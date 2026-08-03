@@ -1,0 +1,2 @@
+- Management Account created manually at https://aws.amazon.com/.
+- Installed aws and terraform applications locally.
