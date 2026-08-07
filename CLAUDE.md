@@ -154,3 +154,7 @@ Edit this section with your main ideas gathered in this project, so that your fu
 
 Use english when writing source code or any files in this repository.
 When responding to chat, always write in Portuguese (Brazil).
+
+## git
+
+Always commit changes to a separate branch with prefix `claude/`. You can commit, push and open Pull Requests on github. I'll merge them. After merge, always sincronize the local folder with the upstream repo.
