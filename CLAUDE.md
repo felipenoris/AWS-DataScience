@@ -33,6 +33,16 @@ The goal is to achieve the following:
 
 - Let's avoid using IAM Users, in favor of assuming IAM Roles temporarely.
 
+- Use AWS CloudWatch to monitor the cloud infrastructure.
+
+- Use AWS Organizations + Control Tower to setup account permissions.
+
+- Use AWS LakeFormation to share data cross-account.
+
+- Use AWS Glue Data Catalog with data stored on S3 buckets, using ICEBERG format, as Data Warehouse.
+
+- Use Amazon ECR as container registry.
+
 ## How this will be done
 
 We will start from scratch: the starting point is a root AWS account created manually.
@@ -63,6 +73,8 @@ app-etl/
 ├── pyproject.toml
 └── README.md
 ```
+
+Development stack similar to this application: <https://github.com/felipenoris/etl-cookbook-tutorial>.
 
 # Guidelines
 
