@@ -158,3 +158,7 @@ When responding to chat, always write in Portuguese (Brazil).
 ## git
 
 Always commit changes to a separate branch with prefix `claude/`. You can commit, push and open Pull Requests on github. I'll merge them. After merge, always sincronize the local folder with the upstream repo.
+
+## Claude LOG
+
+For every project step, review this section and add your own LOG, so that you can remember the current stage of this project.
