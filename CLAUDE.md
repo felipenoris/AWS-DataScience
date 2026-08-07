@@ -187,7 +187,10 @@ Always read `GENERAL_PLAN.md` before planning or executing a step.
 ### Current position
 
 **Stage 0 (Baseline) is complete. Stage 1 (Organization, accounts and identity) is ready to start —
-it is no longer blocked.**
+it is no longer blocked.** The plan was reviewed a second time on 2026-08-07, against the General Objective
+and current AWS guidance; Stage 1 grew substantially as a result (data perimeter, detective controls and
+centralized root management moved into the landing zone), and the account count did **not** change: the six
+accounts already in `secrets/accounts.md` are the complete set.
 
 The blockers were cleared on 2026-08-07: the region is `us-west-2` (D1), the six account e-mails are all
 in `secrets/accounts.md`, the VPN is WireGuard (D4), the lab is ephemeral (D11), and Identity Center
@@ -242,3 +245,32 @@ The repository contains documentation only; `terraform/` is still empty and must
   Three consequences carried into Stage 1: assignments *targeting* the Management account stay manual
   there; the Identity account is as sensitive as Management, so the Sandbox user gets no access to it;
   and Control Tower's own permission sets are left alone to avoid landing-zone drift.
+- **2026-08-07 - Stage 0. Second review of the plan**, this time against the General Objective rather than
+  for internal consistency. The framing that came out of it and should survive: **the lab is not the
+  reference architecture**, and the gap is now written down explicitly in `GENERAL_PLAN.md` §11 rather than
+  left implicit in a series of cost decisions. Four things worth remembering:
+  - **D14 (user's decision): GitLab, Runners, ECR and CodeArtifact live in the Production account.** I had
+    proposed a separate Shared Services account; the user's answer was that these belong in Production.
+    That resolves the problem I raised — they were in Sandbox, next to a broadly permissioned group — at
+    the cost of build and runtime sharing an account. Knock-on effects rippled through the plan: the
+    Production VPC moved from Stage 9 to Stage 3, Sandbox↔Production peering became necessary, the
+    registry sharing reversed direction, and the AZ-ID question in §9 stopped being theoretical.
+  - **D5 (user's decision): build both egress designs and compare.** The user found "no internet at all"
+    too radical to adopt outright but was willing to experiment, so Stage 6 now builds the allowlist
+    version and the no-NAT version and measures both. The user's reservation is recorded as a constraint,
+    not an objection to argue away: **CodeArtifact does not cover Julia or R** (and Cargo needs
+    confirming), so the environment's four ecosystems cannot all be served by it. The reframing that makes
+    design B tractable is that the CI-built dev-env image is itself the dependency delivery mechanism —
+    the proxy is only needed for ad-hoc installs, which are mostly Python.
+  - **The strongest technical finding was D13**: Lake Formation only constrains engines that ask it, so an
+    execution role holding direct S3 on registered prefixes makes every column and row filter decorative.
+    Decided in Stage 5, before Stage 6 writes the execution role.
+  - **Principle 9, preventive before detective**: the data perimeter (SCPs, RCPs, endpoint policies) is
+    free and moved from Stage 11 to Stage 1, along with Security Hub, GuardDuty and Access Analyzer.
+    Cost floor rose from ~USD 15 to ~USD 18-22 as a result — accepted against the USD 50 ceiling.
+  Also corrected four factual errors carried by the first draft: the SageMaker domain `RetentionPolicy`
+  defaults to `Retain` (so the hazard is orphaned filesystems, not lost data); presigned URL *creation* is
+  invisible to CloudTrail (only its use is detectable); the VPC endpoint list was missing
+  `sagemaker.studio`, without which a VPC-only domain does not start; and ACM cannot issue a certificate
+  for a private-only name like `sandbox.internal`, which is what D15 (public domain + split-horizon DNS)
+  now solves. One input is still needed from the user: **which domain name to register**.
