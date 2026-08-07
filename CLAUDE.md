@@ -9,7 +9,13 @@ The goal is to achieve the following:
 
 - Use SageMaker as a development tool for Data Scientists.
 
-- Use a DLP tool to protect data, targeting SageMaker (mainly).
+- Protect data against leakage (DLP), mainly targeting SageMaker. There is no single AWS product that does
+  this, so the requirement is broken into the four problems it has to solve:
+
+	- sensitive-data discovery and classification: know which sensitive data exists and where it is stored.
+	- fine-grained access control: restrict who can read which database, table, column and row.
+	- egress control: restrict where data can be sent to from the development environment.
+	- exfiltration detection: detect and alert on abnormal data access or data movement.
 
 - SageMaker should have access to the internet. We'll explore implementing some restrictions, keeping the possibility of software updates, installing packages, and accessing a few websites.
 
@@ -77,6 +83,10 @@ app-etl/
 The development stack is similar to this application: <https://github.com/felipenoris/etl-cookbook-tutorial>.
 
 # Guidelines
+
+## AWS Region
+
+All infrastructure will be deployed in the `us-west-2` Region.
 
 ## LOG
 
@@ -169,16 +179,43 @@ When I authorize you, you can commit, push and open Pull Requests on GitHub. I'l
 
 For every project step, review this section and add your own LOG, so that you can remember the current stage of this project.
 
-### Stage 0 - Bootstrap not started (2026-08-07)
+Stage numbers refer to `GENERAL_PLAN.md`, which is the staged implementation plan for this project.
+Always read `GENERAL_PLAN.md` before planning or executing a step.
 
-- The repository contains only documentation: `CLAUDE.md`, `LOG.md`, `README.md` (still the initial stub), `REFERENCES.md`, `LICENSE` and the git-ignored `secrets/` folder.
-- The `terraform/` folder exists but is empty. No `terraform-live/` or `terraform-modules/` created yet. No AWS resource provisioned by code.
-- Done manually by the user so far (per `LOG.md`): Management Account created in the AWS console; `aws` CLI and `terraform` installed locally.
-- Accounts planned (`secrets/accounts.md`): Management (bootstrap only, never touched by code), Sandbox and Production.
-- SSO users planned (`secrets/sso-users.md`): infrastructure (admin), sandbox (no infrastructure changes, except SageMaker-managed ones) and manager (approves deployments).
-- Next step not decided yet. Natural candidate: bootstrap the AWS Organization (Sandbox and Production accounts + IAM Identity Center) and the Terraform remote state backend.
+### Current position
 
-### Stage 0.1 - English review of the repository text (2026-08-07)
+**Stage 0 (Baseline) is complete. Stage 1 (Organization, accounts and identity) is ready to start —
+it is no longer blocked.**
 
-- Reviewed the English of `CLAUDE.md`, `README.md` and `REFERENCES.md`: spelling, capitalization of product names (GitLab, Docker, Terraform, SageMaker, AWS Lake Formation) and sentence-level grammar. No instruction changed its meaning.
-- `LOG.md` and `secrets/` were left untouched, as required by the guidelines above.
+The blockers were cleared on 2026-08-07: the region is `us-west-2` (D1), the five account e-mails are all
+in `secrets/accounts.md`, the VPN is WireGuard (D4), and the lab is ephemeral (D11). Two decisions are
+deliberately deferred to the stage that needs them: the SageMaker egress restriction mechanism (D5,
+Stage 6) and the production orchestrator (D7, Stage 10). Neither blocks Stages 1-5.
+
+State of the environment: nothing is provisioned in AWS beyond the manually created Management account.
+The repository contains documentation only; `terraform/` is still empty and must be replaced by
+`terraform-live/` and `terraform-modules/` in Stage 2.
+
+### History
+
+- **2026-08-07 - Stage 0.** Baseline recorded: Management account created manually by the user; `aws` CLI
+  2.36, `terraform` 1.15 and `uv` installed locally; `~/.aws/config` has no SSO profile yet.
+- **2026-08-07 - Stage 0.** English review of `CLAUDE.md`, `README.md` and `REFERENCES.md` (spelling,
+  product-name capitalization, grammar). No instruction changed its meaning. PR #1, merged.
+- **2026-08-07 - Stage 0.** `GENERAL_PLAN.md` created: stages 0-13 and decisions D1-D10. Six decisions were
+  left open (region, VPN technology, SageMaker egress restriction, DLP approach, orchestrator, Identity
+  Center administration); they are recorded there rather than here.
+- **2026-08-07 - Stage 0.** Decisions taken by the user: region `us-west-2` (D1), WireGuard for the VPN
+  (D4), native AWS combination for DLP (D6, now reflected in the four sub-items of the objective above),
+  an ephemeral lab (D11) and a USD 50/month budget ceiling (D12). D5 and D7 deferred.
+  The Log Archive and Audit account e-mails were added to `secrets/accounts.md`.
+- **2026-08-07 - Stage 0.** D11 refined into a three-layer operating model in `GENERAL_PLAN.md` §5.1:
+  `[P]` persistent (free at rest — including the VPC itself), `[D]` dormant (GitLab and WireGuard are
+  stopped, not destroyed) and `[E]` ephemeral (NAT, VPC interface endpoints, SageMaker, EFS). The rule is
+  "pay nothing while idle", not "destroy everything".
+- **2026-08-07 - Stage 0.** Region settled: `us-west-2`, chosen on cost, and it stays there. Data residency
+  is not a concern — this is a test with no real data. The project mirrors something that would run in
+  `sa-east-1` in practice, but that move is **hypothetical and not planned work**: the only consequence is
+  keeping region literals out of the Terraform (`GENERAL_PLAN.md` §4.1), which is good practice regardless.
+  Recorded there for reference: São Paulo has every service this project needs, including SageMaker Studio
+  GPU instances and Graviton — so the answer to "would anything break there?" is no.
