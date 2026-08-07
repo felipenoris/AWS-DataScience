@@ -93,14 +93,12 @@ This folder is ignored by git. It contains personal information. Never edit this
 
 ```
 terraform-live/
-├── dev/
+├── sandbox/
 │   ├── networking/
 │   ├── shared-services/
 │   └── app/
-|        └── app-etl/
-├── hom/
-│   └── ...
-└── prd/
+|        └── app-etl/ # references app-etl (an application) repository source code by tag version
+└── production/
     └── ...
 
 terraform-modules/ # reusable modules used by applications
