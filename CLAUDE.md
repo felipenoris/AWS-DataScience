@@ -21,9 +21,11 @@ The goal is to achieve the following:
 
 - Use three kinds of CI/CD piplines:
 
-	- pipeline to build a development environment: this will be the image used by developers on SageMaker.
+	- pipeline to build a development environment: this will be the docker container (or image) used by developers on SageMaker.
 	- pipeline to build an application: this should build a docker image of the app.
 	- pipeline to deploy an application into production environment.
+
+- Explore the possibility of deploying a workflow developed in SageMaker (Airflow/MWAA) to production.
 
 - use a NFS solution to exchange files between users, SageMaker environment and S3 buckets.
 
@@ -31,7 +33,17 @@ The goal is to achieve the following:
 
 - Let's avoid using IAM Users, in favor of assuming IAM Roles temporarely.
 
+## How this will be done
+
+We will start from scratch: the starting point is a root AWS account created manually.
+
+The project will be implemented incrementally.
+
+I'll ask Claude to plan the next step and Claude will guide me on each step until we reach the project goals.
+
 ## Application source code layout
+
+This is a template for an application developed by a data scientist and intended for deployment in a production environment.
 
 ```
 app-etl/
@@ -43,7 +55,7 @@ app-etl/
 │   ├── test_pipeline.py
 │   └── test_sql.py
 ├── .gitlab-ci.yml
-├── Dockerfile
+├── Dockerfile # builds the application Docker container for deployment
 ├── terraform/ # use of predefined terraform modules hosted at `terraform-modules`
 │   ├── main.tf
 │   ├── variables.tf
@@ -52,18 +64,20 @@ app-etl/
 └── README.md
 ```
 
-# LOG
+# Guidelines
+
+## LOG
 
 `LOG.md` contains all the actions performed during this project.
 Never update `LOG.md`. I'll edit this file.
 
-# Tools installed in the current environment
+## Tools installed in the current environment
 
 - terraform: <https://developer.hashicorp.com/terraform/install>.
 
 - aws client: <https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html>.
 
-# Guidelines
+- uv: <https://docs.astral.sh/uv/>.
 
 ## `secrets` folder
 
@@ -119,14 +133,6 @@ On every interaction, add to `REFERENCES.md` all the internet links Claude used 
 ## `README.md`
 
 Update `README.md` with information about how we are structuring our AWS resources. Also, document the project layout so that people can understand the files and main components.
-
-## How this will be done
-
-We will start from scratch: the starting point is a root AWS account created manually.
-
-The project will be implemented incrementally.
-
-I'll ask Claude to plan the next step and Claude will guide me on each step until we reach the project goals.
 
 # Claude memory
 
