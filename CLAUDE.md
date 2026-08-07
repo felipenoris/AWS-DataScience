@@ -161,7 +161,7 @@ You can edit files in the main branch, but never commit before asking.
 
 Always commit changes to a separate branch with the `claude/` prefix.
 
-Sometimes I'll commit myself, and you're done.
+Sometimes I'll commit the changes myself; in that case, there's nothing left for you to do.
 
 When I authorize you, you can commit, push and open Pull Requests on GitHub. I'll merge them. After the merge, always synchronize the local folder with the upstream repo.
 
