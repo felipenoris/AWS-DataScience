@@ -190,17 +190,14 @@ Always read `GENERAL_PLAN.md` before planning or executing a step.
 
 ### Current position
 
-**Stage 0 (Baseline) is complete. Stage 1 (Organization, accounts and identity) is ready to start —
-it is no longer blocked.** The plan was reviewed a second time on 2026-08-07, against the General Objective
-and current AWS guidance; Stage 1 grew substantially as a result (data perimeter, detective controls and
-centralized root management moved into the landing zone), and the account count did **not** change: the six
-accounts already in `secrets/accounts.md` are the complete set.
+**Stage 0 (Baseline) is complete. Stage 1 (Organization, accounts and identity) is ready to start, with
+nothing blocking it.** Decisions D1-D16 are closed and recorded in `GENERAL_PLAN.md` §4, with the single
+exception of D7 (production orchestrator), deliberately deferred to Stage 10 because that is where it is
+consumed. The six accounts in `secrets/accounts.md` are the complete set.
 
-The blockers were cleared on 2026-08-07: the region is `us-west-2` (D1), the six account e-mails are all
-in `secrets/accounts.md`, the VPN is WireGuard (D4), the lab is ephemeral (D11), and Identity Center
-administration is delegated to a dedicated Identity account (D10). Two decisions are deliberately deferred
-to the stage that needs them: the SageMaker egress restriction mechanism (D5, Stage 6) and the production
-orchestrator (D7, Stage 10). Neither blocks Stages 1-5.
+Two inputs are still needed from the user, neither blocking Stage 1: **which domain name to register**
+(D15, blocks Stage 7) and the outcome of the AZ name-to-ID check in Stage 1 step 16, which decides whether
+Stage 3 anchors subnets on list position or on AZ IDs. Both are tracked in `GENERAL_PLAN.md` §9.
 
 State of the environment: nothing is provisioned in AWS beyond the manually created Management account.
 The repository contains documentation only; `terraform/` is still empty and must be replaced by
@@ -208,100 +205,12 @@ The repository contains documentation only; `terraform/` is still empty and must
 
 ### History
 
-- **2026-08-07 - Stage 0.** Baseline recorded: Management account created manually by the user; `aws` CLI
-  2.36, `terraform` 1.15 and `uv` installed locally; `~/.aws/config` has no SSO profile yet.
-- **2026-08-07 - Stage 0.** English review of `CLAUDE.md`, `README.md` and `REFERENCES.md` (spelling,
-  product-name capitalization, grammar). No instruction changed its meaning. PR #1, merged.
-- **2026-08-07 - Stage 0.** `GENERAL_PLAN.md` created: stages 0-13 and decisions D1-D10. Six decisions were
-  left open (region, VPN technology, SageMaker egress restriction, DLP approach, orchestrator, Identity
-  Center administration); they are recorded there rather than here.
-- **2026-08-07 - Stage 0.** Decisions taken by the user: region `us-west-2` (D1), WireGuard for the VPN
-  (D4), native AWS combination for DLP (D6, now reflected in the four sub-items of the objective above),
-  an ephemeral lab (D11) and a USD 50/month budget ceiling (D12). D5 and D7 deferred.
-  The Log Archive and Audit account e-mails were added to `secrets/accounts.md`.
-- **2026-08-07 - Stage 0.** D11 refined into a three-layer operating model in `GENERAL_PLAN.md` §5.1:
-  `[P]` persistent (free at rest — including the VPC itself), `[D]` dormant (GitLab and WireGuard are
-  stopped, not destroyed) and `[E]` ephemeral (NAT, VPC interface endpoints, SageMaker, EFS). The rule is
-  "pay nothing while idle", not "destroy everything".
-- **2026-08-07 - Stage 0.** Region settled: `us-west-2`, chosen on cost, and it stays there. Data residency
-  is not a concern — this is a test with no real data. The project mirrors something that would run in
-  `sa-east-1` in practice, but that move is **hypothetical and not planned work**: the only consequence is
-  keeping region literals out of the Terraform (`GENERAL_PLAN.md` §4.1), which is good practice regardless.
-  Recorded there for reference: São Paulo has every service this project needs, including SageMaker Studio
-  GPU instances and Graviton — so the answer to "would anything break there?" is no.
-- **2026-08-07 - Stage 0.** Number of AZs reviewed and **D9 kept as it was** (2 for subnets, 1 for metered
-  endpoints). A third AZ buys nothing here: 2 already satisfies every managed service that requires
-  multiple AZs (ALB, RDS Multi-AZ, EKS), and the lab has no availability requirement. Its only real
-  argument is more chances of finding scarce GPU capacity (`ml.g5`, `p5`); against that, every per-AZ
-  metered resource multiplies — six interface endpoints go from ~USD 0.06/h to ~USD 0.18/h. Open item
-  recorded in `GENERAL_PLAN.md` §9: AWS maps AZ names to physical datacenters independently per account,
-  so `us-west-2a` in Sandbox need not be the same datacenter as in Production. That is checked in Stage 1,
-  once the accounts exist, and decides whether Stage 3 anchors subnets on list position or on AZ IDs.
-- **2026-08-07 - Stage 0.** **D10 decided: Identity Center administration is delegated to a dedicated
-  Identity account** (a sixth account, now in `secrets/accounts.md`). The instance itself cannot leave the
-  Management account; only its administration is delegated, via
-  `register-delegated-administrator --service-principal sso.amazonaws.com`. The point is that Terraform
-  then manages permission sets without ever holding Management credentials, which is what turns
-  "the Management account is bootstrap-only" into something enforced instead of merely intended.
-  The user chose a dedicated account over the Audit account so that Audit stays the security guardian
-  and Identity owns access management — I had recommended reusing Audit to avoid a sixth AWS Config
-  recorder (~USD 0.50-1/month); the separation-of-duties argument won, and the cost is accepted.
-  Three consequences carried into Stage 1: assignments *targeting* the Management account stay manual
-  there; the Identity account is as sensitive as Management, so the Sandbox user gets no access to it;
-  and Control Tower's own permission sets are left alone to avoid landing-zone drift.
-- **2026-08-07 - Stage 0. Second review of the plan**, this time against the General Objective rather than
-  for internal consistency. The framing that came out of it and should survive: **the lab is not the
-  reference architecture**, and the gap is now written down explicitly in `GENERAL_PLAN.md` §11 rather than
-  left implicit in a series of cost decisions. Four things worth remembering:
-  - **D14 (user's decision): GitLab, Runners, ECR and CodeArtifact live in the Production account.** I had
-    proposed a separate Shared Services account; the user's answer was that these belong in Production.
-    That resolves the problem I raised — they were in Sandbox, next to a broadly permissioned group — at
-    the cost of build and runtime sharing an account. Knock-on effects rippled through the plan: the
-    Production VPC moved from Stage 9 to Stage 3, Sandbox↔Production peering became necessary, the
-    registry sharing reversed direction, and the AZ-ID question in §9 stopped being theoretical.
-  - **D5 (user's decision): build both egress designs and compare.** The user found "no internet at all"
-    too radical to adopt outright but was willing to experiment, so Stage 6 now builds the allowlist
-    version and the no-NAT version and measures both. The user's reservation is recorded as a constraint,
-    not an objection to argue away: **CodeArtifact does not cover Julia or R** (and Cargo needs
-    confirming), so the environment's four ecosystems cannot all be served by it. The reframing that makes
-    design B tractable is that the CI-built dev-env image is itself the dependency delivery mechanism —
-    the proxy is only needed for ad-hoc installs, which are mostly Python.
-  - **The strongest technical finding was D13**: Lake Formation only constrains engines that ask it, so an
-    execution role holding direct S3 on registered prefixes makes every column and row filter decorative.
-    Decided in Stage 5, before Stage 6 writes the execution role.
-  - **Principle 9, preventive before detective**: the data perimeter (SCPs, RCPs, endpoint policies) is
-    free and moved from Stage 11 to Stage 1, along with Security Hub, GuardDuty and Access Analyzer.
-    Cost floor rose from ~USD 15 to ~USD 18-22 as a result — accepted against the USD 50 ceiling.
-  Also corrected four factual errors carried by the first draft: the SageMaker domain `RetentionPolicy`
-  defaults to `Retain` (so the hazard is orphaned filesystems, not lost data); presigned URL *creation* is
-  invisible to CloudTrail (only its use is detectable); the VPC endpoint list was missing
-  `sagemaker.studio`, without which a VPC-only domain does not start; and ACM cannot issue a certificate
-  for a private-only name like `sandbox.internal`, which is what D15 (public domain + split-horizon DNS)
-  now solves. One input is still needed from the user: **which domain name to register**.
-- **2026-08-07 - Stage 0. Third review of the plan** (user request: inconsistencies + AWS best practices).
-  Findings reported in chat; **no plan edits made yet — pending the user's decisions.** The five findings
-  that would break stages as written: (i) Stage 5's `aws:SourceVpce` bucket policy has no carve-out for
-  AWS-service access, which blocks Athena/Lake Formation — the exact path D13 mandates (fix:
-  `aws:ViaAWSService` exception, per the data-perimeter policy examples); (ii) Stage 4's split tunnel
-  (step 5) contradicts the `aws:SourceIp` control-plane restriction (step 8) — API calls bypass the tunnel,
-  so the condition would deny everything; needs full tunnel with NAT, and `aws:ViaAWSService=false` in the
-  deny; (iii) Stage 4 mixes NAT (step 1) with routed-peer-network return routes (step 6), and VPC peering
-  does no edge-to-edge routing, so the WireGuard client CIDR cannot cross the peering — NAT on the
-  WireGuard instance is mandatory to reach GitLab in Production; (iv) Stage 8's GitLab OIDC federation
-  requires the issuer's JWKS to be publicly reachable by IAM/STS, which a VPN-only GitLab is not —
-  alternatives: expose only the two discovery endpoints, or a dedicated deploy runner with an instance
-  profile; (v) Stage 7's internal ALB is marked `[D]` but ALBs cannot be stopped (~USD 16/month while it
-  exists) — make it `[E]` or terminate TLS on the instance. Cost-model drift: D12 still says
-  15/0.25/20 vs §5's 18-22/0.28/26; §5's floor header still says ~15; Stage 3's design-B figure omits the
-  two CodeArtifact endpoints (~0.11/h, not 0.09); Production-side egress (runner NAT) and the ALB are
-  missing from the hourly table. Best-practice recommendations: SageMaker domain and EFS should be `[P]`
-  (both are free/cents at rest — kills the orphaned-EFS hazard and the fragile S3-sync-on-teardown);
-  SCP denying `iam:CreateUser`/`CreateAccessKey` (principle 2 has no preventive enforcement today);
-  account-level S3 Block Public Access + protecting SCP; Cost Anomaly Detection (free); Iceberg
-  maintenance (OPTIMIZE/VACUUM) is unowned by any stage and S3 Tables should be recorded as a considered
-  decision; tag policies do not force tags at creation (needs `aws:RequestTag` SCPs); GitLab CE SAML group
-  sync is a paid feature, so the Stage 8 gate needs manual group membership; verify cross-account ECR pull
-  for SageMaker custom images (fallback: ECR replication); CodeArtifact does list Cargo as supported, so
-  §9 item 5 is half-answered. Minor: `Environment=shared` tag is vestigial post-D14; `DeployApprover`
-  permission set has no concrete function (the gate lives in GitLab); "classic Studio" wording is ambiguous
-  with the deprecated "Studio Classic".
+- **2026-08-07 - Stage 0 (complete).** Baseline recorded: Management account created manually by the user
+  through the console; `aws` CLI 2.36, `terraform` 1.15 and `uv` installed locally; `~/.aws/config` still has
+  no SSO profile. English review of `CLAUDE.md`, `README.md` and `REFERENCES.md` — PR #1, merged.
+  `GENERAL_PLAN.md` written and then reviewed three times before any AWS resource existed. All of it landed
+  in the plan itself, which is the single source of truth for stages 0-13, decisions D1-D16 and their
+  rationale, the data perimeter (§4.2), the two egress designs (§4.3), the cost and operating model
+  (§5/§5.1), the open questions (§9) and the lab-versus-institution delta (§11). The intermediate drafts
+  were deleted from both histories on 2026-08-07: nothing had been provisioned, so they described only how
+  the document changed, not how the environment did.
