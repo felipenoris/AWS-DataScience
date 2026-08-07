@@ -160,6 +160,8 @@ Update `README.md` with information about how we are structuring our AWS resourc
 
 Edit this section with the main ideas gathered in this project, so that your future self will understand the context.
 
+Never use external memory to store information. Store all your memory from this project in this session, and use it.
+
 ## Language
 
 Use English when writing source code or any files in this repository.
@@ -187,10 +189,11 @@ Always read `GENERAL_PLAN.md` before planning or executing a step.
 **Stage 0 (Baseline) is complete. Stage 1 (Organization, accounts and identity) is ready to start —
 it is no longer blocked.**
 
-The blockers were cleared on 2026-08-07: the region is `us-west-2` (D1), the five account e-mails are all
-in `secrets/accounts.md`, the VPN is WireGuard (D4), and the lab is ephemeral (D11). Two decisions are
-deliberately deferred to the stage that needs them: the SageMaker egress restriction mechanism (D5,
-Stage 6) and the production orchestrator (D7, Stage 10). Neither blocks Stages 1-5.
+The blockers were cleared on 2026-08-07: the region is `us-west-2` (D1), the six account e-mails are all
+in `secrets/accounts.md`, the VPN is WireGuard (D4), the lab is ephemeral (D11), and Identity Center
+administration is delegated to a dedicated Identity account (D10). Two decisions are deliberately deferred
+to the stage that needs them: the SageMaker egress restriction mechanism (D5, Stage 6) and the production
+orchestrator (D7, Stage 10). Neither blocks Stages 1-5.
 
 State of the environment: nothing is provisioned in AWS beyond the manually created Management account.
 The repository contains documentation only; `terraform/` is still empty and must be replaced by
@@ -219,3 +222,23 @@ The repository contains documentation only; `terraform/` is still empty and must
   keeping region literals out of the Terraform (`GENERAL_PLAN.md` §4.1), which is good practice regardless.
   Recorded there for reference: São Paulo has every service this project needs, including SageMaker Studio
   GPU instances and Graviton — so the answer to "would anything break there?" is no.
+- **2026-08-07 - Stage 0.** Number of AZs reviewed and **D9 kept as it was** (2 for subnets, 1 for metered
+  endpoints). A third AZ buys nothing here: 2 already satisfies every managed service that requires
+  multiple AZs (ALB, RDS Multi-AZ, EKS), and the lab has no availability requirement. Its only real
+  argument is more chances of finding scarce GPU capacity (`ml.g5`, `p5`); against that, every per-AZ
+  metered resource multiplies — six interface endpoints go from ~USD 0.06/h to ~USD 0.18/h. Open item
+  recorded in `GENERAL_PLAN.md` §9: AWS maps AZ names to physical datacenters independently per account,
+  so `us-west-2a` in Sandbox need not be the same datacenter as in Production. That is checked in Stage 1,
+  once the accounts exist, and decides whether Stage 3 anchors subnets on list position or on AZ IDs.
+- **2026-08-07 - Stage 0.** **D10 decided: Identity Center administration is delegated to a dedicated
+  Identity account** (a sixth account, now in `secrets/accounts.md`). The instance itself cannot leave the
+  Management account; only its administration is delegated, via
+  `register-delegated-administrator --service-principal sso.amazonaws.com`. The point is that Terraform
+  then manages permission sets without ever holding Management credentials, which is what turns
+  "the Management account is bootstrap-only" into something enforced instead of merely intended.
+  The user chose a dedicated account over the Audit account so that Audit stays the security guardian
+  and Identity owns access management — I had recommended reusing Audit to avoid a sixth AWS Config
+  recorder (~USD 0.50-1/month); the separation-of-duties argument won, and the cost is accepted.
+  Three consequences carried into Stage 1: assignments *targeting* the Management account stay manual
+  there; the Identity account is as sensitive as Management, so the Sandbox user gets no access to it;
+  and Control Tower's own permission sets are left alone to avoid landing-zone drift.

@@ -34,8 +34,8 @@ Staged plan to build the AWS Data Science environment described in `CLAUDE.md`.
 
 - Management Account created manually through the AWS console. Nothing else exists.
 
-**Planned accounts** (`secrets/accounts.md`): Management, Sandbox, Production, Log Archive, Audit —
-all five e-mails are registered.
+**Planned accounts** (`secrets/accounts.md`): Management, Sandbox, Production, Log Archive, Audit,
+Identity — all six e-mails are registered.
 **Planned SSO users** (`secrets/sso-users.md`): infrastructure (admin), sandbox (regular), manager (approvals).
 
 **Region:** `us-west-2` (decision D1, recorded in `CLAUDE.md`).
@@ -72,7 +72,8 @@ Layers per §5.1: `[P]` persistent (free at rest), `[D]` dormant (stopped betwee
 ```
 AWS Organization (Management account - console only)                        [P]
 ├── Log Archive account      (created by Control Tower)                     [P]
-├── Audit account            (created by Control Tower)                     [P]
+├── Audit account            (created by Control Tower) <- security guardian [P]
+├── Identity account         <- Identity Center delegated administration    [P]
 ├── Sandbox account          <- data scientists work here
 │   ├── VPC, subnets, IGW, security groups, private DNS zone                [P]
 │   ├── S3 (raw/curated/artifacts) + Glue Catalog (Iceberg) + Athena        [P]
@@ -100,14 +101,14 @@ AWS Organization (Management account - console only)                        [P]
 |---|---|---|---|
 | D1 | Region | Decided (2026-08-07): **`us-west-2`**, and it stays there | Oregon, chosen on cost — roughly half São Paulo's price on metered items. Data residency is explicitly not a concern: this is a test with no real data. The project mirrors something that would run in `sa-east-1` in practice, but **that move is hypothetical and is not planned work**; the only thing it implies is the Terraform hygiene in §4.1, which is worth doing anyway. The availability question was answered and recorded there: nothing this plan uses is missing from São Paulo. |
 | D2 | Control Tower vs. plain Organizations | Decided: **Control Tower** | Required by `CLAUDE.md`. It creates the Log Archive and Audit accounts, enables CloudTrail/Config org-wide and provides guardrails. Downside: AWS Config is the main recurring cost of the landing zone. |
-| D3 | Terraform state location | Decided: **per-account S3 bucket, native S3 locking** | Terraform 1.15 supports `use_lockfile = true`, so no DynamoDB table is needed. Sandbox state lives in the Sandbox account, Production state in the Production account. This avoids putting state in the Management account (principle 1) and avoids cross-account state access. |
+| D3 | Terraform state location | Decided: **per-account S3 bucket, native S3 locking** | Terraform 1.15 supports `use_lockfile = true`, so no DynamoDB table is needed. Sandbox state lives in the Sandbox account, Production state in the Production account, and identity state in the Identity account (D10). This avoids putting state in the Management account (principle 1) and avoids cross-account state access. |
 | D4 | VPN technology | Decided (2026-08-07): **self-managed WireGuard** | A `t4g.nano` EC2 instance in a public subnet, layer `[D]` — stopped between sessions, not destroyed, so the host key and peer configuration stay stable. Idle cost is its 8 GB EBS volume (~USD 0.65/month) plus the Elastic IP, which lives in the `[P]` foundation slice (~USD 3.65/month) so the endpoint address never changes. Consequences to handle in Stage 4: no native Identity Center integration, so peer public keys are provisioned by Terraform from a git-ignored variable file; and it is a single point of failure, which is acceptable for a lab. AWS Client VPN (~USD 73/month, SAML to Identity Center) stays documented as the managed alternative if SSO-integrated VPN becomes a requirement. |
 | D5 | SageMaker internet restriction mechanism | **DEFERRED to Stage 6** | Options carried forward: (a) **Route 53 Resolver DNS Firewall** with a domain allowlist — cheap, blocks by DNS name, bypassable by raw IP. (b) **Squid proxy on EC2** with an allowlist — cheap, full HTTP(S) control, needs maintenance. (c) **AWS Network Firewall** — real egress filtering with TLS SNI inspection, ~USD 290/month. Nothing before Stage 6 depends on this, provided Stage 3 leaves the NAT route table and egress path easy to reshape. |
 | D6 | DLP approach | Decided (2026-08-07): **native AWS combination** | The objective in `CLAUDE.md` is now split into the four problems it has to solve, each with its own control: discovery/classification → **Macie**; fine-grained access → **Lake Formation** (LF-Tags, column and row filters); egress control → **D5** plus the SageMaker VPC-only domain; exfiltration detection → **CloudTrail data events + GuardDuty + Security Hub** with CloudWatch alarms. A third-party agent-based DLP is only evaluated in Stage 11, after these four are in place and their gaps are known. |
 | D7 | Workflow orchestration in production | **DEFERRED to Stage 10** | Options carried forward: **Step Functions + ECS/Fargate** (pay per execution, near-zero idle cost — the natural fit for an ephemeral lab), **MWAA** (~USD 350+/month, but it is what `CLAUDE.md` names explicitly), or **self-managed Airflow on ECS**. The decision only becomes real once an application from Stage 8 needs scheduling. Keep the application's entry point a plain container so it can be driven by any of the three. |
 | D8 | GitLab hosting | Decided: **self-managed on EC2, layer `[D]`** | Required by `CLAUDE.md`. GitLab CE Omnibus on a private-subnet EC2 instance, reached through the VPN, backed up to S3. Sizing: 8 GB RAM is the realistic minimum for GitLab + Pages — `t4g.large` (ARM) is ~20% cheaper than `t3.large` for the same memory and GitLab Omnibus ships arm64 packages. Stopped between sessions rather than destroyed (~USD 4/month of EBS), because rebuilding from backup on every session is the fragile path. |
 | D9 | Number of AZs | Decided: **2 for subnets, 1 for metered endpoints** | Subnets, route tables and NAT-less network plumbing are free, so the topology spans 2 AZs and stays honest. Interface VPC endpoints are charged per AZ, so they default to a single AZ during lab sessions; a resource in the other AZ still resolves and reaches them, at the cost of cross-AZ traffic and no AZ redundancy — an acceptable trade in a lab, and a one-variable change if it ever is not. |
-| D10 | Identity Center administration | **OPEN** | Permission sets live in the Management account, which Terraform must not touch. Options: (a) manage permission sets manually in the console (simple, matches principle 1); (b) delegate Identity Center administration to a member account and manage it with Terraform from there. Recommendation: (a) for Stage 1, revisit at Stage 12. |
+| D10 | Identity Center administration | Decided (2026-08-07): **delegated to a dedicated Identity account** | The Identity Center instance and its identity store are created in the Management account and cannot be moved; what is delegated is their *administration*. One member account is registered as delegated administrator (`sso.amazonaws.com`), and from there Terraform manages permission sets, groups and assignments — so Terraform never needs credentials in the Management account, which is what makes principle 1 real rather than aspirational. The role goes to a **dedicated Identity account** rather than to the Audit account: Audit stays the security guardian (GuardDuty, Security Hub, Macie findings) and Identity owns access management, so the two concerns do not share a blast radius. Costs one extra Control Tower-governed account, i.e. one more AWS Config recorder (~USD 0.50-1/month) — accepted in exchange for the separation. **Consequences:** (i) assignments whose *target* is the Management account cannot be managed from the delegated account and stay manual; (ii) the Identity account can grant administrative access to any account in the organization, so it is as sensitive as Management — the Sandbox user must never have access to it; (iii) Control Tower's own permission sets (`AWSAdministratorAccess` and friends) are left alone, since editing them causes landing-zone drift. |
 | D11 | Lifecycle of the lab | Decided (2026-08-07): **resources are ephemeral, accounts are not** | The environment runs for a few hours per session and is shut down in between. Accounts, the Organization, Control Tower and Identity Center are never destroyed. Within the accounts the rule is not "destroy everything" but **"pay nothing while idle"**: resources that cost nothing at rest are simply left in place, resources that meter are destroyed, and stateful services that are awkward to rebuild are stopped rather than destroyed. Three layers, defined in §5.1. |
 | D12 | Budget ceiling | Decided (2026-08-07): **USD 50/month** | With the three-layer model the projection is ~USD 15/month floor plus ~USD 0.25 per lab hour, so roughly USD 20/month at the expected usage. The AWS Budget created in Stage 1 alerts at 50/80/100% of USD 50. This ceiling is what rules out always-on GitLab (~USD 60/month by itself) and confirms the stop/start approach. |
 
@@ -154,7 +155,7 @@ nothing is running, and what does an hour of lab time add on top". Order-of-magn
 | KMS customer-managed keys (3) | ~3.00 | ~1.00 per key per month |
 | S3 data + state + backups (~25 GB) | ~1.00 | |
 | ECR images (~10 GB) | ~1.00 | |
-| AWS Config (Control Tower) | ~1-3 | Scales with configuration changes, near zero while idle |
+| AWS Config (Control Tower) | ~1-3 | One recorder per governed account (six, per D10); scales with configuration changes, near zero while idle |
 | Route 53 private hosted zone | ~0.50 | |
 | WireGuard EBS (8 GB) + CloudWatch logs | ~1.00 | |
 
@@ -185,7 +186,7 @@ rest. The rule is **pay nothing while idle**, not **destroy everything**. That s
 three layers, and every stage must say which layer each of its resources belongs to.
 
 **[P] Persistent — created once, never destroyed.** Free or nearly free at rest, or too slow to rebuild:
-the Organization, the five accounts, Control Tower, Identity Center, SCPs, Terraform state buckets, the
+the Organization, the six accounts, Control Tower, Identity Center, SCPs, Terraform state buckets, the
 **VPC itself** (VPC, subnets, route tables, internet gateway, security groups, NACLs cost nothing),
 Route 53 private zone, IAM roles, KMS keys, S3 data buckets, ECR repositories, budgets and alarms.
 
@@ -235,6 +236,9 @@ Each slice carries its layer from §5.1: `[P]` persistent, `[D]` dormant (stop/s
 
 ```
 terraform-live/
+├── identity/             # [P] permission sets, groups, assignments - applied with the
+│   │                     #     delegated-admin profile (D10); never touches Management
+│   └── bootstrap/        # [P] state bucket for the Identity account
 ├── sandbox/
 │   ├── bootstrap/        # [P] state bucket for this account (local state, committed)
 │   ├── foundation/       # [P] VPC, subnets, route tables, IGW, security groups, private
@@ -283,7 +287,7 @@ and reviewed. Nothing provisioned.
 **Objective:** a working AWS Organization with the environment accounts and SSO access, so that everything
 after this can be done by Terraform without root credentials.
 
-**Prerequisites:** none outstanding. D1 is decided (`us-west-2`) and all five account e-mails are in
+**Prerequisites:** none outstanding. D1 is decided (`us-west-2`) and all six account e-mails are in
 `secrets/accounts.md`.
 
 **To execute (all manual, by the user, recorded in `LOG.md`):**
@@ -295,21 +299,35 @@ after this can be done by Terraform without root credentials.
    Log Archive and the Audit accounts (e-mails already in `secrets/accounts.md`), and turn on org-wide
    CloudTrail and Config. Note: the home region cannot be changed afterwards without redeploying the
    landing zone.
-4. Create the `Sandbox` and `Production` accounts through Account Factory, in separate OUs
-   (`Sandbox` OU and `Production` OU), using the e-mails in `secrets/accounts.md`.
-5. In IAM Identity Center, create the three users from `secrets/sso-users.md` and the groups
+4. Create the `Sandbox`, `Production` and `Identity` accounts through Account Factory, using the e-mails
+   in `secrets/accounts.md`. OUs: `Sandbox` OU, `Production` OU, and `Identity` in the `Security` OU
+   alongside Log Archive and Audit.
+5. **Register the Identity account as delegated administrator of IAM Identity Center (D10).** From the
+   Management account:
+   `aws organizations register-delegated-administrator --account-id <IDENTITY_ACCOUNT_ID> --service-principal sso.amazonaws.com`.
+   This is reversible (`deregister-delegated-administrator`), so it is a cheap step to get wrong.
+   Everything in steps 6 and 7 is then done **from the Identity account**, not from Management.
+6. In IAM Identity Center, create the three users from `secrets/sso-users.md` and the groups
    `infrastructure`, `data-scientists`, `managers`. Enforce MFA.
-6. Create permission sets: `AdministratorAccess` (infrastructure), `DataScientistAccess` (sandbox, initially
+7. Create permission sets: `AdministratorAccess` (infrastructure), `DataScientistAccess` (sandbox, initially
    `PowerUserAccess`, tightened in Stage 6), `ReadOnlyAccess` and `DeployApprover` (managers).
-   Assign them: infrastructure → Sandbox + Production; data-scientists → Sandbox; managers → both, read-only
-   plus approval.
-7. Attach a first set of SCPs to the OUs: deny leaving the organization, deny disabling CloudTrail/Config,
+   Assign them: infrastructure → Sandbox + Production + Identity; data-scientists → Sandbox; managers →
+   Sandbox + Production, read-only plus approval. The Sandbox user gets no access to Identity or Audit.
+   Leave Control Tower's own permission sets untouched — editing them causes landing-zone drift.
+   These are created by hand here only because Terraform cannot run before SSO login works; Stage 2 moves
+   them into `terraform-live/identity/` and imports them.
+8. The infrastructure user's assignment **on the Management account itself** has to be created from the
+   Management account — the delegated administrator cannot manage assignments targeting Management.
+   This is the one identity task that stays there permanently.
+9. Attach a first set of SCPs to the OUs: deny leaving the organization, deny disabling CloudTrail/Config,
    deny root user actions, and restrict usable regions to `us-west-2` — the region SCP must still allow
    `us-east-1`, because IAM, Organizations, Route 53, CloudFront and Support only have endpoints there.
-8. Configure local SSO profiles: `aws configure sso` for `awsds-infra-sandbox` and `awsds-infra-prod`.
+10. Configure local SSO profiles: `aws configure sso` for `awsds-infra-sandbox`, `awsds-infra-prod` and
+    `awsds-infra-identity`.
 
 **Deliverables:** accounts created; SSO login working; `aws sts get-caller-identity --profile awsds-infra-sandbox`
-returns the Sandbox account ID.
+returns the Sandbox account ID; `aws sso-admin list-instances --profile awsds-infra-identity` returns the
+Identity Center instance, which is the proof that the delegation took effect.
 
 **Blocking questions for the user:** none.
 
@@ -317,6 +335,13 @@ returns the Sandbox account ID.
 cannot be reused after an account is closed (a closed account holds its e-mail for 90 days) — which is
 exactly why D11 keeps accounts in the persistent layer. Everything created in this stage is persistent;
 nothing here is torn down between sessions.
+
+**To verify while executing this stage**, because Control Tower's handling of Identity Center has changed
+more than once and the plan should not assume: (i) that the delegation coexists with the landing zone
+without raising drift; (ii) that the restriction in step 8 is exactly as described — that assignments
+targeting the Management account are the *only* thing the delegated administrator cannot manage; and
+(iii) the AZ name-to-ID mapping across the Sandbox and Production accounts, which decides whether Stage 3
+anchors subnets on list position or on AZ IDs (§4.1).
 
 ---
 
@@ -332,21 +357,25 @@ nothing here is torn down between sessions.
 2. `terraform-live/sandbox/bootstrap/`: S3 state bucket (versioning, SSE-KMS, public access blocked,
    `use_lockfile = true`). Applied once with local state, then the state file is committed — this is the
    documented chicken-and-egg exception.
-3. Same for `terraform-live/production/bootstrap/`.
+3. Same for `terraform-live/production/bootstrap/` and `terraform-live/identity/bootstrap/`.
 4. Migrate every subsequent slice to the remote backend.
-5. Repository hygiene: `.gitignore` for `.terraform/` and `*.tfstate.backup`; `.terraform.lock.hcl` is
+5. `terraform-live/identity/`: import the permission sets, groups and assignments created by hand in
+   Stage 1, so identity stops being console-managed (D10). Applied with the `awsds-infra-identity`
+   profile. `terraform plan` must come back empty after the import — that is the check that the import
+   is faithful.
+6. Repository hygiene: `.gitignore` for `.terraform/` and `*.tfstate.backup`; `.terraform.lock.hcl` is
    committed on purpose; `pre-commit` with `terraform fmt`, `terraform validate` and `tflint`; optionally
    `checkov` for policy checks.
-6. First reusable modules in `terraform-modules/`: `s3-bucket`, `iam-role`, `kms-key`.
-7. **Teardown/rebuild tooling (D11).** Each slice declares its layer (`[P]`/`[D]`/`[E]`), and a `Makefile`
+7. First reusable modules in `terraform-modules/`: `s3-bucket`, `iam-role`, `kms-key`.
+8. **Teardown/rebuild tooling (D11).** Each slice declares its layer (`[P]`/`[D]`/`[E]`), and a `Makefile`
    at the repository root exposes `make up ENV=sandbox` / `make down ENV=sandbox`: `down` destroys the
    `[E]` slices in reverse dependency order and stops the `[D]` instances; `up` starts the `[D]` instances
    and applies the `[E]` slices. Both must refuse to touch `[P]` slices. Add `make status` to report what
    is currently running and the estimated hourly burn.
-8. **No region literals (§4.1).** `var.region` in every slice, AZs from `data.aws_availability_zones`,
+9. **No region literals (§4.1).** `var.region` in every slice, AZs from `data.aws_availability_zones`,
    AMIs from SSM public parameters. A `grep` check in CI that fails on a hardcoded region keeps this
    honest at no cost.
-9. Update `README.md` with the repository layout and the AWS resource structure (required by `CLAUDE.md`).
+10. Update `README.md` with the repository layout and the AWS resource structure (required by `CLAUDE.md`).
 
 **Deliverables:** `terraform apply` works end-to-end against the Sandbox account using an SSO profile;
 the `Makefile` exists with the slice-to-layer table wired up, even though no `[E]` or `[D]` slice exists
@@ -637,8 +666,8 @@ on a simulated exfiltration attempt.
    estimates most likely to be wrong are the interface endpoints (the largest hourly item) and GitLab
    (the largest idle item). Update §5 and §5.1 with measured numbers rather than the projections.
 6. Config rules / conformance packs on top of the Control Tower guardrails.
-7. Revisit D10 (Identity Center administration) and tighten permission sets against real usage from
-   IAM Access Analyzer.
+7. Tighten the permission sets in `terraform-live/identity/` against real usage, using IAM Access Analyzer
+   — `DataScientistAccess` in particular, which starts as `PowerUserAccess` in Stage 1.
 
 ---
 
@@ -672,7 +701,8 @@ on a simulated exfiltration attempt.
 
 **Resolved on 2026-08-07:** region → `us-west-2` (D1); Control Tower account e-mails → registered in
 `secrets/accounts.md`; VPN → WireGuard (D4); DLP → native AWS combination (D6); lifecycle → resources
-ephemeral, accounts permanent (D11); budget → USD 50/month (D12).
+ephemeral, accounts permanent (D11); budget → USD 50/month (D12); Identity Center administration →
+delegated to a dedicated Identity account (D10).
 
 **Still open, none blocking Stage 1:**
 
@@ -680,7 +710,13 @@ ephemeral, accounts permanent (D11); budget → USD 50/month (D12).
    reshape so this stays a cheap decision.
 2. **D7 - Production orchestrator.** Decided at Stage 10. Keep application entry points as plain containers
    so any of the three options remains viable.
-3. **D10 - Identity Center administration.** Manual in the console for now; revisited at Stage 12.
+3. **AZ name-to-ID mapping across accounts.** AWS maps AZ names to physical datacenters independently per
+   account, so `data.aws_availability_zones` indexed by position can place "the same" AZ in different
+   datacenters in Sandbox and Production — which turns peering traffic that looks intra-AZ into
+   cross-AZ traffic at USD 0.01/GB each way. Check it in Stage 1, once the accounts exist
+   (`aws ec2 describe-availability-zones --query 'AvailabilityZones[].[ZoneName,ZoneId]'` under each
+   profile). If the mappings differ, Stage 3 anchors subnets on `zone_ids` (`usw2-az1`, passed per
+   environment in `.tfvars`) instead of on list position, and §4.1 is updated accordingly.
 4. **Layer assignments.** `[P]`/`[D]`/`[E]` are cost judgements based on estimates. Revisit them at Stage 12
    against the real bill — especially the interface endpoints (the largest hourly item) and GitLab
    (the largest idle item).
@@ -696,3 +732,4 @@ ephemeral, accounts permanent (D11); budget → USD 50/month (D12).
 | 2026-08-07 | Revision after user feedback. D11 restated: the unit of teardown is **resources, not accounts**, and the rule is "pay nothing while idle" rather than "destroy everything" — most AWS resources cost nothing at rest. §5.1 replaced the persistent/ephemeral binary with **three layers** `[P]`/`[D]`/`[E]`, which moved the VPC itself into `[P]` (free at rest) and GitLab and WireGuard into `[D]` (stopped, not destroyed). That removed the backup/restore cycle from the critical path in Stage 7 and split Stage 3 into `foundation/` `[P]` and `egress/` `[E]`. New decision D12: budget ceiling USD 50/month, which is what rules out always-on GitLab, Client VPN, Network Firewall and MWAA. §5 rewritten as a ~USD 15 monthly floor plus ~USD 0.30 per lab hour (~USD 21/month at the expected usage). D1 note corrected: `sa-east-1` was verified against the AWS endpoint tables and is **not** a service-availability problem — the difference is price (~1.5-2x), instance/GPU selection and feature lag. |
 | 2026-08-07 | Region question settled. `us-west-2` on cost, and it stays there — LGPD/data residency dropped as a driver (no real data). The `sa-east-1` availability check was recorded as a fact in §4.1, and its answer is that nothing this plan uses is missing from São Paulo; a correction to the previous entry, which wrongly called São Paulo's GPU selection thin (SageMaker Studio has `ml.g5` there since 2023 and `p5.4xl` since 2026, and `t4g` Graviton is available). A move to São Paulo is **hypothetical and not planned work**, so §4.1 was cut back to plain Terraform hygiene — no region literals, AZs from data sources, AMIs from SSM parameters — and the migration checklist, verification commands and the Stage 12 `sa-east-1` trial were dropped. |
 | 2026-08-07 | **Consistency review of the whole plan**, after the incremental edits above had left it contradicting itself. Fixed: principle 7 still said "resources are destroyed between sessions" (pre-dates the three-layer model); D4 still described WireGuard as destroyed each session; the WireGuard Elastic IP was assigned to `[D]` in §5.1, `[P]` in Stage 4 and `[D]` in the §6 layout (now `[P]` everywhere); D9 read as "2 AZs" while Stage 3 defaulted endpoints to one AZ (now stated as 2 for subnets, 1 for metered endpoints); the §3 diagram carried no layer markers; §5 priced GitLab as `t3.large` while Stage 7 recommended `t4g.large`; Stage 2's deliverable asked `make down` to drive the `[P]` bootstrap slice, contradicting its own rule; Stages 6 and 10 listed D5/D7 as prerequisites when those decisions are taken *inside* those stages; Stage 5 mixed `[P]` data and `[E]` EFS with no slice boundary (added an `nfs/` slice); Stage 7 did not say which slice ECR and the runners belong to. Also corrected a wrong SSM parameter path in §4.1 (`ami-amazon-linux-latest`, not `ami-amazon-latest`), recalculated the hourly figure against the single-AZ endpoint default (~USD 0.25/h, ~USD 20/month, replacing ~USD 0.30 and ~USD 21 in the entry above), and reordered the two entries above into actual chronological order. |
+| 2026-08-07 | **D10 closed: Identity Center administration is delegated to a dedicated Identity account**, a sixth account added to `secrets/accounts.md`. The instance itself stays in Management (it cannot be moved); only its administration is delegated, which lets Terraform manage permission sets without ever holding Management credentials — principle 1 enforced rather than merely stated. Audit keeps a single role, security guardian, and does not also own access management. Updated: §1 (six accounts), the §3 diagram, §5 (Config is per governed account), §5.1, D3 (identity state in the Identity account), Stage 1 (Identity account via Account Factory in the `Security` OU, the `register-delegated-administrator` step, identity work moved out of Management, and the Management-targeted assignment called out as permanently manual), Stage 2 (identity bootstrap plus an import of the Stage 1 console resources), the §6 layout (`terraform-live/identity/`) and Stage 12 (D10 revisit replaced by permission-set tightening). Cost of the decision: one more AWS Config recorder, ~USD 0.50-1/month. Two Control Tower/Identity Center behaviours are flagged in Stage 1 as *to verify during execution* rather than assumed. Also recorded in §9 as open item 3: the AZ name-to-ID mapping between Sandbox and Production, to be checked once the accounts exist, since it decides whether Stage 3 anchors subnets on list position or on AZ IDs. |
