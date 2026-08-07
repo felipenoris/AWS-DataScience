@@ -93,8 +93,9 @@ AWS Organization (Management account - console only)                        [P]
 │       ├── Lake Formation (fine-grained permissions)                       [P]
 │       ├── WireGuard EC2    <- the only human entry point, for BOTH VPCs   [D]
 │       ├── NAT Gateway + interface VPC endpoints                           [E]
-│       ├── SageMaker Studio domain (VPC-only, restricted egress)           [E]
-│       └── EFS (NFS shared filesystem, synced to S3 before teardown)       [E]
+│       ├── SageMaker Studio domain + user profiles (VPC-only)              [P]
+│       │     └── Studio apps (JupyterLab/CodeEditor, restricted egress)    [E]
+│       └── EFS (NFS shared filesystem, lifecycle to IA)                    [P]
 │
 └── OU Production
     └── Production account   <- no human changes infrastructure here
@@ -103,6 +104,7 @@ AWS Organization (Management account - console only)                        [P]
         ├── ECR (dev-env images, application images)          <- D14        [P]
         ├── CodeArtifact (package proxy: PyPI, Cargo, ...)    <- D14        [P]
         ├── GitLab (EC2, private) + GitLab Pages              <- D14        [D]
+        ├── internal ALB for GitLab/Pages (rebuilt per session)             [E]
         ├── GitLab Runners                                    <- D14        [E]
         ├── NAT Gateway + interface VPC endpoints                           [E]
         ├── SageMaker Pipelines / Step Functions / MWAA (workflow)          [E]
@@ -136,7 +138,7 @@ is the control plane, not the account.
 | D9 | Number of AZs | Decided: **2 for subnets, 1 for metered endpoints** | Subnets, route tables and NAT-less network plumbing are free, so the topology spans 2 AZs and stays honest. Interface VPC endpoints are charged per AZ, so they default to a single AZ during lab sessions; a resource in the other AZ still resolves and reaches them, at the cost of cross-AZ traffic and no AZ redundancy — an acceptable trade in a lab, and a one-variable change if it ever is not. |
 | D10 | Identity Center administration | Decided (2026-08-07): **delegated to a dedicated Identity account** | The Identity Center instance and its identity store are created in the Management account and cannot be moved; what is delegated is their *administration*. One member account is registered as delegated administrator (`sso.amazonaws.com`), and from there Terraform manages permission sets, groups and assignments — so Terraform never needs credentials in the Management account, which is what makes principle 1 real rather than aspirational. The role goes to a **dedicated Identity account** rather than to the Audit account: Audit stays the security guardian (GuardDuty, Security Hub, Macie findings) and Identity owns access management, so the two concerns do not share a blast radius. Costs one extra Control Tower-governed account, i.e. one more AWS Config recorder (~USD 0.50-1/month) — accepted in exchange for the separation. **Consequences:** (i) assignments whose *target* is the Management account cannot be managed from the delegated account and stay manual; (ii) the Identity account can grant administrative access to any account in the organization, so it is as sensitive as Management — the Sandbox user must never have access to it; (iii) Control Tower's own permission sets (`AWSAdministratorAccess` and friends) are left alone, since editing them causes landing-zone drift. |
 | D11 | Lifecycle of the lab | Decided (2026-08-07): **resources are ephemeral, accounts are not** | The environment runs for a few hours per session and is shut down in between. Accounts, the Organization, Control Tower and Identity Center are never destroyed. Within the accounts the rule is not "destroy everything" but **"pay nothing while idle"**: resources that cost nothing at rest are simply left in place, resources that meter are destroyed, and stateful services that are awkward to rebuild are stopped rather than destroyed. Three layers, defined in §5.1. |
-| D12 | Budget ceiling | Decided (2026-08-07): **USD 50/month** | With the three-layer model the projection is ~USD 15/month floor plus ~USD 0.25 per lab hour, so roughly USD 20/month at the expected usage. The AWS Budget created in Stage 1 alerts at 50/80/100% of USD 50. This ceiling is what rules out always-on GitLab (~USD 60/month by itself) and confirms the stop/start approach. |
+| D12 | Budget ceiling | Decided (2026-08-07): **USD 50/month** | With the three-layer model the projection is a ~USD 18-22/month floor plus ~USD 0.28-0.35 per lab hour, so roughly USD 26-27/month at the expected usage (§5). The AWS Budget created in Stage 1 alerts at 50/80/100% of USD 50, with Cost Anomaly Detection alongside it. This ceiling is what rules out always-on GitLab (~USD 60/month by itself) and confirms the stop/start approach. |
 | D13 | How Lake Formation is actually enforced | Decided (2026-08-07): **execution roles get no direct S3 access to registered locations** | Lake Formation only constrains engines that ask it. A role holding `s3:GetObject` on a registered bucket can read the raw Parquet from a notebook and every column and row filter becomes decoration. So the fine-grained access control objective in `CLAUDE.md` is only real if the SageMaker execution role's S3 permissions **exclude** the Lake Formation-registered prefixes, and tabular access goes exclusively through an LF-aware engine: Athena, Glue interactive sessions, or EMR with runtime roles. Non-registered prefixes (scratch, artifacts, model outputs) keep ordinary IAM access. Lake Formation's **hybrid access mode** is the documented migration path if a workload turns out to need both, and is a deliberate exception rather than the default. This is decided in Stage 5, before Stage 6 can bake the bypass into the execution role. |
 | D14 | Where GitLab, Runners, ECR and CodeArtifact live | Decided (2026-08-07): **the Production account** | These four are the software supply chain. In the Sandbox account they would sit next to a `data-scientists` group with broad permissions, which means the runner holding the deploy credentials, and the registry Production pulls from, would both be modifiable by the people the approval gate is supposed to gate. Putting them in Production removes that path and costs no extra account. **Accepted trade-off:** build and runtime now share an account, so there is no blast-radius boundary between "the thing that builds" and "the thing that runs" — a compromise of GitLab is a compromise of Production. A large institution splits these into a Shared Services / Tooling account in an `Infrastructure` OU (§11). **Consequences:** the Production VPC moves from Stage 9 to Stage 3; Sandbox↔Production VPC peering is needed so the VPN reaches GitLab; ECR and CodeArtifact are consumed cross-account from Sandbox; and the Sandbox user needs a narrow, service-level (not infrastructure-level) reach into Production. |
 | D15 | TLS for internal endpoints | Decided (2026-08-07): **a real public domain plus split-horizon DNS** | ACM cannot issue a certificate for `sandbox.internal` — public certificates require a domain you can validate publicly, and AWS Private CA costs ~USD 400/month (~USD 50 in short-lived mode), both over the ceiling. The workable path: register one public domain, keep a public hosted zone **for DNS validation only**, issue free public ACM certificates (including the wildcard GitLab Pages needs), and resolve the names to private addresses through the **private** hosted zone. A public certificate on an internal ALB is supported; nothing is published. Cost ~USD 0.50/zone plus the domain (~USD 12-15/year). **Needs input from the user: which domain name to register.** |
@@ -192,6 +194,13 @@ gaps to keep in mind rather than assume away: these conditions do not cover ever
 are evaluated under the signer's identity, and any path that leaves through the *application* layer (an
 HTTPS POST to an allowlisted site) is D5's problem, not the perimeter's.
 
+**Implementation note:** none of these policies should be written from scratch. The aws-samples
+**`data-perimeter-policy-examples`** repository carries reference SCPs, RCPs and endpoint policies with
+the service carve-outs (`aws:ViaAWSService`, `aws:PrincipalIsAWSService`) that every one of these
+conditions needs. A perimeter without the carve-outs blocks AWS services acting on your behalf — and the
+first casualty in this plan would be Athena reading S3 under Lake Formation, i.e. the exact access path
+D13 forces everything through (see Stage 5).
+
 ### 4.3 The two egress designs (D5)
 
 Rather than pick one mechanism up front, Stage 6 builds both and measures them. They are not variations on
@@ -210,7 +219,8 @@ Packages arrive through **CodeArtifact** repositories configured with an upstrea
 (CodeArtifact itself fetches from the internet — AWS-side, not through your VPC), container images through
 **ECR pull-through cache**, and everything else through VPC endpoints. There is no egress path to misuse,
 which is why this is the shape regulated institutions converge on. It also removes the NAT gateway, the
-single largest hourly line item in §5.
+single largest hourly line item in §5 — at the price of the two CodeArtifact interface endpoints
+(~USD 0.02/h), still a clear net saving.
 
 **The user's reservation about (B), recorded as a real constraint, not an objection to be argued away:**
 this environment must support **Python, Julia, Rust and R**, and CodeArtifact does not cover all of them.
@@ -244,7 +254,7 @@ Because of D11 the relevant question is not "what does this cost per month" but 
 nothing is running, and what does an hour of lab time add on top". Order-of-magnitude figures for
 `us-west-2`, to be confirmed with the AWS Pricing Calculator before each stage.
 
-**The floor — paid every month even with the lab shut down (~USD 15):**
+**The floor — paid every month even with the lab shut down (~USD 18-22):**
 
 | Item | Approx. USD/month | Note |
 |---|---|---|
@@ -261,6 +271,7 @@ nothing is running, and what does an hour of lab time add on top". Order-of-magn
 | Security Hub + IAM Access Analyzer | ~1-2 | Enabled org-wide from Stage 1 (principle 9). Access Analyzer external-access findings are free; Security Hub charges per check and per finding |
 | GuardDuty | 0 → ~3-5 | Free for the first 30 days per account, then driven by CloudTrail/VPC flow/DNS log volume. S3 Protection and Malware Protection are extra and are the ones to watch against the ceiling |
 | WireGuard EBS (8 GB) + CloudWatch logs | ~1.00 | |
+| EFS (shared filesystem + Studio homes, lifecycle to IA) | ~0.50 | `[P]` since the third review — cents at rest, and it buys the removal of the sync-to-S3-on-teardown machinery (§5.1 rule 2) |
 | **Revised floor** | **~USD 18-22** | Up from the ~USD 15 estimate, almost entirely from moving the detective controls into the landing zone (principle 9). Still comfortably under the USD 50 ceiling |
 
 Two cost levers worth applying rather than discovering later:
@@ -278,20 +289,25 @@ Two cost levers worth applying rather than discovering later:
 | Item | Approx. USD/h |
 |---|---|
 | NAT Gateway (1) + its public IPv4 | ~0.050 + 0.045/GB processed — **zero under egress design B** (§4.3) |
-| Interface VPC endpoints (~9, single AZ per D9) | ~0.090 (~0.180 if spread across 2 AZs) |
+| Interface VPC endpoints (9, single AZ per D9; 11 under design B) | ~0.090-0.110 (double if spread across 2 AZs) |
 | GitLab EC2 `t4g.large` | ~0.067 (`t3.large` would be ~0.083) |
+| Internal ALB in front of GitLab/Pages (only while GitLab is up) | ~0.023 + LCU usage |
+| Production NAT + endpoints (only while runner builds need egress) | ~0.050 + 0.045/GB |
 | SageMaker Studio `ml.t3.medium` (per running app) | ~0.050 |
 | WireGuard EC2 `t4g.nano` | ~0.004 |
 | Sandbox ↔ Production VPC peering | free within an AZ; USD 0.01/GB each way across AZs — see §9 item 3 |
 | EFS, Athena, Glue | usage-based; negligible at lab scale |
 
-The endpoint count rose from 6 to ~9 because the Stage 3 list was incomplete: Studio in VPC-only mode also
-needs `sagemaker.studio`, and `kms` and the two `codeartifact` endpoints are required by D13/D5(B). At
-~USD 0.01/h per endpoint per AZ this is the largest hourly item, so the list stays minimal and single-AZ.
+The endpoint count rose from 6 to 9 (11 under design B) because the Stage 3 list was incomplete: Studio in
+VPC-only mode also needs `sagemaker.studio` and `kms`, and design B adds the two `codeartifact` endpoints.
+At ~USD 0.01/h per endpoint per AZ this is the largest hourly item, so the list stays minimal and
+single-AZ. The table now also carries the **Production** side — the runners' NAT and the GitLab ALB were
+missing from earlier versions of this plan, which undercounted a full-stack hour.
 
-**Projection:** ~USD 20 floor + 20 h/month × ~USD 0.28 ≈ **USD 26/month**, against the USD 50 ceiling (D12).
-Design B trades the NAT gateway for nothing, so it is the *cheaper* of the two egress options as well as
-the stricter one — which is worth knowing before the Stage 6 comparison starts.
+**Projection:** ~USD 20 floor + 20 h/month × ~USD 0.28-0.35 (the upper end is a full-stack hour: GitLab,
+its ALB and a runner build all running at once) ≈ **USD 26-27/month**, against the USD 50 ceiling (D12).
+Design B trades the NAT gateway for two CodeArtifact endpoints, so it is the *cheaper* of the two egress
+options as well as the stricter one — which is worth knowing before the Stage 6 comparison starts.
 
 **What the ceiling rules out:** always-on GitLab (~USD 60/month on its own), AWS Client VPN
 (~USD 73/month, the D4 alternative), Network Firewall (~USD 290/month, option D5c) and MWAA
@@ -309,7 +325,10 @@ three layers, and every stage must say which layer each of its resources belongs
 **[P] Persistent — created once, never destroyed.** Free or nearly free at rest, or too slow to rebuild:
 the Organization, the six accounts, Control Tower, Identity Center, SCPs, Terraform state buckets, the
 **VPC itself** (VPC, subnets, route tables, internet gateway, security groups, NACLs cost nothing),
-Route 53 private zone, IAM roles, KMS keys, S3 data buckets, ECR repositories, budgets and alarms.
+Route 53 private zone, IAM roles, KMS keys, S3 data buckets, ECR repositories, budgets and alarms — and,
+since the third review, the **SageMaker Studio domain with its user profiles** (a domain at rest bills
+nothing; only running apps and home-filesystem GBs do) and the **EFS filesystem** (lifecycle to
+Infrequent Access; cents per month at lab scale). Rule 2 below records why those two moved out of `[E]`.
 
 **[D] Dormant — kept, but powered off between sessions.** Stateful services where a rebuild is riskier
 than the idle cost: the GitLab EC2 instance and its EBS volume, and the WireGuard instance. `make down`
@@ -319,20 +338,23 @@ instance is replaced. This is what makes the Stage 7 backup/restore cycle a disa
 rather than a daily dependency.
 
 **[E] Ephemeral — destroyed at the end of a session.** Everything metered by the hour and rebuildable in
-minutes: NAT Gateway, interface VPC endpoints, SageMaker domain and apps, EFS, GitLab Runners,
-MWAA/Step Functions, the Stage 13 web tier.
+minutes: NAT Gateway, interface VPC endpoints, SageMaker Studio *apps* (the domain stays), the internal
+ALB in front of GitLab (an ALB cannot be stopped, only destroyed — it bills ~USD 0.023/h for as long as
+it exists), GitLab Runners, MWAA/Step Functions, the Stage 13 web tier.
 
 **Rules this imposes:**
 
 1. Terraform slices are split along these lines. `terraform destroy` of an `[E]` slice must never be able
    to reach a `[P]` resource; persistent buckets get `prevent_destroy` lifecycle blocks.
-2. No state lives only inside an `[E]` resource. EFS content syncs to S3 before teardown; SageMaker Studio
-   home directories are **scratch** — real work lives in GitLab or S3. *Correction to an earlier version of
-   this plan:* deleting a Studio domain **retains** its home EFS by default (`RetentionPolicy` defaults to
-   `Retain`), it does not delete it. So the risk runs the other way — the real hazard is orphaned
-   filesystems accumulating a bill after every `make down`, not lost data. `make down` therefore deletes
-   the home filesystem explicitly, which is safe precisely because the directories are scratch. Confirm the
-   default at Stage 6 before relying on it.
+2. No state lives only inside an `[E]` resource — enforced by construction since the third review, which
+   moved the two stateful ex-`[E]` resources into `[P]` for exactly this reason. The EFS used to be `[E]`
+   with a sync-to-S3-before-teardown step; that sync was the single most likely way to lose real work in
+   this design, and at EFS-IA prices (~USD 0.016/GB-month) persistence costs cents. The Studio domain used
+   to be `[E]` with an explicit home-filesystem delete in `make down`, because deleting a domain
+   **retains** its home EFS by default (`RetentionPolicy` defaults to `Retain`) and every teardown would
+   otherwise orphan a billing filesystem; a domain at rest is free, so keeping it removes both the hazard
+   and the rebuild. SageMaker Studio home directories remain **scratch** by policy — real work lives in
+   GitLab or S3.
 3. `make up` and `make down` per environment, in dependency order, and both must be tested. A rebuild that
    only works by hand is a bug.
 4. Anything slow or awkward to create — Control Tower, accounts, ACM DNS validation, Identity Center —
@@ -353,7 +375,8 @@ Project prefix: `awsds`. Example: `awsds-sandbox-vpc`, `awsds-prod-raw-data`.
 
 **Mandatory tags on every resource:**
 `Project=AWS-DataScience`, `Environment=sandbox|production|shared`, `ManagedBy=terraform`,
-`Owner=<sso-user>`, `CostCenter=<stage>`.
+`Owner=<sso-user>`, `CostCenter=<stage>`. (`shared` marks org-level resources — the identity slice — not
+a Shared Services account, which D14 decided against.)
 
 **Terraform layout:**
 
@@ -365,7 +388,7 @@ terraform-live/
 │   │                     #     delegated-admin profile (D10); never touches Management
 │   └── bootstrap/        # [P] state bucket for the Identity account
 ├── sandbox/
-│   ├── bootstrap/        # [P] state bucket for this account (local state, committed)
+│   ├── bootstrap/        # [P] state bucket for this account (state migrated in, never committed)
 │   ├── foundation/       # [P] VPC, subnets, route tables, IGW, security groups, private
 │   │                     #     hosted zone, KMS keys, IAM roles, WireGuard Elastic IP,
 │   │                     #     peering requester + routes to Production (D14)
@@ -374,8 +397,8 @@ terraform-live/
 │   ├── egress/           # [E] NAT gateway, interface VPC endpoints - the metered network.
 │   │                     #     Two variants behind a switch: D5(A) with NAT, D5(B) without
 │   ├── vpn/              # [D] WireGuard EC2 (stopped, not destroyed)
-│   ├── nfs/              # [E] EFS filesystem, mount targets, access points
-│   ├── sagemaker/        # [E] domain, user profiles, apps
+│   ├── nfs/              # [P] EFS filesystem, mount targets, access points (lifecycle to IA)
+│   ├── sagemaker/        # [P] domain + user profiles; running apps are [E] (deleted by make down)
 │   └── app/
 │       └── app-etl/      # [E]
 └── production/
@@ -383,8 +406,8 @@ terraform-live/
     ├── foundation/       # [P] VPC etc. + peering accepter. Built in Stage 3, because
     │                     #     Stage 7 (GitLab) depends on it (D14)
     ├── data/             # [P] S3, Glue, Lake Formation, ECR, CodeArtifact (D14)
-    ├── egress/           # [E]
-    ├── tooling/          # [D] GitLab EC2 + EBS, internal ALB (D8, D14)
+    ├── egress/           # [E] NAT, endpoints, internal ALB for GitLab/Pages (ALBs cannot stop)
+    ├── tooling/          # [D] GitLab EC2 + EBS (D8, D14) - its ALB lives in egress/ [E]
     ├── runners/          # [E] GitLab Runners (D14)
     ├── orchestration/    # [E] Step Functions / SageMaker Pipelines / MWAA (D7)
     └── app/
@@ -398,7 +421,9 @@ terraform-modules/        # reusable: vpc, wireguard, iam-role, ecr-repo, s3-buc
 `make down ENV=sandbox` destroys the `[E]` slices in reverse dependency order and stops the `[D]`
 instances; `make up ENV=sandbox` starts the `[D]` instances and applies the `[E]` slices; `make status`
 reports what is running and the current hourly burn. `[P]` slices are never touched by any of them — they
-are applied deliberately, by hand.
+are applied deliberately, by hand. One `[E]` resource lives outside any slice: running SageMaker Studio
+*apps* are created by users, not by Terraform, so `make down` deletes them through the API before
+touching the slices.
 
 **Terraform rules:**
 
@@ -442,7 +467,10 @@ after this can be done by Terraform without root credentials.
 
 1. Secure the Management account root user: hardware or virtual MFA, strong password, no access keys,
    billing alerts enabled.
-2. Create a Budget of **USD 50/month** (D12) with e-mail alerts at 50%/80%/100%.
+2. Create a Budget of **USD 50/month** (D12) with e-mail alerts at 50%/80%/100%. Enable **Cost Anomaly
+   Detection** next to it — it is free, and it catches a bad cost *pattern* days before a budget
+   threshold trips. Optionally add a budget *action* that attaches a deny-compute SCP at 100% — a
+   lab-appropriate emergency brake.
 3. Enable AWS Control Tower with `us-west-2` as the home region. It will create the Organization, the
    Log Archive and the Audit accounts (e-mails already in `secrets/accounts.md`), and turn on org-wide
    CloudTrail and Config. Note: the home region cannot be changed afterwards without redeploying the
@@ -463,7 +491,9 @@ after this can be done by Terraform without root credentials.
 6. In IAM Identity Center, create the three users from `secrets/sso-users.md` and the groups
    `infrastructure`, `data-scientists`, `managers`. Enforce MFA.
 7. Create permission sets: `AdministratorAccess` (infrastructure), `DataScientistAccess` (sandbox),
-   `ReadOnlyAccess` and `DeployApprover` (managers).
+   `ReadOnlyAccess` (managers). An earlier draft also created a `DeployApprover` permission set; it was
+   dropped — the deploy approval gate lives in GitLab (Stage 8), driven by GitLab group membership, and
+   consumes no AWS-side permission. Create such a permission set only when something actually consumes it.
    **`DataScientistAccess` does not start as `PowerUserAccess`.** An earlier version of this plan gave it
    `PowerUserAccess` "until Stage 6", which contradicts `CLAUDE.md` ("no permissions to perform
    infrastructure changes, except for artifacts managed by AWS SageMaker") and, worse, would let the
@@ -474,8 +504,8 @@ after this can be done by Terraform without root credentials.
    permissions boundary and scope `PassRole` per the IAM rules in §6.
    Assign them: infrastructure → Sandbox + Production + Identity; data-scientists → Sandbox, plus a
    narrow service-level reach into Production for GitLab and ECR (D14) that grants no infrastructure
-   permission there; managers → Sandbox + Production, read-only plus approval. The Sandbox user gets no
-   access to Identity, Audit or Log Archive.
+   permission there; managers → Sandbox + Production, read-only (the approval itself happens in GitLab).
+   The Sandbox user gets no access to Identity, Audit or Log Archive.
    Leave Control Tower's own permission sets untouched — editing them causes landing-zone drift.
    These are created by hand here only because Terraform cannot run before SSO login works; Stage 2 moves
    them into `terraform-live/identity/` and imports them.
@@ -495,17 +525,30 @@ after this can be done by Terraform without root credentials.
       regions to `us-west-2` — the region SCP must still allow `us-east-1`, because IAM, Organizations,
       Route 53, CloudFront and Support only have endpoints there — and **deny writes to S3 resources
       outside this organization** (`aws:ResourceOrgID`), which is the trusted-resources axis of §4.2 and
-      closes the most direct exfiltration route a notebook has.
+      closes the most direct exfiltration route a notebook has. Two more, cheap and load-bearing:
+      **deny `iam:CreateUser` and `iam:CreateAccessKey`** — principle 2 ("no IAM Users") is otherwise a
+      convention with no enforcement, and break-glass (D16) is unaffected because the Management account
+      is exempt from SCPs — and **deny `s3:PutAccountPublicAccessBlock`**, which protects the
+      account-level setting enabled below.
     - **RCPs:** deny access to S3, STS, KMS, SQS and Secrets Manager from principals outside the
       organization (`aws:PrincipalOrgID`) — the trusted-identities axis of §4.2.
-    - **Tag policies:** enforce the mandatory tags from §6. Without this they are a convention, and
-      conventions do not survive contact with a `terraform apply` at 23:00.
+    - **Tag policies:** standardize the mandatory tags from §6 — with a precision the previous version of
+      this plan got wrong: tag policies constrain *tagging operations*, they cannot force a resource to be
+      created with tags at all. The forcing function is an SCP with `aws:RequestTag`/`aws:TagKeys`
+      conditions on the create actions that matter (EC2, S3, SageMaker). One or the other, or the tags are
+      a convention — and conventions do not survive contact with a `terraform apply` at 23:00.
+    - **Account-level S3 Block Public Access** in every member account. The module-level block from
+      Stage 2 only covers buckets the module creates; the account-level setting is the blanket that also
+      covers the bucket someone creates outside it. Protected by the SCP above.
     - **Declarative policies:** enforce IMDSv2 and EC2 public-access defaults org-wide.
     Apply these to a test OU first — an SCP mistake is the fastest way to lock yourself out of your own
     organization, which is what step 9 exists for.
-12. **Detective controls, from the Audit account** (principle 9 — these belong to the landing zone, not to
-    Stage 11): delegate and enable org-wide **Security Hub**, **IAM Access Analyzer** (external access, and
-    unused access for Stage 12) and **GuardDuty**. Watch the cost of GuardDuty's S3 Protection and Malware
+12. **Detective controls** (principle 9 — these belong to the landing zone, not to Stage 11). The
+    *delegation* of each service to the Audit account runs **from the Management account**
+    (`enable-organization-admin-account` / `register-delegated-administrator`, one manual console action
+    per service — consistent with principle 1); everything after that is done from the Audit account:
+    enable org-wide **Security Hub**, **IAM Access Analyzer** (external access, and unused access for
+    Stage 12) and **GuardDuty**. Watch the cost of GuardDuty's S3 Protection and Malware
     Protection against D12 — enable the base service now and decide on those two with a real bill in hand.
 13. **Make the audit trail tamper-evident:** enable **S3 Object Lock** on the Control Tower Log Archive
     bucket and **CloudTrail log file validation**. An audit log that the compromised party can edit is not
@@ -537,7 +580,8 @@ more than once and the plan should not assume: (i) that the delegation coexists 
 without raising drift; (ii) that the restriction in step 8 is exactly as described — that assignments
 targeting the Management account are the *only* thing the delegated administrator cannot manage; and
 (iii) that the RCPs and SCPs in step 11 do not conflict with the SCPs Control Tower manages itself, which
-is the usual source of "the guardrail I wrote silently does nothing".
+is the usual source of "the guardrail I wrote silently does nothing"; and (iv) that enabling S3 Object
+Lock on the Control Tower-managed Log Archive bucket (step 13) does not raise landing-zone drift.
 
 ---
 
@@ -551,8 +595,10 @@ is the usual source of "the guardrail I wrote silently does nothing".
 
 1. Delete the empty `terraform/` folder; create `terraform-live/` and `terraform-modules/` as in §6.
 2. `terraform-live/sandbox/bootstrap/`: S3 state bucket (versioning, SSE-KMS, public access blocked,
-   `use_lockfile = true`). Applied once with local state, then the state file is committed — this is the
-   documented chicken-and-egg exception.
+   `use_lockfile = true`). Applied once with local state, then the state is migrated into the bucket it
+   just created (add the `backend "s3"` block, `terraform init -migrate-state`) — this is the documented
+   chicken-and-egg exception. **The state file is never committed**: state carries account IDs and
+   resource ARNs, which do not belong in the Git history of a repository hosted on GitHub.
 3. Same for `terraform-live/production/bootstrap/` and `terraform-live/identity/bootstrap/`.
 4. Migrate every subsequent slice to the remote backend.
 5. `terraform-live/identity/`: import the permission sets, groups and assignments created by hand in
@@ -637,7 +683,8 @@ different lifecycles (§5.1).
    a policy restricting it to resources within the organization (`aws:PrincipalOrgID` / `aws:ResourceOrgID`).
    Without this, the S3 gateway endpoint is a private, unlogged, unmetered path to *any* bucket on the
    internet, including someone's personal one — which is the exact failure mode the whole DLP objective is
-   about. Free.
+   about. Free. Take the policy shapes from the `data-perimeter-policy-examples` repository (§4.2) rather
+   than writing them by hand — the service carve-outs are the part everyone forgets.
 10. Keep this slice's route-table associations parameterised, so D5 (Stage 6) can insert a firewall or
     proxy into the egress path, or remove it entirely under design B, without reshaping the foundation.
 
@@ -647,8 +694,9 @@ subnets; an attempt to reach an out-of-organization S3 bucket through the gatewa
 `make down` followed by `make up` restoring egress without touching either VPC.
 
 **Cost note:** this is where the metered bill starts, and `egress/` is the single biggest hourly cost of the
-lab: ~USD 0.14/h with 9 endpoints and a NAT in one AZ, ~USD 0.09/h under design B (no NAT). Keep the
-endpoint list minimal — every entry is a permanent hourly charge for the whole session.
+lab: ~USD 0.14/h with 9 endpoints and a NAT in one AZ; ~USD 0.11/h under design B — no NAT, but the two
+CodeArtifact endpoints bring the count to 11. Keep the endpoint list minimal — every entry is a permanent
+hourly charge for the whole session.
 
 ---
 
@@ -661,7 +709,13 @@ endpoint list minimal — every entry is a permanent hourly charge for the whole
 **To execute:**
 
 1. `terraform-modules/wireguard/`: `t4g.nano` (ARM, Amazon Linux 2023) in a public subnet, WireGuard
-   installed and configured by user data, IP forwarding and NAT to the VPC CIDR enabled.
+   installed and configured by user data, IP forwarding and NAT (masquerade) enabled. **NAT is not
+   optional** — a correction to the previous version, which mixed a NAT model with a routed one: VPC
+   peering does no edge-to-edge routing and only forwards packets whose source and destination sit inside
+   the two VPCs' CIDRs, so the WireGuard client range can never cross the peering to Production. Every
+   packet the instance forwards must carry its own private IP, which also means security groups admit the
+   WireGuard instance's SG (referencing a peer VPC's security group works across a same-region peering),
+   never the client CIDR.
    Layer `[D]`: the instance is **stopped** between sessions, not destroyed (~USD 0.65/month of EBS),
    which keeps the host key and the peer configuration stable.
 2. Elastic IP allocated in the `[P]` foundation slice and re-associated on start, so the endpoint address
@@ -671,18 +725,30 @@ endpoint list minimal — every entry is a permanent hourly charge for the whole
    port 22 from the internet.
 4. Peer public keys supplied through a git-ignored `.tfvars` (keys are generated on the client and the
    private key never leaves the laptop). One peer per person and per device.
-5. Split tunnel: **both** VPC CIDRs are routed through the tunnel (`10.20.0.0/16` and `10.30.0.0/16`) — the
-   Production side is how the data scientist reaches GitLab under D14. `DNS` in the client config points at
-   the VPC resolver (`.2` of the Sandbox VPC CIDR) so private hosted zones and VPC endpoints resolve.
-6. Route table entries so the private subnets in both accounts can answer the WireGuard peer network,
-   across the Stage 3 peering.
+5. **Full tunnel, not split** — a correction to the previous version, forced by step 8: the client routes
+   `0.0.0.0/0` through WireGuard, so AWS API and console traffic exits through the instance's Elastic IP
+   and the `aws:SourceIp` condition can match it. A split tunnel routing only the two VPC CIDRs would
+   leave every API call on the laptop's own connection — and step 8 would then deny the user everything,
+   tunnel up or not. The cost of full tunnel is that ordinary browsing also transits the instance and
+   bills as EC2 data transfer out (~USD 0.09/GB): connect for lab sessions, not as an always-on VPN.
+   Reaching GitLab in Production still works through the Stage 3 peering (NATed by step 1). `DNS` in the
+   client config points at the VPC resolver (`.2` of the Sandbox VPC CIDR) so private hosted zones and
+   VPC endpoints resolve.
+6. No return routes for the WireGuard peer network exist anywhere — with NAT on the instance (step 1) the
+   VPCs only ever see the instance's private IP, and across the peering such a route would be dropped
+   anyway (edge-to-edge, again). What is actually needed: Production's route back to the **Sandbox VPC
+   CIDR** through the peering (already built in Stage 3), and security groups on GitLab, EFS and the
+   endpoints that admit the WireGuard instance's SG or IP.
 7. CloudWatch agent shipping the WireGuard handshake log; alarm if the instance is unhealthy.
 8. **Close the other half of the objective: restrict the AWS control plane to the VPN.** `CLAUDE.md` says
    "all user access to the cloud infrastructure will be performed through a VPN", and a tunnel to the VPC
    only delivers the data plane — the console and the AWS APIs remain reachable from any network in the
-   world with a valid SSO session. Add an `aws:SourceIp` condition, keyed on the WireGuard Elastic IP, to
-   the permission sets in `terraform-live/identity/`, and an `aws:SourceIp` condition on
-   `sagemaker:CreatePresignedDomainUrl` so a Studio URL cannot even be minted from outside the tunnel.
+   world with a valid SSO session. Add a deny with `NotIpAddress` on the WireGuard Elastic IP **combined
+   with `aws:ViaAWSService: false`** to the permission sets in `terraform-live/identity/` — the second
+   condition is not optional: services calling on the user's behalf (Athena reaching S3 is this plan's
+   first casualty) do not carry the user's source IP, and a bare `aws:SourceIp` deny breaks them. Add the
+   same condition pair on `sagemaker:CreatePresignedDomainUrl` so a Studio URL cannot even be minted from
+   outside the tunnel. This restriction is what step 5's full tunnel exists for.
    Two cautions, both of which have locked people out before: apply it to the `data-scientists` and
    `managers` permission sets first and to `AdministratorAccess` only once it demonstrably works, and note
    that this pins access to a single Elastic IP — which is precisely why that IP lives in `[P]` (D4).
@@ -692,8 +758,9 @@ endpoint list minimal — every entry is a permanent hourly charge for the whole
 
 **Deliverables:** connecting from the laptop gives private access to a test resource in **both** accounts;
 the same resource is unreachable with the tunnel down; an AWS API call with the tunnel down is denied for
-the sandbox user; `make down` followed by `make up` restores connectivity without changing the client
-configuration.
+the sandbox user **and the same call with the tunnel up succeeds** — the pair that proves the
+full-tunnel/`aws:SourceIp` wiring; `make down` followed by `make up` restores connectivity without
+changing the client configuration.
 
 **Known trade-off (D4):** no Identity Center integration — revoking a person's access means removing their
 peer and re-applying. Acceptable for a single-operator lab, and the reason AWS Client VPN stays documented
@@ -717,7 +784,12 @@ filesystem in front of it does.
 1. KMS CMKs per data domain; S3 buckets `raw`, `curated`, `artifacts`, `athena-results`, `logs` with
    versioning, encryption, **S3 Bucket Keys** (§5), lifecycle rules, `prevent_destroy`, and a bucket policy
    that denies access not coming through the VPC endpoint (`aws:SourceVpce`) — the resource-side half of
-   the trusted-networks axis in §4.2, complementing the endpoint policies from Stage 3.
+   the trusted-networks axis in §4.2, complementing the endpoint policies from Stage 3. **The deny must
+   carry the `aws:ViaAWSService` carve-out**, or it blocks Athena and Lake Formation vended access — the
+   exact path D13 forces all tabular reads through; a bare `aws:SourceVpce` deny makes step 6 unusable.
+   Take the policy shape from `data-perimeter-policy-examples` (§4.2). While in the bucket policy, add a
+   `s3:signatureAge` cap: it bounds the lifetime of any presigned URL, the preventive counterpart of the
+   detection Stage 11 sets up.
 2. **Define the data classification scheme before defining LF-Tags.** LF-Tags are the mechanism; the
    classification is the decision — which levels exist (e.g. public / internal / restricted / personal),
    who owns the assignment, and what each level permits. Writing the tags first produces a taxonomy shaped
@@ -725,7 +797,12 @@ filesystem in front of it does.
    onto. This is the smallest piece of real data governance in the plan and it costs nothing but thought.
 3. Glue Data Catalog databases (`raw`, `curated`); Glue crawlers only where they earn their keep.
 4. Iceberg tables on S3, queried through Athena; Athena workgroup with a result bucket and a per-query
-   data scan limit (cost guardrail).
+   data scan limit (cost guardrail). **Table maintenance gets an owner on day one**: scheduled `OPTIMIZE`
+   (compaction) and `VACUUM` (snapshot expiry) through Athena, or Glue's automatic compaction — an
+   Iceberg table nobody compacts degrades quietly and pays storage for every dead snapshot. **Amazon S3
+   Tables** — managed Iceberg with automatic maintenance and Lake Formation integration — is the
+   AWS-native alternative, deliberately not used here: D13's registered/unregistered prefix split leans
+   on general-purpose buckets. Recorded in §11.
 5. Enable Lake Formation as the permission model for the catalog; register the S3 locations; apply the
    LF-Tags from step 2.
 6. **Implement D13 — make Lake Formation enforceable.** Split the buckets into *registered* prefixes
@@ -738,11 +815,14 @@ filesystem in front of it does.
    Record any exception through Lake Formation **hybrid access mode** rather than by quietly widening the
    role.
 
-*`nfs/` — layer `[E]`, destroyed with the session:*
+*`nfs/` — layer `[P]`, reclassified in the third review: mount targets are free, and EFS storage with a
+lifecycle policy to Infrequent Access is ~USD 0.016/GB-month — cents at lab scale:*
 
 7. EFS filesystem + mount targets in the private subnets, access points per group; this is the NFS layer
-   shared between users and SageMaker. Decide the S3 ↔ EFS synchronisation pattern (DataSync, or an
-   explicit copy in code — DataSync costs per GB moved).
+   shared between users and SageMaker. Enable the lifecycle policy (transition to IA after 30 days).
+   S3 ↔ EFS movement is an explicit copy in code when a dataset needs to cross — no standing
+   synchronisation machinery (DataSync would cost per GB moved, and there is no teardown left to protect
+   against).
 8. **Access from the user's own machine**, which `CLAUDE.md` asks for ("exchange files between users, the
    SageMaker environment and S3"): NFSv4 over the WireGuard tunnel, TCP/2049 allowed from the VPN peer
    CIDR, using the EFS mount helper with TLS. Two caveats to state rather than discover: throughput over a
@@ -750,14 +830,17 @@ filesystem in front of it does.
    between POSIX UIDs and SSO identities**, so "who wrote this file" is not auditable. EFS Access Points
    pin a UID/GID per group, which bounds the problem to the group level — good enough for a lab, and named
    in §11 as a real gap for an institution.
-9. **S3 is the source of truth.** The sync back to S3 runs before teardown and is part of `make down`;
-   a `make down` that silently loses EFS content is the single most likely way to lose real work in this
-   design, so this step gets tested deliberately, not assumed.
+9. **S3 is the source of truth for data; the filesystem itself now persists.** An earlier version had the
+   EFS `[E]` with a sync-to-S3 step inside `make down` — and correctly called that sync the single most
+   likely way to lose real work in this design. Persistence removes the failure mode outright, for cents;
+   `make down` does not touch the filesystem at all.
 
 **Deliverables:** a sample Iceberg table written and queried through Athena, with access granted through
 Lake Formation rather than raw IAM policies; **a demonstration that the same table cannot be read by
-pointing pandas at its S3 path** — which is the only convincing evidence that D13 holds; and an EFS
-teardown/rebuild cycle that provably preserves its content.
+pointing pandas at its S3 path** — which is the only convincing evidence that D13 holds; **a demonstration
+that Athena still works with the bucket policy attached** — the evidence that the `aws:ViaAWSService`
+carve-out is wired correctly; and a `make down`/`make up` cycle that provably leaves EFS content
+untouched.
 
 ---
 
@@ -796,14 +879,21 @@ that consumes them. **D5 is executed, not decided, in this stage**: both designs
    exfiltration attempt achieves under each. Then choose, and record the choice as the closure of D5.
 7. Attach EFS access points for the shared NFS area.
 8. Lifecycle configuration for idle shutdown — mandatory cost control.
-   Layer `[E]`: the domain is destroyed at the end of each session. **Confirm the `RetentionPolicy`
-   behaviour before writing `make down`** (§5.1 rule 2): the default retains the home EFS, so the failure
-   mode is orphaned filesystems billing quietly, and teardown deletes it explicitly. **Studio home
-   directories are scratch**: notebooks live in GitLab, data lives in S3, shared files live on the Stage 5
-   EFS. State this to users explicitly.
+   **Layers, corrected in the third review: the domain and its user profiles are `[P]`; only the apps are
+   `[E]`.** A domain at rest bills nothing — charges are per running app plus home-filesystem GBs — so
+   destroying it each session bought nothing and created two problems: the orphaned-home-EFS hazard (the
+   `RetentionPolicy` default is `Retain`, so every teardown left a billing filesystem behind unless it was
+   deleted explicitly) and the churn of domain ID, user profiles and Identity Center mappings on every
+   `make up`. `make down` now deletes running *apps* only and leaves the domain alone. **Studio home
+   directories are scratch** by policy: notebooks live in GitLab, data lives in S3, shared files live on
+   the Stage 5 EFS — and the home directories stay small, so their storage rounds to cents. State this to
+   users explicitly.
 9. CloudWatch log groups and metrics for the domain.
 
-**To verify rather than assume:** whether SageMaker Studio offers any supported way to disable file
+**To verify rather than assume:** whether a Studio custom image can be pulled from the **Production**
+account's ECR (D14) — the BYOI documentation is strict about region and thin on cross-account; if it
+fails, the fallback is a native ECR cross-account replication rule into a Sandbox repository, not a
+pipeline. And whether SageMaker Studio offers any supported way to disable file
 download or notebook export from the JupyterLab UI. As far as this plan knows it does not, and Stage 11
 step 3 should not be written as though the control exists. If it does not, the honest position is that
 preventing a determined user from taking data out through their own browser session requires a different
@@ -813,7 +903,8 @@ architecture (streaming desktop, or no direct data access at all), and everythin
 Iceberg table through Athena, writes to EFS — and cannot reach a non-allowlisted site under design A, nor
 any site at all under design B. Plus the written comparison of the two.
 
-**Note on the product direction:** this stage builds classic SageMaker Studio. Since 2024 AWS has been
+**Note on the product direction:** this stage builds the current generation of SageMaker Studio
+(JupyterLab / Code Editor apps — *not* the deprecated "Studio Classic"). Since 2024 AWS has been
 consolidating on **SageMaker Unified Studio** with SageMaker Catalog/Lakehouse, which is what a large
 institution starting today would evaluate first — it bundles the governance layer this plan assembles by
 hand from Lake Formation, LF-Tags and Glue. It is deliberately not used here: it carries a heavier baseline
@@ -834,8 +925,12 @@ under egress design B it is how packages reach SageMaker. The rest of this stage
 
 **To execute:**
 
-1. GitLab CE Omnibus on EC2 in a **Production** private subnet; EBS with a snapshot schedule; internal ALB;
-   Route 53 record in the private zone. Reached from the laptop over the VPN through the Stage 3 peering.
+1. GitLab CE Omnibus on EC2 in a **Production** private subnet; EBS with a snapshot schedule; an internal
+   ALB in front — **layer `[E]`, in `production/egress/`**, correcting the previous version, which put it
+   in the `[D]` tooling slice: an ALB cannot be stopped, it bills (~USD 0.023/h) for as long as it exists,
+   so it is destroyed with the session and rebuilt by `make up` (target group, listener and certificate
+   attachment are plain Terraform; the private DNS name hides the recreation). Route 53 record in the
+   private zone. Reached from the laptop over the VPN through the Stage 3 peering.
    **Layer `[D]` (dormant), decided up front.** GitLab holds real state — repositories, CI history,
    registry metadata — and rebuilding it from a backup on every session is exactly the kind of fragile
    daily dependency §5.1 rule 2 warns about. So the instance and its EBS volume are **stopped**, not
@@ -853,9 +948,11 @@ under egress design B it is how packages reach SageMaker. The rest of this stage
    public domain validation. Register the chosen domain, keep a public hosted zone for DNS validation only,
    issue a public ACM certificate (wildcard, for Pages), attach it to the **internal** ALB, and resolve the
    names privately. Nothing is published; the public zone contains validation records and nothing else.
-3. SAML integration between GitLab and IAM Identity Center, so GitLab has no local accounts. Map the
-   Identity Center groups to GitLab groups, so the Stage 8 approval gate is driven by the same identities
-   as everything else.
+3. SAML integration between GitLab and IAM Identity Center, so GitLab has no local accounts. **A caveat
+   the previous version missed: SAML *login* works in GitLab CE, but SAML group sync is a paid-tier
+   (Premium) feature.** GitLab group membership is therefore maintained by hand — acceptable at three
+   users — with group names mirroring the Identity Center groups 1:1, so the Stage 8 approval gate is
+   driven by the same identity names and a future upgrade to group sync changes nothing visible.
 4. GitLab Pages enabled for documentation, reachable only through the VPN. Pages requires a **domain
    distinct from the GitLab host** (it serves user-supplied content, so sharing the origin would hand it
    the GitLab session cookie) and a **wildcard DNS record plus wildcard certificate** — both provided by
@@ -867,7 +964,9 @@ under egress design B it is how packages reach SageMaker. The rest of this stage
    configured with an upstream to the public registry. Both carry a resource policy granting the **Sandbox**
    account pull/read access, and the KMS key policy has to grant Sandbox too — the direction of sharing is
    the reverse of the previous plan, because the registries moved. §4.3 records which ecosystems
-   CodeArtifact does not cover and what happens to them instead.
+   CodeArtifact does not cover and what happens to them instead. Whether SageMaker Studio actually accepts
+   the `dev-env` image cross-account is verified in Stage 6; the fallback is an ECR replication rule into
+   a Sandbox repository.
 6. GitLab Runners in `production/runners/`, layer `[E]`: autoscaling on EC2 or Fargate, in the private
    subnet, with an instance role that can push to ECR. Container builds with Kaniko or BuildKit (no
    privileged Docker-in-Docker). Runners hold no state worth keeping, so they are rebuilt every session.
@@ -899,11 +998,18 @@ with a valid certificate.
    cover (§4.3). Its rebuild time is therefore a usability metric, not just a CI metric — measure it.
 2. **Application build pipeline:** the `app-etl` template from `CLAUDE.md` — `uv` for dependencies,
    `pytest` for tests, linting, docs build published to Pages, Docker image pushed to ECR on tag.
-3. **Production deploy pipeline:** GitLab OIDC → assume an IAM role (no static keys), promote the image,
-   run `terraform apply` for `terraform-live/production/app/app-etl/` pinned to the application tag, with a
-   manual approval gate assigned to the `managers` group.
-   **Note the consequence of D14:** the runner and its target are now in the same account, so this role
-   assumption is same-account and there is no cross-account boundary protecting Production from a
+3. **Production deploy pipeline:** no static keys — but **not GitLab OIDC federation either, correcting
+   the previous version**: to validate a job's ID token, IAM/STS fetches the issuer's discovery document
+   and JWKS over the public internet, and a VPN-only GitLab (D8/D14) serves neither. The mechanism is a
+   **dedicated deploy runner with an EC2 instance profile** — the runner's role *is* the deploy
+   credential, no token exchange — locked to protected branches/tags and a protected environment, so an
+   ordinary CI job never schedules onto it. Promote the image, run `terraform apply` for
+   `terraform-live/production/app/app-etl/` pinned to the application tag, with a manual approval gate
+   assigned to the `managers` group. OIDC remains the target design if a minimal public surface ever
+   exists (exposing only `/.well-known/openid-configuration` and the JWKS path through a public ALB —
+   plausible at Stage 13); §11 records it.
+   **Note the consequence of D14:** the deploy runner and its target are in the same account, so there is
+   no cross-account boundary protecting Production from a
    compromised runner. Compensate with what is available inside one account: a deploy role scoped to the
    `app/*` slices only, `terraform plan` output attached to the approval, and CloudTrail alarms on any use
    of the deploy role outside a pipeline context. §11 records the account split an institution would use
@@ -912,7 +1018,9 @@ with a valid certificate.
    promotion on critical findings, and dependency scanning on the application. A gate that only warns is
    documentation, not a gate — decide explicitly which findings block.
 5. A pipeline for this infrastructure repository as well: `fmt` / `validate` / `plan` on merge requests,
-   `apply` gated by approval.
+   `apply` gated by approval. This repository lives on GitHub (§1), so that pipeline is either GitHub
+   Actions — with its own OIDC role into AWS; GitHub's issuer *is* public, so federation works there — or
+   it runs on the GitLab mirror from Stage 7 step 7. Decide alongside the mirroring policy.
 
 **Deliverables:** a version tag on `app-etl` flows automatically from source to a running artifact in
 Production, with one human approval; and a build with a known-vulnerable dependency is stopped by the gate.
@@ -1070,6 +1178,9 @@ never built; alarms that fire on a simulated exfiltration attempt.
 - `REFERENCES.md`: every link used as a reference.
 - `README.md`: kept in sync with the real resource structure and repository layout.
 - `GENERAL_PLAN.md`: revised whenever a decision changes or a stage is re-scoped.
+- The **Well-Architected Machine Learning Lens** is the per-stage checklist: when a stage is built, walk
+  its questions for the components the stage touched — it is to this environment what the SRA is to the
+  account structure.
 
 ---
 
@@ -1101,8 +1212,10 @@ Production account; D15 → a public domain plus split-horizon DNS for internal 
 4. **Layer assignments.** `[P]`/`[D]`/`[E]` are cost judgements based on estimates. Revisit them at Stage 12
    against the real bill — especially the interface endpoints (the largest hourly item, now ~9 of them)
    and GitLab (the largest idle item).
-5. **Whether CodeArtifact supports Cargo**, and what the practical answer is for Julia and R (§4.3).
-   Determined at Stage 6, and it partly decides whether egress design B is livable.
+5. **CodeArtifact ecosystem coverage (§4.3).** Narrowed by the third review: the CodeArtifact
+   documentation now lists Cargo among its supported formats, so the Rust question is down to confirming
+   it in practice at Stage 6. Julia and R remain genuinely uncovered and keep their §4.3 fallbacks — they
+   are what decides whether egress design B is livable.
 6. **Whether SageMaker Studio can block file download** (Stage 6). If not, Stage 11's threat model has to
    record an accepted risk rather than a control.
 
@@ -1119,6 +1232,7 @@ Production account; D15 → a public domain plus split-horizon DNS for internal 
 | 2026-08-07 | Region question settled. `us-west-2` on cost, and it stays there — LGPD/data residency dropped as a driver (no real data). The `sa-east-1` availability check was recorded as a fact in §4.1, and its answer is that nothing this plan uses is missing from São Paulo; a correction to the previous entry, which wrongly called São Paulo's GPU selection thin (SageMaker Studio has `ml.g5` there since 2023 and `p5.4xl` since 2026, and `t4g` Graviton is available). A move to São Paulo is **hypothetical and not planned work**, so §4.1 was cut back to plain Terraform hygiene — no region literals, AZs from data sources, AMIs from SSM parameters — and the migration checklist, verification commands and the Stage 12 `sa-east-1` trial were dropped. |
 | 2026-08-07 | **Consistency review of the whole plan**, after the incremental edits above had left it contradicting itself. Fixed: principle 7 still said "resources are destroyed between sessions" (pre-dates the three-layer model); D4 still described WireGuard as destroyed each session; the WireGuard Elastic IP was assigned to `[D]` in §5.1, `[P]` in Stage 4 and `[D]` in the §6 layout (now `[P]` everywhere); D9 read as "2 AZs" while Stage 3 defaulted endpoints to one AZ (now stated as 2 for subnets, 1 for metered endpoints); the §3 diagram carried no layer markers; §5 priced GitLab as `t3.large` while Stage 7 recommended `t4g.large`; Stage 2's deliverable asked `make down` to drive the `[P]` bootstrap slice, contradicting its own rule; Stages 6 and 10 listed D5/D7 as prerequisites when those decisions are taken *inside* those stages; Stage 5 mixed `[P]` data and `[E]` EFS with no slice boundary (added an `nfs/` slice); Stage 7 did not say which slice ECR and the runners belong to. Also corrected a wrong SSM parameter path in §4.1 (`ami-amazon-linux-latest`, not `ami-amazon-latest`), recalculated the hourly figure against the single-AZ endpoint default (~USD 0.25/h, ~USD 20/month, replacing ~USD 0.30 and ~USD 21 in the entry above), and reordered the two entries above into actual chronological order. |
 | 2026-08-07 | **D10 closed: Identity Center administration is delegated to a dedicated Identity account**, a sixth account added to `secrets/accounts.md`. The instance itself stays in Management (it cannot be moved); only its administration is delegated, which lets Terraform manage permission sets without ever holding Management credentials — principle 1 enforced rather than merely stated. Audit keeps a single role, security guardian, and does not also own access management. Updated: §1 (six accounts), the §3 diagram, §5 (Config is per governed account), §5.1, D3 (identity state in the Identity account), Stage 1 (Identity account via Account Factory in the `Security` OU, the `register-delegated-administrator` step, identity work moved out of Management, and the Management-targeted assignment called out as permanently manual), Stage 2 (identity bootstrap plus an import of the Stage 1 console resources), the §6 layout (`terraform-live/identity/`) and Stage 12 (D10 revisit replaced by permission-set tightening). Cost of the decision: one more AWS Config recorder, ~USD 0.50-1/month. Two Control Tower/Identity Center behaviours are flagged in Stage 1 as *to verify during execution* rather than assumed. Also recorded in §9 as open item 3: the AZ name-to-ID mapping between Sandbox and Production, to be checked once the accounts exist, since it decides whether Stage 3 anchors subnets on list position or on AZ IDs. |
+| 2026-08-07 | **Third review (user request: inconsistencies + AWS best practices).** Five fixes to things that would not have worked as written. (1) Stage 5's `aws:SourceVpce` bucket policy gained the `aws:ViaAWSService` carve-out — without it the deny blocks Athena/Lake Formation, the exact path D13 mandates. (2) Stage 4 moved from split tunnel to **full tunnel**: with a split tunnel, AWS API/console traffic never carries the WireGuard EIP, so the step-8 `aws:SourceIp` restriction would deny everything; the deny also gained `aws:ViaAWSService: false`. (3) Stage 4's routed-peer-network model was dropped — VPC peering does no edge-to-edge routing, so NAT on the WireGuard instance is mandatory to reach GitLab in Production, and security groups reference the instance SG rather than the client CIDR. (4) Stage 8's GitLab OIDC federation was replaced by a dedicated deploy runner with an instance profile — IAM/STS must fetch the issuer's JWKS over the public internet, which a VPN-only GitLab cannot serve; OIDC stays documented as the target if a minimal public surface ever exists. (5) The internal ALB moved from `[D]` to `[E]` in `production/egress/` — ALBs cannot be stopped and bill ~USD 0.023/h while they exist. **Layer reclassifications on the plan's own "pay nothing while idle" logic:** the SageMaker domain + user profiles and the EFS moved to `[P]` (both free/cents at rest), which deletes the orphaned-home-EFS hazard and the fragile sync-to-S3-on-teardown step — §5.1 rule 2 rewritten accordingly. **Stage 1 gained:** Cost Anomaly Detection; an SCP denying `iam:CreateUser`/`CreateAccessKey` (principle 2 previously had no preventive enforcement); account-level S3 Block Public Access plus its protecting SCP; the tag-policy overstatement corrected (forcing tags at creation needs `aws:RequestTag` SCPs); the delegation-runs-from-Management wording in step 12; and Object Lock added to the verify-for-drift list. **Other corrections:** bootstrap state migrated into its own bucket instead of committed; GitLab CE SAML group sync flagged as paid-tier (membership managed by hand); Studio custom image cross-account pull flagged for verification with ECR replication as the fallback; Iceberg maintenance (`OPTIMIZE`/`VACUUM`) given an owner in Stage 5 and S3 Tables recorded in §11; `DeployApprover` permission set dropped (the gate lives in GitLab); `Environment=shared` documented as org-level; "classic Studio" renamed to current-generation Studio; the ML Lens added to §8 as the per-stage checklist; Cargo confirmed as a CodeArtifact-supported format (§9 item 5 narrowed). **Cost numbers reconciled:** D12 and the §5 header now agree on a ~USD 18-22 floor, ~USD 0.28-0.35/h and ~USD 26-27/month; design B is ~USD 0.11/h with 11 endpoints; the Production-side NAT and the ALB joined the hourly table. |
 
 ---
 
@@ -1139,11 +1253,12 @@ learned rather than absorbed by accident. This is the delta, decision by decisio
 | Identity | Identity Center as the identity source | Identity Center federated to the corporate IdP (Entra ID, Okta) via SAML + SCIM, groups driven by HR | Joiners/movers/leavers has to be automatic, or entitlements only ever accumulate |
 | Data lake placement | Lake inside the Sandbox and Production accounts | Data lake accounts per domain, with producer/consumer separation and Lake Formation cross-account sharing as the default rather than the exception | The lab conflates *environment* with *data domain*; a real organization has many domains per environment |
 | Data governance | Glue Catalog + LF-Tags, curated by hand | **SageMaker Unified Studio / SageMaker Catalog** (DataZone): business glossary, data products, subscription workflows, lineage | Discovery and a request/approval workflow are the parts that make a lake usable by people who did not build it |
+| Iceberg operations | General-purpose S3 buckets + scheduled Athena `OPTIMIZE`/`VACUUM`, because D13 leans on prefix-level IAM control | **Amazon S3 Tables**: managed Iceberg with automatic compaction, snapshot expiry and Lake Formation integration | The managed service removes the maintenance a hand-rolled lake forgets — but takes away the prefix-level control D13 is built on, so switching is an architecture decision, not a swap |
 | Access requests | Terraform merge request | Self-service request with approval workflow, time-bound grants | "Ask the platform engineer" does not scale, and permanent grants never get revoked |
 | Egress control | DNS Firewall allowlist, or no internet (§4.3) | AWS Network Firewall with TLS inspection, plus an internal package mirror covering every ecosystem (Posit Package Manager, Artifactory or similar) | A commercial artifact manager solves in one product what §4.3 solves with four different fallbacks. It costs money the lab does not have |
 | Egress cost | ~USD 0.05/h NAT | ~USD 290/month Network Firewall, accepted without discussion | The lab has to be clever precisely because it cannot buy the obvious answer |
 | Shared storage | EFS with Access Points; POSIX identity not tied to SSO | FSx for Lustre for training throughput, EFS for home directories, and file access auditable per user | "Who read this file" is unanswerable in the lab design. In a regulated institution that is disqualifying |
-| CI/CD trust | Same-account OIDC (D14) | Build account separate from deploy targets; signed artifacts; provenance attestation | A compromised runner in the lab compromises Production directly |
+| CI/CD trust | Same-account deploy runner with an instance profile (D14; OIDC is blocked because IAM cannot fetch a VPN-only issuer's JWKS) | Build account separate from deploy targets; OIDC federation against a publicly resolvable issuer; signed artifacts; provenance attestation | A compromised runner in the lab compromises Production directly |
 | Backups | AWS Backup + Vault Lock (Stage 12) | The same, plus tested DR runbooks, cross-region recovery, and RTO/RPO agreed per system rather than assumed | The lab tests recovery once; an institution rehearses it |
 | Availability | 1 NAT, single-AZ endpoints, single VPN instance (D9, D4) | Multi-AZ everything, no single points of failure | Every availability shortcut here is a deliberate cost trade, and each one is listed in D4 and D9 |
 | Operations | One person, `make up` / `make down` | On-call rotation, runbooks, change management, an internal platform team with its own product backlog | The largest difference of all, and the one no amount of Terraform addresses |

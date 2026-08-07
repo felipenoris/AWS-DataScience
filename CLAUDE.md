@@ -278,3 +278,30 @@ The repository contains documentation only; `terraform/` is still empty and must
   `sagemaker.studio`, without which a VPC-only domain does not start; and ACM cannot issue a certificate
   for a private-only name like `sandbox.internal`, which is what D15 (public domain + split-horizon DNS)
   now solves. One input is still needed from the user: **which domain name to register**.
+- **2026-08-07 - Stage 0. Third review of the plan** (user request: inconsistencies + AWS best practices).
+  Findings reported in chat; **no plan edits made yet — pending the user's decisions.** The five findings
+  that would break stages as written: (i) Stage 5's `aws:SourceVpce` bucket policy has no carve-out for
+  AWS-service access, which blocks Athena/Lake Formation — the exact path D13 mandates (fix:
+  `aws:ViaAWSService` exception, per the data-perimeter policy examples); (ii) Stage 4's split tunnel
+  (step 5) contradicts the `aws:SourceIp` control-plane restriction (step 8) — API calls bypass the tunnel,
+  so the condition would deny everything; needs full tunnel with NAT, and `aws:ViaAWSService=false` in the
+  deny; (iii) Stage 4 mixes NAT (step 1) with routed-peer-network return routes (step 6), and VPC peering
+  does no edge-to-edge routing, so the WireGuard client CIDR cannot cross the peering — NAT on the
+  WireGuard instance is mandatory to reach GitLab in Production; (iv) Stage 8's GitLab OIDC federation
+  requires the issuer's JWKS to be publicly reachable by IAM/STS, which a VPN-only GitLab is not —
+  alternatives: expose only the two discovery endpoints, or a dedicated deploy runner with an instance
+  profile; (v) Stage 7's internal ALB is marked `[D]` but ALBs cannot be stopped (~USD 16/month while it
+  exists) — make it `[E]` or terminate TLS on the instance. Cost-model drift: D12 still says
+  15/0.25/20 vs §5's 18-22/0.28/26; §5's floor header still says ~15; Stage 3's design-B figure omits the
+  two CodeArtifact endpoints (~0.11/h, not 0.09); Production-side egress (runner NAT) and the ALB are
+  missing from the hourly table. Best-practice recommendations: SageMaker domain and EFS should be `[P]`
+  (both are free/cents at rest — kills the orphaned-EFS hazard and the fragile S3-sync-on-teardown);
+  SCP denying `iam:CreateUser`/`CreateAccessKey` (principle 2 has no preventive enforcement today);
+  account-level S3 Block Public Access + protecting SCP; Cost Anomaly Detection (free); Iceberg
+  maintenance (OPTIMIZE/VACUUM) is unowned by any stage and S3 Tables should be recorded as a considered
+  decision; tag policies do not force tags at creation (needs `aws:RequestTag` SCPs); GitLab CE SAML group
+  sync is a paid feature, so the Stage 8 gate needs manual group membership; verify cross-account ECR pull
+  for SageMaker custom images (fallback: ECR replication); CodeArtifact does list Cargo as supported, so
+  §9 item 5 is half-answered. Minor: `Environment=shared` tag is vestigial post-D14; `DeployApprover`
+  permission set has no concrete function (the gate lives in GitLab); "classic Studio" wording is ambiguous
+  with the deprecated "Studio Classic".
