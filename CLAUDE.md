@@ -167,6 +167,10 @@ Never use external memory to store information. Store all your memory from this 
 Use English when writing source code or any files in this repository.
 When responding in chat, always write in Portuguese (Brazil).
 
+## Expertise
+
+This implementation plan assumes that the reader is a software or computer engineer with experience in software development and finance. The reader has basic knowledge of networking, AWS cloud services, and Terraform, and is familiar with Bash, Python, C, Rust, Julia, and R. Since DevOps is not the reader's primary area of expertise, provide sufficient context and explain the rationale behind DevOps-related tasks rather than assuming prior knowledge.
+
 ## git
 
 You can edit files in the main branch, but never commit before asking.
