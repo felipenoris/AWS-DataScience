@@ -5,7 +5,7 @@ Blueprint for using AWS as a Data Science infrastructure provider.
 - `CLAUDE.md` — goals and working rules.
 - `GENERAL_PLAN.md` — the staged implementation plan (stages, decisions, cost model).
 - `GLOSSARY.md` — every acronym the plan uses, plus its notation and the IAM condition keys it quotes.
-- `ACCOUNTS_AND_USERS.md` — the nine AWS accounts, the axis each sits on, and the four SSO users.
+- `ACCOUNTS_AND_USERS.md` — AWS accounts, the axis each sits on, and the four SSO users.
 - `PRICING.md` — per-unit AWS rates for `sa-east-1` and `us-west-2`, read from the AWS Price List bulk API.
   Unlike the cost figures in `GENERAL_PLAN.md` §5, which are order-of-magnitude estimates, these are
   measured; §5 says what is consumed, `PRICING.md` says what a unit of it costs.
@@ -16,7 +16,7 @@ Blueprint for using AWS as a Data Science infrastructure provider.
 
 ## Account segregation
 
-The environment is split across nine AWS accounts under a single AWS Organization. The cheaper alternative —
+The environment is split across AWS accounts under a single AWS Organization. The cheaper alternative —
 one account, with environments separated by tags, bucket prefixes and IAM policies — is simpler to build and
 simpler to operate, so the split has to earn itself. It does, and the reasons below are specific to a data
 science environment rather than generic "dev and prod should be separate" advice. The following sections
@@ -222,7 +222,7 @@ an OU and to nothing else. It is the mechanical reason this project has a `Workl
 
 | The references recommend | This project | Verdict |
 |---|---|---|
-| Studio only in the development / data-science accounts | The interactive surface only in the **Interactive OU** — since D26, one SageMaker unified domain (DataZone V2) in Development whose project blueprints provision into Sandbox and Development (D17, D21, D26) — enforced by an SCP on the `Workloads` OU denying `sagemaker:CreateDomain`, `CreateUserProfile`, `CreatePresignedDomainUrl` and `datazone:*` domain creation | **Adopted**, and made preventive rather than conventional |
+| Studio only in the development / data-science accounts | The interactive surface only in the **Interactive OU** — since D26, one SageMaker unified domain (DataZone V2) registered in **Data Governance**, whose project blueprints provision compute into Sandbox and Development and nowhere else (D17, D21, D26) — enforced by an SCP on the `Workloads` OU denying `sagemaker:CreateDomain`, `CreateUserProfile`, `CreatePresignedDomainUrl` and `datazone:*` domain creation | **Adopted**, and made preventive rather than conventional |
 | A staging / pre-production deployment target between development and production | The **Staging** account (D20) | **Adopted.** It was missing until 2026-08-08; the plan had tried to stand in for it with a Glue namespace inside Production, which shared an account and a blast radius with the thing it was meant to de-risk |
 | Data scientists get read-only access in staging | `DataScientistStagingAccess` — read, no write of any kind (D18) | **Adopted verbatim.** A staging environment a person can write to stops being evidence of what the pipeline does |
 | Environments expressed as Organizations OUs | Four OUs named for their policy sets (D23): `Workloads` holds Staging and Production, `Interactive` holds Sandbox and Development, `Data` holds Data Governance, `Security` holds the rest | **Adopted.** One SCP set per policy set, written once and inherited — an OU holding a single account forever would be a folder with one file |
@@ -294,7 +294,8 @@ tooling (the MLOps Workload Orchestrator among them) operate on OUs for the same
 
 The corollary: **an OU earns its existence when two or more accounts need the same policy set.** An OU
 holding one account forever is a folder with one file. So this project's OUs are named for their policy,
-not for an environment:
+not for an environment — with one deliberate exception at the bottom of the table, whose value is not the
+policy it carries but the disposable account it contains:
 
 | OU | Accounts | The policy set it carries |
 |---|---|---|
@@ -302,15 +303,24 @@ not for an environment:
 | Interactive | Sandbox, Development | Interactive compute **allowed**; human infrastructure changes denied |
 | Data | Data Governance | No *user* compute (the DataZone control plane and the catalog-maintenance role are carved out by name); deletion denied |
 | Workloads | Staging, Production | No interactive compute; no human control plane |
+| Policy Test | Policy Canary | **None** — this is the OU a *candidate* policy is attached to and exercised against, before it reaches anything real (D29) |
 
 A per-environment OU tree (`Development` OU, `Staging` OU, `Production` OU, one account each) was
 considered and rejected — every OU would hold exactly one account, so the tree would add names without
 adding inheritance. The revision triggers are recorded in the plan (D23): a second production-like account
 nests `Workloads` into `NonProd`/`Prod`; a second data domain does the same for `Data`.
 
+**Why `Policy Test` is not that mistake, despite holding one account.** It is the one OU here whose value is
+not inheritance at all. A Service Control Policy is a permission ceiling that AWS evaluates only when a
+principal makes a call, so a candidate policy attached to an empty OU proves nothing beyond "the JSON
+parsed" — the OU is worth having precisely *because* there is a disposable account inside it to make the
+call. `Data`, by contrast, holds one account and would still be an OU if it held three; `Policy Test` would
+stop making sense the day its account became something worth keeping. Different reasons, same shape, and
+the plan's own test ("two or more accounts needing the same policy set") is the wrong one to apply here.
+
 ### Data Governance vs. Production
 
-The data management account is not "more production than production". The two sit on **different axes**:
+The Data Governance account is not "more production than production". The two sit on **different axes**:
 
 - **Environment** (dev / staging / prod) is the *lifecycle* axis — how mature and how protected this
   instance of the **compute** is: the ETL job, the model, the endpoint.
@@ -331,7 +341,7 @@ Concretely, four things go wrong when the lake lives inside an environment accou
    end up with fourteen copies of the customer table.
 4. **Different protection profile.** A data account wants Object Lock, long retention and deletion denied;
    an application account wants to be rebuildable. One policy set cannot want both, which is why Data
-   Management has its own OU.
+   Governance has its own OU.
 
 In this project the split also simplifies enforcement: the environment accounts do not even *contain* the
 lake buckets, so "the execution role has no direct S3 access to governed data" stops being a carefully
@@ -343,7 +353,7 @@ is the only path by which governed data is ever written.
 
 ## The accounts
 
-Nine accounts, all under one AWS Organization governed by Control Tower.
+Ten accounts, all under one AWS Organization governed by Control Tower.
 
 | Account | OU | Purpose |
 |---|---|---|
@@ -351,6 +361,7 @@ Nine accounts, all under one AWS Organization governed by Control Tower.
 | Log Archive | Security | Central, tamper-evident log store (S3 Object Lock). Created by Control Tower. |
 | Audit | Security | Security guardian: GuardDuty, Security Hub, Macie, IAM Access Analyzer. Created by Control Tower. |
 | Identity | Security | Delegated administration of IAM Identity Center: permission sets, groups, assignments. Separate from Audit so that access management and security monitoring do not share a blast radius. |
+| Policy Canary | Policy Test | Deliberately empty, and disposable: the account a candidate SCP or RCP is exercised against before it reaches anything real (D29). An SCP is only evaluated when a principal makes a call, so a policy staging OU with no account inside it tests nothing — which is why this is an account and not just a folder. Holds an administrator principal and nothing else, because a deny exercised by a principal that lacked the permission anyway proves nothing about a ceiling. |
 | Sandbox | Interactive | **Experimentation** — the unit of work is a notebook. Target of the unified domain's `experimentation` project blueprints (D26): interactive compute, unreviewed code against real (shared) data — the highest-risk account, per §3 above. Nothing here survives; nothing promotes from here. |
 | Development | Interactive | **Development** — the unit of work is a pipeline: a repository with tests, git, CI. Target of the `engineering` project profile (D26). Work graduates in from Sandbox through git, and the promotion chain starts here. |
 | Data Governance | Data | The **state and governance of data**: the governed lake (S3 + Iceberg), the Glue catalog, Lake Formation, classification, the ingestion drop-box, the Glue Crawlers on raw and drop-box (D27), and the **SageMaker Unified Studio domain** with SageMaker Catalog, project profiles, blueprints and account associations (D26). A registry, not a runtime: no user compute, no VPC, no interactive sign-in — every environment reaches it through cross-account shares, and the portal it hosts is used by people who can never administer the account. Renamed from `Data Management` on 2026-08-08. |

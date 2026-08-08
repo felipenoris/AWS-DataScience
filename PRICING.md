@@ -186,23 +186,31 @@ Paid every month even with the lab shut down. Same rows as §5, same assumptions
 | Organization, accounts, Identity Center, VPC, subnets, IGW, security groups, IAM roles | — | — | **0** | **0** |
 | GitLab EBS volume (50 GB gp3) | 0.152 USD/GB-mo | 0.08 USD/GB-mo | 7.60 | 4.00 |
 | Elastic IP for WireGuard (idle or in use) | 0.005 USD/h | 0.005 USD/h | 3.65 | 3.65 |
-| KMS customer-managed keys (3) | 1.00 USD/key-mo | 1.00 USD/key-mo | 3.00 | 3.00 |
+| KMS customer-managed keys (8 — one per Terraform-managed account, plus a derived-zone key per Interactive account, D31) | 1.00 USD/key-mo | 1.00 USD/key-mo | 8.00 | 8.00 |
 | S3 data + state + backups (~25 GB Standard) | 0.0405 USD/GB-mo | 0.023 USD/GB-mo | ~1.50 | ~1.00 |
 | ECR images (~10 GB) | 0.10 USD/GB-mo | 0.10 USD/GB-mo | 1.00 | 1.00 |
-| AWS Config, 8 governed accounts | 0.003 USD/item | 0.003 USD/item | 2.00-4.50 | 2.00-4.50 |
+| AWS Config, 9 governed accounts (D29 added the tenth account; Management is the one not recorded) | 0.003 USD/item | 0.003 USD/item | 2.50-5.00 | 2.50-5.00 |
 | Route 53 hosted zones (1 private + 1 public) | 0.50 USD/zone-mo (global) | 0.50 USD/zone-mo | 1.00 | 1.00 |
 | Public domain registration (D15) | registrar, region-independent | idem | ~1.00 | ~1.00 |
 | CodeArtifact | **not available — see §9** | 0.05 USD/GB-mo + 0.05/10k req | **n/a** | ~0.10 |
 | Security Hub + IAM Access Analyzer | 0.001 USD/check (first 100k) | 0.001 USD/check | 1.00-2.00 | 1.00-2.00 |
 | GuardDuty (after the 30-day free window) | 1.75 USD/GB, 0.000007 USD/event | 1.00 USD/GB, 0.000004 USD/event | 0 → 5.00-9.00 | 0 → 3.00-5.00 |
 | WireGuard EBS (8 GB) + CloudWatch logs | 0.152 USD/GB-mo; logs 0.90 USD/GB | 0.08; logs 0.50 USD/GB | ~1.80 | ~1.00 |
-| EFS (shared filesystem + Studio homes, IA) | 0.044 USD/GB-mo | 0.025 USD/GB-mo | ~0.90 | ~0.50 |
-| Staging, Development, Data Governance at rest | Config + 1 KMS key each | idem | ~3.00 | ~3.00 |
-| **Floor** | | | **~USD 27-40** (central ~33) | **~USD 21-27** |
+| EFS (shared filesystem + project storage, IA) | 0.044 USD/GB-mo | 0.025 USD/GB-mo | ~0.90 | ~0.50 |
+| SageMaker unified domain — DataZone V2 metadata (D26) | 10.00/100k req + 0.40/GiB-mo (global) | idem | ~0.50 | ~0.50 |
+| ~~Staging, Development, Data Governance at rest~~ | **removed — double count** | | **0** | **0** |
+| **Floor** | | | **~USD 30-43** (central ~36) | **~USD 24-30** |
 
 The São Paulo floor is roughly **1.4x** the Oregon one — less than the 1.72x of the metered services,
 because so much of the floor is region-flat: KMS, Config, Route 53, Security Hub, the domain and the
 Elastic IP are identical in both regions.
+
+**Two corrections applied on 2026-08-08, in opposite directions.** The "Staging, Development, Data
+Governance at rest" row charged a Config recorder and a KMS key for those three accounts a second time —
+the Config row already covers all eight governed accounts — so ~USD 3 came out. The KMS row said "(3)" and
+predated D20-D22; there is one customer-managed key per Terraform-managed account, so ~USD 3 went back in.
+The two cancel and the floor range is unchanged, which is a coincidence rather than a confirmation: the
+number to trust is the one `GENERAL_PLAN.md` Stage 12 step 5 measures against the real bill.
 
 ---
 

@@ -1,9 +1,10 @@
 
 # AWS Accounts
 
-Nine accounts, in four organizational units. The account is the isolation boundary; the OU is the policy
+Ten accounts, in five organizational units. The account is the isolation boundary; the OU is the policy
 boundary, so each OU is named for the policy set it carries rather than for its contents (`GENERAL_PLAN.md`
-D23).
+D23) — with one exception, added by D29, whose OU carries no policy set at all because it is where
+*candidate* policies are tried out.
 
 ## The two axes, and the accounts that sit on neither
 
@@ -26,7 +27,8 @@ hold:
 
 - **Neither axis: platform accounts** — the organization's own machinery. They serve every account and
   belong to no environment: the Organization itself (Management), the tamper-evident log store
-  (Log Archive), the security findings plane (Audit) and the access-management plane (Identity).
+  (Log Archive), the security findings plane (Audit), the access-management plane (Identity) and the
+  disposable target the policy plane is tested against (Policy Canary, D29).
 
 **A consequence worth stating explicitly, because it comes up every time:** an account off the lifecycle
 axis is *not* "a production account". Data Governance, Identity and Audit are not production; they are
@@ -45,6 +47,7 @@ is not signing in to the account.
 | Log Archive | Security | Platform | Control Tower guardrails |
 | Audit | Security | Platform | Control Tower guardrails; delegated security administration |
 | Identity | Security | Platform | Control Tower guardrails; delegated Identity Center administration |
+| Policy Canary | Policy Test | Platform | **None of its own** — the OU exists to hold *candidate* policies under test (D29) |
 | Sandbox | Interactive | Lifecycle (before the chain) | Interactive compute allowed; human infrastructure changes denied |
 | Development | Interactive | Lifecycle (head of the chain) | Same as Sandbox — the two differ in content, not in policy |
 | Data Governance | Data | **Ownership** | No user compute; catalog maintenance excepted by name; deletion denied |
@@ -124,6 +127,29 @@ therefore keep their default repository, and the push into GitLab is manual (`GE
 row 13). That was chosen over giving this account a VPC and a peering, which would cost the property that
 makes it simple: nothing standing, nothing metered, nothing to reach.
 
+## Policy Canary Account
+
+Added by `GENERAL_PLAN.md` D29 on 2026-08-08, alone in the `Policy Test` OU.
+
+**What it is for:** a Service Control Policy is a permission *ceiling*, evaluated only when a principal
+makes a call. So a candidate SCP or RCP is attached to the `Policy Test` OU and exercised from this account
+before it goes anywhere real — which is what makes the procedure in Stage 1b step 7 a test rather than a
+gesture. An empty OU would not do: with no account inside it, there is no principal, and attaching a policy
+there proves only that the JSON parsed.
+
+**What it holds: nothing.** No VPC, no data, no Terraform slice, no state bucket. It is not one of the six
+Terraform-managed accounts. The one thing it does hold is the point of it — **an administrator principal**
+(`AdministratorAccess` for the infrastructure user), because a deny exercised by a principal that lacked the
+permission anyway proves nothing about a ceiling.
+
+**Who signs in:** the infrastructure user, to run the test battery, through the deliberately
+differently-named `awsds-policy-canary` profile. Nobody else — an account whose whole purpose is to have
+deliberately broken permissions is not a place for a second persona to draw conclusions.
+
+**The name.** The industry term for the OU is *Policy Staging*, and this project does not use it: there is
+already a `Staging` **account**, and the plan warns three separate times that the two collide in name and
+not in concept. `Policy Test` and `Policy Canary` keep the word `Staging` naming exactly one thing.
+
 ## Log Archive Account
 
 - Log Archive account linked to Control Tower.
@@ -176,7 +202,8 @@ extended**, because the two approvals sit on the two different axes described at
 | Acts in | GitLab (the pipeline's manual gate) | the SageMaker Unified Studio portal |
 | Question being answered | *is this build safe to release?* | *may this person read this dataset?* |
 | Group | `deployment-managers` | `governance-managers` |
-| Where they have access | `ReadOnlyAccess` on Sandbox, Development, Staging and Production — **nothing on Data Governance** | `GovernanceManagerAccess` on **Data Governance only** |
+| Where they have access | `DeploymentManagerAccess` on Sandbox, Development, Staging and Production — **nothing on Data Governance** | `GovernanceManagerAccess` on **Data Governance only** |
+| What they may *read* | Logs, job and pipeline status, catalog metadata, image scan findings, enumerated build-artifact prefixes. **Not** query results, not the derived zones, not decrypted data (D31) | The catalog — names, schemas, classifications, lineage. **Not** the rows |
 
 **The access row is mirrored on purpose:** the one account the deployment manager may not enter is the
 only one the governance manager may. Neither persona is a superset of the other, and neither is a weaker
@@ -202,11 +229,32 @@ given in to — Identity Center will not warn, and no policy can detect it.
   elevated role** used to debug a failed production job (Stage 9) — that is a lifecycle act, not a data
   one.
 
-- **Access:** the `ReadOnlyAccess` permission set on Sandbox, Development, Staging and Production — the
-  four lifecycle accounts, which is the axis this persona works on — and **no assignment of any kind on
+- **Access:** the `DeploymentManagerAccess` permission set on Sandbox, Development, Staging and Production —
+  the four lifecycle accounts, which is the axis this persona works on — and **no assignment of any kind on
   Data Governance**. Deliberately **no** authority
   over data grants either: this user cannot approve a subscription, is not a domain owner in the Unified
   Studio domain, and cannot call `lakeformation:GrantPermissions`.
+
+- **What that set is, and why it is not `ReadOnlyAccess` (`GENERAL_PLAN.md` D31, 2026-08-08).** It used to
+  be. The rule stated below for the governance manager — *an approver who can already read everything is not
+  exercising a control* — is symmetric, and the plan was applying it to one of the two approvers: the
+  AWS-managed `ReadOnlyAccess` includes `s3:Get*` and `athena:GetQueryResults`, so on four accounts this
+  persona could read the D19 derived zones and other people's query output. The derived zones are where the
+  result of a query over `restricted` data lands and, by D19's own classification rule, *is* `restricted`.
+
+  What the persona actually needs is **diagnosis**, not reading: why did the promotion fail, is this build
+  safe to release. So the set grants CloudWatch Logs read including Logs Insights, SageMaker job / pipeline
+  / Model Registry status, Glue catalog metadata, ECR image metadata and scan findings, orchestration
+  execution status, and `s3:GetObject` on enumerated build-artifact and test-report prefixes. It denies
+  explicitly: `athena:*`, `kms:Decrypt`, secrets and parameters, the Terraform state buckets, and the
+  control plane.
+
+  **The approval itself loses nothing**, because it never consumed an AWS permission — it happens in
+  GitLab, driven by group membership.
+
+  **And the backstop is not in this set at all**, which is the part worth remembering: the derived zone has
+  its own KMS key whose policy names who may decrypt (D19 as revised by D31). A permission set is a list
+  someone has to maintain; the key policy is default-deny and covers prefixes nobody thought to enumerate.
 
 ### Governance Manager user
 

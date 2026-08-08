@@ -38,7 +38,8 @@ Staged plan to build the AWS Data Science environment described in `CLAUDE.md`.
 
 **Planned accounts** (`ACCOUNTS_AND_USERS.md`, e-mails in `secrets/emails.md`): Management, Sandbox
 (experimentation), **Development**, **Staging**, Production, **Data Governance**, Log Archive, Audit,
-Identity — **nine accounts**, all e-mails registered. Staging arrived on 2026-08-08 with D20; Development
+Identity, **Policy Canary** — **ten accounts**. Nine e-mails were registered before the plan was reviewed;
+**`Policy Canary`'s is the one still to add to `secrets/emails.md`** (D29, 2026-08-08). Staging arrived on 2026-08-08 with D20; Development
 and Data Governance arrived later the same day with D21/D22, closing the two departures from the AWS
 references that the first Staging revision had left open. Every earlier statement that six or seven
 accounts "are the complete set" is superseded.
@@ -57,10 +58,14 @@ These come from `CLAUDE.md` and constrain every stage:
 
 1. **The Management account is bootstrap-only.** Anything done there is manual, through the console, and
    recorded by the user in `LOG.md`. Terraform does not manage the Management account.
-2. **No IAM Users.** Humans authenticate through IAM Identity Center (SSO) and assume roles. Machines
-   (GitLab CI) use OIDC federation to assume roles. No long-lived access keys anywhere — with exactly one
-   documented exception, break-glass access (D16), because a rule with no escape hatch is a rule that gets
-   broken under pressure.
+2. **No IAM Users, and since 2026-08-08 with no exception.** Humans authenticate through IAM Identity
+   Center (SSO) and assume roles. Machines (GitLab CI) use OIDC federation to assume roles — except the
+   deploy runner, which uses an EC2 instance profile because a VPN-only GitLab cannot serve a JWKS that IAM
+   can fetch (Stage 8 step 4). No long-lived access keys anywhere. This principle used to carry one
+   documented exception for break-glass; **D16 settled that credential as the Management account root,
+   which is not an IAM user and holds no access key**, so the exception dissolved instead of being
+   justified. A rule with no escape hatch is a rule that gets broken under pressure — the escape hatch
+   here simply is not an IAM user.
 3. **Everything else is Terraform.** One state per account/environment, no shared state across environments.
 4. **Private by default.** Data assets and databases never face the public internet. The only public entry
    points are the VPN and, later (Stage 13), an experimental web tier.
@@ -95,13 +100,24 @@ AWS Organization (Management account - console only)                        [P]
 │   │                           GuardDuty / Security Hub / Macie / Analyzer
 │   └── Identity account     <- Identity Center delegated administration    [P]
 │
+├── OU Policy Test           <- NO policy set of its own: this is where a
+│   │                           candidate SCP/RCP is attached and exercised
+│   │                           before it reaches anything real (D29)
+│   └── Policy Canary account <- deliberately EMPTY: no VPC, no data, no
+│                                Terraform slice, no state bucket. Holds one
+│                                thing, and it is the point - an admin
+│                                principal, because an SCP tested by a
+│                                restricted principal measures the identity
+│                                policy instead                              [P]
+│
 ├── OU Interactive           <- one SCP set: interactive compute allowed,
 │   │                           no human infrastructure changes (D23)
 │   ├── Sandbox account      <- EXPERIMENTATION: the unit of work is a notebook
 │   │   ├── VPC, subnets, IGW, security groups, private DNS zone            [P]
 │   │   ├── blueprint target (D26): the experimentation project's
 │   │   │     environments are provisioned here by the domain in
-│   │   │     Development (SageMaker AI apps VPC-only, restricted egress)   [E]
+│   │   │     Data Governance (SageMaker AI apps VPC-only,
+│   │   │     restricted egress). Slice is [P]; running apps are          [P/E]
 │   │   ├── scratch / derived-zone S3 buckets (per-principal, D19)          [P]
 │   │   ├── WireGuard EC2    <- the only human entry point (see below)      [D]
 │   │   ├── NAT Gateway + interface VPC endpoints                           [E]
@@ -112,7 +128,7 @@ AWS Organization (Management account - console only)                        [P]
 │       ├── VPC (same module, own CIDR, peered to Production for GitLab)    [P]
 │       ├── blueprint target (D26): the engineering project's
 │       │     environments are provisioned here by the domain in
-│       │     Data Governance                                               [E]
+│       │     Data Governance. Slice is [P]; running apps are            [P/E]
 │       ├── scratch / derived-zone S3 buckets (per-principal, D19)          [P]
 │       └── NAT + interface VPC endpoints                                   [E]
 │
@@ -233,23 +249,26 @@ Data Governance account at all outside the infrastructure role (D22).
 | D9 | Number of AZs | Decided: **2 for subnets, 1 for metered endpoints** | Subnets, route tables and NAT-less network plumbing are free, so the topology spans 2 AZs and stays honest. Interface VPC endpoints are charged per AZ, so they default to a single AZ during lab sessions; a resource in the other AZ still resolves and reaches them, at the cost of cross-AZ traffic and no AZ redundancy — an acceptable trade in a lab, and a one-variable change if it ever is not. |
 | D10 | Identity Center administration | Decided (2026-08-07): **delegated to a dedicated Identity account** | The Identity Center instance and its identity store are created in the Management account and cannot be moved; what is delegated is their *administration*. One member account is registered as delegated administrator (`sso.amazonaws.com`), and from there Terraform manages permission sets, groups and assignments — so Terraform never needs credentials in the Management account, which is what makes principle 1 real rather than aspirational. The role goes to a **dedicated Identity account** rather than to the Audit account: Audit stays the security guardian (GuardDuty, Security Hub, Macie findings) and Identity owns access management, so the two concerns do not share a blast radius. Costs one extra Control Tower-governed account, i.e. one more AWS Config recorder (~USD 0.50-1/month) — accepted in exchange for the separation. **Consequences:** (i) assignments whose *target* is the Management account cannot be managed from the delegated account and stay manual; (ii) the Identity account can grant administrative access to any account in the organization, so it is as sensitive as Management — the data scientist must never have access to it; (iii) Control Tower's own permission sets (`AWSAdministratorAccess` and friends) are left alone, since editing them causes landing-zone drift. |
 | D11 | Lifecycle of the lab | Decided (2026-08-07): **resources are ephemeral, accounts are not** | The environment runs for a few hours per session and is shut down in between. Accounts, the Organization, Control Tower and Identity Center are never destroyed. Within the accounts the rule is not "destroy everything" but **"pay nothing while idle"**: resources that cost nothing at rest are simply left in place, resources that meter are destroyed, and stateful services that are awkward to rebuild are stopped rather than destroyed. Three layers, defined in §5.1. |
-| D12 | Budget ceiling | Decided (2026-08-07): **USD 50/month** | With the three-layer model the projection is a ~USD 18-22/month floor plus ~USD 0.28-0.35 per lab hour, so roughly USD 26-27/month at the expected usage (§5). The AWS Budget created in Stage 1 alerts at 50/80/100% of USD 50, with Cost Anomaly Detection alongside it. This ceiling is what rules out always-on GitLab (~USD 60/month by itself) and confirms the stop/start approach. |
+| D12 | Budget ceiling | Decided (2026-08-07): **USD 50/month** | With the three-layer model the projection is a ~USD 21-27/month floor plus ~USD 0.28-0.40 per lab hour, so roughly **USD 29-31/month** at the expected usage — the figure in §5, which this row now quotes instead of the pre-D20/D21/D22 estimate of "USD 26-27" it carried until 2026-08-08. The AWS Budget created in Stage 1 alerts at 50/80/100% of USD 50, with Cost Anomaly Detection alongside it. This ceiling is what rules out always-on GitLab (~USD 60/month by itself) and confirms the stop/start approach. |
 | D13 | How Lake Formation is actually enforced | Decided (2026-08-07): **execution roles get no direct S3 access to registered locations** | Lake Formation only constrains engines that ask it. A role holding `s3:GetObject` on a registered bucket can read the raw Parquet from a notebook and every column and row filter becomes decoration. So the fine-grained access control objective in `CLAUDE.md` is only real if the SageMaker execution role's S3 permissions **exclude** the Lake Formation-registered prefixes, and tabular access goes exclusively through an LF-aware engine: Athena, Glue interactive sessions, or EMR with runtime roles. Non-registered prefixes (scratch, artifacts, model outputs) keep ordinary IAM access. Lake Formation's **hybrid access mode** is the documented migration path if a workload turns out to need both, and is a deliberate exception rather than the default. This is decided in Stage 5, before Stage 6 can bake the bypass into the execution role. |
 | D14 | Where GitLab, Runners, ECR and CodeArtifact live | Decided (2026-08-07): **the Production account** | These four are the software supply chain. In the Sandbox account they would sit next to a `data-scientists` group with broad permissions, which means the runner holding the deploy credentials, and the registry Production pulls from, would both be modifiable by the people the approval gate is supposed to gate. Putting them in Production removes that path and costs no extra account. **Accepted trade-off:** build and runtime now share an account, so there is no blast-radius boundary between "the thing that builds" and "the thing that runs" — a compromise of GitLab is a compromise of Production. A large institution splits these into a Shared Services / Tooling account in an `Infrastructure` OU (§11). **Consequences:** the Production VPC moves from Stage 9 to Stage 3; Sandbox↔Production VPC peering is needed so the VPN reaches GitLab (and, since D21, a second peering from Development); ECR and CodeArtifact are consumed cross-account from **both Interactive accounts**; and the data scientist needs a narrow, service-level (not infrastructure-level) reach into Production. |
 | D15 | TLS for internal endpoints | Decided (2026-08-07): **a real public domain plus split-horizon DNS** | ACM cannot issue a certificate for `sandbox.internal` — public certificates require a domain you can validate publicly, and AWS Private CA costs ~USD 400/month (~USD 50 in short-lived mode), both over the ceiling. The workable path: register one public domain, keep a public hosted zone **for DNS validation only**, issue free public ACM certificates (including the wildcard GitLab Pages needs), and resolve the names to private addresses through the **private** hosted zone. A public certificate on an internal ALB is supported; nothing is published. Cost ~USD 0.50/zone plus the domain (~USD 12-15/year). **Needs input from the user: which domain name to register.** |
-| D16 | Break-glass access | Decided (2026-08-07): **one documented emergency path, tested and alarmed** | "No IAM Users" (principle 2) has no answer for an IAM Identity Center outage or a misapplied SCP that locks everyone out, and an absolute rule with no escape hatch is one that gets broken improvised, under pressure, at the worst moment. The exception: a break-glass mechanism in the Management account with hardware MFA, credentials stored offline, never used in normal operation, and a CloudWatch alarm on any use of it. Documented in Stage 1 and tested once. The Management account root user's recovery path is documented alongside it. |
+| D16 | Break-glass access | Decided (2026-08-07), credential settled (2026-08-08): **the Management account root user, and nothing else** | "No IAM Users" (principle 2) has no answer for an IAM Identity Center outage or a misapplied SCP that locks everyone out, and an absolute rule with no escape hatch is one that gets broken improvised, under pressure, at the worst moment. **The credential is the Management account root**, which turns out to remove the exception rather than document one: the root is not an IAM user — it exists whether or not you want it — so principle 2 no longer needs the words "with exactly one exception". There is nothing to create, nothing to rotate beyond password and MFA, no permissions to design and nothing for Terraform to manage. It also merges two things Stage 1a was describing separately without noticing: securing the root (step 1) and building the break-glass path (step 5) are the same credential. And it composes with centralized root access management (1a step 6), which strips root credentials from the **member** accounts and does not touch Management: nine member roots disappear, one root remains, and it is the break-glass. **The honest cost: the root cannot be scoped.** An IAM break-glass user could have carried a two-line policy — `organizations:DetachPolicy` and `DisablePolicyType` — and nothing else; the root can do everything, including closing accounts and changing billing. Every compensating control is therefore detective and procedural: MFA enabled, password stored offline (never in this repository, never in `secrets/`), never used in normal operation, and a CloudWatch alarm on any use. **`iam:CreateAccessKey` on the root becomes an invariant rather than hygiene** — an access key there would be a permanent, unscoped, SCP-immune credential sitting in a file — and since SCPs cannot constrain the Management account, the instrument is detection: the AWS Config rule `iam-root-access-key-check`, enabled with the recorder scope in Stage 1b step 10. **The alarm must not notify the mailbox that is the login.** Root sign-in is e-mail plus password, and the e-mail is the one in `secrets/emails.md`; if the SNS subscription points at the same address, whoever holds the mailbox holds the credential and the alarm together. **MFA: enabled, type deliberately not specified.** The user already has MFA on this root, and nothing in this plan depends on which kind — the alarm does not, the SCP exemption does not, the procedure does not. This is recorded as a decision rather than left silent so that a later reader does not "fix" it back to a hardware requirement, which is what an earlier version of this row said and which contradicted Stage 1a step 1 in the same breath. What *does* still matter, and is not about the type: **if only one MFA device is registered**, losing it means AWS account recovery, which depends on the phone number and payment method on the account — so those are part of the design and must be current. **A second recovery path exists since D30** and the two are for different failures: the root is what you use when Identity Center is down or the organization itself is broken; `awsds-scp-recovery` is what you use when a custom SCP denies something it should not. Reaching for root to fix a policy is a sign the D30 role was scoped wrong. Documented in Stage 1a and tested once. |
 | D17 | Where the data scientist works, and what crosses the account boundary | Decided (2026-08-07), revised (2026-08-08, D21): **interactive compute exists only in the Interactive OU (Sandbox and Development); the deployment targets carry the SageMaker runtime, but only pipelines submit to it** | "SageMaker" is two things and the account boundary runs between them. The **interactive** half — Studio domains, user profiles, JupyterLab/Code Editor apps — exists in the Sandbox and Development accounts and nowhere else: a Studio domain in a deployment target would put unreviewed code back inside the account boundary, which is the one thing the split buys. (The original decision said "Sandbox-only"; D21 split the interactive world into two accounts, so the invariant is now stated against the OU, which is where the SCP enforcing it attaches anyway.) The **runtime** half — training and processing jobs, Pipelines, Model Registry, endpoints — exists in Staging and Production, because that is where artifacts are tested, retrained and served; what changes is that a pipeline submits to it, never a person. This is also what AWS's own multi-account MLOps references do: Studio lives in the development/data-science accounts, and staging and production are deployment targets with no domain of their own. **The promotion boundary is four artifacts**, all travelling Development → Staging → Production through the pipeline (D20, D21): the container image (ECR), the model version (Model Registry), the workflow definition and application code (a git tag), and the Terraform that instantiates them. Sandbox work enters that chain only by graduating into a Development repository through git (D21) — there is no Sandbox → Staging path. **The Model Registry lives in Production** — D14 already collapsed the reference architecture's Tooling account into Production, and a model package group costs nothing at rest; Staging reads the registry and runs the approved version, it does not keep one of its own. **Consequences:** `terraform-live/production/sagemaker/` is a `[P]` slice (model package groups, and the execution role that pipeline-submitted jobs assume), with a job-execution-role-only counterpart in `terraform-live/staging/sagemaker/`; Stage 8's shared base image remains load-bearing, because "promote only the code" is only true if the runtime is identical by construction; and debugging a failed production job is a time-boxed elevated role approved by `deployment-managers`, logged and alarmed — not a notebook (the release approver owns this, not the governance one: it is a lifecycle act). |
 | D18 | Data scientist access outside the Interactive OU | Decided (2026-08-07, restated 2026-08-08 for the nine-account layout): **data plane read, no compute, no control plane; writes only to enumerated prefixes** | `ACCOUNTS_AND_USERS.md` gives the data scientist "read-only access to production environment data, and read-write access to sandbox and development environment". The full access matrix, per account: **Sandbox and Development** — read-write, interactive, the D19 derived zones; this is where the person works. **Staging — read-only, and nothing else.** No writes at all, not even a drop-box: Staging exists to be written by the pipeline and read by a human diagnosing why the pipeline failed, which is exactly what the `amazon-sagemaker-secure-mlops` reference grants in its staging account — a staging environment a human can write to stops being evidence of what the pipeline does. **Production — the data plane without compute:** CloudWatch logs of a failed job, Glue catalog metadata, SageMaker job/pipeline/registry status, named S3 prefixes (application outputs), and Athena on a dedicated workgroup with a scan limit. Denied explicitly: the control plane in full, plus `sagemaker:Create*Job`, `sagemaker:CreatePresignedDomainUrl`, `glue:StartJobRun` and `lakeformation:GrantPermissions`. **Data Governance — no sign-in at all.** The lake (D22) is read through the Lake Formation share from Sandbox and Development, which is the canonical analytical path — the tools are where the person is, so signing in to the account that stores the data accomplishes nothing. The one write the data scientist has toward the lake is the **ingestion drop-box** in Data Governance (`s3:PutObject` into a dated prefix — no `GetObject`, `DeleteObject` or `ListBucket`; a letterbox, not a shared folder), granted cross-account by bucket policy to the Interactive-OU roles rather than by a sign-in. **Deliberately not built:** any general-purpose exchange bucket between environments, which would be a promotion path running parallel to the Stage 8 approval gate. **One consequence to handle before it bites:** every `aws:SourceVpce` deny in a bucket policy (Stage 5, Stage 9) is evaluated against callers from *other* accounts — a data scientist at a laptop reaches S3 through the Sandbox or Development VPC endpoints or through the WireGuard Elastic IP — so the condition has to be a list that admits them (§4.4 row 5), or every call fails with an `AccessDenied` whose cause is invisible from the error. |
-| D19 | The derived zone — what Lake Formation does *not* do (extends D13) | Decided (2026-08-07): **the copy is not prevented; the destination is managed and the perimeter contains it** | Running a `SELECT` against the lake and storing the result is what a data science environment is *for*. Any principal that can read tabular data can materialise it outside the governed prefixes, and no configuration changes that. This is not a hole introduced by D18 — it has been true of the Sandbox since Stage 5, and of every SageMaker installation ever built. What it actually means is worth stating plainly: **Lake Formation's column and row filters are an entitlement mechanism, not a containment mechanism.** They decide what a principal may see at the moment of read; they say nothing about where the bytes go next. D13 makes the entitlement real; this decision covers everything after it. The practice: (i) **the output location is not the user's choice** — the Athena workgroup sets `EnforceWorkGroupConfiguration = true`, so a client cannot override the result location, and `s3:PutObject` on execution roles and permission sets is scoped to enumerated prefixes, never `*`; (ii) derived prefixes are **per principal** (`…/derived/${aws:userid}/`), so one person's copy is not a way around another person's grants; (iii) they carry a **lifecycle expiry**, so the shadow lake does not become permanent by accident; (iv) they sit **inside Macie's scan scope and carry CloudTrail data events** (Stage 11), because this is where sensitive data actually accumulates; (v) classification **inherits** — the output of a query over `restricted` data is `restricted` — stated as policy, because nothing enforces it automatically at this scale (§11: this is exactly where a catalog with lineage earns its price). **And the containment itself comes from somewhere else entirely:** the copy is tolerable because the data perimeter (§4.2) stops it leaving the organization and D5 stops it leaving the network. Preventing the copy was never the control. The perimeter is. |
+| D19 | The derived zone — what Lake Formation does *not* do (extends D13) | Decided (2026-08-07): **the copy is not prevented; the destination is managed and the perimeter contains it** | Running a `SELECT` against the lake and storing the result is what a data science environment is *for*. Any principal that can read tabular data can materialise it outside the governed prefixes, and no configuration changes that. This is not a hole introduced by D18 — it has been true of the Sandbox since Stage 5, and of every SageMaker installation ever built. What it actually means is worth stating plainly: **Lake Formation's column and row filters are an entitlement mechanism, not a containment mechanism.** They decide what a principal may see at the moment of read; they say nothing about where the bytes go next. D13 makes the entitlement real; this decision covers everything after it. The practice: (i) **the output location is not the user's choice** — the Athena workgroup sets `EnforceWorkGroupConfiguration = true`, so a client cannot override the result location, and `s3:PutObject` on execution roles and permission sets is scoped to enumerated prefixes, never `*`; (ii) derived prefixes are **per principal** (`…/derived/${aws:userid}/`), so one person's copy is not a way around another person's grants; (iii) they carry a **lifecycle expiry**, so the shadow lake does not become permanent by accident; (iv) they sit **inside Macie's scan scope and carry CloudTrail data events** (Stage 11), because this is where sensitive data actually accumulates; (v) classification **inherits** — the output of a query over `restricted` data is `restricted` — stated as policy, because nothing enforces it automatically at this scale (§11: this is exactly where a catalog with lineage earns its price). **And the containment itself comes from somewhere else entirely:** the copy is tolerable because the data perimeter (§4.2) stops it leaving the organization and D5 stops it leaving the network. Preventing the copy was never the control. The perimeter is. **Revised 2026-08-08 (D31): a sixth practice, and it is the only one on this list that is default-deny.** The five above answer *where the copy lands*, *how long it lives* and *who is told about it*; none of them answers **who may read it**, which was left to whatever IAM policies happened to exist — and that turned out to be how a release approver acquired read access to materialised `restricted` data without anyone deciding it. So the derived zone gets **its own KMS CMK**, separate from the account's general-purpose key, and the key policy carries the answer: `kms:Decrypt` to the project execution roles and `DataScientistAccess`, and to nobody else. It survives forgetfulness in a way a prefix deny-list does not — a new derived prefix under the same key is covered without anyone updating anything. |
 | D20 | The Staging account | Decided (2026-08-08): **a seventh account, `Staging`, in a new `Workloads` OU alongside Production** | Every AWS multi-account MLOps reference this plan checked puts a pre-production deployment target between the development account and production (`README.md`, "What the AWS references recommend"). This plan did not have one, and the consequence was stated plainly in the 2026-08-07 revision: the first time application code runs against a production-shaped path would be *in* production. That revision tried to stand in for it with a `staging` Glue namespace inside the Production account — **that stand-in is now removed.** It caught schema and logic errors, but it shared an account, an IAM surface and a blast radius with the very thing it was meant to de-risk, so it could never catch a *permission* error, which is the failure class a cross-account promotion actually produces. **What Staging is:** a deployment target. No Studio domain (D17), no Model Registry of its own (it reads Production's and runs the approved version), no GitLab (D14). It carries a VPC, a data platform whose catalog mirrors Production's schema, SageMaker job execution roles, and the application slices the pipeline deploys and tears down. **Its data is sampled or synthetic and never a copy of Production** — Staging is where automated tests run and where data scientists hold read access, so a full copy would mean the cheapest route to production data runs through the less-defended of the two accounts, and would double the storage and Macie bills for the privilege. **No VPC peering to Staging**, deliberately: Sandbox↔Production peering exists because the VPN has to reach GitLab, and nothing in Staging needs VPC-level reach from a laptop — the read access in D18 is data plane (S3, Athena, CloudWatch Logs) over public AWS API endpoints through the tunnel. A second peering would buy route-table complexity and one more hand-driven path into an account whose entire value is that nobody touches it by hand. Add it if something concrete needs it, not before. **OU shape:** `Workloads` with `Staging` and `Production` as children, so the SCP set meaning "no interactive compute, no human control plane" is written once and attached once; Sandbox keeps its own OU, because interactive compute is the whole point there. Not to be confused with a **Policy Staging OU** (§11), which is for testing SCPs before they reach anything real — the names collide, the concepts do not. **Cost:** one more AWS Config recorder (~USD 0.50-1/month) and one more KMS key; the VPC layer is free at rest and the metered `egress/` slice exists only while a promotion runs, which is minutes. The floor moves from ~USD 18-22 to ~USD 19-24 (§5), still comfortably under D12. Staging is never up during an ordinary Sandbox session: `make up ENV=staging` is a pipeline step, not part of a lab session. **Revised 2026-08-08 (D21):** the chain now starts in Development, not Sandbox — Development → Staging → Production; "a seventh account" reflects the count at the time of the decision, since superseded by D21/D22. |
 | D21 | The Development account, and where experimentation ends | Decided (2026-08-08): **a dedicated Development account; Sandbox becomes pure experimentation; the promotion chain starts in Development** | The distinction the AWS MLOps roadmap draws and the previous revision collapsed "because there is one user": **Experimentation (Sandbox)** is where the unit of work is a *notebook* — no versioning expectation, nothing survives, cost is spasmodic and human-driven. **Development** is where the unit of work is a *pipeline* — a repository with tests, a SageMaker Pipeline, git, CI, the expectation that running it again on Tuesday gives the same answer. The user chose to build the boundary anyway, and it buys three real things even single-operator: (i) **the promotion chain gets an honest origin** — what enters CI from Development is already repository-shaped, so the pipeline never has to pretend a notebook is an artifact; (ii) **the graduation step becomes visible** — moving work from Sandbox to Development is a deliberate act (a git commit into a Development repository), not a gradual blurring inside one account; (iii) **cost attribution separates exploration from engineering**, which is the split a real budget conversation needs. **What Development is:** a second Interactive-OU account — Studio domain (VPC-only, same module as Sandbox), derived zone (D19), LF read share from the lake (D22), peering to Production for GitLab, and the place SageMaker Pipelines are *authored and test-run* before the pipeline promotes them. **What it is not:** a deployment target (humans work here interactively) and not a staging area (its runs prove the pipeline works, not that the artifact deploys). **Graduation Sandbox → Development is git, not a pipeline:** a notebook's logic is rewritten into the repository, reviewed, and committed — there is deliberately no automated path that lifts a notebook out of Sandbox, because the rewrite *is* the quality gate. Promotion is Development → Staging → Production and never starts in Sandbox. |
 | D22 | The Data Governance account — state separated from compute | Decided (2026-08-08): **the governed lake moves out of the environment accounts into a dedicated Data Governance account; every environment reaches it through Lake Formation cross-account shares** | Environments (dev/staging/prod) sit on the *lifecycle* axis: how mature and protected a given copy of the application is. Data ownership sits on a different axis entirely: who produces a dataset, answers for its quality and sets its access policy. The lake outlives every application that reads it, so tying it to any environment account ties the data's life to a deployable thing's life — and forces a copy per environment. **What lives here:** the raw and curated S3 buckets (Iceberg), the Glue Data Catalog, Lake Formation with the LF-Tags and the D13 registrations, the classification scheme, the ingestion drop-box (D18), and Macie's primary scan scope (Stage 11). **What never lives here:** compute. No VPC in the first build — the data plane (S3, Glue, Athena, LF) is serverless, and consumers reach it through their *own* VPC endpoints; the SCP on the `Data` OU denies EC2 and SageMaker outright, and deletion protection is the policy set's whole personality (no `s3:DeleteBucket`, Object Lock where retention warrants it). **Who touches it:** nobody, interactively (D18). Sandbox and Development hold LF **read** shares; Production's job execution role holds LF read *and* the **governed write** — the producer path: production ETL writes curated tables through LF-aware engines, cross-account, and that is the only way governed data is ever written. Staging is deliberately not on the share (D20 — its data is sampled or synthetic, local to it). **What this closes and what it opens:** it closes the §11 row "the lab conflates environment with data domain", makes D13 cleaner (the execution roles in the environment accounts hold no S3 access at all to lake buckets — the accounts do not even contain them), and centralises what Macie scans. It opens more cross-account wiring: every row of §4.4 that involved "Production's lake" now points at Data Governance, and the LF share count goes from one to three. One domain, one team still — but now the mechanism is exercised in the shape it scales in. |
-| D23 | OU structure — the account is the isolation boundary, the OU is the policy boundary | Decided (2026-08-08): **four OUs, each defined by the policy set it carries: Security, Interactive, Data, Workloads** | Segregating "by OU" versus "by account" is a false choice — accounts isolate (blast radius, quotas, billing, credentials), OUs attach policy once so it is inherited rather than remembered. An OU therefore earns its existence exactly when two or more accounts need the same policy set, and the OUs here are named for their policy, not for their contents: **Security** (Log Archive, Audit, Identity — Control Tower's guardrails plus delegated administration), **Interactive** (Sandbox, Development — interactive compute *allowed*, human infrastructure changes denied), **Data** (Data Governance — no *user* compute, with the two named carve-outs D26 and D27 add, deletion denied), **Workloads** (Staging, Production — no interactive compute, no human control plane; the D20 SCP set unchanged). A per-environment OU tree (one OU per account) was considered and rejected: an OU holding exactly one account forever is a folder with one file — policy might as well attach to the account. The revision triggers are recorded here so the structure is revisited deliberately: a second production-like account → nest `Workloads` into `NonProd`/`Prod`; the first time Staging and Production need genuinely different policy → the same; a second data domain → the `Data` OU stops being a single-account OU by itself. And one OU is still notably absent, unchanged from before: a **Policy Staging OU** for testing SCPs before they attach to anything real (§11) — the name collides with the Staging *account*, the concepts do not. |
+| D23 | OU structure — the account is the isolation boundary, the OU is the policy boundary | Decided (2026-08-08): **four OUs, each defined by the policy set it carries: Security, Interactive, Data, Workloads. Revised the same day by D29: a fifth, `Policy Test`, holding the throwaway `Policy Canary` account** | Segregating "by OU" versus "by account" is a false choice — accounts isolate (blast radius, quotas, billing, credentials), OUs attach policy once so it is inherited rather than remembered. An OU therefore earns its existence exactly when two or more accounts need the same policy set, and the OUs here are named for their policy, not for their contents: **Security** (Log Archive, Audit, Identity — Control Tower's guardrails plus delegated administration), **Interactive** (Sandbox, Development — interactive compute *allowed*, human infrastructure changes denied), **Data** (Data Governance — no *user* compute, with the two named carve-outs D26 and D27 add, deletion denied), **Workloads** (Staging, Production — no interactive compute, no human control plane; the D20 SCP set unchanged). A per-environment OU tree (one OU per account) was considered and rejected: an OU holding exactly one account forever is a folder with one file — policy might as well attach to the account. The revision triggers are recorded here so the structure is revisited deliberately: a second production-like account → nest `Workloads` into `NonProd`/`Prod`; the first time Staging and Production need genuinely different policy → the same; a second data domain → the `Data` OU stops being a single-account OU by itself. **The OU this row used to list as notably absent — a policy staging OU for testing SCPs before they attach to anything real — was built the same day as D29**, under the names `Policy Test` (OU) and `Policy Canary` (account), chosen precisely to avoid the collision with the Staging *account* that this row spent a sentence warning about. It is the one single-account OU that passes the test above rather than failing it: its purpose *is* to contain a disposable account, so the account and the OU are the same decision. |
 | D24 | Where the shared filesystem lives, now that there are two Studio domains | Decided (2026-08-08): **EFS in Sandbox only; there is no shared filesystem in Development and no network path to Sandbox's** | D21 created a second Studio domain, and the NFS requirement in `CLAUDE.md` ("exchange files between users, the SageMaker environment and S3 buckets") did not automatically follow it. Three options were on the table: a second EFS in Development, a Sandbox↔Development VPC peering carrying NFS, or leaving the filesystem where it is. **The choice is the third**, and the reason it is a decision rather than an omission is that the alternatives each buy something real and are being declined on purpose. A second EFS costs cents but doubles a stateful `[P]` resource and creates the question nobody wants to answer at 23:00 — *which* of the two copies of a file is current. A peering would be the first network path between the two Interactive accounts, built for file convenience rather than for a requirement, and it would weaken the property that graduation is a *rewrite* (D21) by making it possible to simply drag files across. **What this means in practice:** the NFS requirement is served in Sandbox, which is where the VPN terminates and where the human file-exchange use case actually is. The exchange between Sandbox and Development is **S3 and git**, which is the same path the graduation itself takes — the rewrite passes through a repository either way. **Revision trigger:** the first time a Development workflow genuinely needs a POSIX filesystem (a training job that will not read from S3, a tool that mmaps), build the second EFS in `development/nfs/` from the Stage 5 module rather than reaching for the peering. Recorded in §11 as a lab-scale compromise: an institution gives every interactive account its own home and scratch filesystem and does not ask people to think about which account their files are in. |
 | D25 | Who consumes the ingestion drop-box | Decided (2026-08-08): **the Production job execution role, on the producer path; the `Data` OU SCP is tightened so no compute can run in Data Governance at all** | D18 put an ingestion drop-box in the Data Governance account (`s3:PutObject` from the Interactive-OU roles into a dated prefix, no read, no list, no delete) and said "a pipeline picks up from it" — without naming the account that pipeline runs in. There is only one answer consistent with D22: **Production**, because Production's job role already holds the Lake Formation governed write, and ingestion is exactly the producer path applied to a file a human dropped rather than to an upstream feed. Data Governance cannot host it — the `Data` OU exists to make "nothing runs here" structural. **Two consequences to build rather than assume.** (i) The drop-box bucket policy needs a *second* statement, granting the Production job role `GetObject`, `ListBucket` on the dated prefixes and `DeleteObject` (the pickup has to consume what it read, or the letterbox never empties) — plus a grant on the drop-box KMS key, which is the half that is forgotten until the `AccessDenied` arrives. §4.4 row 10 carries it. (ii) The `Data` OU SCP as drafted in Stage 1 denies `ec2:RunInstances`, `sagemaker:Create*`, `glue:CreateDevEndpoint` and ECS/Lambda creation, but **not `glue:CreateJob`/`StartJobRun`** — a gap wide enough to run the whole ingestion in the wrong account by accident. Add Glue job creation and execution to the deny, so the SCP means what the OU's name promises. **The asymmetry is deliberate and worth stating:** the data scientist can put a file into the lake account but cannot read it back, and the thing that reads it runs behind the approval gate. That is what keeps the drop-box from becoming the general-purpose exchange bucket D18 refuses to build. **Revised 2026-08-08 (D26, D27):** "no compute at all" is now "no *user* compute". Two carve-outs were added by name, and the distinction between them is the useful part — `datazone:*` because a governance control plane is not compute (D26), and the crawler/optimizer actions under the catalog-maintenance role because they *are* compute and therefore need a bounded principal, an event trigger and an alarm (D27). The deny list in this decision is otherwise unchanged, Glue jobs included. |
 | D26 | The development experience: SageMaker Unified Studio, and where its domain lives | Decided (2026-08-08): **one SageMaker unified domain — a DataZone V2 domain — in the Data Governance account (renamed from Data Management in the same decision), with account associations to Sandbox and Development; the two classic per-account Studio domains are dropped** | Reverses the Stage 6 note that recorded Unified Studio as deliberately not used. Two of that note's three reasons expired: **official Terraform support arrived in 2026-07** — the `aws-ia/terraform-aws-sagemaker-unified-studio` module provisions the domain and its IAM through the `aws` provider (≥ 6.51) and project profiles, blueprints and projects through **`awscc`** (Cloud Control, ≥ 1.89) — and SageMaker Catalog supplies exactly the publish/subscribe governance layer §11 said only an institution would have. What survives of the old argument is the *order of construction*: the Glue + LF-Tags substrate is still built first and by hand (Stage 5), so the portal is a storey, not the foundation. **Where the domain lives, and why it is not Development.** A first draft of this decision put it in Development and that was wrong in a specific way this plan has been wrong before (the `staging` Glue namespace inside Production, D20): it placed a resource from the **ownership** axis inside an account on the **lifecycle** axis. AWS's own multi-account guidance is a governance-first one — the *Governance account* hosts the domain, its users, account associations, project profiles, projects, Git connections and SageMaker Catalog. This project already has that account; what it lacked was the name. So `Data Management` becomes **`Data Governance`** and takes the domain, which also buys a mechanical gain: DataZone fulfils an approved subscription by **writing a Lake Formation grant**, so co-locating the business catalog with the technical catalog makes every approval local rather than cross-account. **The domain is a registry, not a runtime** — this is the sentence that keeps D17 and D21 intact. It holds projects, profiles, blueprints, memberships and the catalog; it holds no notebook, app, job or project bucket. Blueprints provision into the *associated* accounts, chosen by the project profile: an **`experimentation`** profile provisioning into **Sandbox** (the unit of work is a notebook), an **`engineering`** profile provisioning into **Development** (the unit of work is a pipeline). The Sandbox/Development boundary is therefore not weakened but *strengthened* — it stops depending on which URL a person opens and becomes a property of the project. The D21 graduation is unchanged: the move of code between the two projects' git repositories. **Staging and Production are never associated** — deployment targets stay headless, and D28 defines what crosses instead. **Blueprints enabled and no others:** Tooling; **Lakehouse Catalog in its Glue/Athena form — not the Redshift Serverless variant**, whose per-query RPU minimum has no place under D12; and **ML experience**, whose per-project SageMaker AI domain is where the Stage 6 VPC-only and IAM-condition hardening now applies. **Consequences in the Data OU.** Its policy set becomes "no *user* compute" rather than "no compute at all": `datazone:*` is carved out as a control plane, in the same sense Lake Formation always was, alongside D27's genuine-compute carve-out for crawlers. And the account still has no VPC, so a CodeConnections host cannot reach the private GitLab from here — §4.4 row 13 falls to its manual-push fallback, accepted rather than paid for with a VPC and a peering. **Authentication** is Identity Center — **the domain must be created in IdC's home Region; verify before creating, since neither can move**. **Cost:** DataZone metadata is request- and storage-priced (`PRICING.md`) — cents at lab scale; the cost lever is which blueprints exist, not the domain. **Revision trigger:** if the domain/portal model fights the lab (IdC region coupling, blueprint rigidity, a portal outage blocking all work), the classic two-domain Stage 6 design is in git history and rebuilds from the same substrate. |
 | D27 | Catalog-maintenance compute in the Data OU: crawlers and optimizers | Decided (2026-08-08): **Glue Crawlers for the raw zone and the ingestion drop-box run in Data Governance, under a named catalog-maintenance exception to the Data OU SCP; no crawler ever points at an Iceberg table** | The 2026-08-08 revision asks for crawlers on the data-lake buckets; D25 had just tightened the Data OU SCP to deny all Glue compute. The collision is resolved by distinguishing **user compute** (ETL jobs, dev endpoints, notebooks, interactive sessions — still denied, no exception) from **the catalog's own maintenance** (crawlers, Iceberg compaction/table optimizers, column statistics — allowed, startable only by the lake's maintenance role, which is not assumable interactively). The exception must be *named*, not smuggled: a crawler samples object contents to infer schema, so it does read data — the honest statement is "no compute here **except** the bounded set that produces catalog metadata, under one role, alarmed". **Scope:** crawlers only where schema arrives from outside — the raw zone and the drop-box, where files land whose shape nobody declared. **Never on Iceberg tables**: Iceberg is catalog-native; a crawler would at best duplicate what the catalog already knows and at worst fight the table's own metadata. **Trigger:** EventBridge on drop-box object creation, or on demand before a pickup run (D25) — never a standing schedule; a crawler run bills per DPU-hour with a 10-minute minimum, so cron-always would out-cost the storage it catalogs. **SCP mechanics:** the deny list from D25 stays; add a condition carve-out for `glue:StartCrawler`/`CreateCrawler` and the table-optimizer/statistics actions when the principal is the maintenance role. |
 | D28 | The production workflow contract: what must exist for a scientist-authored workflow to deploy | Decided (2026-08-08): **Production runs workflows headless — no domain, no portal, no blueprint ever touches a deployment target. The pipeline creates, from the application repository, exactly six artifact classes** | The question D26 forces: the workflow is authored in the unified domain (Development), Production has no domain (D17) — so what crosses the gate? **The project's git repository is the promotion vehicle**, and the deployable set is: **(1)** the container image in Production ECR (D14); **(2)** the **workflow definition** — MWAA Serverless YAML — versioned in the repo, deployed by the pipeline to a versioned S3 prefix in Production; **(3)** a **per-workflow IAM execution role** built from `terraform-modules/iam-role`, holding the LF producer grants it needs (D22/D25) and nothing else — one role per workflow is the Serverless isolation model, and the least-privilege property a provisioned MWAA environment structurally cannot offer; **(4)** the orchestration resource itself: **`awscc_mwaaserverless_workflow`** (D7 alternative A) and/or **`aws_sfn_state_machine` + `aws_scheduler_schedule`** (alternative B); **(5)** an explicit **`aws_cloudwatch_log_group` per workflow** — named, retention set — wired into A's `LoggingConfiguration` and B's state-machine logging, so execution logs are a deliverable rather than an accumulation of default log groups nobody expires; **(6)** for ML, the **model package group** (`aws_sagemaker_model_package_group`, Stage 9) whose resource policy lets the pipeline register and approve versions, Staging read approved ones, and Development read status only (§4.4 rows 4, 7). **Terraform support for (4) verified 2026-08-08:** `AWS::MWAAServerless::Workflow` exists in CloudFormation and the `awscc` provider exposes it as `awscc_mwaaserverless_workflow` — re-verify at Stage 10; fallbacks in order: `aws_cloudformation_stack` wrapping the CFN type, then provisioned MWAA (`aws_mwaa_environment`, `[E]`, with the metadata-database caveat back in force). **What authoring must respect, enforced by a promotion lint in Stage 8's CI:** the workflow YAML references the container by ECR URI and tag, never by anything project-scoped, and no operator may reference a domain resource (project connections, portal-scoped IDs) — a workflow that only runs where the portal exists is not a promotable artifact. §4.4 rows 12-14 carry the integration proofs. |
+| D29 | Where a Service Control Policy is tested before it reaches anything real | Decided (2026-08-08): **a tenth account, `Policy Canary`, alone in a fifth OU, `Policy Test`** | Stage 1b step 7 used to end with "apply these to a test OU first", and no such OU existed — D23 chose four and §11 recorded the Policy Staging OU as the notable absence. So the only stated safety procedure for the most dangerous step in the plan was unexecutable. **The obvious fix does not work, and understanding why is what shapes this decision: an *empty* OU tests nothing.** An SCP is a permission ceiling evaluated when a principal makes a call; with no account under the OU there is no principal, so attaching a candidate policy there proves only that the JSON parsed and that Organizations accepted the attachment — both of which `create-policy` already told you. A policy staging OU is a test **only if it contains a throwaway account**. Hence the account, not just the OU. **The two failure classes it has to catch, because intuition only covers the first:** *too tight* — the policy denies something legitimate (the region SCP that forgets `us-east-1`, the `aws:ResourceOrgID` deny that forgets the AWS-owned buckets of §4.2), which fails loudly and immediately; and *too loose* — the condition never matches and the policy denies nothing, which fails **silently** and leaves a control that exists only on paper. The second is Lessons 5 and 13 in `CLAUDE.md`, and it is the one an empty OU can never catch. The test battery therefore runs from **both** directions: the calls that must fail, and the calls that must still succeed. **What the account holds: nothing.** No Terraform slice, no `bootstrap/`, no state bucket, no data, no VPC. It is not one of the six Terraform-managed accounts and gains no `awsds-infra-*` profile; SCP attachment is an Organizations call made from Management (principle 1). **What it does need, and it is the part that is easy to get wrong: the test principal must be an administrator.** An SCP sets the ceiling; testing it with a restricted principal measures the identity policy instead, and a deny that a non-administrator could not have exercised anyway proves nothing. So `AdministratorAccess` is assigned to the `infrastructure` user on this account and on no other basis. **Which axis it sits on:** neither. Like Management, Log Archive, Audit and Identity, it is a **platform** account — the organization's own machinery, serving every account and belonging to no environment (`Environment=shared`). **Naming, deliberately not the industry term.** The literature calls this a *Policy Staging OU*; this plan warns three separate times (D20, D23, Stage 1a step 4) that the name collides with the `Staging` **account** while the concepts do not. Creating a console object called `Policy Staging` next to an account called `Staging` would resurrect exactly that ambiguity, so the OU is `Policy Test` and the account is `Policy Canary` — the thing that breaks first so that nothing else does. **Cost:** one more AWS Config recorder, ~USD 0.50-1/month; no KMS key, since it encrypts nothing. The Config row in §5 goes from eight governed accounts to nine. **What was considered and rejected:** (i) an empty OU — free and worthless, for the reason above; (ii) using the `Interactive` OU as the staging OU while Sandbox and Development are still empty — genuinely free and a real test, but valid only until Stage 3 puts something in those accounts, i.e. a solution with an expiry date that nobody would remember to honour. **Revision trigger:** if a second policy-testing need appears (a `Suspended` OU, a second throwaway account for RCP testing), `Policy Test` stops being a single-account OU by itself; until then it is the one OU in this plan whose *purpose* is to contain a disposable account, which is why it passes the D23 test that a single-account OU normally fails. |
+| D30 | The SCP recovery principal — a named role exempt from every custom deny | Decided (2026-08-08): **build it. One role, `awsds-scp-recovery`, in every SCP-governed account, excluded by an explicit `ArnNotEquals` condition from every `Deny` statement this project writes** | Raised as "option E" alongside D16 and initially recommended *against*, because with root as the break-glass credential the recovery path already exists without a hole: SCPs never apply to the Management account, so a bad policy can always be detached from there. **The user chose to build it anyway, and the trade-off is recorded here rather than argued: this project gains a principal that is permanently outside every guardrail it writes.** The two reasons that make it defensible are worth stating, because neither is "we need it to recover": (i) fixing a policy *in place* keeps the repair out of the Management console, which principle 1 wants touched as little as possible; (ii) the carve-out condition is a real production pattern with real sharp edges, and building it is the kind of thing §11 says this lab exists to learn — learning the pattern is a first-class goal here, not a consolation. **The two sharp edges, which are the whole engineering of this decision.** *First, the account-ID wildcard is a hole, not a convenience.* Writing `arn:aws:iam::*:role/awsds-scp-recovery` exempts a role of that name in **any** account — so anyone who can create a role in any account of the organization can name their way out of every deny. The condition therefore uses **`ArnNotEquals` with an explicit, enumerated list of role ARNs**, one per account, and no wildcard anywhere; and the same SCP set carries a companion deny on `iam:CreateRole`, `iam:PutRolePolicy`, `iam:AttachRolePolicy` and `iam:UpdateAssumeRolePolicy` for that role name, so the exemption cannot be minted or widened from inside a governed account. *Second, the condition has to be in every deny statement or it is worse than useless* — a set where some policies carry it and others do not is a set nobody can reason about, and the drift is silent. So the condition is **generated, never typed**: see the consequence below. **What the role is.** Least privilege still applies, because an SCP exemption removes a *ceiling* and grants nothing: the role's own identity policy is scoped to the actions the SCPs deny, which is a knowable list since the same code writes both. It carries a permissions boundary (§6), a 1-hour maximum session, a trust policy admitting only the infrastructure user's Identity Center role **and requiring `aws:MultiFactorAuthPresent`**, and a CloudTrail alarm on every `sts:AssumeRole` into it — the same shape as the root alarm in D16, and for the same reason: a credential that is never used in normal operation should be loud the one time it is. Layer `[P]`, created in each account's `foundation/` slice. **The consequence this forces, and it closes a hole that predates it: the SCPs have to live in code.** Until now no stage owned them after Stage 1b created them by hand, and nothing imported them — so "generated, never typed" was not even possible. Organizations supports a **delegated administrator for policy management**, so they move into `terraform-live/identity/` alongside the permission sets (D10), applied with the delegated-admin profile and never with credentials in Management. Stage 2 step 5 imports them with the rest. A CI check rejects any `Deny` statement in that slice lacking the carve-out condition, in the same spirit as the region-literal grep of Stage 2 step 9. **What this is not.** It is not the per-function carve-outs the plan already has and keeps — the catalog-maintenance role exempt from the `Data` OU's Glue deny (D27), or a deploy role exempt from a specific deny so automation does not stall. Those exempt one principal from *one* deny because that is the principal's job. This exempts one principal from *all* of them because of what might go wrong, which is a different thing and carries a different risk. **Revision trigger:** the first time a second person has access to this organization, or the first time the role is assumed for anything other than repairing a policy. At that point the institutional answer in §11 — no standing exemption, time-boxed elevation per incident — stops being theoretical. |
+| D31 | What a release approver may read | Decided (2026-08-08): **a bespoke `DeploymentManagerAccess` replaces `ReadOnlyAccess`, and the derived zone gets its own CMK whose key policy is the structural control** | `ACCOUNTS_AND_USERS.md` splits the approver persona in two and justifies the split *entirely* with an argument about what an approver may read — "an approver who can already read everything is not exercising a control". It then applied that argument to one of the two approvers: the governance manager got a permission set whose denials are its point, and the deployment manager got the AWS-managed `ReadOnlyAccess` on four accounts. The argument is symmetric; the plan was not. **The picture is better than "reads everything", and the precision is what shaped the fix.** `ReadOnlyAccess` has no `athena:StartQueryExecution`, so this persona cannot *originate* a read of the lake — no query, no Lake Formation path. It also has no `kms:Decrypt`, so against SSE-KMS buckets a `GetObject` fails. What it does reach: anything unencrypted or SSE-S3, `logs:GetLogEvents` over log *contents*, and — the concrete path — **`athena:GetQueryResults`, which reads other people's query results**. So the exposure was real but narrow, and it was being prevented by encryption rather than by design, which is the kind of accident that stops being true the first time someone creates a bucket without a CMK. **Two changes, and the second is the one that outlives the first.** *(1) `DeploymentManagerAccess`*, built in the shape D18 already uses for `DataScientistProdAccess` rather than reaching for a managed policy: CloudWatch Logs read (including Logs Insights, because diagnosing a failed promotion is the job), SageMaker job/pipeline/Model Registry **status**, Glue catalog metadata, ECR image metadata and scan findings, Step Functions and Scheduler execution status, and `s3:GetObject` on **enumerated** prefixes only — build artifacts and test reports. Denied explicitly rather than by omission: `athena:*` (both the query and the results), `kms:Decrypt`, `secretsmanager:GetSecretValue`, `ssm:GetParameter*`, Terraform state buckets, and the whole control plane. Note what this persona does *not* lose: the release approval itself lives in GitLab and consumes no AWS permission at all (Stage 1b step 3), so narrowing the AWS side costs the approval nothing. *(2) The derived zone gets its own KMS CMK* in each Interactive account, separate from the account's general-purpose key, and **the key policy is where "who may read materialised restricted data" is expressed** — granted to the project execution roles and the `DataScientistAccess` set, to nobody else. This is default-deny and survives forgetfulness: a new derived prefix under the same key is covered without anyone updating a list, which a prefix deny-list is not. **It closes a D19 gap that has nothing to do with this persona:** D19 lists five practices for the derived zone — per-principal prefixes, lifecycle expiry, scoped `PutObject`, Macie scope, classification inheritance — and none of them is about the key, even though the key is the natural place to say who may read the copy. **Cost:** two more CMKs, ~USD 2/month, taking the KMS row from six to eight. **The zero-cost variant, recorded rather than chosen:** S3 sets the KMS encryption context to the object ARN, so a single account key can carry a `kms:EncryptionContext:aws:s3:arn` condition scoped to the derived prefix instead of a second key. Subtler and more fragile; take it only if the two dollars ever matter. **Why this was worth doing at one operator, where the persona is the same human as every other:** §11 says what this lab produces is the *pattern*. A sloppy permission set on a control principal teaches the sloppy pattern, and the plan wrote three bespoke sets for the data scientist (D18) precisely to avoid that. This was the one place it reached for a broad managed policy, and it was for an approver. |
 
 ### 4.1 Region portability
 
@@ -312,6 +331,15 @@ the service carve-outs (`aws:ViaAWSService`, `aws:PrincipalIsAWSService`) that e
 conditions needs. A perimeter without the carve-outs blocks AWS services acting on your behalf — and the
 first casualty in this plan would be Athena reading S3 under Lake Formation, i.e. the exact access path
 D13 forces everything through (see Stage 5).
+
+**The second casualty is not a service carve-out at all, and no condition key covers it: AWS's own
+service-owned S3 buckets.** `aws:ResourceOrgID` is a statement about *your* organization, and the Amazon
+Linux repositories, the SageMaker image and JumpStart buckets and the SSM/CloudWatch agent buckets are
+outside it. A `dnf update` is your credential fetching an object, so `aws:ViaAWSService` is false and the
+request is denied. Every place this plan applies a trusted-resources condition therefore needs a companion
+allow-list of AWS-owned bucket ARNs: the S3 gateway endpoint policy (Stage 3 step 9) is the one that bites
+first and hardest, since under egress design B it is the *only* route to those buckets. Treat "which
+AWS-owned buckets does this environment depend on" as a maintained list, not as a one-off discovery.
 
 ### 4.3 The two egress designs (D5)
 
@@ -383,14 +411,34 @@ survives contact with a Tuesday night.
 | 12 | **The unified domain's account associations** (D26): the DataZone V2 domain in **Data Governance** associated with **Sandbox and Development** through RAM, and blueprints provisioning project environments into those accounts under their provisioning roles. This is the row that carries the whole D26 shape — if associations do not work, the domain is a catalog with no compute attached | 6 | One V2 domain **per Interactive account**, no associations — losing the single portal and the cross-account project model, but keeping projects, the catalog and the Terraform module. The domain would then sit on the lifecycle axis after all, which D26 rejects on principle, so treat this as a degraded mode rather than a design |
 | 13 | **Unified Studio project git ↔ the self-hosted GitLab** (D14, D26): projects attach a repository through CodeConnections, which for self-managed GitLab requires a **CodeConnections host** reaching the instance in Production's private subnet. **Since D26 the domain is in Data Governance, which has no VPC** — so the host has nowhere to attach, and this row is expected to fail rather than merely at risk | 6, 7 | Accepted as the normal path, not as a fallback: the project keeps its default repository and the push into GitLab is a manual `git remote add` + push. The D21 graduation is a rewrite through a repository either way, so what is lost is convenience, not a control. Giving Data Governance a VPC and a peering to buy it back was considered and declined (D26) |
 | 14 | **The pipeline creating `awscc_mwaaserverless_workflow` in Production** (D28): the Cloud Control path from the deploy role — verified to exist 2026-08-08, not yet verified to *apply* cleanly under a CI role with a permission boundary | 10 | `aws_cloudformation_stack` wrapping `AWS::MWAAServerless::Workflow`; second fallback, provisioned MWAA (`aws_mwaa_environment`, `[E]`, metadata-database caveat in force — D7) |
+| 15 | **Whether D13 survives D26: who authors the project execution roles.** D13 requires that the roles running notebooks hold *no* S3 access to Lake Formation-registered prefixes. Until D26 those roles were written here, in Terraform; now the ML and Lakehouse blueprints provision the project environment **and its roles**. Verify what is actually attached to a provisioned project role, and whether a customer-managed policy or a permissions boundary can be imposed on it without the blueprint reconciling it away | 6 | In order: (i) attach a **permissions boundary** to the project role through the `sandbox/sagemaker/` and `development/sagemaker/` prerequisite slices, which is the mechanism least likely to be overwritten; (ii) if the blueprint's own grants cannot be narrowed, fall back to Lake Formation **hybrid access mode** for the affected prefixes and record it as a D13 exception rather than a silent widening; (iii) worst case, keep the lake's registered prefixes out of every blueprint-provisioned role's reach by putting them behind a *separate* LF share that is granted per project rather than per account |
+| 16 | **Whether an `aws:SourceIp` deny on a permission set actually gates the Unified Studio portal** (D26, Stage 4 step 8). The portal is opened by signing in to Identity Center and following the domain URL, not by an IAM-authorized API call under a permission set — so the control §3 claims for the "API and portal" path may cover the API half and not the portal half, which is the data scientist's primary working surface | 4, 6 | In order: (i) an IdC-level or DataZone-level network restriction, if one exists; (ii) accept that the portal is reachable from anywhere with a valid IdC session and rely on the fact that *the project compute it fronts* is VPC-only and its data access is LF-gated — stating plainly in `README.md` that "all access through the VPN" holds for the AWS control plane and not for the portal; (iii) the honest fallback of last resort, which is to say so in the threat model rather than to leave a control listed that nobody implemented (the same discipline Stage 11 step 3 applies to Studio file download) |
 
 Rows 5, 6 and 11 are the ones most likely to surface as an `AccessDenied` — or, in row 11's case, as a
 share that appears to have been granted and simply never arrives. Rows 7-10 are the price of real
 environment separation: the promotion crosses an account boundary twice, the lake is consumed
 cross-account from everywhere (D22), and each crossing is a place where a resource policy can be missing.
-Rows 12-14 arrived with D26-D28 and are the Unified Studio set — row 13 is the one with no workaround
+Rows 12-16 arrived with D26-D28 and are the Unified Studio set — row 13 is the one with no workaround
 that preserves convenience, and row 14 is the one that decides whether D7's alternative A ships in
 Terraform or in a wrapper. Check them deliberately rather than by symptom.
+
+**Rows 15 and 16 are different in kind from the other fourteen and should be read first.** Every other row
+is an integration that either works or has a fallback that costs convenience. These two are rows where a
+*stated control* may not exist:
+
+- **Row 15 is the one that can invalidate a stated objective of `CLAUDE.md`.** "Fine-grained access
+  control" is real only because of D13, and D13 is real only if the execution role's S3 permissions can be
+  constrained. D26 moved the authorship of those roles from this repository to a blueprint, and nobody has
+  checked what that changed. If row 15 fails and no fallback holds, the correct response is not to widen
+  D13 quietly but to record that column and row filtering is an entitlement mechanism whose enforcement is
+  incomplete — which is the same honesty Stage 11 step 3 demands about file download.
+- **Row 16 is the one that can invalidate a stated objective of the same file** — "all user access to the
+  cloud infrastructure will be performed through a VPN". It is cheap to answer (open the portal with the
+  tunnel down) and it is answered at Stage 4, the first moment it can be.
+
+Both follow the pattern of Lesson 7 in `CLAUDE.md`: a decision taken for good reasons moved something, and
+the conditions that referenced it were not re-checked. Here the thing that moved was *who writes the IAM
+policy* and *what a session is authenticated by*.
 
 ---
 
@@ -407,10 +455,10 @@ nothing is running, and what does an hour of lab time add on top". Order-of-magn
 | Organization, accounts, Identity Center, VPC, subnets, IGW, security groups, IAM roles | 0 | These cost nothing at rest, so there is no reason to destroy them |
 | GitLab EBS volume (50 GB gp3) | ~4.00 | Paid while the instance is stopped; this is the price of not rebuilding GitLab |
 | Elastic IP for WireGuard | ~3.65 | All public IPv4 addresses are charged hourly, attached or not |
-| KMS customer-managed keys (3) | ~3.00 | ~1.00 per key per month |
+| KMS customer-managed keys (8) | ~8.00 | ~1.00 per key per month. **Eight:** one per Terraform-managed account (Sandbox, Development, Data Governance, Staging, Production, Identity) plus a **dedicated derived-zone key in each Interactive account** (D31 — the key policy is what says who may read materialised `restricted` data, and it only works as a control if the key is not shared with scratch, state and logs). The "(3)" this row used to say predated D20-D22. Data Governance may need more than one of its own (a CMK per data domain, Stage 5 step 1), so treat 8 as the floor rather than the number |
 | S3 data + state + backups (~25 GB) | ~1.00 | |
 | ECR images (~10 GB) | ~1.00 | |
-| AWS Config (Control Tower) | ~2-4.5 | One recorder per governed account — **eight of the nine**, every account except Management (D20-D22); confirm in Stage 1 whether the landing zone also records the Management account. The estimate assumes an idle lab; a heavy `terraform apply` session records a configuration item per resource change and can multiply this. Control Tower allows restricting the recorded resource types — the main cost lever of the landing zone, applied in Stage 1 |
+| AWS Config (Control Tower) | ~2.5-5 | One recorder per governed account — **nine of the ten**, every account except Management (D20-D22, D29 — `Policy Canary` is empty, but an enrolled account still carries a recorder, and enrolling it is what makes the policy test meaningful); confirm in Stage 1 whether the landing zone also records the Management account. The estimate assumes an idle lab; a heavy `terraform apply` session records a configuration item per resource change and can multiply this. Control Tower allows restricting the recorded resource types — the main cost lever of the landing zone, applied in Stage 1 |
 | Route 53 hosted zones (1 private + 1 public, D15) | ~1.00 | The public zone exists only for ACM DNS validation |
 | Public domain registration (D15) | ~1.00 | ~USD 12-15/year amortised |
 | CodeArtifact | ~0.10 | USD 0.05/GB-month storage plus USD 0.05 per 10k requests; negligible at lab scale |
@@ -419,8 +467,8 @@ nothing is running, and what does an hour of lab time add on top". Order-of-magn
 | WireGuard EBS (8 GB) + CloudWatch logs | ~1.00 | |
 | EFS (shared filesystem + Studio homes, lifecycle to IA) | ~0.50 | `[P]` — cents at rest, and it buys the removal of the sync-to-S3-on-teardown machinery (§5.1 rule 2) |
 | SageMaker unified domain — DataZone V2 metadata (D26) | ~0.50 | Requests USD 10 per 100k, metadata storage USD 0.40/GiB-month, global rates (`PRICING.md`); cents at lab scale. The cost lever is which blueprints exist, not the domain itself |
-| Staging, Development and Data Governance accounts at rest (D20-D22) | ~3.00 | ~USD 1 each: a Config recorder and a KMS key per account. VPCs, buckets and IAM roles are free at rest; Staging's metered slice exists only during a promotion, Development's only while someone is working, and Data Governance has no metered slice at all — its data plane is serverless (the lake storage itself is counted in the S3 row above) |
-| **Revised floor** | **~USD 21-27** | Up from the ~USD 15 first estimate: mostly from moving the detective controls into the landing zone (principle 9), plus ~USD 3 for the three environment/data accounts added on 2026-08-08. Still under the USD 50 ceiling, with less headroom than before — worth rechecking against the real bill at Stage 12 |
+| Staging, Development and Data Governance accounts at rest (D20-D22) | **0 (already counted)** | **This row is now a pointer, not a cost.** It used to add ~USD 3 for "a Config recorder and a KMS key per account" — but the Config row above already covers all eight governed accounts and the KMS row now counts all six keys, so charging these three accounts again was a double count of ~USD 3. What is worth keeping is the *shape*: VPCs, buckets and IAM roles are free at rest; Staging's metered slice exists only during a promotion, Development's only while someone is working, and Data Governance has no metered slice at all — its data plane is serverless (the lake storage is in the S3 row above) |
+| **Revised floor** | **~USD 24-30** | Up from the ~USD 15 first estimate: mostly from moving the detective controls into the landing zone (principle 9), plus ~USD 0.50-1 for D29's tenth account. The double-count fix above nets to zero — removing ~USD 3 of double-counted Config/KMS and adding ~USD 3 of previously under-counted KMS keys cancel — which is luck, not design, and is exactly the kind of thing Stage 12 step 5 exists to replace with a measured number. Still under the USD 50 ceiling, with less headroom than before |
 
 Two cost levers worth applying rather than discovering later:
 
@@ -454,9 +502,9 @@ At ~USD 0.01/h per endpoint per AZ this is the largest hourly item, so the list 
 single-AZ. The table now also carries the **Production** side — the runners' NAT and the GitLab ALB were
 missing from earlier versions of this plan, which undercounted a full-stack hour.
 
-**Projection:** ~USD 23 floor + 20 h/month × ~USD 0.28-0.40 (the upper end is a full-stack hour: GitLab,
+**Projection:** ~USD 26 floor + 20 h/month × ~USD 0.28-0.40 (the upper end is a full-stack hour: GitLab,
 its ALB, a runner build and one Interactive environment all running at once) + a handful of promotions at
-~USD 0.03 each ≈ **USD 29-31/month**, against the USD 50 ceiling (D12). Staging and Data Governance cost
+~USD 0.03 each ≈ **USD 32-34/month**, against the USD 50 ceiling (D12). Staging and Data Governance cost
 almost nothing precisely because neither ever has standing compute; the number to watch is whether Sandbox
 and Development sessions actually stay disjoint, which is what keeps the hourly line from doubling.
 Design B trades the NAT gateway for two CodeArtifact endpoints, so it is the *cheaper* of the two egress
@@ -484,12 +532,15 @@ rest. The rule is **pay nothing while idle**, not **destroy everything**. That s
 three layers, and every stage must say which layer each of its resources belongs to.
 
 **[P] Persistent — created once, never destroyed.** Free or nearly free at rest, or too slow to rebuild:
-the Organization, the nine accounts, Control Tower, Identity Center, SCPs, Terraform state buckets, the
+the Organization, the ten accounts, Control Tower, Identity Center, SCPs, Terraform state buckets, the
 **VPC itself** (VPC, subnets, route tables, internet gateway, security groups, NACLs cost nothing),
 Route 53 private zone, IAM roles, KMS keys, S3 data buckets, ECR repositories, budgets and alarms — and
-the **SageMaker Studio domain with its user profiles** (a domain at rest bills
-nothing; only running apps and home-filesystem GBs do) and the **EFS filesystem** (lifecycle to
+the **SageMaker unified domain and its projects** (D26 — a DataZone V2 domain at rest bills only metadata
+requests and storage; the per-project SageMaker AI domain that the ML blueprint provisions likewise bills
+nothing until an app runs) and the **EFS filesystem** (lifecycle to
 Infrequent Access; cents per month at lab scale). Rule 2 below records why those two moved out of `[E]`.
+The domain is also where the *catalog* lives — glossary, data products, subscription decisions — which is
+state in the rule-2 sense and on its own settles the layer question.
 
 **[D] Dormant — kept, but powered off between sessions.** Stateful services where a rebuild is riskier
 than the idle cost: the GitLab EC2 instance and its EBS volume, and the WireGuard instance. `make down`
@@ -536,6 +587,8 @@ persists; D7 records what Stage 10 must decide about it.
 
 **Naming:** `<project>-<env>-<component>[-<detail>]`, lowercase with hyphens.
 Project prefix: `awsds`. The `<env>` token is one of `sandbox`, `dev`, `data`, `staging`, `prod`, `shared`.
+There is deliberately no token for `Policy Canary` (D29): nothing is ever created in that account, so
+nothing in it needs a name — and the day something does, the account has stopped being what it is for.
 Example: `awsds-sandbox-vpc`, `awsds-data-raw` (the lake lives in Data Governance since D22, so
 `awsds-prod-raw-data` would name a bucket that does not exist), `awsds-prod-ecr-dev-env`.
 
@@ -543,7 +596,7 @@ Example: `awsds-sandbox-vpc`, `awsds-data-raw` (the lake lives in Data Governanc
 `Project=AWS-DataScience`, `Environment=sandbox|development|data|staging|production|shared`,
 `ManagedBy=terraform`, `Owner=<sso-user>`, `CostCenter=<stage>`. (`shared` marks org-level resources — the
 identity slice — not a Shared Services account, which D14 decided against. `data` marks the Data
-Management account, which is not an environment at all: it sits on the ownership axis, not the lifecycle
+Governance account, which is not an environment at all: it sits on the ownership axis, not the lifecycle
 one, so cost reports should be able to separate it from every environment.)
 
 **Terraform layout:**
@@ -553,7 +606,11 @@ Each slice carries its layer from §5.1: `[P]` persistent, `[D]` dormant (stop/s
 ```
 terraform-live/
 ├── identity/             # [P] permission sets, groups, assignments - applied with the
-│   │                     #     delegated-admin profile (D10); never touches Management
+│   │                     #     delegated-admin profile (D10); never touches Management.
+│   │                     #     ALSO the SCPs, RCPs and tag policies since D30: they used
+│   │                     #     to be console-only and owned by nobody after Stage 1b, and
+│   │                     #     the D30 carve-out has to be GENERATED into every Deny from
+│   │                     #     the awsds-scp-recovery ARNs each foundation/ exports
 │   └── bootstrap/        # [P] state bucket for the Identity account
 ├── sandbox/              # EXPERIMENTATION (D21): the unit of work is a notebook
 │   ├── bootstrap/        # [P] state bucket for this account (state migrated in, never committed)
@@ -569,7 +626,14 @@ terraform-live/
 │   ├── nfs/              # [P] EFS filesystem, mount targets, access points (lifecycle to IA)
 │   └── sagemaker/        # [P] blueprint target (D26): the experimentation project's
 │                         #     environments are provisioned HERE by the domain in
-│                         #     Development; running apps are [E], deleted by make down
+│                         #     data-governance/; running apps are [E], deleted by make down.
+│                         #     What Terraform owns in this slice is the PREREQUISITES the
+│                         #     blueprint consumes - the provisioning and manage-access roles,
+│                         #     the VPC/subnet/security-group parameters the ML blueprint is
+│                         #     pointed at, the KMS key, and the D13 boundary policy attached
+│                         #     to the project roles (S4.4 row 15). It does NOT declare the
+│                         #     project environments themselves: DataZone owns those, and a
+│                         #     Terraform resource for them would fight the blueprint
 ├── development/          # DEVELOPMENT (D21): the unit of work is a pipeline
 │   ├── bootstrap/        # [P] state bucket for the Development account
 │   ├── foundation/       # [P] VPC (own CIDR), KMS, IAM roles, peering requester to
@@ -580,7 +644,9 @@ terraform-live/
 │   ├── sagemaker/        # [P] blueprint target (D26): the engineering project's
 │   │                     #     environments land here, provisioned by the domain in
 │   │                     #     data-governance/. No domain of its own. Workflows are
-│   │                     #     authored and test-run here before promotion
+│   │                     #     authored and test-run here before promotion.
+│   │                     #     Same Terraform/DataZone split as sandbox/sagemaker/:
+│   │                     #     prerequisites here, environments owned by the blueprint
 │   └── app/
 │       └── app-etl/      # [E] the application running against Development's own data, applied
 │                         #     by hand while it is being engineered (Stage 8 step 2). It is NOT
@@ -644,9 +710,14 @@ terraform-modules/        # reusable: vpc, wireguard, iam-role, ecr-repo, s3-buc
 `make down ENV=sandbox` destroys the `[E]` slices in reverse dependency order and stops the `[D]`
 instances; `make up ENV=sandbox` starts the `[D]` instances and applies the `[E]` slices; `make status`
 reports what is running and the current hourly burn. `[P]` slices are never touched by any of them — they
-are applied deliberately, by hand. One `[E]` resource lives outside any slice: running SageMaker Studio
-*apps* are created by users, not by Terraform, so `make down` deletes them through the API before
-touching the slices.
+are applied deliberately, by hand. One `[E]` resource lives outside any slice: the running **apps inside a
+Unified Studio project** are created by users, not by Terraform, so `make down` deletes them through the
+API before touching the slices. **Which API, since D26 changed the answer:** the apps live in the
+per-project SageMaker AI domain that the ML blueprint provisioned into the account, so the teardown is
+`sagemaker:ListApps`/`DeleteApp` (and the enclosing space) scoped to that domain — *not* a call against
+the DataZone domain, which owns no compute. `make down` must discover the domain ID rather than have it
+pasted in, since the blueprint chose it. This is the one place where the registry/runtime split shows up
+as an operational detail rather than as a principle.
 
 `ENV=staging` is the one environment a human normally never runs these against: `make up ENV=staging` and
 `make down ENV=staging` are steps *inside* the promotion pipeline (Stage 8), which brings Staging up,
@@ -659,7 +730,7 @@ CI is the same bug as one that only works by hand — but the expected caller is
 - Region, AZs and AMIs follow the portability rules in §4.1 — no region literals in `.tf` files.
 - Authentication through named SSO profiles, one per Terraform-managed account — `awsds-infra-sandbox`,
   `awsds-infra-dev`, `awsds-infra-data`, `awsds-infra-staging`, `awsds-infra-prod`,
-  `awsds-infra-identity` (Stage 1b step 10) — never keys.
+  `awsds-infra-identity` (Stage 1b step 5) — never keys.
 - Every slice: `terraform fmt`, `validate` and `plan` must be clean before apply.
 - Remote state read across slices through `terraform_remote_state` data sources, never hardcoded IDs.
 - Modules are referenced by **git tag**, never by branch, so a module change cannot silently alter an
@@ -673,6 +744,25 @@ CI is the same bug as one that only works by hand — but the expected caller is
   privilege-escalation path: it lets a user run code under any role they are allowed to pass.
 - Nothing gets `AdministratorAccess` or `PowerUserAccess` "for now". The starting point of a permission set
   is narrow, because loosening a permission is a five-minute change and tightening one is a negotiation.
+- **And no broad managed policy for a principal that is itself a control** (D31). `ReadOnlyAccess` looks
+  harmless and is not, for an approver: it carries `s3:Get*` and `athena:GetQueryResults`, so it reaches the
+  derived zones and other people's query output. Every persona in this plan gets a set written for its job —
+  three for the data scientist (D18), one for each approver — and the two approver sets are the ones whose
+  *denials* are the point of them.
+- **Where a read restriction has to survive forgetting, put it in a KMS key policy rather than in a list of
+  prefixes** (D19 as revised by D31). A permission set enumerates; a key policy is default-deny. The
+  derived zone has its own CMK for exactly this reason, and the separation from the account's general-purpose
+  key is what makes it expressible at all.
+- **The `awsds-scp-recovery` role (D30) is narrow too, and the temptation to make it broad is specific.**
+  An SCP exemption removes a *ceiling*; it grants nothing. So the role still needs its own identity policy
+  and that policy is scoped to the actions the SCPs deny — not `AdministratorAccess` "because you never
+  know what you will need to fix". A recovery role with `*` is a second administrator that is also outside
+  every guardrail, which is the one combination this project should never have.
+- **No principal is exempt from a deny "just in case".** Carve-outs are per function and per statement:
+  the catalog-maintenance role exempt from the `Data` OU's Glue deny (D27), a deploy role exempt from a
+  specific deny so automation does not stall. The one blanket exemption in this design is D30's, it is
+  named, alarmed, MFA-gated and enumerated per account, and it exists because the user chose that
+  trade — not because blanket exemptions are the pattern.
 
 ---
 
@@ -690,12 +780,13 @@ and reviewed. Nothing provisioned.
 **Objective:** a working AWS Organization with the environment accounts and SSO access, so that everything
 after this can be done by Terraform without root credentials.
 
-**Prerequisites:** none outstanding. D1 is decided (`us-west-2`) and all nine account e-mails are in
-`secrets/emails.md`.
+**Prerequisites:** none outstanding. D1 is decided (`us-west-2`) and all ten account e-mails are in
+`secrets/emails.md` — `Policy Canary`'s was registered by the user on 2026-08-08, after D29 added the
+account.
 
 **Split into two halves, 1a and 1b.** This is the longest stage in the plan and it used to be one
 unverifiable block of sixteen manual steps. The split is not cosmetic: **1a ends at a checkable state** —
-nine accounts exist, in four OUs, with the root credentials secured and a budget watching them — and it is
+ten accounts exist, in five OUs, with the root credentials secured and a budget watching them — and it is
 the half that is slow, awkward to undo, and worth stopping after. 1b is everything that is fast, reversible
 and iterative: identity, policies, detective controls and the organization-wide enablements. If a session
 runs out before 1b is finished, the environment is still in a coherent state; if it ran out in the middle of
@@ -707,8 +798,17 @@ the old Stage 1, it was not.
 
 **To execute (all manual, by the user, recorded in `LOG.md`):**
 
-1. Secure the Management account root user: hardware or virtual MFA, strong password, no access keys,
-   billing alerts enabled.
+1. **Secure the Management account root user — which since D16 is also the break-glass credential, so this
+   step and step 5 are two halves of one thing rather than two mechanisms.** MFA enabled (the *type* is
+   deliberately unspecified — see D16; the user already has one configured on this root, so here this is a
+   *confirm*, not a *do*), strong password stored offline, **no access keys, ever**, billing alerts enabled.
+   Two details that are load-bearing rather than hygienic:
+   - **The password does not live in this repository and not in `secrets/` either** — offline means a
+     password manager or paper, not a git-ignored folder.
+   - **Check how many MFA devices are registered.** With exactly one, losing it means the AWS account
+     recovery process, which depends on the phone number and payment method on the account — so confirm
+     both are current while you are here. This is the recovery path of the recovery path, and it is the
+     only part of the MFA question that still has consequences once the type is left open.
 2. Create a Budget of **USD 50/month** (D12) with e-mail alerts at 50%/80%/100%. Enable **Cost Anomaly
    Detection** next to it — it is free, and it catches a bad cost *pattern* days before a budget
    threshold trips. Optionally add a budget *action* that attaches a deny-compute SCP at 100% — a
@@ -717,8 +817,19 @@ the old Stage 1, it was not.
    Log Archive and the Audit accounts (e-mails already in `secrets/emails.md`), and turn on org-wide
    CloudTrail and Config. Note: the home region cannot be changed afterwards without redeploying the
    landing zone.
-4. Create the `Sandbox`, `Development`, `Staging`, `Production`, `Data Governance` and `Identity` accounts
-   through Account Factory, using the e-mails in `secrets/emails.md`. OUs, per D23 — each named for the
+   **Two things the setup wizard asks that this plan has an opinion about, and which are awkward to change
+   later:** it asks for the name of the foundational security OU (default `Security` — keep it, D23 uses
+   that name) *and* for an additional OU whose **default name is `Sandbox`**. Do **not** accept that
+   default: this project has a `Sandbox` **account**, and an OU with the same name guarantees a permanent
+   ambiguity in every later sentence about SCPs. Name it `Interactive` here — it is the OU D23 wants
+   anyway — or give it a throwaway name and create the four real OUs in step 4.
+4. Create the `Sandbox`, `Development`, `Staging`, `Production`, `Data Governance`, `Identity` and
+   `Policy Canary` accounts through Account Factory, using the e-mails in `secrets/emails.md`.
+   **Create the OUs from the Control Tower console, not from AWS Organizations.** An OU created directly in
+   Organizations is not *registered* with Control Tower: Account Factory will not provision into it, the
+   guardrails do not apply, and the accounts that land there are unenrolled — a state that looks correct in
+   the Organizations tree and is not. Registering an OU afterwards is possible but is extra work at exactly
+   the moment there is least appetite for it. OUs, per D23 — each named for the
    policy set it carries, not for its contents:
    - `Interactive` OU → `Sandbox` and `Development` (D21). Interactive compute *allowed*; human
      infrastructure changes denied. The only OU into which project blueprints may provision (D26).
@@ -732,29 +843,61 @@ the old Stage 1, it was not.
      compute and is therefore bounded by role, event-driven and alarmed. Anything not on those two lists
      stays denied.
    - `Workloads` OU → `Staging` and `Production` (D20). No interactive compute, no human control plane,
-     written once and attached once. This is *not* the "Policy Staging OU" of §11, which is a place to
-     test SCPs; the names collide, the concepts do not.
+     written once and attached once. **Not to be confused with the `Policy Test` OU below** — the industry
+     calls that one a *Policy Staging OU*, and this plan deliberately does not, precisely so that the word
+     `Staging` names exactly one thing in this organization.
+   - `Policy Test` OU → `Policy Canary` (D29). **Carries no policy set of its own** — it is where a
+     *candidate* SCP or RCP is attached and exercised before it goes anywhere real, which is what step 7 of
+     1b needs and what the plan previously asked for without providing. The account inside it is
+     deliberately empty: no VPC, no data, no Terraform slice, no state bucket, no `awsds-infra-*` profile.
+     It holds one thing and that is the whole design — **an administrator principal**, assigned in 1b step
+     3, because an SCP is a permission *ceiling* and testing it with a restricted principal measures the
+     identity policy instead. Enroll it through Account Factory like the others: an OU that is not
+     registered with Control Tower does not inherit the CT controls, so a policy tested there is tested
+     against a different baseline than the one it will meet in production — which is worse than not
+     testing, because it produces a false pass.
    - `Security` OU → `Identity`, alongside the Log Archive and Audit accounts Control Tower created.
+     **To verify while doing it:** the Security OU is a *foundational* OU in Control Tower's model and
+     carries its own guardrail set, so placing a third, non-Control-Tower-created account in it is worth
+     confirming rather than assuming. If it fights back, the fallback is a sibling `Identity` OU with the
+     same policy set — the D23 test ("an OU earns its existence when two or more accounts need the same
+     policy set") is not met by that, but a landing zone that will not enrol the account is worse.
 
-   **These nine accounts are the complete set** — D14 places the tooling in Production rather than in a
-   separate Shared Services account, and D20-D22 add the deployment target, the development account and
-   the data account the AWS reference architectures describe. §11 records what a larger organization
-   would still add beyond them.
+   **These ten accounts are the complete set** — D14 places the tooling in Production rather than in a
+   separate Shared Services account, D20-D22 add the deployment target, the development account and
+   the data account the AWS reference architectures describe, and D29 adds the disposable one that makes
+   the SCP procedure in 1b step 7 executable. §11 records what a larger organization would still add
+   beyond them.
    Account creation here is manual through Account Factory; **Account Factory for Terraform (AFT)** is the
-   automated equivalent and is deliberately not used — with six accounts to create, once, it is at the
+   automated equivalent and is deliberately not used — with seven accounts to create, once, it is at the
    edge of repaying its setup and still loses (§11).
-5. **Break-glass access (D16).** Set up the emergency path in the Management account: hardware or virtual
-   MFA, credentials recorded offline (never in this repository, never in `secrets/`), a CloudWatch alarm on
-   any use of it, and a documented procedure. Test it once, then leave it alone. Do the same for the
-   Management root user's recovery path. **This belongs in 1a and not later**: every policy in 1b is a way
-   to lock yourself out of your own organization, and the escape hatch has to predate the hazard.
-6. **Centralized root access management.** The organization ends up with eight member accounts — two
-   created by Control Tower (Log Archive, Audit) and six by Account Factory — each with its own
-   root user and its own recovery e-mail: eight credentials nobody will ever rotate. AWS Organizations can
+5. **Break-glass: the procedure and the alarm (D16).** The *credential* was handled in step 1 — it is this
+   root, there is no second mechanism to build. What is left here is what makes it a break-glass rather
+   than just an account owner: write the procedure down (what situations justify using it — an Identity
+   Center outage, an organization-level policy that locked everyone out; what to do; what to record
+   afterwards), build the alarm, and test the whole thing once. **This belongs in 1a and not later**: every
+   policy in 1b is a way to lock yourself out of your own organization, and the escape hatch has to predate
+   the hazard.
+   **The alarm needs a delivery path, not just an intention** (Lesson 5 in `CLAUDE.md`: name the policy line
+   that enforces the stated property). A CloudWatch alarm cannot watch an S3 bucket, and Control Tower's
+   organization trail delivers to the Log Archive account's bucket. So the alarm requires an explicit chain:
+   the trail (or a Management-account trail) writing to a **CloudWatch Logs** group, a **metric filter**
+   matching `userIdentity.type = Root`, a metric, an alarm, and an SNS
+   topic with a subscription that is **not** the same e-mail as the account being alarmed on — root sign-in
+   *is* e-mail plus password, so alarming to the login address hands the same person the credential and its
+   own warning. Build the chain here and fire it once with a deliberate sign-in; an untested alarm is a
+   hypothesis.
+   **A second, narrower recovery path exists (D30) and is built later, in Stage 3.** The `awsds-scp-recovery`
+   role is what handles "a custom SCP denies something it should not"; this root is what handles "Identity
+   Center is down" or "the organization itself is broken". Keeping them separate is the point — reaching
+   for root to repair a policy means the D30 role was scoped wrong, and that is a useful signal to have.
+6. **Centralized root access management.** The organization ends up with nine member accounts — two
+   created by Control Tower (Log Archive, Audit) and seven by Account Factory — each with its own
+   root user and its own recovery e-mail: nine credentials nobody will ever rotate. AWS Organizations can
    remove root credentials from member accounts centrally and perform the few privileged root actions on
    demand. Enable it; this is one console setting that eliminates a whole class of dormant risk.
 
-**Deliverables of 1a:** nine accounts exist, in four OUs; the Management root user is secured and its
+**Deliverables of 1a:** ten accounts exist, in five OUs; the Management root user is secured and its
 break-glass path has been tested once; member-account root credentials are centrally managed; the budget
 and Cost Anomaly Detection are live. Nothing here is torn down between sessions, and nothing after this
 point can lock you out without a way back in.
@@ -780,16 +923,36 @@ that is not.
    **Never put the same person in both groups**, even while there is only one human: the moment that
    happens the split is notation again, and nothing in AWS will warn you.
 3. Create permission sets: `AdministratorAccess` (infrastructure), `DataScientistAccess` (the Interactive
-   OU), `ReadOnlyAccess` (deployment-managers). An earlier draft also created a `DeployApprover` permission
-   set; it was
+   OU), `DeploymentManagerAccess` (deployment-managers). An earlier draft also created a `DeployApprover`
+   permission set; it was
    dropped — the deploy approval gate lives in GitLab (Stage 8), driven by GitLab group membership, and
    consumes no AWS-side permission. Create such a permission set only when something actually consumes it.
-   **`GovernanceManagerAccess`, and it is the one shape worth thinking about rather than copying.** The
-   governance manager approves who may read data, so their own reach must stop at the *catalog*, not the
+   **Note that `DeploymentManagerAccess` is not that set coming back:** the *approval* still consumes no AWS
+   permission; this set exists for the other half of the job, which is **diagnosis** — reading why a
+   promotion failed before deciding whether to release it.
+   **The two approver permission sets are the ones whose *denials* are the point of them, and until
+   2026-08-08 only one of them was written that way.**
+   **`GovernanceManagerAccess`.** The governance manager approves who may read data, so their own reach must
+   stop at the *catalog*, not the
    rows: Glue catalog metadata read, Lake Formation LF-Tag and permission administration, DataZone domain
    ownership, Macie findings read — and **no `s3:GetObject` on lake prefixes and no Athena workgroup**. An
    approver who can already read everything is not exercising a control when they approve a subscription.
-   This is the only permission set in the plan whose *denials* are the point of it.
+   **`DeploymentManagerAccess` (D31), which used to be the AWS-managed `ReadOnlyAccess` and should not have
+   been.** The argument above is symmetric and the plan applied it to one approver only. `ReadOnlyAccess` on
+   four accounts reaches the D19 derived zones — where the output of a query over `restricted` data lives
+   and, by D19's own classification rule, *is* `restricted` — and reaches `athena:GetQueryResults`, which
+   returns other people's query output. So it is replaced by a set in the same shape as
+   `DataScientistProdAccess` (D18): CloudWatch Logs read including Logs Insights (diagnosing a failed
+   promotion is the job), SageMaker job/pipeline/Model Registry **status**, Glue catalog metadata, ECR image
+   metadata and scan findings, Step Functions and EventBridge Scheduler execution status, and
+   `s3:GetObject` on **enumerated** prefixes only — build artifacts and test reports, never a bucket
+   wildcard. Denied explicitly rather than by omission: **`athena:*`** (both starting a query and reading
+   someone else's results), **`kms:Decrypt`**, `secretsmanager:GetSecretValue`, `ssm:GetParameter*`, the
+   Terraform state buckets, and the control plane in full.
+   One precision worth carrying, because it is why the old arrangement looked harmless: `ReadOnlyAccess`
+   grants no `athena:StartQueryExecution` and no `kms:Decrypt`, so it could never *originate* a read of the
+   lake and could not decrypt an SSE-KMS object at all. The exposure was being prevented by encryption
+   rather than by design — which stops being true the first time a bucket is created without a CMK.
    **`DataScientistAccess` does not start as `PowerUserAccess`.** An earlier version of this plan gave it
    `PowerUserAccess` "until Stage 6", which contradicts `ACCOUNTS_AND_USERS.md` ("no permissions to
    perform infrastructure changes, except for artifacts managed by AWS SageMaker") and, worse, would let
@@ -809,29 +972,69 @@ that is not.
    omission: the control plane, `sagemaker:Create*Job`, `sagemaker:CreatePresignedDomainUrl`,
    `glue:StartJobRun` and `lakeformation:GrantPermissions`. GitLab and ECR access (D14) folds into this
    set rather than living as a separate grant. (The ingestion drop-box moved with the lake to Data
-   Management, D22 — it is granted by bucket policy to the Interactive-OU roles, not by this set.)
+   Governance, D22 — it is granted by bucket policy to the Interactive-OU roles, not by this set.)
    **And a third, `DataScientistStagingAccess` (D20)** — read-only, with no write of any kind, not even a
    drop-box. Staging exists to be written by the pipeline and read by a human working out why the pipeline
    failed; a staging environment a person can write to stops being evidence of what the pipeline actually
    does. Same denies as the Production set, minus every write grant.
    Assign them: infrastructure → the six Terraform-managed accounts (Sandbox, Development, Data
-   Management, Staging, Production, Identity); data-scientists →
+   Governance, Staging, Production, Identity) **plus `AdministratorAccess` on `Policy Canary` (D29)** —
+   which is not a seventh Terraform-managed account but the test principal for step 7, and it has to be an
+   administrator or the test measures the wrong thing: an SCP is a ceiling, so a deny that a restricted
+   principal could not have exercised anyway proves nothing about the ceiling; data-scientists →
    `DataScientistAccess` on Sandbox and Development, `DataScientistStagingAccess` on Staging,
    `DataScientistProdAccess` on Production, **no assignment of any kind on Data Governance** (D18/D22);
-   deployment-managers → `ReadOnlyAccess` on Sandbox, Development, Staging and Production (the approval
-   itself happens in GitLab), and **nothing on Data Governance** — a release approver has no business in
-   the account that grants data access; governance-managers → `GovernanceManagerAccess` on **Data
+   deployment-managers → `DeploymentManagerAccess` on Sandbox, Development, Staging and Production (the
+   approval itself happens in GitLab; this set is for diagnosis, D31), and **nothing on Data Governance** —
+   a release approver has no business in the account that grants data access; governance-managers → `GovernanceManagerAccess` on **Data
    Governance only**, which is the mirror image: the one account the deployment manager cannot enter is the
    only one the governance manager can.
-   The data scientist gets no access to Identity, Audit or Log Archive.
+   The data scientist gets no access to Identity, Audit, Log Archive or Policy Canary — the last one
+   matters less than it looks, since the account is empty, but an account whose whole purpose is to have
+   broken permissions is not somewhere a second persona should be able to sign in and draw conclusions.
    Leave Control Tower's own permission sets untouched — editing them causes landing-zone drift.
    These are created by hand here only because Terraform cannot run before SSO login works; Stage 2 moves
    them into `terraform-live/identity/` and imports them.
 4. The infrastructure user's assignment **on the Management account itself** has to be created from the
    Management account — the delegated administrator cannot manage assignments targeting Management.
    This is the one identity task that stays there permanently.
-5. **Preventive policies.** Attach to the OUs, in this order. They come in tiers, one per OU policy set
-    (D23), on top of an organization-root set that applies everywhere:
+5. **Configure the local SSO profiles now, not at the end of the stage.** `aws configure sso` for
+   `awsds-infra-sandbox`, `awsds-infra-dev`, `awsds-infra-staging`, `awsds-infra-prod`, `awsds-infra-data`
+   and `awsds-infra-identity` — plus one more that is deliberately named differently,
+   **`awsds-policy-canary`** (D29). It is not an `awsds-infra-*` profile because `Policy Canary` is not a
+   Terraform-managed account and nothing is ever applied into it; the profile exists only to run step 7's
+   test battery, and the naming keeps that visible in shell history. **This used to be step 10 and that was
+   an ordering bug:** every step below
+   this one does CLI or console work *inside a member account* — restricting the Config recorder, enabling
+   Object Lock on the Log Archive bucket, raising the Lake Formation cross-account version in Data
+   Governance, reading AZ IDs per account — and none of it is reachable without a profile. Doing it here
+   also gives the first real proof that steps 1-4 worked.
+6. **Check the AZ name-to-ID mapping** across the Sandbox, Development and Production accounts
+   (`aws ec2 describe-availability-zones --query 'AvailabilityZones[].[ZoneName,ZoneId]'` under each
+   profile). D14 and D21 make this matter for real: both peerings into Production are free within an AZ
+   and USD 0.01/GB each way across AZs, so a mismatch has a bill attached. See §9 item 3. Cheap to do here,
+   and Stage 3 needs the answer before it writes a subnet.
+7. **Preventive policies.** Attach to the OUs, in this order. They come in tiers, one per OU policy set
+    (D23), on top of an organization-root set that applies everywhere.
+
+    **Every `Deny` statement written below carries the D30 recovery carve-out, and getting its shape right
+    matters more than any individual policy.** The condition excludes the `awsds-scp-recovery` role so that
+    a mistaken policy can be repaired from inside the affected account. Two things about how it is written:
+
+    - **`ArnNotEquals` with an enumerated list of role ARNs, never `ArnNotLike` with a wildcard account.**
+      `arn:aws:iam::*:role/awsds-scp-recovery` would exempt a role of that name in *any* account — which
+      means anyone able to create a role anywhere in the organization can name their way out of every deny
+      you ever write. List the ARNs explicitly, one per governed account.
+    - **A companion deny in the same set**, on `iam:CreateRole`, `iam:PutRolePolicy`, `iam:AttachRolePolicy`
+      and `iam:UpdateAssumeRolePolicy` for that role name, so the exemption cannot be minted or widened
+      from inside a governed account. Without it the enumerated list buys less than it looks like.
+
+    The role itself does not exist yet — it is `[P]` and is created in each account's `foundation/` slice in
+    Stage 3. **Order this deliberately:** either write the policies now with the carve-out condition
+    referring to ARNs that do not yet resolve (which is legal — IAM conditions on non-existent principals
+    simply never match, so the deny applies to everyone until Stage 3, i.e. the safe direction), or attach
+    the policies without the carve-out and add it in Stage 3. The first is preferable because it means the
+    policy text never changes shape later; record which you did.
     - **`Workloads` OU** (D20): deny `sagemaker:CreateDomain`, `sagemaker:CreateUserProfile` and
       `sagemaker:CreatePresignedDomainUrl` — this is what turns D17 from an intention into a control:
       "no Studio outside the Interactive OU" cannot be undone by anyone with a console and a good reason.
@@ -864,48 +1067,87 @@ that is not.
       Stage 2 only covers buckets the module creates; the account-level setting is the blanket that also
       covers the bucket someone creates outside it. Protected by the SCP above.
     - **Declarative policies:** enforce IMDSv2 and EC2 public-access defaults org-wide.
-    Apply these to a test OU first — an SCP mistake is the fastest way to lock yourself out of your own
-    organization, which is what the break-glass path in 1a step 5 exists for.
-6. **Detective controls** (principle 9 — these belong to the landing zone, not to Stage 11). The
+    **Every one of these is attached to the `Policy Test` OU first and exercised from `Policy Canary`
+    before it goes anywhere real (D29).** An SCP mistake is the fastest way to lock yourself out of your
+    own organization — recoverable, because the Management account is exempt from SCPs and the break-glass
+    path from 1a step 5 exists, but recoverable is not the same as cheap. The procedure, and it is a
+    procedure rather than a gesture:
+
+    - **One policy at a time.** Attach, test, record, then move on. A batch that breaks tells you that
+      something in the batch is wrong, which is the least useful form of that information.
+    - **Test in both directions, because the two failure modes are opposites.** *Too tight* — run the calls
+      that must still **succeed** (an `sts:GetCallerIdentity`, a `s3:ListBuckets`, an `ec2:DescribeVpcs` in
+      `us-west-2`, and for the region SCP specifically an `iam:ListRoles`, which only lives in `us-east-1`).
+      *Too loose* — run the calls that must now **fail**: a `PutObject` to a bucket outside the
+      organization, an `iam:CreateUser`, an `ec2:RunInstances` in a denied region. A policy that denies
+      nothing fails silently and leaves you believing you have a control (Lessons 5 and 13 in `CLAUDE.md`),
+      and only this half of the battery catches it.
+    - **From an administrator principal**, which is why 1b step 3 assigns `AdministratorAccess` here. An
+      SCP is a ceiling; a deny exercised by a principal that lacked the permission anyway proves nothing.
+    - **And, from Stage 3 onwards, a third direction: the D30 carve-out itself.** Assume
+      `awsds-scp-recovery` in `Policy Canary` and confirm it *can* do the denied thing, then confirm a
+      plain administrator *cannot*. A carve-out that silently fails to match is a recovery path you find
+      out you do not have on the night you need it — and that is precisely the class of failure `Policy
+      Canary` exists to catch.
+    - **With the detach command written down and the Management account already open** before the first
+      attach. Verify you can reach it *now*, not in theory.
+    - Then move the attachment to its real target — the OU named in each bullet above, or the organization
+      root for the org-wide set. Note that the root-level policies can be exercised here exactly as they
+      will behave in production, because `Policy Test` sits under the root and inherits from it like every
+      other OU.
+
+    Record each outcome. A policy that passed both halves of the battery is a control; one that was only
+    attached is a hope.
+8. **Detective controls** (principle 9 — these belong to the landing zone, not to Stage 11). The
     *delegation* of each service to the Audit account runs **from the Management account**
     (`enable-organization-admin-account` / `register-delegated-administrator`, one manual console action
     per service — consistent with principle 1); everything after that is done from the Audit account:
     enable org-wide **Security Hub**, **IAM Access Analyzer** (external access, and unused access for
     Stage 12) and **GuardDuty**. Watch the cost of GuardDuty's S3 Protection and Malware
     Protection against D12 — enable the base service now and decide on those two with a real bill in hand.
-7. **Make the audit trail tamper-evident:** enable **S3 Object Lock** on the Control Tower Log Archive
+9. **Make the audit trail tamper-evident:** enable **S3 Object Lock** on the Control Tower Log Archive
     bucket and **CloudTrail log file validation**. An audit log that the compromised party can edit is not
     an audit log. Do this before there is anything worth hiding in it.
-8. **Restrict the AWS Config recorder** to the resource types this project actually uses. Config is the
+10. **Restrict the AWS Config recorder** to the resource types this project actually uses. Config is the
     main recurring cost of the landing zone (§5) and the default records everything, in eight accounts.
-9. **Enable organization-wide resource sharing, so the Lake Formation shares of Stage 5 can exist**
-    (D22, §4.4 row 11). Three separate settings, none of which announces its absence:
-    - **`ram:EnableSharingWithAwsOrganization`** — without it, a Lake Formation grant to another account
-      produces an AWS RAM *invitation* that somebody has to accept by hand, and it reappears every time the
-      share is recreated. With it, accounts inside the organization receive shares directly.
-    - **Lake Formation cross-account version 3 or above**, set in the Data Governance account. Versions
+11. **Enable organization-wide resource sharing, so the Lake Formation shares of Stage 5 can exist**
+    (D22, §4.4 row 11). Three separate settings, **in three different accounts** — which is half of why
+    this step is easy to get wrong — and none of which announces its absence:
+    - **`ram:EnableSharingWithAwsOrganization`, called from the *Management* account.** It enables trusted
+      access for RAM across the organization; it is not a Data Governance setting and cannot be done from
+      there. Without it, a Lake Formation grant to another account produces an AWS RAM *invitation* that
+      somebody has to accept by hand, and it reappears every time the share is recreated. With it, accounts
+      inside the organization receive shares directly.
+    - **Lake Formation cross-account version 3 or above**, set **in the Data Governance account**. Versions
       below 3 cannot grant to an Organization or an OU at all, only to an explicit list of account IDs —
       and this project has three consumers with more implied by every §11 row about scale.
     - The **`AWSLakeFormationCrossAccountManager`** managed policy on the grantor (Data Governance), and
-      `ram:AcceptResourceShareInvitation` on the data lake administrator role in each consumer account,
+      `ram:AcceptResourceShareInvitation` on the data lake administrator role **in each consumer account**,
       which is the fallback path if the two settings above are ever unavailable.
+
+    **How to verify it, because the obvious command does not.** `aws ram get-resource-share-associations`
+    requires an `--association-type` and lists the associations of shares that already exist — with no
+    share yet created it returns an empty list, which is indistinguishable from the failure it is supposed
+    to detect. The check that actually answers the question is
+    `aws organizations list-aws-service-access-for-organization` from the Management account, looking for
+    `ram.amazonaws.com`; and, for the second setting,
+    `aws lakeformation get-data-lake-settings --profile awsds-infra-data`, reading the cross-account
+    version back. Confirming a silent-failure mode with a command that is itself silent is how row 11
+    stays open for a month.
 
     This step is here rather than in Stage 5 because it is organization-level and manual, like everything
     else in this stage. Stage 5 step 7 assumes it and will fail confusingly without it: the grant appears
     to succeed on the producer side and the resource simply never shows up on the consumer side.
-10. Configure local SSO profiles: `aws configure sso` for `awsds-infra-sandbox`, `awsds-infra-dev`,
-    `awsds-infra-staging`, `awsds-infra-prod`, `awsds-infra-data` and `awsds-infra-identity`.
-11. **Check the AZ name-to-ID mapping** across the Sandbox, Development and Production accounts
-    (`aws ec2 describe-availability-zones --query 'AvailabilityZones[].[ZoneName,ZoneId]'` under each
-    profile). D14 and D21 make this matter for real: both peerings into Production are free within an AZ
-    and USD 0.01/GB each way across AZs, so a mismatch has a bill attached. See §9 item 3.
 
 **Deliverables of 1b:** SSO login working; `aws sts get-caller-identity --profile awsds-infra-sandbox`
 returns the Sandbox account ID; `aws sso-admin list-instances --profile awsds-infra-identity` returns the
 Identity Center instance, which is the proof that the delegation took effect; an attempt to write to an S3
 bucket outside the organization is denied, which is the proof that the perimeter is real; and
-`aws ram get-resource-share-associations` from the Data Governance profile shows organization sharing
-enabled, which is the proof that Stage 5's shares have somewhere to land.
+`aws organizations list-aws-service-access-for-organization` (from Management) lists `ram.amazonaws.com`
+while `aws lakeformation get-data-lake-settings --profile awsds-infra-data` reports a cross-account
+version of 3 or above — together, the proof that Stage 5's shares have somewhere to land. Note what this
+deliverable used to say: `aws ram get-resource-share-associations` from the Data Governance profile, which
+returns an empty list both when sharing is enabled and when it is not.
 
 **Blocking questions for the user:** the domain name to register (D15). Not needed to start the stage, but
 needed before Stage 7.
@@ -950,6 +1192,19 @@ yet (1b step 9) — if it cannot, that setting moves into Stage 5 and the rest o
    Stage 1, so identity stops being console-managed (D10). Applied with the `awsds-infra-identity`
    profile. `terraform plan` must come back empty after the import — that is the check that the import
    is faithful.
+   **Import the SCPs, RCPs and tag policies here too (D30), which no earlier version of this plan did.**
+   Until D30 they were created by hand in Stage 1b step 7 and then owned by nobody: no stage imported them,
+   nothing regenerated them, and the only record of what they said was the console. That was tolerable
+   while they were four hand-written documents; it stops being tolerable once **every** `Deny` in them has
+   to carry an identical carve-out condition, because a condition that is typed four times is a condition
+   that will exist in three of them. So they move into code and the condition is **generated** from the
+   `awsds-scp-recovery` ARNs exported by each account's `foundation/`.
+   Organizations supports a **delegated administrator for policy management**, so this stays consistent
+   with principle 1: the slice is applied with the delegated-admin profile and Terraform never holds
+   credentials in Management. **Verify that delegation is compatible with the Control Tower landing zone
+   before relying on it** — it is the same family of question as the Identity Center delegation in Stage 1b
+   step 1, and the fallback is the same: the policies stay console-managed and the CI check below becomes
+   a manual review, which is strictly worse and should be recorded as such rather than absorbed.
 6. Repository hygiene: `.gitignore` for `.terraform/` and `*.tfstate.backup`; `.terraform.lock.hcl` is
    committed on purpose; `pre-commit` with `terraform fmt`, `terraform validate` and `tflint`; and
    **`checkov` as a required gate, not an optional one** — a policy check that can be skipped is a policy
@@ -966,6 +1221,12 @@ yet (1b step 9) — if it cannot, that setting moves into Stage 5 and the rest o
 9. **No region literals (§4.1).** `var.region` in every slice, AZs from `data.aws_availability_zones`,
    AMIs from SSM public parameters. A `grep` check in CI that fails on a hardcoded region keeps this
    honest at no cost.
+   **A second check in the same spirit, and it guards a control rather than a convention (D30): fail the
+   build if any `Deny` statement in `terraform-live/identity/` lacks the `awsds-scp-recovery` carve-out
+   condition, or if any carve-out uses a wildcard account ID.** Both failure modes are silent — a missing
+   carve-out means one policy you cannot repair in place, a wildcard means every policy is escapable by
+   anyone who can create a role — and neither shows up in a `plan`. This is the cheapest place to catch
+   the drift that D30 accepts as its main risk.
 10. Update `README.md` with the repository layout and the AWS resource structure (required by `CLAUDE.md`).
 
 **Deliverables:** `terraform apply` works end-to-end against the Sandbox account using an SSO profile;
@@ -1014,7 +1275,40 @@ different lifecycles (§5.1).
    consumer list is read through `terraform_remote_state` rather than pasted.
 4. Route 53 private hosted zone per account (e.g. `sandbox.internal`, `prod.internal`), plus the private
    zone that resolves the D15 public domain names to internal addresses (split-horizon DNS).
+   **A private hosted zone answers only for the VPCs it is associated with, and associating one across
+   accounts is a two-sided handshake — this is the step that makes "reach GitLab by name over the VPN"
+   work, and it was missing from earlier versions of this stage.** The laptop's DNS points at the *Sandbox*
+   VPC resolver (Stage 4 step 5), so a query for `gitlab.prod.internal` is resolved by the Sandbox VPC and
+   returns `NXDOMAIN` unless Production's zone is associated with the Sandbox VPC. Cross-account, that is
+   `aws route53 create-vpc-association-authorization` **in the Production account** (the zone owner)
+   followed by `associate-vpc-with-hosted-zone` **in the Sandbox account** (the VPC owner) — and Terraform
+   splits it the same way, `aws_route53_vpc_association_authorization` plus
+   `aws_route53_zone_association` behind a provider alias. Three associations are needed:
+   - `prod.internal` ← Sandbox VPC (the VPN path to GitLab);
+   - `prod.internal` ← Development VPC (D21: the `engineering` project clones from GitLab, §4.4 row 9);
+   - the D15 split-horizon zone ← Sandbox and Development VPCs, or GitLab and Pages resolve publicly (to
+     nothing) instead of privately.
+
+   Note the ordering trap: the authorization is deleted once the association exists, and re-creating the
+   association after a VPC rebuild needs a fresh authorization. Both zones are `[P]`, so this is a
+   once-per-account operation rather than a per-session one — which is the argument for putting the
+   association in `foundation/` rather than anywhere `make down` can reach.
 5. VPC Flow Logs to CloudWatch Logs with a short retention (a few days — retention is what costs).
+5b. **The `awsds-scp-recovery` role (D30), in every SCP-governed account.** Not networking, but it belongs
+   in `foundation/` because it is `[P]`, free, and must exist before anything can go wrong. Built from
+   `terraform-modules/iam-role`, so the permissions boundary is a required argument rather than an
+   afterthought. Its shape:
+   - **Identity policy scoped to the actions the SCPs deny**, not `AdministratorAccess`. This is the part
+     people skip, and skipping it is what turns a recovery role into a second administrator: the SCP
+     exemption removes a *ceiling*, it grants nothing, so the role still needs its own permissions and
+     they can be narrow. The list is knowable because the same repository writes both halves.
+   - **Trust policy admitting only the infrastructure user's Identity Center role, and requiring
+     `aws:MultiFactorAuthPresent`.** Maximum session duration 1 hour.
+   - **A CloudTrail alarm on every `sts:AssumeRole` into it**, same chain as the root alarm in Stage 1a
+     step 5. A credential that is never used in normal operation should be loud the one time it is.
+   Export its ARN from this slice, so the SCP carve-out list in `terraform-live/identity/` is read through
+   `terraform_remote_state` rather than pasted — which is what keeps the enumerated list honest as accounts
+   come and go.
 6. **Sandbox ↔ Production VPC peering.** The requester lives in `sandbox/foundation/`, the accepter in
    `production/foundation/` (a provider alias, cross-account). Routes are added **per subnet, not per VPC**:
    the Sandbox private subnets reach only the Production subnet holding GitLab and the endpoints, and
@@ -1053,6 +1347,24 @@ different lifecycles (§5.1).
    internet, including someone's personal one — which is the exact failure mode the whole DLP objective is
    about. Free. Take the policy shapes from the `data-perimeter-policy-examples` repository (§4.2) rather
    than writing them by hand — the service carve-outs are the part everyone forgets.
+   **One carve-out that repository will not write for you, and that this project cannot do without.**
+   `aws:ResourceOrgID` on the **S3 gateway** endpoint denies AWS's own service-owned buckets, because they
+   are not in your organization — and several things this plan requires live in exactly those buckets:
+   - the **Amazon Linux 2023 package repositories** (`al2023-repos-<region>-*`), so `dnf update` and every
+     `yum`/`dnf install` on the WireGuard host, the GitLab host and any EC2-based runner stops working.
+     `CLAUDE.md` asks in as many words to keep "the possibility of software updates" — this is the line
+     that either honours that or quietly breaks it;
+   - SageMaker's own regional buckets for built-in images, sample data and JumpStart artifacts;
+   - the SSM agent and CloudWatch agent distribution buckets.
+
+   `aws:ViaAWSService` does **not** rescue these: a `dnf` process on an instance is not an AWS service
+   calling on your behalf, it is your own credential fetching an object. So the gateway endpoint policy
+   needs a second, explicitly enumerated `Allow` statement listing the AWS-owned bucket ARNs the
+   environment depends on, scoped to `s3:GetObject` (and `s3:ListBucket` where the client needs it). Write
+   that list in the `vpc` module as a variable with a documented default, not inline — it is the statement
+   most likely to be trimmed by someone tidying up, and its failure mode is a package manager that hangs
+   rather than an `AccessDenied` anyone can read. Under egress design B this is not optional in any sense:
+   with no NAT route at all, the endpoint is the *only* path to those buckets.
 10. Keep this slice's route-table associations parameterised, so D5 (Stage 6) can insert a firewall or
     proxy into the egress path, or remove it entirely under design B, without reshaping the foundation.
 
@@ -1094,6 +1406,12 @@ hourly charge for the whole session.
    port 22 from the internet.
 4. Peer public keys supplied through a git-ignored `.tfvars` (keys are generated on the client and the
    private key never leaves the laptop). One peer per person and per device.
+   **The peer network gets its own CIDR, chosen here and written down: `10.90.0.0/24`.** It has to avoid all
+   four VPC ranges (`10.20`, `10.30`, `10.40`, `10.50`) *and* be unlikely to collide with a home or café LAN,
+   which is why it is not `10.0.0.0/24` or anything in `192.168.0.0/16`. With NAT on the instance (step 1)
+   nothing inside AWS ever sees this range, so its only job is to not collide with the laptop's own network
+   — a collision there produces a tunnel that comes up and routes nothing, diagnosed by nobody at 23:00.
+   Record it in §4.1's spirit: a variable with this default, not a literal scattered through the module.
 5. **Full tunnel, not split** — a correction to the previous version, forced by step 8: the client routes
    `0.0.0.0/0` through WireGuard, so AWS API and console traffic exits through the instance's Elastic IP
    and the `aws:SourceIp` condition can match it. A split tunnel routing only the two VPC CIDRs would
@@ -1115,9 +1433,17 @@ hourly charge for the whole session.
    world with a valid SSO session. Add a deny with `NotIpAddress` on the WireGuard Elastic IP **combined
    with `aws:ViaAWSService: false`** to the permission sets in `terraform-live/identity/` — the second
    condition is not optional: services calling on the user's behalf (Athena reaching S3 is this plan's
-   first casualty) do not carry the user's source IP, and a bare `aws:SourceIp` deny breaks them. Add the
-   same condition pair on `sagemaker:CreatePresignedDomainUrl` so a Studio URL cannot even be minted from
-   outside the tunnel. This restriction is what step 5's full tunnel exists for.
+   first casualty) do not carry the user's source IP, and a bare `aws:SourceIp` deny breaks them.
+   **Which API to pin this to changed with D26, and the old answer is still written in several places.**
+   The classic Studio path was `sagemaker:CreatePresignedDomainUrl`; there are no classic domains any more,
+   so keep the deny on it as a belt-and-braces measure (it costs nothing and the `Workloads` OU SCP denies
+   the same action anyway) but understand that it now protects nothing that exists. The surface that
+   actually matters is the **Unified Studio portal**, which is reached by signing in to Identity Center and
+   opening the domain URL — not by minting a presigned URL with an IAM call. **Whether a permission-set
+   `aws:SourceIp` deny covers that sign-in at all is unverified and is §4.4 row 16.** Until that row is
+   settled, this step delivers VPN-only access to the AWS APIs and the console, and *not* demonstrably to
+   the portal — which is the data scientist's primary working surface. Do not write it up as though it
+   does. This restriction is what step 5's full tunnel exists for.
    Two cautions, both of which have locked people out before: apply it to the `data-scientists` and
    `deployment-managers` and `governance-managers` permission sets first and to `AdministratorAccess` only once it demonstrably works, and note
    that this pins access to a single Elastic IP — which is precisely why that IP lives in `[P]` (D4).
@@ -1129,16 +1455,23 @@ hourly charge for the whole session.
 **and Production** VPCs — the only two the tunnel reaches at the VPC level. The laptop has **no route into
 the Development or Staging VPCs, by design**, and that is not a gap: both are used entirely through AWS
 API endpoints, which the full tunnel already sends out through the WireGuard Elastic IP (§3, "How a human
-actually reaches each account"). For Development specifically, that means Studio is opened by calling
-`CreatePresignedDomainUrl` and following the returned URL — a public SageMaker endpoint, reached from the
-tunnel's IP, and `VpcOnly` does not change that because it governs how the *app containers* reach the
-network, not how the browser reaches the UI. So the deliverable to demonstrate here is **Studio in
-Development opening with the tunnel up and refusing to open with it down** — which is the `aws:SourceIp`
-condition of step 8 doing its job, not a network route. The Sandbox and Production test resources are
-unreachable with the tunnel down; an AWS API call with the tunnel
-down is denied for the data scientist **and the same call with the tunnel up succeeds** — the pair that
-proves the full-tunnel/`aws:SourceIp` wiring; `make down` followed by `make up` restores connectivity
-without changing the client configuration.
+actually reaches each account"). For Development specifically, that means the work is done through the
+**Unified Studio portal** (D26) — a public endpoint, reached from the tunnel's IP, and `VpcOnly` does not
+change that because it governs how the *app containers* reach the network, not how the browser reaches the
+UI. The laptop needs no route into the Development VPC either way.
+
+So the deliverables are:
+- the Sandbox and Production test resources are reachable with the tunnel up and unreachable with it down;
+- an AWS API call with the tunnel down is denied for the data scientist **and the same call with the tunnel
+  up succeeds** — the pair that proves the full-tunnel/`aws:SourceIp` wiring;
+- `make down` followed by `make up` restores connectivity without changing the client configuration;
+- **and, as a recorded result rather than an assumed one: does the portal itself open with the tunnel down?**
+  This is §4.4 row 16 and it is answered here, at the first moment it can be. If the portal opens without
+  the tunnel, "all user access through a VPN" is not yet true for the surface the data scientist actually
+  uses, and the fallback in that row applies. Write down which of the two happened.
+
+An earlier version of this deliverable said "Studio in Development opens with the tunnel up and refuses to
+open with it down", via `CreatePresignedDomainUrl`. D26 removed the classic domains that sentence described.
 
 **Known trade-off (D4):** no Identity Center integration — revoking a person's access means removing their
 peer and re-applying. Acceptable for a single-operator lab, and the reason AWS Client VPN stays documented
@@ -1163,7 +1496,7 @@ before Stage 9 repeats it for Production.
 
 *`data-governance/data/` — layer `[P]`; the KMS CMKs it uses live in the same account:*
 
-1. KMS CMKs per data domain; S3 buckets `raw`, `curated`, `artifacts`, `athena-results`, `logs` with
+1. KMS CMKs per data domain; S3 buckets `raw`, `curated`, `artifacts`, `logs` with
    versioning, encryption, **S3 Bucket Keys** (§5), lifecycle rules, `prevent_destroy`, and a bucket policy
    that denies access not coming through the VPC endpoint (`aws:SourceVpce`) — the resource-side half of
    the trusted-networks axis in §4.2, complementing the endpoint policies from Stage 3. **The deny must
@@ -1178,6 +1511,20 @@ before Stage 9 repeats it for Production.
    variable from day one: `aws:SourceVpce ∈ [sandbox, development, production endpoints]` **or**
    `aws:SourceIp = <WireGuard EIP>`. Getting this wrong produces an `AccessDenied` with no usable
    diagnostic, in every environment at once.
+   **There is a third legitimate caller and it satisfies neither branch: this account's own
+   catalog-maintenance role (D27).** A Glue Crawler over the raw zone or the drop-box runs in the Glue
+   service with no VPC attachment, so it presents no `aws:SourceVpce` and no WireGuard source IP — a
+   condition written for "every reader is a remote consumer" denies the one reader that is local. The same
+   applies to Iceberg table optimizers and column-statistics runs. Add a third branch keyed on the
+   principal rather than on the network: `aws:PrincipalArn` equal to the maintenance role (or
+   `aws:PrincipalAccount` equal to this account, which is looser and easier to get right). This is the
+   collision D27 created after this step was first written, and it is the reason `AccessDenied` on a
+   crawler is a network-policy bug rather than an IAM one — a distinction nobody makes at first, because
+   the error text points at neither.
+   No `athena-results` bucket is created here: Stage 5 step 8 gives every consuming account its own results
+   bucket, local to it and behind its own enforced workgroup configuration (D19). A results bucket in this
+   account would be a place for query output to accumulate *inside* the governed account, owned by nobody,
+   and outside the per-principal prefix scheme the derived zone is built on.
    **And the endpoint IDs in that list must be the S3 *gateway* endpoints from each consumer's
    `foundation/` slice, never the interface endpoints from `egress/`.** This is the sharp edge D22
    created and it is worth spelling out, because the failure is total and the symptom is mute. Interface
@@ -1198,6 +1545,12 @@ before Stage 9 repeats it for Production.
    the drop-box KMS key — that is the half that is forgotten until the `AccessDenied` arrives, and the
    error text will point at S3, not at KMS. The pickup job itself is built in Stage 9 step 2, on the
    producer path; nothing runs in this account (D25 tightens the `Data` OU SCP so that stays true).
+   **Make that three statements, not two (D27).** The drop-box crawler has to read what the writer wrote
+   in order to infer its schema, so the maintenance role needs `GetObject`/`ListBucket` on the same dated
+   prefixes — and, again, a grant on the drop-box KMS key. Three principals, three statements, and the
+   asymmetry is the design: the data scientist writes and cannot read back; the maintenance role reads and
+   cannot delete; the Production job role reads and deletes. Nobody holds two of those three, which is what
+   keeps the drop-box from becoming the general-purpose exchange bucket D18 refuses to build.
 2. **Define the data classification scheme before defining LF-Tags.** LF-Tags are the mechanism; the
    classification is the decision — which levels exist (e.g. public / internal / restricted / personal),
    who owns the assignment, and what each level permits. Writing the tags first produces a taxonomy shaped
@@ -1228,7 +1581,7 @@ before Stage 9 repeats it for Production.
    Record any exception through Lake Formation **hybrid access mode** rather than by quietly widening a
    role.
 7. **The cross-account shares (D22, §4.4 rows 3 and 11).** **Prerequisite, and it is not optional:**
-   Stage 1b step 9 must have enabled `ram:EnableSharingWithAwsOrganization` and raised the Lake Formation
+   Stage 1b step 11 must have enabled `ram:EnableSharingWithAwsOrganization` and raised the Lake Formation
    cross-account version to 3 or above. Without them the grant appears to succeed on this side and the
    resource never appears on the consumer side — which is the least diagnosable failure in the whole plan,
    because nothing errors. Check it first, then grant the catalog read share to the Sandbox and
@@ -1264,6 +1617,19 @@ before Stage 9 repeats it for Production.
    written down. State the classification rule alongside them: the output of a query over `restricted`
    data is `restricted`. Nothing enforces that automatically at this scale — it is policy, and §11 records
    that a catalog with lineage is what enforces it in an institution.
+   **And the sixth practice, added by D31, which is the only default-deny one on the list: the derived zone
+   gets its own KMS CMK.** Separate from the account's general-purpose key — that separation is the whole
+   mechanism, because a key shared with scratch buckets, state and logs cannot express "who may read
+   derived data" without breaking everything else that uses it. The key policy grants `kms:Decrypt` to the
+   project execution roles and to `DataScientistAccess`, and to nobody else; the `DeploymentManagerAccess`
+   set of D31 is deliberately absent from it, as is any future broad read persona. The five practices above
+   answer *where the copy lands*, *how long it lives* and *who is told about it*; this one answers **who may
+   read it**, and it answers it in the one place that keeps answering after everyone has forgotten the
+   question — a new derived prefix under the same key is covered with no list to update.
+   **Cost:** one CMK per Interactive account, ~USD 1 each (§5). **The zero-cost variant if that ever
+   matters:** S3 sets the KMS encryption context to the object ARN, so the account's existing key can carry
+   a `kms:EncryptionContext:aws:s3:arn` condition scoped to the derived prefix instead of a second key —
+   subtler, more fragile, and recorded here as the fallback rather than the default.
 
 *`sandbox/nfs/` — layer `[P]`: mount targets are free, and EFS storage with a
 lifecycle policy to Infrequent Access is ~USD 0.016/GB-month — cents at lab scale. **Sandbox only, and
@@ -1318,6 +1684,30 @@ URL did the person open" and becomes a property of the project they opened.
 forward**, because under egress design B they are how packages arrive, so they cannot come after the thing
 that consumes them. **D5 is executed, not decided, in this stage**: both designs get built (§4.3).
 
+**And one prerequisite that is not a stage: a `dev-env` image has to already exist in the Production ECR.**
+This stage cannot borrow it from Stage 8, which is where the pipeline that builds it lives — and that
+pipeline runs on GitLab runners, which are Stage 7. Following that chain honestly, Stage 6 depended on two
+later stages, which is why the egress design B comparison could not have been completed as written.
+
+**The resolution, decided 2026-08-08:** the first `base` and `dev-env` images are built **by hand**, locally,
+and pushed to the Production ECR before this stage starts. Concretely: build them from the same
+`Dockerfile`s that Stage 8 step 1 will later own, on the laptop, `docker login` to ECR through the tunnel,
+tag immutably, push. Nothing about the images is provisional — only the thing that built them is. Stage 8
+then takes over authorship of exactly the same artefacts, and its first successful pipeline run is verified
+by producing a byte-comparable image rather than a different one.
+
+Two consequences worth stating rather than discovering:
+
+- **This is the only place in the plan where an artifact reaching an account is not built by a pipeline**,
+  which is precisely the property D14 and Stage 8 exist to guarantee. It is acceptable exactly once, at
+  bootstrap, on an image that is replaced by a pipeline-built one at Stage 8. Record the digest of the
+  hand-built image in `LOG.md`, so the changeover is visible.
+- **The §4.3 verdict on egress design B is provisional until Stage 8.** Design B's whole claim is that
+  the image *is* the dependency delivery mechanism, and the usability of that claim depends on how long a
+  rebuild takes — which is a property of the pipeline, not of a laptop build. So Stage 6 step 6 measures
+  everything else and marks the rebuild-loop number as "measured on a laptop, re-measure at Stage 8". The
+  choice that closes D5 can be made here; the number behind it is confirmed there.
+
 **To execute:**
 
 1. **The unified domain (D26), from the official module** — `aws-ia/terraform-aws-sagemaker-unified-studio`
@@ -1326,7 +1716,7 @@ that consumes them. **D5 is executed, not decided, in this stage**: both designs
    (`data-governance/governance/`), authenticating through
    Identity Center. **Check before creating anything:** the domain must live in IdC's home Region
    (`us-west-2` if Stage 1 went as planned) — neither can move afterwards. Account associations through
-   the org-wide RAM sharing Stage 1b step 9 enabled (§4.4 row 12): **Sandbox** and **Development**;
+   the org-wide RAM sharing Stage 1b step 11 enabled (§4.4 row 12): **Sandbox** and **Development**;
    **Staging and Production are never associated** (D28). Two project profiles: **`experimentation`**,
    whose blueprints provision into Sandbox (the unit of work is a notebook), and **`engineering`**,
    provisioning into Development (the unit of work is a pipeline) — the D21 graduation is the move of code
@@ -1342,9 +1732,21 @@ that consumes them. **D5 is executed, not decided, in this stage**: both designs
    is submitted to by pipelines, not by people. The escape hatch for "I need to debug a production job
    interactively" is a time-boxed elevated role approved by `deployment-managers`, logged and alarmed — designed in
    Stage 9, not improvised on the night it is first needed.
-2. Execution roles per user profile **and per project** (the one-role-per-workflow discipline of D28
-   starts here, not in production), honouring **D13**: no `s3:GetObject` on Lake Formation-registered
-   prefixes. Map user profiles to the Identity Center users.
+2. Execution roles per project (the one-role-per-workflow discipline of D28 starts here, not in
+   production), honouring **D13**: no `s3:GetObject` on Lake Formation-registered prefixes. Project
+   membership maps to Identity Center users and groups, which is what replaced the classic per-user-profile
+   mapping when D26 dropped the classic domains.
+   **This is §4.4 row 15 and it is the step of this stage most likely not to work as written.** D13 assumed
+   these roles were authored here, in Terraform. Under D26 the ML and Lakehouse blueprints provision the
+   project environment *and its roles*, so what this step can actually do may be limited to constraining
+   them from outside — a permissions boundary attached through the `sandbox/sagemaker/` and
+   `development/sagemaker/` prerequisite slices — rather than writing them. **Find out before building
+   anything on top:** provision one throwaway project, read back the policies attached to its role, and
+   check whether a boundary imposed from the prerequisite slice survives a blueprint reconciliation. Row 15
+   carries the fallback chain in order. If none of it holds, the outcome is recorded as an incomplete
+   control rather than absorbed by widening D13 — D13 is the reason the fine-grained access objective in
+   `CLAUDE.md` is a control and not a decoration, and it is worth knowing which of the two it turned out
+   to be.
 3. **Lock down what the notebook can create, not just what the domain can reach.** A VPC-only domain
    constrains Studio itself; it does not constrain training, processing or transform jobs launched from a
    notebook through the API, which accept their own network configuration and will happily run outside the
@@ -1365,17 +1767,32 @@ that consumes them. **D5 is executed, not decided, in this stage**: both designs
 6. **Compare them and write the verdict** (the deliverable in §4.3): measured hourly cost, what breaks in a
    normal session, how long the "I need package X right now" loop takes, and what a deliberate
    exfiltration attempt achieves under each. Then choose, and record the choice as the closure of D5.
-7. Attach EFS access points for the shared NFS area.
+   **Mark the rebuild-loop number as provisional** — it is measured against a hand-built image here and
+   re-measured against the Stage 8 pipeline, per this stage's prerequisites.
+7. Attach EFS access points for the shared NFS area (Sandbox only, D24).
+   **To verify rather than assume, and it is a `CLAUDE.md` requirement rather than a convenience:** D24 and
+   the NFS objective were written against classic Studio, where the domain's `DefaultUserSettings` accept a
+   custom EFS file-system configuration. Under D26 the app is a project environment provisioned by the ML
+   blueprint, and whether an additional EFS access point can be attached to it — and through which
+   parameter — is not known. Check it here. Fallbacks, in order: (i) mount the EFS from inside the app with
+   the EFS mount helper, if the container has the privileges and the security group path (the interface is
+   then a documented command rather than a provisioned volume); (ii) restrict the NFS requirement to its
+   actual use case, which `CLAUDE.md` states as exchanging files between *users*, the SageMaker environment
+   and S3 — the laptop-side mount over the tunnel (step 11 of Stage 5) already delivers two of the three;
+   (iii) accept S3 as the exchange path from inside the project and record the POSIX filesystem as
+   unavailable to project compute, which is a real reduction in scope and belongs in §11 next to the
+   existing "Development has no shared filesystem at all" row.
 8. Lifecycle configuration for idle shutdown — mandatory cost control.
-   **Layers: the domain and its user profiles are `[P]`; only the apps are `[E]`.** A domain at rest bills
-   nothing — charges are per running app plus home-filesystem GBs — so destroying it each session would buy
-   nothing and would create two problems: the orphaned-home-EFS hazard (the
-   `RetentionPolicy` default is `Retain`, so every teardown left a billing filesystem behind unless it was
-   deleted explicitly) and the churn of domain ID, user profiles and Identity Center mappings on every
-   `make up`. `make down` now deletes running *apps* only and leaves the domain alone. **Studio home
-   directories are scratch** by policy: notebooks live in GitLab, data lives in S3, shared files live on
-   the Stage 5 EFS — and the home directories stay small, so their storage rounds to cents. State this to
-   users explicitly.
+   **Layers: the domain and its projects are `[P]`; only the running apps are `[E]`.** A DataZone domain at
+   rest bills metadata only, and the per-project SageMaker AI domain the ML blueprint provisions bills
+   nothing until an app runs — so destroying either one each session would buy nothing and would create two
+   problems: the orphaned-home-EFS hazard (a SageMaker domain's `RetentionPolicy` defaults to `Retain`, so
+   every teardown leaves a billing filesystem behind unless it is deleted explicitly) and the churn of
+   domain IDs, project IDs and Identity Center mappings on every `make up`. `make down` deletes running
+   *apps* only — through the per-project SageMaker AI domain, not through DataZone, which owns no compute
+   (§6). **Project home directories are scratch** by policy: notebooks live in GitLab, data lives in S3,
+   shared files live on the Stage 5 EFS — and the home directories stay small, so their storage rounds to
+   cents. State this to users explicitly.
 9. CloudWatch log groups and metrics for the domain.
 
 **To verify rather than assume** (§4.4 rows 1 and 2 carry these with their fallbacks): whether a Studio
@@ -1391,13 +1808,21 @@ architecture (streaming desktop, or no direct data access at all), and everythin
 **Deliverables:** the data scientist logs in through the VPN, opens the unified portal, works in the
 `experimentation` project (compute provisioned in Sandbox) and in the `engineering` project (compute in
 Development), installs a package, reads a lake table through Athena over the LF share — surfaced as a
-subscribed asset in SageMaker Catalog — writes to EFS (Sandbox), and cannot reach a non-allowlisted site
-under design A, nor any site at all under design B; from the `engineering` project, a `git clone` from
-GitLab succeeds over the Development↔Production peering (§4.4 row 9 — the *network* path, which is
-independent of the CodeConnections attachment in row 13 that D26 accepts losing). Plus the written
-comparison of the two egress designs. **And one negative deliverable, recorded as a result rather than
-assumed:** nothing was provisioned into the Data Governance account by any blueprint — check it, because
-it is the property that keeps the `Data` OU's policy set honest.
+subscribed asset in SageMaker Catalog — writes to EFS (Sandbox, subject to step 7), and cannot reach a
+non-allowlisted site under design A, nor any site at all under design B. Plus the written comparison of the
+two egress designs, with the rebuild-loop figure marked provisional.
+
+**Two negative deliverables, recorded as results rather than assumed:** nothing was provisioned into the
+Data Governance account by any blueprint — check it, because it is the property that keeps the `Data` OU's
+policy set honest; and the answer to §4.4 row 15, whichever way it went — what is attached to a
+blueprint-provisioned project role, and whether a permissions boundary imposed from the prerequisite slice
+survived.
+
+**Deferred to Stage 7, deliberately:** the `git clone` from GitLab in the `engineering` project. GitLab does
+not exist until Stage 7 step 1, so this stage cannot demonstrate it — an earlier version listed it here and
+that was a dependency error, not an ambition. It moves to Stage 7's deliverables, where it belongs together
+with the §4.4 row 9 network proof (the Development↔Production peering) and independently of the
+CodeConnections attachment in row 13 that D26 accepts losing.
 
 **Note on the product direction (revised 2026-08-08, D26):** the first version of this stage built the
 classic Studio generation (JupyterLab / Code Editor domains, one per Interactive account) and recorded
@@ -1407,8 +1832,11 @@ plan assembles by hand in Stage 5 is exactly what SageMaker Catalog puts a porta
 the old argument is the order of construction — the LF substrate is still built first, by hand, and the
 portal is a storey on top of it, not the foundation. The corresponding §11 row is closed. One property
 worth restating because it did not change: the portal, like the old Development Studio UI, is a **public
-endpoint** controlled by `aws:SourceIp` against the WireGuard Elastic IP (§3) — adopting Unified Studio
-neither opens nor closes that path.
+endpoint**, intended to be controlled by `aws:SourceIp` against the WireGuard Elastic IP (§3) — adopting
+Unified Studio neither opens nor closes that path. **"Intended to be" is doing real work in that sentence
+and it did not before:** the classic UI was reached by an IAM-authorized `CreatePresignedDomainUrl` call, so
+a permission-set condition demonstrably applied; the portal is reached by an Identity Center sign-in, and
+whether the same condition applies is §4.4 row 16, answered at Stage 4.
 
 ---
 
@@ -1452,6 +1880,23 @@ under egress design B it is how packages reach SageMaker. The rest of this stage
    (Premium) feature.** GitLab group membership is therefore maintained by hand — acceptable at three
    users — with group names mirroring the Identity Center groups 1:1, so the Stage 8 approval gate is
    driven by the same identity names and a future upgrade to group sync changes nothing visible.
+   **A second edition caveat, in the same family and with larger consequences: the Stage 8 approval gate
+   itself is probably not expressible in CE as designed.** Stage 8 step 3.5 wants a manual approval
+   *assigned to the `deployment-managers` group*; **protected environments** and **deployment approval
+   rules** — the features that express "this job may only be run by members of group X" — are Premium.
+   What CE does give is a `when: manual` job on a **protected branch or protected tag**, where the set of
+   people who may run it is the set allowed to deploy to that ref. Verify which of the two this instance
+   supports **before Stage 8 is written**, not during it, because the answer changes what "the approval
+   gate" means:
+   - if Premium is available, the gate is what D20 describes;
+   - if not, the fallback is protected-tag permissions plus a GitLab group whose membership is maintained by
+     hand — the same compromise already accepted for SAML group sync one paragraph up, applied to the
+     control D20 leans on rather than to a convenience. It is weaker in a specific way worth writing down:
+     the constraint is *who can push the protected tag*, not *who approves this particular release*, and
+     CloudTrail on the two deploy roles (§4.4 row 8) becomes the record of what actually happened rather
+     than a supplement to it.
+
+   §11 gains a row either way: an institution buys the tier and gets the approval as a first-class object.
 4. GitLab Pages enabled for documentation, reachable only through the VPN. Pages requires a **domain
    distinct from the GitLab host** (it serves user-supplied content, so sharing the origin would hand it
    the GitLab session cookie) and a **wildcard DNS record plus wildcard certificate** — both provided by
@@ -1478,7 +1923,12 @@ under egress design B it is how packages reach SageMaker. The rest of this stage
 
 **Deliverables:** a repository pushed to GitLab over the VPN, a pipeline running on a private runner, an
 image in ECR pulled successfully **from both Interactive accounts**, and a docs site served by Pages over
-HTTPS with a valid certificate.
+HTTPS with a valid certificate. **Plus the one deferred from Stage 6:** a `git clone` from GitLab inside the
+`engineering` project, which proves the Development↔Production peering carries it (§4.4 row 9) — the
+*network* path, independent of the CodeConnections attachment in row 13 that D26 accepts losing. Row 13
+itself is also answered here, since this is when GitLab first exists: check whether a CodeConnections host
+can be created at all from an account with no VPC, and record the manual `git remote add` as the accepted
+path when it cannot.
 
 ---
 
@@ -1532,7 +1982,9 @@ HTTPS with a valid certificate.
       against a real catalog, real IAM and a real network;
    4. `make down ENV=staging` — tear it back down, so the metered cost is minutes;
    5. **manual approval**, assigned to the `deployment-managers` group, with the Staging test results and the
-      Production `terraform plan` attached to it;
+      Production `terraform plan` attached to it — **subject to the GitLab edition check in Stage 7 step 3:**
+      group-assigned deployment approvals are Premium, and the CE fallback is a `when: manual` job on a
+      protected tag, which constrains *who can push the tag* rather than *who approves this release*;
    6. promote the image and `terraform apply` for `terraform-live/production/app/app-etl/`.
 
    A failure at step 3 stops the chain and Production is never touched. That is the property the earlier
@@ -1628,13 +2080,11 @@ somewhere real to run, and the end of this stage is where the first fully meanin
 4. **The Staging data platform (D20)** — `terraform-live/staging/data/`, from the same modules again, plus
    `terraform-live/staging/sagemaker/` holding job execution roles and nothing else (no domain, no Model
    Registry; the approved model version is read from Production's).
-   Its catalog **mirrors Production's schema** — same databases, same table definitions, same LF-Tags —
-   because a staging run that fails on a schema difference tests the staging environment rather than the
-   application.
-   Its catalog mirrors the *lake's* schema (D22) — same databases, same table definitions, same
-   LF-Tags — held locally with sampled or synthetic content.
+   Its catalog **mirrors the lake's schema** (D22) — same databases, same table definitions, same
+   LF-Tags — held locally, with sampled or synthetic content, because a staging run that fails on a schema
+   difference tests the staging environment rather than the application.
    Its **data is sampled or synthetic and is never a copy of the lake, and Staging is not on the Data
-   Management share (D20/D22)**. This is the part to hold the line on: Staging is a deployment target
+   Governance share (D20/D22)**. This is the part to hold the line on: Staging is a deployment target
    where the data scientists have read access (D18) and where automated tests run unattended, so a share
    or a copy would make the least-defended account the cheapest route to governed data. If a test
    genuinely needs production-shaped volume, generate it; if it needs production *values*, the test
@@ -1730,7 +2180,7 @@ to destroy, so its run history is not state inside an `[E]` resource.
    container; that covers the `app-etl` template in `CLAUDE.md` but not the other thing a data science
    environment produces, which is a trained model. The **SageMaker Model Registry** is the promotion
    boundary — a model version is *approved*, not a file copied — and D17 puts it in the Production account,
-   built in Stage 9 step 2, so this stage consumes it rather than inventing it. What remains to define
+   built in Stage 9 step 3, so this stage consumes it rather than inventing it. What remains to define
    here: who registers a model version and under which role (the pipeline's, never the data scientist's),
    how an approved version is served (batch transform or an endpoint), and what is recorded alongside it —
    training data version, metrics, owner. Without this, "data science environment" means "notebooks with a
@@ -1808,7 +2258,7 @@ never built; alarms that fire on a simulated exfiltration attempt.
    estimates most likely to be wrong are the interface endpoints (the largest hourly item) and GitLab
    (the largest idle item). Update §5 and §5.1 with measured numbers rather than the projections.
 6. Config rules / conformance packs on top of the Control Tower guardrails; review the recorder scope set
-   in Stage 1b step 8 against what the bill actually shows.
+   in Stage 1b step 10 against what the bill actually shows.
 7. Tighten the permission sets in `terraform-live/identity/` against real usage, using **IAM Access
    Analyzer unused-access findings** — which is a better instrument than review, because it reports
    permissions that were granted and never exercised.
@@ -1854,7 +2304,7 @@ never built; alarms that fire on a simulated exfiltration attempt.
 
 ## 9. Open questions
 
-Everything that was open before execution started is now closed in §4 (D1-D28). What follows is
+Everything that was open before execution started is now closed in §4 (D1-D31). What follows is
 what is genuinely still unanswered:
 
 1. **Which domain name to register (D15).** The one input needed from the user. Not blocking Stage 1, but
@@ -1871,7 +2321,7 @@ what is genuinely still unanswered:
    datacenters in Sandbox, Development and Production — which turns peering traffic that looks intra-AZ
    into cross-AZ traffic at USD 0.01/GB each way. **D14 and D21 made this concrete rather than
    theoretical:** the VPN, SageMaker and GitLab talk across the two peerings constantly. Check it in
-   Stage 1b step 11
+   Stage 1b step 6
    (`aws ec2 describe-availability-zones --query 'AvailabilityZones[].[ZoneName,ZoneId]'` under each
    profile). If the mappings differ, Stage 3 anchors subnets on `zone_ids` (`usw2-az1`, passed per
    environment in `.tfvars`) instead of on list position, and §4.1 is updated accordingly.
@@ -1884,8 +2334,13 @@ what is genuinely still unanswered:
 6. **Whether SageMaker Studio can block file download** (Stage 6 — the question carries over unchanged to
    the ML-blueprint apps under D26). If not, Stage 11's threat model has to
    record an accepted risk rather than a control.
-7. **The fourteen cross-account integrations in §4.4.** Each has a stated fallback, so none of them blocks
+7. **The sixteen cross-account integrations in §4.4.** Each has a stated fallback, so none of them blocks
    a stage, but none of them is known to work either. They are listed there rather than repeated here.
+   **Rows 15 and 16, added 2026-08-08 by the pre-Stage-1 review, are not integration risks but
+   control risks** — whether D13's constraint on execution roles survives blueprint-authored roles (row 15),
+   and whether the VPN restriction reaches the Unified Studio portal at all (row 16). Each can invalidate an
+   objective stated in `CLAUDE.md`, so they are answered at Stages 6 and 4 respectively and their outcome is
+   written down either way.
    Row 11 (organization-wide RAM sharing and the Lake Formation cross-account version) is the one to
    settle earliest, because it is enabled in Stage 1b and consumed in Stage 5 — and since D26 it also
    carries the domain's account associations (row 12) — and its failure mode is silence rather than an
@@ -1904,6 +2359,59 @@ what is genuinely still unanswered:
    environment ever has, whether a Staging run could have caught it. Until there is such a record, this
    is a belief rather than a finding.
 
+### Blocking Stage 1 — the choices the user has to make, added 2026-08-08 by the pre-Stage-1 review
+
+Items 1-9 above are things to *find out*. These are things to *decide*, they have no defensible
+default, and each one is referenced from the step that needs it.
+
+10. ~~**What "apply these to a test OU first" means, since there is no test OU**~~ — **closed 2026-08-08 as
+    D29:** a tenth account, `Policy Canary`, alone in a fifth OU, `Policy Test`. The reasoning that closed
+    it is worth keeping in one line, because the obvious answer was the wrong one: an *empty* policy
+    staging OU tests nothing, since an SCP is only evaluated when a principal makes a call, so the OU is
+    worth having only because there is a disposable account inside it. Stage 1b step 7 now carries the
+    procedure — one policy at a time, exercised from an administrator principal, in both directions
+    (what must still succeed *and* what must now fail), with the detach command ready. Two verifications
+    ride along with it and are answered while executing: whether the **IAM Policy Simulator** evaluates
+    SCPs for member-account principals — if it does, it is a cheaper first pass than any OU — and whether
+    the OU has to be **registered with Control Tower** for the test to run against the real control
+    baseline, which D29 assumes and Stage 1a step 4 instructs.
+11. ~~**What the break-glass credential actually is**~~ — **closed 2026-08-08: the Management account root,
+    and nothing else** (D16). It removes the exception from principle 2 rather than documenting one, since
+    the root is not an IAM user; it merges Stage 1a steps 1 and 5, which were describing the same credential;
+    and it composes with centralized root access management, which strips root from the member accounts and
+    leaves exactly one. The cost, recorded rather than hidden: the root cannot be scoped, so every
+    compensating control is detective — MFA, offline password, no access keys (with
+    `iam-root-access-key-check` as the instrument, since SCPs cannot reach Management), and an alarm whose
+    SNS destination is deliberately *not* the mailbox that is the login.
+    **The MFA type is deliberately left unspecified**, which is a decision and not an omission: nothing in
+    this plan depends on it, and the user already has MFA on this root. What survives is not about the type
+    — with a single registered device, recovery runs through AWS support and depends on the account's phone
+    number and payment method, so those are part of the design.
+    **And the second half of this item went the other way (D30):** the SCP recovery principal — a role
+    exempt from every custom deny — was recommended against and **adopted by the user's decision**. It is
+    built, with an enumerated ARN list rather than a wildcard, a companion deny on creating the role, a
+    scoped identity policy, MFA-gated trust, an assume alarm, and a CI check that no `Deny` ships without
+    the carve-out. It also forced a hole closed that predated it: the SCPs now live in code
+    (`terraform-live/identity/`), because a condition repeated by hand across four documents is a condition
+    that will be missing from one.
+12. ~~**Whether the deployment manager keeps blanket `ReadOnlyAccess` on four accounts**~~ — **closed
+    2026-08-08 as D31: it does not.** Two changes, and the more durable one is the second. `ReadOnlyAccess`
+    is replaced by a bespoke **`DeploymentManagerAccess`** in the shape D18 already uses — diagnosis, not
+    reading: logs, job and pipeline status, catalog metadata, scan findings, enumerated artifact prefixes;
+    `athena:*` and `kms:Decrypt` denied explicitly. And the **derived zone gets its own KMS CMK** in each
+    Interactive account, whose key policy is where "who may read materialised `restricted` data" is
+    expressed — default-deny, so a derived prefix nobody enumerated is still covered. That second half
+    closes a gap in D19 that had nothing to do with this persona: five practices for the derived zone, none
+    of them about the key. Cost: two more CMKs, ~USD 2/month.
+    **One precision worth keeping, because it is why the old arrangement looked fine:** `ReadOnlyAccess`
+    grants neither `athena:StartQueryExecution` nor `kms:Decrypt`, so it could not originate a read of the
+    lake and could not decrypt an SSE-KMS object. The exposure was real but was being prevented by
+    *encryption* rather than by *design* — a property that evaporates the first time a bucket is created
+    without a CMK, which is exactly the kind of accident this plan should not depend on.
+
+**Every item in this section that was a *decision* is now closed. Items 1-9 remain, and they are all
+things to find out by doing.** Stage 1a has no outstanding prerequisite.
+
 ---
 
 ## 10. Plan revision history
@@ -1914,7 +2422,7 @@ something already provisioned.
 
 | Date | Change |
 |---|---|
-| 2026-08-07 → 2026-08-08 | **The plan, written and revised ten times before any AWS resource existed.** It arrived at: stages 0-13; decisions D1-D28, all closed — the ninth revision adopted **SageMaker Unified Studio** (D26), the catalog-maintenance exception for Glue Crawlers (D27) and the production workflow contract (D28), and the tenth placed the domain by asking which *axis* it sits on — **`Data Management` was renamed `Data Governance`** and took the domain, no tenth account being needed, and the single `Manager` persona split into **Deployment Manager** and **Governance Manager** so that releasing a job and granting it data are two signatures; the nine-account, four-OU layout; §4.2 the data perimeter; §4.3 the two egress designs; §4.4 the fourteen cross-account integrations; §5/§5.1 the cost model and the `[P]`/`[D]`/`[E]` operating model; §9 the open questions; §11 the lab-versus-institution delta. `GLOSSARY.md` and `PRICING.md` were created along the way, the latter measured from the AWS Price List bulk API rather than estimated. The individual revisions are not recorded here: everything that survived them is in the sections above, and with nothing provisioned they described only how the document changed, not how the environment did. The reasoning that would otherwise be lost is kept in the D-columns of §4 (each decision carries its own rationale and its revision triggers) and in the "Lessons carried forward" list in `CLAUDE.md`. |
+| 2026-08-07 → 2026-08-08 | **The plan, written and revised ten times before any AWS resource existed.** It arrived at: stages 0-13; decisions D1-D28, all closed — the ninth revision adopted **SageMaker Unified Studio** (D26), the catalog-maintenance exception for Glue Crawlers (D27) and the production workflow contract (D28), and the tenth placed the domain by asking which *axis* it sits on — **`Data Management` was renamed `Data Governance`** and took the domain, no tenth account being needed, and the single `Manager` persona split into **Deployment Manager** and **Governance Manager** so that releasing a job and granting it data are two signatures; the nine-account, four-OU layout; §4.2 the data perimeter; §4.3 the two egress designs; §4.4 the cross-account integrations — fourteen at that point, sixteen after the review below; §5/§5.1 the cost model and the `[P]`/`[D]`/`[E]` operating model; §9 the open questions; §11 the lab-versus-institution delta. `GLOSSARY.md` and `PRICING.md` were created along the way, the latter measured from the AWS Price List bulk API rather than estimated. The individual revisions are not recorded here: everything that survived them is in the sections above, and with nothing provisioned they described only how the document changed, not how the environment did. The reasoning that would otherwise be lost is kept in the D-columns of §4 (each decision carries its own rationale and its revision triggers) and in the "Lessons carried forward" list in `CLAUDE.md`. **A final pre-Stage-1 review closed the document out on 2026-08-08** — Stage 1b renumbered, the RAM enablement attributed to the right account with a verification that can fail, OU creation routed through Control Tower, §4.4 rows 15-16 added as *control* risks, the perimeter's AWS-owned-bucket carve-out written down, Stage 6's dependency on Stages 7-8 resolved with a hand-built first image, and three choices left open as §9 items 10-12. It earns no row of its own for the same reason none of the ten revisions do: nothing was provisioned. |
 
 ---
 
@@ -1927,9 +2435,9 @@ learned rather than absorbed by accident. This is the delta, decision by decisio
 
 | Area | This lab | A large institution | Why the difference matters |
 |---|---|---|---|
-| Account structure | 9 accounts; tooling in Production (D14); one account per environment plus one data account (D20-D22) | Shared Services / Tooling account in an `Infrastructure` OU; a Network account; per-team sandbox accounts; separate Dev/Staging/Prod **per workload**; data accounts **per domain** | The lab still has no boundary between build and runtime, and none between teams. One account per environment role is enough for one team and one workload; at thirty of either, each role becomes a fleet |
-| OUs | Security, Interactive, Data, Workloads (D23) | Plus Infrastructure, Deployments, Policy Staging, Suspended; Workloads nested into NonProd/Prod | The four OUs each carry a real policy set, which is the test an OU must pass. Policy Staging is the notable absence: an SCP tested on a throwaway OU before it reaches anything real is the difference between a guardrail and an outage. D23 records the nesting triggers |
-| Account vending | Manual Account Factory, six times | **AFT** (Account Factory for Terraform) with a customization pipeline | At six accounts created once, automation costs more than it saves; at thirty it is the only way accounts stay consistent |
+| Account structure | 10 accounts; tooling in Production (D14); one account per environment, one data account (D20-D22) and one disposable policy-test account (D29) | Shared Services / Tooling account in an `Infrastructure` OU; a Network account; per-team sandbox accounts; separate Dev/Staging/Prod **per workload**; data accounts **per domain** | The lab still has no boundary between build and runtime, and none between teams. One account per environment role is enough for one team and one workload; at thirty of either, each role becomes a fleet |
+| OUs | Security, Interactive, Data, Workloads, **Policy Test** (D23, D29) | Plus Infrastructure, Deployments, Suspended; Workloads nested into NonProd/Prod | Four of the five carry a real policy set, which is the test an OU must pass; the fifth carries none *by design* — it is where a candidate policy is exercised against a disposable account before it reaches anything real. **This row used to list that OU as the notable absence and it was closed on 2026-08-08 (D29)**, under names chosen to avoid the collision with the Staging account. What is still absent is a `Suspended` OU, which needs accounts to decommission and this lab has none. D23 records the nesting triggers |
+| Account vending | Manual Account Factory, seven times | **AFT** (Account Factory for Terraform) with a customization pipeline | At seven accounts created once, automation costs more than it saves; at thirty it is the only way accounts stay consistent |
 | Networking | One VPC per account, peered, NAT and endpoints per account | Transit Gateway or Cloud WAN, centralized egress through an inspection VPC, centralized interface endpoints shared by RAM, **IPAM** for CIDR allocation | Peering is O(n^2) and per-account endpoints are the largest hourly cost multiplied by the number of accounts. CIDRs chosen by hand collide eventually |
 | VPN | Self-managed WireGuard, peers in a `.tfvars` (D4) | AWS Client VPN or Verified Access, federated to the corporate IdP, with per-user certificates and session logging | Revoking one person here means editing a file and re-applying. That does not survive an offboarding process |
 | Identity | Identity Center as the identity source | Identity Center federated to the corporate IdP (Entra ID, Okta) via SAML + SCIM, groups driven by HR | Joiners/movers/leavers has to be automatic, or entitlements only ever accumulate |
@@ -1938,13 +2446,15 @@ learned rather than absorbed by accident. This is the delta, decision by decisio
 | Who approves access to data | **Closed 2026-08-08: the lab adopted it.** The single `Manager` persona was split into a **Deployment Manager** (`deployment-managers`, lifecycle approvals in the pipeline) and a **Governance Manager** (`governance-managers`, subscription and data-access approvals in the portal, domain owner of the unified domain) | A data steward *per data domain*, sitting inside the producing team rather than centrally, with the subscription queue as their own backlog | The split was first recorded here as notational, then adopted a few hours later — because it is not notational: with one persona a single human writes a job reading restricted data, approves its release **and** approves its data access. What stays a lab compromise is that there is one governance manager for all data, not one per domain |
 | Domain topology | One domain, one set of project profiles, all data in one Data Governance account | A domain per business data domain, **decentralised producer accounts** each owning and publishing their own datasets, consumers subscribing across them | This project's Data Governance account is a producer, a consumer and the governance plane at once. That collapse is invisible at one team and becomes the central problem at ten — it is what "data mesh" is a name for |
 | Iceberg operations | General-purpose S3 buckets + scheduled Athena `OPTIMIZE`/`VACUUM`, because D13 leans on prefix-level IAM control | **Amazon S3 Tables**: managed Iceberg with automatic compaction, snapshot expiry and Lake Formation integration | The managed service removes the maintenance a hand-rolled lake forgets — but takes away the prefix-level control D13 is built on, so switching is an architecture decision, not a swap |
-| Derived data (D19) | Per-principal prefixes with a lifecycle expiry; classification inheritance stated as policy and enforced by nobody | Lineage-aware catalog that propagates the classification of a source onto everything derived from it, plus periodic re-scan of the derived zone | The lab knows *where* copies land but not *what is in them* until Macie says so, days later. Inheritance by policy works with three users and fails silently with thirty |
+| Derived data (D19, D31) | Per-principal prefixes with a lifecycle expiry; **a dedicated CMK whose key policy decides who may read the copy**; classification inheritance stated as policy and enforced by nobody | Lineage-aware catalog that propagates the classification of a source onto everything derived from it, plus periodic re-scan of the derived zone | The lab knows *where* copies land but not *what is in them* until Macie says so, days later. Inheritance by policy works with three users and fails silently with thirty |
 | Environment promotion | Four environments: Sandbox (experimentation) feeding Development by git, then Development → Staging → Production through the pipeline (D20, D21) | The same chain, plus per-workload triples, and staging data that is a governed, masked copy of production rather than a sample | This row closed on 2026-08-08 in two steps — Staging in the morning, Development and the corrected chain origin in the evening. What stays open is the *data*: sampled data catches permission, schema and wiring errors, and misses everything that only appears at production distribution and volume |
 | Access requests | Terraform merge request | Self-service request with approval workflow, time-bound grants | "Ask the platform engineer" does not scale, and permanent grants never get revoked |
+| Recovering from a bad guardrail | A standing principal, `awsds-scp-recovery`, exempt from every custom deny (D30) | No standing exemption at all: the policy is detached from the management account by whoever owns it, or an incident-scoped role is elevated for a bounded window and expires on its own | The lab's version is a permanent hole justified by a hypothetical, which is the shape an institution refuses precisely because the hypothetical is rare and the hole is not. It is defensible here for two reasons that do not survive scale: there is one operator, so the "the person who hits it cannot reach Management" argument that motivates the pattern institutionally does not apply; and the carve-out's sharp edges — wildcard account IDs, drift across statements — are worth building once to understand. The revision trigger in D30 is the arrival of a second person |
 | Egress control | DNS Firewall allowlist, or no internet (§4.3) | AWS Network Firewall with TLS inspection, plus an internal package mirror covering every ecosystem (Posit Package Manager, Artifactory or similar) | A commercial artifact manager solves in one product what §4.3 solves with four different fallbacks. It costs money the lab does not have |
 | Egress cost | ~USD 0.05/h NAT | ~USD 290/month Network Firewall, accepted without discussion | The lab has to be clever precisely because it cannot buy the obvious answer |
 | Shared storage | EFS with Access Points, in **Sandbox only** (D24); POSIX identity not tied to SSO | FSx for Lustre for training throughput, EFS for home directories in *every* interactive account, and file access auditable per user | Two gaps, not one. "Who read this file" is unanswerable in the lab design — in a regulated institution that is disqualifying. And a data scientist working in Development has no shared filesystem at all, so they have to think about which account their files are in; an institution would never make that the user's problem |
 | CI/CD trust | Same-account deploy runner with an instance profile (D14; OIDC is blocked because IAM cannot fetch a VPN-only issuer's JWKS) | Build account separate from deploy targets; OIDC federation against a publicly resolvable issuer; signed artifacts; provenance attestation | A compromised runner in the lab compromises Production directly |
+| The approval gate itself | GitLab CE: a `when: manual` job on a protected tag, if the edition check in Stage 7 step 3 confirms that group-assigned approvals are Premium; GitLab group membership maintained by hand, mirroring the Identity Center groups | GitLab Premium or Ultimate: protected environments and deployment approval rules as first-class objects, with the approver group driven by SAML group sync from the corporate IdP | The lab's gate constrains *who can push a tag*, which is a proxy for *who approves this release*, not the thing itself. D20's whole argument rests on that gate, so this is the one place where an edition limit reaches a load-bearing control rather than a convenience — and it is why CloudTrail on the two deploy roles (§4.4 row 8) is the actual record of what happened |
 | Backups | AWS Backup + Vault Lock (Stage 12) | The same, plus tested DR runbooks, cross-region recovery, and RTO/RPO agreed per system rather than assumed | The lab tests recovery once; an institution rehearses it |
 | Availability | 1 NAT, single-AZ endpoints, single VPN instance (D9, D4) | Multi-AZ everything, no single points of failure | Every availability shortcut here is a deliberate cost trade, and each one is listed in D4 and D9 |
 | Operations | One person, `make up` / `make down` | On-call rotation, runbooks, change management, an internal platform team with its own product backlog | The largest difference of all, and the one no amount of Terraform addresses |
