@@ -16,7 +16,7 @@ are now officially just the acronym.
 | `[P]` | **Persistent** layer. Resources created once and never destroyed, because they cost nothing (or nearly nothing) at rest, or are too slow to rebuild. See `GENERAL_PLAN.md` §5.1. |
 | `[D]` | **Dormant** layer. Resources kept but powered off between sessions — stateful services where rebuilding is riskier than paying the idle cost. `make down` stops them; `make up` starts them. |
 | `[E]` | **Ephemeral** layer. Resources destroyed at the end of every session: everything metered by the hour and rebuildable in minutes. |
-| `D1` … `D23` | Numbered key decisions, recorded with their rationale in `GENERAL_PLAN.md` §4. Referenced from the stages that consume them. |
+| `D1` … `D25` | Numbered key decisions, recorded with their rationale in `GENERAL_PLAN.md` §4. Referenced from the stages that consume them. |
 | **Sandbox / Development / Staging / Production** | The four environments, one AWS account each. Sandbox is experimentation (the unit of work is a notebook); Development is where pipelines are engineered (the unit of work is a repository); Staging and Production are *deployment targets* that only a pipeline writes to. Promotion runs Development → Staging → Production; Sandbox feeds Development through git. See `README.md`, "Three distinctions the layout is built on". |
 | **Data Management** | The account that owns the *state* of data: the governed lake, its catalog, Lake Formation and the classification scheme. No compute, no interactive sign-in; every environment reaches it through Lake Formation cross-account shares. |
 | `§` | A section of `GENERAL_PLAN.md` (e.g. §4.2 is the data perimeter). |
@@ -38,7 +38,7 @@ are now officially just the acronym.
 | **OIDC** | OpenID Connect | An identity layer over OAuth 2.0. In CI/CD it lets a pipeline job prove who it is to AWS with a short-lived token instead of a stored access key. Blocked in this project's GitLab because validating the token requires AWS to reach the issuer over the public internet (D8, D14). |
 | **JWKS** | JSON Web Key Set | The public keys an OIDC issuer publishes so a verifier can validate its tokens. AWS fetches this over the public internet, which is exactly why a VPN-only GitLab cannot use OIDC federation. |
 | **MFA** | Multi-Factor Authentication | A second proof of identity beyond the password. Mandatory on every user here, and on the break-glass path (D16). |
-| **AFT** | Account Factory for Terraform | AWS's tooling for provisioning Control Tower accounts from code. Deliberately not used: three accounts created once do not repay the setup (§11). |
+| **AFT** | Account Factory for Terraform | AWS's tooling for provisioning Control Tower accounts from code. Deliberately not used: six accounts created once, by hand, do not repay the setup (§11). |
 | **SRA** | (AWS) Security Reference Architecture | AWS's published reference for how to lay out security services across a multi-account organization. |
 
 ## Networking
@@ -111,6 +111,7 @@ are now officially just the acronym.
 | **Promotion** | — | Moving a versioned artifact from one environment to the next through the pipeline, with a gate in between. In this project the chain is Development → Staging → Production, and the four artifacts that travel are listed in D17. |
 | **Graduation** | — | The step *before* promotion: notebook logic from Sandbox is rewritten into a Development repository, reviewed and committed (D21). It is git, not a pipeline — the rewrite is the quality gate, and there is deliberately no automated path that lifts a notebook out of Sandbox. |
 | **Producer path** | — | The Lake Formation governed-write grant held by Production's job execution role (D22): production ETL writing curated tables into the Data Management lake, cross-account, through LF-aware engines. The only way governed data is ever written. |
+| **Ingestion drop-box** | — | A dated S3 prefix in the Data Management account that the Interactive-OU roles may `PutObject` into and nothing else — no read, no list, no delete: a letterbox, not a shared folder (D18). The pickup runs in Production on the producer path (D25), which is what stops it from becoming the general-purpose exchange bucket between accounts that the plan deliberately refuses to build. |
 | **MWAA** | Managed Workflows for Apache Airflow | AWS's hosted Airflow. Named explicitly in `CLAUDE.md`, but ~USD 350/month, so D7 keeps it as one option among four. |
 | **DR** | Disaster Recovery | Restoring after something is destroyed, as opposed to routine operation. |
 | **RTO / RPO** | Recovery Time / Recovery Point Objective | How long recovery may take, and how much data may be lost. Stage 12 requires stating both as numbers rather than assuming them. |

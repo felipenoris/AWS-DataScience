@@ -124,7 +124,8 @@ instance — is a promotion path that bypasses the approval gate, and is therefo
 
 The split is not free, and the plan accepts the cost deliberately rather than pretending it away:
 
-- one AWS Config recorder per governed account, and there are now seven of them;
+- one AWS Config recorder per governed account, and there are now eight of them — every account except
+  Management;
 - a duplicated network layer per account — interface VPC endpoints are the largest hourly line item in this
   project, and they exist on every side of the boundary;
 - cross-account integrations that each have to be *proven* rather than assumed: Studio pulling a custom image
@@ -205,7 +206,7 @@ an OU and to nothing else. It is the mechanical reason this project has a `Workl
 | Studio only in the development / data-science accounts | Studio only in the **Interactive OU** — Sandbox and Development (D17, D21) — enforced by an SCP on the `Workloads` OU denying `sagemaker:CreateDomain`, `CreateUserProfile` and `CreatePresignedDomainUrl` | **Adopted**, and made preventive rather than conventional |
 | A staging / pre-production deployment target between development and production | The **Staging** account (D20) | **Adopted.** It was missing until 2026-08-08; the plan had tried to stand in for it with a Glue namespace inside Production, which shared an account and a blast radius with the thing it was meant to de-risk |
 | Data scientists get read-only access in staging | `DataScientistStagingAccess` — read, no write of any kind (D18) | **Adopted verbatim.** A staging environment a person can write to stops being evidence of what the pipeline does |
-| Environments expressed as Organizations OUs | `Workloads` OU holding Staging and Production; `Sandbox` in its own OU | **Adopted.** One SCP set for both deployment targets, written once |
+| Environments expressed as Organizations OUs | Four OUs named for their policy sets (D23): `Workloads` holds Staging and Production, `Interactive` holds Sandbox and Development, `Data` holds Data Management, `Security` holds the rest | **Adopted.** One SCP set per policy set, written once and inherited — an OU holding a single account forever would be a folder with one file |
 | Model Registry and ECR in a Tooling / shared-services account | Both in the **Production** account (D14) | **Departure**, the main one remaining. No separate tooling account, on cost. The consequence is stated rather than hidden: there is no boundary between what builds and what runs, so a compromise of GitLab is a compromise of Production |
 | A separate data lake / data management account | The **Data Management** account (D22): the lake, its catalog, Lake Formation and the classification scheme, reached from every environment through cross-account shares | **Adopted** on 2026-08-08. It had been a departure; the section below on Data Management vs. Production records why it stopped being one |
 | Experimentation and development as distinct accounts | **Sandbox** (experimentation — the unit of work is a notebook) and **Development** (the unit of work is a pipeline), both in the Interactive OU (D21) | **Adopted** on 2026-08-08. It had been collapsed "because there is one user"; the section below on Development vs. Experimentation records what the boundary buys anyway |

@@ -117,7 +117,7 @@ This folder is ignored by git. It contains personal information. Never edit this
 
 - Infrastructure user: user with Administrator permissions.
 
-- Data Scientist user: regular user, with no permissions to perform infrastructure changes, except for artifacts managed by AWS SageMaker. This user can write data, develop applications, and trigger CI/CD deploy pipelines to promote artifacts from the Sandbox to the Production environment.
+- Data Scientist user: regular user, with no permissions to perform infrastructure changes, except for artifacts managed by AWS SageMaker. This user can write data, develop applications, and trigger CI/CD deploy pipelines that promote artifacts along the chain Development -> Staging -> Production. Sandbox work enters that chain by graduating into a Development repository through git, never by a pipeline.
 
 - Manager user: approves deployment of artifacts.
 
@@ -131,13 +131,21 @@ This folder is ignored by git. It contains personal information. Never edit this
 
 ```
 terraform-live/
-├── sandbox/
-│   ├── networking/
-│   ├── shared-services/
-│   └── app/
-|        └── app-etl/ # references the app-etl application source code by tag version
-└── production/
-    └── ...
+├── identity/          # permission sets, groups and assignments (delegated admin)
+├── sandbox/           # experimentation
+│   ├── bootstrap/     # Terraform state bucket for this account
+│   ├── foundation/    # VPC, subnets, KMS, IAM roles - free at rest, never destroyed
+│   ├── data/          # scratch and derived-zone buckets, Athena workgroup, LF links
+│   ├── egress/        # NAT and interface VPC endpoints - metered, destroyed per session
+│   ├── vpn/           # WireGuard
+│   ├── nfs/           # EFS
+│   └── sagemaker/     # Studio domain and user profiles
+├── development/       # pipeline engineering - same shape, no vpn/ and no nfs/
+├── data-management/   # the governed lake: no VPC, no compute
+├── staging/           # deployment target, driven by the promotion pipeline
+└── production/        # deployment target + GitLab, runners, ECR, CodeArtifact
+    └── app/
+        └── app-etl/   # references the app-etl application source code by tag version
 
 terraform-modules/ # reusable modules used by applications
 ├── step-function/
@@ -145,6 +153,8 @@ terraform-modules/ # reusable modules used by applications
 └── iam-role/
     └── ...
 ```
+
+The authoritative layout, with the `[P]`/`[D]`/`[E]` layer of every slice, is in `GENERAL_PLAN.md` §6.
 
 ## secrets folder
 
@@ -192,11 +202,14 @@ Always read `GENERAL_PLAN.md` before planning or executing a step.
 
 ### Current position
 
-**Stage 0 (Baseline) is complete. Stage 1 (Organization, accounts and identity) is ready to start, with
-nothing blocking it.** Decisions D1-D23 are closed and recorded in `GENERAL_PLAN.md` §4, with the single
+**Stage 0 (Baseline) is complete. Stage 1a (landing zone, accounts, OUs) is ready to start, with
+nothing blocking it.** Decisions D1-D25 are closed and recorded in `GENERAL_PLAN.md` §4, with the single
 exception of D7 (production orchestrator), deliberately deferred to Stage 10 because that is where it is
 consumed. The **nine** accounts in `ACCOUNTS_AND_USERS.md` (e-mails in `secrets/emails.md`) are the
 complete set. The SSO user formerly called "sandbox user" is now the **data scientist** user.
+**Stage 1 is now two halves:** 1a is the slow, hard-to-undo part (Control Tower, the six Account Factory
+accounts, the four OUs, break-glass) and ends at a state you can check; 1b is the fast, reversible part
+(identity, SCP/RCP, detective controls, organization-wide enablement).
 
 The shape to hold in mind, because every old habit contradicts some part of it:
 
@@ -212,15 +225,27 @@ The shape to hold in mind, because every old habit contradicts some part of it:
   Production — no interactive compute, no human control plane).
 - **D18** gives the data scientist read-only permission sets on Staging and Production (data plane, no
   compute); **D19** keeps the derived zones (now per Interactive account) designed rather than left over.
+- **Two access paths, not one.** "The VPN is the only entry point" is true because the tunnel is *full*,
+  not because it routes into every VPC. Only Sandbox and Production are reachable at the VPC level;
+  Development and Staging are used entirely through AWS API endpoints exited via the WireGuard Elastic IP
+  — including Studio in Development, whose UI is a public endpoint even for a `VpcOnly` domain. The
+  control there is `aws:SourceIp`, never `aws:SourceVpce` (§3).
+- **D24:** the shared EFS lives in Sandbox only; Development gets neither its own nor a path to it, and
+  the exchange between the two Interactive accounts is S3 and git. **D25:** the ingestion drop-box is
+  picked up by Production's job role on the producer path — which also closed a hole where the `Data` OU
+  SCP never denied Glue jobs.
 
 `README.md` carries the argument for the account split, the summaries of the three AWS reference
 architectures, and the three distinctions (Development×Experimentation, OU×Account, Data
 Management×Production).
 
 Two inputs are still needed from the user, neither blocking Stage 1: **which domain name to register**
-(D15, blocks Stage 7) and the outcome of the AZ name-to-ID check in Stage 1 step 16, which decides whether
+(D15, blocks Stage 7) and the outcome of the AZ name-to-ID check in Stage 1b step 11, which decides whether
 Stage 3 anchors subnets on list position or on AZ IDs. Both are tracked in `GENERAL_PLAN.md` §9, alongside
-the nine cross-account integrations in §4.4 that have a fallback each but are not yet known to work.
+the eleven cross-account integrations in §4.4 that have a fallback each but are not yet known to work.
+Of those, **row 11 is the one to settle earliest**: organization-wide RAM sharing plus Lake Formation
+cross-account version 3+ are enabled in Stage 1b step 9 and consumed in Stage 5, and their absence makes a
+share fail *silently* — the grant succeeds on the producer side and the resource never appears.
 
 State of the environment: nothing is provisioned in AWS beyond the manually created Management account.
 The repository contains documentation only; `terraform/` is still empty and must be replaced by
@@ -279,3 +304,24 @@ The repository contains documentation only; `terraform/` is still empty and must
   Interactive accounts, and Stage 9 reframed as "the deployment targets' platforms plus the producer
   path". `README.md` gained the three-distinctions section; `GLOSSARY.md` gained graduation, producer
   path and the four-OU entry.
+
+- **2026-08-08 - seventh review: consistency pass over the nine-account layout (D24, D25).** The user asked
+  for a sweep of every repository file against the reorganized account set. Two kinds of finding came out
+  of it, and the second kind is the one worth remembering. The first was residue — counts and names the
+  previous revision had not chased down (seven Config recorders, "Sandbox in its own OU", AFT "three
+  accounts", `Environment=sandbox|production|shared`, ECR/CodeArtifact granted only to Sandbox, the
+  `awsds-prod-raw-data` example naming a bucket D22 had moved). Mechanical, fixed in one pass.
+  The second kind was **things the reorganization created and nobody had noticed were now unanswered**:
+  the shared EFS had silently become Sandbox-only when a second Studio domain appeared (**D24** makes that
+  a decision and records the revision trigger); the ingestion drop-box had a writer and no reader
+  (**D25** puts the pickup in Production on the producer path, and in doing so exposed that the `Data` OU
+  SCP never denied Glue jobs — so "no compute in Data Management" was an intention, not a control); and
+  the three Lake Formation shares needed organization-wide RAM sharing plus cross-account version 3+,
+  which no stage enabled. **The sharpest one, and the lesson to carry:** Stage 5 told the reader to pin
+  the Data Management bucket policies to the consumers' `aws:SourceVpce` — but interface endpoints are
+  `[E]`, so their IDs change on every `make up`, and since D22 they live in a *different account* from
+  the policy, so nothing would repair it. The fix is to anchor on the `[P]` S3 **gateway** endpoints (or
+  on `aws:SourceVpc`). The general form: **when a decision moves a resource across an account boundary,
+  re-check every condition that referenced it — especially conditions pointing at ephemeral things.**
+  Stage 1 was also split into 1a (landing zone, hard to undo, ends checkable) and 1b (identity, policies,
+  detective controls, org-wide enablement).

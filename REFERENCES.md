@@ -97,6 +97,8 @@
 
 - SageMaker Studio custom images: <https://docs.aws.amazon.com/sagemaker/latest/dg/studio-byoi.html>.
 
+- Connect to SageMaker Studio through an interface VPC endpoint (`aws.sagemaker.<region>.studio`, plus the note that `CreatePresignedDomainUrl` travels through the *SageMaker API* endpoint, and that users outside the VPC can still reach the Studio UI over the internet unless an IAM condition stops them): <https://docs.aws.amazon.com/sagemaker/latest/dg/studio-interface-endpoint.html>.
+
 - SageMaker IAM condition keys (`sagemaker:VpcSubnets`, `NetworkIsolation`, `InstanceTypes`, `VolumeKmsKey`): <https://docs.aws.amazon.com/sagemaker/latest/dg/security_iam_service-with-iam.html>.
 
 - SageMaker `RetentionPolicy` for `DeleteDomain` (defaults to `Retain`): <https://docs.aws.amazon.com/sagemaker/latest/APIReference/API_RetentionPolicy.html>.
@@ -140,6 +142,12 @@
 - Specifying an Athena query result location using a workgroup (and the CTAS `external_location` conflict it causes): <https://docs.aws.amazon.com/athena/latest/ug/query-results-specify-location-workgroup.html>.
 
 - AWS Lake Formation cross-account permissions: <https://docs.aws.amazon.com/lake-formation/latest/dg/cross-account-permissions.html>.
+
+- Lake Formation cross-account sharing prerequisites (the grantor needs `AWSLakeFormationCrossAccountManager`; the target's data lake administrator needs `ram:AcceptResourceShareInvitation` and `ram:EnableSharingWithAwsOrganization`): <https://docs.aws.amazon.com/lake-formation/latest/dg/cross-account-prereqs.html>.
+
+- Updating Lake Formation cross-account data sharing version settings (version 3 or above is required to share with an Organization or an OU, and it is what removes the per-share RAM invitation): <https://docs.aws.amazon.com/lake-formation/latest/dg/optimize-ram.html>.
+
+- Lake Formation cross-account data sharing best practices and considerations: <https://docs.aws.amazon.com/lake-formation/latest/dg/cross-account-notes.html>.
 
 - Lake Formation hybrid access mode (the documented exception in D13): <https://docs.aws.amazon.com/lake-formation/latest/dg/hybrid-access-mode.html>.
 
