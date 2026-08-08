@@ -5,6 +5,10 @@ Blueprint for using AWS as a Data Science infrastructure provider.
 - `CLAUDE.md` — goals and working rules.
 - `GENERAL_PLAN.md` — the staged implementation plan (stages, decisions, cost model).
 - `GLOSSARY.md` — every acronym the plan uses, plus its notation and the IAM condition keys it quotes.
+- `ACCOUNTS_AND_USERS.md` — the nine AWS accounts and the SSO users.
+- `PRICING.md` — per-unit AWS rates for `sa-east-1` and `us-west-2`, read from the AWS Price List bulk API.
+  Unlike the cost figures in `GENERAL_PLAN.md` §5, which are order-of-magnitude estimates, these are
+  measured; §5 says what is consumed, `PRICING.md` says what a unit of it costs.
 - `LOG.md` — record of every step performed manually through the console.
 - `REFERENCES.md` — external references used along the way.
 

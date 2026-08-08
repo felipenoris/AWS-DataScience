@@ -168,6 +168,10 @@ On every interaction, add to `REFERENCES.md` all the internet links Claude used 
 
 Update `README.md` with information about how we are structuring our AWS resources. Also, document the project layout so that people can understand the files and main components.
 
+## Pricing
+
+For every new AWS service referenced, update `PRICING.md`.
+
 # Claude memory
 
 Edit this section with the main ideas gathered in this project, so that your future self will understand the context.
@@ -203,10 +207,12 @@ Always read `GENERAL_PLAN.md` before planning or executing a step.
 ### Current position
 
 **Stage 0 (Baseline) is complete. Stage 1a (landing zone, accounts, OUs) is ready to start, with
-nothing blocking it.** Decisions D1-D25 are closed and recorded in `GENERAL_PLAN.md` §4, with the single
-exception of D7 (production orchestrator), deliberately deferred to Stage 10 because that is where it is
-consumed. The **nine** accounts in `ACCOUNTS_AND_USERS.md` (e-mails in `secrets/emails.md`) are the
-complete set. The SSO user formerly called "sandbox user" is now the **data scientist** user.
+nothing blocking it.** Decisions D1-D25 are **all** closed and recorded in `GENERAL_PLAN.md` §4 — D7, the
+last one still open, was settled on 2026-08-08: Stage 10 builds **two** orchestrators and compares them,
+(A) MWAA and (B) EventBridge + Step Functions + Lambda/Fargate, exactly as D5 does for egress. What
+remains open inside D7 is only which MWAA shape (Serverless versus `mw1.micro`) and what happens to its
+metadata database at teardown. The **nine** accounts in `ACCOUNTS_AND_USERS.md` (e-mails in
+`secrets/emails.md`) are the complete set. The SSO user formerly called "sandbox user" is now the **data scientist** user.
 **Stage 1 is now two halves:** 1a is the slow, hard-to-undo part (Control Tower, the six Account Factory
 accounts, the four OUs, break-glass) and ends at a state you can check; 1b is the fast, reversible part
 (identity, SCP/RCP, detective controls, organization-wide enablement).
@@ -325,3 +331,25 @@ The repository contains documentation only; `terraform/` is still empty and must
   re-check every condition that referenced it — especially conditions pointing at ephemeral things.**
   Stage 1 was also split into 1a (landing zone, hard to undo, ends checkable) and 1b (identity, policies,
   detective controls, org-wide enablement).
+- **2026-08-08 - eighth review: D7 closed, and prices stopped being estimates (`PRICING.md`).** The user
+  asked a narrow question — *is the USD 360/month MWAA figure charged per hour, and is that infra `[P]`,
+  `[D]` or `[E]`?* Both answers were in the plan (yes, per hour of *existence*, at one-second resolution,
+  DAGs running or not; and `[E]`), but checking them exposed that the D7 options table had gone stale in
+  the direction that mattered: **`mw1.micro`** (USD 0.29/h) and **MWAA Serverless** (USD 0.088 per
+  task-hour, no environment fee, GA November 2025) did not exist when it was written, and Serverless
+  dissolves the "USD 350/month floor" that §5 used to rule MWAA out. The user then decided D7 by
+  **building both**: (A) MWAA and (B) EventBridge + Step Functions + Lambda/Fargate — the same
+  build-both-and-compare shape as D5. SageMaker Pipelines and self-managed Airflow on ECS stay documented,
+  unbuilt. **The `[E]` caveat is the part to carry forward:** MWAA takes ~20-30 min to create or delete,
+  so it does not fit the `make up`/`make down` cadence, and its metadata database (run history, XComs,
+  UI-defined connections) is state living only inside an `[E]` resource — the exact failure §5.1 rule 2
+  exists to prevent, and the third time this project has hit it after EFS and the Studio domain.
+  `PRICING.md` was created in the same pass and is a different kind of artifact from the rest of the
+  repository: **measured, not reasoned.** Every rate comes from the AWS Price List bulk API
+  (`pricing.us-east-1.amazonaws.com/offers/v1.0/aws/<service>/current/<region>/index.json`), for
+  `sa-east-1` and `us-west-2` side by side. Two things fell out of it that no amount of re-reading the
+  plan would have produced: the São Paulo premium is **real and roughly 1.5-2.1x** (the 2026-08-07 guess
+  of "~1.5-2x" was right), and **CodeArtifact does not exist in `sa-east-1`** — thirteen Regions, not
+  including São Paulo — which the original Region check had missed and which is a *missing component* for
+  D14 and egress design B, not a price difference. **The habit worth keeping: the bulk API is public, needs
+  no credentials, and answers in seconds what the pricing pages answer in paragraphs.**

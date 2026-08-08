@@ -13,6 +13,10 @@
 
 - AWS Pricing Calculator: <https://calculator.aws/>.
 
+- AWS Price List bulk API - offer index (all service codes): <https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/index.json>. Per service and Region: `offers/v1.0/aws/<serviceCode>/current/<region>/index.json`; the Regions a service is offered in are at `offers/v1.0/aws/<serviceCode>/current/region_index.json`. Public, no credentials required - the source of every rate in `PRICING.md`.
+
+- AWS CodeArtifact endpoints and quotas (used to confirm that CodeArtifact is **not** available in `sa-east-1`): <https://docs.aws.amazon.com/general/latest/gr/codeartifact.html>.
+
 - etl-cookbook-tutorial: <https://github.com/felipenoris/etl-cookbook-tutorial>.
 
 ## Organization and identity
@@ -184,6 +188,28 @@
 - GitLab CI/CD OIDC federation with AWS: <https://docs.gitlab.com/ee/ci/cloud_services/aws/>.
 
 - Amazon MWAA (Managed Workflows for Apache Airflow): <https://docs.aws.amazon.com/mwaa/latest/userguide/what-is-mwaa.html>.
+
+- Amazon MWAA pricing (environment fee billed hourly, at one-second resolution, for as long as the environment exists): <https://aws.amazon.com/managed-workflows-for-apache-airflow/pricing/>.
+
+- AWS Price List bulk API, used to read the authoritative `us-west-2` MWAA rates: <https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AmazonMWAA/current/us-west-2/index.json>.
+
+- Amazon MWAA environment classes (`mw1.micro` ... `mw1.2xlarge`): <https://docs.aws.amazon.com/mwaa/latest/userguide/environment-class.html>.
+
+- Amazon MWAA `mw1.micro` environments announcement: <https://aws.amazon.com/blogs/big-data/introducing-amazon-mwaa-micro-environments-for-apache-airflow/>.
+
+- Amazon MWAA Serverless (pay per task, GA November 2025 - relevant to D7): <https://docs.aws.amazon.com/mwaa/latest/mwaa-serverless-userguide/what-is-mwaa-serverless.html>.
+
+- Amazon MWAA Serverless announcement: <https://aws.amazon.com/about-aws/whats-new/2025/11/mwaa-serverless-deployment-apache-airflow-workflows/>.
+
+- Amazon MWAA service quotas (10 environments per account per Region, 25 workers and 5 web servers per environment): <https://docs.aws.amazon.com/mwaa/latest/userguide/mwaa-quotas.html>.
+
+- Workflows in Amazon SageMaker Unified Studio - the "Workflows" feature, which supports both MWAA Serverless and MWAA provisioned: <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/workflow-orchestration.html>.
+
+- SageMaker Unified Studio support for importing existing MWAA environments: <https://aws.amazon.com/about-aws/whats-new/2026/07/amazon-sagemaker-unified-studio-import-existing-mwaa-environments/>.
+
+- `aws_mwaa_environment` Terraform resource (provisioned MWAA only): <https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/mwaa_environment>.
+
+- Terraform AWS provider issue #45254, "Support for Amazon MWAA Serverless" - open, no implementation yet (checked 2026-08-08): <https://github.com/hashicorp/terraform-provider-aws/issues/45254>.
 
 - AWS Step Functions: <https://docs.aws.amazon.com/step-functions/latest/dg/welcome.html>.
 

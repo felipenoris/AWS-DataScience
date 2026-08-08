@@ -144,7 +144,8 @@ AWS Organization (Management account - console only)                        [P]
         ├── internal ALB for GitLab/Pages (rebuilt per session)             [E]
         ├── GitLab Runners                                    <- D14        [E]
         ├── NAT Gateway + interface VPC endpoints                           [E]
-        ├── SageMaker Pipelines / Step Functions / MWAA (workflow)          [E]
+        ├── orchestration, built twice and compared (D7):                   [E]
+        │     (A) MWAA  (B) EventBridge + Step Functions + Lambda/Fargate
         └── (Stage 13) public web tier -> private backend                   [E]
 ```
 
@@ -205,7 +206,7 @@ Data Management account at all outside the infrastructure role (D22).
 | D4 | VPN technology | Decided (2026-08-07): **self-managed WireGuard** | A `t4g.nano` EC2 instance in a public subnet, layer `[D]` — stopped between sessions, not destroyed, so the host key and peer configuration stay stable. Idle cost is its 8 GB EBS volume (~USD 0.65/month) plus the Elastic IP, which lives in the `[P]` foundation slice (~USD 3.65/month) so the endpoint address never changes. Consequences to handle in Stage 4: no native Identity Center integration, so peer public keys are provisioned by Terraform from a git-ignored variable file; and it is a single point of failure, which is acceptable for a lab. AWS Client VPN (~USD 73/month, SAML to Identity Center) stays documented as the managed alternative if SSO-integrated VPN becomes a requirement. |
 | D5 | SageMaker internet restriction mechanism | Decided (2026-08-07): **build BOTH and compare, in Stage 6** | Not one mechanism but two designs, implemented behind a switch and evaluated against each other — see §4.3. **(A) Limited internet:** NAT plus an allowlist, using Route 53 Resolver DNS Firewall and/or a Squid proxy. **(B) No internet:** no NAT at all for the SageMaker subnets; packages arrive through CodeArtifact (upstream to the public repositories) and ECR pull-through cache, everything else through VPC endpoints. AWS Network Firewall (~USD 290/month) stays documented as the enterprise variant of (A) but is not built. The user's stated reservation about (B) is recorded in §4.3: CodeArtifact does not cover every language this environment needs. |
 | D6 | DLP approach | Decided (2026-08-07): **native AWS combination**, on top of a data perimeter | The objective in `CLAUDE.md` is split into four problems, each with its own control: discovery/classification → **Macie**; fine-grained access → **Lake Formation** (LF-Tags, column and row filters), made enforceable by D13; egress control → **D5** plus the SageMaker VPC-only domain; exfiltration detection → **CloudTrail data events + GuardDuty + Security Hub** with CloudWatch alarms. **Underneath all four sits the data perimeter (§4.2)** — SCPs, RCPs and VPC endpoint policies built in Stage 1, not Stage 11, because they are the only controls that make exfiltration structurally impossible rather than merely visible. A third-party agent-based DLP is only evaluated in Stage 11, after these are in place and their gaps are known. |
-| D7 | Workflow orchestration in production | **DEFERRED to Stage 10** | Options carried forward: **SageMaker Pipelines** (native to the environment the workflow is developed in, pay per execution — the shortest path from notebook to production, and the option the previous version of this table wrongly omitted), **Step Functions + ECS/Fargate** (pay per execution, near-zero idle cost), **MWAA** (~USD 350+/month, but it is what `CLAUDE.md` names explicitly), or **self-managed Airflow on ECS**. The decision only becomes real once an application from Stage 8 needs scheduling. Keep the application's entry point a plain container so it can be driven by any of the four. |
+| D7 | Workflow orchestration in production | Decided (2026-08-08): **build BOTH and compare, in Stage 10** | Not one orchestrator but two implementations of the same workflow, behind the same application contract — the shape D5 already uses for egress. **(A) MWAA**, hosted Airflow, which is what `CLAUDE.md` names explicitly and what keeps the workflow expressed as a portable Airflow DAG. **(B) Plain AWS services**: **EventBridge Scheduler** as the trigger, **Step Functions** as the state machine, **Lambda** for glue steps and **ECS/Fargate** (or a SageMaker job) for the container steps. The two are *not* equivalent, which is the point of building both — see the cost and lifecycle asymmetry below. **Not built, kept documented:** SageMaker Pipelines (native to the environment the workflow is developed in, pay per execution — the shortest path from notebook to production, and the right answer if the workflow turns out to be a training pipeline rather than an ETL) and self-managed Airflow on ECS (all of Airflow's semantics, none of the managed cost, all of the operational burden). **Cost asymmetry (`us-west-2`, authoritative rates in `PRICING.md`):** MWAA charges an *environment fee per hour of existence*, billed at one-second resolution, whether or not a DAG runs — `mw1.micro` USD 0.29/h (~USD 212/month always-on), `mw1.small` USD 0.49/h (~USD 358/month), plus USD 0.10/GB-month of metadata-database storage and any additional worker/scheduler/web-server instances. Design B has **no standing fee at all**: Step Functions Standard is USD 0.000025 per state transition, EventBridge Scheduler USD 1.00 per million invocations, Lambda USD 0.0000166667 per GB-second — a nightly workflow costs cents per month. **The unit of billing is the *environment*, not the account, the user or the DAG** — one `CreateEnvironment` call, one hourly fee, whether it runs zero DAGs or two hundred, for one data scientist or for the whole team. Volume reaches the bill only through *concurrency*, via autoscaled worker instances. The consequence for the promotion chain is worth stating before someone proposes it: giving Development, Staging and Production each its own Airflow means three environments, ~USD 1 073/month in `us-west-2` — which is a second, financial reason for what D17 already decides on architectural grounds, that orchestration lives only in Production (§6). "Test the DAG in Staging first" is answered by an `[E]` environment for an hour, not by a standing second one. A third MWAA shape removes the multiplication entirely: **MWAA Serverless** (GA November 2025), USD 0.088 per task-hour with a one-minute minimum and **no environment fee**, which is pay-per-execution Airflow and therefore the variant to try first. Its trade-offs are not only financial and are set out in `PRICING.md` §1.3: YAML workflow definitions instead of Python DAGs, Airflow v3 fixed, **no Airflow web UI**, and — the one that cuts in this project's favour — **one IAM execution role per workflow**, where provisioned MWAA gives every task the same environment role. Against the data perimeter (§4.2) that is an argument for Serverless independent of cost. **One practical blocker to resolve at Stage 10, found on 2026-08-08:** the AWS Terraform provider has `aws_mwaa_environment` for provisioned MWAA but **nothing for MWAA Serverless** — the request for `aws_mwaaserverless_workflow` is an open issue with no branch. Since `CLAUDE.md` requires all infrastructure in Terraform, alternative A on Serverless needs a route: check whether Cloud Control API covers it (the `awscc` provider), otherwise wrap a CloudFormation stack, otherwise fall back to `mw1.micro`, which is fully supported. Re-check before the stage starts — this is exactly the kind of gap that closes on its own within months. **Layer `[E]` — with a caveat that design B does not have:** an MWAA environment takes ~20-30 minutes to create and about as long to delete, so it does not fit the `make up`/`make down` cadence the way a NAT gateway does, and its metadata database (run history, XComs, UI-defined connections and variables) is state living *only* inside an `[E]` resource, which §5.1 rule 2 forbids. DAG code is in S3 and survives; run history does not. Either Stage 10 adds an export-before-teardown step, or MWAA is run as an `[E]` **experiment** whose history is expendable — decide that when the stage starts, and record it. Design B is `[E]` without qualification: the state machine definition *is* the state. **Unchanged from the previous version of this decision:** the application's entry point stays a plain container, so it can be driven by either implementation, or by the two options that were not built. |
 | D8 | GitLab hosting | Decided: **self-managed on EC2 in the Production account, layer `[D]`** | Required by `CLAUDE.md`. GitLab CE Omnibus on a private-subnet EC2 instance, reached through the VPN, backed up to S3. Account placement per D14. Sizing: 8 GB RAM is the realistic minimum for GitLab + Pages — `t4g.large` (ARM) is ~20% cheaper than `t3.large` for the same memory and GitLab Omnibus ships arm64 packages. Stopped between sessions rather than destroyed (~USD 4/month of EBS), because rebuilding from backup on every session is the fragile path. |
 | D9 | Number of AZs | Decided: **2 for subnets, 1 for metered endpoints** | Subnets, route tables and NAT-less network plumbing are free, so the topology spans 2 AZs and stays honest. Interface VPC endpoints are charged per AZ, so they default to a single AZ during lab sessions; a resource in the other AZ still resolves and reaches them, at the cost of cross-AZ traffic and no AZ redundancy — an acceptable trade in a lab, and a one-variable change if it ever is not. |
 | D10 | Identity Center administration | Decided (2026-08-07): **delegated to a dedicated Identity account** | The Identity Center instance and its identity store are created in the Management account and cannot be moved; what is delegated is their *administration*. One member account is registered as delegated administrator (`sso.amazonaws.com`), and from there Terraform manages permission sets, groups and assignments — so Terraform never needs credentials in the Management account, which is what makes principle 1 real rather than aspirational. The role goes to a **dedicated Identity account** rather than to the Audit account: Audit stays the security guardian (GuardDuty, Security Hub, Macie findings) and Identity owns access management, so the two concerns do not share a blast radius. Costs one extra Control Tower-governed account, i.e. one more AWS Config recorder (~USD 0.50-1/month) — accepted in exchange for the separation. **Consequences:** (i) assignments whose *target* is the Management account cannot be managed from the delegated account and stay manual; (ii) the Identity account can grant administrative access to any account in the organization, so it is as sensitive as Management — the data scientist must never have access to it; (iii) Control Tower's own permission sets (`AWSAdministratorAccess` and friends) are left alone, since editing them causes landing-zone drift. |
@@ -239,13 +240,18 @@ What remains is ordinary Terraform hygiene, which costs nothing and is worth doi
 | AMI IDs | AMI IDs are region-scoped. Resolve through SSM public parameters (e.g. `/aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-arm64`), never a literal `ami-…`. |
 | Bucket names | S3 names are globally unique — build them from variables rather than pasting a region in. |
 
-Recorded for reference, from the check on 2026-08-07: `sa-east-1` has endpoints for every service this
-plan uses — Control Tower, IAM Identity Center, SageMaker (Studio with `ml.t3.medium`, `ml.g5`, `p5.4xl`),
-MWAA, Macie, GuardDuty, Security Hub, Lake Formation, Glue, Athena, EFS, ECR, Client VPN, Network Firewall
-and Graviton `t4g`. So the answer to "would anything break in São Paulo?" is no; the differences are price
-(~1.5-2x) and a lag on the newest SageMaker features. If a move ever became real, the one genuinely
-expensive part would be redeploying the Control Tower landing zone, whose home region is fixed at
-deployment time.
+Recorded for reference, from the check on 2026-08-07 and **corrected on 2026-08-08**: `sa-east-1` has
+endpoints for almost every service this plan uses — Control Tower, IAM Identity Center, SageMaker (Studio
+with `ml.t3.medium`, `ml.g5`, `p5.4xl`), MWAA, Macie, GuardDuty, Security Hub, Lake Formation, Glue,
+Athena, EFS, ECR, Client VPN, Network Firewall and Graviton `t4g`. **The exception, missed by the original
+check: AWS CodeArtifact is not available in `sa-east-1`** — it exists in thirteen Regions, `us-west-2`
+among them, and São Paulo is not one. That is not a price difference, it is a missing component: D14 puts
+CodeArtifact in the supply chain and egress design B (D5) depends on it as the *only* package path when
+there is no NAT. A move to São Paulo would have to replace it (a self-hosted proxy such as devpi, or
+design A only). The rest of the answer to "would anything break in São Paulo?" is no; the remaining
+difference is price, **measured rather than guessed on 2026-08-08: roughly 1.5-2.1x**, service by service,
+in `PRICING.md`. If a move ever became real, the one genuinely expensive part would be redeploying the
+Control Tower landing zone, whose home region is fixed at deployment time.
 
 One cross-region rule is permanent and unrelated to any of this: ACM certificates for CloudFront must live
 in `us-east-1` regardless of where the workload runs (relevant only at Stage 13).
@@ -426,9 +432,14 @@ Design B trades the NAT gateway for two CodeArtifact endpoints, so it is the *ch
 options as well as the stricter one — which is worth knowing before the Stage 6 comparison starts.
 
 **What the ceiling rules out:** always-on GitLab (~USD 60/month on its own), AWS Client VPN
-(~USD 73/month, the D4 alternative), Network Firewall (~USD 290/month, option D5c) and MWAA
-(~USD 350/month, option D7). Any of these becomes affordable only as a short, deliberate experiment —
-which is precisely what the operating model below is for.
+(~USD 73/month, the D4 alternative), Network Firewall (~USD 290/month, option D5c) and an always-on MWAA
+environment (~USD 212/month for `mw1.micro`, ~USD 358/month for `mw1.small` — D7 alternative A). Any of
+these becomes affordable only as a short, deliberate experiment — which is precisely what the operating
+model below is for. **D7 now commits to building MWAA rather than merely documenting it**, and this is the
+line it has to respect: the environment is `[E]`, it exists for the length of a comparison run, and at
+`mw1.micro` an eight-hour experiment costs ~USD 2.30. **MWAA Serverless** (USD 0.088 per task-hour, no
+environment fee) removes the exposure entirely and is therefore the variant to try first. Authoritative
+per-unit rates, for both `us-west-2` and `sa-east-1`, are in `PRICING.md`.
 
 **Guardrail:** AWS Budgets with e-mail alerts must exist before any compute is created (Stage 1).
 
@@ -456,7 +467,10 @@ rather than a daily dependency.
 **[E] Ephemeral — destroyed at the end of a session.** Everything metered by the hour and rebuildable in
 minutes: NAT Gateway, interface VPC endpoints, SageMaker Studio *apps* (the domain stays), the internal
 ALB in front of GitLab (an ALB cannot be stopped, only destroyed — it bills ~USD 0.023/h for as long as
-it exists), GitLab Runners, MWAA/Step Functions, the Stage 13 web tier.
+it exists), GitLab Runners, both D7 orchestrators (the MWAA environment and the native
+EventBridge/Step Functions/Lambda stack), the Stage 13 web tier. **MWAA is the awkward member of this
+list** — ~20-30 minutes to create or delete, and a metadata database that holds state nothing else
+persists; D7 records what Stage 10 must decide about it.
 
 **Rules this imposes:**
 
@@ -564,7 +578,11 @@ terraform-live/
     ├── egress/           # [E] NAT, endpoints, internal ALB for GitLab/Pages (ALBs cannot stop)
     ├── tooling/          # [D] GitLab EC2 + EBS (D8, D14) - its ALB lives in egress/ [E]
     ├── runners/          # [E] GitLab Runners (D14)
-    ├── orchestration/    # [E] Step Functions / SageMaker Pipelines / MWAA (D7)
+    ├── orchestration/    # [E] D7 builds two, behind a switch like D5's egress designs:
+    │                     #     (A) mwaa/ and (B) native/ (EventBridge + Step
+    │                     #     Functions + Lambda/Fargate). See the [E] caveat in D7:
+    │                     #     MWAA takes ~20-30 min to create and its metadata DB is
+    │                     #     state inside an [E] resource
     └── app/
         └── app-etl/      # [E]
 
@@ -1544,17 +1562,31 @@ including the ones that fail.
 
 **Objective:** take a workflow developed in SageMaker and run it in production on a schedule.
 
-**Prerequisites:** Stages 8, 9. **D7 is taken at the start of this stage**, once a real application
-finally needs scheduling — that is the point at which the MWAA-versus-Step-Functions trade stops being
-abstract.
+**Prerequisites:** Stages 8, 9. **D7 is settled — both implementations are built here** and compared
+against the same application, which is the only way the MWAA-versus-native trade stops being abstract.
+What is *not* settled and must be decided at the start of this stage: whether MWAA runs as a serverless
+environment or a `mw1.micro` one, and what happens to its metadata database at teardown (see the `[E]`
+caveat in D7).
 
 **To execute:**
 
-1. Implement the chosen orchestrator (SageMaker Pipelines, a Step Functions module, or an MWAA environment).
+1. Implement **both** orchestrators against the same workflow, behind a switch, in
+   `production/orchestration/`:
+   - **(A) MWAA** — an Airflow DAG. Start with **MWAA Serverless** (pay per task-hour, no environment fee);
+     fall back to a `mw1.micro` environment if a needed feature is missing there. Same DAG either way.
+   - **(B) Native** — **EventBridge Scheduler** triggers a **Step Functions** state machine; container
+     steps run on ECS/Fargate or as SageMaker jobs, glue steps on **Lambda**.
+   The comparison to write down: cost per run and per month, time to deploy a change, how a failed task is
+   retried and observed, and what each one costs in Terraform code and in operational surface. Cost model
+   and per-unit rates are in §5 and `PRICING.md`.
 2. Define how a SageMaker-developed pipeline becomes a deployable artifact — most likely a container plus
-   a workflow definition, both versioned in the application repository.
+   a workflow definition, both versioned in the application repository. **The container must be identical
+   for both orchestrators**; if it is not, the comparison is measuring the packaging, not the orchestrator.
 3. Schedule, retry, alerting on failure to CloudWatch/SNS.
-4. If MWAA is used, document how to create and destroy it on demand to avoid the idle cost.
+4. Document how to create and destroy the MWAA environment on demand, and what is lost when it goes: DAG
+   code lives in S3 and survives, run history and UI-defined connections/variables do not. Either export
+   them before teardown or state explicitly that they are expendable — the `[E]` rule in §5.1 does not
+   allow leaving this implicit.
 5. **Close the notebook-to-production gap for models, not just for ETL.** The CI/CD in Stage 8 promotes a
    container; that covers the `app-etl` template in `CLAUDE.md` but not the other thing a data science
    environment produces, which is a trained model. The **SageMaker Model Registry** is the promotion
@@ -1683,13 +1715,17 @@ never built; alarms that fire on a simulated exfiltration attempt.
 
 ## 9. Open questions
 
-Everything that was open before execution started is now closed in §4 (D1-D23, except D7). What follows is
+Everything that was open before execution started is now closed in §4 (D1-D25). What follows is
 what is genuinely still unanswered:
 
 1. **Which domain name to register (D15).** The one input needed from the user. Not blocking Stage 1, but
    blocking Stage 7, and worth doing early since registration and validation take time.
-2. **D7 - Production orchestrator.** Decided at Stage 10. Keep application entry points as plain containers
-   so any of the four options remains viable.
+2. **D7 - which MWAA shape, and what happens to its metadata database.** The decision itself is closed
+   (2026-08-08): both orchestrators get built in Stage 10. What is open is internal to alternative A —
+   MWAA Serverless versus a `mw1.micro` environment, and whether run history is exported before teardown
+   or declared expendable. Neither question can be answered before a real workflow exists. Keep
+   application entry points as plain containers so both implementations, and the two options that were not
+   built, remain viable.
 3. **AZ name-to-ID mapping across accounts.** AWS maps AZ names to physical datacenters independently per
    account, so `data.aws_availability_zones` indexed by position can place "the same" AZ in different
    datacenters in Sandbox, Development and Production — which turns peering traffic that looks intra-AZ
@@ -1738,6 +1774,7 @@ something already provisioned.
 | 2026-08-08 | **Staging account added (D20)**, after the AWS multi-account MLOps references were read properly — all three place a pre-production deployment target between the development account and production, and this plan had none. A new `Workloads` OU holds Staging and Production so the "no interactive compute" SCP set is written once. Stage 8's deploy step became a chain (`up staging` → deploy → integration tests → `down staging` → approval → Production) with two named deploy roles; Stage 9 gained the Staging data platform and lost the `staging`-Glue-namespace-inside-Production stand-in the previous revision had invented; Stage 3 builds the Staging VPC and explicitly does *not* peer it. Still recorded as a plan revision rather than a change to something provisioned — nothing exists in AWS yet. |
 | 2026-08-08 | **Development and Data Management accounts added (D21, D22); OU structure decided (D23).** The user reorganized the account set to nine: Sandbox becomes pure experimentation (unit of work: a notebook), Development is where pipelines are engineered (unit of work: a repository), and the promotion chain now starts there — Development → Staging → Production, with Sandbox → Development a git graduation, not a pipeline. The governed lake moved out of the environment accounts into Data Management, reached everywhere through LF cross-account shares (read for the Interactive OU, read + governed write for Production's job role — the producer path). Four OUs, named for their policy sets: Security, Interactive, Data, Workloads. Consequences threaded through §3, §4.4 (nine integration rows), §5 (floor ~USD 21-27), §6 (six state buckets, `development/` and `data-management/` trees), and stages 1-11. The stale `secrets/accounts.md` / `sso-users.md` references were replaced by `ACCOUNTS_AND_USERS.md` + `secrets/emails.md`, and the "sandbox user" became the **data scientist** user throughout. |
 | 2026-08-08 | **Consistency pass over the nine-account layout, plus D24 and D25.** A review of every repository file against the reorganized account set found the residue the previous revision left behind — stale counts (seven Config recorders, "Sandbox in its own OU", AFT "three accounts", "five member accounts", `Environment=sandbox\|production\|shared`, ECR/CodeArtifact granted only to Sandbox), the `awsds-prod-raw-data` naming example that names a bucket the D22 layout no longer has, and the `terraform-live/` sketch in `CLAUDE.md` that predates §6 — and three genuine gaps. **D24** settles the shared filesystem: EFS stays in Sandbox only, Development gets neither its own nor a path to it, and the exchange between the two Interactive accounts is S3 and git. **D25** settles who consumes the ingestion drop-box: the Production job execution role, on the producer path — which also exposed that the `Data` OU SCP never denied Glue jobs, so "no compute in Data Management" was an intention rather than a control. Two new §4.4 rows (the drop-box pickup; organization-wide RAM sharing plus Lake Formation cross-account version 3+, which Stage 1b now enables and whose absence makes a share fail *silently*). One sharp correction in Stage 5: the `aws:SourceVpce` condition in the Data Management bucket policies must anchor on the `[P]` S3 **gateway** endpoints, never on the `[E]` interface endpoints — those change ID on every `make up`, and since D22 they live in a different account from the policy, so nothing would repair it. Stage 1 was split into **1a** (landing zone, accounts, OUs, break-glass — the slow, hard-to-undo half, ending at a checkable state) and **1b** (identity, policies, detective controls, org-wide enablement). Still a plan revision rather than a change to something provisioned: nothing exists in AWS yet. |
+| 2026-08-08 | **D7 closed: build both orchestrators (Stage 10), and prices moved from estimate to measurement.** A question about *how* the MWAA figure is billed — per hour of existence, at one-second resolution, whether or not a DAG runs — exposed that the D7 options table was out of date in a way that favoured MWAA: `mw1.micro` (USD 0.29/h) and **MWAA Serverless** (USD 0.088 per task-hour, no environment fee, GA November 2025) did not exist when the plan was written, and Serverless removes the standing-cost objection that §5 used to rule MWAA out. The user decided to build **two** implementations rather than pick one, in the shape D5 already uses: **(A)** MWAA and **(B)** EventBridge + Step Functions + Lambda/Fargate. SageMaker Pipelines and self-managed Airflow on ECS stay documented but unbuilt. Threaded through §3, §5, §5.1, §6, Stage 10 and §9 item 2, which is now about *which MWAA shape*, not *which orchestrator*. The `[E]` caveat is new and is the part most likely to bite: MWAA takes ~20-30 minutes to create or delete and its metadata database is state living only inside an `[E]` resource, which §5.1 rule 2 forbids — the same class of problem the EFS and Studio-domain decisions already had to solve. `PRICING.md` was created in the same pass, with per-unit rates for `sa-east-1` and `us-west-2` read from the AWS Price List bulk API rather than estimated; it confirms the "~1.5-2x" São Paulo premium the 2026-08-07 Region check had guessed (measured: 1.5-2.1x) and **corrects that check on one point — CodeArtifact is not available in `sa-east-1`**, which is a missing component for D14 and for egress design B, not a price difference. |
 
 ---
 
