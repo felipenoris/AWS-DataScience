@@ -103,7 +103,8 @@ Never update `LOG.md`. I'll edit this file.
 
 ## `secrets` folder
 
-This folder is ignored by git. It contains personal information. Never edit this folder. Claude can read the files in this folder to gather information.
+This folder is ignored by git. It contains personal information. Never edit this folder, and never
+write anything into it. Claude can read the files in this folder to gather information.
 
 ## Accounts and Users
 
@@ -131,37 +132,10 @@ This folder is ignored by git. It contains personal information. Never edit this
 
 - The Terraform code will have a subfolder for each controlled account (environment).
 
-```
-terraform-live/
-├── identity/          # permission sets, groups and assignments (delegated admin)
-├── sandbox/           # experimentation
-│   ├── bootstrap/     # Terraform state bucket for this account
-│   ├── foundation/    # VPC, subnets, KMS, IAM roles - free at rest, never destroyed
-│   ├── data/          # scratch and derived-zone buckets, Athena workgroup, LF links
-│   ├── egress/        # NAT and interface VPC endpoints - metered, destroyed per session
-│   ├── vpn/           # WireGuard
-│   ├── nfs/           # EFS
-│   └── sagemaker/     # blueprint target: prerequisites the Unified Studio project
-│                      # environments are provisioned onto (D26)
-├── development/       # pipeline engineering - same shape, no vpn/ and no nfs/
-├── data-governance/   # the governed lake + the Unified Studio domain: no VPC, no user compute
-├── staging/           # deployment target, driven by the promotion pipeline
-└── production/        # deployment target + GitLab, runners, ECR, CodeArtifact
-    └── app/
-        └── app-etl/   # references the app-etl application source code by tag version
-
-terraform-modules/ # reusable modules used by applications
-├── step-function/
-│   └── ...
-└── iam-role/
-    └── ...
-```
-
-The authoritative layout, with the `[P]`/`[D]`/`[E]` layer of every slice, is in `GENERAL_PLAN.md` §6.
-
-## secrets folder
-
-I'll store my personal information in the secrets folder. Never touch it. This folder is added to the `.gitignore`.
+- Two trees: `terraform-live/` (one subfolder per controlled account, sliced by lifecycle layer) and
+  `terraform-modules/` (reusable modules, consumed by git tag). **The authoritative layout, with the
+  `[P]`/`[D]`/`[E]` layer of every slice, is in [`plan/conventions.md`](plan/conventions.md) §6** —
+  kept in one place on purpose, so the two copies cannot drift.
 
 ## References
 
@@ -202,256 +176,67 @@ When I authorize you, you can commit, push and open Pull Requests on GitHub. I'l
 
 ## Claude LOG
 
-For every project step, review this section and add your own LOG, so that you can remember the current stage of this project.
+For every project step, review this section and add your own LOG, so that you can remember the current
+stage of this project.
 
-Stage numbers refer to `GENERAL_PLAN.md`, which is the staged implementation plan for this project.
-Always read `GENERAL_PLAN.md` before planning or executing a step.
+Stage numbers refer to `plan/stages/`. **Always read `GENERAL_PLAN.md` before planning or executing a
+step** — it is the plan core and carries both indexes — then read only the stage file and the decisions
+its `Consumes` row lists.
+
+### What to read, and when
+
+| Task | Read |
+|---|---|
+| Anything | this file + `GENERAL_PLAN.md` (plan core: principles, account map, both indexes) |
+| Execute a stage | [`plan/stages/`](plan/stages/INDEX.md)`stage-NN-*.md`, the decisions in its **Consumes** row, and [`plan/conventions.md`](plan/conventions.md) |
+| Plan, review, or settle a decision | add [`plan/lessons.md`](plan/lessons.md) and [`plan/open-questions.md`](plan/open-questions.md) |
+| Look up a decision | [`plan/decisions/INDEX.md`](plan/decisions/INDEX.md) first — open a decision file only for its reasoning |
+| Cost of a new service | [`PRICING.md`](PRICING.md) — measured from the Price List API, never estimated (Lesson 6) |
+| Cross-account wiring | [`plan/integrations.md`](plan/integrations.md), rows `INT-01`…`INT-16` |
+| "What would an institution do?" | [`plan/institutional-delta.md`](plan/institutional-delta.md) |
+
+Do not open by habit: [`plan/history.md`](plan/history.md), [`plan/institutional-delta.md`](plan/institutional-delta.md).
+Reference things by **stable ID** — `D26`, `INT-11`, `Stage 1b step 7` — never by section or row number.
 
 ### Current position
 
-**Stage 0 (Baseline) is complete. Stage 1a (landing zone, accounts, OUs) is ready to start, with
-nothing blocking it — the `Policy Canary` e-mail was registered 2026-08-08.** Decisions D1-D31
-are **all** closed and recorded in `GENERAL_PLAN.md` §4 — D30 too. The
-ninth revision (2026-08-08) adopted **SageMaker Unified Studio**: one DataZone **V2** domain in
-Development (D26, official `aws-ia` Terraform module — domain via `aws`, blueprints/projects via
-`awscc`), Glue Crawlers on raw + drop-box under a named catalog-maintenance exception (D27), and the
-production workflow contract (D28: six artifact classes the pipeline creates; no domain or blueprint
-ever touches a deployment target). D7 builds **two** orchestrators in Stage 10 and compares them:
-(A) **MWAA Serverless** — Terraform path verified: `awscc_mwaaserverless_workflow`, from
-`AWS::MWAAServerless::Workflow`; fallbacks CFN-stack wrapper, then `mw1.micro` — and (B) EventBridge
-Scheduler + Step Functions + Lambda/Fargate, both with explicit per-workflow CloudWatch log groups. The
-**ten** accounts in `ACCOUNTS_AND_USERS.md` (all ten e-mails registered in `secrets/emails.md`) are the
-complete set. The SSO users are **four**: infrastructure, data scientist (formerly "sandbox user"), and — since 2026-08-08 — **deployment manager** and **governance manager**, split out of the single `Manager` persona because one signature must not be able to release a job *and* grant it the data it reads.
-**Stage 1 is now two halves:** 1a is the slow, hard-to-undo part (Control Tower, the seven Account Factory
-accounts, the five OUs, break-glass) and ends at a state you can check; 1b is the fast, reversible part
-(identity, SCP/RCP, detective controls, organization-wide enablement).
+- **Stage 0 complete. Stage 1a is ready to start, with nothing blocking it.**
+- **Nothing is provisioned in AWS** beyond the Management account, created manually by the user.
+- The repository is documentation only; `terraform/` is empty and is replaced by `terraform-live/`
+  and `terraform-modules/` in Stage 2.
+- **All thirty-one decisions (D1-D31) are closed** — see [`plan/decisions/INDEX.md`](plan/decisions/INDEX.md).
+- Inputs still needed from the user, neither blocking Stage 1: **which domain name to register**
+  (D15, blocks Stage 7), and the AZ name-to-ID check in Stage 1b step 6, which decides whether Stage 3
+  anchors subnets on list position or on AZ IDs.
+- Integration risks worth settling earliest: **INT-11** (organization-wide RAM sharing + Lake Formation
+  cross-account v3 — enabled in Stage 1b, consumed in Stage 5, and its absence makes a share fail
+  *silently*) and **INT-13** (CodeConnections from the domain to the private GitLab — the one row with no
+  convenience-preserving fallback).
+- **2026-08-08: the plan was split** out of the two large files into `GENERAL_PLAN.md` (core + indexes)
+  and `plan/`. Nothing about the plan's content changed in that split.
 
-The shape to hold in mind, because every old habit contradicts some part of it:
-
-- **Four environments, one axis of lifecycle:** Sandbox (experimentation — the unit of work is a
-  notebook), Development (the unit of work is a pipeline), Staging and Production (deployment targets,
-  written only by the pipeline). Promotion runs **Development → Staging → Production**; Sandbox feeds
-  Development through **git graduation**, never through a pipeline (D21).
-- **Three groups, not one sequence** (`ACCOUNTS_AND_USERS.md` carries the per-account classification):
-  the **lifecycle** axis (Sandbox before the chain, then Development → Staging → Production), the
-  **ownership** axis (Data Governance alone), and the **platform** accounts on neither (Management, Log
-  Archive, Audit, Identity). *An account off the lifecycle axis is not "a production account"* — that
-  question gets asked every time; the answer is that Data Governance and Identity are **high blast
-  radius**, which is a different property from being production.
-- **One account off that axis entirely:** Data Governance (D22) owns the governed lake; every environment
-  reaches it through Lake Formation cross-account shares — read for Sandbox/Development, read plus
-  **governed write** for Production's job role (the producer path). Nobody signs in to it interactively.
-- **Five OUs, four named for their policy sets (D23):** Security; Interactive (Sandbox + Development — the
-  only OU where a domain may exist, D17); Data (no *user* compute — D27 carves out catalog maintenance:
-  crawlers and table optimizers under the lake's own role, never on Iceberg tables); Workloads (Staging +
-  Production — no interactive compute, no human control plane). **The fifth, `Policy Test` (D29), carries
-  no policy set on purpose** — it is where a *candidate* SCP/RCP is attached and exercised against the
-  disposable `Policy Canary` account before it reaches anything real. It exists as an account and not just
-  a folder because an SCP is only evaluated when a principal makes a call, so an empty staging OU tests
-  nothing; and the test principal is an **administrator**, because a deny exercised by a principal that
-  lacked the permission anyway proves nothing about a ceiling. Never call it "Policy Staging" — that is the
-  industry term and it collides with the `Staging` account, which is exactly what the naming avoids.
-- **One unified domain, projects as the isolation unit (D26):** the DataZone V2 domain is registered in
-  **Data Governance** (renamed from Data Management on 2026-08-08) because a domain is a registry of
-  projects and data products — ownership axis, not lifecycle axis. **It holds no compute:** the
-  `experimentation` project profile provisions into Sandbox, `engineering` into Development, and nothing
-  is ever provisioned into the domain account itself. Sandbox×Development is therefore *strengthened*, not
-  dissolved — it stops being "which URL did the person open" and becomes a property of the project.
-  Lakehouse blueprint in its Glue/Athena form only — **never** the Redshift Serverless variant.
-  Staging and Production are never associated. What crosses the gate is
-  the D28 artifact set — image, workflow YAML in S3, per-workflow role, orchestration resource, log
-  group, model package group — carried by the project's git repository, linted against domain-scoped
-  references.
-- **D18** gives the data scientist read-only permission sets on Staging and Production (data plane, no
-  compute); **D19** keeps the derived zones (now per Interactive account) designed rather than left over.
-- **Two access paths, not one.** "The VPN is the only entry point" is true because the tunnel is *full*,
-  not because it routes into every VPC. Only Sandbox and Production are reachable at the VPC level;
-  Development and Staging are used entirely through AWS API endpoints exited via the WireGuard Elastic IP
-  — including the Unified Studio portal, which is a public endpoint even when project compute is
-  VPC-only. The control there is `aws:SourceIp`, never `aws:SourceVpce` (§3) — **and whether that control
-  reaches the portal at all is §4.4 row 16, unverified**: the portal is entered by an Identity Center
-  sign-in, not by an IAM-authorized call under a permission set, so the condition demonstrably covers the
-  API half and not yet the portal half. Answered at Stage 4.
-- **D24:** the shared EFS lives in Sandbox only; Development gets neither its own nor a path to it, and
-  the exchange between the two Interactive accounts is S3 and git. **D25:** the ingestion drop-box is
-  picked up by Production's job role on the producer path — which also closed a hole where the `Data` OU
-  SCP never denied Glue jobs.
-
-`README.md` carries the argument for the account split, the summaries of the three AWS reference
-architectures, and the three distinctions (Development×Experimentation, OU×Account, Data
-Governance×Production).
-
-**A pre-Stage-1 review of the whole plan was run on 2026-08-08 and its corrections are applied.** It earns
-no row in `GENERAL_PLAN.md` §10, by that section's own rule — nothing is provisioned, so it is a change to
-the document and not to the environment; the History entry below is the record. What it changed that
-matters most: Stage 1b was **renumbered** so the SSO
-profiles and the AZ check come at steps 5-6 instead of 10-11 — every step after them needs a profile;
-`ram:EnableSharingWithAwsOrganization` was corrected to run from **Management**, not Data Governance, and
-its verification command was replaced because the old one returns an empty list whether or not sharing is
-enabled; the OUs must be created **from the Control Tower console** or Account Factory will not provision
-into them; §4.4 gained **rows 15 and 16**, which are control risks rather than integration risks; and the
-data perimeter gained an explicit carve-out for **AWS-owned S3 buckets** without which `dnf update` stops
-working — an explicit `CLAUDE.md` requirement. **Three choices are now blocking Stage 1** and are recorded
-as §9 items 10-12: what "apply to a test OU first" means when no test OU exists, what the break-glass
-credential actually is, and whether the deployment manager keeps blanket `ReadOnlyAccess` — **all three
-since settled, as D29, D16/D30 and D31 respectively**.
-
-Two further inputs are needed from the user, neither blocking Stage 1: **which domain name to register**
-(D15, blocks Stage 7) and the outcome of the AZ name-to-ID check in Stage 1b step 6, which decides whether
-Stage 3 anchors subnets on list position or on AZ IDs. Both are tracked in `GENERAL_PLAN.md` §9, alongside
-the sixteen cross-account integrations in §4.4 that have a fallback each but are not yet known to work.
-Of those, **row 11 is the one to settle earliest**: organization-wide RAM sharing plus Lake Formation
-cross-account version 3+ are enabled in Stage 1b step 11 and consumed in Stage 5 — and since D26 also
-carry the domain's account associations (row 12) — and their absence makes a
-share fail *silently*: the grant succeeds on the producer side and the resource never appears. **Row 13**
-(CodeConnections from the unified domain to the self-hosted GitLab in a private subnet) is the one with
-no convenience-preserving fallback; check it while building Stage 7.
-
-State of the environment: nothing is provisioned in AWS beyond the manually created Management account.
-The repository contains documentation only; `terraform/` is still empty and must be replaced by
-`terraform-live/` and `terraform-modules/` in Stage 2.
-
-### History
-
-- **2026-08-07 / 2026-08-08 — Stage 0 (complete), and the plan.** Management account created manually by
-  the user through the console; `aws` CLI 2.36, `terraform` 1.15 and `uv` installed locally;
-  `~/.aws/config` still has no SSO profile. English review of `CLAUDE.md`, `README.md` and
-  `REFERENCES.md` — PR #1, merged. `GENERAL_PLAN.md` was then written and revised ten times before any
-  AWS resource existed, arriving at the nine-account / four-OU layout and D1-D28, all closed —
-  since extended to ten accounts and five OUs by D29 (see the review entry below) — the ninth
-  revision adopting SageMaker Unified Studio (D26), the catalog-maintenance carve-out (D27) and the
-  production workflow contract (D28), and the tenth placing the domain on the ownership axis — which
-  renamed `Data Management` to **`Data Governance`**, needed no new account, and split the `Manager`
-  persona into **Deployment Manager** and **Governance Manager**;
-  `GLOSSARY.md` and `PRICING.md` were created along the way. The individual revisions are deliberately
-  not recorded: with nothing provisioned they describe how the document changed, not how the environment
-  did, and everything that survived them is in `GENERAL_PLAN.md` — §4 for the decisions and their
-  rationale, §11 for the lab-versus-institution delta.
-
-- **2026-08-08 — pre-Stage-1 review of the whole plan, corrections applied.** The last thing done before
-  provisioning anything. It found four classes of problem and all but the decisions are fixed: (i) **Stage 1
-  ordering and correctness** — SSO profiles used five steps before they were created, `ram` org sharing
-  attributed to the wrong account with a verification command that cannot fail, OUs created outside Control
-  Tower's registration, the Control Tower wizard's default `Sandbox` OU name colliding with the Sandbox
-  *account*; (ii) **two control risks promoted to §4.4 rows 15 and 16** — whether D13 survives roles that
-  blueprints now author, and whether the VPN restriction reaches the Unified Studio portal at all; (iii)
-  **dependency errors between stages** — Stage 6 needed the `dev-env` image (Stage 8) and GitLab (Stage 7),
-  resolved by building the first image **by hand** and deferring the `git clone` deliverable to Stage 7;
-  the cross-account private-hosted-zone association that makes "reach GitLab by name" work was missing
-  entirely; (iv) **the perimeter denying AWS's own S3 buckets**, which breaks `dnf update` — a stated
-  `CLAUDE.md` requirement. Also: the GitLab CE edition limit reaches the *approval gate*, not just SAML
-  group sync, so D20's central control needs an edition check before Stage 8 is written.
-  **The first of the three remaining choices was then closed as D29** (§9 item 10): a tenth account,
-  **`Policy Canary`**, alone in a fifth OU, **`Policy Test`**. The reasoning matters more than the outcome
-  — the obvious fix (an empty test OU) tests *nothing*, because an SCP is only evaluated when a principal
-  makes a call; the OU is worth having only because a disposable account sits inside it, and the test
-  principal has to be an **administrator** or the battery measures the identity policy instead of the
-  ceiling. Stage 1b step 7 now carries the procedure, in both directions: what must still succeed *and*
-  what must now fail. **§9 item 11 then closed in two parts.** The break-glass credential is the
-  **Management account root** (D16) — which *removes* principle 2's exception rather than documenting one,
-  merges Stage 1a steps 1 and 5, and composes with centralized root access management: nine member roots
-  disappear, one remains, and it is the break-glass. Its cost is that root cannot be scoped, so every
-  compensating control is detective. **MFA type is deliberately unspecified** — a recorded decision, not an
-  omission. And the second part went against the recommendation: the **SCP recovery principal was adopted
-  (D30)** by the user's choice — `awsds-scp-recovery`, exempt from every custom deny. Built with the
-  mitigations that decide whether it is a control or a hole, and it forced the SCPs into code
-  (`terraform-live/identity/`), which no earlier version of the plan owned. **§9 item 12 then closed as
-  D31:** the deployment manager loses blanket `ReadOnlyAccess` for a bespoke `DeploymentManagerAccess`
-  (diagnosis, not reading — `athena:*` and `kms:Decrypt` denied explicitly), and the **derived zone gets its
-  own KMS CMK** whose key policy is where "who may read materialised `restricted` data" lives. That second
-  half closes a D19 gap unrelated to the persona and is the part that outlives it: a permission set
-  enumerates, a key policy is default-deny. **All three review decisions are now settled and §9 holds only
-  things to find out by doing.**
+**Budget for this section: ~1 KB.** It states *state*, not reasoning. Reasoning belongs in the decision
+file; narrative belongs in [`plan/history.md`](plan/history.md).
 
 ### Lessons carried forward
 
-Findings from the planning period that are **not** recoverable by re-reading `GENERAL_PLAN.md`. Add to
-this list only what would otherwise be relearned the hard way.
+**Read [`plan/lessons.md`](plan/lessons.md) before planning, reviewing, or settling a decision.**
+The fifteen titles are kept here so a lesson can be *recognised* without opening the file; the
+reasoning that makes each one usable is in the file, and the titles alone are not a substitute.
 
-1. **A copy of governed data landing somewhere less governed is not a hole to be closed.** It is a
-   property of every SageMaker installation, not something D18 introduced. The control is the data
-   perimeter (§4.2), which stops the copy leaving the organization; preventing the copy was never the
-   control. The first answer given on this got it wrong and treated it as a newly opened gap.
-2. **A stand-in that shares an account with the thing it de-risks proves nothing about permissions.** A
-   `staging` Glue namespace *inside* Production was once invented to substitute for a Staging account: it
-   shared an IAM surface and a blast radius with its own subject, so it could catch a schema error and
-   never a permission error — which is the failure class a cross-account promotion actually produces.
-   That is why D20 exists.
-3. **When a decision moves a resource across an account boundary, re-check every condition that
-   referenced it — especially conditions pointing at ephemeral things.** This nearly shipped: Stage 5
-   pinned the Data Governance bucket policies to the consumers' `aws:SourceVpce`, but interface endpoints
-   are `[E]` (new IDs on every `make up`) and since D22 live in a *different* account, so nothing would
-   ever repair them. Anchor on the `[P]` S3 **gateway** endpoint, or on `aws:SourceVpc`.
-4. **State that lives only inside an `[E]` resource is this design's recurring failure mode** (§5.1 rule
-   2). Three hits already — EFS, the Studio domain, MWAA's metadata database — and it will recur for
-   every stateful service considered for the `make up`/`make down` cadence. Check it before adopting one.
-5. **An intention is not a control.** "No compute in Data Governance" was written down for a whole
-   revision before anyone noticed the `Data` OU SCP never denied Glue jobs (D25). Likewise the three Lake
-   Formation shares assumed organization-wide RAM sharing and cross-account version 3+ that no stage
-   enabled — and their absence makes a share fail *silently*, the grant succeeding while the resource
-   never appears. For every stated property, name the policy line that enforces it.
-6. **Prices are measured, not reasoned.** The AWS Price List bulk API
-   (`pricing.us-east-1.amazonaws.com/offers/v1.0/aws/<service>/current/<region>/index.json`) is public,
-   needs no credentials, and answers in seconds what the pricing pages answer in paragraphs. It is also
-   how a *missing component* was found rather than a price difference — CodeArtifact does not exist in
-   `sa-east-1` — which the Region check done by reading had missed. `PRICING.md` is built this way.
-7. **A rejected-on-cost option goes stale in the direction that flatters the rejection.** The D7 table
-   ruled MWAA out on a standing-cost floor that `mw1.micro` and MWAA Serverless had since removed.
-   Re-check the price and the shape of any service the plan rejected on cost before acting on it. The
-   same pattern closed D26 a day later: Unified Studio was rejected partly for having no IaC path, and
-   official Terraform support had arrived (2026-07) before the rejection was ever acted on.
-8. **When the classic `aws` provider lacks a resource, check the CloudFormation registry and `awscc`
-   before declaring a Terraform gap.** `AWS::MWAAServerless::Workflow` existed, and `awscc` exposes
-   every registry type mechanically — the "open issue, no branch" on the classic provider was the wrong
-   place to look. The `aws-ia` Unified Studio module itself splits the same way: domain via `aws`,
-   projects and blueprints via `awscc`.
-9. **The axis question applies to people as well as to resources.** The same pass that moved the domain
-   onto the ownership axis split the `Manager` persona along it: **Deployment Manager** (lifecycle —
-   approves releases) and **Governance Manager** (ownership — approves data access). This had been
-   written into §11 as "what an institution would do, notational here" a few hours earlier, and that was
-   wrong: with one persona, a single human writes a job that reads restricted data, approves its release
-   **and** approves its access to that data. Three acts, one signature. Never assign one person to both
-   groups. The related trap: the governance manager must **not** have blanket read on the data they gate
-   — an approver who can already read everything is not exercising a control.
-10. **Before placing a new resource in an account, ask which axis it is on — and check whether a
-   *registry* is being confused with a *runtime*.** D26's first draft put the Unified Studio domain in
-   Development because that is where people work. Wrong: a domain holds projects, profiles, blueprints
-   and the catalog, while blueprints provision the compute into whichever account the profile names. It
-   is an ownership-axis resource and belongs with the catalog it governs (which is also what makes
-   subscription fulfilment a *local* Lake Formation grant). The recurring symptom of getting this wrong
-   is the question "so is that a production account?" — the honest answer is that off-axis accounts are
-   not production, they are cross-cutting, and some of them are high blast radius instead.
+1. **A copy of governed data landing somewhere less governed is not a hole to be closed.**
+2. **A stand-in that shares an account with the thing it de-risks proves nothing about permissions.**
+3. **When a decision moves a resource across an account boundary, re-check every condition that referenced it — especially conditions pointing at ephemeral things.**
+4. **State that lives only inside an `[E]` resource is this design's recurring failure mode**
+5. **An intention is not a control.**
+6. **Prices are measured, not reasoned.**
+7. **A rejected-on-cost option goes stale in the direction that flatters the rejection.**
+8. **When the classic `aws` provider lacks a resource, check the CloudFormation registry and `awscc` before declaring a Terraform gap.**
+9. **The axis question applies to people as well as to resources.**
+10. **Before placing a new resource in an account, ask which axis it is on — and check whether a *registry* is being confused with a *runtime*.**
 11. **A decision that changes *who authors* an IAM policy invalidates every claim made about that policy.**
-   Lesson 3 is about resources crossing an account boundary; this is the same failure one level up. D13's
-   entire force is "the execution role holds no S3 on registered prefixes" — a sentence that was true
-   because *we wrote the role*. D26 handed role authorship to a blueprint and nobody re-read D13 for a
-   whole revision. The general form: when adopting a managed or opinionated service, list which resources
-   it will now create on your behalf, and re-read every decision whose enforcement depends on one of them.
-   §4.4 row 15 exists because of this.
-12. **An edition or tier limit can reach a load-bearing control, not just a convenience.** The plan caught
-   that GitLab CE lacks SAML group sync and correctly filed it as an annoyance. It did not notice that the
-   *approval gate* — the thing D20's entire argument rests on — is the same kind of paid feature, so the
-   lab's gate constrains "who can push a protected tag" rather than "who approves this release". Check the
-   tier of every product feature a *control* depends on, separately from the features the workflow merely
-   prefers.
-13. **A verification command that returns empty on both success and failure is not a verification.** Stage
-   1b's deliverable proposed `aws ram get-resource-share-associations` as the proof that organization-wide
-   sharing was enabled; with no share yet created it returns an empty list in both cases. This is the
-   detection-side twin of Lesson 5: an intention is not a control, and a command that cannot fail is not a
-   check. Before writing a deliverable, ask what its output looks like when the thing is *broken*.
+12. **An edition or tier limit can reach a load-bearing control, not just a convenience.**
+13. **A verification command that returns empty on both success and failure is not a verification.**
+14. **A blanket carve-out written by hand across several policies is a control that will be missing from one of them.**
+15. **Recommending against something is not the same as it being wrong, and the record should show which happened.**
 
-14. **A blanket carve-out written by hand across several policies is a control that will be missing from
-   one of them.** D30 adopted a principal exempt from every custom `Deny`. The dangerous part is not the
-   exemption — that was a deliberate, argued trade — it is that the *same condition* has to appear in every
-   statement, and a set where three policies carry it and the fourth does not is one nobody can reason
-   about, with no error to tell you which. Two consequences generalise beyond this decision: any condition
-   that must appear in N places gets **generated, not typed** (which is what finally forced the SCPs into
-   Terraform, a gap that had sat unowned since Stage 1b was written); and any ARN condition gets an
-   **enumerated list, never a wildcard account** — `arn:aws:iam::*:role/x` means "anyone who can create a
-   role named x, anywhere". Both traps are invisible in a `plan` and cheap in CI.
-15. **Recommending against something is not the same as it being wrong, and the record should show which
-   happened.** D30 was recommended against and adopted anyway, for reasons that hold: fixing in place keeps
-   repairs out of the Management console, and the pattern's sharp edges are worth building once in a lab
-   whose stated purpose (§11) is to learn patterns. The useful discipline is to write the trade-off into the
-   decision rather than re-argue it, then spend the effort on the mitigations — which is where the real
-   engineering of D30 turned out to be.

@@ -16,10 +16,11 @@ are now officially just the acronym.
 | `[P]` | **Persistent** layer. Resources created once and never destroyed, because they cost nothing (or nearly nothing) at rest, or are too slow to rebuild. See `GENERAL_PLAN.md` §5.1. |
 | `[D]` | **Dormant** layer. Resources kept but powered off between sessions — stateful services where rebuilding is riskier than paying the idle cost. `make down` stops them; `make up` starts them. |
 | `[E]` | **Ephemeral** layer. Resources destroyed at the end of every session: everything metered by the hour and rebuildable in minutes. |
-| `D1` … `D25` | Numbered key decisions, recorded with their rationale in `GENERAL_PLAN.md` §4. Referenced from the stages that consume them. |
+| `D1` … `D31` | Numbered key decisions. **One file each** in `plan/decisions/`, with a one-line summary per decision in `plan/decisions/INDEX.md`. Referenced by ID from the stages that consume them. |
 | **Sandbox / Development / Staging / Production** | The four environments, one AWS account each. Sandbox is experimentation (the unit of work is a notebook); Development is where pipelines are engineered (the unit of work is a repository); Staging and Production are *deployment targets* that only a pipeline writes to. Promotion runs Development → Staging → Production; Sandbox feeds Development through git. See `README.md`, "Three distinctions the layout is built on". |
 | **Data Governance** | The account that owns the *state* of data: the governed lake, its catalog, Lake Formation and the classification scheme. No compute, no interactive sign-in; every environment reaches it through Lake Formation cross-account shares. |
-| `§` | A section of `GENERAL_PLAN.md` (e.g. §4.2 is the data perimeter). |
+| `INT-01` … `INT-16` | Numbered cross-account integrations that must be proven, each with a fallback: `plan/integrations.md`. Replaces the old "§4.4 row *n*" references, which renumbered whenever a row was inserted. |
+| `§` | A section of the plan as it was when it lived in one file. The numbers are kept **inside** the `plan/` files as historical anchors (e.g. `plan/architecture.md` §4.2 is the data perimeter), but the address of anything is its file plus its stable ID — `D26`, `INT-11`, `Stage 1b step 7`. |
 
 ---
 
@@ -63,8 +64,8 @@ are now officially just the acronym.
 | **SSH** | Secure Shell | Remote shell access. Deliberately not exposed here: shell access goes through SSM Session Manager instead of port 22. |
 | **ALB** | Application Load Balancer | An HTTP-aware load balancer. Cannot be stopped — only created or destroyed — which is why it lives in the `[E]` layer. |
 | **LCU** | Load Balancer Capacity Unit | The usage-based half of an ALB's bill, on top of its hourly charge. |
-| **WAN** | Wide Area Network | In "Cloud WAN", AWS's managed multi-region network fabric (§11). |
-| **IPAM** | IP Address Manager | AWS's service for allocating CIDR ranges across an organization so they do not collide (§11). |
+| **WAN** | Wide Area Network | In "Cloud WAN", AWS's managed multi-region network fabric (`plan/institutional-delta.md`). |
+| **IPAM** | IP Address Manager | AWS's service for allocating CIDR ranges across an organization so they do not collide (`plan/institutional-delta.md`). |
 | **VPN** | Virtual Private Network | The encrypted tunnel that is the only human entry point to the private network. WireGuard here (D4). |
 
 ## Storage, data and analytics
@@ -74,13 +75,13 @@ are now officially just the acronym.
 | **S3** | Simple Storage Service | Object storage. The source of truth for all data in this project. |
 | **EBS** | Elastic Block Store | Network-attached block storage for EC2 instances. Billed even while the instance is stopped — the idle cost of the `[D]` layer. |
 | **EFS** | Elastic File System | Managed NFS. The shared filesystem between users and SageMaker. |
-| **FSx** | (Amazon FSx) | A family of managed file systems. FSx for Lustre is named in §11 as what an institution uses for training throughput. |
+| **FSx** | (Amazon FSx) | A family of managed file systems. FSx for Lustre is named in `plan/institutional-delta.md` as what an institution uses for training throughput. |
 | **NFS / NFSv4** | Network File System (version 4) | The protocol for mounting a remote filesystem as if it were local. |
 | **IA** | Infrequent Access | A cheaper storage class for data that is rarely read. EFS and S3 both have one; the lifecycle transition to IA is what makes persistent EFS cost cents. |
 | **POSIX** | Portable Operating System Interface | The Unix filesystem semantics EFS implements — including numeric **UID**/**GID** (user/group identifiers), which have no connection to SSO identities. That gap is why "who wrote this file" is unanswerable in this design. |
 | **CMK** | Customer Managed Key | A KMS key you create and control, as opposed to an AWS-managed one. ~USD 1/month each. |
 | **SSE** | Server-Side Encryption | Encryption applied by the storage service. `SSE-KMS` means encrypted with a KMS key. |
-| **KMS** | Key Management Service | AWS's key store. Charges per key **and per request** — which is why S3 Bucket Keys matter (§5). |
+| **KMS** | Key Management Service | AWS's key store. Charges per key **and per request** — which is why S3 Bucket Keys matter (`plan/cost-model.md`). |
 | **ETL** | Extract, Transform, Load | The classic data pipeline shape. The sample application in `CLAUDE.md` is `app-etl`. |
 | **LF** | Lake Formation | AWS's permission layer over the Glue Data Catalog. **LF-Tags** are the labels its grants are expressed against, allowing "grant on everything tagged `restricted`" instead of table-by-table. |
 | **DLP** | Data Loss Prevention | Preventing sensitive data from leaving. In this project it is not one product but four problems, each with its own control (D6). |

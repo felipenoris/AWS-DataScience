@@ -85,7 +85,7 @@ to `MinWorkers` (default 1) when the queue drains — the environment fee does n
 **Consequence for the promotion chain (D20, D21).** Because the multiplier is the environment, giving
 Development, Staging and Production each its own Airflow means **three** environments:
 3 × USD 357.70 = **USD 1 073/month** in `us-west-2`, or USD 1 845 in `sa-east-1`. This plan does not do
-that — D17 keeps interactive and orchestration compute out of the deployment targets and §6 places
+that — D17 keeps interactive and orchestration compute out of the deployment targets and `plan/conventions.md` §6 places
 `orchestration/` only under `production/` — but the architectural choice has a four-figure number attached,
 and it is worth knowing before someone reasonably proposes "let's test the DAG in Staging first". The cheap
 answer to that is an `[E]` environment for an hour, not a second standing one. **MWAA Serverless removes
@@ -116,7 +116,7 @@ This is the variant D7 tries first: it is Airflow with the cost shape of alterna
 one place in this file where the São Paulo premium nearly disappears (1.18x instead of 1.72x). Available in
 both `us-west-2` and `sa-east-1`. Terraform: **`awscc_mwaaserverless_workflow`** (Cloud Control, from
 `AWS::MWAAServerless::Workflow`); the classic `aws` provider has no Serverless resource yet (D28,
-§4.4 row 14 of the plan).
+INT-14 of the plan).
 
 **What you give up for that price**, and what you gain — this is not the same product with a different
 invoice:
@@ -133,7 +133,7 @@ invoice:
 
 The row that matters most to *this* project is not the price: **one execution role per workflow** is a
 least-privilege property that provisioned MWAA cannot offer, since there every task inherits the same
-environment role. Against the data-perimeter design in §4.2 of `GENERAL_PLAN.md`, that is an argument for
+environment role. Against the data-perimeter design in `plan/architecture.md` §4.2, that is an argument for
 Serverless independent of cost. The row that argues the other way is the missing Airflow UI, which is a
 real loss for a data scientist debugging a DAG.
 
@@ -177,9 +177,9 @@ decision than the USD 350 figure was.
 
 ---
 
-## 2. The monthly floor (`GENERAL_PLAN.md` §5), re-priced
+## 2. The monthly floor (`plan/cost-model.md`), re-priced
 
-Paid every month even with the lab shut down. Same rows as §5, same assumptions, both regions.
+Paid every month even with the lab shut down. Same rows as `plan/cost-model.md`, same assumptions, both regions.
 
 | Item | Rate (`sa-east-1`) | Rate (`us-west-2`) | `sa-east-1` /month | `us-west-2` /month |
 |---|---|---|---|---|
@@ -214,7 +214,7 @@ number to trust is the one `GENERAL_PLAN.md` Stage 12 step 5 measures against th
 
 ---
 
-## 3. Per hour of lab time (`GENERAL_PLAN.md` §5), re-priced
+## 3. Per hour of lab time (`plan/cost-model.md`), re-priced
 
 | Item | `sa-east-1` USD/h | `us-west-2` USD/h | Ratio |
 |---|---|---|---|
@@ -248,7 +248,7 @@ Note that `GENERAL_PLAN.md` §5 estimates NAT at USD 0.050/h in `us-west-2`; the
 
 | Option | `sa-east-1` USD/month | `us-west-2` USD/month | Where it appears |
 |---|---|---|---|
-| Always-on GitLab (`t4g.large` + 50 GB gp3 + ALB) | 78.26 + 7.60 + 24.82 = **110.68** | 49.06 + 4.00 + 16.43 = **69.49** | D8, §5 |
+| Always-on GitLab (`t4g.large` + 50 GB gp3 + ALB) | 78.26 + 7.60 + 24.82 = **110.68** | 49.06 + 4.00 + 16.43 = **69.49** | D8, `plan/cost-model.md` |
 | AWS Client VPN (1 endpoint association, 730 h) | 0.15/h → **109.50** | 0.10/h → **73.00** | D4 alternative |
 | — plus each connected client | 0.05/h | 0.05/h | |
 | AWS Network Firewall (1 endpoint) | 0.395/h → **288.35** + 0.065/GB | 0.395/h → **288.35** + 0.065/GB | D5 option (c) |
@@ -293,7 +293,7 @@ São Paulo as in Oregon.
 | **KMS** customer-managed key (USD/key-mo) | 1.00 | 1.00 | **1.00** |
 | KMS requests (USD per 10 000) | 0.03 | 0.03 | **1.00** |
 
-Athena at 9.00 USD/TB in São Paulo makes the two cost levers in §5 of the plan — **S3 Bucket Keys** and
+Athena at 9.00 USD/TB in São Paulo makes the two cost levers in `plan/cost-model.md` — **S3 Bucket Keys** and
 partition/format discipline on the Iceberg tables — worth roughly twice as much there as in Oregon.
 
 ### SageMaker Unified Studio — the DataZone V2 domain (D26)
@@ -349,7 +349,7 @@ than discoveries:
 | Route 53 Resolver queries, first 1B (USD per million) | 0.40 | — | |
 
 **Macie is the one to watch in São Paulo: 2.25x, the largest premium in this file.** The plan already says
-to scope Macie to a sampled prefix rather than the whole lake (§5); in `sa-east-1` that instruction is
+to scope Macie to a sampled prefix rather than the whole lake (`plan/cost-model.md`); in `sa-east-1` that instruction is
 worth more than twice as much.
 
 ---

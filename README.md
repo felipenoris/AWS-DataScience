@@ -3,12 +3,19 @@
 Blueprint for using AWS as a Data Science infrastructure provider.
 
 - `CLAUDE.md` — goals and working rules.
-- `GENERAL_PLAN.md` — the staged implementation plan (stages, decisions, cost model).
+- `GENERAL_PLAN.md` — the **plan core**: guiding principles, the account map, and the two indexes
+  (stages and decisions). Read this first; it points at everything else.
+- `plan/` — the plan itself, split so that a task reads only what it needs:
+  - `plan/stages/` — one file per stage, each declaring the decisions it **consumes**.
+  - `plan/decisions/` — one file per decision `D1`…`D31`, plus a one-line-per-decision `INDEX.md`.
+  - `plan/architecture.md`, `plan/conventions.md`, `plan/integrations.md` (`INT-01`…`INT-16`),
+    `plan/cost-model.md`, `plan/open-questions.md`, `plan/lessons.md`,
+    `plan/institutional-delta.md`, `plan/history.md`.
 - `GLOSSARY.md` — every acronym the plan uses, plus its notation and the IAM condition keys it quotes.
 - `ACCOUNTS_AND_USERS.md` — AWS accounts, the axis each sits on, and the four SSO users.
 - `PRICING.md` — per-unit AWS rates for `sa-east-1` and `us-west-2`, read from the AWS Price List bulk API.
-  Unlike the cost figures in `GENERAL_PLAN.md` §5, which are order-of-magnitude estimates, these are
-  measured; §5 says what is consumed, `PRICING.md` says what a unit of it costs.
+  Unlike the cost figures in `plan/cost-model.md`, which are order-of-magnitude estimates, these are
+  measured; the cost model says what is consumed, `PRICING.md` says what a unit of it costs.
 - `LOG.md` — record of every step performed manually through the console.
 - `REFERENCES.md` — external references used along the way.
 
@@ -371,4 +378,5 @@ Ten accounts, all under one AWS Organization governed by Control Tower.
 The full rationale for each placement — why the tooling sits in Production rather than in a separate Shared
 Services account (D14), why Identity is its own account (D10), what the Staging account is and is not
 (D20), where experimentation ends and development begins (D21), why the lake has its own account (D22), and
-how the OUs were chosen (D23) — is recorded in `GENERAL_PLAN.md` §4.
+how the OUs were chosen (D23) — is recorded one file per decision in `plan/decisions/`
+(index: `plan/decisions/INDEX.md`).
