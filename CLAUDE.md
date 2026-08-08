@@ -105,19 +105,21 @@ Never update `LOG.md`. I'll edit this file.
 
 This folder is ignored by git. It contains personal information. Never edit this folder. Claude can read the files in this folder to gather information.
 
-## Segregation by accounts
+## Accounts and Users
 
-- The file `secrets/accounts.md` contains the AWS account information to use.
+- The file `ACCOUNTS_AND_USERS.md` contains the AWS accounts and users.
 
 - All accounts will be registered under an AWS Organization managed by the `Management Account`.
 
-- Accounts will be used to isolate environments: Sandbox and Production.
+- Accounts will be used to isolate environments: (1) Sandbox, (2) Development, (3) Staging and (4) Production.
 
-## Single-sign-on users (`secrets/sso-users.md`)
+- Promotion happens from: Development -> Staging -> Production. Given that Sandbox is the experimentation environment.
 
 - Infrastructure user: user with Administrator permissions.
 
-- Sandbox user: regular user, with no permissions to perform infrastructure changes, except for artifacts managed by AWS SageMaker. This user can write data, develop applications, and trigger CI/CD deploy pipelines to promote artifacts from the Sandbox to the Production environment.
+- Data Scientist user: regular user, with no permissions to perform infrastructure changes, except for artifacts managed by AWS SageMaker. This user can write data, develop applications, and trigger CI/CD deploy pipelines to promote artifacts from the Sandbox to the Production environment.
+
+- Manager user: approves deployment of artifacts.
 
 ## terraform
 
@@ -191,30 +193,34 @@ Always read `GENERAL_PLAN.md` before planning or executing a step.
 ### Current position
 
 **Stage 0 (Baseline) is complete. Stage 1 (Organization, accounts and identity) is ready to start, with
-nothing blocking it.** Decisions D1-D20 are closed and recorded in `GENERAL_PLAN.md` §4, with the single
+nothing blocking it.** Decisions D1-D23 are closed and recorded in `GENERAL_PLAN.md` §4, with the single
 exception of D7 (production orchestrator), deliberately deferred to Stage 10 because that is where it is
-consumed. The **seven** accounts in `secrets/accounts.md` are the complete set — Staging was added by the
-user on 2026-08-08 and is D20.
+consumed. The **nine** accounts in `ACCOUNTS_AND_USERS.md` (e-mails in `secrets/emails.md`) are the
+complete set. The SSO user formerly called "sandbox user" is now the **data scientist** user.
 
-The three most recent decisions answer where the humans are, and they are the ones most likely to be
-contradicted by an old habit: **D17** — the Studio domain exists only in Sandbox, while Production carries
-the SageMaker *runtime* (Model Registry, job execution roles) that only pipelines submit to; **D18** —
-data scientists hold a second, compute-free permission set in Production, with writes limited to an
-ingestion drop-box and their own Athena results; **D19** — Lake Formation filters are entitlement, not
-containment, so the derived zone is designed (per-principal prefixes, expiry, Macie scope) rather than
-left over, and containment comes from the data perimeter instead; and **D20** — the Staging account, a
-deployment target with sampled data only, read-only for data scientists, in a new `Workloads` OU with
-Production so the "no interactive compute" SCP set is written once.
+The shape to hold in mind, because every old habit contradicts some part of it:
 
-The environment chain is **Sandbox → Staging → Production**. Sandbox is the only account with a Studio
-domain and the only one where interactive compute is allowed; the other two are written to by the pipeline
-and read by humans. `README.md` carries the argument for the account split and the summaries of the three
-AWS reference architectures the layout follows.
+- **Four environments, one axis of lifecycle:** Sandbox (experimentation — the unit of work is a
+  notebook), Development (the unit of work is a pipeline), Staging and Production (deployment targets,
+  written only by the pipeline). Promotion runs **Development → Staging → Production**; Sandbox feeds
+  Development through **git graduation**, never through a pipeline (D21).
+- **One account off that axis entirely:** Data Management (D22) owns the governed lake; every environment
+  reaches it through Lake Formation cross-account shares — read for Sandbox/Development, read plus
+  **governed write** for Production's job role (the producer path). Nobody signs in to it interactively.
+- **Four OUs, named for their policy sets (D23):** Security; Interactive (Sandbox + Development — the
+  only OU where a Studio domain may exist, D17); Data (no compute at all); Workloads (Staging +
+  Production — no interactive compute, no human control plane).
+- **D18** gives the data scientist read-only permission sets on Staging and Production (data plane, no
+  compute); **D19** keeps the derived zones (now per Interactive account) designed rather than left over.
+
+`README.md` carries the argument for the account split, the summaries of the three AWS reference
+architectures, and the three distinctions (Development×Experimentation, OU×Account, Data
+Management×Production).
 
 Two inputs are still needed from the user, neither blocking Stage 1: **which domain name to register**
 (D15, blocks Stage 7) and the outcome of the AZ name-to-ID check in Stage 1 step 16, which decides whether
 Stage 3 anchors subnets on list position or on AZ IDs. Both are tracked in `GENERAL_PLAN.md` §9, alongside
-the six cross-account integrations in §4.4 that have a fallback each but are not yet known to work.
+the nine cross-account integrations in §4.4 that have a fallback each but are not yet known to work.
 
 State of the environment: nothing is provisioned in AWS beyond the manually created Management account.
 The repository contains documentation only; `terraform/` is still empty and must be replaced by
@@ -226,7 +232,7 @@ The repository contains documentation only; `terraform/` is still empty and must
   through the console; `aws` CLI 2.36, `terraform` 1.15 and `uv` installed locally; `~/.aws/config` still has
   no SSO profile. English review of `CLAUDE.md`, `README.md` and `REFERENCES.md` — PR #1, merged.
   `GENERAL_PLAN.md` written and then reviewed four times before any AWS resource existed. All of it landed
-  in the plan itself, which is the single source of truth for stages 0-13, decisions D1-D20 and their
+  in the plan itself, which is the single source of truth for stages 0-13, the numbered decisions and their
   rationale, the data perimeter (§4.2), the two egress designs (§4.3), the cross-account integrations to
   prove (§4.4), the cost and operating model (§5/§5.1), the open questions (§9) and the
   lab-versus-institution delta (§11). The intermediate drafts
@@ -256,3 +262,20 @@ The repository contains documentation only; `terraform/` is still empty and must
   peered, and a cost floor of ~USD 19-24. `README.md` gained a section summarising each of the three
   references and a table of what this project adopts versus where it departs (tooling in Production, no
   data-lake account, sampled staging data).
+- **2026-08-08 - sixth review: the nine-account layout (D21, D22, D23).** After the chat answered three
+  questions — Development×Experimentation, OU×Account, Data Management×Production — the user reorganized
+  the accounts to match: created **Development** (Sandbox becomes pure experimentation; the promotion
+  chain now starts in Development, and Sandbox → Development is a git graduation, not a pipeline) and
+  **Data Management** (the governed lake leaves the environment accounts; LF cross-account shares become
+  the default read path, and Production's job role holds the governed write — the producer path). The
+  file layout changed too: `ACCOUNTS_AND_USERS.md` at the repository root describes accounts and users;
+  `secrets/` now holds only `emails.md`; the SSO "sandbox user" was renamed **data scientist**. OUs were
+  settled as policy sets (D23): Security, Interactive, Data, Workloads — with the rejection of
+  one-account-per-OU recorded, and nesting triggers written down. Two departures from the AWS references
+  thereby closed (data account, experimentation/development split); the tooling-in-Production departure
+  (D14) is the main one that remains. Plan-wide consequences: nine §4.4 integration rows (notably the
+  Development↔Production peering for GitLab and the three LF shares), floor ~USD 21-27, six state
+  buckets, Stage 5 rebuilt around the Data Management account with a consumer slice applied to both
+  Interactive accounts, and Stage 9 reframed as "the deployment targets' platforms plus the producer
+  path". `README.md` gained the three-distinctions section; `GLOSSARY.md` gained graduation, producer
+  path and the four-OU entry.
