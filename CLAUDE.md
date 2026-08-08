@@ -191,13 +191,30 @@ Always read `GENERAL_PLAN.md` before planning or executing a step.
 ### Current position
 
 **Stage 0 (Baseline) is complete. Stage 1 (Organization, accounts and identity) is ready to start, with
-nothing blocking it.** Decisions D1-D16 are closed and recorded in `GENERAL_PLAN.md` §4, with the single
+nothing blocking it.** Decisions D1-D20 are closed and recorded in `GENERAL_PLAN.md` §4, with the single
 exception of D7 (production orchestrator), deliberately deferred to Stage 10 because that is where it is
-consumed. The six accounts in `secrets/accounts.md` are the complete set.
+consumed. The **seven** accounts in `secrets/accounts.md` are the complete set — Staging was added by the
+user on 2026-08-08 and is D20.
+
+The three most recent decisions answer where the humans are, and they are the ones most likely to be
+contradicted by an old habit: **D17** — the Studio domain exists only in Sandbox, while Production carries
+the SageMaker *runtime* (Model Registry, job execution roles) that only pipelines submit to; **D18** —
+data scientists hold a second, compute-free permission set in Production, with writes limited to an
+ingestion drop-box and their own Athena results; **D19** — Lake Formation filters are entitlement, not
+containment, so the derived zone is designed (per-principal prefixes, expiry, Macie scope) rather than
+left over, and containment comes from the data perimeter instead; and **D20** — the Staging account, a
+deployment target with sampled data only, read-only for data scientists, in a new `Workloads` OU with
+Production so the "no interactive compute" SCP set is written once.
+
+The environment chain is **Sandbox → Staging → Production**. Sandbox is the only account with a Studio
+domain and the only one where interactive compute is allowed; the other two are written to by the pipeline
+and read by humans. `README.md` carries the argument for the account split and the summaries of the three
+AWS reference architectures the layout follows.
 
 Two inputs are still needed from the user, neither blocking Stage 1: **which domain name to register**
 (D15, blocks Stage 7) and the outcome of the AZ name-to-ID check in Stage 1 step 16, which decides whether
-Stage 3 anchors subnets on list position or on AZ IDs. Both are tracked in `GENERAL_PLAN.md` §9.
+Stage 3 anchors subnets on list position or on AZ IDs. Both are tracked in `GENERAL_PLAN.md` §9, alongside
+the six cross-account integrations in §4.4 that have a fallback each but are not yet known to work.
 
 State of the environment: nothing is provisioned in AWS beyond the manually created Management account.
 The repository contains documentation only; `terraform/` is still empty and must be replaced by
@@ -208,9 +225,34 @@ The repository contains documentation only; `terraform/` is still empty and must
 - **2026-08-07 - Stage 0 (complete).** Baseline recorded: Management account created manually by the user
   through the console; `aws` CLI 2.36, `terraform` 1.15 and `uv` installed locally; `~/.aws/config` still has
   no SSO profile. English review of `CLAUDE.md`, `README.md` and `REFERENCES.md` — PR #1, merged.
-  `GENERAL_PLAN.md` written and then reviewed three times before any AWS resource existed. All of it landed
-  in the plan itself, which is the single source of truth for stages 0-13, decisions D1-D16 and their
-  rationale, the data perimeter (§4.2), the two egress designs (§4.3), the cost and operating model
-  (§5/§5.1), the open questions (§9) and the lab-versus-institution delta (§11). The intermediate drafts
+  `GENERAL_PLAN.md` written and then reviewed four times before any AWS resource existed. All of it landed
+  in the plan itself, which is the single source of truth for stages 0-13, decisions D1-D20 and their
+  rationale, the data perimeter (§4.2), the two egress designs (§4.3), the cross-account integrations to
+  prove (§4.4), the cost and operating model (§5/§5.1), the open questions (§9) and the
+  lab-versus-institution delta (§11). The intermediate drafts
   were deleted from both histories on 2026-08-07: nothing had been provisioned, so they described only how
   the document changed, not how the environment did.
+- **2026-08-07 - fourth review, driven by two questions from the user.** *Does segregating Sandbox from
+  Production make sense with SageMaker, or is the point to promote only code?* and *data scientists will
+  have access to both accounts, read-only on the production lake.* The first was answered by checking AWS's
+  own multi-account MLOps references (both in `REFERENCES.md`): Studio lives in the development account and
+  the deployment targets have no domain — which became D17. The second was a requirement, not a question,
+  and became D18 plus D19. **A correction worth carrying forward:** the first response treated
+  "read the lake, write the result somewhere less governed" as a hole the new requirement opened. It is
+  not — it is a property of every SageMaker installation, true of the Sandbox since Stage 5, and the
+  reason it is tolerable is that the data perimeter (§4.2) stops the copy leaving the organization.
+  Preventing the copy was never the control. `README.md` gained the account-segregation rationale and
+  `GLOSSARY.md` was created in the same pass.
+- **2026-08-08 - fifth review: the Staging account (D20).** The user added a `Staging` account to
+  `secrets/accounts.md` and asked for the plan to follow the AWS recommendations properly. All three
+  references — `amazon-sagemaker-secure-mlops`, the MLOps foundation roadmap, and the MLOps Workload
+  Orchestrator — place a pre-production deployment target between the development account and production,
+  and this plan had none. **A lesson worth keeping:** the previous revision had *noticed* the gap and
+  invented a `staging` Glue namespace inside the Production account to fill it. That stand-in was wrong in
+  a specific and instructive way — it shared an account, an IAM surface and a blast radius with the thing
+  it was meant to de-risk, so it could catch a schema error but never a permission error, which is the
+  failure class a cross-account promotion actually produces. It has been removed. Seven accounts now, a
+  `Workloads` OU, a promotion chain with two named deploy roles, a third VPC that is deliberately *not*
+  peered, and a cost floor of ~USD 19-24. `README.md` gained a section summarising each of the three
+  references and a table of what this project adopts versus where it departs (tooling in Production, no
+  data-lake account, sampled staging data).
