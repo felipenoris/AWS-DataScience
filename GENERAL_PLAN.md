@@ -37,13 +37,15 @@ Staged plan to build the AWS Data Science environment described in `CLAUDE.md`.
 - Management Account created manually through the AWS console. Nothing else exists.
 
 **Planned accounts** (`ACCOUNTS_AND_USERS.md`, e-mails in `secrets/emails.md`): Management, Sandbox
-(experimentation), **Development**, **Staging**, Production, **Data Management**, Log Archive, Audit,
+(experimentation), **Development**, **Staging**, Production, **Data Governance**, Log Archive, Audit,
 Identity — **nine accounts**, all e-mails registered. Staging arrived on 2026-08-08 with D20; Development
-and Data Management arrived later the same day with D21/D22, closing the two departures from the AWS
+and Data Governance arrived later the same day with D21/D22, closing the two departures from the AWS
 references that the first Staging revision had left open. Every earlier statement that six or seven
 accounts "are the complete set" is superseded.
 **Planned SSO users** (`ACCOUNTS_AND_USERS.md`): infrastructure (admin), **data scientist** (regular —
-renamed from "sandbox user", read-write in Sandbox and Development), manager (approvals).
+renamed from "sandbox user", read-write in Sandbox and Development), **deployment manager** (release
+approvals) and **governance manager** (data-access approvals) — one persona until 2026-08-08, split then
+because the two approvals sit on the two different axes (§3).
 
 **Region:** `us-west-2` (decision D1, recorded in `CLAUDE.md`).
 
@@ -97,27 +99,37 @@ AWS Organization (Management account - console only)                        [P]
 │   │                           no human infrastructure changes (D23)
 │   ├── Sandbox account      <- EXPERIMENTATION: the unit of work is a notebook
 │   │   ├── VPC, subnets, IGW, security groups, private DNS zone            [P]
-│   │   ├── SageMaker Studio domain + user profiles (VPC-only)              [P]
-│   │   │     └── Studio apps (JupyterLab/CodeEditor, restricted egress)    [E]
+│   │   ├── blueprint target (D26): the experimentation project's
+│   │   │     environments are provisioned here by the domain in
+│   │   │     Development (SageMaker AI apps VPC-only, restricted egress)   [E]
 │   │   ├── scratch / derived-zone S3 buckets (per-principal, D19)          [P]
 │   │   ├── WireGuard EC2    <- the only human entry point (see below)      [D]
 │   │   ├── NAT Gateway + interface VPC endpoints                           [E]
 │   │   └── EFS (NFS shared filesystem, lifecycle to IA) <- Sandbox only D24 [P]
 │   │
 │   └── Development account  <- DEVELOPMENT: the unit of work is a pipeline
-│       │                       (repository with tests, SageMaker pipeline) D21
+│       │                       (repository with tests, workflows)          D21
 │       ├── VPC (same module, own CIDR, peered to Production for GitLab)    [P]
-│       ├── SageMaker Studio domain + user profiles (VPC-only)              [P]
-│       │     └── Studio apps + SageMaker Pipelines under development       [E]
+│       ├── blueprint target (D26): the engineering project's
+│       │     environments are provisioned here by the domain in
+│       │     Data Governance                                               [E]
 │       ├── scratch / derived-zone S3 buckets (per-principal, D19)          [P]
 │       └── NAT + interface VPC endpoints                                   [E]
 │
-├── OU Data                  <- one SCP set: no compute at all; data cannot
-│   │                           be deleted, only governed (D22, D23)
-│   └── Data Management account <- owns the STATE of data: the lake,
-│       │                          its quality and its access policies
+├── OU Data                  <- one SCP set: no USER compute (two named
+│   │                           exceptions); data cannot be deleted, only
+│   │                           governed (D22, D23, D26, D27)
+│   └── Data Governance account <- the OWNERSHIP axis: owns the STATE of
+│       │                          data AND its governance. Nobody signs in
 │       ├── S3 raw/curated (Iceberg) - the only copy of governed data       [P]
 │       ├── Glue Data Catalog + Lake Formation (LF-Tags, D13 registration)  [P]
+│       ├── SageMaker unified domain (DataZone V2) + project profiles,
+│       │     blueprints (Tooling, Lakehouse Glue/Athena, ML), account
+│       │     associations, SageMaker Catalog            <- D26            [P]
+│       │     A REGISTRY, NOT A RUNTIME: blueprints provision compute
+│       │     into Sandbox and Development, never here
+│       ├── Glue Crawlers (raw + drop-box) under the maintenance role,
+│       │     event-driven; Iceberg optimizers           <- D27            [P] cfg
 │       ├── ingestion drop-box prefix (PutObject-only, dated, D18)          [P]
 │       └── LF cross-account shares -> Sandbox, Development (read),
 │           Production (read + governed write: the producer path)           [P]
@@ -149,11 +161,17 @@ AWS Organization (Management account - console only)                        [P]
         └── (Stage 13) public web tier -> private backend                   [E]
 ```
 
-**The two axes, made explicit (D22, D23).** The OU axis is *lifecycle*: how mature and how protected the
-compute in an account is (Interactive → Workloads). The Data OU sits on the other axis, *ownership*: the
-lake outlives every application that reads it, so it lives in an account whose policy set is about
-retention and governance, not deployment. Environments hold **compute**; the Data Management account holds
-**state**. Every environment reaches the same single copy of the data through a Lake Formation
+**The two axes, made explicit (D22, D23, D26).** The OU axis is *lifecycle*: how mature and how protected
+the compute in an account is (Interactive → Workloads). The Data OU sits on the other axis, *ownership*:
+the lake outlives every application that reads it, so it lives in an account whose policy set is about
+retention and governance, not deployment. Environments hold **compute**; the Data Governance account holds
+**state and governance** — since D26 that includes the SageMaker unified domain, which is a registry of
+projects and data products and therefore an ownership-axis resource, not a Development one. **The
+platform accounts sit on neither axis** (Management, Log Archive, Audit, Identity): they serve every
+account and belong to no environment. The consequence that has to be said out loud, because it is asked
+every time: *an account off the lifecycle axis is not "a production account"*. Some of them —
+Identity, Data Governance — are nonetheless high blast radius. Sensitive and production are different
+properties. `ACCOUNTS_AND_USERS.md` carries the same classification per account. Every environment reaches the same single copy of the data through a Lake Formation
 cross-account share — which is what `CLAUDE.md` asked for ("use AWS Lake Formation to share data
 cross-account") taken to its logical conclusion: the share is the *default* read path, not an exception.
 
@@ -175,11 +193,11 @@ single entry point true. Concretely there are two paths and they should not be c
 - **VPC-level reach**, which only Sandbox and Production have. The tunnel terminates in the Sandbox VPC,
   and the Sandbox↔Production peering extends it to the GitLab subnet. This is the path for private DNS
   names, the EFS mount (D24) and anything addressed by a private IP.
-- **AWS API and Studio UI reach**, which every account has, over public AWS endpoints exited through the
-  WireGuard Elastic IP. This is how **Studio in Development is used**: `CreatePresignedDomainUrl` is an
-  ordinary SageMaker API call, and the Studio UI it returns is a public endpoint even for a `VpcOnly`
-  domain — `VpcOnly` governs how the *app containers* reach the network, not how the browser reaches the
-  UI. The laptop needs no route into the Development VPC.
+- **AWS API and portal reach**, which every account has, over public AWS endpoints exited through the
+  WireGuard Elastic IP. This is how **the unified domain is used (D26)**: the Unified
+  Studio portal — like the presigned Studio URL before it — is a public endpoint even when project
+  compute is `VpcOnly`; VPC-only governs how the *app containers* reach the network, not how the browser
+  reaches the UI. The laptop needs no route into the Development VPC.
 
 The control that makes the second path VPN-only is therefore **`aws:SourceIp` on the WireGuard Elastic IP**
 (Stage 4 step 8), not `aws:SourceVpce`. Getting that backwards is the fastest way to write a condition that
@@ -188,11 +206,15 @@ either denies everything or protects nothing.
 **Where the humans are (D17, D18, D21).** D14 refined that boundary once; the decisions above refine it
 further, and the resulting sentence is the one to remember: *humans run code in the Interactive OU and
 nowhere else; they read the deployment targets' data planes; nobody changes a Workloads-OU control plane
-by hand, and the lake is written only through governed engines.* Concretely: Studio domains exist in
-Sandbox and Development and nowhere else (D17 as revised by D21); the data scientist holds read-only
+by hand, and the lake is written only through governed engines.* Concretely: interactive compute exists in
+Sandbox and Development and nowhere else — since D26 one unified domain, registered in Data Governance,
+whose project blueprints provision compute into the two Interactive accounts and into no others (D17 as
+revised by D21 and re-read by D26). The domain being elsewhere changes nothing about where code runs: it
+is a registry, and the project profile names the target account. The data
+scientist holds read-only
 permission sets on Staging and Production for logs, catalog metadata, job status and Athena (D18); the
 SageMaker runtime in Staging and Production is reachable only by a pipeline; and no human signs in to the
-Data Management account at all outside the infrastructure role (D22).
+Data Governance account at all outside the infrastructure role (D22).
 
 ---
 
@@ -206,7 +228,7 @@ Data Management account at all outside the infrastructure role (D22).
 | D4 | VPN technology | Decided (2026-08-07): **self-managed WireGuard** | A `t4g.nano` EC2 instance in a public subnet, layer `[D]` — stopped between sessions, not destroyed, so the host key and peer configuration stay stable. Idle cost is its 8 GB EBS volume (~USD 0.65/month) plus the Elastic IP, which lives in the `[P]` foundation slice (~USD 3.65/month) so the endpoint address never changes. Consequences to handle in Stage 4: no native Identity Center integration, so peer public keys are provisioned by Terraform from a git-ignored variable file; and it is a single point of failure, which is acceptable for a lab. AWS Client VPN (~USD 73/month, SAML to Identity Center) stays documented as the managed alternative if SSO-integrated VPN becomes a requirement. |
 | D5 | SageMaker internet restriction mechanism | Decided (2026-08-07): **build BOTH and compare, in Stage 6** | Not one mechanism but two designs, implemented behind a switch and evaluated against each other — see §4.3. **(A) Limited internet:** NAT plus an allowlist, using Route 53 Resolver DNS Firewall and/or a Squid proxy. **(B) No internet:** no NAT at all for the SageMaker subnets; packages arrive through CodeArtifact (upstream to the public repositories) and ECR pull-through cache, everything else through VPC endpoints. AWS Network Firewall (~USD 290/month) stays documented as the enterprise variant of (A) but is not built. The user's stated reservation about (B) is recorded in §4.3: CodeArtifact does not cover every language this environment needs. |
 | D6 | DLP approach | Decided (2026-08-07): **native AWS combination**, on top of a data perimeter | The objective in `CLAUDE.md` is split into four problems, each with its own control: discovery/classification → **Macie**; fine-grained access → **Lake Formation** (LF-Tags, column and row filters), made enforceable by D13; egress control → **D5** plus the SageMaker VPC-only domain; exfiltration detection → **CloudTrail data events + GuardDuty + Security Hub** with CloudWatch alarms. **Underneath all four sits the data perimeter (§4.2)** — SCPs, RCPs and VPC endpoint policies built in Stage 1, not Stage 11, because they are the only controls that make exfiltration structurally impossible rather than merely visible. A third-party agent-based DLP is only evaluated in Stage 11, after these are in place and their gaps are known. |
-| D7 | Workflow orchestration in production | Decided (2026-08-08): **build BOTH and compare, in Stage 10** | Not one orchestrator but two implementations of the same workflow, behind the same application contract — the shape D5 already uses for egress. **(A) MWAA**, hosted Airflow, which is what `CLAUDE.md` names explicitly and what keeps the workflow expressed as a portable Airflow DAG. **(B) Plain AWS services**: **EventBridge Scheduler** as the trigger, **Step Functions** as the state machine, **Lambda** for glue steps and **ECS/Fargate** (or a SageMaker job) for the container steps. The two are *not* equivalent, which is the point of building both — see the cost and lifecycle asymmetry below. **Not built, kept documented:** SageMaker Pipelines (native to the environment the workflow is developed in, pay per execution — the shortest path from notebook to production, and the right answer if the workflow turns out to be a training pipeline rather than an ETL) and self-managed Airflow on ECS (all of Airflow's semantics, none of the managed cost, all of the operational burden). **Cost asymmetry (`us-west-2`, authoritative rates in `PRICING.md`):** MWAA charges an *environment fee per hour of existence*, billed at one-second resolution, whether or not a DAG runs — `mw1.micro` USD 0.29/h (~USD 212/month always-on), `mw1.small` USD 0.49/h (~USD 358/month), plus USD 0.10/GB-month of metadata-database storage and any additional worker/scheduler/web-server instances. Design B has **no standing fee at all**: Step Functions Standard is USD 0.000025 per state transition, EventBridge Scheduler USD 1.00 per million invocations, Lambda USD 0.0000166667 per GB-second — a nightly workflow costs cents per month. **The unit of billing is the *environment*, not the account, the user or the DAG** — one `CreateEnvironment` call, one hourly fee, whether it runs zero DAGs or two hundred, for one data scientist or for the whole team. Volume reaches the bill only through *concurrency*, via autoscaled worker instances. The consequence for the promotion chain is worth stating before someone proposes it: giving Development, Staging and Production each its own Airflow means three environments, ~USD 1 073/month in `us-west-2` — which is a second, financial reason for what D17 already decides on architectural grounds, that orchestration lives only in Production (§6). "Test the DAG in Staging first" is answered by an `[E]` environment for an hour, not by a standing second one. A third MWAA shape removes the multiplication entirely: **MWAA Serverless** (GA November 2025), USD 0.088 per task-hour with a one-minute minimum and **no environment fee**, which is pay-per-execution Airflow and therefore the variant to try first. Its trade-offs are not only financial and are set out in `PRICING.md` §1.3: YAML workflow definitions instead of Python DAGs, Airflow v3 fixed, **no Airflow web UI**, and — the one that cuts in this project's favour — **one IAM execution role per workflow**, where provisioned MWAA gives every task the same environment role. Against the data perimeter (§4.2) that is an argument for Serverless independent of cost. **One practical blocker to resolve at Stage 10, found on 2026-08-08:** the AWS Terraform provider has `aws_mwaa_environment` for provisioned MWAA but **nothing for MWAA Serverless** — the request for `aws_mwaaserverless_workflow` is an open issue with no branch. Since `CLAUDE.md` requires all infrastructure in Terraform, alternative A on Serverless needs a route: check whether Cloud Control API covers it (the `awscc` provider), otherwise wrap a CloudFormation stack, otherwise fall back to `mw1.micro`, which is fully supported. Re-check before the stage starts — this is exactly the kind of gap that closes on its own within months. **Layer `[E]` — with a caveat that design B does not have:** an MWAA environment takes ~20-30 minutes to create and about as long to delete, so it does not fit the `make up`/`make down` cadence the way a NAT gateway does, and its metadata database (run history, XComs, UI-defined connections and variables) is state living *only* inside an `[E]` resource, which §5.1 rule 2 forbids. DAG code is in S3 and survives; run history does not. Either Stage 10 adds an export-before-teardown step, or MWAA is run as an `[E]` **experiment** whose history is expendable — decide that when the stage starts, and record it. Design B is `[E]` without qualification: the state machine definition *is* the state. **Unchanged from the previous version of this decision:** the application's entry point stays a plain container, so it can be driven by either implementation, or by the two options that were not built. |
+| D7 | Workflow orchestration in production | Decided (2026-08-08): **build BOTH and compare, in Stage 10** | Not one orchestrator but two implementations of the same workflow, behind the same application contract — the shape D5 already uses for egress. **(A) MWAA**, hosted Airflow, which is what `CLAUDE.md` names explicitly and what keeps the workflow expressed as a portable Airflow DAG. **(B) Plain AWS services**: **EventBridge Scheduler** as the trigger, **Step Functions** as the state machine, **Lambda** for glue steps and **ECS/Fargate** (or a SageMaker job) for the container steps. The two are *not* equivalent, which is the point of building both — see the cost and lifecycle asymmetry below. **Not built, kept documented:** SageMaker Pipelines (native to the environment the workflow is developed in, pay per execution — the shortest path from notebook to production, and the right answer if the workflow turns out to be a training pipeline rather than an ETL) and self-managed Airflow on ECS (all of Airflow's semantics, none of the managed cost, all of the operational burden). **Cost asymmetry (`us-west-2`, authoritative rates in `PRICING.md`):** MWAA charges an *environment fee per hour of existence*, billed at one-second resolution, whether or not a DAG runs — `mw1.micro` USD 0.29/h (~USD 212/month always-on), `mw1.small` USD 0.49/h (~USD 358/month), plus USD 0.10/GB-month of metadata-database storage and any additional worker/scheduler/web-server instances. Design B has **no standing fee at all**: Step Functions Standard is USD 0.000025 per state transition, EventBridge Scheduler USD 1.00 per million invocations, Lambda USD 0.0000166667 per GB-second — a nightly workflow costs cents per month. **The unit of billing is the *environment*, not the account, the user or the DAG** — one `CreateEnvironment` call, one hourly fee, whether it runs zero DAGs or two hundred, for one data scientist or for the whole team. Volume reaches the bill only through *concurrency*, via autoscaled worker instances. The consequence for the promotion chain is worth stating before someone proposes it: giving Development, Staging and Production each its own Airflow means three environments, ~USD 1 073/month in `us-west-2` — which is a second, financial reason for what D17 already decides on architectural grounds, that orchestration lives only in Production (§6). "Test the DAG in Staging first" is answered by an `[E]` environment for an hour, not by a standing second one. A third MWAA shape removes the multiplication entirely: **MWAA Serverless** (GA November 2025), USD 0.088 per task-hour with a one-minute minimum and **no environment fee**, which is pay-per-execution Airflow and therefore the variant to try first. Its trade-offs are not only financial and are set out in `PRICING.md` §1.3: YAML workflow definitions instead of Python DAGs, Airflow v3 fixed, **no Airflow web UI**, and — the one that cuts in this project's favour — **one IAM execution role per workflow**, where provisioned MWAA gives every task the same environment role. Against the data perimeter (§4.2) that is an argument for Serverless independent of cost. **The Terraform route, raised as a blocker in the morning revision and resolved in the evening one:** the classic `aws` provider still has nothing for MWAA Serverless (the issue requesting `aws_mwaaserverless_workflow` is open with no branch), but **`AWS::MWAAServerless::Workflow` exists in CloudFormation, and the `awscc` provider exposes it as `awscc_mwaaserverless_workflow`** — and `awscc` is a required provider anyway once D26 adopts the Unified Studio module. Alternative A is buildable in Terraform today; re-verify at Stage 10, with `aws_cloudformation_stack` as the wrapper fallback and a `mw1.micro` environment as the last resort. Alternative B's components are pinned by D28: **EventBridge Scheduler** as the trigger, **Step Functions** as the state machine, and an explicit **`aws_cloudwatch_log_group` per workflow** for execution logs. The full production artifact contract — what must exist in the deployment target for either alternative to receive a scientist-authored workflow — is D28. **Layer `[E]` — with a caveat that design B does not have:** an MWAA environment takes ~20-30 minutes to create and about as long to delete, so it does not fit the `make up`/`make down` cadence the way a NAT gateway does, and its metadata database (run history, XComs, UI-defined connections and variables) is state living *only* inside an `[E]` resource, which §5.1 rule 2 forbids. DAG code is in S3 and survives; run history does not. Either Stage 10 adds an export-before-teardown step, or MWAA is run as an `[E]` **experiment** whose history is expendable — decide that when the stage starts, and record it. Design B is `[E]` without qualification: the state machine definition *is* the state. **Unchanged from the previous version of this decision:** the application's entry point stays a plain container, so it can be driven by either implementation, or by the two options that were not built. |
 | D8 | GitLab hosting | Decided: **self-managed on EC2 in the Production account, layer `[D]`** | Required by `CLAUDE.md`. GitLab CE Omnibus on a private-subnet EC2 instance, reached through the VPN, backed up to S3. Account placement per D14. Sizing: 8 GB RAM is the realistic minimum for GitLab + Pages — `t4g.large` (ARM) is ~20% cheaper than `t3.large` for the same memory and GitLab Omnibus ships arm64 packages. Stopped between sessions rather than destroyed (~USD 4/month of EBS), because rebuilding from backup on every session is the fragile path. |
 | D9 | Number of AZs | Decided: **2 for subnets, 1 for metered endpoints** | Subnets, route tables and NAT-less network plumbing are free, so the topology spans 2 AZs and stays honest. Interface VPC endpoints are charged per AZ, so they default to a single AZ during lab sessions; a resource in the other AZ still resolves and reaches them, at the cost of cross-AZ traffic and no AZ redundancy — an acceptable trade in a lab, and a one-variable change if it ever is not. |
 | D10 | Identity Center administration | Decided (2026-08-07): **delegated to a dedicated Identity account** | The Identity Center instance and its identity store are created in the Management account and cannot be moved; what is delegated is their *administration*. One member account is registered as delegated administrator (`sso.amazonaws.com`), and from there Terraform manages permission sets, groups and assignments — so Terraform never needs credentials in the Management account, which is what makes principle 1 real rather than aspirational. The role goes to a **dedicated Identity account** rather than to the Audit account: Audit stays the security guardian (GuardDuty, Security Hub, Macie findings) and Identity owns access management, so the two concerns do not share a blast radius. Costs one extra Control Tower-governed account, i.e. one more AWS Config recorder (~USD 0.50-1/month) — accepted in exchange for the separation. **Consequences:** (i) assignments whose *target* is the Management account cannot be managed from the delegated account and stay manual; (ii) the Identity account can grant administrative access to any account in the organization, so it is as sensitive as Management — the data scientist must never have access to it; (iii) Control Tower's own permission sets (`AWSAdministratorAccess` and friends) are left alone, since editing them causes landing-zone drift. |
@@ -216,15 +238,18 @@ Data Management account at all outside the infrastructure role (D22).
 | D14 | Where GitLab, Runners, ECR and CodeArtifact live | Decided (2026-08-07): **the Production account** | These four are the software supply chain. In the Sandbox account they would sit next to a `data-scientists` group with broad permissions, which means the runner holding the deploy credentials, and the registry Production pulls from, would both be modifiable by the people the approval gate is supposed to gate. Putting them in Production removes that path and costs no extra account. **Accepted trade-off:** build and runtime now share an account, so there is no blast-radius boundary between "the thing that builds" and "the thing that runs" — a compromise of GitLab is a compromise of Production. A large institution splits these into a Shared Services / Tooling account in an `Infrastructure` OU (§11). **Consequences:** the Production VPC moves from Stage 9 to Stage 3; Sandbox↔Production VPC peering is needed so the VPN reaches GitLab (and, since D21, a second peering from Development); ECR and CodeArtifact are consumed cross-account from **both Interactive accounts**; and the data scientist needs a narrow, service-level (not infrastructure-level) reach into Production. |
 | D15 | TLS for internal endpoints | Decided (2026-08-07): **a real public domain plus split-horizon DNS** | ACM cannot issue a certificate for `sandbox.internal` — public certificates require a domain you can validate publicly, and AWS Private CA costs ~USD 400/month (~USD 50 in short-lived mode), both over the ceiling. The workable path: register one public domain, keep a public hosted zone **for DNS validation only**, issue free public ACM certificates (including the wildcard GitLab Pages needs), and resolve the names to private addresses through the **private** hosted zone. A public certificate on an internal ALB is supported; nothing is published. Cost ~USD 0.50/zone plus the domain (~USD 12-15/year). **Needs input from the user: which domain name to register.** |
 | D16 | Break-glass access | Decided (2026-08-07): **one documented emergency path, tested and alarmed** | "No IAM Users" (principle 2) has no answer for an IAM Identity Center outage or a misapplied SCP that locks everyone out, and an absolute rule with no escape hatch is one that gets broken improvised, under pressure, at the worst moment. The exception: a break-glass mechanism in the Management account with hardware MFA, credentials stored offline, never used in normal operation, and a CloudWatch alarm on any use of it. Documented in Stage 1 and tested once. The Management account root user's recovery path is documented alongside it. |
-| D17 | Where the data scientist works, and what crosses the account boundary | Decided (2026-08-07), revised (2026-08-08, D21): **interactive compute exists only in the Interactive OU (Sandbox and Development); the deployment targets carry the SageMaker runtime, but only pipelines submit to it** | "SageMaker" is two things and the account boundary runs between them. The **interactive** half — Studio domains, user profiles, JupyterLab/Code Editor apps — exists in the Sandbox and Development accounts and nowhere else: a Studio domain in a deployment target would put unreviewed code back inside the account boundary, which is the one thing the split buys. (The original decision said "Sandbox-only"; D21 split the interactive world into two accounts, so the invariant is now stated against the OU, which is where the SCP enforcing it attaches anyway.) The **runtime** half — training and processing jobs, Pipelines, Model Registry, endpoints — exists in Staging and Production, because that is where artifacts are tested, retrained and served; what changes is that a pipeline submits to it, never a person. This is also what AWS's own multi-account MLOps references do: Studio lives in the development/data-science accounts, and staging and production are deployment targets with no domain of their own. **The promotion boundary is four artifacts**, all travelling Development → Staging → Production through the pipeline (D20, D21): the container image (ECR), the model version (Model Registry), the workflow definition and application code (a git tag), and the Terraform that instantiates them. Sandbox work enters that chain only by graduating into a Development repository through git (D21) — there is no Sandbox → Staging path. **The Model Registry lives in Production** — D14 already collapsed the reference architecture's Tooling account into Production, and a model package group costs nothing at rest; Staging reads the registry and runs the approved version, it does not keep one of its own. **Consequences:** `terraform-live/production/sagemaker/` is a `[P]` slice (model package groups, and the execution role that pipeline-submitted jobs assume), with a job-execution-role-only counterpart in `terraform-live/staging/sagemaker/`; Stage 8's shared base image remains load-bearing, because "promote only the code" is only true if the runtime is identical by construction; and debugging a failed production job is a time-boxed elevated role approved by `managers`, logged and alarmed — not a notebook. |
-| D18 | Data scientist access outside the Interactive OU | Decided (2026-08-07, restated 2026-08-08 for the nine-account layout): **data plane read, no compute, no control plane; writes only to enumerated prefixes** | `ACCOUNTS_AND_USERS.md` gives the data scientist "read-only access to production environment data, and read-write access to sandbox and development environment". The full access matrix, per account: **Sandbox and Development** — read-write, interactive, the D19 derived zones; this is where the person works. **Staging — read-only, and nothing else.** No writes at all, not even a drop-box: Staging exists to be written by the pipeline and read by a human diagnosing why the pipeline failed, which is exactly what the `amazon-sagemaker-secure-mlops` reference grants in its staging account — a staging environment a human can write to stops being evidence of what the pipeline does. **Production — the data plane without compute:** CloudWatch logs of a failed job, Glue catalog metadata, SageMaker job/pipeline/registry status, named S3 prefixes (application outputs), and Athena on a dedicated workgroup with a scan limit. Denied explicitly: the control plane in full, plus `sagemaker:Create*Job`, `sagemaker:CreatePresignedDomainUrl`, `glue:StartJobRun` and `lakeformation:GrantPermissions`. **Data Management — no sign-in at all.** The lake (D22) is read through the Lake Formation share from Sandbox and Development, which is the canonical analytical path — the tools are where the person is, so signing in to the account that stores the data accomplishes nothing. The one write the data scientist has toward the lake is the **ingestion drop-box** in Data Management (`s3:PutObject` into a dated prefix — no `GetObject`, `DeleteObject` or `ListBucket`; a letterbox, not a shared folder), granted cross-account by bucket policy to the Interactive-OU roles rather than by a sign-in. **Deliberately not built:** any general-purpose exchange bucket between environments, which would be a promotion path running parallel to the Stage 8 approval gate. **One consequence to handle before it bites:** every `aws:SourceVpce` deny in a bucket policy (Stage 5, Stage 9) is evaluated against callers from *other* accounts — a data scientist at a laptop reaches S3 through the Sandbox or Development VPC endpoints or through the WireGuard Elastic IP — so the condition has to be a list that admits them (§4.4 row 5), or every call fails with an `AccessDenied` whose cause is invisible from the error. |
+| D17 | Where the data scientist works, and what crosses the account boundary | Decided (2026-08-07), revised (2026-08-08, D21): **interactive compute exists only in the Interactive OU (Sandbox and Development); the deployment targets carry the SageMaker runtime, but only pipelines submit to it** | "SageMaker" is two things and the account boundary runs between them. The **interactive** half — Studio domains, user profiles, JupyterLab/Code Editor apps — exists in the Sandbox and Development accounts and nowhere else: a Studio domain in a deployment target would put unreviewed code back inside the account boundary, which is the one thing the split buys. (The original decision said "Sandbox-only"; D21 split the interactive world into two accounts, so the invariant is now stated against the OU, which is where the SCP enforcing it attaches anyway.) The **runtime** half — training and processing jobs, Pipelines, Model Registry, endpoints — exists in Staging and Production, because that is where artifacts are tested, retrained and served; what changes is that a pipeline submits to it, never a person. This is also what AWS's own multi-account MLOps references do: Studio lives in the development/data-science accounts, and staging and production are deployment targets with no domain of their own. **The promotion boundary is four artifacts**, all travelling Development → Staging → Production through the pipeline (D20, D21): the container image (ECR), the model version (Model Registry), the workflow definition and application code (a git tag), and the Terraform that instantiates them. Sandbox work enters that chain only by graduating into a Development repository through git (D21) — there is no Sandbox → Staging path. **The Model Registry lives in Production** — D14 already collapsed the reference architecture's Tooling account into Production, and a model package group costs nothing at rest; Staging reads the registry and runs the approved version, it does not keep one of its own. **Consequences:** `terraform-live/production/sagemaker/` is a `[P]` slice (model package groups, and the execution role that pipeline-submitted jobs assume), with a job-execution-role-only counterpart in `terraform-live/staging/sagemaker/`; Stage 8's shared base image remains load-bearing, because "promote only the code" is only true if the runtime is identical by construction; and debugging a failed production job is a time-boxed elevated role approved by `deployment-managers`, logged and alarmed — not a notebook (the release approver owns this, not the governance one: it is a lifecycle act). |
+| D18 | Data scientist access outside the Interactive OU | Decided (2026-08-07, restated 2026-08-08 for the nine-account layout): **data plane read, no compute, no control plane; writes only to enumerated prefixes** | `ACCOUNTS_AND_USERS.md` gives the data scientist "read-only access to production environment data, and read-write access to sandbox and development environment". The full access matrix, per account: **Sandbox and Development** — read-write, interactive, the D19 derived zones; this is where the person works. **Staging — read-only, and nothing else.** No writes at all, not even a drop-box: Staging exists to be written by the pipeline and read by a human diagnosing why the pipeline failed, which is exactly what the `amazon-sagemaker-secure-mlops` reference grants in its staging account — a staging environment a human can write to stops being evidence of what the pipeline does. **Production — the data plane without compute:** CloudWatch logs of a failed job, Glue catalog metadata, SageMaker job/pipeline/registry status, named S3 prefixes (application outputs), and Athena on a dedicated workgroup with a scan limit. Denied explicitly: the control plane in full, plus `sagemaker:Create*Job`, `sagemaker:CreatePresignedDomainUrl`, `glue:StartJobRun` and `lakeformation:GrantPermissions`. **Data Governance — no sign-in at all.** The lake (D22) is read through the Lake Formation share from Sandbox and Development, which is the canonical analytical path — the tools are where the person is, so signing in to the account that stores the data accomplishes nothing. The one write the data scientist has toward the lake is the **ingestion drop-box** in Data Governance (`s3:PutObject` into a dated prefix — no `GetObject`, `DeleteObject` or `ListBucket`; a letterbox, not a shared folder), granted cross-account by bucket policy to the Interactive-OU roles rather than by a sign-in. **Deliberately not built:** any general-purpose exchange bucket between environments, which would be a promotion path running parallel to the Stage 8 approval gate. **One consequence to handle before it bites:** every `aws:SourceVpce` deny in a bucket policy (Stage 5, Stage 9) is evaluated against callers from *other* accounts — a data scientist at a laptop reaches S3 through the Sandbox or Development VPC endpoints or through the WireGuard Elastic IP — so the condition has to be a list that admits them (§4.4 row 5), or every call fails with an `AccessDenied` whose cause is invisible from the error. |
 | D19 | The derived zone — what Lake Formation does *not* do (extends D13) | Decided (2026-08-07): **the copy is not prevented; the destination is managed and the perimeter contains it** | Running a `SELECT` against the lake and storing the result is what a data science environment is *for*. Any principal that can read tabular data can materialise it outside the governed prefixes, and no configuration changes that. This is not a hole introduced by D18 — it has been true of the Sandbox since Stage 5, and of every SageMaker installation ever built. What it actually means is worth stating plainly: **Lake Formation's column and row filters are an entitlement mechanism, not a containment mechanism.** They decide what a principal may see at the moment of read; they say nothing about where the bytes go next. D13 makes the entitlement real; this decision covers everything after it. The practice: (i) **the output location is not the user's choice** — the Athena workgroup sets `EnforceWorkGroupConfiguration = true`, so a client cannot override the result location, and `s3:PutObject` on execution roles and permission sets is scoped to enumerated prefixes, never `*`; (ii) derived prefixes are **per principal** (`…/derived/${aws:userid}/`), so one person's copy is not a way around another person's grants; (iii) they carry a **lifecycle expiry**, so the shadow lake does not become permanent by accident; (iv) they sit **inside Macie's scan scope and carry CloudTrail data events** (Stage 11), because this is where sensitive data actually accumulates; (v) classification **inherits** — the output of a query over `restricted` data is `restricted` — stated as policy, because nothing enforces it automatically at this scale (§11: this is exactly where a catalog with lineage earns its price). **And the containment itself comes from somewhere else entirely:** the copy is tolerable because the data perimeter (§4.2) stops it leaving the organization and D5 stops it leaving the network. Preventing the copy was never the control. The perimeter is. |
 | D20 | The Staging account | Decided (2026-08-08): **a seventh account, `Staging`, in a new `Workloads` OU alongside Production** | Every AWS multi-account MLOps reference this plan checked puts a pre-production deployment target between the development account and production (`README.md`, "What the AWS references recommend"). This plan did not have one, and the consequence was stated plainly in the 2026-08-07 revision: the first time application code runs against a production-shaped path would be *in* production. That revision tried to stand in for it with a `staging` Glue namespace inside the Production account — **that stand-in is now removed.** It caught schema and logic errors, but it shared an account, an IAM surface and a blast radius with the very thing it was meant to de-risk, so it could never catch a *permission* error, which is the failure class a cross-account promotion actually produces. **What Staging is:** a deployment target. No Studio domain (D17), no Model Registry of its own (it reads Production's and runs the approved version), no GitLab (D14). It carries a VPC, a data platform whose catalog mirrors Production's schema, SageMaker job execution roles, and the application slices the pipeline deploys and tears down. **Its data is sampled or synthetic and never a copy of Production** — Staging is where automated tests run and where data scientists hold read access, so a full copy would mean the cheapest route to production data runs through the less-defended of the two accounts, and would double the storage and Macie bills for the privilege. **No VPC peering to Staging**, deliberately: Sandbox↔Production peering exists because the VPN has to reach GitLab, and nothing in Staging needs VPC-level reach from a laptop — the read access in D18 is data plane (S3, Athena, CloudWatch Logs) over public AWS API endpoints through the tunnel. A second peering would buy route-table complexity and one more hand-driven path into an account whose entire value is that nobody touches it by hand. Add it if something concrete needs it, not before. **OU shape:** `Workloads` with `Staging` and `Production` as children, so the SCP set meaning "no interactive compute, no human control plane" is written once and attached once; Sandbox keeps its own OU, because interactive compute is the whole point there. Not to be confused with a **Policy Staging OU** (§11), which is for testing SCPs before they reach anything real — the names collide, the concepts do not. **Cost:** one more AWS Config recorder (~USD 0.50-1/month) and one more KMS key; the VPC layer is free at rest and the metered `egress/` slice exists only while a promotion runs, which is minutes. The floor moves from ~USD 18-22 to ~USD 19-24 (§5), still comfortably under D12. Staging is never up during an ordinary Sandbox session: `make up ENV=staging` is a pipeline step, not part of a lab session. **Revised 2026-08-08 (D21):** the chain now starts in Development, not Sandbox — Development → Staging → Production; "a seventh account" reflects the count at the time of the decision, since superseded by D21/D22. |
 | D21 | The Development account, and where experimentation ends | Decided (2026-08-08): **a dedicated Development account; Sandbox becomes pure experimentation; the promotion chain starts in Development** | The distinction the AWS MLOps roadmap draws and the previous revision collapsed "because there is one user": **Experimentation (Sandbox)** is where the unit of work is a *notebook* — no versioning expectation, nothing survives, cost is spasmodic and human-driven. **Development** is where the unit of work is a *pipeline* — a repository with tests, a SageMaker Pipeline, git, CI, the expectation that running it again on Tuesday gives the same answer. The user chose to build the boundary anyway, and it buys three real things even single-operator: (i) **the promotion chain gets an honest origin** — what enters CI from Development is already repository-shaped, so the pipeline never has to pretend a notebook is an artifact; (ii) **the graduation step becomes visible** — moving work from Sandbox to Development is a deliberate act (a git commit into a Development repository), not a gradual blurring inside one account; (iii) **cost attribution separates exploration from engineering**, which is the split a real budget conversation needs. **What Development is:** a second Interactive-OU account — Studio domain (VPC-only, same module as Sandbox), derived zone (D19), LF read share from the lake (D22), peering to Production for GitLab, and the place SageMaker Pipelines are *authored and test-run* before the pipeline promotes them. **What it is not:** a deployment target (humans work here interactively) and not a staging area (its runs prove the pipeline works, not that the artifact deploys). **Graduation Sandbox → Development is git, not a pipeline:** a notebook's logic is rewritten into the repository, reviewed, and committed — there is deliberately no automated path that lifts a notebook out of Sandbox, because the rewrite *is* the quality gate. Promotion is Development → Staging → Production and never starts in Sandbox. |
-| D22 | The Data Management account — state separated from compute | Decided (2026-08-08): **the governed lake moves out of the environment accounts into a dedicated Data Management account; every environment reaches it through Lake Formation cross-account shares** | Environments (dev/staging/prod) sit on the *lifecycle* axis: how mature and protected a given copy of the application is. Data ownership sits on a different axis entirely: who produces a dataset, answers for its quality and sets its access policy. The lake outlives every application that reads it, so tying it to any environment account ties the data's life to a deployable thing's life — and forces a copy per environment. **What lives here:** the raw and curated S3 buckets (Iceberg), the Glue Data Catalog, Lake Formation with the LF-Tags and the D13 registrations, the classification scheme, the ingestion drop-box (D18), and Macie's primary scan scope (Stage 11). **What never lives here:** compute. No VPC in the first build — the data plane (S3, Glue, Athena, LF) is serverless, and consumers reach it through their *own* VPC endpoints; the SCP on the `Data` OU denies EC2 and SageMaker outright, and deletion protection is the policy set's whole personality (no `s3:DeleteBucket`, Object Lock where retention warrants it). **Who touches it:** nobody, interactively (D18). Sandbox and Development hold LF **read** shares; Production's job execution role holds LF read *and* the **governed write** — the producer path: production ETL writes curated tables through LF-aware engines, cross-account, and that is the only way governed data is ever written. Staging is deliberately not on the share (D20 — its data is sampled or synthetic, local to it). **What this closes and what it opens:** it closes the §11 row "the lab conflates environment with data domain", makes D13 cleaner (the execution roles in the environment accounts hold no S3 access at all to lake buckets — the accounts do not even contain them), and centralises what Macie scans. It opens more cross-account wiring: every row of §4.4 that involved "Production's lake" now points at Data Management, and the LF share count goes from one to three. One domain, one team still — but now the mechanism is exercised in the shape it scales in. |
-| D23 | OU structure — the account is the isolation boundary, the OU is the policy boundary | Decided (2026-08-08): **four OUs, each defined by the policy set it carries: Security, Interactive, Data, Workloads** | Segregating "by OU" versus "by account" is a false choice — accounts isolate (blast radius, quotas, billing, credentials), OUs attach policy once so it is inherited rather than remembered. An OU therefore earns its existence exactly when two or more accounts need the same policy set, and the OUs here are named for their policy, not for their contents: **Security** (Log Archive, Audit, Identity — Control Tower's guardrails plus delegated administration), **Interactive** (Sandbox, Development — interactive compute *allowed*, human infrastructure changes denied), **Data** (Data Management — no compute at all, deletion denied), **Workloads** (Staging, Production — no interactive compute, no human control plane; the D20 SCP set unchanged). A per-environment OU tree (one OU per account) was considered and rejected: an OU holding exactly one account forever is a folder with one file — policy might as well attach to the account. The revision triggers are recorded here so the structure is revisited deliberately: a second production-like account → nest `Workloads` into `NonProd`/`Prod`; the first time Staging and Production need genuinely different policy → the same; a second data domain → the `Data` OU stops being a single-account OU by itself. And one OU is still notably absent, unchanged from before: a **Policy Staging OU** for testing SCPs before they attach to anything real (§11) — the name collides with the Staging *account*, the concepts do not. |
+| D22 | The Data Governance account — state separated from compute | Decided (2026-08-08): **the governed lake moves out of the environment accounts into a dedicated Data Governance account; every environment reaches it through Lake Formation cross-account shares** | Environments (dev/staging/prod) sit on the *lifecycle* axis: how mature and protected a given copy of the application is. Data ownership sits on a different axis entirely: who produces a dataset, answers for its quality and sets its access policy. The lake outlives every application that reads it, so tying it to any environment account ties the data's life to a deployable thing's life — and forces a copy per environment. **What lives here:** the raw and curated S3 buckets (Iceberg), the Glue Data Catalog, Lake Formation with the LF-Tags and the D13 registrations, the classification scheme, the ingestion drop-box (D18), and Macie's primary scan scope (Stage 11). **What never lives here:** compute. No VPC in the first build — the data plane (S3, Glue, Athena, LF) is serverless, and consumers reach it through their *own* VPC endpoints; the SCP on the `Data` OU denies EC2 and SageMaker outright, and deletion protection is the policy set's whole personality (no `s3:DeleteBucket`, Object Lock where retention warrants it). **Who touches it:** nobody, interactively (D18). Sandbox and Development hold LF **read** shares; Production's job execution role holds LF read *and* the **governed write** — the producer path: production ETL writes curated tables through LF-aware engines, cross-account, and that is the only way governed data is ever written. Staging is deliberately not on the share (D20 — its data is sampled or synthetic, local to it). **What this closes and what it opens:** it closes the §11 row "the lab conflates environment with data domain", makes D13 cleaner (the execution roles in the environment accounts hold no S3 access at all to lake buckets — the accounts do not even contain them), and centralises what Macie scans. It opens more cross-account wiring: every row of §4.4 that involved "Production's lake" now points at Data Governance, and the LF share count goes from one to three. One domain, one team still — but now the mechanism is exercised in the shape it scales in. |
+| D23 | OU structure — the account is the isolation boundary, the OU is the policy boundary | Decided (2026-08-08): **four OUs, each defined by the policy set it carries: Security, Interactive, Data, Workloads** | Segregating "by OU" versus "by account" is a false choice — accounts isolate (blast radius, quotas, billing, credentials), OUs attach policy once so it is inherited rather than remembered. An OU therefore earns its existence exactly when two or more accounts need the same policy set, and the OUs here are named for their policy, not for their contents: **Security** (Log Archive, Audit, Identity — Control Tower's guardrails plus delegated administration), **Interactive** (Sandbox, Development — interactive compute *allowed*, human infrastructure changes denied), **Data** (Data Governance — no *user* compute, with the two named carve-outs D26 and D27 add, deletion denied), **Workloads** (Staging, Production — no interactive compute, no human control plane; the D20 SCP set unchanged). A per-environment OU tree (one OU per account) was considered and rejected: an OU holding exactly one account forever is a folder with one file — policy might as well attach to the account. The revision triggers are recorded here so the structure is revisited deliberately: a second production-like account → nest `Workloads` into `NonProd`/`Prod`; the first time Staging and Production need genuinely different policy → the same; a second data domain → the `Data` OU stops being a single-account OU by itself. And one OU is still notably absent, unchanged from before: a **Policy Staging OU** for testing SCPs before they attach to anything real (§11) — the name collides with the Staging *account*, the concepts do not. |
 | D24 | Where the shared filesystem lives, now that there are two Studio domains | Decided (2026-08-08): **EFS in Sandbox only; there is no shared filesystem in Development and no network path to Sandbox's** | D21 created a second Studio domain, and the NFS requirement in `CLAUDE.md` ("exchange files between users, the SageMaker environment and S3 buckets") did not automatically follow it. Three options were on the table: a second EFS in Development, a Sandbox↔Development VPC peering carrying NFS, or leaving the filesystem where it is. **The choice is the third**, and the reason it is a decision rather than an omission is that the alternatives each buy something real and are being declined on purpose. A second EFS costs cents but doubles a stateful `[P]` resource and creates the question nobody wants to answer at 23:00 — *which* of the two copies of a file is current. A peering would be the first network path between the two Interactive accounts, built for file convenience rather than for a requirement, and it would weaken the property that graduation is a *rewrite* (D21) by making it possible to simply drag files across. **What this means in practice:** the NFS requirement is served in Sandbox, which is where the VPN terminates and where the human file-exchange use case actually is. The exchange between Sandbox and Development is **S3 and git**, which is the same path the graduation itself takes — the rewrite passes through a repository either way. **Revision trigger:** the first time a Development workflow genuinely needs a POSIX filesystem (a training job that will not read from S3, a tool that mmaps), build the second EFS in `development/nfs/` from the Stage 5 module rather than reaching for the peering. Recorded in §11 as a lab-scale compromise: an institution gives every interactive account its own home and scratch filesystem and does not ask people to think about which account their files are in. |
-| D25 | Who consumes the ingestion drop-box | Decided (2026-08-08): **the Production job execution role, on the producer path; the `Data` OU SCP is tightened so no compute can run in Data Management at all** | D18 put an ingestion drop-box in the Data Management account (`s3:PutObject` from the Interactive-OU roles into a dated prefix, no read, no list, no delete) and said "a pipeline picks up from it" — without naming the account that pipeline runs in. There is only one answer consistent with D22: **Production**, because Production's job role already holds the Lake Formation governed write, and ingestion is exactly the producer path applied to a file a human dropped rather than to an upstream feed. Data Management cannot host it — the `Data` OU exists to make "nothing runs here" structural. **Two consequences to build rather than assume.** (i) The drop-box bucket policy needs a *second* statement, granting the Production job role `GetObject`, `ListBucket` on the dated prefixes and `DeleteObject` (the pickup has to consume what it read, or the letterbox never empties) — plus a grant on the drop-box KMS key, which is the half that is forgotten until the `AccessDenied` arrives. §4.4 row 10 carries it. (ii) The `Data` OU SCP as drafted in Stage 1 denies `ec2:RunInstances`, `sagemaker:Create*`, `glue:CreateDevEndpoint` and ECS/Lambda creation, but **not `glue:CreateJob`/`StartJobRun`** — a gap wide enough to run the whole ingestion in the wrong account by accident. Add Glue job creation and execution to the deny, so the SCP means what the OU's name promises. **The asymmetry is deliberate and worth stating:** the data scientist can put a file into the lake account but cannot read it back, and the thing that reads it runs behind the approval gate. That is what keeps the drop-box from becoming the general-purpose exchange bucket D18 refuses to build. |
+| D25 | Who consumes the ingestion drop-box | Decided (2026-08-08): **the Production job execution role, on the producer path; the `Data` OU SCP is tightened so no compute can run in Data Governance at all** | D18 put an ingestion drop-box in the Data Governance account (`s3:PutObject` from the Interactive-OU roles into a dated prefix, no read, no list, no delete) and said "a pipeline picks up from it" — without naming the account that pipeline runs in. There is only one answer consistent with D22: **Production**, because Production's job role already holds the Lake Formation governed write, and ingestion is exactly the producer path applied to a file a human dropped rather than to an upstream feed. Data Governance cannot host it — the `Data` OU exists to make "nothing runs here" structural. **Two consequences to build rather than assume.** (i) The drop-box bucket policy needs a *second* statement, granting the Production job role `GetObject`, `ListBucket` on the dated prefixes and `DeleteObject` (the pickup has to consume what it read, or the letterbox never empties) — plus a grant on the drop-box KMS key, which is the half that is forgotten until the `AccessDenied` arrives. §4.4 row 10 carries it. (ii) The `Data` OU SCP as drafted in Stage 1 denies `ec2:RunInstances`, `sagemaker:Create*`, `glue:CreateDevEndpoint` and ECS/Lambda creation, but **not `glue:CreateJob`/`StartJobRun`** — a gap wide enough to run the whole ingestion in the wrong account by accident. Add Glue job creation and execution to the deny, so the SCP means what the OU's name promises. **The asymmetry is deliberate and worth stating:** the data scientist can put a file into the lake account but cannot read it back, and the thing that reads it runs behind the approval gate. That is what keeps the drop-box from becoming the general-purpose exchange bucket D18 refuses to build. **Revised 2026-08-08 (D26, D27):** "no compute at all" is now "no *user* compute". Two carve-outs were added by name, and the distinction between them is the useful part — `datazone:*` because a governance control plane is not compute (D26), and the crawler/optimizer actions under the catalog-maintenance role because they *are* compute and therefore need a bounded principal, an event trigger and an alarm (D27). The deny list in this decision is otherwise unchanged, Glue jobs included. |
+| D26 | The development experience: SageMaker Unified Studio, and where its domain lives | Decided (2026-08-08): **one SageMaker unified domain — a DataZone V2 domain — in the Data Governance account (renamed from Data Management in the same decision), with account associations to Sandbox and Development; the two classic per-account Studio domains are dropped** | Reverses the Stage 6 note that recorded Unified Studio as deliberately not used. Two of that note's three reasons expired: **official Terraform support arrived in 2026-07** — the `aws-ia/terraform-aws-sagemaker-unified-studio` module provisions the domain and its IAM through the `aws` provider (≥ 6.51) and project profiles, blueprints and projects through **`awscc`** (Cloud Control, ≥ 1.89) — and SageMaker Catalog supplies exactly the publish/subscribe governance layer §11 said only an institution would have. What survives of the old argument is the *order of construction*: the Glue + LF-Tags substrate is still built first and by hand (Stage 5), so the portal is a storey, not the foundation. **Where the domain lives, and why it is not Development.** A first draft of this decision put it in Development and that was wrong in a specific way this plan has been wrong before (the `staging` Glue namespace inside Production, D20): it placed a resource from the **ownership** axis inside an account on the **lifecycle** axis. AWS's own multi-account guidance is a governance-first one — the *Governance account* hosts the domain, its users, account associations, project profiles, projects, Git connections and SageMaker Catalog. This project already has that account; what it lacked was the name. So `Data Management` becomes **`Data Governance`** and takes the domain, which also buys a mechanical gain: DataZone fulfils an approved subscription by **writing a Lake Formation grant**, so co-locating the business catalog with the technical catalog makes every approval local rather than cross-account. **The domain is a registry, not a runtime** — this is the sentence that keeps D17 and D21 intact. It holds projects, profiles, blueprints, memberships and the catalog; it holds no notebook, app, job or project bucket. Blueprints provision into the *associated* accounts, chosen by the project profile: an **`experimentation`** profile provisioning into **Sandbox** (the unit of work is a notebook), an **`engineering`** profile provisioning into **Development** (the unit of work is a pipeline). The Sandbox/Development boundary is therefore not weakened but *strengthened* — it stops depending on which URL a person opens and becomes a property of the project. The D21 graduation is unchanged: the move of code between the two projects' git repositories. **Staging and Production are never associated** — deployment targets stay headless, and D28 defines what crosses instead. **Blueprints enabled and no others:** Tooling; **Lakehouse Catalog in its Glue/Athena form — not the Redshift Serverless variant**, whose per-query RPU minimum has no place under D12; and **ML experience**, whose per-project SageMaker AI domain is where the Stage 6 VPC-only and IAM-condition hardening now applies. **Consequences in the Data OU.** Its policy set becomes "no *user* compute" rather than "no compute at all": `datazone:*` is carved out as a control plane, in the same sense Lake Formation always was, alongside D27's genuine-compute carve-out for crawlers. And the account still has no VPC, so a CodeConnections host cannot reach the private GitLab from here — §4.4 row 13 falls to its manual-push fallback, accepted rather than paid for with a VPC and a peering. **Authentication** is Identity Center — **the domain must be created in IdC's home Region; verify before creating, since neither can move**. **Cost:** DataZone metadata is request- and storage-priced (`PRICING.md`) — cents at lab scale; the cost lever is which blueprints exist, not the domain. **Revision trigger:** if the domain/portal model fights the lab (IdC region coupling, blueprint rigidity, a portal outage blocking all work), the classic two-domain Stage 6 design is in git history and rebuilds from the same substrate. |
+| D27 | Catalog-maintenance compute in the Data OU: crawlers and optimizers | Decided (2026-08-08): **Glue Crawlers for the raw zone and the ingestion drop-box run in Data Governance, under a named catalog-maintenance exception to the Data OU SCP; no crawler ever points at an Iceberg table** | The 2026-08-08 revision asks for crawlers on the data-lake buckets; D25 had just tightened the Data OU SCP to deny all Glue compute. The collision is resolved by distinguishing **user compute** (ETL jobs, dev endpoints, notebooks, interactive sessions — still denied, no exception) from **the catalog's own maintenance** (crawlers, Iceberg compaction/table optimizers, column statistics — allowed, startable only by the lake's maintenance role, which is not assumable interactively). The exception must be *named*, not smuggled: a crawler samples object contents to infer schema, so it does read data — the honest statement is "no compute here **except** the bounded set that produces catalog metadata, under one role, alarmed". **Scope:** crawlers only where schema arrives from outside — the raw zone and the drop-box, where files land whose shape nobody declared. **Never on Iceberg tables**: Iceberg is catalog-native; a crawler would at best duplicate what the catalog already knows and at worst fight the table's own metadata. **Trigger:** EventBridge on drop-box object creation, or on demand before a pickup run (D25) — never a standing schedule; a crawler run bills per DPU-hour with a 10-minute minimum, so cron-always would out-cost the storage it catalogs. **SCP mechanics:** the deny list from D25 stays; add a condition carve-out for `glue:StartCrawler`/`CreateCrawler` and the table-optimizer/statistics actions when the principal is the maintenance role. |
+| D28 | The production workflow contract: what must exist for a scientist-authored workflow to deploy | Decided (2026-08-08): **Production runs workflows headless — no domain, no portal, no blueprint ever touches a deployment target. The pipeline creates, from the application repository, exactly six artifact classes** | The question D26 forces: the workflow is authored in the unified domain (Development), Production has no domain (D17) — so what crosses the gate? **The project's git repository is the promotion vehicle**, and the deployable set is: **(1)** the container image in Production ECR (D14); **(2)** the **workflow definition** — MWAA Serverless YAML — versioned in the repo, deployed by the pipeline to a versioned S3 prefix in Production; **(3)** a **per-workflow IAM execution role** built from `terraform-modules/iam-role`, holding the LF producer grants it needs (D22/D25) and nothing else — one role per workflow is the Serverless isolation model, and the least-privilege property a provisioned MWAA environment structurally cannot offer; **(4)** the orchestration resource itself: **`awscc_mwaaserverless_workflow`** (D7 alternative A) and/or **`aws_sfn_state_machine` + `aws_scheduler_schedule`** (alternative B); **(5)** an explicit **`aws_cloudwatch_log_group` per workflow** — named, retention set — wired into A's `LoggingConfiguration` and B's state-machine logging, so execution logs are a deliverable rather than an accumulation of default log groups nobody expires; **(6)** for ML, the **model package group** (`aws_sagemaker_model_package_group`, Stage 9) whose resource policy lets the pipeline register and approve versions, Staging read approved ones, and Development read status only (§4.4 rows 4, 7). **Terraform support for (4) verified 2026-08-08:** `AWS::MWAAServerless::Workflow` exists in CloudFormation and the `awscc` provider exposes it as `awscc_mwaaserverless_workflow` — re-verify at Stage 10; fallbacks in order: `aws_cloudformation_stack` wrapping the CFN type, then provisioned MWAA (`aws_mwaa_environment`, `[E]`, with the metadata-database caveat back in force). **What authoring must respect, enforced by a promotion lint in Stage 8's CI:** the workflow YAML references the container by ECR URI and tag, never by anything project-scoped, and no operator may reference a domain resource (project connections, portal-scoped IDs) — a workflow that only runs where the portal exists is not a promotable artifact. §4.4 rows 12-14 carry the integration proofs. |
 
 ### 4.1 Region portability
 
@@ -346,21 +371,26 @@ survives contact with a Tuesday night.
 |---|---|---|---|
 | 1 | Studio custom image pulled from the **Production** ECR (D14) into the Sandbox **and Development** domains | 6 | An ECR cross-account replication rule into a repository in each Interactive account. Not a pipeline |
 | 2 | CodeArtifact consumed cross-account from Sandbox and Development — domain policy *and* KMS key policy | 6, 7 | Bake the packages into the dev-env image (§4.3), which is the delivery mechanism anyway |
-| 3 | Lake Formation cross-account shares through AWS RAM, now **three** (D22): Data Management → Sandbox (read), → Development (read), → Production (read + governed write, the producer path) — resource links and `IAMAllowedPrincipals` have version-dependent behaviour, and the *write* grant is the least-travelled variant | 5, 9 | None; instead, prove each grant restricts with the "read it with pandas" test *before* believing it, and prove the write path with a job that writes a curated table cross-account |
+| 3 | Lake Formation cross-account shares through AWS RAM, now **three** (D22): Data Governance → Sandbox (read), → Development (read), → Production (read + governed write, the producer path) — resource links and `IAMAllowedPrincipals` have version-dependent behaviour, and the *write* grant is the least-travelled variant | 5, 9 | None; instead, prove each grant restricts with the "read it with pandas" test *before* believing it, and prove the write path with a job that writes a curated table cross-account |
 | 4 | Model Registry: reading or approving a Production model package group from Development (D17) | 9, 10 | Registration happens only under the pipeline's own Production role; the Development side never writes to the registry |
-| 5 | S3 bucket policies (now mostly in **Data Management**, D22) whose `aws:SourceVpce` condition must admit the endpoints of *every* consuming account — Sandbox, Development, Production — plus the WireGuard Elastic IP (D18). **The IDs must come from the `[P]` S3 gateway endpoints in each consumer's `foundation/`, never from the `[E]` interface endpoints in `egress/`**, whose IDs change on every `make up` — and which now sit in a different account from the policy | 5, 9 | Replace the condition with `aws:SourceVpce ∈ list` **or** `aws:SourceIp = <WireGuard EIP>`, maintained as a variable per consuming account rather than edited by hand; or anchor on `aws:SourceVpc` (the VPC ID, also `[P]`) |
+| 5 | S3 bucket policies (now mostly in **Data Governance**, D22) whose `aws:SourceVpce` condition must admit the endpoints of *every* consuming account — Sandbox, Development, Production — plus the WireGuard Elastic IP (D18). **The IDs must come from the `[P]` S3 gateway endpoints in each consumer's `foundation/`, never from the `[E]` interface endpoints in `egress/`**, whose IDs change on every `make up` — and which now sit in a different account from the policy | 5, 9 | Replace the condition with `aws:SourceVpce ∈ list` **or** `aws:SourceIp = <WireGuard EIP>`, maintained as a variable per consuming account rather than edited by hand; or anchor on `aws:SourceVpc` (the VPC ID, also `[P]`) |
 | 6 | Whether S3 **console** browsing survives the `aws:SourceVpce` deny at all — console operations issued by the console backend carry neither the endpoint nor the user's source IP | 9 | Tell users to use the CLI over the tunnel, and write that in `README.md` rather than leaving a broken console as a surprise |
 | 7 | **Staging** (D20) consuming Production: pulling the application image from the Production ECR and reading the approved model version from the Production Model Registry, both under the pipeline's Staging role | 8, 9 | Replicate the image into a Staging ECR repository as part of the promotion, and pass the model artifact's S3 URI explicitly instead of resolving it through the registry |
 | 8 | The deploy roles assuming **across** accounts — the runner is in Production (D14), so the trust policies run Production → Staging and Production → Production | 8 | None needed; but write the two trust policies as separate roles with separate names, so an audit can tell which one was used |
 | 9 | **Development ↔ Production VPC peering** (D21): Studio in Development must reach GitLab in Production to clone and push — the same narrow, per-subnet route shape as the Sandbox peering | 3, 7 | None at the network level; if the second peering proves troublesome, the mirror-to-GitHub policy from Stage 7 step 7 is the interim path for Development commits |
-| 10 | **The ingestion drop-box pickup** (D25): the Production job role reading and deleting from a Data Management prefix that the Interactive-OU roles write to — a bucket policy with two asymmetric statements, plus a grant on the drop-box KMS key | 5, 9 | Have the Interactive-OU roles write to a bucket in Production instead, and accept that the file lands outside the governed account before it is curated. Strictly worse — it puts an ungoverned copy in the deployment target — so treat it as a stopgap, not an alternative |
-| 11 | **Organization-wide sharing enablement for Lake Formation** (D22): `ram:EnableSharingWithAwsOrganization`, LF **cross-account version 3 or above** (required to grant to an Organization or an OU rather than to an account list), and `AWSLakeFormationCrossAccountManager` on the Data Management grantor | 1, 5 | Grant to explicit **account IDs** rather than to the OU, and accept a RAM invitation per share. Three shares accepted by hand, once, is survivable — but the invitations reappear whenever a share is recreated, so it is a tax on every rebuild |
+| 10 | **The ingestion drop-box pickup** (D25): the Production job role reading and deleting from a Data Governance prefix that the Interactive-OU roles write to — a bucket policy with two asymmetric statements, plus a grant on the drop-box KMS key | 5, 9 | Have the Interactive-OU roles write to a bucket in Production instead, and accept that the file lands outside the governed account before it is curated. Strictly worse — it puts an ungoverned copy in the deployment target — so treat it as a stopgap, not an alternative |
+| 11 | **Organization-wide sharing enablement for Lake Formation** (D22): `ram:EnableSharingWithAwsOrganization`, LF **cross-account version 3 or above** (required to grant to an Organization or an OU rather than to an account list), and `AWSLakeFormationCrossAccountManager` on the Data Governance grantor | 1, 5 | Grant to explicit **account IDs** rather than to the OU, and accept a RAM invitation per share. Three shares accepted by hand, once, is survivable — but the invitations reappear whenever a share is recreated, so it is a tax on every rebuild |
+| 12 | **The unified domain's account associations** (D26): the DataZone V2 domain in **Data Governance** associated with **Sandbox and Development** through RAM, and blueprints provisioning project environments into those accounts under their provisioning roles. This is the row that carries the whole D26 shape — if associations do not work, the domain is a catalog with no compute attached | 6 | One V2 domain **per Interactive account**, no associations — losing the single portal and the cross-account project model, but keeping projects, the catalog and the Terraform module. The domain would then sit on the lifecycle axis after all, which D26 rejects on principle, so treat this as a degraded mode rather than a design |
+| 13 | **Unified Studio project git ↔ the self-hosted GitLab** (D14, D26): projects attach a repository through CodeConnections, which for self-managed GitLab requires a **CodeConnections host** reaching the instance in Production's private subnet. **Since D26 the domain is in Data Governance, which has no VPC** — so the host has nowhere to attach, and this row is expected to fail rather than merely at risk | 6, 7 | Accepted as the normal path, not as a fallback: the project keeps its default repository and the push into GitLab is a manual `git remote add` + push. The D21 graduation is a rewrite through a repository either way, so what is lost is convenience, not a control. Giving Data Governance a VPC and a peering to buy it back was considered and declined (D26) |
+| 14 | **The pipeline creating `awscc_mwaaserverless_workflow` in Production** (D28): the Cloud Control path from the deploy role — verified to exist 2026-08-08, not yet verified to *apply* cleanly under a CI role with a permission boundary | 10 | `aws_cloudformation_stack` wrapping `AWS::MWAAServerless::Workflow`; second fallback, provisioned MWAA (`aws_mwaa_environment`, `[E]`, metadata-database caveat in force — D7) |
 
 Rows 5, 6 and 11 are the ones most likely to surface as an `AccessDenied` — or, in row 11's case, as a
 share that appears to have been granted and simply never arrives. Rows 7-10 are the price of real
 environment separation: the promotion crosses an account boundary twice, the lake is consumed
 cross-account from everywhere (D22), and each crossing is a place where a resource policy can be missing.
-Check them deliberately rather than by symptom.
+Rows 12-14 arrived with D26-D28 and are the Unified Studio set — row 13 is the one with no workaround
+that preserves convenience, and row 14 is the one that decides whether D7's alternative A ships in
+Terraform or in a wrapper. Check them deliberately rather than by symptom.
 
 ---
 
@@ -388,7 +418,8 @@ nothing is running, and what does an hour of lab time add on top". Order-of-magn
 | GuardDuty | 0 → ~3-5 | Free for the first 30 days per account, then driven by CloudTrail/VPC flow/DNS log volume. S3 Protection and Malware Protection are extra and are the ones to watch against the ceiling |
 | WireGuard EBS (8 GB) + CloudWatch logs | ~1.00 | |
 | EFS (shared filesystem + Studio homes, lifecycle to IA) | ~0.50 | `[P]` — cents at rest, and it buys the removal of the sync-to-S3-on-teardown machinery (§5.1 rule 2) |
-| Staging, Development and Data Management accounts at rest (D20-D22) | ~3.00 | ~USD 1 each: a Config recorder and a KMS key per account. VPCs, buckets and IAM roles are free at rest; Staging's metered slice exists only during a promotion, Development's only while someone is working, and Data Management has no metered slice at all — its data plane is serverless (the lake storage itself is counted in the S3 row above) |
+| SageMaker unified domain — DataZone V2 metadata (D26) | ~0.50 | Requests USD 10 per 100k, metadata storage USD 0.40/GiB-month, global rates (`PRICING.md`); cents at lab scale. The cost lever is which blueprints exist, not the domain itself |
+| Staging, Development and Data Governance accounts at rest (D20-D22) | ~3.00 | ~USD 1 each: a Config recorder and a KMS key per account. VPCs, buckets and IAM roles are free at rest; Staging's metered slice exists only during a promotion, Development's only while someone is working, and Data Governance has no metered slice at all — its data plane is serverless (the lake storage itself is counted in the S3 row above) |
 | **Revised floor** | **~USD 21-27** | Up from the ~USD 15 first estimate: mostly from moving the detective controls into the landing zone (principle 9), plus ~USD 3 for the three environment/data accounts added on 2026-08-08. Still under the USD 50 ceiling, with less headroom than before — worth rechecking against the real bill at Stage 12 |
 
 Two cost levers worth applying rather than discovering later:
@@ -425,7 +456,7 @@ missing from earlier versions of this plan, which undercounted a full-stack hour
 
 **Projection:** ~USD 23 floor + 20 h/month × ~USD 0.28-0.40 (the upper end is a full-stack hour: GitLab,
 its ALB, a runner build and one Interactive environment all running at once) + a handful of promotions at
-~USD 0.03 each ≈ **USD 29-31/month**, against the USD 50 ceiling (D12). Staging and Data Management cost
+~USD 0.03 each ≈ **USD 29-31/month**, against the USD 50 ceiling (D12). Staging and Data Governance cost
 almost nothing precisely because neither ever has standing compute; the number to watch is whether Sandbox
 and Development sessions actually stay disjoint, which is what keeps the hourly line from doubling.
 Design B trades the NAT gateway for two CodeArtifact endpoints, so it is the *cheaper* of the two egress
@@ -439,7 +470,10 @@ model below is for. **D7 now commits to building MWAA rather than merely documen
 line it has to respect: the environment is `[E]`, it exists for the length of a comparison run, and at
 `mw1.micro` an eight-hour experiment costs ~USD 2.30. **MWAA Serverless** (USD 0.088 per task-hour, no
 environment fee) removes the exposure entirely and is therefore the variant to try first. Authoritative
-per-unit rates, for both `us-west-2` and `sa-east-1`, are in `PRICING.md`.
+per-unit rates, for both `us-west-2` and `sa-east-1`, are in `PRICING.md`. The same discipline applies
+inside the unified domain (D26): the Lakehouse blueprint is enabled in its Glue/Athena form only — its
+**Redshift Serverless** variant would put a second, larger query bill on top of Athena's, and it is
+excluded by decision, not by omission.
 
 **Guardrail:** AWS Budgets with e-mail alerts must exist before any compute is created (Stage 1).
 
@@ -502,7 +536,7 @@ persists; D7 records what Stage 10 must decide about it.
 
 **Naming:** `<project>-<env>-<component>[-<detail>]`, lowercase with hyphens.
 Project prefix: `awsds`. The `<env>` token is one of `sandbox`, `dev`, `data`, `staging`, `prod`, `shared`.
-Example: `awsds-sandbox-vpc`, `awsds-data-raw` (the lake lives in Data Management since D22, so
+Example: `awsds-sandbox-vpc`, `awsds-data-raw` (the lake lives in Data Governance since D22, so
 `awsds-prod-raw-data` would name a bucket that does not exist), `awsds-prod-ecr-dev-env`.
 
 **Mandatory tags on every resource:**
@@ -527,14 +561,15 @@ terraform-live/
 │   │                     #     hosted zone, KMS keys, IAM roles, WireGuard Elastic IP,
 │   │                     #     peering requester + routes to Production (D14)
 │   ├── data/             # [P] scratch + derived-zone buckets (per-principal, D19), Athena
-│   │                     #     workgroup, LF resource links to the Data Management share (D22).
-│   │                     #     The lake itself is NOT here - it lives in data-management/
+│   │                     #     workgroup, LF resource links to the Data Governance share (D22).
+│   │                     #     The lake itself is NOT here - it lives in data-governance/
 │   ├── egress/           # [E] NAT gateway, interface VPC endpoints - the metered network.
 │   │                     #     Two variants behind a switch: D5(A) with NAT, D5(B) without
 │   ├── vpn/              # [D] WireGuard EC2 (stopped, not destroyed)
 │   ├── nfs/              # [P] EFS filesystem, mount targets, access points (lifecycle to IA)
-│   └── sagemaker/        # [P] Studio domain + user profiles (D17/D21);
-│                         #     running apps are [E], deleted by make down
+│   └── sagemaker/        # [P] blueprint target (D26): the experimentation project's
+│                         #     environments are provisioned HERE by the domain in
+│                         #     Development; running apps are [E], deleted by make down
 ├── development/          # DEVELOPMENT (D21): the unit of work is a pipeline
 │   ├── bootstrap/        # [P] state bucket for the Development account
 │   ├── foundation/       # [P] VPC (own CIDR), KMS, IAM roles, peering requester to
@@ -542,19 +577,31 @@ terraform-live/
 │   ├── data/             # [P] scratch + derived zone + Athena workgroup + LF resource
 │   │                     #     links, same shape as sandbox/data/
 │   ├── egress/           # [E] NAT + endpoints, same D5 switch as sandbox
-│   ├── sagemaker/        # [P] Studio domain + user profiles; SageMaker Pipelines are
+│   ├── sagemaker/        # [P] blueprint target (D26): the engineering project's
+│   │                     #     environments land here, provisioned by the domain in
+│   │                     #     data-governance/. No domain of its own. Workflows are
 │   │                     #     authored and test-run here before promotion
 │   └── app/
 │       └── app-etl/      # [E] the application running against Development's own data, applied
 │                         #     by hand while it is being engineered (Stage 8 step 2). It is NOT
 │                         #     part of the promotion chain - that starts at a git tag and its
 │                         #     first target is Staging. No nfs/ slice here, by decision (D24)
-├── data-management/      # THE LAKE (D22): state, not compute
-│   ├── bootstrap/        # [P] state bucket for the Data Management account
-│   └── data/             # [P] raw/curated S3 (Iceberg), Glue Data Catalog, Lake Formation
-│                         #     registrations + LF-Tags (D13), ingestion drop-box (D18),
-│                         #     cross-account shares to sandbox/development/production.
-│                         #     No foundation/ slice: no VPC, no compute, nothing metered
+├── data-governance/      # THE OWNERSHIP AXIS (D22, D26): state and governance,
+│   │                     # never compute. Renamed from data-management/ on 2026-08-08
+│   ├── bootstrap/        # [P] state bucket for the Data Governance account
+│   ├── data/             # [P] raw/curated S3 (Iceberg), Glue Data Catalog, Lake Formation
+│   │                     #     registrations + LF-Tags (D13), ingestion drop-box (D18),
+│   │                     #     cross-account shares to sandbox/development/production,
+│   │                     #     Glue Crawlers on raw + drop-box under the D27 exception
+│   │                     #     (config is free at rest; runs are metered, event-driven)
+│   └── governance/       # [P] the SageMaker unified domain (DataZone V2, D26) via the
+│                         #     aws-ia module: domain + IAM through the aws provider,
+│                         #     project profiles / blueprints / projects through awscc.
+│                         #     Account associations to sandbox and development
+│                         #     (§4.4 row 12). A registry: blueprints provision compute
+│                         #     into those accounts, never into this one.
+│                         #     No foundation/ slice: no VPC, no user compute, nothing
+│                         #     standing - which is also why §4.4 row 13 has no host
 ├── staging/              # deployment target (D20): no Studio domain, no Model
 │   │                     # Registry of its own, no GitLab
 │   ├── bootstrap/        # [P] state bucket for the Staging account
@@ -572,21 +619,24 @@ terraform-live/
     │                     #     Built in Stage 3, because Stage 7 (GitLab) depends on it (D14)
     ├── data/             # [P] ECR, CodeArtifact (D14), application-output buckets, Athena
     │                     #     workgroup, LF resource links + the governed-write grant (D22).
-    │                     #     The lake itself lives in data-management/
+    │                     #     The lake itself lives in data-governance/
     ├── sagemaker/        # [P] Model Registry (model package groups) + the execution role
     │                     #     pipeline-submitted jobs assume. No domain, no user profiles (D17)
     ├── egress/           # [E] NAT, endpoints, internal ALB for GitLab/Pages (ALBs cannot stop)
     ├── tooling/          # [D] GitLab EC2 + EBS (D8, D14) - its ALB lives in egress/ [E]
     ├── runners/          # [E] GitLab Runners (D14)
     ├── orchestration/    # [E] D7 builds two, behind a switch like D5's egress designs:
-    │                     #     (A) mwaa/ and (B) native/ (EventBridge + Step
-    │                     #     Functions + Lambda/Fargate). See the [E] caveat in D7:
-    │                     #     MWAA takes ~20-30 min to create and its metadata DB is
-    │                     #     state inside an [E] resource
+    │                     #     (A) mwaa-serverless/ - awscc_mwaaserverless_workflow per
+    │                     #         app, YAML in S3, per-workflow role + log group (D28)
+    │                     #     (B) native/ - aws_scheduler_schedule + aws_sfn_state_machine
+    │                     #         + Lambda/Fargate, same log-group discipline
+    │                     #     The 20-30-min-create / metadata-DB caveat applies only to
+    │                     #     the provisioned-MWAA fallback (§4.4 row 14)
     └── app/
         └── app-etl/      # [E]
 
-terraform-modules/        # reusable: vpc, wireguard, iam-role, ecr-repo, s3-bucket, step-function, ...
+terraform-modules/        # reusable: vpc, wireguard, iam-role, ecr-repo, s3-bucket,
+                          # step-function, mwaa-serverless-workflow, ...
                           # consumed by git tag, never by branch - a module that moves under a
                           # caller is a broken caller
 ```
@@ -667,13 +717,20 @@ the old Stage 1, it was not.
    Log Archive and the Audit accounts (e-mails already in `secrets/emails.md`), and turn on org-wide
    CloudTrail and Config. Note: the home region cannot be changed afterwards without redeploying the
    landing zone.
-4. Create the `Sandbox`, `Development`, `Staging`, `Production`, `Data Management` and `Identity` accounts
+4. Create the `Sandbox`, `Development`, `Staging`, `Production`, `Data Governance` and `Identity` accounts
    through Account Factory, using the e-mails in `secrets/emails.md`. OUs, per D23 — each named for the
    policy set it carries, not for its contents:
    - `Interactive` OU → `Sandbox` and `Development` (D21). Interactive compute *allowed*; human
-     infrastructure changes denied. The only OU where a Studio domain may exist.
-   - `Data` OU → `Data Management` (D22). No compute at all — the SCP denies EC2 and SageMaker outright —
-     and deletion protection is the policy set's whole personality.
+     infrastructure changes denied. The only OU into which project blueprints may provision (D26).
+   - `Data` OU → `Data Governance` (D22, D26, D27). **No *user* compute** — the SCP denies EC2 and
+     SageMaker outright, plus Glue job creation and execution (D25) — and deletion protection is the
+     policy set's whole personality. **Two named carve-outs, and the distinction between them is the
+     point:** `datazone:*` is permitted because a DataZone domain is a governance *control plane*, in the
+     same sense Lake Formation always was — it grants and records, it does not run anyone's code (D26);
+     and `glue:CreateCrawler`/`StartCrawler` plus the table-optimizer and column-statistics actions are
+     permitted **only when the principal is the lake's catalog-maintenance role** (D27), which *is* real
+     compute and is therefore bounded by role, event-driven and alarmed. Anything not on those two lists
+     stays denied.
    - `Workloads` OU → `Staging` and `Production` (D20). No interactive compute, no human control plane,
      written once and attached once. This is *not* the "Policy Staging OU" of §11, which is a place to
      test SCPs; the names collide, the concepts do not.
@@ -714,12 +771,25 @@ that is not.
    `aws organizations register-delegated-administrator --account-id <IDENTITY_ACCOUNT_ID> --service-principal sso.amazonaws.com`.
    This is reversible (`deregister-delegated-administrator`), so it is a cheap step to get wrong.
    Everything in steps 2 and 3 is then done **from the Identity account**, not from Management.
-2. In IAM Identity Center, create the three users from `ACCOUNTS_AND_USERS.md` (e-mails in
-   `secrets/emails.md`) and the groups `infrastructure`, `data-scientists`, `managers`. Enforce MFA.
+2. In IAM Identity Center, create the **four** users from `ACCOUNTS_AND_USERS.md` (e-mails in
+   `secrets/emails.md`) and the groups `infrastructure`, `data-scientists`, **`deployment-managers`** and
+   **`governance-managers`**. Enforce MFA. The two manager groups were one group (`managers`) until
+   2026-08-08; they were split because the two approvals they carry sit on different axes and, more to the
+   point, because one persona holding both means a single human can write a job that reads restricted
+   data, approve its release *and* approve its access to that data — three acts, one signature.
+   **Never put the same person in both groups**, even while there is only one human: the moment that
+   happens the split is notation again, and nothing in AWS will warn you.
 3. Create permission sets: `AdministratorAccess` (infrastructure), `DataScientistAccess` (the Interactive
-   OU), `ReadOnlyAccess` (managers). An earlier draft also created a `DeployApprover` permission set; it was
+   OU), `ReadOnlyAccess` (deployment-managers). An earlier draft also created a `DeployApprover` permission
+   set; it was
    dropped — the deploy approval gate lives in GitLab (Stage 8), driven by GitLab group membership, and
    consumes no AWS-side permission. Create such a permission set only when something actually consumes it.
+   **`GovernanceManagerAccess`, and it is the one shape worth thinking about rather than copying.** The
+   governance manager approves who may read data, so their own reach must stop at the *catalog*, not the
+   rows: Glue catalog metadata read, Lake Formation LF-Tag and permission administration, DataZone domain
+   ownership, Macie findings read — and **no `s3:GetObject` on lake prefixes and no Athena workgroup**. An
+   approver who can already read everything is not exercising a control when they approve a subscription.
+   This is the only permission set in the plan whose *denials* are the point of it.
    **`DataScientistAccess` does not start as `PowerUserAccess`.** An earlier version of this plan gave it
    `PowerUserAccess` "until Stage 6", which contradicts `ACCOUNTS_AND_USERS.md` ("no permissions to
    perform infrastructure changes, except for artifacts managed by AWS SageMaker") and, worse, would let
@@ -747,8 +817,12 @@ that is not.
    Assign them: infrastructure → the six Terraform-managed accounts (Sandbox, Development, Data
    Management, Staging, Production, Identity); data-scientists →
    `DataScientistAccess` on Sandbox and Development, `DataScientistStagingAccess` on Staging,
-   `DataScientistProdAccess` on Production, **no assignment of any kind on Data Management** (D18/D22);
-   managers → Sandbox, Development, Staging, Production, read-only (the approval itself happens in GitLab).
+   `DataScientistProdAccess` on Production, **no assignment of any kind on Data Governance** (D18/D22);
+   deployment-managers → `ReadOnlyAccess` on Sandbox, Development, Staging and Production (the approval
+   itself happens in GitLab), and **nothing on Data Governance** — a release approver has no business in
+   the account that grants data access; governance-managers → `GovernanceManagerAccess` on **Data
+   Governance only**, which is the mirror image: the one account the deployment manager cannot enter is the
+   only one the governance manager can.
    The data scientist gets no access to Identity, Audit or Log Archive.
    Leave Control Tower's own permission sets untouched — editing them causes landing-zone drift.
    These are created by hand here only because Terraform cannot run before SSO login works; Stage 2 moves
@@ -809,10 +883,10 @@ that is not.
     - **`ram:EnableSharingWithAwsOrganization`** — without it, a Lake Formation grant to another account
       produces an AWS RAM *invitation* that somebody has to accept by hand, and it reappears every time the
       share is recreated. With it, accounts inside the organization receive shares directly.
-    - **Lake Formation cross-account version 3 or above**, set in the Data Management account. Versions
+    - **Lake Formation cross-account version 3 or above**, set in the Data Governance account. Versions
       below 3 cannot grant to an Organization or an OU at all, only to an explicit list of account IDs —
       and this project has three consumers with more implied by every §11 row about scale.
-    - The **`AWSLakeFormationCrossAccountManager`** managed policy on the grantor (Data Management), and
+    - The **`AWSLakeFormationCrossAccountManager`** managed policy on the grantor (Data Governance), and
       `ram:AcceptResourceShareInvitation` on the data lake administrator role in each consumer account,
       which is the fallback path if the two settings above are ever unavailable.
 
@@ -830,7 +904,7 @@ that is not.
 returns the Sandbox account ID; `aws sso-admin list-instances --profile awsds-infra-identity` returns the
 Identity Center instance, which is the proof that the delegation took effect; an attempt to write to an S3
 bucket outside the organization is denied, which is the proof that the perimeter is real; and
-`aws ram get-resource-share-associations` from the Data Management profile shows organization sharing
+`aws ram get-resource-share-associations` from the Data Governance profile shows organization sharing
 enabled, which is the proof that Stage 5's shares have somewhere to land.
 
 **Blocking questions for the user:** the domain name to register (D15). Not needed to start the stage, but
@@ -867,7 +941,7 @@ yet (1b step 9) — if it cannot, that setting moves into Stage 5 and the rest o
    just created (add the `backend "s3"` block, `terraform init -migrate-state`) — this is the documented
    chicken-and-egg exception. **The state file is never committed**: state carries account IDs and
    resource ARNs, which do not belong in the Git history of a repository hosted on GitHub.
-3. Same for `terraform-live/development/bootstrap/`, `terraform-live/data-management/bootstrap/`,
+3. Same for `terraform-live/development/bootstrap/`, `terraform-live/data-governance/bootstrap/`,
    `terraform-live/staging/bootstrap/`, `terraform-live/production/bootstrap/` and
    `terraform-live/identity/bootstrap/`. Six state buckets, one per account that Terraform manages —
    no shared state across environments (D3).
@@ -917,7 +991,7 @@ the same day is how the modules get proven.
 **Scope change (D20, D21):** and the Staging and Development VPCs, for the same reason applied again.
 Staging's `egress/` is applied by the promotion pipeline rather than by a person; Development's is part of
 an ordinary working session. Four applications of one module on one day is a better proof of the module
-than four applications spread across four stages. **The Data Management account gets no VPC at all
+than four applications spread across four stages. **The Data Governance account gets no VPC at all
 (D22)** — its data plane is serverless (S3, Glue, Athena, Lake Formation), consumers reach it through
 their own VPC endpoints, and an account whose SCP denies compute has nothing to put in a subnet.
 
@@ -935,7 +1009,7 @@ different lifecycles (§5.1).
    without rebuilding the VPC, and the address space costs nothing.
 2. Internet Gateway, route tables, NACLs, baseline security groups.
 3. S3 and DynamoDB **gateway** endpoints — these are free, so they live here. Being `[P]` is not incidental:
-   their IDs are what the Data Management bucket policies condition on (Stage 5 step 1), so they must
+   their IDs are what the Data Governance bucket policies condition on (Stage 5 step 1), so they must
    survive every `make down`. Export each account's gateway endpoint ID from this slice's outputs, so the
    consumer list is read through `terraform_remote_state` rather than pasted.
 4. Route 53 private hosted zone per account (e.g. `sandbox.internal`, `prod.internal`), plus the private
@@ -1045,7 +1119,7 @@ hourly charge for the whole session.
    same condition pair on `sagemaker:CreatePresignedDomainUrl` so a Studio URL cannot even be minted from
    outside the tunnel. This restriction is what step 5's full tunnel exists for.
    Two cautions, both of which have locked people out before: apply it to the `data-scientists` and
-   `managers` permission sets first and to `AdministratorAccess` only once it demonstrably works, and note
+   `deployment-managers` and `governance-managers` permission sets first and to `AdministratorAccess` only once it demonstrably works, and note
    that this pins access to a single Elastic IP — which is precisely why that IP lives in `[P]` (D4).
    Break-glass (D16) is the way out if this goes wrong.
 9. Write the client setup instructions in `README.md`, including how to regenerate the config after a
@@ -1079,7 +1153,7 @@ as the alternative.
 **Prerequisites:** Stage 3.
 
 **Scope change (D22):** the governed lake — buckets, catalog, Lake Formation, classification — is built in
-the **Data Management account** (`terraform-live/data-management/data/`), not in Sandbox. What the
+the **Data Governance account** (`terraform-live/data-governance/data/`), not in Sandbox. What the
 environment accounts get in this stage is their *consumer* side: LF resource links, an Athena workgroup,
 the scratch and derived-zone buckets (D19), and — Sandbox only — the NFS layer. The lake is written once;
 the consumer slice is applied twice (Sandbox and Development), which is how the sharing shape gets proven
@@ -1087,7 +1161,7 @@ before Stage 9 repeats it for Production.
 
 **To execute:**
 
-*`data-management/data/` — layer `[P]`; the KMS CMKs it uses live in the same account:*
+*`data-governance/data/` — layer `[P]`; the KMS CMKs it uses live in the same account:*
 
 1. KMS CMKs per data domain; S3 buckets `raw`, `curated`, `artifacts`, `athena-results`, `logs` with
    versioning, encryption, **S3 Bucket Keys** (§5), lifecycle rules, `prevent_destroy`, and a bucket policy
@@ -1129,7 +1203,13 @@ before Stage 9 repeats it for Production.
    who owns the assignment, and what each level permits. Writing the tags first produces a taxonomy shaped
    by whatever the first table happened to contain, and Stage 11's Macie findings then have nothing to map
    onto. This is the smallest piece of real data governance in the plan and it costs nothing but thought.
-3. Glue Data Catalog databases (`raw`, `curated`); Glue crawlers only where they earn their keep.
+3. Glue Data Catalog databases (`raw`, `curated`). **Glue Crawlers where schema arrives from outside,
+   and only there (D27):** one over the raw zone, one over the ingestion drop-box — in this account,
+   under the named catalog-maintenance exception to the `Data` OU SCP, startable only by the maintenance
+   role. Event-driven (EventBridge on drop-box object creation) or run before a D25 pickup, never on a
+   standing schedule: a crawler run bills per DPU-hour with a 10-minute minimum, so cron-always would
+   out-cost the storage it catalogs. **No crawler ever points at an Iceberg table** — Iceberg is
+   catalog-native, and a crawler would at best duplicate what the catalog already knows.
 4. Iceberg tables on S3. **Table maintenance gets an owner on day one**: scheduled `OPTIMIZE`
    (compaction) and `VACUUM` (snapshot expiry) through Athena, or Glue's automatic compaction — an
    Iceberg table nobody compacts degrades quietly and pays storage for every dead snapshot. **Amazon S3
@@ -1141,7 +1221,7 @@ before Stage 9 repeats it for Production.
 6. **Implement D13 — make Lake Formation enforceable — which D22 makes structural.** In the old layout
    this required carefully *excluding* the registered prefixes from roles that lived next to them; now the
    environment accounts do not even contain the lake buckets. The SageMaker execution roles and the
-   `DataScientistAccess` permission set hold **no S3 permission of any kind on Data Management buckets**
+   `DataScientistAccess` permission set hold **no S3 permission of any kind on Data Governance buckets**
    (except the drop-box `PutObject`) — tabular access goes through Athena, Glue interactive sessions or
    EMR runtime roles, which ask Lake Formation across the account boundary. This is the step that decides
    whether the fine-grained access control objective in `CLAUDE.md` is a control or a decoration.
@@ -1155,6 +1235,15 @@ before Stage 9 repeats it for Production.
    Development accounts through Lake Formation/RAM, create the resource links on the consumer side, and
    prove each one with the pandas test *before* Stage 6 builds anything on top. (The Production share,
    including the governed write, waits for Stage 9 — no consumer exists for it yet.)
+
+   **The catalog gains a second storey in Stage 6 (D26):** SageMaker Catalog — the DataZone layer of the
+   unified domain — sits on top of this Glue/LF substrate. Publishing an asset and approving a
+   subscription happen in the portal, and for managed assets the *fulfilment* of an approval is a Lake
+   Formation grant that DataZone writes. Nothing in this stage is replaced by that: the LF-Tags, the
+   registrations and the cross-account shares built here are what the portal's approvals resolve to —
+   which is why this stage still comes first. **Whose approvals:** the **governance manager**'s. That
+   persona also owns the classification scheme from step 2 and the LF-Tag assignments — deliberately the
+   same person, because a taxonomy owned by someone who does not answer for the grants is decoration.
 
 *`sandbox/data/` and `development/data/` — the consumer side, layer `[P]`, same module for both:*
 
@@ -1201,7 +1290,7 @@ genuinely needs POSIX semantics:*
     likely way to lose real work in this design. Persistence removes the failure mode outright, for cents;
     `make down` does not touch the filesystem at all.
 
-**Deliverables:** a sample Iceberg table written in Data Management and queried through Athena **from both
+**Deliverables:** a sample Iceberg table written in Data Governance and queried through Athena **from both
 Sandbox and Development**, with access granted through the Lake Formation share rather than raw IAM
 policies; **a demonstration that the same table cannot be read by pointing pandas at its S3 path from
 either account** — which is the only convincing evidence that D13 holds, now with the account boundary
@@ -1212,9 +1301,18 @@ configuration holds; and a `make down`/`make up` cycle that provably leaves EFS 
 
 ---
 
-### Stage 6 - SageMaker Studio (Sandbox and Development)
+### Stage 6 - SageMaker Unified Studio (the development experience)
 
-**Objective:** the data scientist's working environment.
+**Objective:** the data scientist's working environment — since the 2026-08-08 revision (D26), one
+SageMaker unified domain (DataZone V2) with projects, rather than two classic Studio domains.
+
+**Read this before the steps, because it is the thing most easily misread:** the domain is registered in
+**Data Governance**, but *no compute runs there*. A domain is a registry — projects, profiles, blueprints,
+memberships, the catalog. The compute lands in whichever account the project profile names, which is
+Sandbox for `experimentation` and Development for `engineering`. So this stage builds one resource in the
+Data Governance account and provisions working environments into the two Interactive accounts, and the
+Sandbox/Development boundary from D21 comes out of it stronger rather than weaker: it stops being "which
+URL did the person open" and becomes a property of the project they opened.
 
 **Prerequisites:** Stages 3, 4, 5, and the ECR/CodeArtifact repositories from Stage 7 step 5 — **pulled
 forward**, because under egress design B they are how packages arrive, so they cannot come after the thing
@@ -1222,17 +1320,30 @@ that consumes them. **D5 is executed, not decided, in this stage**: both designs
 
 **To execute:**
 
-1. SageMaker Studio domains in **VPC-only** mode, in the private subnets, with the interface endpoints
-   from Stage 3 — including `sagemaker.studio`, without which a domain will not start. **Two domains from
-   one module: Sandbox and Development (D17/D21), and these are the only two in the project.** The same
-   Terraform module applied twice, differing in account, CIDR and mount targets — a divergence between
-   the two domains is a bug, because "the pipeline behaves differently in Development" must never be
-   explained by the environments themselves differing. The deployment targets never get one: a domain
-   there would return unreviewed code to the accounts the split exists to protect, and the SageMaker
-   runtime they carry (Stage 9) is submitted to by pipelines, not by people. The escape hatch for
-   "I need to debug a production job interactively" is a time-boxed elevated role approved by `managers`,
-   logged and alarmed — designed in Stage 9, not improvised on the night it is first needed.
-2. Execution roles per user profile, honouring **D13**: no `s3:GetObject` on Lake Formation-registered
+1. **The unified domain (D26), from the official module** — `aws-ia/terraform-aws-sagemaker-unified-studio`
+   (`aws` ≥ 6.51 for the domain and its IAM roles, `awscc` ≥ 1.89 for project profiles, blueprints and
+   projects): a single **DataZone V2 domain** in the **Data Governance** account
+   (`data-governance/governance/`), authenticating through
+   Identity Center. **Check before creating anything:** the domain must live in IdC's home Region
+   (`us-west-2` if Stage 1 went as planned) — neither can move afterwards. Account associations through
+   the org-wide RAM sharing Stage 1b step 9 enabled (§4.4 row 12): **Sandbox** and **Development**;
+   **Staging and Production are never associated** (D28). Two project profiles: **`experimentation`**,
+   whose blueprints provision into Sandbox (the unit of work is a notebook), and **`engineering`**,
+   provisioning into Development (the unit of work is a pipeline) — the D21 graduation is the move of code
+   between the two projects' git repositories, unchanged in substance. **The domain account is not a
+   provisioning target for anything**: no blueprint is enabled in Data Governance itself, which is what
+   keeps the `Data` OU's "no user compute" true while the registry lives there. Blueprints enabled and no
+   others:
+   **Tooling**; **Lakehouse Catalog in its Glue/Athena form — not the Redshift Serverless variant**
+   (D26, D12); and **ML experience**, whose per-project SageMaker AI domain runs in **VPC-only** mode in
+   the private subnets with the interface endpoints from Stage 3 — including `sagemaker.studio`, without
+   which it will not start. The deployment targets never get a domain or an association: unreviewed code
+   must not reach the accounts the split exists to protect, and the SageMaker runtime they carry (Stage 9)
+   is submitted to by pipelines, not by people. The escape hatch for "I need to debug a production job
+   interactively" is a time-boxed elevated role approved by `deployment-managers`, logged and alarmed — designed in
+   Stage 9, not improvised on the night it is first needed.
+2. Execution roles per user profile **and per project** (the one-role-per-workflow discipline of D28
+   starts here, not in production), honouring **D13**: no `s3:GetObject` on Lake Formation-registered
    prefixes. Map user profiles to the Identity Center users.
 3. **Lock down what the notebook can create, not just what the domain can reach.** A VPC-only domain
    constrains Studio itself; it does not constrain training, processing or transform jobs launched from a
@@ -1277,19 +1388,27 @@ step 3 should not be written as though the control exists. If it does not, the h
 preventing a determined user from taking data out through their own browser session requires a different
 architecture (streaming desktop, or no direct data access at all), and everything else is detection.
 
-**Deliverables:** the data scientist logs in through the VPN, opens Studio **in each Interactive
-account**, installs a package, reads a lake table through Athena over the LF share, writes to EFS
-(Sandbox) — and cannot reach a non-allowlisted site under design A, nor any site at all under design B;
-from Development, a `git clone` from GitLab across the peering succeeds (§4.4 row 9). Plus the written
-comparison of the two egress designs.
+**Deliverables:** the data scientist logs in through the VPN, opens the unified portal, works in the
+`experimentation` project (compute provisioned in Sandbox) and in the `engineering` project (compute in
+Development), installs a package, reads a lake table through Athena over the LF share — surfaced as a
+subscribed asset in SageMaker Catalog — writes to EFS (Sandbox), and cannot reach a non-allowlisted site
+under design A, nor any site at all under design B; from the `engineering` project, a `git clone` from
+GitLab succeeds over the Development↔Production peering (§4.4 row 9 — the *network* path, which is
+independent of the CodeConnections attachment in row 13 that D26 accepts losing). Plus the written
+comparison of the two egress designs. **And one negative deliverable, recorded as a result rather than
+assumed:** nothing was provisioned into the Data Governance account by any blueprint — check it, because
+it is the property that keeps the `Data` OU's policy set honest.
 
-**Note on the product direction:** this stage builds the current generation of SageMaker Studio
-(JupyterLab / Code Editor apps — *not* the deprecated "Studio Classic"). Since 2024 AWS has been
-consolidating on **SageMaker Unified Studio** with SageMaker Catalog/Lakehouse, which is what a large
-institution starting today would evaluate first — it bundles the governance layer this plan assembles by
-hand from Lake Formation, LF-Tags and Glue. It is deliberately not used here: it carries a heavier baseline
-(a DataZone domain and its own projects/accounts model) than a USD 50/month lab supports, and the
-hand-assembled version teaches more about the mechanics underneath. Recorded in §11.
+**Note on the product direction (revised 2026-08-08, D26):** the first version of this stage built the
+classic Studio generation (JupyterLab / Code Editor domains, one per Interactive account) and recorded
+Unified Studio as deliberately not used — heavier baseline, less of the mechanics visible. D26 reverses
+that: official Terraform support arrived in 2026-07 (the `aws-ia` module), and the governance layer this
+plan assembles by hand in Stage 5 is exactly what SageMaker Catalog puts a portal on. What survives of
+the old argument is the order of construction — the LF substrate is still built first, by hand, and the
+portal is a storey on top of it, not the foundation. The corresponding §11 row is closed. One property
+worth restating because it did not change: the portal, like the old Development Studio UI, is a **public
+endpoint** controlled by `aws:SourceIp` against the WireGuard Elastic IP (§3) — adopting Unified Studio
+neither opens nor closes that path.
 
 ---
 
@@ -1412,7 +1531,7 @@ HTTPS with a valid certificate.
       These are not the unit tests from step 2; they are the ones that exercise the deployed artifact
       against a real catalog, real IAM and a real network;
    4. `make down ENV=staging` — tear it back down, so the metered cost is minutes;
-   5. **manual approval**, assigned to the `managers` group, with the Staging test results and the
+   5. **manual approval**, assigned to the `deployment-managers` group, with the Staging test results and the
       Production `terraform plan` attached to it;
    6. promote the image and `terraform apply` for `terraform-live/production/app/app-etl/`.
 
@@ -1482,23 +1601,27 @@ somewhere real to run, and the end of this stage is where the first fully meanin
 **To execute:**
 
 1. Apply the `production/data/` consumer slice, same module as the Stage 5 consumer side: application
-   output buckets, the Production Athena workgroup, and LF resource links to the Data Management share.
+   output buckets, the Production Athena workgroup, and LF resource links to the Data Governance share.
    The lake itself is not here (D22) — Production's `data/` holds what applications *produce locally*
    (logs, intermediates, outputs pending curation), not governed tables.
 2. **The producer path (D22, §4.4 row 3).** Grant the Production job execution role the Lake Formation
-   read **and governed-write** share from Data Management: production ETL writes curated tables through
+   read **and governed-write** share from Data Governance: production ETL writes curated tables through
    LF-aware engines, cross-account, and this is the only path by which governed data is ever written.
    Prove it with a job that writes a curated table, and prove its converse — the same role cannot
    `PutObject` into the lake buckets directly.
    **The ingestion drop-box pickup runs here too (D25, §4.4 row 10)**, because it is the same producer
    path applied to a file a human dropped rather than to an upstream feed: a job under the Production
-   execution role reads the dated prefixes in Data Management, curates the contents into a governed table
-   through the LF write, and deletes what it consumed. Data Management cannot host this job — its OU SCP
+   execution role reads the dated prefixes in Data Governance, curates the contents into a governed table
+   through the LF write, and deletes what it consumed. Data Governance cannot host this job — its OU SCP
    denies compute, Glue jobs included — so if it does not run in Production it does not run anywhere.
    Verify the KMS grant explicitly: an `AccessDenied` on the drop-box key surfaces as an S3 error.
 3. **`production/sagemaker/` — the runtime half of D17, layer `[P]`.** Model package groups for the Model
-   Registry, and the execution role that pipeline-submitted training, processing and batch-transform jobs
-   assume. No domain, no user profiles, no interactive anything. The registry lives here rather than in
+   Registry (**`aws_sagemaker_model_package_group`**, one per application or model family — D28 item 6),
+   and the execution role that pipeline-submitted training, processing and batch-transform jobs
+   assume. No domain, no user profiles, no interactive anything. **Each package group carries a resource
+   policy written here, not improvised in Stage 10:** the pipeline's Production role registers and
+   approves versions; the Staging deploy role reads approved versions (§4.4 row 7); the Development side
+   reads status and nothing else (§4.4 row 4). The registry lives here rather than in
    an Interactive account because it is the promotion boundary: a model version is *approved*, and the
    approval has to sit on the far side of the gate from the person who trained it. A model package group
    costs nothing at rest, which is why this is `[P]` and not part of the `[E]` orchestration slice.
@@ -1526,7 +1649,7 @@ somewhere real to run, and the end of this stage is where the first fully meanin
    per-principal prefix). The Staging set carries no write grant at all — confirm that in the plan output,
    not only in the intention.
 6. **The production debugging escape hatch**, designed here rather than improvised later (D17): a
-   time-boxed elevated role in Production, assumable only with an approval from `managers`, that grants
+   time-boxed elevated role in Production, assumable only with an approval from `deployment-managers`, that grants
    read access to job inputs and outputs for a bounded window. CloudTrail alarm on every assumption of it.
    This exists because "nobody ever needs to look at production interactively" is not true, and an
    undesigned need becomes a permanent permission.
@@ -1537,7 +1660,7 @@ somewhere real to run, and the end of this stage is where the first fully meanin
    - from a **Sandbox or Development** session — no deployment target's infrastructure can be changed; a
      lake table can be read through the share but not written (the governed write belongs to Production's
      job role alone, D22); a write to an S3 bucket outside the organization is denied (§4.2); the
-     drop-box in Data Management accepts a `PutObject` and refuses the matching `GetObject`;
+     drop-box in Data Governance accepts a `PutObject` and refuses the matching `GetObject`;
    - from a **Production** session as the data scientist (D18) — no compute can be started
      (`sagemaker:CreateTrainingJob`, `glue:StartJobRun` both denied); Athena runs and its result lands in
      the per-principal prefix even when the client asks for somewhere else; and the reach does not extend
@@ -1564,29 +1687,45 @@ including the ones that fail.
 
 **Prerequisites:** Stages 8, 9. **D7 is settled — both implementations are built here** and compared
 against the same application, which is the only way the MWAA-versus-native trade stops being abstract.
-What is *not* settled and must be decided at the start of this stage: whether MWAA runs as a serverless
-environment or a `mw1.micro` one, and what happens to its metadata database at teardown (see the `[E]`
-caveat in D7).
+What remains to check at the start of this stage, not to decide: that `awscc_mwaaserverless_workflow`
+still applies cleanly under the CI deploy role (§4.4 row 14 — verified to *exist* on 2026-08-08, not yet
+verified to apply under a permission boundary). The metadata-database question from the earlier revision
+of this stage applies **only if the provisioned fallback is ever used** — Serverless has no environment
+to destroy, so its run history is not state inside an `[E]` resource.
 
 **To execute:**
 
 1. Implement **both** orchestrators against the same workflow, behind a switch, in
-   `production/orchestration/`:
-   - **(A) MWAA** — an Airflow DAG. Start with **MWAA Serverless** (pay per task-hour, no environment fee);
-     fall back to a `mw1.micro` environment if a needed feature is missing there. Same DAG either way.
-   - **(B) Native** — **EventBridge Scheduler** triggers a **Step Functions** state machine; container
-     steps run on ECS/Fargate or as SageMaker jobs, glue steps on **Lambda**.
-   The comparison to write down: cost per run and per month, time to deploy a change, how a failed task is
-   retried and observed, and what each one costs in Terraform code and in operational surface. Cost model
-   and per-unit rates are in §5 and `PRICING.md`.
-2. Define how a SageMaker-developed pipeline becomes a deployable artifact — most likely a container plus
-   a workflow definition, both versioned in the application repository. **The container must be identical
-   for both orchestrators**; if it is not, the comparison is measuring the packaging, not the orchestrator.
-3. Schedule, retry, alerting on failure to CloudWatch/SNS.
-4. Document how to create and destroy the MWAA environment on demand, and what is lost when it goes: DAG
-   code lives in S3 and survives, run history and UI-defined connections/variables do not. Either export
-   them before teardown or state explicitly that they are expendable — the `[E]` rule in §5.1 does not
-   allow leaving this implicit.
+   `production/orchestration/`, each producing the D28 artifact set:
+   - **(A) MWAA Serverless** — the workflow YAML from the application repository, deployed by the
+     pipeline to a versioned S3 prefix; one **`awscc_mwaaserverless_workflow`** per application, with its
+     own execution role and its own log group (D28 items 2-5). Fallbacks in order (§4.4 row 14):
+     `aws_cloudformation_stack` wrapping `AWS::MWAAServerless::Workflow`; then a `mw1.micro` environment
+     (`aws_mwaa_environment`, `[E]`, metadata-database caveat back in force).
+   - **(B) Native** — an **`aws_scheduler_schedule`** (EventBridge Scheduler) triggers an
+     **`aws_sfn_state_machine`**; container steps run on ECS/Fargate or as SageMaker jobs, glue steps on
+     **Lambda**; the state machine's logging configuration writes to the same explicit
+     **`aws_cloudwatch_log_group`** discipline as A — named, retention set, per workflow.
+   **One asymmetry the comparison must not hide:** A is defined in YAML (DAG-factory format — AWS ships
+   a Python-to-YAML converter), B in ASL. The Airflow DAG a data scientist writes in the domain converts
+   to A mechanically; to B it must be *ported*. That difference is a large part of what is being compared.
+   The rest to write down: cost per run and per month, time to deploy a change, how a failed task is
+   retried and observed — under A this means logs only, there is no Airflow UI in Serverless — and what
+   each costs in Terraform code and operational surface. Cost model and per-unit rates: §5, `PRICING.md`.
+2. Define how a workflow authored in the unified domain becomes a deployable artifact — the D28 set: the
+   container, the workflow YAML and the terraform/ folder, all versioned in the project repository that
+   graduated into GitLab. **The container must be identical for both orchestrators**; if it is not, the
+   comparison is measuring the packaging, not the orchestrator. **Add the D28 promotion lint to the
+   Stage 8 CI here:** reject any workflow definition that references a domain resource (project
+   connections, portal-scoped IDs) or names a container by anything other than ECR URI and tag — a
+   workflow that only runs where the portal exists is not a promotable artifact.
+3. Schedule, retry, alerting on failure to CloudWatch/SNS — alarms on the per-workflow log groups and on
+   the workflow/state-machine failure metrics, in both implementations.
+4. If — and only if — the provisioned fallback is used: document how to create and destroy the MWAA
+   environment on demand, and what is lost when it goes. DAG code lives in S3 and survives; run history
+   and UI-defined connections/variables do not. Either export them before teardown or state explicitly
+   that they are expendable — the `[E]` rule in §5.1 does not allow leaving this implicit. Under
+   Serverless this step is empty by construction, which is itself a point for the comparison in step 1.
 5. **Close the notebook-to-production gap for models, not just for ETL.** The CI/CD in Stage 8 promotes a
    container; that covers the `app-etl` template in `CLAUDE.md` but not the other thing a data science
    environment produces, which is a trained model. The **SageMaker Model Registry** is the promotion
@@ -1623,7 +1762,7 @@ registry — exercised in Staging on the way — rather than by being copied.
 **What is no longer in this stage:** the data perimeter (§4.2) moved to Stage 1 and Security Hub, GuardDuty
 and Access Analyzer moved there with it (principle 9). What remains here is genuinely data-specific.
 
-1. Amazon Macie for sensitive-data discovery — primary scope the **Data Management** buckets (D22),
+1. Amazon Macie for sensitive-data discovery — primary scope the **Data Governance** buckets (D22),
    plus the **derived zones in Sandbox and Development** (D19), which is where governed data re-surfaces
    outside the lake account and is the part a Data-Management-only scope would miss; findings to Security
    Hub; results mapped
@@ -1715,17 +1854,18 @@ never built; alarms that fire on a simulated exfiltration attempt.
 
 ## 9. Open questions
 
-Everything that was open before execution started is now closed in §4 (D1-D25). What follows is
+Everything that was open before execution started is now closed in §4 (D1-D28). What follows is
 what is genuinely still unanswered:
 
 1. **Which domain name to register (D15).** The one input needed from the user. Not blocking Stage 1, but
    blocking Stage 7, and worth doing early since registration and validation take time.
-2. **D7 - which MWAA shape, and what happens to its metadata database.** The decision itself is closed
-   (2026-08-08): both orchestrators get built in Stage 10. What is open is internal to alternative A —
-   MWAA Serverless versus a `mw1.micro` environment, and whether run history is exported before teardown
-   or declared expendable. Neither question can be answered before a real workflow exists. Keep
-   application entry points as plain containers so both implementations, and the two options that were not
-   built, remain viable.
+2. **D7/D28 - two verifications, not decisions.** The orchestration decision is closed (both built,
+   Stage 10; alternative A is MWAA Serverless via `awscc_mwaaserverless_workflow`, verified to exist
+   2026-08-08). What is open: (i) whether the awscc resource *applies* cleanly under the CI deploy role
+   (§4.4 row 14 — fallback chain recorded there); (ii) whether logs-only observability — Serverless has
+   no Airflow UI — is livable for a data scientist debugging a failed run, which only the Stage 10
+   comparison can answer. Keep application entry points as plain containers so both implementations, and
+   the two options that were not built, remain viable.
 3. **AZ name-to-ID mapping across accounts.** AWS maps AZ names to physical datacenters independently per
    account, so `data.aws_availability_zones` indexed by position can place "the same" AZ in different
    datacenters in Sandbox, Development and Production — which turns peering traffic that looks intra-AZ
@@ -1741,13 +1881,17 @@ what is genuinely still unanswered:
 5. **CodeArtifact ecosystem coverage (§4.3).** The CodeArtifact documentation lists Cargo among its
    supported formats, so the Rust question is down to confirming it in practice at Stage 6. Julia and R remain genuinely uncovered and keep their §4.3 fallbacks — they
    are what decides whether egress design B is livable.
-6. **Whether SageMaker Studio can block file download** (Stage 6). If not, Stage 11's threat model has to
+6. **Whether SageMaker Studio can block file download** (Stage 6 — the question carries over unchanged to
+   the ML-blueprint apps under D26). If not, Stage 11's threat model has to
    record an accepted risk rather than a control.
-7. **The eleven cross-account integrations in §4.4.** Each has a stated fallback, so none of them blocks a
-   stage, but none of them is known to work either. They are listed there rather than repeated here.
+7. **The fourteen cross-account integrations in §4.4.** Each has a stated fallback, so none of them blocks
+   a stage, but none of them is known to work either. They are listed there rather than repeated here.
    Row 11 (organization-wide RAM sharing and the Lake Formation cross-account version) is the one to
-   settle earliest, because it is enabled in Stage 1b and consumed in Stage 5, and its failure mode is
-   silence rather than an error.
+   settle earliest, because it is enabled in Stage 1b and consumed in Stage 5 — and since D26 it also
+   carries the domain's account associations (row 12) — and its failure mode is silence rather than an
+   error. Row 13 (CodeConnections from the unified domain to the self-hosted GitLab in a private subnet)
+   is the one with no convenience-preserving fallback: check it while building Stage 7, when GitLab first
+   exists.
 8. **How much of the S3 console survives the `aws:SourceVpce` condition** (§4.4 row 6, Stage 9). This
    decides whether D18's "read named S3 prefixes in Production" is usable through the console at all, or
    whether it is a CLI-over-the-tunnel operation that `README.md` has to say so about. Cheap to answer,
@@ -1770,11 +1914,7 @@ something already provisioned.
 
 | Date | Change |
 |---|---|
-| 2026-08-07 | Initial version plus four revisions, consolidated into the plan as it now stands: stages 0-13; decisions D1-D19, all closed except D7 (deferred to Stage 10); §4.2 data perimeter; §4.3 the two egress designs; §4.4 cross-account integrations; §5/§5.1 cost model and the `[P]`/`[D]`/`[E]` operating model; §9 open questions; §11 the lab-versus-institution delta. The last of the four added D17-D19 (where the data scientist works, their access to Production, and the derived zone) and the stage changes those force, in stages 1, 5, 6, 8, 9 and 10. The intermediate drafts were removed: no AWS resource had been provisioned while they were written, so they recorded only how the document evolved, not how the environment did. |
-| 2026-08-08 | **Staging account added (D20)**, after the AWS multi-account MLOps references were read properly — all three place a pre-production deployment target between the development account and production, and this plan had none. A new `Workloads` OU holds Staging and Production so the "no interactive compute" SCP set is written once. Stage 8's deploy step became a chain (`up staging` → deploy → integration tests → `down staging` → approval → Production) with two named deploy roles; Stage 9 gained the Staging data platform and lost the `staging`-Glue-namespace-inside-Production stand-in the previous revision had invented; Stage 3 builds the Staging VPC and explicitly does *not* peer it. Still recorded as a plan revision rather than a change to something provisioned — nothing exists in AWS yet. |
-| 2026-08-08 | **Development and Data Management accounts added (D21, D22); OU structure decided (D23).** The user reorganized the account set to nine: Sandbox becomes pure experimentation (unit of work: a notebook), Development is where pipelines are engineered (unit of work: a repository), and the promotion chain now starts there — Development → Staging → Production, with Sandbox → Development a git graduation, not a pipeline. The governed lake moved out of the environment accounts into Data Management, reached everywhere through LF cross-account shares (read for the Interactive OU, read + governed write for Production's job role — the producer path). Four OUs, named for their policy sets: Security, Interactive, Data, Workloads. Consequences threaded through §3, §4.4 (nine integration rows), §5 (floor ~USD 21-27), §6 (six state buckets, `development/` and `data-management/` trees), and stages 1-11. The stale `secrets/accounts.md` / `sso-users.md` references were replaced by `ACCOUNTS_AND_USERS.md` + `secrets/emails.md`, and the "sandbox user" became the **data scientist** user throughout. |
-| 2026-08-08 | **Consistency pass over the nine-account layout, plus D24 and D25.** A review of every repository file against the reorganized account set found the residue the previous revision left behind — stale counts (seven Config recorders, "Sandbox in its own OU", AFT "three accounts", "five member accounts", `Environment=sandbox\|production\|shared`, ECR/CodeArtifact granted only to Sandbox), the `awsds-prod-raw-data` naming example that names a bucket the D22 layout no longer has, and the `terraform-live/` sketch in `CLAUDE.md` that predates §6 — and three genuine gaps. **D24** settles the shared filesystem: EFS stays in Sandbox only, Development gets neither its own nor a path to it, and the exchange between the two Interactive accounts is S3 and git. **D25** settles who consumes the ingestion drop-box: the Production job execution role, on the producer path — which also exposed that the `Data` OU SCP never denied Glue jobs, so "no compute in Data Management" was an intention rather than a control. Two new §4.4 rows (the drop-box pickup; organization-wide RAM sharing plus Lake Formation cross-account version 3+, which Stage 1b now enables and whose absence makes a share fail *silently*). One sharp correction in Stage 5: the `aws:SourceVpce` condition in the Data Management bucket policies must anchor on the `[P]` S3 **gateway** endpoints, never on the `[E]` interface endpoints — those change ID on every `make up`, and since D22 they live in a different account from the policy, so nothing would repair it. Stage 1 was split into **1a** (landing zone, accounts, OUs, break-glass — the slow, hard-to-undo half, ending at a checkable state) and **1b** (identity, policies, detective controls, org-wide enablement). Still a plan revision rather than a change to something provisioned: nothing exists in AWS yet. |
-| 2026-08-08 | **D7 closed: build both orchestrators (Stage 10), and prices moved from estimate to measurement.** A question about *how* the MWAA figure is billed — per hour of existence, at one-second resolution, whether or not a DAG runs — exposed that the D7 options table was out of date in a way that favoured MWAA: `mw1.micro` (USD 0.29/h) and **MWAA Serverless** (USD 0.088 per task-hour, no environment fee, GA November 2025) did not exist when the plan was written, and Serverless removes the standing-cost objection that §5 used to rule MWAA out. The user decided to build **two** implementations rather than pick one, in the shape D5 already uses: **(A)** MWAA and **(B)** EventBridge + Step Functions + Lambda/Fargate. SageMaker Pipelines and self-managed Airflow on ECS stay documented but unbuilt. Threaded through §3, §5, §5.1, §6, Stage 10 and §9 item 2, which is now about *which MWAA shape*, not *which orchestrator*. The `[E]` caveat is new and is the part most likely to bite: MWAA takes ~20-30 minutes to create or delete and its metadata database is state living only inside an `[E]` resource, which §5.1 rule 2 forbids — the same class of problem the EFS and Studio-domain decisions already had to solve. `PRICING.md` was created in the same pass, with per-unit rates for `sa-east-1` and `us-west-2` read from the AWS Price List bulk API rather than estimated; it confirms the "~1.5-2x" São Paulo premium the 2026-08-07 Region check had guessed (measured: 1.5-2.1x) and **corrects that check on one point — CodeArtifact is not available in `sa-east-1`**, which is a missing component for D14 and for egress design B, not a price difference. |
+| 2026-08-07 → 2026-08-08 | **The plan, written and revised ten times before any AWS resource existed.** It arrived at: stages 0-13; decisions D1-D28, all closed — the ninth revision adopted **SageMaker Unified Studio** (D26), the catalog-maintenance exception for Glue Crawlers (D27) and the production workflow contract (D28), and the tenth placed the domain by asking which *axis* it sits on — **`Data Management` was renamed `Data Governance`** and took the domain, no tenth account being needed, and the single `Manager` persona split into **Deployment Manager** and **Governance Manager** so that releasing a job and granting it data are two signatures; the nine-account, four-OU layout; §4.2 the data perimeter; §4.3 the two egress designs; §4.4 the fourteen cross-account integrations; §5/§5.1 the cost model and the `[P]`/`[D]`/`[E]` operating model; §9 the open questions; §11 the lab-versus-institution delta. `GLOSSARY.md` and `PRICING.md` were created along the way, the latter measured from the AWS Price List bulk API rather than estimated. The individual revisions are not recorded here: everything that survived them is in the sections above, and with nothing provisioned they described only how the document changed, not how the environment did. The reasoning that would otherwise be lost is kept in the D-columns of §4 (each decision carries its own rationale and its revision triggers) and in the "Lessons carried forward" list in `CLAUDE.md`. |
 
 ---
 
@@ -1793,8 +1933,10 @@ learned rather than absorbed by accident. This is the delta, decision by decisio
 | Networking | One VPC per account, peered, NAT and endpoints per account | Transit Gateway or Cloud WAN, centralized egress through an inspection VPC, centralized interface endpoints shared by RAM, **IPAM** for CIDR allocation | Peering is O(n^2) and per-account endpoints are the largest hourly cost multiplied by the number of accounts. CIDRs chosen by hand collide eventually |
 | VPN | Self-managed WireGuard, peers in a `.tfvars` (D4) | AWS Client VPN or Verified Access, federated to the corporate IdP, with per-user certificates and session logging | Revoking one person here means editing a file and re-applying. That does not survive an offboarding process |
 | Identity | Identity Center as the identity source | Identity Center federated to the corporate IdP (Entra ID, Okta) via SAML + SCIM, groups driven by HR | Joiners/movers/leavers has to be automatic, or entitlements only ever accumulate |
-| Data lake placement | One Data Management account (D22), producer/consumer separation, LF cross-account sharing as the default read path | Data lake accounts **per domain**, a data-mesh org model, and subscription workflows in front of the shares | This row largely closed on 2026-08-08 — the mechanism is now the institutional one. What remains is scale: one domain and one producer here; an institution has many of each, and the request/approval workflow in front of the share becomes the product |
-| Data governance | Glue Catalog + LF-Tags, curated by hand | **SageMaker Unified Studio / SageMaker Catalog** (DataZone): business glossary, data products, subscription workflows, lineage | Discovery and a request/approval workflow are the parts that make a lake usable by people who did not build it |
+| Data lake placement | One Data Governance account (D22), producer/consumer separation, LF cross-account sharing as the default read path | Data lake accounts **per domain**, a data-mesh org model, and subscription workflows in front of the shares | This row largely closed on 2026-08-08 — the mechanism is now the institutional one. What remains is scale: one domain and one producer here; an institution has many of each, and the request/approval workflow in front of the share becomes the product |
+| Data governance | **Closed 2026-08-08 (D26): the lab adopted it** — a unified domain (DataZone V2) over the hand-built Glue + LF-Tags substrate | SageMaker Unified Studio / SageMaker Catalog (DataZone): business glossary, data products, subscription workflows, lineage | The one row in this table closed by product maturity rather than by budget: official Terraform support (2026-07) removed the practical objection, and the substrate is still built by hand first (Stage 5), so the teaching value survives underneath the portal |
+| Who approves access to data | **Closed 2026-08-08: the lab adopted it.** The single `Manager` persona was split into a **Deployment Manager** (`deployment-managers`, lifecycle approvals in the pipeline) and a **Governance Manager** (`governance-managers`, subscription and data-access approvals in the portal, domain owner of the unified domain) | A data steward *per data domain*, sitting inside the producing team rather than centrally, with the subscription queue as their own backlog | The split was first recorded here as notational, then adopted a few hours later — because it is not notational: with one persona a single human writes a job reading restricted data, approves its release **and** approves its data access. What stays a lab compromise is that there is one governance manager for all data, not one per domain |
+| Domain topology | One domain, one set of project profiles, all data in one Data Governance account | A domain per business data domain, **decentralised producer accounts** each owning and publishing their own datasets, consumers subscribing across them | This project's Data Governance account is a producer, a consumer and the governance plane at once. That collapse is invisible at one team and becomes the central problem at ten — it is what "data mesh" is a name for |
 | Iceberg operations | General-purpose S3 buckets + scheduled Athena `OPTIMIZE`/`VACUUM`, because D13 leans on prefix-level IAM control | **Amazon S3 Tables**: managed Iceberg with automatic compaction, snapshot expiry and Lake Formation integration | The managed service removes the maintenance a hand-rolled lake forgets — but takes away the prefix-level control D13 is built on, so switching is an architecture decision, not a swap |
 | Derived data (D19) | Per-principal prefixes with a lifecycle expiry; classification inheritance stated as policy and enforced by nobody | Lineage-aware catalog that propagates the classification of a source onto everything derived from it, plus periodic re-scan of the derived zone | The lab knows *where* copies land but not *what is in them* until Macie says so, days later. Inheritance by policy works with three users and fails silently with thirty |
 | Environment promotion | Four environments: Sandbox (experimentation) feeding Development by git, then Development → Staging → Production through the pipeline (D20, D21) | The same chain, plus per-workload triples, and staging data that is a governed, masked copy of production rather than a sample | This row closed on 2026-08-08 in two steps — Staging in the morning, Development and the corrected chain origin in the evening. What stays open is the *data*: sampled data catches permission, schema and wiring errors, and misses everything that only appears at production distribution and volume |

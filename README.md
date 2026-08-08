@@ -5,7 +5,7 @@ Blueprint for using AWS as a Data Science infrastructure provider.
 - `CLAUDE.md` — goals and working rules.
 - `GENERAL_PLAN.md` — the staged implementation plan (stages, decisions, cost model).
 - `GLOSSARY.md` — every acronym the plan uses, plus its notation and the IAM condition keys it quotes.
-- `ACCOUNTS_AND_USERS.md` — the nine AWS accounts and the SSO users.
+- `ACCOUNTS_AND_USERS.md` — the nine AWS accounts, the axis each sits on, and the four SSO users.
 - `PRICING.md` — per-unit AWS rates for `sa-east-1` and `us-west-2`, read from the AWS Price List bulk API.
   Unlike the cost figures in `GENERAL_PLAN.md` §5, which are order-of-magnitude estimates, these are
   measured; §5 says what is consumed, `PRICING.md` says what a unit of it costs.
@@ -91,13 +91,20 @@ Two refinements, both easy to state wrongly:
 - **The boundary is the control plane, not the account.** Humans do use services hosted in Production —
   GitLab over the VPN, and read access to production data — but nobody changes Production *infrastructure*
   by hand.
-- **Interactive compute lives only in the Interactive OU.** SageMaker Studio (domain, user profiles,
-  JupyterLab and Code Editor apps) exists in the Sandbox and Development accounts and nowhere else, enforced
-  by a Service Control Policy on the `Workloads` OU rather than left as an intention. SageMaker's *runtime*
-  APIs — training and processing jobs, Pipelines, Model Registry, endpoints — do exist in Staging and
+- **Interactive compute lives only in the Interactive OU.** Since the ninth plan revision (D26), the
+  interactive surface is **SageMaker Unified Studio**: one DataZone V2 domain, *registered* in the Data
+  Governance account because a domain is a registry of projects and data products rather than a runtime,
+  and whose project blueprints *provision compute* into Sandbox (`experimentation` profile) and Development
+  (`engineering` profile) — and nowhere else, enforced by a Service Control Policy on the `Workloads` OU
+  rather than left as an intention. Where the domain is registered and where code runs are two different
+  questions, and only the second is an account-boundary question. SageMaker's *runtime*
+  APIs — training and processing jobs, Model Registry, endpoints — do exist in Staging and
   Production, because that is where models are tested, retrained and served; the difference is that only a
-  pipeline submits to them. A Studio domain in a deployment target would put unreviewed code back inside the
-  account boundary, which is precisely what the split exists to prevent.
+  pipeline submits to them. A domain or an account association in a deployment target would put unreviewed
+  code back inside the account boundary, which is precisely what the split exists to prevent — what
+  crosses instead is a fixed artifact set (container image, workflow definition, per-workflow IAM role,
+  orchestration resource, log group, model package group — D28), carried by git and created by the
+  pipeline.
 
 ### 7. What crosses the boundary
 
@@ -109,17 +116,25 @@ Artifacts cross in one direction only, through the pipeline, and they pass throu
 - the Terraform that instantiates them.
 
 The chain is **Development → Staging → Production**. Staging receives the built artifact, runs the
-integration tests against a sampled or synthetic dataset, and is torn down again; only then does a human
-approval release the same artifact to Production. A failure in Staging stops the chain, and Production is
+integration tests against a sampled or synthetic dataset, and is torn down again; only then does the
+**Deployment Manager**'s approval release the same artifact to Production. A failure in Staging stops the
+chain, and Production is
 never touched. Sandbox sits *before* the chain, not at its head: experimentation graduates into a
 Development repository through git — a rewrite and a review, not an automated lift — and only what lands in
 such a repository can be promoted.
 
-Data crosses in the other direction: the governed lake lives in the Data Management account, and its catalog
+Data crosses in the other direction: the governed lake lives in the Data Governance account, and its catalog
 is shared read-only to Sandbox and Development through Lake Formation, so that all interactive work happens
 against real data without making a copy of it. Production's job role holds the same share plus the *governed
 write* — production ETL is the lake's producer. Staging is not part of any share — it never holds governed
 data, for the reason given in the next section.
+
+**And the two directions have two different approvers, deliberately.** The Deployment Manager approves
+what *moves along the chain*; the **Governance Manager** approves who may *read the data* — subscriptions
+in the SageMaker Catalog, LF-Tags, the classification scheme. Neither can do the other's job. With a
+single approver, one person could write a job that reads restricted data, approve its release into
+Production, and approve that job's access to the dataset: three acts, one signature. The split is what
+makes the two arrows above independent of each other.
 
 Anything that crosses outside this list — a shared S3 bucket used to hand files between accounts, for
 instance — is a promotion path that bypasses the approval gate, and is therefore not built.
@@ -166,7 +181,7 @@ group**:
 The sentence that settles the question this project kept asking: **only the development account runs
 SageMaker Studio.** Staging and Production function exclusively as deployment targets, with no Studio domain
 of their own. The sample also notes one Studio domain per region per account, and a dedicated data-science
-team account. Shared-services and data-management account groups are offered as optional additions for
+team account. Shared-services and data-governance account groups are offered as optional additions for
 larger setups.
 
 ### 2. MLOps foundation roadmap for enterprises with Amazon SageMaker
@@ -207,12 +222,12 @@ an OU and to nothing else. It is the mechanical reason this project has a `Workl
 
 | The references recommend | This project | Verdict |
 |---|---|---|
-| Studio only in the development / data-science accounts | Studio only in the **Interactive OU** — Sandbox and Development (D17, D21) — enforced by an SCP on the `Workloads` OU denying `sagemaker:CreateDomain`, `CreateUserProfile` and `CreatePresignedDomainUrl` | **Adopted**, and made preventive rather than conventional |
+| Studio only in the development / data-science accounts | The interactive surface only in the **Interactive OU** — since D26, one SageMaker unified domain (DataZone V2) in Development whose project blueprints provision into Sandbox and Development (D17, D21, D26) — enforced by an SCP on the `Workloads` OU denying `sagemaker:CreateDomain`, `CreateUserProfile`, `CreatePresignedDomainUrl` and `datazone:*` domain creation | **Adopted**, and made preventive rather than conventional |
 | A staging / pre-production deployment target between development and production | The **Staging** account (D20) | **Adopted.** It was missing until 2026-08-08; the plan had tried to stand in for it with a Glue namespace inside Production, which shared an account and a blast radius with the thing it was meant to de-risk |
 | Data scientists get read-only access in staging | `DataScientistStagingAccess` — read, no write of any kind (D18) | **Adopted verbatim.** A staging environment a person can write to stops being evidence of what the pipeline does |
-| Environments expressed as Organizations OUs | Four OUs named for their policy sets (D23): `Workloads` holds Staging and Production, `Interactive` holds Sandbox and Development, `Data` holds Data Management, `Security` holds the rest | **Adopted.** One SCP set per policy set, written once and inherited — an OU holding a single account forever would be a folder with one file |
+| Environments expressed as Organizations OUs | Four OUs named for their policy sets (D23): `Workloads` holds Staging and Production, `Interactive` holds Sandbox and Development, `Data` holds Data Governance, `Security` holds the rest | **Adopted.** One SCP set per policy set, written once and inherited — an OU holding a single account forever would be a folder with one file |
 | Model Registry and ECR in a Tooling / shared-services account | Both in the **Production** account (D14) | **Departure**, the main one remaining. No separate tooling account, on cost. The consequence is stated rather than hidden: there is no boundary between what builds and what runs, so a compromise of GitLab is a compromise of Production |
-| A separate data lake / data management account | The **Data Management** account (D22): the lake, its catalog, Lake Formation and the classification scheme, reached from every environment through cross-account shares | **Adopted** on 2026-08-08. It had been a departure; the section below on Data Management vs. Production records why it stopped being one |
+| A separate data lake / data management account | The **Data Governance** account (D22): the lake, its catalog, Lake Formation and the classification scheme, reached from every environment through cross-account shares | **Adopted** on 2026-08-08. It had been a departure; the section below on Data Governance vs. Production records why it stopped being one |
 | Experimentation and development as distinct accounts | **Sandbox** (experimentation — the unit of work is a notebook) and **Development** (the unit of work is a pipeline), both in the Interactive OU (D21) | **Adopted** on 2026-08-08. It had been collapsed "because there is one user"; the section below on Development vs. Experimentation records what the boundary buys anyway |
 | Staging holds data representative of production | Staging holds **sampled or synthetic data only**, never a copy of production | **Deliberate departure.** Staging is a deployment target where data scientists have read access and unattended tests run, so a full copy would make the less-defended of the two accounts the cheapest route to production data. The accepted cost: a test suite that catches permission, schema and wiring errors and misses whatever only appears at production distribution and volume |
 
@@ -285,7 +300,7 @@ not for an environment:
 |---|---|---|
 | Security | Log Archive, Audit, Identity | Control Tower guardrails; delegated administration |
 | Interactive | Sandbox, Development | Interactive compute **allowed**; human infrastructure changes denied |
-| Data | Data Management | No compute at all; deletion denied |
+| Data | Data Governance | No *user* compute (the DataZone control plane and the catalog-maintenance role are carved out by name); deletion denied |
 | Workloads | Staging, Production | No interactive compute; no human control plane |
 
 A per-environment OU tree (`Development` OU, `Staging` OU, `Production` OU, one account each) was
@@ -293,7 +308,7 @@ considered and rejected — every OU would hold exactly one account, so the tree
 adding inheritance. The revision triggers are recorded in the plan (D23): a second production-like account
 nests `Workloads` into `NonProd`/`Prod`; a second data domain does the same for `Data`.
 
-### Data Management vs. Production
+### Data Governance vs. Production
 
 The data management account is not "more production than production". The two sit on **different axes**:
 
@@ -336,9 +351,9 @@ Nine accounts, all under one AWS Organization governed by Control Tower.
 | Log Archive | Security | Central, tamper-evident log store (S3 Object Lock). Created by Control Tower. |
 | Audit | Security | Security guardian: GuardDuty, Security Hub, Macie, IAM Access Analyzer. Created by Control Tower. |
 | Identity | Security | Delegated administration of IAM Identity Center: permission sets, groups, assignments. Separate from Audit so that access management and security monitoring do not share a blast radius. |
-| Sandbox | Interactive | **Experimentation** — the unit of work is a notebook. SageMaker Studio, interactive compute, unreviewed code against real (shared) data: the highest-risk account, per §3 above. Nothing here survives; nothing promotes from here. |
-| Development | Interactive | **Development** — the unit of work is a pipeline: a repository with tests, git, CI, a Studio domain of its own. Work graduates in from Sandbox through git, and the promotion chain starts here. |
-| Data Management | Data | The **state of data**: the governed lake (S3 + Iceberg), the Glue catalog, Lake Formation, classification, the ingestion drop-box. No compute, no VPC, no interactive sign-in — every environment reaches it through cross-account shares. |
+| Sandbox | Interactive | **Experimentation** — the unit of work is a notebook. Target of the unified domain's `experimentation` project blueprints (D26): interactive compute, unreviewed code against real (shared) data — the highest-risk account, per §3 above. Nothing here survives; nothing promotes from here. |
+| Development | Interactive | **Development** — the unit of work is a pipeline: a repository with tests, git, CI. Target of the `engineering` project profile (D26). Work graduates in from Sandbox through git, and the promotion chain starts here. |
+| Data Governance | Data | The **state and governance of data**: the governed lake (S3 + Iceberg), the Glue catalog, Lake Formation, classification, the ingestion drop-box, the Glue Crawlers on raw and drop-box (D27), and the **SageMaker Unified Studio domain** with SageMaker Catalog, project profiles, blueprints and account associations (D26). A registry, not a runtime: no user compute, no VPC, no interactive sign-in — every environment reaches it through cross-account shares, and the portal it hosts is used by people who can never administer the account. Renamed from `Data Management` on 2026-08-08. |
 | Staging | Workloads | Deployment target. Receives the built artifact, runs the integration tests against sampled or synthetic data local to it, and is torn down again. No Studio domain, no Model Registry of its own, no GitLab, no share from the lake. Data scientists: read-only. |
 | Production | Workloads | The software supply chain (GitLab, runners, ECR, CodeArtifact), the production SageMaker runtime including the Model Registry, and the lake's **producer**: its job role holds the governed write. No interactive compute, no human control-plane access. |
 

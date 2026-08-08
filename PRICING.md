@@ -114,7 +114,9 @@ minimum.
 
 This is the variant D7 tries first: it is Airflow with the cost shape of alternative B, and it is also the
 one place in this file where the São Paulo premium nearly disappears (1.18x instead of 1.72x). Available in
-both `us-west-2` and `sa-east-1`.
+both `us-west-2` and `sa-east-1`. Terraform: **`awscc_mwaaserverless_workflow`** (Cloud Control, from
+`AWS::MWAAServerless::Workflow`); the classic `aws` provider has no Serverless resource yet (D28,
+§4.4 row 14 of the plan).
 
 **What you give up for that price**, and what you gain — this is not the same product with a different
 invoice:
@@ -195,7 +197,7 @@ Paid every month even with the lab shut down. Same rows as §5, same assumptions
 | GuardDuty (after the 30-day free window) | 1.75 USD/GB, 0.000007 USD/event | 1.00 USD/GB, 0.000004 USD/event | 0 → 5.00-9.00 | 0 → 3.00-5.00 |
 | WireGuard EBS (8 GB) + CloudWatch logs | 0.152 USD/GB-mo; logs 0.90 USD/GB | 0.08; logs 0.50 USD/GB | ~1.80 | ~1.00 |
 | EFS (shared filesystem + Studio homes, IA) | 0.044 USD/GB-mo | 0.025 USD/GB-mo | ~0.90 | ~0.50 |
-| Staging, Development, Data Management at rest | Config + 1 KMS key each | idem | ~3.00 | ~3.00 |
+| Staging, Development, Data Governance at rest | Config + 1 KMS key each | idem | ~3.00 | ~3.00 |
 | **Floor** | | | **~USD 27-40** (central ~33) | **~USD 21-27** |
 
 The São Paulo floor is roughly **1.4x** the Oregon one — less than the 1.72x of the metered services,
@@ -285,6 +287,29 @@ São Paulo as in Oregon.
 
 Athena at 9.00 USD/TB in São Paulo makes the two cost levers in §5 of the plan — **S3 Bucket Keys** and
 partition/format discipline on the Iceberg tables — worth roughly twice as much there as in Oregon.
+
+### SageMaker Unified Studio — the DataZone V2 domain (D26)
+
+DataZone publishes **global, region-independent rates** in the Price List API (the offer file has no
+per-region entries — one price everywhere the service exists):
+
+| Item | USD | Unit |
+|---|---|---|
+| Metadata requests | 10.00 | per 100 000 requests |
+| Metadata storage | 0.40 | per GiB-month |
+| Compute units (metadata generation, data quality) | 1.776 | per compute unit |
+| AI recommendations — input / output | 0.015 / 0.075 | per 1 000 tokens |
+
+At lab scale the domain itself is **cents per month** — a single user cannot produce 100k metadata
+requests by hand, and the metadata for a lake this size is megabytes. **The cost of Unified Studio is not
+the domain; it is what the blueprints provision.** Two consequences the plan records as decisions rather
+than discoveries:
+
+- The **Lakehouse blueprint is enabled in its Glue/Athena form only** (D26). Its Redshift Serverless
+  variant provisions a workgroup whose per-query RPU minimum would put a second, larger query bill on top
+  of Athena's — excluded by decision, not omission.
+- The **ML blueprint's** per-project SageMaker AI apps bill exactly like the Studio apps in §8
+  (`ml.t3.medium` at 0.081/0.050 USD/h) — the domain adds nothing to the hourly rate.
 
 ---
 

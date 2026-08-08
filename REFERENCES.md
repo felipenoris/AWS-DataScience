@@ -209,7 +209,19 @@
 
 - `aws_mwaa_environment` Terraform resource (provisioned MWAA only): <https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/mwaa_environment>.
 
-- Terraform AWS provider issue #45254, "Support for Amazon MWAA Serverless" - open, no implementation yet (checked 2026-08-08): <https://github.com/hashicorp/terraform-provider-aws/issues/45254>.
+- Terraform AWS provider issue #45254, "Support for Amazon MWAA Serverless" - open, no implementation yet in the classic provider (checked 2026-08-08): <https://github.com/hashicorp/terraform-provider-aws/issues/45254>.
+
+- `AWS::MWAAServerless::Workflow` CloudFormation resource - the registry type that closes the gap above (D28): <https://docs.aws.amazon.com/AWSCloudFormation/latest/TemplateReference/aws-resource-mwaaserverless-workflow.html>.
+
+- `awscc_mwaaserverless_workflow` - the Cloud Control (awscc provider) resource generated from that registry type: <https://registry.terraform.io/providers/hashicorp/awscc/latest/docs/resources/mwaaserverless_workflow>.
+
+- Amazon MWAA Serverless key concepts (YAML workflows, per-workflow IAM role, EventBridge Scheduler underneath, no Airflow UI): <https://docs.aws.amazon.com/mwaa/latest/mwaa-serverless-userguide/mwaas-concepts.html>.
+
+- `terraform-aws-sagemaker-unified-studio` - the official aws-ia module for provisioning SageMaker Unified Studio (domain + IAM via the aws provider, project profiles/blueprints/projects via awscc) (D26): <https://github.com/aws-ia/terraform-aws-sagemaker-unified-studio>.
+
+- Announcement of Terraform support for SageMaker Unified Studio (2026-07): <https://aws.amazon.com/about-aws/whats-new/2026/07/amazon-sagemaker-unified-studio-terraform/>.
+
+- Upgrading Amazon DataZone domains to SageMaker unified domains - the `domainVersion` V1/V2 distinction: <https://docs.aws.amazon.com/datazone/latest/userguide/upgrade-domain.html>.
 
 - AWS Step Functions: <https://docs.aws.amazon.com/step-functions/latest/dg/welcome.html>.
 
