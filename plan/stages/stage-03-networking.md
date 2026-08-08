@@ -4,7 +4,7 @@
 |---|---|
 | **Status** | not started |
 | **Prerequisites** | Stage 2. |
-| **Consumes** | [D5](../decisions/D05-sagemaker-egress.md), [D9](../decisions/D09-az-count.md), [D14](../decisions/D14-supply-chain-account.md), [D15](../decisions/D15-tls-internal.md), [D18](../decisions/D18-data-scientist-access.md), [D20](../decisions/D20-staging-account.md), [D21](../decisions/D21-development-account.md), [D22](../decisions/D22-data-governance-account.md), [D30](../decisions/D30-scp-recovery.md) |
+| **Consumes** | [D5](../decisions/D05-sagemaker-egress.md), [D9](../decisions/D09-az-count.md), [D14](../decisions/D14-supply-chain-account.md), [D15](../decisions/D15-tls-internal.md), [D18](../decisions/D18-data-scientist-access.md), [D20](../decisions/D20-staging-account.md), [D21](../decisions/D21-development-account.md), [D22](../decisions/D22-data-governance-account.md) |
 | **Proves** | [INT-09](../integrations.md) |
 
 *Read with [`plan/conventions.md`](../conventions.md) (naming, layout, `[P]`/`[D]`/`[E]`, IAM rules).*
@@ -65,21 +65,9 @@ different lifecycles (`plan/conventions.md` §5.1).
    once-per-account operation rather than a per-session one — which is the argument for putting the
    association in `foundation/` rather than anywhere `make down` can reach.
 5. VPC Flow Logs to CloudWatch Logs with a short retention (a few days — retention is what costs).
-5b. **The `awsds-scp-recovery` role (D30), in every SCP-governed account.** Not networking, but it belongs
-   in `foundation/` because it is `[P]`, free, and must exist before anything can go wrong. Built from
-   `terraform-modules/iam-role`, so the permissions boundary is a required argument rather than an
-   afterthought. Its shape:
-   - **Identity policy scoped to the actions the SCPs deny**, not `AdministratorAccess`. This is the part
-     people skip, and skipping it is what turns a recovery role into a second administrator: the SCP
-     exemption removes a *ceiling*, it grants nothing, so the role still needs its own permissions and
-     they can be narrow. The list is knowable because the same repository writes both halves.
-   - **Trust policy admitting only the infrastructure user's Identity Center role, and requiring
-     `aws:MultiFactorAuthPresent`.** Maximum session duration 1 hour.
-   - **A CloudTrail alarm on every `sts:AssumeRole` into it**, same chain as the root alarm in Stage 1a
-     step 5. A credential that is never used in normal operation should be loud the one time it is.
-   Export its ARN from this slice, so the SCP carve-out list in `terraform-live/identity/` is read through
-   `terraform_remote_state` rather than pasted — which is what keeps the enumerated list honest as accounts
-   come and go.
+   *(An earlier version of this stage carried a step 5b here: the `awsds-scp-recovery` role, in every
+   SCP-governed account. **D30 was reverted, so nothing of the sort is built** — there is no standing SCP
+   exemption anywhere in this design, and `foundation/` holds only the account's own `[P]` IAM.)*
 6. **Sandbox ↔ Production VPC peering.** The requester lives in `sandbox/foundation/`, the accepter in
    `production/foundation/` (a provider alias, cross-account). Routes are added **per subnet, not per VPC**:
    the Sandbox private subnets reach only the Production subnet holding GitLab and the endpoints, and
@@ -103,15 +91,47 @@ different lifecycles (`plan/conventions.md` §5.1).
 7. NAT Gateway — a single one, with a documented switch for one-per-AZ. **Built behind the D5 switch:**
    under egress design B (`plan/architecture.md` §4.3) the SageMaker subnets get no NAT route at all, so this resource is
    conditional, not assumed.
-8. Interface VPC endpoints, added on demand per stage. The working list, corrected — the previous version
-   of this plan was missing three that Studio and D5(B) require:
-   `sts`, `logs`, `ecr.api`, `ecr.dkr`, `sagemaker.api`, `sagemaker.runtime`, **`sagemaker.studio`**
-   (required for JupyterLab/CodeEditor apps in a VPC-only domain — Studio simply does not work without
-   it), `elasticfilesystem`, **`kms`**, and under D5(B) **`codeartifact.api`** and
-   **`codeartifact.repositories`**. Default to a single AZ during lab sessions (D9) — at ~USD 0.01/h per
-   endpoint per AZ, two AZs doubles the largest hourly line item. A resource in the other AZ still resolves
-   the endpoint DNS and reaches it; the cost is cross-AZ traffic and the loss of AZ redundancy, neither of
-   which matters in a lab.
+8. **Interface VPC endpoints — a per-account list, not one list** (revised 2026-08-08). Earlier versions
+   of this plan carried a single working list applied to every VPC-bearing account. That was wrong in both
+   directions: it paid for endpoints an account cannot use, and it left out the ones the data plane needs.
+   The list is a variable of `terraform-modules/vpc/` with a documented default per **account role**.
+
+   **The common core, in every account:** `sts`, `logs`, `kms`, `ecr.api`, `ecr.dkr`, plus the data-plane
+   three — **`athena`**, **`glue`** and **`lakeformation`**.
+
+   **Those three are the correction that matters, and they belong in *both* egress designs.** D13 routes
+   every tabular read through an LF-aware engine, so `athena` and `glue` are how a notebook reaches its
+   own data at all; under design B, with no NAT route anywhere, their absence means design B cannot execute
+   a single query — it was not a cheaper design, it was an unbuildable one. `lakeformation` is the least
+   certain of the three (in a plain Athena flow the credential vending happens service-side, not from your
+   VPC; in a flow that resolves LF credentials client-side — `awswrangler`, Glue interactive sessions — it
+   happens here). It is included at a cent an hour rather than discovered at Stage 6.
+
+   **Then, per account role:**
+
+   | Account | Adds | Notes |
+   |---|---|---|
+   | **Sandbox** | `sagemaker.api`, `sagemaker.runtime`, `sagemaker.studio`, `elasticfilesystem` | `sagemaker.studio` is required for JupyterLab/Code Editor apps in a VPC-only domain — they simply do not start without it |
+   | **Development** | `sagemaker.api`, `sagemaker.runtime`, `sagemaker.studio` | **No `elasticfilesystem`** — D24 gives Development neither its own EFS nor a path to Sandbox's, so this endpoint would be a cent an hour resolving nothing |
+   | **Staging** | `sagemaker.api`, `sagemaker.runtime` | No domain, so no `sagemaker.studio`. **No `lakeformation`** either — Staging is deliberately not on the Data Governance share (D20, D22), and an endpoint for a share that does not exist is a control smell, not just a cost |
+   | **Production** | `sagemaker.api`, `sagemaker.runtime`, and under D7(B) `states` + `scheduler` | Holds the LF read **and governed write** share (D22), so `lakeformation` in the core list is load-bearing here rather than precautionary |
+
+   **Under D5(B), the Interactive accounts add `codeartifact.api` and `codeartifact.repositories`** — the
+   package path when there is no NAT.
+
+   **Candidates deliberately not created yet, with the trigger for each**, so that "it must be a missing
+   endpoint" is a checklist rather than a guess at 23:00:
+   - **`datazone`** — if the VPC-only project apps call the domain for project context or connections.
+     Unknown; **verify at Stage 6** and add it there if they do.
+   - **`ssm` + `ssmmessages` + `ec2messages`** (Production) — Session Manager reaches GitLab in its private
+     subnet through the NAT, but Production's NAT is `[E]` and only up during builds. The trigger is the
+     first time you need to get into the GitLab host outside a build window. +0.030/h.
+   - **`secretsmanager`** (Production) — for `gitlab-secrets.json` (Stage 7 step 1), same NAT caveat.
+   - **`monitoring`** — if the CloudWatch agent on a private-subnet host cannot push metrics.
+
+   Default to a **single AZ** during lab sessions (D9) — at ~USD 0.01/h per endpoint per AZ, two AZs
+   doubles the largest hourly line item. A resource in the other AZ still resolves the endpoint DNS and
+   reaches it; the cost is cross-AZ traffic and the loss of AZ redundancy, neither of which matters here.
 9. **Endpoint policies — the trusted-networks axis of `plan/architecture.md` §4.2.** Every interface and gateway endpoint carries
    a policy restricting it to resources within the organization (`aws:PrincipalOrgID` / `aws:ResourceOrgID`).
    Without this, the S3 gateway endpoint is a private, unlogged, unmetered path to *any* bucket on the
@@ -145,10 +165,23 @@ permitted subnets; **Staging unreachable from any other VPC at the network level
 missing peering is missing on purpose; an attempt to reach an out-of-organization S3 bucket through the
 gateway endpoint denied; and `make down` followed by `make up` restoring egress without touching any VPC.
 
-**Cost note:** this is where the metered bill starts, and `egress/` is the single biggest hourly cost of the
-lab: ~USD 0.14/h with 9 endpoints and a NAT in one AZ; ~USD 0.11/h under design B — no NAT, but the two
-CodeArtifact endpoints bring the count to 11. Keep the endpoint list minimal — every entry is a permanent
-hourly charge for the whole session.
+**Cost note:** this is where the metered bill starts, and `egress/` is the single biggest hourly cost of
+the lab. Per account, single AZ, at USD 0.010/h per endpoint and USD 0.050/h for a NAT gateway with its
+public IPv4:
+
+| Account | Design A (NAT) | Design B (no NAT) |
+|---|---|---|
+| Sandbox | 12 endpoints + NAT = **0.170/h** | 14 endpoints = **0.140/h** |
+| Development | 11 + NAT = **0.160/h** | 13 = **0.130/h** |
+| Staging | 9 + NAT = **0.140/h**, for the minutes a promotion runs | — (D5 governs the Interactive accounts) |
+| Production | 10-12 + NAT = **0.150-0.170/h**, while runners or orchestration are up | — |
+
+**Both designs got more expensive than the earlier figures (0.14 and 0.11), and the gap between them
+survived**: design B is cheaper by exactly USD 0.030/h, which is the NAT and its address (0.050) minus the
+two CodeArtifact endpoints (0.020). The plan's older claim that B trades the NAT for two endpoints and
+comes out ahead turns out to be right — it was just right against a list that could not have run a query.
+Keep the list minimal per account: every entry is a permanent hourly charge for the whole session, and the
+per-account table above exists so that trimming one account does not silently trim another.
 ---
 
 *Stage index: [stages/INDEX.md](INDEX.md) · Plan core: [GENERAL_PLAN.md](../../GENERAL_PLAN.md)*

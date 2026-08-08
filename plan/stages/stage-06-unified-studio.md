@@ -5,7 +5,7 @@
 | **Status** | not started |
 | **Prerequisites** | Stages 3, 4, 5, and the ECR/CodeArtifact repositories from Stage 7 step 5 — **pulled forward**, because under egress design B they are how packages arrive, so they cannot come after the thing that consumes them. **D5 is executed, not decided, in this stage**: both designs get built (`plan/architecture.md` §4.3). |
 | **Consumes** | [D5](../decisions/D05-sagemaker-egress.md), [D12](../decisions/D12-budget-ceiling.md), [D13](../decisions/D13-lake-formation-enforcement.md), [D14](../decisions/D14-supply-chain-account.md), [D21](../decisions/D21-development-account.md), [D24](../decisions/D24-shared-filesystem.md), [D26](../decisions/D26-unified-studio.md), [D28](../decisions/D28-workflow-contract.md) |
-| **Proves** | [INT-01](../integrations.md), [INT-09](../integrations.md), [INT-12](../integrations.md), [INT-13](../integrations.md), [INT-15](../integrations.md), [INT-16](../integrations.md) |
+| **Proves** | [INT-01](../integrations.md), [INT-09](../integrations.md), [INT-12](../integrations.md), [INT-13](../integrations.md), [INT-15](../integrations.md), [INT-16](../integrations.md), [INT-17](../integrations.md) |
 
 *Read with [`plan/conventions.md`](../conventions.md) (naming, layout, `[P]`/`[D]`/`[E]`, IAM rules).*
 
@@ -141,7 +141,17 @@ Two consequences worth stating rather than discovering:
 custom image can be pulled from the **Production**
 account's ECR (D14) — the BYOI documentation is strict about region and thin on cross-account; if it
 fails, the fallback is a native ECR cross-account replication rule into a repository in **each Interactive
-account**, not a pipeline. And whether SageMaker Studio offers any supported way to disable file
+account**, not a pipeline.
+**And the question INT-01 does not answer, which is `INT-17`: what makes an image *selectable* at all.**
+Pulling the image cross-account and having it appear in the project's image selector are two different
+mechanisms, and only the first has a row of its own. Until D26 the second was ours end to end — image,
+image version, app image config, attached to a domain this repository wrote. The attachment point now sits
+inside the blueprint-provisioned SageMaker AI domain. **Answer this on the same throwaway project used for
+INT-15, and answer it before step 6's egress comparison begins:** the whole claim of design B is that the
+`dev-env` image is the dependency delivery mechanism for Julia, R and Rust, so a design B measured without
+a working custom image is a design B missing three of its four ecosystems, and the comparison would be
+decided by a defect rather than by the trade it exists to measure. Record the mechanism — the Stage 8
+step 1 pipeline is written against it. And whether SageMaker Studio offers any supported way to disable file
 download or notebook export from the JupyterLab UI. As far as this plan knows it does not, and Stage 11
 step 3 should not be written as though the control exists. If it does not, the honest position is that
 preventing a determined user from taking data out through their own browser session requires a different

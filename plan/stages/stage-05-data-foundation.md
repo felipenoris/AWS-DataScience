@@ -4,7 +4,7 @@
 |---|---|
 | **Status** | not started |
 | **Prerequisites** | Stage 3. |
-| **Consumes** | [D13](../decisions/D13-lake-formation-enforcement.md), [D18](../decisions/D18-data-scientist-access.md), [D19](../decisions/D19-derived-zone.md), [D22](../decisions/D22-data-governance-account.md), [D24](../decisions/D24-shared-filesystem.md), [D25](../decisions/D25-drop-box-consumer.md), [D26](../decisions/D26-unified-studio.md), [D27](../decisions/D27-catalog-maintenance.md), [D31](../decisions/D31-approver-read.md) |
+| **Consumes** | [D6](../decisions/D06-dlp-approach.md), [D13](../decisions/D13-lake-formation-enforcement.md), [D18](../decisions/D18-data-scientist-access.md), [D19](../decisions/D19-derived-zone.md), [D22](../decisions/D22-data-governance-account.md), [D24](../decisions/D24-shared-filesystem.md), [D25](../decisions/D25-drop-box-consumer.md), [D26](../decisions/D26-unified-studio.md), [D27](../decisions/D27-catalog-maintenance.md), [D31](../decisions/D31-approver-read.md) |
 | **Proves** | [INT-03](../integrations.md), [INT-05](../integrations.md), [INT-10](../integrations.md) |
 
 *Read with [`plan/conventions.md`](../conventions.md) (naming, layout, `[P]`/`[D]`/`[E]`, IAM rules).*
@@ -185,6 +185,24 @@ genuinely needs POSIX semantics:*
     EFS `[E]` with a sync-to-S3 step inside `make down` — and correctly called that sync the single most
     likely way to lose real work in this design. Persistence removes the failure mode outright, for cents;
     `make down` does not touch the filesystem at all.
+
+*Not part of the data foundation, but this is the stage it belongs to:*
+
+13. **Enable Security Hub org-wide, from the Audit account** (delegated in Stage 1b step 8, moved out of
+    the landing zone by principle 9 as amended). This stage is the trigger because Security Hub's value is
+    its *standards* — automated checks of your resources against the AWS Foundational Security Best
+    Practices and CIS benchmarks — and before this stage there were barely any resources to check.
+    Turning it on here means its first report is about a lake, a catalog and a set of buckets that will
+    still exist next month, rather than about scaffolding.
+    Enable the AWS Foundational Security Best Practices standard, ingest the GuardDuty findings already
+    flowing from Stage 4 step 10, and **triage the first report deliberately**: a benchmark run against a
+    freshly built environment produces its largest finding count ever, and the useful act is deciding which
+    controls to disable as not-applicable rather than carrying a permanently red dashboard. A dashboard
+    nobody believes is worth less than no dashboard.
+    **Cost:** per check and per finding ingested above the free tier (`plan/cost-model.md`). Note the
+    compounding this stage now inherits and the landing zone no longer pays: Security Hub's checks run as
+    **AWS Config rules**, so they add rule evaluations on top of the configuration items Control Tower
+    already records.
 
 **Deliverables:** a sample Iceberg table written in Data Governance and queried through Athena **from both
 Sandbox and Development**, with access granted through the Lake Formation share rather than raw IAM

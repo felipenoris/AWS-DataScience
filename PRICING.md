@@ -3,7 +3,7 @@
 Prices for region `sa-east-1`.
 
 `us-west-2` is shown alongside it in every table, because that is the region the project actually deploys
-in (`CLAUDE.md`) and the region all the estimates in `GENERAL_PLAN.md` §5 were written for. Having both
+in (`CLAUDE.md`) and the region all the estimates in `plan/cost-model.md` were written for. Having both
 columns is what makes the São Paulo premium a measurement instead of an impression.
 
 ---
@@ -186,10 +186,10 @@ Paid every month even with the lab shut down. Same rows as `plan/cost-model.md`,
 | Organization, accounts, Identity Center, VPC, subnets, IGW, security groups, IAM roles | — | — | **0** | **0** |
 | GitLab EBS volume (50 GB gp3) | 0.152 USD/GB-mo | 0.08 USD/GB-mo | 7.60 | 4.00 |
 | Elastic IP for WireGuard (idle or in use) | 0.005 USD/h | 0.005 USD/h | 3.65 | 3.65 |
-| KMS customer-managed keys (8 — one per Terraform-managed account, plus a derived-zone key per Interactive account, D31) | 1.00 USD/key-mo | 1.00 USD/key-mo | 8.00 | 8.00 |
+| KMS customer-managed keys (one per Terraform-managed account, plus a derived-zone key per Interactive account, D31) | 1.00 USD/key-mo | 1.00 USD/key-mo | 8.00 | 8.00 |
 | S3 data + state + backups (~25 GB Standard) | 0.0405 USD/GB-mo | 0.023 USD/GB-mo | ~1.50 | ~1.00 |
 | ECR images (~10 GB) | 0.10 USD/GB-mo | 0.10 USD/GB-mo | 1.00 | 1.00 |
-| AWS Config, 9 governed accounts (D29 added the tenth account; Management is the one not recorded) | 0.003 USD/item | 0.003 USD/item | 2.50-5.00 | 2.50-5.00 |
+| AWS Config, every governed account (Management is the one not recorded) | 0.003 USD/item | 0.003 USD/item | 2.50-5.00 | 2.50-5.00 |
 | Route 53 hosted zones (1 private + 1 public) | 0.50 USD/zone-mo (global) | 0.50 USD/zone-mo | 1.00 | 1.00 |
 | Public domain registration (D15) | registrar, region-independent | idem | ~1.00 | ~1.00 |
 | CodeArtifact | **not available — see §9** | 0.05 USD/GB-mo + 0.05/10k req | **n/a** | ~0.10 |
@@ -199,18 +199,27 @@ Paid every month even with the lab shut down. Same rows as `plan/cost-model.md`,
 | EFS (shared filesystem + project storage, IA) | 0.044 USD/GB-mo | 0.025 USD/GB-mo | ~0.90 | ~0.50 |
 | SageMaker unified domain — DataZone V2 metadata (D26) | 10.00/100k req + 0.40/GiB-mo (global) | idem | ~0.50 | ~0.50 |
 | ~~Staging, Development, Data Governance at rest~~ | **removed — double count** | | **0** | **0** |
-| **Floor** | | | **~USD 30-43** (central ~36) | **~USD 24-30** |
+| **Floor** | | | **~USD 30-43** (central ~36) | **~USD 25-34** (central ~30) |
 
-The São Paulo floor is roughly **1.4x** the Oregon one — less than the 1.72x of the metered services,
+The São Paulo floor is roughly **1.25-1.4x** the Oregon one — less than the 1.72x of the metered services,
 because so much of the floor is region-flat: KMS, Config, Route 53, Security Hub, the domain and the
 Elastic IP are identical in both regions.
 
+The low end of each range is the first thirty days, while GuardDuty is inside its free window; the high end
+is an ordinary month with GuardDuty billing, Config at the top of its range and Security Hub at the top of
+its.
+
 **Two corrections applied on 2026-08-08, in opposite directions.** The "Staging, Development, Data
-Governance at rest" row charged a Config recorder and a KMS key for those three accounts a second time —
-the Config row already covers all eight governed accounts — so ~USD 3 came out. The KMS row said "(3)" and
-predated D20-D22; there is one customer-managed key per Terraform-managed account, so ~USD 3 went back in.
-The two cancel and the floor range is unchanged, which is a coincidence rather than a confirmation: the
-number to trust is the one `GENERAL_PLAN.md` Stage 12 step 5 measures against the real bill.
+Governance at rest" row charged a Config recorder and a KMS key for those accounts a second time —
+the Config row already covers every governed account — so ~USD 3 came out. The KMS row said "(3)" and
+predated D20-D22; there is one customer-managed key per Terraform-managed account plus the D31 derived-zone
+keys, so ~USD 3 went back in.
+
+**And a third correction, on the same date: the `us-west-2` floor was restated from ~USD 24-30 to
+~USD 25-34.** The earlier figure was carried over rather than summed; adding this table's own `us-west-2`
+column row by row gives 25.25 at the low end and 33.75 at the high end. The `sa-east-1` column was already
+consistent with its own rows, which is why only one side moved. The number to trust in the end is still the
+one Stage 12 step 5 measures against the real bill — this is arithmetic over list rates, not an invoice.
 
 ---
 
@@ -220,8 +229,9 @@ number to trust is the one `GENERAL_PLAN.md` Stage 12 step 5 measures against th
 |---|---|---|---|
 | NAT Gateway (1) | 0.093 + 0.093/GB | 0.045 + 0.045/GB | 2.07 |
 | Interface VPC endpoint (each, per AZ) | 0.021 + 0.01/GB | 0.010 + 0.01/GB | 2.10 |
-| — 9 endpoints, single AZ (D9) | 0.189 | 0.090 | 2.10 |
-| — 11 endpoints, egress design B | 0.231 | 0.110 | (design B needs CodeArtifact — see §9) |
+| — Sandbox, 12 endpoints, single AZ (D9), design A | 0.252 | 0.120 | 2.10 |
+| — Sandbox, 14 endpoints, design B | 0.294 | 0.140 | (design B needs CodeArtifact — see §9) |
+| — Development 11 / Staging 9 / Production 10-12 | 0.231 / 0.189 / 0.210-0.252 | 0.110 / 0.090 / 0.100-0.120 | 2.10 |
 | GitLab EC2 `t4g.large` | 0.1072 | 0.0672 | 1.60 |
 | — `t3.large`, the x86 equivalent | 0.1344 | 0.0832 | 1.62 |
 | Internal ALB | 0.034 + 0.011/LCU-h | 0.0225 + 0.008/LCU-h | 1.51 |
@@ -233,14 +243,19 @@ number to trust is the one `GENERAL_PLAN.md` Stage 12 step 5 measures against th
 | Internet data transfer out, first 10 TB (see §7 note) | 0.150/GB | 0.090/GB | 1.67 |
 | Inter-region transfer to the other region | 0.16/GB out of São Paulo | 0.02/GB into São Paulo | asymmetric |
 
-**Typical Sandbox hour** (9 endpoints + NAT + one Studio app + WireGuard):
-`sa-east-1` **≈ 0.37/h**, `us-west-2` **≈ 0.19/h**.
+**Typical Sandbox hour** (its endpoints + one Studio app + WireGuard, plus the NAT under design A):
+design A `sa-east-1` **≈ 0.44/h**, `us-west-2` **≈ 0.22/h**; design B **≈ 0.38** and **≈ 0.19**.
 
-**Full-stack hour** (the above + GitLab + its ALB + Production's NAT and endpoints):
-`sa-east-1` **≈ 0.79/h**, `us-west-2` **≈ 0.41/h**.
+**Full-stack hour** (a design-A Sandbox + GitLab + its ALB + Production's NAT **and its endpoints**):
+`sa-east-1` **≈ 0.89/h**, `us-west-2` **≈ 0.46/h**.
 
-Note that `GENERAL_PLAN.md` §5 estimates NAT at USD 0.050/h in `us-west-2`; the measured rate is
-**0.045**. The estimate was high by ~11%, in the safe direction.
+**Both figures rose on 2026-08-08** — from 0.37/0.19 and 0.79/0.41 — for two reasons recorded in
+`plan/cost-model.md`: the endpoint list was missing `athena`, `glue` and `lakeformation`, without which
+D13's access path has no route at all under design B; and Production's *endpoints* were never counted in a
+full-stack hour, only its NAT.
+
+Note that `plan/cost-model.md` quotes NAT at USD 0.050/h in `us-west-2`; the measured gateway rate is
+**0.045**, plus 0.005 for its public IPv4 — which is where the round 0.050 comes from.
 
 ---
 
@@ -380,7 +395,7 @@ worth more than twice as much.
 **Note on data transfer out.** Two offer files disagree. The `AWSDataTransfer` offer — the current,
 unified one, and the source of the table above — gives `sa-east-1` 0.150 USD/GB for the first 10 TB. The
 older per-service `AmazonEC2` offer still carries a São Paulo tier of 0.25 USD/GB. The `us-west-2` figure
-of 0.090 matches what `GENERAL_PLAN.md` §4.3 already assumed, which is a point in favour of the unified
+of 0.090 matches what `plan/architecture.md` §4.3 already assumed, which is a point in favour of the unified
 offer being the live one, but this is the one row in this file to verify against a real invoice before
 relying on it. The first 100 GB/month out of AWS is free organization-wide and is not modelled here.
 
@@ -419,7 +434,7 @@ argument D8 makes for GitLab, and it holds in São Paulo unchanged.
 **One thing that is not a price at all: `AWS CodeArtifact does not exist in sa-east-1`.** It is offered in
 thirteen Regions — `us-east-1`, `us-east-2`, `us-west-2`, `ap-south-1`, `ap-southeast-1`,
 `ap-southeast-2`, `ap-northeast-1`, `eu-central-1`, `eu-west-1`, `eu-west-2`, `eu-west-3`, `eu-south-1`,
-`eu-north-1` — and São Paulo is not among them. The Region check recorded in `GENERAL_PLAN.md` §4 on
+`eu-north-1` — and São Paulo is not among them. The Region check recorded in `plan/architecture.md` §4.1 on
 2026-08-07 missed this, and it matters twice: **D14** puts CodeArtifact in the supply chain, and **egress
 design B (D5)** depends on it as the *only* package path when there is no NAT. In São Paulo, design B as
 written is not buildable; it would need a self-hosted proxy (devpi, a Cargo mirror such as panamax) or
@@ -429,16 +444,18 @@ design A only.
 
 | Figure | `sa-east-1` | `us-west-2` | Ratio |
 |---|---|---|---|
-| Monthly floor (§2) | ~USD 27-40, central ~33 | ~USD 21-27, central ~23 | ~1.4x |
-| Typical lab hour (§3) | ~USD 0.37 | ~USD 0.19 | ~1.9x |
-| Full-stack hour (§3) | ~USD 0.79 | ~USD 0.41 | ~1.9x |
-| **Projection at 20 h/month** | **~USD 40-49** | **~USD 29-31** | |
-| Against the D12 ceiling of USD 50 | essentially no headroom | ~USD 20 of headroom | |
+| Monthly floor (§2) | ~USD 30-43, central ~36 | ~USD 25-34, central ~30 | ~1.25-1.4x |
+| Typical lab hour (§3) | ~USD 0.38-0.44 | ~USD 0.19-0.22 | ~2.0x |
+| Full-stack hour (§3) | ~USD 0.89 | ~USD 0.46 | ~1.9x |
+| **Projection at 20 h/month** | **~USD 38-61** | **~USD 29-43** | |
+| Against the D12 ceiling of USD 50 | **breaches it** at anything above a light month | **~USD 7** at the top of the range | |
 
-So the answer to "could this project run in São Paulo?" is: **technically yes except for CodeArtifact, but
-it would sit against the USD 50 ceiling rather than comfortably under it** — and the first overrun would be
-a session that leaves a NAT gateway and nine interface endpoints up for a full day: 24 h × 0.282 =
-**USD 6.77** in `sa-east-1` against 24 h × 0.135 = USD 3.24 in `us-west-2`.
+So the answer to "could this project run in São Paulo?" changed on 2026-08-08, and not in São Paulo's
+favour: **technically yes except for CodeArtifact, but it no longer fits under the USD 50 ceiling once the
+data-plane endpoints are counted.** Interface endpoints carry the sharpest premium in this file (2.10x) and
+the correction added three of them to every account, so São Paulo absorbed the change roughly twice over.
+The first overrun there would be a session that leaves a design-A Sandbox `egress/` up for a full day:
+24 h × 0.350 = **USD 8.40** in `sa-east-1` against 24 h × 0.170 = USD 4.08 in `us-west-2`.
 
 ---
 
@@ -460,6 +477,6 @@ storage bill), and the first 30 days of GuardDuty per account.
 Anything whose volume is unknown until the environment runs: Config configuration items during a heavy
 `terraform apply`, CloudTrail data events under a Spark job, GuardDuty log volume, Macie GB inspected,
 Athena TB scanned, EFS throughput, inter-AZ traffic driven by the AZ-mapping question in
-`GENERAL_PLAN.md` §9 item 3, and the domain registration itself (registrar price, per TLD). Stage 12
+`plan/open-questions.md` item 3, and the domain registration itself (registrar price, per TLD). Stage 12
 replaces the estimated rows in §2 and §3 with figures from the real bill; the per-unit rates in this file
 do not change at that point — only the quantities they are multiplied by.

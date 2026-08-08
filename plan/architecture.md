@@ -181,7 +181,11 @@ in `PRICING.md`. If a move ever became real, the one genuinely expensive part wo
 Control Tower landing zone, whose home region is fixed at deployment time.
 
 One cross-region rule is permanent and unrelated to any of this: ACM certificates for CloudFront must live
-in `us-east-1` regardless of where the workload runs (relevant only at Stage 13).
+in `us-east-1` regardless of where the workload runs (relevant only at Stage 13). **This is not merely a
+note about where to click** — the region restriction (Stage 1b step 7) governs `us-west-2` alone, so
+`acm:*` has to be among the globally exempt actions or Stage 13 cannot issue that certificate at all.
+Control Tower's Region deny control carries it; the point of recording it here is that a fact stated in one
+file and a policy written in another were, until 2026-08-08, unaware of each other.
 
 ---
 
@@ -245,9 +249,17 @@ connecting to a raw IP, so it is a strong control against accident and a weak on
 Packages arrive through **CodeArtifact** repositories configured with an upstream to the public registry
 (CodeArtifact itself fetches from the internet — AWS-side, not through your VPC), container images through
 **ECR pull-through cache**, and everything else through VPC endpoints. There is no egress path to misuse,
-which is why this is the shape regulated institutions converge on. It also removes the NAT gateway, the
-single largest hourly line item in `plan/cost-model.md` — at the price of the two CodeArtifact interface endpoints
-(~USD 0.02/h), still a clear net saving.
+which is why this is the shape regulated institutions converge on. It also removes the NAT gateway — at
+the price of the two CodeArtifact interface endpoints, a net saving of **~USD 0.030/h** (`plan/cost-model.md`).
+
+**A correction worth carrying into the Stage 6 comparison, because it nearly made design B unbuildable.**
+Until 2026-08-08 the endpoint list omitted `athena`, `glue` and `lakeformation`. Under design A the NAT
+hid that; under design B there is no NAT, so the design as written could not have executed a single query
+— and D13 routes *every* tabular read through an LF-aware engine, which is the whole access path. The
+three are now in the common core of both designs (Stage 3 step 8). Two things follow: **both designs cost
+more than this file used to say**, and **the saving above is now the NAT alone**, which is the honest form
+of it. Three cents an hour decides nothing — the comparison below is settled by friction, which is what
+D5 said it wanted to measure.
 
 **The user's reservation about (B), recorded as a real constraint, not an objection to be argued away:**
 this environment must support **Python, Julia, Rust and R**, and CodeArtifact does not cover all of them.
@@ -260,6 +272,13 @@ Concretely:
 | Julia (Pkg) | **Not supported** | Self-hosted `PkgServer.jl` storage server, or bake into the dev-env image, or allowlist `pkg.julialang.org` |
 | R (CRAN) | **Not supported** | Posit Package Manager (commercial), a `miniCRAN` mirror served from S3, or bake into the image |
 | OS packages (dnf/apt) | Not applicable | Distro mirror on S3, or bake into the image |
+
+**And since 2026-08-08 that rebuild has a gate in it**, which is a genuine cost to this comparison and not
+a footnote: the `dev-env` image is released through its own promotion chain with an approval by the
+**Dev Env Steward** (Stage 8 step 1). Under design A a missing Python package is a `pip install` in the
+notebook; under design B it is a merge request, a build, a scan and a human approval. That is the right
+governance for a runtime everyone shares — and it is exactly the friction the Stage 6 verdict has to
+measure honestly rather than average away. Whether the gate can be automated at all is `INT-17`.
 
 The reframing that makes this tractable: **the dev-env container image is itself the dependency delivery
 mechanism.** It is built by a CI pipeline (Stage 8) on a runner that *does* have internet, so Julia, R,

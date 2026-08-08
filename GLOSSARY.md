@@ -13,13 +13,13 @@ are now officially just the acronym.
 
 | Symbol | Meaning |
 |---|---|
-| `[P]` | **Persistent** layer. Resources created once and never destroyed, because they cost nothing (or nearly nothing) at rest, or are too slow to rebuild. See `GENERAL_PLAN.md` §5.1. |
+| `[P]` | **Persistent** layer. Resources created once and never destroyed, because they cost nothing (or nearly nothing) at rest, or are too slow to rebuild. See `plan/conventions.md` §5.1. |
 | `[D]` | **Dormant** layer. Resources kept but powered off between sessions — stateful services where rebuilding is riskier than paying the idle cost. `make down` stops them; `make up` starts them. |
 | `[E]` | **Ephemeral** layer. Resources destroyed at the end of every session: everything metered by the hour and rebuildable in minutes. |
 | `D1` … `D31` | Numbered key decisions. **One file each** in `plan/decisions/`, with a one-line summary per decision in `plan/decisions/INDEX.md`. Referenced by ID from the stages that consume them. |
 | **Sandbox / Development / Staging / Production** | The four environments, one AWS account each. Sandbox is experimentation (the unit of work is a notebook); Development is where pipelines are engineered (the unit of work is a repository); Staging and Production are *deployment targets* that only a pipeline writes to. Promotion runs Development → Staging → Production; Sandbox feeds Development through git. See `README.md`, "Three distinctions the layout is built on". |
 | **Data Governance** | The account that owns the *state* of data: the governed lake, its catalog, Lake Formation and the classification scheme. No compute, no interactive sign-in; every environment reaches it through Lake Formation cross-account shares. |
-| `INT-01` … `INT-16` | Numbered cross-account integrations that must be proven, each with a fallback: `plan/integrations.md`. Replaces the old "§4.4 row *n*" references, which renumbered whenever a row was inserted. |
+| `INT-nn` | Numbered cross-account integrations that must be proven, each with a fallback: `plan/integrations.md`. Replaces the old "§4.4 row *n*" references, which renumbered whenever a row was inserted. |
 | `§` | A section of the plan as it was when it lived in one file. The numbers are kept **inside** the `plan/` files as historical anchors (e.g. `plan/architecture.md` §4.2 is the data perimeter), but the address of anything is its file plus its stable ID — `D26`, `INT-11`, `Stage 1b step 7`. |
 
 ---
@@ -29,19 +29,19 @@ are now officially just the acronym.
 | Acronym | Expansion | What it means here |
 |---|---|---|
 | **OU** | Organizational Unit | A folder of AWS accounts inside an Organization. Policies attach to an OU or to an account — never to a tag. The account is the isolation boundary; the OU is the *policy* boundary (D23), and each OU here is named for the policy set it carries: `Security`, `Interactive` (Sandbox + Development — interactive compute allowed), `Data` (Data Governance — no *user* compute; two named carve-outs, the DataZone control plane and the catalog-maintenance role, D26/D27), `Workloads` (Staging + Production — no interactive compute, no human control plane); and `Policy Test`, which carries **no** policy set of its own — it is where a *candidate* SCP or RCP is attached and exercised against the disposable `Policy Canary` account before it reaches anything real (D29). **The name collision this avoids:** the industry calls that last one a *Policy Staging OU*, which sits confusingly next to the `Staging` **account** in the `Workloads` OU. This project uses `Policy Test` / `Policy Canary` so that the word `Staging` names exactly one thing. |
-| **Policy Canary** | — | The tenth account (D29), alone in the `Policy Test` OU, deliberately empty: no VPC, no data, no Terraform slice, no state bucket. It exists because an SCP is a permission *ceiling* evaluated only when a principal makes a call — so an empty policy-staging OU tests nothing, and the account inside it is what turns the OU into a test. Holds one thing: an administrator principal, since a deny exercised by a principal that lacked the permission anyway proves nothing about a ceiling. |
+| **Policy Canary** | — | The disposable account (D29), alone in the `Policy Test` OU, deliberately empty: no VPC, no data, no Terraform slice, no state bucket. It exists because an SCP is a permission *ceiling* evaluated only when a principal makes a call — so an empty policy-staging OU tests nothing, and the account inside it is what turns the OU into a test. Holds one thing: an administrator principal, since a deny exercised by a principal that lacked the permission anyway proves nothing about a ceiling. |
 | **SCP** | Service Control Policy | A maximum-permission ceiling attached to an OU or account, evaluated on the **identity** side. It cannot grant anything; it only removes. Applies to *every* principal in the account including administrators — but **never to the Management account**, which is what makes the D16 break-glass path work. Used here to deny leaving the organization, deny disabling CloudTrail, restrict regions, and deny writes to S3 outside the organization. |
-| **`awsds-scp-recovery`** | — | The recovery principal of D30: one role per governed account, excluded by an explicit `ArnNotEquals` condition from every `Deny` this project writes, so a mistaken policy can be repaired from inside the affected account instead of by detaching it from Management. **Two traps it is written to avoid:** a wildcard account ID (`arn:aws:iam::*:role/…`) would exempt a role of that name in *any* account, so anyone who can create a role can name their way out of every deny; and a carve-out present in some `Deny` statements and missing from others is a set nobody can reason about, which is why the SCPs live in code and the condition is generated. Scoped identity policy, MFA-gated trust, 1-hour sessions, alarmed on assume. Not to be confused with per-function carve-outs (D27's catalog-maintenance role), which exempt one principal from *one* deny because that is its job. |
+| **`awsds-scp-recovery`** | — | **Not built — the name survives only in the record of a reverted decision.** D30 proposed one role per governed account, exempt by an explicit `ArnNotEquals` condition from every `Deny` this project writes; it was adopted and then reverted the same day, so **this design has no standing SCP exemption**. The recovery path is the Management account root (D16), and a bad policy is caught before attachment by the `Policy Canary` battery (D29). Two writing rules outlived the decision and apply to the per-function carve-outs that do exist (D26's `datazone:*`, D27's catalog-maintenance role): never a wildcard account ID in an ARN condition (`arn:aws:iam::*:role/…` exempts a role of that name in *any* account), and any condition repeated across policies is generated rather than typed — which is why the SCPs live in code. |
 | **RCP** | Resource Control Policy | The mirror image of an SCP, evaluated on the **resource** side. Sets a maximum permission on resources (S3, STS, KMS, SQS, Secrets Manager) regardless of what any account-level policy allows. The piece that stops principals outside the organization touching your data. |
 | **IAM** | Identity and Access Management | AWS's permission system: users, roles, policies. This project uses no IAM Users — humans get temporary credentials by assuming roles through SSO. |
 | **SSO** | Single Sign-On | One login for many accounts. Here it means AWS IAM Identity Center (the service formerly called AWS SSO). |
 | **IdP** | Identity Provider | The system that authenticates a person (Entra ID, Okta, or Identity Center itself). |
 | **SAML** | Security Assertion Markup Language | The XML-based protocol that lets an external IdP authenticate a user into an application. Used to log into GitLab with Identity Center credentials. |
-| **SCIM** | System for Cross-domain Identity Management | The protocol that *provisions and deprovisions* users and groups from an IdP, as opposed to merely authenticating them. Named in §11 as what an institution adds on top of SAML. |
+| **SCIM** | System for Cross-domain Identity Management | The protocol that *provisions and deprovisions* users and groups from an IdP, as opposed to merely authenticating them. Named in `plan/institutional-delta.md` as what an institution adds on top of SAML. |
 | **OIDC** | OpenID Connect | An identity layer over OAuth 2.0. In CI/CD it lets a pipeline job prove who it is to AWS with a short-lived token instead of a stored access key. Blocked in this project's GitLab because validating the token requires AWS to reach the issuer over the public internet (D8, D14). |
 | **JWKS** | JSON Web Key Set | The public keys an OIDC issuer publishes so a verifier can validate its tokens. AWS fetches this over the public internet, which is exactly why a VPN-only GitLab cannot use OIDC federation. |
 | **MFA** | Multi-Factor Authentication | A second proof of identity beyond the password. Mandatory on every user here, and on the break-glass path (D16). |
-| **AFT** | Account Factory for Terraform | AWS's tooling for provisioning Control Tower accounts from code. Deliberately not used: six accounts created once, by hand, do not repay the setup (§11). |
+| **AFT** | Account Factory for Terraform | AWS's tooling for provisioning Control Tower accounts from code. Deliberately not used: this handful of accounts, created once, by hand, does not repay the setup (`plan/institutional-delta.md`). |
 | **SRA** | (AWS) Security Reference Architecture | AWS's published reference for how to lay out security services across a multi-account organization. |
 
 ## Networking
@@ -49,7 +49,7 @@ are now officially just the acronym.
 | Acronym | Expansion | What it means here |
 |---|---|---|
 | **VPC** | Virtual Private Cloud | A private, isolated network inside an AWS account. One per account in this project, non-overlapping so they can be peered. |
-| **AZ** | Availability Zone | A physically separate datacenter within a region. Note that AZ *names* (`us-west-2a`) map to different physical AZs in different accounts; the AZ *ID* (`usw2-az1`) is the stable identifier. This distinction has a bill attached (§9 item 3). |
+| **AZ** | Availability Zone | A physically separate datacenter within a region. Note that AZ *names* (`us-west-2a`) map to different physical AZs in different accounts; the AZ *ID* (`usw2-az1`) is the stable identifier. This distinction has a bill attached (`plan/open-questions.md` item 3). |
 | **CIDR** | Classless Inter-Domain Routing | The `10.20.0.0/16` notation for an address range. |
 | **IGW** | Internet Gateway | The VPC component that allows traffic to and from the public internet. |
 | **NAT** | Network Address Translation | Rewriting source addresses so many private hosts share one public address. A **NAT Gateway** lets private subnets reach the internet without being reachable from it — and is the single largest hourly cost in this project, which is why egress design B removes it. |
@@ -120,16 +120,16 @@ are now officially just the acronym.
 | **Blueprint** | Environment blueprint (DataZone) | The template a Unified Studio project profile composes to provision real resources into an associated account. This plan enables three and no others: Tooling, **Lakehouse in its Glue/Athena form** (never the Redshift Serverless variant, D26/D12) and ML. The cost of Unified Studio is what blueprints provision, not the domain. |
 | **Deployment Manager** | — | The SSO persona that approves promotion of an artifact along Development → Staging → Production, and the time-boxed elevated role used to debug a failed production job. Acts in GitLab; group `deployment-managers`; read-only in the four lifecycle accounts and **absent from Data Governance**. Cannot grant access to data. |
 | **Governance Manager** | — | The SSO persona that approves data subscriptions and every other access to data, and owns the classification scheme and LF-Tag assignments. Domain owner of the Unified Studio domain; group `governance-managers`; present **only** in Data Governance. Sees the catalog, not the rows — an approver who can already read everything is not exercising a control. Split from the single `Manager` persona on 2026-08-08, together with [Deployment Manager]. |
-| **CodeConnections** | AWS CodeConnections | The service that attaches an external git repository (GitHub, GitLab, self-managed GitLab via a **host**) to AWS services — the path by which a Unified Studio project uses the self-hosted GitLab (§4.4 row 13, the one integration with no convenience-preserving fallback). |
+| **CodeConnections** | AWS CodeConnections | The service that attaches an external git repository (GitHub, GitLab, self-managed GitLab via a **host**) to AWS services — the path by which a Unified Studio project uses the self-hosted GitLab (`INT-13`, the one integration with no convenience-preserving fallback). |
 | **DR** | Disaster Recovery | Restoring after something is destroyed, as opposed to routine operation. |
 | **RTO / RPO** | Recovery Time / Recovery Point Objective | How long recovery may take, and how much data may be lost. Stage 12 requires stating both as numbers rather than assuming them. |
 | **FinOps** | Financial Operations | Treating cloud cost as an engineering concern with owners and feedback loops. |
 | **SigV4** | Signature Version 4 | AWS's request-signing algorithm. Relevant because signing a presigned URL is a purely **local** SigV4 operation — it makes no API call and therefore appears nowhere in CloudTrail (Stage 11). |
 | **PyPI** | Python Package Index | The public Python package repository. |
-| **CRAN** | Comprehensive R Archive Network | The public R package repository. Not supported by CodeArtifact, which is one of the constraints shaping egress design B (§4.3). |
+| **CRAN** | Comprehensive R Archive Network | The public R package repository. Not supported by CodeArtifact, which is one of the constraints shaping egress design B (`plan/architecture.md` §4.3). |
 | **UI** | User Interface | — |
 | **OS** | Operating System | — |
-| **HR** | Human Resources | Only in §11, describing group membership driven by an HR system. |
+| **HR** | Human Resources | Only in `plan/institutional-delta.md`, describing group membership driven by an HR system. |
 
 ## AWS services referred to by acronym
 
@@ -150,9 +150,9 @@ These are not acronyms, but they carry most of the plan's meaning and are the de
 
 | Key | What it tests |
 |---|---|
-| `aws:PrincipalOrgID` | Is the caller part of *my* organization? The trusted-identities axis of the data perimeter (§4.2). |
+| `aws:PrincipalOrgID` | Is the caller part of *my* organization? The trusted-identities axis of the data perimeter (`plan/architecture.md` §4.2). |
 | `aws:ResourceOrgID` | Is the resource being touched part of *my* organization? The trusted-resources axis — this is what stops a notebook copying data to a personal S3 bucket. |
-| `aws:SourceVpc` / `aws:SourceVpce` | Did the request arrive through my VPC, or through a specific VPC endpoint? The trusted-networks axis. Note that a request from a laptop, even over the VPN, may carry a *different* account's endpoint ID — see §4.4 rows 5 and 6. |
+| `aws:SourceVpc` / `aws:SourceVpce` | Did the request arrive through my VPC, or through a specific VPC endpoint? The trusted-networks axis. Note that a request from a laptop, even over the VPN, may carry a *different* account's endpoint ID — see `INT-05` and `INT-06`. |
 | `aws:SourceIp` | The caller's public source address. Used to require that AWS API calls arrive through the VPN's Elastic IP (Stage 4 step 8). |
 | `aws:ViaAWSService` | Is an AWS service making this call on the user's behalf, rather than the user directly? **The carve-out that everyone forgets.** Without it, a perimeter that looks correct blocks Athena reading S3 under Lake Formation — the exact path D13 forces all tabular reads through. |
 | `aws:PrincipalIsAWSService` | The same idea from the resource side: the caller is a service principal, not a person. |
@@ -169,4 +169,4 @@ These are not acronyms, but they carry most of the plan's meaning and are the de
 |---|---|
 | **USD** | United States dollar. All costs in the plan are USD, in `us-west-2`, and are order-of-magnitude estimates until Stage 12 replaces them with measured figures. |
 | **GB** | Gigabyte. |
-| **USD/h**, **USD/month** | The two figures the cost model always separates: the hourly burn while the lab is up, and the floor paid even when it is shut down (§5). |
+| **USD/h**, **USD/month** | The two figures the cost model always separates: the hourly burn while the lab is up, and the floor paid even when it is shut down (`plan/cost-model.md`). |

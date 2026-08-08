@@ -124,6 +124,8 @@ write anything into it. Claude can read the files in this folder to gather infor
 
 - Governance Manager user: approves data subscriptions and other access to data. Domain owner of the SageMaker Unified Studio domain.
 
+- Dev Env Steward user: approves the `dev-env` container image — the runtime every notebook runs on. The image's build code (a `Dockerfile`) lives in a GitLab repository the Data Scientist can write to; a CI/CD pipeline builds, tests and scans it, and only this user's approval makes the resulting image selectable in SageMaker.
+
 ## terraform
 
 - All infrastructure code will be in Terraform.
@@ -192,7 +194,7 @@ its `Consumes` row lists.
 | Plan, review, or settle a decision | add [`plan/lessons.md`](plan/lessons.md) and [`plan/open-questions.md`](plan/open-questions.md) |
 | Look up a decision | [`plan/decisions/INDEX.md`](plan/decisions/INDEX.md) first — open a decision file only for its reasoning |
 | Cost of a new service | [`PRICING.md`](PRICING.md) — measured from the Price List API, never estimated (Lesson 6) |
-| Cross-account wiring | [`plan/integrations.md`](plan/integrations.md), rows `INT-01`…`INT-16` |
+| Cross-account wiring | [`plan/integrations.md`](plan/integrations.md), the `INT-nn` rows |
 | "What would an institution do?" | [`plan/institutional-delta.md`](plan/institutional-delta.md) |
 
 Do not open by habit: [`plan/history.md`](plan/history.md), [`plan/institutional-delta.md`](plan/institutional-delta.md).
@@ -208,6 +210,8 @@ Reference things by **stable ID** — `D26`, `INT-11`, `Stage 1b step 7` — nev
 - Inputs still needed from the user, neither blocking Stage 1: **which domain name to register**
   (D15, blocks Stage 7), and the AZ name-to-ID check in Stage 1b step 6, which decides whether Stage 3
   anchors subnets on list position or on AZ IDs.
+- **Do first, because it can take days: the Organizations account-quota increase** (Stage 1a pre-flight).
+  The measured limit is exactly the number of accounts Stage 1a ends with, so a single retry breaches it.
 - Integration risks worth settling earliest: **INT-11** (organization-wide RAM sharing + Lake Formation
   cross-account v3 — enabled in Stage 1b, consumed in Stage 5, and its absence makes a share fail
   *silently*) and **INT-13** (CodeConnections from the domain to the private GitLab — the one row with no
@@ -237,6 +241,6 @@ reasoning that makes each one usable is in the file, and the titles alone are no
 11. **A decision that changes *who authors* an IAM policy invalidates every claim made about that policy.**
 12. **An edition or tier limit can reach a load-bearing control, not just a convenience.**
 13. **A verification command that returns empty on both success and failure is not a verification.**
-14. **A blanket carve-out written by hand across several policies is a control that will be missing from one of them.**
-15. **Recommending against something is not the same as it being wrong, and the record should show which happened.**
+14. **A condition that has to appear in N places by hand is a control that will be missing from one of them.**
+15. **An adopted-against-advice decision is undone by *delivery*, not by re-argument — and a revision trigger written about operating something cannot fire while you are still building it.**
 

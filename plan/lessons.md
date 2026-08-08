@@ -81,20 +81,33 @@ lesson can be *recognised* without opening this file; the reasoning that makes e
    detection-side twin of Lesson 5: an intention is not a control, and a command that cannot fail is not a
    check. Before writing a deliverable, ask what its output looks like when the thing is *broken*.
 
-14. **A blanket carve-out written by hand across several policies is a control that will be missing from
-   one of them.** D30 adopted a principal exempt from every custom `Deny`. The dangerous part is not the
-   exemption — that was a deliberate, argued trade — it is that the *same condition* has to appear in every
-   statement, and a set where three policies carry it and the fourth does not is one nobody can reason
-   about, with no error to tell you which. Two consequences generalise beyond this decision: any condition
-   that must appear in N places gets **generated, not typed** (which is what finally forced the SCPs into
-   Terraform, a gap that had sat unowned since Stage 1b was written); and any ARN condition gets an
-   **enumerated list, never a wildcard account** — `arn:aws:iam::*:role/x` means "anyone who can create a
-   role named x, anywhere". Both traps are invisible in a `plan` and cheap in CI.
-15. **Recommending against something is not the same as it being wrong, and the record should show which
-   happened.** D30 was recommended against and adopted anyway, for reasons that hold: fixing in place keeps
-   repairs out of the Management console, and the pattern's sharp edges are worth building once in a lab
-   whose stated purpose (`plan/institutional-delta.md`) is to learn patterns. The useful discipline is to write the trade-off into the
-   decision rather than re-argue it, then spend the effort on the mitigations — which is where the real
+14. **A condition that has to appear in N places by hand is a control that will be missing from one of
+   them.** The case that produced this was D30's blanket carve-out — a principal exempt from every custom
+   `Deny`, which meant the *same condition* had to appear in every statement, and a set where three
+   policies carry it and the fourth does not is one nobody can reason about, with no error to say which.
+   **D30 was later reverted, and the lesson outlived it**, in two parts that apply to any policy set: any
+   condition that must appear in N places gets **generated, not typed** — which is what forced the SCPs
+   into Terraform, a gap that had sat unowned since Stage 1b was written and which is still the right call
+   without the carve-out; and any ARN condition gets an **enumerated list, never a wildcard account**,
+   because `arn:aws:iam::*:role/x` means "anyone who can create a role named x, anywhere". Both traps are
+   invisible in a `plan` and cheap in CI. The per-function carve-outs the design still has (D26, D27) are
+   subject to both.
+15. **An adopted-against-advice decision is undone by *delivery*, not by re-argument — and a revision
+   trigger written about operating something cannot fire while you are still building it.** D30 was
+   recommended against, adopted anyway for reasons that held at the time, and reverted the same day. What
+   reversed it was not the original argument being re-run: it was a review finding that the role could not
+   be placed where its own justification needed it (the SCPs had moved to the Identity account in the same
+   pass, and that was one of the two accounts the delivery mechanism could not reach). Three things to
+   carry:
+   - **Write the trade-off into the decision rather than re-arguing it**, and then spend the effort on the
+     mitigations — that part was right, and it is what makes a decision inspectable later.
+   - **Then check that the thing can actually be built where the argument needs it.** "Is this a good
+     idea?" and "can this be delivered to the place that justifies it?" are different reviews, and the
+     second one is the one that was missing.
+   - **Write revision triggers that can fire during construction.** D30's were "a second person gains
+     access" and "the role is assumed for something other than repairing a policy" — both about operating
+     it, so neither could catch a defect in scoping it. Add at least one trigger of the form "if the thing
+     turns out not to exist where X assumes it does".
 
 ---
 

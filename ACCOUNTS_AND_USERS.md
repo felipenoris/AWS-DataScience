@@ -1,9 +1,9 @@
 
 # AWS Accounts
 
-Ten accounts, in five organizational units. The account is the isolation boundary; the OU is the policy
-boundary, so each OU is named for the policy set it carries rather than for its contents (`GENERAL_PLAN.md`
-D23) — with one exception, added by D29, whose OU carries no policy set at all because it is where
+The accounts below, grouped into organizational units. The account is the isolation boundary; the OU is the
+policy boundary, so each OU is named for the policy set it carries rather than for its contents
+([D23](plan/decisions/D23-ou-structure.md)) — with one exception, added by D29, whose OU carries no policy set at all because it is where
 *candidate* policies are tried out.
 
 ## The two axes, and the accounts that sit on neither
@@ -62,7 +62,7 @@ is not signing in to the account.
 
 - Represents an experimentation sandbox environment, where the unit of work is a notebook. Sandbox users will use this to experiment and develop artifacts.
 
-- **Target of the `experimentation` project profile** (`GENERAL_PLAN.md` D26). The SageMaker Unified Studio
+- **Target of the `experimentation` project profile** ([D26](plan/decisions/D26-unified-studio.md)). The SageMaker Unified Studio
   domain lives in Data Governance, but the compute does not: when a data scientist creates an
   experimentation project, its blueprints provision the environment — the SageMaker AI apps, the project
   bucket, the execution roles — **into this account**. Arbitrary code runs here, against this account's
@@ -123,13 +123,13 @@ administering the account.
 
 **One accepted consequence.** This account has no VPC in the first build, so an AWS CodeConnections host
 cannot reach the self-hosted GitLab in Production's private subnet from here. Unified Studio projects
-therefore keep their default repository, and the push into GitLab is manual (`GENERAL_PLAN.md` §4.4
-row 13). That was chosen over giving this account a VPC and a peering, which would cost the property that
+therefore keep their default repository, and the push into GitLab is manual
+([INT-13](plan/integrations.md)). That was chosen over giving this account a VPC and a peering, which would cost the property that
 makes it simple: nothing standing, nothing metered, nothing to reach.
 
 ## Policy Canary Account
 
-Added by `GENERAL_PLAN.md` D29 on 2026-08-08, alone in the `Policy Test` OU.
+Added by [D29](plan/decisions/D29-policy-canary.md) on 2026-08-08, alone in the `Policy Test` OU.
 
 **What it is for:** a Service Control Policy is a permission *ceiling*, evaluated only when a principal
 makes a call. So a candidate SCP or RCP is attached to the `Policy Test` OU and exercised from this account
@@ -177,7 +177,7 @@ not in concept. `Policy Test` and `Policy Canary` keep the word `Staging` naming
   hosts it: the person's projects run in Sandbox and Development, and the access matrix below is unchanged
   by the portal's existence. In the portal this user is a **project member**, never a domain owner.
 
-- the access matrix this expands into, per account (`GENERAL_PLAN.md` D18):
+- the access matrix this expands into, per account ([D18](plan/decisions/D18-data-scientist-access.md)):
 
   - **Sandbox and Development**: read-write and interactive. This is where the person works.
   - **Staging**: read-only, with no write of any kind. Staging is written by the pipeline and read by a
@@ -189,35 +189,51 @@ not in concept. `Policy Test` and `Policy Canary` keep the word `Staging` naming
     ingestion drop-box, granted by bucket policy rather than by a sign-in.
   - **Identity, Audit, Log Archive**: no access.
 
-## The two Manager users
+## The approver users
 
-There used to be one `Manager user` — "approves deployment of artifacts". SageMaker Catalog (D26)
-introduced a second kind of approval, and on 2026-08-08 the persona was **split in two rather than
-extended**, because the two approvals sit on the two different axes described at the top of this file:
+There used to be one `Manager user` — "approves deployment of artifacts". It has been split twice, each
+time because a genuinely different question needed a different signature, and each time along one of the
+axes described at the top of this file. **Every split is a separation of duties, not a reorganisation of
+labels.**
 
-| | Deployment Manager | Governance Manager |
-|---|---|---|
-| Axis | **Lifecycle** | **Ownership** |
-| Approves | promotion of an artifact along Development → Staging → Production | data subscriptions and every other access to data |
-| Acts in | GitLab (the pipeline's manual gate) | the SageMaker Unified Studio portal |
-| Question being answered | *is this build safe to release?* | *may this person read this dataset?* |
-| Group | `deployment-managers` | `governance-managers` |
-| Where they have access | `DeploymentManagerAccess` on Sandbox, Development, Staging and Production — **nothing on Data Governance** | `GovernanceManagerAccess` on **Data Governance only** |
-| What they may *read* | Logs, job and pipeline status, catalog metadata, image scan findings, enumerated build-artifact prefixes. **Not** query results, not the derived zones, not decrypted data (D31) | The catalog — names, schemas, classifications, lineage. **Not** the rows |
+| | Deployment Manager | Governance Manager | Dev Env Steward |
+|---|---|---|---|
+| Axis | **Lifecycle** | **Ownership** | **Supply chain** |
+| Approves | promotion of an artifact along Development → Staging → Production | data subscriptions and every other access to data | the `dev-env` container image that every notebook runs on |
+| Acts in | GitLab (the promotion pipeline's manual gate) | the SageMaker Unified Studio portal | GitLab (the dev-env pipeline's manual gate) |
+| Question being answered | *is this build safe to release?* | *may this person read this dataset?* | *is this runtime safe to hand to everyone?* |
+| Group | `deployment-managers` | `governance-managers` | `dev-env-stewards` |
+| Where they have access | `DeploymentManagerAccess` on Sandbox, Development, Staging and Production — **nothing on Data Governance** | `GovernanceManagerAccess` on **Data Governance only** | `DevEnvStewardAccess` on Production (the registry) and read-only on Sandbox and Development (where the image is registered) — **nothing on Staging, Data Governance or Identity** |
+| What they may *read* | Logs, job and pipeline status, catalog metadata, image scan findings, enumerated build-artifact prefixes. **Not** query results, not the derived zones, not decrypted data (D31) | The catalog — names, schemas, classifications, lineage. **Not** the rows | The image: its `Dockerfile` history in GitLab, the build log, ECR image metadata and **enhanced-scanning findings**, and the SageMaker image / app-image-config resources. **No data at all** — no lake prefixes, no Athena, no `kms:Decrypt` |
 
-**The access row is mirrored on purpose:** the one account the deployment manager may not enter is the
-only one the governance manager may. Neither persona is a superset of the other, and neither is a weaker
-copy of the data scientist — they are two different jobs that happen to share the word "approve".
+**Neither of the first two is a superset of the other, and the third is on a different axis from both.**
+The one account the deployment manager may not enter is the only one the governance manager may; the
+steward enters neither of those and looks only at artifacts.
+
+**Why the third persona exists, and it is the same argument as D14 one level up.** Whoever controls the
+`dev-env` image controls what code runs in every notebook, against whatever that notebook can reach. A
+malicious or careless layer in that image is a credential exfiltrator installed on every workstation at
+once — and it arrives *before* any of the other gates, because the data scientist is running it while they
+write the code the deployment manager will later approve. D14 puts the supply chain (GitLab, runners, ECR,
+CodeArtifact) in Production precisely so the people the gate gates cannot modify it; this persona is who
+signs off on the one supply-chain artifact the data scientist is *supposed* to be able to propose changes
+to.
 
 **Why this is a control and not just tidier naming.** With one persona, a single human could write a job
-that reads `restricted` data, approve its promotion to Production, **and** approve that job's access to the
-dataset — three acts, one signature. Split, the promotion gate and the data grant require two different
-people, and neither can complete the path alone. That is the separation of duties this environment
-otherwise only claims to have, and it costs one extra SSO user.
+that reads `restricted` data, approve its promotion to Production, approve that job's access to the
+dataset, **and** approve the runtime image the job was written on — four acts, one signature. Split, no
+one of them can complete the path alone. That is the separation of duties this environment otherwise only
+claims to have, and it costs one extra SSO user per split.
 
-**One rule that nothing in AWS will enforce for you:** never put the same person in both groups. While
-there is a single operator the temptation is obvious and the split becomes notation the moment it is
-given in to — Identity Center will not warn, and no policy can detect it.
+**The steward must not be able to bypass their own gate**, which is the part that is easy to get wrong:
+if they can `ecr:PutImage` or create a SageMaker image version by hand, the approval is theatre. Those
+actions are denied explicitly in their permission set — the pipeline holds them, and the pipeline runs
+only after the gate.
+
+**One rule that nothing in AWS will enforce for you:** never put the same person in more than one of these
+groups, and never in one of them plus `data-scientists`. While there is a single operator the temptation is
+obvious and every split becomes notation the moment it is given in to — Identity Center will not warn, and
+no policy can detect it.
 
 ### Deployment Manager user
 
@@ -225,20 +241,20 @@ given in to — Identity Center will not warn, and no policy can detect it.
   deployment of artifacts.
 
 - Exercises the manual approval step in the promotion pipeline, with the Staging test results and the
-  Terraform plan in front of them (`GENERAL_PLAN.md` Stage 8). Also the approver for the **time-boxed
+  Terraform plan in front of them ([Stage 8](plan/stages/stage-08-cicd-pipelines.md)). Also the approver for the **time-boxed
   elevated role** used to debug a failed production job (Stage 9) — that is a lifecycle act, not a data
   one.
 
 - **Access:** the `DeploymentManagerAccess` permission set on Sandbox, Development, Staging and Production —
-  the four lifecycle accounts, which is the axis this persona works on — and **no assignment of any kind on
+  the lifecycle accounts, which is the axis this persona works on — and **no assignment of any kind on
   Data Governance**. Deliberately **no** authority
   over data grants either: this user cannot approve a subscription, is not a domain owner in the Unified
   Studio domain, and cannot call `lakeformation:GrantPermissions`.
 
-- **What that set is, and why it is not `ReadOnlyAccess` (`GENERAL_PLAN.md` D31, 2026-08-08).** It used to
+- **What that set is, and why it is not `ReadOnlyAccess` ([D31](plan/decisions/D31-approver-read.md), 2026-08-08).** It used to
   be. The rule stated below for the governance manager — *an approver who can already read everything is not
   exercising a control* — is symmetric, and the plan was applying it to one of the two approvers: the
-  AWS-managed `ReadOnlyAccess` includes `s3:Get*` and `athena:GetQueryResults`, so on four accounts this
+  AWS-managed `ReadOnlyAccess` includes `s3:Get*` and `athena:GetQueryResults`, so across those accounts this
   persona could read the D19 derived zones and other people's query output. The derived zones are where the
   result of a query over `restricted` data lands and, by D19's own classification rule, *is* `restricted`.
 
@@ -263,7 +279,7 @@ given in to — Identity Center will not warn, and no policy can detect it.
 - **Domain owner / data steward** of the SageMaker Unified Studio domain. Approving a subscription is what
   causes DataZone to write the underlying **Lake Formation grant**, so this user's decisions are what the
   fine-grained access model in D13 actually resolves to. Also owns the data classification scheme and the
-  LF-Tag assignments (`GENERAL_PLAN.md` Stage 5) — the taxonomy and the grants belong to the same person,
+  LF-Tag assignments ([Stage 5](plan/stages/stage-05-data-foundation.md)) — the taxonomy and the grants belong to the same person,
   or the taxonomy becomes decoration.
 
 - **Access:** the `GovernanceManagerAccess` permission set on **Data Governance and nowhere else** — which
@@ -275,3 +291,43 @@ given in to — Identity Center will not warn, and no policy can detect it.
 - **One thing this user should not have, and it is easy to grant by accident:** blanket read access to the
   data itself. An approver who can already read everything is not exercising a control when they approve a
   subscription. They see the catalog — names, schemas, classifications, lineage — not the rows.
+
+### Dev Env Steward user
+
+- roles: approves the `dev-env` container image — the runtime every notebook and every Unified Studio
+  project app runs on.
+
+- **The mechanism, which is deliberately the same shape as the application promotion** (Stage 8): the
+  image's build code — a `Dockerfile` and its pinned package manifests — lives in a **GitLab repository the
+  data scientist can write to**. A change is a merge request. The pipeline builds the image, smoke-tests
+  it, scans it, and pushes it to ECR under an immutable tag. **Nothing reaches a working environment
+  until this user approves the manual gate**; the approval is what causes the pipeline to register the
+  image so it appears in the SageMaker image selector for the Sandbox and Development projects.
+
+- **The parallel worth holding onto:** a `dev-env` image version is to the workbench what a **Model
+  Registry version is to a model** (D17) — it is *approved*, not copied. The build is cheap and anyone may
+  propose one; what is gated is which built version becomes the one everybody gets.
+
+- **Why the data scientist writes to that repository and the plan is comfortable with it.** This is the one
+  supply-chain artifact whose content is genuinely their expertise: which version of Julia, which CRAN
+  snapshot, which Rust toolchain. Denying them write access would push the request into a ticket and make
+  the environment stale, which is how people end up installing things by hand into a notebook and
+  discovering at promotion time that Production has different versions. The control is not "who may
+  propose" — it is "who may release", which is this persona.
+
+- **Access:** the `DevEnvStewardAccess` permission set on **Production** (ECR image metadata and enhanced
+  scanning findings, the build pipeline's CloudWatch logs) and **read-only on Sandbox and Development**
+  (the SageMaker image and app-image-config resources, to confirm what is actually registered). **Nothing
+  on Staging, Data Governance, Identity, Audit, Log Archive or Policy Canary.**
+
+- **What is denied explicitly rather than by omission, because these are what would make the gate
+  theatre:** `ecr:PutImage`, `ecr:BatchDeleteImage`, `sagemaker:CreateImage*` and
+  `sagemaker:UpdateAppImageConfig` — the pipeline holds those, and the pipeline runs only after the
+  approval. Also `athena:*`, `kms:Decrypt`, and any `s3:GetObject` on lake or derived prefixes: this
+  persona approves a *runtime*, and never needs to read data to do it.
+
+- **The failure this persona is really guarding against** is not a bad package version, which shows up as a
+  broken build. It is a layer that quietly adds a credential-harvesting entrypoint or an outbound beacon to
+  an image that then runs in every notebook, holding the SageMaker execution role, inside the VPC. That is
+  why the gate is a human reading a diff, and why ECR enhanced scanning blocking on critical findings
+  (Stage 8) is a companion to it rather than a substitute.

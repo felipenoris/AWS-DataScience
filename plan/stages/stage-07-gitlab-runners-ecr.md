@@ -66,6 +66,14 @@ under egress design B it is how packages reach SageMaker. The rest of this stage
      than a supplement to it.
 
    `plan/institutional-delta.md` gains a row either way: an institution buys the tier and gets the approval as a first-class object.
+   **Note that the edition question now decides *two* gates, not one.** Since the `dev-env` image got its
+   own promotion chain and its own approver (Stage 8 step 1, `dev-env-stewards`), the same Premium feature
+   governs whether "only a dev env steward may release a runtime image" is expressible, or whether it
+   degrades to "only certain people may push the protected tag". Check it once, for both.
+   **GitLab groups to create here, mirroring the Identity Center groups 1:1:** `data-scientists`,
+   `deployment-managers`, `governance-managers` and `dev-env-stewards`. And the repositories: the
+   application repositories, plus **`dev-env/`** — the image build code, **writable by
+   `data-scientists`** and with its release tag protected so only `dev-env-stewards` can push it.
 4. GitLab Pages enabled for documentation, reachable only through the VPN. Pages requires a **domain
    distinct from the GitLab host** (it serves user-supplied content, so sharing the origin would hand it
    the GitLab session cookie) and a **wildcard DNS record plus wildcard certificate** — both provided by

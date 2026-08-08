@@ -1,7 +1,8 @@
 # Decisions — index
 
-Thirty-one closed decisions. Read this table first; open a decision file only when you need
-its reasoning, its consequences or its revision trigger.
+D1-D31, all settled — **D30 settled as a revert**, which is a decision like any other and keeps its file
+so the record shows what happened. Read this table first; open a decision file only when you need its
+reasoning, its consequences or its revision trigger.
 
 | # | Decision | In one line | Stages |
 |---|---|---|---|
@@ -34,12 +35,14 @@ its reasoning, its consequences or its revision trigger.
 | [D27](D27-catalog-maintenance.md) | Catalog-maintenance compute in the Data OU: crawlers and optimizers | Crawlers and table optimizers may run in Data Governance under a named catalog-maintenance exception; never on Iceberg tables. | S1a, S5 |
 | [D28](D28-workflow-contract.md) | The production workflow contract: what must exist for a scientist-a… | What crosses the gate into a headless deployment target: exactly six artifact classes, carried by the repository. | S6, S9, S10 |
 | [D29](D29-policy-canary.md) | Where a Service Control Policy is tested before it reaches anything… | A tenth account, `Policy Canary`, alone in a fifth OU, `Policy Test` — because an empty OU tests nothing. | S1a, S1b |
-| [D30](D30-scp-recovery.md) | The SCP recovery principal — a named role exempt from every custom … | `awsds-scp-recovery`, one enumerated role exempt from every custom `Deny`; adopted against the recommendation, with the trade-off recorded. | S1a, S1b, S2, S3 |
+| [D30](D30-scp-recovery.md) | The SCP recovery principal — a named role exempt from every custom … | **Reverted.** No standing SCP exemption: the Management root (D16) is the only recovery path. The SCPs stay in code regardless. | — |
 | [D31](D31-approver-read.md) | What a release approver may read | A bespoke `DeploymentManagerAccess` replaces `ReadOnlyAccess`, and the derived zone gets its own CMK. | S1b, S5 |
 
 ---
 
-**All thirty-one are decided.** A decision is revisited only through its own *revision trigger*;
-when one is, edit its file in place and add a line to [`plan/history.md`](../history.md).
+**All of them are settled.** A decision is normally revisited only through its own *revision trigger*;
+when one is revisited — for whatever reason — edit its file in place and add a line to
+[`plan/history.md`](../history.md). **A reverted decision keeps its file and its number**, because the
+record of what was tried and why it was undone is worth more than a tidy list.
 
 *Plan core: [GENERAL_PLAN.md](../../GENERAL_PLAN.md)*

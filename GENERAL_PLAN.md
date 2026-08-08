@@ -67,9 +67,11 @@ These come from `CLAUDE.md` and constrain every stage:
 1. **The Management account is bootstrap-only.** Anything done there is manual, through the console, and
    recorded by the user in `LOG.md`. Terraform does not manage the Management account.
 2. **No IAM Users, and since 2026-08-08 with no exception.** Humans authenticate through IAM Identity
-   Center (SSO) and assume roles. Machines (GitLab CI) use OIDC federation to assume roles — except the
-   deploy runner, which uses an EC2 instance profile because a VPN-only GitLab cannot serve a JWKS that IAM
-   can fetch (Stage 8 step 4). No long-lived access keys anywhere. This principle used to carry one
+   Center (SSO) and assume roles. Machines (GitLab CI) use **EC2 instance profiles**: a VPN-only GitLab
+   cannot serve a JWKS that IAM can fetch, so OIDC federation is not available to any runner in this
+   design (Stage 7 step 6, Stage 8 step 4). OIDC remains the target the moment a public issuer surface
+   exists, and `plan/institutional-delta.md` records it as the institutional answer. No long-lived access
+   keys anywhere. This principle used to carry one
    documented exception for break-glass; **D16 settled that credential as the Management account root,
    which is not an IAM user and holds no access key**, so the exception dissolved instead of being
    justified. A rule with no escape hatch is a rule that gets broken under pressure — the escape hatch
@@ -85,9 +87,20 @@ These come from `CLAUDE.md` and constrain every stage:
    layer its resources belong to, so this shapes how each stage is designed, not just how it is operated.
 8. **The region is a variable, not an assumption** (decision D1). The lab runs in `us-west-2` and stays
    there; keeping the region out of the code is plain Terraform hygiene, not migration work. See `plan/architecture.md` §4.1.
-9. **Preventive controls come before detective ones.** The data perimeter (`plan/architecture.md` §4.2) is part of the landing
-   zone, not of the DLP stage. Detecting an exfiltration you could have made impossible is a worse outcome
-   than preventing it, and the preventive half (SCPs, RCPs, endpoint policies) is free.
+9. **Preventive controls come before detective ones — and the two halves are scheduled by different
+   rules.** Detecting an exfiltration you could have made impossible is a worse outcome than preventing it,
+   so prevention has precedence. **The preventive half is built in the landing zone** (SCPs, RCPs, endpoint
+   policies, the data perimeter of `plan/architecture.md` §4.2): it is free, it is structural, and a
+   guardrail written after the thing it guards has already been used is a guardrail that arrives late.
+   **The detective half is enabled when there is something to detect**, service by service, each naming
+   the stage that turns it on — GuardDuty at Stage 4, with the first internet-facing resource; Security Hub
+   at Stage 5, with the first governed data; Macie at Stage 11. Detection is metered, it observes rather
+   than prevents, and turning it on over empty accounts buys nothing while spending the one free window in
+   which its real cost could have been measured. **The exception is anything detective that is free**, which
+   follows the preventive rule instead: IAM Access Analyzer's external-access findings, CloudTrail log file
+   validation and S3 Object Lock are all in the landing zone. *This principle used to say only its first
+   half, and Stage 1b read it as licence to enable every detective service at once — see
+   `plan/institutional-delta.md` for what an institution does instead.*
 10. **The lab is not the reference architecture.** Most decisions here are bent by a USD 50/month ceiling
     and a single operator. `plan/institutional-delta.md` records, decision by decision, what a large institution would do instead —
     so that what is learned here is the pattern, not the compromise.
@@ -102,18 +115,18 @@ its **Consumes** row names; that is the whole reading list.
 | Stage | What it builds | Status |
 |---|---|---|
 | [0 — Baseline](plan/stages/stage-00-baseline.md) | Management account by hand, local tooling, the documentation set | **DONE** |
-| [1a — Landing zone](plan/stages/stage-01a-landing-zone.md) | Control Tower, ten accounts, five OUs, root secured, budget — slow and hard to undo | **ready to start** |
-| [1b — Identity and controls](plan/stages/stage-01b-identity-and-controls.md) | Identity Center, permission sets, SCP/RCP, detective controls, org-wide enablement — fast and reversible | not started |
+| [1a — Landing zone](plan/stages/stage-01a-landing-zone.md) | Control Tower, the accounts and OUs, root secured, budget — slow and hard to undo | **ready to start** |
+| [1b — Identity and controls](plan/stages/stage-01b-identity-and-controls.md) | Identity Center, permission sets, SCP/RCP, the free detective controls, org-wide enablement — fast and reversible | not started |
 | [2 — Terraform foundation](plan/stages/stage-02-terraform-foundation.md) | State buckets, module skeletons, the SCP import, CI hygiene checks | not started |
 | [3 — Networking](plan/stages/stage-03-networking.md) | Four VPCs, split `foundation/` + `egress/` | not started |
-| [4 — VPN](plan/stages/stage-04-vpn.md) | WireGuard, the only entry point; peering so the tunnel reaches GitLab | not started |
-| [5 — Data foundation](plan/stages/stage-05-data-foundation.md) | Lake, Glue, Iceberg, Lake Formation + the three cross-account shares; EFS | not started |
+| [4 — VPN](plan/stages/stage-04-vpn.md) | WireGuard, the only entry point; peering so the tunnel reaches GitLab; GuardDuty on, with the first exposed resource | not started |
+| [5 — Data foundation](plan/stages/stage-05-data-foundation.md) | Lake, Glue, Iceberg, Lake Formation + the three cross-account shares; EFS; Security Hub on | not started |
 | [6 — Unified Studio](plan/stages/stage-06-unified-studio.md) | The DataZone V2 domain, project profiles, and the two egress designs compared | not started |
 | [7 — GitLab, Runners, ECR](plan/stages/stage-07-gitlab-runners-ecr.md) | GitLab CE on EC2, runners, registries, TLS and split-horizon DNS | not started |
 | [8 — CI/CD pipelines](plan/stages/stage-08-cicd-pipelines.md) | The three pipeline types and the promotion gate | not started |
 | [9 — Deployment targets](plan/stages/stage-09-deployment-targets.md) | Staging and Production platforms, Model Registry, the producer path | not started |
 | [10 — Orchestration](plan/stages/stage-10-orchestration-promotion.md) | Both orchestrators (D7) built and compared, end-to-end promotion | not started |
-| [11 — DLP](plan/stages/stage-11-dlp.md) | Macie, CloudTrail data events, GuardDuty, Security Hub | not started |
+| [11 — DLP](plan/stages/stage-11-dlp.md) | Macie, CloudTrail data events, LF column/row filters, GuardDuty's paid add-ons | not started |
 | [12 — Observability and FinOps](plan/stages/stage-12-observability-finops.md) | Dashboards, alarms, cost attribution against the real bill | not started |
 | [13 — Public web tier](plan/stages/stage-13-public-web-tier.md) | The public-facing experiment in front of a private backend | not started |
 
@@ -121,15 +134,17 @@ its **Consumes** row names; that is the whole reading list.
 
 ## 3. Decisions
 
-**Thirty-one, all closed.** One file each, with its reasoning, consequences and revision trigger:
+**D1-D31, all settled** — one of them, **D30, settled as a revert** and keeps its file so the record shows
+what was tried. One file each, with its reasoning, consequences and revision trigger:
 [`plan/decisions/INDEX.md`](plan/decisions/INDEX.md) — a one-line summary per decision, which is usually
 all that is needed.
 
 The load-bearing few, for orientation: **D11** (pay nothing while idle — three layers), **D13** (Lake
 Formation is only real if execution roles hold no S3 on registered prefixes), **D17/D21** (interactive
 compute only in the Interactive OU; the chain starts in Development), **D22** (the lake is on the
-ownership axis), **D26** (one unified domain, a registry and never a runtime), **D16/D30** (the two
-recovery paths, and what each is for).
+ownership axis), **D26** (one unified domain, a registry and never a runtime), **D16** (the recovery path
+— **the only one**, since D30 was reverted, which is what makes D29's policy canary load-bearing rather
+than nice to have).
 
 ---
 
@@ -152,7 +167,7 @@ recovery paths, and what each is for).
 |---|---|---|
 | [`plan/architecture.md`](plan/architecture.md) | Target architecture, region portability, the data perimeter, the two egress designs, the shape to hold in mind | Designing, or reasoning about where something belongs |
 | [`plan/conventions.md`](plan/conventions.md) | Naming, tags, `terraform-live/` layout, Terraform and IAM rules, the `[P]`/`[D]`/`[E]` layers | Any stage from Stage 2 onwards |
-| [`plan/integrations.md`](plan/integrations.md) | `INT-01`…`INT-16`: the cross-account things that must be proven, each with a fallback | Building anything that crosses an account boundary |
+| [`plan/integrations.md`](plan/integrations.md) | The `INT-nn` rows: the cross-account things that must be proven, each with a fallback | Building anything that crosses an account boundary |
 | [`plan/cost-model.md`](plan/cost-model.md) | The projection and its assumptions (rates live in [`PRICING.md`](PRICING.md)) | Adding a service, or checking the ceiling |
 | [`plan/open-questions.md`](plan/open-questions.md) | Only things to find out by doing | Planning a session |
 | [`plan/lessons.md`](plan/lessons.md) | Fifteen mistakes, with the reasoning that makes each recognisable | **Before planning, reviewing or settling a decision** |

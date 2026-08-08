@@ -29,7 +29,8 @@ what is genuinely still unanswered:
    profile). If the mappings differ, Stage 3 anchors subnets on `zone_ids` (`usw2-az1`, passed per
    environment in `.tfvars`) instead of on list position, and `plan/architecture.md` §4.1 is updated accordingly.
 4. **Layer assignments.** `[P]`/`[D]`/`[E]` are cost judgements based on estimates. Revisit them at Stage 12
-   against the real bill — especially the interface endpoints (the largest hourly item, now ~9 of them)
+   against the real bill — especially the interface endpoints (the largest hourly item, and since
+   2026-08-08 a **per-account** list rather than one list: Stage 3 step 8)
    and GitLab (the largest idle item).
 5. **CodeArtifact ecosystem coverage (`plan/architecture.md` §4.3).** The CodeArtifact documentation lists Cargo among its
    supported formats, so the Rust question is down to confirming it in practice at Stage 6. Julia and R remain genuinely uncovered and keep their `plan/architecture.md` §4.3 fallbacks — they
@@ -37,7 +38,7 @@ what is genuinely still unanswered:
 6. **Whether SageMaker Studio can block file download** (Stage 6 — the question carries over unchanged to
    the ML-blueprint apps under D26). If not, Stage 11's threat model has to
    record an accepted risk rather than a control.
-7. **The sixteen cross-account integrations in `plan/integrations.md`.** Each has a stated fallback, so none of them blocks
+7. **The cross-account integrations in `plan/integrations.md`.** Each has a stated fallback, so none of them blocks
    a stage, but none of them is known to work either. They are listed there rather than repeated here.
    **INT-15 and 16, added 2026-08-08 by the pre-Stage-1 review, are not integration risks but
    control risks** — whether D13's constraint on execution roles survives blueprint-authored roles (INT-15),
@@ -90,14 +91,14 @@ default, and each one is referenced from the step that needs it.
     this plan depends on it, and the user already has MFA on this root. What survives is not about the type
     — with a single registered device, recovery runs through AWS support and depends on the account's phone
     number and payment method, so those are part of the design.
-    **And the second half of this item went the other way (D30):** the SCP recovery principal — a role
-    exempt from every custom deny — was recommended against and **adopted by the user's decision**. It is
-    built, with an enumerated ARN list rather than a wildcard, a companion deny on creating the role, a
-    scoped identity policy, MFA-gated trust, an assume alarm, and a CI check that no `Deny` ships without
-    the carve-out. It also forced a hole closed that predated it: the SCPs now live in code
-    (`terraform-live/identity/`), because a condition repeated by hand across four documents is a condition
-    that will be missing from one.
-12. ~~**Whether the deployment manager keeps blanket `ReadOnlyAccess` on four accounts**~~ — **closed
+    **The second half of this item went the other way and then came back (D30):** the SCP recovery
+    principal — a role exempt from every custom deny — was recommended against, **adopted by the user's
+    decision, and then reverted**, once a review found the role could not be delivered to the account whose
+    repair path justified it. So there is **one** recovery credential and it is the root. What the round
+    trip left behind is worth keeping: the SCPs now live in code (`terraform-live/identity/`), because a
+    policy set that nobody owns after Stage 1b is one whose only record is the console — and, with no
+    exemption anywhere, it is the artefact that most needs a diff and a rollback.
+12. ~~**Whether the deployment manager keeps blanket `ReadOnlyAccess` on the lifecycle accounts**~~ — **closed
     2026-08-08 as D31: it does not.** Two changes, and the more durable one is the second. `ReadOnlyAccess`
     is replaced by a bespoke **`DeploymentManagerAccess`** in the shape D18 already uses — diagnosis, not
     reading: logs, job and pipeline status, catalog metadata, scan findings, enumerated artifact prefixes;

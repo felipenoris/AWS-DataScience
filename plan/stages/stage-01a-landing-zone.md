@@ -4,7 +4,7 @@
 |---|---|
 | **Status** | ready to start — nothing blocking |
 | **Prerequisites** | none outstanding (D1 decided, all ten e-mails registered) |
-| **Consumes** | [D1](../decisions/D01-region.md), [D12](../decisions/D12-budget-ceiling.md), [D14](../decisions/D14-supply-chain-account.md), [D16](../decisions/D16-break-glass.md), [D20](../decisions/D20-staging-account.md), [D21](../decisions/D21-development-account.md), [D22](../decisions/D22-data-governance-account.md), [D23](../decisions/D23-ou-structure.md), [D25](../decisions/D25-drop-box-consumer.md), [D26](../decisions/D26-unified-studio.md), [D27](../decisions/D27-catalog-maintenance.md), [D29](../decisions/D29-policy-canary.md), [D30](../decisions/D30-scp-recovery.md) |
+| **Consumes** | [D1](../decisions/D01-region.md), [D12](../decisions/D12-budget-ceiling.md), [D14](../decisions/D14-supply-chain-account.md), [D16](../decisions/D16-break-glass.md), [D20](../decisions/D20-staging-account.md), [D21](../decisions/D21-development-account.md), [D22](../decisions/D22-data-governance-account.md), [D23](../decisions/D23-ou-structure.md), [D25](../decisions/D25-drop-box-consumer.md), [D26](../decisions/D26-unified-studio.md), [D27](../decisions/D27-catalog-maintenance.md), [D29](../decisions/D29-policy-canary.md) |
 | **Proves** | — |
 
 *Read with [`plan/conventions.md`](../conventions.md) (naming, layout, `[P]`/`[D]`/`[E]`, IAM rules).*
@@ -14,19 +14,36 @@
 **Objective:** a working AWS Organization with the environment accounts and SSO access, so that everything
 after this can be done by Terraform without root credentials.
 
-**Prerequisites:** none outstanding. D1 is decided (`us-west-2`) and all ten account e-mails are in
-`secrets/emails.md` — `Policy Canary`'s was registered by the user on 2026-08-08, after D29 added the
-account.
+**Prerequisites:** none outstanding. D1 is decided (`us-west-2`) and an e-mail is registered in
+`secrets/emails.md` for every account this stage creates — `Policy Canary`'s was added by the user on
+2026-08-08, after D29 introduced the account.
 
 **Split into two halves, 1a and 1b.** This is the longest stage in the plan and it used to be one
 unverifiable block of sixteen manual steps. The split is not cosmetic: **1a ends at a checkable state** —
-ten accounts exist, in five OUs, with the root credentials secured and a budget watching them — and it is
+every account exists, in its OU, with the root credentials secured and a budget watching them — and it is
 the half that is slow, awkward to undo, and worth stopping after. 1b is everything that is fast, reversible
 and iterative: identity, policies, detective controls and the organization-wide enablements. If a session
 runs out before 1b is finished, the environment is still in a coherent state; if it ran out in the middle of
 the old Stage 1, it was not.
 
 ---
+
+**Pre-flight, before step 1 — the account quota, which is the one thing here that can stall for days.**
+AWS Organizations caps the number of accounts an organization may hold, and the cap on a young organization
+is low. **Measured on 2026-08-08: this organization's limit is 10 accounts** — exactly the number this stage
+ends with (Management plus the member accounts), so it fits with **no margin at all**. Two consequences,
+both of which bite at the worst moment:
+
+- A failed Account Factory provisioning that has to be retried can consume a slot, and a **closed account
+  still counts against the quota** while it is in the post-closure retention window (~90 days). So the
+  first retry is also the first quota breach.
+- `Policy Canary` is disposable *by design* (D29). With zero margin it is not actually disposable: closing
+  it does not free the slot for ~90 days.
+
+So **request a quota increase before enabling Control Tower** — Service Quotas, AWS Organizations,
+"Maximum number of accounts", ask for something with headroom (15 is plenty). It is free, it is a support
+ticket that can take days, and it is the only item in this stage that cannot be worked around once started.
+Record the granted value in `LOG.md`.
 
 **To execute (all manual, by the user, recorded in `LOG.md`):**
 
@@ -74,6 +91,11 @@ the old Stage 1, it was not.
      permitted **only when the principal is the lake's catalog-maintenance role** (D27), which *is* real
      compute and is therefore bounded by role, event-driven and alarmed. Anything not on those two lists
      stays denied.
+     **This OU is also the sole exception to an organization-root deny** (1b step 7): `datazone:CreateDomain`
+     is denied everywhere and carved out here, so the unified domain can exist only in this account. Note
+     the mechanism, because getting it backwards produces a policy that does nothing — SCPs are ceilings and
+     an explicit `Deny` wins wherever it appears, so the exception is a **condition on the root deny**
+     naming this OU, never an `Allow` written in this OU's own policy set.
    - `Workloads` OU → `Staging` and `Production` (D20). No interactive compute, no human control plane,
      written once and attached once. **Not to be confused with the `Policy Test` OU below** — the industry
      calls that one a *Policy Staging OU*, and this plan deliberately does not, precisely so that the word
@@ -95,14 +117,14 @@ the old Stage 1, it was not.
      same policy set — the D23 test ("an OU earns its existence when two or more accounts need the same
      policy set") is not met by that, but a landing zone that will not enrol the account is worse.
 
-   **These ten accounts are the complete set** — D14 places the tooling in Production rather than in a
-   separate Shared Services account, D20-D22 add the deployment target, the development account and
+   **The accounts listed above are the complete set** — D14 places the tooling in Production rather than in
+   a separate Shared Services account, D20-D22 add the deployment target, the development account and
    the data account the AWS reference architectures describe, and D29 adds the disposable one that makes
    the SCP procedure in 1b step 7 executable. `plan/institutional-delta.md` records what a larger organization would still add
    beyond them.
    Account creation here is manual through Account Factory; **Account Factory for Terraform (AFT)** is the
-   automated equivalent and is deliberately not used — with seven accounts to create, once, it is at the
-   edge of repaying its setup and still loses (`plan/institutional-delta.md`).
+   automated equivalent and is deliberately not used — at this handful of accounts, created once, it is at
+   the edge of repaying its setup and still loses (`plan/institutional-delta.md`).
 5. **Break-glass: the procedure and the alarm (D16).** The *credential* was handled in step 1 — it is this
    root, there is no second mechanism to build. What is left here is what makes it a break-glass rather
    than just an account owner: write the procedure down (what situations justify using it — an Identity
@@ -119,17 +141,22 @@ the old Stage 1, it was not.
    *is* e-mail plus password, so alarming to the login address hands the same person the credential and its
    own warning. Build the chain here and fire it once with a deliberate sign-in; an untested alarm is a
    hypothesis.
-   **A second, narrower recovery path exists (D30) and is built later, in Stage 3.** The `awsds-scp-recovery`
-   role is what handles "a custom SCP denies something it should not"; this root is what handles "Identity
-   Center is down" or "the organization itself is broken". Keeping them separate is the point — reaching
-   for root to repair a policy means the D30 role was scoped wrong, and that is a useful signal to have.
-6. **Centralized root access management.** The organization ends up with nine member accounts — two
-   created by Control Tower (Log Archive, Audit) and seven by Account Factory — each with its own
-   root user and its own recovery e-mail: nine credentials nobody will ever rotate. AWS Organizations can
-   remove root credentials from member accounts centrally and perform the few privileged root actions on
-   demand. Enable it; this is one console setting that eliminates a whole class of dormant risk.
+   **This is the only recovery path, and that is a decision rather than an omission (D30, reverted).** A
+   narrower standing principal exempt from every custom `Deny` was proposed, adopted and then removed: the
+   lab keeps no exemption, so the root handles all three failures — "Identity Center is down", "the
+   organization itself is broken", and "a custom SCP denies something it should not". **Two consequences
+   for how the rest of Stage 1 is executed, and both are already written into it:** the break-glass chain
+   below must work *before* the first policy is attached in 1b step 7, and every candidate policy goes
+   through the `Policy Canary` battery (D29) first — with no exemption, catching a bad policy before
+   attachment is far cheaper than repairing it afterwards.
+6. **Centralized root access management.** Every member account — the ones Control Tower created (Log
+   Archive, Audit) and the ones Account Factory created — arrives with its own root user and its own
+   recovery e-mail: one dormant credential per account, none of which anybody will ever rotate. AWS
+   Organizations can remove root credentials from member accounts centrally and perform the few privileged
+   root actions on demand. Enable it; this is one console setting that eliminates a whole class of dormant
+   risk.
 
-**Deliverables of 1a:** ten accounts exist, in five OUs; the Management root user is secured and its
+**Deliverables of 1a:** every account exists, in its OU; the Management root user is secured and its
 break-glass path has been tested once; member-account root credentials are centrally managed; the budget
 and Cost Anomaly Detection are live. Nothing here is torn down between sessions, and nothing after this
 point can lock you out without a way back in.

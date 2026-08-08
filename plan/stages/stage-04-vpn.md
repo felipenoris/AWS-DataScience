@@ -4,7 +4,7 @@
 |---|---|
 | **Status** | not started |
 | **Prerequisites** | Stage 3. D4 is decided: self-managed WireGuard. |
-| **Consumes** | [D4](../decisions/D04-vpn-wireguard.md), [D16](../decisions/D16-break-glass.md), [D26](../decisions/D26-unified-studio.md) |
+| **Consumes** | [D4](../decisions/D04-vpn-wireguard.md), [D6](../decisions/D06-dlp-approach.md), [D16](../decisions/D16-break-glass.md), [D26](../decisions/D26-unified-studio.md) |
 | **Proves** | [INT-16](../integrations.md) |
 
 *Read with [`plan/conventions.md`](../conventions.md) (naming, layout, `[P]`/`[D]`/`[E]`, IAM rules).*
@@ -78,6 +78,19 @@
    Break-glass (D16) is the way out if this goes wrong.
 9. Write the client setup instructions in `README.md`, including how to regenerate the config after a
    rebuild.
+10. **Enable GuardDuty org-wide, from the Audit account** (delegated in Stage 1b step 8). It lands in this
+   stage and not in the landing zone because **this stage builds the first internet-facing resource in the
+   project**: an EC2 instance with a public Elastic IP and an open UDP port. Until now there was nothing
+   exposed and nothing to detect; from here there is, and the thing GuardDuty is best at is exactly this
+   host's failure mode — an instance's role credentials being used from outside AWS, outbound traffic to a
+   known-bad destination, crypto-mining patterns.
+   It needs no configuration: GuardDuty reads CloudTrail management events, VPC Flow Logs and DNS query
+   logs on its own, without you enabling any of them. Route findings to the Audit account and an SNS topic.
+   **Leave S3 Protection and Malware Protection off** — they are billed separately and are decided in
+   Stage 11 step 4 against a real bill.
+   **Cost:** free for the first 30 days per account, then driven by log volume (`plan/cost-model.md`).
+   Note what that free window is *not*: it starts when the service is enabled, in every account at once, so
+   it is a discount on this stage and the next, not a measurement instrument to be spent deliberately.
 
 **Deliverables:** connecting from the laptop gives private access to a test resource in the Sandbox
 **and Production** VPCs — the only two the tunnel reaches at the VPC level. The laptop has **no route into

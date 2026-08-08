@@ -29,10 +29,11 @@ Each slice carries its layer from §5.1: `[P]` persistent, `[D]` dormant (stop/s
 terraform-live/
 ├── identity/             # [P] permission sets, groups, assignments - applied with the
 │   │                     #     delegated-admin profile (D10); never touches Management.
-│   │                     #     ALSO the SCPs, RCPs and tag policies since D30: they used
-│   │                     #     to be console-only and owned by nobody after Stage 1b, and
-│   │                     #     the D30 carve-out has to be GENERATED into every Deny from
-│   │                     #     the awsds-scp-recovery ARNs each foundation/ exports
+│   │                     #     ALSO the SCPs, RCPs and tag policies: they used to be
+│   │                     #     console-only and owned by nobody after Stage 1b. Since D30
+│   │                     #     was reverted there is no principal that can work around a
+│   │                     #     bad Deny from inside a governed account, so this set needs
+│   │                     #     a diff, a review and a rollback more than anything else here
 │   └── bootstrap/        # [P] state bucket for the Identity account
 ├── sandbox/              # EXPERIMENTATION (D21): the unit of work is a notebook
 │   ├── bootstrap/        # [P] state bucket for this account (state migrated in, never committed)
@@ -46,6 +47,12 @@ terraform-live/
 │   │                     #     Two variants behind a switch: D5(A) with NAT, D5(B) without
 │   ├── vpn/              # [D] WireGuard EC2 (stopped, not destroyed)
 │   ├── nfs/              # [P] EFS filesystem, mount targets, access points (lifecycle to IA)
+│   ├── dev-env/          # [P] the approved dev-env image registered for this account:
+│   │                     #     aws_sagemaker_image + image_version + app_image_config.
+│   │                     #     Applied by the Stage 8 step 1 pipeline after the dev-env
+│   │                     #     steward's approval, through awsds-deploy-devenv-sandbox -
+│   │                     #     the one slice written from Production into an Interactive
+│   │                     #     account (INT-18). Its only input is the approved digest
 │   └── sagemaker/        # [P] blueprint target (D26): the experimentation project's
 │                         #     environments are provisioned HERE by the domain in
 │                         #     data-governance/; running apps are [E], deleted by make down.
@@ -63,6 +70,9 @@ terraform-live/
 │   ├── data/             # [P] scratch + derived zone + Athena workgroup + LF resource
 │   │                     #     links, same shape as sandbox/data/
 │   ├── egress/           # [E] NAT + endpoints, same D5 switch as sandbox
+│   ├── dev-env/          # [P] same slice, same module, same pipeline, applied through
+│   │                     #     awsds-deploy-devenv-dev - the image is identical in both
+│   │                     #     Interactive accounts by construction (D17, Stage 8 step 1)
 │   ├── sagemaker/        # [P] blueprint target (D26): the engineering project's
 │   │                     #     environments land here, provisioned by the domain in
 │   │                     #     data-governance/. No domain of its own. Workflows are
@@ -175,16 +185,17 @@ CI is the same bug as one that only works by hand — but the expected caller is
   prefixes** (D19 as revised by D31). A permission set enumerates; a key policy is default-deny. The
   derived zone has its own CMK for exactly this reason, and the separation from the account's general-purpose
   key is what makes it expressible at all.
-- **The `awsds-scp-recovery` role (D30) is narrow too, and the temptation to make it broad is specific.**
-  An SCP exemption removes a *ceiling*; it grants nothing. So the role still needs its own identity policy
-  and that policy is scoped to the actions the SCPs deny — not `AdministratorAccess` "because you never
-  know what you will need to fix". A recovery role with `*` is a second administrator that is also outside
-  every guardrail, which is the one combination this project should never have.
-- **No principal is exempt from a deny "just in case".** Carve-outs are per function and per statement:
-  the catalog-maintenance role exempt from the `Data` OU's Glue deny (D27), a deploy role exempt from a
-  specific deny so automation does not stall. The one blanket exemption in this design is D30's, it is
-  named, alarmed, MFA-gated and enumerated per account, and it exists because the user chose that
-  trade — not because blanket exemptions are the pattern.
+- **No principal is exempt from a deny "just in case", and since D30 was reverted there is no exception
+  to that at all.** Carve-outs are per function and per statement: the catalog-maintenance role exempt
+  from the `Data` OU's Glue deny (D27), `datazone:*` as a governance control plane (D26), a deploy role
+  exempt from a specific deny so automation does not stall. Each names one principal, one statement and
+  one reason. A standing role exempt from *every* custom deny was proposed and removed — the recovery path
+  is the Management account, which sits outside SCPs by AWS's design rather than by ours (D16), and the
+  cheap defence is catching the bad policy in the `Policy Canary` before it is attached (D29).
+- **Any ARN condition uses an enumerated list, never a wildcard account.** `arn:aws:iam::*:role/x` reads
+  as "any principal named `x`, in any account", so a condition written to name one role silently names a
+  role that anybody able to create a role can mint. This applies to the per-function carve-outs above and
+  is checked in CI (Stage 2 step 9).
 
 ---
 
@@ -195,7 +206,7 @@ rest. The rule is **pay nothing while idle**, not **destroy everything**. That s
 three layers, and every stage must say which layer each of its resources belongs to.
 
 **[P] Persistent — created once, never destroyed.** Free or nearly free at rest, or too slow to rebuild:
-the Organization, the ten accounts, Control Tower, Identity Center, SCPs, Terraform state buckets, the
+the Organization, the accounts, Control Tower, Identity Center, SCPs, Terraform state buckets, the
 **VPC itself** (VPC, subnets, route tables, internet gateway, security groups, NACLs cost nothing),
 Route 53 private zone, IAM roles, KMS keys, S3 data buckets, ECR repositories, budgets and alarms — and
 the **SageMaker unified domain and its projects** (D26 — a DataZone V2 domain at rest bills only metadata

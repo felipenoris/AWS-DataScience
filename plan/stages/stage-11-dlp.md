@@ -17,8 +17,11 @@
 
 **To execute:**
 
-**What is no longer in this stage:** the data perimeter (`plan/architecture.md` §4.2) moved to Stage 1 and Security Hub, GuardDuty
-and Access Analyzer moved there with it (principle 9). What remains here is genuinely data-specific.
+**What is no longer in this stage:** the data perimeter (`plan/architecture.md` §4.2) moved to Stage 1, and
+the detective services moved to the stage that first gives each one something to observe (principle 9, as
+amended): IAM Access Analyzer to Stage 1b step 8 because it is free, **GuardDuty to Stage 4 step 10** with
+the first internet-facing resource, **Security Hub to Stage 5 step 13** with the first governed data. What
+remains here is genuinely data-specific.
 
 1. Amazon Macie for sensitive-data discovery — primary scope the **Data Governance** buckets (D22),
    plus the **derived zones in Sandbox and Development** (D19), which is where governed data re-surfaces
@@ -33,8 +36,9 @@ and Access Analyzer moved there with it (principle 9). What remains here is genu
    notebook export" as a control. Verify it exists before relying on it (Stage 6 flags the same doubt) —
    as far as this plan knows, Studio has no supported setting for that. If it does not, say so plainly in
    the threat model rather than leaving a control listed that nobody implemented.
-4. Turn on GuardDuty's **S3 Protection and Malware Protection** — deferred from Stage 1 specifically so the
-   decision could be made against a real bill (`plan/cost-model.md`).
+4. Turn on GuardDuty's **S3 Protection and Malware Protection** — the base service has been running since
+   Stage 4 step 10, and these two are billed separately and were deferred specifically so the decision
+   could be made against a real bill (`plan/cost-model.md`).
 5. CloudTrail data events on the sensitive buckets; CloudWatch alarms for exfiltration patterns: mass
    `GetObject`, unusual egress volume, `PutObject` to an unexpected destination.
    **Correction:** the previous version listed an alarm on "presigned URL creation". That is not

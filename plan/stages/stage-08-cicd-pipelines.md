@@ -5,7 +5,7 @@
 | **Status** | not started |
 | **Prerequisites** | Stage 7. |
 | **Consumes** | [D5](../decisions/D05-sagemaker-egress.md), [D8](../decisions/D08-gitlab-hosting.md), [D14](../decisions/D14-supply-chain-account.md), [D17](../decisions/D17-interactive-vs-runtime.md), [D20](../decisions/D20-staging-account.md), [D21](../decisions/D21-development-account.md) |
-| **Proves** | [INT-07](../integrations.md), [INT-08](../integrations.md) |
+| **Proves** | [INT-07](../integrations.md), [INT-08](../integrations.md), [INT-17](../integrations.md), [INT-18](../integrations.md) |
 
 *Read with [`plan/conventions.md`](../conventions.md) (naming, layout, `[P]`/`[D]`/`[E]`, IAM rules).*
 
@@ -17,23 +17,67 @@
 
 **To execute:**
 
-1. **Development-environment pipeline — and the shared base image underneath it.** This pipeline builds
-   *two* images, not one, and the split is what makes the whole promotion story true:
+1. **Development-environment pipeline — a promotion chain with its own gate, in the same shape as the
+   application chain in step 3.** This is not a build job that pushes an image; it is a release process for
+   the runtime every notebook and every Unified Studio project app runs on, and it has its own approver
+   (`dev-env-stewards`, `ACCOUNTS_AND_USERS.md`).
+
+   **The repository.** `dev-env/` in GitLab, holding the `Dockerfile`s and their pinned package manifests,
+   **writable by the data scientist**. That write access is deliberate and is the point of the design: which
+   Julia version, which CRAN snapshot, which Rust toolchain is their expertise, and routing it through a
+   ticket is what makes an environment stale — after which people install things by hand in a notebook and
+   discover the version skew at promotion time. The control is not *who may propose* but *who may release*.
+
+   **Two images, not one, and the split is what makes the whole promotion story true:**
    - **`base`**: the language runtimes and their pinned versions — Python, Julia, R, the Rust toolchain —
      and nothing else. Tagged immutably.
-   - **`dev-env`** = `base` + JupyterLab/Code Editor, notebook tooling, the interactive extras. Pushed to
-     ECR and registered as a SageMaker custom image / app image config **in both Interactive domains**
-     (D21) — same image, same version, both accounts, so Sandbox exploration and Development engineering
-     run on the same runtime by construction. Triggered by tags.
+   - **`dev-env`** = `base` + JupyterLab/Code Editor, notebook tooling, the interactive extras.
 
    The reason for the split is D17: "promote only the code" is only true if the runtime the code lands on
    is identical to the one it was written against, and the only way to make that true *by construction* is
-   a common ancestor image. Two independently built images with the same package list in them are two
-   images that will diverge, quietly, at the first rebuild — and the divergence surfaces in production, as
-   a version skew nobody changed.
+   a common ancestor image. Two independently built images with the same package list are two images that
+   will diverge, quietly, at the first rebuild — and the divergence surfaces in production, as a version
+   skew nobody changed. The application image is `FROM base:<pinned tag>` (step 2), never `FROM dev-env`.
+
+   **The chain, on a tag:**
+   1. build `base` and `dev-env`, immutable tags derived from the commit;
+   2. **smoke-test the image** — it starts, every language runtime resolves, the pinned versions are the
+      ones the manifest asked for, the key libraries import. This is the analogue of step 3's integration
+      tests: cheap, and it catches the class of failure that otherwise reaches every workstation at once;
+   3. **ECR enhanced scanning**, blocking on critical findings (step 5);
+   4. push to the Production ECR under the immutable tag — **visible to nobody yet**;
+   5. **manual approval, assigned to the `dev-env-stewards` group**, with the image diff, the scan report
+      and the smoke-test output attached. Same GitLab edition caveat as step 3.5 and Stage 7 step 3: a
+      group-assigned approval is Premium, and the CE fallback is a `when: manual` job on a protected tag;
+   6. **register the approved version** so it becomes selectable in the Sandbox and Development projects.
+
+   **Step 6 is the one that is not yet known to be buildable, and it is `INT-17`.** Registration used to be
+   ours end to end — `aws_sagemaker_image`, `image_version`, `app_image_config`, attached to a domain this
+   repository wrote. Since D26 the domain is the per-project SageMaker AI domain that the **ML blueprint**
+   provisions, which this repository does not author, so *what call makes an image appear in the selector,
+   and whether it survives blueprint reconciliation*, is unverified. It is the same authorship question as
+   INT-15, applied to image registration instead of to the execution role. **Answer it in Stage 6, before
+   this pipeline is written**, and record the mechanism. If no automated path holds, the pipeline still
+   delivers everything up to step 5 and the steward performs step 6 by hand — the approval, which is the
+   control, is unaffected; what is lost is automation.
+
+   **The version pointer is a promotion, not an overwrite.** Tags are immutable (Stage 7 step 5), so
+   nothing is "moved". The approved artifact is a *new registered version* that the projects then resolve
+   to — the same shape as the Model Registry, where a model version is approved rather than a file copied
+   (D17). That parallel is worth keeping: it means "which runtime is everyone on" is a queryable fact with
+   an approval attached, not the result of whoever pushed last.
+
+   **Cross-account consequence to build deliberately:** the runner lives in Production (D14), and step 6
+   writes into **Sandbox and Development**. That is a new trust direction — the supply chain reaching into
+   the Interactive accounts, where every other flow in this plan runs the other way. It gets its own narrow
+   deploy roles (`awsds-deploy-devenv-sandbox`, `awsds-deploy-devenv-dev`), scoped to the dev-env slice and
+   nothing else, and it is `INT-18`.
+
    Under D5(B) this pipeline carries more weight still: it is where Julia, R and the Rust toolchain are
    installed, so it is the dependency delivery mechanism for every ecosystem CodeArtifact does not cover
-   (`plan/architecture.md` §4.3). Its rebuild time is therefore a usability metric, not just a CI metric — measure it.
+   (`plan/architecture.md` §4.3). Its rebuild time is therefore a usability metric, not just a CI metric —
+   **and the gate now sits inside that loop**, which is a real cost to the D5 comparison and is recorded
+   there: under design B, "I need package X" means a rebuild *and* an approval.
 2. **Application build pipeline:** the `app-etl` template from `CLAUDE.md` — `uv` for dependencies,
    `pytest` for tests, linting, docs build published to Pages, Docker image pushed to ECR on tag.
    While the application is being engineered it is also applied by hand into
@@ -90,7 +134,7 @@
    promotion on critical findings, and dependency scanning on the application. A gate that only warns is
    documentation, not a gate — decide explicitly which findings block.
 6. A pipeline for this infrastructure repository as well: `fmt` / `validate` / `plan` on merge requests,
-   `apply` gated by approval. This repository lives on GitHub (`GENERAL_PLAN.md` §1), so that pipeline is either GitHub
+   `apply` gated by approval. This infrastructure repository lives on GitHub — GitLab hosts the *application* repositories, not this one — so that pipeline is either GitHub
    Actions — with its own OIDC role into AWS; GitHub's issuer *is* public, so federation works there — or
    it runs on the GitLab mirror from Stage 7 step 7. Decide alongside the mirroring policy.
 

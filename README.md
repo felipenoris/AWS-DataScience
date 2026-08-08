@@ -8,11 +8,11 @@ Blueprint for using AWS as a Data Science infrastructure provider.
 - `plan/` — the plan itself, split so that a task reads only what it needs:
   - `plan/stages/` — one file per stage, each declaring the decisions it **consumes**.
   - `plan/decisions/` — one file per decision `D1`…`D31`, plus a one-line-per-decision `INDEX.md`.
-  - `plan/architecture.md`, `plan/conventions.md`, `plan/integrations.md` (`INT-01`…`INT-16`),
+  - `plan/architecture.md`, `plan/conventions.md`, `plan/integrations.md` (the `INT-nn` rows),
     `plan/cost-model.md`, `plan/open-questions.md`, `plan/lessons.md`,
     `plan/institutional-delta.md`, `plan/history.md`.
 - `GLOSSARY.md` — every acronym the plan uses, plus its notation and the IAM condition keys it quotes.
-- `ACCOUNTS_AND_USERS.md` — AWS accounts, the axis each sits on, and the four SSO users.
+- `ACCOUNTS_AND_USERS.md` — AWS accounts, the axis each sits on, and the SSO users.
 - `PRICING.md` — per-unit AWS rates for `sa-east-1` and `us-west-2`, read from the AWS Price List bulk API.
   Unlike the cost figures in `plan/cost-model.md`, which are order-of-magnitude estimates, these are
   measured; the cost model says what is consumed, `PRICING.md` says what a unit of it costs.
@@ -150,8 +150,8 @@ instance — is a promotion path that bypasses the approval gate, and is therefo
 
 The split is not free, and the plan accepts the cost deliberately rather than pretending it away:
 
-- one AWS Config recorder per governed account, and there are now eight of them — every account except
-  Management;
+- one AWS Config recorder per governed account — every account except Management, so this cost grows with
+  the account count;
 - a duplicated network layer per account — interface VPC endpoints are the largest hourly line item in this
   project, and they exist on every side of the boundary;
 - cross-account integrations that each have to be *proven* rather than assumed: Studio pulling a custom image
@@ -229,7 +229,7 @@ an OU and to nothing else. It is the mechanical reason this project has a `Workl
 
 | The references recommend | This project | Verdict |
 |---|---|---|
-| Studio only in the development / data-science accounts | The interactive surface only in the **Interactive OU** — since D26, one SageMaker unified domain (DataZone V2) registered in **Data Governance**, whose project blueprints provision compute into Sandbox and Development and nowhere else (D17, D21, D26) — enforced by an SCP on the `Workloads` OU denying `sagemaker:CreateDomain`, `CreateUserProfile`, `CreatePresignedDomainUrl` and `datazone:*` domain creation | **Adopted**, and made preventive rather than conventional |
+| Studio only in the development / data-science accounts | The interactive surface only in the **Interactive OU** — since D26, one SageMaker unified domain (DataZone V2) registered in **Data Governance**, whose project blueprints provision compute into Sandbox and Development and nowhere else (D17, D21, D26) — enforced by two SCPs (Stage 1b step 7): the `Workloads` OU denies `sagemaker:CreateDomain`, `CreateUserProfile`, `CreatePresignedDomainUrl` **and `datazone:*` in full**, so a deployment target can neither host a domain nor associate itself to one; and the organization root denies `datazone:CreateDomain` everywhere except the `Data` OU, so "one domain, and it lives in Data Governance" is a control rather than a convention | **Adopted**, and made preventive rather than conventional |
 | A staging / pre-production deployment target between development and production | The **Staging** account (D20) | **Adopted.** It was missing until 2026-08-08; the plan had tried to stand in for it with a Glue namespace inside Production, which shared an account and a blast radius with the thing it was meant to de-risk |
 | Data scientists get read-only access in staging | `DataScientistStagingAccess` — read, no write of any kind (D18) | **Adopted verbatim.** A staging environment a person can write to stops being evidence of what the pipeline does |
 | Environments expressed as Organizations OUs | Four OUs named for their policy sets (D23): `Workloads` holds Staging and Production, `Interactive` holds Sandbox and Development, `Data` holds Data Governance, `Security` holds the rest | **Adopted.** One SCP set per policy set, written once and inherited — an OU holding a single account forever would be a folder with one file |
@@ -360,7 +360,7 @@ is the only path by which governed data is ever written.
 
 ## The accounts
 
-Ten accounts, all under one AWS Organization governed by Control Tower.
+All under one AWS Organization governed by Control Tower.
 
 | Account | OU | Purpose |
 |---|---|---|

@@ -4,7 +4,7 @@
 |---|---|
 | **Status** | not started |
 | **Prerequisites** | Stage 1. |
-| **Consumes** | [D3](../decisions/D03-terraform-state.md), [D10](../decisions/D10-identity-center-delegation.md), [D11](../decisions/D11-lab-lifecycle.md), [D30](../decisions/D30-scp-recovery.md) |
+| **Consumes** | [D3](../decisions/D03-terraform-state.md), [D10](../decisions/D10-identity-center-delegation.md), [D11](../decisions/D11-lab-lifecycle.md) |
 | **Proves** | — |
 
 *Read with [`plan/conventions.md`](../conventions.md) (naming, layout, `[P]`/`[D]`/`[E]`, IAM rules).*
@@ -25,20 +25,29 @@
    resource ARNs, which do not belong in the Git history of a repository hosted on GitHub.
 3. Same for `terraform-live/development/bootstrap/`, `terraform-live/data-governance/bootstrap/`,
    `terraform-live/staging/bootstrap/`, `terraform-live/production/bootstrap/` and
-   `terraform-live/identity/bootstrap/`. Six state buckets, one per account that Terraform manages —
+   `terraform-live/identity/bootstrap/`. One state bucket per account that Terraform manages —
    no shared state across environments (D3).
 4. Migrate every subsequent slice to the remote backend.
 5. `terraform-live/identity/`: import the permission sets, groups and assignments created by hand in
    Stage 1, so identity stops being console-managed (D10). Applied with the `awsds-infra-identity`
    profile. `terraform plan` must come back empty after the import — that is the check that the import
    is faithful.
-   **Import the SCPs, RCPs and tag policies here too (D30), which no earlier version of this plan did.**
-   Until D30 they were created by hand in Stage 1b step 7 and then owned by nobody: no stage imported them,
-   nothing regenerated them, and the only record of what they said was the console. That was tolerable
-   while they were four hand-written documents; it stops being tolerable once **every** `Deny` in them has
-   to carry an identical carve-out condition, because a condition that is typed four times is a condition
-   that will exist in three of them. So they move into code and the condition is **generated** from the
-   `awsds-scp-recovery` ARNs exported by each account's `foundation/`.
+   **Import the SCPs, RCPs and tag policies here too, which no earlier version of this plan did.**
+   They are created by hand in Stage 1b step 7 and would otherwise be owned by nobody: no stage imports
+   them, nothing regenerates them, and the only record of what they say is the console. That is the most
+   dangerous artefact in this plan to hold in a browser tab — it is the set that can lock the organization
+   out of itself, and since D30 was reverted there is **no principal inside a governed account that can
+   work around a mistake in it**. Code gives it a diff, a review and a rollback; the console gives it none
+   of the three.
+   (This consequence arrived with D30 and outlived it. D30's own reason was narrower — a carve-out
+   condition repeated across several policies has to be *generated, not typed* — and that reason went away
+   with the decision. The ownership hole it happened to close did not.)
+   **What is deliberately *not* imported here: the region restriction.** It is Control Tower's own Region
+   deny control (1b step 7), not one of the hand-written documents, and the SCP that implements it is
+   generated and owned by the landing zone. Importing that SCP into `terraform-live/identity/` would put
+   Terraform and Control Tower in a fight over the same object, which is the landing-zone drift this plan
+   already refuses to create for permission sets. If it is to be in code at all, the resource is
+   **`aws_controltower_control`** — the control, not the policy it emits.
    Organizations supports a **delegated administrator for policy management**, so this stays consistent
    with principle 1: the slice is applied with the delegated-admin profile and Terraform never holds
    credentials in Management. **Verify that delegation is compatible with the Control Tower landing zone
@@ -61,12 +70,13 @@
 9. **No region literals (`plan/architecture.md` §4.1).** `var.region` in every slice, AZs from `data.aws_availability_zones`,
    AMIs from SSM public parameters. A `grep` check in CI that fails on a hardcoded region keeps this
    honest at no cost.
-   **A second check in the same spirit, and it guards a control rather than a convention (D30): fail the
-   build if any `Deny` statement in `terraform-live/identity/` lacks the `awsds-scp-recovery` carve-out
-   condition, or if any carve-out uses a wildcard account ID.** Both failure modes are silent — a missing
-   carve-out means one policy you cannot repair in place, a wildcard means every policy is escapable by
-   anyone who can create a role — and neither shows up in a `plan`. This is the cheapest place to catch
-   the drift that D30 accepts as its main risk.
+   **A second check in the same spirit, and it guards a control rather than a convention: fail the build
+   if any policy document in `terraform-live/identity/` carries an ARN condition with a wildcard account
+   ID** (`arn:aws:iam::*:role/...`). That pattern means "any principal of this name, in any account", so a
+   condition meant to name one role silently names a role anybody can create. It is invisible in a `plan`
+   and cheap in CI. This check used to also require a `awsds-scp-recovery` carve-out in every `Deny`; that
+   half went away with D30, and the wildcard half did not, because it applies to the per-function
+   carve-outs the design still has (D26, D27).
 10. Update `README.md` with the repository layout and the AWS resource structure (required by `CLAUDE.md`).
 
 **Deliverables:** `terraform apply` works end-to-end against the Sandbox account using an SSO profile;
