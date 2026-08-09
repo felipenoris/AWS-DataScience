@@ -118,16 +118,6 @@ write anything into it. Claude can read the files in this folder to gather infor
 
 - Promotion happens from: Development -> Staging -> Production. Given that Sandbox is the experimentation environment.
 
-- Infrastructure user: user with Administrator permissions.
-
-- Data Scientist user: regular user, with no permissions to perform infrastructure changes, except for artifacts managed by AWS SageMaker. This user can write data, develop applications, and trigger CI/CD deploy pipelines that promote artifacts along the chain Development -> Staging -> Production. Sandbox work enters that chain by graduating into a Development repository through git, never by a pipeline.
-
-- Deployment Manager user: approves deployment of artifacts along Development -> Staging -> Production.
-
-- Governance Manager user: approves data subscriptions and other access to data. Domain owner of the SageMaker Unified Studio domain.
-
-- Dev Env Steward user: approves the `dev-env` container image — the runtime every notebook runs on. The image's build code (a `Dockerfile`) lives in a GitLab repository the Data Scientist can write to; a CI/CD pipeline builds, tests and scans it, and only this user's approval makes the resulting image selectable in SageMaker.
-
 ## terraform
 
 - All infrastructure code will be in Terraform.

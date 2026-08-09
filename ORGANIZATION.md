@@ -193,7 +193,7 @@ contents of the directory — see "Identities this project did not create" at th
 
 ## Data Scientist user
 
-- roles: regular user with read-only access to production environment data, and read-write access to sandbox and development environment. Can't perform infrastructure changes, unless it is managed by some AWS Service (SageMaker).
+- roles: regular user with read-only access to production environment data, and read-write access to sandbox and development environment. Can't perform infrastructure changes, unless it is managed by some AWS Service (SageMaker). This user can commit to git repos to develop and trigger CI/CD deploy pipelines that promote artifacts along the chain Development -> Staging -> Production. Sandbox work enters that chain by graduating into a Development repository through git, never by a pipeline. This user can also commit to git repos that contains build scripts for `dev-env`.
 
 - **The primary working surface is the SageMaker Unified Studio portal** (D26), reached through the VPN like
   every other endpoint. Signing in to the portal is not signing in to the Data Governance account that
