@@ -149,9 +149,14 @@ gesture. An empty OU would not do: with no account inside it, there is no princi
 there proves only that the JSON parsed.
 
 **What it holds: nothing.** No VPC, no data, no Terraform slice, no state bucket. It is not one of the six
-Terraform-managed accounts. The one thing it does hold is the point of it — **an administrator principal**
-(`AdministratorAccess` for the infrastructure user), because a deny exercised by a principal that lacked the
-permission anyway proves nothing about a ceiling.
+Terraform-managed accounts. The one thing it does hold is the point of it — **an administrator principal**,
+because a deny exercised by a principal that lacked the permission anyway proves nothing about a ceiling.
+That principal is the infrastructure user, through the **direct assignment of Control Tower's
+`AWSAdministratorAccess`** that Account Factory made at vend time (D32) — *that* set, not the
+`AdministratorAccess` this project creates, which the `infrastructure` group carries on the six
+Terraform-managed accounts and never here. Stage 1b step 3.1 confirms it rather than creating anything, and
+step 3.8 marks it as the one direct assignment that is permanent: there is no group and no `awsds-infra-*`
+profile behind it, so removing it removes the only way in.
 
 **Who signs in:** the infrastructure user, to run the test battery, through the deliberately
 differently-named `awsds-policy-canary` profile. Nobody else — an account whose whole purpose is to have

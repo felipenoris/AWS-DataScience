@@ -219,7 +219,9 @@ Reference things by **stable ID** — `D26`, `INT-11`, `Stage 1b step 7` — nev
   `Sandboxes` is nested under `Interactive`, holding the per-unit accounts with no policy set of its own.
   **Depth is 2** — Stage 2's OU `for_each` must recurse, or every Sandbox account is invisible to it.
 - **The repository is documentation only**; `terraform/` is empty until Stage 2 replaces it with
-  `terraform-live/` + `terraform-modules/`.
+  `terraform-live/` + `terraform-modules/`. Stage 2 needs one Management-account action no earlier stage
+  performs — the Organizations **policy** delegation to Identity (**INT-20**), without which the SCPs stay
+  in the console.
 - **All thirty-six decisions are closed** ([`plan/decisions/INDEX.md`](plan/decisions/INDEX.md)). The four
   governing what happens next: **D32** (`SSOUserEmail` is always the infrastructure user, and it grants
   administrator), **D33**/**D34** (`AWS Control Tower Admin` vends, from the access portal, never root,

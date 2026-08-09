@@ -5,30 +5,62 @@
 | **Status** | **next** — not started |
 | **Prerequisites** | Stage 1a complete, bar the deferred `Staging` vend. **Steps 3 and 5 must skip their `Staging` items** (`DataScientistStagingAccess`, `DeploymentManagerAccess` on Staging, the `awsds-infra-staging` profile) and pick them up when the account is vended |
 | **Consumes** | [D10](../decisions/D10-identity-center-delegation.md), [D11](../decisions/D11-lab-lifecycle.md), [D12](../decisions/D12-budget-ceiling.md), [D14](../decisions/D14-supply-chain-account.md), [D15](../decisions/D15-tls-internal.md), [D16](../decisions/D16-break-glass.md), [D17](../decisions/D17-interactive-vs-runtime.md), [D18](../decisions/D18-data-scientist-access.md), [D19](../decisions/D19-derived-zone.md), [D20](../decisions/D20-staging-account.md), [D21](../decisions/D21-development-account.md), [D22](../decisions/D22-data-governance-account.md), [D23](../decisions/D23-ou-structure.md), [D25](../decisions/D25-drop-box-consumer.md), [D26](../decisions/D26-unified-studio.md), [D27](../decisions/D27-catalog-maintenance.md), [D29](../decisions/D29-policy-canary.md), [D31](../decisions/D31-approver-read.md), [D32](../decisions/D32-account-factory-sso-user.md), [D33](../decisions/D33-control-tower-admin-user.md), [D34](../decisions/D34-account-vending.md), [D35](../decisions/D35-sandbox-cardinality.md) |
-| **Proves** | [INT-11](../integrations.md) — and **constrains** [INT-12](../integrations.md), whose fallback step 7 forbids until the policy is amended |
+| **Proves** | **The two organization-level halves of [INT-11](../integrations.md)** — org-wide RAM sharing and Lake Formation cross-account v3. The third (`AWSLakeFormationCrossAccountManager` on the grantor) is Stage 5 step 7, because the role does not exist yet (11.4). Also **constrains** [INT-12](../integrations.md), whose fallback step 7 forbids until the policy is amended |
 
 *Read with [`plan/conventions.md`](../conventions.md) (naming, layout, `[P]`/`[D]`/`[E]`, IAM rules).*
+
+**Not a prerequisite, but do not lose it:** 1a step 2's **budget alert thresholds (50/80/100%) and Cost
+Anomaly Detection** are unrecorded rather than done (`CLAUDE.md`, Current position). Both are free, both are
+Management-console work, and 1b already puts `AWS Control Tower Admin` in that console at steps 1, 8 and 11 —
+so close them in passing and record them in `log/stage-01a-landing-zone.md`, not here.
 
 ---
 
 Everything in 1b is fast, reversible and iterative — which is exactly why it is separated from the half
-that is not. Step 7 is the one exception, and it carries its own recovery procedure.
+that is not. **Two exceptions, and knowing which is which is the whole of the risk budget:** step 7 is
+neither fast nor freely reversible from inside a governed account and carries its own recovery procedure;
+step 9's Object Lock retention, once set in compliance mode, is permanent.
+
+## The stage at a glance
+
+Eleven steps, and the order is a dependency chain rather than a listing. Read this table to plan a session;
+read the step for how to do it.
+
+| # | What | Identity | Why it is here and not later |
+|---|---|---|---|
+| 1 | Delegate Identity Center to the Identity account | CT Admin @ Management | Everything in 2-4 is done *from* Identity |
+| 2 | Users and groups, beside Control Tower's | Infra user @ Identity | — |
+| 3 | Permission sets and assignments | Infra user @ Identity | — |
+| 4 | Confirm no persona reaches Management | Infra user @ Identity | Closes the assignment path that step 8 then watches |
+| 5 | Local `aws configure sso` profiles | Infra user, laptop | **Every step below needs a member-account profile** |
+| 6 | AZ name→ID mapping per account | Infra user, laptop | Stage 3 anchors subnets on the answer |
+| 7 | Preventive policies (SCP/RCP/tag/declarative + managed controls) | mixed — see 7.4 | Prevention before detection (principle 9) |
+| 8 | Access Analyzer + the group-membership alarm | CT Admin @ Management / Audit | The alarm is the only control over step 1's blast radius |
+| 9 | Object Lock, compliance mode, on the log bucket | CT Admin @ Log Archive | Before there is anything worth hiding in the trail |
+| 10 | Measure AWS Config, then decide | CT Admin @ Management + Audit | The landing zone's largest recurring line |
+| 11 | Org-wide RAM sharing + LF cross-account v3 | CT Admin @ Management / Infra user @ Data | Stage 5 fails **silently** without it |
+
+**Sessions.** Steps 1-6 are one sitting and are the bootstrap: nothing below them is reachable without a
+profile. Step 7 wants its own sitting with the Management console already open. Steps 8-11 are independent
+of each other. **Keep step 1 and step 8 in the same session** — step 1 widens the Identity account's blast
+radius and step 8 is the only thing watching it.
 
 ## Who executes what
 
-**Every manual step names the identity that performs it, not only what it does** (Lesson 17). Three
-identities do all eleven steps, and confusing them is how a step stalls on an `AccessDenied` that looks
-like a policy bug.
+**Every manual step names the identity that performs it, not only what it does** (Lesson 17). **Two
+identities do all eleven steps, through four sign-in paths** — and it is the *path* that is easy to get
+wrong, which is how a step stalls on an `AccessDenied` that looks like a policy bug.
 
 | Steps | Identity | Sign-in path |
 |---|---|---|
-| 1, 7 (managed controls, org-root attachments), 8 (delegations), 10, 11 (RAM) | **`AWS Control Tower Admin`** (D33/D34) | access portal → `AWSAdministratorAccess` on **Management** |
-| 7 (account-level BPA on Log Archive and Audit), 9 | **`AWS Control Tower Admin`** | access portal → `AWSAdministratorAccess` on **Log Archive** / **Audit** — the infrastructure user has *no* assignment in either (`ORGANIZATION.md`) |
+| 1, 7 (policy-type enablement, org-root attachments, managed controls), 8.1 (delegations), 10 (Cost Explorer), 11.1 (RAM) | **`AWS Control Tower Admin`** (D33/D34) | access portal → `AWSAdministratorAccess` on **Management** |
+| 7.4 step 1 (account-level BPA on Log Archive and Audit), 8.2 (creating the analyzer *in Audit*), 9 (Object Lock, *in Log Archive*), 10 (the Config aggregator lives in Audit) | **`AWS Control Tower Admin`** | access portal → `AWSAdministratorAccess` on **Log Archive** / **Audit** — the infrastructure user has *no* assignment in either (`ORGANIZATION.md`) |
 | 2, 3, 4 | **Infrastructure user** | access portal → `AWSAdministratorAccess` on **Identity** (the direct Account Factory assignment from 1a step 4 — this is what bootstraps the whole stage) |
-| 5, 6, 7 (the `Policy Canary` battery), 11 (Lake Formation) | **Infrastructure user**, from the laptop | the `awsds-infra-*` and `awsds-policy-canary` profiles created in step 5 |
+| 5, 6, 7.3 (the `Policy Canary` battery), 7.4 step 1 (BPA in the other member accounts), 11.2 (Lake Formation) | **Infrastructure user**, from the laptop | the `awsds-infra-*` and `awsds-policy-canary` profiles created in step 5 |
 
 **Nothing in this stage is performed by root**, and nothing is performed by a project persona other than
-the infrastructure user.
+the infrastructure user. The *directory* holds six identities after step 2 (five personas plus
+`AWS Control Tower Admin`); only these two ever execute anything here.
 
 ## What this stage costs
 
@@ -68,6 +100,12 @@ recurring line in the whole landing zone:
      Management administrator by editing a group membership. That is the same blast radius
      `ORGANIZATION.md` already ascribes to this account; it is recorded here because D33's groups make it
      concrete rather than theoretical, and because **step 8's alarm is the only control over it**.
+     **And it widens once more, one stage from here:** this delegation reaches Identity Center only. The
+     SCPs, RCPs and tag policies written in step 7 are AWS Organizations objects and stay console-managed
+     until **Stage 2 step 5.1 (INT-20)** adds a *second*, different delegation — a resource-based policy on
+     the organization — after which the Identity account can also edit organization policy, Control Tower's
+     guardrails included. Nothing to do about it here; the point is that step 8's alarm is the control above
+     both delegations, so it is worth building well rather than quickly.
    - **Verify while executing (i):** that the delegation coexists with the landing zone without raising
      Control Tower drift. Control Tower's handling of Identity Center has changed more than once. Record
      the answer in `log/stage-01b-identity-and-controls.md`.
@@ -146,12 +184,16 @@ recurring line in the whole landing zone:
    \* **Skip every `Staging` cell until the account is vended** (the prerequisites row). Nothing before
    Stage 8 needs it.
 
-   Plus one assignment with no group behind it: **`AdministratorAccess` on `Policy Canary` (D29)**, which
-   since D32 is a **confirmation rather than a task** — vending it in 1a step 4 with the infrastructure
-   user's `SSOUserEmail` already gave that account an administrator, and a direct assignment is the right
-   shape there: the account is deliberately outside the Terraform-managed set and has no `awsds-infra-*`
-   profile either. It must be an administrator or step 7 measures the wrong thing — an SCP is a *ceiling*,
-   so a deny that a restricted principal could not have exercised anyway proves nothing about it.
+   Plus one account reached with no group behind it: **`Policy Canary` (D29)**, which since D32 is a
+   **confirmation rather than a task**. Vending it in 1a step 4 with the infrastructure user's
+   `SSOUserEmail` already left a **direct assignment of Control Tower's `AWSAdministratorAccess`** there —
+   *that* set, not this project's, and saying so is 3.2's rule being applied rather than restated. So the
+   task here is to **confirm it, not to create anything**: `aws sso-admin list-account-assignments` for the
+   Policy Canary account must return the infrastructure user with an administrator set. A direct assignment
+   is also the right *shape* there — the account is deliberately outside the Terraform-managed set, has no
+   `awsds-infra-*` profile, and is reached only through `awsds-policy-canary`. It must be an administrator
+   or step 7 measures the wrong thing: an SCP is a *ceiling*, so a deny that a restricted principal could
+   not have exercised anyway proves nothing about it.
 
    **3.2 — Settle the name collision before creating anything, because its failure mode is silent.**
    Control Tower already created a permission set called **`AWSAdministratorAccess`**; this step creates one
@@ -264,7 +306,12 @@ recurring line in the whole landing zone:
    - **Remove none of them until the group path is proven end to end** — `infrastructure` →
      `AdministratorAccess` → an actual `aws sts get-caller-identity` under each profile in step 5. Removing
      them first is the cheapest way to lock the only administrator out of an account whose sole remaining
-     recovery path is the Management root (D16; D30 reverted).
+     recovery path is the Management root (D16; D30 reverted). **So the removal happens after step 5, not
+     inside step 3** — it is listed here because this is where the assignments are described.
+   - **`Policy Canary` is the exception and it is permanent.** Its direct assignment is not a leftover to be
+     cleaned up: there is no group and no `awsds-infra-*` profile behind it (3.1), so removing it removes the
+     only way into the account, and with it D29's whole battery. Whatever the answer to (vi) below, this one
+     stays.
    - **The Identity account's direct assignment is the bootstrap for this entire stage** — it is what lets
      steps 2, 3 and 4 happen at all. It is the last one to touch, if any of them is touched.
    - **Verify while executing (vi):** whether removing one sticks, or Control Tower re-creates it on a
@@ -342,6 +389,13 @@ recurring line in the whole landing zone:
      policies live in `terraform-live/identity/` from Stage 2 rather than in the console (Lesson 14).
    - **Any ARN condition uses an enumerated list, never a wildcard account.** `arn:aws:iam::*:role/x` means
      "anyone who can create a role named `x`, anywhere".
+   - **There is a size budget, and it is small enough to hit.** AWS Organizations caps how many policies
+     attach to one node and how large each is — **10 SCPs per node and 10 240 characters** since the May 2026
+     increase, but **RCPs are still 5 per node and 5 120 characters**, and Control Tower's own guardrails
+     consume part of the SCP allowance at every OU it registers. The organization root here is asked to carry
+     the 7.5 set *and* the tag-forcing SCP of 7.8, and 7.8's RCP covers five services in one document.
+     **Count before writing, and prefer one well-`Sid`-ed policy per node to several thin ones** — a policy
+     that will not attach is discovered at the end of the work rather than at the start.
    - **A third rule arrives with D34, and it is the one that survives an account being added later.** OUs
      and accounts are created from the console, outside every Terraform state — which cannot cause drift,
      because nothing here declares them, but *can* leave a new OU with no policy attached and a new account
@@ -354,13 +408,25 @@ recurring line in the whole landing zone:
 
    1. **Enable the policy types that are not already on.** Control Tower enables `SERVICE_CONTROL_POLICY`;
       **`RESOURCE_CONTROL_POLICY`, `TAG_POLICY` and `DECLARATIVE_POLICY_EC2` are not enabled by default**
-      and cannot be attached until they are (`aws organizations enable-policy-type --root-id <r-xxxx>
-      --policy-type ...`, or the Organizations console). RCPs additionally require an organization with
-      **all features** enabled. Nothing below works without this and the error does not say so clearly.
+      and cannot be attached until they are. RCPs additionally require an organization with **all features**
+      enabled — Control Tower requires that too, so it is expected to be on; confirm it rather than assume
+      it. Nothing below works without this and the error does not say so clearly.
+
+      ```bash
+      aws organizations describe-organization --query 'Organization.FeatureSet'   # must be ALL
+      aws organizations list-roots --query 'Roots[0].[Id,PolicyTypes]'            # note the root id r-xxxx
+      aws organizations enable-policy-type --root-id <r-xxxx> --policy-type RESOURCE_CONTROL_POLICY
+      aws organizations enable-policy-type --root-id <r-xxxx> --policy-type TAG_POLICY
+      aws organizations enable-policy-type --root-id <r-xxxx> --policy-type DECLARATIVE_POLICY_EC2
+      ```
+
+      Re-run `list-roots` afterwards: each type must read `ENABLED`, not `PENDING_ENABLE`.
    2. **Confirm the `Policy Canary` account is reachable** under `awsds-policy-canary` and holds an
       administrator (step 3.1).
    3. **Write the detach command down, and reach the Management console *now*, not in theory.** This is the
-      whole recovery path, not a backup to one.
+      whole recovery path, not a backup to one. The command is
+      `aws organizations detach-policy --policy-id <p-xxxx> --target-id <root-or-ou-id>`, run from
+      Management — have the policy id in the same note, because it is not guessable at 23:00.
    4. **Enable account-level S3 Block Public Access before the SCP that denies changing it** — see 7.4,
       where the ordering is stated as an instruction rather than implied.
 
@@ -375,15 +441,22 @@ recurring line in the whole landing zone:
    - **From an administrator principal.** An SCP is a ceiling; a deny exercised by a principal that lacked
      the permission anyway proves nothing. That is what step 3.1's assignment on this account is for.
    - **Test in both directions, because the two failure modes are opposites.**
-     - *Too tight* — the calls that must still **succeed**: `sts:GetCallerIdentity`, `s3:ListBuckets`,
-       `ec2:DescribeVpcs` in `us-west-2`, and — for the region restriction — `iam:ListRoles`,
+     - *Too tight* — the calls that must still **succeed**: `sts:GetCallerIdentity`,
+       `s3:ListAllMyBuckets` (`aws s3 ls` — **not** `s3:ListBucket`, which is a different action about the
+       objects *inside* one bucket, and naming the wrong one is how a battery produces a false pass),
+       `ec2:DescribeVpcs` in `us-west-2`, and — once the region restriction is on — `iam:ListRoles`,
        `budgets:DescribeBudgets` and `ce:GetCostAndUsage`, all of which answer in `us-east-1` and must keep
        working.
      - *Too loose* — the calls that must now **fail**: a `PutObject` to a bucket outside the organization,
-       an `iam:CreateUser`, and **an `ec2:RunInstances` in `us-east-1` specifically**. That last one is the
-       discriminating test and it has to name `us-east-1` rather than "a denied region": under the correct
-       construction `us-east-1` is *not* an allowed region and the call must fail, while under the loose
-       construction this plan used to describe it would succeed and look like a pass.
+       and an `iam:CreateUser`.
+     - **The region test belongs to 7.7, not to this battery, and the sequencing matters.** The
+       discriminating check is `ec2:RunInstances --dry-run` in **`us-east-1` specifically** — under the
+       correct construction `us-east-1` is *not* an allowed region and the call must fail, while under the
+       loose construction this plan used to describe (adding `us-east-1` to the allowed list) it would
+       succeed and look like a pass. But no policy written in 7.5 or 7.6 implements the region restriction:
+       it comes from a **Control Tower managed control**, enabled at 7.4 step 4. So run this pair —
+       `us-east-1` must return `UnauthorizedOperation`, `us-west-2` must return `DryRunOperation` — from
+       `awsds-policy-canary` **after** 7.7, as the check that the managed control took effect.
    - **Use `--dry-run` for the "must fail" half wherever the API supports it, because a passing test that is
      not dry-run is a resource you now own.** `ec2:RunInstances --dry-run` returns `DryRunOperation` when
      the call *would* have been allowed and `UnauthorizedOperation` when it is denied — two distinguishable
@@ -401,6 +474,14 @@ recurring line in the whole landing zone:
    - **Then move the attachment to its real target** — the OU named in 7.4/7.5, or the organization root for
      the org-wide set. The root-level policies can be exercised here exactly as they will behave in
      production, because `Policy Test` sits under the root and inherits from it like every other OU.
+     **And that is also the canary's one permanent limitation, worth knowing before you rely on it a second
+     time:** once the root set is attached, `Policy Canary` inherits it forever, so every later candidate is
+     tested *on top of* the existing ceiling rather than in isolation. That is the right thing for
+     regression — it is the real evaluation order — and the wrong thing for answering "does *this policy*
+     deny X", because denies only ever compose: a call that fails may be failing on the root set. The half
+     that stays clean is the *must still succeed* half, which composition can only make stricter — so a
+     success there is still evidence about the candidate. For the deny half, read the CloudTrail
+     `errorMessage`, which names the policy id.
    - **Record each outcome.** A policy that passed both halves is a control; one that was only attached is a
      hope.
    - **Two verifications ride along** (`plan/open-questions.md` item 10): whether the **IAM Policy
@@ -414,10 +495,18 @@ recurring line in the whole landing zone:
    **7.4 — The order of attachment. This is an instruction, not a listing order.** Two pairs interlock, and
    following the old "attach to the OUs, in this order" literally breaks one of them.
 
-   1. **Account-level S3 Block Public Access in every member account** — `AWS Control Tower Admin` for Log
-      Archive and Audit, the `awsds-infra-*` profiles elsewhere. The module-level block from Stage 2 only
-      covers buckets the module creates; the account-level setting is the blanket that also covers the
-      bucket someone creates outside it.
+   1. **Account-level S3 Block Public Access in every account, enumerated rather than implied.** The
+      module-level block from Stage 2 only covers buckets the module creates; the account-level setting is
+      the blanket that also covers the bucket someone creates outside it — so "every member account" has to
+      be a list, or the one account nobody had a profile for is the one that keeps the hole.
+      - `AWS Control Tower Admin`, from the console: **Management**, **Log Archive**, **Audit**.
+      - `awsds-infra-sandbox`, `-dev`, `-prod`, `-data`, `-identity` (`aws s3control put-public-access-block`).
+      - **`awsds-policy-canary`** — the easiest one to forget, because the account is supposed to stay empty
+        and has no `awsds-infra-*` profile. It is still an account with an S3 API.
+      - **`Staging` gets it at the vend**, with everything else deferred there.
+      - **Management is on the list even though the deny below never reaches it** (SCPs do not apply to the
+        management account, D16). The ordering interlock in step 2 is therefore about the *members*; doing
+        Management first is simply doing it in the same sitting.
    2. **Then** the organization-root SCP set (7.5), which includes the deny on
       `s3:PutAccountPublicAccessBlock`. **In the other order the deny blocks the very call that enables the
       setting it protects**, in every account at once, and the repair is a detach from Management.
@@ -441,6 +530,13 @@ recurring line in the whole landing zone:
      axis of `plan/architecture.md` §4.2, and the most direct exfiltration route a notebook has. **Writes
      only, deliberately:** a read-side deny of the same shape breaks `docker pull`, package installs and
      every other legitimate read of an AWS-owned bucket.
+     **Write the condition the way 7.8 writes the RCP's, because it is the same trap and this plan only
+     spelled it out on one of the two sides:**
+     `"StringNotEqualsIfExists": {"aws:ResourceOrgID": "<o-xxxx>"}` beside
+     `"BoolIfExists": {"aws:PrincipalIsAWSService": "false"}`. A plain `StringNotEquals` evaluates **true
+     when the key is absent**, so every call that does not populate `aws:ResourceOrgID` is denied — and the
+     `BoolIfExists` pair is what stops the deny reaching calls an AWS service makes on your behalf. Both
+     halves are invisible in the JSON review and obvious in the canary, which is what 7.3 is for.
    - **Deny `iam:CreateUser` and `iam:CreateAccessKey`.** Principle 2 ("no IAM Users") is otherwise a
      convention with no enforcement. Break-glass (D16) is unaffected: the Management account is exempt from
      SCPs.
@@ -450,10 +546,22 @@ recurring line in the whole landing zone:
      than a control, and a second domain anywhere would quietly reintroduce the thing the account split
      exists to prevent — a second interactive entry point with its own blueprints and its own project roles.
      Three precisions:
-     - **The carve-out is the OU, not a role:** `aws:PrincipalOrgPaths` (or an Organizations path condition)
-       admitting the `Data` OU and nothing else. SCPs are ceilings and an explicit `Deny` wins wherever it
-       appears, so the exception is a **condition on the root deny**, never an `Allow` in the `Data` OU's own
-       set.
+     - **The carve-out is the OU, not a role:** `aws:PrincipalOrgPaths` admitting the `Data` OU and nothing
+       else. SCPs are ceilings and an explicit `Deny` wins wherever it appears, so the exception is a
+       **condition on the root deny**, never an `Allow` in the `Data` OU's own set.
+       **Two mechanics decide whether it works at all, and both fail in the direction of a deny that never
+       lifts:**
+       - `aws:PrincipalOrgPaths` is a **multi-valued** key, so the deny's condition is
+         `"ForAllValues:StringNotLike"`, never a bare `"StringNotLike"` — a set operator is required and a
+         missing one is a policy that does not evaluate the way it reads.
+       - The value is the **full path with a trailing slash**: `<o-xxxx>/r-xxxx/<ou-id-of-Data>/`. `Data`
+         sits directly under the root, so that is the whole path; append `*` instead of the final `/` only
+         if the carve-out is ever meant to reach nested OUs.
+
+       Get either wrong and Data Governance cannot create the domain the whole of Stage 6 depends on, with
+       an `AccessDenied` that names the root policy and not the condition. Exercise **both** directions in
+       7.3 — from an administrator in `Policy Canary` (must fail) and, once the OU ids are known, confirm
+       the path string against `aws organizations list-parents` rather than against a screenshot.
      - **It must be `CreateDomain` alone and not `datazone:*` at the root.** Sandbox and Development need
        `datazone:PutEnvironmentBlueprintConfiguration` for the blueprints to provision into them at all, so
        a root-wide namespace deny would break Stage 6 rather than protect it. The `Workloads` OU tightens to
@@ -507,6 +615,16 @@ recurring line in the whole landing zone:
      `datazone:*` as a governance control plane (D26), and `glue:CreateCrawler`/`StartCrawler` plus the
      table-optimizer and column-statistics actions **only when the principal is the catalog-maintenance
      role** (D27).
+     **The `sagemaker:Create*` line is the one to re-read before attaching, because this list predates D26.**
+     It was written when the only thing that could run in Data Governance was a job somebody started by
+     hand; since D26 the account also holds the **unified domain**, whose creation and whose Tooling
+     blueprint provision resources into this very account. If any part of that surface evaluates under
+     `sagemaker:*` rather than `datazone:*` — which is exactly what verification (viii) asks — then a
+     `datazone:*`-only carve-out leaves the `Data` OU denying the creation of the domain the whole of
+     Stage 6 depends on, five stages before anyone tries it. **So answer (viii) against the `Data` OU as
+     well as against `Workloads`**, and if the answer is mixed, widen this carve-out to the specific
+     `sagemaker:*` actions the domain needs rather than dropping the deny. The distinction the deny is
+     protecting is *user compute*, not *the control plane that happens to share a prefix with it*.
 
    - **`Interactive` OU** (D21) — **read this before writing anything here, because the phrase the plan used
      to carry did not describe a policy.** "Human infrastructure changes denied" appeared across six files as
@@ -565,8 +683,9 @@ recurring line in the whole landing zone:
 
    **7.7 — The Control Tower managed controls: use theirs, do not hand-roll these two.**
 
-   - **Region restriction** (revised 2026-08-08). Enable Control Tower's **Region deny** control with
-     **`us-west-2` as the only governed region**. Three reasons it is not in the hand-written set:
+   - **Region restriction** (revised 2026-08-08; **corrected 2026-08-09 — there are two of these controls,
+     and the plan knew only the one that cannot be canary-tested**). Goal unchanged: **`us-west-2` as the
+     only allowed region**. Three reasons it is not in the hand-written set:
      - **Global services resolve to `us-east-1`.** `iam:CreateRole` goes to `iam.amazonaws.com`, which
        answers in `us-east-1`, so `aws:RequestedRegion` is `us-east-1` and a naive deny breaks IAM outright.
        The correct exemption is **`NotAction` on the global service prefixes**, never adding `us-east-1` to
@@ -574,26 +693,47 @@ recurring line in the whole landing zone:
        looser: it would permit `ec2:RunInstances` in a region with no Config recorder, no GuardDuty and no
        endpoints, which is precisely the blind spot the control exists to remove.
      - **That exemption list has to stay complete as AWS ships services, and AWS maintains theirs.** This is
-       Lesson 14 applied to a list rather than to a condition. The plan's own list was already missing the
-       ones this project depends on: Billing/Cost Explorer/Budgets (1a step 2 creates a budget, Stage 12
-       step 4 reviews cost), `route53domains:*` (a *separate* prefix from `route53:*`, and the one that
-       registers the D15 domain — **exercised only at Stage 13** since the 2026-08-09 revision, but list it
-       now: adding it later means editing the SCP under time pressure, and it grants nothing that is not
-       also gated by the permission set), `acm:*` (a CloudFront certificate must live in `us-east-1`),
-       `sts:*`, `waf:*`/`wafv2:*` for Stage 13, and **`s3:PutAccountPublicAccessBlock` plus
-       `s3:ListAllMyBuckets`**, which are account-level calls evaluated outside the region — the pair that
-       interlocks with 7.4.
-     - **It also needs principal exemptions, not just service ones:** the Control Tower execution role and
-       the AWS service-linked roles, or the landing zone's own machinery breaks. The managed control carries
-       these; a hand-written one has to remember them.
+       Lesson 14 applied to a list rather than to a condition — and the useful finding is that **AWS's
+       default `NotAction` already contains every prefix this project was worried about**: `iam:*`,
+       `organizations:*`, `sts:*`, `kms:*`, `sso:*`, `config:*`, `access-analyzer:*`, `route53:*`,
+       **`route53domains:*`** (a separate prefix, and the one that registers the D15 domain at Stage 13),
+       `acm:*`, `cloudfront:*`, `shield:*`, `waf:*`/`wafv2:*`, the whole billing family
+       (`billing:*`, `budgets:*`, `ce:*`, `cur:*`, `pricing:*`, `tax:*`), and **`s3:PutAccountPublicAccessBlock`
+       plus `s3:ListAllMyBuckets`** — the pair that interlocks with 7.4. **So do not maintain a list: read
+       the current one off the control's `Artifacts` tab in the Control Tower console and diff it against
+       what this project calls** (**verify while executing (vii)**), then add only what is genuinely
+       missing, through `ExemptedActions`.
+     - **It also needs principal exemptions, not just service ones.** AWS's default already exempts
+       `AWSControlTowerExecution`, `aws-controltower-ConfigRecorderRole`,
+       `aws-controltower-ForwardSnsNotificationRole` and `AWSControlTower_VPCFlowLogsRole`, or the landing
+       zone's own machinery breaks. A hand-written control has to remember them; this is the third reason
+       not to write one.
 
-     **The cost of choosing the managed control, stated rather than discovered:** Region deny is a
-     **landing-zone-level setting**, not an elective control attached per OU — so it very likely **cannot be
-     exercised against the `Policy Test` OU first**, and applies everywhere the moment it is turned on.
-     **Verify this before enabling it**, and if it is indeed landing-zone-wide, note that the D29 battery
-     does not apply to this one control: the compensating facts are that it is an AWS-tested control and
-     that it is reversible from the Control Tower console. Keep that console open, as with everything else
-     in this step.
+     **Which of the two controls to enable, and this is the part that changed.** AWS ships a
+     landing-zone-wide Region deny **and** an OU-scoped one, and only the second can be exercised the way
+     D29 requires:
+
+     | | `GRREGIONDENY` | `CT.MULTISERVICE.PV.1` |
+     |---|---|---|
+     | Scope | The **whole landing zone**; applies to every registered OU at once | **Per OU**, chosen at enable time |
+     | How | Landing zone settings → **Modify settings** — i.e. a landing-zone update, not a checkbox | Controls library → **Enable control** → pick the OU, or `aws controltower enable-control` |
+     | Parameters | Region list only | `AllowedRegions` (mandatory), `ExemptedActions`, `ExemptedPrincipalARNs` |
+     | Canary-testable (D29) | **No** | **Yes — attach it to `Policy Test` first** |
+
+     **Do it in this order.** Enable `CT.MULTISERVICE.PV.1` on **`Policy Test`** with
+     `AllowedRegions=["us-west-2"]`, run the region pair from 7.3 under `awsds-policy-canary` (`us-east-1`
+     → `UnauthorizedOperation`, `us-west-2` → `DryRunOperation`), and confirm the *must still succeed* list —
+     `iam:ListRoles`, `budgets:DescribeBudgets`, `ce:GetCostAndUsage`. Only then enable it on the real OUs
+     (`Interactive`, `Workloads`, `Data`, `Identity`) **or** turn on the landing-zone-wide one, which is the
+     simpler operation once the parameters are known to be right. **Enabling both is possible and the
+     interaction is hard to predict** — AWS says so in the control's own documentation — so pick one and
+     record which, in `log/stage-01b-identity-and-controls.md`.
+
+     **Two facts to have before you start.** The home region cannot be denied, and *nothing must already
+     exist in the regions being denied* — trivially true here, and it is the reason to do this now rather
+     than at Stage 12. Both controls are reversible from the Control Tower console, which is the
+     compensating fact if the landing-zone-wide one is chosen; the landing-zone route also costs a
+     landing-zone update, so **budget it as an hour, not a click**.
 
    - **The two root-user controls, and the one parameter that decides whether they break 1a step 6.**
      `AWS-GR_RESTRICT_ROOT_USER_ACCESS_KEYS` and `AWS-GR_RESTRICT_ROOT_USER` are *strongly recommended*
@@ -602,8 +742,13 @@ recurring line in the whole landing zone:
      - The other denies `*` wherever `aws:PrincipalArn` matches `arn:*:iam::*:root`, and **that reaches the
        privileged root sessions 1a step 6 depends on**: in a member account an `sts:AssumeRoot` session *is*
        that principal, so the control would deny the very action that restores a root credential or unlocks
-       a self-denied S3 bucket policy. Enable it **with the `ExemptAssumeRoot` parameter**, which adds
-       `"Null": {"aws:AssumedRoot": "true"}` to the condition and carves the centralized path back out.
+       a self-denied S3 bucket policy. Enable it **with the `ExemptAssumeRoot` parameter**, which carves the
+       centralized path back out by exempting requests carrying `aws:AssumedRoot`.
+       **Three mechanics, confirmed against the control's documentation, because each is a way to get it
+       wrong:** the parameter exists **only** on `AWS-GR_RESTRICT_ROOT_USER`; it is set **per OU**, at enable
+       time, so every OU this control is enabled on needs it — miss one and 1a step 6's recovery path is
+       closed in exactly that OU; and **it does not accept `false`** — presence means exempt, absence means
+       not exempt, so "set it to false" is not a thing you can do or read back.
      - Both controls also take `ExemptedPrincipalArns`; neither exemption should be a wildcard account.
      - **The asymmetry that makes this safe to enable at all:** the controls attach to OUs, and the
        Management account is exempt from SCPs, so the break-glass root is untouched either way (D16).
@@ -628,6 +773,22 @@ recurring line in the whole landing zone:
      `aws:RequestTag`/`aws:TagKeys` conditions on the create actions that matter** (EC2, S3, SageMaker). One
      or the other, or the tags are a convention — and conventions do not survive contact with a
      `terraform apply` at 23:00.
+     **That forcing SCP is a decision, not a formality, and it is the one policy in 7.5-7.8 that binds the
+     builder as hard as it binds anyone** (Lesson 18 read forwards for once). Three things it breaks if it
+     is written broadly:
+     - **Resources whose create API takes no tags.** `aws:RequestTag` can only be satisfied by a call that
+       carries tags; where the API does not accept them, a `Deny` on the create action is a deny full stop.
+     - **Resources this project does not create.** D26's blueprints provision project buckets, Glue
+       databases, Athena workgroups and execution roles into Sandbox and Development under DataZone's own
+       provisioning roles — they will not carry `CostCenter=<stage>`, and the failure surfaces at Stage 6 as
+       a project that will not create.
+     - **The landing zone's own machinery**, which creates resources in every enrolled account.
+     **So adopt it narrowly or not at all**, and adopt it *here*, in writing: the defensible scope is the
+     handful of create actions whose cost this project actually attributes — `ec2:RunInstances`,
+     `s3:CreateBucket`, `rds:CreateDBInstance` — with `Environment` and `Project` as the required keys and
+     nothing else, exempting the blueprint and Control Tower principals per 7.1's enumerated-ARN rule. It is
+     the fifth decision due while executing, and it is the one whose cost lands on a stage nobody is looking
+     at yet.
      **Write both enumerations so a per-unit token is admissible before it is needed (D35).** The `<env>`
      list and the tag policy's allowed values both enumerate `sandbox`; an enumeration that does not admit a
      per-unit value turns the first apply in a freshly vended account into an `AccessDenied`, discovered by
@@ -655,7 +816,7 @@ recurring line in the whole landing zone:
    | **IAM Access Analyzer** | No — registering the delegated administrator creates no analyzer | **Here**, 8.2 |
    | **GuardDuty** | **Yes** — "GuardDuty gets enabled automatically … in the current AWS Region" for the administrator account | **Stage 4 step 10**, with the enablement |
    | **Security Hub** | **Yes** — designating the administrator "enables Security Hub CSPM in the current AWS Region for the delegated administrator account" | **Stage 5 step 13**, with the enablement |
-   | **Macie** | Expect the same; **verify** | **Stage 11**, with the enablement |
+   | **Macie** | Expect the same; **verify — at Stage 11, not here, since nothing in 1b touches Macie** | **Stage 11**, with the enablement |
 
    **What this costs, stated rather than discovered:** three later stages each need one visit to the
    Management console, which this stage was trying to spare them. That is the smaller price. Delegating
@@ -695,17 +856,43 @@ recurring line in the whole landing zone:
      trail already collects member-account events into
      **`aws-controltower/CloudTrailLogs-*` in the Management account** — 1a step 5 established exactly this
      property and used it for the same reason — so:
-     - Metric filter on that log group matching the Identity Center directory events that change group
-       membership and account assignments (`AddMemberToGroup`, `RemoveMemberFromGroup`,
-       `CreateAccountAssignment`, `DeleteAccountAssignment`), filtered to the Control Tower group names.
+     - Metric filter on that log group matching the events that change group membership and account
+       assignments. **There are three event sources, not one, and an earlier version of this step named only
+       the console pair** — AWS's own documentation says to consider both the public and the console API
+       when detecting "adding a member to a group":
+
+       | Event source | Events | Emitted by |
+       |---|---|---|
+       | `sso-directory.amazonaws.com` | `AddMemberToGroup`, `RemoveMemberFromGroup` | The Identity Center **console** |
+       | `identitystore.amazonaws.com` | `CreateGroupMembership`, `DeleteGroupMembership` | The **API/CLI/Terraform** path |
+       | `sso.amazonaws.com` | `CreateAccountAssignment`, `DeleteAccountAssignment` | Either |
+
+       **Matching only the console pair is the failure mode this project walks into by design**, because
+       Stage 2 moves identity into `terraform-live/identity/` — from then on every membership change this
+       alarm exists to catch arrives through `identitystore`, and a filter that misses it reports nothing
+       while looking healthy (Lesson 13).
+     - **Filter on group *IDs*, resolved first — not on names.** These events carry the group's `groupId`
+       (a GUID), and CloudTrail's Identity Center payloads changed in January 2025 in exactly the fields a
+       name-based filter would key on (`userName`, `principalId`, `displayName`). So resolve them once —
+       `aws sso-admin list-instances` for the `IdentityStoreId`, then
+       `aws identitystore list-groups --identity-store-id <d-xxxx>` — record the IDs of
+       `AWSControlTowerAdmins`, `AWSAccountFactory` and the rest of the pre-wired set in
+       `log/stage-01b-identity-and-controls.md`, and put those in the pattern. **If that proves awkward,
+       take the cheaper and stricter option: do not filter by group at all.** Membership changes across
+       this whole directory are a handful of events a year; a slightly noisy alarm that fires is worth more
+       than a precise one that cannot.
      - Namespace `AWSDS/Security`, its own metric name, metric value `1`, **`Default value` left empty** —
        a custom metric is USD 0.30/metric-month and is metered only in the hours it publishes.
      - Alarm: Sum, 1 minute, `≥ 1`, **missing data `notBreaching`** (the price of the empty default value),
        delivering to `awsds-org-break-glass-alerts` — the same SNS topic as the break-glass alarm, which is
        already confirmed on both channels.
-     - **Verify the event names and the account they are recorded in before trusting the filter**, and if
-       the events turn out to be recorded only in the Identity account, keep the filter there instead and
-       point it at the same topic cross-account. Record which it was.
+     - **Verify while executing (ix):** which account the events land in, and under which of the three event
+       sources above, before trusting the filter. If they turn
+       out to be recorded only in the Identity account, keep the filter there instead and point it at the
+       same topic cross-account. Record which it was.
+     - **Expect the alarm to fire minutes late, and do not treat that as a failure.** The path is
+       CloudTrail → S3 → CloudWatch Logs → metric filter → alarm, so single-digit minutes of delay is normal
+       for a detective control of this shape. It is why 1a's break-glass alarm is built the same way.
    - **Fire it once**, by adding and removing a member deliberately. An untested alarm is a hypothesis —
      1a step 5 makes the same point about the same topic.
 
@@ -797,10 +984,21 @@ recurring line in the whole landing zone:
 
     **10.3 — So do this instead, in this order.**
 
-    1. **Measure.** Read the actual Config spend and the configuration-item count for the last full period
-       (Cost Explorer, and `aws configservice get-status` / the Config console per account). Record the
-       number in `log/stage-01b-identity-and-controls.md`. Prices are measured, not reasoned (Lesson 6), and
-       the same rule applies to volumes.
+    1. **Measure — and note that this takes two sign-ins, which the step used to hide.**
+       - **Spend**, from **Management**: Cost Explorer filtered to `AWS Config`, grouped by **usage type**
+         and by **linked account**, for the last full month. The usage-type breakdown is what separates
+         configuration items from rule evaluations, and only one of those is what step 10 is about.
+       - **Volume**, from **Audit**: 1a made Audit the **Config aggregator** account, so the item counts for
+         every enrolled account are readable there in one place —
+         `aws configservice describe-configuration-aggregators` to find it, then the Config console's
+         aggregated view. Going account by account under the `awsds-infra-*` profiles gives the same answer
+         for more work, and misses Log Archive and Audit, where the infrastructure user has no assignment.
+       Record both numbers in `log/stage-01b-identity-and-controls.md`. Prices are measured, not reasoned
+       (Lesson 6), and the same rule applies to volumes.
+       **One caveat on the number you will get:** the accounts are days old and nearly empty, so this
+       measures the recorder's floor, not its cost during Stages 2-3. That is the honest reason step 10.3
+       point 2 defers the decision to Stage 12 rather than the reason it is written as if the number were
+       final.
     2. **Decide against the measured number, not the estimate.** If the item count sits inside the
        USD 2.50-5.00/month band `PRICING.md` projects, the honest answer is to leave the recorder alone and
        revisit at **Stage 12 step 5**, when there is a real bill and Stage 2-3's apply storm is over.
@@ -826,6 +1024,25 @@ recurring line in the whole landing zone:
     (`awsds-infra-data`). Versions below 3 cannot grant to an Organization or an OU at all, only to an
     explicit list of account IDs — and this project has three consumers at N=1, one more per business unit
     (D35), with more implied by every `plan/institutional-delta.md` row about scale.
+
+    **Prefer the console for this one, and if you use the CLI, read this first.** The version lives inside
+    `DataLakeSettings`, and **`put-data-lake-settings` replaces that whole structure rather than patching
+    it** — call it with only `Parameters` set and you have just cleared `DataLakeAdmins`,
+    `CreateDatabaseDefaultPermissions` and `CreateTableDefaultPermissions` in the same call. The safe shape
+    is get-modify-put:
+
+    ```bash
+    aws lakeformation get-data-lake-settings --profile awsds-infra-data > /tmp/lf.json
+    # edit DataLakeSettings.Parameters.CROSS_ACCOUNT_VERSION to "3", keep every other key
+    aws lakeformation put-data-lake-settings --profile awsds-infra-data --cli-input-json file:///tmp/lf.json
+    ```
+
+    Today the structure is nearly empty, which is exactly why this is cheap to do now and expensive to do
+    after Stage 5 has registered a lake and named its administrators. Note also that changing these settings
+    requires being a Lake Formation **data lake administrator** or holding
+    `lakeformation:PutDataLakeSettings` outright — the infrastructure user has the latter through
+    `AdministratorAccess`, so no administrator has to be registered first; Stage 5 still creates the real
+    one.
 
     **11.3 — How to verify it, because the obvious command does not.**
     `aws ram get-resource-share-associations` requires an `--association-type` and lists the associations of
@@ -877,9 +1094,19 @@ Each one is written so that its output differs between working and broken (Lesso
   is not the deliverable; a bucket you do not own would have refused you anyway.
 - **The ceiling is real in the other direction too:** `ec2:RunInstances --dry-run` in `us-east-1` returns
   `UnauthorizedOperation`, while the same call in `us-west-2` returns `DryRunOperation`.
-- **The audit trail survives its own administrator:**
-  `aws s3api get-object-lock-configuration --bucket aws-controltower-logs-*` reports `COMPLIANCE` with a
-  retention shorter than the bucket's lifecycle expiration.
+- **The audit trail survives its own administrator:** resolve the real bucket name first — the `*` in
+  `aws-controltower-logs-*` is this document's shorthand, not a glob the CLI expands, and pasting it returns
+  a bucket-not-found that reads like a failed lock:
+
+  ```bash
+  BUCKET=$(aws s3api list-buckets --query "Buckets[?starts_with(Name,'aws-controltower-logs-')].Name | [0]" --output text)
+  aws s3api get-object-lock-configuration --bucket "$BUCKET"
+  ```
+
+  Run it **inside Log Archive** — CloudShell under `AWS Control Tower Admin` → `AWSAdministratorAccess`, per
+  "Who executes what"; the infrastructure user has no assignment there and no profile to pass. It must
+  report `COMPLIANCE`, with a retention shorter than the bucket's lifecycle expiration
+  (`aws s3api get-bucket-lifecycle-configuration --bucket "$BUCKET"`).
 - **The membership alarm is a control and not a hypothesis:** it fired once, on both channels, on a
   deliberate add-and-remove.
 - **Stage 5's shares have somewhere to land:**
@@ -892,15 +1119,18 @@ Each one is written so that its output differs between working and broken (Lesso
 ## Decisions due while executing
 
 **Blocking questions for the user: none** — nothing here waits on an input before the stage can start. But
-four decisions are *made* during it, and each has to be written into
-`log/stage-01b-identity-and-controls.md` rather than left to whoever is at the keyboard (Lesson 16):
+six decisions are *made* during it, and each has to be written into
+`log/stage-01b-identity-and-controls.md` rather than left to whoever is at the keyboard (Lesson 16). Two of
+them are permanent:
 
-1. **Whether the `Interactive` OU gets a policy set of its own**, and whether the
-   `sagemaker:CreateNotebookInstance` candidate is adopted (step 7.6).
-2. **The name of this project's administrator permission set** — `AdministratorAccess` as
-   `ORGANIZATION.md` states, or a rename propagated in the same session (step 3.2).
-3. **The Object Lock retention period**, which is permanent (step 9.3).
-4. **Whether the Config recorder is left alone** after the measurement (step 10.3).
+| # | Decision | Step | Reversible? |
+|---|---|---|---|
+| 1 | Whether the `Interactive` OU gets a policy set of its own, and whether the `sagemaker:CreateNotebookInstance` candidate is adopted | 7.6 | Yes |
+| 2 | The name of this project's administrator permission set — `AdministratorAccess` as `ORGANIZATION.md` states, or a rename propagated in the same session | 3.2 | Yes, but it touches three other files |
+| 3 | **The Object Lock retention period** | 9.3 | **No — compliance mode cannot be shortened and Object Lock cannot be disabled** |
+| 4 | Whether the Config recorder is left alone after the measurement | 10.3 | Yes |
+| 5 | Whether the tag-forcing SCP is adopted, and over which create actions | 7.8 | Yes, but its cost lands at Stage 6 |
+| 6 | Which Region deny control is used — `CT.MULTISERVICE.PV.1` per OU, or landing-zone-wide `GRREGIONDENY` | 7.7 | Yes; enabling **both** is what is hard to undo, because the interaction is not predictable |
 
 The domain name (D15) used to be listed here as "needed before Stage 7"; the 2026-08-09 revision moved it
 to **Stage 13**, which is now the only stage that registers anything public. Nothing between here and there
@@ -936,10 +1166,19 @@ Each is stated in its step; the list is the index, not a second copy. Record eve
 | iv | Does enabling Object Lock on the Control Tower-managed bucket raise landing-zone drift? | 9.5 |
 | v | Can the Lake Formation cross-account version be raised to 3+ with no lake in the account? | 11.6 |
 | vi | Does removing an Account Factory direct assignment stick, or is it re-created? | 3.8 |
-| vii | Is Region deny really landing-zone-wide, i.e. untestable against `Policy Test` first? | 7.7 |
-| viii | Which namespace does each Unified Studio action actually evaluate under — `datazone:*` or `sagemaker:*`? | 7.6 |
-| ix | Does Macie's delegation enable Macie, as GuardDuty's and Security Hub's do? | 8.1 |
-| x | Are Identity Center membership events recorded in Management's org-trail log group after the delegation? | 8.3 |
+| vii | Does `CT.MULTISERVICE.PV.1`'s current default `NotAction` still cover everything this project calls from `us-east-1`? Read it off the control's `Artifacts` tab and diff | 7.7 |
+| viii | Which namespace does each Unified Studio action actually evaluate under — `datazone:*` or `sagemaker:*`? **Ask it of the `Data` OU as well as of `Workloads`** | 7.6 |
+| ix | Are Identity Center membership events recorded in Management's org-trail log group after the delegation, and under which of the three event sources? | 8.3 |
+
+**Was (vii), now answered from the documentation rather than by execution:** *"is Region deny
+landing-zone-wide, i.e. untestable against `Policy Test` first?"* — **the landing-zone control
+`GRREGIONDENY` is; the OU-scoped `CT.MULTISERVICE.PV.1` is not, and can be canary-tested.** 7.7 carries the
+choice that replaces the question.
+
+**Was (ix), and it does not belong to this stage:** *"does Macie's delegation enable Macie, as GuardDuty's
+and Security Hub's do?"* — 8.1 defers Macie's delegation to **Stage 11**, so nothing in 1b can answer it.
+It is recorded in 8.1's table as the thing to check *there*, and dropped from this list, which is about
+what is answered while executing 1b.
 
 ---
 

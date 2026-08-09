@@ -128,7 +128,7 @@ its **Consumes** row names; that is the whole reading list.
 | [0 — Baseline](plan/stages/stage-00-baseline.md) | Management account by hand, local tooling, the documentation set | **DONE** |
 | [1a — Landing zone](plan/stages/stage-01a-landing-zone.md) | Control Tower, the accounts and OUs, root secured, budget — slow and hard to undo | **done except the `Staging` vend** |
 | [1b — Identity and controls](plan/stages/stage-01b-identity-and-controls.md) | Identity Center, permission sets, SCP/RCP, the free detective controls, org-wide enablement — fast and reversible | **next** |
-| [2 — Terraform foundation](plan/stages/stage-02-terraform-foundation.md) | State buckets, module skeletons, the SCP import, CI hygiene checks | not started |
+| [2 — Terraform foundation](plan/stages/stage-02-terraform-foundation.md) | State buckets, module skeletons, the identity/SCP import, the hygiene checks | not started |
 | [3 — Networking](plan/stages/stage-03-networking.md) | One VPC per account that has one, split `foundation/` + `egress/` | not started |
 | [4 — VPN](plan/stages/stage-04-vpn.md) | WireGuard, the only entry point; peering so the tunnel reaches GitLab; GuardDuty on, with the first exposed resource | not started |
 | [5 — Data foundation](plan/stages/stage-05-data-foundation.md) | Lake, Glue, Iceberg, Lake Formation + the three cross-account shares; EFS; Security Hub on | not started |

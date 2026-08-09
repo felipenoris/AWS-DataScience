@@ -257,7 +257,8 @@ CI is the same bug as one that only works by hand — but the expected caller is
 - **Any ARN condition uses an enumerated list, never a wildcard account.** `arn:aws:iam::*:role/x` reads
   as "any principal named `x`, in any account", so a condition written to name one role silently names a
   role that anybody able to create a role can mint. This applies to the per-function carve-outs above and
-  is checked in CI (Stage 2 step 9).
+  is checked by **`make check`** (Stage 2 step 9.2) — there is no CI before Stage 7 — moving into the
+  pipeline at Stage 8.
 
 ---
 
