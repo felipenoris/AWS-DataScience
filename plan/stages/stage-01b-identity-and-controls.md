@@ -277,6 +277,29 @@ that is not.
     - **`Interactive` OU** (D21): no extra SageMaker denies — Studio is the point — but the same
       no-infrastructure guardrails as everywhere else. The differences between Sandbox and Development
       are differences of content, not of policy, which is why they share the OU.
+      **Attach here and not to the nested `Sandboxes` OU** (D23, D35). `Sandboxes` groups the accounts that
+      multiply and carries no set of its own; inheritance is what makes a unit vended next year governed on
+      arrival, and a set attached twice is a set that will diverge in one of the two places.
+    - **`Identity` OU** (D10, D23 as revised 2026-08-09) — **the tier this plan did not have, because the
+      account was supposed to be in `Security`.** It is not: Control Tower refused the vend into a
+      foundational OU, so the account sits in a sibling OU created from the console — and **a
+      console-created OU carries no policy set until code attaches one** (D34). Two things to do here, in
+      this order:
+      - **Establish the baseline before writing anything.** List the Control Tower controls enabled on
+        `Security` and on `Identity` and diff them; whatever `Security` got by being foundational and
+        `Identity` did not is the gap. Enable the equivalent elective controls on `Identity` where they
+        exist. Record the diff in `LOG.md` — "it used to inherit that" is not a control (Lesson 5).
+      - **Then the hand-written set.** The organization-root SCPs and RCPs already reach this account by
+        inheritance from the root, so what belongs *here* is what makes the identity plane's own blast
+        radius smaller: deny `organizations:LeaveOrganization` (already at the root), deny deletion or
+        disabling of the CloudTrail this account is recorded in, and deny the account creating compute at
+        all — there is no workload here, only Terraform managing Identity Center, so `ec2:RunInstances`,
+        `sagemaker:Create*` and the rest of the D22 compute list apply to this OU for exactly the same
+        reason they apply to `Data`.
+      **Do not put the Identity account under the `Data` OU's set to save writing one**, tempting as the
+      overlap looks: `Data`'s set denies `s3:DeleteBucket` and `lakeformation:DeregisterResource` and carves
+      out `datazone:*` and the catalog-maintenance role, none of which means anything here, and an OU whose
+      policy is *mostly* right is the kind of thing nobody re-reads.
     - **Region restriction — use Control Tower's own control, do not write this one by hand** (revised
       2026-08-08). Enable Control Tower's **Region deny** control with **`us-west-2` as the only governed
       region**. Why it is not in the hand-written set below:

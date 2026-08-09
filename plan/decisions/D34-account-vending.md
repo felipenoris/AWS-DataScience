@@ -91,7 +91,9 @@ SCP/RCP set, the tag policy, the per-OU attachments — is driven by `for_each` 
 created yesterday from the console is covered by the next apply with nobody remembering. Permission set
 assignments stay **explicit**, because a new account silently acquiring `DataScientistAccess` is precisely the
 failure this design exists to prevent. *To verify while writing Stage 2:* that the data sources enumerate OUs
-at the nesting depth this organization actually uses, and that the `for_each` key is stable enough that adding
+at the nesting depth this organization actually uses — **answered on 2026-08-09 and the answer is 2**
+(D23: `Sandboxes` under `Interactive`), so a single-level enumeration over the root's children misses every
+Sandbox account — and that the `for_each` key is stable enough that adding
 an OU does not re-create the existing attachments.
 
 ## The flow, which is what makes an added account cheap

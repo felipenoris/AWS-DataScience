@@ -52,8 +52,14 @@
    set and the tag policy are `for_each` over `aws_organizations_organizational_units` /
    `aws_organizations_organization` data sources; **permission set assignments stay written out one by
    one**, because an account silently acquiring `DataScientistAccess` on the next apply is the failure this
-   design exists to prevent. *To verify here:* that those data sources enumerate OUs at the nesting depth
-   this organization uses, and that the `for_each` key is stable enough that adding an OU does not
+   design exists to prevent. **The nesting depth is no longer an open question and the answer is 2**
+   (D23, 2026-08-09): `Sandboxes` sits under `Interactive`, and every business unit's Sandbox account sits
+   under `Sandboxes`. `aws_organizations_organizational_units` returns the children of **one** parent, so a
+   single `for_each` over the root's children enumerates neither the nested OU nor the accounts in it — and
+   the failure is the silent one this whole paragraph is about: those accounts stay outside every org-wide
+   attachment while `terraform plan` reports "No changes". **Recurse, or enumerate both levels explicitly and
+   fail the CI check if an OU exists that neither level matched.** *Still to verify here:* that the
+   `for_each` key is stable enough that adding an OU does not
    re-create the existing attachments — a plan that wants to destroy and re-create an SCP attachment is a
    momentary hole in the ceiling.
    **What is deliberately *not* imported here: the region restriction.** It is Control Tower's own Region

@@ -13,10 +13,16 @@ Layers per `plan/conventions.md` §5.1: `[P]` persistent (free at rest), `[D]` d
 ```
 AWS Organization (Management account - console only)                        [P]
 │
-├── OU Security
+├── OU Security              <- FOUNDATIONAL: Control Tower owns this OU and
+│   │                           will not accept an account it did not create
 │   ├── Log Archive account  (created by Control Tower, S3 Object Lock)     [P]
-│   ├── Audit account        (created by Control Tower) <- security guardian [P]
-│   │                           GuardDuty / Security Hub / Macie / Analyzer
+│   └── Audit account        (created by Control Tower) <- security guardian [P]
+│                               GuardDuty / Security Hub / Macie / Analyzer
+│
+├── OU Identity              <- its own OU since 2026-08-09: the vend into
+│   │                           Security was refused (D23). Inherits NONE of
+│   │                           Security's foundational guardrails, so its
+│   │                           policy set is attached, not inherited
 │   └── Identity account     <- Identity Center delegated administration    [P]
 │
 ├── OU Policy Test           <- NO policy set of its own: this is where a
@@ -30,21 +36,26 @@ AWS Organization (Management account - console only)                        [P]
 │                                policy instead                              [P]
 │
 ├── OU Interactive           <- one SCP set: interactive compute allowed,
-│   │                           no human infrastructure changes (D23)
-│   ├── Sandbox account      <- EXPERIMENTATION: the unit of work is a notebook.
-│   │                           ONE PER BUSINESS UNIT (D35) - the only account
-│   │                           in this tree that multiplies; N is 1 today, and
-│   │                           the whole subtree below is what Stage 14 vends
-│   │                           from a unit name. Everything else is structural
-│   │   ├── VPC, subnets, IGW, security groups, private DNS zone            [P]
-│   │   ├── blueprint target (D26): the experimentation project's
-│   │   │     environments are provisioned here by the domain in
-│   │   │     Data Governance (SageMaker AI apps VPC-only,
-│   │   │     restricted egress). Slice is [P]; running apps are          [P/E]
-│   │   ├── scratch / derived-zone S3 buckets (per-principal, D19)          [P]
-│   │   ├── WireGuard EC2    <- the only human entry point (see below)      [D]
-│   │   ├── NAT Gateway + interface VPC endpoints                           [E]
-│   │   └── EFS (NFS shared filesystem, lifecycle to IA) <- Sandbox only D24 [P]
+│   │                           no human infrastructure changes (D23). It is
+│   │                           attached HERE and inherits into Sandboxes below
+│   ├── OU Sandboxes         <- groups the one class of account that
+│   │   │                       multiplies. NO policy set of its own: the
+│   │   │                       Interactive set above inherits into it, which
+│   │   │                       is what makes a new unit governed on arrival
+│   │   └── Sandbox account  <- EXPERIMENTATION: the unit of work is a notebook.
+│   │       │                   ONE PER BUSINESS UNIT (D35) - the only account
+│   │       │                   in this tree that multiplies; N is 1 today, and
+│   │       │                   this whole subtree is what Stage 14 vends from
+│   │       │                   a unit name. Everything else is structural
+│   │       ├── VPC, subnets, IGW, security groups, private DNS zone        [P]
+│   │       ├── blueprint target (D26): the experimentation project's
+│   │       │     environments are provisioned here by the domain in
+│   │       │     Data Governance (SageMaker AI apps VPC-only,
+│   │       │     restricted egress). Slice is [P]; running apps are      [P/E]
+│   │       ├── scratch / derived-zone S3 buckets (per-principal, D19)      [P]
+│   │       ├── WireGuard EC2 <- the only human entry point (see below)     [D]
+│   │       ├── NAT Gateway + interface VPC endpoints                       [E]
+│   │       └── EFS (NFS shared filesystem, lifecycle to IA), per unit  D24 [P]
 │   │
 │   └── Development account  <- DEVELOPMENT: the unit of work is a pipeline
 │       │                       (repository with tests, workflows)          D21
@@ -321,11 +332,16 @@ contradicts some part of it.
 - **One account off that axis entirely:** Data Governance (D22) owns the governed lake; every environment
   reaches it through Lake Formation cross-account shares — read for Sandbox/Development, read plus
   **governed write** for Production's job role (the producer path). Nobody signs in to it interactively.
-- **Five OUs, four named for their policy sets (D23):** Security; Interactive (Sandbox + Development — the
+- **Six OUs plus one nested, and only four of them carry a policy set (D23):** Security (foundational,
+  Control Tower's own — Log Archive and Audit); Interactive (Development plus the nested `Sandboxes` — the
   only OU where a domain may exist, D17); Data (no *user* compute — D27 carves out catalog maintenance:
   crawlers and table optimizers under the lake's own role, never on Iceberg tables); Workloads (Staging +
-  Production — no interactive compute, no human control plane). **The fifth, `Policy Test` (D29), carries
-  no policy set on purpose** — it is where a *candidate* SCP/RCP is attached and exercised against the
+  Production — no interactive compute, no human control plane). **`Identity` was split out of `Security` on
+  2026-08-09** because Control Tower would not vend a non-foundational account into a foundational OU — so
+  it inherits none of `Security`'s guardrails and its set is attached rather than inherited. **`Sandboxes`
+  carries no policy set at all**, by design: it groups the per-unit Sandbox accounts (D35) and inherits
+  `Interactive`. Depth is therefore 2, which any OU enumeration has to be written against (D34).
+  **And `Policy Test` (D29) carries no policy set on purpose** — it is where a *candidate* SCP/RCP is attached and exercised against the
   disposable `Policy Canary` account before it reaches anything real. It exists as an account and not just
   a folder because an SCP is only evaluated when a principal makes a call, so an empty staging OU tests
   nothing; and the test principal is an **administrator**, because a deny exercised by a principal that

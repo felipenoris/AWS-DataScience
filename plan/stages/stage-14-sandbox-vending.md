@@ -12,8 +12,10 @@
 ---
 
 **Objective:** adding a business unit is a merge request. One input — the unit's name — produces its
-`Sandbox` account, in the `Interactive` OU, with networking, identity, domain association and a filesystem,
-and nothing about it is typed twice.
+`Sandbox` account, in the **`Sandboxes` OU** (nested under `Interactive`, D23), with networking, identity,
+domain association and a filesystem, and nothing about it is typed twice. The OU is what makes the account
+governed on arrival: the `Interactive` policy set inherits down into it, so `ManagedOrganizationalUnit` in
+step 2 points at `Sandboxes` and the account needs no policy attachment of its own.
 
 **Scope, which is narrower than it first looks (D35).** Only `Sandbox` multiplies. `Development`, `Staging`
 and `Production` are structural and singular, so **the promotion chain is untouched by this stage** — one set

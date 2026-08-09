@@ -204,67 +204,31 @@ Reference things by **stable ID** — `D26`, `INT-11`, `Stage 1b step 7` — nev
 
 ### Current position
 
-- **Stage 0 complete. Stage 1a is nearly done** — `LOG.md` is authoritative. Control Tower enabled
-  (`us-west-2`), quota increase to 15 *requested*, budget set, and `Development`, `Sandbox Account 1`,
-  `Production`, `Data Governance` and `Policy Canary` vended. **Left: `Identity` (see below) and `Staging`,
-  deferred on quota.**
-- **The OU tree that exists is not the one D23 describes, in two ways — both open, neither yet decided.**
-  (i) **`Sandboxes` is nested under `Interactive`** and is in no plan document; decide whether it is D35's
-  multiplied-class OU or an execution accident. (ii) **`Identity Account` could not be vended into the
-  `Security` OU** — Control Tower appears to block a non-foundational account there — so a sibling
-  **`Identity` OU** was created, which is exactly the fallback Stage 1a step 4 wrote down. Both need the plan
-  updated (D23, the account tables, `architecture.md`, and 1b step 7's per-OU policy tiers: a new OU carries
-  no policy set until code attaches one). Together they make the organization's **OU nesting depth 2**, which
-  is the parameter Stage 2's `for_each`-over-the-data-sources rule (D34) turns on.
-- **Vending an account: the `SSOUserEmail` field always takes the infrastructure user (D32)**, the same
-  address on every account vended. It grants administrative access to the account, so it is never the
-  account's own e-mail and never another persona.
-- **Vending is done from the AWS access portal as `AWS Control Tower Admin`, never from root (D33)** —
-  root gets a Service Catalog portfolio error, by design. That user is Control Tower's own creation, carries
-  the Management **root e-mail**, and via `AWSControlTowerAdmins` is administrator on **Management, Log
-  Archive and Audit** — so it can erase its own audit trail. **MFA is mandatory.** **It is no longer
-  disabled in 1b (D34): it is the standing owner of Control Tower administration** — OUs, vending,
-  enrolment — console only, because the account list is not static. Its three permanent controls: MFA,
-  Object Lock in **compliance** mode (1b step 9), and the group-membership alarm (1b step 8).
-  **The Identity Center directory is not empty** — Control Tower populated it with its own groups and
-  permission sets, one named `AWSAdministratorAccess`; its empty groups are pre-wired ceilings, so no
-  project persona ever joins one.
-- **Adding an account later is ordinary, not exceptional (D34)**: gate = which axis and which OU (D23),
-  owner = that user, baseline = code that already exists. **Nothing declares the Organization in Terraform,
-  so console vending cannot drift any state** — but it can leave an OU or account *invisible* to code
-  written as a list, so in `terraform-live/identity/` **the floor is discovered (`for_each` over the
-  Organizations data sources) and the grants are enumerated.**
-- **Cardinality is a property of the map (D35): every account is structural — exactly one — except
-  `Sandbox`, one per business unit** (N is 1 today). **N Sandboxes → one Development → one Staging → one
-  Production**, so the cardinality boundary *is* D21's graduation boundary and **the promotion chain is
-  untouched by N**. Automation goes where the multiplication is (**new Stage 14**). Consequence for stages
-  not yet written: **anything saying "*the* Sandbox account" is a singleton assumption** — S3 needs a
-  supernet + allocation table for the Sandbox class, S4 must name the VPN home as a role (the topology
-  choice — hub, Transit Gateway, or per-unit — is settled in S14 with N in hand), S1b splits only the
-  Sandbox half of the assignment into `data-scientists-<bu>`, S6 associates N+1 accounts to the one domain.
-  **Per-unit isolation ends at the graduation boundary**; past it, it is Lake Formation's job.
-- **An older AWS account is attached to the organization**, which consumes a quota slot: the plan's ten
-  accounts plus it exceed the measured limit of 10. **`Staging` is the account to defer** — its first hard
-  dependency is Stage 8, and D20 keeps it unpeered, so deferring costs nothing structurally.
-- The repository is documentation only; `terraform/` is empty and is replaced by `terraform-live/`
-  and `terraform-modules/` in Stage 2.
-- **All thirty-five decisions (D1-D35) are closed** — see [`plan/decisions/INDEX.md`](plan/decisions/INDEX.md).
-- Inputs still needed from the user, neither blocking Stage 1: **which domain name to register**
-  (D15, blocks Stage 7), and the AZ name-to-ID check in Stage 1b step 6, which decides whether Stage 3
-  anchors subnets on list position or on AZ IDs.
-- **The account-quota increase was requested at 15** (Stage 1a pre-flight, `LOG.md`) against a measured
-  limit of 10 — exactly the number Stage 1a ends with. **Confirm it was granted before vending the last
-  accounts**: without it a single failed provisioning breaches the cap, and a closed account holds its slot
-  for ~90 days.
-- Integration risks worth settling earliest: **INT-11** (organization-wide RAM sharing + Lake Formation
-  cross-account v3 — enabled in Stage 1b, consumed in Stage 5, and its absence makes a share fail
-  *silently*) and **INT-13** (CodeConnections from the domain to the private GitLab — the one row with no
-  convenience-preserving fallback).
-- **2026-08-08: the plan was split** out of the two large files into `GENERAL_PLAN.md` (core + indexes)
-  and `plan/`. Nothing about the plan's content changed in that split.
+- **Stage 1a nearly done; `LOG.md` is authoritative.** Control Tower enabled (`us-west-2`), budget set,
+  and `Development`, `Sandbox Account 1`, `Production`, `Data Governance`, `Policy Canary` vended.
+  **Left: `Identity` and `Staging`**, deferred on the account cap — the increase to 15 is *requested* and
+  has to be confirmed before the last vends (Stage 1a pre-flight has the arithmetic).
+- **The OU tree is not the one D23 first described** — revised 2026-08-09 by execution; full tree in
+  [`plan/architecture.md`](plan/architecture.md). `Identity` has an OU of its own, because the foundational
+  `Security` OU refused the vend, so it inherits no guardrails and 1b step 7 must attach its set; and
+  `Sandboxes` is nested under `Interactive`, holding the per-unit accounts with no policy set of its own.
+  **Depth is 2** — Stage 2's OU `for_each` must recurse, or every Sandbox account is invisible to it.
+- **The repository is documentation only**; `terraform/` is empty until Stage 2 replaces it with
+  `terraform-live/` + `terraform-modules/`.
+- **All thirty-five decisions are closed** ([`plan/decisions/INDEX.md`](plan/decisions/INDEX.md)). The four
+  governing what happens next: **D32** (`SSOUserEmail` is always the infrastructure user, and it grants
+  administrator), **D33**/**D34** (`AWS Control Tower Admin` vends, from the access portal, never root,
+  permanently), **D35** (`Sandbox` is one per business unit; every other account is exactly one).
+- **Still needed from the user**, neither blocking: **the domain name to register** (D15, blocks Stage 7),
+  and the AZ name-to-ID check (1b step 6), which decides how Stage 3 anchors subnets.
+- **Settle earliest:** **INT-11** (org-wide RAM sharing + Lake Formation cross-account v3 — fails
+  *silently*) and **INT-13** (CodeConnections to the private GitLab — no convenience-preserving fallback).
 
-**Budget for this section: ~1 KB.** It states *state*, not reasoning. Reasoning belongs in the decision
-file; narrative belongs in [`plan/history.md`](plan/history.md).
+**Budget for this section: ~2 KB** (raised from ~1 KB on 2026-08-09, when the section was cut back from
+4.8 KB — [`plan/history.md`](plan/history.md) says why). It states *state*, not reasoning: reasoning belongs
+in the decision file, narrative in `plan/history.md`. **A bullet here that explains *why* is a stale copy of
+something that already lives elsewhere** — that test is the actual control, not the number. Re-trim whenever
+a stage closes.
 
 ### Lessons carried forward
 

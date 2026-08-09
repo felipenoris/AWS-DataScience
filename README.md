@@ -232,7 +232,7 @@ an OU and to nothing else. It is the mechanical reason this project has a `Workl
 | Studio only in the development / data-science accounts | The interactive surface only in the **Interactive OU** — since D26, one SageMaker unified domain (DataZone V2) registered in **Data Governance**, whose project blueprints provision compute into Sandbox and Development and nowhere else (D17, D21, D26) — enforced by two SCPs (Stage 1b step 7): the `Workloads` OU denies `sagemaker:CreateDomain`, `CreateUserProfile`, `CreatePresignedDomainUrl` **and `datazone:*` in full**, so a deployment target can neither host a domain nor associate itself to one; and the organization root denies `datazone:CreateDomain` everywhere except the `Data` OU, so "one domain, and it lives in Data Governance" is a control rather than a convention | **Adopted**, and made preventive rather than conventional |
 | A staging / pre-production deployment target between development and production | The **Staging** account (D20) | **Adopted.** It was missing until 2026-08-08; the plan had tried to stand in for it with a Glue namespace inside Production, which shared an account and a blast radius with the thing it was meant to de-risk |
 | Data scientists get read-only access in staging | `DataScientistStagingAccess` — read, no write of any kind (D18) | **Adopted verbatim.** A staging environment a person can write to stops being evidence of what the pipeline does |
-| Environments expressed as Organizations OUs | Four OUs named for their policy sets (D23): `Workloads` holds Staging and Production, `Interactive` holds Sandbox and Development, `Data` holds Data Governance, `Security` holds the rest | **Adopted.** One SCP set per policy set, written once and inherited — an OU holding a single account forever would be a folder with one file |
+| Environments expressed as Organizations OUs | OUs named for their policy sets (D23): `Workloads` holds Staging and Production, `Interactive` holds Development plus a nested `Sandboxes` for the per-unit Sandbox accounts, `Data` holds Data Governance, `Security` holds Log Archive and Audit, and `Identity` holds the identity plane | **Adopted.** One SCP set per policy set, written once and inherited — an OU holding a single account forever would be a folder with one file. Two of the OUs came from execution rather than design: `Identity`, because a foundational `Security` OU would not take the account, and `Sandboxes`, which groups a cardinality class and carries no policy of its own |
 | Model Registry and ECR in a Tooling / shared-services account | Both in the **Production** account (D14) | **Departure**, the main one remaining. No separate tooling account, on cost. The consequence is stated rather than hidden: there is no boundary between what builds and what runs, so a compromise of GitLab is a compromise of Production |
 | A separate data lake / data management account | The **Data Governance** account (D22): the lake, its catalog, Lake Formation and the classification scheme, reached from every environment through cross-account shares | **Adopted** on 2026-08-08. It had been a departure; the section below on Data Governance vs. Production records why it stopped being one |
 | Experimentation and development as distinct accounts | **Sandbox** (experimentation — the unit of work is a notebook) and **Development** (the unit of work is a pipeline), both in the Interactive OU (D21) | **Adopted** on 2026-08-08. It had been collapsed "because there is one user"; the section below on Development vs. Experimentation records what the boundary buys anyway |
@@ -306,8 +306,10 @@ policy it carries but the disposable account it contains:
 
 | OU | Accounts | The policy set it carries |
 |---|---|---|
-| Security | Log Archive, Audit, Identity | Control Tower guardrails; delegated administration |
-| Interactive | Sandbox, Development | Interactive compute **allowed**; human infrastructure changes denied |
+| Security | Log Archive, Audit | Control Tower guardrails. **Foundational** — Control Tower owns it, and it will not accept an account it did not create there |
+| Identity | Identity | Delegated Identity Center administration. Split out of `Security` on 2026-08-09 because the vend into a foundational OU was refused (D23) — so whatever guardrails `Security` carried by being foundational have to be attached here explicitly |
+| Interactive | Development, and the nested `Sandboxes` OU | Interactive compute **allowed**; human infrastructure changes denied |
+| Interactive → Sandboxes | Sandbox, one per business unit (D35) | **None of its own** — it inherits `Interactive`. It is a container for a *cardinality class*, not a policy boundary |
 | Data | Data Governance | No *user* compute (the DataZone control plane and the catalog-maintenance role are carved out by name); deletion denied |
 | Workloads | Staging, Production | No interactive compute; no human control plane |
 | Policy Test | Policy Canary | **None** — this is the OU a *candidate* policy is attached to and exercised against, before it reaches anything real (D29) |
@@ -316,6 +318,16 @@ A per-environment OU tree (`Development` OU, `Staging` OU, `Production` OU, one 
 considered and rejected — every OU would hold exactly one account, so the tree would add names without
 adding inheritance. The revision triggers are recorded in the plan (D23): a second production-like account
 nests `Workloads` into `NonProd`/`Prod`; a second data domain does the same for `Data`.
+
+**Two OUs in the table above came from execution, not from this argument, and they are the reason the test
+needs a third clause.** `Identity` exists because Control Tower refused to vend the account into `Security`,
+which is a *foundational* OU it owns — so the account's policy set has to be attached rather than inherited,
+which is precisely what makes it a real OU rather than a folder. `Sandboxes` exists to group the one class of
+account that multiplies (D35), and it carries **no policy set of its own**: `Interactive`'s SCPs inherit down
+into it. So the full test is *an OU earns its existence when two or more accounts need the same policy set,
+**or** when it exists to contain a class of account* — a disposable one (`Policy Test`) or a multiplied one
+(`Sandboxes`). The nesting also means the organization's OU depth is 2, which is a fact any code enumerating
+OUs has to be written against (D34).
 
 **Why `Policy Test` is not that mistake, despite holding one account.** It is the one OU here whose value is
 not inheritance at all. A Service Control Policy is a permission ceiling that AWS evaluates only when a
@@ -367,9 +379,9 @@ All under one AWS Organization governed by Control Tower.
 | Management | root | Organization owner. Bootstrap only, manual, through the console. Never managed by Terraform. |
 | Log Archive | Security | Central, tamper-evident log store (S3 Object Lock). Created by Control Tower. |
 | Audit | Security | Security guardian: GuardDuty, Security Hub, Macie, IAM Access Analyzer. Created by Control Tower. |
-| Identity | Security | Delegated administration of IAM Identity Center: permission sets, groups, assignments. Separate from Audit so that access management and security monitoring do not share a blast radius. |
+| Identity | Identity | Delegated administration of IAM Identity Center: permission sets, groups, assignments. Separate from Audit so that access management and security monitoring do not share a blast radius. In an OU of its own since 2026-08-09: Control Tower would not vend it into the foundational `Security` OU (D23). |
 | Policy Canary | Policy Test | Deliberately empty, and disposable: the account a candidate SCP or RCP is exercised against before it reaches anything real (D29). An SCP is only evaluated when a principal makes a call, so a policy staging OU with no account inside it tests nothing — which is why this is an account and not just a folder. Holds an administrator principal and nothing else, because a deny exercised by a principal that lacked the permission anyway proves nothing about a ceiling. |
-| Sandbox | Interactive | **Experimentation** — the unit of work is a notebook. Target of the unified domain's `experimentation` project blueprints (D26): interactive compute, unreviewed code against real (shared) data — the highest-risk account, per §3 above. Nothing here survives; nothing promotes from here. |
+| Sandbox | Interactive → Sandboxes | **Experimentation** — the unit of work is a notebook. One account per business unit (D35), grouped under the nested `Sandboxes` OU. Target of the unified domain's `experimentation` project blueprints (D26): interactive compute, unreviewed code against real (shared) data — the highest-risk account, per §3 above. Nothing here survives; nothing promotes from here. |
 | Development | Interactive | **Development** — the unit of work is a pipeline: a repository with tests, git, CI. Target of the `engineering` project profile (D26). Work graduates in from Sandbox through git, and the promotion chain starts here. |
 | Data Governance | Data | The **state and governance of data**: the governed lake (S3 + Iceberg), the Glue catalog, Lake Formation, classification, the ingestion drop-box, the Glue Crawlers on raw and drop-box (D27), and the **SageMaker Unified Studio domain** with SageMaker Catalog, project profiles, blueprints and account associations (D26). A registry, not a runtime: no user compute, no VPC, no interactive sign-in — every environment reaches it through cross-account shares, and the portal it hosts is used by people who can never administer the account. Renamed from `Data Management` on 2026-08-08. |
 | Staging | Workloads | Deployment target. Receives the built artifact, runs the integration tests against sampled or synthetic data local to it, and is torn down again. No Studio domain, no Model Registry of its own, no GitLab, no share from the lake. Data scientists: read-only. |

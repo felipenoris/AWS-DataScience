@@ -130,6 +130,38 @@ onwards the file records how the environment changed, not just the plan.
   as a list, with `plan` reporting "No changes" either way — so the floor is discovered (`for_each` over the
   Organizations data sources) and the grants are enumerated.**
 
+- **2026-08-09 — `D35`, from a question rather than from a failure.** Asked how many of each account would
+  exist in five years, the map split in two: everything is **structural** — exactly one, forever — except
+  **`Sandbox`, which is one per business unit**. The boundary turned out not to be arbitrary: it is exactly
+  `D21`'s graduation boundary, because experimentation is naturally per-unit while engineering is
+  institutional. So the chain reads **N Sandboxes → one Development → one Staging → one Production**, and the
+  useful consequence is that **the promotion chain is untouched by N** — the multiplication sits entirely
+  upstream of the approval gate, which is the cheapest place for it. Automation goes where the multiplication
+  is: a new **Stage 14** vends a unit's Sandbox from its name, using rung 2 of `D34`'s ladder. The expensive
+  half was not the automation but the **singleton assumptions already written into stages not yet built** —
+  one hardcoded Sandbox CIDR, a VPN that lands in "the" Sandbox account, one `data-scientists` group, a domain
+  associated with two accounts — each nearly free to loosen while still prose, and each a rebuild afterwards.
+  All four were loosened the same day. Per-unit isolation deliberately **ends at the graduation boundary**;
+  past it it is Lake Formation's job, and a unit wanting its own Development is the revision trigger.
+
+- **2026-08-09 — the OU tree came back different from the plan, twice, and `D23` was revised to match.**
+  Both arrived from execution, and both are adopted rather than undone. **`Identity` could not be vended into
+  `Security`** — a *foundational* OU in Control Tower's model, which will not take an account it did not
+  create. Stage 1a step 4 had flagged exactly this as a thing to verify and had named exactly this fallback,
+  so the plan followed the plan; what the plan had *not* carried is the consequence, and it is the whole
+  finding: **`Security`'s policy set was never ours** — it is Control Tower's guardrails, inherited by the OU
+  being foundational — so a sibling OU inherits none of it, and 1b step 7 gained an `Identity` tier that
+  starts by diffing the controls on the two OUs. An OU created from the console carries no policy set until
+  code attaches one (`D34`), and this is that rule meeting a real account. And **`Sandboxes` was created
+  nested under `Interactive`** to group the per-unit Sandbox accounts. It carries **no policy set of its
+  own** — `Interactive`'s inherits down, which is what keeps `D35`'s "a new Sandbox is governed by being
+  placed correctly" true. It also required a third clause in `D23`'s test for when an OU earns its
+  existence: not only "two or more accounts need the same policy set", but also "it exists to contain a
+  *class* of account" — disposable (`Policy Test`) or multiplied (`Sandboxes`). **The one mechanical cost is
+  in Stage 2:** OU nesting depth is now **2**, so an enumeration over the root's children misses every
+  Sandbox account — silently, with `plan` reporting "No changes", which is the exact failure mode `D34` was
+  written about.
+
 - **2026-08-09 — consistency pass over the whole repository, after D30-D35.** No decision changed and
   nothing provisioned had to change; what it found is the *shape* of what a run of four decisions in two
   days leaves behind, which is worth remembering because it will recur:
@@ -158,11 +190,16 @@ onwards the file records how the environment changed, not just the plan.
     recorded in this file and in `CLAUDE.md`, and not in the Stage 1a pre-flight, which is what someone
     executing actually reads. Moved there.
 
-  **One item was found and deliberately not fixed**, because it is a decision rather than a correction: the
-  organization now contains an OU named `Sandboxes`, nested under `Interactive` (`LOG.md`, 2026-08-09), and
-  no plan document knows about it — not D23, not D35, not the account tables. It also makes the
-  organization's OU nesting depth **2**, which is exactly the parameter Stage 2's `for_each`-over-the-data-sources
-  rule (D34) depends on and currently lists as "to verify".
+  **The two OU findings it raised were settled the same day** and are the entry above this one; the pass
+  itself only surfaced them.
+
+  **It also cut `CLAUDE.md`'s `Current position` section from 4.8 KB to ~2 KB and raised its stated budget
+  from ~1 KB to ~2 KB.** Most of what was there had stopped being *state*: paragraphs of D32/D33/D34/D35
+  reasoning, duplicated from the decision files, and a note about the plan split that belongs here. The
+  budget was raised rather than defended because it had been exceeded roughly fivefold with nothing
+  noticing — a number that never fires is not a limit, and the honest one for a landing zone at this account
+  count is 2 KB. What replaced the number as the actual rule is a test that can be applied while writing:
+  **a bullet in that section that explains *why* is a stale copy of something that lives elsewhere.**
 
 ---
 

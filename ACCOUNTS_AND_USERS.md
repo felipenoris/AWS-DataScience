@@ -46,9 +46,9 @@ is not signing in to the account.
 | Management | root | Platform | Bootstrap only, manual, never managed by Terraform |
 | Log Archive | Security | Platform | Control Tower guardrails |
 | Audit | Security | Platform | Control Tower guardrails; delegated security administration |
-| Identity | Security | Platform | Control Tower guardrails; delegated Identity Center administration |
+| Identity | **Identity** | Platform | Delegated Identity Center administration. Its own OU since 2026-08-09: Control Tower would not vend the account into the foundational `Security` OU (D23) |
 | Policy Canary | Policy Test | Platform | **None of its own** — the OU exists to hold *candidate* policies under test (D29) |
-| Sandbox | Interactive | Lifecycle (before the chain) | Interactive compute allowed; human infrastructure changes denied. **One account per business unit (D35)** — the only non-structural row in this table |
+| Sandbox | Interactive → **Sandboxes** | Lifecycle (before the chain) | Interactive compute allowed; human infrastructure changes denied — inherited from `Interactive`, since the nested `Sandboxes` OU carries no policy set of its own. **One account per business unit (D35)** — the only non-structural row in this table |
 | Development | Interactive | Lifecycle (head of the chain) | Same as Sandbox — the two differ in content, not in policy |
 | Data Governance | Data | **Ownership** | No user compute; catalog maintenance excepted by name; deletion denied |
 | Staging | Workloads | Lifecycle | No interactive compute; no human control plane |
@@ -172,6 +172,15 @@ not in concept. `Policy Test` and `Policy Canary` keep the word `Staging` naming
 ## Identity Account
 
 - Manage identity store, users, groups and permissions.
+
+- **It sits in an `Identity` OU of its own, not in `Security`** (D23, revised 2026-08-09). That was not the
+  design: it was to join Log Archive and Audit under `Security`, and Control Tower refused the vend —
+  `Security` is a **foundational** OU in its model. Stage 1a step 4 had named this as a thing to verify and
+  named this exact fallback, so the plan followed the plan. **The consequence to carry: `Security`'s policy
+  set was Control Tower's guardrails, inherited by the OU being foundational, and a new OU inherits none of
+  it.** Whatever `Security` carried that `Identity` does not must be attached explicitly (Stage 1b step 7) —
+  the account did not become less sensitive by moving, and this is the account whose administrator can grant
+  access to every other one.
 
 # SSO Users
 

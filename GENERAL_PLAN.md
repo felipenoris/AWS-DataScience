@@ -42,9 +42,9 @@ The `§` numbers kept inside `plan/` files are historical anchors, not addresses
 | Management | (root) | platform | Bootstrap only, console only, never Terraform. Its **root user is the break-glass credential** (D16) |
 | Log Archive | Security | platform | Control Tower log sink, S3 Object Lock |
 | Audit | Security | platform | Security guardian: GuardDuty, Security Hub, Macie, Access Analyzer |
-| Identity | Security | platform | Identity Center **delegated administration** (D10) — as sensitive as Management |
+| Identity | **Identity** | platform | Identity Center **delegated administration** (D10) — as sensitive as Management. Its own OU because Control Tower would not vend it into the foundational `Security` OU (D23, 2026-08-09) |
 | Policy Canary | Policy Test | platform | Deliberately empty. The disposable account a candidate SCP is exercised against (D29) |
-| Sandbox | Interactive | lifecycle (before the chain) | **Experimentation** — the unit of work is a notebook. VPN terminates here; EFS lives here (D24) |
+| Sandbox | Interactive → **Sandboxes** | lifecycle (before the chain) | **Experimentation** — the unit of work is a notebook. VPN terminates here; EFS lives here (D24). One per business unit (D35), grouped in a nested OU that carries no policy set of its own |
 | Development | Interactive | lifecycle | **Engineering** — the unit of work is a pipeline. The promotion chain starts here (D21) |
 | Data Governance | Data | **ownership** | The governed lake + the Unified Studio domain (D22, D26). No VPC, no user compute, no interactive sign-in |
 | Staging | Workloads | lifecycle | Deployment target, written only by the pipeline; sampled or synthetic data (D20) |
@@ -127,7 +127,7 @@ its **Consumes** row names; that is the whole reading list.
 | [1a — Landing zone](plan/stages/stage-01a-landing-zone.md) | Control Tower, the accounts and OUs, root secured, budget — slow and hard to undo | **in progress** |
 | [1b — Identity and controls](plan/stages/stage-01b-identity-and-controls.md) | Identity Center, permission sets, SCP/RCP, the free detective controls, org-wide enablement — fast and reversible | not started |
 | [2 — Terraform foundation](plan/stages/stage-02-terraform-foundation.md) | State buckets, module skeletons, the SCP import, CI hygiene checks | not started |
-| [3 — Networking](plan/stages/stage-03-networking.md) | Four VPCs, split `foundation/` + `egress/` | not started |
+| [3 — Networking](plan/stages/stage-03-networking.md) | One VPC per account that has one, split `foundation/` + `egress/` | not started |
 | [4 — VPN](plan/stages/stage-04-vpn.md) | WireGuard, the only entry point; peering so the tunnel reaches GitLab; GuardDuty on, with the first exposed resource | not started |
 | [5 — Data foundation](plan/stages/stage-05-data-foundation.md) | Lake, Glue, Iceberg, Lake Formation + the three cross-account shares; EFS; Security Hub on | not started |
 | [6 — Unified Studio](plan/stages/stage-06-unified-studio.md) | The DataZone V2 domain, project profiles, and the two egress designs compared | not started |

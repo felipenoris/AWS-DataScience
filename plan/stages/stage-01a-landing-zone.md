@@ -161,8 +161,12 @@ that multiplies.
    the Organizations tree and is not. Registering an OU afterwards is possible but is extra work at exactly
    the moment there is least appetite for it. OUs, per D23 — each named for the
    policy set it carries, not for its contents:
-   - `Interactive` OU → `Sandbox` and `Development` (D21). Interactive compute *allowed*; human
-     infrastructure changes denied. The only OU into which project blueprints may provision (D26).
+   - `Interactive` OU → `Development`, plus a nested **`Sandboxes` OU** holding the `Sandbox` accounts, one
+     per business unit (D35). Interactive compute *allowed*; human infrastructure changes denied. The only
+     OU into which project blueprints may provision (D26). **Attach the policy set to `Interactive`, not to
+     `Sandboxes`** — the nested OU carries none of its own and inherits, which is what makes a newly vended
+     unit governed the moment it lands. Created this way on 2026-08-09 (`LOG.md`); it is the reason the
+     organization's OU nesting depth is 2, which Stage 2 has to write its `for_each` against.
    - `Data` OU → `Data Governance` (D22, D26, D27). **No *user* compute** — the SCP denies EC2 and
      SageMaker outright, plus Glue job creation and execution (D25) — and deletion protection is the
      policy set's whole personality. **Two named carve-outs, and the distinction between them is the
@@ -191,12 +195,18 @@ that multiplies.
      registered with Control Tower does not inherit the CT controls, so a policy tested there is tested
      against a different baseline than the one it will meet in production — which is worse than not
      testing, because it produces a false pass.
-   - `Security` OU → `Identity`, alongside the Log Archive and Audit accounts Control Tower created.
-     **To verify while doing it:** the Security OU is a *foundational* OU in Control Tower's model and
-     carries its own guardrail set, so placing a third, non-Control-Tower-created account in it is worth
-     confirming rather than assuming. If it fights back, the fallback is a sibling `Identity` OU with the
-     same policy set — the D23 test ("an OU earns its existence when two or more accounts need the same
-     policy set") is not met by that, but a landing zone that will not enrol the account is worse.
+   - `Security` OU → the Log Archive and Audit accounts Control Tower created, **and nothing else.**
+     `Identity` was meant to join them and **could not** — the vend was refused on 2026-08-09 (`LOG.md`).
+     This step had flagged it as a thing to verify rather than assume, for the right reason: `Security` is a
+     *foundational* OU in Control Tower's model, and a non-Control-Tower-created account does not simply
+     join one.
+   - `Identity` OU → `Identity`. **This is the fallback this step named, and it fired.** Take the one
+     consequence seriously rather than treating the OU as a rename: `Security`'s policy set was never
+     written by this project — it is Control Tower's guardrails, inherited by the OU being *foundational* —
+     so a brand-new sibling OU inherits **none** of it. **Enumerate the controls applied to `Security` and to
+     `Identity`, compare them, and attach whatever differs explicitly in 1b step 7** (D34: a console-created
+     OU carries no policy set until code attaches one). This is the account whose administrator can grant
+     access to every other account; it did not become less sensitive by moving.
 
    **The accounts listed above are the complete set *for this stage*, which is not the same as the complete
    set (D34).** D14 places the tooling in Production rather than in a separate Shared Services account,

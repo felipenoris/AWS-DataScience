@@ -86,7 +86,10 @@ assumptions is nearly free to loosen while it is prose:
   one. Also **one account slot per unit** against the organization quota (D34's headroom item).
 
 **What is already future-proof, stated so it is not re-solved.** SCPs attach to the **OU**, so a new Sandbox
-inherits its whole policy set by being placed correctly — that is D23 paying off. D34's "the floor is
+inherits its whole policy set by being placed correctly — that is D23 paying off, and since 2026-08-09
+"correctly" has a name: the **`Sandboxes` OU** nested under `Interactive`, which holds the multiplied class
+and deliberately carries no policy set of its own (D23). The cost of that nesting is one line in Stage 2: the
+organization's OU depth is now 2, so the `for_each` below has to recurse. D34's "the floor is
 discovered, the grants are enumerated" rule means a new account is picked up by the organization-wide
 policies on the next apply. And Lake Formation cross-account **v3** (1b step 11) can grant to an OU or to a
 list, so the mechanical ceiling on N consumers is already lifted.
