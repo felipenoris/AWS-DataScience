@@ -27,6 +27,154 @@ than four applications spread across four stages. **The Data Governance account 
 (D22)** — its data plane is serverless (S3, Glue, Athena, Lake Formation), consumers reach it through
 their own VPC endpoints, and an account whose SCP denies compute has nothing to put in a subnet.
 
+---
+
+**The proposed topology.** Two views of the same thing: what crosses an account boundary, and what one VPC
+looks like inside. Both describe the *target* of this stage — none of it exists yet. Layers are
+`plan/conventions.md` §5.1: `[P]` free at rest and never destroyed, `[D]` stopped between sessions,
+`[E]` destroyed at the end of every session.
+
+*View 1 — what crosses account boundaries.* The two solid peerings are the only VPC-level paths between
+accounts; everything else is reached over public AWS endpoints, exited through the WireGuard Elastic IP
+(`plan/architecture.md` §3, "How a human actually reaches each account").
+
+```mermaid
+flowchart TB
+    LAPTOP["Laptop<br/>WireGuard peer · 10.90.0.0/24"]
+    API(["Public AWS API + console endpoints<br/>entered from the WireGuard Elastic IP · aws:SourceIp"])
+
+    subgraph OUI["OU Interactive"]
+        subgraph SBXS["OU Sandboxes · one account per business unit · D35"]
+            subgraph SBX["Sandbox · unit 1<br/>10.20.0.0/16 from the Sandbox supernet · sandbox.internal"]
+                WG["WireGuard EC2 · public subnet + EIP<br/>full tunnel, SNAT · [D]"]
+                SBXPRIV["private subnets<br/>Studio apps · EFS · D24"]
+            end
+            SBX2["Sandbox · units 2..N<br/>same module, own /16 from the supernet<br/>N = 1 today"]
+        end
+        subgraph DEV["Development · 10.50.0.0/16 · dev.internal"]
+            DEVPRIV["private subnets<br/>Studio apps"]
+        end
+    end
+
+    subgraph OUW["OU Workloads"]
+        subgraph PRD["Production · 10.30.0.0/16 · prod.internal"]
+            GITLAB["GitLab + Pages + internal ALB<br/>one private subnet · [D] / [E]"]
+            PRDPRIV["private subnets<br/>runners · jobs · orchestration"]
+        end
+        subgraph STG["Staging · 10.40.0.0/16 · staging.internal<br/>no peering to anywhere, by decision · D20"]
+            STGPRIV["private subnets<br/>pipeline-deployed apps · [E]"]
+        end
+    end
+
+    subgraph OUD["OU Data"]
+        DG["Data Governance · NO VPC · D22<br/>S3 · Glue · Athena · Lake Formation"]
+    end
+
+    LAPTOP -->|"UDP 51820"| WG
+    WG --> SBXPRIV
+    WG ==>|"peering 1 · routes only to the GitLab subnet"| GITLAB
+    DEVPRIV ==>|"peering 2 · INT-09 · same narrow routes"| GITLAB
+    LAPTOP -.->|"all other traffic, through the tunnel"| API
+    API -.-> DEV
+    API -.-> STG
+    API -.-> DG
+    SBXPRIV -.->|"athena · glue · lakeformation endpoints<br/>+ LF share"| DG
+    DEVPRIV -.-> DG
+    PRDPRIV -.->|"read + governed write"| DG
+```
+
+*View 2 — inside one VPC.* The same `terraform-modules/vpc/` module produces this in all four
+VPC-bearing accounts; only the CIDR and the interface-endpoint list differ.
+
+```mermaid
+flowchart TB
+    NET(["Internet"])
+    IGW["Internet Gateway · [P]"]
+
+    subgraph VPC["One VPC · 2 AZs · enable_dns_support = true · enable_dns_hostnames = true"]
+        subgraph AZA["AZ a"]
+            PUBA["public subnet<br/>WireGuard EC2 in Sandbox only"]
+            NAT["NAT Gateway, in the public subnet<br/>design A only · D5 · [E]"]
+            PRIA["private subnet<br/>Studio apps · runners · GitLab"]
+            ISOA["isolated subnet<br/>data tier, no route out"]
+        end
+        subgraph AZB["AZ b"]
+            PUBB["public subnet"]
+            PRIB["private subnet"]
+            ISOB["isolated subnet"]
+        end
+        GWEP["S3 + DynamoDB gateway endpoints · free · [P]<br/>org-scoped policy + the AWS-owned bucket allow-list<br/>IDs exported: Stage 5 bucket policies condition on them"]
+        IFEP["interface endpoints · single AZ · D9 · [E]<br/>core: sts logs kms ecr.api ecr.dkr athena glue lakeformation<br/>+ the per-account list of step 8"]
+        PHZ["Route 53 private hosted zone · [P]<br/>one per account, plus the cross-account associations of step 4"]
+        FLOW["VPC Flow Logs → CloudWatch Logs · short retention · [P]"]
+    end
+
+    PRIA -->|"0.0.0.0/0 · design A only"| NAT
+    PRIB -->|"0.0.0.0/0 · design A only"| NAT
+    NAT --> IGW
+    PUBA --> IGW
+    PUBB --> IGW
+    IGW --> NET
+    PRIA -.->|"S3 · DynamoDB"| GWEP
+    ISOA -.-> GWEP
+    PRIB -.-> GWEP
+    PRIA -.->|"every other AWS API"| IFEP
+    PRIB -.->|"cross-AZ, by design · D9"| IFEP
+
+    classDef pub fill:#fde8cd,stroke:#b26a00,color:#111;
+    classDef priv fill:#d8e8fb,stroke:#1f4e79,color:#111;
+    classDef iso fill:#e4e4e4,stroke:#555555,color:#111;
+    classDef eph fill:#ffe1e1,stroke:#b00020,color:#111,stroke-dasharray: 4 3;
+    class PUBA,PUBB pub;
+    class PRIA,PRIB priv;
+    class ISOA,ISOB iso;
+    class NAT,IFEP eph;
+```
+
+Under **design B** the NAT node and both `0.0.0.0/0` routes simply do not exist, and the gateway endpoint
+is the *only* path to the AWS-owned buckets of step 9 — which is why that allow-list is load-bearing rather
+than tidy.
+
+*View 3 — who resolves what.* Neither view above shows it, and it is where step 4 is lost: a name is
+answered by the resolver of the VPC the query enters, so **the laptop's whole private namespace is whatever
+the Sandbox VPC can resolve**. Solid edges are zones this project owns and can associate; dotted edges are
+the two `NXDOMAIN`s — one to be fixed by step 4, one deliberate.
+
+```mermaid
+flowchart LR
+    LAPTOP["Laptop · WireGuard client<br/>DNS = 10.20.0.2 · Stage 4 step 5"]
+
+    subgraph SBXVPC["Sandbox VPC · 10.20.0.0/16"]
+        RSBX["VPC resolver · 10.20.0.2"]
+        SBXEP["interface endpoints created here<br/>AWS-managed private zone"]
+    end
+
+    subgraph ZONES["Route 53 private hosted zones · ours · [P]"]
+        Z1["sandbox.internal<br/>owner: Sandbox"]
+        Z2["prod.internal<br/>owner: Production<br/>gitlab · pages"]
+        Z3["dev.internal · staging.internal<br/>owners: Development · Staging"]
+    end
+
+    subgraph PRDVPC["Production VPC · 10.30.0.0/16"]
+        PRDEP["interface endpoints created here<br/>AWS-managed private zone"]
+    end
+
+    RDEV["Development VPC resolver · 10.50.0.2"]
+
+    LAPTOP --> RSBX
+    RSBX -->|"associated at creation"| Z1
+    RSBX -->|"two-sided association · step 4:<br/>authorization in Production, association in Sandbox"| Z2
+    RDEV -->|"same handshake · D21 · INT-09"| Z2
+    RSBX -->|"private DNS answers"| SBXEP
+    RSBX -.->|"NXDOMAIN: an AWS-managed endpoint zone<br/>cannot be associated with another VPC"| PRDEP
+    RSBX -.->|"NXDOMAIN, and deliberately: both accounts are<br/>used over public AWS endpoints, not by private name"| Z3
+```
+
+The consequence is the one sentence step 4 spends a paragraph on: **an AWS-service name that must resolve
+privately for the laptop needs its endpoint in the Sandbox VPC** — a Production endpoint answers inside
+Production only, and no association fixes it, because that zone is not ours to associate. GitLab escapes
+this because it is reached through `prod.internal`, which *is* ours.
+
 **To execute:**
 
 The network is split across two slices per account, because the free half and the metered half have
