@@ -296,3 +296,15 @@
 - Preparing an organization trail (why member-account events reach the **management account's** log group, which is what makes one metric filter cover every account): <https://docs.aws.amazon.com/awscloudtrail/latest/userguide/creating-an-organizational-trail-prepare.html>.
 
 - CloudWatch Logs metric filters, and the JSON filter-pattern syntax used by the root-activity filter: <https://docs.aws.amazon.com/AmazonCloudWatch/latest/logs/MonitoringLogData.html> and <https://docs.aws.amazon.com/AmazonCloudWatch/latest/logs/FilterAndPatternSyntax.html>.
+
+- **Centralize root access for member accounts** — the prerequisites, the two capabilities, the console and CLI paths, and the statement that accounts created afterwards have no root credentials at all (Stage 1a step 6): <https://docs.aws.amazon.com/IAM/latest/UserGuide/id_root-enable-root-access.html>.
+
+- Perform a privileged task on an AWS Organizations member account — the five task-policy ARNs, the console `Take privileged action` flow, and the two constraints that shape the step: **root cannot call `sts:AssumeRoot`**, and there is **no global STS endpoint** for it: <https://docs.aws.amazon.com/IAM/latest/UserGuide/id_root-user-privileged-task.html>.
+
+- `AssumeRoot` API reference (session capped at 900 seconds, `TaskPolicyArn` required): <https://docs.aws.amazon.com/STS/latest/APIReference/API_AssumeRoot.html>.
+
+- Track privileged tasks in AWS CloudTrail — the two event shapes the break-glass alarm has to be read against: the `AssumeRoot` call itself (`sessionContext.assumedRoot = "true"`, `targetPrincipal`) and the in-session actions, which are logged in the target account as `userIdentity.type = "Root"` and therefore match the root-activity filter: <https://docs.aws.amazon.com/IAM/latest/UserGuide/cloudtrail-track-privileged-tasks.html>.
+
+- AWS Control Tower **strongly recommended preventive controls** — the SCP artifacts for `AWS-GR_RESTRICT_ROOT_USER` and `AWS-GR_RESTRICT_ROOT_USER_ACCESS_KEYS`, neither enabled by default, and the `ExemptAssumeRoot` / `ExemptedPrincipalArns` parameters that keep the first one compatible with centralized root access (Stage 1b step 7): <https://docs.aws.amazon.com/controltower/latest/controlreference/strongly-recommended-preventive-controls.html>.
+
+- AWS News Blog, centrally managing root access for customers using AWS Organizations (the launch post; the CLI sequence `enable-aws-service-access` → `enable-organizations-root-credentials-management` → `enable-organizations-root-sessions`): <https://aws.amazon.com/blogs/aws/centrally-managing-root-access-for-customers-using-aws-organizations/>.

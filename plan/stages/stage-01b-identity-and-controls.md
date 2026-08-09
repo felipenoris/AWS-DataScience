@@ -399,6 +399,19 @@ that is not.
       fall back, this policy is amended first (carve the `Interactive` OU in, or drop the root deny to the
       `Workloads` OU only), deliberately and with the reason recorded. A fallback silently forbidden by a
       policy written five stages earlier is the worst version of this.
+    - **The two root-user controls Control Tower ships, and the one parameter that decides whether they
+      break Stage 1a step 6.** `AWS-GR_RESTRICT_ROOT_USER_ACCESS_KEYS` and `AWS-GR_RESTRICT_ROOT_USER` are
+      *strongly recommended* controls — **not enabled by default**, so today the organization has neither.
+      The access-key one is free of consequences and matches the invariant D16 already states. The other
+      denies `*` wherever `aws:PrincipalArn` matches `arn:*:iam::*:root`, and **that reaches the privileged
+      root sessions 1a step 6 depends on**: in a member account an `sts:AssumeRoot` session *is* that
+      principal, so the control would deny the very action that restores a root credential or unlocks a
+      self-denied S3 bucket policy. Enable it **with the `ExemptAssumeRoot` parameter**, which adds
+      `"Null": {"aws:AssumedRoot": "true"}` to the condition and carves the centralized path back out. Both
+      controls also take `ExemptedPrincipalArns`; neither exemption should be a wildcard account (the
+      writing rule above). Note the asymmetry that makes this safe to enable at all: the controls attach to
+      OUs, and **the Management account is exempt from SCPs**, so the break-glass root is untouched either
+      way (D16). Enabled from the Control Tower console, so this one is reversible without a detach.
     - **RCPs:** deny access to S3, STS, KMS, SQS and Secrets Manager from principals outside the
       organization (`aws:PrincipalOrgID`) — the trusted-identities axis of `plan/architecture.md` §4.2.
     - **Tag policies:** standardize the mandatory tags from `plan/conventions.md` §6 — with a precision the previous version of

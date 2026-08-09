@@ -489,7 +489,9 @@ The first overrun there would be a session that leaves a design-A Sandbox `egres
 Worth stating explicitly, because their absence from the tables above is a fact and not an omission:
 
 AWS Organizations, AWS Control Tower itself (you pay for what it provisions — Config, CloudTrail, S3 — not
-for the service), IAM and IAM Identity Center, AWS Budgets (first two budgets), IAM Access Analyzer
+for the service), IAM and IAM Identity Center — including **centralized root access management**, both
+capabilities, and the `sts:AssumeRoot` sessions it grants (Stage 1a step 6); the only cost those carry is
+indirect, one break-glass SMS per privileged session — AWS Budgets (first two budgets), IAM Access Analyzer
 external-access findings, AWS Cost Anomaly Detection, VPC / subnets / route tables / internet gateway /
 security groups / NACLs, S3 gateway VPC endpoints, ECR pull-through cache (you pay only for the stored
 images), SageMaker Studio **domains** and user profiles at rest (only running apps and home-directory

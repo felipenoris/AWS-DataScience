@@ -198,8 +198,10 @@ Reference things by **stable ID** — `D26`, `INT-11`, `Stage 1b step 7` — nev
 - **Stage 1a nearly done; `LOG.md` is authoritative.** Control Tower enabled (`us-west-2`), budget set,
   and `Development`, `Sandbox Account 1`, `Production`, `Data Governance`, `Policy Canary` and `Identity`
   vended. **Accounts left: `Staging` alone**, deferred on the account cap — the increase to 15 is *requested*
-  and has to be confirmed before that vend (Stage 1a pre-flight has the arithmetic). **Steps left: 5**
-  (break-glass — runbook written 2026-08-09, alarm chain not built) **and 6** (centralized root access).
+  and has to be confirmed before that vend (Stage 1a pre-flight has the arithmetic). **Step left: 6**
+  (centralized root access; procedure written 2026-08-09 as 6.0-6.8). Step 5's chain was built the same day,
+  but `LOG.md` records the test as *run* and not its **result** — 6.5 settles it, since each deletion fires
+  the same alarm. Best done **before** the `Staging` vend: accounts created afterwards have no root at all.
 - **The OU tree is not the one D23 first described** — revised 2026-08-09 by execution; full tree in
   [`plan/architecture.md`](plan/architecture.md). `Identity` has an OU of its own, because the foundational
   `Security` OU refused the vend, so it inherits no guardrails and 1b step 7 must attach its set; and

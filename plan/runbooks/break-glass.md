@@ -83,6 +83,10 @@ If any of these is the reason you are reaching for root, stop — the answer is 
 - **Applying Terraform, in any account.** That is the infrastructure user
   ([D32](../decisions/D32-account-factory-sso-user.md)).
 - **Reading a log, a finding or a bill.** Those are readable from an assumed role.
+- **Anything root-shaped in a *member* account** — deleting or restoring its root credentials, unlocking an
+  S3 bucket policy or an SQS queue policy that denies everyone. Since Stage 1a step 6 that is a **privileged
+  root session** taken from the Management account by `AWS Control Tower Admin`, scoped to one of five task
+  policies and capped at 15 minutes. It fires this alarm (§7) and it is *not* this runbook.
 - **"It is faster."** It is, and that is exactly the habit this runbook exists to prevent: a credential used
   routinely stops being detectable, because its alarm stops meaning anything.
 
@@ -180,6 +184,13 @@ Four properties of this chain that are load-bearing:
   caught them** — this is the reason the chain hangs off the Control Tower trail rather than a new one.
 - **The filter catches any root API call, not only sign-in.** `ConsoleLogin` is the expected event; anything
   else under a root identity is more interesting, not less.
+- **It therefore also catches privileged root sessions, which are routine-ish rather than an emergency.**
+  Since Stage 1a step 6 the management account can take a scoped root session into a member account
+  (`sts:AssumeRoot`); the actions inside it are logged in that account as `userIdentity.type = "Root"`, so
+  they match this filter. **Telling the two apart is a correlation, not a field**: look for an
+  `sts.amazonaws.com` / `AssumeRoot` event with `sessionContext.assumedRoot = "true"` and
+  `requestParameters.targetPrincipal`, and match its `accessKeyId` to the member-account events. An alarm
+  with no such event, and a `ConsoleLogin` on the Management account, is the real thing.
 - **The alarm lives in the account it watches.** The Management root can delete it, and so can
   `AWS Control Tower Admin`. That is accepted for this lab, with two compensations: the S3 copy in Log
   Archive is under Object Lock in *compliance* mode (Stage 1b step 9), which nobody can bypass; and the

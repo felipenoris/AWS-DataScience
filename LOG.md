@@ -75,4 +75,5 @@
 
 - Moving to `CloudWatch` with the root account -> Alarms -> Create. Selected `RootActivityCount`, classic, Sum 1 minute, static, Greater/Equal to 1. Additional configuration -> Missing data treatment -> Treat missing data as good (not breaching threshold). In alarm -> Select an existing SNS topic -> send a notification to `awsds-org-break-glass-alerts`. Alarm name set to `AWS Break Glass Alert`, with description `A root account login was detected.`.
 
-- Testing the break-glass: logged out. Logged in with root account. Did nothing (no actions). Logged out.
+- Testing the break-glass: logged out. Logged in with root account. Did nothing (no actions). Logged out. Still waiting for the alerts. Will proceed with plan.
+

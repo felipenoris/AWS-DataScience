@@ -299,10 +299,89 @@ that multiplies.
    the **Last tested** row of the runbook.
 6. **Centralized root access management.** Every member account — the ones Control Tower created (Log
    Archive, Audit) and the ones Account Factory created — arrives with its own root user and its own
-   recovery e-mail: one dormant credential per account, none of which anybody will ever rotate. AWS
-   Organizations can remove root credentials from member accounts centrally and perform the few privileged
-   root actions on demand. Enable it; this is one console setting that eliminates a whole class of dormant
-   risk.
+   recovery e-mail: one dormant credential per account, none of which anybody will ever rotate, and each one
+   re-obtainable by whoever holds that inbox. AWS Organizations can remove those credentials centrally and
+   perform the few genuinely root-only actions on demand, as short sessions. **It does not touch the
+   Management account root**, which is what makes it compose with D16 instead of competing with it: every
+   member root disappears, one root remains, and that one is the break-glass.
+
+   **6.0 — Sign in as `AWS Control Tower Admin` → `AWSAdministratorAccess` on the Management account.**
+   Not as root, and that is a hard constraint rather than a preference: **`sts:AssumeRoot` cannot be called
+   by a root user**, and every privileged action below is a root session. Same shape as step 4's Account
+   Factory refusal (D33) — vending and this are the two Management-account jobs root cannot do.
+
+   **6.1 — Do this before the `Staging` vend, if the quota allows.** Accounts created in Organizations
+   *after* the feature is on have **no root credentials at all**, so `Staging` would be born clean and 6.4
+   would never have to touch it. Nothing breaks in the other order; it is one account's worth of manual work,
+   and the pre-flight's quota wait is the only reason it might come to that.
+
+   **6.2 — Enable the feature.** IAM console (Management account) → **Root access management** → **Enable**:
+   - Enable **both** capabilities. `Root credentials management` is the deletion; **`Privileged root actions
+     in member accounts` is the way back** — without it `Allow password recovery` does not exist, and a
+     deleted root is deleted with no documented path to restore it. AWS states the dependency plainly, which
+     is why enabling only the first is the one wrong way to do this step.
+   - **Leave `Delegated administrator` empty.** The natural candidate is the `Identity` account by analogy
+     with D10, and that analogy is exactly why it waits: the account is vended and otherwise bare until 1b,
+     and this delegation grants root sessions into **every** account in the organization. Deferring costs
+     nothing — it is one reversible API call — and a delegation of that reach is a decision with a number,
+     not a field filled in while passing.
+   - If the page reads **`Root access management is disabled`**, trusted access for IAM is not on in
+     Organizations: enable `iam.amazonaws.com` there and come back.
+
+   **6.3 — Verify, with something that cannot pass silently** (Lesson 13). From CloudShell in the Management
+   account, `aws iam list-organizations-features` must list **both** `RootCredentialsManagement` and
+   `RootSessions`, and `aws organizations list-aws-service-access-for-organization` must include
+   `iam.amazonaws.com`. Both return content on success and different content on failure, which the
+   per-account view does not.
+
+   **6.4 — Delete the credentials, one account at a time.** IAM → **Root access management** → select the
+   account → **Take privileged action** → **Delete root credentials**. The console shows a credential report
+   first — password present, access key present and when it was last used, signing certificates, MFA — and
+   **that report is the only time anybody will ever look at that account's root**: anything in it other than
+   "nothing" belongs in `LOG.md`. The deletion removes password, access keys and signing certificates and
+   deactivates MFA. **There is no bulk action in the console**; the per-account CLI equivalent is
+
+   ```bash
+   aws sts assume-root --target-principal <account-id> --task-policy-arn arn=arn:aws:iam::aws:policy/root-task/IAMDeleteRootUserCredentials --duration-seconds 900 --region us-west-2
+   ```
+
+   followed by `delete-login-profile`, `delete-access-key`, `delete-signing-certificate` and
+   `deactivate-mfa-device` under the returned credentials (note: `sts:AssumeRoot` has **no global endpoint** —
+   the `--region` is required — and the session is capped at 900 seconds). The member accounts today are
+   `Log Archive`, `Audit`, `Development`, `Sandbox Account 1`, `Production`, `Data Governance`,
+   `Policy Canary` and `Identity`, plus `Staging` unless 6.1 made it moot — eight or nine is below the
+   threshold where scripting a privileged path earns its own risk.
+
+   **6.5 — Expect the break-glass alarm to fire, and take it as the second test of step 5.** The *actions*
+   inside a privileged session are logged in the target account as `userIdentity.type = "Root"`, which is
+   precisely what 5.3's filter matches, and the trail is org-wide — so **every deletion pages both
+   channels**. Two things follow, better written down than discovered: from here on the alarm means "root
+   activity anywhere", and a privileged session is told apart from a real root sign-in only by correlating
+   the `sts.amazonaws.com` `AssumeRoot` event (`sessionContext.assumedRoot = true`, plus
+   `requestParameters.targetPrincipal`) with the `accessKeyId` on the member-account events. And **if nothing
+   arrives on both channels here, step 5 never worked**: `LOG.md` records the 5.5 test as performed but not
+   its result, so this is where that gets settled.
+
+   **6.6 — What it costs, and the reversal.** Afterwards a member account cannot sign in as root and cannot
+   run password recovery; anything genuinely root-only there is done from Management as a ≤15-minute session,
+   and **only five task policies exist** (audit credentials, create root password, delete credentials, unlock
+   an S3 bucket policy, unlock an SQS queue policy). Two of those five are the "I denied myself" repairs, so
+   the practical loss is narrow. The one capability this design might have wanted and cannot have from inside
+   the account is **S3 MFA Delete**, which requires that account's own root — and 1b step 9 uses Object Lock
+   in compliance mode instead, so nothing is actually given up. Reversal, if it is ever needed: **Allow
+   password recovery** on that account (only offered once the credentials are gone), reset from the root
+   inbox, do the task, delete again.
+
+   **6.7 — Carry one consequence into 1b step 7.** Control Tower's strongly-recommended control
+   **`AWS-GR_RESTRICT_ROOT_USER`** denies `*` where `aws:PrincipalArn` matches `arn:*:iam::*:root` — which
+   **also denies privileged root sessions**, because in the member account they *are* that principal. It is
+   **not enabled by default**, so nothing is broken today. If 1b step 7 enables it (or writes the
+   hand-rolled equivalent), it must carry the **`ExemptAssumeRoot`** parameter, which adds
+   `"Null": {"aws:AssumedRoot": "true"}` to the condition. Without that, the control and this step's own
+   recovery action cancel out — the escape hatch is denied by the guardrail meant to protect it.
+
+   **6.8 — Record it in `LOG.md`**: date, which capabilities were enabled, whether a delegated administrator
+   was set, what each account's credential report showed, and whether both alarm channels fired.
 
 **Deliverables of 1a:** every account exists, in its OU, each with the **same** infrastructure user holding
 administrative access through Identity Center (D32) — one user in the directory, not seven; the Management
