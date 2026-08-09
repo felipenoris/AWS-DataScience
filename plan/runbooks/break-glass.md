@@ -5,11 +5,57 @@
 | **Credential** | The **Management account root user**, and nothing else ([D16](../decisions/D16-break-glass.md)) |
 | **Built by** | [Stage 1a](../stages/stage-01a-landing-zone.md) steps 1 and 5 |
 | **Detects use** | CloudWatch alarm `awsds-org-root-activity` → SNS `awsds-org-break-glass-alerts` (e-mail + SMS) |
-| **Last tested** | *(fill in at each test — see §5)* |
+| **Last tested** | *(fill in at each test — see §6)* |
 
-This is the **only** recovery path. A second, narrower one was proposed and reverted
-([D30](../decisions/D30-scp-recovery.md)), so there is no principal inside a governed account that can work
-around a bad `Deny`. Everything below assumes that.
+---
+
+## 0. What this is
+
+**The credential was never built, and that is the point.** "No IAM Users" (principle 2) has no answer for an
+Identity Center outage or a misapplied SCP, and an absolute rule with no escape hatch is one that gets broken
+improvised, under pressure, at the worst moment. D16 settled the escape hatch as the **Management account
+root**, which removes the exception instead of documenting one: the root is not an IAM user, it exists
+whether or not you want it, there is nothing to create and nothing for Terraform to manage. So Stage 1a step
+1 (secure the root) and step 5 (build the break-glass) are two halves of one thing, and what step 5 adds is
+not a credential — it is what makes that credential a *break-glass* rather than just an account owner: this
+written procedure, an alarm on its use, and one test.
+
+**It is the only recovery path, and that is a decision rather than an omission.** A second, narrower
+principal — standing, exempt from every custom `Deny` — was proposed, adopted and then reverted
+([D30](../decisions/D30-scp-recovery.md)). The lab keeps no exemption, so this root carries all three
+failures in §1 alone, and no principal inside a governed account can work around a bad `Deny`. Two
+consequences, both already written into the plan: the chain in §7 must work **before** the first policy is
+attached in Stage 1b step 7, and every candidate policy is exercised against the `Policy Canary`
+([D29](../decisions/D29-policy-canary.md)) first — with no exemption, catching a bad policy before
+attachment is far cheaper than repairing it afterwards.
+
+**Which is also why it is built in Stage 1a and not later.** Every policy 1b attaches is a way to lock
+yourself out of your own organization. The escape hatch has to predate the hazard, or it is being built by
+someone who already needs it.
+
+**An intention is not a control** (Lesson 5): the alarm needs a *delivery path* that can be named. A
+CloudWatch alarm cannot watch an S3 bucket, and the Control Tower organization trail delivers to the Log
+Archive account's bucket — so "alarm on root usage" is not a setting, it is the explicit chain in §7: trail
+→ CloudWatch Logs group → metric filter → metric → alarm → SNS topic → subscriptions. Each link is a place
+it can silently fail, which is why §6 exists.
+
+**The subscription must not be the address that logs in.** Root sign-in *is* e-mail plus password, so
+alarming to the login address hands one person the credential and its own warning. Since
+[D33](../decisions/D33-control-tower-admin-user.md) that address is disqualified twice over: it is also the
+`AWS Control Tower Admin` login, i.e. a *routine* daily login, which would make every alarm ambiguous.
+**But be honest about how much that rule buys here.** In an institution the alarm reaches someone who is not
+holding the credential. In this lab every address is a `+alias` on one Gmail account and there is one human,
+so a distinct address buys **routing and filterability — not separation**: the same mailbox compromise
+defeats both. What adds a genuine second factor is a **second channel**, which is why the SMS endpoint in §7
+is not optional decoration — it is the only part of the separation that survives the one-inbox problem.
+
+**Two SNS topics already exist and neither is this one.** Control Tower created
+`aws-controltower-SecurityNotifications` per Region and `aws-controltower-AggregateSecurityNotifications` in
+the Audit account, and subscribed the Audit account's e-mail to the aggregate topic automatically. They are
+deliberately noisy — AWS Config notifies on every resource it discovers — and an alarm that arrives in a
+stream nobody reads is not an alarm. Note that the Audit account's *root* address being a notification
+endpoint has the same shape as the rule above, one account over; Stage 1a step 6 defuses it by removing that
+account's root credentials centrally, after which the address is a mailbox rather than a credential.
 
 ---
 
@@ -115,8 +161,11 @@ Control Tower organization trail  (aws-controltower-BaselineCloudTrail, multi-re
             alarm   awsds-org-root-activity   (Sum ≥ 1 over 1 period, missing data = notBreaching)
                     │
             SNS     awsds-org-break-glass-alerts
-                    ├── e-mail  (the break-glass alert address in secrets/emails.md — NOT the root address)
+                    ├── e-mail  (the break-glass address — NOT the root address)
                     └── SMS     (the second channel; the only part that survives the one-inbox problem)
+
+  Both endpoints are recorded in the break-glass section of secrets/emails.md, which is
+  git-ignored; neither value appears anywhere in this repository.
 ```
 
 Four properties of this chain that are load-bearing:

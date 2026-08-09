@@ -225,49 +225,78 @@ that multiplies.
    automated equivalent and is deliberately not used — but note that its rejection rested on "created once",
    a premise D34 retired, so what keeps it out now is measured cost and not frequency
    (`plan/institutional-delta.md`).
-5. **Break-glass: the procedure and the alarm (D16).** The *credential* was handled in step 1 — it is this
-   root, there is no second mechanism to build. What is left here is what makes it a break-glass rather
-   than just an account owner: write the procedure down (what situations justify using it — an Identity
-   Center outage, an organization-level policy that locked everyone out; what to do; what to record
-   afterwards), build the alarm, and test the whole thing once.
-   **The procedure is written: [`plan/runbooks/break-glass.md`](../runbooks/break-glass.md)**, which also
-   carries the exact alarm chain, the resource names and the test. **This belongs in 1a and not later**: every
-   policy in 1b is a way to lock yourself out of your own organization, and the escape hatch has to predate
-   the hazard.
-   **The alarm needs a delivery path, not just an intention** (Lesson 5 in `CLAUDE.md`: name the policy line
-   that enforces the stated property). A CloudWatch alarm cannot watch an S3 bucket, and Control Tower's
-   organization trail delivers to the Log Archive account's bucket. So the alarm requires an explicit chain:
-   the trail (or a Management-account trail) writing to a **CloudWatch Logs** group, a **metric filter**
-   matching `userIdentity.type = Root`, a metric, an alarm, and an SNS
-   topic with a subscription that is **not** the same e-mail as the account being alarmed on — root sign-in
-   *is* e-mail plus password, so alarming to the login address hands the same person the credential and its
-   own warning. Since D33 that address is doubly disqualified: it is also the `AWS Control Tower Admin`
-   login. Build the chain here and fire it once with a deliberate sign-in; an untested alarm is a
-   hypothesis.
-   **Be honest about how much the "different address" rule buys here, because the prose above overstates
-   it (Lesson 5).** In an institution the alarm goes to someone who is *not* holding the root credential.
-   In this lab every address is a `+alias` on one Gmail account and there is one human, so a distinct
-   address buys **routing and filterability — not separation**: the same mailbox compromise defeats both.
-   What actually adds a second factor is a **second channel**: subscribe an SMS endpoint to the topic
-   alongside the e-mail. SNS supports it directly, it costs cents at this volume, and it is the only part of
-   this step that survives the one-inbox problem. Register whichever address is chosen in
-   `secrets/emails.md` before building the topic.
-   **Two SNS topics already exist and are not this one.** Control Tower created
-   `aws-controltower-SecurityNotifications` per Region and `aws-controltower-AggregateSecurityNotifications`
-   in the Audit account, and **subscribed the Audit account's e-mail to the aggregate topic automatically**.
-   Do not reuse them for break-glass: they are deliberately noisy — AWS Config notifies on every resource it
-   discovers — and an alarm that arrives in a stream nobody reads is not an alarm. Note also that the
-   Audit account's *root* address being a notification endpoint is the same shape as the rule above, one
-   account over; step 6 is what defuses it, by removing that account's root credentials centrally, after
-   which the address is a mailbox rather than a credential.
-   **This is the only recovery path, and that is a decision rather than an omission (D30, reverted).** A
-   narrower standing principal exempt from every custom `Deny` was proposed, adopted and then removed: the
-   lab keeps no exemption, so the root handles all three failures — "Identity Center is down", "the
-   organization itself is broken", and "a custom SCP denies something it should not". **Two consequences
-   for how the rest of Stage 1 is executed, and both are already written into it:** the break-glass chain
-   below must work *before* the first policy is attached in 1b step 7, and every candidate policy goes
-   through the `Policy Canary` battery (D29) first — with no exemption, catching a bad policy before
-   attachment is far cheaper than repairing it afterwards.
+5. **Break-glass: the procedure and the alarm (D16).** Three deliverables: the procedure written down, the
+   alarm chain built, and the whole thing tested once. **The first is done —
+   [`plan/runbooks/break-glass.md`](../runbooks/break-glass.md)**, whose §0 carries *why* this step exists
+   and whose §7 is the reference copy of the chain below. Read it once before building; what follows is only
+   the procedure.
+
+   **Sign in as `AWS Control Tower Admin` → `AWSAdministratorAccess` on the Management account, region
+   `us-west-2`.** The whole chain is built from that session. The root is needed only in 5.5, to fire the
+   alarm.
+
+   **5.0 — Two choices, made before the console is open.** Pick the **e-mail address the alarm notifies**
+   (a dedicated alias, *not* the root address — runbook §0 says why) and the **mobile number** for the SMS
+   endpoint, and register both in `secrets/emails.md`. That file is the user's and is git-ignored: neither
+   value is ever copied into this repository.
+
+   **5.1 — Verify what the landing zone already delivered. Build nothing yet.**
+   - **CloudWatch → Log groups** must contain **`aws-controltower/CloudTrailLogs`**. From landing zone 3.0
+     it is created **only in the Management account** (earlier versions put one in every enrolled account),
+     which is why the filter goes here and not in Log Archive.
+   - **CloudTrail → Trails → `aws-controltower-BaselineCloudTrail`** must show **Multi-region: Yes** and
+     **Global service events: Yes**. This is load-bearing: **root console sign-in is recorded in
+     `us-east-1`**, because console sign-in is a global service in CloudTrail. A new single-Region trail in
+     `us-west-2` would not see the event at all — which is precisely why this chain hangs off the existing
+     organization trail instead of creating one.
+   - Being an *organization* trail, member-account events land in this same log group, so **one metric
+     filter covers every account** — useful until step 6 removes the member roots, and a backstop after.
+   - **Do not modify the trail**: an edit is landing-zone drift. Adding a *metric filter* to the log group
+     is not — it is a separate resource, and the log group survives even a decommission.
+   - **If the log group is absent** (a landing zone set up without CloudWatch Logs), stop and re-plan: the
+     fallback is a second, Management-only trail, which changes both the cost and the steps below.
+
+   **5.2 — The SNS topic and its two subscriptions.** SNS in `us-west-2`, **Standard** topic:
+   - Name `awsds-org-break-glass-alerts`; **Display name** set (SMS requires one — it becomes the sender
+     prefix).
+   - **Leave encryption off.** With SSE under the AWS-managed `aws/sns` key, a CloudWatch alarm **cannot
+     publish** — the CloudWatch service principal has no `kms:GenerateDataKey` on it, and the alarm fails
+     *silently*: a chain that cannot deliver looks exactly like a quiet organization (Lesson 13), which is
+     the one failure mode this whole step exists to prevent. Encrypting would require a customer-managed key
+     with an explicit key policy; not worth it here.
+   - **E-mail subscription** → the 5.0 address → **confirm the link**; it stays `Pending confirmation` until
+     then, and an unconfirmed subscription is a channel that does not exist.
+   - **SMS subscription**, which needs one prior step: a new account is in the **SNS SMS sandbox** and can
+     only send to *verified* numbers. **SNS → Text messaging (SMS) → Sandbox destination phone numbers →
+     Add**, verify by OTP, then subscribe the number to the topic. Nothing else is needed for Brazil: it
+     supports short codes, does **not** support long codes or sender IDs, and requires **no** registration,
+     so there is no origination identity to buy and no filing to wait on — AWS sends over its shared
+     short-code pool, best effort.
+   - **Do not reuse the two Control Tower topics** — runbook §0 says why.
+
+   **5.3 — The metric filter.** On `aws-controltower/CloudTrailLogs` → **Metric filters → Create**:
+   - Pattern (the CIS root-usage pattern; it catches **any** root API call, not only `ConsoleLogin`):
+     `{ $.userIdentity.type = "Root" && $.userIdentity.invokedBy NOT EXISTS && $.eventType != "AwsServiceEvent" }`
+   - Filter name `awsds-org-root-activity`; namespace `AWSDS/Security`; metric name `RootActivityCount`;
+     metric value `1`.
+   - **Leave `Default value` empty.** A metric-filter metric is a *custom* metric at USD 0.30/metric-month,
+     metered only for the hours it actually publishes — so with no default value a quiet month costs nothing
+     (`PRICING.md` §6). The price of that choice is paid in 5.4.
+
+   **5.4 — The alarm.** CloudWatch → Alarms → Create → metric `AWSDS/Security` / `RootActivityCount`:
+   - **Sum**, period **1 minute**, static threshold **≥ 1**, **1 of 1** datapoints.
+   - **Missing data: `notBreaching`.** This is the price of 5.3: with no default value the metric publishes
+     nothing while all is well, and any other setting turns silence into an alarm or an
+     `INSUFFICIENT_DATA` that hides one.
+   - Name `awsds-org-root-activity`; **In alarm** action → the topic from 5.2.
+
+   **5.5 — Test it. An untested alarm is a hypothesis.** Sign in as Management root, do nothing, sign out.
+   Allow **up to ~15 minutes** end to end (CloudTrail delivery → CloudWatch Logs → metric → alarm → SNS);
+   past ~20 minutes it is a failure, not latency. Confirm the message arrived on **both** channels — a
+   missing channel is a finding — and that the alarm returns to `OK` on its own.
+
+   **5.6 — Record it.** Resource names and the test result in `LOG.md` (the user's file), and the date in
+   the **Last tested** row of the runbook.
 6. **Centralized root access management.** Every member account — the ones Control Tower created (Log
    Archive, Audit) and the ones Account Factory created — arrives with its own root user and its own
    recovery e-mail: one dormant credential per account, none of which anybody will ever rotate. AWS

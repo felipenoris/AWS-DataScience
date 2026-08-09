@@ -106,7 +106,7 @@ Never update `LOG.md`. I'll edit this file.
 This folder is ignored by git. It contains personal information. Never edit this folder, and never
 write anything into it. Claude can read the files in this folder to gather information.
 
-**Never copy or reproduce any email addresses contained in this folder into any other project files.**.
+**Never copy or reproduce any email addresses or telephone numbers contained in this folder into any other project files.**.
 
 ## Organization
 
