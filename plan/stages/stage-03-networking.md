@@ -4,7 +4,7 @@
 |---|---|
 | **Status** | not started |
 | **Prerequisites** | Stage 2. |
-| **Consumes** | [D5](../decisions/D05-sagemaker-egress.md), [D9](../decisions/D09-az-count.md), [D14](../decisions/D14-supply-chain-account.md), [D15](../decisions/D15-tls-internal.md), [D18](../decisions/D18-data-scientist-access.md), [D20](../decisions/D20-staging-account.md), [D21](../decisions/D21-development-account.md), [D22](../decisions/D22-data-governance-account.md) |
+| **Consumes** | [D5](../decisions/D05-sagemaker-egress.md), [D9](../decisions/D09-az-count.md), [D14](../decisions/D14-supply-chain-account.md), [D15](../decisions/D15-tls-internal.md), [D18](../decisions/D18-data-scientist-access.md), [D20](../decisions/D20-staging-account.md), [D21](../decisions/D21-development-account.md), [D22](../decisions/D22-data-governance-account.md), [D35](../decisions/D35-sandbox-cardinality.md) |
 | **Proves** | [INT-09](../integrations.md) |
 
 *Read with [`plan/conventions.md`](../conventions.md) (naming, layout, `[P]`/`[D]`/`[E]`, IAM rules).*
@@ -36,7 +36,8 @@ different lifecycles (`plan/conventions.md` §5.1).
 
 1. `terraform-modules/vpc/`: VPC (`10.20.0.0/16` sandbox, `10.30.0.0/16` production, `10.40.0.0/16`
    staging, `10.50.0.0/16` development), 2 AZs, public + private + isolated (data) subnets. Applied to
-   **all four** accounts. The ranges are non-overlapping even where no peering is planned — Staging is
+   **every account that has a VPC** — Sandbox (one per business unit, D35), Development, Staging and
+   Production. The ranges are non-overlapping even where no peering is planned — Staging is
    deliberately not peered (D20), but a CIDR chosen to overlap is a decision that cannot be revisited
    without rebuilding the VPC, and the address space costs nothing.
    **Forward constraint from D35, and this is the step where it is free.** `Sandbox` is one account **per
@@ -166,7 +167,8 @@ different lifecycles (`plan/conventions.md` §5.1).
 10. Keep this slice's route-table associations parameterised, so D5 (Stage 6) can insert a firewall or
     proxy into the egress path, or remove it entirely under design B, without reshaping the foundation.
 
-**Deliverables:** all four VPCs applied by Terraform from the same module; flow logs visible; endpoints
+**Deliverables:** every VPC applied by Terraform from the same module, with the Sandbox range taken from the
+allocation table rather than from a literal (D35); flow logs visible; endpoints
 resolving privately; both peerings reachable in the intended direction and *not* reachable outside the
 permitted subnets; **Staging unreachable from any other VPC at the network level** — the proof that the
 missing peering is missing on purpose; an attempt to reach an out-of-organization S3 bucket through the

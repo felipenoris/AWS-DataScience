@@ -25,6 +25,24 @@ it names a Shared Services account if one is ever vended, and nothing else. `dat
 Governance account, which is not an environment at all: it sits on the ownership axis, not the lifecycle
 one, so cost reports should be able to separate it from every environment.)
 
+**Forward constraint from D35 — every `sandbox` token in this file is per business unit, not singular.**
+`Sandbox` is the one account in the map that multiplies (one per business unit; N is 1 today), so five
+things written here as singletons are really per-unit: the `<env>` token `sandbox`, the
+`Environment=sandbox` tag value, the `terraform-live/sandbox/` tree, the `awsds-infra-sandbox` SSO profile,
+and `make up`/`make down ENV=sandbox`. Everything else — Development, Staging, Production, Data Governance,
+Identity, `org` — is structural and stays exactly as written.
+
+**The concrete scheme is settled in [Stage 14](stages/stage-14-sandbox-vending.md)**, alongside the CIDR
+allocation table (Stage 3) and the VPN topology (Stage 4): choosing a directory and token shape here, with
+one unit and no `sandbox-unit` module written, would be guessing at the interface of something that does not
+exist yet. What this note fixes now is the cheaper half, and it is the one that fails silently — **the two
+enumerations above are Lesson 14 in naming.** The `<env>` list and the tag policy's allowed values both
+enumerate `sandbox`, and the forcing function behind the tags is an SCP conditioned on `aws:RequestTag`
+(1b step 7). So an enumeration that does not admit a per-unit token turns the first apply in a freshly
+vended account into an `AccessDenied` — discovered in a new account, by whoever is standing it up, which is
+the worst possible place to find out about a naming rule. Write both lists so a per-unit token is admissible
+before it is needed.
+
 **Terraform layout:**
 
 Each slice carries its layer from §5.1: `[P]` persistent, `[D]` dormant (stop/start), `[E]` ephemeral.
@@ -39,7 +57,11 @@ terraform-live/
 │   │                     #     bad Deny from inside a governed account, so this set needs
 │   │                     #     a diff, a review and a rollback more than anything else here
 │   └── bootstrap/        # [P] state bucket for the Identity account
-├── sandbox/              # EXPERIMENTATION (D21): the unit of work is a notebook
+├── sandbox/              # EXPERIMENTATION (D21): the unit of work is a notebook.
+│   │                     # ONE OF THESE PER BUSINESS UNIT (D35) - the whole subtree
+│   │                     # below is what Stage 14's sandbox-unit module composes
+│   │                     # from a single input. N is 1 today; the naming is settled
+│   │                     # there, not here (see the D35 note above)
 │   ├── bootstrap/        # [P] state bucket for this account (state migrated in, never committed)
 │   ├── foundation/       # [P] VPC, subnets, route tables, IGW, security groups, private
 │   │                     #     hosted zone, KMS keys, IAM roles, WireGuard Elastic IP,
@@ -151,7 +173,9 @@ terraform-modules/        # reusable: vpc, wireguard, iam-role, ecr-repo, s3-buc
 
 `make down ENV=sandbox` destroys the `[E]` slices in reverse dependency order and stops the `[D]`
 instances; `make up ENV=sandbox` starts the `[D]` instances and applies the `[E]` slices; `make status`
-reports what is running and the current hourly burn. `[P]` slices are never touched by any of them — they
+reports what is running and the current hourly burn. **`ENV` names a business unit's sandbox rather than
+*the* sandbox (D35)** — Stage 14 step 6 makes the same `up`/`down` pair work against a generated unit, which
+is what makes a unit disposable rather than merely creatable. `[P]` slices are never touched by any of them — they
 are applied deliberately, by hand. One `[E]` resource lives outside any slice: the running **apps inside a
 Unified Studio project** are created by users, not by Terraform, so `make down` deletes them through the
 API before touching the slices. **Which API, since D26 changed the answer:** the apps live in the
@@ -172,7 +196,8 @@ CI is the same bug as one that only works by hand — but the expected caller is
 - Region, AZs and AMIs follow the portability rules in `plan/architecture.md` §4.1 — no region literals in `.tf` files.
 - Authentication through named SSO profiles, one per Terraform-managed account — `awsds-infra-sandbox`,
   `awsds-infra-dev`, `awsds-infra-data`, `awsds-infra-staging`, `awsds-infra-prod`,
-  `awsds-infra-identity` (Stage 1b step 5) — never keys.
+  `awsds-infra-identity` (Stage 1b step 5) — never keys. **One of these per business unit is the sandbox
+  one** (D35); the other five are structural.
 - Every slice: `terraform fmt`, `validate` and `plan` must be clean before apply.
 - Remote state read across slices through `terraform_remote_state` data sources, never hardcoded IDs.
 - **The Organization is never in Terraform, and the code is written to survive that (D34).** Accounts and

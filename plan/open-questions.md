@@ -1,13 +1,13 @@
 # Open questions
 
-Only things to find out by doing. **All thirty-one decisions are closed** — a question that
+Only things to find out by doing. **All thirty-five decisions are closed** — a question that
 turns into a choice becomes a decision file, not a longer entry here.
 
 ---
 
 ## 9. Open questions
 
-Everything that was open before execution started is now closed in `plan/decisions/` (D1-D31). What follows is
+Everything that was open before execution started is now closed in `plan/decisions/` (D1-D35). What follows is
 what is genuinely still unanswered:
 
 1. **Which domain name to register (D15).** The one input needed from the user. Not blocking Stage 1, but

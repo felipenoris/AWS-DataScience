@@ -4,7 +4,7 @@
 |---|---|
 | **Status** | not started |
 | **Prerequisites** | Stage 3. D4 is decided: self-managed WireGuard. |
-| **Consumes** | [D4](../decisions/D04-vpn-wireguard.md), [D6](../decisions/D06-dlp-approach.md), [D16](../decisions/D16-break-glass.md), [D26](../decisions/D26-unified-studio.md) |
+| **Consumes** | [D4](../decisions/D04-vpn-wireguard.md), [D6](../decisions/D06-dlp-approach.md), [D16](../decisions/D16-break-glass.md), [D26](../decisions/D26-unified-studio.md), [D35](../decisions/D35-sandbox-cardinality.md) |
 | **Proves** | [INT-16](../integrations.md) |
 
 *Read with [`plan/conventions.md`](../conventions.md) (naming, layout, `[P]`/`[D]`/`[E]`, IAM rules).*

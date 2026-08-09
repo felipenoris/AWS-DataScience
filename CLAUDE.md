@@ -204,12 +204,21 @@ Reference things by **stable ID** — `D26`, `INT-11`, `Stage 1b step 7` — nev
 
 ### Current position
 
-- **Stage 0 complete. Stage 1a is in progress** — see `LOG.md` for exactly how far. Control Tower is
-  enabled (`us-west-2`), the account-quota increase to 15 is *requested*, the budget is set, the `Security`
-  and `Interactive` OUs exist, and accounts are being vended through Account Factory — `Development` first.
+- **Stage 0 complete. Stage 1a is nearly done** — `LOG.md` is authoritative. Control Tower enabled
+  (`us-west-2`), quota increase to 15 *requested*, budget set, and `Development`, `Sandbox Account 1`,
+  `Production`, `Data Governance` and `Policy Canary` vended. **Left: `Identity` (see below) and `Staging`,
+  deferred on quota.**
+- **The OU tree that exists is not the one D23 describes, in two ways — both open, neither yet decided.**
+  (i) **`Sandboxes` is nested under `Interactive`** and is in no plan document; decide whether it is D35's
+  multiplied-class OU or an execution accident. (ii) **`Identity Account` could not be vended into the
+  `Security` OU** — Control Tower appears to block a non-foundational account there — so a sibling
+  **`Identity` OU** was created, which is exactly the fallback Stage 1a step 4 wrote down. Both need the plan
+  updated (D23, the account tables, `architecture.md`, and 1b step 7's per-OU policy tiers: a new OU carries
+  no policy set until code attaches one). Together they make the organization's **OU nesting depth 2**, which
+  is the parameter Stage 2's `for_each`-over-the-data-sources rule (D34) turns on.
 - **Vending an account: the `SSOUserEmail` field always takes the infrastructure user (D32)**, the same
-  address on all seven. It grants administrative access to the account, so it is never the account's own
-  e-mail and never another persona.
+  address on every account vended. It grants administrative access to the account, so it is never the
+  account's own e-mail and never another persona.
 - **Vending is done from the AWS access portal as `AWS Control Tower Admin`, never from root (D33)** —
   root gets a Service Catalog portfolio error, by design. That user is Control Tower's own creation, carries
   the Management **root e-mail**, and via `AWSControlTowerAdmins` is administrator on **Management, Log

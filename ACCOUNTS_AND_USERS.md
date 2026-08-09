@@ -48,7 +48,7 @@ is not signing in to the account.
 | Audit | Security | Platform | Control Tower guardrails; delegated security administration |
 | Identity | Security | Platform | Control Tower guardrails; delegated Identity Center administration |
 | Policy Canary | Policy Test | Platform | **None of its own** — the OU exists to hold *candidate* policies under test (D29) |
-| Sandbox | Interactive | Lifecycle (before the chain) | Interactive compute allowed; human infrastructure changes denied |
+| Sandbox | Interactive | Lifecycle (before the chain) | Interactive compute allowed; human infrastructure changes denied. **One account per business unit (D35)** — the only non-structural row in this table |
 | Development | Interactive | Lifecycle (head of the chain) | Same as Sandbox — the two differ in content, not in policy |
 | Data Governance | Data | **Ownership** | No user compute; catalog maintenance excepted by name; deletion denied |
 | Staging | Workloads | Lifecycle | No interactive compute; no human control plane |
@@ -61,6 +61,17 @@ is not signing in to the account.
 ## Sandbox Account
 
 - Represents an experimentation sandbox environment, where the unit of work is a notebook. Sandbox users will use this to experiment and develop artifacts.
+
+- **There is one of these per business unit** ([D35](plan/decisions/D35-sandbox-cardinality.md)) — it is the
+  only account in this file that is not structural. Every other account here, `Development` included, is
+  exactly one, forever. The chain reads **N Sandboxes → one Development → one Staging → one Production**, so
+  the cardinality boundary is the same line as the D21 graduation boundary: experimentation is naturally
+  per-unit, engineering is institutional. **N is 1 today.** Two consequences worth stating here rather than
+  discovering later: a unit's experimentation is private to it (its own account, its own filesystem, its own
+  people), and **that isolation stops at the graduation boundary** — past it, one shared Development, and
+  whatever separation is required is carried by Lake Formation grants and per-pipeline execution roles, not
+  by an account boundary that is deliberately not there. Vending a unit's account is
+  [Stage 14](plan/stages/stage-14-sandbox-vending.md).
 
 - **Target of the `experimentation` project profile** ([D26](plan/decisions/D26-unified-studio.md)). The SageMaker Unified Studio
   domain lives in Data Governance, but the compute does not: when a data scientist creates an
@@ -182,7 +193,13 @@ contents of the directory — see "Identities this project did not create" at th
 
 - the access matrix this expands into, per account ([D18](plan/decisions/D18-data-scientist-access.md)):
 
-  - **Sandbox and Development**: read-write and interactive. This is where the person works.
+  - **Sandbox and Development**: read-write and interactive. This is where the person works. **The group
+    behind the two halves is not the same one (D35):** `Development` is a single shared engineering account
+    and keeps one `data-scientists` group, while a `Sandbox` exists per business unit, so its assignment is
+    to a **`data-scientists-<bu>`** group covering that unit's Sandbox and nothing else — otherwise every
+    data scientist can sign in to every unit's experimentation account. The permission set itself
+    (`DataScientistAccess`) is unchanged and shared. With one unit there is no per-unit group yet; what
+    exists now is the naming, so the second unit is an addition and not a refactor.
   - **Staging**: read-only, with no write of any kind. Staging is written by the pipeline and read by a
     human diagnosing why the pipeline failed.
   - **Production**: the data plane without compute — logs, catalog metadata, job status, named S3

@@ -68,7 +68,7 @@ group level — *"IAM Identity Center users that provision accounts must be in t
 or the management group"* — so **vending is a property of group membership, not of this user**, and the two
 groups are very far from equivalent. `AWSAccountFactory` grants exactly one thing,
 `AWSServiceCatalogEndUserAccess` on Management, which is what Account Factory mechanically requires;
-`AWSControlTowerAdmins` grants administrator across three accounts. **The narrow replacement is therefore
+`AWSControlTowerAdmins` grants administrator across Management, Log Archive and Audit. **The narrow replacement is therefore
 real, with one precision that decides how it is used:** AWS's own table says users of
 `AWSControlTowerAdmins` in the Management account *"are the only ones that have access to the AWS Control
 Tower console"*. So a principal holding only `AWSAccountFactory` vends through the **Service Catalog**
@@ -76,7 +76,7 @@ console — the Account Factory product — and not through the Control Tower co
 difference, not a capability one, and it is the trade this plan takes.
 
 **The decision as originally taken: treat it as a bootstrap credential with a defined end** — it vends the
-seven accounts, a finite job ending inside Stage 1a, and is **disabled** (not deleted) once the
+accounts Stage 1a needs, a finite job ending inside that stage, and is **disabled** (not deleted) once the
 infrastructure user's group-based path has been proven in 1b.
 
 **This is the half D34 withdrew, and the reason is that "a finite job" was a premise about frequency rather
@@ -134,8 +134,10 @@ update may re-create them anyway. An empty group grants nothing; the exposure is
 
 **Consequence for `ACCOUNTS_AND_USERS.md`: it is documented, and since D34 it holds a duty — but it is still
 not one of the five personas.** The `SSO Users` section
-lists the five humans the separation of duties is built from, and this is not a sixth — it holds no duty,
-signs nothing, and has an end date. But leaving it out entirely is worse than either option, because the
+lists the five humans the separation of duties is built from, and this is not a sixth — it approves nothing,
+signs nothing, owns no data or workload and appears in no separation of duties. The one duty it does hold
+since D34 — Control Tower administration — is an operational job attached to an identity, not a persona, and
+it has no end date. But leaving it out entirely is worse than either option, because the
 file would claim a directory of five while the console shows six: **an administrator that appears in no
 document is indistinguishable from one that should not be there**, which is exactly the judgement a later
 review has to make quickly. So it goes in its own subsection, "Identities this project did not create",

@@ -2,8 +2,8 @@
 
 | | |
 |---|---|
-| **Status** | ready to start — nothing blocking |
-| **Prerequisites** | none outstanding (D1 decided, all ten e-mails registered) |
+| **Status** | **in progress** — see `LOG.md` for exactly how far. Control Tower enabled, OUs created, accounts being vended |
+| **Prerequisites** | none outstanding (D1 decided, an e-mail registered for every account this stage creates) |
 | **Consumes** | [D1](../decisions/D01-region.md), [D12](../decisions/D12-budget-ceiling.md), [D14](../decisions/D14-supply-chain-account.md), [D16](../decisions/D16-break-glass.md), [D20](../decisions/D20-staging-account.md), [D21](../decisions/D21-development-account.md), [D22](../decisions/D22-data-governance-account.md), [D23](../decisions/D23-ou-structure.md), [D25](../decisions/D25-drop-box-consumer.md), [D26](../decisions/D26-unified-studio.md), [D27](../decisions/D27-catalog-maintenance.md), [D29](../decisions/D29-policy-canary.md), [D32](../decisions/D32-account-factory-sso-user.md), [D33](../decisions/D33-control-tower-admin-user.md), [D34](../decisions/D34-account-vending.md) |
 | **Proves** | — |
 
@@ -30,9 +30,24 @@ the old Stage 1, it was not.
 
 **Pre-flight, before step 1 — the account quota, which is the one thing here that can stall for days.**
 AWS Organizations caps the number of accounts an organization may hold, and the cap on a young organization
-is low. **Measured on 2026-08-08: this organization's limit is 10 accounts** — exactly the number this stage
-ends with (Management plus the member accounts), so it fits with **no margin at all**. Two consequences,
-both of which bite at the worst moment:
+is low. **Measured on 2026-08-08: this organization's limit is 10 accounts** — the number this stage ends
+with (Management plus the member accounts), so it would fit with **no margin at all**.
+
+**And it does not fit, because the organization was not empty.** An **older AWS account, predating this
+project, is already attached to the organization** and consumes a slot, so this stage's set plus that one is
+**eleven against a cap of ten**. Two things follow, and neither is optional:
+
+- **A quota increase was requested at 15** (Service Quotas → AWS Organizations → "Maximum number of
+  accounts"; it is a global setting but the request is filed from `us-east-1`). It is recorded in `LOG.md`
+  as *requested*. **Confirm it was granted before vending the last accounts** — the granted value goes in
+  `LOG.md`.
+- **Until it is granted, defer `Staging`.** It is the right one to defer and the reason is structural, not
+  arbitrary: its first hard dependency is Stage 8, and D20 keeps it unpeered from everything, so nothing
+  earlier is waiting on it. **Deferring costs nothing now that D34 has withdrawn the retirement of the only
+  identity that can vend** — there is no "vend it before the vending credential goes away" ordering trap
+  left, so this is a scheduling choice and not a structural one.
+
+Two consequences of a thin margin, both of which bite at the worst moment:
 
 - A failed Account Factory provisioning that has to be retried can consume a slot, and a **closed account
   still counts against the quota** while it is in the post-closure retention window (~90 days). So the
@@ -40,10 +55,11 @@ both of which bite at the worst moment:
 - `Policy Canary` is disposable *by design* (D29). With zero margin it is not actually disposable: closing
   it does not free the slot for ~90 days.
 
-So **request a quota increase before enabling Control Tower** — Service Quotas, AWS Organizations,
-"Maximum number of accounts", ask for something with headroom (15 is plenty). It is free, it is a support
-ticket that can take days, and it is the only item in this stage that cannot be worked around once started.
-Record the granted value in `LOG.md`.
+The increase is free and it is a support ticket that can take days, which is why it is the one item here
+worth filing before anything else. **It also stops being a stage pre-flight after this stage (D34):
+quota headroom is a standing item**, because vending is a standing capability — and under **D35** the
+recurring consumer of slots is named: **one slot per business unit**, since `Sandbox` is the one account
+that multiplies.
 
 **To execute (all manual, by the user, recorded in `LOG.md`):**
 
@@ -119,7 +135,7 @@ Record the granted value in `LOG.md`.
    field's clothes — AWS's own wording is that this user *"will have administrative access to the account
    you're provisioning"*. Fill it with the **infrastructure user** (its address is registered in
    `secrets/emails.md`; first/last name `Infrastructure` / `User`) and use **the same address on
-   all seven accounts**: Account Factory recognises the existing Identity Center user and adds one more
+   every account vended, here and later (D34)**: Account Factory recognises the existing Identity Center user and adds one more
    assignment instead of creating a second one, so the result is a single administrator with a single MFA
    device — which is exactly the bootstrap access Stage 2 needs in order to run Terraform without root.
    Three ways to get this wrong, none of them cheap to undo:

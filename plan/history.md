@@ -130,6 +130,40 @@ onwards the file records how the environment changed, not just the plan.
   as a list, with `plan` reporting "No changes" either way — so the floor is discovered (`for_each` over the
   Organizations data sources) and the grants are enumerated.**
 
+- **2026-08-09 — consistency pass over the whole repository, after D30-D35.** No decision changed and
+  nothing provisioned had to change; what it found is the *shape* of what a run of four decisions in two
+  days leaves behind, which is worth remembering because it will recur:
+
+  - **A decision's consequences reached the stage bodies but not the stage headers.** D35's forward
+    constraints had been written into Stages 1b, 3, 4 and 6, and `D35` was in none of their `Consumes`
+    rows — so the one navigation rule this plan has (*a stage is its file plus the decisions it consumes*)
+    would have skipped the decision precisely where it changes the work. Added.
+  - **An amendment leaves the amended file self-contradictory.** D33 still asserted the retirement D34
+    withdrew ("it holds no duty, signs nothing, and has an end date") in the same section that announces
+    the withdrawal, and `REFERENCES.md` still annotated a link as the cleanup path for it.
+  - **A count is a premise in disguise.** D32's "the same address on all *N* vended accounts" spelled the
+    number out, in six files, and was tripping `check-plan-refs.sh`'s own account-count rule. The stale part
+    was not the arithmetic — it was that a fixed number *is* the frequency premise D34 retired. Made generic
+    in D32, D33, Stage 1a, `lessons.md`, `CLAUDE.md` and the decisions index; the script passes again.
+  - **D35 reached the prose and not the files that become code**, which is the expensive half: the
+    authoritative layout in `plan/conventions.md` still described one `sandbox/` slice, one
+    `awsds-infra-sandbox` profile, one `ENV=sandbox`, and two *closed enumerations* — the `<env>` token list
+    and the tag policy's allowed values — that would reject a per-unit token as an `AccessDenied` on the
+    first apply in a newly vended account. `cost-model.md` had no per-unit term although D35 pointed at it
+    by name; `ACCOUNTS_AND_USERS.md` and `architecture.md` had no cardinality at all; `integrations.md`
+    still associated the domain with two accounts where Stage 6 already said N+1. All loosened, with the
+    concrete scheme deliberately left to Stage 14 rather than guessed at now.
+  - **The quota arithmetic lived in the wrong file.** That an older account already occupies a slot — so the
+    plan's set is eleven against a cap of ten — and that `Staging` is therefore the account to defer were
+    recorded in this file and in `CLAUDE.md`, and not in the Stage 1a pre-flight, which is what someone
+    executing actually reads. Moved there.
+
+  **One item was found and deliberately not fixed**, because it is a decision rather than a correction: the
+  organization now contains an OU named `Sandboxes`, nested under `Interactive` (`LOG.md`, 2026-08-09), and
+  no plan document knows about it — not D23, not D35, not the account tables. It also makes the
+  organization's OU nesting depth **2**, which is exactly the parameter Stage 2's `for_each`-over-the-data-sources
+  rule (D34) depends on and currently lists as "to verify".
+
 ---
 
 *Plan core: [GENERAL_PLAN.md](../GENERAL_PLAN.md) · Decisions: [plan/decisions/INDEX.md](decisions/INDEX.md) · Stages: [plan/stages/INDEX.md](stages/INDEX.md)*

@@ -59,7 +59,7 @@
 
 - Working with IAM Identity Center and AWS Control Tower (the default directory, its groups and permission sets, and the delegated-administration caveat): <https://docs.aws.amazon.com/controltower/latest/userguide/sso.html>.
 
-- Disabling an IAM Identity Center user (the cleanup path for a superseded Account Factory SSO user): <https://docs.aws.amazon.com/singlesignon/latest/userguide/disableuser.html>.
+- Disabling an IAM Identity Center user (read under D33 as the mechanism, not as a plan: the retirement of `AWS Control Tower Admin` it was cited for was withdrawn by D34, so no user in this design is scheduled for disabling): <https://docs.aws.amazon.com/singlesignon/latest/userguide/disableuser.html>.
 
 - IAM OIDC identity providers (the issuer's discovery/JWKS URL must be publicly reachable — relevant to Stage 8 with a private GitLab): <https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_providers_create_oidc.html>.
 

@@ -18,7 +18,7 @@ nothing is running, and what does an hour of lab time add on top". Order-of-magn
 | Organization, accounts, Identity Center, VPC, subnets, IGW, security groups, IAM roles | 0 | These cost nothing at rest, so there is no reason to destroy them |
 | GitLab EBS volume (50 GB gp3) | ~4.00 | Paid while the instance is stopped; this is the price of not rebuilding GitLab |
 | Elastic IP for WireGuard | ~3.65 | All public IPv4 addresses are charged hourly, attached or not |
-| KMS customer-managed keys | ~8.00 | ~1.00 per key per month. The set: one per Terraform-managed account (Sandbox, Development, Data Governance, Staging, Production, Identity) plus a **dedicated derived-zone key in each Interactive account** (D31 — the key policy is what says who may read materialised `restricted` data, and it only works as a control if the key is not shared with scratch, state and logs). Data Governance may need more than one of its own (a CMK per data domain, Stage 5 step 1), so this row is a floor rather than a count |
+| KMS customer-managed keys | ~8.00 | ~1.00 per key per month. The set at N=1: one per Terraform-managed account (Sandbox, Development, Data Governance, Staging, Production, Identity) plus a **dedicated derived-zone key in each Interactive account** (D31 — the key policy is what says who may read materialised `restricted` data, and it only works as a control if the key is not shared with scratch, state and logs). Data Governance may need more than one of its own (a CMK per data domain, Stage 5 step 1), so this row is a floor rather than a count |
 | S3 data + state + backups (~25 GB) | ~1.00 | |
 | ECR images (~10 GB) | ~1.00 | |
 | AWS Config (Control Tower) | ~2.5-5 | **One recorder per governed account — every account except Management** (D20-D22, D29 — `Policy Canary` is empty, but an enrolled account still carries a recorder, and enrolling it is what makes the policy test meaningful); confirm in Stage 1 whether the landing zone also records the Management account. This row scales with the account count, so it is the line to re-read whenever an account is added. The estimate assumes an idle lab; a heavy `terraform apply` session records a configuration item per resource change and can multiply this. Control Tower allows restricting the recorded resource types — the main cost lever of the landing zone, applied in Stage 1 |
@@ -32,6 +32,25 @@ nothing is running, and what does an hour of lab time add on top". Order-of-magn
 | SageMaker unified domain — DataZone V2 metadata (D26) | ~0.50 | Requests USD 10 per 100k, metadata storage USD 0.40/GiB-month, global rates (`PRICING.md`); cents at lab scale. The cost lever is which blueprints exist, not the domain itself |
 | Staging, Development and Data Governance accounts at rest (D20-D22) | **0 (already counted)** | **This row is now a pointer, not a cost.** It used to add ~USD 3 for "a Config recorder and a KMS key per account" — but the Config row above already covers every governed account and the KMS row already counts every key, so charging these accounts again was a double count of ~USD 3. What is worth keeping is the *shape*: VPCs, buckets and IAM roles are free at rest; Staging's metered slice exists only during a promotion, Development's only while someone is working, and Data Governance has no metered slice at all — its data plane is serverless (the lake storage is in the S3 row above) |
 | **Floor** | **~USD 25-34** | Up from the ~USD 15 first estimate: mostly the detective controls, plus the recorder for D29's disposable account. The low end is the first thirty days, while GuardDuty is still inside its free window; the high end is an ordinary month with GuardDuty billing and Config recording an active build-out. **This is the *steady-state* floor. During Stages 1b-3 it is lower — roughly ~USD 24-27 — because GuardDuty does not exist until Stage 4 and Security Hub until Stage 5** (principle 9, as amended: detection is enabled when there is something to detect). **Recomputed 2026-08-08 by summing the measured `us-west-2` column of `PRICING.md` §2** — the "~USD 21-27" and "~USD 24-30" this row and its header used to carry both predated D29/D31 and both understated it. **What is still not in this row**, and is already decided elsewhere in the plan: the Secrets Manager secret holding `gitlab-secrets.json` (Stage 7 step 1), the CloudWatch alarms the plan requires (root sign-in, the two deploy roles, the catalog-maintenance role, VPN, GitLab, budget — at USD 0.10 each this is ~USD 1-1.50), AWS Backup storage and Vault Lock (Stage 12 step 8), and the growth of the Object-Locked Log Archive bucket. Expect the measured floor at Stage 12 step 5 to land above this range, not below it |
+
+**What a second business unit adds to the floor (D35).** Every row above is written for one Sandbox, and
+`Sandbox` is the one account that multiplies. The terms a unit brings with it, and they are all rows that
+already exist here rather than new kinds of cost: **one account** (free at rest, but one slot against the
+organization quota), **one AWS Config recorder** — the row above already says it scales with the account
+count, and this is the thing that makes it scale — **two KMS CMKs** at ~USD 1.00 each (the account key plus
+the D31 derived-zone key, since a unit's Sandbox is an Interactive account), **one EFS** at ~USD 0.50 (D24 —
+each unit's filesystem lives in its own Sandbox), and, on the hourly side and dominating everything else,
+**one full set of interface VPC endpoints**: 12 under design A, 14 under B, at ~USD 0.010/h each, so
+~USD 0.12-0.14 per hour that unit is working. So a unit is roughly **+USD 3-5 on the floor** and **+~USD 0.17
+per active hour** — against a USD 50 ceiling whose planning number already has about USD 7 of headroom, which
+means the **second** unit is affordable and the third is a budget decision, not a formality.
+
+**Do not treat those figures as measured.** They are the existing measured rates in `PRICING.md` re-summed
+for one more account; the per-unit total is measured properly at [Stage 14](stages/stage-14-sandbox-vending.md),
+before the first vended unit rather than after it (Lesson 6). The number to watch there is the endpoint
+row, because it is what decides whether **centralized interface endpoints shared by RAM** stop being the
+institutional answer (`plan/institutional-delta.md`) and become the arithmetic one — per-account endpoints
+multiplied by account count is already the largest hourly item in this table.
 
 Two cost levers worth applying rather than discovering later:
 
@@ -48,7 +67,7 @@ Two cost levers worth applying rather than discovering later:
 | Item | Approx. USD/h |
 |---|---|
 | NAT Gateway (1) + its public IPv4 | ~0.050 + 0.045/GB processed — **zero under egress design B** (`plan/architecture.md` §4.3) |
-| **Interface VPC endpoints — per account, single AZ (D9)** | ~0.010 each. The list is per account role, not one list (Stage 3 step 8): **Sandbox** 12 (14 under design B), **Development** 11 (13), **Staging** 9, **Production** 10-12. Double if spread across 2 AZs |
+| **Interface VPC endpoints — per account, single AZ (D9)** | ~0.010 each. The list is per account role, not one list (Stage 3 step 8): **Sandbox** 12 (14 under design B), **Development** 11 (13), **Staging** 9, **Production** 10-12. Double if spread across 2 AZs. **The Sandbox line is per business unit (D35)** — this is the term that multiplies |
 | GitLab EC2 `t4g.large` | ~0.067 (`t3.large` would be ~0.083) |
 | Internal ALB in front of GitLab/Pages (only while GitLab is up) | ~0.023 + LCU usage |
 | **Production `egress/`** (only while runner builds or orchestration need it) | NAT ~0.050 + **endpoints ~0.100-0.120** — the endpoint half was missing from every earlier version of this table |

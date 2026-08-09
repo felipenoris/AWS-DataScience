@@ -4,7 +4,7 @@
 |---|---|
 | **Status** | not started |
 | **Prerequisites** | Stages 3, 4, 5, and the ECR/CodeArtifact repositories from Stage 7 step 5 — **pulled forward**, because under egress design B they are how packages arrive, so they cannot come after the thing that consumes them. **D5 is executed, not decided, in this stage**: both designs get built (`plan/architecture.md` §4.3). |
-| **Consumes** | [D5](../decisions/D05-sagemaker-egress.md), [D12](../decisions/D12-budget-ceiling.md), [D13](../decisions/D13-lake-formation-enforcement.md), [D14](../decisions/D14-supply-chain-account.md), [D21](../decisions/D21-development-account.md), [D24](../decisions/D24-shared-filesystem.md), [D26](../decisions/D26-unified-studio.md), [D28](../decisions/D28-workflow-contract.md) |
+| **Consumes** | [D5](../decisions/D05-sagemaker-egress.md), [D12](../decisions/D12-budget-ceiling.md), [D13](../decisions/D13-lake-formation-enforcement.md), [D14](../decisions/D14-supply-chain-account.md), [D21](../decisions/D21-development-account.md), [D24](../decisions/D24-shared-filesystem.md), [D26](../decisions/D26-unified-studio.md), [D28](../decisions/D28-workflow-contract.md), [D35](../decisions/D35-sandbox-cardinality.md) |
 | **Proves** | [INT-01](../integrations.md), [INT-09](../integrations.md), [INT-12](../integrations.md), [INT-13](../integrations.md), [INT-15](../integrations.md), [INT-16](../integrations.md), [INT-17](../integrations.md) |
 
 *Read with [`plan/conventions.md`](../conventions.md) (naming, layout, `[P]`/`[D]`/`[E]`, IAM rules).*

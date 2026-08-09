@@ -4,7 +4,7 @@
 planning period that re-reading the plan will not give back. Add to this list only what would otherwise
 be relearned the hard way.
 
-Read it before planning, reviewing, or settling a decision. `CLAUDE.md` carries the sixteen titles so a
+Read it before planning, reviewing, or settling a decision. `CLAUDE.md` carries the seventeen titles so a
 lesson can be *recognised* without opening this file; the reasoning that makes each one usable is here.
 
 ---
@@ -115,7 +115,7 @@ lesson can be *recognised* without opening this file; the reasoning that makes e
    complete-sounding, and wrong: the wizard asks for a **second** address under **Access configuration**,
    and AWS's wording for it is that the user *"will have administrative access to the account you're
    provisioning"*. The plan named one e-mail and the form has two, so the obvious answer — reuse the
-   account's own address — would have made a root e-mail a federated administrator on seven accounts, two
+   account's own address — would have made a root e-mail a federated administrator on every vended account, two
    steps before the same stage removes root credentials centrally. D32 settles the value. **The general
    form:** for every manual step, write down **every required field and the value it takes**, not only the
    fields the plan already has an opinion about. The unnamed ones do not stay unanswered; they get answered

@@ -31,7 +31,11 @@ AWS Organization (Management account - console only)                        [P]
 │
 ├── OU Interactive           <- one SCP set: interactive compute allowed,
 │   │                           no human infrastructure changes (D23)
-│   ├── Sandbox account      <- EXPERIMENTATION: the unit of work is a notebook
+│   ├── Sandbox account      <- EXPERIMENTATION: the unit of work is a notebook.
+│   │                           ONE PER BUSINESS UNIT (D35) - the only account
+│   │                           in this tree that multiplies; N is 1 today, and
+│   │                           the whole subtree below is what Stage 14 vends
+│   │                           from a unit name. Everything else is structural
 │   │   ├── VPC, subnets, IGW, security groups, private DNS zone            [P]
 │   │   ├── blueprint target (D26): the experimentation project's
 │   │   │     environments are provisioned here by the domain in
@@ -299,10 +303,15 @@ and what an intentional exfiltration attempt achieves. The plan does not pre-com
 Moved here from `CLAUDE.md` on 2026-08-08: it is a mental model, not a status. Every old habit
 contradicts some part of it.
 
-- **Four environments, one axis of lifecycle:** Sandbox (experimentation — the unit of work is a
+- **Four environment roles, one axis of lifecycle:** Sandbox (experimentation — the unit of work is a
   notebook), Development (the unit of work is a pipeline), Staging and Production (deployment targets,
   written only by the pipeline). Promotion runs **Development → Staging → Production**; Sandbox feeds
   Development through **git graduation**, never through a pipeline (D21).
+- **Four roles, but not one account each: `Sandbox` is one account per business unit (D35).** The chain is
+  **N Sandboxes → one Development → one Staging → one Production**, so the cardinality boundary is the same
+  line as the graduation boundary above — experimentation multiplies, the engineering chain after it does
+  not, and the promotion chain is therefore untouched by N. N is 1 today. Per-unit isolation ends at that
+  line; past it, isolation is Lake Formation's job and not an account boundary's.
 - **Three groups, not one sequence** (`ACCOUNTS_AND_USERS.md` carries the per-account classification):
   the **lifecycle** axis (Sandbox before the chain, then Development → Staging → Production), the
   **ownership** axis (Data Governance alone), and the **platform** accounts on neither (Management, Log

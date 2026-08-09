@@ -124,7 +124,7 @@ its **Consumes** row names; that is the whole reading list.
 | Stage | What it builds | Status |
 |---|---|---|
 | [0 — Baseline](plan/stages/stage-00-baseline.md) | Management account by hand, local tooling, the documentation set | **DONE** |
-| [1a — Landing zone](plan/stages/stage-01a-landing-zone.md) | Control Tower, the accounts and OUs, root secured, budget — slow and hard to undo | **ready to start** |
+| [1a — Landing zone](plan/stages/stage-01a-landing-zone.md) | Control Tower, the accounts and OUs, root secured, budget — slow and hard to undo | **in progress** |
 | [1b — Identity and controls](plan/stages/stage-01b-identity-and-controls.md) | Identity Center, permission sets, SCP/RCP, the free detective controls, org-wide enablement — fast and reversible | not started |
 | [2 — Terraform foundation](plan/stages/stage-02-terraform-foundation.md) | State buckets, module skeletons, the SCP import, CI hygiene checks | not started |
 | [3 — Networking](plan/stages/stage-03-networking.md) | Four VPCs, split `foundation/` + `egress/` | not started |
@@ -180,7 +180,7 @@ than nice to have).
 | [`plan/integrations.md`](plan/integrations.md) | The `INT-nn` rows: the cross-account things that must be proven, each with a fallback | Building anything that crosses an account boundary |
 | [`plan/cost-model.md`](plan/cost-model.md) | The projection and its assumptions (rates live in [`PRICING.md`](PRICING.md)) | Adding a service, or checking the ceiling |
 | [`plan/open-questions.md`](plan/open-questions.md) | Only things to find out by doing | Planning a session |
-| [`plan/lessons.md`](plan/lessons.md) | Fifteen mistakes, with the reasoning that makes each recognisable | **Before planning, reviewing or settling a decision** |
+| [`plan/lessons.md`](plan/lessons.md) | Seventeen mistakes, with the reasoning that makes each recognisable | **Before planning, reviewing or settling a decision** |
 | [`plan/institutional-delta.md`](plan/institutional-delta.md) | What a large institution would do instead, decision by decision | Designing — so a lab compromise is not learned as a pattern |
 | [`plan/history.md`](plan/history.md) | How the plan and the environment got here | Almost never |
 | [`README.md`](README.md) | The argument for the account split, the three AWS reference architectures, and the three distinctions (Development×Experimentation, OU×Account, Data Governance×Production) | Explaining the design to someone, or re-checking why the split is shaped this way |

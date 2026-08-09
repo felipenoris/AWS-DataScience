@@ -6,7 +6,7 @@ that is the whole reading list for executing it.
 | Stage | What it builds | Status | Prerequisites |
 |---|---|---|---|
 | [Stage 0 — Baseline](stage-00-baseline.md) | Management account by hand, local tooling, the documentation set. | **DONE** | none |
-| [Stage 1a — Landing zone, accounts and OUs](stage-01a-landing-zone.md) | Control Tower, the accounts and OUs, root secured, budget — the slow, hard-to-undo half. | ready to start — nothing blocking | none outstanding (D1 decided, every account e-mail registered) |
+| [Stage 1a — Landing zone, accounts and OUs](stage-01a-landing-zone.md) | Control Tower, the accounts and OUs, root secured, budget — the slow, hard-to-undo half. | **in progress** (`LOG.md`) | none outstanding (D1 decided, every account e-mail registered) |
 | [Stage 1b — Identity, policies, detective controls, org-wide enablement](stage-01b-identity-and-controls.md) | Identity Center, permission sets, SCP/RCP, the free detective controls, org-wide enablement — the fast, reversible half. | not started | Stage 1a complete |
 | [Stage 2 — Terraform foundation](stage-02-terraform-foundation.md) | State buckets, module skeletons, the SCP import, CI hygiene checks. | not started | Stage 1. |
 | [Stage 3 — Networking](stage-03-networking.md) | Four VPCs (Sandbox, Development, Staging, Production), split `foundation/` + `egress/`. | not started | Stage 2. |

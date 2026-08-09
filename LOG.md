@@ -59,3 +59,4 @@
 
 - Created `Policy Canary Account` under `Policy Test` OU with IAM SSO user `Infrastructure User`.
 
+- Couldn't create `Identity Account` under `Security` OU. Looks like it's blocked by AWS, maybe because it is foundational. I created a `Identity` OU. Created `Identity Account` under `Identity` OU.

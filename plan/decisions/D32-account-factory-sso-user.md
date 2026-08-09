@@ -2,7 +2,7 @@
 
 **Status:** Decided (2026-08-08): **the infrastructure user, the same one for every vended account**
 
-**In one line:** Account Factory's `SSOUserEmail` is a permission decision, not a contact field — it gets the infrastructure user, identically on all seven accounts.
+**In one line:** Account Factory's `SSOUserEmail` is a permission decision, not a contact field — it gets the infrastructure user, identically on every account vended.
 
 **Related decisions:** [D10](D10-identity-center-delegation.md), [D16](D16-break-glass.md), [D29](D29-policy-canary.md)
 
@@ -19,8 +19,10 @@ wording is that this user *"will have administrative access to the account you'r
 step 4 named only the first, so the second was going to be answered by whoever was at the keyboard, at the
 moment they least wanted to think about identity design (Lesson 16). **The choice: the infrastructure
 user** — its address as registered in `secrets/emails.md`, first/last name `Infrastructure` / `User` — **and the
-same address on all seven vended accounts** (Sandbox, Development, Staging, Production, Data Governance,
-Identity, Policy Canary). Account Factory recognises the existing Identity Center user and adds one more
+same address on every vended account** (Sandbox, Development, Staging, Production, Data Governance,
+Identity, Policy Canary in Stage 1a, and every account vended after it — D34 makes vending a standing
+capability, so this value is chosen once and reused rather than being a list with an end). Account Factory
+recognises the existing Identity Center user and adds one more
 assignment rather than creating a second user, so the result is **one administrator, one MFA device, one
 credential to protect**, holding admin everywhere. That is not a convenience: principle 2 says humans
 authenticate through Identity Center and assume roles, and this is the concrete thing that lets **Stage 2
