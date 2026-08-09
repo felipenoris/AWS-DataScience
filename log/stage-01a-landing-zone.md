@@ -87,7 +87,7 @@ Stage: [`plan/stages/stage-01a-landing-zone.md`](../plan/stages/stage-01a-landin
 	- Sandbox Account 1
 	- Identity Account
 
-- Não atribuí `Delegated administrator for centralized root access` a ninguém.
+- No user has `Delegated administrator for centralized root access`.
 
 ---
 
