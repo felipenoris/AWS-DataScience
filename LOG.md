@@ -51,3 +51,11 @@
 
 - I checked that `Infrastructure User` now has access to `Development Account`, `Sandbox Account 1` and `Production Account`.
 
+- Created `Data` OU under `Root`.
+
+- Created `Data Governance Account` under `Data` OU with IAM SSO user `Infrastructure User`.
+
+- Created `Policy Test` OU under `Root`.
+
+- Created `Policy Canary Account` under `Policy Test` OU with IAM SSO user `Infrastructure User`.
+
