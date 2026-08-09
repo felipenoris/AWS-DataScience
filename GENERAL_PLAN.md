@@ -29,7 +29,7 @@ Staged plan to build the AWS Data Science environment described in `CLAUDE.md`.
 | A cross-account thing that must be proven | a new `INT-nn` row in [`plan/integrations.md`](plan/integrations.md) |
 | A mistake worth not repeating | [`plan/lessons.md`](plan/lessons.md) + its title in `CLAUDE.md` |
 | A procedure to follow when something is on fire | a file in [`plan/runbooks/`](plan/runbooks/) |
-| What happened | [`plan/history.md`](plan/history.md) — never `LOG.md`, which is the user's |
+| What happened | [`plan/history.md`](plan/history.md) — never `log/`, which is the user's |
 
 **Identifiers are stable, section numbers are not.** Reference `D26`, `INT-11`, `Stage 1b step 7`.
 The `§` numbers kept inside `plan/` files are historical anchors, not addresses.
@@ -75,7 +75,8 @@ designs: [`plan/architecture.md`](plan/architecture.md).
 These come from `CLAUDE.md` and constrain every stage:
 
 1. **The Management account is bootstrap-only.** Anything done there is manual, through the console, and
-   recorded by the user in `LOG.md`. Terraform does not manage the Management account.
+   recorded by the user in that stage's file under [`log/`](log/INDEX.md). Terraform does not manage the
+   Management account.
 2. **No IAM Users, and since 2026-08-08 with no exception.** Humans authenticate through IAM Identity
    Center (SSO) and assume roles. Machines (GitLab CI) use **EC2 instance profiles**: a VPN-only GitLab
    cannot serve a JWKS that IAM can fetch, so OIDC federation is not available to any runner in this
@@ -125,8 +126,8 @@ its **Consumes** row names; that is the whole reading list.
 | Stage | What it builds | Status |
 |---|---|---|
 | [0 — Baseline](plan/stages/stage-00-baseline.md) | Management account by hand, local tooling, the documentation set | **DONE** |
-| [1a — Landing zone](plan/stages/stage-01a-landing-zone.md) | Control Tower, the accounts and OUs, root secured, budget — slow and hard to undo | **in progress** |
-| [1b — Identity and controls](plan/stages/stage-01b-identity-and-controls.md) | Identity Center, permission sets, SCP/RCP, the free detective controls, org-wide enablement — fast and reversible | not started |
+| [1a — Landing zone](plan/stages/stage-01a-landing-zone.md) | Control Tower, the accounts and OUs, root secured, budget — slow and hard to undo | **done except the `Staging` vend** |
+| [1b — Identity and controls](plan/stages/stage-01b-identity-and-controls.md) | Identity Center, permission sets, SCP/RCP, the free detective controls, org-wide enablement — fast and reversible | **next** |
 | [2 — Terraform foundation](plan/stages/stage-02-terraform-foundation.md) | State buckets, module skeletons, the SCP import, CI hygiene checks | not started |
 | [3 — Networking](plan/stages/stage-03-networking.md) | One VPC per account that has one, split `foundation/` + `egress/` | not started |
 | [4 — VPN](plan/stages/stage-04-vpn.md) | WireGuard, the only entry point; peering so the tunnel reaches GitLab; GuardDuty on, with the first exposed resource | not started |
@@ -161,7 +162,8 @@ than nice to have).
 
 ## 4. Cross-cutting work (continuous, not a stage)
 
-- `LOG.md`: the user records every manual step (never edited by Claude).
+- [`log/`](log/INDEX.md): the user records every manual step, in that stage's `log/stage-NN-*.md`
+  (never edited by Claude). A new stage gets a new file, and a row in [`log/INDEX.md`](log/INDEX.md).
 - `CLAUDE.md` → `Claude LOG`: updated at the end of each stage, referencing the stage number from this plan.
 - `REFERENCES.md`: every link used as a reference.
 - `README.md`: kept in sync with the real resource structure and repository layout.
@@ -187,4 +189,4 @@ than nice to have).
 | [`plan/history.md`](plan/history.md) | How the plan and the environment got here | Almost never |
 | [`README.md`](README.md) | The argument for the account split, the three AWS reference architectures, and the three distinctions (Development×Experimentation, OU×Account, Data Governance×Production) | Explaining the design to someone, or re-checking why the split is shaped this way |
 | [`GLOSSARY.md`](GLOSSARY.md) | Every acronym, the notation, and the IAM condition keys the plan quotes | Reading a stage and hitting an unfamiliar term |
-| [`LOG.md`](LOG.md) | Manual AWS actions, written by the user | Never edited by Claude |
+| [`log/INDEX.md`](log/INDEX.md) | What each stage's manual-action log records | Before opening a log — then open **only** the `log/stage-NN-*.md` you need. Written by the user, never edited by Claude |

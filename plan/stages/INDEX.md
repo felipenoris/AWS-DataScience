@@ -6,8 +6,8 @@ that is the whole reading list for executing it.
 | Stage | What it builds | Status | Prerequisites |
 |---|---|---|---|
 | [Stage 0 — Baseline](stage-00-baseline.md) | Management account by hand, local tooling, the documentation set. | **DONE** | none |
-| [Stage 1a — Landing zone, accounts and OUs](stage-01a-landing-zone.md) | Control Tower, the accounts and OUs, root secured, budget — the slow, hard-to-undo half. | **in progress** (`LOG.md`) | none outstanding (D1 decided, every account e-mail registered) |
-| [Stage 1b — Identity, policies, detective controls, org-wide enablement](stage-01b-identity-and-controls.md) | Identity Center, permission sets, SCP/RCP, the free detective controls, org-wide enablement — the fast, reversible half. | not started | Stage 1a complete |
+| [Stage 1a — Landing zone, accounts and OUs](stage-01a-landing-zone.md) | Control Tower, the accounts and OUs, root secured, budget — the slow, hard-to-undo half. | **done except the `Staging` vend** ([log](../../log/stage-01a-landing-zone.md)) | none outstanding (D1 decided, every account e-mail registered) |
+| [Stage 1b — Identity, policies, detective controls, org-wide enablement](stage-01b-identity-and-controls.md) | Identity Center, permission sets, SCP/RCP, the free detective controls, org-wide enablement — the fast, reversible half. | **next** | Stage 1a complete, bar the deferred `Staging` vend |
 | [Stage 2 — Terraform foundation](stage-02-terraform-foundation.md) | State buckets, module skeletons, the SCP import, CI hygiene checks. | not started | Stage 1. |
 | [Stage 3 — Networking](stage-03-networking.md) | One VPC per account that has one (Sandbox — one per business unit, D35 — Development, Staging, Production), split `foundation/` + `egress/`. | not started | Stage 2. |
 | [Stage 4 — VPN access](stage-04-vpn.md) | WireGuard, the only entry point; peering to Production so the tunnel reaches GitLab. | not started | Stage 3. D4 is decided: self-managed WireGuard. |
@@ -24,4 +24,5 @@ that is the whole reading list for executing it.
 
 ---
 
-*Plan core: [GENERAL_PLAN.md](../../GENERAL_PLAN.md)*
+*Plan core: [GENERAL_PLAN.md](../../GENERAL_PLAN.md) · What was actually done by hand, per stage:
+[log/INDEX.md](../../log/INDEX.md) — same file slugs as here*

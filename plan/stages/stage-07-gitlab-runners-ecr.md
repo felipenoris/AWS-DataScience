@@ -79,7 +79,8 @@ exactly why step 1's backup/restore cycle has to be tested for real.
    - Generate the **internal root CA** once, in **`production/pki/` `[P]` — its own slice, its own state
      file and its own KMS key (D36), applied early per the ordering note above.** Not in `foundation/`:
      that slice is opened to change a CIDR or accept a peering, and every such edit would otherwise be made
-     by a principal holding the root. Record the CA certificate's fingerprint in `LOG.md` when it is
+     by a principal holding the root. Record the CA certificate's fingerprint in
+     `log/stage-07-gitlab-runners-ecr.md` when it is
      created — without it, a substituted root is indistinguishable from the real one by inspection.
    - Issue the leaves from it: `gitlab.prod.internal` and the **wildcard** Pages needs. The consuming slice
      reads them through `terraform_remote_state`; **the root private key is never an output** (D36).

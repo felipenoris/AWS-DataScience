@@ -68,7 +68,8 @@ anyone who merely needed to change a subnet.**
      than an afterthought.
    - A CloudWatch alarm on `kms:Decrypt` against the PKI key by any principal other than the infrastructure
      role, and on any `kms:ScheduleKeyDeletion` for it.
-   - The CA certificate's fingerprint recorded in `LOG.md` when it is created, so "is the root my clients
+   - The CA certificate's fingerprint recorded in `log/stage-07-gitlab-runners-ecr.md` when it is created,
+     so "is the root my clients
      trust the root I generated?" is answerable at all. Without it, a substituted root is indistinguishable
      from the real one by inspection.
 6. **Rotation is a rebuild, and it is rehearsed once.** Generating a new root means rebuilding the `dev-env`

@@ -31,7 +31,8 @@ Root
 ```
 
 **`Identity` is its own OU because Control Tower would not put the account anywhere else.** The account was
-to live in `Security` alongside Log Archive and Audit; vending it there was blocked (`LOG.md`, 2026-08-09),
+to live in `Security` alongside Log Archive and Audit; vending it there was blocked
+(`log/stage-01a-landing-zone.md`, 2026-08-09),
 and the most likely reason is the one Stage 1a step 4 had already written down as a thing to verify —
 `Security` is a **foundational** OU in Control Tower's model, and a non-foundational account does not simply
 join it. So the fallback that step named fired, exactly as written. **This is not the "folder with one file"

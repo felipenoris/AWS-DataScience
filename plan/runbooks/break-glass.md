@@ -4,8 +4,8 @@
 |---|---|
 | **Credential** | The **Management account root user**, and nothing else ([D16](../decisions/D16-break-glass.md)) |
 | **Built by** | [Stage 1a](../stages/stage-01a-landing-zone.md) steps 1 and 5 |
-| **Detects use** | CloudWatch alarm `awsds-org-root-activity` → SNS `awsds-org-break-glass-alerts` (e-mail + SMS) |
-| **Last tested** | *(fill in at each test — see §6)* |
+| **Detects use** | CloudWatch alarm **`AWS Break Glass Alert`** → SNS `awsds-org-break-glass-alerts` (e-mail + SMS) |
+| **Last tested** | **2026-08-09** — root sign-in, no actions; delivered on **both** channels ([log](../../log/stage-01a-landing-zone.md)) |
 
 ---
 
@@ -92,7 +92,8 @@ If any of these is the reason you are reaching for root, stop — the answer is 
 
 ## 3. Before you sign in
 
-1. **Write down why**, in one sentence, before the login page — you will need it in `LOG.md` afterwards and
+1. **Write down why**, in one sentence, before the login page — you will need it in the log of whichever
+   stage is current (`log/stage-NN-*.md`) afterwards, and
    the sentence is what distinguishes an emergency from a shortcut. If you cannot write it, see §2.
 2. **Have the password and the MFA device in hand.** The password lives **offline** — a password manager or
    paper, never in this repository and never in `secrets/` (D16).
@@ -124,7 +125,8 @@ If any of these is the reason you are reaching for root, stop — the answer is 
 
 1. **Confirm the alarm arrived**, on both channels (e-mail and SMS). A missing channel is a finding — fix it
    the same day, while the reason is still fresh.
-2. **Record it in `LOG.md`** (the user's file, never written by Claude): date, the one-sentence reason, what
+2. **Record it in the current stage's `log/stage-NN-*.md`** (the user's file, never written by Claude):
+   date, the one-sentence reason, what
    was changed, and whether both alarm channels fired.
 3. **Ask what made root necessary, and close that gap.** A bad SCP means the `Policy Canary` battery (D29)
    missed a case — add the case. A repeated cause is a design defect, not an operational one.
@@ -172,11 +174,11 @@ looking at:
 history with the `eventTime` of what actually matched:
 
 ```bash
-aws cloudwatch describe-alarm-history --alarm-name '<alarm>' --history-item-type StateUpdate --max-records 10 --region us-west-2
+aws cloudwatch describe-alarm-history --alarm-name 'AWS Break Glass Alert' --history-item-type StateUpdate --max-records 10 --region us-west-2
 ```
 
 ```bash
-aws logs filter-log-events --log-group-name '<the aws-controltower/CloudTrailLogs-* group>' --filter-pattern '{ $.userIdentity.type = "Root" && $.userIdentity.invokedBy NOT EXISTS && $.eventType != "AwsServiceEvent" }' --start-time $(date -v-1d +%s000) --region us-west-2
+aws logs filter-log-events --log-group-name 'aws-controltower/CloudTrailLogs-gcs-gsx' --filter-pattern '{ $.userIdentity.type = "Root" && $.userIdentity.invokedBy NOT EXISTS && $.eventType != "AwsServiceEvent" }' --start-time $(date -v-1d +%s000) --region us-west-2
 ```
 
 The second runs the *same pattern the filter runs*, so what it returns is exactly what produced the metric —
@@ -186,7 +188,7 @@ here only because the alarm firing is already known.
 
 ## 7. What the alarm is, exactly
 
-The chain, all of it in the **Management account**, home region `us-west-2`:
+The chain **as built on 2026-08-09**, all of it in the **Management account**, home region `us-west-2`:
 
 ```
 Control Tower organization trail  (aws-controltower-BaselineCloudTrail, multi-region,
@@ -194,25 +196,33 @@ Control Tower organization trail  (aws-controltower-BaselineCloudTrail, multi-re
         │
         ├── S3 in Log Archive                     ← the immutable copy (Object Lock, Stage 1b step 9)
         │
-        └── CloudWatch Logs  aws-controltower/CloudTrailLogs   ← created by the landing zone in the
-                    │                                            MANAGEMENT account (landing zone ≥ 3.0)
+        └── CloudWatch Logs  aws-controltower/CloudTrailLogs-gcs-gsx   ← created by the landing zone in
+                    │            (the -gcs-gsx suffix is this            the MANAGEMENT account
+                    │             landing zone's, not a constant)        (landing zone ≥ 3.0)
                     │
             metric filter  awsds-org-root-activity
                     │      { $.userIdentity.type = "Root"
                     │        && $.userIdentity.invokedBy NOT EXISTS
                     │        && $.eventType != "AwsServiceEvent" }
                     │
-            metric  AWSDS/Security → RootActivityCount
+            metric  AWSDS/Security → RootActivityCount   (no default value — see Cost below)
                     │
-            alarm   awsds-org-root-activity   (Sum ≥ 1 over 1 period, missing data = notBreaching)
+            alarm   AWS Break Glass Alert   (Sum ≥ 1 over 1 period, missing data = notBreaching)
                     │
-            SNS     awsds-org-break-glass-alerts
+            SNS     awsds-org-break-glass-alerts   (Standard, display name "AWS Break Glass Alert",
+                    │                               unencrypted — see Stage 1a step 5.2)
                     ├── e-mail  (the break-glass address — NOT the root address)
                     └── SMS     (the second channel; the only part that survives the one-inbox problem)
 
   Both endpoints are recorded in the break-glass section of secrets/emails.md, which is
   git-ignored; neither value appears anywhere in this repository.
 ```
+
+**The alarm and the metric filter do not share a name, and Stage 1a asked for one that they would.** The
+plan's step 5.4 named the alarm `awsds-org-root-activity`, matching the filter; it was created as
+**`AWS Break Glass Alert`**. Nothing is wrong — an alarm's name is a label — but every command in §6.1 takes
+the name literally, so the built name is the one recorded here and the plan's is the stale one. If it is ever
+renamed to match, this file and §6.1 change with it.
 
 Four properties of this chain that are load-bearing:
 

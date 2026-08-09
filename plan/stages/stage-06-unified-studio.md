@@ -43,7 +43,7 @@ Two consequences worth stating rather than discovering:
 - **This is the only place in the plan where an artifact reaching an account is not built by a pipeline**,
   which is precisely the property D14 and Stage 8 exist to guarantee. It is acceptable exactly once, at
   bootstrap, on an image that is replaced by a pipeline-built one at Stage 8. Record the digest of the
-  hand-built image in `LOG.md`, so the changeover is visible.
+  hand-built image in `log/stage-06-unified-studio.md`, so the changeover is visible.
 - **The `plan/architecture.md` §4.3 verdict on egress design B is provisional until Stage 8.** Design B's whole claim is that
   the image *is* the dependency delivery mechanism, and the usability of that claim depends on how long a
   rebuild takes — which is a property of the pipeline, not of a laptop build. So Stage 6 step 6 measures

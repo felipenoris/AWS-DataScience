@@ -1,15 +1,9 @@
+# Log — Stage 1a — Landing zone, accounts and OUs
 
-# Log of activities
+*Manual actions performed by the user. Written by the user, **never** by Claude.
+Stage: [`plan/stages/stage-01a-landing-zone.md`](../plan/stages/stage-01a-landing-zone.md).*
 
-## Stage 0 — Baseline
-
-- Management Account created manually at https://aws.amazon.com/. Root account has MFA enabled.
-
-- Installed aws client from: https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html.
-
-- Installed terraform from: https://developer.hashicorp.com/terraform/install
-
-## Stage 1a — Landing zone, accounts and OUs
+---
 
 - Opened support ticker to increase "Maximum number of accounts" to **15**. This is global setting, but must be requested selecting "us-east-1" region (N. Virginia). Issue can be tracked at <https://us-east-1.console.aws.amazon.com/servicequotas/home/requests?region=us-east-1>.
 
@@ -75,13 +69,15 @@
 
 - Moving to `CloudWatch` with the root account -> Alarms -> Create. Selected `RootActivityCount`, classic, Sum 1 minute, static, Greater/Equal to 1. Additional configuration -> Missing data treatment -> Treat missing data as good (not breaching threshold). In alarm -> Select an existing SNS topic -> send a notification to `awsds-org-break-glass-alerts`. Alarm name set to `AWS Break Glass Alert`, with description `A root account login was detected.`.
 
-- Testing the break-glass: logged out. Logged in with root account. Did nothing (no actions). Logged out. The alarm was received successfully. 
+- Testing the break-glass: logged out. Logged in with root account. Did nothing (no actions). Logged out. The alarm was received successfully, on both SMS and Email. 
 
 - Logged as AWS Control Tower Admin → AWSAdministratorAccess → IAM → root access management → Enable. Enabled `Root credentials management` and `Privileged root actions in member accounts`. Left `Delegated administrator` empty. Clicked `Enable`. Em seguida, retornou sucesso com a seguinte mensagem `Root access management enabled. You can now delete root user credentials for member accounts from the Root access management page.`.
 
 - Running command `aws iam list-organizations-features` on CloudShell, in the same session, returns `RootSessions` and `RootCredentialsManagement` as `EnabledFeatures`.
 
-- Next step is 6.4. `Take privileged action` is not active on the management account. I checked the following accounts and "Take privileged action" does not list `Delete root credentials` option. This means that none of these accounts have existing root credentials. So I guess I'll all set.
+- Running command `aws organizations list-aws-service-access-for-organization`, the result includes `iam.amazonaws.com` at `EnabledServicePrincipals`.
+
+- Next step is 6.4. `Take privileged action` is not active on the management account. I checked the following accounts and "Take privileged action" does not list `Delete root credentials` option. This means that none of these accounts have existing root credentials. For every account, the option `Allow password recovery` appears. So I guess I'll all set.
 	- Development Account
 	- Audit Account
 	- Data Governance Account
@@ -92,3 +88,7 @@
 	- Identity Account
 
 - Não atribuí `Delegated administrator for centralized root access` a ninguém.
+
+---
+
+*Log index: [log/INDEX.md](INDEX.md) · Stage index: [plan/stages/INDEX.md](../plan/stages/INDEX.md)*

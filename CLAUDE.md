@@ -90,8 +90,12 @@ All infrastructure will be deployed in the `us-west-2` Region.
 
 ## LOG
 
-`LOG.md` contains all the actions performed during this project.
-Never update `LOG.md`. I'll edit this file.
+The `log/` folder contains all the actions performed manually during this project, **one file per stage**,
+mirroring `plan/stages/`: `log/stage-NN-*.md` ↔ `plan/stages/stage-NN-*.md`.
+[`log/INDEX.md`](log/INDEX.md) says what each file records — **read the index and then the one stage log you
+need, never all of them.**
+
+Never update anything under `log/`. I'll edit those files.
 
 ## Tools installed in the current environment
 
@@ -122,7 +126,8 @@ write anything into it. Claude can read the files in this folder to gather infor
 
 - All infrastructure code will be in Terraform.
 
-- Steps done manually by me will be recorded in the `LOG.md` file. Never update `LOG.md`. I'll edit this file.
+- Steps done manually by me will be recorded in the stage's file under `log/`. Never update anything under
+  `log/`. I'll edit those files.
 
 - The Terraform code will have a subfolder for each controlled account (environment).
 
@@ -183,6 +188,7 @@ its `Consumes` row lists.
 |---|---|
 | Anything | this file + `GENERAL_PLAN.md` (plan core: principles, account map, both indexes) |
 | Execute a stage | [`plan/stages/`](plan/stages/INDEX.md)`stage-NN-*.md`, the decisions in its **Consumes** row, and [`plan/conventions.md`](plan/conventions.md) |
+| What was actually done by hand in a stage | [`log/`](log/INDEX.md)`stage-NN-*.md` — **the same slug as the stage file**; [`log/INDEX.md`](log/INDEX.md) first, so only one log is opened |
 | Plan, review, or settle a decision | add [`plan/lessons.md`](plan/lessons.md) and [`plan/open-questions.md`](plan/open-questions.md) |
 | Look up a decision | [`plan/decisions/INDEX.md`](plan/decisions/INDEX.md) first — open a decision file only for its reasoning |
 | Cost of a new service | [`PRICING.md`](PRICING.md) — measured from the Price List API, never estimated (Lesson 6) |
@@ -195,13 +201,18 @@ Reference things by **stable ID** — `D26`, `INT-11`, `Stage 1b step 7` — nev
 
 ### Current position
 
-- **Stage 1a nearly done; `LOG.md` is authoritative.** Control Tower enabled (`us-west-2`), budget set,
-  and `Development`, `Sandbox Account 1`, `Production`, `Data Governance`, `Policy Canary` and `Identity`
-  vended. **Accounts left: `Staging` alone**, deferred on the account cap — the increase to 15 is *requested*
-  and has to be confirmed before that vend (Stage 1a pre-flight has the arithmetic). **Step left: 6**
-  (centralized root access; procedure written 2026-08-09 as 6.0-6.8). Step 5's chain was built the same day,
-  but `LOG.md` records the test as *run* and not its **result** — 6.5 settles it, since each deletion fires
-  the same alarm. Best done **before** the `Staging` vend: accounts created afterwards have no root at all.
+- **Stage 1a is done but for one vend; [`log/stage-01a-landing-zone.md`](log/stage-01a-landing-zone.md) is
+  authoritative. Next is Stage 1b.** Control Tower enabled
+  (`us-west-2`), budget set, and `Development`, `Sandbox Account 1`, `Production`, `Data Governance`,
+  `Policy Canary` and `Identity` vended. Break-glass built and **tested 2026-08-09 on both channels** — the
+  thing 1b step 7 may not start without. Centralized root access on (both capabilities, no delegated
+  administrator); **no member account had root credentials to delete**, and each now offers `Allow password
+  recovery`, so 6.4 closed on positive evidence and 6.5's alarm never had cause to fire.
+- **Left from 1a, neither blocking 1b:** the **`Staging`** vend, held on the account cap — the increase to 15
+  is *requested*, confirm before vending, and nothing needs the account before Stage 8, so **1b steps 3 and 5
+  skip their Staging items** (`DataScientistStagingAccess`, `DeploymentManagerAccess`, the
+  `awsds-infra-staging` profile) and pick them up at the vend; and step 2's **budget alerts (50/80/100%) and
+  Cost Anomaly Detection**, which are unrecorded rather than done.
 - **The OU tree is not the one D23 first described** — revised 2026-08-09 by execution; full tree in
   [`plan/architecture.md`](plan/architecture.md). `Identity` has an OU of its own, because the foundational
   `Security` OU refused the vend, so it inherits no guardrails and 1b step 7 must attach its set; and
