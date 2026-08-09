@@ -113,6 +113,22 @@
 
 - AWS Private CA (the expensive alternative rejected in D15): <https://docs.aws.amazon.com/privateca/latest/userguide/PcaWelcome.html>.
 
+- ACM: importing certificates (how the internal CA's leaves reach an ALB — free, but never auto-renewed): <https://docs.aws.amazon.com/acm/latest/userguide/import-certificate.html>.
+
+- ACM: certificate transparency logging (why a public certificate would publish the internal hostnames — D15 phase 1): <https://docs.aws.amazon.com/acm/latest/userguide/acm-concepts.html#concept-transparency>.
+
+- Route 53 private hosted zones (the only zones this project owns before Stage 13): <https://docs.aws.amazon.com/Route53/latest/DeveloperGuide/hosted-zones-private.html>.
+
+- ICANN resolution 2024.07.29.06, reserving `.internal` from delegation in the root zone for private use — why D36 fixes the internal naming on that suffix: <https://www.icann.org/en/board-activities-and-meetings/materials/approved-resolutions-special-meeting-of-the-icann-board-29-07-2024-en>.
+
+- VPC endpoint private DNS (served by an AWS-managed zone, scoped to the endpoint's own VPC — the limit behind Stage 3 step 4's second note): <https://docs.aws.amazon.com/vpc/latest/privatelink/privatelink-access-aws-services.html>.
+
+- MWAA: VPC endpoints for a private-routing environment, and the Route 53 private-zone technique for names an endpoint's own private DNS will not answer (Stage 10 step 4): <https://docs.aws.amazon.com/mwaa/latest/userguide/vpc-vpe-create-access.html>.
+
+- MWAA: managing access to service-specific VPC endpoints: <https://docs.aws.amazon.com/mwaa/latest/userguide/vpc-vpe-access.html>.
+
+- SageMaker Unified Studio: accessing the portal — the domain URL is issued by AWS and handed to users, so nothing here needs a domain of ours (D15 phase 1): <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/getting-started-access-the-portal.html>.
+
 ## SageMaker and shared storage
 
 - SageMaker Studio notebooks and internet access: <https://docs.aws.amazon.com/sagemaker/latest/dg/studio-notebooks-and-internet-access.html>.

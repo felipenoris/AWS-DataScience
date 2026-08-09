@@ -142,6 +142,48 @@ trail, the log group, the metric filter, the alarm or the subscriptions.
 3. Expect: the alarm goes to `In alarm`, and a message arrives on **both** subscriptions.
 4. Update the **Last tested** row at the top of this file.
 
+### 6.1 Attributing an alarm to an event — read this before concluding anything from one
+
+**The notification's arrival time is not the event's time**, and that gap is the whole of it: the metric
+filter stamps its datapoint with the CloudTrail `eventTime`, but the alarm can only evaluate once the record
+has travelled trail → S3 → CloudWatch Logs, which is minutes. So an alarm that lands *while you are doing
+something else* is usually reporting what you did **before** that. Two consequences that decide what you are
+looking at:
+
+- **Since Stage 1a step 6, the ordinary cause of this alarm is a privileged root session, not a sign-in.**
+  `sts:AssumeRoot` returns credentials that *are* the member account's root, so `DeleteLoginProfile`,
+  `DeactivateMFADevice` and friends are logged in **that** account as `userIdentity.type = "Root"` — the
+  filter matches, even though the human is signed in as `AWS Control Tower Admin` the whole time. The
+  `recipientAccountId` on the matched event names which member account it was. **It is the calls inside the
+  session that match, not the opening of it** — the `AssumeRoot` call is logged under *your* identity as
+  `AssumedRole` and matches nothing. Which means the read-only `IAMAuditRootUserCredentials` task pages both
+  channels exactly like a deletion does: checking whether an account still has root credentials is not a
+  free look.
+- **A sign-in through the AWS access portal never matches this filter, `AWS Control Tower Admin` included.**
+  That user carries the Management root's e-mail address (D33) and is still an Identity Center user: its
+  events are logged as `IdentityCenterUser` / `AssumedRole`, never as `Root`. The shared address is an
+  inbox-ambiguity problem, not a detection one.
+- **The filter matches the whole root session, not the sign-in.** Every API call made while signed in as
+  root is a datapoint — and a metric filter evaluates records as they are *ingested*, so calls made before
+  the filter existed still count if they arrive after it. Building this chain from a root session therefore
+  fires the alarm with the alarm's own creation.
+
+**Two commands settle it**, both from the Management account. Compare the datapoint timestamp in the alarm's
+history with the `eventTime` of what actually matched:
+
+```bash
+aws cloudwatch describe-alarm-history --alarm-name '<alarm>' --history-item-type StateUpdate --max-records 10 --region us-west-2
+```
+
+```bash
+aws logs filter-log-events --log-group-name '<the aws-controltower/CloudTrailLogs-* group>' --filter-pattern '{ $.userIdentity.type = "Root" && $.userIdentity.invokedBy NOT EXISTS && $.eventType != "AwsServiceEvent" }' --start-time $(date -v-1d +%s000) --region us-west-2
+```
+
+The second runs the *same pattern the filter runs*, so what it returns is exactly what produced the metric —
+`eventName`, `eventTime`, `sourceIPAddress` and `recipientAccountId` per event. Note the honest limit
+(Lesson 13): an empty result proves only that no root call landed in that window, which is a useful answer
+here only because the alarm firing is already known.
+
 ## 7. What the alarm is, exactly
 
 The chain, all of it in the **Management account**, home region `us-west-2`:

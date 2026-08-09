@@ -140,7 +140,18 @@ terraform-live/
 └── production/
     ├── bootstrap/        # [P]
     ├── foundation/       # [P] VPC etc. + peering accepters for Sandbox AND Development.
-    │                     #     Built in Stage 3, because Stage 7 (GitLab) depends on it (D14)
+    │                     #     Built in Stage 3, because Stage 7 (GitLab) depends on it (D14).
+    │                     #     ALSO the prod.internal and pages.internal private zones and
+    │                     #     their cross-account associations (D15 as revised 2026-08-09).
+    │                     #     NO public zone, NO registered domain: those are Stage 13, and
+    │                     #     NOT the CA - see pki/ below
+    ├── pki/              # [P] the internal root CA (D36). OWN state file and OWN KMS key,
+    │                     #     deliberately not foundation/'s: foundation is opened to change
+    │                     #     a CIDR or accept a peering, and every such edit would otherwise
+    │                     #     decrypt the root. Applied EARLY, with registry/ below, because
+    │                     #     the dev-env image is built from Stage 6 and must carry the root
+    │                     #     (INT-19). Outputs the CA cert and the issued leaves - NEVER the
+    │                     #     root private key. Excluded from every make down path
     ├── data/             # [P] application-output buckets, Athena workgroup, LF resource
     │                     #     links + the governed-write grant (D22). The lake itself lives
     │                     #     in data-governance/. The registries are NOT here - see below

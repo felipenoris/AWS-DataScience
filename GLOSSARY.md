@@ -58,7 +58,7 @@ are now officially just the acronym.
 | **EIP** | Elastic IP | A public IPv4 address you own rather than one assigned at boot. Billed hourly whether attached or not. Kept in the `[P]` layer so the VPN endpoint address survives a rebuild. |
 | **IP / IPv4** | Internet Protocol (version 4) | — |
 | **TCP / UDP** | Transmission Control Protocol / User Datagram Protocol | WireGuard uses UDP/51820; NFS uses TCP/2049. |
-| **DNS** | Domain Name System | Name-to-address resolution. **Split-horizon DNS** means the same name resolves to a public address from outside and a private one from inside — the mechanism that lets a public TLS certificate serve an internal-only endpoint (D15). |
+| **DNS** | Domain Name System | Name-to-address resolution. **Split-horizon DNS** means the same name resolves to a public address from outside and a private one from inside. It was D15's original mechanism; **the 2026-08-09 revision dropped it** — internal endpoints are named in private hosted zones only, and public DNS does not exist before Stage 13. The term is kept here because Stage 13 may revive it. |
 | **TLS** | Transport Layer Security | The encryption under HTTPS. |
 | **HTTP / HTTPS** | HyperText Transfer Protocol (Secure) | — |
 | **SSH** | Secure Shell | Remote shell access. Deliberately not exposed here: shell access goes through SSM Session Manager instead of port 22. |
@@ -135,8 +135,9 @@ are now officially just the acronym.
 
 | Acronym | Expansion |
 |---|---|
-| **ACM** | AWS Certificate Manager — issues and renews TLS certificates. Cannot issue for a private-only domain, which is the whole of D15. |
-| **CA** | Certificate Authority — in "AWS Private CA", the ~USD 400/month alternative D15 rules out. |
+| **ACM** | AWS Certificate Manager — issues and renews TLS certificates. Cannot *issue* for a private-only domain, which is the whole of D15; it can **import** one issued elsewhere, free, which is how the internal CA's leaves reach an ALB. Imported certificates are **not** renewed automatically. |
+| **CA** | Certificate Authority. Two of them here: the project's own **internal CA** (D15 phase 1 — free, its root distributed to the laptop, the `dev-env` image and the runners), and **AWS Private CA**, the ~USD 400/month managed alternative D15 rules out. |
+| **CT** | Certificate Transparency — the public append-only logs every publicly trusted certificate is published to. Why D15 does *not* issue public certificates for internal names: doing so would publish the internal name inventory. |
 | **RAM** | AWS **Resource Access Manager** — the service that shares resources across accounts. Not random-access memory; the collision is unfortunate and the plan means the service every time. Lake Formation cross-account sharing runs on it. |
 | **SNS** | Simple Notification Service — the fan-out for alerts. |
 | **SQS** | Simple Queue Service — appears only in the list of services RCPs can constrain. |

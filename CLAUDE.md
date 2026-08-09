@@ -19,9 +19,9 @@ The goal is to achieve the following:
 
 - SageMaker should have access to the internet. We'll explore implementing some restrictions, keeping the possibility of software updates, installing packages, and accessing a few websites.
 
-- Use GitLab hosted on AWS for source-code control.
+- Use GitLab hosted on AWS for source-code control, accessible only through intranet (VPN), not facing public internet.
 
-- Use GitLab Pages to host docs.
+- Use GitLab Pages to host docs, accessible only through intranet (VPN), not facing public internet.
 
 - Use GitLab CI/CD to automate tests, docs and deployment.
 
@@ -209,13 +209,20 @@ Reference things by **stable ID** — `D26`, `INT-11`, `Stage 1b step 7` — nev
   **Depth is 2** — Stage 2's OU `for_each` must recurse, or every Sandbox account is invisible to it.
 - **The repository is documentation only**; `terraform/` is empty until Stage 2 replaces it with
   `terraform-live/` + `terraform-modules/`.
-- **All thirty-five decisions are closed** ([`plan/decisions/INDEX.md`](plan/decisions/INDEX.md)). The four
+- **All thirty-six decisions are closed** ([`plan/decisions/INDEX.md`](plan/decisions/INDEX.md)). The four
   governing what happens next: **D32** (`SSOUserEmail` is always the infrastructure user, and it grants
   administrator), **D33**/**D34** (`AWS Control Tower Admin` vends, from the access portal, never root,
   permanently), **D35** (`Sandbox` is one per business unit; every other account is exactly one).
-- **Still needed from the user**, none blocking now: **the domain name to register** (D15, blocks Stage 7),
-  the AZ name-to-ID check (1b step 6), which decides how Stage 3 anchors subnets, and — due at 1b step 7 —
-  whether the `Interactive` OU gets a policy set of its own; it carries none today.
+- **Still needed from the user**, none blocking now: **the domain name to register** (D15 phase 2 — since
+  the 2026-08-09 revision it blocks **Stage 13 alone**, not Stage 7), the AZ name-to-ID check (1b step 6),
+  which decides how Stage 3 anchors subnets, and — due at 1b step 7 — whether the `Interactive` OU gets a
+  policy set of its own; it carries none today.
+- **No public DNS exists before Stage 13** (D15, revised 2026-08-09 after `CLAUDE.md` made GitLab and Pages
+  intranet-only). Internal endpoints are `*.internal` in private hosted zones, certified by an **internal
+  CA** whose root must reach three surfaces — laptop, `dev-env` image, runners (**INT-19**, the only
+  integration row that fails as a TLS handshake rather than an `AccessDenied`). Split-horizon DNS is not
+  built; Stage 13 decides whether it ever is. **D36** gives that root its own slice, state and KMS key
+  (`production/pki/`, applied before Stage 6) — it is the one credential here with *no* revocation path.
 - **Settle earliest:** **INT-11** (org-wide RAM sharing + Lake Formation cross-account v3 — fails
   *silently*) and **INT-13** (CodeConnections to the private GitLab — no convenience-preserving fallback).
 
@@ -228,7 +235,7 @@ a stage closes.
 ### Lessons carried forward
 
 **Read [`plan/lessons.md`](plan/lessons.md) before planning, reviewing, or settling a decision.**
-The eighteen titles are kept here so a lesson can be *recognised* without opening the file; the
+The nineteen titles are kept here so a lesson can be *recognised* without opening the file; the
 reasoning that makes each one usable is in the file, and the titles alone are not a substitute.
 
 1. **A copy of governed data landing somewhere less governed is not a hole to be closed.**
@@ -249,4 +256,5 @@ reasoning that makes each one usable is in the file, and the titles alone are no
 16. **A manual step delegated to a console wizard is only as specified as the fields it names — and an unnamed field that grants permissions is a permission decision made by whoever is at the keyboard.**
 17. **A service that "sets itself up" creates principals nobody chose — enumerate them before the next step depends on one.**
 18. **A policy never constrains the principal that authors it.**
+19. **A blocking input has to be re-checked against the requirement it actually serves, not against the mechanism that was chosen for it.**
 

@@ -186,12 +186,14 @@ Paid every month even with the lab shut down. Same rows as `plan/cost-model.md`,
 | Organization, accounts, Identity Center, VPC, subnets, IGW, security groups, IAM roles | — | — | **0** | **0** |
 | GitLab EBS volume (50 GB gp3) | 0.152 USD/GB-mo | 0.08 USD/GB-mo | 7.60 | 4.00 |
 | Elastic IP for WireGuard (idle or in use) | 0.005 USD/h | 0.005 USD/h | 3.65 | 3.65 |
-| KMS customer-managed keys (one per Terraform-managed account, plus a derived-zone key per Interactive account, D31) | 1.00 USD/key-mo | 1.00 USD/key-mo | 8.00 | 8.00 |
+| KMS customer-managed keys (one per Terraform-managed account, plus a derived-zone key per Interactive account (D31), plus the PKI key (D36)) | 1.00 USD/key-mo | 1.00 USD/key-mo | 9.00 | 9.00 |
 | S3 data + state + backups (~25 GB Standard) | 0.0405 USD/GB-mo | 0.023 USD/GB-mo | ~1.50 | ~1.00 |
 | ECR images (~10 GB) | 0.10 USD/GB-mo | 0.10 USD/GB-mo | 1.00 | 1.00 |
 | AWS Config, every governed account (Management is the one not recorded) | 0.003 USD/item | 0.003 USD/item | 2.50-5.00 | 2.50-5.00 |
-| Route 53 hosted zones (1 private + 1 public) | 0.50 USD/zone-mo (global) | 0.50 USD/zone-mo | 1.00 | 1.00 |
-| Public domain registration (D15) | registrar, region-independent | idem | ~1.00 | ~1.00 |
+| Route 53 **private** hosted zones (2-3: one per VPC-bearing account, plus `pages.internal`) | 0.50 USD/zone-mo (global) | 0.50 USD/zone-mo | 1.00-1.50 | 1.00-1.50 |
+| Route 53 **public** hosted zone (D15 phase 2 — **Stage 13 only**) | 0.50 USD/zone-mo (global) | 0.50 USD/zone-mo | 0 → 0.50 | 0 → 0.50 |
+| Public domain registration (D15 phase 2 — **Stage 13 only**) | registrar, region-independent | idem | 0 → ~1.00 | 0 → ~1.00 |
+| ACM **imported** certificates (D15 phase 1 — the internal CA's leaves) | free | free | 0 | 0 |
 | CodeArtifact | **not available — see §9** | 0.05 USD/GB-mo + 0.05/10k req | **n/a** | ~0.10 |
 | Security Hub + IAM Access Analyzer | 0.001 USD/check (first 100k) | 0.001 USD/check | 1.00-2.00 | 1.00-2.00 |
 | GuardDuty (after the 30-day free window) | 1.75 USD/GB, 0.000007 USD/event | 1.00 USD/GB, 0.000004 USD/event | 0 → 5.00-9.00 | 0 → 3.00-5.00 |

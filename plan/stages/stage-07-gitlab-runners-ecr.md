@@ -4,8 +4,8 @@
 |---|---|
 | **Status** | not started |
 | **Prerequisites** | Stages 3 (which now builds the Production VPC), 4; decisions D8, D14, D15. |
-| **Consumes** | [D8](../decisions/D08-gitlab-hosting.md), [D12](../decisions/D12-budget-ceiling.md), [D14](../decisions/D14-supply-chain-account.md), [D15](../decisions/D15-tls-internal.md), [D20](../decisions/D20-staging-account.md), [D26](../decisions/D26-unified-studio.md) |
-| **Proves** | [INT-08](../integrations.md), [INT-09](../integrations.md), [INT-13](../integrations.md) |
+| **Consumes** | [D8](../decisions/D08-gitlab-hosting.md), [D12](../decisions/D12-budget-ceiling.md), [D14](../decisions/D14-supply-chain-account.md), [D15](../decisions/D15-tls-internal.md), [D20](../decisions/D20-staging-account.md), [D26](../decisions/D26-unified-studio.md), [D36](../decisions/D36-internal-pki.md) |
+| **Proves** | [INT-08](../integrations.md), [INT-09](../integrations.md), [INT-13](../integrations.md), [INT-19](../integrations.md) |
 
 *Read with [`plan/conventions.md`](../conventions.md) (naming, layout, `[P]`/`[D]`/`[E]`, IAM rules).*
 
@@ -16,8 +16,11 @@ account** (D14).
 
 **Prerequisites:** Stages 3 (which now builds the Production VPC), 4; decisions D8, D14, D15.
 
-**Note on ordering:** step 5 (ECR and CodeArtifact) is pulled forward and applied before Stage 6, because
-under egress design B it is how packages reach SageMaker. The rest of this stage stays here.
+**Note on ordering — two slices are pulled forward and applied before Stage 6, for the same class of
+reason:** step 5 (ECR and CodeArtifact), because under egress design B it is how packages reach SageMaker;
+and **`production/pki/` from step 2 (D36)**, because the `dev-env` image exists from Stage 6 (INT-01) and
+has to be *built* with the CA root already in it — a CA created at its natural place here would mean the
+first image is built without it and rebuilt afterwards. The rest of this stage stays here.
 
 **Note on option preservation — build this so a Shared Services account stays cheap to add (D14).**
 D14 keeps the supply chain in Production for two reasons that are both about running cost, not about
@@ -70,11 +73,32 @@ exactly why step 1's backup/restore cycle has to be tested for real.
    Instance type per D8: `t4g.large` (ARM, 8 GB). Point GitLab's object storage (artifacts, LFS, uploads,
    registry) at S3 rather than at the EBS volume — it keeps the volume small and puts the bulky, valuable
    data in a `[P]` bucket that is versioned and lifecycle-managed.
-2. **TLS per D15**, correcting an error in the previous version of this plan: an ACM certificate cannot be
-   issued for `sandbox.internal` or any other private-only name, because public certificates require
-   public domain validation. Register the chosen domain, keep a public hosted zone for DNS validation only,
-   issue a public ACM certificate (wildcard, for Pages), attach it to the **internal** ALB, and resolve the
-   names privately. Nothing is published; the public zone contains validation records and nothing else.
+2. **TLS per D15, as revised on 2026-08-09 — an internal CA, and no registered domain at this stage.**
+   ACM cannot issue for `prod.internal` (public certificates need public validation) and Private CA is over
+   budget, but the audience here is three clients we build ourselves, so the trust chain is ours:
+   - Generate the **internal root CA** once, in **`production/pki/` `[P]` — its own slice, its own state
+     file and its own KMS key (D36), applied early per the ordering note above.** Not in `foundation/`:
+     that slice is opened to change a CIDR or accept a peering, and every such edit would otherwise be made
+     by a principal holding the root. Record the CA certificate's fingerprint in `LOG.md` when it is
+     created — without it, a substituted root is indistinguishable from the real one by inspection.
+   - Issue the leaves from it: `gitlab.prod.internal` and the **wildcard** Pages needs. The consuming slice
+     reads them through `terraform_remote_state`; **the root private key is never an output** (D36).
+     **Import them into ACM** and attach to the internal ALB. Imported certificates are free, but **ACM does
+     not renew them** — issue at or below 398 days and schedule the re-import (D15 phase 1 note 5).
+   - **Distribute the root to all three client surfaces (INT-19): the laptop, the `dev-env` image, and the
+     runners.** A surface that is missed fails with an opaque TLS error at the moment somebody is trying to
+     `git clone`, not with an access denial that names itself. Do this before step 3, because the SAML
+     round-trip in step 3 is a browser flow through `gitlab.prod.internal` and an untrusted certificate
+     turns it into an unexplained loop.
+   **Nothing is published, no domain is registered, and the internal names never enter a Certificate
+   Transparency log** — which a public ACM certificate would have made unavoidable. The public domain, the
+   public zone and public certificates arrive at Stage 13, for the tier that is actually public.
+
+   **Worth evaluating here rather than assuming: with the certificate no longer coming from ACM, the ALB
+   loses its main job.** It was in the design to terminate a public ACM certificate; GitLab Omnibus's own
+   nginx can serve the internal CA's certificate — including the Pages wildcard — directly on the instance,
+   with the `prod.internal` record pointing at it. That removes an `[E]` resource, its ~USD 0.023/h and its
+   rebuild path from `make up`. Measure both and record the choice; the CA is the same either way.
 3. SAML integration between GitLab and IAM Identity Center, so GitLab has no local accounts. **A caveat
    the previous version missed: SAML *login* works in GitLab CE, but SAML group sync is a paid-tier
    (Premium) feature.** GitLab group membership is therefore maintained by hand — acceptable at three
@@ -106,9 +130,14 @@ exactly why step 1's backup/restore cycle has to be tested for real.
    application repositories, plus **`dev-env/`** — the image build code, **writable by
    `data-scientists`** and with its release tag protected so only `dev-env-stewards` can push it.
 4. GitLab Pages enabled for documentation, reachable only through the VPN. Pages requires a **domain
-   distinct from the GitLab host** (it serves user-supplied content, so sharing the origin would hand it
-   the GitLab session cookie) and a **wildcard DNS record plus wildcard certificate** — both provided by
-   D15, which is why that decision has to be made before this stage.
+   distinct from the GitLab host** — it serves user-supplied content, so sharing the origin would hand it
+   the GitLab session cookie — plus a **wildcard DNS record and a wildcard certificate**. Under the revised
+   D15 all three are internal and cost nothing: a **second private hosted zone**, `pages.internal`, separate
+   from `prod.internal` so the cookie boundary is a real domain boundary and not just a different host;
+   a wildcard record `*.pages.internal` in it; and a `*.pages.internal` leaf from the internal CA.
+   The zone needs the same cross-account associations as `prod.internal` (Stage 3 step 4) — Pages is read
+   from the laptop and from Studio, so both the Sandbox and the Development VPCs must resolve it, and it is
+   an easy one to forget because the GitLab host itself will already be working by then.
 5. **Registries, in `production/registry/`, layer `[P]` — applied early (before Stage 6):**
    ECR repositories `dev-env` (SageMaker images) and `app/*` (application images), with lifecycle policies
    to expire untagged images and **ECR enhanced scanning** enabled; an **ECR pull-through cache** rule for
@@ -133,7 +162,9 @@ exactly why step 1's backup/restore cycle has to be tested for real.
 
 **Deliverables:** a repository pushed to GitLab over the VPN, a pipeline running on a private runner, an
 image in ECR pulled successfully **from both Interactive accounts**, and a docs site served by Pages over
-HTTPS with a valid certificate. **Plus the one deferred from Stage 6:** a `git clone` from GitLab inside the
+HTTPS with a certificate that validates **against the internal CA, on all three client surfaces** — laptop
+browser, `dev-env` notebook and runner (INT-19). "It works in my browser" only tests the one surface where
+somebody clicked through a warning. **Plus the one deferred from Stage 6:** a `git clone` from GitLab inside the
 `engineering` project, which proves the Development↔Production peering carries it (INT-09) — the
 *network* path, independent of the CodeConnections attachment in INT-13 that D26 accepts losing. INT-13
 itself is also answered here, since this is when GitLab first exists: check whether a CodeConnections host

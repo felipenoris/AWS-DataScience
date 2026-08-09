@@ -53,7 +53,11 @@ than a rewrite.
 1. **`terraform-modules/sandbox-unit/`** — one module, one input (the unit name), composing what already
    exists: a `foundation/` VPC from the Stage 3 module with its CIDR taken from the allocation table, the
    `egress/` slice, `nfs/` for the unit's filesystem (D24), and the Route 53 associations that let the unit
-   reach GitLab by name. **Composition, not new resources** — if this module needs a resource type that
+   reach GitLab by name. **Two PKI items, not one, and the second is the easy one to miss (D36):** the zone
+   associations *and* the **internal CA root reaching this unit's `dev-env` image** (INT-19). The first
+   fails as `NXDOMAIN`, the second as a TLS handshake error inside a notebook — neither says "a business
+   unit was vended without it". Both belong in this module, or they are Lesson 14 in a new place.
+   **Composition, not new resources** — if this module needs a resource type that
    Stage 3 or Stage 5 did not already build, that is a signal the earlier stage was written for a singleton
    and should be fixed there instead.
 2. **The account request itself, and the rung to use (D34).** The account is still created by **Account

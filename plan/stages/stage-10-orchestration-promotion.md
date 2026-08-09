@@ -49,8 +49,17 @@ to destroy, so its run history is not state inside an `[E]` resource.
    workflow that only runs where the portal exists is not a promotable artifact.
 3. Schedule, retry, alerting on failure to CloudWatch/SNS — alarms on the per-workflow log groups and on
    the workflow/state-machine failure metrics, in both implementations.
-4. If — and only if — the provisioned fallback is used: document how to create and destroy the MWAA
-   environment on demand, and what is lost when it goes. DAG code lives in S3 and survives; run history
+4. If — and only if — the provisioned fallback is used: **first, how the Airflow UI is reached at all.**
+   A provisioned environment in *private* web-server mode is served by interface endpoints
+   (`airflow.env`, `airflow.api`, `airflow.ops`) whose private DNS answers **only inside the VPC that owns
+   them** — an AWS-managed zone that cannot be associated with another VPC (Stage 3 step 4). The laptop
+   resolves through the *Sandbox* VPC, so `<env>.<region>.airflow.amazonaws.com` will not resolve to those
+   ENIs by itself. The fix is internal and cheap, but it is work: a private hosted zone of our own with
+   ALIAS records to the endpoint DNS name, associated with the Sandbox VPC, or a hosts-file entry on the
+   laptop. Public web-server mode is not the alternative — it would put the Airflow UI on the internet,
+   which `CLAUDE.md` rules out. **Under MWAA Serverless the question is empty: there is no web UI at all**,
+   which is one more entry for the step 1 comparison, and the reason this whole item is conditional.
+   Then: document how to create and destroy the MWAA environment on demand, and what is lost when it goes. DAG code lives in S3 and survives; run history
    and UI-defined connections/variables do not. Either export them before teardown or state explicitly
    that they are expendable — the `[E]` rule in `plan/conventions.md` §5.1 does not allow leaving this implicit. Under
    Serverless this step is empty by construction, which is itself a point for the comparison in step 1.

@@ -52,8 +52,14 @@ different lifecycles (`plan/conventions.md` §5.1).
    their IDs are what the Data Governance bucket policies condition on (Stage 5 step 1), so they must
    survive every `make down`. Export each account's gateway endpoint ID from this slice's outputs, so the
    consumer list is read through `terraform_remote_state` rather than pasted.
-4. Route 53 private hosted zone per account (e.g. `sandbox.internal`, `prod.internal`), plus the private
-   zone that resolves the D15 public domain names to internal addresses (split-horizon DNS).
+4. Route 53 private hosted zone per account (e.g. `sandbox.internal`, `prod.internal`). **These are the
+   *only* zones this project owns before Stage 13** — D15 was revised on 2026-08-09 and there is no
+   registered domain, no public zone and no split-horizon zone until the public web tier exists.
+   **Two VPC attributes have to be on for any of this to work, and for private DNS on the interface
+   endpoints in step 8 to work at all:** `enableDnsSupport` **and** `enableDnsHostnames`. They default to
+   true only on the default VPC; a VPC built by Terraform gets `enable_dns_hostnames = false` unless it is
+   set. Under egress design B — no NAT anywhere — an endpoint whose private DNS does not answer is not a
+   slow path, it is no path.
    **A private hosted zone answers only for the VPCs it is associated with, and associating one across
    accounts is a two-sided handshake — this is the step that makes "reach GitLab by name over the VPN"
    work, and it was missing from earlier versions of this stage.** The laptop's DNS points at the *Sandbox*
@@ -62,11 +68,19 @@ different lifecycles (`plan/conventions.md` §5.1).
    `aws route53 create-vpc-association-authorization` **in the Production account** (the zone owner)
    followed by `associate-vpc-with-hosted-zone` **in the Sandbox account** (the VPC owner) — and Terraform
    splits it the same way, `aws_route53_vpc_association_authorization` plus
-   `aws_route53_zone_association` behind a provider alias. Three associations are needed:
+   `aws_route53_zone_association` behind a provider alias. **Two associations are needed** — it was three
+   before D15's revision removed the split-horizon zone:
    - `prod.internal` ← Sandbox VPC (the VPN path to GitLab);
-   - `prod.internal` ← Development VPC (D21: the `engineering` project clones from GitLab, INT-09);
-   - the D15 split-horizon zone ← Sandbox and Development VPCs, or GitLab and Pages resolve publicly (to
-     nothing) instead of privately.
+   - `prod.internal` ← Development VPC (D21: the `engineering` project clones from GitLab, INT-09).
+
+   **What this mechanism does *not* extend to, and it is the trap one layer down.** The private DNS of an
+   **interface VPC endpoint** is served by an AWS-*managed* hosted zone that is invisible in the account and
+   cannot be associated with another VPC. So an endpoint created in Production answers only inside
+   Production's VPC. The laptop's resolver is the *Sandbox* VPC (Stage 4 step 5), which means **any
+   AWS-service name that must resolve privately for the laptop needs its endpoint in the Sandbox VPC**, or a
+   private zone of our own holding ALIAS records to the endpoint's DNS name. It is not a problem today —
+   every endpoint the laptop needs is already in Sandbox and GitLab is reached through `prod.internal`,
+   which *is* ours — but it is the reason the provisioned-MWAA fallback carries a DNS step (Stage 10 step 4).
 
    Note the ordering trap: the authorization is deleted once the association exists, and re-creating the
    association after a VPC rebuild needs a fresh authorization. Both zones are `[P]`, so this is a

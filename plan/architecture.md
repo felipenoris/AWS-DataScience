@@ -206,6 +206,10 @@ One cross-region rule is permanent and unrelated to any of this: ACM certificate
 in `us-east-1` regardless of where the workload runs (relevant only at Stage 13). **This is not merely a
 note about where to click** — the region restriction (Stage 1b step 7) governs `us-west-2` alone, so
 `acm:*` has to be among the globally exempt actions or Stage 13 cannot issue that certificate at all.
+**Since D15's revision on 2026-08-09 that exemption is unexercised until Stage 13** — before it, ACM is used
+only to *import* the internal CA's leaves in `us-west-2`, which the region control permits anyway. Leave the
+exemption in the policy regardless: adding it later means editing an SCP under time pressure, and the same
+applies to `route53domains:*`, whose single use is the registration in Stage 13 step 1.
 Control Tower's Region deny control carries it; the point of recording it here is that a fact stated in one
 file and a policy written in another were, until 2026-08-08, unaware of each other.
 

@@ -132,20 +132,20 @@ its **Consumes** row names; that is the whole reading list.
 | [4 — VPN](plan/stages/stage-04-vpn.md) | WireGuard, the only entry point; peering so the tunnel reaches GitLab; GuardDuty on, with the first exposed resource | not started |
 | [5 — Data foundation](plan/stages/stage-05-data-foundation.md) | Lake, Glue, Iceberg, Lake Formation + the three cross-account shares; EFS; Security Hub on | not started |
 | [6 — Unified Studio](plan/stages/stage-06-unified-studio.md) | The DataZone V2 domain, project profiles, and the two egress designs compared | not started |
-| [7 — GitLab, Runners, ECR](plan/stages/stage-07-gitlab-runners-ecr.md) | GitLab CE on EC2, runners, registries, TLS and split-horizon DNS | not started |
+| [7 — GitLab, Runners, ECR](plan/stages/stage-07-gitlab-runners-ecr.md) | GitLab CE on EC2, runners, registries, internal names and TLS from the internal CA | not started |
 | [8 — CI/CD pipelines](plan/stages/stage-08-cicd-pipelines.md) | The three pipeline types and the promotion gate | not started |
 | [9 — Deployment targets](plan/stages/stage-09-deployment-targets.md) | Staging and Production platforms, Model Registry, the producer path | not started |
 | [10 — Orchestration](plan/stages/stage-10-orchestration-promotion.md) | Both orchestrators (D7) built and compared, end-to-end promotion | not started |
 | [11 — DLP](plan/stages/stage-11-dlp.md) | Macie, CloudTrail data events, LF column/row filters, GuardDuty's paid add-ons | not started |
 | [12 — Observability and FinOps](plan/stages/stage-12-observability-finops.md) | Dashboards, alarms, cost attribution against the real bill | not started |
-| [13 — Public web tier](plan/stages/stage-13-public-web-tier.md) | The public-facing experiment in front of a private backend | not started |
+| [13 — Public web tier](plan/stages/stage-13-public-web-tier.md) | The public-facing experiment in front of a private backend — **and the only stage with public DNS** (D15 phase 2) | not started |
 | [14 — Sandbox vending](plan/stages/stage-14-sandbox-vending.md) | A business unit's `Sandbox` account from one name (D35) | not started |
 
 ---
 
 ## 3. Decisions
 
-**D1-D35, all settled** — one of them, **D30, settled as a revert** and keeps its file so the record shows
+**D1-D36, all settled** — one of them, **D30, settled as a revert** and keeps its file so the record shows
 what was tried. One file each, with its reasoning, consequences and revision trigger:
 [`plan/decisions/INDEX.md`](plan/decisions/INDEX.md) — a one-line summary per decision, which is usually
 all that is needed.
@@ -182,7 +182,7 @@ than nice to have).
 | [`plan/cost-model.md`](plan/cost-model.md) | The projection and its assumptions (rates live in [`PRICING.md`](PRICING.md)) | Adding a service, or checking the ceiling |
 | [`plan/runbooks/break-glass.md`](plan/runbooks/break-glass.md) | When the Management root may be used, the procedure, and the alarm chain that watches it (D16) | An emergency — or when changing anything in that chain |
 | [`plan/open-questions.md`](plan/open-questions.md) | Only things to find out by doing | Planning a session |
-| [`plan/lessons.md`](plan/lessons.md) | Eighteen mistakes, with the reasoning that makes each recognisable | **Before planning, reviewing or settling a decision** |
+| [`plan/lessons.md`](plan/lessons.md) | Nineteen mistakes, with the reasoning that makes each recognisable | **Before planning, reviewing or settling a decision** |
 | [`plan/institutional-delta.md`](plan/institutional-delta.md) | What a large institution would do instead, decision by decision | Designing — so a lab compromise is not learned as a pattern |
 | [`plan/history.md`](plan/history.md) | How the plan and the environment got here | Almost never |
 | [`README.md`](README.md) | The argument for the account split, the three AWS reference architectures, and the three distinctions (Development×Experimentation, OU×Account, Data Governance×Production) | Explaining the design to someone, or re-checking why the split is shaped this way |

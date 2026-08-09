@@ -1,6 +1,6 @@
 # Decisions — index
 
-D1-D35, all settled — **D30 settled as a revert**, which is a decision like any other and keeps its file
+D1-D36, all settled — **D30 settled as a revert**, which is a decision like any other and keeps its file
 so the record shows what happened. Read this table first; open a decision file only when you need its
 reasoning, its consequences or its revision trigger.
 
@@ -20,7 +20,7 @@ reasoning, its consequences or its revision trigger.
 | [D12](D12-budget-ceiling.md) | Budget ceiling | USD 50/month ceiling; it is what rules out always-on GitLab and forces stop/start. | S1a, S1b, S6, S7 |
 | [D13](D13-lake-formation-enforcement.md) | How Lake Formation is actually enforced | Execution roles get NO direct S3 access to Lake Formation-registered prefixes, or every filter is decoration. | S5, S6, S11 |
 | [D14](D14-supply-chain-account.md) | Where GitLab, Runners, ECR and CodeArtifact live | GitLab, Runners, ECR and CodeArtifact live in Production, not next to the people the gate gates. | S1a, S1b, S3, S6, S7, S8, S9 |
-| [D15](D15-tls-internal.md) | TLS for internal endpoints | A real public domain plus split-horizon DNS; ACM cannot certify `.internal` and Private CA is over budget. **Needs a domain name from the user.** | S1b, S3, S7 |
+| [D15](D15-tls-internal.md) | TLS and naming for internal endpoints | **Revised 2026-08-09 into two phases.** Before Stage 13: private hosted zones (`*.internal`) plus an **internal CA** whose root is distributed to the laptop, the `dev-env` image and the runners (INT-19); no registered domain, no public zone, no split-horizon. At Stage 13: the public domain and public ACM, for the tier that is actually public. **The domain name is needed from the user at Stage 13, not before.** | S1b, S3, S7, S13 |
 | [D16](D16-break-glass.md) | Break-glass access | Break-glass is the Management account root and nothing else; every compensating control is detective. | S1a, S1b, S4 |
 | [D17](D17-interactive-vs-runtime.md) | Where the data scientist works, and what crosses the account boundary | Interactive compute exists only in the Interactive OU; deployment targets carry the runtime, and only pipelines submit to it. | S1b, S8, S9, S10 |
 | [D18](D18-data-scientist-access.md) | Data scientist access outside the Interactive OU | Outside the Interactive OU the data scientist gets the data plane, no compute, no control plane; writes only to enumerated prefixes. | S1b, S3, S5, S9 |
@@ -41,6 +41,7 @@ reasoning, its consequences or its revision trigger.
 | [D33](D33-control-tower-admin-user.md) | The `AWS Control Tower Admin` user, and who drives Account Fac… | Root cannot vend at all; the landing zone's own admin user carries the root e-mail and drives the vending. **Its retirement was withdrawn by D34.** | S1a, S1b |
 | [D34](D34-account-vending.md) | Account vending as a standing capability | The account list is not static: that user is kept enabled as the permanent owner of OUs and accounts, console-only — and the Organization being outside Terraform is why that cannot break any state. | S1a, S1b, S2 |
 | [D35](D35-sandbox-cardinality.md) | Structural accounts vs. the Sandbox multiplied per business unit | `Sandbox` is one per business unit; everything else — `Development` included — is singular, so the cardinality boundary *is* D21's graduation boundary and the promotion chain is untouched by N. Automation goes where the multiplication is (S14); the singleton assumptions in S3/S4/S1b/S6 are loosened now, while they are still prose. | S1b, S3, S4, S6, S14 |
+| [D36](D36-internal-pki.md) | Custody of the internal PKI | The CA root D15 created gets **its own slice, state and KMS key** (`production/pki/`), applied early because the `dev-env` image must be built carrying it. **The second credential IAM cannot revoke** (after D16's root) and the one with *no* revocation path at all, so its controls are detective: data events on the state prefix, a KMS alarm, the fingerprint in `LOG.md`, and a rehearsed rotation. | S7, S12, S14 |
 
 ---
 

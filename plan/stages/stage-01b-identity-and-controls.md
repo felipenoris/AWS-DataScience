@@ -355,7 +355,9 @@ that is not.
         is Lesson 14 applied to a list rather than to a condition. The plan's own list was already missing
         the ones this project depends on: Billing/Cost Explorer/Budgets (`Stage 1a step 2` creates a
         budget, `Stage 12 step 4` reviews cost), `route53domains:*` (a *separate* prefix from `route53:*`,
-        and the one that registers the D15 domain), `acm:*` (a CloudFront certificate must live in
+        and the one that registers the D15 domain — **exercised only at Stage 13** since the 2026-08-09
+        revision, but list it now: adding it later means editing the SCP under time pressure, and it grants
+        nothing that is not also gated by the permission set), `acm:*` (a CloudFront certificate must live in
         `us-east-1` — `plan/architecture.md` §4.1 states this and nothing connected it to the region
         policy), `sts:*`, `waf:*`/`wafv2:*` for Stage 13, and **`s3:PutAccountPublicAccessBlock` plus
         `s3:ListAllMyBuckets`**, which are account-level calls evaluated outside the region — that last one
@@ -577,8 +579,9 @@ version of 3 or above — together, the proof that Stage 5's shares have somewhe
 deliverable used to say: `aws ram get-resource-share-associations` from the Data Governance profile, which
 returns an empty list both when sharing is enabled and when it is not.
 
-**Blocking questions for the user:** the domain name to register (D15). Not needed to start the stage, but
-needed before Stage 7.
+**Blocking questions for the user:** none. The domain name (D15) used to be listed here as "needed before
+Stage 7"; the 2026-08-09 revision moved it to **Stage 13**, which is now the only stage that registers
+anything public. Nothing between here and there depends on a name we do not already own.
 
 **Risks:** Control Tower landing zone deployment takes ~60 minutes and is awkward to undo. Account e-mails
 cannot be reused after an account is closed (a closed account holds its e-mail for 90 days) — which is

@@ -10,8 +10,11 @@ turns into a choice becomes a decision file, not a longer entry here.
 Everything that was open before execution started is now closed in `plan/decisions/` (D1-D35). What follows is
 what is genuinely still unanswered:
 
-1. **Which domain name to register (D15).** The one input needed from the user. Not blocking Stage 1, but
-   blocking Stage 7, and worth doing early since registration and validation take time.
+1. **Which domain name to register (D15 phase 2).** Still the one input needed from the user, but the
+   2026-08-09 revision moved *when*: it now blocks **Stage 13** alone, not Stage 7. Nothing before the
+   public web tier registers or publishes anything — internal endpoints are `*.internal` names certified by
+   the internal CA. Registration and validation still take time, so it is worth deciding before Stage 13
+   starts; it is no longer worth doing early.
 2. **D7/D28 - two verifications, not decisions.** The orchestration decision is closed (both built,
    Stage 10; alternative A is MWAA Serverless via `awscc_mwaaserverless_workflow`, verified to exist
    2026-08-08). What is open: (i) whether the awscc resource *applies* cleanly under the CI deploy role

@@ -4,7 +4,7 @@
 planning period that re-reading the plan will not give back. Add to this list only what would otherwise
 be relearned the hard way.
 
-Read it before planning, reviewing, or settling a decision. `CLAUDE.md` carries the eighteen titles so a
+Read it before planning, reviewing, or settling a decision. `CLAUDE.md` carries the nineteen titles so a
 lesson can be *recognised* without opening this file; the reasoning that makes each one usable is here.
 
 ---
@@ -161,6 +161,19 @@ lesson can be *recognised* without opening this file; the reasoning that makes e
    was cleared, but because the table was written about approval and the builder does not approve. The
    related tell, cheaper to spot: **the persona with the shortest section in the document is usually the one
    with the widest reach**, because reach that nobody had to argue for is reach nobody wrote down.
+19. **A blocking input has to be re-checked against the requirement it actually serves, not against the
+   mechanism that was chosen for it.** D15 needed *a certificate a client would trust*. The mechanism chosen
+   was *a public domain*, and from then on the plan tracked the mechanism: "the domain name" sat for weeks as
+   the one input needed from the user, blocking Stage 7, listed in `CLAUDE.md`, in `open-questions.md` and in
+   two stage files. It survived because it was never re-derived — nobody asked again what the certificate was
+   *for*, and the answer, once asked, was "three clients we build ourselves", which needs no public trust
+   chain at all. The trigger that exposed it was unrelated: `CLAUDE.md` gained a line saying GitLab is
+   intranet-only, and the mechanism's whole premise went with it. **The general form:** when a requirement is
+   restated — especially when it is *narrowed* — walk the decisions downstream of it and ask which of them
+   were solving the old, wider version. And there is a second half worth the same attention: deferring the
+   mechanism turned out to *improve* the design rather than merely postpone it, because a public certificate
+   publishes its names to Certificate Transparency logs. **A prerequisite that has quietly become optional is
+   usually also carrying a cost nobody has priced**, since nothing was forcing anyone to look at it.
 
 ---
 

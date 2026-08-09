@@ -77,8 +77,18 @@
 
 - Testing the break-glass: logged out. Logged in with root account. Did nothing (no actions). Logged out. The alarm was received successfully. 
 
-- Logged as AWS Control Tower Admin → AWSAdministratorAccess → IAM → oot access management → Enable. Enabled `Root credentials management` and `Privileged root actions in member accounts`. Left `Delegated administrator` empty. Clicked `Enable`. Em seguida, retornou sucesso com a seguinte mensagem `Root access management enabled. You can now delete root user credentials for member accounts from the Root access management page.`.
+- Logged as AWS Control Tower Admin → AWSAdministratorAccess → IAM → root access management → Enable. Enabled `Root credentials management` and `Privileged root actions in member accounts`. Left `Delegated administrator` empty. Clicked `Enable`. Em seguida, retornou sucesso com a seguinte mensagem `Root access management enabled. You can now delete root user credentials for member accounts from the Root access management page.`.
 
 - Running command `aws iam list-organizations-features` on CloudShell, in the same session, returns `RootSessions` and `RootCredentialsManagement` as `EnabledFeatures`.
 
-- Next step is 6.4.
+- Next step is 6.4. `Take privileged action` is not active on the management account. I checked the following accounts and "Take privileged action" does not list `Delete root credentials` option. This means that none of these accounts have existing root credentials. So I guess I'll all set.
+	- Development Account
+	- Audit Account
+	- Data Governance Account
+	- Log Archive Account
+	- Policy Canary Account
+	- Production Account
+	- Sandbox Account 1
+	- Identity Account
+
+- Não atribuí `Delegated administrator for centralized root access` a ninguém.
