@@ -19,6 +19,37 @@ account** (D14).
 **Note on ordering:** step 5 (ECR and CodeArtifact) is pulled forward and applied before Stage 6, because
 under egress design B it is how packages reach SageMaker. The rest of this stage stays here.
 
+**Note on option preservation — build this so a Shared Services account stays cheap to add (D14).**
+D14 keeps the supply chain in Production for two reasons that are both about running cost, not about
+security: a second VPC floor (~50-65 USD/month) and the account quota. Its revision trigger can fire, so
+this stage is written to make the move a **re-target**, not a rewrite. **Be clear about what the folders do
+and do not buy**: separate slices reduce *migration* cost and nothing else — they are not a boundary, they
+share one account, one IAM space, one SCP ceiling and one blast radius (Lesson 5). What actually makes such
+a move expensive is not the folder but **implicit same-account coupling**, so the four measures below are
+about coupling:
+
+1. **The registries get their own slice, `production/registry/` `[P]`** — ECR, the pull-through cache and
+   CodeArtifact, *out of* `production/data/`, which keeps the application-output buckets and the Lake
+   Formation resource links. Those two sets move in opposite directions the day the trigger fires: the
+   registries leave, the buckets and links stay. `plan/conventions.md` §6 carries this layout.
+2. **Cross-account by construction, even inside one account.** The pipeline reaches its targets by
+   `AssumeRole` with the account id coming from a variable, **including into Production** — never by
+   same-account implicitness. Likewise the ECR and CodeArtifact resource policies and their KMS key
+   policies enumerate consumers from a **map of account ids** (Lesson 14 — a principal pasted in by hand in
+   N places will be missing from one). If the registries move, the map gains a key; nothing else changes.
+3. **No implicit sharing with Production's own resources.** `tooling/`, `runners/` and `registry/` read
+   `production/foundation/` only through `terraform_remote_state` outputs that would still exist if
+   foundation lived in another account — VPC id, subnet ids, CIDRs — and they get **their own KMS key**,
+   not the key `production/data/` uses for application data. A shared key is the single hardest thing to
+   unpick later, because it is referenced from every consumer account's policy.
+4. **Reserve the CIDR now, in Stage 3's allocation table.** It costs nothing and avoids renumbering a
+   peered topology later.
+
+What stays genuinely sticky, and is worth knowing rather than avoiding: **GitLab's state** — repositories,
+CI history, registry metadata on EBS/S3 — plus the private DNS name, the certificate and the runner
+registration. Moving those is a restore-and-repoint with a maintenance window, not a redesign, which is
+exactly why step 1's backup/restore cycle has to be tested for real.
+
 **To execute:**
 
 1. GitLab CE Omnibus on EC2 in a **Production** private subnet; EBS with a snapshot schedule; an internal
@@ -78,13 +109,15 @@ under egress design B it is how packages reach SageMaker. The rest of this stage
    distinct from the GitLab host** (it serves user-supplied content, so sharing the origin would hand it
    the GitLab session cookie) and a **wildcard DNS record plus wildcard certificate** — both provided by
    D15, which is why that decision has to be made before this stage.
-5. **Registries, in `production/data/`, layer `[P]` — applied early (before Stage 6):**
+5. **Registries, in `production/registry/`, layer `[P]` — applied early (before Stage 6):**
    ECR repositories `dev-env` (SageMaker images) and `app/*` (application images), with lifecycle policies
    to expire untagged images and **ECR enhanced scanning** enabled; an **ECR pull-through cache** rule for
    the upstream public registries; and a **CodeArtifact** domain with repositories per ecosystem, each
    configured with an upstream to the public registry. Both carry a resource policy granting the **Sandbox
    and Development** accounts pull/read access, and the KMS key policy has to grant both as well — the
-   direction of sharing is the reverse of the previous plan, because the registries moved. `plan/architecture.md` §4.3 records
+   direction of sharing is the reverse of the previous plan, because the registries moved. **Both policies
+   enumerate their consumers from a map of account ids, and the key is this slice's own key, not
+   `production/data/`'s** (option-preservation note above, measures 2 and 3). `plan/architecture.md` §4.3 records
    which ecosystems CodeArtifact does not cover and what happens to them instead. Whether SageMaker Studio
    actually accepts the `dev-env` image cross-account is verified in Stage 6; the fallback is an ECR
    replication rule into a repository in each Interactive account.

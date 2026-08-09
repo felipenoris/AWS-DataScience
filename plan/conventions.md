@@ -8,16 +8,20 @@ the Terraform and IAM rules, and the `[P]`/`[D]`/`[E]` layers every slice is cla
 ## 6. Conventions (to be applied from Stage 2 onwards)
 
 **Naming:** `<project>-<env>-<component>[-<detail>]`, lowercase with hyphens.
-Project prefix: `awsds`. The `<env>` token is one of `sandbox`, `dev`, `data`, `staging`, `prod`, `shared`.
+Project prefix: `awsds`. The `<env>` token is one of `sandbox`, `dev`, `data`, `staging`, `prod`, `org`.
 There is deliberately no token for `Policy Canary` (D29): nothing is ever created in that account, so
 nothing in it needs a name — and the day something does, the account has stopped being what it is for.
 Example: `awsds-sandbox-vpc`, `awsds-data-raw` (the lake lives in Data Governance since D22, so
 `awsds-prod-raw-data` would name a bucket that does not exist), `awsds-prod-ecr-dev-env`.
 
 **Mandatory tags on every resource:**
-`Project=AWS-DataScience`, `Environment=sandbox|development|data|staging|production|shared`,
-`ManagedBy=terraform`, `Owner=<sso-user>`, `CostCenter=<stage>`. (`shared` marks org-level resources — the
-identity slice — not a Shared Services account, which D14 decided against. `data` marks the Data
+`Project=AWS-DataScience`, `Environment=sandbox|development|data|staging|production|org`,
+`ManagedBy=terraform`, `Owner=<sso-user>`, `CostCenter=<stage>`. (`org` marks org-level and **platform**
+resources — the identity slice, and D29's Policy Canary. **It was `shared` until 2026-08-09 and was renamed
+before anything was built**, because D14's revision trigger can fire and the account it would create is
+conventionally called `shared`: two different things answering to one token in cost reports is a defect that
+is free to avoid now and means renaming deployed resources later. **`shared` is now reserved and unused** —
+it names a Shared Services account if one is ever vended, and nothing else. `data` marks the Data
 Governance account, which is not an environment at all: it sits on the ownership axis, not the lifecycle
 one, so cost reports should be able to separate it from every environment.)
 
@@ -115,9 +119,15 @@ terraform-live/
     ├── bootstrap/        # [P]
     ├── foundation/       # [P] VPC etc. + peering accepters for Sandbox AND Development.
     │                     #     Built in Stage 3, because Stage 7 (GitLab) depends on it (D14)
-    ├── data/             # [P] ECR, CodeArtifact (D14), application-output buckets, Athena
-    │                     #     workgroup, LF resource links + the governed-write grant (D22).
-    │                     #     The lake itself lives in data-governance/
+    ├── data/             # [P] application-output buckets, Athena workgroup, LF resource
+    │                     #     links + the governed-write grant (D22). The lake itself lives
+    │                     #     in data-governance/. The registries are NOT here - see below
+    ├── registry/         # [P] ECR (+ pull-through cache) and CodeArtifact (D14), with their
+    │                     #     OWN KMS key and consumer account ids from a map. Split out of
+    │                     #     data/ on 2026-08-09 to preserve D14's revision option: if the
+    │                     #     supply chain ever moves to a Shared Services account, this
+    │                     #     slice leaves and data/ stays. A folder is not a boundary - it
+    │                     #     buys migration cost only (Stage 7, option-preservation note)
     ├── sagemaker/        # [P] Model Registry (model package groups) + the execution role
     │                     #     pipeline-submitted jobs assume. No domain, no user profiles (D17)
     ├── egress/           # [E] NAT, endpoints, internal ALB for GitLab/Pages (ALBs cannot stop)

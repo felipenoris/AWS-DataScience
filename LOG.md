@@ -44,3 +44,10 @@
 - Registered a new OU called `Sandboxes` under `Root` -> `Interactive`. This OU will be used to group all sandbox accounts.
 
 - Created new account `Sandbox Account 1` under `Sandboxes` with IAM SSO user `Infrastructure User`. Now I can see that in the IAM Identity Center there's only one `Infrastructure User` with two accounts listed: `Development Account` and `Sandbox Account 1`.
+
+- Created a `Workloads` OU under `Root`.
+
+- Created `Production Account` under `Workloads` OU with IAM SSO user `Infrastructure User`.
+
+- I checked that `Infrastructure User` now has access to `Development Account`, `Sandbox Account 1` and `Production Account`.
+
