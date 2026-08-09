@@ -219,6 +219,14 @@ CI is the same bug as one that only works by hand — but the expected caller is
   privilege-escalation path: it lets a user run code under any role they are allowed to pass.
 - Nothing gets `AdministratorAccess` or `PowerUserAccess` "for now". The starting point of a permission set
   is narrow, because loosening a permission is a five-minute change and tightening one is a negotiation.
+  **One exception exists and it is named rather than tacit: the `infrastructure` group** (D32;
+  `ORGANIZATION.md`, "The limit of the separation of duties"). It holds `AdministratorAccess` on every
+  Terraform-managed account because it is the identity `terraform apply` runs as, and an identity that
+  *authors* IAM cannot be constrained by the IAM it authors — narrowing that set would be notation, not a
+  control (Lesson 18). What contains it is detective and enumerated: the Control Tower group-membership
+  alarm, Object Lock in compliance mode, CloudTrail with log file validation. **Read the exception
+  narrowly** — it covers one group, and any *other* principal that turns up holding administrator is a
+  finding, not a precedent.
 - **And no broad managed policy for a principal that is itself a control** (D31). `ReadOnlyAccess` looks
   harmless and is not, for an approver: it carries `s3:Get*` and `athena:GetQueryResults`, so it reaches the
   derived zones and other people's query output. Every persona in this plan gets a set written for its job —

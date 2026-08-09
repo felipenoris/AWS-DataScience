@@ -35,9 +35,16 @@ AWS Organization (Management account - console only)                        [P]
 │                                restricted principal measures the identity
 │                                policy instead                              [P]
 │
-├── OU Interactive           <- one SCP set: interactive compute allowed,
-│   │                           no human infrastructure changes (D23). It is
-│   │                           attached HERE and inherits into Sandboxes below
+├── OU Interactive           <- NO set of its own: interactive compute is allowed
+│   │                           here because, unlike Workloads and Data, nothing
+│   │                           denies it - the org-root set is the whole ceiling.
+│   │                           What holds infrastructure change off the data
+│   │                           scientist is DataScientistAccess, an IDENTITY
+│   │                           policy, not this OU (D23; Stage 1b step 7 carries
+│   │                           the choice of whether to give the OU a set at all,
+│   │                           and why the literal SCP cannot be written without
+│   │                           exempting the builder). If it ever gains one, it
+│   │                           attaches HERE and inherits into Sandboxes below
 │   ├── OU Sandboxes         <- groups the one class of account that
 │   │   │                       multiplies. NO policy set of its own: the
 │   │   │                       Interactive set above inherits into it, which

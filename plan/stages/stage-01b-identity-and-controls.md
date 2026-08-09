@@ -192,9 +192,21 @@ that is not.
    which of the two it turned out to be.
    These are created by hand here only because Terraform cannot run before SSO login works; Stage 2 moves
    them into `terraform-live/identity/` and imports them.
-4. The infrastructure user's assignment **on the Management account itself** has to be created from the
-   Management account — the delegated administrator cannot manage assignments targeting Management.
-   This is the one identity task that stays there permanently.
+4. **No project persona holds an assignment on the Management account — the infrastructure user included.**
+   This step used to create one, and it contradicted the reason `AWS Control Tower Admin` is kept standing at
+   all: the Management-account work is *its* job, and what D34 buys is precisely that the infrastructure user
+   gains no standing reach there. Principle 1 says the same from the other side — Management is
+   bootstrap-only and console-only, Terraform never runs against it, so there is nothing for an
+   `awsds-infra-*` profile to do. Step 3's assignment list above already omits it; this step now says so
+   deliberately rather than by omission, which is the difference between a decision and an oversight.
+   **Keep the mechanical fact the old step carried, because it is true and it bites two steps later:** the
+   delegated administrator **cannot manage assignments targeting the Management account** — those can only be
+   created from Management itself. That is a constraint on *creating* an assignment, and it is not a
+   constraint on group membership: `AWSControlTowerAdmins` already carries `AWSAdministratorAccess` on
+   Management, created by the landing zone, and step 1 records that the delegated administrator can edit who
+   is in it. So the preventive path into Management is closed and the membership path is not — which is why
+   step 8's alarm is the control rather than a nicety. The verification list at the bottom of this stage
+   carries the item that confirms the restriction is exactly as described.
 5. **Configure the local SSO profiles now, not at the end of the stage.** `aws configure sso` for
    `awsds-infra-sandbox`, `awsds-infra-dev`, `awsds-infra-staging`, `awsds-infra-prod`, `awsds-infra-data`
    and `awsds-infra-identity` — plus one more that is deliberately named differently,
@@ -274,12 +286,42 @@ that is not.
       whose entire policy set says nothing runs there — and ECS/Lambda creation), deny `s3:DeleteBucket`
       and `lakeformation:DeregisterResource`. The lake account's SCP is about what can never happen there,
       because nothing is supposed to *run* there at all.
-    - **`Interactive` OU** (D21): no extra SageMaker denies — Studio is the point — but the same
-      no-infrastructure guardrails as everywhere else. The differences between Sandbox and Development
-      are differences of content, not of policy, which is why they share the OU.
-      **Attach here and not to the nested `Sandboxes` OU** (D23, D35). `Sandboxes` groups the accounts that
-      multiply and carries no set of its own; inheritance is what makes a unit vended next year governed on
-      arrival, and a set attached twice is a set that will diverge in one of the two places.
+    - **`Interactive` OU** (D21) — **read this before writing anything here, because the phrase the plan
+      used to carry did not describe a policy.** "Human infrastructure changes denied" appeared across six
+      files as a property of this OU's SCP set, and no SCP implements it. What actually stops the data
+      scientist from creating a VPC is `DataScientistAccess` and its permissions boundary — an **identity**
+      policy, enumerated by hand, which is exactly the sort of thing an SCP is supposed to back up rather
+      than the thing an SCP *is* (Lesson 5). Corrected across those files on 2026-08-09. The honest statement
+      of what this OU carries is **nothing of its own**: interactive compute is allowed here because, unlike
+      `Workloads` and `Data`, nothing denies it, and the organization-root set is the whole ceiling.
+
+      **Why the literal SCP was not simply written, which is the part to understand before writing one.** A
+      deny of "infrastructure changes" in these accounts would have to exempt the identity that *builds* the
+      infrastructure in them — Terraform applies the VPC, the buckets, the roles and the keys here under
+      `AdministratorAccess`. A standing exemption for the builder from every infrastructure deny is the exact
+      shape D30 proposed and had reverted. A second exemption would follow it: D26's blueprints provision
+      project buckets, execution roles and apps into these accounts under DataZone's own provisioning roles —
+      principals that do not exist until Stage 6 (Lesson 17), and whose absence from a carve-out surfaces as
+      a failed project creation rather than as a policy error.
+
+      **So there is a choice to make while attaching, rather than a sentence to inherit.** Either leave this
+      OU with no set of its own — and say so in one place instead of implying a control — or give it denies
+      that are *interactive-specific and need no exemption at all*. The candidate worth pricing is the
+      ungoverned interactive surface: **`sagemaker:CreateNotebookInstance` and
+      `sagemaker:CreatePresignedNotebookInstanceUrl`**. Nothing in this design uses a classic notebook
+      instance; it bypasses the VPC-only app configuration and the `dev-env` image gate in one step; and
+      denying it binds the builder too, which is what would make it a control rather than a carve-out. It is
+      named here as a candidate and **deliberately not adopted** — adopting it is a decision, and it belongs
+      to whoever runs this step against the `Policy Canary` battery. Record which way it went.
+
+      The differences between Sandbox and Development are differences of content, not of policy, which is
+      why they share the OU.
+      **If this OU does gain a set, attach it here and not to the nested `Sandboxes` OU** (D23, D35).
+      `Sandboxes` groups the accounts that multiply and carries no set of its own; inheritance is what makes
+      a unit vended next year governed on arrival, and a set attached twice is a set that will diverge in one
+      of the two places. **Until it gains one, that instruction is about the root set** — which reaches a
+      newly vended Sandbox whatever the nesting, so "governed on arrival" is true today for a reason that has
+      nothing to do with where the attachment goes.
     - **`Identity` OU** (D10, D23 as revised 2026-08-09) — **the tier this plan did not have, because the
       account was supposed to be in `Security`.** It is not: Control Tower refused the vend into a
       foundational OU, so the account sits in a sibling OU created from the console — and **a

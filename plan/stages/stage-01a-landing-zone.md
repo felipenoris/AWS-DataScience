@@ -162,10 +162,13 @@ that multiplies.
    the moment there is least appetite for it. OUs, per D23 — each named for the
    policy set it carries, not for its contents:
    - `Interactive` OU → `Development`, plus a nested **`Sandboxes` OU** holding the `Sandbox` accounts, one
-     per business unit (D35). Interactive compute *allowed*; human infrastructure changes denied. The only
-     OU into which project blueprints may provision (D26). **Attach the policy set to `Interactive`, not to
-     `Sandboxes`** — the nested OU carries none of its own and inherits, which is what makes a newly vended
-     unit governed the moment it lands. Created this way on 2026-08-09 (`LOG.md`); it is the reason the
+     per business unit (D35). Interactive compute *allowed* — because, unlike `Workloads` and `Data`, nothing
+     here denies it. **This OU carries no set of its own**, and the line that used to say "human
+     infrastructure changes denied" described an identity policy (`DataScientistAccess`), not an SCP; Stage 1b
+     step 7 carries the correction and the choice of whether to give the OU a set at all. The only OU into
+     which project blueprints may provision (D26). **If a set is written, attach it to `Interactive`, not to
+     `Sandboxes`** — the nested OU carries none of its own and inherits, which is what would make a newly
+     vended unit governed the moment it lands. Created this way on 2026-08-09 (`LOG.md`); it is the reason the
      organization's OU nesting depth is 2, which Stage 2 has to write its `for_each` against.
    - `Data` OU → `Data Governance` (D22, D26, D27). **No *user* compute** — the SCP denies EC2 and
      SageMaker outright, plus Glue job creation and execution (D25) — and deletion protection is the

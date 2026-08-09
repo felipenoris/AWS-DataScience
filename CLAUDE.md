@@ -195,9 +195,9 @@ Reference things by **stable ID** — `D26`, `INT-11`, `Stage 1b step 7` — nev
 ### Current position
 
 - **Stage 1a nearly done; `LOG.md` is authoritative.** Control Tower enabled (`us-west-2`), budget set,
-  and `Development`, `Sandbox Account 1`, `Production`, `Data Governance`, `Policy Canary` vended.
-  **Left: `Identity` and `Staging`**, deferred on the account cap — the increase to 15 is *requested* and
-  has to be confirmed before the last vends (Stage 1a pre-flight has the arithmetic).
+  and `Development`, `Sandbox Account 1`, `Production`, `Data Governance`, `Policy Canary` and `Identity`
+  vended. **Left: `Staging` alone**, deferred on the account cap — the increase to 15 is *requested* and has
+  to be confirmed before that vend (Stage 1a pre-flight has the arithmetic).
 - **The OU tree is not the one D23 first described** — revised 2026-08-09 by execution; full tree in
   [`plan/architecture.md`](plan/architecture.md). `Identity` has an OU of its own, because the foundational
   `Security` OU refused the vend, so it inherits no guardrails and 1b step 7 must attach its set; and
@@ -209,8 +209,9 @@ Reference things by **stable ID** — `D26`, `INT-11`, `Stage 1b step 7` — nev
   governing what happens next: **D32** (`SSOUserEmail` is always the infrastructure user, and it grants
   administrator), **D33**/**D34** (`AWS Control Tower Admin` vends, from the access portal, never root,
   permanently), **D35** (`Sandbox` is one per business unit; every other account is exactly one).
-- **Still needed from the user**, neither blocking: **the domain name to register** (D15, blocks Stage 7),
-  and the AZ name-to-ID check (1b step 6), which decides how Stage 3 anchors subnets.
+- **Still needed from the user**, none blocking now: **the domain name to register** (D15, blocks Stage 7),
+  the AZ name-to-ID check (1b step 6), which decides how Stage 3 anchors subnets, and — due at 1b step 7 —
+  whether the `Interactive` OU gets a policy set of its own; it carries none today.
 - **Settle earliest:** **INT-11** (org-wide RAM sharing + Lake Formation cross-account v3 — fails
   *silently*) and **INT-13** (CodeConnections to the private GitLab — no convenience-preserving fallback).
 
@@ -223,7 +224,7 @@ a stage closes.
 ### Lessons carried forward
 
 **Read [`plan/lessons.md`](plan/lessons.md) before planning, reviewing, or settling a decision.**
-The seventeen titles are kept here so a lesson can be *recognised* without opening the file; the
+The eighteen titles are kept here so a lesson can be *recognised* without opening the file; the
 reasoning that makes each one usable is in the file, and the titles alone are not a substitute.
 
 1. **A copy of governed data landing somewhere less governed is not a hole to be closed.**
@@ -243,4 +244,5 @@ reasoning that makes each one usable is in the file, and the titles alone are no
 15. **An adopted-against-advice decision is undone by *delivery*, not by re-argument — and a revision trigger written about operating something cannot fire while you are still building it.**
 16. **A manual step delegated to a console wizard is only as specified as the fields it names — and an unnamed field that grants permissions is a permission decision made by whoever is at the keyboard.**
 17. **A service that "sets itself up" creates principals nobody chose — enumerate them before the next step depends on one.**
+18. **A policy never constrains the principal that authors it.**
 

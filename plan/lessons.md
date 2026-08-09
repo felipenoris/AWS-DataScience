@@ -4,7 +4,7 @@
 planning period that re-reading the plan will not give back. Add to this list only what would otherwise
 be relearned the hard way.
 
-Read it before planning, reviewing, or settling a decision. `CLAUDE.md` carries the seventeen titles so a
+Read it before planning, reviewing, or settling a decision. `CLAUDE.md` carries the eighteen titles so a
 lesson can be *recognised* without opening this file; the reasoning that makes each one usable is here.
 
 ---
@@ -145,6 +145,22 @@ lesson can be *recognised* without opening this file; the reasoning that makes e
    A missing enumeration does not stay local: it becomes a wrong assumption in every step that reads the
    same resource later. **When a step ends with "X now exists", enumerate what X *contains*, on every axis,
    not only the one the step was about.**
+18. **A policy never constrains the principal that authors it.** Lesson 11 says that changing *who authors*
+   an IAM policy invalidates every claim made about that policy; this is the same fact from the other side,
+   and it holds permanently rather than being triggered by a change. Every control in this design — the two
+   approvers' denials, the derived zone's CMK, the OU policy sets, the permissions boundaries — is written by
+   the infrastructure user and applied under its credentials. "Can a data scientist read the derived zone?"
+   has an answer; the same question about the identity that owns the key policy does not, and it went unasked
+   until someone read `ORGANIZATION.md` and noticed that the persona with the thinnest description was the
+   one holding administrator everywhere. **The general form:** for each control, name the principal that
+   authors it, exclude that principal from the claim, and then ask what is *left* holding it. The answer is
+   almost always detective — a log that principal cannot edit, an alarm on the membership that would grant
+   the reach, an object lock its own administrator cannot lift — and the useful move is to enumerate those
+   three rather than to attempt a preventive control that the author would simply rewrite. **The tell** is a
+   separation-of-duties table whose rows are all *approvers*: the builder is missing from it not because it
+   was cleared, but because the table was written about approval and the builder does not approve. The
+   related tell, cheaper to spot: **the persona with the shortest section in the document is usually the one
+   with the widest reach**, because reach that nobody had to argue for is reach nobody wrote down.
 
 ---
 

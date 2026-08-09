@@ -201,6 +201,63 @@ onwards the file records how the environment changed, not just the plan.
   count is 2 KB. What replaced the number as the actual rule is a test that can be applied while writing:
   **a bullet in that section that explains *why* is a stale copy of something that lives elsewhere.**
 
+- **2026-08-09 — the infrastructure persona was documented, after a question about whether it conflicted with
+  the others.** No decision changed and nothing was re-provisioned; D32 is untouched. The question was asked
+  from the access portal — *why is `Infrastructure User` attached to all these accounts, and does it overlap
+  another persona?* — and the answer needed three things the repository did not contain.
+
+  **The persona had a two-line section and administrator on every vended account.** `ORGANIZATION.md` gave
+  each of the other four a paragraph of reach, denials and reasoning, and gave this one "can assume
+  infrastructure change roles". The reason is visible in hindsight: the other four were *argued into
+  existence* by successive splits of a `Manager user`, so each split wrote its own justification, while this
+  one was never contested and so was never described. It now carries what the others carry — what it is (the
+  builder: the identity `terraform apply` runs as), why it is attached to those accounts (D32's `SSOUserEmail`,
+  the same value on every vend, so the list is not curated), the difference between **today's direct
+  `AWSAdministratorAccess` assignment** and the group path Stage 1b builds, and an access table whose
+  Management, Log Archive and Audit rows read *nothing*, with the reason.
+
+  **The answer to the question itself: no functional conflict, total permission overlap.** Each persona
+  answers a different question — captured in a new index table at the head of the `SSO Users` section, which
+  is the shape of the separation and is now stated once instead of being inferable — and nobody else builds.
+  But the builder holds administrator where the others' controls live, so it can `lakeformation:GrantPermissions`
+  in Data Governance, `ecr:PutImage` in Production, and rewrite the derived zone's key policy that D31 relies
+  on. The separation of duties is real among the four and silent about the fifth, which the document now says
+  in the place a reader would otherwise conclude the opposite.
+
+  **One contradiction and one imprecision, both found by following that thread.** Stage 1b step 4 created an
+  assignment for the infrastructure user *on the Management account*, against README §3, D33, D34 and
+  principle 1 — resolved in the direction the other four take (no assignment; the step now says so
+  deliberately and keeps the delegated-administrator constraint it also carried). And the sentence "the
+  infrastructure user gains no Management-account reach", repeated in three files as the payoff of keeping
+  `AWS Control Tower Admin` standing, is true of *standing assignment* only: that user administers `Identity`,
+  and an Identity Center delegated administrator can edit `AWSControlTowerAdmins` membership. All three now
+  say **standing**, and name Stage 1b step 8's alarm as what covers the gap. That alarm was already load-bearing
+  under D34; it has one more reason now.
+
+  **Lesson 18 was added** — *a policy never constrains the principal that authors it* — with the corollary that
+  produced this entry: the persona with the shortest section is usually the one with the widest reach.
+
+  **Two loose ends from the same thread were closed in the same pass, and the second was the larger finding.**
+  `plan/conventions.md`'s "nothing gets `AdministratorAccess` or `PowerUserAccess`" now names its one
+  exception — the `infrastructure` group — and says to read it narrowly, so any *other* principal holding
+  administrator reads as a finding rather than as precedent. And **"human infrastructure changes denied",
+  carried in six files as a property of the `Interactive` OU's SCP set, turned out to describe no SCP at
+  all.** What holds infrastructure change off the data scientist is `DataScientistAccess` plus its
+  permissions boundary — an *identity* policy, which is the thing an SCP is supposed to back up rather than
+  the thing an SCP is (Lesson 5, found in its purest form: the sentence had been read as a control for the
+  whole planning period). The literal SCP is not written, and the reason is now recorded where it will be
+  needed: it would have to exempt the identity that *builds* every VPC, bucket, role and key in those
+  accounts, which is the standing builder exemption D30 proposed and had reverted — with a second exemption
+  behind it for the DataZone provisioning roles D26's blueprints create, principals that do not exist until
+  Stage 6. So `Interactive` is stated as carrying **no set of its own**: interactive compute is allowed there
+  because, unlike `Workloads` and `Data`, nothing denies it. Stage 1b step 7 now carries the choice of
+  whether to give it one, with the single candidate that would need no exemption named and **not** adopted —
+  `sagemaker:CreateNotebookInstance` and `CreatePresignedNotebookInstanceUrl`, the ungoverned interactive
+  surface that bypasses both the VPC-only app configuration and the `dev-env` gate. Adopting it is a decision
+  for whoever attaches policy against the `Policy Canary` battery, not one to inherit as prose. One knock-on:
+  "attach at `Interactive` so `Sandboxes` inherits" is currently an instruction about nothing — a newly
+  vended Sandbox is governed on arrival by the organization-root set, whatever the nesting.
+
 ---
 
 *Plan core: [GENERAL_PLAN.md](../GENERAL_PLAN.md) · Decisions: [plan/decisions/INDEX.md](decisions/INDEX.md) · Stages: [plan/stages/INDEX.md](stages/INDEX.md)*

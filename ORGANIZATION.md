@@ -48,7 +48,7 @@ is not signing in to the account.
 | Audit | Security | Platform | Control Tower guardrails; delegated security administration |
 | Identity | **Identity** | Platform | Delegated Identity Center administration. Its own OU since 2026-08-09: Control Tower would not vend the account into the foundational `Security` OU (D23) |
 | Policy Canary | Policy Test | Platform | **None of its own** — the OU exists to hold *candidate* policies under test (D29) |
-| Sandbox | Interactive → **Sandboxes** | Lifecycle (before the chain) | Interactive compute allowed; human infrastructure changes denied — inherited from `Interactive`, since the nested `Sandboxes` OU carries no policy set of its own. **One account per business unit (D35)** — the only non-structural row in this table |
+| Sandbox | Interactive → **Sandboxes** | Lifecycle (before the chain) | Interactive compute allowed — because nothing denies it. Neither `Sandboxes` nor `Interactive` carries a set of its own today, so what reaches this account is the organization-root set; infrastructure change is held off the data scientist by `DataScientistAccess`, an *identity* policy (Stage 1b step 7). **One account per business unit (D35)** — the only non-structural row in this table |
 | Development | Interactive | Lifecycle (head of the chain) | Same as Sandbox — the two differ in content, not in policy |
 | Data Governance | Data | **Ownership** | No user compute; catalog maintenance excepted by name; deletion denied |
 | Staging | Workloads | Lifecycle | No interactive compute; no human control plane |
@@ -187,9 +187,111 @@ not in concept. `Policy Test` and `Policy Canary` keep the word `Staging` naming
 The five users below are the **personas** the separation of duties is built from. They are not the whole
 contents of the directory — see "Identities this project did not create" at the end of this section.
 
+**Index — one persona per row, identified by the question it answers.** The question is what separates them:
+two personas answering the same question are one persona with two names, and a persona whose question nobody
+asks does not need to exist. The axis column is the same vocabulary the accounts use at the top of this file,
+which is what makes a split survive an account being added.
+
+| Persona | The question it answers | Axis | Where it acts |
+|---|---|---|---|
+| [Infrastructure](#infrastructure-user) | *does this exist?* — who builds and changes the infrastructure | **Platform** — it approves nothing, and nothing else builds | Terraform, from a workstation, against every account the project manages |
+| [Data Scientist](#data-scientist-user) | *who uses the environment?* | **Consumption** | The Unified Studio portal, GitLab, the notebook |
+| [Deployment Manager](#deployment-manager-user) | *is this build safe to release?* | **Lifecycle** | GitLab — the promotion pipeline's manual gate |
+| [Governance Manager](#governance-manager-user) | *may this person read this dataset?* | **Ownership** | The Unified Studio portal |
+| [Dev Env Steward](#dev-env-steward-user) | *is this runtime safe to hand to everyone?* | **Supply chain** | GitLab — the `dev-env` pipeline's manual gate |
+| [`AWS Control Tower Admin`](#aws-control-tower-admin-d33) | *who creates OUs and vends accounts?* | **Not a persona** ([D33](plan/decisions/D33-control-tower-admin-user.md), [D34](plan/decisions/D34-account-vending.md)) — one standing duty, no approval, no data, no workload | The Control Tower console |
+
+**The separation of duties runs between the Data Scientist and the three approvers; Infrastructure is not
+part of it and contains it.** Those four are separated from one another by design, and no one of them can
+complete a path alone. The infrastructure persona sits outside that argument entirely — see
+[the limit of the separation of duties](#the-limit-of-the-separation-of-duties-which-is-this-user), which is
+the paragraph to read before trusting the approver table further down.
+
 ## Infrastructure user
 
-- roles: can assume infrastructure change roles
+- roles: can assume infrastructure change roles.
+
+**What it actually is: the builder.** It is the identity `terraform apply` runs as. Every VPC, bucket, role,
+KMS key, permission set and policy in this design is authored by it and applied under its credentials,
+through the `awsds-infra-*` SSO profiles over the VPN. It approves nothing, owns no dataset, runs no workload
+and appears in no gate — which is exactly why it collides with none of the other personas: they answer *may
+this happen?*, and this one answers *does it exist?*
+
+**Its group and its permission set:** the `infrastructure` group holding `AdministratorAccess`, created in
+Stage 1b step 3 — **not** Control Tower's `AWSAdministratorAccess`, which is four characters away and grants
+the same thing. Anywhere this repository says "the administrator permission set" without naming Control
+Tower, it means the first one.
+
+**Why it is associated with the vended accounts, which was never a decision taken per account.** Account
+Factory's form carries a second address, `SSOUserEmail`, which reads like a contact field and is not: AWS's
+own wording is that the user *"will have administrative access to the account you're provisioning"*.
+[D32](plan/decisions/D32-account-factory-sso-user.md) fixes that value as this user, identically on every
+vend — one administrator, one MFA device, one credential to protect — and that is the concrete thing letting
+Stage 2 run `terraform apply` without ever touching root. So the list below is not a list somebody curated:
+it is **every account Account Factory has vended**. `Log Archive` and `Audit` are absent because the landing
+zone created them itself rather than through Account Factory, and that absence is correct rather than
+incidental.
+
+**What exists today is not yet the model above, and the difference matters operationally.** Each vended
+account carries a **direct user assignment** of Control Tower's `AWSAdministratorAccess`, made at vend time
+and sitting outside the group model entirely; the `infrastructure` group does not exist until Stage 1b. Two
+consequences, both from D32: **remove none of those direct assignments until the group path is proven end to
+end** — `infrastructure` → `AdministratorAccess` → a real `sts:GetCallerIdentity` under each profile — because
+the only thing behind a lockout is the Management root ([D16](plan/decisions/D16-break-glass.md)); and
+**whether they can be removed at all is a verification, not an assumption**, since a landing-zone update, an
+account update or a re-enrollment may re-create them.
+
+### Access, per account
+
+| Account | What it holds | Why |
+|---|---|---|
+| Sandbox, Development, Staging, Production, Data Governance, Identity | `AdministratorAccess`, through the `infrastructure` group | These are the Terraform-managed slices, and this is the identity that applies them |
+| Policy Canary | `AdministratorAccess`, as a **direct** assignment and deliberately so | The account is outside the Terraform-managed set and has no `awsds-infra-*` profile — it is reached through `awsds-policy-canary`. It needs an *administrator* or the [D29](plan/decisions/D29-policy-canary.md) battery measures the identity policy instead of the SCP ceiling |
+| Management | **Nothing, permanently** | Principle 1 makes Management bootstrap-only and console-only; Terraform never runs against it. D33/D34 keep `AWS Control Tower Admin` standing precisely so this user needs no reach there, and [D10](plan/decisions/D10-identity-center-delegation.md) delegates Identity Center to the `Identity` account for the same reason. Stage 1b step 4 used to create an assignment here and no longer does |
+| Log Archive, Audit | **Nothing** | Neither was vended by Account Factory and neither holds a Terraform slice. The audit trail has to survive its own administrators, which is an argument against adding one rather than a gap to close |
+
+### The limit of the separation of duties, which is this user
+
+**Read this before trusting the approver table further down.** That separation is real *among the four*: no
+one of them can complete a path alone. It says nothing about this one — and in AWS terms **this user is a
+strict superset of all four**, everywhere it holds administrator.
+
+- In `Data Governance` it can call `lakeformation:GrantPermissions`, the act that *defines* the governance
+  manager. The `Data` OU's policy set denies compute, `s3:DeleteBucket` and
+  `lakeformation:DeregisterResource`; it does not deny granting.
+- In `Production` it can `ecr:PutImage`, and in Sandbox and Development `sagemaker:CreateImageVersion` — the
+  exact actions `DevEnvStewardAccess` denies so that the `dev-env` gate is not theatre.
+- The derived zone's own CMK is what stops a release approver reading query output (D19 as revised by
+  [D31](plan/decisions/D31-approver-read.md)). An administrator of the account holding the key rewrites the
+  key policy — and, one level worse, **this user is the author of that key policy**, because it is the
+  identity Terraform runs as. A policy never constrains the principal that writes it (Lesson 18).
+
+**And the reach is not bounded by the table above.** It is administrator of `Identity`, which Stage 1b step 1
+registers as the delegated administrator of IAM Identity Center — and a delegated administrator can manage
+groups *assigned to* the Management account, `AWSControlTowerAdmins` among them. One membership edit and this
+user is administrator of Management, Log Archive and Audit. So the claim repeated in `README.md`, D33 and D34
+— *the infrastructure user gains no Management-account reach* — is exactly true of **standing assignment** and
+not of reachability. It is written that way in all three; keep it written that way.
+
+**Nothing preventive contains any of this, and that is a property of the design rather than a hole in it:**
+whoever builds the control plane can rewrite the control plane. What contains it is **detective, and
+enumerable — so it can be checked rather than assumed**: the alarm on Control Tower group membership
+(Stage 1b step 8), S3 Object Lock in **compliance** mode on the Log Archive bucket (Stage 1b step 9), and
+CloudTrail with log file validation. If one of those three is missing, this user is unobserved as well as
+unbounded, and the difference between those two states is the whole control.
+
+**Two rules follow, and AWS enforces neither:**
+
+- **The "never the same person in two groups" rule below extends to this persona, and this is the hardest
+  instance of it to keep.** A human in `infrastructure` *plus* any approver group is not a partial overlap: it
+  is the separation of duties gone in full, because the infrastructure half already contains the other half.
+  With one operator this is a statement of intent — write it down anyway, so a second operator inherits a rule
+  instead of a habit.
+- **`AdministratorAccess` here is the one named exception to `plan/conventions.md`'s "nothing gets
+  `AdministratorAccess` or `PowerUserAccess`".** Named rather than tacit, because the reason is structural: an
+  identity that authors IAM cannot be constrained by the IAM it authors, so narrowing this set would be
+  notation. The honest control is that it is **one human with one MFA device** — and the moment there is a
+  second, D32's revision trigger fires.
 
 ## Data Scientist user
 
@@ -260,9 +362,11 @@ actions are denied explicitly in their permission set — the pipeline holds the
 only after the gate.
 
 **One rule that nothing in AWS will enforce for you:** never put the same person in more than one of these
-groups, and never in one of them plus `data-scientists`. While there is a single operator the temptation is
-obvious and every split becomes notation the moment it is given in to — Identity Center will not warn, and
-no policy can detect it.
+groups, and never in one of them plus `data-scientists` — **or plus `infrastructure`**, which is the
+instance that matters most and the one this table hides, because `infrastructure` is not a column here at
+all: it already contains every column, and the argument is in "The limit of the separation of duties" above.
+While there is a single operator the temptation is obvious and every split becomes notation the moment it is
+given in to — Identity Center will not warn, and no policy can detect it.
 
 ### Deployment Manager user
 

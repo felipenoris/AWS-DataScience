@@ -308,8 +308,8 @@ policy it carries but the disposable account it contains:
 |---|---|---|
 | Security | Log Archive, Audit | Control Tower guardrails. **Foundational** — Control Tower owns it, and it will not accept an account it did not create there |
 | Identity | Identity | Delegated Identity Center administration. Split out of `Security` on 2026-08-09 because the vend into a foundational OU was refused (D23) — so whatever guardrails `Security` carried by being foundational have to be attached here explicitly |
-| Interactive | Development, and the nested `Sandboxes` OU | Interactive compute **allowed**; human infrastructure changes denied |
-| Interactive → Sandboxes | Sandbox, one per business unit (D35) | **None of its own** — it inherits `Interactive`. It is a container for a *cardinality class*, not a policy boundary |
+| Interactive | Development, and the nested `Sandboxes` OU | Interactive compute **allowed** — and this is the one OU that adds no deny to the organization-root set, which is why. What keeps the data scientist from changing infrastructure is `DataScientistAccess`, an *identity* policy, not this OU (see below the table) |
+| Interactive → Sandboxes | Sandbox, one per business unit (D35) | **None of its own** — and `Interactive` above has none either today, so what reaches a Sandbox is the organization-root set. It is a container for a *cardinality class*, not a policy boundary |
 | Data | Data Governance | No *user* compute (the DataZone control plane and the catalog-maintenance role are carved out by name); deletion denied |
 | Workloads | Staging, Production | No interactive compute; no human control plane |
 | Policy Test | Policy Canary | **None** — this is the OU a *candidate* policy is attached to and exercised against, before it reaches anything real (D29) |
@@ -323,11 +323,23 @@ nests `Workloads` into `NonProd`/`Prod`; a second data domain does the same for 
 needs a third clause.** `Identity` exists because Control Tower refused to vend the account into `Security`,
 which is a *foundational* OU it owns — so the account's policy set has to be attached rather than inherited,
 which is precisely what makes it a real OU rather than a folder. `Sandboxes` exists to group the one class of
-account that multiplies (D35), and it carries **no policy set of its own**: `Interactive`'s SCPs inherit down
-into it. So the full test is *an OU earns its existence when two or more accounts need the same policy set,
-**or** when it exists to contain a class of account* — a disposable one (`Policy Test`) or a multiplied one
-(`Sandboxes`). The nesting also means the organization's OU depth is 2, which is a fact any code enumerating
-OUs has to be written against (D34).
+account that multiplies (D35), and it carries **no policy set of its own**: whatever `Interactive` carries
+inherits down into it. So the full test is *an OU earns its existence when two or more accounts need the same
+policy set, **or** when it exists to contain a class of account* — a disposable one (`Policy Test`) or a
+multiplied one (`Sandboxes`). The nesting also means the organization's OU depth is 2, which is a fact any
+code enumerating OUs has to be written against (D34).
+
+**And one clarification about `Interactive` that this table used to get wrong.** It read "human
+infrastructure changes denied", as though the OU carried an SCP saying so. It does not, and no SCP in this
+design does: what keeps a data scientist from creating a VPC is the `DataScientistAccess` permission set and
+its permissions boundary — an **identity** policy. The distinction is not pedantic, because an SCP survives a
+mistake in a permission set and a permission set does not survive a mistake in itself. The literal SCP was
+considered and is not written for a reason worth knowing: it would have to exempt the identity that *builds*
+all the infrastructure in these accounts, and a standing exemption for the builder is the shape D30 proposed
+and had reverted. So `Interactive` is currently the OU where the organization-root ceiling is the whole
+ceiling — interactive compute is allowed because nothing denies it — and whether it should gain denies of its
+own is a choice recorded at the step that attaches policy (Stage 1b step 7), together with the one candidate
+that would need no exemption at all.
 
 **Why `Policy Test` is not that mistake, despite holding one account.** It is the one OU here whose value is
 not inheritance at all. A Service Control Policy is a permission ceiling that AWS evaluates only when a
@@ -458,7 +470,10 @@ The alternative was a narrower identity (`AWSServiceCatalogEndUserAccess`, vendi
 because **creating an OU is part of the stated job** and the Control Tower console is documented as reachable
 only by members of `AWSControlTowerAdmins`; splitting the work across two identities to avoid a permission
 one of them holds anyway buys nothing. What the choice does buy is that **the infrastructure user gains no
-reach into the Management account**, which keeps D32's shape intact.
+*standing* reach into the Management account**, which keeps D32's shape intact — *standing* being the precise
+word, since that user administers the `Identity` account and an Identity Center delegated administrator can
+edit `AWSControlTowerAdmins` membership. The assignment is absent; the path is watched rather than closed
+(`ORGANIZATION.md`, "The limit of the separation of duties").
 
 Keeping that identity standing has a price, recorded as a permanent condition rather than as a window:
 

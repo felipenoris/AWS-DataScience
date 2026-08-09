@@ -87,8 +87,13 @@ described below remains correct and remains unused, for one reason that decides 
 reaches the Account Factory *product* through the Service Catalog console, but AWS documents the **Control
 Tower console** — where OUs are created, accounts enrolled and the landing zone updated — as reachable only
 by `AWSControlTowerAdmins`. Creating OUs is part of the job, so the narrow path does not cover it. What the
-choice preserves is the thing worth preserving: **the infrastructure user gains no Management-account reach**,
-so D32's one-administrator-one-MFA-device shape over the vended accounts is untouched.
+choice preserves is the thing worth preserving: **the infrastructure user gains no *standing*
+Management-account reach**, so D32's one-administrator-one-MFA-device shape over the vended accounts is
+untouched. *Standing* is doing work in that sentence and is not padding: the infrastructure user is
+administrator of the `Identity` account, whose delegated administrator can edit the membership of
+`AWSControlTowerAdmins` — so the assignment is absent and the reach is one membership edit away, which is
+what makes Stage 1b step 8's alarm the control here rather than a nicety (`ORGANIZATION.md`, "The limit of
+the separation of duties").
 
 **Why not delete it, and why not simply repoint it at a fresh address** — the second is the tempting
 answer and it is the wrong one. Deleting the only identity that has ever reached Account Factory, before the

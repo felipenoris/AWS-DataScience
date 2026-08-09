@@ -40,8 +40,10 @@ one of them fits `AWSAccountFactory`:
 Creating OUs is explicitly part of the stated job, so the narrow path does not cover it; and splitting the
 job across two identities to avoid a permission that one of them holds anyway buys nothing. What the choice
 does buy, and it is the reason to write it down rather than assume it: **the infrastructure user gains no
-Management-account reach**, so D32's shape — one administrator, one MFA device, over the vended accounts —
-survives intact.
+*standing* Management-account reach**, so D32's shape — one administrator, one MFA device, over the vended
+accounts — survives intact. Read *standing* literally: that user is administrator of `Identity`, and an
+Identity Center delegated administrator can edit the membership of `AWSControlTowerAdmins`, so what is absent
+is the assignment and not the path to it. Stage 1b step 8's alarm is what covers the difference.
 
 **What this costs, stated as a permanent condition rather than as a window.** D33 sized the exposure as "MFA
 plus a short window" and the window is now open-ended, so the control set has to be restated with the

@@ -180,7 +180,7 @@ than nice to have).
 | [`plan/integrations.md`](plan/integrations.md) | The `INT-nn` rows: the cross-account things that must be proven, each with a fallback | Building anything that crosses an account boundary |
 | [`plan/cost-model.md`](plan/cost-model.md) | The projection and its assumptions (rates live in [`PRICING.md`](PRICING.md)) | Adding a service, or checking the ceiling |
 | [`plan/open-questions.md`](plan/open-questions.md) | Only things to find out by doing | Planning a session |
-| [`plan/lessons.md`](plan/lessons.md) | Seventeen mistakes, with the reasoning that makes each recognisable | **Before planning, reviewing or settling a decision** |
+| [`plan/lessons.md`](plan/lessons.md) | Eighteen mistakes, with the reasoning that makes each recognisable | **Before planning, reviewing or settling a decision** |
 | [`plan/institutional-delta.md`](plan/institutional-delta.md) | What a large institution would do instead, decision by decision | Designing — so a lab compromise is not learned as a pattern |
 | [`plan/history.md`](plan/history.md) | How the plan and the environment got here | Almost never |
 | [`README.md`](README.md) | The argument for the account split, the three AWS reference architectures, and the three distinctions (Development×Experimentation, OU×Account, Data Governance×Production) | Explaining the design to someone, or re-checking why the split is shaped this way |
