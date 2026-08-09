@@ -241,7 +241,7 @@ that multiplies.
    value is ever copied into this repository.
 
    **5.1 — Verify what the landing zone already delivered. Build nothing yet.**
-   - **CloudWatch → Log groups** must contain **`aws-controltower/CloudTrailLogs`**. From landing zone 3.0
+   - **CloudWatch → Logs → Log Management → Log groups** must contain **`aws-controltower/CloudTrailLogs`**. From landing zone 3.0
      it is created **only in the Management account** (earlier versions put one in every enrolled account),
      which is why the filter goes here and not in Log Archive.
    - **CloudTrail → Trails → `aws-controltower-BaselineCloudTrail`** must show **Multi-region: Yes** and

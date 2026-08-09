@@ -60,3 +60,19 @@
 - Created `Policy Canary Account` under `Policy Test` OU with IAM SSO user `Infrastructure User`.
 
 - Couldn't create `Identity Account` under `Security` OU. Looks like it's blocked by AWS, maybe because it is foundational. I created a `Identity` OU. Created `Identity Account` under `Identity` OU.
+
+- Now to the break-glass. Logged with root account. On CloudWatch I can see a log group called `aws-controltower/CloudTrailLogs-gcs-gsx`.
+
+- Moving to `CloudTrail` -> Trails with the root account, I can see `aws-controltower-BaselineCloudTrail` with Multi-region trail set to `Yes`. Organization trail set to `Yes`. The console does not show the `Global service events` parameter. To check the parameter I used the following command line on `CloudShell`: `aws cloudtrail get-trail --name aws-controltower-BaselineCloudTrail`. It returned `IncludeGlobalServiceEvents: true`. From this, I conclude that Global service events is set to `Yes`.
+
+- Moving to `SNS` with the root account. Create topic -> Topic name = `awsds-org-break-glass-alerts` -> Next step. Type = `Standard`. Name = `AWS Break Glass Alert`. Topic is now saved.
+
+	- On SNS topic `awsds-org-break-glass-alerts` -> create subscription. Protocol = `Email`. Endpoint set to the break-glass email. Added new subscription with Protocol = `SMS`, added the break-glass phone number, which was confirmed via SMS.
+
+	- The plan says: "Do not reuse the two Control Tower topics". But the topic list has only one item, which is the one that I created manually (`awsds-org-break-glass-alerts`).
+
+- Moving to `CloudWatch` with the root account -> Logs -> Log Management -> `aws-controltower/CloudTrailLogs-gcs-gsx` -> Metric filters -> Create metric filter. Filter pattern set to `{ $.userIdentity.type = "Root" && $.userIdentity.invokedBy NOT EXISTS && $.eventType != "AwsServiceEvent" }`. Filter name set to `awsds-org-root-activity`. Metric namespace set to `AWSDS/Security`. Metric name set to `RootActivityCount`. Metric value set to `1`.
+
+- Moving to `CloudWatch` with the root account -> Alarms -> Create. Selected `RootActivityCount`, classic, Sum 1 minute, static, Greater/Equal to 1. Additional configuration -> Missing data treatment -> Treat missing data as good (not breaching threshold). In alarm -> Select an existing SNS topic -> send a notification to `awsds-org-break-glass-alerts`. Alarm name set to `AWS Break Glass Alert`, with description `A root account login was detected.`.
+
+- Testing the break-glass: logged out. Logged in with root account. Did nothing (no actions). Logged out.
