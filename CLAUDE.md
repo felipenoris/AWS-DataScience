@@ -108,13 +108,13 @@ write anything into it. Claude can read the files in this folder to gather infor
 
 **Never copy or reproduce any email addresses contained in this folder into any other project files.**.
 
-## Accounts and Users
+## Organization
 
-- The file `ACCOUNTS_AND_USERS.md` contains the AWS accounts and users.
+- The file `ORGANIZATION.md` contains the AWS OUs, accounts and users.
 
-- All accounts will be registered under an AWS Organization managed by the `Management Account`.
+- All accounts will be registered under an AWS Organization managed by the `Management Account` using Control Tower.
 
-- Accounts will be used to isolate environments: (1) Sandbox, (2) Development, (3) Staging and (4) Production.
+- Accounts will be used to isolate environments.
 
 - Promotion happens from: Development -> Staging -> Production. Given that Sandbox is the experimentation environment.
 
