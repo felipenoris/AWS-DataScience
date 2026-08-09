@@ -4,7 +4,7 @@
 planning period that re-reading the plan will not give back. Add to this list only what would otherwise
 be relearned the hard way.
 
-Read it before planning, reviewing, or settling a decision. `CLAUDE.md` carries the fifteen titles so a
+Read it before planning, reviewing, or settling a decision. `CLAUDE.md` carries the sixteen titles so a
 lesson can be *recognised* without opening this file; the reasoning that makes each one usable is here.
 
 ---
@@ -108,6 +108,43 @@ lesson can be *recognised* without opening this file; the reasoning that makes e
      access" and "the role is assumed for something other than repairing a policy" — both about operating
      it, so neither could catch a defect in scoping it. Add at least one trigger of the form "if the thing
      turns out not to exist where X assumes it does".
+16. **A manual step delegated to a console wizard is only as specified as the fields it names — and an
+   unnamed field that grants permissions is a permission decision made by whoever is at the keyboard.**
+   This one was caught by execution rather than by review, which is the point of writing it down. Stage 1a
+   step 4 read "create the accounts through Account Factory, using the e-mails in `secrets/emails.md`" —
+   complete-sounding, and wrong: the wizard asks for a **second** address under **Access configuration**,
+   and AWS's wording for it is that the user *"will have administrative access to the account you're
+   provisioning"*. The plan named one e-mail and the form has two, so the obvious answer — reuse the
+   account's own address — would have made a root e-mail a federated administrator on seven accounts, two
+   steps before the same stage removes root credentials centrally. D32 settles the value. **The general
+   form:** for every manual step, write down **every required field and the value it takes**, not only the
+   fields the plan already has an opinion about. The unnamed ones do not stay unanswered; they get answered
+   by whoever is executing, at the moment they least want to be designing identity. The tell is a step
+   whose verb is "create X **using** Y" — `using` almost always hides a form.
+17. **A service that "sets itself up" creates principals nobody chose — enumerate them before the next
+   step depends on one.** Lesson 16 is about fields a wizard *asks* about; this is the class it does not
+   cover, because the wizard never asks. Enabling Control Tower created an Identity Center user,
+   `AWS Control Tower Admin`, holding administrative access to the Management account under the **root
+   account's e-mail address** — the very collision D32 refuses for vended accounts, arrived at from the
+   other side, and it surfaced only because an invitation e-mail landed in an inbox. Its twin finding is the
+   opposite shape: the root user, which had done every step so far, **cannot use Account Factory at all**
+   (documented), so a step written as "create the accounts through Account Factory" was not executable by
+   the identity that was executing the stage. **The general form:** after enabling any service that
+   provisions identity or federation, list the principals that now exist and ask of each one *which of this
+   plan's personas is it* — the honest answer is often "none, and it is an administrator". And for any
+   manual step, say **which identity performs it**, not only what it does; "whoever has the console" is not
+   an identity, and the console the previous step accepted is not evidence about the next one. D33 settles
+   both halves.
+   **The expensive part is downstream, and it is what makes this worth a lesson of its own.** Stage 1a step
+   3 described what Control Tower creates on the *account* axis — the Organization, Log Archive, Audit,
+   CloudTrail, Config — and said nothing on the *identity* axis. So two later steps were written against a
+   state that was never going to hold: 1b step 2 said "create the users and the groups" and 1b step 3 said
+   "create permission sets: `AdministratorAccess`, …" **in a directory that already contains Control Tower's
+   groups and a permission set named `AWSAdministratorAccess`** — four characters away, also granting
+   administrator, and an assignment against the wrong one still works, so nothing would have reported it.
+   A missing enumeration does not stay local: it becomes a wrong assumption in every step that reads the
+   same resource later. **When a step ends with "X now exists", enumerate what X *contains*, on every axis,
+   not only the one the step was about.**
 
 ---
 

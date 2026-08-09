@@ -1,6 +1,6 @@
 # Decisions — index
 
-D1-D31, all settled — **D30 settled as a revert**, which is a decision like any other and keeps its file
+D1-D35, all settled — **D30 settled as a revert**, which is a decision like any other and keeps its file
 so the record shows what happened. Read this table first; open a decision file only when you need its
 reasoning, its consequences or its revision trigger.
 
@@ -37,6 +37,10 @@ reasoning, its consequences or its revision trigger.
 | [D29](D29-policy-canary.md) | Where a Service Control Policy is tested before it reaches anything… | A tenth account, `Policy Canary`, alone in a fifth OU, `Policy Test` — because an empty OU tests nothing. | S1a, S1b |
 | [D30](D30-scp-recovery.md) | The SCP recovery principal — a named role exempt from every custom … | **Reverted.** No standing SCP exemption: the Management root (D16) is the only recovery path. The SCPs stay in code regardless. | — |
 | [D31](D31-approver-read.md) | What a release approver may read | A bespoke `DeploymentManagerAccess` replaces `ReadOnlyAccess`, and the derived zone gets its own CMK. | S1b, S5 |
+| [D32](D32-account-factory-sso-user.md) | Which Identity Center user Account Factory associates with eac… | Account Factory's `SSOUserEmail` is a permission decision, not a contact field — it gets the infrastructure user, identically on all seven accounts. | S1a, S1b |
+| [D33](D33-control-tower-admin-user.md) | The `AWS Control Tower Admin` user, and who drives Account Fac… | Root cannot vend at all; the landing zone's own admin user carries the root e-mail and drives the vending. **Its retirement was withdrawn by D34.** | S1a, S1b |
+| [D34](D34-account-vending.md) | Account vending as a standing capability | The account list is not static: that user is kept enabled as the permanent owner of OUs and accounts, console-only — and the Organization being outside Terraform is why that cannot break any state. | S1a, S1b, S2 |
+| [D35](D35-sandbox-cardinality.md) | Structural accounts vs. the Sandbox multiplied per business unit | `Sandbox` is one per business unit; everything else — `Development` included — is singular, so the cardinality boundary *is* D21's graduation boundary and the promotion chain is untouched by N. Automation goes where the multiplication is (S14); the singleton assumptions in S3/S4/S1b/S6 are loosened now, while they are still prose. | S1b, S3, S4, S6, S14 |
 
 ---
 

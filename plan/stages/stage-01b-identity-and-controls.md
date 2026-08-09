@@ -4,7 +4,7 @@
 |---|---|
 | **Status** | not started |
 | **Prerequisites** | Stage 1a complete |
-| **Consumes** | [D10](../decisions/D10-identity-center-delegation.md), [D11](../decisions/D11-lab-lifecycle.md), [D12](../decisions/D12-budget-ceiling.md), [D14](../decisions/D14-supply-chain-account.md), [D15](../decisions/D15-tls-internal.md), [D16](../decisions/D16-break-glass.md), [D17](../decisions/D17-interactive-vs-runtime.md), [D18](../decisions/D18-data-scientist-access.md), [D19](../decisions/D19-derived-zone.md), [D20](../decisions/D20-staging-account.md), [D21](../decisions/D21-development-account.md), [D22](../decisions/D22-data-governance-account.md), [D23](../decisions/D23-ou-structure.md), [D25](../decisions/D25-drop-box-consumer.md), [D29](../decisions/D29-policy-canary.md), [D31](../decisions/D31-approver-read.md) |
+| **Consumes** | [D10](../decisions/D10-identity-center-delegation.md), [D11](../decisions/D11-lab-lifecycle.md), [D12](../decisions/D12-budget-ceiling.md), [D14](../decisions/D14-supply-chain-account.md), [D15](../decisions/D15-tls-internal.md), [D16](../decisions/D16-break-glass.md), [D17](../decisions/D17-interactive-vs-runtime.md), [D18](../decisions/D18-data-scientist-access.md), [D19](../decisions/D19-derived-zone.md), [D20](../decisions/D20-staging-account.md), [D21](../decisions/D21-development-account.md), [D22](../decisions/D22-data-governance-account.md), [D23](../decisions/D23-ou-structure.md), [D25](../decisions/D25-drop-box-consumer.md), [D29](../decisions/D29-policy-canary.md), [D31](../decisions/D31-approver-read.md), [D32](../decisions/D32-account-factory-sso-user.md), [D33](../decisions/D33-control-tower-admin-user.md), [D34](../decisions/D34-account-vending.md) |
 | **Proves** | [INT-11](../integrations.md) |
 
 *Read with [`plan/conventions.md`](../conventions.md) (naming, layout, `[P]`/`[D]`/`[E]`, IAM rules).*
@@ -19,12 +19,49 @@ that is not.
    `aws organizations register-delegated-administrator --account-id <IDENTITY_ACCOUNT_ID> --service-principal sso.amazonaws.com`.
    This is reversible (`deregister-delegated-administrator`), so it is a cheap step to get wrong.
    Everything in steps 2 and 3 is then done **from the Identity account**, not from Management.
+   **One property of delegation that is easy to miss and is load-bearing here:** an Identity Center delegated
+   administrator can manage **groups assigned to the Management account** — including Control Tower's
+   `AWSControlTowerAdmins`. So whoever administers this account can grant themselves Management
+   administrator by editing a group membership. That is the same blast radius `ACCOUNTS_AND_USERS.md`
+   already ascribes to the Identity account ("whoever controls Identity can grant access to any account");
+   it is recorded here because these particular groups (D33) make it concrete rather than theoretical.
 2. In IAM Identity Center, create the users from `ACCOUNTS_AND_USERS.md` (e-mails in `secrets/emails.md`)
    and the groups `infrastructure`, `data-scientists`, **`deployment-managers`**, **`governance-managers`**
    and **`dev-env-stewards`**. Enforce MFA.
+   **The infrastructure user is not created here — it already exists (D32).** Account Factory created it in
+   1a step 4 from the `SSOUserEmail` field, and it already holds a direct administrator assignment on every
+   vended account. So this step creates **four** users, not five, and the only thing to do about the fifth
+   is to put it in the `infrastructure` group. Re-creating it under a second address gives one human two
+   administrators, one of which nobody is watching.
+   **This step does not start from an empty directory, and it was written as if it did.** Enabling Control
+   Tower in 1a step 3 created the Identity Center directory *and populated it* — its own groups
+   (`AWSAccountFactory`, `AWSControlTowerAdmins`, the auditor groups, one administrator group per vended
+   account), its own permission sets, and a first administrator. **Enumerate what is already there before
+   creating anything**, and treat the two sets as separate: Control Tower owns its objects and may re-create
+   them, this stage owns `infrastructure`, `data-scientists`, `deployment-managers`, `governance-managers`
+   and `dev-env-stewards`. **Do not add a project persona to a Control Tower group and do not repurpose
+   one** — those groups arrive with their assignments already made, so a membership edit is an
+   organization-wide grant: `AWSControlTowerAdmins` is administrator on Management, Log Archive *and* Audit,
+   and `AWSSecurityAuditPowerUsers` is `AWSPowerUserAccess` on every account. They are empty today, and
+   empty is not the same as harmless.
+   **The sixth identity is `AWS Control Tower Admin` (D33), and it stays (D34).** Created with the Management
+   root's e-mail, it is not a *persona* of this plan — no project group, not the infrastructure user — but it
+   does hold one duty: it is the standing owner of Control Tower administration, creating OUs and vending
+   accounts from the console. **Do not disable it.** An earlier version of this step retired it here, on the
+   premise that vending ends inside Stage 1a; the account list is not static, so what it needed was an owner
+   and not an end date. Three consequences for this stage:
+   - **Its MFA is a standing control** (set in 1a step 3), not a stopgap for a few days.
+   - **Do not add it to any project group and do not give it a project permission set.** Its whole footprint
+     stays the two Control Tower groups it arrived with.
+   - **The narrow alternative stays documented and unused**, so nobody rediscovers it as a fault:
+     `AWSAccountFactory` alone reaches the Account Factory product through the **Service Catalog** console,
+     which is enough to *vend into an existing OU* but not to reach the **Control Tower console** — where OUs
+     are created and accounts enrolled — which AWS documents as reachable only by `AWSControlTowerAdmins`
+     members. Creating OUs is part of the job, which is what decided D34.
    **Prerequisite to check first: `secrets/emails.md` must carry an address for every user created here.**
-   As of 2026-08-08 it does not have one for the **Dev Env Steward**, which was added to the design after
-   the file was last filled in. An Identity Center user cannot be created without one.
+   Verified on 2026-08-08 — it does, including the **Dev Env Steward**, which was missing when this step was
+   first written. An Identity Center user cannot be created without one, so re-check before starting rather
+   than half-way through.
    The approver groups were a single `managers` group until 2026-08-08 and have been split twice since,
    each time along a different axis — release (lifecycle), data access (ownership), runtime image (supply
    chain). The reason is cumulative and it is the whole point: one persona holding all of them means a
@@ -34,7 +71,16 @@ that is not.
    `data-scientists`, even while there is only one human: the moment that happens the split is notation
    again, and nothing in AWS will warn you.
 3. Create permission sets: `AdministratorAccess` (infrastructure), `DataScientistAccess` (the Interactive
-   OU), `DeploymentManagerAccess` (deployment-managers). An earlier draft also created a `DeployApprover`
+   OU), `DeploymentManagerAccess` (deployment-managers).
+   **First, the name collision this walks into.** Control Tower already created a permission set called
+   **`AWSAdministratorAccess`**, and this step creates one called `AdministratorAccess` — two objects, four
+   characters apart, both granting administrator, one owned by Control Tower and one by this project. Every
+   later sentence of the form "assign the administrator permission set" becomes ambiguous, and the failure
+   mode is silent: an assignment made against the wrong one still works, so nothing tells you. Either name
+   this project's set distinctly (`InfrastructureAccess` is the honest name — it is the `infrastructure`
+   group's set) or record explicitly, here, which of the two every assignment in this plan means. Do not
+   reuse or edit the Control Tower set: it is theirs, and a landing-zone update may reset it.
+   An earlier draft also created a `DeployApprover`
    permission set; it was
    dropped — the deploy approval gate lives in GitLab (Stage 8), driven by GitLab group membership, and
    consumes no AWS-side permission. Create such a permission set only when something actually consumes it.
@@ -75,6 +121,15 @@ that is not.
    **One set, two targets (D21):** `DataScientistAccess` is assigned on Sandbox *and* Development — the
    two accounts are policy-identical at this level (that is what putting them in one OU asserts), and what
    differs between them is the work, not the permission shape.
+   **Forward constraint from D35, and it applies to only half of this assignment.** `Sandbox` is one account
+   per business unit; `Development` is singular. So the **Development half stays exactly as written** — one
+   shared engineering account, one group — while the **Sandbox half becomes `data-scientists-<bu>`, assigned
+   on that unit's Sandbox only**, or every data scientist can enter every unit's experimentation account.
+   The approver groups stay single, because approval is an institutional function. **Do not create per-unit
+   groups now** — there is one unit. Create the *naming* and write the assignment so that a second unit is an
+   addition rather than a refactor; the permission set itself is unchanged and shared. Note what this means
+   and does not mean: per-unit isolation ends at the graduation boundary, so isolating one unit's *work* past
+   that point is Lake Formation's job, not the account boundary's.
    **`DevEnvStewardAccess`, the third approver set, and it follows the same rule as the other two: its
    *denials* are the point.** The steward approves the `dev-env` image — the runtime every notebook and
    every project app runs on — and the approval itself happens in GitLab, consuming no AWS permission. What
@@ -106,7 +161,11 @@ that is not.
    Governance, Staging, Production, Identity) **plus `AdministratorAccess` on `Policy Canary` (D29)** —
    which is not a seventh Terraform-managed account but the test principal for step 7, and it has to be an
    administrator or the test measures the wrong thing: an SCP is a ceiling, so a deny that a restricted
-   principal could not have exercised anyway proves nothing about the ceiling; data-scientists →
+   principal could not have exercised anyway proves nothing about the ceiling. **On `Policy Canary` this is
+   a confirmation rather than a task (D32):** vending it in 1a step 4 with the infrastructure user's
+   `SSOUserEmail` already gave that account an administrator, and a direct assignment is the right shape
+   there — the account is deliberately outside the Terraform-managed set and has no `awsds-infra-*` profile
+   either. Continuing: data-scientists →
    `DataScientistAccess` on Sandbox and Development, `DataScientistStagingAccess` on Staging,
    `DataScientistProdAccess` on Production, **no assignment of any kind on Data Governance** (D18/D22);
    deployment-managers → `DeploymentManagerAccess` on Sandbox, Development, Staging and Production (the
@@ -120,6 +179,17 @@ that is not.
    matters less than it looks, since the account is empty, but an account whose whole purpose is to have
    broken permissions is not somewhere a second persona should be able to sign in and draw conclusions.
    Leave Control Tower's own permission sets untouched — editing them causes landing-zone drift.
+   **The direct assignments Account Factory left behind are a separate question from those permission sets,
+   and the ordering is the whole of it (D32).** Every vended account carries a *direct* assignment of
+   Control Tower's administrator set to the infrastructure user, created in 1a step 4 and sitting outside
+   the group model built here. **Remove none of them until the group path is proven end to end** —
+   `infrastructure` → `AdministratorAccess` → an actual `aws sts get-caller-identity` under each profile in
+   step 5. Removing them first is the cheapest way to lock the only administrator out of an account whose
+   sole remaining recovery path is the Management root (D16; D30 reverted). **And verify before promising
+   the cleanup at all:** Control Tower may re-create the assignment on a landing-zone update, an account
+   update or a re-enrollment, in which case the honest outcome is to record it as a permanent property of
+   Account Factory-vended accounts rather than to keep deleting something that keeps returning. Record
+   which of the two it turned out to be.
    These are created by hand here only because Terraform cannot run before SSO login works; Stage 2 moves
    them into `terraform-live/identity/` and imports them.
 4. The infrastructure user's assignment **on the Management account itself** has to be created from the
@@ -159,6 +229,13 @@ that is not.
     policies live in `terraform-live/identity/` from Stage 2 rather than in the console), and **any ARN
     condition uses an enumerated list, never a wildcard account** — `arn:aws:iam::*:role/x` means "anyone
     who can create a role named `x`, anywhere".
+    **A third rule arrives with D34, and it is the one that survives an account being added later.** OUs and
+    accounts are created from the console, outside every Terraform state — which cannot cause drift, because
+    nothing here declares them, but *can* leave a new OU with no policy attached and a new account outside
+    every enumerated condition, with `terraform plan` reporting "No changes" either way. So when these
+    policies move into `terraform-live/identity/` at Stage 2: **the floor is discovered and the grants are
+    enumerated** — attachments and org-wide sets driven by `for_each` over the Organizations data sources,
+    permission set assignments written out one by one.
     - **`Workloads` OU** (D20): deny `sagemaker:CreateDomain`, `sagemaker:CreateUserProfile` and
       `sagemaker:CreatePresignedDomainUrl` — this is what turns D17 from an intention into a control:
       "no Studio outside the Interactive OU" cannot be undone by anyone with a console and a good reason.
@@ -230,7 +307,11 @@ that is not.
       that it is reversible from the Control Tower console. Keep that console open, as with everything else
       in this step.
     - **SCPs (hand-written, in the set that moves to `terraform-live/identity/` at Stage 2):** deny leaving
-      the organization, deny disabling CloudTrail/Config/GuardDuty, and **deny writes to S3 resources
+      the organization — **not hygiene: a real principal can call it.** Control Tower's
+      `AWSControlTowerAdmins` group carries `AWSOrganizationsFullAccess` on every member account (D33), and
+      `organizations:LeaveOrganization` is one of the few Organizations calls a *member* account can make.
+      One call drops every SCP and every Control Tower control for that account. Also deny disabling
+      CloudTrail/Config/GuardDuty, and **deny writes to S3 resources
       outside this organization** (`aws:ResourceOrgID`), which is the trusted-resources axis of `plan/architecture.md` §4.2 and
       closes the most direct exfiltration route a notebook has. Two more, cheap and load-bearing:
       **deny `iam:CreateUser` and `iam:CreateAccessKey`** — principle 2 ("no IAM Users") is otherwise a
@@ -323,6 +404,20 @@ that is not.
       **free**, so they follow the preventive rule rather than the detective one — and they catch exactly
       the class of mistake Stages 2 and 3 create: a bucket policy or a role trust policy that grants to a
       principal outside the organization. Unused-access findings are the paid half and stay in Stage 12.
+    - **An alarm on membership changes to Control Tower's own groups (D33), which D34 promotes from prudent
+      to load-bearing.** Those groups are pre-wired: one membership edit puts a person into
+      `AWSAdministratorAccess` on Management, Log Archive and Audit, or `AWSPowerUserAccess` on every account,
+      with nothing to review and no approval anywhere. **`AWSControlTowerAdmins` is no longer empty** — it
+      permanently holds the vending owner — so this alarm is now the only thing that distinguishes "the
+      expected member" from "a second one somebody added".
+      **There is no preventive control above this** — the Identity Center administrator is the top of the
+      identity plane, and after step 1 that is the delegated administrator in the Identity account, who can
+      place themselves in `AWSControlTowerAdmins`. So the control is detective and it has to exist:
+      an EventBridge rule on the Identity Center management events that change group membership and account
+      assignments, filtered to the Control Tower group names, delivering to the same SNS topic as the
+      break-glass alarm. Free, and it is the only thing standing between "nobody is in those groups" and
+      "somebody is". **Fire it once**, by adding and removing a member deliberately — an untested alarm is a
+      hypothesis (1a step 5 makes the same point about the same topic).
 
     **Deliberately not here:**
     - **GuardDuty → Stage 4 step 10**, with the WireGuard instance: the first internet-facing resource in
@@ -341,6 +436,25 @@ that is not.
 9. **Make the audit trail tamper-evident:** enable **S3 Object Lock** on the Control Tower Log Archive
     bucket and **CloudTrail log file validation**. An audit log that the compromised party can edit is not
     an audit log. Do this before there is anything worth hiding in it.
+    **This is the step that limits D33, and it only does so in one of the two modes** — which the earlier
+    wording left unsaid, so it was an intention rather than a control (Lesson 5). `AWSControlTowerAdmins`
+    is administrator *of the Log Archive account*, so the principal this step defends against holds
+    `s3:BypassGovernanceRetention`: in **governance** mode it walks straight through. Use **compliance**
+    mode, where a locked object version cannot be deleted or overwritten by anyone, including that
+    account's root. **Since D34 that principal is permanent**, so this is not a control covering a
+    two-week bootstrap window — it is what keeps the audit trail surviving its own administrator for as
+    long as the organization exists. Getting the mode wrong here is therefore a permanent hole, not a
+    temporary one. Three practical constraints, all of which bite later if ignored:
+    - **Compliance mode is not reversible and not shortenable.** The retention period is a commitment, so
+      keep it **short** — long enough that tampering is detectable, not long enough to become an archive.
+      This is a detection control, not a retention policy.
+    - **Keep the retention shorter than Control Tower's own log lifecycle expiration**, or the landing
+      zone's lifecycle deletions start failing against locked objects. Read the bucket's existing lifecycle
+      rule first and set the lock inside it.
+    - **The bucket already exists**, which used to make this step impossible; since November 2023 Object
+      Lock can be enabled in place on an existing bucket, and doing so requires versioning (S3 turns it on).
+      Existing objects are not locked retroactively — the default retention applies to objects written
+      *after* it, which is fine here and is the reason for "before there is anything worth hiding".
 10. **Restrict the AWS Config recorder** to the resource types this project actually uses. Config is the
     main recurring cost of the landing zone (`plan/cost-model.md`), and the default records everything, in
     every governed account — so the cost scales with the account count and with how busy `terraform apply`
@@ -400,7 +514,11 @@ targeting the Management account are the *only* thing the delegated administrato
 which is the usual source of "the guardrail I wrote silently does nothing"; (iv) that enabling S3 Object
 Lock on the Control Tower-managed Log Archive bucket (**1b step 9**) does not raise landing-zone drift; and
 (v) that the Lake Formation cross-account version can be raised to 3+ in an account that has no lake in it
-yet (**1b step 11**) — if it cannot, that setting moves into Stage 5 and the rest of the step stays here.
+yet (**1b step 11**) — if it cannot, that setting moves into Stage 5 and the rest of the step stays here;
+and (vi) whether removing the direct administrator assignment Account Factory created on each vended
+account (**1b step 3**, D32) sticks, or is re-created by a landing-zone update, an account update or a
+re-enrollment — the answer decides whether that assignment is cleanup or a permanent property, and D32 is
+amended either way.
 ---
 
 *Stage index: [stages/INDEX.md](INDEX.md) · Plan core: [GENERAL_PLAN.md](../../GENERAL_PLAN.md)*

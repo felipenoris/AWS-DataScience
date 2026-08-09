@@ -20,6 +20,7 @@ that is the whole reading list for executing it.
 | [Stage 11 — Data protection and DLP](stage-11-dlp.md) | Macie, CloudTrail data events, LF column/row filters, GuardDuty's paid add-ons — data-specific detection on top of the perimeter. | not started | Stages 5, 6, 9; decision D6. |
 | [Stage 12 — Observability, governance and FinOps](stage-12-observability-finops.md) | Dashboards, alarms, cost attribution against what the bill actually shows. | not started | any stage that created resources. |
 | [Stage 13 — Public-facing web tier (experiment)](stage-13-public-web-tier.md) | The public-facing experiment: web tier in front of a private backend. | not started | Stages 3, 9. |
+| [Stage 14 — Per-business-unit Sandbox vending](stage-14-sandbox-vending.md) | A business unit's `Sandbox` account from one name in a merge request (D35). | not started | Stages 2, 3, 4, 6. The first stage about **scale** rather than capability: it parameterises slices that already exist, and it is where the VPN topology question (one hub, a Transit Gateway, or per-unit endpoints) is finally answered — with N in hand. **The promotion chain is untouched**: only `Sandbox` multiplies. |
 
 ---
 

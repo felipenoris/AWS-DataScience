@@ -4,7 +4,7 @@
 |---|---|
 | **Status** | ready to start — nothing blocking |
 | **Prerequisites** | none outstanding (D1 decided, all ten e-mails registered) |
-| **Consumes** | [D1](../decisions/D01-region.md), [D12](../decisions/D12-budget-ceiling.md), [D14](../decisions/D14-supply-chain-account.md), [D16](../decisions/D16-break-glass.md), [D20](../decisions/D20-staging-account.md), [D21](../decisions/D21-development-account.md), [D22](../decisions/D22-data-governance-account.md), [D23](../decisions/D23-ou-structure.md), [D25](../decisions/D25-drop-box-consumer.md), [D26](../decisions/D26-unified-studio.md), [D27](../decisions/D27-catalog-maintenance.md), [D29](../decisions/D29-policy-canary.md) |
+| **Consumes** | [D1](../decisions/D01-region.md), [D12](../decisions/D12-budget-ceiling.md), [D14](../decisions/D14-supply-chain-account.md), [D16](../decisions/D16-break-glass.md), [D20](../decisions/D20-staging-account.md), [D21](../decisions/D21-development-account.md), [D22](../decisions/D22-data-governance-account.md), [D23](../decisions/D23-ou-structure.md), [D25](../decisions/D25-drop-box-consumer.md), [D26](../decisions/D26-unified-studio.md), [D27](../decisions/D27-catalog-maintenance.md), [D29](../decisions/D29-policy-canary.md), [D32](../decisions/D32-account-factory-sso-user.md), [D33](../decisions/D33-control-tower-admin-user.md), [D34](../decisions/D34-account-vending.md) |
 | **Proves** | — |
 
 *Read with [`plan/conventions.md`](../conventions.md) (naming, layout, `[P]`/`[D]`/`[E]`, IAM rules).*
@@ -72,8 +72,73 @@ Record the granted value in `LOG.md`.
    default: this project has a `Sandbox` **account**, and an OU with the same name guarantees a permanent
    ambiguity in every later sentence about SCPs. Name it `Interactive` here — it is the OU D23 wants
    anyway — or give it a throwaway name and create the four real OUs in step 4.
+
+   **What this step silently creates, and which nothing else in the plan asked for (D33).** Setting up the
+   landing zone builds an Identity Center directory **and populates it**: Control Tower's own groups
+   (`AWSAccountFactory`, `AWSControlTowerAdmins`, the auditor groups), its own permission sets — including
+   one named **`AWSAdministratorAccess`** — and a first administrator. That administrator is an Identity
+   Center user with display name **`AWS Control Tower Admin`**, carrying the **Management account's root
+   e-mail** and belonging to both `AWSAccountFactory` and `AWSControlTowerAdmins`; it announces itself as an
+   *"Invitation to join AWS IAM Identity Center"* in that inbox. Those two memberships are its whole
+   footprint, and they reach further than the Management account: `AWSControlTowerAdmins` is
+   `AWSAdministratorAccess` on **Management, Log Archive and Audit**, plus `AWSOrganizationsFullAccess` on
+   every member account. No field in the wizard asked about any of it (Lesson 17), and **1b steps 2 and 3
+   were written assuming an empty directory** — they now say otherwise.
+   Three things to do while still here, before step 4 needs it:
+   - **Set the AWS access portal URL** (IAM Identity Center → Settings) and record it in `secrets/emails.md`.
+     It is the sign-in path for every human from this point on.
+   - **Accept the invitation and put MFA on that user — this is the one item here that is not optional.**
+     It administers the Management account *and the Log Archive account*, so it can delete the organization
+     CloudTrail record of its own use, including the trail step 5's alarm reads. Password-only, under an
+     address that is also the root login, is a worse credential than the root beside it. The reach cannot be
+     trimmed while it is in use: `AWSControlTowerAdmins` is atomic, and the Management administrator this
+     stage runs on comes in the same membership as the Log Archive one.
+   - **Note it as the standing owner of Control Tower administration (D34, amending D33)** — it vends the
+     accounts in step 4 and **keeps** that job afterwards: OUs, account vending, enrolment, landing-zone
+     updates, from the console and never from Terraform. It was originally to be disabled at the end of 1b;
+     that retirement is withdrawn, because the account list is not static and Control Tower administration
+     needs an owner rather than an end date. It is still **not one of the five personas** — it holds one
+     duty, approves nothing, and joins no project group. Its permanence moves weight onto three things that
+     are therefore not optional: **MFA here**, **Object Lock in compliance mode** (1b step 9), and the
+     **group-membership alarm** (1b step 8).
 4. Create the `Sandbox`, `Development`, `Staging`, `Production`, `Data Governance`, `Identity` and
    `Policy Canary` accounts through Account Factory, using the e-mails in `secrets/emails.md`.
+
+   **Sign in at the access portal first — Account Factory cannot be driven from root, at all (D33).** From
+   the root user the console returns *"Your AWS IAM identity does not have access to the AWS Control Tower
+   Account Factory portfolio in AWS Service Catalog"*, and that is the documented design rather than
+   something to repair: Account Factory is a Service Catalog product whose portfolio grants access to IAM
+   users, groups and roles, and AWS states that provisioning requires `AWSServiceCatalogEndUserFullAccess`
+   and that you **cannot be signed in as the root user**. There is no principal to associate for root. The
+   path is: **access portal → `AWS Control Tower Admin` → `AWSAdministratorAccess` on the Management
+   account → Control Tower → Account Factory.** Confirmed working on 2026-08-09.
+
+   **Account Factory asks for two e-mail addresses and only one of them is the account's (D32).** The
+   `Account email` becomes the vended account's **root** user. The second, under **Access configuration**
+   (`SSOUserEmail`, with a first and last name beside it), is a permission decision wearing a contact
+   field's clothes — AWS's own wording is that this user *"will have administrative access to the account
+   you're provisioning"*. Fill it with the **infrastructure user** (its address is registered in
+   `secrets/emails.md`; first/last name `Infrastructure` / `User`) and use **the same address on
+   all seven accounts**: Account Factory recognises the existing Identity Center user and adds one more
+   assignment instead of creating a second one, so the result is a single administrator with a single MFA
+   device — which is exactly the bootstrap access Stage 2 needs in order to run Terraform without root.
+   Three ways to get this wrong, none of them cheap to undo:
+   - **Do not reuse the account's own address here.** AWS permits it; this plan does not. That address is
+     the root user, and step 5 alarms on root sign-in while step 6 removes root credentials centrally — an
+     address that is also a normal daily login makes the alarm ambiguous and hands one inbox both the
+     credential and its own warning.
+   - **Do not use any of the other four personas.** The field grants administrator, so a data scientist or
+     any of the three approvers placed here holds the separation of duties `ACCOUNTS_AND_USERS.md`
+     describes before it has been built (Lesson 9).
+   - **Do not treat it as changeable later.** Updating the provisioned product with a different
+     `SSOUserEmail` **creates a second Identity Center user and leaves the first one in place** — a dormant
+     administrator, which is the very thing step 6 is removing on the root side.
+
+   **Two consequences to carry forward, both picked up in 1b.** The infrastructure user now **exists in
+   Identity Center before 1b step 2 runs**, so that step creates four users and not five. And every vended
+   account is left holding a *direct* administrator assignment, outside the group model — **not removed
+   here, and not removed by default**; D32 says when and whether.
+
    **Create the OUs from the Control Tower console, not from AWS Organizations.** An OU created directly in
    Organizations is not *registered* with Control Tower: Account Factory will not provision into it, the
    guardrails do not apply, and the accounts that land there are unenrolled — a state that looks correct in
@@ -117,14 +182,20 @@ Record the granted value in `LOG.md`.
      same policy set — the D23 test ("an OU earns its existence when two or more accounts need the same
      policy set") is not met by that, but a landing zone that will not enrol the account is worse.
 
-   **The accounts listed above are the complete set** — D14 places the tooling in Production rather than in
-   a separate Shared Services account, D20-D22 add the deployment target, the development account and
-   the data account the AWS reference architectures describe, and D29 adds the disposable one that makes
-   the SCP procedure in 1b step 7 executable. `plan/institutional-delta.md` records what a larger organization would still add
-   beyond them.
+   **The accounts listed above are the complete set *for this stage*, which is not the same as the complete
+   set (D34).** D14 places the tooling in Production rather than in a separate Shared Services account,
+   D20-D22 add the deployment target, the development account and the data account the AWS reference
+   architectures describe, and D29 adds the disposable one that makes the SCP procedure in 1b step 7
+   executable. `plan/institutional-delta.md` records what a larger organization would still add beyond them.
+   **An account added later is an ordinary event, not an exception**: D34 carries the flow — the gate is
+   which axis and which OU the account needs (D23), the owner is `AWS Control Tower Admin`, and the
+   post-vend baseline is code that already exists (`bootstrap/`, the identity slice, `foundation/`, an SSO
+   profile). **A consequence that matters right now: an account may be deferred without a structural cost**,
+   so if the quota increase has not been granted, vend what fits and vend the rest afterwards.
    Account creation here is manual through Account Factory; **Account Factory for Terraform (AFT)** is the
-   automated equivalent and is deliberately not used — at this handful of accounts, created once, it is at
-   the edge of repaying its setup and still loses (`plan/institutional-delta.md`).
+   automated equivalent and is deliberately not used — but note that its rejection rested on "created once",
+   a premise D34 retired, so what keeps it out now is measured cost and not frequency
+   (`plan/institutional-delta.md`).
 5. **Break-glass: the procedure and the alarm (D16).** The *credential* was handled in step 1 — it is this
    root, there is no second mechanism to build. What is left here is what makes it a break-glass rather
    than just an account owner: write the procedure down (what situations justify using it — an Identity
@@ -139,8 +210,25 @@ Record the granted value in `LOG.md`.
    matching `userIdentity.type = Root`, a metric, an alarm, and an SNS
    topic with a subscription that is **not** the same e-mail as the account being alarmed on — root sign-in
    *is* e-mail plus password, so alarming to the login address hands the same person the credential and its
-   own warning. Build the chain here and fire it once with a deliberate sign-in; an untested alarm is a
+   own warning. Since D33 that address is doubly disqualified: it is also the `AWS Control Tower Admin`
+   login. Build the chain here and fire it once with a deliberate sign-in; an untested alarm is a
    hypothesis.
+   **Be honest about how much the "different address" rule buys here, because the prose above overstates
+   it (Lesson 5).** In an institution the alarm goes to someone who is *not* holding the root credential.
+   In this lab every address is a `+alias` on one Gmail account and there is one human, so a distinct
+   address buys **routing and filterability — not separation**: the same mailbox compromise defeats both.
+   What actually adds a second factor is a **second channel**: subscribe an SMS endpoint to the topic
+   alongside the e-mail. SNS supports it directly, it costs cents at this volume, and it is the only part of
+   this step that survives the one-inbox problem. Register whichever address is chosen in
+   `secrets/emails.md` before building the topic.
+   **Two SNS topics already exist and are not this one.** Control Tower created
+   `aws-controltower-SecurityNotifications` per Region and `aws-controltower-AggregateSecurityNotifications`
+   in the Audit account, and **subscribed the Audit account's e-mail to the aggregate topic automatically**.
+   Do not reuse them for break-glass: they are deliberately noisy — AWS Config notifies on every resource it
+   discovers — and an alarm that arrives in a stream nobody reads is not an alarm. Note also that the
+   Audit account's *root* address being a notification endpoint is the same shape as the rule above, one
+   account over; step 6 is what defuses it, by removing that account's root credentials centrally, after
+   which the address is a mailbox rather than a credential.
    **This is the only recovery path, and that is a decision rather than an omission (D30, reverted).** A
    narrower standing principal exempt from every custom `Deny` was proposed, adopted and then removed: the
    lab keeps no exemption, so the root handles all three failures — "Identity Center is down", "the
@@ -156,9 +244,12 @@ Record the granted value in `LOG.md`.
    root actions on demand. Enable it; this is one console setting that eliminates a whole class of dormant
    risk.
 
-**Deliverables of 1a:** every account exists, in its OU; the Management root user is secured and its
-break-glass path has been tested once; member-account root credentials are centrally managed; the budget
-and Cost Anomaly Detection are live. Nothing here is torn down between sessions, and nothing after this
+**Deliverables of 1a:** every account exists, in its OU, each with the **same** infrastructure user holding
+administrative access through Identity Center (D32) — one user in the directory, not seven; the Management
+root user is secured and its break-glass path has been tested once; member-account root credentials are
+centrally managed; the budget and Cost Anomaly Detection are live. The `AWS Control Tower Admin` user exists,
+has MFA, and **stays** — it is the standing owner of Control Tower administration (D34), not a credential
+awaiting retirement. Nothing here is torn down between sessions, and nothing after this
 point can lock you out without a way back in.
 ---
 

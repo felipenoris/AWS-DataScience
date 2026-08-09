@@ -165,6 +165,14 @@ CI is the same bug as one that only works by hand — but the expected caller is
   `awsds-infra-identity` (Stage 1b step 5) — never keys.
 - Every slice: `terraform fmt`, `validate` and `plan` must be clean before apply.
 - Remote state read across slices through `terraform_remote_state` data sources, never hardcoded IDs.
+- **The Organization is never in Terraform, and the code is written to survive that (D34).** Accounts and
+  OUs are created from the console, by design (principle 1), so no state declares them and none of it can
+  drift. What it *can* do is leave a console-created OU or account outside code that was written as a list —
+  invisible rather than drifted, with `terraform plan` reporting "No changes". So in `terraform-live/identity/`:
+  **the floor is discovered, the grants are enumerated.** Anything that must cover everything — SCP/RCP
+  attachments, the organization-root set, the tag policy — is `for_each` over the `aws_organizations_*` data
+  sources; permission set assignments are written out one by one, because an account acquiring a grant by
+  simply existing is the opposite of the intended failure mode.
 - Modules are referenced by **git tag**, never by branch, so a module change cannot silently alter an
   existing deployment.
 

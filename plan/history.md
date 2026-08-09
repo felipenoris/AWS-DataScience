@@ -8,9 +8,9 @@ How the plan and the environment got here. Two records, deliberately separate:
 Nothing here changes a future decision; do not read it to execute a stage.
 
 **Why this file is short.** A revision earns a row here only once it changes something that has already
-been *provisioned*. Nothing has been provisioned yet — the whole plan predates the first AWS resource — so
-everything below is a single entry about a document. The moment Stage 1a runs, this file starts growing
-for real, and the entries above that line stay as short as they are now.
+been *provisioned*. Everything up to and including the pre-Stage-1 review predates the first AWS resource
+and is therefore a single entry about a document. **Stage 1a started on 2026-08-08**, and from that entry
+onwards the file records how the environment changed, not just the plan.
 
 ---
 
@@ -60,6 +60,75 @@ for real, and the entries above that line stay as short as they are now.
   not go stale, the monthly floor recomputed from the measured rates in `PRICING.md`, Stage 1b's internal
   step references repaired, and an account-quota pre-flight added to Stage 1a — are in the files
   themselves and change no decision.
+
+- **2026-08-08 — Stage 1a in flight: `D32` added, mid-vend.** The first revision made while AWS resources
+  were actually being created, and it came from execution rather than review. Account Factory's form asks
+  for an `SSOUserEmail` that **grants administrative access to the account being vended**; Stage 1a step 4
+  named only the account e-mail, so the field had no planned value. `D32` gives it one — the infrastructure
+  user, the same on all seven vended accounts — and the consequences reach 1b: the infrastructure user now
+  pre-exists (1b step 2 creates four users, not five), `Policy Canary`'s administrator arrives at vend time
+  (1b step 3 confirms rather than assigns), and every vended account is left holding a *direct*
+  administrator assignment whose removal is deliberately deferred and conditional on a verification.
+  Generalised as **Lesson 16**. Nothing already provisioned had to change: Control Tower creates Log
+  Archive and Audit without asking this question.
+
+- **2026-08-09 — `D33` added, also mid-vend, and also from execution.** Two findings in the same session,
+  both about *who* performs a manual step rather than what it does. The landing zone had created an Identity
+  Center user, `AWS Control Tower Admin`, holding Management-account administrator under the **root
+  account's e-mail** — no wizard field asked for it, and it surfaced only as an unexpected invitation
+  e-mail. And the root user, which had executed every step so far, could not open Account Factory at all:
+  documented behaviour (Service Catalog portfolio access; root is not a principal that can hold it), so
+  Stage 1a step 4 named an action nobody had an identity for. `D33` settles both — vending runs from the
+  access portal as that user, which is treated as a bootstrap credential with MFA and is disabled in 1b once
+  the infrastructure user's group path is proven — and leaves one edge open on purpose: who administers
+  Control Tower after 1a. Generalised as **Lesson 17**. Nothing already vended had to change; the
+  `Development` account was created correctly under `D32`.
+
+  **A follow-up question the same day found the expensive half.** Asked whether the new user should be
+  catalogued and whether its e-mail should be changed, the review turned up its **group memberships** —
+  `AWSAccountFactory` and `AWSControlTowerAdmins` — and with them the fact that **the whole Identity Center
+  directory was already populated** by the landing zone: Control Tower's groups, its permission sets, one of
+  them named `AWSAdministratorAccess`. Stage 1b steps 2 and 3 had been written against an empty directory
+  and would have created `AdministratorAccess` four characters from it, where a wrong assignment works
+  silently. Both steps were rewritten; `ACCOUNTS_AND_USERS.md` gained an "Identities this project did not
+  create" section, because an undocumented administrator cannot be told apart from an unauthorised one; and
+  `D33` settled the e-mail question as **disable, do not rename** — renaming keeps a standing Management
+  administrator alive to fix a mail-routing problem, and Control Tower may re-create the original anyway.
+
+  **A third pass, from the access portal, resized the finding.** Reading the user's actual account list
+  showed the reach is not "administrator of Management": `AWSControlTowerAdmins` carries
+  `AWSAdministratorAccess` on **Management, Log Archive and Audit**, plus `AWSOrganizationsFullAccess` on
+  every member account — all of it group-derived, no direct assignments. So the bootstrap administrator can
+  delete the organization CloudTrail record of its own use, including the trail `D16`'s break-glass alarm
+  reads, and the group is atomic so the reach cannot be trimmed while Stage 1a still runs on it. `D33` was
+  corrected: MFA becomes mandatory rather than advisable, the window is closed on schedule, and the narrow
+  replacement is `AWSAccountFactory` alone — which vends through the **Service Catalog** console, the
+  Control Tower console being documented as reachable only by `AWSControlTowerAdmins` members. Two knock-on
+  edits: 1b step 7's "deny leaving the organization" stopped being hygiene, because
+  `AWSOrganizationsFullAccess` gives a member account a real `organizations:LeaveOrganization` path; and
+  `ACCOUNTS_AND_USERS.md` now records that Control Tower's *empty* groups are pre-wired ceilings, one
+  membership edit away from an organization-wide grant.
+
+  **A fourth pass, later the same day, withdrew the retirement — `D34`.** Two things arrived together: an
+  older AWS account turned out to be attached to the organization, which put the account count against a
+  quota of 10 and raised the question of which account could be deferred (answer: `Staging`, whose first
+  hard dependency is Stage 8, and which D20 already keeps unpeered from everything); and, following that,
+  the observation that **the account list is not static at all** — somebody will eventually want another
+  sandbox. That falsified the premise both `D33` and the AFT row in `plan/institutional-delta.md` rested on:
+  *"vending is a finite job"*. `D33`'s own second revision trigger had anticipated it, and it fired. `D34`
+  keeps `AWS Control Tower Admin` **enabled permanently** as the owner of Control Tower administration —
+  OUs, vending, enrolment, landing-zone updates, console only — because the narrow replacement
+  (`AWSAccountFactory` through Service Catalog) vends into existing OUs but cannot reach the Control Tower
+  console where OUs are created. The cost is stated rather than retired: MFA, Object Lock in **compliance**
+  mode and the group-membership alarm stop being cover for a two-week window and become the whole control
+  set, and the absence of any approval in front of a vend goes into `plan/institutional-delta.md` as its own
+  row. Three side effects: the "vend `Staging` before disabling the only identity that can vend" ordering
+  trap disappeared with the retirement; the AFT rejection was re-argued from measured cost instead of
+  rarity (Lesson 7, applied to frequency rather than price); and the Terraform question underneath it all —
+  *does console vending break state?* — produced the rule now in `plan/conventions.md`: **nothing declares
+  the Organization, so nothing drifts, but a console-created OU or account is *invisible* to code written
+  as a list, with `plan` reporting "No changes" either way — so the floor is discovered (`for_each` over the
+  Organizations data sources) and the grants are enumerated.**
 
 ---
 

@@ -9,6 +9,17 @@
 
 *Read with [`plan/conventions.md`](../conventions.md) (naming, layout, `[P]`/`[D]`/`[E]`, IAM rules).*
 
+**Forward constraint from D35 — read this before writing "the Sandbox account" anywhere below.** `Sandbox` is
+one account **per business unit**, and **the VPN lives on exactly that multiplied side**: the tunnel's landing
+account, the client resolver target, the routes and the Sandbox↔Production peering that reaches GitLab all
+become per-unit as N grows. (Development is singular, so its own peering is fixed and is not part of the
+problem.) **The topology is not decided here and should not be** — a designated hub account, a Transit Gateway
+in a shared network account, or per-unit VPN endpoints are all live, and the choice depends on N and on
+whether units may reach each other at all ([Stage 14](stage-14-sandbox-vending.md) carries it as its central
+open question). What this stage owes Stage 14 is only this: **name the VPN home as a role an account plays,
+not as "the Sandbox account"** — one variable, so that changing the topology later is a substitution instead
+of a rewrite.
+
 ---
 
 **Objective:** the only human path into the private network.

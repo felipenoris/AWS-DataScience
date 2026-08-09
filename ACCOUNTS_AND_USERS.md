@@ -164,6 +164,9 @@ not in concept. `Policy Test` and `Policy Canary` keep the word `Staging` naming
 
 # SSO Users
 
+The five users below are the **personas** the separation of duties is built from. They are not the whole
+contents of the directory — see "Identities this project did not create" at the end of this section.
+
 ## Infrastructure user
 
 - roles: can assume infrastructure change roles
@@ -331,3 +334,76 @@ no policy can detect it.
   an image that then runs in every notebook, holding the SageMaker execution role, inside the VPC. That is
   why the gate is a human reading a diff, and why ECR enhanced scanning blocking on critical findings
   (Stage 8) is a companion to it rather than a substitute.
+
+## Identities this project did not create
+
+Enabling Control Tower (Stage 1a step 3) builds an IAM Identity Center directory **and populates it** — with
+groups, permission sets and a first administrator. None of it was requested by this plan, and none of it is
+a persona. It is listed here for one reason: **an administrator that appears in no document is
+indistinguishable from one that should not be there**, and that is a judgement a security review has to make
+quickly. One of them has since been given a job by this project — Control Tower administration (D34) — which
+makes it a *standing identity with one duty*, still not a persona, and makes documenting it more necessary
+rather than less.
+
+### `AWS Control Tower Admin` (D33)
+
+An Identity Center user created by the landing zone, carrying the **Management account's root e-mail
+address** — the address AWS has at landing-zone time, so it is expected rather than a misconfiguration. Its
+entire footprint comes from **two group memberships, with no direct assignment**:
+
+| Group | Management | Log Archive | Audit | Member accounts |
+|---|---|---|---|---|
+| `AWSControlTowerAdmins` | `AWSAdministratorAccess` | `AWSAdministratorAccess` | `AWSAdministratorAccess` | `AWSOrganizationsFullAccess` |
+| `AWSAccountFactory` | `AWSServiceCatalogEndUserAccess` | — | — | — |
+
+**Read the second and third columns before the first.** This is not merely an administrator of the
+Management account: it administers **Log Archive**, which holds the organization CloudTrail bucket, and
+**Audit**, which holds the security findings plane. It can delete the record of its own use — including the
+trail the break-glass alarm reads. The `AWSOrganizationsFullAccess` on member accounts is close to inert,
+Organizations being a management-account API, except for `organizations:LeaveOrganization`, which a member
+account *can* call and which drops all governance for that account at once (denied at the organization root,
+Stage 1b step 7).
+
+- **What it is for:** the only identity that can vend accounts, because **root cannot use Account Factory at
+  all** — a documented restriction, not a permission to be granted. **Since D34 that is a standing job, not a
+  bootstrap one:** it owns Control Tower administration — creating OUs, vending accounts, enrolling them,
+  landing-zone updates — from the console, never from Terraform.
+- **What it is not:** a sixth persona. It holds one duty and no other: it approves nothing, owns no data or
+  workload, and appears in no separation of duties. Do not add it to `infrastructure`, `data-scientists` or
+  any approver group, and do not give it a permission set of this project's.
+- **Why not the narrow replacement.** `AWSAccountFactory` alone (`AWSServiceCatalogEndUserAccess`) is enough
+  to vend into an OU that already exists, through the Service Catalog console — but not to reach the
+  **Control Tower console**, where OUs are created and accounts enrolled, which AWS documents as reachable
+  only by `AWSControlTowerAdmins`. Creating OUs is part of the job. The choice keeps the **infrastructure
+  user out of the Management account**, which is what D32's one-administrator-one-MFA-device shape depends on.
+- **What limits it, permanently.** The reach above cannot be trimmed: `AWSControlTowerAdmins` is atomic, and
+  the Management administrator arrives in the same membership as the Log Archive one. So the control set is
+  three things, none of which is optional and all of which are now permanent rather than covering a window:
+  **MFA on the user**; **S3 Object Lock in *compliance* mode** on the Log Archive bucket (Stage 1b step 9),
+  because this principal holds `s3:BypassGovernanceRetention` and walks through governance mode; and the
+  **alarm on membership changes to its groups** (Stage 1b step 8), which is what distinguishes the expected
+  member from a second one somebody added.
+- **Deliberately not renamed and not deleted.** Repointing it at a non-root address treats the symptom and
+  risks a landing-zone update re-creating it under the root address, leaving the renamed one behind as a
+  dormant administrator — D33 has the full argument, and a permanent identity makes it stronger.
+- **The inbox collision is therefore permanent:** the break-glass alarm's SNS subscription (Stage 1a step 5)
+  must not be that address, or one inbox holds the root credential, its own warning, and a routine login.
+  Since every address here is a `+alias` on one mailbox, the **SMS endpoint** is the part of that separation
+  that is actually real.
+
+### The groups and permission sets that arrived with it
+
+Control Tower also created its own permission sets — including one named **`AWSAdministratorAccess`**, four
+characters from the `AdministratorAccess` Stage 1b creates — and a set of groups that are **currently
+empty and pre-wired**: `AWSServiceCatalogAdmins`, `AWSSecurityAuditors`, `AWSSecurityAuditPowerUsers`,
+`AWSLogArchiveAdmins`, `AWSLogArchiveViewers`, `AWSAuditAccountAdmins`, `AWSAuditAccountViewers`.
+
+**One of them is no longer empty:** `AWSControlTowerAdmins` permanently holds the vending owner above (D34),
+which is why the alarm on membership changes to these groups is what tells an expected member from an added
+one. The rest are empty.
+
+**Empty is the important word, and it is not the same as harmless.** Each already carries its assignments,
+so adding one person to one of them is an organization-wide grant made by a single membership edit —
+`AWSSecurityAuditPowerUsers`, for instance, holds `AWSPowerUserAccess` on **every** account including the
+member accounts. None of this project's five personas belongs in any of them: Stage 1b builds its own groups
+beside these, and the two sets stay separate.

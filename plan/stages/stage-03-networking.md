@@ -39,6 +39,13 @@ different lifecycles (`plan/conventions.md` §5.1).
    **all four** accounts. The ranges are non-overlapping even where no peering is planned — Staging is
    deliberately not peered (D20), but a CIDR chosen to overlap is a decision that cannot be revisited
    without rebuilding the VPC, and the address space costs nothing.
+   **Forward constraint from D35, and this is the step where it is free.** `Sandbox` is one account **per
+   business unit** — the other three stay singular — so the sandbox literal above is not an allocation
+   scheme; it is a list somebody extends by hand, which is Lesson 14 in address space. Before writing the
+   ranges, **reserve a supernet for the Sandbox class with room for the units that will exist, and allocate
+   one `/16` per unit from a recorded table**. Production, Staging and Development keep their fixed ranges.
+   The table is the artefact, not the literals. Doing this now costs a paragraph; doing it after the third
+   business unit costs a VPC rebuild in an account somebody is working in.
 2. Internet Gateway, route tables, NACLs, baseline security groups.
 3. S3 and DynamoDB **gateway** endpoints — these are free, so they live here. Being `[P]` is not incidental:
    their IDs are what the Data Governance bucket policies condition on (Stage 5 step 1), so they must

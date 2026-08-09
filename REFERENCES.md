@@ -41,7 +41,25 @@
 
 - AWS Control Tower Account Factory for Terraform (AFT): <https://docs.aws.amazon.com/controltower/latest/userguide/aft-overview.html>.
 
+- Provision and manage accounts with Account Factory (the `SSOUserEmail` may be an existing Identity Center user; changing it later creates a *second* user and leaves the first): <https://docs.aws.amazon.com/controltower/latest/userguide/account-factory.html>.
+
+- Provisioning an account in Account Factory, field by field (`SSOUserEmail` gets administrative access to the vended account; `AccountEmail` must not already belong to an AWS account): <https://docs.aws.amazon.com/controltower/latest/userguide/provision-as-end-user.html>.
+
+- Permissions required for provisioning accounts (`AWSServiceCatalogEndUserFullAccess`, and **"you cannot be signed in as the Root user"** — why Account Factory refuses root, D33): <https://docs.aws.amazon.com/controltower/latest/userguide/provision-and-manage-accounts.html>.
+
+- Identity and access management in AWS Control Tower (root user vs. IAM Identity Center user, and what authenticates a Control Tower operation): <https://docs.aws.amazon.com/controltower/latest/userguide/auth-access.html>.
+
+- Recommendations for setting up groups, roles and policies in AWS Control Tower: <https://docs.aws.amazon.com/controltower/latest/userguide/roles-recommendations.html>.
+
+- Removing an Account Factory portfolio and product from Service Catalog (shows the portfolio/principal model behind the Account Factory access error): <https://docs.aws.amazon.com/controltower/latest/userguide/controltower-walkthrough-cleanup-account-factory.html>.
+
+- **IAM Identity Center groups for AWS Control Tower — the authoritative table of which group gets which permission set in which account** (`AWSControlTowerAdmins` = administrator on Management, Log Archive *and* Audit, plus `AWSOrganizationsFullAccess` on member accounts; `AWSAccountFactory` = `AWSServiceCatalogEndUserAccess` on Management only; and only `AWSControlTowerAdmins` members reach the Control Tower console): <https://docs.aws.amazon.com/controltower/latest/userguide/sso-groups.html>.
+
 - AWS IAM Identity Center: <https://docs.aws.amazon.com/singlesignon/latest/userguide/what-is.html>.
+
+- Working with IAM Identity Center and AWS Control Tower (the default directory, its groups and permission sets, and the delegated-administration caveat): <https://docs.aws.amazon.com/controltower/latest/userguide/sso.html>.
+
+- Disabling an IAM Identity Center user (the cleanup path for a superseded Account Factory SSO user): <https://docs.aws.amazon.com/singlesignon/latest/userguide/disableuser.html>.
 
 - IAM OIDC identity providers (the issuer's discovery/JWKS URL must be publicly reachable — relevant to Stage 8 with a private GitLab): <https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_providers_create_oidc.html>.
 
@@ -247,6 +265,16 @@
 
 - CloudTrail log file validation (tamper-evident audit trail): <https://docs.aws.amazon.com/awscloudtrail/latest/userguide/cloudtrail-log-file-validation-intro.html>.
 
+- S3 Object Lock — **governance vs. compliance mode**, the distinction that decides whether an administrator of the Log Archive account can bypass it (`s3:BypassGovernanceRetention`): <https://docs.aws.amazon.com/AmazonS3/latest/userguide/object-lock.html>.
+
+- Configuring S3 Object Lock (enabling it in place on an **existing** versioned bucket, and applying retention to existing objects with S3 Batch Operations): <https://docs.aws.amazon.com/AmazonS3/latest/userguide/object-lock-configure.html>.
+
 - AWS Backup Vault Lock (Stage 12): <https://docs.aws.amazon.com/aws-backup/latest/devguide/vault-lock.html>.
 
 - AWS Service Quotas: <https://docs.aws.amazon.com/servicequotas/latest/userguide/intro.html>.
+
+- Track alerts through Amazon SNS in AWS Control Tower (the topics the landing zone creates, and the fact that the Audit account e-mail is subscribed to `aws-controltower-AggregateSecurityNotifications` by default): <https://docs.aws.amazon.com/controltower/latest/userguide/sns.html>.
+
+- Compliance notifications by SNS in the audit account (why those topics are too noisy to carry a break-glass alarm): <https://docs.aws.amazon.com/controltower/latest/controlreference/receive-notifications.html>.
+
+- Amazon SNS SMS subscriptions (the second channel for the break-glass alarm, Stage 1a step 5): <https://docs.aws.amazon.com/sns/latest/dg/sns-mobile-phone-number-as-subscriber.html>.

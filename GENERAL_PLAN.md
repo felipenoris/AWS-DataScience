@@ -55,6 +55,15 @@ Development → Staging → Production), the **ownership** axis (Data Governance
 accounts on neither. *An account off the lifecycle axis is not "a production account"* — Data Governance
 and Identity are **high blast radius**, which is a different property.
 
+**And one property that cuts across all three: cardinality (D35).** Every account above is **structural** —
+exactly one, forever — **except `Sandbox`, which is one per business unit** (N is 1 today). The chain reads
+**N Sandboxes → one Development → one Staging → one Production**, so the cardinality boundary is exactly
+D21's graduation boundary: experimentation multiplies, the engineering chain that follows it does not — which
+is why the promotion chain is untouched by N. That decides where vending is automated: the structural
+accounts keep the console flow (D34), the Sandbox gets [Stage 14](plan/stages/stage-14-sandbox-vending.md).
+It also means any stage writing "*the* Sandbox account" is writing a singleton assumption that has to be paid
+for later.
+
 Full annotated tree, the two access paths, region portability, the data perimeter and the two egress
 designs: [`plan/architecture.md`](plan/architecture.md).
 
@@ -129,12 +138,13 @@ its **Consumes** row names; that is the whole reading list.
 | [11 — DLP](plan/stages/stage-11-dlp.md) | Macie, CloudTrail data events, LF column/row filters, GuardDuty's paid add-ons | not started |
 | [12 — Observability and FinOps](plan/stages/stage-12-observability-finops.md) | Dashboards, alarms, cost attribution against the real bill | not started |
 | [13 — Public web tier](plan/stages/stage-13-public-web-tier.md) | The public-facing experiment in front of a private backend | not started |
+| [14 — Sandbox vending](plan/stages/stage-14-sandbox-vending.md) | A business unit's `Sandbox` account from one name (D35) | not started |
 
 ---
 
 ## 3. Decisions
 
-**D1-D31, all settled** — one of them, **D30, settled as a revert** and keeps its file so the record shows
+**D1-D35, all settled** — one of them, **D30, settled as a revert** and keeps its file so the record shows
 what was tried. One file each, with its reasoning, consequences and revision trigger:
 [`plan/decisions/INDEX.md`](plan/decisions/INDEX.md) — a one-line summary per decision, which is usually
 all that is needed.

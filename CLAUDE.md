@@ -106,6 +106,8 @@ Never update `LOG.md`. I'll edit this file.
 This folder is ignored by git. It contains personal information. Never edit this folder, and never
 write anything into it. Claude can read the files in this folder to gather information.
 
+**Never copy or reproduce any email addresses contained in this folder into any other project files.**.
+
 ## Accounts and Users
 
 - The file `ACCOUNTS_AND_USERS.md` contains the AWS accounts and users.
@@ -202,16 +204,49 @@ Reference things by **stable ID** — `D26`, `INT-11`, `Stage 1b step 7` — nev
 
 ### Current position
 
-- **Stage 0 complete. Stage 1a is ready to start, with nothing blocking it.**
-- **Nothing is provisioned in AWS** beyond the Management account, created manually by the user.
+- **Stage 0 complete. Stage 1a is in progress** — see `LOG.md` for exactly how far. Control Tower is
+  enabled (`us-west-2`), the account-quota increase to 15 is *requested*, the budget is set, the `Security`
+  and `Interactive` OUs exist, and accounts are being vended through Account Factory — `Development` first.
+- **Vending an account: the `SSOUserEmail` field always takes the infrastructure user (D32)**, the same
+  address on all seven. It grants administrative access to the account, so it is never the account's own
+  e-mail and never another persona.
+- **Vending is done from the AWS access portal as `AWS Control Tower Admin`, never from root (D33)** —
+  root gets a Service Catalog portfolio error, by design. That user is Control Tower's own creation, carries
+  the Management **root e-mail**, and via `AWSControlTowerAdmins` is administrator on **Management, Log
+  Archive and Audit** — so it can erase its own audit trail. **MFA is mandatory.** **It is no longer
+  disabled in 1b (D34): it is the standing owner of Control Tower administration** — OUs, vending,
+  enrolment — console only, because the account list is not static. Its three permanent controls: MFA,
+  Object Lock in **compliance** mode (1b step 9), and the group-membership alarm (1b step 8).
+  **The Identity Center directory is not empty** — Control Tower populated it with its own groups and
+  permission sets, one named `AWSAdministratorAccess`; its empty groups are pre-wired ceilings, so no
+  project persona ever joins one.
+- **Adding an account later is ordinary, not exceptional (D34)**: gate = which axis and which OU (D23),
+  owner = that user, baseline = code that already exists. **Nothing declares the Organization in Terraform,
+  so console vending cannot drift any state** — but it can leave an OU or account *invisible* to code
+  written as a list, so in `terraform-live/identity/` **the floor is discovered (`for_each` over the
+  Organizations data sources) and the grants are enumerated.**
+- **Cardinality is a property of the map (D35): every account is structural — exactly one — except
+  `Sandbox`, one per business unit** (N is 1 today). **N Sandboxes → one Development → one Staging → one
+  Production**, so the cardinality boundary *is* D21's graduation boundary and **the promotion chain is
+  untouched by N**. Automation goes where the multiplication is (**new Stage 14**). Consequence for stages
+  not yet written: **anything saying "*the* Sandbox account" is a singleton assumption** — S3 needs a
+  supernet + allocation table for the Sandbox class, S4 must name the VPN home as a role (the topology
+  choice — hub, Transit Gateway, or per-unit — is settled in S14 with N in hand), S1b splits only the
+  Sandbox half of the assignment into `data-scientists-<bu>`, S6 associates N+1 accounts to the one domain.
+  **Per-unit isolation ends at the graduation boundary**; past it, it is Lake Formation's job.
+- **An older AWS account is attached to the organization**, which consumes a quota slot: the plan's ten
+  accounts plus it exceed the measured limit of 10. **`Staging` is the account to defer** — its first hard
+  dependency is Stage 8, and D20 keeps it unpeered, so deferring costs nothing structurally.
 - The repository is documentation only; `terraform/` is empty and is replaced by `terraform-live/`
   and `terraform-modules/` in Stage 2.
-- **All thirty-one decisions (D1-D31) are closed** — see [`plan/decisions/INDEX.md`](plan/decisions/INDEX.md).
+- **All thirty-five decisions (D1-D35) are closed** — see [`plan/decisions/INDEX.md`](plan/decisions/INDEX.md).
 - Inputs still needed from the user, neither blocking Stage 1: **which domain name to register**
   (D15, blocks Stage 7), and the AZ name-to-ID check in Stage 1b step 6, which decides whether Stage 3
   anchors subnets on list position or on AZ IDs.
-- **Do first, because it can take days: the Organizations account-quota increase** (Stage 1a pre-flight).
-  The measured limit is exactly the number of accounts Stage 1a ends with, so a single retry breaches it.
+- **The account-quota increase was requested at 15** (Stage 1a pre-flight, `LOG.md`) against a measured
+  limit of 10 — exactly the number Stage 1a ends with. **Confirm it was granted before vending the last
+  accounts**: without it a single failed provisioning breaches the cap, and a closed account holds its slot
+  for ~90 days.
 - Integration risks worth settling earliest: **INT-11** (organization-wide RAM sharing + Lake Formation
   cross-account v3 — enabled in Stage 1b, consumed in Stage 5, and its absence makes a share fail
   *silently*) and **INT-13** (CodeConnections from the domain to the private GitLab — the one row with no
@@ -225,7 +260,7 @@ file; narrative belongs in [`plan/history.md`](plan/history.md).
 ### Lessons carried forward
 
 **Read [`plan/lessons.md`](plan/lessons.md) before planning, reviewing, or settling a decision.**
-The fifteen titles are kept here so a lesson can be *recognised* without opening the file; the
+The seventeen titles are kept here so a lesson can be *recognised* without opening the file; the
 reasoning that makes each one usable is in the file, and the titles alone are not a substitute.
 
 1. **A copy of governed data landing somewhere less governed is not a hole to be closed.**
@@ -243,4 +278,6 @@ reasoning that makes each one usable is in the file, and the titles alone are no
 13. **A verification command that returns empty on both success and failure is not a verification.**
 14. **A condition that has to appear in N places by hand is a control that will be missing from one of them.**
 15. **An adopted-against-advice decision is undone by *delivery*, not by re-argument — and a revision trigger written about operating something cannot fire while you are still building it.**
+16. **A manual step delegated to a console wizard is only as specified as the fields it names — and an unnamed field that grants permissions is a permission decision made by whoever is at the keyboard.**
+17. **A service that "sets itself up" creates principals nobody chose — enumerate them before the next step depends on one.**
 

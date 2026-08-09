@@ -7,7 +7,7 @@ Blueprint for using AWS as a Data Science infrastructure provider.
   (stages and decisions). Read this first; it points at everything else.
 - `plan/` — the plan itself, split so that a task reads only what it needs:
   - `plan/stages/` — one file per stage, each declaring the decisions it **consumes**.
-  - `plan/decisions/` — one file per decision `D1`…`D31`, plus a one-line-per-decision `INDEX.md`.
+  - `plan/decisions/` — one file per decision `D1`…`D35`, plus a one-line-per-decision `INDEX.md`.
   - `plan/architecture.md`, `plan/conventions.md`, `plan/integrations.md` (the `INT-nn` rows),
     `plan/cost-model.md`, `plan/open-questions.md`, `plan/lessons.md`,
     `plan/institutional-delta.md`, `plan/history.md`.
@@ -380,3 +380,171 @@ Services account (D14), why Identity is its own account (D10), what the Staging 
 (D20), where experimentation ends and development begins (D21), why the lake has its own account (D22), and
 how the OUs were chosen (D23) — is recorded one file per decision in `plan/decisions/`
 (index: `plan/decisions/INDEX.md`).
+
+---
+
+## How OUs and accounts are created
+
+The table above says *which* accounts exist. This section says *how one comes into existence* — a process
+that is deliberately not uniform: most accounts are created by hand from the console, and exactly one class
+of account is destined for a Terraform-driven flow. The asymmetry is the point, and the reasoning behind it
+is recorded in D32, D33, D34 and D35.
+
+### 1. The Organization is deliberately outside Terraform
+
+The first principle of the plan keeps the Management account out of Terraform entirely. Nothing in this
+repository will ever declare `aws_organizations_account` or `aws_organizations_organizational_unit`, and the
+landing zone itself — Control Tower, its guardrails, its baseline — is enabled through the console and
+recorded in `LOG.md`.
+
+That is not a temporary shortcut awaiting codification. It has a direct and useful consequence: **creating an
+OU or an account from the console cannot make any Terraform state inconsistent**, because a state file only
+tracks what a configuration declares, and no configuration declares these. There is no drift to reconcile,
+now or after Terraform starts holding state for everything else.
+
+### 2. Two classes of account, and the boundary between them
+
+Read the account map with the question *"how many of these will exist in five years?"* and it splits in two
+(D35):
+
+| Class | Accounts | Cardinality | How it is created |
+|---|---|---|---|
+| **Structural** | Management, Log Archive, Audit, Identity, Policy Canary, Data Governance, **Development**, Staging, Production | **one, always** | manually, from the console, by the owner named in §3 |
+| **Multiplied** | **Sandbox** | **one per business unit** | automated, in Terraform — Stage 14 |
+
+The boundary is not a convenience. It is **exactly the graduation boundary of D21**: in Sandbox the unit of
+work is a notebook and the account is for experimentation; in Development the unit of work is a pipeline and
+the promotion chain begins. Experimentation is naturally per-business-unit — each unit explores its own data,
+with its own people, on its own schedule — while engineering is institutional: one discipline, one set of
+repositories, one chain. So the chain reads **N Sandboxes → one Development → one Staging → one
+Production**, and the multiplication sits entirely *upstream* of the approval gate, which is the cheapest
+place for it to be. N is 1 today.
+
+Two consequences worth stating explicitly, because both are easy to assume wrongly:
+
+- **The promotion chain is untouched by N.** One Development means one set of pipelines, one deploy role
+  pair, one approval gate, however many business units exist.
+- **Per-unit isolation ends at the graduation boundary.** A unit's experimentation is private to it; its
+  engineering is not. Past that line, whatever isolation is required is carried by Lake Formation grants,
+  LF-Tags and per-pipeline execution roles — never by an account boundary that is deliberately not there.
+
+### 3. Who creates accounts, and why it is neither root nor the infrastructure user
+
+Accounts are vended through **Control Tower's Account Factory**, from the AWS access portal, as the
+`AWS Control Tower Admin` user — **never from the root user**, which gets a Service Catalog portfolio error
+by design (D33). That user is Control Tower's own creation: it carries the Management account's root e-mail
+address and, through the `AWSControlTowerAdmins` group, is administrator on Management, Log Archive and
+Audit.
+
+This was originally sized as a bootstrap credential with an end date. **D34 withdrew that retirement**, on a
+premise change rather than a change of mechanism: a sandbox for a new line of work, a second data domain, a
+per-workload staging account are ordinary requests, and each of them is an account. A capability that is
+exercised indefinitely gets a permanent owner instead of an end date — creating OUs, vending accounts,
+enrolling accounts and landing-zone updates, console only.
+
+The alternative was a narrower identity (`AWSServiceCatalogEndUserAccess`, vending only). It was rejected
+because **creating an OU is part of the stated job** and the Control Tower console is documented as reachable
+only by members of `AWSControlTowerAdmins`; splitting the work across two identities to avoid a permission
+one of them holds anyway buys nothing. What the choice does buy is that **the infrastructure user gains no
+reach into the Management account**, which keeps D32's shape intact.
+
+Keeping that identity standing has a price, recorded as a permanent condition rather than as a window:
+
+- **MFA on it is mandatory and permanent**, not a stopgap.
+- **Object Lock on the log archive must be in *compliance* mode** — this principal is administrator *of Log
+  Archive*, so it holds `s3:BypassGovernanceRetention` and governance mode is transparent to it. Compliance
+  mode is the only thing that keeps the audit trail surviving its own administrator.
+- **An alarm on Control Tower group membership stays**, because the cheapest way to acquire this reach is to
+  be added to its group.
+- **Separation of duties: none, and that is the honest word.** The identity that creates accounts also
+  administers the account holding the audit trail, and nobody approves a vend. One human, one lab —
+  recorded in `plan/institutional-delta.md` rather than argued away.
+
+### 4. What is filled into the vending form
+
+Account Factory asks for an account name, an e-mail address, the destination OU, and **`SSOUserEmail`**. That
+last field looks like a contact field and is not: it grants administrative access to the account through
+Identity Center. So it always takes the **infrastructure user**, identically on every account (D32) — never
+the account's own e-mail address, and never another persona. The result is one administrator, one MFA device,
+across every vended account.
+
+Note also that the Identity Center directory is **not empty** at this point: Control Tower populated it with
+its own groups and permission sets, one of them named `AWSAdministratorAccess`. Those empty groups are
+pre-wired permission ceilings, so no project persona ever joins one.
+
+### 5. The gate, which comes before the account exists
+
+An account request is answered in this order (D34):
+
+1. **Which axis is it on, and which OU's policy set does it need?** The axes are lifecycle (dev / staging /
+   prod), data ownership, and platform. If an existing policy set fits — and "another sandbox" almost always
+   means the `Interactive` set — the account joins that OU and inherits SCP, RCP, tag policy and the region
+   control for free.
+2. **If no policy set fits, the request is an OU decision, not an account decision** (D23: an OU earns its
+   existence when two or more accounts need the same policy set). It then goes through the `Policy Canary`
+   battery (D29) before being attached anywhere real.
+3. **The post-vend baseline is code that already exists** — which is the whole reason account N+1 is cheap:
+   the state bucket slice, the identity assignments, OU membership for the policy set, `foundation/` if the
+   account needs a VPC, an SSO profile, and the mandatory tags. For an *interactive* account, name what it
+   actually pulls in: Stage 3 (VPC, private hosted zone associations), Stage 4 (peering and VPN reach) and
+   Stage 6 (domain association and a project profile). Naming that list is what makes the real cost of "just
+   one more sandbox" visible at the moment somebody asks for it, which is the point of having a gate.
+4. **Quota headroom is a standing item, not a one-off pre-flight.** Keep slack for a failed provisioning that
+   has to be retried; a closed account holds both its slot and its e-mail address for roughly 90 days.
+
+### 6. Why manual creation is safe here — and the failure it *does* introduce
+
+The safety argument is §1: nothing declares the Organization, so nothing can drift. But the failure mode that
+replaces drift is worse in one specific way — **it is silent**. Drift is code and reality disagreeing, and
+`terraform plan` reports it. This is reality holding something the code never mentioned, and `terraform plan`
+reports *"No changes"*. A console-vended account is **invisible**, not **drifted**, and three things are
+exactly where that matters:
+
+- **SCP/RCP attachments**, which attach to OUs. An OU created from the console carries no policy set until
+  code attaches one.
+- **Permission set assignments.** A vended account arrives holding only the direct Account Factory assignment
+  and nothing from the group model.
+- **Enumerated ARN and account-ID conditions**, which this project's conventions require to be lists rather
+  than wildcards. A new account is silently outside every one of them.
+
+The mechanism that answers this — a mechanism, not a checklist line — is:
+
+> **The floor is discovered, the grants are enumerated.**
+
+In `terraform-live/identity/`, anything that must cover *everything* (the organization-root SCP/RCP set, the
+tag policy, the per-OU attachments) is driven by `for_each` over the AWS Organizations data sources, so an OU
+or account created yesterday from the console is covered by the next apply with nobody having to remember.
+Permission set assignments stay **explicit**, because a new account silently acquiring `DataScientistAccess`
+is precisely the failure the design exists to prevent.
+
+Two properties already work in this flow's favour: SCPs attach to the **OU**, so a new Sandbox inherits its
+whole policy set simply by being placed correctly (D23 paying off), and Lake Formation cross-account **v3**
+can grant to an OU or to a list, so there is no mechanical ceiling on the number of consumer accounts.
+
+### 7. Where automation goes, and the ladder it climbs
+
+Automation goes where the multiplication is. Vending is not an all-or-nothing choice between "keep doing it
+by hand" and "adopt a whole product" — there are three rungs, and naming only the outer two is how the status
+quo wins by forfeit (D34):
+
+| Rung | What it is | What it costs |
+|---|---|---|
+| 1. **Today** | Account Factory from the console, by the owner in §3 | nothing; the request has no diff and no review |
+| 2. **The middle** | `aws_servicecatalog_provisioned_product` against the **Account Factory product**, with `AccountEmail`, `AccountName`, `ManagedOrganizationalUnit` and the SSO fields as provisioning parameters | one Terraform slice; a principal with Service Catalog rights **in Management**, which reopens the ownership question; and `prevent_destroy`, because terminating that resource **closes an account** |
+| 3. **AFT** (Account Factory for Terraform) | the full product: its own management account, pipelines, per-account customization repositories | a dedicated account slot plus metered services |
+
+**Rung 2 is what Stage 14 uses**, for the Sandbox class only. The account is still created *by Account
+Factory*, so Control Tower enrolment, guardrails and baseline are untouched — what changes is only who fills
+in the form. The goal of that stage is that adding a business unit is a merge request whose single input is
+the unit's name.
+
+The structural accounts stay on rung 1 indefinitely, and that is a considered position rather than
+procrastination: automating a form that is filled in nine times, once each, would be code written to be run
+once per account and read every time it is changed.
+
+**When this is revisited.** Account creation becoming frequent enough that the post-vend baseline is run from
+memory rather than read, or a second human joining — at which point the ladder is walked from rung 1, not
+jumped to rung 3, with the cost of whichever rung is chosen *measured* into `PRICING.md` first. For the
+Sandbox class specifically, the trigger is a business unit needing its own **Development**, which would move
+an account off the structural side of the table and break the "the chain is untouched by N" property the
+whole split rests on.

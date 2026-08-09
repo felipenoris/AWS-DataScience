@@ -4,7 +4,7 @@
 |---|---|
 | **Status** | not started |
 | **Prerequisites** | Stage 1. |
-| **Consumes** | [D3](../decisions/D03-terraform-state.md), [D10](../decisions/D10-identity-center-delegation.md), [D11](../decisions/D11-lab-lifecycle.md) |
+| **Consumes** | [D3](../decisions/D03-terraform-state.md), [D10](../decisions/D10-identity-center-delegation.md), [D11](../decisions/D11-lab-lifecycle.md), [D34](../decisions/D34-account-vending.md) |
 | **Proves** | — |
 
 *Read with [`plan/conventions.md`](../conventions.md) (naming, layout, `[P]`/`[D]`/`[E]`, IAM rules).*
@@ -42,6 +42,20 @@
    (This consequence arrived with D30 and outlived it. D30's own reason was narrower — a carve-out
    condition repeated across several policies has to be *generated, not typed* — and that reason went away
    with the decision. The ownership hole it happened to close did not.)
+   **Write this slice so an OU or account created later is covered without anybody remembering (D34).**
+   Accounts and OUs are vended from the console, permanently and by design, and **that cannot make this
+   state inconsistent** — nothing here declares `aws_organizations_account` or
+   `aws_organizations_organizational_unit`, and a state file tracks only what a configuration declares. The
+   risk is the opposite of drift and it is silent: a new OU with no attachment, or a new account outside
+   every enumerated ARN/account-ID condition, with `terraform plan` reporting **"No changes"** in both
+   cases. So: **the floor is discovered, the grants are enumerated.** Attachments, the organization-root
+   set and the tag policy are `for_each` over `aws_organizations_organizational_units` /
+   `aws_organizations_organization` data sources; **permission set assignments stay written out one by
+   one**, because an account silently acquiring `DataScientistAccess` on the next apply is the failure this
+   design exists to prevent. *To verify here:* that those data sources enumerate OUs at the nesting depth
+   this organization uses, and that the `for_each` key is stable enough that adding an OU does not
+   re-create the existing attachments — a plan that wants to destroy and re-create an SCP attachment is a
+   momentary hole in the ceiling.
    **What is deliberately *not* imported here: the region restriction.** It is Control Tower's own Region
    deny control (1b step 7), not one of the hand-written documents, and the SCP that implements it is
    generated and owned by the landing zone. Importing that SCP into `terraform-live/identity/` would put
