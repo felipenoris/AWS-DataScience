@@ -229,7 +229,9 @@ that multiplies.
    root, there is no second mechanism to build. What is left here is what makes it a break-glass rather
    than just an account owner: write the procedure down (what situations justify using it — an Identity
    Center outage, an organization-level policy that locked everyone out; what to do; what to record
-   afterwards), build the alarm, and test the whole thing once. **This belongs in 1a and not later**: every
+   afterwards), build the alarm, and test the whole thing once.
+   **The procedure is written: [`plan/runbooks/break-glass.md`](../runbooks/break-glass.md)**, which also
+   carries the exact alarm chain, the resource names and the test. **This belongs in 1a and not later**: every
    policy in 1b is a way to lock yourself out of your own organization, and the escape hatch has to predate
    the hazard.
    **The alarm needs a delivery path, not just an intention** (Lesson 5 in `CLAUDE.md`: name the policy line

@@ -278,3 +278,21 @@
 - Compliance notifications by SNS in the audit account (why those topics are too noisy to carry a break-glass alarm): <https://docs.aws.amazon.com/controltower/latest/controlreference/receive-notifications.html>.
 
 - Amazon SNS SMS subscriptions (the second channel for the break-glass alarm, Stage 1a step 5): <https://docs.aws.amazon.com/sns/latest/dg/sns-mobile-phone-number-as-subscriber.html>.
+
+- Amazon SNS **SMS sandbox** (a new account may only send to *verified* destination numbers — the one-time step before the break-glass SMS channel works): <https://docs.aws.amazon.com/sns/latest/dg/sns-sms-sandbox.html>, and the verification procedure: <https://docs.aws.amazon.com/sns/latest/dg/sns-sms-sandbox-verifying-phone-numbers.html>.
+
+- Supported countries for SMS with AWS End User Messaging (the **Brazil row**: short codes yes, long codes no, sender IDs no, no registration required — so nothing has to be bought or filed for the break-glass SMS): <https://docs.aws.amazon.com/sms-voice/latest/userguide/phone-numbers-sms-by-country.html>.
+
+- AWS End User Messaging SMS pricing (the only published source for the per-country SMS message price, which is **not** in the Price List bulk API — see `PRICING.md` §6): <https://aws.amazon.com/end-user-messaging/pricing/>.
+
+- Logging and monitoring in AWS Control Tower (what the landing zone logs and where): <https://docs.aws.amazon.com/controltower/latest/userguide/logging-and-monitoring.html>, and about logging: <https://docs.aws.amazon.com/controltower/latest/userguide/about-logging.html>.
+
+- Resources not removed when a landing zone is decommissioned — the page that names the CloudWatch log group **`aws-controltower/CloudTrailLogs`** and its blueprint `AWSControlTowerBP-BASELINE-CLOUDTRAIL-MASTER`; from landing zone 3.0 it is created **only in the management account**, which is the log group the break-glass metric filter attaches to: <https://docs.aws.amazon.com/controltower/latest/userguide/resources-not-removed.html>.
+
+- CloudTrail **AWS Management Console sign-in events** — root user sign-ins are recorded in `us-east-1` because console sign-in is a global service; the break-glass alarm only sees them because the Control Tower trail is multi-region with global service events included (Stage 1a step 5): <https://docs.aws.amazon.com/awscloudtrail/latest/userguide/cloudtrail-event-reference-aws-console-sign-in-events.html>.
+
+- Sending CloudTrail events to CloudWatch Logs (the delivery leg the metric filter reads): <https://docs.aws.amazon.com/awscloudtrail/latest/userguide/send-cloudtrail-events-to-cloudwatch-logs.html>.
+
+- Preparing an organization trail (why member-account events reach the **management account's** log group, which is what makes one metric filter cover every account): <https://docs.aws.amazon.com/awscloudtrail/latest/userguide/creating-an-organizational-trail-prepare.html>.
+
+- CloudWatch Logs metric filters, and the JSON filter-pattern syntax used by the root-activity filter: <https://docs.aws.amazon.com/AmazonCloudWatch/latest/logs/MonitoringLogData.html> and <https://docs.aws.amazon.com/AmazonCloudWatch/latest/logs/FilterAndPatternSyntax.html>.

@@ -8,6 +8,8 @@ Blueprint for using AWS as a Data Science infrastructure provider.
 - `plan/` — the plan itself, split so that a task reads only what it needs:
   - `plan/stages/` — one file per stage, each declaring the decisions it **consumes**.
   - `plan/decisions/` — one file per decision `D1`…`D35`, plus a one-line-per-decision `INDEX.md`.
+  - `plan/runbooks/` — procedures to follow when something is on fire. Today: `break-glass.md`, which
+    says when the Management account root may be used, what to do with it, and what watches its use.
   - `plan/architecture.md`, `plan/conventions.md`, `plan/integrations.md` (the `INT-nn` rows),
     `plan/cost-model.md`, `plan/open-questions.md`, `plan/lessons.md`,
     `plan/institutional-delta.md`, `plan/history.md`.

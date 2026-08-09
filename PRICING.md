@@ -359,9 +359,34 @@ than discoveries:
 | CloudWatch logs storage (USD/GB-mo) | 0.0408 | 0.03 | 1.36 |
 | CloudWatch Logs Insights scanned (USD/GB) | 0.009 | 0.005 | 1.80 |
 | CloudWatch standard alarm (USD/alarm-mo) | 0.135 | 0.10 | 1.35 |
+| CloudWatch **custom metric**, first 10 000 (USD/metric-mo) | 0.30 | 0.30 | **1.00** |
+| **SNS** API requests, above the first 1M/month (each) | 0.0000005 | 0.0000005 | **1.00** |
+| SNS e-mail / e-mail-JSON notifications, above the first 1 000/month (each) | 0.00002 | 0.00002 | **1.00** |
+| SNS HTTP/HTTPS notifications, above the first 100 000/month (each) | 0.0000006 | 0.0000006 | **1.00** |
+| SNS SMS, per message delivered | *not in the Price List API* | *not in the Price List API* | — |
 | **Route 53** hosted zone, first 25 (USD/zone-mo) | 0.50 (global) | 0.50 | **1.00** |
 | Route 53 Resolver DNS Firewall, first 1B queries (USD per million) | 0.60 | — | |
 | Route 53 Resolver queries, first 1B (USD per million) | 0.40 | — | |
+
+**A metric emitted by a CloudWatch Logs metric filter is a custom metric, at USD 0.30/metric-month.** That
+is three times the alarm beside it, and it is avoidable: custom metrics are metered only for the hours in
+which datapoints are actually published, so a metric filter created **without a default value** publishes
+nothing in a quiet month and costs nothing. This is why the break-glass filter (Stage 1a step 5) leaves the
+default value empty and the alarm treats missing data as `notBreaching`, rather than emitting a `0` every
+minute for the reassurance of a continuous line.
+
+**SNS SMS is the one row in this file that could not be measured, and it is recorded as a gap rather than
+guessed (Lesson 6).** The `AmazonSNS` offer file carries an `SMS` delivery-attempt SKU priced at
+`0.0000000000` — that is the *attempt*, not the message; the per-message price is per destination country
+and, in several countries, per carrier, and AWS publishes it only on the AWS End User Messaging SMS pricing
+page and its downloadable CSV, not in the bulk API (checked `AmazonSNS`, `AmazonPinpoint` and
+`AWSEndUserMessaging3pFees` on 2026-08-09 — the last two carry only WhatsApp rows for `BR`). Two facts that
+make the gap tolerable here: the only SMS this environment sends is the break-glass alarm (Stage 1a step 5),
+so the volume is single-digit messages per year, and **Brazil supports short codes but neither long codes nor
+sender IDs**, so there is no origination identity to buy and no registration to file — AWS sends over its
+shared short-code pool on a best-effort basis. The one thing to check before relying on the channel is the
+**SMS sandbox**: a new account can only send to *verified* destination numbers, which is a one-time console
+step and not a cost.
 
 **Macie is the one to watch in São Paulo: 2.25x, the largest premium in this file.** The plan already says
 to scope Macie to a sampled prefix rather than the whole lake (`plan/cost-model.md`); in `sa-east-1` that instruction is

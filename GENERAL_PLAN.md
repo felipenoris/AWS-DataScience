@@ -28,6 +28,7 @@ Staged plan to build the AWS Data Science environment described in `CLAUDE.md`.
 | A naming, layout, Terraform or IAM rule | [`plan/conventions.md`](plan/conventions.md) |
 | A cross-account thing that must be proven | a new `INT-nn` row in [`plan/integrations.md`](plan/integrations.md) |
 | A mistake worth not repeating | [`plan/lessons.md`](plan/lessons.md) + its title in `CLAUDE.md` |
+| A procedure to follow when something is on fire | a file in [`plan/runbooks/`](plan/runbooks/) |
 | What happened | [`plan/history.md`](plan/history.md) — never `LOG.md`, which is the user's |
 
 **Identifiers are stable, section numbers are not.** Reference `D26`, `INT-11`, `Stage 1b step 7`.
@@ -179,6 +180,7 @@ than nice to have).
 | [`plan/conventions.md`](plan/conventions.md) | Naming, tags, `terraform-live/` layout, Terraform and IAM rules, the `[P]`/`[D]`/`[E]` layers | Any stage from Stage 2 onwards |
 | [`plan/integrations.md`](plan/integrations.md) | The `INT-nn` rows: the cross-account things that must be proven, each with a fallback | Building anything that crosses an account boundary |
 | [`plan/cost-model.md`](plan/cost-model.md) | The projection and its assumptions (rates live in [`PRICING.md`](PRICING.md)) | Adding a service, or checking the ceiling |
+| [`plan/runbooks/break-glass.md`](plan/runbooks/break-glass.md) | When the Management root may be used, the procedure, and the alarm chain that watches it (D16) | An emergency — or when changing anything in that chain |
 | [`plan/open-questions.md`](plan/open-questions.md) | Only things to find out by doing | Planning a session |
 | [`plan/lessons.md`](plan/lessons.md) | Eighteen mistakes, with the reasoning that makes each recognisable | **Before planning, reviewing or settling a decision** |
 | [`plan/institutional-delta.md`](plan/institutional-delta.md) | What a large institution would do instead, decision by decision | Designing — so a lab compromise is not learned as a pattern |

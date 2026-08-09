@@ -188,6 +188,7 @@ its `Consumes` row lists.
 | Cost of a new service | [`PRICING.md`](PRICING.md) — measured from the Price List API, never estimated (Lesson 6) |
 | Cross-account wiring | [`plan/integrations.md`](plan/integrations.md), the `INT-nn` rows |
 | "What would an institution do?" | [`plan/institutional-delta.md`](plan/institutional-delta.md) |
+| Root is needed, or its alarm chain is being changed | [`plan/runbooks/break-glass.md`](plan/runbooks/break-glass.md) |
 
 Do not open by habit: [`plan/history.md`](plan/history.md), [`plan/institutional-delta.md`](plan/institutional-delta.md).
 Reference things by **stable ID** — `D26`, `INT-11`, `Stage 1b step 7` — never by section or row number.
@@ -196,8 +197,9 @@ Reference things by **stable ID** — `D26`, `INT-11`, `Stage 1b step 7` — nev
 
 - **Stage 1a nearly done; `LOG.md` is authoritative.** Control Tower enabled (`us-west-2`), budget set,
   and `Development`, `Sandbox Account 1`, `Production`, `Data Governance`, `Policy Canary` and `Identity`
-  vended. **Left: `Staging` alone**, deferred on the account cap — the increase to 15 is *requested* and has
-  to be confirmed before that vend (Stage 1a pre-flight has the arithmetic).
+  vended. **Accounts left: `Staging` alone**, deferred on the account cap — the increase to 15 is *requested*
+  and has to be confirmed before that vend (Stage 1a pre-flight has the arithmetic). **Steps left: 5**
+  (break-glass — runbook written 2026-08-09, alarm chain not built) **and 6** (centralized root access).
 - **The OU tree is not the one D23 first described** — revised 2026-08-09 by execution; full tree in
   [`plan/architecture.md`](plan/architecture.md). `Identity` has an OU of its own, because the foundational
   `Security` OU refused the vend, so it inherits no guardrails and 1b step 7 must attach its set; and
