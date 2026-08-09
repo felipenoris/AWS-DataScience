@@ -67,7 +67,7 @@
 
 - Moving to `SNS` with the root account. Create topic -> Topic name = `awsds-org-break-glass-alerts` -> Next step. Type = `Standard`. Name = `AWS Break Glass Alert`. Topic is now saved.
 
-	- On SNS topic `awsds-org-break-glass-alerts` -> create subscription. Protocol = `Email`. Endpoint set to the break-glass email. Added new subscription with Protocol = `SMS`, added the break-glass phone number, which was confirmed via SMS.
+	- On SNS topic `awsds-org-break-glass-alerts` -> create subscription. Protocol = `Email`. Endpoint set to the break-glass email. Added new subscription with Protocol = `SMS`, added the break-glass phone number, which was confirmed via SMS. After creating EMAIL subscription, clicked on "Request confirmation" for the email subscription. I noticed that the AWS email with confirmation code was caught in my spam email filter. Solved this in my email app. Clicked the link within the email and the subscription was confirmed.
 
 	- The plan says: "Do not reuse the two Control Tower topics". But the topic list has only one item, which is the one that I created manually (`awsds-org-break-glass-alerts`).
 
@@ -75,5 +75,10 @@
 
 - Moving to `CloudWatch` with the root account -> Alarms -> Create. Selected `RootActivityCount`, classic, Sum 1 minute, static, Greater/Equal to 1. Additional configuration -> Missing data treatment -> Treat missing data as good (not breaching threshold). In alarm -> Select an existing SNS topic -> send a notification to `awsds-org-break-glass-alerts`. Alarm name set to `AWS Break Glass Alert`, with description `A root account login was detected.`.
 
-- Testing the break-glass: logged out. Logged in with root account. Did nothing (no actions). Logged out. Still waiting for the alerts. Will proceed with plan.
+- Testing the break-glass: logged out. Logged in with root account. Did nothing (no actions). Logged out. The alarm was received successfully. 
 
+- Logged as AWS Control Tower Admin → AWSAdministratorAccess → IAM → oot access management → Enable. Enabled `Root credentials management` and `Privileged root actions in member accounts`. Left `Delegated administrator` empty. Clicked `Enable`. Em seguida, retornou sucesso com a seguinte mensagem `Root access management enabled. You can now delete root user credentials for member accounts from the Root access management page.`.
+
+- Running command `aws iam list-organizations-features` on CloudShell, in the same session, returns `RootSessions` and `RootCredentialsManagement` as `EnabledFeatures`.
+
+- Next step is 6.4.
