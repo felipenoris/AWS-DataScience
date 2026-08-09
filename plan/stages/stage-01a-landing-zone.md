@@ -144,7 +144,7 @@ that multiplies.
      address that is also a normal daily login makes the alarm ambiguous and hands one inbox both the
      credential and its own warning.
    - **Do not use any of the other four personas.** The field grants administrator, so a data scientist or
-     any of the three approvers placed here holds the separation of duties `ACCOUNTS_AND_USERS.md`
+     any of the three approvers placed here holds the separation of duties `ORGANIZATION.md`
      describes before it has been built (Lesson 9).
    - **Do not treat it as changeable later.** Updating the provisioned product with a different
      `SSOUserEmail` **creates a second Identity Center user and leaves the first one in place** — a dormant

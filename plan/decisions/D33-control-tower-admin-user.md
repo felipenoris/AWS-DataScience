@@ -132,7 +132,7 @@ update may re-create them anyway. An empty group grants nothing; the exposure is
   step 8's free one. That is what keeps "these permission sets are used by nobody" a measured fact instead
   of an assumption.
 
-**Consequence for `ACCOUNTS_AND_USERS.md`: it is documented, and since D34 it holds a duty — but it is still
+**Consequence for `ORGANIZATION.md`: it is documented, and since D34 it holds a duty — but it is still
 not one of the five personas.** The `SSO Users` section
 lists the five humans the separation of duties is built from, and this is not a sixth — it approves nothing,
 signs nothing, owns no data or workload and appears in no separation of duties. The one duty it does hold

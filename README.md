@@ -12,7 +12,7 @@ Blueprint for using AWS as a Data Science infrastructure provider.
     `plan/cost-model.md`, `plan/open-questions.md`, `plan/lessons.md`,
     `plan/institutional-delta.md`, `plan/history.md`.
 - `GLOSSARY.md` — every acronym the plan uses, plus its notation and the IAM condition keys it quotes.
-- `ACCOUNTS_AND_USERS.md` — AWS accounts, the axis each sits on, and the SSO users.
+- `ORGANIZATION.md` — AWS accounts, the axis each sits on, and the SSO users.
 - `PRICING.md` — per-unit AWS rates for `sa-east-1` and `us-west-2`, read from the AWS Price List bulk API.
   Unlike the cost figures in `plan/cost-model.md`, which are order-of-magnitude estimates, these are
   measured; the cost model says what is consumed, `PRICING.md` says what a unit of it costs.

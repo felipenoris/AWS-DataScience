@@ -22,10 +22,10 @@ that is not.
    **One property of delegation that is easy to miss and is load-bearing here:** an Identity Center delegated
    administrator can manage **groups assigned to the Management account** — including Control Tower's
    `AWSControlTowerAdmins`. So whoever administers this account can grant themselves Management
-   administrator by editing a group membership. That is the same blast radius `ACCOUNTS_AND_USERS.md`
+   administrator by editing a group membership. That is the same blast radius `ORGANIZATION.md`
    already ascribes to the Identity account ("whoever controls Identity can grant access to any account");
    it is recorded here because these particular groups (D33) make it concrete rather than theoretical.
-2. In IAM Identity Center, create the users from `ACCOUNTS_AND_USERS.md` (e-mails in `secrets/emails.md`)
+2. In IAM Identity Center, create the users from `ORGANIZATION.md` (e-mails in `secrets/emails.md`)
    and the groups `infrastructure`, `data-scientists`, **`deployment-managers`**, **`governance-managers`**
    and **`dev-env-stewards`**. Enforce MFA.
    **The infrastructure user is not created here — it already exists (D32).** Account Factory created it in
@@ -111,7 +111,7 @@ that is not.
    lake and could not decrypt an SSE-KMS object at all. The exposure was being prevented by encryption
    rather than by design — which stops being true the first time a bucket is created without a CMK.
    **`DataScientistAccess` does not start as `PowerUserAccess`.** An earlier version of this plan gave it
-   `PowerUserAccess` "until Stage 6", which contradicts `ACCOUNTS_AND_USERS.md` ("no permissions to
+   `PowerUserAccess` "until Stage 6", which contradicts `ORGANIZATION.md` ("no permissions to
    perform infrastructure changes, except for artifacts managed by AWS SageMaker") and, worse, would let
    the data scientist create a public S3 bucket or an internet-facing EC2 instance — i.e. walk around the
    whole design — for five stages. It starts as: SageMaker Studio use, read/write on the account's scratch

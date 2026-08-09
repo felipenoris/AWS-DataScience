@@ -20,7 +20,7 @@
 1. **Development-environment pipeline — a promotion chain with its own gate, in the same shape as the
    application chain in step 3.** This is not a build job that pushes an image; it is a release process for
    the runtime every notebook and every Unified Studio project app runs on, and it has its own approver
-   (`dev-env-stewards`, `ACCOUNTS_AND_USERS.md`).
+   (`dev-env-stewards`, `ORGANIZATION.md`).
 
    **The repository.** `dev-env/` in GitLab, holding the `Dockerfile`s and their pinned package manifests,
    **writable by the data scientist**. That write access is deliberate and is the point of the design: which

@@ -90,7 +90,7 @@ onwards the file records how the environment changed, not just the plan.
   directory was already populated** by the landing zone: Control Tower's groups, its permission sets, one of
   them named `AWSAdministratorAccess`. Stage 1b steps 2 and 3 had been written against an empty directory
   and would have created `AdministratorAccess` four characters from it, where a wrong assignment works
-  silently. Both steps were rewritten; `ACCOUNTS_AND_USERS.md` gained an "Identities this project did not
+  silently. Both steps were rewritten; `ORGANIZATION.md` gained an "Identities this project did not
   create" section, because an undocumented administrator cannot be told apart from an unauthorised one; and
   `D33` settled the e-mail question as **disable, do not rename** — renaming keeps a standing Management
   administrator alive to fix a mail-routing problem, and Control Tower may re-create the original anyway.
@@ -106,7 +106,7 @@ onwards the file records how the environment changed, not just the plan.
   Control Tower console being documented as reachable only by `AWSControlTowerAdmins` members. Two knock-on
   edits: 1b step 7's "deny leaving the organization" stopped being hygiene, because
   `AWSOrganizationsFullAccess` gives a member account a real `organizations:LeaveOrganization` path; and
-  `ACCOUNTS_AND_USERS.md` now records that Control Tower's *empty* groups are pre-wired ceilings, one
+  `ORGANIZATION.md` now records that Control Tower's *empty* groups are pre-wired ceilings, one
   membership edit away from an organization-wide grant.
 
   **A fourth pass, later the same day, withdrew the retirement — `D34`.** Two things arrived together: an
@@ -182,7 +182,7 @@ onwards the file records how the environment changed, not just the plan.
     `awsds-infra-sandbox` profile, one `ENV=sandbox`, and two *closed enumerations* — the `<env>` token list
     and the tag policy's allowed values — that would reject a per-unit token as an `AccessDenied` on the
     first apply in a newly vended account. `cost-model.md` had no per-unit term although D35 pointed at it
-    by name; `ACCOUNTS_AND_USERS.md` and `architecture.md` had no cardinality at all; `integrations.md`
+    by name; `ORGANIZATION.md` and `architecture.md` had no cardinality at all; `integrations.md`
     still associated the domain with two accounts where Stage 6 already said N+1. All loosened, with the
     concrete scheme deliberately left to Stage 14 rather than guessed at now.
   - **The quota arithmetic lived in the wrong file.** That an older account already occupies a slot — so the

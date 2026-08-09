@@ -36,7 +36,7 @@ administrator per account.** Seven dormant administrators, each needing its own 
 will ever rotate — the exact shape of the problem step 6 exists to remove on the root side, recreated one
 layer up in Identity Center. **Why not one of the other four personas.** The field grants *administrator*.
 A data scientist, a deployment manager, a governance manager or a dev env steward placed here holds
-administrative access to accounts the entire separation-of-duties argument in `ACCOUNTS_AND_USERS.md` says
+administrative access to accounts the entire separation-of-duties argument in `ORGANIZATION.md` says
 they must not (Lesson 9) — and holds it from stage one, before any of the permission sets that describe
 their real reach exist. **Why not a placeholder to be replaced later**, which is the tempting third option:
 updating the provisioned product with a different `SSOUserEmail` **creates a new Identity Center user and

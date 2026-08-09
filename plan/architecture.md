@@ -121,7 +121,7 @@ platform accounts sit on neither axis** (Management, Log Archive, Audit, Identit
 account and belong to no environment. The consequence that has to be said out loud, because it is asked
 every time: *an account off the lifecycle axis is not "a production account"*. Some of them —
 Identity, Data Governance — are nonetheless high blast radius. Sensitive and production are different
-properties. `ACCOUNTS_AND_USERS.md` carries the same classification per account. Every environment reaches the same single copy of the data through a Lake Formation
+properties. `ORGANIZATION.md` carries the same classification per account. Every environment reaches the same single copy of the data through a Lake Formation
 cross-account share — which is what `CLAUDE.md` asked for ("use AWS Lake Formation to share data
 cross-account") taken to its logical conclusion: the share is the *default* read path, not an exception.
 
@@ -323,7 +323,7 @@ contradicts some part of it.
   line as the graduation boundary above — experimentation multiplies, the engineering chain after it does
   not, and the promotion chain is therefore untouched by N. N is 1 today. Per-unit isolation ends at that
   line; past it, isolation is Lake Formation's job and not an account boundary's.
-- **Three groups, not one sequence** (`ACCOUNTS_AND_USERS.md` carries the per-account classification):
+- **Three groups, not one sequence** (`ORGANIZATION.md` carries the per-account classification):
   the **lifecycle** axis (Sandbox before the chain, then Development → Staging → Production), the
   **ownership** axis (Data Governance alone), and the **platform** accounts on neither (Management, Log
   Archive, Audit, Identity). *An account off the lifecycle axis is not "a production account"* — that

@@ -27,7 +27,7 @@ in the direction that flatters the rejection.
 **The decision.** `AWS Control Tower Admin` stays enabled and is the named owner of Control Tower
 administration: creating OUs, vending accounts through Account Factory, enrolling accounts, and landing-zone
 updates. Console only, no Terraform. It is recorded in `secrets/emails.md` (by the user, 2026-08-09) and in
-`ACCOUNTS_AND_USERS.md`.
+`ORGANIZATION.md`.
 
 **Why this identity and not the narrow path, which D33 preferred.** The job splits into two classes and only
 one of them fits `AWSAccountFactory`:
