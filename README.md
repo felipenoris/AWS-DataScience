@@ -3,11 +3,13 @@
 Blueprint for using AWS as a Data Science infrastructure provider.
 
 - `CLAUDE.md` — goals and working rules.
-- `GENERAL_PLAN.md` — the **plan core**: guiding principles, the account map, and the two indexes
-  (stages and decisions). Read this first; it points at everything else.
+- `GENERAL_PLAN.md` — the **plan core**: guiding principles, the account map, the two indexes
+  (stages and decisions), and the **write** map that says where new content goes. Read this first. The
+  **read** map — which file answers which question — is kept only in `CLAUDE.md`, "What to read, and when".
 - `plan/` — the plan itself, split so that a task reads only what it needs:
   - `plan/stages/` — one file per stage, each declaring the decisions it **consumes**.
-  - `plan/decisions/` — one file per decision `D1`…`D35`, plus a one-line-per-decision `INDEX.md`.
+  - `plan/decisions/` — one file per decision `D1`…`D36`, plus a one-line-per-decision `INDEX.md`. All
+    are settled; `D30` was settled as a *revert* and keeps its file, so the record shows what was tried.
   - `plan/runbooks/` — procedures to follow when something is on fire. Today: `break-glass.md`, which
     says when the Management account root may be used, what to do with it, and what watches its use.
   - `plan/architecture.md`, `plan/conventions.md`, `plan/integrations.md` (the `INT-nn` rows),
@@ -23,7 +25,10 @@ Blueprint for using AWS as a Data Science infrastructure provider.
 - `log/` — record of every step performed manually through the console, **one file per stage**, mirroring
   `plan/stages/` (`log/stage-NN-*.md` ↔ `plan/stages/stage-NN-*.md`). `log/INDEX.md` says what each file
   records, so finding a step never means reading every log.
+- `AWS-CLI.md` — the `aws` recipes run by hand, and which identity runs each of them.
 - `REFERENCES.md` — external references used along the way.
+- `scripts/` — repository hygiene, not infrastructure: `check-plan-refs.sh` validates the plan's internal
+  links and stable-ID references.
 
 ---
 
@@ -400,7 +405,7 @@ All under one AWS Organization governed by Control Tower.
 
 **The account map is in [`ORGANIZATION.md`](ORGANIZATION.md)**: an index table of account → OU → axis →
 purpose → the policy set that OU carries, then one section per account saying what it holds and what it
-deliberately does not — and, above all of it, the two families of IAM role, the seven permission sets, the
+deliberately does not — and, after them, the two families of IAM role, the seven permission sets, the
 five SSO groups and the assignment triples binding them to accounts.
 
 It is not summarised here on purpose. A second account list is a list that drifts, and it drifts in the
@@ -515,9 +520,11 @@ one that is no longer empty are in `ORGANIZATION.md` ("The groups and permission
 An account request is answered in this order (D34):
 
 1. **Which axis is it on, and which OU's policy set does it need?** The axes are lifecycle (dev / staging /
-   prod), data ownership, and platform. If an existing policy set fits — and "another sandbox" almost always
-   means the `Interactive` set — the account joins that OU and inherits SCP, RCP, tag policy and the region
-   control for free.
+   prod), data ownership, and platform. If an existing placement fits — and "another sandbox" almost always
+   means the nested `Sandboxes` OU — the account joins it and inherits SCP, RCP, tag policy and the region
+   control for free. Note where that inheritance actually comes from today: `Sandboxes` carries no set,
+   `Interactive` above it carries none either, so what a new Sandbox inherits is the **organization-root**
+   set. That is the ceiling, and it is the reason placing the account correctly is enough.
 2. **If no policy set fits, the request is an OU decision, not an account decision** (D23: an OU earns its
    existence when two or more accounts need the same policy set). It then goes through the `Policy Canary`
    battery (D29) before being attached anywhere real.

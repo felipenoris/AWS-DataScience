@@ -124,8 +124,11 @@ the lake outlives every application that reads it, so it lives in an account who
 retention and governance, not deployment. Environments hold **compute**; the Data Governance account holds
 **state and governance** — since D26 that includes the SageMaker unified domain, which is a registry of
 projects and data products and therefore an ownership-axis resource, not a Development one. **The
-platform accounts sit on neither axis** (Management, Log Archive, Audit, Identity): they serve every
-account and belong to no environment. The consequence that has to be said out loud, because it is asked
+platform accounts sit on neither axis** — Management, Log Archive, Audit, Identity and D29's
+`Policy Canary`: they serve every account and belong to no environment. *The last of those is the one that
+keeps being left off this list, because it is the only platform account that is **disposable** rather than
+permanent — and disposability is a cardinality property that cuts across the axes (D35), not an axis of its
+own.* The consequence that has to be said out loud, because it is asked
 every time: *an account off the lifecycle axis is not "a production account"*. Some of them —
 Identity, Data Governance — are nonetheless high blast radius. Sensitive and production are different
 properties. `ORGANIZATION.md` carries the same classification per account. Every environment reaches the same single copy of the data through a Lake Formation
@@ -336,28 +339,41 @@ contradicts some part of it.
   line; past it, isolation is Lake Formation's job and not an account boundary's.
 - **Three groups, not one sequence** (`ORGANIZATION.md` carries the per-account classification):
   the **lifecycle** axis (Sandbox before the chain, then Development → Staging → Production), the
-  **ownership** axis (Data Governance alone), and the **platform** accounts on neither (Management, Log
-  Archive, Audit, Identity). *An account off the lifecycle axis is not "a production account"* — that
+  **ownership** axis (Data Governance alone), and the **platform** accounts on neither — the organization's
+  own machinery, serving every account and belonging to no environment. *An account off the lifecycle axis
+  is not "a production account"* — that
   question gets asked every time; the answer is that Data Governance and Identity are **high blast
   radius**, which is a different property from being production.
 - **One account off that axis entirely:** Data Governance (D22) owns the governed lake; every environment
   reaches it through Lake Formation cross-account shares — read for Sandbox/Development, read plus
   **governed write** for Production's job role (the producer path). Nobody signs in to it interactively.
-- **Six OUs plus one nested, and only four of them carry a policy set (D23):** Security (foundational,
-  Control Tower's own — Log Archive and Audit); Interactive (Development plus the nested `Sandboxes` — the
-  only OU where a domain may exist, D17); Data (no *user* compute — D27 carves out catalog maintenance:
-  crawlers and table optimizers under the lake's own role, never on Iceberg tables); Workloads (Staging +
-  Production — no interactive compute, no human control plane). **`Identity` was split out of `Security` on
-  2026-08-09** because Control Tower would not vend a non-foundational account into a foundational OU — so
-  it inherits none of `Security`'s guardrails and its set is attached rather than inherited. **`Sandboxes`
-  carries no policy set at all**, by design: it groups the per-unit Sandbox accounts (D35) and inherits
-  `Interactive`. Depth is therefore 2, which any OU enumeration has to be written against (D34).
-  **And `Policy Test` (D29) carries no policy set on purpose** — it is where a *candidate* SCP/RCP is attached and exercised against the
-  disposable `Policy Canary` account before it reaches anything real. It exists as an account and not just
-  a folder because an SCP is only evaluated when a principal makes a call, so an empty staging OU tests
-  nothing; and the test principal is an **administrator**, because a deny exercised by a principal that
-  lacked the permission anyway proves nothing about a ceiling. Never call it "Policy Staging" — that is the
-  industry term and it collides with the `Staging` account, which is exactly what the naming avoids.
+- **Six OUs plus one nested, and what each carries is deliberately not uniform (D23).** *The count is the
+  wrong thing to remember — it has gone stale twice already (four, then five, then six plus one), and each
+  time it was the **list** that was wrong rather than the number.* Read it per OU instead:
+  - **`Security`** (Log Archive, Audit) is **foundational**: its ceiling is Control Tower's guardrails,
+    inherited by the accounts being foundational rather than by the folder, and never ours to write.
+  - **`Data`** (no *user* compute — D27 carves out catalog maintenance: crawlers and table optimizers under
+    the lake's own role, never on Iceberg tables) and **`Workloads`** (Staging + Production — no
+    interactive compute, no human control plane) carry the sets this project writes.
+  - **`Identity` carries one too, and it is the one that has to be *attached*.** It was split out of
+    `Security` on 2026-08-09 because Control Tower would not vend a non-foundational account into a
+    foundational OU, so it inherits none of those guardrails — **Stage 1c step 7 attaches them or they are
+    not there**, and this is the account whose administrator can grant access to every other one.
+  - **`Sandboxes` carries none, by design**: it groups the per-unit Sandbox accounts (D35) and inherits
+    `Interactive`. Depth is therefore 2, which any OU enumeration has to be written against (D34).
+  - **`Interactive` carries none either — today, and that is an open decision rather than a property.** It
+    holds Development plus the nested `Sandboxes`, it is the only OU where a domain may exist (D17), and
+    interactive compute is allowed there because nothing denies it: the organization-root set is the whole
+    ceiling. What holds infrastructure change off the data scientist is `DataScientistAccess`, an
+    **identity** policy, not this OU. Whether it gains a set of its own is Stage 1c step 7.6 — the one
+    blocking question of that stage.
+  - **`Policy Test` (D29) carries none on purpose** — it is where a *candidate* SCP/RCP is attached and
+    exercised against the disposable `Policy Canary` account before it reaches anything real. It exists as
+    an account and not just a folder because an SCP is only evaluated when a principal makes a call, so an
+    empty staging OU tests nothing; and the test principal is an **administrator**, because a deny
+    exercised by a principal that lacked the permission anyway proves nothing about a ceiling. Never call
+    it "Policy Staging" — that is the industry term and it collides with the `Staging` account, which is
+    exactly what the naming avoids.
 - **One unified domain, projects as the isolation unit (D26):** the DataZone V2 domain is registered in
   **Data Governance** (renamed from Data Management on 2026-08-08) because a domain is a registry of
   projects and data products — ownership axis, not lifecycle axis. **It holds no compute:** the
