@@ -64,7 +64,7 @@ to destroy, so its run history is not state inside an `[E]` resource.
    that they are expendable — the `[E]` rule in `plan/conventions.md` §5.1 does not allow leaving this implicit. Under
    Serverless this step is empty by construction, which is itself a point for the comparison in step 1.
 5. **Close the notebook-to-production gap for models, not just for ETL.** The CI/CD in Stage 8 promotes a
-   container; that covers the `app-etl` template in `CLAUDE.md` but not the other thing a data science
+   container; that covers the `app-etl` template in [`plan/conventions.md`](../conventions.md) but not the other thing a data science
    environment produces, which is a trained model. The **SageMaker Model Registry** is the promotion
    boundary — a model version is *approved*, not a file copied — and D17 puts it in the Production account,
    built in Stage 9 step 3, so this stage consumes it rather than inventing it. What remains to define

@@ -63,8 +63,10 @@ that is actually public*, which is the Stage 13 web tier, and wrong as a prerequ
    note.** The root has to be in the trust store of every client that speaks to an internal endpoint:
    the **laptop** (macOS keychain, and `git`/`curl`/Python each with their own opinion about CA bundles),
    the **`dev-env` image** (baked in at build time, so notebooks can `git clone`), and the **GitLab
-   runners** (user data). That is three surfaces, they live in three accounts, and a missed one fails as an
-   opaque TLS error rather than as an access denial — tracked as **INT-19**.
+   runners** (user data). That is three surfaces, no two of them in the same place — the laptop is in no
+   AWS account at all, the runners are in Production, and the `dev-env` image reaches **every** Interactive
+   account, which multiplies with the business units (D35). A missed one fails as an opaque TLS error
+   rather than as an access denial — tracked as **INT-19**.
 4. **The CA private key is state.** Generating it with the Terraform `tls` provider puts it in the state
    file; the state bucket's KMS key is then inside the CA's trust boundary. Acceptable at lab scale and
    stated rather than discovered — the alternative, generating it offline and keeping only the certificate

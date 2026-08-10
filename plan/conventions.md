@@ -275,6 +275,36 @@ CI is the same bug as one that only works by hand — but the expected caller is
   is checked by **`make check`** (Stage 2 step 9.2) — there is no CI before Stage 7 — moving into the
   pipeline at Stage 8.
 
+### Application repository layout
+
+The template for an application written by a data scientist and intended for deployment, consumed by
+[Stage 8](stages/stage-08-cicd-pipelines.md) (the three pipeline types) and
+[Stage 10](stages/stage-10-orchestration-promotion.md). It lived in `CLAUDE.md` until 2026-08-09, which put
+a Stage 8 artifact in the file loaded on every session:
+
+```
+app-etl/
+├── src/
+│   ├── main.py
+│   ├── pipeline/
+│   └── sql/
+├── tests/
+│   ├── test_pipeline.py
+│   └── test_sql.py
+├── .gitlab-ci.yml
+├── Dockerfile # builds the application Docker container for deployment
+├── terraform/ # uses predefined Terraform modules hosted at `terraform-modules`
+│   ├── main.tf
+│   ├── variables.tf
+│   └── envs/
+├── pyproject.toml
+└── README.md
+```
+
+The development stack is similar to <https://github.com/felipenoris/etl-cookbook-tutorial>. Note that the
+application's own `terraform/` directory is the *source* of a slice; what is applied is the
+`terraform-live/<env>/app/app-etl/` slice above, which is `[E]` in every environment.
+
 ---
 
 ### 5.1 Operating model: three layers (D11)

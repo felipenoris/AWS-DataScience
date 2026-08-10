@@ -57,30 +57,8 @@ The project will be implemented incrementally.
 
 I'll ask Claude to plan the next step and Claude will guide me on each step until we reach the project goals.
 
-## Application source code layout
-
-This is a template for an application developed by a data scientist and intended for deployment in a production environment.
-
-```
-app-etl/
-├── src/
-│   ├── main.py
-│   ├── pipeline/
-│   └── sql/
-├── tests/
-│   ├── test_pipeline.py
-│   └── test_sql.py
-├── .gitlab-ci.yml
-├── Dockerfile # builds the application Docker container for deployment
-├── terraform/ # uses predefined Terraform modules hosted at `terraform-modules`
-│   ├── main.tf
-│   ├── variables.tf
-│   └── envs/
-├── pyproject.toml
-└── README.md
-```
-
-The development stack is similar to this application: <https://github.com/felipenoris/etl-cookbook-tutorial>.
+The application repository template (`app-etl`) is a layout convention, and lives with the others:
+[`plan/conventions.md`](plan/conventions.md), "Application repository layout".
 
 # Guidelines
 
@@ -88,22 +66,9 @@ The development stack is similar to this application: <https://github.com/felipe
 
 All infrastructure will be deployed in the `us-west-2` Region.
 
-## LOG
-
-The `log/` folder contains all the actions performed manually during this project, **one file per stage**,
-mirroring `plan/stages/`: `log/stage-NN-*.md` ↔ `plan/stages/stage-NN-*.md`.
-[`log/INDEX.md`](log/INDEX.md) says what each file records — **read the index and then the one stage log you
-need, never all of them.**
-
-Never update anything under `log/`. I'll edit those files.
-
 ## Tools installed in the current environment
 
-- terraform: <https://developer.hashicorp.com/terraform/install>.
-
-- aws client: <https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html>.
-
-- uv: <https://docs.astral.sh/uv/>.
+`terraform`, the `aws` client and `uv` — install links in [`REFERENCES.md`](REFERENCES.md), "Tools".
 
 ## `secrets` folder
 
@@ -113,8 +78,6 @@ write anything into it. Claude can read the files in this folder to gather infor
 **Never copy or reproduce any email addresses or telephone numbers contained in this folder into any other project files.**.
 
 ## Organization
-
-- The file `ORGANIZATION.md` contains the AWS OUs, accounts and users.
 
 - All accounts will be registered under an AWS Organization managed by the `Management Account` using Control Tower.
 
@@ -126,27 +89,20 @@ write anything into it. Claude can read the files in this folder to gather infor
 
 - All infrastructure code will be in Terraform.
 
-- Steps done manually by me will be recorded in the stage's file under `log/`. Never update anything under
-  `log/`. I'll edit those files.
-
-- The Terraform code will have a subfolder for each controlled account (environment).
-
 - Two trees: `terraform-live/` (one subfolder per controlled account, sliced by lifecycle layer) and
   `terraform-modules/` (reusable modules, consumed by git tag). **The authoritative layout, with the
   `[P]`/`[D]`/`[E]` layer of every slice, is in [`plan/conventions.md`](plan/conventions.md) §6** —
   kept in one place on purpose, so the two copies cannot drift.
 
-## References
+## Upkeep — the files this project maintains
 
-On every interaction, add to `REFERENCES.md` all the internet links Claude used as references.
-
-## `README.md`
-
-Update `README.md` with information about how we are structuring our AWS resources. Also, document the project layout so that people can understand the files and main components.
-
-## Pricing
-
-For every new AWS service referenced, update `PRICING.md`.
+| File | What it holds, and the rule |
+|---|---|
+| [`log/`](log/INDEX.md) | Every step performed by hand in AWS, one file per stage, mirroring `plan/stages/`. **Written by the user — Claude never edits anything under `log/`** |
+| [`ORGANIZATION.md`](ORGANIZATION.md) | The AWS OUs, accounts and users |
+| [`REFERENCES.md`](REFERENCES.md) | Every internet link used as a reference, added on the interaction that used it |
+| [`README.md`](README.md) | How the AWS resources are structured, and the project layout, so people can understand the components |
+| [`PRICING.md`](PRICING.md) | A row for every new AWS service referenced |
 
 # Claude memory
 
@@ -184,90 +140,85 @@ its `Consumes` row lists.
 
 ### What to read, and when
 
+**This table is the only routing map — every other file points here rather than repeating it.**
+
 | Task | Read |
 |---|---|
-| Anything | this file + `GENERAL_PLAN.md` (plan core: principles, account map, both indexes) |
+| Anything | this file + [`GENERAL_PLAN.md`](GENERAL_PLAN.md) (plan core: principles, the account map, the route) |
 | Execute a stage | [`plan/stages/`](plan/stages/INDEX.md)`stage-NN-*.md`, the decisions in its **Consumes** row, and [`plan/conventions.md`](plan/conventions.md) |
+| Design, or reason about where something belongs | [`plan/architecture.md`](plan/architecture.md) — target architecture, region portability, the data perimeter, the two egress designs |
+| A naming, layout, Terraform or IAM rule | [`plan/conventions.md`](plan/conventions.md) — also the `[P]`/`[D]`/`[E]` layers and the `app-etl` repository template |
 | What was actually done by hand in a stage | [`log/`](log/INDEX.md)`stage-NN-*.md` — **the same slug as the stage file**; [`log/INDEX.md`](log/INDEX.md) first, so only one log is opened |
 | Plan, review, or settle a decision | add [`plan/lessons.md`](plan/lessons.md) and [`plan/open-questions.md`](plan/open-questions.md) |
 | Look up a decision | [`plan/decisions/INDEX.md`](plan/decisions/INDEX.md) first — open a decision file only for its reasoning |
 | Cost of a new service | [`PRICING.md`](PRICING.md) — measured from the Price List API, never estimated (Lesson 6) |
+| The projection, and whether the ceiling still holds | [`plan/cost-model.md`](plan/cost-model.md) |
 | Cross-account wiring | [`plan/integrations.md`](plan/integrations.md), the `INT-nn` rows |
-| "What would an institution do?" | [`plan/institutional-delta.md`](plan/institutional-delta.md) |
+| An unfamiliar acronym, or the notation | [`GLOSSARY.md`](GLOSSARY.md) |
+| Running an `aws` command by hand | [`AWS-CLI.md`](AWS-CLI.md) — the recipes, and which identity runs them |
+| "What would an institution do?" | [`plan/institutional-delta.md`](plan/institutional-delta.md) — so a lab compromise is not learned as a pattern |
 | Root is needed, or its alarm chain is being changed | [`plan/runbooks/break-glass.md`](plan/runbooks/break-glass.md) |
+| Explaining the design to someone | [`README.md`](README.md) — the argument for the account split and the three distinctions |
+| How the plan got here | [`plan/history.md`](plan/history.md) — almost never |
 
-Do not open by habit: [`plan/history.md`](plan/history.md), [`plan/institutional-delta.md`](plan/institutional-delta.md).
 Reference things by **stable ID** — `D26`, `INT-11`, `Stage 1b step 7` — never by section or row number.
+The `§` numbers inside `plan/` files are historical anchors, not addresses.
 
 ### Current position
 
-- **Stage 1a is done but for one vend; [`log/stage-01a-landing-zone.md`](log/stage-01a-landing-zone.md) is
-  authoritative. Next is Stage 1b.** Control Tower enabled
-  (`us-west-2`), budget set, and `Development`, `Sandbox Account 1`, `Production`, `Data Governance`,
-  `Policy Canary` and `Identity` vended. Break-glass built and **tested 2026-08-09 on both channels** — the
-  thing 1b step 7 may not start without. Centralized root access on (both capabilities, no delegated
-  administrator); **no member account had root credentials to delete**, and each now offers `Allow password
-  recovery`, so 6.4 closed on positive evidence and 6.5's alarm never had cause to fire.
-- **Left from 1a, neither blocking 1b:** the **`Staging`** vend, held on the account cap — the increase to 15
-  is *requested*, confirm before vending, and nothing needs the account before Stage 8, so **1b steps 3 and 5
-  skip their Staging items** (`DataScientistStagingAccess`, `DeploymentManagerAccess`, the
-  `awsds-infra-staging` profile) and pick them up at the vend; and step 2's **budget alerts (50/80/100%) and
-  Cost Anomaly Detection**, which are unrecorded rather than done.
+- **Stage 1a is done but for the `Staging` vend; [`log/stage-01a-landing-zone.md`](log/stage-01a-landing-zone.md)
+  is authoritative. Next is Stage 1b.** Control Tower enabled (`us-west-2`), budget set, `Development`,
+  `Sandbox Account 1`, `Production`, `Data Governance`, `Policy Canary` and `Identity` vended, centralized
+  root access on. Break-glass built and **tested 2026-08-09 on both channels** — the thing 1b step 7 may not
+  start without.
+- **The `Staging` vend is held on the account cap** — the increase to 15 is *requested*; confirm before
+  vending. **1b steps 3 and 5 skip their Staging items** (`DataScientistStagingAccess`,
+  `DeploymentManagerAccess`, the `awsds-infra-staging` profile).
+- **The USD 50 budget notifies nobody.** Its 50/80/100% alerts and Cost Anomaly Detection are **skipped by
+  decision** (2026-08-09), not pending — do not offer to close them in passing. D12 holds the trade and its
+  revision trigger.
 - **The OU tree is not the one D23 first described** — revised 2026-08-09 by execution; full tree in
-  [`plan/architecture.md`](plan/architecture.md). `Identity` has an OU of its own, because the foundational
-  `Security` OU refused the vend, so it inherits no guardrails and 1b step 7 must attach its set; and
-  `Sandboxes` is nested under `Interactive`, holding the per-unit accounts with no policy set of its own.
-  **Depth is 2** — Stage 2's OU `for_each` must recurse, or every Sandbox account is invisible to it.
+  [`plan/architecture.md`](plan/architecture.md). `Identity` has an OU of its own and inherits no
+  guardrails, so **1b step 7 must attach its set**; `Sandboxes` is nested under `Interactive` and carries no
+  policy set of its own. **Depth is 2 — Stage 2's OU `for_each` must recurse**, or every Sandbox account is
+  invisible to it.
 - **The repository is documentation only**; `terraform/` is empty until Stage 2 replaces it with
-  `terraform-live/` + `terraform-modules/`. Stage 2 needs one Management-account action no earlier stage
-  performs — the Organizations **policy** delegation to Identity (**INT-20**), without which the SCPs stay
-  in the console.
+  `terraform-live/` + `terraform-modules/`.
 - **All thirty-six decisions are closed** ([`plan/decisions/INDEX.md`](plan/decisions/INDEX.md)). The four
-  governing what happens next: **D32** (`SSOUserEmail` is always the infrastructure user, and it grants
-  administrator), **D33**/**D34** (`AWS Control Tower Admin` vends, from the access portal, never root,
-  permanently), **D35** (`Sandbox` is one per business unit; every other account is exactly one).
-- **Still needed from the user**, none blocking now: **the domain name to register** (D15 phase 2 — since
-  the 2026-08-09 revision it blocks **Stage 13 alone**, not Stage 7), the AZ name-to-ID check (1b step 6),
-  which decides how Stage 3 anchors subnets, and — due at 1b step 7 — whether the `Interactive` OU gets a
-  policy set of its own; it carries none today.
-- **No public DNS exists before Stage 13** (D15, revised 2026-08-09 after `CLAUDE.md` made GitLab and Pages
-  intranet-only). Internal endpoints are `*.internal` in private hosted zones, certified by an **internal
-  CA** whose root must reach three surfaces — laptop, `dev-env` image, runners (**INT-19**, the only
-  integration row that fails as a TLS handshake rather than an `AccessDenied`). Split-horizon DNS is not
-  built; Stage 13 decides whether it ever is. **D36** gives that root its own slice, state and KMS key
-  (`production/pki/`, applied before Stage 6) — it is the one credential here with *no* revocation path.
-- **Settle earliest:** **INT-11** (org-wide RAM sharing + Lake Formation cross-account v3 — fails
-  *silently*) and **INT-13** (CodeConnections to the private GitLab — no convenience-preserving fallback).
+  governing what happens next: **D32** (`SSOUserEmail`), **D33**/**D34** (who vends), **D35** (`Sandbox` is
+  one per business unit; every other account is exactly one).
+- **Still needed from the user**, none blocking now: **the domain name** (D15 phase 2, blocking **Stage 13
+  alone**), the AZ name-to-ID check (1b step 6, which decides how Stage 3 anchors subnets), and — due at 1b
+  step 7 — whether the `Interactive` OU gets a policy set of its own; it carries none today.
+- **No public DNS before Stage 13** (D15); internal names are `*.internal` off an internal CA (D36, INT-19).
+- **Settle earliest:** **INT-11** (fails *silently*) and **INT-13** (no convenience-preserving fallback).
 
-**Budget for this section: ~2 KB** (raised from ~1 KB on 2026-08-09, when the section was cut back from
-4.8 KB — [`plan/history.md`](plan/history.md) says why). It states *state*, not reasoning: reasoning belongs
-in the decision file, narrative in `plan/history.md`. **A bullet here that explains *why* is a stale copy of
-something that already lives elsewhere** — that test is the actual control, not the number. Re-trim whenever
-a stage closes.
+**Budget: ~2 KB.** State, not reasoning — **a bullet here that explains *why*, or that a stage file should
+be carrying, is a stale copy of something that already lives elsewhere.** Re-trim whenever a stage closes.
 
 ### Lessons carried forward
 
 **Read [`plan/lessons.md`](plan/lessons.md) before planning, reviewing, or settling a decision.**
-The nineteen titles are kept here so a lesson can be *recognised* without opening the file; the
-reasoning that makes each one usable is in the file, and the titles alone are not a substitute.
+These are recognition keys, not the lessons: each one is a title trimmed to what makes it identifiable, and
+the reasoning that makes it *usable* is in the file. Recognising one is the signal to open it.
 
-1. **A copy of governed data landing somewhere less governed is not a hole to be closed.**
-2. **A stand-in that shares an account with the thing it de-risks proves nothing about permissions.**
-3. **When a decision moves a resource across an account boundary, re-check every condition that referenced it — especially conditions pointing at ephemeral things.**
-4. **State that lives only inside an `[E]` resource is this design's recurring failure mode**
+1. **A copy of governed data somewhere less governed is not a hole to be closed.**
+2. **A stand-in sharing an account with what it de-risks proves nothing about permissions.**
+3. **A resource moved across an account boundary invalidates every condition that referenced it.**
+4. **State living only inside an `[E]` resource — the recurring failure mode.**
 5. **An intention is not a control.**
 6. **Prices are measured, not reasoned.**
 7. **A rejected-on-cost option goes stale in the direction that flatters the rejection.**
-8. **When the classic `aws` provider lacks a resource, check the CloudFormation registry and `awscc` before declaring a Terraform gap.**
+8. **Check the CloudFormation registry and `awscc` before declaring a Terraform gap.**
 9. **The axis question applies to people as well as to resources.**
-10. **Before placing a new resource in an account, ask which axis it is on — and check whether a *registry* is being confused with a *runtime*.**
-11. **A decision that changes *who authors* an IAM policy invalidates every claim made about that policy.**
+10. **Ask which axis a new resource is on — and whether a *registry* is being confused with a *runtime*.**
+11. **A decision changing *who authors* an IAM policy invalidates every claim about that policy.**
 12. **An edition or tier limit can reach a load-bearing control, not just a convenience.**
-13. **A verification command that returns empty on both success and failure is not a verification.**
-14. **A condition that has to appear in N places by hand is a control that will be missing from one of them.**
-15. **An adopted-against-advice decision is undone by *delivery*, not by re-argument — and a revision trigger written about operating something cannot fire while you are still building it.**
-16. **A manual step delegated to a console wizard is only as specified as the fields it names — and an unnamed field that grants permissions is a permission decision made by whoever is at the keyboard.**
-17. **A service that "sets itself up" creates principals nobody chose — enumerate them before the next step depends on one.**
+13. **A verification that returns empty on both success and failure is not a verification.**
+14. **A condition that must appear in N places by hand will be missing from one of them.**
+15. **An adopted-against-advice decision is undone by *delivery*, not by re-argument.**
+16. **A console wizard is only as specified as the fields it names.**
+17. **A service that "sets itself up" creates principals nobody chose.**
 18. **A policy never constrains the principal that authors it.**
-19. **A blocking input has to be re-checked against the requirement it actually serves, not against the mechanism that was chosen for it.**
+19. **A blocking input is re-checked against the requirement, not against the mechanism.**
 

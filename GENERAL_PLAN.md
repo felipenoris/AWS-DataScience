@@ -27,12 +27,12 @@ Staged plan to build the AWS Data Science environment described in `CLAUDE.md`.
 | Steps to build something | the stage file in [`plan/stages/`](plan/stages/INDEX.md) |
 | A naming, layout, Terraform or IAM rule | [`plan/conventions.md`](plan/conventions.md) |
 | A cross-account thing that must be proven | a new `INT-nn` row in [`plan/integrations.md`](plan/integrations.md) |
-| A mistake worth not repeating | [`plan/lessons.md`](plan/lessons.md) + its title in `CLAUDE.md` |
+| A mistake worth not repeating | [`plan/lessons.md`](plan/lessons.md) + its recognition key in `CLAUDE.md` |
 | A procedure to follow when something is on fire | a file in [`plan/runbooks/`](plan/runbooks/) |
 | What happened | [`plan/history.md`](plan/history.md) — never `log/`, which is the user's |
 
-**Identifiers are stable, section numbers are not.** Reference `D26`, `INT-11`, `Stage 1b step 7`.
-The `§` numbers kept inside `plan/` files are historical anchors, not addresses.
+This is the **write** map. The **read** map — which file answers which question — is `CLAUDE.md`
+§"What to read, and when", and it is kept only there.
 
 ---
 
@@ -176,17 +176,9 @@ than nice to have).
 
 ## 5. Everything else
 
-| File | What it holds | Read it when |
-|---|---|---|
-| [`plan/architecture.md`](plan/architecture.md) | Target architecture, region portability, the data perimeter, the two egress designs, the shape to hold in mind | Designing, or reasoning about where something belongs |
-| [`plan/conventions.md`](plan/conventions.md) | Naming, tags, `terraform-live/` layout, Terraform and IAM rules, the `[P]`/`[D]`/`[E]` layers | Any stage from Stage 2 onwards |
-| [`plan/integrations.md`](plan/integrations.md) | The `INT-nn` rows: the cross-account things that must be proven, each with a fallback | Building anything that crosses an account boundary |
-| [`plan/cost-model.md`](plan/cost-model.md) | The projection and its assumptions (rates live in [`PRICING.md`](PRICING.md)) | Adding a service, or checking the ceiling |
-| [`plan/runbooks/break-glass.md`](plan/runbooks/break-glass.md) | When the Management root may be used, the procedure, and the alarm chain that watches it (D16) | An emergency — or when changing anything in that chain |
-| [`plan/open-questions.md`](plan/open-questions.md) | Only things to find out by doing | Planning a session |
-| [`plan/lessons.md`](plan/lessons.md) | Nineteen mistakes, with the reasoning that makes each recognisable | **Before planning, reviewing or settling a decision** |
-| [`plan/institutional-delta.md`](plan/institutional-delta.md) | What a large institution would do instead, decision by decision | Designing — so a lab compromise is not learned as a pattern |
-| [`plan/history.md`](plan/history.md) | How the plan and the environment got here | Almost never |
-| [`README.md`](README.md) | The argument for the account split, the three AWS reference architectures, and the three distinctions (Development×Experimentation, OU×Account, Data Governance×Production) | Explaining the design to someone, or re-checking why the split is shaped this way |
-| [`GLOSSARY.md`](GLOSSARY.md) | Every acronym, the notation, and the IAM condition keys the plan quotes | Reading a stage and hitting an unfamiliar term |
-| [`log/INDEX.md`](log/INDEX.md) | What each stage's manual-action log records | Before opening a log — then open **only** the `log/stage-NN-*.md` you need. Written by the user, never edited by Claude |
+**`CLAUDE.md` §"What to read, and when" is the routing table, and it is the only one.** It lists every
+file in this repository against the question that sends you to it — `plan/architecture.md`,
+`plan/conventions.md`, `plan/integrations.md`, `plan/cost-model.md`, `plan/lessons.md`,
+`plan/open-questions.md`, `plan/institutional-delta.md`, `plan/history.md`, `plan/runbooks/`,
+`README.md`, `GLOSSARY.md`, `PRICING.md`, `log/INDEX.md`. This section used to repeat two thirds of it,
+which is one table too many for something whose whole purpose is to be trusted without checking.

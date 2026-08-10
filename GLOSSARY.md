@@ -82,7 +82,7 @@ are now officially just the acronym.
 | **CMK** | Customer Managed Key | A KMS key you create and control, as opposed to an AWS-managed one. ~USD 1/month each. |
 | **SSE** | Server-Side Encryption | Encryption applied by the storage service. `SSE-KMS` means encrypted with a KMS key. |
 | **KMS** | Key Management Service | AWS's key store. Charges per key **and per request** — which is why S3 Bucket Keys matter (`plan/cost-model.md`). |
-| **ETL** | Extract, Transform, Load | The classic data pipeline shape. The sample application in `CLAUDE.md` is `app-etl`. |
+| **ETL** | Extract, Transform, Load | The classic data pipeline shape. The sample application is `app-etl` (`plan/conventions.md`, "Application repository layout"). |
 | **LF** | Lake Formation | AWS's permission layer over the Glue Data Catalog. **LF-Tags** are the labels its grants are expressed against, allowing "grant on everything tagged `restricted`" instead of table-by-table. |
 | **DLP** | Data Loss Prevention | Preventing sensitive data from leaving. In this project it is not one product but four problems, each with its own control (D6). |
 | **EMR** | (originally Elastic MapReduce) | AWS's managed Hadoop/Spark service. Now officially just "Amazon EMR". Relevant here only as one of the Lake Formation-aware engines. |

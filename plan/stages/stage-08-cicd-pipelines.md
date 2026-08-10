@@ -78,7 +78,7 @@
    (`plan/architecture.md` §4.3). Its rebuild time is therefore a usability metric, not just a CI metric —
    **and the gate now sits inside that loop**, which is a real cost to the D5 comparison and is recorded
    there: under design B, "I need package X" means a rebuild *and* an approval.
-2. **Application build pipeline:** the `app-etl` template from `CLAUDE.md` — `uv` for dependencies,
+2. **Application build pipeline:** the `app-etl` template from [`plan/conventions.md`](../conventions.md) — `uv` for dependencies,
    `pytest` for tests, linting, docs build published to Pages, Docker image pushed to ECR on tag.
    While the application is being engineered it is also applied by hand into
    `terraform-live/development/app/app-etl/`, against Development's own data. That slice is **not** a step

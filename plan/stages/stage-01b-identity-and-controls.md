@@ -9,10 +9,12 @@
 
 *Read with [`plan/conventions.md`](../conventions.md) (naming, layout, `[P]`/`[D]`/`[E]`, IAM rules).*
 
-**Not a prerequisite, but do not lose it:** 1a step 2's **budget alert thresholds (50/80/100%) and Cost
-Anomaly Detection** are unrecorded rather than done (`CLAUDE.md`, Current position). Both are free, both are
-Management-console work, and 1b already puts `AWS Control Tower Admin` in that console at steps 1, 8 and 11 —
-so close them in passing and record them in `log/stage-01a-landing-zone.md`, not here.
+**Was "do not lose it", now settled: 1a step 2's budget alert thresholds (50/80/100%) and Cost Anomaly
+Detection are deliberately skipped** (user, 2026-08-09). They are not pending work and are not to be picked
+up in passing here. **The USD 50 budget therefore notifies nobody**: the ceiling is a number read from the
+console, so the cost control of D12 is now the operator's own habit of looking — which is an intention, not
+a control (Lesson 5). `plan/cost-model.md` names the exposure this leaves standing (a forgotten `egress/`
+day at ~USD 4.08), and D12 carries the revision trigger.
 
 ---
 

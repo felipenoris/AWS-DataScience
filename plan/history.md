@@ -259,6 +259,21 @@ onwards the file records how the environment changed, not just the plan.
   "attach at `Interactive` so `Sandboxes` inherits" is currently an instruction about nothing — a newly
   vended Sandbox is governed on arrival by the organization-root set, whatever the nesting.
 
+- **2026-08-09 — the budget's alerts and Cost Anomaly Detection are skipped, and the USD 50 ceiling stops
+  being enforced by anything automatic.** 1a step 2 built the budget and left its 50/80/100% thresholds and
+  Cost Anomaly Detection undone; the plan carried them as pending work for Stage 1b to close in passing. The
+  user settled it the other way: **both are skipped by decision**, not deferred. This is an entry here rather
+  than a plan edit alone because the budget is already provisioned and four files asserted a control that
+  does not exist — `plan/cost-model.md` called the pair "the primary control here, not a convenience",
+  1a's deliverables said "the budget and Cost Anomaly Detection are live", and D12 described the alerting as
+  part of the ceiling. All four now say what is true: **the budget notifies nobody, so USD 50 is a figure
+  read from a console.** What carries the exposure instead is the `[E]` teardown discipline of D11 plus
+  whoever opens Cost Explorer — which is exactly the shape Lesson 5 warns about, and is recorded as such
+  rather than dressed up. The concrete cost of the gap is in `plan/cost-model.md`: a session that leaves
+  `egress/` up burns ~USD 4.08/day, and two forgotten days now surface at the end of the month instead of on
+  the day. D12 carries the revision trigger — the first month the bill exceeds the projection, or the first
+  forgotten `[E]` resource found by reading the bill. The alerts remain free and take minutes to add.
+
 ---
 
 *Plan core: [GENERAL_PLAN.md](../GENERAL_PLAN.md) · Decisions: [plan/decisions/INDEX.md](decisions/INDEX.md) · Stages: [plan/stages/INDEX.md](stages/INDEX.md)*

@@ -102,8 +102,11 @@ floor row eat into it. Staging and Data Governance cost almost nothing precisely
 standing compute; the number to watch is whether Sandbox and Development sessions actually stay disjoint,
 which is what keeps the hourly line from doubling.
 The single fastest way to breach the ceiling is a session that leaves `egress/` up: at ~USD 0.170/h that is
-USD 4.08 for a forgotten day, and two of them cancel the entire headroom — which is why the budget alerts
-and Cost Anomaly Detection of Stage 1a step 2 are the primary control here, not a convenience.
+USD 4.08 for a forgotten day, and two of them cancel the entire headroom. **This used to say that the budget
+alerts and Cost Anomaly Detection of Stage 1a step 2 are the primary control here; both were skipped by
+decision on 2026-08-09, so there is no automatic control over it at all** — the exposure is carried by the
+teardown discipline of the `[E]` layer (D11) and by whoever remembers to open Cost Explorer. Two forgotten
+days are therefore detected at the end of the month, not on the day they happen.
 Design B trades the NAT gateway for two CodeArtifact endpoints, so it is the *cheaper* of the two egress
 options as well as the stricter one — which is worth knowing before the Stage 6 comparison starts.
 

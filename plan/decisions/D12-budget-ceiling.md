@@ -12,7 +12,11 @@
 
 ## Rationale and consequences
 
-With the three-layer model the projection is a ~USD 21-27/month floor plus ~USD 0.28-0.40 per lab hour, so roughly **USD 29-31/month** at the expected usage — the figure in `plan/cost-model.md`, which this row now quotes instead of the pre-D20/D21/D22 estimate of "USD 26-27" it carried until 2026-08-08. The AWS Budget created in Stage 1 alerts at 50/80/100% of USD 50, with Cost Anomaly Detection alongside it. This ceiling is what rules out always-on GitLab (~USD 60/month by itself) and confirms the stop/start approach.
+With the three-layer model the projection is a ~USD 21-27/month floor plus ~USD 0.28-0.40 per lab hour, so roughly **USD 29-31/month** at the expected usage — the figure in `plan/cost-model.md`, which this row now quotes instead of the pre-D20/D21/D22 estimate of "USD 26-27" it carried until 2026-08-08. This ceiling is what rules out always-on GitLab (~USD 60/month by itself) and confirms the stop/start approach.
+
+**How the ceiling is enforced, amended 2026-08-09.** This decision used to say the Stage 1a budget alerts at 50/80/100% with Cost Anomaly Detection alongside it. **The user skipped both**, so the AWS Budget exists and notifies nobody: **USD 50 is a target, not a threshold anything reacts to.** The ceiling is enforced by the operating model instead — the `[E]` teardown of D11 and a manual look at Cost Explorer. That is a weaker enforcement of the same number, and it is deliberate: the alerts are free and can be added in minutes whenever the trade stops being acceptable.
+
+**Revision trigger:** the first month the real bill exceeds the USD 29-43 projection, or the first forgotten `[E]` resource found by reading the bill rather than by noticing it — either one is evidence that the ceiling needed a notification and not a figure.
 
 ---
 

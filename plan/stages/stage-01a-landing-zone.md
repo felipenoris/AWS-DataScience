@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Status** | **done on 2026-08-09, except the deferred `Staging` vend** (step 4) and step 2's budget alerts + Cost Anomaly Detection — [`log/stage-01a-landing-zone.md`](../../log/stage-01a-landing-zone.md) is authoritative |
+| **Status** | **done on 2026-08-09, except the deferred `Staging` vend** (step 4). Step 2's budget alerts + Cost Anomaly Detection are **skipped by decision**, not outstanding — [`log/stage-01a-landing-zone.md`](../../log/stage-01a-landing-zone.md) is authoritative |
 | **Prerequisites** | none outstanding (D1 decided, an e-mail registered for every account this stage creates) |
 | **Consumes** | [D1](../decisions/D01-region.md), [D12](../decisions/D12-budget-ceiling.md), [D14](../decisions/D14-supply-chain-account.md), [D16](../decisions/D16-break-glass.md), [D20](../decisions/D20-staging-account.md), [D21](../decisions/D21-development-account.md), [D22](../decisions/D22-data-governance-account.md), [D23](../decisions/D23-ou-structure.md), [D25](../decisions/D25-drop-box-consumer.md), [D26](../decisions/D26-unified-studio.md), [D27](../decisions/D27-catalog-maintenance.md), [D29](../decisions/D29-policy-canary.md), [D32](../decisions/D32-account-factory-sso-user.md), [D33](../decisions/D33-control-tower-admin-user.md), [D34](../decisions/D34-account-vending.md) |
 | **Proves** | — |
@@ -74,10 +74,13 @@ that multiplies.
      recovery process, which depends on the phone number and payment method on the account — so confirm
      both are current while you are here. This is the recovery path of the recovery path, and it is the
      only part of the MFA question that still has consequences once the type is left open.
-2. Create a Budget of **USD 50/month** (D12) with e-mail alerts at 50%/80%/100%. Enable **Cost Anomaly
-   Detection** next to it — it is free, and it catches a bad cost *pattern* days before a budget
-   threshold trips. Optionally add a budget *action* that attaches a deny-compute SCP at 100% — a
-   lab-appropriate emergency brake.
+2. Create a Budget of **USD 50/month** (D12). **The e-mail alerts at 50%/80%/100% and Cost Anomaly
+   Detection were skipped by decision on 2026-08-09** — both free, both described here as the way the
+   ceiling announces itself, and neither exists. What was built is the budget alone, which is a figure in
+   a console rather than a notification, so **overspend is discovered by looking**. The optional budget
+   *action* that attaches a deny-compute SCP at 100% was not built either; with no alert above it, it is
+   now the only mechanism in this step that would act without being watched, which is the argument for
+   revisiting it first if the skip is ever undone.
 3. Enable AWS Control Tower with `us-west-2` as the home region. It will create the Organization, the
    Log Archive and the Audit accounts (e-mails already in `secrets/emails.md`), and turn on org-wide
    CloudTrail and Config. Note: the home region cannot be changed afterwards without redeploying the
@@ -386,7 +389,8 @@ that multiplies.
 **Deliverables of 1a:** every account exists, in its OU, each with the **same** infrastructure user holding
 administrative access through Identity Center (D32) — one user in the directory, not seven; the Management
 root user is secured and its break-glass path has been tested once; member-account root credentials are
-centrally managed; the budget and Cost Anomaly Detection are live. The `AWS Control Tower Admin` user exists,
+centrally managed; the USD 50 budget exists, **with no alert thresholds and no Cost Anomaly Detection
+beside it** (skipped by decision — step 2). The `AWS Control Tower Admin` user exists,
 has MFA, and **stays** — it is the standing owner of Control Tower administration (D34), not a credential
 awaiting retirement. Nothing here is torn down between sessions, and nothing after this
 point can lock you out without a way back in.
