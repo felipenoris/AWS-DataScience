@@ -6,7 +6,7 @@
 
 **Related decisions:** [D14](D14-supply-chain-account.md), [D20](D20-staging-account.md), [D21](D21-development-account.md)
 
-**Referenced by stages:** [Stage 1b](../stages/stage-01b-identity-and-controls.md), [Stage 8](../stages/stage-08-cicd-pipelines.md), [Stage 9](../stages/stage-09-deployment-targets.md), [Stage 10](../stages/stage-10-orchestration-promotion.md)
+**Referenced by stages:** [Stage 1c](../stages/stage-01c-preventive-policies.md), [Stage 8](../stages/stage-08-cicd-pipelines.md), [Stage 9](../stages/stage-09-deployment-targets.md), [Stage 10](../stages/stage-10-orchestration-promotion.md)
 
 ---
 

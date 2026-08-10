@@ -6,7 +6,7 @@
 
 **Related decisions:** [D12](D12-budget-ceiling.md), [D14](D14-supply-chain-account.md), [D17](D17-interactive-vs-runtime.md), [D18](D18-data-scientist-access.md), [D21](D21-development-account.md), [D22](D22-data-governance-account.md)
 
-**Referenced by stages:** [Stage 1a](../stages/stage-01a-landing-zone.md), [Stage 1b](../stages/stage-01b-identity-and-controls.md), [Stage 3](../stages/stage-03-networking.md), [Stage 7](../stages/stage-07-gitlab-runners-ecr.md), [Stage 8](../stages/stage-08-cicd-pipelines.md), [Stage 9](../stages/stage-09-deployment-targets.md), [Stage 10](../stages/stage-10-orchestration-promotion.md)
+**Referenced by stages:** [Stage 1a](../stages/stage-01a-landing-zone.md), [Stage 1b](../stages/stage-01b-identity-and-controls.md), [Stage 1c](../stages/stage-01c-preventive-policies.md), [Stage 3](../stages/stage-03-networking.md), [Stage 7](../stages/stage-07-gitlab-runners-ecr.md), [Stage 8](../stages/stage-08-cicd-pipelines.md), [Stage 9](../stages/stage-09-deployment-targets.md), [Stage 10](../stages/stage-10-orchestration-promotion.md)
 
 ---
 

@@ -40,7 +40,7 @@ AWS Organization (Management account - console only)                        [P]
 │   │                           denies it - the org-root set is the whole ceiling.
 │   │                           What holds infrastructure change off the data
 │   │                           scientist is DataScientistAccess, an IDENTITY
-│   │                           policy, not this OU (D23; Stage 1b step 7 carries
+│   │                           policy, not this OU (D23; Stage 1c step 7 carries
 │   │                           the choice of whether to give the OU a set at all,
 │   │                           and why the literal SCP cannot be written without
 │   │                           exempting the builder). If it ever gains one, it
@@ -204,7 +204,7 @@ Control Tower landing zone, whose home region is fixed at deployment time.
 
 One cross-region rule is permanent and unrelated to any of this: ACM certificates for CloudFront must live
 in `us-east-1` regardless of where the workload runs (relevant only at Stage 13). **This is not merely a
-note about where to click** — the region restriction (Stage 1b step 7) governs `us-west-2` alone, so
+note about where to click** — the region restriction (Stage 1c step 7) governs `us-west-2` alone, so
 `acm:*` has to be among the globally exempt actions or Stage 13 cannot issue that certificate at all.
 **Since D15's revision on 2026-08-09 that exemption is unexercised until Stage 13** — before it, ACM is used
 only to *import* the internal CA's leaves in `us-west-2`, which the region control permits anyway. Leave the

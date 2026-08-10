@@ -48,7 +48,7 @@ is not signing in to the account.
 | Audit | Security | Platform | Control Tower guardrails; delegated security administration |
 | Identity | **Identity** | Platform | Delegated Identity Center administration. Its own OU since 2026-08-09: Control Tower would not vend the account into the foundational `Security` OU (D23) |
 | Policy Canary | Policy Test | Platform | **None of its own** — the OU exists to hold *candidate* policies under test (D29) |
-| Sandbox | Interactive → **Sandboxes** | Lifecycle (before the chain) | Interactive compute allowed — because nothing denies it. Neither `Sandboxes` nor `Interactive` carries a set of its own today, so what reaches this account is the organization-root set; infrastructure change is held off the data scientist by `DataScientistAccess`, an *identity* policy (Stage 1b step 7). **One account per business unit (D35)** — the only non-structural row in this table |
+| Sandbox | Interactive → **Sandboxes** | Lifecycle (before the chain) | Interactive compute allowed — because nothing denies it. Neither `Sandboxes` nor `Interactive` carries a set of its own today, so what reaches this account is the organization-root set; infrastructure change is held off the data scientist by `DataScientistAccess`, an *identity* policy (Stage 1c step 7). **One account per business unit (D35)** — the only non-structural row in this table |
 | Development | Interactive | Lifecycle (head of the chain) | Same as Sandbox — the two differ in content, not in policy |
 | Data Governance | Data | **Ownership** | No user compute; catalog maintenance excepted by name; deletion denied |
 | Staging | Workloads | Lifecycle | No interactive compute; no human control plane |
@@ -144,7 +144,7 @@ Added by [D29](plan/decisions/D29-policy-canary.md) on 2026-08-08, alone in the 
 
 **What it is for:** a Service Control Policy is a permission *ceiling*, evaluated only when a principal
 makes a call. So a candidate SCP or RCP is attached to the `Policy Test` OU and exercised from this account
-before it goes anywhere real — which is what makes the procedure in Stage 1b step 7 a test rather than a
+before it goes anywhere real — which is what makes the procedure in Stage 1c step 7 a test rather than a
 gesture. An empty OU would not do: with no account inside it, there is no principal, and attaching a policy
 there proves only that the JSON parsed.
 
@@ -183,7 +183,7 @@ not in concept. `Policy Test` and `Policy Canary` keep the word `Staging` naming
   `Security` is a **foundational** OU in its model. Stage 1a step 4 had named this as a thing to verify and
   named this exact fallback, so the plan followed the plan. **The consequence to carry: `Security`'s policy
   set was Control Tower's guardrails, inherited by the OU being foundational, and a new OU inherits none of
-  it.** Whatever `Security` carried that `Identity` does not must be attached explicitly (Stage 1b step 7) —
+  it.** Whatever `Security` carried that `Identity` does not must be attached explicitly (Stage 1c step 7) —
   the account did not become less sensitive by moving, and this is the account whose administrator can grant
   access to every other one.
 
@@ -281,7 +281,7 @@ not of reachability. It is written that way in all three; keep it written that w
 **Nothing preventive contains any of this, and that is a property of the design rather than a hole in it:**
 whoever builds the control plane can rewrite the control plane. What contains it is **detective, and
 enumerable — so it can be checked rather than assumed**: the alarm on Control Tower group membership
-(Stage 1b step 8), S3 Object Lock in **compliance** mode on the Log Archive bucket (Stage 1b step 9), and
+(Stage 1b step 8), S3 Object Lock in **compliance** mode on the Log Archive bucket (Stage 1d step 9), and
 CloudTrail with log file validation. If one of those three is missing, this user is unobserved as well as
 unbounded, and the difference between those two states is the whole control.
 
@@ -497,7 +497,7 @@ Management account: it administers **Log Archive**, which holds the organization
 trail the break-glass alarm reads. The `AWSOrganizationsFullAccess` on member accounts is close to inert,
 Organizations being a management-account API, except for `organizations:LeaveOrganization`, which a member
 account *can* call and which drops all governance for that account at once (denied at the organization root,
-Stage 1b step 7).
+Stage 1c step 7).
 
 - **What it is for:** the only identity that can vend accounts, because **root cannot use Account Factory at
   all** — a documented restriction, not a permission to be granted. **Since D34 that is a standing job, not a
@@ -514,7 +514,7 @@ Stage 1b step 7).
 - **What limits it, permanently.** The reach above cannot be trimmed: `AWSControlTowerAdmins` is atomic, and
   the Management administrator arrives in the same membership as the Log Archive one. So the control set is
   three things, none of which is optional and all of which are now permanent rather than covering a window:
-  **MFA on the user**; **S3 Object Lock in *compliance* mode** on the Log Archive bucket (Stage 1b step 9),
+  **MFA on the user**; **S3 Object Lock in *compliance* mode** on the Log Archive bucket (Stage 1d step 9),
   because this principal holds `s3:BypassGovernanceRetention` and walks through governance mode; and the
   **alarm on membership changes to its groups** (Stage 1b step 8), which is what distinguishes the expected
   member from a second one somebody added.

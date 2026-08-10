@@ -127,7 +127,9 @@ its **Consumes** row names; that is the whole reading list.
 |---|---|---|
 | [0 — Baseline](plan/stages/stage-00-baseline.md) | Management account by hand, local tooling, the documentation set | **DONE** |
 | [1a — Landing zone](plan/stages/stage-01a-landing-zone.md) | Control Tower, the accounts and OUs, root secured, budget — slow and hard to undo | **done except the `Staging` vend** |
-| [1b — Identity and controls](plan/stages/stage-01b-identity-and-controls.md) | Identity Center, permission sets, SCP/RCP, the free detective controls, org-wide enablement — fast and reversible | **next** |
+| [1b — Identity Center and the alarm](plan/stages/stage-01b-identity-and-controls.md) | Delegation, users and groups, permission sets, SSO profiles, AZ mapping, Access Analyzer and the group-membership alarm (steps 1-6, 8) | **next** |
+| [1c — Preventive policies](plan/stages/stage-01c-preventive-policies.md) | SCP, RCP, tag and declarative policies, the managed controls (step 7) — the one irreversible-from-inside sitting | not started |
+| [1d — Audit trail and org-wide enablement](plan/stages/stage-01d-org-wide-enablement.md) | Object Lock, the AWS Config decision, org-wide RAM + Lake Formation v3 (steps 9-11, independent of each other) | not started |
 | [2 — Terraform foundation](plan/stages/stage-02-terraform-foundation.md) | State buckets, module skeletons, the identity/SCP import, the hygiene checks | not started |
 | [3 — Networking](plan/stages/stage-03-networking.md) | One VPC per account that has one, split `foundation/` + `egress/` | not started |
 | [4 — VPN](plan/stages/stage-04-vpn.md) | WireGuard, the only entry point; peering so the tunnel reaches GitLab; GuardDuty on, with the first exposed resource | not started |

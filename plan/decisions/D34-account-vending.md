@@ -6,7 +6,7 @@
 
 **Related decisions:** [D16](D16-break-glass.md), [D23](D23-ou-structure.md), [D29](D29-policy-canary.md), [D32](D32-account-factory-sso-user.md), [D33](D33-control-tower-admin-user.md), [D35](D35-sandbox-cardinality.md)
 
-**Referenced by stages:** [Stage 1a](../stages/stage-01a-landing-zone.md), [Stage 1b](../stages/stage-01b-identity-and-controls.md), [Stage 2](../stages/stage-02-terraform-foundation.md), [Stage 14](../stages/stage-14-sandbox-vending.md)
+**Referenced by stages:** [Stage 1a](../stages/stage-01a-landing-zone.md), [Stage 1b](../stages/stage-01b-identity-and-controls.md), [Stage 1c](../stages/stage-01c-preventive-policies.md), [Stage 1d](../stages/stage-01d-org-wide-enablement.md), [Stage 2](../stages/stage-02-terraform-foundation.md), [Stage 14](../stages/stage-14-sandbox-vending.md)
 
 **Refined by [D35](D35-sandbox-cardinality.md):** this decision says the account list is not static; D35 says *which part* of it is not — everything structural keeps the console flow below, while `Sandbox` alone multiplies per business unit and gets an automated one (Stage 14).
 
@@ -50,7 +50,7 @@ plus a short window" and the window is now open-ended, so the control set has to
 mechanism named (Lesson 5), not merely re-promised:
 
 - **MFA on this user is the standing control**, not a stopgap for a few days.
-- **Stage 1b step 9's Object Lock must be in *compliance* mode.** This principal is administrator *of Log
+- **Stage 1d step 9's Object Lock must be in *compliance* mode.** This principal is administrator *of Log
   Archive*, so it holds `s3:BypassGovernanceRetention` and governance mode is transparent to it. Compliance
   mode is now the only thing that keeps the audit trail surviving its own administrator, indefinitely.
 - **Stage 1b step 8's alarm on Control Tower group membership stays and gains a second reason:** with this

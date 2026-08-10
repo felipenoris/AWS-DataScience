@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | **Status** | not started |
-| **Prerequisites** | **Stage 1a and Stage 1b**, both complete. `Staging` is still unvended, so **step 3 skips `terraform-live/staging/bootstrap/`** and step 5 skips its Staging assignments — the same carve-out 1b steps 3 and 5 already carry, picked up at the vend |
+| **Prerequisites** | **Stage 1a and Stages 1b, 1c and 1d**, all complete. `Staging` is still unvended, so **step 3 skips `terraform-live/staging/bootstrap/`** and step 5 skips its Staging assignments — the same carve-out 1b steps 3 and 5 already carry, picked up at the vend |
 | **Consumes** | [D3](../decisions/D03-terraform-state.md), [D10](../decisions/D10-identity-center-delegation.md), [D11](../decisions/D11-lab-lifecycle.md), [D23](../decisions/D23-ou-structure.md), [D34](../decisions/D34-account-vending.md), [D35](../decisions/D35-sandbox-cardinality.md), [D36](../decisions/D36-internal-pki.md) |
 | **Proves** | [INT-20](../integrations.md) — the Organizations **policy** delegation into the Identity account, which step 5 assumes and no earlier stage creates |
 
@@ -11,7 +11,7 @@
 
 ---
 
-**Objective:** the repository can provision infrastructure reproducibly — and the policy set Stage 1b typed
+**Objective:** the repository can provision infrastructure reproducibly — and the policy set Stage 1c typed
 into a console acquires a diff, a review and a rollback.
 
 Everything built here is `[P]` (D11). Nothing in this stage is torn down between sessions, and `make down`
@@ -69,15 +69,15 @@ CloudTrail record of a `kms:Decrypt`).
 ## What this stage deliberately leaves outside Terraform
 
 Step 5's argument — *a policy whose only record is a browser tab is owned by nobody* — applies word for word
-to four artefacts Stage 1b also created by hand. They stay console-managed anyway, and the reason is
+to four artefacts Stages 1b-1d also created by hand. They stay console-managed anyway, and the reason is
 structural rather than an oversight:
 
 | Artefact | Where it lives | Why it cannot come into code here |
 |---|---|---|
 | The org-trail metric filter + the group-membership alarm (1b step 8.3) | **Management** | Principle 1: Terraform never holds Management credentials. There is no state bucket there and there will not be one |
 | The organization-level Access Analyzer (1b step 8.2) | **Audit** | Audit is not a Terraform-managed account: no bootstrap, no profile, no state. Bringing it in means a seventh state bucket and a seventh key |
-| Object Lock on `aws-controltower-logs-*` (1b step 9) | **Log Archive** | Same, plus the object is Control Tower's — managing it from Terraform is landing-zone drift |
-| The Control Tower **controls** — Region deny, the two root controls (1b step 7.7) | landing zone | Not policies but controls. If they are ever coded, the resource is `aws_controltower_control` (5.4) |
+| Object Lock on `aws-controltower-logs-*` (1d step 9) | **Log Archive** | Same, plus the object is Control Tower's — managing it from Terraform is landing-zone drift |
+| The Control Tower **controls** — Region deny, the two root controls (1c step 7.7) | landing zone | Not policies but controls. If they are ever coded, the resource is `aws_controltower_control` (5.4) |
 
 And two accounts get **no state bucket at all, on purpose**: **`Policy Canary`** (`plan/architecture.md` §3:
 "no Terraform slice, no state bucket" — an account whose point is to stay empty) and **Management**. Creating
@@ -191,7 +191,7 @@ nobody goes looking for a migration to perform.
 
 ### 5. `terraform-live/identity/` — the import that gives the policy set an owner
 
-This is the substance of the stage. Stage 1b creates permission sets, groups, assignments, SCPs, RCPs, tag
+This is the substance of the stage. Stages 1b-1d create permission sets, groups, assignments, SCPs, RCPs, tag
 policies and declarative policies **by hand**; without this step nothing regenerates them, no stage owns
 them, and the only record of what they say is a browser tab. That set is the one that can lock the
 organization out of itself, and since D30 was reverted there is **no principal inside a governed account that
@@ -254,7 +254,7 @@ AWS Organizations objects, and by default only the Management account can touch 
   `Sandboxes` under `Interactive`). The same nesting that breaks a single-level `for_each` in 5.3 breaks a
   single-OU delegation here, and it breaks it the same silent way.
 - **Exclude `DisablePolicyType` and `EnablePolicyType`.** They act on the root and turning a policy type off
-  detaches every policy of that type at once. Nothing in this design needs them after 1b step 7.2.
+  detaches every policy of that type at once. Nothing in this design needs them after 1c step 7.2.
 
 **The blast radius this creates, stated rather than discovered.** AWS's own note is that the delegation
 *"allows delegated administrators to perform the specified actions on policies created by any account in the
@@ -271,17 +271,19 @@ it into `ORGANIZATION.md`'s description of that account rather than leaving it h
 | This project's **five groups** (1b step 2) | `sso/` | **Control Tower's groups** — `AWSControlTowerAdmins`, `AWSAccountFactory`, the auditor and per-account groups |
 | This project's **seven permission sets** (1b step 3.1) | `sso/` | **`AWSAdministratorAccess` and every other Control Tower set** — editing them is landing-zone drift (D10, consequence iii) |
 | Their **group assignments** | `sso/` | The **direct Account Factory assignments** to the infrastructure user (D32, 1b step 3.8) — and if 1b's verification (vi) found they are re-created, they are a permanent property of a vended account, not something to model |
-| The **org-root SCP set** (1b step 7.5), the **per-OU sets** (7.6), the **RCPs**, the **tag policy** and the **declarative EC2 policy** (7.8) | `org-policies/` | The **Control Tower controls** (7.7) — see 5.4 |
+| The **org-root SCP set** (1c step 7.5), the **per-OU sets** (7.6), the **RCPs**, the **tag policy** and the **declarative EC2 policy** (7.8) | `org-policies/` | The **Control Tower controls** (7.7) — see 5.4 |
 
-- **The declarative policy was missing from every earlier version of this step.** 1b step 7.8 creates one
+- **The declarative policy was missing from every earlier version of this step.** 1c step 7.8 creates one
   (IMDSv2 and EC2 public-access defaults) and it is an Organizations policy like the others.
   **Verify while executing (ii):** that `aws_organizations_policy` accepts `type =
   "DECLARATIVE_POLICY_EC2"` in the pinned provider version. If it does not, that one policy stays console
   managed and is recorded as such (Lesson 5 — an unowned artefact is worse when nobody wrote down that it is
   unowned).
-- **Read `log/stage-01b-identity-and-controls.md` before writing anything.** Two of 1b's four
+- **Read the three landing-zone logs before writing anything** —
+  `log/stage-01b-identity-and-controls.md`, `log/stage-01c-preventive-policies.md` and
+  `log/stage-01d-org-wide-enablement.md`. Two of their four
   execute-time decisions change what exists to import: whether the `Interactive` OU got a policy set at all
-  (1b step 7.6) and what this project's administrator permission set is actually called (1b step 3.2).
+  (1c step 7.6) and what this project's administrator permission set is actually called (1b step 3.2).
 
 **5.3 — Write it so an OU or account created later is covered without anybody remembering (D34).**
 
@@ -318,7 +320,7 @@ seam**, which is the fourth reason to have made it.
    in the ceiling.
 
 **5.4 — What is deliberately not imported: the region restriction.** It is Control Tower's own Region deny
-control (1b step 7.7), not one of the hand-written documents, and the SCP that implements it is generated and
+control (1c step 7.7), not one of the hand-written documents, and the SCP that implements it is generated and
 owned by the landing zone. Importing that SCP would put Terraform and Control Tower in a fight over the same
 object — the landing-zone drift this plan already refuses to create for permission sets. If it is ever to be
 in code, the resource is **`aws_controltower_control`** — the control, not the policy it emits.
@@ -340,7 +342,7 @@ cheap:
 - **`identity/sso/` lands anyway.** It depends only on the Identity Center delegation, which 1b already
   proved, so a failure in 5.1 costs this stage half its scope rather than all of it — and costs no state
   move, because the boundary was drawn before the attempt rather than after it.
-- **`identity/org-policies/` stays empty and the four policy types stay console-managed**, exactly as 1b left
+- **`identity/org-policies/` stays empty and the four policy types stay console-managed**, exactly as 1c left
   them. Step 9.2's wildcard check degrades from a script to a manual review — strictly worse, and
   **recorded as such in `log/stage-02-terraform-foundation.md`**, not absorbed (Lesson 5: an unowned artefact
   is worse when nobody wrote down that it is unowned).
@@ -383,7 +385,7 @@ check that will be skipped on the day it would have mattered. Any suppression is
 `terraform-modules/`: **`s3-bucket`, `iam-role`, `kms-key`.**
 
 - **`s3-bucket`** enables **S3 Bucket Keys** by default (`plan/cost-model.md`) and blocks public access
-  unconditionally. The account-level block from 1b step 7.4 is the blanket; this is the module-level half,
+  unconditionally. The account-level block from 1c step 7.4 is the blanket; this is the module-level half,
   and neither replaces the other.
 - **`iam-role`** takes a **permissions boundary as a required argument**, so omitting one has to be
   deliberate (`plan/conventions.md`, IAM rules).

@@ -49,7 +49,7 @@ what is genuinely still unanswered:
    objective stated in `CLAUDE.md`, so they are answered at Stages 6 and 4 respectively and their outcome is
    written down either way.
    INT-11 (organization-wide RAM sharing and the Lake Formation cross-account version) is the one to
-   settle earliest, because it is enabled in Stage 1b and consumed in Stage 5 — and since D26 it also
+   settle earliest, because it is enabled in Stage 1d and consumed in Stage 5 — and since D26 it also
    carries the domain's account associations (INT-12) — and its failure mode is silence rather than an
    error. INT-13 (CodeConnections from the unified domain to the self-hosted GitLab in a private subnet)
    is the one with no convenience-preserving fallback: check it while building Stage 7, when GitLab first
@@ -75,7 +75,7 @@ default, and each one is referenced from the step that needs it.
     D29:** a tenth account, `Policy Canary`, alone in a fifth OU, `Policy Test`. The reasoning that closed
     it is worth keeping in one line, because the obvious answer was the wrong one: an *empty* policy
     staging OU tests nothing, since an SCP is only evaluated when a principal makes a call, so the OU is
-    worth having only because there is a disposable account inside it. Stage 1b step 7 now carries the
+    worth having only because there is a disposable account inside it. Stage 1c step 7 now carries the
     procedure — one policy at a time, exercised from an administrator principal, in both directions
     (what must still succeed *and* what must now fail), with the detach command ready. Two verifications
     ride along with it and are answered while executing: whether the **IAM Policy Simulator** evaluates
@@ -100,7 +100,7 @@ default, and each one is referenced from the step that needs it.
     repair path justified it. So there is **one** recovery credential and it is the root. What the round
     trip left behind is worth keeping: the SCPs now live in code (`terraform-live/identity/org-policies/`),
     because a
-    policy set that nobody owns after Stage 1b is one whose only record is the console — and, with no
+    policy set that nobody owns after Stage 1c is one whose only record is the console — and, with no
     exemption anywhere, it is the artefact that most needs a diff and a rollback.
 12. ~~**Whether the deployment manager keeps blanket `ReadOnlyAccess` on the lifecycle accounts**~~ — **closed
     2026-08-08 as D31: it does not.** Two changes, and the more durable one is the second. `ReadOnlyAccess`

@@ -161,7 +161,7 @@ its `Consumes` row lists.
 | Explaining the design to someone | [`README.md`](README.md) — the argument for the account split and the three distinctions |
 | How the plan got here | [`plan/history.md`](plan/history.md) — almost never |
 
-Reference things by **stable ID** — `D26`, `INT-11`, `Stage 1b step 7` — never by section or row number.
+Reference things by **stable ID** — `D26`, `INT-11`, `Stage 1c step 7` — never by section or row number.
 The `§` numbers inside `plan/` files are historical anchors, not addresses.
 
 ### Current position
@@ -169,7 +169,7 @@ The `§` numbers inside `plan/` files are historical anchors, not addresses.
 - **Stage 1a is done but for the `Staging` vend; [`log/stage-01a-landing-zone.md`](log/stage-01a-landing-zone.md)
   is authoritative. Next is Stage 1b.** Control Tower enabled (`us-west-2`), budget set, `Development`,
   `Sandbox Account 1`, `Production`, `Data Governance`, `Policy Canary` and `Identity` vended, centralized
-  root access on. Break-glass built and **tested 2026-08-09 on both channels** — the thing 1b step 7 may not
+  root access on. Break-glass built and **tested 2026-08-09 on both channels** — the thing 1c step 7 may not
   start without.
 - **The `Staging` vend is held on the account cap** — the increase to 15 is *requested*; confirm before
   vending. **1b steps 3 and 5 skip their Staging items** (`DataScientistStagingAccess`,
@@ -179,7 +179,7 @@ The `§` numbers inside `plan/` files are historical anchors, not addresses.
   revision trigger.
 - **The OU tree is not the one D23 first described** — revised 2026-08-09 by execution; full tree in
   [`plan/architecture.md`](plan/architecture.md). `Identity` has an OU of its own and inherits no
-  guardrails, so **1b step 7 must attach its set**; `Sandboxes` is nested under `Interactive` and carries no
+  guardrails, so **1c step 7 must attach its set**; `Sandboxes` is nested under `Interactive` and carries no
   policy set of its own. **Depth is 2 — Stage 2's OU `for_each` must recurse**, or every Sandbox account is
   invisible to it.
 - **The repository is documentation only**; `terraform/` is empty until Stage 2 replaces it with
@@ -187,9 +187,13 @@ The `§` numbers inside `plan/` files are historical anchors, not addresses.
 - **All thirty-six decisions are closed** ([`plan/decisions/INDEX.md`](plan/decisions/INDEX.md)). The four
   governing what happens next: **D32** (`SSOUserEmail`), **D33**/**D34** (who vends), **D35** (`Sandbox` is
   one per business unit; every other account is exactly one).
+- **The landing zone's second half is three stages, split 2026-08-09**: **1b** (steps 1-6, 8), **1c**
+  (step 7, the only irreversible one), **1d** (steps 9-11, independent of each other, and not blocked on
+  1c). **Step numbers did not change** — `Stage 1c step 7` is the same step every file already cites.
+  **1c and 1d have no `log/` file yet.**
 - **Still needed from the user**, none blocking now: **the domain name** (D15 phase 2, blocking **Stage 13
-  alone**), the AZ name-to-ID check (1b step 6, which decides how Stage 3 anchors subnets), and — due at 1b
-  step 7 — whether the `Interactive` OU gets a policy set of its own; it carries none today.
+  alone**), the AZ name-to-ID check (1b step 6, which decides how Stage 3 anchors subnets), and — due at
+  1c step 7 — whether the `Interactive` OU gets a policy set of its own; it carries none today.
 - **No public DNS before Stage 13** (D15); internal names are `*.internal` off an internal CA (D36, INT-19).
 - **Settle earliest:** **INT-11** (fails *silently*) and **INT-13** (no convenience-preserving fallback).
 

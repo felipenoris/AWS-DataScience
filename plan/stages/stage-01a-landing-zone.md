@@ -18,13 +18,19 @@ after this can be done by Terraform without root credentials.
 `secrets/emails.md` for every account this stage creates — `Policy Canary`'s was added by the user on
 2026-08-08, after D29 introduced the account.
 
-**Split into two halves, 1a and 1b.** This is the longest stage in the plan and it used to be one
-unverifiable block of sixteen manual steps. The split is not cosmetic: **1a ends at a checkable state** —
-every account exists, in its OU, with the root credentials secured and a budget watching them — and it is
-the half that is slow, awkward to undo, and worth stopping after. 1b is everything that is fast, reversible
-and iterative: identity, policies, detective controls and the organization-wide enablements. If a session
-runs out before 1b is finished, the environment is still in a coherent state; if it ran out in the middle of
-the old Stage 1, it was not.
+**Split into halves, then the second half into three.** This is the longest stage in the plan and it used
+to be one unverifiable block of sixteen manual steps. The split is not cosmetic: **1a ends at a checkable
+state** — every account exists, in its OU, with the root credentials secured and a budget watching them —
+and it is the half that is slow, awkward to undo, and worth stopping after. If a session runs out anywhere
+after it, the environment is still in a coherent state; if it ran out in the middle of the old Stage 1, it
+was not.
+
+The second half was itself split on 2026-08-09, along the sessions it already described:
+**[1b](stage-01b-identity-and-controls.md)** (identity, profiles, the alarm — steps 1-6 and 8),
+**[1c](stage-01c-preventive-policies.md)** (step 7, the policies, the one part that is not freely
+reversible) and **[1d](stage-01d-org-wide-enablement.md)** (steps 9-11: the audit trail, the Config
+decision, the org-wide enablements). **The step numbers did not change**, so references from this file to
+`1c step 7` or `1d step 9` name exactly the steps they always did.
 
 ---
 
@@ -118,7 +124,7 @@ that multiplies.
      that retirement is withdrawn, because the account list is not static and Control Tower administration
      needs an owner rather than an end date. It is still **not one of the five personas** — it holds one
      duty, approves nothing, and joins no project group. Its permanence moves weight onto three things that
-     are therefore not optional: **MFA here**, **Object Lock in compliance mode** (1b step 9), and the
+     are therefore not optional: **MFA here**, **Object Lock in compliance mode** (1d step 9), and the
      **group-membership alarm** (1b step 8).
 4. Create the `Sandbox`, `Development`, `Staging`, `Production`, `Data Governance`, `Identity` and
    `Policy Canary` accounts through Account Factory, using the e-mails in `secrets/emails.md`.
@@ -182,7 +188,7 @@ that multiplies.
      permitted **only when the principal is the lake's catalog-maintenance role** (D27), which *is* real
      compute and is therefore bounded by role, event-driven and alarmed. Anything not on those two lists
      stays denied.
-     **This OU is also the sole exception to an organization-root deny** (1b step 7): `datazone:CreateDomain`
+     **This OU is also the sole exception to an organization-root deny** (1c step 7): `datazone:CreateDomain`
      is denied everywhere and carved out here, so the unified domain can exist only in this account. Note
      the mechanism, because getting it backwards produces a policy that does nothing — SCPs are ceilings and
      an explicit `Deny` wins wherever it appears, so the exception is a **condition on the root deny**
@@ -210,14 +216,14 @@ that multiplies.
      consequence seriously rather than treating the OU as a rename: `Security`'s policy set was never
      written by this project — it is Control Tower's guardrails, inherited by the OU being *foundational* —
      so a brand-new sibling OU inherits **none** of it. **Enumerate the controls applied to `Security` and to
-     `Identity`, compare them, and attach whatever differs explicitly in 1b step 7** (D34: a console-created
+     `Identity`, compare them, and attach whatever differs explicitly in 1c step 7** (D34: a console-created
      OU carries no policy set until code attaches one). This is the account whose administrator can grant
      access to every other account; it did not become less sensitive by moving.
 
    **The accounts listed above are the complete set *for this stage*, which is not the same as the complete
    set (D34).** D14 places the tooling in Production rather than in a separate Shared Services account,
    D20-D22 add the deployment target, the development account and the data account the AWS reference
-   architectures describe, and D29 adds the disposable one that makes the SCP procedure in 1b step 7
+   architectures describe, and D29 adds the disposable one that makes the SCP procedure in 1c step 7
    executable. `plan/institutional-delta.md` records what a larger organization would still add beyond them.
    **An account added later is an ordinary event, not an exception**: D34 carries the flow — the gate is
    which axis and which OU the account needs (D23), the owner is `AWS Control Tower Admin`, and the
@@ -370,15 +376,15 @@ that multiplies.
    and **only five task policies exist** (audit credentials, create root password, delete credentials, unlock
    an S3 bucket policy, unlock an SQS queue policy). Two of those five are the "I denied myself" repairs, so
    the practical loss is narrow. The one capability this design might have wanted and cannot have from inside
-   the account is **S3 MFA Delete**, which requires that account's own root — and 1b step 9 uses Object Lock
+   the account is **S3 MFA Delete**, which requires that account's own root — and 1d step 9 uses Object Lock
    in compliance mode instead, so nothing is actually given up. Reversal, if it is ever needed: **Allow
    password recovery** on that account (only offered once the credentials are gone), reset from the root
    inbox, do the task, delete again.
 
-   **6.7 — Carry one consequence into 1b step 7.** Control Tower's strongly-recommended control
+   **6.7 — Carry one consequence into 1c step 7.** Control Tower's strongly-recommended control
    **`AWS-GR_RESTRICT_ROOT_USER`** denies `*` where `aws:PrincipalArn` matches `arn:*:iam::*:root` — which
    **also denies privileged root sessions**, because in the member account they *are* that principal. It is
-   **not enabled by default**, so nothing is broken today. If 1b step 7 enables it (or writes the
+   **not enabled by default**, so nothing is broken today. If 1c step 7 enables it (or writes the
    hand-rolled equivalent), it must carry the **`ExemptAssumeRoot`** parameter, which adds
    `"Null": {"aws:AssumedRoot": "true"}` to the condition. Without that, the control and this step's own
    recovery action cancel out — the escape hatch is denied by the guardrail meant to protect it.

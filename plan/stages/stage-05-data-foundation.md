@@ -111,7 +111,7 @@ before Stage 9 repeats it for Production.
    Record any exception through Lake Formation **hybrid access mode** rather than by quietly widening a
    role.
 7. **The cross-account shares (D22, INT-03 and 11).** **Prerequisite, and it is not optional:**
-   Stage 1b step 11 must have enabled `ram:EnableSharingWithAwsOrganization` and raised the Lake Formation
+   Stage 1d step 11 must have enabled `ram:EnableSharingWithAwsOrganization` and raised the Lake Formation
    cross-account version to 3 or above. Without them the grant appears to succeed on this side and the
    resource never appears on the consumer side — which is the least diagnosable failure in the whole plan,
    because nothing errors. Check it first, then grant the catalog read share to the Sandbox and

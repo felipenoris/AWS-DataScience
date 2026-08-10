@@ -6,7 +6,7 @@
 
 **Related decisions:** [D16](D16-break-glass.md), [D29](D29-policy-canary.md), [D10](D10-identity-center-delegation.md), [D27](D27-catalog-maintenance.md)
 
-**Referenced by stages:** — (the stages that used to consume it no longer do: [Stage 1b](../stages/stage-01b-identity-and-controls.md), [Stage 2](../stages/stage-02-terraform-foundation.md), [Stage 3](../stages/stage-03-networking.md))
+**Referenced by stages:** — (the stages that used to consume it no longer do: [Stage 1b](../stages/stage-01b-identity-and-controls.md), [Stage 1c](../stages/stage-01c-preventive-policies.md), [Stage 2](../stages/stage-02-terraform-foundation.md), [Stage 3](../stages/stage-03-networking.md))
 
 ---
 
@@ -28,7 +28,7 @@ Likewise the generalisable half of Lesson 14 survives the specific case that pro
 
 - **The role does not repair the policy.** Being exempt from a `Deny` means the principal can perform the denied *action* inside that account. Detaching or editing an SCP is an `organizations:*` call, which is made from the Management account or from the delegated policy administrator — not from the account the deny is hurting. So "repair in place" was never quite what the role did.
 - **The account where the repair actually happens is `Identity`** — D30 itself moved the SCPs to `terraform-live/identity/org-policies/`, applied with the delegated-admin profile. A mis-written organization-root SCP (the region restriction is the obvious candidate: Identity Center is regional and `organizations:*` answers in `us-east-1`) denies *that* account the call that would fix the policy.
-- **And `Identity` was one of the accounts the design could not reach.** The role was to be created in each account's `foundation/` slice, and `foundation/` exists only where there is a VPC. `Data Governance` has none by decision (D22) and `Identity` has only `bootstrap/`. The delivered design would therefore have placed the exemption in every account where it was a convenience and omitted it from the one where it was the mechanism. The `Policy Canary` battery in Stage 1b step 7 had the same problem in a sharper form: it instructed the operator to assume the role in an account D29 defines as holding no Terraform slice at all.
+- **And `Identity` was one of the accounts the design could not reach.** The role was to be created in each account's `foundation/` slice, and `foundation/` exists only where there is a VPC. `Data Governance` has none by decision (D22) and `Identity` has only `bootstrap/`. The delivered design would therefore have placed the exemption in every account where it was a convenience and omitted it from the one where it was the mechanism. The `Policy Canary` battery in Stage 1c step 7 had the same problem in a sharper form: it instructed the operator to assume the role in an account D29 defines as holding no Terraform slice at all.
 
 That is Lesson 3 and Lesson 11 applied to this decision: D30 was adopted in the same pass that moved the SCPs into the Identity account, and nobody re-read its scope against that move. Given the choice between engineering the scope out (a minimal `foundation/` for two accounts, a hand-made role in the canary, an enumerated ARN list maintained across all of them) and removing the exemption, **the user chose to remove it.** The lab returns to the institutional answer, which `plan/institutional-delta.md` had recorded all along: no standing exemption; the policy is detached from the Management account by whoever owns it.
 
@@ -36,7 +36,7 @@ That is Lesson 3 and Lesson 11 applied to this decision: D30 was adopted in the 
 
 1. **The `Policy Canary` battery (D29) is now the primary defence, not a nicety** — a bad policy is far cheaper to catch before attachment than to repair after it.
 2. **Stage 1a step 5 requires the break-glass path to be built and fired once *before* any policy is attached.** That ordering was already deliberate; it is now the thing standing between a mistake and a locked organization.
-3. **Stage 1b step 7's "with the detach command written down and the Management account already open before the first attach"** is no longer belt-and-braces. It is the procedure.
+3. **Stage 1c step 7's "with the detach command written down and the Management account already open before the first attach"** is no longer belt-and-braces. It is the procedure.
 
 **On the revision trigger, because it is worth noticing that it did not fire.** D30's recorded triggers were "a second person gains access" and "the role is assumed for anything other than repairing a policy". Neither happened; what happened was a review finding the decision undeliverable as scoped. A trigger written only about *operating* the thing cannot catch a defect in *building* it — worth remembering when writing the next one.
 

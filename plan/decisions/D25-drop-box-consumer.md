@@ -6,7 +6,7 @@
 
 **Related decisions:** [D18](D18-data-scientist-access.md), [D22](D22-data-governance-account.md), [D26](D26-unified-studio.md), [D27](D27-catalog-maintenance.md)
 
-**Referenced by stages:** [Stage 1a](../stages/stage-01a-landing-zone.md), [Stage 1b](../stages/stage-01b-identity-and-controls.md), [Stage 5](../stages/stage-05-data-foundation.md), [Stage 9](../stages/stage-09-deployment-targets.md)
+**Referenced by stages:** [Stage 1a](../stages/stage-01a-landing-zone.md), [Stage 1c](../stages/stage-01c-preventive-policies.md), [Stage 5](../stages/stage-05-data-foundation.md), [Stage 9](../stages/stage-09-deployment-targets.md)
 
 ---
 

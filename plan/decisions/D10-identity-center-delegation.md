@@ -6,7 +6,7 @@
 
 **Related decisions:** —
 
-**Referenced by stages:** [Stage 1b](../stages/stage-01b-identity-and-controls.md), [Stage 2](../stages/stage-02-terraform-foundation.md)
+**Referenced by stages:** [Stage 1b](../stages/stage-01b-identity-and-controls.md), [Stage 1c](../stages/stage-01c-preventive-policies.md), [Stage 2](../stages/stage-02-terraform-foundation.md)
 
 ---
 

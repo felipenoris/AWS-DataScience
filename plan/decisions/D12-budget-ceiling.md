@@ -6,7 +6,7 @@
 
 **Related decisions:** [D20](D20-staging-account.md), [D21](D21-development-account.md), [D22](D22-data-governance-account.md)
 
-**Referenced by stages:** [Stage 1a](../stages/stage-01a-landing-zone.md), [Stage 1b](../stages/stage-01b-identity-and-controls.md), [Stage 6](../stages/stage-06-unified-studio.md), [Stage 7](../stages/stage-07-gitlab-runners-ecr.md)
+**Referenced by stages:** [Stage 1a](../stages/stage-01a-landing-zone.md), [Stage 1d](../stages/stage-01d-org-wide-enablement.md), [Stage 6](../stages/stage-06-unified-studio.md), [Stage 7](../stages/stage-07-gitlab-runners-ecr.md)
 
 ---
 

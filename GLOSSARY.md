@@ -20,7 +20,7 @@ are now officially just the acronym.
 | **Sandbox / Development / Staging / Production** | The four environment *roles*, each one AWS account — **except `Sandbox`, which is one account per business unit (D35)**, so the chain reads N Sandboxes → one Development → one Staging → one Production. N is 1 today. Sandbox is experimentation (the unit of work is a notebook); Development is where pipelines are engineered (the unit of work is a repository); Staging and Production are *deployment targets* that only a pipeline writes to. Promotion runs Development → Staging → Production; Sandbox feeds Development through git. See `README.md`, "Three distinctions the layout is built on". |
 | **Data Governance** | The account that owns the *state* of data: the governed lake, its catalog, Lake Formation and the classification scheme. No compute, no interactive sign-in; every environment reaches it through Lake Formation cross-account shares. |
 | `INT-nn` | Numbered cross-account integrations that must be proven, each with a fallback: `plan/integrations.md`. Replaces the old "§4.4 row *n*" references, which renumbered whenever a row was inserted. |
-| `§` | A section of the plan as it was when it lived in one file. The numbers are kept **inside** the `plan/` files as historical anchors (e.g. `plan/architecture.md` §4.2 is the data perimeter), but the address of anything is its file plus its stable ID — `D26`, `INT-11`, `Stage 1b step 7`. |
+| `§` | A section of the plan as it was when it lived in one file. The numbers are kept **inside** the `plan/` files as historical anchors (e.g. `plan/architecture.md` §4.2 is the data perimeter), but the address of anything is its file plus its stable ID — `D26`, `INT-11`, `Stage 1c step 7`. |
 
 ---
 

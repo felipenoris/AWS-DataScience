@@ -76,7 +76,7 @@ lesson can be *recognised* without opening this file; the reasoning that makes e
    tier of every product feature a *control* depends on, separately from the features the workflow merely
    prefers.
 13. **A verification command that returns empty on both success and failure is not a verification.** Stage
-   1b's deliverable proposed `aws ram get-resource-share-associations` as the proof that organization-wide
+   1d's deliverable (Stage 1b's, when it was written) proposed `aws ram get-resource-share-associations` as the proof that organization-wide
    sharing was enabled; with no share yet created it returns an empty list in both cases. This is the
    detection-side twin of Lesson 5: an intention is not a control, and a command that cannot fail is not a
    check. Before writing a deliverable, ask what its output looks like when the thing is *broken*.

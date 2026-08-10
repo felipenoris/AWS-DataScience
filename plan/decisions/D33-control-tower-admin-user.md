@@ -6,7 +6,7 @@
 
 **Related decisions:** [D10](D10-identity-center-delegation.md), [D16](D16-break-glass.md), [D32](D32-account-factory-sso-user.md), [D34](D34-account-vending.md)
 
-**Referenced by stages:** [Stage 1a](../stages/stage-01a-landing-zone.md), [Stage 1b](../stages/stage-01b-identity-and-controls.md)
+**Referenced by stages:** [Stage 1a](../stages/stage-01a-landing-zone.md), [Stage 1b](../stages/stage-01b-identity-and-controls.md), [Stage 1c](../stages/stage-01c-preventive-policies.md), [Stage 1d](../stages/stage-01d-org-wide-enablement.md)
 
 ---
 
@@ -42,7 +42,7 @@ break-glass alarm is built on.** That is the watcher problem, not a scoping deta
 retirement below is a schedule rather than a preference. The `AWSOrganizationsFullAccess` on member
 accounts is by contrast nearly inert — Organizations is a management-account API — **with one member-account
 call that is not: `organizations:LeaveOrganization`**, which drops every SCP and every Control Tower control
-for that account in a single call. 1b step 7 already denies it at the organization root; this finding is
+for that account in a single call. 1c step 7 already denies it at the organization root; this finding is
 what turns that line from hygiene into a load-bearing control.
 
 On top of that reach sits the original collision: the **login identity is the root e-mail address** — the
@@ -60,7 +60,7 @@ drop the latter drops the former too. Splitting it would mean writing direct use
 pattern this plan is removing rather than adding. So the control is **not** a smaller grant; it is **MFA plus
 a bounded window**. **Since D34 the window is not bounded**, and that changes what has to carry the weight:
 MFA becomes a standing control rather than a stopgap, and the two things that limit this principal after the
-fact — **Object Lock in *compliance* mode** on the Log Archive bucket (1b step 9) and the **group-membership
+fact — **Object Lock in *compliance* mode** on the Log Archive bucket (1d step 9) and the **group-membership
 alarm** (1b step 8) — stop being belt-and-braces and become the control set. D34 states them in that form.
 
 **Where the ability to vend actually lives, which decides how it is replaced.** AWS states the rule at the
@@ -124,7 +124,7 @@ Tower's objects, removing them breaks Account Factory and the Control Tower cons
 update may re-create them anyway. An empty group grants nothing; the exposure is not that it exists but that
 **someone can add a member to it**. Three things address that, and two were already in the plan:
 
-- **1b step 9 — S3 Object Lock in *compliance* mode on the Log Archive bucket, plus CloudTrail log file
+- **1d step 9 — S3 Object Lock in *compliance* mode on the Log Archive bucket, plus CloudTrail log file
   validation.** This is the direct answer to "the bootstrap administrator can erase its own trail", and the
   mode is the whole control: this principal is an administrator *of that account*, so it holds
   `s3:BypassGovernanceRetention` and walks through **governance** mode untouched. Compliance mode binds even

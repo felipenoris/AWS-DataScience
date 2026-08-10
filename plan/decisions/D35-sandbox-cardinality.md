@@ -6,7 +6,7 @@
 
 **Related decisions:** [D17](D17-interactive-vs-runtime.md), [D18](D18-data-scientist-access.md), [D20](D20-staging-account.md), [D21](D21-development-account.md), [D23](D23-ou-structure.md), [D24](D24-shared-filesystem.md), [D26](D26-unified-studio.md), [D34](D34-account-vending.md)
 
-**Referenced by stages:** [Stage 1b](../stages/stage-01b-identity-and-controls.md), [Stage 3](../stages/stage-03-networking.md), [Stage 4](../stages/stage-04-vpn.md), [Stage 6](../stages/stage-06-unified-studio.md), [Stage 14](../stages/stage-14-sandbox-vending.md)
+**Referenced by stages:** [Stage 1b](../stages/stage-01b-identity-and-controls.md), [Stage 1c](../stages/stage-01c-preventive-policies.md), [Stage 1d](../stages/stage-01d-org-wide-enablement.md), [Stage 3](../stages/stage-03-networking.md), [Stage 4](../stages/stage-04-vpn.md), [Stage 6](../stages/stage-06-unified-studio.md), [Stage 14](../stages/stage-14-sandbox-vending.md)
 
 ---
 
@@ -76,7 +76,7 @@ assumptions is nearly free to loosen while it is prose:
 - **Domain association (Stage 6, D26).** The single unified domain is associated with **N + 1** interactive
   accounts — every Sandbox plus the one Development — each needing its own blueprint configuration. That is
   the intended mechanism, so it scales; what it makes heavier is the root deny on `datazone:CreateDomain`
-  (1b step 7), because with many sandboxes the pressure to let a unit "just create its own domain" is exactly
+  (1c step 7), because with many sandboxes the pressure to let a unit "just create its own domain" is exactly
   what that deny exists to resist, and INT-12's one-domain-per-account fallback gets more expensive with
   every unit.
 - **Cost (`plan/cost-model.md`).** A business unit costs **one** account, one Config recorder, one KMS key,
@@ -91,7 +91,7 @@ inherits its whole policy set by being placed correctly — that is D23 paying o
 and deliberately carries no policy set of its own (D23). The cost of that nesting is one line in Stage 2: the
 organization's OU depth is now 2, so the `for_each` below has to recurse. D34's "the floor is
 discovered, the grants are enumerated" rule means a new account is picked up by the organization-wide
-policies on the next apply. And Lake Formation cross-account **v3** (1b step 11) can grant to an OU or to a
+policies on the next apply. And Lake Formation cross-account **v3** (1d step 11) can grant to an OU or to a
 list, so the mechanical ceiling on N consumers is already lifted.
 
 **One precision on that last one, because "grant to the OU" is the wrong lesson to take from it.** v3 removes

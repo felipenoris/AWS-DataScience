@@ -274,6 +274,24 @@ onwards the file records how the environment changed, not just the plan.
   the day. D12 carries the revision trigger — the first month the bill exceeds the projection, or the first
   forgotten `[E]` resource found by reading the bill. The alerts remain free and take minutes to add.
 
+- **2026-08-09 — Stage 1b is split into 1b, 1c and 1d, along the sessions it already described.** The file
+  had reached 98 KB and eleven steps under a single `To execute` heading with no sub-headings, so executing
+  step 5 meant reading all of it, and its `Consumes` row named twenty-two decisions with no indication of
+  which step wanted which — 114 KB of decision files to perform a step that needs one. The split follows the
+  stage's own "Sessions" note rather than inventing a boundary: **1b** keeps steps 1-6 and **8** (step 8's
+  alarm is the only control over step 1's blast radius, so the two may not be separated), **1c** is step 7
+  alone — the one part that is not freely reversible from inside a governed account, and the one that wants
+  the Management console open and the detach command written down before it starts — and **1d** is steps 9,
+  10 and 11, which are independent of each other and of 1c. **Step numbers were deliberately not
+  renumbered**, so every existing `Stage 1b step 7` reference became `Stage 1c step 7` and nothing else
+  moved; the same holds for the verification numerals i-ix and the six decision rows, which are now
+  distributed across the three files under the landing zone's numbering rather than restarted. Two index
+  defects surfaced while doing it and are fixed: **D28 was consumed by step 7.6 and named nowhere**, and
+  **D30 — reverted, but load-bearing in 7.1 and step 3 — was in neither the `Consumes` row nor its own
+  "referenced by" line**. This is a documentation change with no provisioned counterpart, and it earns an
+  entry only because the stage it reorganises has not started: **[`log/`](../log/INDEX.md) needs a file for
+  1c and one for 1d, and only the user writes those.**
+
 ---
 
 *Plan core: [GENERAL_PLAN.md](../GENERAL_PLAN.md) · Decisions: [plan/decisions/INDEX.md](decisions/INDEX.md) · Stages: [plan/stages/INDEX.md](stages/INDEX.md)*

@@ -25,11 +25,11 @@ principal — standing, exempt from every custom `Deny` — was proposed, adopte
 ([D30](../decisions/D30-scp-recovery.md)). The lab keeps no exemption, so this root carries all three
 failures in §1 alone, and no principal inside a governed account can work around a bad `Deny`. Two
 consequences, both already written into the plan: the chain in §7 must work **before** the first policy is
-attached in Stage 1b step 7, and every candidate policy is exercised against the `Policy Canary`
+attached in Stage 1c step 7, and every candidate policy is exercised against the `Policy Canary`
 ([D29](../decisions/D29-policy-canary.md)) first — with no exemption, catching a bad policy before
 attachment is far cheaper than repairing it afterwards.
 
-**Which is also why it is built in Stage 1a and not later.** Every policy 1b attaches is a way to lock
+**Which is also why it is built in Stage 1a and not later.** Every policy Stage 1c attaches is a way to lock
 yourself out of your own organization. The escape hatch has to predate the hazard, or it is being built by
 someone who already needs it.
 
@@ -194,7 +194,7 @@ The chain **as built on 2026-08-09**, all of it in the **Management account**, h
 Control Tower organization trail  (aws-controltower-BaselineCloudTrail, multi-region,
                                    global service events included)
         │
-        ├── S3 in Log Archive                     ← the immutable copy (Object Lock, Stage 1b step 9)
+        ├── S3 in Log Archive                     ← the immutable copy (Object Lock, Stage 1d step 9)
         │
         └── CloudWatch Logs  aws-controltower/CloudTrailLogs-gcs-gsx   ← created by the landing zone in
                     │            (the -gcs-gsx suffix is this            the MANAGEMENT account
@@ -245,7 +245,7 @@ Four properties of this chain that are load-bearing:
   with no such event, and a `ConsoleLogin` on the Management account, is the real thing.
 - **The alarm lives in the account it watches.** The Management root can delete it, and so can
   `AWS Control Tower Admin`. That is accepted for this lab, with two compensations: the S3 copy in Log
-  Archive is under Object Lock in *compliance* mode (Stage 1b step 9), which nobody can bypass; and the
+  Archive is under Object Lock in *compliance* mode (Stage 1d step 9), which nobody can bypass; and the
   detection is a *deterrent plus a record*, not a preventive control. See
   [`plan/institutional-delta.md`](../institutional-delta.md) for the cross-account answer.
 

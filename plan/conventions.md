@@ -38,7 +38,7 @@ one unit and no `sandbox-unit` module written, would be guessing at the interfac
 exist yet. What this note fixes now is the cheaper half, and it is the one that fails silently — **the two
 enumerations above are Lesson 14 in naming.** The `<env>` list and the tag policy's allowed values both
 enumerate `sandbox`, and the forcing function behind the tags is an SCP conditioned on `aws:RequestTag`
-(1b step 7). So an enumeration that does not admit a per-unit token turns the first apply in a freshly
+(1c step 7). So an enumeration that does not admit a per-unit token turns the first apply in a freshly
 vended account into an `AccessDenied` — discovered in a new account, by whoever is standing it up, which is
 the worst possible place to find out about a naming rule. Write both lists so a per-unit token is admissible
 before it is needed.
@@ -64,7 +64,7 @@ terraform-live/
 │                         #     These are AWS ORGANIZATIONS objects and the Identity Center
 │                         #     delegation does not reach them - they need a separate
 │                         #     resource-based delegation policy written from Management
-│                         #     (INT-20). Console-only and owned by nobody after Stage 1b,
+│                         #     (INT-20). Console-only and owned by nobody after Stage 1c,
 │                         #     and since D30 was reverted no principal inside a governed
 │                         #     account can work around a bad Deny, so this set needs a
 │                         #     diff, a review and a rollback more than anything else here.

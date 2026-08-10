@@ -21,7 +21,7 @@ before it is registered, published or resolvable from outside the VPN.
 **To execute:**
 
 1. **Register the domain and create the public hosted zone** (D15 phase 2). This is the first and only use
-   of `route53domains:*` in the project — Stage 1b step 7's region-exemption list carries it for this
+   of `route53domains:*` in the project — Stage 1c step 7's region-exemption list carries it for this
    moment. Registration and validation are slow, so start the stage here rather than discovering the wait
    after the ALB is built.
 2. Public ALB in the public subnets with WAF and a **public ACM certificate** issued against the new zone.

@@ -6,7 +6,7 @@
 
 **Related decisions:** [D13](D13-lake-formation-enforcement.md), [D18](D18-data-scientist-access.md), [D20](D20-staging-account.md)
 
-**Referenced by stages:** [Stage 1a](../stages/stage-01a-landing-zone.md), [Stage 1b](../stages/stage-01b-identity-and-controls.md), [Stage 3](../stages/stage-03-networking.md), [Stage 5](../stages/stage-05-data-foundation.md), [Stage 9](../stages/stage-09-deployment-targets.md), [Stage 11](../stages/stage-11-dlp.md)
+**Referenced by stages:** [Stage 1a](../stages/stage-01a-landing-zone.md), [Stage 1b](../stages/stage-01b-identity-and-controls.md), [Stage 1c](../stages/stage-01c-preventive-policies.md), [Stage 1d](../stages/stage-01d-org-wide-enablement.md), [Stage 3](../stages/stage-03-networking.md), [Stage 5](../stages/stage-05-data-foundation.md), [Stage 9](../stages/stage-09-deployment-targets.md), [Stage 11](../stages/stage-11-dlp.md)
 
 ---
 

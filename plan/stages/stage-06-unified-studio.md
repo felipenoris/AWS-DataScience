@@ -58,11 +58,11 @@ Two consequences worth stating rather than discovering:
    (`data-governance/governance/`), authenticating through
    Identity Center. **Check before creating anything:** the domain must live in IdC's home Region
    (`us-west-2` if Stage 1 went as planned) — neither can move afterwards. Account associations through
-   the org-wide RAM sharing Stage 1b step 11 enabled (INT-12): **Sandbox** and **Development**;
+   the org-wide RAM sharing Stage 1d step 11 enabled (INT-12): **Sandbox** and **Development**;
    **Staging and Production are never associated** (D28). **And under D35 the associated set is not two
    accounts but N + 1** — one Sandbox per business unit plus the single Development — each needing its own
    blueprint configuration against the same single domain. That is the intended mechanism, so it scales; what
-   it makes heavier is the root deny on `datazone:CreateDomain` (1b step 7), because with many sandboxes the
+   it makes heavier is the root deny on `datazone:CreateDomain` (1c step 7), because with many sandboxes the
    pressure to let a unit "just create its own domain" is exactly what that deny exists to resist, and
    INT-12's one-domain-per-account fallback gets more expensive with every unit. Two project profiles:
    **`experimentation`**,

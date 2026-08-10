@@ -11,7 +11,7 @@ hosted zone and public ACM certificates arrive only at **Stage 13**, with the pu
 **Related decisions:** [D4](D04-vpn-wireguard.md) (the VPN is the only way in), [D8](D08-gitlab-hosting.md),
 [D14](D14-supply-chain-account.md), [D26](D26-unified-studio.md)
 
-**Referenced by stages:** [Stage 1b](../stages/stage-01b-identity-and-controls.md),
+**Referenced by stages:** [Stage 1c](../stages/stage-01c-preventive-policies.md),
 [Stage 3](../stages/stage-03-networking.md), [Stage 7](../stages/stage-07-gitlab-runners-ecr.md),
 [Stage 13](../stages/stage-13-public-web-tier.md)
 
@@ -108,7 +108,7 @@ the name leak and the removed blocker — but `plan/cost-model.md` and `PRICING.
 
 - **Stage 7 no longer blocks on a user input.** The only remaining input for the domain name is Stage 13.
 - **Stage 3 loses the split-horizon zone and one of its three cross-account associations.**
-- **Stage 1b's region-exemption list keeps `acm:*` but does not need `route53domains:*` until Stage 13** —
+- **Stage 1c's region-exemption list keeps `acm:*` but does not need `route53domains:*` until Stage 13** —
   registration is the only `route53domains` call, and it happens once, there.
 - **A new build dependency exists that did not before:** the `dev-env` image and the runner AMI/user data
   carry the internal root. INT-19.
