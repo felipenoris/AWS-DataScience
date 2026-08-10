@@ -129,9 +129,7 @@ table above, and it is the whole reason the alarm is in this stage rather than i
 
 ### Step 2 — Create this project's users and groups in IAM Identity Center — beside Control Tower's, never inside them
 
-- **Pre-flight:** `secrets/emails.md` must carry an address for every user created here. Verified on
-  2026-08-08 — it does, including the **Dev Env Steward**, which was missing when this step was first
-  written. An Identity Center user cannot be created without one, so re-check *before* starting rather
+- **Pre-flight:** `secrets/emails.md` must carry an address for every user created here. An Identity Center user cannot be created without one, so re-check *before* starting rather
   than half-way through.
 - **Enumerate before creating anything. This step does not start from an empty directory, and it was
   written as if it did.** Enabling Control Tower in 1a step 3 created the Identity Center directory *and
