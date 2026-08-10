@@ -114,7 +114,17 @@ before Stage 9 repeats it for Production.
    Stage 1d step 11 must have enabled `ram:EnableSharingWithAwsOrganization` and raised the Lake Formation
    cross-account version to 3 or above. Without them the grant appears to succeed on this side and the
    resource never appears on the consumer side — which is the least diagnosable failure in the whole plan,
-   because nothing errors. Check it first, then grant the catalog read share to the Sandbox and
+   because nothing errors.
+
+   **This stage is also the thing most likely to undo it, which is why the check is run twice.**
+   `aws_lakeformation_data_lake_settings` replaces the whole `DataLakeSettings` structure rather than
+   patching it — the same trap 1d step 11.2 describes for the CLI. **The resource that declares this
+   account's data lake administrators must carry `parameters = { CROSS_ACCOUNT_VERSION = "3" }`**, or the
+   first `terraform apply` here resets the version 1d set by hand and INT-11 breaks in silence, days before
+   anyone tries a share. So: run `aws lakeformation get-data-lake-settings --profile awsds-infra-data
+   --query 'DataLakeSettings.Parameters'` **after** the apply as well as before it, and record both.
+
+   Then grant the catalog read share to the Sandbox and
    Development accounts through Lake Formation/RAM, create the resource links on the consumer side, and
    prove each one with the pandas test *before* Stage 6 builds anything on top. (The Production share,
    including the governed write, waits for Stage 9 — no consumer exists for it yet.)

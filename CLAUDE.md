@@ -172,8 +172,8 @@ The `§` numbers inside `plan/` files are historical anchors, not addresses.
   root access on. Break-glass built and **tested 2026-08-09 on both channels** — the thing 1c step 7 may not
   start without.
 - **The `Staging` vend is held on the account cap** — the increase to 15 is *requested*; confirm before
-  vending. **1b steps 3 and 5 skip their Staging items** (`DataScientistStagingAccess`,
-  `DeploymentManagerAccess`, the `awsds-infra-staging` profile).
+  vending. **What the deferral owes is one list, in [Stage 1a](plan/stages/stage-01a-landing-zone.md)**
+  ("What the deferral leaves owed"), not five per-stage footnotes.
 - **The USD 50 budget notifies nobody.** Its 50/80/100% alerts and Cost Anomaly Detection are **skipped by
   decision** (2026-08-09), not pending — do not offer to close them in passing. D12 holds the trade and its
   revision trigger.
@@ -187,13 +187,20 @@ The `§` numbers inside `plan/` files are historical anchors, not addresses.
 - **All thirty-six decisions are closed** ([`plan/decisions/INDEX.md`](plan/decisions/INDEX.md)). The four
   governing what happens next: **D32** (`SSOUserEmail`), **D33**/**D34** (who vends), **D35** (`Sandbox` is
   one per business unit; every other account is exactly one).
-- **The landing zone's second half is three stages, split 2026-08-09**: **1b** (steps 1-6, 8), **1c**
-  (step 7, the only irreversible one), **1d** (steps 9-11, independent of each other, and not blocked on
-  1c). **Step numbers did not change** — `Stage 1c step 7` is the same step every file already cites.
-  **1c and 1d have no `log/` file yet.**
+- **The landing zone's second half is three stages, split 2026-08-09**: **1b** (steps 1-6, 5.1, 8), **1c**
+  (step 7, the only irreversible one, in two sittings), **1d** (steps 9-11, independent of each other, and
+  not blocked on 1c). **Step numbers did not change** — `Stage 1c step 7` is the same step every file
+  already cites; **5.1 is the one number added** (2026-08-09). **1c and 1d have no `log/` file yet.**
+- **The identity seam, settled 2026-08-09 by review** (`plan/conventions.md`): **people** — users, groups,
+  memberships — stay in the directory; **entitlements** — permission sets, boundaries, group→account
+  assignments — are Terraform. So **1b creates one permission set and specifies seven**; the other six are
+  *written* in Stage 2 step 5, never typed into a console. **1b step 8.3's alarm is unfiltered** by
+  decision, with the filtered variant in `plan/institutional-delta.md` for real headcount.
 - **Still needed from the user**, none blocking now: **the domain name** (D15 phase 2, blocking **Stage 13
   alone**), the AZ name-to-ID check (1b step 6, which decides how Stage 3 anchors subnets), and — due at
-  1c step 7 — whether the `Interactive` OU gets a policy set of its own; it carries none today.
+  1c step 7 — whether the `Interactive` OU gets a policy set of its own (decision 1) and whether the
+  `s3:PutAccountPublicAccessBlock` deny is carved (**decision 7**, new: without it no future account can
+  ever have account-level BPA).
 - **No public DNS before Stage 13** (D15); internal names are `*.internal` off an internal CA (D36, INT-19).
 - **Settle earliest:** **INT-11** (fails *silently*) and **INT-13** (no convenience-preserving fallback).
 

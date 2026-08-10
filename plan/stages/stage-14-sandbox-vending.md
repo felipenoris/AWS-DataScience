@@ -82,6 +82,25 @@ than a rewrite.
    group — and the approver groups stay institutional and single. Generated from the same unit name as
    everything else: a group whose membership is right and whose *assignment* was typed by hand is the failure
    mode here.
+   **The group and the assignment are on opposite sides of the identity seam, and the module has to respect
+   it** (`plan/conventions.md`): the **assignment** is Terraform, driven by the same human-authored unit map
+   as everything else in this stage — which is still "enumerated" under D34, because a unit gets its grant by
+   being written down. The **group** and its members are directory objects; here the module may create the
+   group as a convenience, but the day the directory comes from an IdP the group arrives over SCIM and this
+   module must keep working with only the assignment. Write it so removing the group resource is a deletion,
+   not a redesign.
+   **This is also the step where the per-unit tokens are first exercised for real**: `<env>` and the tag
+   policy's allowed values must both admit the unit's token, or the first apply in the new account is an
+   `AccessDenied` (`plan/conventions.md`, the D35 note; Stage 1c step 7.8).
+
+3b. **The account-level baseline that no policy can apply retroactively.** Whatever Stage 1c decision 7
+   settled, this step owes the new account **account-level S3 Block Public Access** — and the order is not
+   negotiable: after the account inherits the organization-root SCP, `s3:PutAccountPublicAccessBlock` is
+   denied inside it forever, and there is no cross-account API for the setting. So either the deny carries
+   the carve-out decision 7 describes and this step uses it, or the new account is knowingly without the
+   account-level block and the bucket-level block from the `s3-bucket` module is the whole control. **Read
+   `log/stage-01c-preventive-policies.md` before vending, and record which it was for this unit** — a unit
+   that silently differs from the others is the thing this stage exists to prevent.
 4. **Domain association (D26, INT-12).** Associate the new Sandbox with the single unified domain in Data
    Governance and configure the ML blueprint into it. Nothing creates a domain — the root deny on
    `datazone:CreateDomain` stands, and this stage is where the pressure to break it will first be felt.

@@ -206,6 +206,16 @@ which is what makes a split survive an account being added.
 | [Dev Env Steward](#dev-env-steward-user) | *is this runtime safe to hand to everyone?* | **Supply chain** | GitLab — the `dev-env` pipeline's manual gate |
 | [`AWS Control Tower Admin`](#aws-control-tower-admin-d33) | *who creates OUs and vends accounts?* | **Not a persona** ([D33](plan/decisions/D33-control-tower-admin-user.md), [D34](plan/decisions/D34-account-vending.md)) — one standing duty, no approval, no data, no workload | The Control Tower console |
 
+**A persona is not a person, and the difference decides what is in Terraform.** Five personas is a fixed
+number — it is the design. The number of *humans* behind each is not: `Infrastructure`, both approvers and
+the Governance Manager are one person each and stay that way, the `Dev Env Steward` is a handful in any real
+deployment, and the `Data Scientist` is hundreds. Nothing in this file changes with that number, and
+nothing in AWS does either **as long as the seam is respected**: a permission set and its assignment are
+per *persona and account*, and only the directory — users, groups, memberships — is per person.
+So entitlements are code (`terraform-live/identity/sso/`, Stage 2 step 5) and people are directory objects,
+arriving over SCIM from a corporate IdP in any deployment large enough for it to matter.
+`plan/conventions.md`, "The identity seam", carries the rule and the three ways to break it.
+
 **The separation of duties runs between the Data Scientist and the three approvers; Infrastructure is not
 part of it and contains it.** Those four are separated from one another by design, and no one of them can
 complete a path alone. The infrastructure persona sits outside that argument entirely — see
@@ -516,8 +526,9 @@ Stage 1c step 7).
   three things, none of which is optional and all of which are now permanent rather than covering a window:
   **MFA on the user**; **S3 Object Lock in *compliance* mode** on the Log Archive bucket (Stage 1d step 9),
   because this principal holds `s3:BypassGovernanceRetention` and walks through governance mode; and the
-  **alarm on membership changes to its groups** (Stage 1b step 8), which is what distinguishes the expected
-  member from a second one somebody added.
+  **alarm on Identity Center membership and assignment changes** (Stage 1b step 8.3 — deliberately
+  *unfiltered*, so it covers these groups without depending on anyone maintaining a list of which groups
+  matter), which is what distinguishes the expected member from a second one somebody added.
 - **Deliberately not renamed and not deleted.** Repointing it at a non-root address treats the symptom and
   risks a landing-zone update re-creating it under the root address, leaving the renamed one behind as a
   dormant administrator — D33 has the full argument, and a permanent identity makes it stronger.

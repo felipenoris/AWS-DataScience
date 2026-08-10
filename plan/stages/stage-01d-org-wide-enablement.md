@@ -149,10 +149,14 @@ something Control Tower does not offer:
      for more work, and misses Log Archive and Audit, where the infrastructure user has no assignment.
    Record both numbers in `log/stage-01d-org-wide-enablement.md`. Prices are measured, not reasoned
    (Lesson 6), and the same rule applies to volumes.
-   **One caveat on the number you will get:** the accounts are days old and nearly empty, so this
-   measures the recorder's floor, not its cost during Stages 2-3. That is the honest reason step 10.3
-   point 2 defers the decision to Stage 12 rather than the reason it is written as if the number were
-   final.
+   **Two caveats on the number you will get, and the first changes what to ask for.** There is no "last
+   full month" — the organization is days old — so ask Cost Explorer for the **last 7 days, daily**, and
+   record the daily rate rather than a month that does not exist. Cost Explorer also has to be enabled
+   before it answers at all, and its first data appears about 24 hours later: if it is not on, turn it on
+   and take the measurement in the next session rather than treating an empty report as a low number.
+   **Second:** the accounts are nearly empty, so this measures the recorder's floor, not its cost during
+   Stages 2-3. That is the honest reason step 10.3 point 2 defers the decision to Stage 12 rather than the
+   reason it is written as if the number were final.
 2. **Decide against the measured number, not the estimate.** If the item count sits inside the
    USD 2.50-5.00/month band `PRICING.md` projects, the honest answer is to leave the recorder alone and
    revisit at **Stage 12 step 5**, when there is a real bill and Stage 2-3's apply storm is over.
@@ -199,6 +203,20 @@ requires being a Lake Formation **data lake administrator** or holding
 `lakeformation:PutDataLakeSettings` outright — the infrastructure user has the latter through
 `AdministratorAccess`, so no administrator has to be registered first; Stage 5 still creates the real
 one.
+
+**And this is what the step owes Stage 5, because the value set here is the one Stage 5 will silently
+overwrite** (added 2026-08-09). `aws_lakeformation_data_lake_settings` is the Terraform face of the same
+replace-the-whole-structure API, and Stage 5 declares the data lake administrators through it. A resource
+that names `admins` and omits `parameters` **resets `CROSS_ACCOUNT_VERSION` to its default on the first
+apply** — and the failure that follows is INT-11's: the grant succeeds on the producer side and the share
+never arrives on the consumer side, with nothing anywhere reporting an error. So:
+
+- **Write the requirement into `log/stage-01d-org-wide-enablement.md` as an instruction to Stage 5**, not
+  only the value that was set: the Stage 5 resource must carry
+  `parameters = { CROSS_ACCOUNT_VERSION = "3" }` alongside its `admins`.
+- **Stage 5 step 7 repeats the check from 11.3 after its first apply**, not only before it. Verifying a
+  setting before the thing that overwrites it runs is the same class of mistake as verifying with a
+  command that returns empty either way.
 
 #### 11.3 — How to verify it, because the obvious command does not
 `aws ram get-resource-share-associations` requires an `--association-type` and lists the associations of

@@ -53,6 +53,23 @@ project, is already attached to the organization** and consumes a slot, so this 
   identity that can vend** — there is no "vend it before the vending credential goes away" ordering trap
   left, so this is a scheduling choice and not a structural one.
 
+**What the deferral leaves owed, in one list — because it is currently owed by five different files.**
+Each of the stages below carries its own "skip the Staging cell" note, which is right for someone executing
+that stage and useless for someone vending the account six weeks later. **When `Staging` is vended, work
+this list**, and record it in `log/stage-01a-landing-zone.md` beside the vend itself:
+
+| Owed by | What |
+|---|---|
+| [1b step 3](stage-01b-identity-and-controls.md) | The `Staging` cells of the assignment table — `DataScientistStagingAccess`, and `DeploymentManagerAccess` on Staging. Both sets are **written in Stage 2 step 5**, so after Stage 2 this is an entry in the enumerated assignment list, not console work |
+| [1b step 5](stage-01b-identity-and-controls.md) | The `awsds-infra-staging` profile, bound to this project's `AdministratorAccess` |
+| [1b step 6](stage-01b-identity-and-controls.md) | The AZ name→ID mapping for the account, before Stage 3 writes a subnet for it |
+| [1c step 7.4](stage-01c-preventive-policies.md) | Account-level S3 Block Public Access — **and it is subject to decision 7**: after the organization-root deny is attached, this may be impossible from inside the account |
+| [1c step 7.7](stage-01c-preventive-policies.md) | Nothing extra *if* the account lands in the already-governed `Workloads` OU — confirm the controls enabled on that OU reached it, rather than assuming inheritance |
+| [Stage 2 step 3](stage-02-terraform-foundation.md) | `terraform-live/staging/bootstrap/` — its state bucket and KMS key |
+
+The first and the fourth are the ones that change character with time: after Stage 2 the identity half is
+code, and after 1c the BPA half may no longer be possible at all.
+
 Two consequences of a thin margin, both of which bite at the worst moment:
 
 - A failed Account Factory provisioning that has to be retried can consume a slot, and a **closed account

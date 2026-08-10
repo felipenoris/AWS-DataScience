@@ -4,7 +4,7 @@
 |---|---|
 | **Status** | not started |
 | **Prerequisites** | **Stage 1a and Stages 1b, 1c and 1d**, all complete. `Staging` is still unvended, so **step 3 skips `terraform-live/staging/bootstrap/`** and step 5 skips its Staging assignments — the same carve-out 1b steps 3 and 5 already carry, picked up at the vend |
-| **Consumes** | [D3](../decisions/D03-terraform-state.md), [D10](../decisions/D10-identity-center-delegation.md), [D11](../decisions/D11-lab-lifecycle.md), [D23](../decisions/D23-ou-structure.md), [D34](../decisions/D34-account-vending.md), [D35](../decisions/D35-sandbox-cardinality.md), [D36](../decisions/D36-internal-pki.md) |
+| **Consumes** | [D3](../decisions/D03-terraform-state.md), [D10](../decisions/D10-identity-center-delegation.md), [D11](../decisions/D11-lab-lifecycle.md), [D23](../decisions/D23-ou-structure.md), [D34](../decisions/D34-account-vending.md), [D35](../decisions/D35-sandbox-cardinality.md), [D36](../decisions/D36-internal-pki.md) — **plus, for step 5's six permission sets, the design of record in [Stage 1b step 3](stage-01b-identity-and-controls.md) and the decisions it lists** (D14, D18-D22, D31). They are written here and specified there; neither file restates the other |
 | **Proves** | [INT-20](../integrations.md) — the Organizations **policy** delegation into the Identity account, which step 5 assumes and no earlier stage creates |
 
 *Read with [`plan/conventions.md`](../conventions.md) (naming, layout, `[P]`/`[D]`/`[E]`, Terraform and IAM rules).*
@@ -24,11 +24,13 @@ addresses** and are kept as they are. They are not the sequence to work in. The 
 
 1. **Step 1** (repository skeleton) and **step 6** (tooling and hygiene) — nothing can be checked before the
    checkers exist.
-2. **Step 9** (the two CI-less checks) — step 5 imports the very policies the wildcard-ARN check guards, so
-   the check has to exist *before* the import, not four steps after it.
-3. **Step 7** (the three modules), then **step 2** and **step 3** (the bootstrap slices) — with the caveat in
-   2.3: bootstrap does **not** consume the modules.
-4. **Step 5.1** (the Organizations delegation, in Management, by hand) — the precondition for all of step 5.
+2. **Step 9** (the two CI-less checks) — step 5 writes and imports the very policies the wildcard-ARN check
+   guards, so the check has to exist *before* them, not four steps after.
+3. **Step 2** and **step 3** (the bootstrap slices), then **step 7** (the three modules). *(This pair used
+   to be the other way round, for no reason it could state: 2.3 says bootstrap deliberately consumes no
+   module, so putting the modules first only delays the first real apply.)*
+4. **Step 5.1** (the Organizations delegation, in Management, by hand) — the precondition for
+   `org-policies/`, and for nothing else.
 5. **Step 5** — `identity/sso/` first, `identity/org-policies/` second (5.5) — then **step 4** (backends
    everywhere else).
 6. **Step 8** (the `Makefile`), **step 10** (documentation).
@@ -69,8 +71,9 @@ CloudTrail record of a `kms:Decrypt`).
 ## What this stage deliberately leaves outside Terraform
 
 Step 5's argument — *a policy whose only record is a browser tab is owned by nobody* — applies word for word
-to four artefacts Stages 1b-1d also created by hand. They stay console-managed anyway, and the reason is
-structural rather than an oversight:
+to six artefacts Stages 1b-1d also produced by hand. They stay outside anyway, and each reason is
+structural rather than an oversight. **Two different reasons, and the last two rows are the second one:**
+the first four *cannot* be in code (wrong account, or Control Tower's object); the last two *must not* be.
 
 | Artefact | Where it lives | Why it cannot come into code here |
 |---|---|---|
@@ -78,6 +81,8 @@ structural rather than an oversight:
 | The organization-level Access Analyzer (1b step 8.2) | **Audit** | Audit is not a Terraform-managed account: no bootstrap, no profile, no state. Bringing it in means a seventh state bucket and a seventh key |
 | Object Lock on `aws-controltower-logs-*` (1d step 9) | **Log Archive** | Same, plus the object is Control Tower's — managing it from Terraform is landing-zone drift |
 | The Control Tower **controls** — Region deny, the two root controls (1c step 7.7) | landing zone | Not policies but controls. If they are ever coded, the resource is `aws_controltower_control` (5.4) |
+| The four **users** and five **groups** (1b step 2) | the Identity Center directory | They are people, not entitlements. In a real deployment they arrive over SCIM from the corporate IdP, and nothing here should have an opinion about that (`plan/conventions.md`, "The identity seam") |
+| **Account-level S3 Block Public Access** (1c step 7.4) | each member account | 1c step 7.5 denies `s3:PutAccountPublicAccessBlock`, so `aws_s3_account_public_access_block` in any slice is an apply that fails. This is the one row here that is not "cannot" but "must not" |
 
 And two accounts get **no state bucket at all, on purpose**: **`Policy Canary`** (`plan/architecture.md` §3:
 "no Terraform slice, no state bucket" — an account whose point is to stay empty) and **Management**. Creating
@@ -189,14 +194,24 @@ Only `bootstrap/` migrates, because only `bootstrap/` has to run before its own 
 slice declares the backend from its first `init` and never holds local state at all.** Say it that way so
 nobody goes looking for a migration to perform.
 
-### 5. `terraform-live/identity/` — the import that gives the policy set an owner
+### 5. `terraform-live/identity/` — where the entitlement plane acquires an owner
 
-This is the substance of the stage. Stages 1b-1d create permission sets, groups, assignments, SCPs, RCPs, tag
-policies and declarative policies **by hand**; without this step nothing regenerates them, no stage owns
-them, and the only record of what they say is a browser tab. That set is the one that can lock the
-organization out of itself, and since D30 was reverted there is **no principal inside a governed account that
-can work around a mistake in it** (D16 — the Management root is the whole recovery path). Code gives it a
-diff, a review and a rollback; the console gives it none of the three.
+This is the substance of the stage, and **it is two different jobs that the previous version of this step
+described as one**: the six persona permission sets are **written here, from the design in Stage 1b step 3**,
+having never been typed into a console; the organization's policy set is **imported**, because prevention had
+to precede it (principle 9) and 1c therefore attached it by hand. Both end in the same place — an artefact
+with a diff, a review and a rollback, which is what neither has while its only record is a browser tab. That
+matters most for the policy half: since D30 was reverted there is **no principal inside a governed account
+that can work around a mistake in it** (D16 — the Management root is the whole recovery path).
+
+**Written here, not imported (1b step 3.9):** `DataScientistAccess`, `DataScientistStagingAccess`,
+`DataScientistProdAccess`, `DeploymentManagerAccess`, `GovernanceManagerAccess`, `DevEnvStewardAccess`, and
+every group assignment except the administrator's. Nothing before Stage 5 needs any of them, so hand-typing
+them into a console and then demanding that code reproduce them byte for byte (5.5) was the same work twice
+with a gate in the middle that fails on JSON whitespace.
+
+**Imported:** the `AdministratorAccess` set and its assignments (1b step 3), and the whole
+`org-policies/` set (1c step 7).
 
 *(This consequence arrived with D30 and outlived it. D30's own reason was narrower — a carve-out condition
 repeated across several policies has to be generated, not typed — and that reason went away with the
@@ -207,7 +222,9 @@ layout; the reasoning belongs here, because it is what the rest of this step is 
 
 | | `identity/sso/` | `identity/org-policies/` |
 |---|---|---|
-| **What it holds** | permission sets, groups, assignments | SCPs, RCPs, tag policy, declarative policy |
+| **What it holds** | permission sets, their policies and boundaries, and **group→account assignments** | SCPs, RCPs, tag policy, declarative policy |
+| **What it deliberately does not hold** | **users and groups** — directory objects, person-shaped, owned by the IdP in any real deployment (`plan/conventions.md`, "The identity seam") | the Control Tower **controls** (5.4) |
+| **How it gets there** | six sets **written**, the administrator set **imported** (1b step 3.9) | **imported** — 1c attached it by hand because prevention precedes it |
 | **Reached through** | the **Identity Center** delegated administrator (`sso.amazonaws.com`, 1b step 1) | a **resource-based delegation policy** on the organization (5.1, INT-20) |
 | **Proved when** | Stage 1b, already | **never** — 5.1 is the first attempt |
 | **D34's rule** | grants are **enumerated** | the floor is **discovered** |
@@ -264,15 +281,37 @@ So this is the **second** widening of the Identity account's blast radius, after
 1b step 1 records — and its control is the same one: 1b step 8.3's alarm, plus the CloudTrail record. Write
 it into `ORGANIZATION.md`'s description of that account rather than leaving it here.
 
-**5.2 — What is imported, and — the half that is easier to get wrong — what is not.**
+**5.2 — What is written, what is imported, and — the half that is easiest to get wrong — what is neither.**
 
-| Imported | Into | Left alone |
+| Object | How it gets into state | Left alone |
 |---|---|---|
-| This project's **five groups** (1b step 2) | `sso/` | **Control Tower's groups** — `AWSControlTowerAdmins`, `AWSAccountFactory`, the auditor and per-account groups |
-| This project's **seven permission sets** (1b step 3.1) | `sso/` | **`AWSAdministratorAccess` and every other Control Tower set** — editing them is landing-zone drift (D10, consequence iii) |
-| Their **group assignments** | `sso/` | The **direct Account Factory assignments** to the infrastructure user (D32, 1b step 3.8) — and if 1b's verification (vi) found they are re-created, they are a permanent property of a vended account, not something to model |
-| The **org-root SCP set** (1c step 7.5), the **per-OU sets** (7.6), the **RCPs**, the **tag policy** and the **declarative EC2 policy** (7.8) | `org-policies/` | The **Control Tower controls** (7.7) — see 5.4 |
+| The **six persona permission sets** and their policies (design of record: 1b step 3.1-3.7) | **Written** — `aws_ssoadmin_permission_set` + `aws_ssoadmin_permission_set_inline_policy`, applied here for the first time | — |
+| Their **group→account assignments** (`aws_ssoadmin_account_assignment`) | **Written**, enumerated one by one (5.3), with the principal resolved by **display name** through `data.aws_identitystore_group` | — |
+| The **`AdministratorAccess`** set (1b step 3) and its assignments | **Imported** — it is the credential this apply runs as, so it cannot be created by the apply | **`AWSAdministratorAccess` and every other Control Tower set** — editing them is landing-zone drift (D10, consequence iii) |
+| This project's **five groups** and its **four users** (1b step 2) | **Neither.** They stay directory objects, outside every state file | **Control Tower's groups** — `AWSControlTowerAdmins`, `AWSAccountFactory`, the auditor and per-account groups |
+| The **direct Account Factory assignments** (D32, 1b step 3.8/5.1) | **Neither** — and if 1b's verification (vi) found they are re-created, they are a permanent property of a vended account rather than something to model | — |
+| The **org-root SCP set** (1c step 7.5), the **per-OU sets** (7.6), the **RCPs**, the **tag policy** and the **declarative EC2 policy** (7.8) | **Imported** | The **Control Tower controls** (7.7) — see 5.4 |
 
+- **Why the four users and five groups stay out, since everything else identity-shaped is coming in.** It is
+  the seam in `plan/conventions.md`, "The identity seam": a permission set and an assignment are
+  *entitlements*, and their number is fixed by the design; a user and a group membership are *people*, and
+  their number grows with headcount — hundreds of data scientists, a dozen stewards. Putting people in
+  Terraform makes the repository an HR system, puts personal data in a state file, and turns joiners and
+  leavers into merge requests. In a real deployment they arrive over SCIM from the corporate IdP, and this
+  slice is unchanged by that — **which is exactly why an assignment must resolve its group by display name
+  and never by GUID**: a replaced directory re-creates the groups with new IDs.
+- **The permissions boundary is the one thing here that cannot be finished inside this slice** (1b step
+  3.4). A customer-managed boundary referenced from a permission set must exist as an `aws_iam_policy` with
+  the same name and path **in every account the set is provisioned into**, and those accounts' policies
+  belong to their own `foundation/` slices — different state, different profile, one more copy per business
+  unit (D35). **Decide it here** (decision 4 below): boundary created by each account's `foundation/` and
+  attached afterwards through `aws_ssoadmin_permissions_boundary_attachment`, an AWS-managed policy as the
+  boundary, or the sets stay inline-only until Stage 3 exists. Attaching a customer-managed reference before
+  the policy exists in the target account fails the *provisioning*, in that account only — which is the
+  quiet version of this mistake.
+- **There is a size cap on a permission set's inline policy**, and three of these sets are long enumerated
+  denies (1b step 3.5). Count before writing, the same discipline 1c step 7.1 applies to SCPs; the way out
+  is a customer-managed policy, which lands back on the paragraph above.
 - **The declarative policy was missing from every earlier version of this step.** 1c step 7.8 creates one
   (IMDSv2 and EC2 public-access defaults) and it is an Organizations policy like the others.
   **Verify while executing (ii):** that `aws_organizations_policy` accepts `type =
@@ -281,9 +320,13 @@ it into `ORGANIZATION.md`'s description of that account rather than leaving it h
   unowned).
 - **Read the three landing-zone logs before writing anything** —
   `log/stage-01b-identity-and-controls.md`, `log/stage-01c-preventive-policies.md` and
-  `log/stage-01d-org-wide-enablement.md`. Two of their four
-  execute-time decisions change what exists to import: whether the `Interactive` OU got a policy set at all
-  (1c step 7.6) and what this project's administrator permission set is actually called (1b step 3.2).
+  `log/stage-01d-org-wide-enablement.md`. Three of their execute-time decisions change what exists here:
+  whether the `Interactive` OU got a policy set at all (1c step 7.6), what this project's administrator
+  permission set is actually called (1b step 3.2), and whether the Account Factory direct assignments could
+  be removed (1b step 5.1).
+- **One thing that must never be declared in any slice, because it looks like it belongs in one:**
+  `aws_s3_account_public_access_block`. 1c step 7.5 denies `s3:PutAccountPublicAccessBlock`, so an apply
+  that touches it fails — see that step for why the setting is made by hand and stays that way.
 
 **5.3 — Write it so an OU or account created later is covered without anybody remembering (D34).**
 
@@ -325,15 +368,28 @@ owned by the landing zone. Importing that SCP would put Terraform and Control To
 object — the landing-zone drift this plan already refuses to create for permission sets. If it is ever to be
 in code, the resource is **`aws_controltower_control`** — the control, not the policy it emits.
 
-**5.5 — The check that the import is faithful: `terraform plan` must come back empty, in both slices.** Not
+**5.5 — The check that an import is faithful: after the import, `terraform plan` must come back empty.** Not
 "small", empty. An import that plans a change is either a policy that differs from what is attached, or a
 resource whose attributes Terraform normalises differently — and the first of those is a control that does
 not say what you think it says.
 
-**Do `sso/` first and `org-policies/` second**, and not for convenience: `sso/` exercises an import mechanism
-against objects whose worst failure is somebody being unable to sign in, so any misunderstanding about how a
-faithful import behaves surfaces where it is cheap. `org-policies/` is the same mechanism against the set
-that can lock the organization out of itself.
+**Read it against 5.2's first column, because the gate now applies to one half of the stage and not the
+other.** The six written permission sets plan a *creation* on their first apply — that is the point of them,
+and an empty plan there would mean nothing was written. The gate is for the imported objects: the
+administrator set and its assignments in `sso/`, and everything in `org-policies/`.
+
+**The cheap way to make the policy import land empty, which costs 1c nothing.** The usual failure is
+cosmetic — the JSON typed into the console and the JSON rendered from the configuration differ in
+whitespace or key order, and the plan shows a rewrite of a policy nobody changed. So **1c writes each
+document as a file in `terraform-live/identity/org-policies/policies/*.json` first and pastes those exact
+bytes into the console**, recording the policy ID beside the filename. The import then compares a document
+against itself. If that was not done, expect an iteration or two here and **do not "converge" by applying** —
+read the diff first (see the Risks).
+
+**Do `sso/` first and `org-policies/` second**, and not for convenience: `sso/` exercises the import
+mechanism against objects whose worst failure is somebody being unable to sign in, so any misunderstanding
+about how a faithful import behaves surfaces where it is cheap. `org-policies/` is the same mechanism
+against the set that can lock the organization out of itself.
 
 **5.6 — The fallback, if 5.1 turns out to be incompatible with the Control Tower landing zone.** Same family
 of question as the Identity Center delegation in 1b step 1, and the split above is what makes the answer
@@ -464,9 +520,15 @@ Each is written so its output differs between working and broken (Lesson 13):
   **no changes** while reading state from S3.
 - **Locking is real:** two concurrent `terraform plan` runs against the same slice — the second reports a
   lock held, rather than both succeeding.
-- **Both imports are faithful:** `terraform plan` is **empty** in `identity/sso/` *and* in
-  `identity/org-policies/`, and `aws organizations list-policies --filter SERVICE_CONTROL_POLICY` lists the
-  same policy IDs the second state holds.
+- **Both imports are faithful:** after the import and the first apply, `terraform plan` is **empty** in
+  `identity/sso/` *and* in `identity/org-policies/`, and
+  `aws organizations list-policies --filter SERVICE_CONTROL_POLICY` lists the same policy IDs the second
+  state holds.
+- **The written half exists where it did not before:** the six persona permission sets are returned by
+  `aws sso-admin list-permission-sets` **and none of them was created before this stage** — the log of
+  1b records one set created by hand, not seven. A group assignment resolves to a group by name:
+  `terraform state show` on one of them names a principal ID that
+  `aws identitystore describe-group` resolves back to the expected display name.
 - **The two slices are independent, which is why they are two:** `terraform state list` in `sso/` names no
   `aws_organizations_*` resource, and `org-policies/` names no `aws_ssoadmin_*` one. Neither reads the other
   through `terraform_remote_state`.
@@ -489,7 +551,7 @@ Each is written so its output differs between working and broken (Lesson 13):
 
 ## Decisions due while executing
 
-**Blocking questions for the user: none.** Three decisions are *made* during the stage and each is written
+**Blocking questions for the user: none.** Four decisions are *made* during the stage and each is written
 into `log/stage-02-terraform-foundation.md` rather than left to whoever is at the keyboard (Lesson 16):
 
 1. **The exact Organizations delegation document** (5.1) — which actions, which resource ARNs, and the
@@ -498,8 +560,13 @@ into `log/stage-02-terraform-foundation.md` rather than left to whoever is at th
    bucket of its own (3.4).
 3. **The noncurrent-version lifecycle on the state buckets** (2.1) — the retention, and that it is a cost
    choice rather than a compliance one.
+4. **How `DataScientistAccess`'s permissions boundary is delivered** (5.2, 1b step 3.4) — an `aws_iam_policy`
+   created by each target account's `foundation/` and attached afterwards, an AWS-managed policy, or
+   inline-only sets until Stage 3 exists. It is a decision rather than a preference because a
+   customer-managed reference that is missing in *one* account fails provisioning **in that account only**,
+   and with one Sandbox per business unit (D35) the number of places it can be missing grows.
 
-*(A fourth used to be here — whether to split `terraform-live/identity/`. It was settled on 2026-08-09,
+*(A fifth used to be here — whether to split `terraform-live/identity/`. It was settled on 2026-08-09,
 before execution: the split is the design, its reasoning is in step 5 and the layout is in
 `plan/conventions.md` §6. Splitting afterwards would have been a state move, which is the whole reason it
 could not be left open.)*

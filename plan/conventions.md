@@ -11,6 +11,9 @@ the Terraform and IAM rules, and the `[P]`/`[D]`/`[E]` layers every slice is cla
 Project prefix: `awsds`. The `<env>` token is one of `sandbox`, `dev`, `data`, `staging`, `prod`, `org`.
 There is deliberately no token for `Policy Canary` (D29): nothing is ever created in that account, so
 nothing in it needs a name — and the day something does, the account has stopped being what it is for.
+*(One exception, and it is bounded: a battery run creates throwaway objects — a bucket, an IAM user — to
+exercise a candidate policy, and deletes them in the same sitting. Stage 1c step 7.3 plans the cleanup
+before the call. A throwaway that outlives its battery is the thing this rule is about.)*
 Example: `awsds-sandbox-vpc`, `awsds-data-raw` (the lake lives in Data Governance since D22, so
 `awsds-prod-raw-data` would name a bucket that does not exist), `awsds-prod-ecr-dev-env`.
 
@@ -54,12 +57,16 @@ terraform-live/
 │   │                     # are separated on that seam. Both applied with the
 │   │                     # awsds-infra-identity profile; neither touches Management
 │   ├── bootstrap/        # [P] state bucket for the Identity account
-│   ├── sso/              # [P] permission sets, groups, assignments. Reached through the
-│   │                     #     IAM Identity Center delegated administrator (D10,
-│   │                     #     sso.amazonaws.com), which Stage 1b step 1 already proves.
-│   │                     #     Control Tower's own sets and groups are NOT here, and the
-│   │                     #     Account Factory direct assignments are not either (D32):
-│   │                     #     editing either is landing-zone drift
+│   ├── sso/              # [P] permission sets, their policies and boundaries, and the
+│   │                     #     group->account assignments. Reached through the IAM Identity
+│   │                     #     Center delegated administrator (D10, sso.amazonaws.com),
+│   │                     #     which Stage 1b step 1 already proves. SIX of the seven sets
+│   │                     #     are WRITTEN here and were never typed into a console
+│   │                     #     (Stage 1b step 3.9); the administrator set is imported.
+│   │                     #     NOT here: users and groups - they are people, see "The
+│   │                     #     identity seam" below. Control Tower's own sets and groups
+│   │                     #     are NOT here either, nor the Account Factory direct
+│   │                     #     assignments (D32): editing either is landing-zone drift
 │   └── org-policies/     # [P] the SCPs, RCPs, the tag policy and the declarative policy.
 │                         #     These are AWS ORGANIZATIONS objects and the Identity Center
 │                         #     delegation does not reach them - they need a separate
@@ -234,8 +241,47 @@ CI is the same bug as one that only works by hand — but the expected caller is
   are written out one by one, because an account acquiring a grant by simply existing is the opposite of the
   intended failure mode. **The split runs along the same seam** — discovered on one side, enumerated on the
   other — which is a second reason to keep it.
+  **What "enumerated" means once the Sandbox multiplies (D35), because the obvious reading forbids
+  something it should not:** a `for_each` over a **human-authored map of business units**, kept in a
+  `.tfvars`, is still enumeration — a unit acquires its assignment because somebody wrote its name down, not
+  because an account appeared. What the rule forbids is `for_each` over a *data source*: an assignment
+  keyed on `data.aws_organizations_organization.accounts` grants by discovery, and that is the failure mode.
+  Stage 14 generates a unit's group and assignment from that same map.
 - Modules are referenced by **git tag**, never by branch, so a module change cannot silently alter an
   existing deployment.
+
+**The identity seam — what goes in Terraform, and the rule that keeps it true at any headcount:**
+
+**Nothing whose count grows with the number of people belongs in Terraform.** The line runs between a
+*person* and an *entitlement*, and it is drawn here rather than in a stage file because it has to survive
+every stage:
+
+| | Person-shaped | Entitlement-shaped |
+|---|---|---|
+| What | Identity Center **users**, **groups**, and group **memberships** | **permission sets**, their inline or customer-managed policies, **permissions boundaries**, and **group→account assignments** |
+| How many | grows with headcount — hundreds of data scientists, a dozen `dev-env` stewards | fixed by the design: seven sets, and O(groups × accounts) assignments |
+| Where it lives | the directory. Console at lab scale (four users, Stage 1b step 2); **SCIM from the corporate IdP** in any real deployment | `terraform-live/identity/sso/` (Stage 2 step 5) |
+| Why not the other way | Terraform would become the HR system, with personal data in a state file and joiners/leavers as merge requests | a console-only entitlement has no diff, no review and no rollback |
+
+Three rules follow, and each has a failure mode that is silent:
+
+- **Assign a permission set to a group, never to a user.** A group assignment is one object no matter how
+  many people are in the group; a user assignment is one per person, created one API call at a time. The
+  one exception is Account Factory's own direct assignment to the infrastructure user (D32), which is
+  documented rather than copied.
+- **Resolve a group by display name, never by GUID** — `data.aws_identitystore_group`, not a pasted ID.
+  Group IDs are properties of *one* directory instance: replace the identity source, which is exactly what
+  federating to a corporate IdP does, and every hardcoded ID becomes a resource that matches nothing.
+  Stage 1b step 8.3's alarm makes the same choice for the same reason, from the other side.
+- **The number of people never appears in a resource count.** If a design change makes it appear — a
+  per-person prefix, a per-person role, a per-person assignment — that is the signal to move the
+  multiplication into a group or a boundary. D19's per-principal derived prefixes are the one deliberate
+  exception, and they are bounded by a lifecycle rule rather than by headcount.
+
+**One resource that must never be declared in any slice:** `aws_s3_account_public_access_block`. The
+account-level setting is made by hand in Stage 1c step 7.4, and Stage 1c step 7.5 then denies
+`s3:PutAccountPublicAccessBlock` — so an apply or a drift correction that touches it fails. It reads like
+something that belongs in `foundation/`, which is exactly why it is written down here.
 
 **IAM rules** (these are conventions because they are easy to violate one role at a time):
 

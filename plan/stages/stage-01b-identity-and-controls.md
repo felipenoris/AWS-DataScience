@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | **Status** | **next** — not started |
-| **Prerequisites** | Stage 1a complete, bar the deferred `Staging` vend. **Steps 3 and 5 must skip their `Staging` items** (`DataScientistStagingAccess`, `DeploymentManagerAccess` on Staging, the `awsds-infra-staging` profile) and pick them up when the account is vended |
+| **Prerequisites** | Stage 1a complete, bar the deferred `Staging` vend. **Steps 3, 5 and 6 skip their `Staging` items**; the full list of what the deferral owes, across every stage, is in [Stage 1a](stage-01a-landing-zone.md) ("What the deferral leaves owed") and is worked at the vend rather than remembered here |
 | **Consumes** | [D10](../decisions/D10-identity-center-delegation.md), [D11](../decisions/D11-lab-lifecycle.md), [D14](../decisions/D14-supply-chain-account.md), [D16](../decisions/D16-break-glass.md), [D18](../decisions/D18-data-scientist-access.md), [D19](../decisions/D19-derived-zone.md), [D20](../decisions/D20-staging-account.md), [D21](../decisions/D21-development-account.md), [D22](../decisions/D22-data-governance-account.md), [D29](../decisions/D29-policy-canary.md), [D30](../decisions/D30-scp-recovery.md), [D31](../decisions/D31-approver-read.md), [D32](../decisions/D32-account-factory-sso-user.md), [D33](../decisions/D33-control-tower-admin-user.md), [D34](../decisions/D34-account-vending.md), [D35](../decisions/D35-sandbox-cardinality.md) |
 | **Proves** | Nothing cross-account; this stage is what makes every later stage reachable. Step 5's profiles are the precondition for **Stage 1c**, **Stage 1d** and everything from Stage 2 onwards |
 | **Log** | [`log/stage-01b-identity-and-controls.md`](../../log/stage-01b-identity-and-controls.md) |
@@ -19,10 +19,11 @@ forgotten `egress/` day at ~USD 4.08), and D12 carries the revision trigger.
 
 ---
 
-**Step numbers are identifiers, not an order — and they run 1-6 and 8 here.** The landing zone's second
-half was one stage until 2026-08-09 and is now three (1b, 1c, 1d), split along the sessions it already
-described. **The step numbers did not change in the split**, so `Stage 1c step 7` and `Stage 1d step 9` are
-the same steps every other file already references; only the stage prefix moved. Step 7 is
+**Step numbers are identifiers, not an order — and they run 1-6 and 8 here, plus 5.1.** The landing zone's
+second half was one stage until 2026-08-09 and is now three (1b, 1c, 1d), split along the sessions it
+already described. **The step numbers did not change in the split**, so `Stage 1c step 7` and
+`Stage 1d step 9` are the same steps every other file already references; only the stage prefix moved.
+**5.1 is the one number added since** — an action step 3.8 already described but no step performed. Step 7 is
 [Stage 1c](stage-01c-preventive-policies.md); steps 9, 10 and 11 are
 [Stage 1d](stage-01d-org-wide-enablement.md).
 
@@ -32,37 +33,46 @@ rather than the tail of this one.
 
 ## The stage at a glance
 
-Seven steps, and the order is a dependency chain rather than a listing. Read this table to plan a session;
-read the step for how to do it. **The `Consumes` column is per step** — executing step 5 does not require
-reading sixteen decision files.
+**The step numbers are identifiers and the `Order` column is the sequence.** They differ in two places, and
+both differences are the point rather than an accident: 8.3 runs *first* and 5.1 is an action step 3
+describes but does not perform. Read this table to plan a session; read the step for how to do it.
+**The `Consumes` column is per step** — executing step 5 does not require reading sixteen decision files.
 
-| # | What | Identity | Consumes | Why it is here and not later |
-|---|---|---|---|---|
-| 1 | Delegate Identity Center to the Identity account | CT Admin @ Management | D10, D33 | Everything in 2-4 is done *from* Identity |
-| 2 | Users and groups, beside Control Tower's | Infra user @ Identity | D32, D33, D34, D35 | — |
-| 3 | Permission sets and assignments | Infra user @ Identity | D14, D16, D18, D19, D20, D21, D22, D29, D30, D31, D32 | — |
-| 4 | Confirm no persona reaches Management | Infra user @ Identity | D34 | Closes the assignment path that step 8 then watches |
-| 5 | Local `aws configure sso` profiles | Infra user, laptop | D29 | **Stages 1c and 1d cannot start without a member-account profile** |
-| 6 | AZ name→ID mapping per account | Infra user, laptop | D14, D20, D21 | Stage 3 anchors subnets on the answer |
-| 8 | Access Analyzer + the group-membership alarm | CT Admin @ Management / Audit | D33, D34 | The alarm is the only control over step 1's blast radius |
+| Order | # | What | Identity | Consumes | Why it is where it is |
+|---|---|---|---|---|---|
+| 1 | **8.3** | The alarm on Identity Center membership and assignment changes — unfiltered | CT Admin @ Management | D33, D34 | **Before step 1, not beside it.** It is the only control over the blast radius step 1 creates, and it depends on nothing in this stage — the groups it watches are Control Tower's and exist since 1a |
+| 2 | 1 | Delegate Identity Center to the Identity account | CT Admin @ Management | D10, D33 | Everything in 2-4 is done *from* Identity |
+| 3 | 2 | Users and groups, beside Control Tower's | Infra user @ Identity | D32, D33, D34, D35 | Its first membership edit is what fires the alarm built in 8.3 |
+| 4 | 3 | **One** permission set — the administrator — and its assignments | Infra user @ Identity | to execute: D16, D29, D32 · to *specify* the other six (3.4-3.7): D14, D18, D19, D20, D21, D22, D31 | The other six are specified here and **created in Stage 2 step 5**, in code (3.9) |
+| 5 | 4 | Confirm no persona reaches Management | Infra user @ Identity | D34 | Closes the assignment path 8.3 then watches |
+| 6 | 5 | Local `aws configure sso` profiles | Infra user, laptop | D29 | **Stages 1c, 1d and 2 cannot start without a member-account profile.** It depends on nothing above it — see the note in step 5 |
+| 7 | **5.1** | Retire the Account Factory direct assignments, or record that they cannot be | Infra user @ Identity + laptop | D32 | Described in 3.8, performed here, because it is only safe once the group path is proven **and** it invalidates the profiles step 5 just wrote |
+| 8 | 6 | AZ name→ID mapping per account | Infra user, laptop | D14, D20, D21 | Stage 3 anchors subnets on the answer |
+| 9 | 8.2 | IAM Access Analyzer, org-wide from Audit | CT Admin @ Management / Audit | D33, D34 | Free, and it catches what Stages 2-3 create. Nothing else waits on it |
 
-**Sessions.** Steps 1-6 are one sitting and are the bootstrap: nothing in this stage or the two that follow
-is reachable without a profile. **Keep step 1 and step 8 in the same session** — step 1 widens the Identity
-account's blast radius and step 8 is the only thing watching it. That constraint is why step 8 stayed here
-rather than moving to Stage 1d with the rest of the org-wide work.
+**Sessions.** Orders 1-7 are one sitting and are the bootstrap: nothing in this stage or the three that
+follow is reachable without a profile. Orders 8 and 9 are independent of everything else and of each other.
+
+**Why 8.3 moved to the front, since the previous version of this file solved the same problem differently.**
+It used to say "keep step 1 and step 8 in the same session", which is an intention rather than a control
+(Lesson 5) — the window between them is exactly the interval in which the widened blast radius is
+unobserved, and nothing enforces its length. 8.3 has no dependency on steps 1-6: the groups it watches were
+created by Control Tower in 1a, and the metric filter goes on the Management account's org-trail log group,
+which 1a step 5 already used. Building it first closes the window by construction instead of by discipline,
+and it makes step 2 the alarm's test rather than requiring a deliberate edit to `AWSControlTowerAdmins`.
 
 ## Who executes what
 
 **Every manual step names the identity that performs it, not only what it does** (Lesson 17). **Two
-identities do all seven steps, through three sign-in paths** — and it is the *path* that is easy to get
+identities do all of it, through three sign-in paths** — and it is the *path* that is easy to get
 wrong, which is how a step stalls on an `AccessDenied` that looks like a policy bug.
 
 | Steps | Identity | Sign-in path |
 |---|---|---|
-| 1, 8.1 (delegations) | **`AWS Control Tower Admin`** (D33/D34) | access portal → `AWSAdministratorAccess` on **Management** |
+| 8.3 (the metric filter and the alarm), 1 and 8.1 (delegations) | **`AWS Control Tower Admin`** (D33/D34) | access portal → `AWSAdministratorAccess` on **Management** |
 | 8.2 (creating the analyzer *in Audit*) | **`AWS Control Tower Admin`** | access portal → `AWSAdministratorAccess` on **Audit** — the infrastructure user has *no* assignment there (`ORGANIZATION.md`) |
-| 2, 3, 4 | **Infrastructure user** | access portal → `AWSAdministratorAccess` on **Identity** (the direct Account Factory assignment from 1a step 4 — this is what bootstraps the whole stage) |
-| 5, 6 | **Infrastructure user**, from the laptop | the `awsds-infra-*` and `awsds-policy-canary` profiles created in step 5 |
+| 2, 3, 4, 5.1 | **Infrastructure user** | access portal → `AWSAdministratorAccess` on **Identity** (the direct Account Factory assignment from 1a step 4 — this is what bootstraps the whole stage) |
+| 5, 5.1's re-check, 6 | **Infrastructure user**, from the laptop | the `awsds-infra-*` and `awsds-policy-canary` profiles created in step 5 |
 
 **Nothing in this stage is performed by root**, and nothing is performed by a project persona other than
 the infrastructure user. The *directory* holds six identities after step 2 (five personas plus
@@ -87,6 +97,9 @@ The landing zone's one significant recurring line, AWS Config, is decided in **S
 
 ### Step 1 — Register the Identity account as delegated administrator of IAM Identity Center (D10)
 
+**Do not start this step until 8.3's alarm exists and has been seen to work.** That is the ordering in the
+table above, and it is the whole reason the alarm is in this stage rather than in Stage 1d.
+
 - **Do**, from the Management account:
   `aws organizations register-delegated-administrator --account-id <IDENTITY_ACCOUNT_ID> --service-principal sso.amazonaws.com`.
 - **Verify:** `aws organizations list-delegated-administrators --service-principal sso.amazonaws.com`
@@ -101,12 +114,13 @@ The landing zone's one significant recurring line, AWS Config, is decided in **S
   Tower's `AWSControlTowerAdmins`. So whoever administers the Identity account can grant themselves
   Management administrator by editing a group membership. That is the same blast radius
   `ORGANIZATION.md` already ascribes to this account; it is recorded here because D33's groups make it
-  concrete rather than theoretical, and because **step 8's alarm is the only control over it**.
+  concrete rather than theoretical, and because **8.3's alarm — already built, one step earlier — is the
+  only control over it**.
   **And it widens once more, one stage from here:** this delegation reaches Identity Center only. The
   SCPs, RCPs and tag policies written in **Stage 1c** are AWS Organizations objects and stay console-managed
   until **Stage 2 step 5.1 (INT-20)** adds a *second*, different delegation — a resource-based policy on
   the organization — after which the Identity account can also edit organization policy, Control Tower's
-  guardrails included. Nothing to do about it here; the point is that step 8's alarm is the control above
+  guardrails included. Nothing to do about it here; the point is that 8.3's alarm is the control above
   both delegations, so it is worth building well rather than quickly.
 - **Verify while executing (i):** that the delegation coexists with the landing zone without raising
   Control Tower drift. Control Tower's handling of Identity Center has changed more than once. Record
@@ -168,7 +182,13 @@ The landing zone's one significant recurring line, AWS Config, is decided in **S
   signature. Nothing in AWS will warn you.
 
 
-### Step 3 — Create the permission sets and make the assignments
+### Step 3 — Create the administrator permission set, and specify the other six
+
+**This step creates one permission set and specifies seven.** The six that are not the administrator are
+**written in code, in Stage 2 step 5**, and are never typed into a console — 3.9 carries the reasoning and
+it is the substantive change of the 2026-08-09 revision. What stays here is the *design*: 3.1 to 3.7 are
+the design of record for all seven sets, and Stage 2 step 5.2 points back at this section rather than
+restating it.
 
 #### 3.1 — The seven sets, stated up front rather than discovered paragraph by paragraph
 
@@ -176,18 +196,26 @@ An earlier
 version of this step named three in its first line and introduced four more further down, which is how a
 set gets missed.
 
-| Permission set | Group | Assigned on | Shape |
-|---|---|---|---|
-| `AdministratorAccess` | `infrastructure` | Sandbox, Development, Data Governance, Staging*, Production, Identity | The builder. The one named exception to "nothing gets `AdministratorAccess`" (`plan/conventions.md`) |
-| `DataScientistAccess` | `data-scientists` | Sandbox **and** Development (D21) | Studio use, scratch/derived read-write, Athena, ECR pull. **Not** `PowerUserAccess`, **not** `AmazonSageMakerFullAccess` |
-| `DataScientistStagingAccess` | `data-scientists` | Staging* (D20) | Read-only, no write of any kind, not even a drop-box |
-| `DataScientistProdAccess` | `data-scientists` | Production (D18) | Data plane read, no compute, no control plane |
-| `DeploymentManagerAccess` | `deployment-managers` | Sandbox, Development, Staging*, Production (D31) | Diagnosis, not reading. **Nothing on Data Governance** |
-| `GovernanceManagerAccess` | `governance-managers` | **Data Governance only** | The catalog, never the rows |
-| `DevEnvStewardAccess` | `dev-env-stewards` | Production + read-only on Sandbox and Development | The artifact, never the data |
+| Permission set | Group | Assigned on | Created | Shape |
+|---|---|---|---|---|
+| `AdministratorAccess` | `infrastructure` | Sandbox, Development, Data Governance, Staging*, Production, Identity | **Here, by hand** | The builder. The one named exception to "nothing gets `AdministratorAccess`" (`plan/conventions.md`) |
+| `DataScientistAccess` | `data-scientists` | Sandbox **and** Development (D21) | Stage 2 step 5 | Studio use, scratch/derived read-write, Athena, ECR pull. **Not** `PowerUserAccess`, **not** `AmazonSageMakerFullAccess` |
+| `DataScientistStagingAccess` | `data-scientists` | Staging* (D20) | Stage 2 step 5 | Read-only, no write of any kind, not even a drop-box |
+| `DataScientistProdAccess` | `data-scientists` | Production (D18) | Stage 2 step 5 | Data plane read, no compute, no control plane |
+| `DeploymentManagerAccess` | `deployment-managers` | Sandbox, Development, Staging*, Production (D31) | Stage 2 step 5 | Diagnosis, not reading. **Nothing on Data Governance** |
+| `GovernanceManagerAccess` | `governance-managers` | **Data Governance only** | Stage 2 step 5 | The catalog, never the rows |
+| `DevEnvStewardAccess` | `dev-env-stewards` | Production + read-only on Sandbox and Development | Stage 2 step 5 | The artifact, never the data |
 
 \* **Skip every `Staging` cell until the account is vended** (the prerequisites row). Nothing before
 Stage 8 needs it.
+
+**The five groups are still created here, in step 2, and that is not an inconsistency — it is the seam.**
+A group and a group membership are *person-shaped*: in a real environment they arrive from the corporate
+IdP over SCIM, and the number of them grows with the number of people. A permission set and its assignment
+are *entitlement-shaped*: their number is fixed by the design, not by headcount. So the directory objects
+stay outside Terraform and the entitlements go into it, with the assignment resolving its group **by
+display name** rather than by GUID (`plan/conventions.md`, "The identity seam"). Nothing here changes if
+the directory is later replaced.
 
 Plus one account reached with no group behind it: **`Policy Canary` (D29)**, which since D32 is a
 **confirmation rather than a task**. Vending it in 1a step 4 with the infrastructure user's
@@ -236,6 +264,17 @@ design — for five stages. `AmazonSageMakerFullAccess` is *not* a safe starting
 `s3:*` on any bucket with "sagemaker" in the name plus a broad `iam:PassRole`. It starts as: SageMaker
 Studio use, read/write on the account's scratch and derived prefixes, Athena, ECR pull, and nothing else,
 with a **permissions boundary** and `PassRole` scoped per the IAM rules in `plan/conventions.md` §6.
+
+**The boundary carries a mechanical constraint that decides where it can be declared**, and it is the one
+thing in this section that cannot be settled by writing a policy document. A boundary attached to a
+permission set (`aws_ssoadmin_permissions_boundary_attachment`) is either an AWS-managed policy or a
+**customer-managed** one referenced *by name* — and a customer-managed reference requires an IAM policy
+with that name and path to exist **in every account the permission set is provisioned into**. Miss one and
+provisioning fails there, in an account nobody is looking at. Those `aws_iam_policy` objects belong to each
+account's own `foundation/` slice: a different state, a different profile, a different apply — and one more
+copy per business unit (D35). So it is a cross-slice ordering dependency, not a policy choice, and
+**Stage 2 step 5 carries it as a decision row** rather than leaving it to be discovered by a failed
+provisioning.
 
 #### 3.5 — The three sets whose *denials* are the point of them
 
@@ -318,8 +357,11 @@ infrastructure user, created in 1a step 4 and sitting outside the group model bu
 - **Remove none of them until the group path is proven end to end** — `infrastructure` →
   `AdministratorAccess` → an actual `aws sts get-caller-identity` under each profile in step 5. Removing
   them first is the cheapest way to lock the only administrator out of an account whose sole remaining
-  recovery path is the Management root (D16; D30 reverted). **So the removal happens after step 5, not
-  inside step 3** — it is listed here because this is where the assignments are described.
+  recovery path is the Management root (D16; D30 reverted). **So the removal is not performed here: it is
+  [step 5.1](#step-51--retire-the-account-factory-direct-assignments-or-record-that-they-cannot-be),
+  and it has a step number for a reason.** An earlier version of this file described the removal in this
+  subsection and told the reader to do it "after step 5" — an action with no step, no identity and no place
+  in any table, which is the shape of something that gets done at the wrong moment or not at all.
 - **`Policy Canary` is the exception and it is permanent.** Its direct assignment is not a leftover to be
   cleaned up: there is no group and no `awsds-infra-*` profile behind it (3.1), so removing it removes the
   only way into the account, and with it D29's whole battery. Whatever the answer to (vi) below, this one
@@ -331,10 +373,32 @@ infrastructure user, created in 1a step 4 and sitting outside the group model bu
   record the direct assignment as a **permanent property of Account Factory-vended accounts** rather
   than to keep deleting something that keeps coming back. D32 is amended either way.
 
-#### 3.9 — Why this is by hand
+#### 3.9 — Why *one* set is by hand, and the other six are not
 
-Terraform cannot run before SSO login works. Stage 2 moves all of it into
-`terraform-live/identity/sso/` and imports it.
+The old version of this
+subsection read: *"Terraform cannot run before SSO login works. Stage 2 moves all of it into
+`terraform-live/identity/sso/` and imports it."* Both sentences are true and the conclusion does not
+follow from them. Terraform cannot run before **an administrator can sign in**; that justifies one group
+and one permission set, not seven — and the other six then get typed into a console and immediately
+re-expressed in code, with Stage 2 step 5.5 demanding that the second expression match the first byte for
+byte. That is the same work done twice with a gate in the middle designed to fail on JSON whitespace.
+
+- **Nothing between here and Stage 5 needs the other six.** The "Who executes what" table of this stage and
+  of 1c, 1d and 2 contains exactly two identities — `AWS Control Tower Admin` and the infrastructure user.
+  The data scientist's first sign-in is Stage 6, the governance manager's is Stage 6, and the two GitLab
+  approvers consume no AWS permission at all until they diagnose something (Stage 8).
+- **So they are authored in `terraform-live/identity/sso/` at Stage 2 step 5, created rather than
+  imported.** The design of record is 3.1-3.7 above; Stage 2 references it and does not restate it.
+- **What is still imported is small and deliberate:** the `AdministratorAccess` set created here and its
+  assignments. That keeps the whole entitlement plane in code — an artefact nobody owns is worse than an
+  artefact somebody owns badly (Lesson 5) — and it exercises the import mechanism on objects whose worst
+  failure is that a person cannot sign in, which is exactly the argument Stage 2 step 5.5 already makes for
+  doing `sso/` before `org-policies/`.
+- **Why the administrator set is not authored in code with the rest, which is the mirror-image question.**
+  It is the credential the code applies *as*. A permission set whose only source is the state file that
+  needs it to be applied is a cycle, and the Account Factory direct assignments (3.8) are the only thing
+  standing behind it until 5.1 proves otherwise. Author it by hand, import it, keep the direct assignments
+  until 5.1 says they can go.
 
 
 ### Step 4 — No project persona holds an assignment on the Management account — the infrastructure user included
@@ -345,13 +409,13 @@ Terraform cannot run before SSO login works. Stage 2 moves all of it into
   Management is bootstrap-only and console-only, Terraform never runs against it, so there is nothing for
   an `awsds-infra-*` profile to do. Step 3's assignment list already omits it; this step now says so
   deliberately rather than by omission, which is the difference between a decision and an oversight.
-- **Keep the mechanical fact the old step carried, because it is true and it bites at step 8:** the
+- **Keep the mechanical fact the old step carried, because it is true and it bites at 8.3:** the
   delegated administrator **cannot manage assignments targeting the Management account** — those can only
   be created from Management itself. That is a constraint on *creating an assignment*, and it is **not** a
   constraint on group membership: `AWSControlTowerAdmins` already carries `AWSAdministratorAccess` on
   Management, created by the landing zone, and step 1 records that the delegated administrator can edit
   who is in it. **So the preventive path into Management is closed and the membership path is not** —
-  which is why step 8's alarm is the control rather than a nicety.
+  which is why 8.3's alarm — built before any of this — is the control rather than a nicety.
 - **Verify while executing (ii):** that the restriction is exactly as described — that assignments
   targeting the Management account are the *only* thing the delegated administrator cannot manage.
 
@@ -361,17 +425,66 @@ Terraform cannot run before SSO login works. Stage 2 moves all of it into
 - **Do:** `aws configure sso` for `awsds-infra-sandbox`, `awsds-infra-dev`, `awsds-infra-prod`,
   `awsds-infra-data` and `awsds-infra-identity` — plus one more that is deliberately named differently,
   **`awsds-policy-canary`** (D29). `awsds-infra-staging` waits for the vend.
+- **Name the permission set each profile is bound to, and write it in the log.** `aws configure sso` stores
+  a `sso_role_name` in `~/.aws/config`, so a profile is bound to *one* named set, not to "whatever
+  administrator access this user has". There are two administrator sets four characters apart (3.2), and
+  which one a profile points at decides whether 5.1 is safe:
+  - **Point every profile at this project's `AdministratorAccess`**, reached through the `infrastructure`
+    group. That is the whole point of the group path, and it is what makes 5.1 a cleanup rather than a
+    lockout.
+  - **Control Tower's `AWSAdministratorAccess` — the Account Factory direct assignment — is the fallback
+    to fall back *to*, not the one to configure.** A profile bound to it works today and stops working the
+    moment 5.1 removes the assignment behind it.
+  - `awsds-policy-canary` is the exception and has no choice: that account has only the direct
+    assignment (3.1), so its profile is bound to `AWSAdministratorAccess` permanently. Record it, so the
+    asymmetry reads as a decision rather than as a slip.
 - **Why the canary profile is not an `awsds-infra-*`:** `Policy Canary` is not a Terraform-managed
   account and nothing is ever applied into it. The profile exists only to run Stage 1c's test battery, and
   the naming keeps that visible in shell history.
-- **Verify:** `aws sts get-caller-identity --profile <each>` returns the expected account ID. This is the
-  first real proof that steps 1-4 worked, and it is the precondition step 3.8 names before any direct
-  assignment is removed.
-- **This used to be the second-to-last step and that was an ordering bug.** Every step below this one,
-  and everything in Stages 1c and 1d, does CLI or console work *inside a member account* — the
+- **Verify:** `aws sts get-caller-identity --profile <each>` returns the expected account ID **and an
+  assumed-role ARN naming the set the profile was bound to** — the ARN is the evidence, the account ID
+  alone is not (Lesson 13: an `AWSReservedSSO_AWSAdministratorAccess_*` ARN and an
+  `AWSReservedSSO_AdministratorAccess_*` ARN both "work").
+- **This step depends on nothing above it, which the previous version of this file did not say.** The
+  Account Factory direct assignments exist since 1a step 4, so `aws configure sso` works before the
+  delegation, before the groups and before the permission sets — bound to `AWSAdministratorAccess`. That
+  is worth knowing for one reason: if anything in steps 1-4 goes wrong, the way back in is already
+  configured. What the *ordering* buys is that the profiles written here are the ones the rest of the
+  project uses, bound to the set the group path provides.
+- **It used to be the second-to-last step and that was an ordering bug.** Every step below this one,
+  and everything in Stages 1c, 1d and 2, does CLI or console work *inside a member account* — the
   `Policy Canary` battery, restricting the Config recorder, enabling Object Lock on the Log Archive
   bucket, raising the Lake Formation cross-account version in Data Governance, reading AZ IDs per
   account — and none of it is reachable without a profile.
+
+
+### Step 5.1 — Retire the Account Factory direct assignments, or record that they cannot be
+
+**A step of its own since 2026-08-09.** 3.8 describes these assignments and used to describe their removal
+as something to do "after step 5" — an action with no number, no identity and no row in any table. It has
+both now, because it is the one act in this stage that can lock the only administrator out of an account.
+
+- **Precondition, and it is not the same as "step 5 is finished":** every profile from step 5 has returned
+  an assumed-role ARN naming **this project's** `AdministratorAccess`. That is the proof that
+  `infrastructure` → `AdministratorAccess` → the account actually resolves. A profile still bound to
+  `AWSAdministratorAccess` means the group path is untested in that account, and removing the direct
+  assignment there is removing the only thing that is known to work.
+- **Do:** remove the direct user assignment of `AWSAdministratorAccess` from Sandbox, Development,
+  Production, Data Governance and — **last, and only if the four others survived it** — Identity. The
+  Identity account's assignment is what bootstrapped this whole stage; it is the last one to touch and the
+  first one to restore.
+- **Never `Policy Canary`** (3.8). Its direct assignment is the only way into the account and it is
+  permanent.
+- **Then re-check, don't assume:** `aws sts get-caller-identity --profile <each>` again, after the
+  removal. If a profile was bound to the set that was just removed, it fails here — which is the cheap
+  version of that discovery, and the reason this step is not the last thing done in a session.
+- **This is where verification (vi) is answered.** If the assignments come back — on a landing-zone
+  update, an account update or a re-enrollment — the honest outcome is to stop removing them and record
+  the direct assignment as a **permanent property of an Account Factory-vended account**, in
+  `log/stage-01b-identity-and-controls.md` and in D32. Stage 2 step 5.2 then models nothing about them,
+  which is already what it says.
+- **Reversible**, and cheaply: the assignment can be re-created from the Identity account. It is a
+  separate step because the *sequence* is what is dangerous, not the operation.
 
 
 ### Step 6 — Check the AZ name-to-ID mapping
@@ -393,6 +506,10 @@ Terraform cannot run before SSO login works. Stage 2 moves all of it into
 ### Step 8 — Security delegation, the free detective control, and the alarm that has no preventive control above it
 
 Principle 9, as amended 2026-08-08.
+
+**Its two halves are executed at opposite ends of the stage, and the number does not say so.** 8.3 is the
+**first** thing done in this stage — before step 1 — and 8.2 is the last, or a session of its own. Nothing
+depends on 8.2; everything after step 1 depends on 8.3 existing. The at-a-glance table is the order.
 
 This step used to enable Security Hub, GuardDuty and Access Analyzer here, all at once, citing principle
 9. That was a misreading of it: the principle argues that **prevention has precedence and that the
@@ -431,7 +548,11 @@ a service enabled early goes stale in the direction that flatters the estimate).
   attaching RCPs, which is a second reason they come before Stage 1c is repeated in code at Stage 2.
 - **Unused-access findings are the paid half and stay in Stage 12.**
 
-#### 8.3 — Do here: an alarm on membership changes to Control Tower's own groups (D33), which D34 promotes from prudent to load-bearing
+#### 8.3 — Do **first**: an alarm on Identity Center membership and assignment changes (D33), which D34 promotes from prudent to load-bearing
+
+**This is the first thing executed in Stage 1b**, before the delegation of step 1 — see the at-a-glance
+table. It depends on nothing else in the stage: the groups it watches are Control Tower's, they exist since
+1a, and the log group it reads is the one 1a step 5 already used.
 
 - **Why it has to exist.** Those groups are pre-wired: one membership edit puts a person into
   `AWSAdministratorAccess` on Management, Log Archive and Audit, or `AWSPowerUserAccess` on every
@@ -467,30 +588,50 @@ a service enabled early goes stale in the direction that flatters the estimate).
     Stage 2 moves identity into `terraform-live/identity/sso/` — from then on every membership change this
     alarm exists to catch arrives through `identitystore`, and a filter that misses it reports nothing
     while looking healthy (Lesson 13).
-  - **Filter on group *IDs*, resolved first — not on names.** These events carry the group's `groupId`
-    (a GUID), and CloudTrail's Identity Center payloads changed in January 2025 in exactly the fields a
-    name-based filter would key on (`userName`, `principalId`, `displayName`). So resolve them once —
-    `aws sso-admin list-instances` for the `IdentityStoreId`, then
-    `aws identitystore list-groups --identity-store-id <d-xxxx>` — record the IDs of
-    `AWSControlTowerAdmins`, `AWSAccountFactory` and the rest of the pre-wired set in
-    `log/stage-01b-identity-and-controls.md`, and put those in the pattern. **If that proves awkward,
-    take the cheaper and stricter option: do not filter by group at all.** Membership changes across
-    this whole directory are a handful of events a year; a slightly noisy alarm that fires is worth more
-    than a precise one that cannot.
+  - **Do not filter by group. Match the six events above and nothing else** — settled 2026-08-09, and it
+    is the choice this project makes rather than an option left at the keyboard (Lesson 16). The
+    alternative was to key the pattern on each group's `groupId`, resolved once through
+    `aws sso-admin list-instances` and `aws identitystore list-groups`. Three reasons it lost:
+    - **Precision buys nothing at this size.** The whole directory holds six identities and five project
+      groups. Every membership change in it is worth a notification; there is no class of edit this alarm
+      *should* ignore.
+    - **A filter keyed on a GUID is a filter with a hidden expiry.** Those IDs are properties of *this*
+      directory instance. Replace the identity source — the move a real deployment makes the day it
+      federates to a corporate IdP — and the groups are re-created with new IDs, leaving a pattern that
+      matches nothing and an alarm that looks healthy (Lesson 13). CloudTrail's Identity Center payloads
+      already changed once, in January 2025, in exactly the fields a name-based filter would have keyed on.
+    - **The failure modes are not symmetric.** A noisy alarm is read and tuned; a silent one is trusted.
+    **This inverts at scale, and that is written down rather than left implicit:** with hundreds of data
+    scientists arriving through SCIM, an unfiltered alarm fires on every onboarding and is muted within a
+    fortnight — which is worse than not having it. `plan/institutional-delta.md` carries the row, and the
+    revision trigger is the arrival of an external identity source, not a headcount.
   - Namespace `AWSDS/Security`, its own metric name, metric value `1`, **`Default value` left empty** —
     a custom metric is USD 0.30/metric-month and is metered only in the hours it publishes.
   - Alarm: Sum, 1 minute, `≥ 1`, **missing data `notBreaching`** (the price of the empty default value),
     delivering to `awsds-org-break-glass-alerts` — the same SNS topic as the break-glass alarm, which is
     already confirmed on both channels.
-  - **Verify while executing (ix):** which account the events land in, and under which of the three event
-    sources above, before trusting the filter. If they turn
-    out to be recorded only in the Identity account, keep the filter there instead and point it at the
-    same topic cross-account. Record which it was.
+  - **What "do not filter" costs in practice, which is less than it sounds.** Step 2 and step 3 generate a
+    burst of these events, and so does Stage 2's first apply of `identity/sso/`. A CloudWatch alarm
+    notifies on a **state transition**, not per datapoint, so a burst produces one notification and one
+    later return to OK — not one per assignment. The cost of the choice is a handful of expected
+    notifications at three known moments, all of them in this plan.
+  - **Verify while executing (ix), and it can only be answered after step 1:** which account the events
+    land in, and under which of the three event sources above. The filter is built here, while the
+    directory is still administered from Management; the delegation then moves that administration to the
+    Identity account, and **step 2's first group edit is the first event that answers the question**. If
+    the events turn out to be recorded only in the Identity account, keep a filter there instead and point
+    it at the same topic cross-account. Record which it was.
   - **Expect the alarm to fire minutes late, and do not treat that as a failure.** The path is
     CloudTrail → S3 → CloudWatch Logs → metric filter → alarm, so single-digit minutes of delay is normal
     for a detective control of this shape. It is why 1a's break-glass alarm is built the same way.
-- **Fire it once**, by adding and removing a member deliberately. An untested alarm is a hypothesis —
-  1a step 5 makes the same point about the same topic.
+- **The test is step 2, not a contrived edit.** An untested alarm is a hypothesis (1a step 5 makes the same
+  point about the same topic) — and because this alarm is built *before* the rest of the stage, putting the
+  infrastructure user into the `infrastructure` group is a real membership change that must produce a real
+  notification. If step 2 completes and nothing arrives, stop: the alarm is not a control, and step 1 has
+  already widened what it was supposed to be watching. The old instruction here was to add and remove a
+  member of `AWSControlTowerAdmins` deliberately — a live edit to the most dangerous group in the
+  organization, performed to test the thing that watches it. Ordering the stage properly removes the need
+  for it.
 
 #### 8.4 — Deliberately not here
 
@@ -515,12 +656,18 @@ a service enabled early goes stale in the direction that flatters the estimate).
 Each one is written so that its output differs between working and broken (Lesson 13):
 
 - **SSO login works and the group path is real:** `aws sts get-caller-identity --profile awsds-infra-sandbox`
-  returns the Sandbox account ID, and the same for every other profile from step 5.
+  returns the Sandbox account ID **and an ARN containing
+  `AWSReservedSSO_AdministratorAccess`** — this project's set, reached through the `infrastructure` group —
+  and the same for every other `awsds-infra-*` profile. The account ID alone proves only that *an*
+  administrator assignment exists, which was already true before this stage started.
 - **The delegation took effect:** `aws sso-admin list-instances --profile awsds-infra-identity` returns the
   Identity Center instance — from the *Identity* account, which is what makes it evidence about the
   delegation rather than about Identity Center existing.
-- **The membership alarm is a control and not a hypothesis:** it fired once, on both channels, on a
-  deliberate add-and-remove.
+- **The membership alarm is a control and not a hypothesis:** step 2's first group edit produced a
+  notification on both channels, minutes later — with the alarm already in place *before* step 1 widened
+  what it watches.
+- **The direct assignments are settled either way** (5.1): removed and the profiles still work, or recorded
+  as a permanent property of a vended account with D32 amended. What is not acceptable is not knowing.
 
 ## Decisions due while executing
 
@@ -538,9 +685,14 @@ written into `log/stage-01b-identity-and-controls.md` rather than left to whoeve
 
 ## Risks
 
-- **Step 1's delegation widens the Identity account's blast radius before step 8's alarm exists.** Keep the
-  two in the same session. This is the constraint that decided the split: step 8 belongs with step 1, not
-  with the org-wide work it otherwise resembles.
+- **Step 1's delegation widens the Identity account's blast radius, and 8.3's alarm is the only thing above
+  it.** The ordering — 8.3 first, then step 1 — is what makes that a control rather than a promise; the
+  previous version of this file asked for the two to be in "the same session", which bounds nothing. This is
+  also the constraint that decided the split: 8.3 belongs with step 1, not with the org-wide work it
+  otherwise resembles.
+- **5.1 is the one act here that can lock an administrator out of an account.** It is reversible from the
+  Identity account, and it is safe only in the order the step states: profiles proven against this project's
+  set first, Identity account last.
 - **Nothing here is torn down between sessions** — everything 1b creates is `[P]` (D11). Account e-mails
   cannot be reused after an account is closed (a closed account holds its e-mail for 90 days), which is
   exactly why D11 keeps accounts in the persistent layer. The same is true of 1c and 1d.
@@ -555,8 +707,8 @@ landing zone's** — iii, iv, v, vii and viii are asked in Stages 1c and 1d.
 |---|---|---|
 | i | Does the Identity Center delegation coexist with the landing zone without raising drift? | 1 |
 | ii | Are Management-targeted assignments the *only* thing the delegated administrator cannot manage? | 4 |
-| vi | Does removing an Account Factory direct assignment stick, or is it re-created? | 3.8 |
-| ix | Are Identity Center membership events recorded in Management's org-trail log group after the delegation, and under which of the three event sources? | 8.3 |
+| vi | Does removing an Account Factory direct assignment stick, or is it re-created? | 5.1 (described in 3.8) |
+| ix | Are Identity Center membership events recorded in Management's org-trail log group after the delegation, and under which of the three event sources? | 8.3, answered by step 2 |
 
 **Was (ix), and it does not belong to this stage:** *"does Macie's delegation enable Macie, as GuardDuty's
 and Security Hub's do?"* — 8.1 defers Macie's delegation to **Stage 11**, so nothing here can answer it.
