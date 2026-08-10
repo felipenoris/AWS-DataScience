@@ -399,9 +399,9 @@ is the only path by which governed data is ever written.
 All under one AWS Organization governed by Control Tower.
 
 **The account map is in [`ORGANIZATION.md`](ORGANIZATION.md)**: an index table of account → OU → axis →
-the policy set that OU carries, then one section per account saying what it holds and what it deliberately
-does not — and, above all of it, the two families of IAM role, the seven permission sets, the five SSO
-groups and the assignment triples binding them to accounts.
+purpose → the policy set that OU carries, then one section per account saying what it holds and what it
+deliberately does not — and, above all of it, the two families of IAM role, the seven permission sets, the
+five SSO groups and the assignment triples binding them to accounts.
 
 It is not summarised here on purpose. A second account list is a list that drifts, and it drifts in the
 direction of whichever file was edited last.

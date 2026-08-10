@@ -41,18 +41,22 @@ account.** A human may *use* a service hosted in an account they can never admin
 Production over the VPN, the SageMaker Unified Studio portal hosted in Data Governance. Using the service
 is not signing in to the account.
 
-| Account | OU | Axis | Policy set the OU carries |
-|---|---|---|---|
-| Management | root | Platform | Bootstrap only, manual, never managed by Terraform |
-| Log Archive | Security | Platform | Control Tower guardrails |
-| Audit | Security | Platform | Control Tower guardrails; delegated security administration |
-| Identity | **Identity** | Platform | Delegated Identity Center administration. Its own OU since 2026-08-09: Control Tower would not vend the account into the foundational `Security` OU (D23) |
-| Policy Canary | Policy Test | Platform | **None of its own** — the OU exists to hold *candidate* policies under test (D29) |
-| Sandbox | Interactive → **Sandboxes** | Lifecycle (before the chain) | Interactive compute allowed — because nothing denies it. Neither `Sandboxes` nor `Interactive` carries a set of its own today, so what reaches this account is the organization-root set; infrastructure change is held off the data scientist by `DataScientistAccess`, an *identity* policy (Stage 1c step 7). **One account per business unit (D35)** — the only non-structural row in this table |
-| Development | Interactive | Lifecycle (head of the chain) | Same as Sandbox — the two differ in content, not in policy |
-| Data Governance | Data | **Ownership** | No user compute; catalog maintenance excepted by name; deletion denied |
-| Staging | Workloads | Lifecycle | No interactive compute; no human control plane |
-| Production | Workloads | Lifecycle (end of the chain) | Same as Staging |
+**This table is the account map**, and the sections after it are one per account. `Purpose` says what the
+account is *for*; `Policy set` says what the OU it sits in *constrains* — the two are deliberately different
+questions, which is why an account can be high blast radius and carry a light policy set at the same time.
+
+| Account | OU | Axis | Purpose | Policy set the OU carries |
+|---|---|---|---|---|
+| Management | root | Platform | **Organization owner** — the Organization itself, Control Tower, and the landing zone | Bootstrap only, manual, never managed by Terraform |
+| Log Archive | Security | Platform | Central, **tamper-evident** log store (S3 Object Lock). Created by Control Tower, not vended by Account Factory | Control Tower guardrails |
+| Audit | Security | Platform | **Security guardian** — GuardDuty, Security Hub, Macie and IAM Access Analyzer. Created by Control Tower, not vended by Account Factory | Control Tower guardrails; delegated security administration |
+| Identity | **Identity** | Platform | The **access-management plane**: permission sets, groups and assignments. Separate from Audit so that access management and security monitoring do not share a blast radius | Delegated Identity Center administration. Its own OU since 2026-08-09: Control Tower would not vend the account into the foundational `Security` OU (D23) |
+| Policy Canary | Policy Test | Platform | **Deliberately empty, and disposable** — the account a candidate SCP or RCP is exercised against before it reaches anything real. An SCP is evaluated only when a principal makes a call, so a policy-staging OU with no account inside it tests nothing, which is why this is an account and not just a folder. Holds an administrator principal and nothing else, because a deny exercised by a principal that lacked the permission anyway proves nothing about a ceiling | **None of its own** — the OU exists to hold *candidate* policies under test (D29) |
+| Sandbox | Interactive → **Sandboxes** | Lifecycle (before the chain) | **Experimentation** — the unit of work is a notebook. Target of the unified domain's `experimentation` project blueprints (D26): interactive compute running unreviewed code against real, shared data, which makes it **the highest-risk account rather than the lowest** (`README.md` §3). Nothing here survives; nothing promotes from here | Interactive compute allowed — because nothing denies it. Neither `Sandboxes` nor `Interactive` carries a set of its own today, so what reaches this account is the organization-root set; infrastructure change is held off the data scientist by `DataScientistAccess`, an *identity* policy (Stage 1c step 7). **One account per business unit (D35)** — the only non-structural row in this table |
+| Development | Interactive | Lifecycle (head of the chain) | **Development** — the unit of work is a pipeline: a repository with tests, git and CI. Target of the `engineering` project profile (D26). Work graduates in from Sandbox **through git, never through a pipeline**, and the promotion chain starts here | Same as Sandbox — the two differ in content, not in policy |
+| Data Governance | Data | **Ownership** | The **state and governance of data**: the governed lake (S3 + Iceberg), the Glue catalog, Lake Formation, classification, the ingestion drop-box, the Glue Crawlers on raw and drop-box (D27), and the **SageMaker Unified Studio domain** with its catalog, project profiles, blueprints and account associations (D26). **A registry, not a runtime** — no VPC and no interactive sign-in; every environment reaches it through cross-account shares, and the portal it hosts is used by people who can never administer the account. Renamed from `Data Management` on 2026-08-08 | No user compute; catalog maintenance excepted by name; deletion denied |
+| Staging | Workloads | Lifecycle | **Deployment target** — receives the built artifact, runs the integration tests against sampled or synthetic data local to it, and is torn down again. No Studio domain, no Model Registry of its own, no GitLab, no share from the lake. Data scientists: read-only | No interactive compute; no human control plane |
+| Production | Workloads | Lifecycle (end of the chain) | The **software supply chain** (GitLab, runners, ECR, CodeArtifact), the production SageMaker runtime including the **Model Registry**, and the lake's **producer** — its job execution role holds the governed write, the only path by which governed data is ever written | Same as Staging |
 
 ## Management Account
 
