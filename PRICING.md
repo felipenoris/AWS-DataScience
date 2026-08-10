@@ -190,7 +190,7 @@ Paid every month even with the lab shut down. Same rows as `plan/cost-model.md`,
 | S3 data + state + backups (~25 GB Standard) | 0.0405 USD/GB-mo | 0.023 USD/GB-mo | ~1.50 | ~1.00 |
 | ECR images (~10 GB) | 0.10 USD/GB-mo | 0.10 USD/GB-mo | 1.00 | 1.00 |
 | AWS Config, every governed account (Management is the one not recorded) | 0.003 USD/item | 0.003 USD/item | 2.50-5.00 | 2.50-5.00 |
-| Route 53 **private** hosted zones (2-3: one per VPC-bearing account, plus `pages.internal`) | 0.50 USD/zone-mo (global) | 0.50 USD/zone-mo | 1.00-1.50 | 1.00-1.50 |
+| Route 53 **private** hosted zones (**3 at N=1**: `sandbox.internal` per business unit, plus `prod.internal` and `pages.internal`, both in Production — Development and Staging get none, Stage 3 step 4.2) | 0.50 USD/zone-mo (global) | 0.50 USD/zone-mo | 1.00-1.50 | 1.00-1.50 |
 | Route 53 **public** hosted zone (D15 phase 2 — **Stage 13 only**) | 0.50 USD/zone-mo (global) | 0.50 USD/zone-mo | 0 → 0.50 | 0 → 0.50 |
 | Public domain registration (D15 phase 2 — **Stage 13 only**) | registrar, region-independent | idem | 0 → ~1.00 | 0 → ~1.00 |
 | ACM **imported** certificates (D15 phase 1 — the internal CA's leaves) | free | free | 0 | 0 |

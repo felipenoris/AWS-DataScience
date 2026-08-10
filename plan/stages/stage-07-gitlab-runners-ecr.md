@@ -144,9 +144,9 @@ exactly why step 1's backup/restore cycle has to be tested for real.
    D15 all three are internal and cost nothing: a **second private hosted zone**, `pages.internal`, separate
    from `prod.internal` so the cookie boundary is a real domain boundary and not just a different host;
    a wildcard record `*.pages.internal` in it; and a `*.pages.internal` leaf from the internal CA.
-   The zone needs the same cross-account associations as `prod.internal` (Stage 3 step 4) — Pages is read
-   from the laptop and from Studio, so both the Sandbox and the Development VPCs must resolve it, and it is
-   an easy one to forget because the GitLab host itself will already be working by then.
+   **The zone itself and its two cross-account associations are already built — Stage 3 step 4** creates
+   `pages.internal` beside `prod.internal` and associates both with the Sandbox and Development VPCs, since
+   Pages is read from the laptop and from Studio. What this step adds is the wildcard record and the leaf.
 5. **Registries, in `production/registry/`, layer `[P]` — applied early (before Stage 6):**
    ECR repositories `dev-env` (SageMaker images) and `app/*` (application images), with lifecycle policies
    to expire untagged images and **ECR enhanced scanning** enabled; an **ECR pull-through cache** rule for
