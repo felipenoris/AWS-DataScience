@@ -14,7 +14,9 @@ Blueprint for using AWS as a Data Science infrastructure provider.
     `plan/cost-model.md`, `plan/open-questions.md`, `plan/lessons.md`,
     `plan/institutional-delta.md`, `plan/history.md`.
 - `GLOSSARY.md` — every acronym the plan uses, plus its notation and the IAM condition keys it quotes.
-- `ORGANIZATION.md` — AWS accounts, the axis each sits on, and the SSO users.
+- `ORGANIZATION.md` — the account map (one section per account, and the axis each sits on), **the two
+  families of IAM role**, and the entitlement plane above them: the SSO users, the seven permission sets,
+  the five groups, and the assignment triples binding them to accounts.
 - `PRICING.md` — per-unit AWS rates for `sa-east-1` and `us-west-2`, read from the AWS Price List bulk API.
   Unlike the cost figures in `plan/cost-model.md`, which are order-of-magnitude estimates, these are
   measured; the cost model says what is consumed, `PRICING.md` says what a unit of it costs.
@@ -56,6 +58,12 @@ application environment.
 The SageMaker execution role runs code a person wrote seconds ago: unreviewed, untested, and quite possibly
 pasted from a search result. Whatever that role can reach is reachable by that code. The same applies to every
 package the notebook installs — a typosquatted PyPI name is enough, and it executes with the same credential.
+
+**Whose credential that is, is the whole argument.** The code runs as the *execution role* — the role
+SageMaker assumes — and not as the role the person signed in with. So restricting what a data scientist may
+*click* does not restrict what their notebook may *reach*, and a control written against the wrong one of the
+two constrains nothing. `ORGANIZATION.md`, "The two families of IAM role", carries the distinction and what
+actually happens when a job runs.
 
 In a conventional environment, code reaches production through review, CI and a deploy. In a data science
 environment the *whole point* is that people can run something immediately, without any of that. Both
@@ -390,18 +398,16 @@ is the only path by which governed data is ever written.
 
 All under one AWS Organization governed by Control Tower.
 
-| Account | OU | Purpose |
-|---|---|---|
-| Management | root | Organization owner. Bootstrap only, manual, through the console. Never managed by Terraform. |
-| Log Archive | Security | Central, tamper-evident log store (S3 Object Lock). Created by Control Tower. |
-| Audit | Security | Security guardian: GuardDuty, Security Hub, Macie, IAM Access Analyzer. Created by Control Tower. |
-| Identity | Identity | Delegated administration of IAM Identity Center: permission sets, groups, assignments. Separate from Audit so that access management and security monitoring do not share a blast radius. In an OU of its own since 2026-08-09: Control Tower would not vend it into the foundational `Security` OU (D23). |
-| Policy Canary | Policy Test | Deliberately empty, and disposable: the account a candidate SCP or RCP is exercised against before it reaches anything real (D29). An SCP is only evaluated when a principal makes a call, so a policy staging OU with no account inside it tests nothing — which is why this is an account and not just a folder. Holds an administrator principal and nothing else, because a deny exercised by a principal that lacked the permission anyway proves nothing about a ceiling. |
-| Sandbox | Interactive → Sandboxes | **Experimentation** — the unit of work is a notebook. One account per business unit (D35), grouped under the nested `Sandboxes` OU. Target of the unified domain's `experimentation` project blueprints (D26): interactive compute, unreviewed code against real (shared) data — the highest-risk account, per §3 above. Nothing here survives; nothing promotes from here. |
-| Development | Interactive | **Development** — the unit of work is a pipeline: a repository with tests, git, CI. Target of the `engineering` project profile (D26). Work graduates in from Sandbox through git, and the promotion chain starts here. |
-| Data Governance | Data | The **state and governance of data**: the governed lake (S3 + Iceberg), the Glue catalog, Lake Formation, classification, the ingestion drop-box, the Glue Crawlers on raw and drop-box (D27), and the **SageMaker Unified Studio domain** with SageMaker Catalog, project profiles, blueprints and account associations (D26). A registry, not a runtime: no user compute, no VPC, no interactive sign-in — every environment reaches it through cross-account shares, and the portal it hosts is used by people who can never administer the account. Renamed from `Data Management` on 2026-08-08. |
-| Staging | Workloads | Deployment target. Receives the built artifact, runs the integration tests against sampled or synthetic data local to it, and is torn down again. No Studio domain, no Model Registry of its own, no GitLab, no share from the lake. Data scientists: read-only. |
-| Production | Workloads | The software supply chain (GitLab, runners, ECR, CodeArtifact), the production SageMaker runtime including the Model Registry, and the lake's **producer**: its job role holds the governed write. No interactive compute, no human control-plane access. |
+**The account map is in [`ORGANIZATION.md`](ORGANIZATION.md)**: an index table of account → OU → axis →
+purpose → the policy set that OU carries, then one section per account saying what it holds and what it
+deliberately does not — and, above all of it, the two families of IAM role, the seven permission sets, the
+five SSO groups and the assignment triples binding them to accounts.
+
+It is not summarised here on purpose. A second account list is a list that drifts, and it drifts in the
+direction of whichever file was edited last.
+
+What this file adds instead is the *argument* for that map: §1-§8 above are why the boundary runs where it
+does, and the sections below are how an account comes into existence.
 
 The full rationale for each placement — why the tooling sits in Production rather than in a separate Shared
 Services account (D14), why Identity is its own account (D10), what the Staging account is and is not
@@ -413,7 +419,7 @@ how the OUs were chosen (D23) — is recorded one file per decision in `plan/dec
 
 ## How OUs and accounts are created
 
-The table above says *which* accounts exist. This section says *how one comes into existence* — a process
+`ORGANIZATION.md` says *which* accounts exist. This section says *how one comes into existence* — a process
 that is deliberately not uniform: most accounts are created by hand from the console, and exactly one class
 of account is destined for a Terraform-driven flow. The asymmetry is the point, and the reasoning behind it
 is recorded in D32, D33, D34 and D35.
@@ -460,9 +466,10 @@ Two consequences worth stating explicitly, because both are easy to assume wrong
 
 Accounts are vended through **Control Tower's Account Factory**, from the AWS access portal, as the
 `AWS Control Tower Admin` user — **never from the root user**, which gets a Service Catalog portfolio error
-by design (D33). That user is Control Tower's own creation: it carries the Management account's root e-mail
-address and, through the `AWSControlTowerAdmins` group, is administrator on Management, Log Archive and
-Audit.
+by design (D33). That user is Control Tower's own creation rather than this project's, and **its reach is
+wider than its name suggests** — wide enough that it is worth reading before trusting any other claim in this
+section. `ORGANIZATION.md` ("`AWS Control Tower Admin`") carries the group matrix, what it reaches in each
+account, and what permanently limits it.
 
 This was originally sized as a bootstrap credential with an end date. **D34 withdrew that retirement**, on a
 premise change rather than a change of mechanism: a sandbox for a new line of work, a second data domain, a
@@ -479,17 +486,15 @@ word, since that user administers the `Identity` account and an Identity Center 
 edit `AWSControlTowerAdmins` membership. The assignment is absent; the path is watched rather than closed
 (`ORGANIZATION.md`, "The limit of the separation of duties").
 
-Keeping that identity standing has a price, recorded as a permanent condition rather than as a window:
+Keeping that identity standing has a price, and it is paid as three permanent controls rather than as a
+window that closes — MFA on the user, S3 Object Lock in *compliance* mode on the log archive, and the alarm
+on Control Tower group membership. Why none of the three is optional, and why compliance mode specifically,
+is in `ORGANIZATION.md`.
 
-- **MFA on it is mandatory and permanent**, not a stopgap.
-- **Object Lock on the log archive must be in *compliance* mode** — this principal is administrator *of Log
-  Archive*, so it holds `s3:BypassGovernanceRetention` and governance mode is transparent to it. Compliance
-  mode is the only thing that keeps the audit trail surviving its own administrator.
-- **An alarm on Control Tower group membership stays**, because the cheapest way to acquire this reach is to
-  be added to its group.
-- **Separation of duties: none, and that is the honest word.** The identity that creates accounts also
-  administers the account holding the audit trail, and nobody approves a vend. One human, one lab —
-  recorded in `plan/institutional-delta.md` rather than argued away.
+What belongs here is the part that is an argument rather than a control: **separation of duties, none, and
+that is the honest word.** The identity that creates accounts also administers the account holding the audit
+trail, and nobody approves a vend. One human, one lab — recorded in `plan/institutional-delta.md` rather than
+argued away.
 
 ### 4. What is filled into the vending form
 
@@ -500,8 +505,10 @@ the account's own e-mail address, and never another persona. The result is one a
 across every vended account.
 
 Note also that the Identity Center directory is **not empty** at this point: Control Tower populated it with
-its own groups and permission sets, one of them named `AWSAdministratorAccess`. Those empty groups are
-pre-wired permission ceilings, so no project persona ever joins one.
+its own groups and permission sets, and those groups are **pre-wired permission ceilings** — each already
+carries its assignments, so adding one person to one of them is an organization-wide grant made by a single
+membership edit. No project persona ever joins one. Which groups they are, what each already grants, and the
+one that is no longer empty are in `ORGANIZATION.md` ("The groups and permission sets that arrived with it").
 
 ### 5. The gate, which comes before the account exists
 

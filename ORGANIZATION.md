@@ -41,18 +41,22 @@ account.** A human may *use* a service hosted in an account they can never admin
 Production over the VPN, the SageMaker Unified Studio portal hosted in Data Governance. Using the service
 is not signing in to the account.
 
-| Account | OU | Axis | Policy set the OU carries |
-|---|---|---|---|
-| Management | root | Platform | Bootstrap only, manual, never managed by Terraform |
-| Log Archive | Security | Platform | Control Tower guardrails |
-| Audit | Security | Platform | Control Tower guardrails; delegated security administration |
-| Identity | **Identity** | Platform | Delegated Identity Center administration. Its own OU since 2026-08-09: Control Tower would not vend the account into the foundational `Security` OU (D23) |
-| Policy Canary | Policy Test | Platform | **None of its own** — the OU exists to hold *candidate* policies under test (D29) |
-| Sandbox | Interactive → **Sandboxes** | Lifecycle (before the chain) | Interactive compute allowed — because nothing denies it. Neither `Sandboxes` nor `Interactive` carries a set of its own today, so what reaches this account is the organization-root set; infrastructure change is held off the data scientist by `DataScientistAccess`, an *identity* policy (Stage 1c step 7). **One account per business unit (D35)** — the only non-structural row in this table |
-| Development | Interactive | Lifecycle (head of the chain) | Same as Sandbox — the two differ in content, not in policy |
-| Data Governance | Data | **Ownership** | No user compute; catalog maintenance excepted by name; deletion denied |
-| Staging | Workloads | Lifecycle | No interactive compute; no human control plane |
-| Production | Workloads | Lifecycle (end of the chain) | Same as Staging |
+**This table is the account map**, and the sections after it are one per account. `Purpose` says what the
+account is *for*; `Policy set` says what the OU it sits in *constrains* — the two are deliberately different
+questions, which is why an account can be high blast radius and carry a light policy set at the same time.
+
+| Account | OU | Axis | Purpose | Policy set the OU carries |
+|---|---|---|---|---|
+| Management | root | Platform | **Organization owner** — the Organization itself, Control Tower, and the landing zone | Bootstrap only, manual, never managed by Terraform |
+| Log Archive | Security | Platform | Central, **tamper-evident** log store (S3 Object Lock). Created by Control Tower, not vended by Account Factory | Control Tower guardrails |
+| Audit | Security | Platform | **Security guardian** — GuardDuty, Security Hub, Macie and IAM Access Analyzer. Created by Control Tower, not vended by Account Factory | Control Tower guardrails; delegated security administration |
+| Identity | **Identity** | Platform | The **access-management plane**: permission sets, groups and assignments. Separate from Audit so that access management and security monitoring do not share a blast radius | Delegated Identity Center administration. Its own OU since 2026-08-09: Control Tower would not vend the account into the foundational `Security` OU (D23) |
+| Policy Canary | Policy Test | Platform | **Deliberately empty, and disposable** — the account a candidate SCP or RCP is exercised against before it reaches anything real. An SCP is evaluated only when a principal makes a call, so a policy-staging OU with no account inside it tests nothing, which is why this is an account and not just a folder. Holds an administrator principal and nothing else, because a deny exercised by a principal that lacked the permission anyway proves nothing about a ceiling | **None of its own** — the OU exists to hold *candidate* policies under test (D29) |
+| Sandbox | Interactive → **Sandboxes** | Lifecycle (before the chain) | **Experimentation** — the unit of work is a notebook. Target of the unified domain's `experimentation` project blueprints (D26): interactive compute running unreviewed code against real, shared data, which makes it **the highest-risk account rather than the lowest** (`README.md` §3). Nothing here survives; nothing promotes from here | Interactive compute allowed — because nothing denies it. Neither `Sandboxes` nor `Interactive` carries a set of its own today, so what reaches this account is the organization-root set; infrastructure change is held off the data scientist by `DataScientistAccess`, an *identity* policy (Stage 1c step 7). **One account per business unit (D35)** — the only non-structural row in this table |
+| Development | Interactive | Lifecycle (head of the chain) | **Development** — the unit of work is a pipeline: a repository with tests, git and CI. Target of the `engineering` project profile (D26). Work graduates in from Sandbox **through git, never through a pipeline**, and the promotion chain starts here | Same as Sandbox — the two differ in content, not in policy |
+| Data Governance | Data | **Ownership** | The **state and governance of data**: the governed lake (S3 + Iceberg), the Glue catalog, Lake Formation, classification, the ingestion drop-box, the Glue Crawlers on raw and drop-box (D27), and the **SageMaker Unified Studio domain** with its catalog, project profiles, blueprints and account associations (D26). **A registry, not a runtime** — no VPC and no interactive sign-in; every environment reaches it through cross-account shares, and the portal it hosts is used by people who can never administer the account. Renamed from `Data Management` on 2026-08-08 | No user compute; catalog maintenance excepted by name; deletion denied |
+| Staging | Workloads | Lifecycle | **Deployment target** — receives the built artifact, runs the integration tests against sampled or synthetic data local to it, and is torn down again. No Studio domain, no Model Registry of its own, no GitLab, no share from the lake. Data scientists: read-only | No interactive compute; no human control plane |
+| Production | Workloads | Lifecycle (end of the chain) | The **software supply chain** (GitLab, runners, ECR, CodeArtifact), the production SageMaker runtime including the **Model Registry**, and the lake's **producer** — its job execution role holds the governed write, the only path by which governed data is ever written | Same as Staging |
 
 ## Management Account
 
@@ -187,7 +191,87 @@ not in concept. `Policy Test` and `Policy Canary` keep the word `Staging` naming
   the account did not become less sensitive by moving, and this is the account whose administrator can grant
   access to every other one.
 
+# The two families of IAM role
+
+**Every IAM role in this project answers one of two questions, and the axis separating them is *who assumes
+it — a person, or an AWS service*.** The four sections after this one are almost entirely about the first
+family; most of the data-protection argument is about the second. Merging them in your head is the cheapest
+way to write a control that constrains nothing.
+
+| | Human access role | Execution role |
+|---|---|---|
+| Example | `AWSReservedSSO_DataScientistAccess_a1b2c3` | `awsds-sagemaker-training` |
+| Assumed by | **a person**, through the SSO access portal | **a service** — SageMaker, Glue, Lambda, Step Functions |
+| Comes from | a **[permission set](#permission-sets)** | a plain `aws_iam_role` |
+| Declared in | `terraform-live/identity/sso/` (Stage 2 step 5) | the account's own slice — `sandbox/sagemaker/`, `production/sagemaker/` |
+| Trust policy | generated by Identity Center, SAML-based, **not writable** | written here, naming a service principal |
+| Lives for | the sign-in session | the life of the job |
+| Answers | *what may this person **ask** for?* | *what may the **code** reach?* |
+
+**An execution role has no permission set and cannot have one**, and that is structural rather than
+conventional: an Identity Center assignment's principal must be a *user or a group*, and the role a
+permission set generates trusts a SAML provider that no service principal can use. The two mechanisms do not
+meet. What *can* cross the seam is a **policy document** — a customer-managed `aws_iam_policy` can be
+attached to an execution role and referenced by a permission set at the same time, which is exactly the
+permissions-boundary mechanism of Stage 1b step 3.4. The document crosses; the role never does.
+
+## What actually happens when a job runs
+
+```
+  person  (member of sso-group-data-scientists)
+     │
+     │  SSO access portal → sso:GetRoleCredentials
+     ▼
+  AWSReservedSSO_DataScientistAccess_a1b2c3          ← family 1: human access
+     │
+     │  sagemaker:CreateTrainingJob
+     │      RoleArn = arn:aws:iam::<acct>:role/awsds-sagemaker-training
+     │      └──────────── this is iam:PassRole ───────────┐
+     ▼                                                    │
+  SageMaker, the service  ◄────────────────────────────────┘
+     │  sts:AssumeRole
+     ▼
+  awsds-sagemaker-training                           ← family 2: execution
+     │
+     └─►  reads S3, resolves Glue tables, decrypts with KMS,
+          and is what actually leaves the VPC
+```
+
+**The last hop is the whole point: the notebook's code does not run as the person's role.** The human role
+is what *asked* for the job to exist; once SageMaker has assumed the execution role, it is out of the
+picture. Every object read, every table resolved, every `kms:Decrypt` and every outbound packet is
+authorised against the **execution role**.
+
+## Why this is the seam the data-protection argument sits on
+
+Three consequences, and each is a place this plan would be wrong if the two were treated as one:
+
+- **Narrowing a permission set does not narrow what the code can read.** `DataScientistAccess` governs what
+  the person may *click*; the execution role governs what the notebook may *reach*.
+  [D13](plan/decisions/D13-lake-formation-enforcement.md)'s entire force is one sentence — *the roles running
+  notebooks hold no S3 access to Lake Formation-registered prefixes* — and it is a claim about the second
+  family. The same sentence said about a permission set would be notation.
+- **`iam:PassRole` is the bridge, and therefore the escalation path.** Unqualified `PassRole` plus a
+  job-creating API lets a person run arbitrary code under **any** role they can name. It is always scoped by
+  `iam:PassedToService` **and** by resource ARN (`plan/conventions.md`) — never granted bare.
+- **Whoever authors the execution role owns the control** (Lesson 11). Until D26 this project wrote those
+  roles itself; the Unified Studio blueprints now provision the project environment *and its roles*, which
+  is precisely what **`INT-15`** is open about. A decision that moves role authorship invalidates every
+  claim that rested on the role.
+
+## "Two" is a simplification, along the axis that matters
+
+Other roles exist — the service-linked roles AWS creates for itself, the GitLab runner's instance role, the
+cross-account roles Lake Formation uses. Each falls on one side of the same question, *is a person or a
+service assuming this?*, and that question is what decides whether a given control reaches it at all.
+
 # SSO Users
+
+**This section is about *people*. The three that follow are about *entitlements*** —
+[Permission Sets](#permission-sets), [SSO Groups](#sso-groups), [Assignments](#assignments). The split is
+not editorial: it is the seam in `plan/conventions.md` ("The identity seam"). What is in this section stays
+in the directory at any headcount; what is in the other three becomes Terraform
+(`terraform-live/identity/sso/`, Stage 2 step 5).
 
 The five users below are the **personas** the separation of duties is built from. They are not the whole
 contents of the directory — see "Identities this project did not create" at the end of this section.
@@ -560,3 +644,177 @@ so adding one person to one of them is an organization-wide grant made by a sing
 `AWSSecurityAuditPowerUsers`, for instance, holds `AWSPowerUserAccess` on **every** account including the
 member accounts. None of this project's five personas belongs in any of them: Stage 1b builds its own groups
 beside these, and the two sets stay separate.
+
+# Permission Sets
+
+**Seven sets, and the number is fixed by the design rather than by headcount.** That is what makes them
+Terraform: unlike a user or a membership, no amount of hiring adds one.
+
+| Permission set | Group behind it | What it is for, in one line | How it comes into existence | Design of record |
+|---|---|---|---|---|
+| `InfrastructureAccess` | `sso-group-infrastructure` | The builder — the identity `terraform apply` runs as. The **one named exception** to "nothing gets `AdministratorAccess`" | **By hand**, Stage 1b step 3 — then **imported** at Stage 2 step 5 | 3.1 |
+| `DataScientistAccess` | `sso-group-data-scientists` | Studio use, scratch/derived read-write, Athena, ECR pull. **Not** `PowerUserAccess`, **not** `AmazonSageMakerFullAccess` | **Written** in Terraform, Stage 2 step 5 — never typed into a console | 3.4 |
+| `DataScientistStagingAccess` | `sso-group-data-scientists` | Read-only on Staging, no write of any kind, not even a drop-box | **Written**, Stage 2 step 5 | 3.6 |
+| `DataScientistProdAccess` | `sso-group-data-scientists` | Production data plane read: no compute, no control plane | **Written**, Stage 2 step 5 | 3.6 |
+| `DeploymentManagerAccess` | `sso-group-deployment-managers` | **Diagnosis, not reading** — why a promotion failed. Nothing on Data Governance | **Written**, Stage 2 step 5 | 3.5 |
+| `GovernanceManagerAccess` | `sso-group-governance-managers` | The catalog, never the rows | **Written**, Stage 2 step 5 | 3.5 |
+| `DevEnvStewardAccess` | `sso-group-dev-env-stewards` | The artifact, never the data — judging the `dev-env` image | **Written**, Stage 2 step 5 | 3.5 |
+
+*The "Design of record" column is a subsection of [Stage 1b step 3](plan/stages/stage-01b-identity-and-controls.md),
+which carries each set's grants **and its explicit denies**. That file is the specification and this table is
+the inventory; neither restates the other, so they cannot drift.*
+
+## What a permission set actually is: a factory for IAM roles
+
+**It is not an alternative to an IAM role — it produces one**, and it produces only the *human* family; the
+other one is [above](#the-two-families-of-iam-role). Assigning set `P` to a principal on account `A` makes IAM
+Identity Center provision a real IAM role *inside* `A`:
+
+```
+arn:aws:iam::<A>:role/aws-reserved/sso.amazonaws.com/us-west-2/AWSReservedSSO_P_<random suffix>
+```
+
+It carries the set's policies and its permissions boundary, and its trust policy trusts Identity Center —
+**not the person**, who appears in it nowhere. Signing in through the access portal returns temporary STS
+credentials for that role, which is how `CLAUDE.md`'s "avoid IAM Users, in favor of assuming IAM Roles
+temporarily" is actually delivered: no IAM user, no long-lived access key, anywhere in this design.
+
+Four consequences, none of them cosmetic:
+
+- **One set assigned on N accounts is N roles**, with N different ARNs. That is Stage 1b step 3.3 seen from
+  the IAM side, and it is why every grant is scoped by resource ARN and by condition, never by "this account
+  will not have that resource".
+- **The assumed-role ARN is the evidence, the account ID is not.** Two administrator sets exist four
+  characters apart (`InfrastructureAccess` and Control Tower's `AWSAdministratorAccess`) and an assignment
+  against the wrong one still works — Stage 1b steps 3.2, 5 and 5.1 all turn on reading that ARN.
+- **The suffix is generated per account, so the role ARN can never be hard-coded.** A bucket policy or KMS
+  key policy naming a human principal matches `AWSReservedSSO_<Set>_*` — relevant from Stage 5 onward, where
+  key policies are the backstop the permission sets are not.
+- **The generated role is never edited by hand and never declared as `aws_iam_role`.** Identity Center
+  reconciles it back, silently.
+
+## The rules these seven obey
+
+- **`<Persona>Access`, and never within four characters of a Control Tower set** (`plan/conventions.md`). The
+  name says the *group*, not the permission level — a set named after a level invites reuse by a second
+  principal.
+- **Nothing gets `AdministratorAccess` or `PowerUserAccess` "for now".** `InfrastructureAccess` is the single
+  named exception, and the argument for it is structural rather than pragmatic: an identity that authors IAM
+  cannot be constrained by the IAM it authors (Lesson 18). See
+  [the limit of the separation of duties](#the-limit-of-the-separation-of-duties-which-is-this-user).
+- **For the three approver sets the *denies* are the point of them.** An approver who can already read
+  everything is not exercising a control when they approve. Those denies are explicit, not by omission.
+- **The permissions boundary cannot be finished inside `identity/sso/`** (Stage 1b step 3.4). A
+  customer-managed boundary is referenced *by name* and the `aws_iam_policy` must already exist **in every
+  account the set is provisioned into** — different state, different profile, one more copy per business unit
+  (D35). Miss one account and provisioning fails there alone, which is the quiet version of the mistake.
+  Stage 2 step 5 carries it as a decision row.
+- **Control Tower's own sets are never edited or reused.** `AWSAdministratorAccess` is theirs; a landing-zone
+  update may reset it, and touching it is drift.
+
+# SSO Groups
+
+**Five groups, one per persona.** A group is *person-shaped* — its membership grows with headcount — so
+**groups live in the directory and never in Terraform**, while the assignment that binds a group to a
+permission set does. That is the seam, and it is what lets a joiner or a leaver be a directory edit rather
+than a merge request.
+
+| Group | Persona | Humans behind it, realistically | Holds |
+|---|---|---|---|
+| `sso-group-infrastructure` | [Infrastructure](#infrastructure-user) | **one**, with one MFA device — D32's shape depends on it | `InfrastructureAccess` on six accounts |
+| `sso-group-data-scientists` | [Data Scientist](#data-scientist-user) | hundreds | The three `DataScientist*Access` sets |
+| `sso-group-deployment-managers` | [Deployment Manager](#deployment-manager-user) | one | `DeploymentManagerAccess` on the four lifecycle accounts |
+| `sso-group-governance-managers` | [Governance Manager](#governance-manager-user) | one | `GovernanceManagerAccess` on Data Governance alone |
+| `sso-group-dev-env-stewards` | [Dev Env Steward](#dev-env-steward-user) | a handful | `DevEnvStewardAccess` on three accounts |
+
+**One group is planned and deliberately not created yet:** `sso-group-data-scientists-<bu>`, one per business
+unit, covering that unit's `Sandbox` and nothing else (D35, [Stage 14](plan/stages/stage-14-sandbox-vending.md)).
+`Sandbox` is one account per business unit and N is currently 1, so what exists today is the *naming* — which
+makes the second unit an addition rather than a refactor. `Development` is a single shared account and keeps
+one group permanently.
+
+## The rules these five obey
+
+- **The `sso-group-` prefix separates two sets of same-named objects, and that is what it is for.** Control
+  Tower's groups on one side (never joined, never repurposed — see
+  [the groups that arrived with it](#the-groups-and-permission-sets-that-arrived-with-it)); and, from Stage 7,
+  **GitLab groups that mirror these personas 1:1 and deliberately do *not* carry the prefix**. A bare
+  `deployment-managers` in this repository means the GitLab group; a prefixed one means the directory.
+- **The name is load-bearing mechanically, not editorially.** Assignments resolve their principal by
+  **display name** through `data.aws_identitystore_group` — never by GUID, so that replacing the directory
+  with a corporate IdP over SCIM re-creates the groups with new IDs and changes nothing in Terraform. A name
+  written one way in the plan and another in the directory is a `terraform plan` that fails, or a second
+  group somebody creates to make the error go away.
+- **A permission set is assigned to a group, never to a user.** One object regardless of how many people are
+  in it. The one exception is Account Factory's direct assignment to the infrastructure user (D32), which is
+  documented rather than copied.
+- **Never the same person in two of these groups**, and never in one plus `sso-group-data-scientists` — or
+  plus `sso-group-infrastructure`, which is the instance that matters most because it already contains all
+  the others. Identity Center will not warn, and no policy can detect it.
+
+# Assignments
+
+**The triple is the unit:** `(permission set, group, account)`. This is the table Stage 2 step 5 writes out
+one row at a time — **enumerated, never generated from a `for_each` over discovered accounts** (D34), because
+a grant that appears because an account appeared is the failure mode that rule exists to prevent.
+
+| # | Permission set | Group | Account | What it is for |
+|---|---|---|---|---|
+| 1 | `InfrastructureAccess` | `sso-group-infrastructure` | Sandbox | Applies the account's Terraform slices |
+| 2 | `InfrastructureAccess` | `sso-group-infrastructure` | Development | Applies the account's Terraform slices |
+| 3 | `InfrastructureAccess` | `sso-group-infrastructure` | Staging \* | Applies the account's Terraform slices |
+| 4 | `InfrastructureAccess` | `sso-group-infrastructure` | Production | Applies the account's Terraform slices, the supply chain included (D14) |
+| 5 | `InfrastructureAccess` | `sso-group-infrastructure` | Data Governance | Applies the lake, the catalog and the Lake Formation wiring |
+| 6 | `InfrastructureAccess` | `sso-group-infrastructure` | Identity | Applies `identity/sso/` and `identity/org-policies/` — the entitlement plane applying itself |
+| 7 | `DataScientistAccess` | `sso-group-data-scientists` † | Sandbox | Where experimentation happens: read-write, interactive |
+| 8 | `DataScientistAccess` | `sso-group-data-scientists` | Development | The shared engineering account: read-write, interactive |
+| 9 | `DataScientistStagingAccess` | `sso-group-data-scientists` | Staging \* | Reading why the pipeline failed — and nothing else, so Staging stays evidence of what the pipeline does |
+| 10 | `DataScientistProdAccess` | `sso-group-data-scientists` | Production | Data plane read: logs, catalog metadata, job status, named prefixes, a dedicated Athena workgroup |
+| 11 | `DeploymentManagerAccess` | `sso-group-deployment-managers` | Sandbox | Diagnosing a build before releasing it |
+| 12 | `DeploymentManagerAccess` | `sso-group-deployment-managers` | Development | Diagnosing a build before releasing it |
+| 13 | `DeploymentManagerAccess` | `sso-group-deployment-managers` | Staging \* | The test results the promotion gate is decided on |
+| 14 | `DeploymentManagerAccess` | `sso-group-deployment-managers` | Production | Diagnosing a failed promotion after the fact |
+| 15 | `GovernanceManagerAccess` | `sso-group-governance-managers` | Data Governance | LF-Tags, subscriptions, domain ownership — the catalog, never the rows |
+| 16 | `DevEnvStewardAccess` | `sso-group-dev-env-stewards` | Production | ECR image metadata, enhanced-scanning findings, the build pipeline's logs (the registry lives here, D14) |
+| 17 | `DevEnvStewardAccess` | `sso-group-dev-env-stewards` | Sandbox | Confirming which image version is actually registered |
+| 18 | `DevEnvStewardAccess` | `sso-group-dev-env-stewards` | Development | Confirming which image version is actually registered |
+
+\* **The three `Staging` rows do not exist yet** — the account is unvended (the increase to the account cap
+is requested, not granted). Stage 1b step 3 and Stage 2 step 5 both skip them, and they are picked up at the
+vend. **15 assignments today, 18 at the target.**
+
+† **Row 7 is the one that changes shape at the second business unit.** D35 makes `Sandbox` one account per
+unit, so its assignment moves to `sso-group-data-scientists-<bu>` — covering that unit's Sandbox alone —
+while row 8 stays on the shared group. The permission set is unchanged and shared; only the principal
+differs. With one unit there is no per-unit group yet.
+
+## What is *not* in the table above, and why each absence is deliberate
+
+| Account | Who has nothing there | Why |
+|---|---|---|
+| **Management** | **every persona, permanently** | Bootstrap-only and console-only (principle 1); Terraform never runs against it. D33/D34 keep `AWS Control Tower Admin` standing precisely so no persona needs reach here. Stage 1b step 4 used to create an assignment and now deliberately does not |
+| **Data Governance** | `sso-group-data-scientists`, `sso-group-deployment-managers`, `sso-group-dev-env-stewards` | The lake is read from Sandbox and Development through the Lake Formation cross-account share (D18/D22), not by signing in. A release approver has no business in the account that grants data access — and `sso-group-governance-managers` is the mirror image, holding only this one |
+| **Staging** | `sso-group-dev-env-stewards` | The artifact it judges is a container image, not an environment — the narrowest of the three approver sets |
+| **Policy Canary** | **every group** | Reached only by the infrastructure *user*'s direct assignment (below). An account whose whole purpose is to have broken permissions is not somewhere a second persona should sign in and draw conclusions |
+| **Log Archive, Audit** | every persona | Neither was vended by Account Factory and neither holds a Terraform slice. The audit trail has to survive its own administrators — an argument against adding an assignment, not a gap to close |
+
+## The assignments that are not group assignments (D32)
+
+Two kinds exist beside the table, and **neither is modelled in Terraform** — Stage 2 step 5.2 leaves both
+alone deliberately:
+
+- **The Account Factory direct assignments.** Every vended account carries a *direct* assignment of Control
+  Tower's `AWSAdministratorAccess` to the **infrastructure user**, created at vend time from the
+  `SSOUserEmail` field. They are what bootstraps the whole identity plane — rows 1-6 above do not exist until
+  Stage 1b step 3 — and **Stage 1b step 5.1 is where they are retired, or recorded as un-retirable.** Removing
+  one before the group path is proven end to end is the cheapest way to lock the only administrator out of an
+  account whose sole remaining recovery path is the Management root (D16).
+- **`Policy Canary`'s, which is permanent and is the exception to that step.** There is no group and no
+  `awsds-infra-*` profile behind it, so removing it removes the only way in. It must be an *administrator*
+  or [D29](plan/decisions/D29-policy-canary.md)'s battery measures the identity policy instead of the SCP
+  ceiling — an SCP is a ceiling, and a deny a restricted principal could not have exercised anyway proves
+  nothing about it. It is reached through the deliberately differently-named `awsds-policy-canary` profile.
+
+**Control Tower's own assignments are likewise never modelled** — `AWSControlTowerAdmins` and `AWSAccountFactory`
+carry theirs from the landing zone, and editing them is drift. They are described in
+[the groups that arrived with it](#the-groups-and-permission-sets-that-arrived-with-it).
