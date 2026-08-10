@@ -49,14 +49,27 @@ Each slice carries its layer from §5.1: `[P]` persistent, `[D]` dormant (stop/s
 
 ```
 terraform-live/
-├── identity/             # [P] permission sets, groups, assignments - applied with the
-│   │                     #     delegated-admin profile (D10); never touches Management.
-│   │                     #     ALSO the SCPs, RCPs and tag policies: they used to be
-│   │                     #     console-only and owned by nobody after Stage 1b. Since D30
-│   │                     #     was reverted there is no principal that can work around a
-│   │                     #     bad Deny from inside a governed account, so this set needs
-│   │                     #     a diff, a review and a rollback more than anything else here
-│   └── bootstrap/        # [P] state bucket for the Identity account
+├── identity/             # THE IDENTITY PLANE. TWO slices, not one (Stage 2 step 5): they
+│   │                     # reach their objects through two DIFFERENT delegations, so they
+│   │                     # are separated on that seam. Both applied with the
+│   │                     # awsds-infra-identity profile; neither touches Management
+│   ├── bootstrap/        # [P] state bucket for the Identity account
+│   ├── sso/              # [P] permission sets, groups, assignments. Reached through the
+│   │                     #     IAM Identity Center delegated administrator (D10,
+│   │                     #     sso.amazonaws.com), which Stage 1b step 1 already proves.
+│   │                     #     Control Tower's own sets and groups are NOT here, and the
+│   │                     #     Account Factory direct assignments are not either (D32):
+│   │                     #     editing either is landing-zone drift
+│   └── org-policies/     # [P] the SCPs, RCPs, the tag policy and the declarative policy.
+│                         #     These are AWS ORGANIZATIONS objects and the Identity Center
+│                         #     delegation does not reach them - they need a separate
+│                         #     resource-based delegation policy written from Management
+│                         #     (INT-20). Console-only and owned by nobody after Stage 1b,
+│                         #     and since D30 was reverted no principal inside a governed
+│                         #     account can work around a bad Deny, so this set needs a
+│                         #     diff, a review and a rollback more than anything else here.
+│                         #     NOT the region restriction: that is a Control Tower control,
+│                         #     not a hand-written document (Stage 2 step 5.4)
 ├── sandbox/              # EXPERIMENTATION (D21): the unit of work is a notebook.
 │   │                     # ONE OF THESE PER BUSINESS UNIT (D35) - the whole subtree
 │   │                     # below is what Stage 14's sandbox-unit module composes
@@ -214,11 +227,13 @@ CI is the same bug as one that only works by hand — but the expected caller is
 - **The Organization is never in Terraform, and the code is written to survive that (D34).** Accounts and
   OUs are created from the console, by design (principle 1), so no state declares them and none of it can
   drift. What it *can* do is leave a console-created OU or account outside code that was written as a list —
-  invisible rather than drifted, with `terraform plan` reporting "No changes". So in `terraform-live/identity/`:
-  **the floor is discovered, the grants are enumerated.** Anything that must cover everything — SCP/RCP
-  attachments, the organization-root set, the tag policy — is `for_each` over the `aws_organizations_*` data
-  sources; permission set assignments are written out one by one, because an account acquiring a grant by
-  simply existing is the opposite of the intended failure mode.
+  invisible rather than drifted, with `terraform plan` reporting "No changes". So, across the two identity
+  slices: **the floor is discovered, the grants are enumerated.** Anything that must cover everything —
+  SCP/RCP attachments, the organization-root set, the tag policy, all in `identity/org-policies/` — is
+  `for_each` over the `aws_organizations_*` data sources; permission set assignments, in `identity/sso/`,
+  are written out one by one, because an account acquiring a grant by simply existing is the opposite of the
+  intended failure mode. **The split runs along the same seam** — discovered on one side, enumerated on the
+  other — which is a second reason to keep it.
 - Modules are referenced by **git tag**, never by branch, so a module change cannot silently alter an
   existing deployment.
 

@@ -542,7 +542,7 @@ The mechanism that answers this — a mechanism, not a checklist line — is:
 
 > **The floor is discovered, the grants are enumerated.**
 
-In `terraform-live/identity/`, anything that must cover *everything* (the organization-root SCP/RCP set, the
+In `terraform-live/identity/org-policies/`, anything that must cover *everything* (the organization-root SCP/RCP set, the
 tag policy, the per-OU attachments) is driven by `for_each` over the AWS Organizations data sources, so an OU
 or account created yesterday from the console is covered by the next apply with nobody having to remember.
 Permission set assignments stay **explicit**, because a new account silently acquiring `DataScientistAccess`

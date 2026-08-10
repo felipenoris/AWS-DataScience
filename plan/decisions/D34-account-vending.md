@@ -87,12 +87,13 @@ matters:
   wildcards. A new account is silently outside every one of them — Lesson 14, arriving through a new door.
 
 **The rule, and it is a mechanism rather than a checklist line: the floor is discovered, the grants are
-enumerated.** In `terraform-live/identity/`, anything that must cover *everything* — the organization-root
+enumerated.** In `terraform-live/identity/org-policies/`, anything that must cover *everything* — the organization-root
 SCP/RCP set, the tag policy, the per-OU attachments — is driven by `for_each` over
 `aws_organizations_organizational_units` / `aws_organizations_organization` data sources, so an OU or account
 created yesterday from the console is covered by the next apply with nobody remembering. Permission set
 assignments stay **explicit**, because a new account silently acquiring `DataScientistAccess` is precisely the
-failure this design exists to prevent. *To verify while writing Stage 2:* that the data sources enumerate OUs
+failure this design exists to prevent — and they live in the sibling slice, `terraform-live/identity/sso/`,
+because the two halves are reached through two different delegations (Stage 2 step 5). *To verify while writing Stage 2:* that the data sources enumerate OUs
 at the nesting depth this organization actually uses — **answered on 2026-08-09 and the answer is 2**
 (D23: `Sandboxes` under `Interactive`), so a single-level enumeration over the root's children misses every
 Sandbox account — and that the `for_each` key is stable enough that adding

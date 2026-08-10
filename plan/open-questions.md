@@ -98,7 +98,8 @@ default, and each one is referenced from the step that needs it.
     principal — a role exempt from every custom deny — was recommended against, **adopted by the user's
     decision, and then reverted**, once a review found the role could not be delivered to the account whose
     repair path justified it. So there is **one** recovery credential and it is the root. What the round
-    trip left behind is worth keeping: the SCPs now live in code (`terraform-live/identity/`), because a
+    trip left behind is worth keeping: the SCPs now live in code (`terraform-live/identity/org-policies/`),
+    because a
     policy set that nobody owns after Stage 1b is one whose only record is the console — and, with no
     exemption anywhere, it is the artefact that most needs a diff and a rollback.
 12. ~~**Whether the deployment manager keeps blanket `ReadOnlyAccess` on the lifecycle accounts**~~ — **closed

@@ -27,7 +27,7 @@
    (the largest idle item). Update `plan/cost-model.md` and `plan/conventions.md` §5.1 with measured numbers rather than the projections.
 6. Config rules / conformance packs on top of the Control Tower guardrails; review the recorder scope set
    in Stage 1b step 10 against what the bill actually shows.
-7. Tighten the permission sets in `terraform-live/identity/` against real usage, using **IAM Access
+7. Tighten the permission sets in `terraform-live/identity/sso/` against real usage, using **IAM Access
    Analyzer unused-access findings** — which is a better instrument than review, because it reports
    permissions that were granted and never exercised.
 8. **Backup and recoverability**, which no earlier stage owns: an org-wide **AWS Backup** plan through an

@@ -70,7 +70,7 @@ of a rewrite.
    "all user access to the cloud infrastructure will be performed through a VPN", and a tunnel to the VPC
    only delivers the data plane — the console and the AWS APIs remain reachable from any network in the
    world with a valid SSO session. Add a deny with `NotIpAddress` on the WireGuard Elastic IP **combined
-   with `aws:ViaAWSService: false`** to the permission sets in `terraform-live/identity/` — the second
+   with `aws:ViaAWSService: false`** to the permission sets in `terraform-live/identity/sso/` — the second
    condition is not optional: services calling on the user's behalf (Athena reaching S3 is this plan's
    first casualty) do not carry the user's source IP, and a bare `aws:SourceIp` deny breaks them.
    **Which API to pin this to changed with D26, and the old answer is still written in several places.**

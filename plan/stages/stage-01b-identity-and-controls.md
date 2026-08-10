@@ -320,7 +320,7 @@ recurring line in the whole landing zone:
      than to keep deleting something that keeps coming back. D32 is amended either way.
 
    **3.9 — Why this is by hand.** Terraform cannot run before SSO login works. Stage 2 moves all of it into
-   `terraform-live/identity/` and imports it.
+   `terraform-live/identity/sso/` and imports it.
 
 4. **No project persona holds an assignment on the Management account — the infrastructure user included.**
 
@@ -386,7 +386,8 @@ recurring line in the whole landing zone:
      exempt from SCPs by design (D16) — so the battery *is* the control, and having the Management console
      already open is a precondition rather than a precaution.
    - **A condition that has to appear in several policies is generated, not typed** — which is why these
-     policies live in `terraform-live/identity/` from Stage 2 rather than in the console (Lesson 14).
+     policies live in `terraform-live/identity/org-policies/` from Stage 2 rather than in the console
+     (Lesson 14).
    - **Any ARN condition uses an enumerated list, never a wildcard account.** `arn:aws:iam::*:role/x` means
      "anyone who can create a role named `x`, anywhere".
    - **There is a size budget, and it is small enough to hit.** AWS Organizations caps how many policies
@@ -400,7 +401,8 @@ recurring line in the whole landing zone:
      and accounts are created from the console, outside every Terraform state — which cannot cause drift,
      because nothing here declares them, but *can* leave a new OU with no policy attached and a new account
      outside every enumerated condition, with `terraform plan` reporting "No changes" either way. So when
-     these policies move into `terraform-live/identity/` at Stage 2: **the floor is discovered and the
+     these policies move into `terraform-live/identity/org-policies/` at Stage 2: **the floor is discovered
+     and the
      grants are enumerated** — attachments and org-wide sets driven by `for_each` over the Organizations
      data sources, permission set assignments written out one by one.
 
@@ -519,7 +521,8 @@ recurring line in the whole landing zone:
    `s3:PutAccountPublicAccessBlock` and `s3:ListAllMyBuckets`, which are account-level calls evaluated
    outside any region.
 
-   **7.5 — The organization-root SCP set** (hand-written; moves to `terraform-live/identity/` at Stage 2).
+   **7.5 — The organization-root SCP set** (hand-written; moves to `terraform-live/identity/org-policies/`
+   at Stage 2).
 
    - **Deny `organizations:LeaveOrganization` — not hygiene: a real principal can call it.** Control Tower's
      `AWSControlTowerAdmins` group carries `AWSOrganizationsFullAccess` on every member account (D33), and
@@ -868,7 +871,7 @@ recurring line in the whole landing zone:
        | `sso.amazonaws.com` | `CreateAccountAssignment`, `DeleteAccountAssignment` | Either |
 
        **Matching only the console pair is the failure mode this project walks into by design**, because
-       Stage 2 moves identity into `terraform-live/identity/` — from then on every membership change this
+       Stage 2 moves identity into `terraform-live/identity/sso/` — from then on every membership change this
        alarm exists to catch arrives through `identitystore`, and a filter that misses it reports nothing
        while looking healthy (Lesson 13).
      - **Filter on group *IDs*, resolved first — not on names.** These events carry the group's `groupId`

@@ -73,7 +73,7 @@ somewhere real to run, and the end of this stage is where the first fully meanin
    thing it was meant to de-risk, so it could catch a schema or logic error but never a permission one —
    which is the failure class a cross-account promotion actually produces.
 5. **Apply the `DataScientistProdAccess` and `DataScientistStagingAccess` permission sets (D18)** created
-   by hand in Stage 1b step 3, now from `terraform-live/identity/`, together with the Production Athena
+   by hand in Stage 1b step 3, now from `terraform-live/identity/sso/`, together with the Production Athena
    workgroup they depend on (`EnforceWorkGroupConfiguration = true`, scan limit, results to a
    per-principal prefix). The Staging set carries no write grant at all — confirm that in the plan output,
    not only in the intention.
