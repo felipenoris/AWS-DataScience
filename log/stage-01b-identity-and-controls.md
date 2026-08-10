@@ -57,6 +57,44 @@ aws identitystore create-user --identity-store-id d-xxxxxxxxxx --display-name "G
 	- Governance Manager User -> sso-group-governance-managers
 
 - Received Alarm (Identity Center membership and assignment change).
+
+- Added Infrastructure user to sso-group-infrastructure. Alarm received successfuly.
+
+- Loged with CT Admin, AWSAdministratorAccess. Fixed the Alarm `Identity Center membership and assignment change`: Edit → Additional configuration → Missing data treatment → Treat missing data as good (not breaching threshold).
+
+- Login as Infrastructure User -> Identity Account -> AWSAdministratorAccess. Checked region `us-west-2`. IAM Center -> Settings -> Configura multi-factor authentication. Set `Every time they sign in` and `Require them to register an MFA device at sign in`.
+
+- Testing alarm thru identitystore. Running on CloudShell, replacing d-xxxxxxxxxx with my IAM Center ID.
+
+```
+IDS=d-xxxxxxxxxx
+
+GID=$(aws identitystore get-group-id \
+    --identity-store-id $IDS \
+    --alternate-identifier '{"UniqueAttribute":{"AttributePath":"displayName","AttributeValue":"sso-group-data-scientists"}}' \
+    --query GroupId \
+    --output text)
+
+
+USERID=$(aws identitystore get-user-id \
+    --identity-store-id $IDS \
+    --alternate-identifier '{"UniqueAttribute":{"AttributePath":"userName","AttributeValue":"<USER_NAME>"}}' \
+    --query UserId \
+    --output text)
+
+
+MID=$(aws identitystore get-group-membership-id --identity-store-id $IDS --group-id $GID --member-id UserId=$USERID --query MembershipId --output text)
+
+aws identitystore delete-group-membership --identity-store-id $IDS --membership-id $MID
+aws identitystore create-group-membership --identity-store-id $IDS --group-id $GID --member-id UserId=$USERID
+
+aws identitystore list-group-memberships --identity-store-id $IDS --group-id $GID
+```
+
+- Alarm received successfuly and the user returned to the sso-group-data-scientists group.
+
+- Ended step 2. Moving to Step 3.
+
 ---
 
 *Log index: [log/INDEX.md](INDEX.md) · Stage index: [plan/stages/INDEX.md](../plan/stages/INDEX.md)*
