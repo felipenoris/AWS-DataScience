@@ -3,8 +3,21 @@
 
 The accounts below, grouped into organizational units. The account is the isolation boundary; the OU is the
 policy boundary, so each OU is named for the policy set it carries rather than for its contents
-([D23](plan/decisions/D23-ou-structure.md)) — with one exception, added by D29, whose OU carries no policy set at all because it is where
-*candidate* policies are tried out.
+([D23](plan/decisions/D23-ou-structure.md)).
+
+**Three OUs carry no policy set of their own, and each for a different reason** — worth stating up front,
+because the naming rule above suggests otherwise:
+
+- **`Policy Test`** ([D29](plan/decisions/D29-policy-canary.md)) — by design. It is where a *candidate*
+  SCP or RCP is attached and exercised before it reaches anything real.
+- **`Sandboxes`** ([D35](plan/decisions/D35-sandbox-cardinality.md)) — a container for a *cardinality
+  class*, nested under `Interactive` and inheriting whatever that OU carries. That inheritance is what
+  makes a new business unit's account governed on arrival.
+- **`Interactive`** — **today**, and pending a decision. Interactive compute is allowed there because
+  nothing denies it: the organization-root set is the whole ceiling, and what holds infrastructure change
+  off the data scientist is `DataScientistAccess`, an *identity* policy. Whether the OU gains a set of its
+  own is settled at [Stage 1c step 7](plan/stages/stage-01c-preventive-policies.md); the per-OU sets
+  written there are `Workloads`, `Data` and `Identity`, plus `Interactive` only if that step says so.
 
 ## The two axes, and the accounts that sit on neither
 
@@ -56,11 +69,21 @@ questions, which is why an account can be high blast radius and carry a light po
 | Development | Interactive | Lifecycle (head of the chain) | **Development** — the unit of work is a pipeline: a repository with tests, git and CI. Target of the `engineering` project profile (D26). Work graduates in from Sandbox **through git, never through a pipeline**, and the promotion chain starts here | Same as Sandbox — the two differ in content, not in policy |
 | Data Governance | Data | **Ownership** | The **state and governance of data**: the governed lake (S3 + Iceberg), the Glue catalog, Lake Formation, classification, the ingestion drop-box, the Glue Crawlers on raw and drop-box (D27), and the **SageMaker Unified Studio domain** with its catalog, project profiles, blueprints and account associations (D26). **A registry, not a runtime** — no VPC and no interactive sign-in; every environment reaches it through cross-account shares, and the portal it hosts is used by people who can never administer the account. Renamed from `Data Management` on 2026-08-08 | No user compute; catalog maintenance excepted by name; deletion denied |
 | Staging | Workloads | Lifecycle | **Deployment target** — receives the built artifact, runs the integration tests against sampled or synthetic data local to it, and is torn down again. No Studio domain, no Model Registry of its own, no GitLab, no share from the lake. Data scientists: read-only | No interactive compute; no human control plane |
-| Production | Workloads | Lifecycle (end of the chain) | The **software supply chain** (GitLab, runners, ECR, CodeArtifact), the production SageMaker runtime including the **Model Registry**, and the lake's **producer** — its job execution role holds the governed write, the only path by which governed data is ever written | Same as Staging |
+| Production | Workloads | Lifecycle (end of the chain) | The **software supply chain** (GitLab, runners, ECR, CodeArtifact), the production SageMaker runtime including the **Model Registry**, the **orchestration** layer ([D7](plan/decisions/D07-orchestration.md), built twice and compared), and the lake's **producer** — its job execution role holds the governed write, the only path by which governed data is ever written | Same as Staging |
 
 ## Management Account
 
-- represents the root account. Never touch it. This will be used only to bootstrap the AWS environment manually. All further actions will be performed using auxiliary accounts.
+- Represents the root account, and owns the Organization, Control Tower and the landing zone. It is
+  **bootstrap-only and console-only** (principle 1): everything done here is manual and recorded by the
+  user in that stage's file under `log/`, and **Terraform never runs against it**. No persona holds an
+  assignment here, permanently — `AWS Control Tower Admin` is kept standing (D33, D34) precisely so that
+  none needs one.
+
+- **"Never touch it" is one qualification short, and the qualification is the recovery path.** Its **root
+  user is the break-glass credential** ([D16](plan/decisions/D16-break-glass.md)) — the only one, since D30
+  was reverted, which is what makes D29's policy canary load-bearing rather than nice to have. When it may
+  be used, what to do with it, and the alarm chain that watches its use are in
+  [`plan/runbooks/break-glass.md`](plan/runbooks/break-glass.md).
 
 ## Sandbox Account
 
@@ -83,6 +106,17 @@ questions, which is why an account can be high blast radius and carry a light po
   bucket, the execution roles — **into this account**. Arbitrary code runs here, against this account's
   data and behind this account's egress controls, exactly as it did before the domain existed.
 
+- **Two things live here that live nowhere else**, and both are consequences of the account being where
+  people actually are: the **WireGuard instance** — the single human entry point, whose tunnel is *full*,
+  so the Sandbox VPC is one of only two the laptop reaches at the VPC level
+  ([D4](plan/decisions/D04-vpn-wireguard.md), Stage 4) — and the **shared EFS filesystem**, one per
+  business unit ([D24](plan/decisions/D24-shared-filesystem.md)). Development gets neither its own EFS nor
+  a path to this one; the exchange between the two Interactive accounts is S3 and git.
+
+- **This is the highest-risk account in the organization, not the lowest** — real data meets unreviewed
+  code, interactively, with a browser session attached. The argument is in [§3 of `README.md`](README.md),
+  and it is what makes the perimeter and the egress controls get built here first.
+
 ## Development Account
 
 - Represents a development environment, where the unit of work is a pipeline (repository with tests, workflow definitions). In contrast with the Sandbox environment, the Development environment uses git, CI and automation tools.
@@ -93,11 +127,48 @@ questions, which is why an account can be high blast radius and carry a light po
 
 ## Staging Account
 
-- Staging area before promotion to Production.
+- **Deployment target, not a staging area someone works in** ([D20](plan/decisions/D20-staging-account.md)).
+  It receives the artifact built in Development, runs the integration tests against it, and is torn down
+  again. No Studio domain, no Model Registry of its own, no GitLab. Only the pipeline writes here, which is
+  what its `Workloads` policy set enforces — no interactive compute, no human control plane.
+
+- **Its data is sampled or synthetic and local to it, and it is in no Lake Formation share.** That is a
+  deliberate departure from the reference architectures: a target where data scientists have read access
+  and unattended tests run would otherwise be the cheapest route to production data. The accepted cost is a
+  test suite that catches permission, schema and wiring errors and misses whatever only appears at
+  production distribution and volume.
+
+- **Read-only for the data scientist, with no write of any kind** — `DataScientistStagingAccess`
+  ([D18](plan/decisions/D18-data-scientist-access.md)). The moment a person can adjust Staging by hand to
+  make a test pass, the test stops being evidence about the pipeline.
+
+- **Not vended yet.** The account is held on the Organization's account cap; the increase is requested, not
+  granted. [Stage 1a](plan/stages/stage-01a-landing-zone.md) carries the full list of what the deferral
+  leaves owed — including the three assignment rows at the end of this file.
 
 ## Production Account
 
-- represents the production environment. All actions in this account will be done using terraform.
+- Represents the production environment: the end of the promotion chain, and — since
+  [D14](plan/decisions/D14-supply-chain-account.md) — the **software supply chain** as well. It holds
+  GitLab and GitLab Pages, the runners, ECR, CodeArtifact, the SageMaker Model Registry and runtime, the
+  orchestration layer (D7), and the lake's **producer** path.
+
+- **"Only Terraform touches Production" is about the control plane, not the account**, and the two are
+  routinely confused. Nobody changes Production *infrastructure* by hand — Terraform builds it and the
+  pipeline deploys into it. But humans do *use* services hosted here: GitLab over the VPN, and the
+  production data plane read that `DataScientistProdAccess` grants (D18). Using a service is not
+  administering the account.
+
+- **Why the supply chain is here and not in a shared-services account** — the departure this project makes
+  knowingly, on cost (D14). Whoever controls GitLab, the runners and the registries controls what runs in
+  Production, so they must not sit in an account where `sso-group-data-scientists` has broad permissions.
+  The consequence is stated rather than hidden: there is no boundary between what builds and what runs, so
+  a compromise of GitLab is a compromise of Production.
+
+- **It is also the one deployment target that reaches the lake as a writer.** Its job execution role holds
+  the Lake Formation share's **governed write** — the only path by which governed data is ever written
+  ([D22](plan/decisions/D22-data-governance-account.md)) — and it is the consumer of the ingestion drop-box
+  ([D25](plan/decisions/D25-drop-box-consumer.md)).
 
 ## Data Governance Account
 
@@ -172,11 +243,34 @@ not in concept. `Policy Test` and `Policy Canary` keep the word `Staging` naming
 
 ## Log Archive Account
 
-- Log Archive account linked to Control Tower.
+- The organization's **tamper-evident log sink**, created by Control Tower itself rather than vended by
+  Account Factory — which is why no `SSOUserEmail` direct assignment exists here (D32) and why it holds no
+  Terraform slice. It receives the organization CloudTrail and the Config history.
+
+- **S3 Object Lock in *compliance* mode** ([Stage 1d step 9](plan/stages/stage-01d-org-wide-enablement.md)),
+  not governance mode, and that distinction is load-bearing: `AWS Control Tower Admin` administers this
+  account and holds `s3:BypassGovernanceRetention`, so governance mode would be walked through by exactly
+  the identity the retention is there to survive. Together with CloudTrail log file validation and the
+  alarm on Identity Center membership changes, it is one of the three permanent controls that make the
+  standing administrators *observed* rather than merely unbounded.
+
+- **Nobody holds an assignment here** — not even the infrastructure user. The audit trail has to survive
+  its own administrators, which is an argument against adding one rather than a gap to close.
 
 ## Audit Account
 
-- Audit account linked to Control Tower.
+- The **security guardian**, created by Control Tower rather than vended: the delegated administrator for
+  GuardDuty, Security Hub, Macie and IAM Access Analyzer, and where their organization-wide findings land.
+
+- **The services arrive stage by stage, not all at once**, and each names the stage that turns it on:
+  Access Analyzer's external-access findings in the landing zone (Stage 1b) because they are free, then
+  GuardDuty at Stage 4 with the first internet-facing resource, Security Hub at Stage 5 with the first
+  governed data, and Macie at Stage 11. Guiding principle 9 carries the rule — detection is metered, and
+  turning it on over empty accounts buys nothing while spending the one free window in which its real cost
+  could have been measured.
+
+- **Separate from `Identity` on purpose**, so that access management and security monitoring do not share
+  a blast radius, and **no persona holds an assignment here** for the same reason as Log Archive.
 
 ## Identity Account
 
@@ -523,7 +617,7 @@ given in to — Identity Center will not warn, and no policy can detect it.
   is enough, because since D22 that is the account the governed catalog lives in. It grants Glue catalog
   metadata read, Lake Formation LF-Tag and permission administration, DataZone domain ownership and Macie
   findings read. Deliberately **no** authority over releases: this user cannot approve a promotion, holds
-  nothing in the four lifecycle accounts, and has no role in the pipeline.
+  nothing in the lifecycle accounts, and has no role in the pipeline.
 
 - **One thing this user should not have, and it is easy to grant by accident:** blanket read access to the
   data itself. An approver who can already read everything is not exercising a control when they approve a
@@ -721,11 +815,11 @@ than a merge request.
 
 | Group | Persona | Humans behind it, realistically | Holds |
 |---|---|---|---|
-| `sso-group-infrastructure` | [Infrastructure](#infrastructure-user) | **one**, with one MFA device — D32's shape depends on it | `InfrastructureAccess` on six accounts |
+| `sso-group-infrastructure` | [Infrastructure](#infrastructure-user) | **one**, with one MFA device — D32's shape depends on it | `InfrastructureAccess` on every Terraform-managed account |
 | `sso-group-data-scientists` | [Data Scientist](#data-scientist-user) | hundreds | The three `DataScientist*Access` sets |
-| `sso-group-deployment-managers` | [Deployment Manager](#deployment-manager-user) | one | `DeploymentManagerAccess` on the four lifecycle accounts |
+| `sso-group-deployment-managers` | [Deployment Manager](#deployment-manager-user) | one | `DeploymentManagerAccess` on the lifecycle accounts |
 | `sso-group-governance-managers` | [Governance Manager](#governance-manager-user) | one | `GovernanceManagerAccess` on Data Governance alone |
-| `sso-group-dev-env-stewards` | [Dev Env Steward](#dev-env-steward-user) | a handful | `DevEnvStewardAccess` on three accounts |
+| `sso-group-dev-env-stewards` | [Dev Env Steward](#dev-env-steward-user) | a handful | `DevEnvStewardAccess` on Production and the Interactive accounts |
 
 **One group is planned and deliberately not created yet:** `sso-group-data-scientists-<bu>`, one per business
 unit, covering that unit's `Sandbox` and nothing else (D35, [Stage 14](plan/stages/stage-14-sandbox-vending.md)).
@@ -783,9 +877,10 @@ a grant that appears because an account appeared is the failure mode that rule e
 is requested, not granted). Stage 1b step 3 and Stage 2 step 5 both skip them, and they are picked up at the
 vend. **15 assignments today, 18 at the target.**
 
-† **Row 7 is the one that changes shape at the second business unit.** D35 makes `Sandbox` one account per
-unit, so its assignment moves to `sso-group-data-scientists-<bu>` — covering that unit's Sandbox alone —
-while row 8 stays on the shared group. The permission set is unchanged and shared; only the principal
+† **The `DataScientistAccess` assignment on `Sandbox` is the one that changes shape at the second business
+unit.** D35 makes `Sandbox` one account per unit, so its principal moves to
+`sso-group-data-scientists-<bu>` — covering that unit's Sandbox alone — while the same set's assignment on
+`Development` stays on the shared group. The permission set is unchanged and shared; only the principal
 differs. With one unit there is no per-unit group yet.
 
 ## What is *not* in the table above, and why each absence is deliberate
@@ -805,7 +900,8 @@ alone deliberately:
 
 - **The Account Factory direct assignments.** Every vended account carries a *direct* assignment of Control
   Tower's `AWSAdministratorAccess` to the **infrastructure user**, created at vend time from the
-  `SSOUserEmail` field. They are what bootstraps the whole identity plane — rows 1-6 above do not exist until
+  `SSOUserEmail` field. They are what bootstraps the whole identity plane — the `InfrastructureAccess`
+  assignments above do not exist until
   Stage 1b step 3 — and **Stage 1b step 5.1 is where they are retired, or recorded as un-retirable.** Removing
   one before the group path is proven end to end is the cheapest way to lock the only administrator out of an
   account whose sole remaining recovery path is the Management root (D16).
