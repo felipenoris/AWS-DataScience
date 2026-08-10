@@ -139,15 +139,15 @@ table above, and it is the whole reason the alarm is in this stage rather than i
   this stage owns the five groups below.
 - **Create four users, not five (D32).** The infrastructure user already exists: Account Factory created
   it in 1a step 4 from the `SSOUserEmail` field, and it already holds a direct administrator assignment
-  on every vended account. The only thing to do about it here is **put it in the `infrastructure`
+  on every vended account. The only thing to do about it here is **put it in the `sso-group-infrastructure`
   group**. Re-creating it under a second address gives one human two administrators, one of which nobody
   is watching.
-- **Create five groups:** `infrastructure`, `data-scientists`, `deployment-managers`,
-  `governance-managers`, `dev-env-stewards`.
+- **Create five groups:** `sso-group-infrastructure`, `sso-group-data-scientists`, `sso-group-deployment-managers`,
+  `sso-group-governance-managers`, `sso-group-dev-env-stewards`.
 - **One group per business unit is deferred, deliberately (D35).** `Sandbox` is one account per business
-  unit and N is 1, so **create `data-scientists` and no per-unit group today**. What this step fixes now
+  unit and N is 1, so **create `sso-group-data-scientists` and no per-unit group today**. What this step fixes now
   is that the *assignment list* in step 3 keeps the Sandbox row separable from the Development row, so
-  the second unit is an addition (`data-scientists-<bu>` covering that unit's Sandbox alone) and not a
+  the second unit is an addition (`sso-group-data-scientists-<bu>` covering that unit's Sandbox alone) and not a
   refactor. [Stage 14](stage-14-sandbox-vending.md) owns the naming; do not invent it here.
 - **Enforce MFA** in Identity Center settings — required at every sign-in, and required at registration.
   This applies to `AWS Control Tower Admin` too, whose MFA (1a step 3) is a **standing control**, not a
@@ -171,7 +171,7 @@ table above, and it is the whole reason the alarm is in this stage rather than i
     console** — where OUs are created and accounts enrolled — which AWS documents as reachable only by
     `AWSControlTowerAdmins` members. Creating OUs is part of the job, which is what decided D34.
 - **Never put the same person in more than one approver group, or in one of them plus
-  `data-scientists`** — or plus `infrastructure`, which is the instance that matters most and the one the
+  `sso-group-data-scientists`** — or plus `sso-group-infrastructure`, which is the instance that matters most and the one the
   tables hide. The approver groups were a single `managers` group until 2026-08-08 and have been split
   twice since, each time along a different axis: release (lifecycle), data access (ownership), runtime
   image (supply chain). The reason is cumulative and it is the whole point: one persona holding all of
@@ -196,13 +196,13 @@ set gets missed.
 
 | Permission set | Group | Assigned on | Created | Shape |
 |---|---|---|---|---|
-| `AdministratorAccess` | `infrastructure` | Sandbox, Development, Data Governance, Staging*, Production, Identity | **Here, by hand** | The builder. The one named exception to "nothing gets `AdministratorAccess`" (`plan/conventions.md`) |
-| `DataScientistAccess` | `data-scientists` | Sandbox **and** Development (D21) | Stage 2 step 5 | Studio use, scratch/derived read-write, Athena, ECR pull. **Not** `PowerUserAccess`, **not** `AmazonSageMakerFullAccess` |
-| `DataScientistStagingAccess` | `data-scientists` | Staging* (D20) | Stage 2 step 5 | Read-only, no write of any kind, not even a drop-box |
-| `DataScientistProdAccess` | `data-scientists` | Production (D18) | Stage 2 step 5 | Data plane read, no compute, no control plane |
-| `DeploymentManagerAccess` | `deployment-managers` | Sandbox, Development, Staging*, Production (D31) | Stage 2 step 5 | Diagnosis, not reading. **Nothing on Data Governance** |
-| `GovernanceManagerAccess` | `governance-managers` | **Data Governance only** | Stage 2 step 5 | The catalog, never the rows |
-| `DevEnvStewardAccess` | `dev-env-stewards` | Production + read-only on Sandbox and Development | Stage 2 step 5 | The artifact, never the data |
+| `InfrastructureAccess` | `sso-group-infrastructure` | Sandbox, Development, Data Governance, Staging*, Production, Identity | **Here, by hand** | The builder. The one named exception to "nothing gets `AdministratorAccess`" (`plan/conventions.md`) — it is the one set that attaches it |
+| `DataScientistAccess` | `sso-group-data-scientists` | Sandbox **and** Development (D21) | Stage 2 step 5 | Studio use, scratch/derived read-write, Athena, ECR pull. **Not** `PowerUserAccess`, **not** `AmazonSageMakerFullAccess` |
+| `DataScientistStagingAccess` | `sso-group-data-scientists` | Staging* (D20) | Stage 2 step 5 | Read-only, no write of any kind, not even a drop-box |
+| `DataScientistProdAccess` | `sso-group-data-scientists` | Production (D18) | Stage 2 step 5 | Data plane read, no compute, no control plane |
+| `DeploymentManagerAccess` | `sso-group-deployment-managers` | Sandbox, Development, Staging*, Production (D31) | Stage 2 step 5 | Diagnosis, not reading. **Nothing on Data Governance** |
+| `GovernanceManagerAccess` | `sso-group-governance-managers` | **Data Governance only** | Stage 2 step 5 | The catalog, never the rows |
+| `DevEnvStewardAccess` | `sso-group-dev-env-stewards` | Production + read-only on Sandbox and Development | Stage 2 step 5 | The artifact, never the data |
 
 \* **Skip every `Staging` cell until the account is vended** (the prerequisites row). Nothing before
 Stage 8 needs it.
@@ -226,21 +226,36 @@ is also the right *shape* there — the account is deliberately outside the Terr
 or Stage 1c measures the wrong thing: an SCP is a *ceiling*, so a deny that a restricted principal could
 not have exercised anyway proves nothing about it.
 
-#### 3.2 — Settle the name collision before creating anything, because its failure mode is silent
-Control Tower already created a permission set called **`AWSAdministratorAccess`**; this step creates one
-called **`AdministratorAccess`** — two objects four characters apart, both granting administrator, one
-owned by Control Tower and one by this project. An assignment made against the wrong one still works, so
-nothing reports it.
+#### 3.2 — The name collision, settled before creating anything, because its failure mode is silent
 
-- **The name is `AdministratorAccess`**, and the disambiguation rule is the one `ORGANIZATION.md` already
-  states: *anywhere this repository says "the administrator permission set" without naming Control Tower,
-  it means this project's*. That is the choice, not an option — an earlier draft left "either rename it
-  or write the rule down" open at execution time, and an unanswered naming question gets answered by
-  whoever is at the keyboard (Lesson 16).
-- **If you would rather rename it** (`InfrastructureAccess` is the honest name — it is the
-  `infrastructure` group's set), that is a decision that has to be made *here* and propagated in the same
-  session to `ORGANIZATION.md`, `plan/conventions.md` and D32. Record which way it went.
+**The name is `InfrastructureAccess`** — decided 2026-08-10, before execution, and already propagated. It is
+not a choice left at the keyboard (Lesson 16); it is recorded here because the *reason* is what the step has
+to carry into the console.
+
+Control Tower already created a permission set called **`AWSAdministratorAccess`**. The set created here was
+going to be called `AdministratorAccess` — two objects four characters apart, both granting administrator,
+one owned by Control Tower and one by this project. **An assignment made against the wrong one still works,
+so nothing reports it.** Three things decided the rename:
+
+- **It degrades the one check standing in front of the only dangerous act in this stage.** Step 5's evidence
+  and step 5.1's precondition are both "read the ARN and tell which set it is".
+  `AWSReservedSSO_InfrastructureAccess_*` next to `AWSReservedSSO_AWSAdministratorAccess_*` is a difference
+  you cannot miss; `AWSReservedSSO_AdministratorAccess_*` next to it is a prefix nobody reads carefully, at
+  the moment they are about to remove the assignment that is known to work (Lesson 13).
+- **It restores the shape the other six sets already follow** — `<Persona>Access` — so the administrator set
+  stops being the only one named after a *permission level* rather than a group. `plan/conventions.md` asks
+  for its exception to be read narrowly, covering one group; a name that says `Administrator` invites the
+  opposite reading.
+- **The collision had already produced drift in prose, before the object existed.** `ORGANIZATION.md`'s
+  access table and D29 both said this project's set was the one on `Policy Canary`, where 3.1, step 5 and
+  D32 say it is Control Tower's. Both were corrected in the same pass.
+
+Two rules survive the rename and are the reason it was cheap now and would not have been later:
+
 - **Never edit or reuse Control Tower's set.** It is theirs, and a landing-zone update may reset it.
+- **`AWSAdministratorAccess` is still what every Account Factory direct assignment points at** (D32), and
+  what `awsds-policy-canary` is bound to permanently (3.1). The rename removes the ambiguity, not the second
+  set — both exist throughout this stage, and the whole of 5.1 is about telling them apart.
 
 #### 3.3 — One permission set object is one policy, however many accounts it is assigned to
 
@@ -333,12 +348,12 @@ who can already read everything is not exercising a control when they approve.
 
 #### 3.7 — What nobody gets, which is as much of the design as what they do
 
-- **`data-scientists` has no assignment of any kind on Data Governance** (D18/D22). The lake is read from
+- **`sso-group-data-scientists` has no assignment of any kind on Data Governance** (D18/D22). The lake is read from
   Sandbox and Development through the Lake Formation share.
-- **`deployment-managers` has nothing on Data Governance** — a release approver has no business in the
-  account that grants data access. `governance-managers` is the mirror image: the one account the
+- **`sso-group-deployment-managers` has nothing on Data Governance** — a release approver has no business in the
+  account that grants data access. `sso-group-governance-managers` is the mirror image: the one account the
   deployment manager cannot enter is the only one they can.
-- **`dev-env-stewards` has nothing on Staging, Data Governance, Identity, Audit, Log Archive or Policy
+- **`sso-group-dev-env-stewards` has nothing on Staging, Data Governance, Identity, Audit, Log Archive or Policy
   Canary** — the narrowest of the three, because the artifact it judges is a container image and not an
   environment.
 - **No project persona has anything on Identity, Audit, Log Archive or Policy Canary** except the
@@ -352,8 +367,8 @@ who can already read everything is not exercising a control when they approve.
 Every vended account carries a *direct* assignment of Control Tower's administrator set to the
 infrastructure user, created in 1a step 4 and sitting outside the group model built here.
 
-- **Remove none of them until the group path is proven end to end** — `infrastructure` →
-  `AdministratorAccess` → an actual `aws sts get-caller-identity` under each profile in step 5. Removing
+- **Remove none of them until the group path is proven end to end** — `sso-group-infrastructure` →
+  `InfrastructureAccess` → an actual `aws sts get-caller-identity` under each profile in step 5. Removing
   them first is the cheapest way to lock the only administrator out of an account whose sole remaining
   recovery path is the Management root (D16; D30 reverted). **So the removal is not performed here: it is
   [step 5.1](#step-51--retire-the-account-factory-direct-assignments-or-record-that-they-cannot-be),
@@ -387,7 +402,7 @@ byte. That is the same work done twice with a gate in the middle designed to fai
   approvers consume no AWS permission at all until they diagnose something (Stage 8).
 - **So they are authored in `terraform-live/identity/sso/` at Stage 2 step 5, created rather than
   imported.** The design of record is 3.1-3.7 above; Stage 2 references it and does not restate it.
-- **What is still imported is small and deliberate:** the `AdministratorAccess` set created here and its
+- **What is still imported is small and deliberate:** the `InfrastructureAccess` set created here and its
   assignments. That keeps the whole entitlement plane in code — an artefact nobody owns is worse than an
   artefact somebody owns badly (Lesson 5) — and it exercises the import mechanism on objects whose worst
   failure is that a person cannot sign in, which is exactly the argument Stage 2 step 5.5 already makes for
@@ -427,7 +442,7 @@ byte. That is the same work done twice with a gate in the middle designed to fai
   a `sso_role_name` in `~/.aws/config`, so a profile is bound to *one* named set, not to "whatever
   administrator access this user has". There are two administrator sets four characters apart (3.2), and
   which one a profile points at decides whether 5.1 is safe:
-  - **Point every profile at this project's `AdministratorAccess`**, reached through the `infrastructure`
+  - **Point every profile at this project's `InfrastructureAccess`**, reached through the `sso-group-infrastructure`
     group. That is the whole point of the group path, and it is what makes 5.1 a cleanup rather than a
     lockout.
   - **Control Tower's `AWSAdministratorAccess` — the Account Factory direct assignment — is the fallback
@@ -442,7 +457,9 @@ byte. That is the same work done twice with a gate in the middle designed to fai
 - **Verify:** `aws sts get-caller-identity --profile <each>` returns the expected account ID **and an
   assumed-role ARN naming the set the profile was bound to** — the ARN is the evidence, the account ID
   alone is not (Lesson 13: an `AWSReservedSSO_AWSAdministratorAccess_*` ARN and an
-  `AWSReservedSSO_AdministratorAccess_*` ARN both "work").
+  `AWSReservedSSO_InfrastructureAccess_*` ARN both "work", and only the second means the group path
+  resolved). The 3.2 rename makes that a glance rather than a careful read; it does not remove the need
+  to look.
 - **This step depends on nothing above it, which the previous version of this file did not say.** The
   Account Factory direct assignments exist since 1a step 4, so `aws configure sso` works before the
   delegation, before the groups and before the permission sets — bound to `AWSAdministratorAccess`. That
@@ -463,8 +480,8 @@ as something to do "after step 5" — an action with no number, no identity and 
 both now, because it is the one act in this stage that can lock the only administrator out of an account.
 
 - **Precondition, and it is not the same as "step 5 is finished":** every profile from step 5 has returned
-  an assumed-role ARN naming **this project's** `AdministratorAccess`. That is the proof that
-  `infrastructure` → `AdministratorAccess` → the account actually resolves. A profile still bound to
+  an assumed-role ARN naming **this project's** `InfrastructureAccess`. That is the proof that
+  `sso-group-infrastructure` → `InfrastructureAccess` → the account actually resolves. A profile still bound to
   `AWSAdministratorAccess` means the group path is untested in that account, and removing the direct
   assignment there is removing the only thing that is known to work.
 - **Do:** remove the direct user assignment of `AWSAdministratorAccess` from Sandbox, Development,
@@ -624,7 +641,7 @@ table. It depends on nothing else in the stage: the groups it watches are Contro
     for a detective control of this shape. It is why 1a's break-glass alarm is built the same way.
 - **The test is step 2, not a contrived edit.** An untested alarm is a hypothesis (1a step 5 makes the same
   point about the same topic) — and because this alarm is built *before* the rest of the stage, putting the
-  infrastructure user into the `infrastructure` group is a real membership change that must produce a real
+  infrastructure user into the `sso-group-infrastructure` group is a real membership change that must produce a real
   notification. If step 2 completes and nothing arrives, stop: the alarm is not a control, and step 1 has
   already widened what it was supposed to be watching. The old instruction here was to add and remove a
   member of `AWSControlTowerAdmins` deliberately — a live edit to the most dangerous group in the
@@ -655,7 +672,7 @@ Each one is written so that its output differs between working and broken (Lesso
 
 - **SSO login works and the group path is real:** `aws sts get-caller-identity --profile awsds-infra-sandbox`
   returns the Sandbox account ID **and an ARN containing
-  `AWSReservedSSO_AdministratorAccess`** — this project's set, reached through the `infrastructure` group —
+  `AWSReservedSSO_InfrastructureAccess`** — this project's set, reached through the `sso-group-infrastructure` group —
   and the same for every other `awsds-infra-*` profile. The account ID alone proves only that *an*
   administrator assignment exists, which was already true before this stage started.
 - **The delegation took effect:** `aws sso-admin list-instances --profile awsds-infra-identity` returns the
@@ -669,13 +686,17 @@ Each one is written so that its output differs between working and broken (Lesso
 
 ## Decisions due while executing
 
-**Blocking questions for the user: none.** One decision is *made* during this stage, and it has to be
-written into `log/stage-01b-identity-and-controls.md` rather than left to whoever is at the keyboard
-(Lesson 16):
+**Blocking questions for the user: none — and since 2026-08-10, no decision is left to be made here
+either.** The one decision this stage carried was settled *before* execution rather than at the keyboard,
+which is Lesson 16 being applied rather than restated:
 
-| # | Decision | Step | Reversible? |
+| # | Decision | Step | Settled |
 |---|---|---|---|
-| 2 | The name of this project's administrator permission set — `AdministratorAccess` as `ORGANIZATION.md` states, or a rename propagated in the same session | 3.2 | Yes, but it touches three other files |
+| 2 | The name of this project's administrator permission set | 3.2 | **`InfrastructureAccess`**, 2026-08-10, propagated in the same session to `ORGANIZATION.md`, `plan/conventions.md`, D29, D32, Stages 1a, 1c, 1d, 2 and 4. The reasoning is in 3.2; the naming rule it produced is in `plan/conventions.md` |
+
+**What is still owed to the log:** that the set was in fact created under that name, and the
+`AWSReservedSSO_InfrastructureAccess_*` ARNs step 5 returns. A decision recorded in the plan and not
+matched by the object in the console is the failure this table exists to prevent.
 
 *The numbering is the landing zone's, not this file's: decisions 1, 5 and 6 are made in
 [Stage 1c](stage-01c-preventive-policies.md), and 3 and 4 in

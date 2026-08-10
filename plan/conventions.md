@@ -263,8 +263,33 @@ every stage:
 | Where it lives | the directory. Console at lab scale (four users, Stage 1b step 2); **SCIM from the corporate IdP** in any real deployment | `terraform-live/identity/sso/` (Stage 2 step 5) |
 | Why not the other way | Terraform would become the HR system, with personal data in a state file and joiners/leavers as merge requests | a console-only entitlement has no diff, no review and no rollback |
 
-Three rules follow, and each has a failure mode that is silent:
+Five rules follow, and each has a failure mode that is silent:
 
+- **An Identity Center group is named `sso-group-<persona>`.** All five are: `sso-group-infrastructure`,
+  `sso-group-data-scientists`, `sso-group-deployment-managers`, `sso-group-governance-managers`,
+  `sso-group-dev-env-stewards`; a per-business-unit Sandbox group is `sso-group-data-scientists-<bu>`
+  (D35, Stage 14). **The prefix separates two sets of same-named objects, and that is what it is for:**
+  Control Tower's own groups on one side (`AWSControlTowerAdmins`, `AWSAccountFactory`, the auditor and
+  per-account groups — never to be joined or repurposed), and, from Stage 7, **GitLab groups that mirror
+  these personas 1:1 and deliberately do *not* carry the prefix** — `deployment-managers` and
+  `dev-env-stewards` in GitLab are where the two approval gates actually live, and they are different
+  objects in a different system. So a bare `deployment-managers` in this repository means the GitLab group
+  and a prefixed one means the directory; before this rule the same token meant both.
+  **The exactness matters mechanically, not just editorially:** assignments resolve their principal by
+  **display name** through `data.aws_identitystore_group` (rule 3 below), so a name written one way in the
+  plan and another way in the directory is a `terraform plan` that fails — or, worse, a second group
+  someone creates to make the error go away.
+- **A permission set is named `<Persona>Access`, and never within four characters of a Control Tower set.**
+  All seven are: `InfrastructureAccess`, `DataScientistAccess`, `DataScientistStagingAccess`,
+  `DataScientistProdAccess`, `DeploymentManagerAccess`, `GovernanceManagerAccess`, `DevEnvStewardAccess`.
+  Two things follow from the shape. **It names the group, not the permission level** — a set called after a
+  level invites reuse by a second principal, and the `AdministratorAccess` exception below is meant to be
+  read narrowly. **And a near-miss with a Control Tower set is a silent fault, not an aesthetic one:** the
+  administrator set was to be `AdministratorAccess`, four characters from Control Tower's
+  `AWSAdministratorAccess`, and an assignment made against the wrong one still works while the two
+  `AWSReservedSSO_*` ARNs differ only in a prefix nobody reads carefully (Stage 1b step 3.2, 2026-08-10 —
+  the ARN is the evidence in step 5 and the precondition of step 5.1, so this collision would have degraded
+  the one check standing between the operator and a lockout).
 - **Assign a permission set to a group, never to a user.** A group assignment is one object no matter how
   many people are in the group; a user assignment is one per person, created one API call at a time. The
   one exception is Account Factory's own direct assignment to the infrastructure user (D32), which is
@@ -291,8 +316,9 @@ something that belongs in `foundation/`, which is exactly why it is written down
   privilege-escalation path: it lets a user run code under any role they are allowed to pass.
 - Nothing gets `AdministratorAccess` or `PowerUserAccess` "for now". The starting point of a permission set
   is narrow, because loosening a permission is a five-minute change and tightening one is a negotiation.
-  **One exception exists and it is named rather than tacit: the `infrastructure` group** (D32;
-  `ORGANIZATION.md`, "The limit of the separation of duties"). It holds `AdministratorAccess` on every
+  **One exception exists and it is named rather than tacit: the `sso-group-infrastructure` group** (D32;
+  `ORGANIZATION.md`, "The limit of the separation of duties"). It holds **`InfrastructureAccess`** — the one
+  permission set that attaches `AdministratorAccess` — on every
   Terraform-managed account because it is the identity `terraform apply` runs as, and an identity that
   *authors* IAM cannot be constrained by the IAM it authors — narrowing that set would be notation, not a
   control (Lesson 18). What contains it is detective and enumerated: the Control Tower group-membership

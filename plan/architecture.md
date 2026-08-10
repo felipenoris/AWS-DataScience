@@ -134,7 +134,7 @@ cross-account") taken to its logical conclusion: the share is the *default* read
 
 **Why the tooling sits in Production (D14).** GitLab, its runners, ECR and CodeArtifact are the supply
 chain: whoever controls them controls what runs in Production. They must not live in the account where
-the `data-scientists` group has broad permissions. Two consequences shape several stages: the Production
+the `sso-group-data-scientists` group has broad permissions. Two consequences shape several stages: the Production
 VPC has to exist before Stage 7 (so it is built in Stage 3, not Stage 9), and the human path to GitLab is
 laptop → WireGuard in Sandbox → VPC peering → GitLab in Production.
 

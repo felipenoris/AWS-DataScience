@@ -7,5 +7,10 @@ Use CloudShell at AWS Console.
 Login as `AWS Control Tower Admin User`.
 
 ```
-$ aws organizations list-accounts --query 'Accounts[].[Name,Id]' --output table
+aws organizations list-accounts --query 'Accounts[].[Name,Id]' --output table
+```
+## Lists Identity Store ID (SSO)
+
+```
+aws sso-admin list-instances
 ```

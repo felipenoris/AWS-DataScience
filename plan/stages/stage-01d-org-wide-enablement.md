@@ -201,7 +201,7 @@ Today the structure is nearly empty, which is exactly why this is cheap to do no
 after Stage 5 has registered a lake and named its administrators. Note also that changing these settings
 requires being a Lake Formation **data lake administrator** or holding
 `lakeformation:PutDataLakeSettings` outright — the infrastructure user has the latter through
-`AdministratorAccess`, so no administrator has to be registered first; Stage 5 still creates the real
+`InfrastructureAccess`, so no administrator has to be registered first; Stage 5 still creates the real
 one.
 
 **And this is what the step owes Stage 5, because the value set here is the one Stage 5 will silently

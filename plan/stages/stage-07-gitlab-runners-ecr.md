@@ -126,8 +126,16 @@ exactly why step 1's backup/restore cycle has to be tested for real.
    own promotion chain and its own approver (Stage 8 step 1, `dev-env-stewards`), the same Premium feature
    governs whether "only a dev env steward may release a runtime image" is expressible, or whether it
    degrades to "only certain people may push the protected tag". Check it once, for both.
-   **GitLab groups to create here, mirroring the Identity Center groups 1:1:** `data-scientists`,
-   `deployment-managers`, `governance-managers` and `dev-env-stewards`. And the repositories: the
+   **GitLab groups to create here, one per persona, mirroring the Identity Center groups 1:1 in
+   *membership* and deliberately not in *name*:** `data-scientists`, `deployment-managers`,
+   `governance-managers` and `dev-env-stewards` — **without** the `sso-group-` prefix the directory
+   objects carry (`plan/conventions.md`, the identity seam's first rule). The prefix marks an Identity
+   Center group, and these are GitLab objects in a different system, granting nothing in AWS; a bare name
+   in this repository means the GitLab group and a prefixed one means the directory. **The 1:1 that
+   matters is the person behind each**, which is what makes the Stage 8 gate consistent with the AWS
+   access model and what a future upgrade to SAML group sync would automate — and it is also the pairing
+   that has to be re-checked by hand until then, since nothing enforces that
+   `sso-group-deployment-managers` and GitLab's `deployment-managers` hold the same people. And the repositories: the
    application repositories, plus **`dev-env/`** — the image build code, **writable by
    `data-scientists`** and with its release tag protected so only `dev-env-stewards` can push it.
 4. GitLab Pages enabled for documentation, reachable only through the VPN. Pages requires a **domain

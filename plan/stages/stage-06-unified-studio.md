@@ -78,7 +78,7 @@ Two consequences worth stating rather than discovering:
    which it will not start. The deployment targets never get a domain or an association: unreviewed code
    must not reach the accounts the split exists to protect, and the SageMaker runtime they carry (Stage 9)
    is submitted to by pipelines, not by people. The escape hatch for "I need to debug a production job
-   interactively" is a time-boxed elevated role approved by `deployment-managers`, logged and alarmed — designed in
+   interactively" is a time-boxed elevated role approved by the **deployment manager**, logged and alarmed — designed in
    Stage 9, not improvised on the night it is first needed.
 2. Execution roles per project (the one-role-per-workflow discipline of D28 starts here, not in
    production), honouring **D13**: no `s3:GetObject` on Lake Formation-registered prefixes. Project

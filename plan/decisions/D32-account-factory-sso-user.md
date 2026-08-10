@@ -43,11 +43,11 @@ updating the provisioned product with a different `SSOUserEmail` **creates a new
 does not remove the previous one** (documented behaviour). The placeholder does not get replaced; it gets
 *joined*, and becomes precisely the dormant administrator this decision is avoiding. So the value is chosen
 once, at vend time, deliberately. **Consequence 1 — the infrastructure user pre-dates Stage 1b.** 1b step 2
-used to read as "create the five users"; it creates **four**, and the fifth is added to the `infrastructure`
+used to read as "create the five users"; it creates **four**, and the fifth is added to the `sso-group-infrastructure`
 group rather than re-created under a second address. **Consequence 2 — every vended account carries a
 *direct* user assignment**, outside the group model 1b builds, of Control Tower's own administrator
 permission set. **It is deliberately not removed during 1b**, and the order is the whole point: the
-group-based path (`infrastructure` → `AdministratorAccess` → a real `sts:GetCallerIdentity` under each
+group-based path (`sso-group-infrastructure` → `InfrastructureAccess` → a real `sts:GetCallerIdentity` under each
 profile) must be *proven* first, because since D30 was reverted the only thing behind a lockout is the
 Management root. **And whether it can be removed at all is a verification, not an assumption:** Control
 Tower may re-create the assignment on a landing-zone update, an account update or a re-enrollment, in which

@@ -83,8 +83,8 @@ of a rewrite.
    settled, this step delivers VPN-only access to the AWS APIs and the console, and *not* demonstrably to
    the portal — which is the data scientist's primary working surface. Do not write it up as though it
    does. This restriction is what step 5's full tunnel exists for.
-   Two cautions, both of which have locked people out before: apply it to the `data-scientists` and
-   `deployment-managers` and `governance-managers` permission sets first and to `AdministratorAccess` only once it demonstrably works, and note
+   Two cautions, both of which have locked people out before: apply it to the `DataScientistAccess`,
+   `DeploymentManagerAccess` and `GovernanceManagerAccess` permission sets first and to `InfrastructureAccess` only once it demonstrably works, and note
    that this pins access to a single Elastic IP — which is precisely why that IP lives in `[P]` (D4).
    Break-glass (D16) is the way out if this goes wrong.
 9. Write the client setup instructions in `README.md`, including how to regenerate the config after a

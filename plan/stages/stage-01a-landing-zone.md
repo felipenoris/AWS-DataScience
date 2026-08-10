@@ -61,7 +61,7 @@ this list**, and record it in `log/stage-01a-landing-zone.md` beside the vend it
 | Owed by | What |
 |---|---|
 | [1b step 3](stage-01b-identity-and-controls.md) | The `Staging` cells of the assignment table — `DataScientistStagingAccess`, and `DeploymentManagerAccess` on Staging. Both sets are **written in Stage 2 step 5**, so after Stage 2 this is an entry in the enumerated assignment list, not console work |
-| [1b step 5](stage-01b-identity-and-controls.md) | The `awsds-infra-staging` profile, bound to this project's `AdministratorAccess` |
+| [1b step 5](stage-01b-identity-and-controls.md) | The `awsds-infra-staging` profile, bound to this project's `InfrastructureAccess` |
 | [1b step 6](stage-01b-identity-and-controls.md) | The AZ name→ID mapping for the account, before Stage 3 writes a subnet for it |
 | [1c step 7.4](stage-01c-preventive-policies.md) | Account-level S3 Block Public Access — **and it is subject to decision 7**: after the organization-root deny is attached, this may be impossible from inside the account |
 | [1c step 7.7](stage-01c-preventive-policies.md) | Nothing extra *if* the account lands in the already-governed `Workloads` OU — confirm the controls enabled on that OU reached it, rather than assuming inheritance |

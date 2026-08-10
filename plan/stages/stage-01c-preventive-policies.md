@@ -432,7 +432,7 @@ One tier per OU policy set (D23), on top of the root set above.
   something that is not attached while this OU's decision is being made.)*
   - **Why the literal SCP was not simply written.** A deny of "infrastructure changes" in these accounts
     would have to exempt the identity that *builds* the infrastructure in them — Terraform applies the
-    VPC, the buckets, the roles and the keys here under `AdministratorAccess`. A standing exemption for
+    VPC, the buckets, the roles and the keys here under `InfrastructureAccess`. A standing exemption for
     the builder from every infrastructure deny is the exact shape D30 proposed and had reverted. A second
     exemption would follow it: D26's blueprints provision project buckets, execution roles and apps into
     these accounts under DataZone's own provisioning roles — principals that do not exist until Stage 6

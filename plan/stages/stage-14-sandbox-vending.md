@@ -77,7 +77,7 @@ than a rewrite.
      `+alias` convention and is registered in `secrets/emails.md` before the apply, never generated.
    *To verify before writing it:* the product name and the exact parameter keys, which are the kind of detail
    that changes between landing-zone versions.
-3. **Identity per unit (D35).** A `data-scientists-<bu>` group, assigned `DataScientistAccess` on that unit's
+3. **Identity per unit (D35).** A `sso-group-data-scientists-<bu>` group, assigned `DataScientistAccess` on that unit's
    Sandbox and nothing else. The Development assignment stays as it is — one shared engineering account, one
    group — and the approver groups stay institutional and single. Generated from the same unit name as
    everything else: a group whose membership is right and whose *assignment* was typed by hand is the failure

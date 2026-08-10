@@ -153,7 +153,7 @@ Terraform-managed accounts. The one thing it does hold is the point of it — **
 because a deny exercised by a principal that lacked the permission anyway proves nothing about a ceiling.
 That principal is the infrastructure user, through the **direct assignment of Control Tower's
 `AWSAdministratorAccess`** that Account Factory made at vend time (D32) — *that* set, not the
-`AdministratorAccess` this project creates, which the `infrastructure` group carries on the six
+`InfrastructureAccess` this project creates, which the `sso-group-infrastructure` group carries on the six
 Terraform-managed accounts and never here. Stage 1b step 3.1 confirms it rather than creating anything, and
 step 3.8 marks it as the one direct assignment that is permanent: there is no group and no `awsds-infra-*`
 profile behind it, so removing it removes the only way in.
@@ -232,10 +232,14 @@ through the `awsds-infra-*` SSO profiles over the VPN. It approves nothing, owns
 and appears in no gate — which is exactly why it collides with none of the other personas: they answer *may
 this happen?*, and this one answers *does it exist?*
 
-**Its group and its permission set:** the `infrastructure` group holding `AdministratorAccess`, created in
-Stage 1b step 3 — **not** Control Tower's `AWSAdministratorAccess`, which is four characters away and grants
-the same thing. Anywhere this repository says "the administrator permission set" without naming Control
-Tower, it means the first one.
+**Its group and its permission set:** the `sso-group-infrastructure` group holding `InfrastructureAccess`, created in
+Stage 1b step 3 — **not** Control Tower's `AWSAdministratorAccess`, which grants the same thing and is the
+set behind every Account Factory direct assignment (D32). **The name is chosen against that collision, and
+that is its whole point** (Stage 1b step 3.2, decided 2026-08-10): this set was to be called
+`AdministratorAccess`, four characters from Control Tower's, and an assignment made against the wrong one
+still works — so nothing would have reported it. It also restores the `<Persona>Access` shape the other six
+sets follow, and it names the *group* rather than the permission level, which is how the exception in
+`plan/conventions.md` is meant to be read: narrowly, covering one group.
 
 **Why it is associated with the vended accounts, which was never a decision taken per account.** Account
 Factory's form carries a second address, `SSOUserEmail`, which reads like a contact field and is not: AWS's
@@ -249,9 +253,9 @@ incidental.
 
 **What exists today is not yet the model above, and the difference matters operationally.** Each vended
 account carries a **direct user assignment** of Control Tower's `AWSAdministratorAccess`, made at vend time
-and sitting outside the group model entirely; the `infrastructure` group does not exist until Stage 1b. Two
+and sitting outside the group model entirely; the `sso-group-infrastructure` group does not exist until Stage 1b. Two
 consequences, both from D32: **remove none of those direct assignments until the group path is proven end to
-end** — `infrastructure` → `AdministratorAccess` → a real `sts:GetCallerIdentity` under each profile — because
+end** — `sso-group-infrastructure` → `InfrastructureAccess` → a real `sts:GetCallerIdentity` under each profile — because
 the only thing behind a lockout is the Management root ([D16](plan/decisions/D16-break-glass.md)); and
 **whether they can be removed at all is a verification, not an assumption**, since a landing-zone update, an
 account update or a re-enrollment may re-create them.
@@ -260,8 +264,8 @@ account update or a re-enrollment may re-create them.
 
 | Account | What it holds | Why |
 |---|---|---|
-| Sandbox, Development, Staging, Production, Data Governance, Identity | `AdministratorAccess`, through the `infrastructure` group | These are the Terraform-managed slices, and this is the identity that applies them |
-| Policy Canary | `AdministratorAccess`, as a **direct** assignment and deliberately so | The account is outside the Terraform-managed set and has no `awsds-infra-*` profile — it is reached through `awsds-policy-canary`. It needs an *administrator* or the [D29](plan/decisions/D29-policy-canary.md) battery measures the identity policy instead of the SCP ceiling |
+| Sandbox, Development, Staging, Production, Data Governance, Identity | `InfrastructureAccess`, through the `sso-group-infrastructure` group | These are the Terraform-managed slices, and this is the identity that applies them |
+| Policy Canary | Control Tower's **`AWSAdministratorAccess`**, as a **direct** assignment and deliberately so — *not* `InfrastructureAccess` | Account Factory left it at vend time (D32) and it is **permanent**: the account is outside the Terraform-managed set, has no group and no `awsds-infra-*` profile, so removing it removes the only way in (Stage 1b step 3.8). It is reached through `awsds-policy-canary`. It needs an *administrator* or the [D29](plan/decisions/D29-policy-canary.md) battery measures the identity policy instead of the SCP ceiling |
 | Management | **Nothing, permanently** | Principle 1 makes Management bootstrap-only and console-only; Terraform never runs against it. D33/D34 keep `AWS Control Tower Admin` standing precisely so this user needs no reach there, and [D10](plan/decisions/D10-identity-center-delegation.md) delegates Identity Center to the `Identity` account for the same reason. Stage 1b step 4 used to create an assignment here and no longer does |
 | Log Archive, Audit | **Nothing** | Neither was vended by Account Factory and neither holds a Terraform slice. The audit trail has to survive its own administrators, which is an argument against adding one rather than a gap to close |
 
@@ -298,12 +302,13 @@ unbounded, and the difference between those two states is the whole control.
 **Two rules follow, and AWS enforces neither:**
 
 - **The "never the same person in two groups" rule below extends to this persona, and this is the hardest
-  instance of it to keep.** A human in `infrastructure` *plus* any approver group is not a partial overlap: it
+  instance of it to keep.** A human in `sso-group-infrastructure` *plus* any approver group is not a partial overlap: it
   is the separation of duties gone in full, because the infrastructure half already contains the other half.
   With one operator this is a statement of intent — write it down anyway, so a second operator inherits a rule
   instead of a habit.
-- **`AdministratorAccess` here is the one named exception to `plan/conventions.md`'s "nothing gets
-  `AdministratorAccess` or `PowerUserAccess`".** Named rather than tacit, because the reason is structural: an
+- **`InfrastructureAccess` here is the one named exception to `plan/conventions.md`'s "nothing gets
+  `AdministratorAccess` or `PowerUserAccess`"** — it is the one set that attaches the first of those. Named
+  rather than tacit, because the reason is structural: an
   identity that authors IAM cannot be constrained by the IAM it authors, so narrowing this set would be
   notation. The honest control is that it is **one human with one MFA device** — and the moment there is a
   second, D32's revision trigger fires.
@@ -321,8 +326,8 @@ unbounded, and the difference between those two states is the whole control.
 
   - **Sandbox and Development**: read-write and interactive. This is where the person works. **The group
     behind the two halves is not the same one (D35):** `Development` is a single shared engineering account
-    and keeps one `data-scientists` group, while a `Sandbox` exists per business unit, so its assignment is
-    to a **`data-scientists-<bu>`** group covering that unit's Sandbox and nothing else — otherwise every
+    and keeps one `sso-group-data-scientists` group, while a `Sandbox` exists per business unit, so its assignment is
+    to a **`sso-group-data-scientists-<bu>`** group covering that unit's Sandbox and nothing else — otherwise every
     data scientist can sign in to every unit's experimentation account. The permission set itself
     (`DataScientistAccess`) is unchanged and shared. With one unit there is no per-unit group yet; what
     exists now is the naming, so the second unit is an addition and not a refactor.
@@ -348,7 +353,7 @@ labels.**
 | Approves | promotion of an artifact along Development → Staging → Production | data subscriptions and every other access to data | the `dev-env` container image that every notebook runs on |
 | Acts in | GitLab (the promotion pipeline's manual gate) | the SageMaker Unified Studio portal | GitLab (the dev-env pipeline's manual gate) |
 | Question being answered | *is this build safe to release?* | *may this person read this dataset?* | *is this runtime safe to hand to everyone?* |
-| Group | `deployment-managers` | `governance-managers` | `dev-env-stewards` |
+| Group | `sso-group-deployment-managers` | `sso-group-governance-managers` | `sso-group-dev-env-stewards` |
 | Where they have access | `DeploymentManagerAccess` on Sandbox, Development, Staging and Production — **nothing on Data Governance** | `GovernanceManagerAccess` on **Data Governance only** | `DevEnvStewardAccess` on Production (the registry) and read-only on Sandbox and Development (where the image is registered) — **nothing on Staging, Data Governance or Identity** |
 | What they may *read* | Logs, job and pipeline status, catalog metadata, image scan findings, enumerated build-artifact prefixes. **Not** query results, not the derived zones, not decrypted data (D31) | The catalog — names, schemas, classifications, lineage. **Not** the rows | The image: its `Dockerfile` history in GitLab, the build log, ECR image metadata and **enhanced-scanning findings**, and the SageMaker image / app-image-config resources. **No data at all** — no lake prefixes, no Athena, no `kms:Decrypt` |
 
@@ -377,8 +382,8 @@ actions are denied explicitly in their permission set — the pipeline holds the
 only after the gate.
 
 **One rule that nothing in AWS will enforce for you:** never put the same person in more than one of these
-groups, and never in one of them plus `data-scientists` — **or plus `infrastructure`**, which is the
-instance that matters most and the one this table hides, because `infrastructure` is not a column here at
+groups, and never in one of them plus `sso-group-data-scientists` — **or plus `sso-group-infrastructure`**, which is the
+instance that matters most and the one this table hides, because `sso-group-infrastructure` is not a column here at
 all: it already contains every column, and the argument is in "The limit of the separation of duties" above.
 While there is a single operator the temptation is obvious and every split becomes notation the moment it is
 given in to — Identity Center will not warn, and no policy can detect it.
@@ -514,7 +519,7 @@ Stage 1c step 7).
   bootstrap one:** it owns Control Tower administration — creating OUs, vending accounts, enrolling them,
   landing-zone updates — from the console, never from Terraform.
 - **What it is not:** a sixth persona. It holds one duty and no other: it approves nothing, owns no data or
-  workload, and appears in no separation of duties. Do not add it to `infrastructure`, `data-scientists` or
+  workload, and appears in no separation of duties. Do not add it to `sso-group-infrastructure`, `sso-group-data-scientists` or
   any approver group, and do not give it a permission set of this project's.
 - **Why not the narrow replacement.** `AWSAccountFactory` alone (`AWSServiceCatalogEndUserAccess`) is enough
   to vend into an OU that already exists, through the Service Catalog console — but not to reach the
@@ -539,8 +544,10 @@ Stage 1c step 7).
 
 ### The groups and permission sets that arrived with it
 
-Control Tower also created its own permission sets — including one named **`AWSAdministratorAccess`**, four
-characters from the `AdministratorAccess` Stage 1b creates — and a set of groups that are **currently
+Control Tower also created its own permission sets — including one named **`AWSAdministratorAccess`**, which
+is what every Account Factory direct assignment points at (D32) and what the `awsds-policy-canary` profile is
+permanently bound to; Stage 1b step 3.2 named this project's set `InfrastructureAccess` to keep the two
+distinguishable at a glance — and a set of groups that are **currently
 empty and pre-wired**: `AWSServiceCatalogAdmins`, `AWSSecurityAuditors`, `AWSSecurityAuditPowerUsers`,
 `AWSLogArchiveAdmins`, `AWSLogArchiveViewers`, `AWSAuditAccountAdmins`, `AWSAuditAccountViewers`.
 

@@ -210,7 +210,7 @@ every group assignment except the administrator's. Nothing before Stage 5 needs 
 them into a console and then demanding that code reproduce them byte for byte (5.5) was the same work twice
 with a gate in the middle that fails on JSON whitespace.
 
-**Imported:** the `AdministratorAccess` set and its assignments (1b step 3), and the whole
+**Imported:** the `InfrastructureAccess` set and its assignments (1b step 3), and the whole
 `org-policies/` set (1c step 7).
 
 *(This consequence arrived with D30 and outlived it. D30's own reason was narrower — a carve-out condition
@@ -287,7 +287,7 @@ it into `ORGANIZATION.md`'s description of that account rather than leaving it h
 |---|---|---|
 | The **six persona permission sets** and their policies (design of record: 1b step 3.1-3.7) | **Written** — `aws_ssoadmin_permission_set` + `aws_ssoadmin_permission_set_inline_policy`, applied here for the first time | — |
 | Their **group→account assignments** (`aws_ssoadmin_account_assignment`) | **Written**, enumerated one by one (5.3), with the principal resolved by **display name** through `data.aws_identitystore_group` | — |
-| The **`AdministratorAccess`** set (1b step 3) and its assignments | **Imported** — it is the credential this apply runs as, so it cannot be created by the apply | **`AWSAdministratorAccess` and every other Control Tower set** — editing them is landing-zone drift (D10, consequence iii) |
+| The **`InfrastructureAccess`** set (1b step 3) and its assignments | **Imported** — it is the credential this apply runs as, so it cannot be created by the apply | **`AWSAdministratorAccess` and every other Control Tower set** — editing them is landing-zone drift (D10, consequence iii). The Account Factory direct assignments of that set are not modelled either (row below) |
 | This project's **five groups** and its **four users** (1b step 2) | **Neither.** They stay directory objects, outside every state file | **Control Tower's groups** — `AWSControlTowerAdmins`, `AWSAccountFactory`, the auditor and per-account groups |
 | The **direct Account Factory assignments** (D32, 1b step 3.8/5.1) | **Neither** — and if 1b's verification (vi) found they are re-created, they are a permanent property of a vended account rather than something to model | — |
 | The **org-root SCP set** (1c step 7.5), the **per-OU sets** (7.6), the **RCPs**, the **tag policy** and the **declarative EC2 policy** (7.8) | **Imported** | The **Control Tower controls** (7.7) — see 5.4 |

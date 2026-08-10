@@ -79,7 +79,7 @@ somewhere real to run, and the end of this stage is where the first fully meanin
    per-principal prefix). The Staging set carries no write grant at all — confirm that in the plan output,
    not only in the intention.
 6. **The production debugging escape hatch**, designed here rather than improvised later (D17): a
-   time-boxed elevated role in Production, assumable only with an approval from `deployment-managers`, that grants
+   time-boxed elevated role in Production, assumable only with an approval from the **deployment manager**, that grants
    read access to job inputs and outputs for a bounded window. CloudTrail alarm on every assumption of it.
    This exists because "nobody ever needs to look at production interactively" is not true, and an
    undesigned need becomes a permanent permission.

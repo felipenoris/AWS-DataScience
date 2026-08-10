@@ -67,9 +67,9 @@ assumptions is nearly free to loosen while it is prose:
   as though there is one** — it names the VPN home as a role an account plays, so the topology change is a
   substitution rather than a rewrite. [Stage 14](../stages/stage-14-sandbox-vending.md) carries it as its
   central open question.
-- **Identity (Stage 1b).** `DataScientistAccess` is currently assigned to one `data-scientists` group on
+- **Identity (Stage 1b).** `DataScientistAccess` is currently assigned to one `sso-group-data-scientists` group on
   Sandbox and Development. The Development half is right and stays — it is the shared engineering account.
-  The Sandbox half becomes **`data-scientists-<bu>`, assigned on that unit's Sandbox only**, or every data
+  The Sandbox half becomes **`sso-group-data-scientists-<bu>`, assigned on that unit's Sandbox only**, or every data
   scientist can enter every unit's experimentation account. **Do not create per-unit groups yet** — there is
   one unit. Create the *naming* and write the assignment so the second unit is an addition rather than a
   refactor; the permission set itself is unchanged and shared.
