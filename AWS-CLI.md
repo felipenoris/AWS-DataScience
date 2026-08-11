@@ -2,6 +2,11 @@
 
 Use CloudShell at AWS Console.
 
+**Before typing a listing by hand, check [`aws/INDEX.md`](aws/INDEX.md):** the read-only scripts there
+already capture the Organization tree, the accounts, and the whole Identity Center directory into
+`aws/output/`, from a named local profile rather than from CloudShell. What stays here are the one-off
+recipes and anything the scripts do not cover.
+
 ## Lists accounts with IDs
 
 Login as `AWS Control Tower Admin User`.

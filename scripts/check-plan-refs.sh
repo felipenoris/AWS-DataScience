@@ -31,7 +31,7 @@ done
 
 # Every prose file the plan owns. The root docs were outside this net until 2026-08-08,
 # which is exactly where the stale references had survived.
-PROSE=(GENERAL_PLAN.md CLAUDE.md README.md ORGANIZATION.md GLOSSARY.md PRICING.md)
+PROSE=(GENERAL_PLAN.md CLAUDE.md README.md ORGANIZATION.md GLOSSARY.md PRICING.md AWS_STATE.md aws/INDEX.md)
 while IFS= read -r f; do PROSE+=("$f"); done < <(find plan -name '*.md' | sort)
 
 say "== stale section/row references (use a stable ID instead) =="

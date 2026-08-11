@@ -26,6 +26,12 @@ Blueprint for using AWS as a Data Science infrastructure provider.
   `plan/stages/` (`log/stage-NN-*.md` ↔ `plan/stages/stage-NN-*.md`). `log/INDEX.md` says what each file
   records, so finding a step never means reading every log.
 - `AWS-CLI.md` — the `aws` recipes run by hand, and which identity runs each of them.
+- `aws/` — read-only scripts that photograph what is actually deployed, one text snapshot per script under
+  the untracked `aws/output/`. `aws/INDEX.md` says which script writes which file and which section of it
+  answers which question. Not infrastructure code: nothing here creates or changes a resource.
+- `AWS_STATE.md` — the reconciliation layer between the three above: what a snapshot is *expected* to show
+  (`INV-nn`), which differences are already accounted for (`EXC-nn`), and what a later stage will change.
+  Carries no identifiers and no reasoning on purpose — those live in the snapshot and in `plan/decisions/`.
 - `REFERENCES.md` — external references used along the way.
 - `scripts/` — repository hygiene, not infrastructure: `check-plan-refs.sh` validates the plan's internal
   links and stable-ID references.

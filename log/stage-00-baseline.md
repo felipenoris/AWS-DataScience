@@ -11,6 +11,9 @@ Stage: [`plan/stages/stage-00-baseline.md`](../plan/stages/stage-00-baseline.md)
 
 - Installed terraform from: https://developer.hashicorp.com/terraform/install
 
+- The organization already held an account named `Sandbox`, now `SUSPENDED` and attached directly to the
+  root, from an earlier experiment unrelated to this project. Left alone — `AWS_STATE.md`, `EXC-01`.
+
 ---
 
 *Log index: [log/INDEX.md](INDEX.md) · Stage index: [plan/stages/INDEX.md](../plan/stages/INDEX.md)*

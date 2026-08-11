@@ -77,6 +77,12 @@
 
 - Granting a user permissions to pass a role (`iam:PassRole`): <https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_use_passrole.html>.
 
+- `aws organizations` CLI reference (the calls `aws/list-identities.sh` uses to walk the OU tree and list the accounts): <https://docs.aws.amazon.com/cli/latest/reference/organizations/>.
+
+- `aws sso-admin` CLI reference (Identity Center *entitlements*: instances, permission sets, assignments): <https://docs.aws.amazon.com/cli/latest/reference/sso-admin/>.
+
+- `aws identitystore` CLI reference (Identity Center *people*: users, groups, memberships - the other side of the identity seam): <https://docs.aws.amazon.com/cli/latest/reference/identitystore/>.
+
 ## Terraform
 
 - Terraform S3 backend (including native state locking): <https://developer.hashicorp.com/terraform/language/backend/s3>.

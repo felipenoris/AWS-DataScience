@@ -29,7 +29,7 @@ Staged plan to build the AWS Data Science environment described in `CLAUDE.md`.
 | A cross-account thing that must be proven | a new `INT-nn` row in [`plan/integrations.md`](plan/integrations.md) |
 | A mistake worth not repeating | [`plan/lessons.md`](plan/lessons.md) + its recognition key in `CLAUDE.md` |
 | A procedure to follow when something is on fire | a file in [`plan/runbooks/`](plan/runbooks/) |
-| What happened | [`plan/history.md`](plan/history.md) — never `log/`, which is the user's |
+| What happened | [`plan/history.md`](plan/history.md) — never a `log/stage-NN-*.md`, which is the user's |
 
 This is the **write** map. The **read** map — which file answers which question — is `CLAUDE.md`
 §"What to read, and when", and it is kept only there.
@@ -165,7 +165,8 @@ than nice to have).
 ## 4. Cross-cutting work (continuous, not a stage)
 
 - [`log/`](log/INDEX.md): the user records every manual step, in that stage's `log/stage-NN-*.md`
-  (never edited by Claude). A new stage gets a new file, and a row in [`log/INDEX.md`](log/INDEX.md).
+  (never edited by Claude). A new stage gets a new file; its row in [`log/INDEX.md`](log/INDEX.md) is
+  Claude's to write and to keep current — that index is the one file under `log/` Claude maintains.
 - `CLAUDE.md` → `Claude LOG`: updated at the end of each stage, referencing the stage number from this plan.
 - `REFERENCES.md`: every link used as a reference.
 - `README.md`: kept in sync with the real resource structure and repository layout.

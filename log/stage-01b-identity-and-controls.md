@@ -524,6 +524,36 @@ yields:
 }
 ```
 
+- Created the `aws/` script folder (`aws/list-identities.sh`) and ran it for the first time with the
+  `awsds-infra-identity` profile. Read-only; writes `aws/output/list-identities.txt`, not versioned.
+  Every call returned — the report's "calls that failed" section came back empty.
+
+- What that first run settles, beyond the listings themselves:
+
+  - **Step 3's owed tag check is answered.** `list-tags-for-resource` on the `InfrastructureAccess`
+    permission set returns all five tags sent at creation: `Project`, `Environment=org`,
+    `Owner=sso-group-infrastructure`, `ManagedBy=terraform`, `CostCenter=stage-01b`. The console listing
+    that showed four was a console artifact, not a missing tag.
+
+  - **Step 4's "reads are not restricted" now covers the read surface, not one probe.** From the delegated
+    administrator, with no `AccessDenied` anywhere: `organizations` describe-organization, list-roots,
+    list-organizational-units-for-parent, list-accounts-for-parent, list-accounts; `sso-admin`
+    list-instances, list-permission-sets, describe-permission-set, list-managed-policies-in-permission-set,
+    list-customer-managed-policy-references-in-permission-set, get-permissions-boundary-for-permission-set,
+    get-inline-policy-for-permission-set, list-tags-for-resource,
+    list-accounts-for-provisioned-permission-set, list-account-assignments; `identitystore` list-groups,
+    list-users, list-group-memberships. **Including the assignments that target the Management account** —
+    the one thing step 4 proved cannot be *changed* from here. The boundary is manage-vs-read, and it is
+    now measured on both sides.
+
+  - **Only `SERVICE_CONTROL_POLICY` is `ENABLED` on the organization root.** `RESOURCE_CONTROL_POLICY`,
+    `TAG_POLICY` and `DECLARATIVE_POLICY_EC2` are absent, exactly as Stage 1c step 7.2 assumes. That
+    assumption is now measured instead of inherited from documentation.
+
+- Observed on the same run and unrelated to this stage: an account named `Sandbox`, `SUSPENDED`, attached
+  directly to the organization root. Left over from an earlier experiment of mine, nothing to do with this
+  project. Recorded as `EXC-01` in `AWS_STATE.md` and ignored from here on.
+
 - Ended step 5 (header). Starting step 5.1.
 
 ---

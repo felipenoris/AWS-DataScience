@@ -84,6 +84,20 @@ what is genuinely still unanswered:
       on the account axis (Lesson 9).
     Decide with N=2 in hand, or when 1c step 7.8 writes the tag policy — whichever comes first. Nothing
     before Stage 2 depends on it.
+11. **What `AWSOrganizationsFullAccess` reaches from inside a vended account.** Measured 2026-08-11, from
+    the first `aws/list-identities.sh` snapshots: **every vended account carries
+    `AWSOrganizationsFullAccess` → `AWSControlTowerAdmins`**, a group whose one member is the Control Tower
+    admin SSO user — a third live path into every vended account, alongside the two the plan wrote
+    (`AWS_STATE.md`, A.1). Nobody chose it; Control Tower created it with the landing zone, which is
+    **Lesson 17** in its plainest form. What is open is its reach, not its existence. The managed policy
+    grants `organizations:*`, and Organizations refuses most calls made from anywhere but the management
+    account and a service's delegated administrator — so the residue is either nothing, or a read over the
+    whole organization tree from an account that has no business seeing it. **The policy document cannot
+    answer this**: what is left is exactly what the *service* refuses, which only a call finds out. Answer
+    it by assuming that permission set in one vended account and running the reads and one harmless write;
+    it costs minutes. Two things ride on it — whether 1c's policy set has to deny anything for it, and
+    whether the assignment should be removed at all, which is landing-zone state and therefore a decision
+    in D32's neighbourhood rather than a cleanup.
 
 ### Blocking Stage 1 — the choices the user has to make, added 2026-08-08 by the pre-Stage-1 review
 

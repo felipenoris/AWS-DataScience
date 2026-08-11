@@ -100,7 +100,8 @@ write anything into it. Claude can read the files in this folder to gather infor
 
 | File | What it holds, and the rule |
 |---|---|
-| [`log/`](log/INDEX.md) | Every step performed by hand in AWS, one file per stage, mirroring `plan/stages/`. **Written by the user — Claude never edits anything under `log/`** |
+| [`log/`](log/INDEX.md)`stage-NN-*.md` | Every step performed by hand in AWS, one file per stage, mirroring `plan/stages/`. **Written by the user — Claude never edits a stage log.** Claude may draft wording for the user to paste, and says so |
+| [`log/INDEX.md`](log/INDEX.md) | The one exception under `log/`: **Claude maintains it.** After reading a stage log, bring its `Records` cell to what the file now contains — a cell saying less than the file is what the index exists to prevent. Never restate a step there: the cell says *what is inside*, in one line |
 | [`ORGANIZATION.md`](ORGANIZATION.md) | The AWS OUs, accounts and users |
 | [`REFERENCES.md`](REFERENCES.md) | Every internet link used as a reference, added on the interaction that used it |
 | [`README.md`](README.md) | How the AWS resources are structured, and the project layout, so people can understand the components |
@@ -151,6 +152,8 @@ its `Consumes` row lists.
 | Design, or reason about where something belongs | [`plan/architecture.md`](plan/architecture.md) — target architecture, region portability, the data perimeter, the two egress designs |
 | A naming, layout, Terraform or IAM rule | [`plan/conventions.md`](plan/conventions.md) — also the `[P]`/`[D]`/`[E]` layers and the `app-etl` repository template |
 | What was actually done by hand in a stage | [`log/`](log/INDEX.md)`stage-NN-*.md` — **the same slug as the stage file**; [`log/INDEX.md`](log/INDEX.md) first, so only one log is opened |
+| **What is deployed right now** — accounts, OUs, SSO groups, users, permission sets, assignments | [`aws/INDEX.md`](aws/INDEX.md) — read-only scripts and the snapshots they write to `aws/output/` (untracked). Its question table says which section answers what; **regenerate rather than trust a stale file, and never copy an account id or email out of one** |
+| **Whether something a snapshot shows is expected** — before reporting it as a finding | [`AWS_STATE.md`](AWS_STATE.md) — the invariants (`INV-nn`), the known exceptions (`EXC-nn`, e.g. the suspended `Sandbox` account that is **not** ours), and what a later stage is going to change anyway. **Read it whenever a snapshot is read** |
 | Plan, review, or settle a decision | add [`plan/lessons.md`](plan/lessons.md) and [`plan/open-questions.md`](plan/open-questions.md) |
 | Look up a decision | [`plan/decisions/INDEX.md`](plan/decisions/INDEX.md) first — open a decision file only for its reasoning |
 | Cost of a new service | [`PRICING.md`](PRICING.md) — measured from the Price List API, never estimated (Lesson 6) |
