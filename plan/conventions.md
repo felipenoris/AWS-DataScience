@@ -19,7 +19,7 @@ Example: `awsds-sandbox-vpc`, `awsds-data-raw` (the lake lives in Data Governanc
 
 **Mandatory tags on every resource:**
 `Project=AWS-DataScience`, `Environment=sandbox|development|data|staging|production|org`,
-`ManagedBy=terraform`, `Owner=<sso-user>`, `CostCenter=<stage>`. (`org` marks org-level and **platform**
+`ManagedBy=terraform`, `Owner=<sso-group>`, `CostCenter=<stage>`. (`org` marks org-level and **platform**
 resources — the identity slice, and D29's Policy Canary. **It was `shared` until 2026-08-09 and was renamed
 before anything was built**, because D14's revision trigger can fire and the account it would create is
 conventionally called `shared`: two different things answering to one token in cost reports is a defect that
@@ -28,11 +28,38 @@ it names a Shared Services account if one is ever vended, and nothing else. `dat
 Governance account, which is not an environment at all: it sits on the ownership axis, not the lifecycle
 one, so cost reports should be able to separate it from every environment.)
 
+**`Owner` names a group, never a person — settled 2026-08-10, while one resource carried it.** The value is
+one of the project's `sso-group-*` groups (Stage 1b step 2), and it records **who owns the resource, not who
+created it**: a vended account, an OU and the identity slice are all `Owner=sso-group-infrastructure` even
+though `AWS Control Tower Admin` created them, since that identity is deliberately in no project group (D33,
+D34). Ownership rather than authorship is what keeps the tag from being a second spelling of `ManagedBy`,
+and what makes it carry information from Stage 6 onwards — when the interactive environment starts creating
+resources the builder did not.
+
+Three reasons it is not `<sso-user>`, which is what this line said until 2026-08-10:
+
+- **The literal reading is an e-mail address.** Identity Center users are created with the address as their
+  `userName` (Stage 1b step 2), so a per-user value would carry an address out of `secrets/` and into git
+  twice over — through Stage 2's Terraform and through 1c step 7.8's tag policy — which `CLAUDE.md` forbids
+  outright.
+- **A group survives the identity source being replaced; a user name does not.** Same argument 1b step 8.3
+  used to refuse a metric filter keyed on a GUID.
+- **With one human it would be a constant.** `Owner=<the one builder>` on every resource attributes nothing
+  that `ManagedBy=terraform` does not already say, and a column with one value is not an axis (Lesson 9).
+
+**What this tag is not, and the name suggests otherwise:** it is not attribution evidence. A tag is written
+by whoever creates the resource, so *who did this* is answered by CloudTrail's `userIdentity` — collected
+org-wide since 1a step 5 — and never by `Owner` (Lesson 5). It is also **outside the forcing SCP**, which
+requires `Environment` and `Project` and nothing else (1c step 7.8), so a resource provisioned by a service
+on the project's behalf — a D26 blueprint role, the landing zone's own machinery — simply does not carry it
+and nothing denies the call.
+
 **Forward constraint from D35 — every `sandbox` token in this file is per business unit, not singular.**
-`Sandbox` is the one account in the map that multiplies (one per business unit; N is 1 today), so five
+`Sandbox` is the one account in the map that multiplies (one per business unit; N is 1 today), so six
 things written here as singletons are really per-unit: the `<env>` token `sandbox`, the
-`Environment=sandbox` tag value, the `terraform-live/sandbox/` tree, the `awsds-infra-sandbox` SSO profile,
-and `make up`/`make down ENV=sandbox`. Everything else — Development, Staging, Production, Data Governance,
+`Environment=sandbox` tag value, the **`Owner=sso-group-data-scientists` tag value** — 1b step 2 already
+names the per-unit form, `sso-group-data-scientists-<bu>` — the `terraform-live/sandbox/` tree, the
+`awsds-infra-sandbox` SSO profile, and `make up`/`make down ENV=sandbox`. Everything else — Development, Staging, Production, Data Governance,
 Identity, `org` — is structural and stays exactly as written.
 
 **The concrete scheme is settled in [Stage 14](stages/stage-14-sandbox-vending.md)**, alongside the CIDR
@@ -40,11 +67,14 @@ allocation table (Stage 3) and the VPN topology (Stage 4): choosing a directory 
 one unit and no `sandbox-unit` module written, would be guessing at the interface of something that does not
 exist yet. What this note fixes now is the cheaper half, and it is the one that fails silently — **the two
 enumerations above are Lesson 14 in naming.** The `<env>` list and the tag policy's allowed values both
-enumerate `sandbox`, and the forcing function behind the tags is an SCP conditioned on `aws:RequestTag`
-(1c step 7). So an enumeration that does not admit a per-unit token turns the first apply in a freshly
-vended account into an `AccessDenied` — discovered in a new account, by whoever is standing it up, which is
-the worst possible place to find out about a naming rule. Write both lists so a per-unit token is admissible
-before it is needed.
+enumerate `sandbox` — and since 2026-08-10 that policy enumerates `sso-group-data-scientists` for `Owner`
+as well — while the forcing function behind the tags is an SCP conditioned on `aws:RequestTag` (1c step 7).
+So an enumeration that does not admit a per-unit token turns the first apply in a freshly vended account
+into an `AccessDenied` — discovered in a new account, by whoever is standing it up, which is the worst
+possible place to find out about a naming rule. **`Owner` fails softer than `Environment` and in the same
+place:** it is outside that SCP, so a value the policy does not admit is a non-compliant tagging operation
+rather than a denied create — quieter, and therefore the one more likely to be found late. Write every list
+so a per-unit token is admissible before it is needed.
 
 **Terraform layout:**
 

@@ -15,11 +15,11 @@ Stage: [`plan/stages/stage-01b-identity-and-controls.md`](../plan/stages/stage-0
 
 - Set filter name as `Identity Center membership and assignment changes`. Namespace (existing) `AWSDS/Security`. Metric name `IdentityCenterChangeCount`. Metric value 1.
 
-- Selecting the metric -> Create Alarm. Metric name `IdentityCenterChangeCount`. Statistic `Sum`, 1 minute. Greater/Equal to 1. In alarm send a notification to `awsds-org-break-glass-alerts`. Alarm name `Identity Center membership and assignment change`. Alarm description `Identity Center membership and assignment change detected.`.
+- Selecting the metric -> Create Alarm. Metric name `IdentityCenterChangeCount`. Statistic `Sum`, 1 minute, missing data notBreaching. Greater/Equal to 1. In alarm send a notification to `awsds-org-break-glass-alerts`. Alarm name `Identity Center membership and assignment change`. Alarm description `Identity Center membership and assignment change detected.`.
 
 - Ended step 8.3. Starting step 1.
 
-- From CloudShell console, using the real `IDENTITY_ACCOUNT_ID`:
+- This step registers Identity Account as delegated administrator for AWS IAM Identity Center service (sso.amazonaws.com). From CloudShell console, using the real `IDENTITY_ACCOUNT_ID`:
 
 ```
 aws organizations register-delegated-administrator --account-id <IDENTITY_ACCOUNT_ID> --service-principal sso.amazonaws.com
@@ -60,8 +60,6 @@ aws identitystore create-user --identity-store-id d-xxxxxxxxxx --display-name "G
 
 - Added Infrastructure user to sso-group-infrastructure. Alarm received successfuly.
 
-- Loged with CT Admin, AWSAdministratorAccess. Fixed the Alarm `Identity Center membership and assignment change`: Edit → Additional configuration → Missing data treatment → Treat missing data as good (not breaching threshold).
-
 - Login as Infrastructure User -> Identity Account -> AWSAdministratorAccess. Checked region `us-west-2`. IAM Center -> Settings -> Configura multi-factor authentication. Set `Every time they sign in` and `Require them to register an MFA device at sign in`.
 
 - Testing alarm thru identitystore. Running on CloudShell, replacing d-xxxxxxxxxx with my IAM Center ID.
@@ -94,6 +92,358 @@ aws identitystore list-group-memberships --identity-store-id $IDS --group-id $GI
 - Alarm received successfuly and the user returned to the sso-group-data-scientists group.
 
 - Ended step 2. Moving to Step 3.
+
+- Login as Infrastructure User -> Identity Account -> AWSAdministratorAccess.
+
+- Executed on CloudShell:
+
+```
+# IAM ARN and IdentityStoreID
+INST=$(aws sso-admin list-instances --query 'Instances[0].InstanceArn' --output text)
+IDS=$(aws sso-admin list-instances --query 'Instances[0].IdentityStoreId' --output text)
+echo "$INST / $IDS"
+
+# creates InfrastructureAccess and attaches AdministratorAccess policy
+PS=$(aws sso-admin create-permission-set --instance-arn "$INST" --name InfrastructureAccess --description "The builder: the identity terraform apply runs as" --session-duration PT4H --tags Key=Project,Value=AWS-DataScience Key=Environment,Value=org Key=ManagedBy,Value=terraform Key=CostCenter,Value=stage-01b Key=Owner,Value=sso-group-infrastructure --query 'PermissionSet.PermissionSetArn' --output text) && echo "$PS"
+aws sso-admin attach-managed-policy-to-permission-set --instance-arn "$INST" --permission-set-arn "$PS" --managed-policy-arn arn:aws:iam::aws:policy/AdministratorAccess
+```
+
+- Group attribution on each account:
+
+```
+GID=$(aws identitystore get-group-id --identity-store-id "$IDS" --alternate-identifier '{"UniqueAttribute":{"AttributePath":"displayName","AttributeValue":"sso-group-infrastructure"}}' --query GroupId --output text) && echo "$GID"
+for ACCT in $SANDBOX_ID $DEV_ID $DATA_GOVERNANCE_ID $PRODUCTION_ID $IDENTITY_ID; do aws sso-admin create-account-assignment --instance-arn "$INST" --target-id "$ACCT" --target-type AWS_ACCOUNT --permission-set-arn "$PS" --principal-type GROUP --principal-id "$GID"; done
+```
+
+- Checking 
+
+```
+IDS=$(aws sso-admin list-instances --query 'Instances[0].IdentityStoreId' --output text)
+INST=$(aws sso-admin list-instances --query 'Instances[0].InstanceArn' --output text) # SSO ARN
+
+GID=$(aws identitystore get-group-id \
+  --identity-store-id "$IDS" \
+  --alternate-identifier '{"UniqueAttribute":{"AttributePath":"displayName","AttributeValue":"sso-group-infrastructure"}}' \
+  --query GroupId \
+  --output text)
+
+echo "Group ID: $GID"
+
+aws sso-admin list-account-assignments-for-principal \
+  --instance-arn "$INST" \
+  --principal-id "$GID" \
+  --principal-type GROUP \
+  --output table
+```
+
+
+```
+# Lists account assignments for group sso-group-infrastructure
+
+SSO_GROUP_NAME=sso-group-infrastructure
+
+INST=$(aws sso-admin list-instances --query 'Instances[0].InstanceArn' --output text)
+IDS=$(aws sso-admin list-instances --query 'Instances[0].IdentityStoreId' --output text)
+
+ALTERNATE_ID=$(printf '{"UniqueAttribute":{"AttributePath":"displayName","AttributeValue":"%s"}}' "$SSO_GROUP_NAME")
+
+GID=$(aws identitystore get-group-id \
+  --identity-store-id "$IDS" \
+  --alternate-identifier "$ALTERNATE_ID" \
+  --query GroupId \
+  --output text)
+
+echo "Group ID: $GID"
+echo ""
+printf "%-20s %-30s %-40s %s\n" "AccountId" "AccountName" "PermissionSetName" "PermissionSetArn"
+printf "%-20s %-30s %-40s %s\n" "---------" "-----------" "-----------------" "----------------"
+
+aws sso-admin list-account-assignments-for-principal \
+  --instance-arn "$INST" \
+  --principal-id "$GID" \
+  --principal-type GROUP \
+  --query 'AccountAssignments[*].[AccountId,PermissionSetArn]' \
+  --output text | while read ACCOUNT_ID PS_ARN; do
+
+    ACCOUNT_NAME=$(aws organizations describe-account \
+      --account-id "$ACCOUNT_ID" \
+      --query 'Account.Name' \
+      --output text)
+
+    PS_NAME=$(aws sso-admin describe-permission-set \
+      --instance-arn "$INST" \
+      --permission-set-arn "$PS_ARN" \
+      --query 'PermissionSet.Name' \
+      --output text)
+
+    printf "%-20s %-30s %-40s %s\n" "$ACCOUNT_ID" "$ACCOUNT_NAME" "$PS_NAME" "$PS_ARN"
+done
+
+# Result (Account IDs replaced by xxx)
+#xxx         Development Account            InfrastructureAccess                     arn:aws:sso:::permissionSet/ssoins-79076fdc3a54ee96/ps-06c47afa33c0cad1
+#xxx         Data Governance Account        InfrastructureAccess                     arn:aws:sso:::permissionSet/ssoins-79076fdc3a54ee96/ps-06c47afa33c0cad1
+#xxx         Identity Account               InfrastructureAccess                     arn:aws:sso:::permissionSet/ssoins-79076fdc3a54ee96/ps-06c47afa33c0cad1
+#xxx         Sandbox Account 1              InfrastructureAccess                     arn:aws:sso:::permissionSet/ssoins-79076fdc3a54ee96/ps-06c47afa33c0cad1
+#xxx         Production Account             InfrastructureAccess                     arn:aws:sso:::permissionSet/ssoins-79076fdc3a54ee96/ps-06c47afa33c0cad1
+```
+
+- Lists all permission set ARNs. AWSAdministratorAccess is the CT's permission set.
+
+```
+# lista o ARC de todos os Permission Sets:
+for P in $(aws sso-admin list-permission-sets --instance-arn "$INST" --query 'PermissionSets[]' --output text); do echo "$(aws sso-admin describe-permission-set --instance-arn "$INST" --permission-set-arn "$P" --query 'PermissionSet.Name' --output text)  $P"; done
+
+# Resultado
+#AWSOrganizationsFullAccess  arn:aws:sso:::permissionSet/ssoins-79076fdc3a54ee96/ps-79074d475a5b7b17
+#AWSReadOnlyAccess  arn:aws:sso:::permissionSet/ssoins-79076fdc3a54ee96/ps-79073b13c3d8a6cb
+#InfrastructureAccess  arn:aws:sso:::permissionSet/ssoins-79076fdc3a54ee96/ps-06c47afa33c0cad1
+#AWSServiceCatalogAdminFullAccess  arn:aws:sso:::permissionSet/ssoins-79076fdc3a54ee96/ps-7907a92899eacb91
+#AWSAdministratorAccess  arn:aws:sso:::permissionSet/ssoins-79076fdc3a54ee96/ps-7907c2179ed46d33
+#AWSServiceCatalogEndUserAccess  arn:aws:sso:::permissionSet/ssoins-79076fdc3a54ee96/ps-79072402f29fffac
+#AWSPowerUserAccess  arn:aws:sso:::permissionSet/ssoins-79076fdc3a54ee96/ps-790755fafece7807
+```
+
+- At IAM Identity Center -> Permission Sets, I checked that `InfrastructureAccess` was created with AWS managed policy `AdministratorAccess`, session duration of 4H.
+    - Tags:
+        - Project=AWS-DataScience
+        - Environment=org
+        - ManagedBy=terraform
+        - CostCenter=stage-01b
+        - Owner=sso-group-infrastructure
+
+    - Accounts:
+        - Production Account
+        - Development Account
+        - Data Governance Account
+        - Identity Account
+        - Sandbox Account 1 
+
+    - On `Policy Canary`, Infrastructure User has "PrincipalId": "5851a330-90b1-70c6-730e-c607d8c87eb8".
+    - Staging was skipped, not yet vended.
+
+- checking 8.3 (ix):
+
+```
+aws cloudwatch describe-alarm-history --alarm-name "Identity Center membership and assignment change" --history-item-type StateUpdate --max-records 10 --query 'AlarmHistoryItems[].[Timestamp,HistorySummary]' --output text
+2026-08-11T01:25:00.628000+00:00        Alarm updated from ALARM to OK
+2026-08-11T01:18:00.628000+00:00        Alarm updated from OK to ALARM
+2026-08-10T06:42:00.627000+00:00        Alarm updated from ALARM to OK
+2026-08-10T06:34:00.627000+00:00        Alarm updated from OK to ALARM
+2026-08-10T06:13:00.632000+00:00        Alarm updated from INSUFFICIENT_DATA to OK
+2026-08-10T05:56:10.425000+00:00        Alarm updated from ALARM to INSUFFICIENT_DATA
+2026-08-10T05:50:10.423000+00:00        Alarm updated from INSUFFICIENT_DATA to ALARM
+2026-08-10T05:38:10.423000+00:00        Alarm updated from ALARM to INSUFFICIENT_DATA
+2026-08-10T05:30:10.423000+00:00        Alarm updated from INSUFFICIENT_DATA to ALARM
+```
+
+- Verification (ix) — answered. Alarm history (Management, us-west-2):
+    - 2026-08-10 05:30-05:56 UTC — step 2, flapping through INSUFFICIENT_DATA (before the fix)
+    - 2026-08-10 06:13 UTC — missing-data treatment fix takes effect (INSUFFICIENT_DATA -> OK)
+    - 2026-08-10 06:34-06:42 UTC — the `identitystore` membership test: OK -> ALARM -> OK
+    - 2026-08-11 01:18-01:25 UTC — step 3's five `create-account-assignment` calls: one single
+      OK -> ALARM -> OK transition for five events, as 8.3 predicted
+  **The finding:** step 3 ran from the *Identity* account and the alarm, which lives in
+  *Management*, fired. So Identity Center events still land in Management's org-trail log group
+  after the step 1 delegation. The fallback 8.3 held in reserve — a second filter in Identity
+  pointing cross-account at the same topic — is not needed.
+  Event sources confirmed by own evidence: `identitystore.amazonaws.com` and
+  `sso.amazonaws.com`. **`sso-directory.amazonaws.com` (the console path) was never exercised** —
+  everything so far was done by CLI. Untested, not broken.
+
+- Verification (i) (landing zone): `sso.amazonaws.com` as a delegated administrator (step 1) does not raise
+  Control Tower drift on landing zone version 4.0 :
+
+```
+LZ=$(aws controltower list-landing-zones --query 'landingZones[0].arn' --output text) && echo "$LZ" && aws controltower get-landing-zone --landing-zone-identifier "$LZ" --query 'landingZone.[version,status,driftStatus,latestAvailableVersion]'
+arn:aws:controltower:us-west-2:885931358757:landingzone/4I3ACTXON4Q7CJ8H
+[
+    "4.0",
+    "ACTIVE",
+    {
+        "status": "IN_SYNC"
+    },
+    "4.0"
+]
+```
+
+- Checking Canary:
+
+```
+INST=$(aws sso-admin list-instances --query 'Instances[0].InstanceArn' --output text); for P in $(aws sso-admin list-permission-sets --instance-arn "$INST" --query 'PermissionSets[]' --output text); do aws sso-admin list-account-assignments --instance-arn "$INST" --account-id "$POLICY_CANARY_ID" --permission-set-arn "$P" --query "AccountAssignments[?PrincipalId=='5851a330-90b1-70c6-730e-c607d8c87eb8'].[PrincipalType,PrincipalId]" --output text | sed "s|^|$(aws sso-admin describe-permission-set --instance-arn "$INST" --permission-set-arn "$P" --query 'PermissionSet.Name' --output text)\t|"; done
+```
+
+results in: 
+```
+AWSAdministratorAccess  USER    5851a330-90b1-70c6-730e-c607d8c87eb8
+```
+
+which shows PrincipalType = USER (direct assignment), CT's permission set AWSAdministratorAccess, and no line about InfrastructureAccess.
+
+- Ended step 3. Moving to step 4.
+
+- Starting Step 4. Checking if any persona reaches Management.
+
+```
+MGMT_ID=xxx # management account ID
+INST=$(aws sso-admin list-instances --query 'Instances[0].InstanceArn' --output text); for P in $(aws sso-admin list-permission-sets-provisioned-to-account --instance-arn "$INST" --account-id "$MGMT_ID" --query 'PermissionSets[]' --output text); do echo "== $(aws sso-admin describe-permission-set --instance-arn "$INST" --permission-set-arn "$P" --query 'PermissionSet.Name' --output text)"; aws sso-admin list-account-assignments --instance-arn "$INST" --account-id "$MGMT_ID" --permission-set-arn "$P" --output table; done
+```
+
+Result:
+
+```
+== AWSServiceCatalogEndUserAccess
+---------------------------------------------------------------------------------------------------
+|                                     ListAccountAssignments                                      |
++-------------------------------------------------------------------------------------------------+
+||                                      AccountAssignments                                       ||
+|+------------------+----------------------------------------------------------------------------+|
+||  AccountId       |  xxx                                                              ||
+||  PermissionSetArn|  arn:aws:sso:::permissionSet/ssoins-79076fdc3a54ee96/ps-79072402f29fffac   ||
+||  PrincipalId     |  f8d16390-20f1-7094-b767-bc4b6f8be26d                                      ||
+||  PrincipalType   |  GROUP                                                                     ||
+|+------------------+----------------------------------------------------------------------------+|
+== AWSServiceCatalogAdminFullAccess
+---------------------------------------------------------------------------------------------------
+|                                     ListAccountAssignments                                      |
++-------------------------------------------------------------------------------------------------+
+||                                      AccountAssignments                                       ||
+|+------------------+----------------------------------------------------------------------------+|
+||  AccountId       |  xxx                                                              ||
+||  PermissionSetArn|  arn:aws:sso:::permissionSet/ssoins-79076fdc3a54ee96/ps-7907a92899eacb91   ||
+||  PrincipalId     |  7801e3c0-b091-7095-068a-692ab619c7c2                                      ||
+||  PrincipalType   |  GROUP                                                                     ||
+|+------------------+----------------------------------------------------------------------------+|
+== AWSAdministratorAccess
+---------------------------------------------------------------------------------------------------
+|                                     ListAccountAssignments                                      |
++-------------------------------------------------------------------------------------------------+
+||                                      AccountAssignments                                       ||
+|+------------------+----------------------------------------------------------------------------+|
+||  AccountId       |  xxx                                                              ||
+||  PermissionSetArn|  arn:aws:sso:::permissionSet/ssoins-79076fdc3a54ee96/ps-7907c2179ed46d33   ||
+||  PrincipalId     |  d8e1b360-f021-705d-ba51-7cd5b28b17d9                                      ||
+||  PrincipalType   |  GROUP                                                                     ||
+|+------------------+----------------------------------------------------------------------------+|
+== AWSPowerUserAccess
+---------------------------------------------------------------------------------------------------
+|                                     ListAccountAssignments                                      |
++-------------------------------------------------------------------------------------------------+
+||                                      AccountAssignments                                       ||
+|+------------------+----------------------------------------------------------------------------+|
+||  AccountId       |  xxx                                                              ||
+||  PermissionSetArn|  arn:aws:sso:::permissionSet/ssoins-79076fdc3a54ee96/ps-790755fafece7807   ||
+||  PrincipalId     |  c88113e0-e001-7081-2318-a37dd98d5a6f                                      ||
+||  PrincipalType   |  GROUP                                                                     ||
+|+------------------+----------------------------------------------------------------------------+|
+== AWSReadOnlyAccess
+---------------------------------------------------------------------------------------------------
+|                                     ListAccountAssignments                                      |
++-------------------------------------------------------------------------------------------------+
+||                                      AccountAssignments                                       ||
+|+------------------+----------------------------------------------------------------------------+|
+||  AccountId       |  xxx                                                              ||
+||  PermissionSetArn|  arn:aws:sso:::permissionSet/ssoins-79076fdc3a54ee96/ps-79073b13c3d8a6cb   ||
+||  PrincipalId     |  78b1a3b0-0071-7096-37c4-abe4d1ec3796                                      ||
+||  PrincipalType   |  GROUP                                                                     ||
+|+------------------+----------------------------------------------------------------------------+|
+```
+
+Listing groups:
+
+```
+INST=$(aws sso-admin list-instances --query 'Instances[0].InstanceArn' --output text); IDS=$(aws sso-admin list-instances --query 'Instances[0].IdentityStoreId' --output text); for P in $(aws sso-admin list-permission-sets-provisioned-to-account --instance-arn "$INST" --account-id "$MGMT_ID" --query 'PermissionSets[]' --output text); do PSN=$(aws sso-admin describe-permission-set --instance-arn "$INST" --permission-set-arn "$P" --query 'PermissionSet.Name' --output text); aws sso-admin list-account-assignments --instance-arn "$INST" --account-id "$MGMT_ID" --permission-set-arn "$P" --query 'AccountAssignments[].[PrincipalType,PrincipalId]' --output text | while read T PID; do if [ "$T" = "GROUP" ]; then N=$(aws identitystore describe-group --identity-store-id "$IDS" --group-id "$PID" --query DisplayName --output text); else N=$(aws identitystore describe-user --identity-store-id "$IDS" --user-id "$PID" --query DisplayName --output text); fi; printf "%-40s %-6s %s\n" "$PSN" "$T" "$N"; done; done
+```
+
+results in:
+
+```
+AWSServiceCatalogEndUserAccess           GROUP  AWSAccountFactory
+AWSServiceCatalogAdminFullAccess         GROUP  AWSServiceCatalogAdmins
+AWSAdministratorAccess                   GROUP  AWSControlTowerAdmins
+AWSPowerUserAccess                       GROUP  AWSSecurityAuditPowerUsers
+AWSReadOnlyAccess                        GROUP  AWSSecurityAuditors
+```
+
+```
+for G in AWSControlTowerAdmins AWSServiceCatalogAdmins AWSAccountFactory AWSSecurityAuditors AWSSecurityAuditPowerUsers; do GID=$(aws identitystore get-group-id --identity-store-id "$IDS" --alternate-identifier "{\"UniqueAttribute\":{\"AttributePath\":\"displayName\",\"AttributeValue\":\"$G\"}}" --query GroupId --output text); echo "== $G"; aws identitystore list-group-memberships --identity-store-id "$IDS" --group-id "$GID" --query 'GroupMemberships[].MemberId.UserId' --output text | tr '\t' '\n' | while read U; do [ -n "$U" ] && aws identitystore describe-user --identity-store-id "$IDS" --user-id "$U" --query DisplayName --output text; done; done
+```
+
+results in :
+
+```
+== AWSControlTowerAdmins
+AWS Control Tower Admin
+== AWSServiceCatalogAdmins
+== AWSAccountFactory
+AWS Control Tower Admin
+== AWSSecurityAuditors
+== AWSSecurityAuditPowerUsers
+```
+
+- Verification (a) — answered. Two layers, because the assignment list alone does not close the Management
+  account:
+    - **Assignment path:** five permission sets provisioned to Management, five Control Tower groups behind
+      them, no `sso-group-*` and no `PrincipalType USER`. No project persona holds an assignment there, the
+      infrastructure user included — which is what `ORGANIZATION.md` records as permanent.
+    - **Membership path:** the only human reaching Management is `AWS Control Tower Admin`, through
+      `AWSControlTowerAdmins` (administrator) and `AWSAccountFactory` (Service Catalog end user). Those are
+      the two Control Tower groups it arrived with (D33/D34), and it is in no project group.
+      `AWSSecurityAuditPowerUsers` — `AWSPowerUserAccess` on *every* account — and `AWSSecurityAuditors` are
+      **empty**.
+  **The caveat is the point of the step:** those two empty groups are state, not a control. Nothing prevents
+  a membership being added, and step 4 closes the *assignment* path into Management while leaving the
+  *membership* path open by construction. The 8.3 alarm is what observes it — which is why it was built
+  before step 1 rather than beside it.
+
+- Verification (ii) — answered for the assignment path, by probe. Deleting an assignment that does not
+  exist, so the write path is exercised against Management with nothing to lose either way:
+
+```
+aws sso-admin delete-account-assignment --instance-arn "$INST" --target-id "$MGMT_ID" \
+  --target-type AWS_ACCOUNT --permission-set-arn "$PS" --principal-type GROUP --principal-id "$GID"
+
+An error occurred (AccessDeniedException) when calling the DeleteAccountAssignment operation:
+User: arn:aws:sts::<IDENTITY_ID>:assumed-role/AWSReservedSSO_AWSAdministratorAccess_<id>/<infrastructure user>
+is not authorized to perform: sso:DeleteAccountAssignment
+on resource: arn:aws:sso:::account/<MGMT_ID> with an explicit deny in a resource-based policy
+```
+
+  Three things it shows beyond the yes/no:
+    - **The deny is explicit and lives in a resource-based policy**, not in what the principal was granted.
+      The call was made by a principal holding `AdministratorAccess` *in the account that administers the
+      directory* and was denied anyway — so the restriction cannot be lifted from inside Identity by editing
+      an identity policy. Lesson 18 seen from the side that works: the delegated administrator does not
+      author the policy that contains it.
+    - **It is scoped by target account** (`arn:aws:sso:::account/<MGMT_ID>`), which is the shape step 4
+      describes.
+    - **Reads are not restricted.** Everything under (a) above was run from Identity, as the delegated
+      administrator, and returned. So the boundary is manage-vs-read, not visibility.
+  **What the probe does not answer:** whether Management-targeted assignments are the *only* thing the
+  delegated administrator cannot manage. One operation was exercised. Registering/deregistering a delegated
+  administrator and the instance-level operations are expected to stay with Management too, so the honest
+  answer is **"no, not the only thing"**, and (ii) is recorded here as answered **for the assignment path**,
+  pending a documentation check for the rest.
+
+- **The identity that executed steps 2, 3 and 4** is the infrastructure user through Control Tower's
+  `AWSReservedSSO_AWSAdministratorAccess_*` — the Account Factory direct assignment (D32), which the stage's
+  "Who executes what" table names as the bootstrap of the whole stage. Consequence worth stating before
+  step 5: **`sso-group-infrastructure` → `InfrastructureAccess` → an account is still unexercised.**
+  Everything proven about that path so far is a listing of assignments, never an `sts:GetCallerIdentity`
+  under it. Step 5 is where it turns into evidence, and that evidence is 5.1's precondition.
+
+- Back to step 3, still owed — the tag check on the permission set. The console listing showed four tags
+  and the create call sent five:
+
+```
+aws sso-admin list-tags-for-resource --instance-arn "$INST" --resource-arn "$PS"
+```
+
+  `Owner=sso-group-infrastructure`: present. This set is the first and only resource in the project
+  carrying `Owner`, and `plan/conventions.md` settled the value as an `sso-group-*` — never a user — on
+  2026-08-10.
+
+- Ended step 4. Moving to step 5.
+
 
 ---
 
