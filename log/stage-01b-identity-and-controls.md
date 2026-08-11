@@ -524,7 +524,8 @@ yields:
 }
 ```
 
-- 
+- Ended step 5 (header). Starting step 5.1.
+
 ---
 
 *Log index: [log/INDEX.md](INDEX.md) · Stage index: [plan/stages/INDEX.md](../plan/stages/INDEX.md)*

@@ -4,8 +4,8 @@
 |---|---|
 | **Status** | not started |
 | **Prerequisites** | **[Stage 1b](stage-01b-identity-and-controls.md) complete** — every step here runs inside a member account and needs step 5's profiles. **Stage 1c is not a prerequisite**: none of these three steps depends on a policy being attached, so this stage can be executed before it if a session is short |
-| **Consumes** | [D12](../decisions/D12-budget-ceiling.md), [D22](../decisions/D22-data-governance-account.md), [D29](../decisions/D29-policy-canary.md), [D33](../decisions/D33-control-tower-admin-user.md), [D34](../decisions/D34-account-vending.md), [D35](../decisions/D35-sandbox-cardinality.md) |
-| **Proves** | **The two organization-level halves of [INT-11](../integrations.md)** — org-wide RAM sharing and Lake Formation cross-account v3. The third (`AWSLakeFormationCrossAccountManager` on the grantor) is Stage 5 step 7, because the role does not exist yet (11.4) |
+| **Consumes** | [D12](../decisions/D12-budget-ceiling.md), [D16](../decisions/D16-break-glass.md), [D22](../decisions/D22-data-governance-account.md), [D29](../decisions/D29-policy-canary.md), [D33](../decisions/D33-control-tower-admin-user.md), [D34](../decisions/D34-account-vending.md), [D35](../decisions/D35-sandbox-cardinality.md) |
+| **Proves** | **The two organization-level halves of [INT-11](../integrations.md)** — org-wide RAM sharing and Lake Formation cross-account v3. **Also closes [D16](../decisions/D16-break-glass.md)'s last unbuilt deliverable** (10.4). The third (`AWSLakeFormationCrossAccountManager` on the grantor) is Stage 5 step 7, because the role does not exist yet (11.4) |
 | **Log** | `log/stage-01d-org-wide-enablement.md` |
 
 *Read with [`plan/conventions.md`](../conventions.md) (naming, layout, `[P]`/`[D]`/`[E]`, IAM rules).*
@@ -25,14 +25,14 @@ member account rather than from Management alone.
 | # | What | Identity | Consumes | Why it is here and not later |
 |---|---|---|---|---|
 | 9 | Object Lock, compliance mode, on the log bucket | CT Admin @ Log Archive | D33, D34 | Before there is anything worth hiding in the trail |
-| 10 | Measure AWS Config, then decide | CT Admin @ Management + Audit | D12, D29 | The landing zone's largest recurring line |
+| 10 | Measure AWS Config, then decide — **and, in 10.4, the rule D16 owes** | CT Admin @ Management + Audit | D12, D16, D29 | The landing zone's largest recurring line. **10.4 is not about that line at all** and is independent of what 10.3 decides |
 | 11 | Org-wide RAM sharing + LF cross-account v3 | CT Admin @ Management / Infra user @ Data | D22, D35 | Stage 5 fails **silently** without it |
 
 ## Who executes what
 
 | Steps | Identity | Sign-in path |
 |---|---|---|
-| 10 (Cost Explorer), 11.1 (RAM) | **`AWS Control Tower Admin`** (D33/D34) | access portal → `AWSAdministratorAccess` on **Management** |
+| 10.3 (Cost Explorer), **10.4 (the Config rule, which exists only in Management)**, 11.1 (RAM) | **`AWS Control Tower Admin`** (D33/D34) | access portal → `AWSAdministratorAccess` on **Management** |
 | 9 (Object Lock, *in Log Archive*), 10 (the Config aggregator lives in Audit) | **`AWS Control Tower Admin`** | access portal → `AWSAdministratorAccess` on **Log Archive** / **Audit** — the infrastructure user has *no* assignment in either (`ORGANIZATION.md`) |
 | 11.2 (Lake Formation) | **Infrastructure user**, from the laptop | the `awsds-infra-data` profile created in Stage 1b step 5 |
 
@@ -166,6 +166,60 @@ something Control Tower does not offer:
    here: `Policy Canary` is the tempting candidate and unenrolling it removes the Control Tower control
    baseline that makes D29's battery a valid test rather than a false pass.
 
+#### 10.4 — The one thing in step 10 that is not about cost: `iam-root-access-key-check`
+
+[D16](../decisions/D16-break-glass.md) makes an access key on the Management root an **invariant** rather
+than hygiene — it would be a permanent, unscoped, SCP-immune credential sitting in a file — and, since SCPs
+cannot reach the Management account, it names the instrument: the AWS Config managed rule
+`iam-root-access-key-check`, *"enabled with the recorder scope in Stage 1d step 10"*. **No sub-step carried
+it until 2026-08-11**, which left a detective control over the only unrestricted credential in the project
+owed by a step that never created it. This sub-step is that debt, and it starts by correcting the sentence
+that assigned it.
+
+**The rule has nothing to do with the recorder scope.** `IAM_ROOT_ACCESS_KEY_CHECK` is **periodic and
+parameterless**: it evaluates on a schedule against the account rather than on a configuration item, so no
+choice made in 10.3 can turn it on, off, or blind. It sits inside step 10 because both are about Config, not
+because one configures the other — so 10.3's decision may be taken without reference to this sub-step, and
+this sub-step executed whichever way 10.3 goes.
+
+**Where it has to live is the awkward part: the Management account** — the one account this project
+deliberately keeps out of Terraform (principle 1), and the one `plan/cost-model.md` is unsure about, reading
+the Config line as "every governed account **except Management**" and asking Stage 1 to confirm it. Resolve
+that first, because it decides whether this is a two-minute step or a decision:
+
+```bash
+# from Management, as AWS Control Tower Admin (CloudShell)
+aws configservice describe-configuration-recorders --region us-west-2
+aws configservice describe-delivery-channels --region us-west-2
+```
+
+An **empty list is the answer, not an error** (Lesson 13): `"ConfigurationRecorders": []` means Control Tower
+left Management unrecorded, a Config rule has nothing to run in, and **decision 8** below applies.
+
+**Do not deploy it as an organization Config rule from the Audit delegated administrator** — the obvious
+route, and the one that fails on this particular target. AWS Config does not create the service-linked role
+in the management account on its own, and without that role a delegated administrator cannot deploy into it;
+member accounts work, the management account does not. Since this rule is wanted on Management *only*, the
+organization-rule mechanism buys nothing here and adds a failure mode.
+
+**So create it by hand, in Management, as `AWS Control Tower Admin`** — the same identity and the same
+precedent as 1a step 5's metric filter and alarm, which are also hand-made Management resources this project
+accepts as permanently outside Terraform. Record the rule name and its first evaluation in
+`log/stage-01d-org-wide-enablement.md`, beside the two numbers from 10.3.
+
+**What it adds over the alarm 1a already built — because if the answer were "nothing" this sub-step would be
+deleted rather than written.** `awsds-org-root-activity` fires on *any* root activity that is not an AWS
+service event, so a root `iam:CreateAccessKey` **already** trips the break-glass alarm at the moment it
+happens. The rule answers a different question, and the difference is **event versus state**: the alarm sees
+the *act*, and only while the chain (trail → S3 → Logs → filter → alarm) is intact; the rule reports whether a
+key **exists now** — including one created before 1a step 5 existed, one whose event was missed, and one that
+is still there a month after everyone agreed it had been deleted.
+
+**The fallback, if decision 8 goes against the recorder, and it answers the state question too.** From
+Management, `aws iam get-account-summary --query 'SummaryMap.AccountAccessKeysPresent'` returns `1` when a
+root access key exists and `0` when it does not — the same fact, free, with no recorder and no rule. What it
+does not do is *watch*: it is a command someone has to remember to run, which is an intention rather than a
+control (Lesson 5). That is the whole trade in decision 8.
 
 ### Step 11 — Enable organization-wide resource sharing, so the Lake Formation shares of Stage 5 can exist (D22, INT-11)
 
@@ -283,8 +337,15 @@ Each one is written so that its output differs between working and broken (Lesso
   of 3 or above. *(Note what this deliverable used to say:
   `aws ram get-resource-share-associations` from the Data Governance profile, which returns an empty list
   both when sharing is enabled and when it is not.)*
-- **The Config number is measured and written down**, not estimated — both numbers from 10.2, in
+- **The Config number is measured and written down**, not estimated — both numbers from 10.3, in
   `log/stage-01d-org-wide-enablement.md` (Lesson 6).
+- **Something other than a person's memory reports whether the break-glass root has an access key** (10.4,
+  D16). Either the rule exists and answers — from Management,
+  `aws configservice describe-compliance-by-config-rule --config-rule-names <name>` reports `COMPLIANT` —
+  or decision 8 went the other way and the standing answer is
+  `aws iam get-account-summary --query 'SummaryMap.AccountAccessKeysPresent'` returning `0`, with the log
+  saying **which of the two it is**. The failure this deliverable exists to prevent is the stage closing
+  with neither, which is what happened to this control between D16 and 2026-08-11.
 
 ## Decisions due while executing
 
@@ -295,10 +356,13 @@ Each one is written so that its output differs between working and broken (Lesso
 |---|---|---|---|
 | 3 | **The Object Lock retention period** | 9.3 | **No — compliance mode cannot be shortened and Object Lock cannot be disabled** |
 | 4 | Whether the Config recorder is left alone after the measurement | 10.3 | Yes |
+| **8** | **Whether a Config recorder is turned on in Management for the sake of one rule** — ~USD 0.50-1/month for the same shape of recorder every other governed account already carries, plus a hand-made resource in the account this project keeps out of Terraform — **or the invariant is left to 1a's alarm plus the `get-account-summary` check**, which is an intention rather than a control (Lesson 5) | 10.4 | Yes |
 
 *The numbering is the landing zone's: decision 2 belongs to
-[Stage 1b](stage-01b-identity-and-controls.md), and 1, 5 and 6 to
-[Stage 1c](stage-01c-preventive-policies.md).*
+[Stage 1b](stage-01b-identity-and-controls.md), and 1, 5, 6 and 7 to
+[Stage 1c](stage-01c-preventive-policies.md). **Decision 8 was added on 2026-08-11**, by the review that
+found D16 assigning `iam-root-access-key-check` to a step that never carried it — it continues the landing
+zone's sequence rather than renumbering anything.*
 
 ## Risks
 
@@ -320,6 +384,7 @@ Record every answer in `log/stage-01d-org-wide-enablement.md`, including the one
 |---|---|---|
 | iv | Does enabling Object Lock on the Control Tower-managed bucket raise landing-zone drift? | 9.5 |
 | v | Can the Lake Formation cross-account version be raised to 3+ with no lake in the account? | 11.6 |
+| x | **Does the Control Tower landing zone record the Management account at all?** `plan/cost-model.md` assumes it does not and asks Stage 1 to confirm; 10.4 is the first step that has to know, and the Config row's account count is wrong by one either way | 10.4 |
 
 ---
 

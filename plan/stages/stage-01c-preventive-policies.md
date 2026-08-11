@@ -642,7 +642,7 @@ own, and it carries none today. Four decisions are *made* during this stage, eac
 | **7** | **Whether the `s3:PutAccountPublicAccessBlock` deny carries an enumerated carve-out, or a future account is accepted as permanently without account-level BPA** | 7.4 step 1 | Yes as a policy edit — but a *new account* created while it is undecided cannot be fixed afterwards, which is what makes it a decision rather than a preference |
 
 *The numbering is the landing zone's: decision 2 belongs to
-[Stage 1b](stage-01b-identity-and-controls.md), 3 and 4 to
+[Stage 1b](stage-01b-identity-and-controls.md), 3, 4 and 8 to
 [Stage 1d](stage-01d-org-wide-enablement.md). **Decision 7 was added on 2026-08-09**, by the review that
 found the 7.4 interlock recurs at every vend — it continues the landing zone's sequence rather than
 renumbering anything.*
