@@ -75,7 +75,9 @@ All infrastructure will be deployed in the `us-west-2` Region.
 This folder is ignored by git. It contains personal information. Never edit this folder, and never
 write anything into it. Claude can read the files in this folder to gather information.
 
-**Never copy or reproduce any email addresses or telephone numbers contained in this folder into any other project files.**.
+**Never read the file `serets/prompts.md`!**
+
+**Never copy or reproduce any email addresses, telephone numbers, account IDs contained in this folder into any other project files.**.
 
 ## Organization
 
