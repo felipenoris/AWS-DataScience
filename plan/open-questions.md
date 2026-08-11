@@ -65,6 +65,25 @@ what is genuinely still unanswered:
    at production distribution and volume. Answer it by recording, for each production incident this
    environment ever has, whether a Staging run could have caught it. Until there is such a record, this
    is a belief rather than a finding.
+10. **How far the Sandbox ordinal propagates.** The token shape is settled — an ordinal integer,
+    `awsds-infra-sandbox-1`, `-2`, … (`plan/conventions.md`, 2026-08-11) — and the SSO profile carries it
+    today. What is open is which of the other five per-unit tokens D35 names do: the `<env>` token, the
+    `Environment` tag value, the `Owner=sso-group-data-scientists` value, the `terraform-live/sandbox/` tree
+    and `ENV=sandbox`. **Two of the five are not symmetrical with the profile and are the reason this is a
+    question rather than a find-and-replace:**
+    - **`Environment=sandbox-1` is an enumerated value inside an SCP-forced tag policy** (1c step 7.8), so
+      it must be decided *before* that policy is written. Enumerating `sandbox` alone means the first apply
+      in a vended `sandbox-2` is an `AccessDenied` in a new account (Lesson 14); enumerating every ordinal
+      up front means editing an org policy at each vend. A prefix-shaped value would dissolve it, and tag
+      policies do not do prefixes — which is the constraint, not a preference. It also splits every cost
+      report by unit, which may be the point or may be noise.
+    - **`sso-group-data-scientists-1` reads worse than the profile does.** A profile names an account and an
+      ordinal is a fine name for an account; a *group* exists to say who is in it, and D35 wrote `<bu>`
+      there for that reason. This is the one place where the business-unit name may still be the better
+      token, and holding both shapes is not a contradiction — the group is on the people axis, the profile
+      on the account axis (Lesson 9).
+    Decide with N=2 in hand, or when 1c step 7.8 writes the tag policy — whichever comes first. Nothing
+    before Stage 2 depends on it.
 
 ### Blocking Stage 1 — the choices the user has to make, added 2026-08-08 by the pre-Stage-1 review
 
@@ -117,7 +136,7 @@ default, and each one is referenced from the step that needs it.
     *encryption* rather than by *design* — a property that evaporates the first time a bucket is created
     without a CMK, which is exactly the kind of accident this plan should not depend on.
 
-**Every item in this section that was a *decision* is now closed. Items 1-9 remain, and they are all
+**Every item in this section that was a *decision* is now closed. Items 1-10 remain, and they are all
 things to find out by doing.** Stage 1a has no outstanding prerequisite.
 
 ---

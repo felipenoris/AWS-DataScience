@@ -73,6 +73,13 @@ assumptions is nearly free to loosen while it is prose:
   scientist can enter every unit's experimentation account. **Do not create per-unit groups yet** — there is
   one unit. Create the *naming* and write the assignment so the second unit is an addition rather than a
   refactor; the permission set itself is unchanged and shared.
+  **Amended 2026-08-11 — the per-unit token is an ordinal, and `<bu>` above is now only half true.** The
+  user settled the token as an integer at the moment the first SSO profile was created:
+  `awsds-infra-sandbox-1`, matching the account AWS already names `Sandbox Account 1`
+  (`plan/conventions.md`). That is the **account** axis. Whether the *group* takes the ordinal too, or keeps
+  a unit name — a group exists to say who is in it, which an ordinal does not do — is
+  `open-questions.md` item 10, along with the `Environment` tag value, whose enumeration inside the 1c
+  step 7.8 tag policy is the one that fails as an `AccessDenied` in a fresh account if it is guessed wrong.
 - **Domain association (Stage 6, D26).** The single unified domain is associated with **N + 1** interactive
   accounts — every Sandbox plus the one Development — each needing its own blueprint configuration. That is
   the intended mechanism, so it scales; what it makes heavier is the root deny on `datazone:CreateDomain`

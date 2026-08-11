@@ -59,13 +59,35 @@ and nothing denies the call.
 things written here as singletons are really per-unit: the `<env>` token `sandbox`, the
 `Environment=sandbox` tag value, the **`Owner=sso-group-data-scientists` tag value** — 1b step 2 already
 names the per-unit form, `sso-group-data-scientists-<bu>` — the `terraform-live/sandbox/` tree, the
-`awsds-infra-sandbox` SSO profile, and `make up`/`make down ENV=sandbox`. Everything else — Development, Staging, Production, Data Governance,
+`awsds-infra-sandbox-<n>` SSO profile, and `make up`/`make down ENV=sandbox`. Everything else — Development, Staging, Production, Data Governance,
 Identity, `org` — is structural and stays exactly as written.
 
-**The concrete scheme is settled in [Stage 14](stages/stage-14-sandbox-vending.md)**, alongside the CIDR
-allocation table (Stage 3) and the VPN topology (Stage 4): choosing a directory and token shape here, with
-one unit and no `sandbox-unit` module written, would be guessing at the interface of something that does not
-exist yet. What this note fixes now is the cheaper half, and it is the one that fails silently — **the two
+**The per-unit token is an ordinal integer — settled by the user 2026-08-11, at the moment the first profile
+was created.** `Sandbox Account 1` is reached through **`awsds-infra-sandbox-1`**; the second business unit's
+account is `awsds-infra-sandbox-2`, and so on, with no gap-filling and no reuse of a retired number. D35
+wrote the placeholder as `<bu>` — a business *unit name* — and this is deliberately not that. Two things the
+ordinal buys and one it costs:
+
+- **It matches the name AWS already shows.** The account is `Sandbox Account 1` in the organization, so the
+  profile, the account and every console listing agree. A token derived from a unit name would be a second
+  vocabulary for the same account, and the mapping between the two would live nowhere.
+- **It cannot go stale.** A business unit can be renamed, merged or dissolved; anything named after it then
+  carries a name nobody recognises, and renaming deployed resources is the cost this whole section exists to
+  avoid. An ordinal has no meaning to lose.
+- **What it costs, and it is a real duty rather than a footnote: the token carries no meaning.**
+  `sandbox-2` does not say whose it is. So the **ordinal→business-unit mapping has to be written where a
+  human reads it — `ORGANIZATION.md`, at the vend** — or the ordinal is an index into a table that does not
+  exist. [Stage 14](stages/stage-14-sandbox-vending.md) owns that duty; until N is 2 there is nothing to
+  record and nothing yet lost.
+
+**What is left to [Stage 14](stages/stage-14-sandbox-vending.md)** — alongside the CIDR allocation table
+(Stage 3) and the VPN topology (Stage 4) — **is the directory shape and the `sandbox-unit` module's
+interface, and no longer the token.** Guessing at the interface of a module that does not exist yet still
+costs more than it saves; the token above stopped being a guess. **Which of the other five per-unit tokens
+actually carry the ordinal is open** — `open-questions.md` item 10 — and it is open in the direction that
+matters: `Environment=sandbox-1` is an enumerated value inside an SCP-forced tag policy (1c step 7.8), so it
+is decided *before* that policy is written, not after. What this note fixes now is the cheaper half, and it
+is the one that fails silently — **the two
 enumerations above are Lesson 14 in naming.** The `<env>` list and the tag policy's allowed values both
 enumerate `sandbox` — and since 2026-08-10 that policy enumerates `sso-group-data-scientists` for `Owner`
 as well — while the forcing function behind the tags is an SCP conditioned on `aws:RequestTag` (1c step 7).
@@ -255,10 +277,11 @@ CI is the same bug as one that only works by hand — but the expected caller is
 
 - Pin the provider version and `required_version`. One `providers.tf` per slice.
 - Region, AZs and AMIs follow the portability rules in `plan/architecture.md` §4.1 — no region literals in `.tf` files.
-- Authentication through named SSO profiles, one per Terraform-managed account — `awsds-infra-sandbox`,
+- Authentication through named SSO profiles, one per Terraform-managed account — `awsds-infra-sandbox-1`,
   `awsds-infra-dev`, `awsds-infra-data`, `awsds-infra-staging`, `awsds-infra-prod`,
-  `awsds-infra-identity` (Stage 1b step 5) — never keys. **One of these per business unit is the sandbox
-  one** (D35); the other five are structural.
+  `awsds-infra-identity` (Stage 1b step 5) — never keys. **The sandbox one is ordinal-suffixed and there is
+  one per business unit** (D35): `-1` today, `-2` when the second unit is vended. The other five are
+  structural and carry no suffix.
 - Every slice: `terraform fmt`, `validate` and `plan` must be clean before apply.
 - Remote state read across slices through `terraform_remote_state` data sources, never hardcoded IDs.
 - **The Organization is never in Terraform, and the code is written to survive that (D34).** Accounts and

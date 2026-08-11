@@ -262,7 +262,7 @@ following the old "attach to the OUs, in this order" literally breaks one of the
    the blanket that also covers the bucket someone creates outside it — so "every member account" has to
    be a list, or the one account nobody had a profile for is the one that keeps the hole.
    - `AWS Control Tower Admin`, from the console: **Management**, **Log Archive**, **Audit**.
-   - `awsds-infra-sandbox`, `-dev`, `-prod`, `-data`, `-identity` (`aws s3control put-public-access-block`).
+   - `awsds-infra-sandbox-1`, `-dev`, `-prod`, `-data`, `-identity` (`aws s3control put-public-access-block`).
    - **`awsds-policy-canary`** — the easiest one to forget, because the account is supposed to stay empty
      and has no `awsds-infra-*` profile. It is still an account with an S3 API.
    - **`Staging` gets it at the vend**, with everything else deferred there.

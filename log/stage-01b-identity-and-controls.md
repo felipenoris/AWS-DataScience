@@ -444,7 +444,87 @@ aws sso-admin list-tags-for-resource --instance-arn "$INST" --resource-arn "$PS"
 
 - Ended step 4. Moving to step 5.
 
+- Configuring sso access with aws cli:
 
+```
+aws configure sso-session
+```
+
+session name: awsds
+Start URL: https://[my-url].awsapps.com/start
+SSO region: us-west-2
+SSO registration scopes: left default value
+
+- Logoff console from browser.
+
+- Configuring Development profile:
+
+    - `aws configure sso --profile awsds-infra-dev`
+    - session name awsds
+    - will open browser to login. used Infrastructure User sso.
+    - selected Development Account
+    - selected InfrastructureAccess
+    - selected region us-west-2
+    - selected output json
+
+- repeated same steps for profiles:
+    - awsds-infra-sandbox-1 (Sandbox account)
+    - awsds-infra-prod (Production account)
+    - awsds-infra-data (Data account)
+    - awsds-infra-identity (Identity account)
+
+- awsds-policy-canary profile configured with AWSAdministratorAccess.
+
+- verifying:
+
+```
+for P in awsds-infra-sandbox-1 awsds-infra-dev awsds-infra-prod awsds-infra-data awsds-infra-identity awsds-policy-canary; do printf '%-24s ' "$P"; aws sts get-caller-identity --profile "$P" --query Arn --output text 2>&1; done
+```
+
+yields:
+
+```
+awsds-infra-sandbox-1: arn:aws:sts::892278726726:assumed-role/AWSReservedSSO_InfrastructureAccess_59e5b26af457128d
+awsds-infra-dev: arn:aws:sts::680160265342:assumed-role/AWSReservedSSO_InfrastructureAccess_7edd72025c361e9b
+awsds-infra-prod: arn:aws:sts::477537078499:assumed-role/AWSReservedSSO_InfrastructureAccess_c2bcabf74c885115
+awsds-infra-data: arn:aws:sts::782981553460:assumed-role/AWSReservedSSO_InfrastructureAccess_ba1899ccb658ab35
+awsds-infra-identity: arn:aws:sts::863181492659:assumed-role/AWSReservedSSO_InfrastructureAccess_a6d31eda0e5de20c
+awsds-policy-canary: arn:aws:sts::817139099669:assumed-role/AWSReservedSSO_AWSAdministratorAccess_59a09ed7d34a9cd1
+```
+
+- Checking:
+
+```
+aws sso-admin list-instances --profile awsds-infra-identity
+```
+
+yields:
+
+```
+{
+    "Instances": [
+        {
+            "InstanceArn": "arn:aws:sso:::instance/ssoins-79076fdc3a54ee96",
+            "IdentityStoreId": "d-9267c9ef91",
+            "OwnerAccountId": "xxxx",
+            "Name": "yyyy",
+            "CreatedDate": "2026-08-01T18:30:39.407000-03:00",
+            "Status": "ACTIVE",
+            "PrimaryRegion": "us-west-2",
+            "Regions": [
+                {
+                    "RegionName": "us-west-2",
+                    "Status": "ACTIVE",
+                    "AddedDate": "2026-08-01T18:30:39.407000-03:00",
+                    "IsPrimaryRegion": true
+                }
+            ]
+        }
+    ]
+}
+```
+
+- 
 ---
 
 *Log index: [log/INDEX.md](INDEX.md) · Stage index: [plan/stages/INDEX.md](../plan/stages/INDEX.md)*

@@ -435,9 +435,12 @@ byte. That is the same work done twice with a gate in the middle designed to fai
 
 ### Step 5 — Configure the local SSO profiles now, not at the end of the stage
 
-- **Do:** `aws configure sso` for `awsds-infra-sandbox`, `awsds-infra-dev`, `awsds-infra-prod`,
+- **Do:** `aws configure sso` for `awsds-infra-sandbox-1`, `awsds-infra-dev`, `awsds-infra-prod`,
   `awsds-infra-data` and `awsds-infra-identity` — plus one more that is deliberately named differently,
   **`awsds-policy-canary`** (D29). `awsds-infra-staging` waits for the vend.
+  **The sandbox profile carries an ordinal and the other four do not** (`plan/conventions.md`, settled
+  2026-08-11): `Sandbox` is the one account that multiplies (D35), `-1` names the account AWS already calls
+  `Sandbox Account 1`, and the second business unit gets `awsds-infra-sandbox-2`.
 - **Name the permission set each profile is bound to, and write it in the log.** `aws configure sso` stores
   a `sso_role_name` in `~/.aws/config`, so a profile is bound to *one* named set, not to "whatever
   administrator access this user has". There are two administrator sets four characters apart (3.2), and
@@ -504,7 +507,7 @@ both now, because it is the one act in this stage that can lock the only adminis
 
 ### Step 6 — Check the AZ name-to-ID mapping
 
-- **Do**, under each of `awsds-infra-sandbox`, `awsds-infra-dev` and `awsds-infra-prod`:
+- **Do**, under each of `awsds-infra-sandbox-1`, `awsds-infra-dev` and `awsds-infra-prod`:
   `aws ec2 describe-availability-zones --query 'AvailabilityZones[].[ZoneName,ZoneId]'`.
 - **Why it has a bill attached.** AWS maps AZ names to physical datacenters independently per account, so
   `data.aws_availability_zones` indexed by position can place "the same" AZ in different datacenters.
@@ -670,7 +673,7 @@ table. It depends on nothing else in the stage: the groups it watches are Contro
 
 Each one is written so that its output differs between working and broken (Lesson 13):
 
-- **SSO login works and the group path is real:** `aws sts get-caller-identity --profile awsds-infra-sandbox`
+- **SSO login works and the group path is real:** `aws sts get-caller-identity --profile awsds-infra-sandbox-1`
   returns the Sandbox account ID **and an ARN containing
   `AWSReservedSSO_InfrastructureAccess`** — this project's set, reached through the `sso-group-infrastructure` group —
   and the same for every other `awsds-infra-*` profile. The account ID alone proves only that *an*

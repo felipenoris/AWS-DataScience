@@ -516,7 +516,7 @@ decisions listed below.
 Each is written so its output differs between working and broken (Lesson 13):
 
 - **A slice applies end to end against a real account:** `terraform apply` in `sandbox/bootstrap/` under
-  `awsds-infra-sandbox`, then `terraform init -migrate-state`, then a second `terraform plan` that reports
+  `awsds-infra-sandbox-1`, then `terraform init -migrate-state`, then a second `terraform plan` that reports
   **no changes** while reading state from S3.
 - **Locking is real:** two concurrent `terraform plan` runs against the same slice — the second reports a
   lock held, rather than both succeeding.

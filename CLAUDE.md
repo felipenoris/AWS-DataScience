@@ -166,11 +166,18 @@ The `§` numbers inside `plan/` files are historical anchors, not addresses.
 
 ### Current position
 
-- **Stage 1a is done but for the `Staging` vend; [`log/stage-01a-landing-zone.md`](log/stage-01a-landing-zone.md)
-  is authoritative. Next is Stage 1b.** Control Tower enabled (`us-west-2`), budget set, `Development`,
-  `Sandbox Account 1`, `Production`, `Data Governance`, `Policy Canary` and `Identity` vended, centralized
-  root access on. Break-glass built and **tested 2026-08-09 on both channels** — the thing 1c step 7 may not
-  start without.
+- **Stage 1a is done but for the `Staging` vend, and Stage 1b is mid-execution** — the two `log/` files are
+  authoritative. 1a: Control Tower enabled (`us-west-2`), budget set, `Development`, `Sandbox Account 1`,
+  `Production`, `Data Governance`, `Policy Canary` and `Identity` vended, centralized root access on.
+  Break-glass built and **tested 2026-08-09 on both channels** — the thing 1c step 7 may not start without.
+- **1b: 8.3, 1, 2, 3, 4 and 5 are done and verifications i, ii and ix answered. Next is 5.1**, then 6 and
+  8.2. All six SSO profiles exist; the five `awsds-infra-*` return
+  `AWSReservedSSO_InfrastructureAccess_*` and `awsds-policy-canary` returns `AWSReservedSSO_AWSAdministratorAccess_*`
+  — 5.1's precondition, met. **`sso-directory.amazonaws.com` (the console path) is still unexercised** by
+  8.3's filter; everything so far went through the CLI.
+- **The Sandbox per-unit token is an ordinal** — `awsds-infra-sandbox-1`, `-2`, … (user, 2026-08-11),
+  matching the account name AWS shows. How far it propagates past the profile is
+  [`plan/open-questions.md`](plan/open-questions.md) item 10, due before 1c step 7.8 writes the tag policy.
 - **The `Staging` vend is held on the account cap** — the increase to 15 is *requested*; confirm before
   vending. **What the deferral owes is one list, in [Stage 1a](plan/stages/stage-01a-landing-zone.md)**
   ("What the deferral leaves owed"), not five per-stage footnotes.
@@ -187,10 +194,9 @@ The `§` numbers inside `plan/` files are historical anchors, not addresses.
 - **All thirty-six decisions are closed** ([`plan/decisions/INDEX.md`](plan/decisions/INDEX.md)). The four
   governing what happens next: **D32** (`SSOUserEmail`), **D33**/**D34** (who vends), **D35** (`Sandbox` is
   one per business unit; every other account is exactly one).
-- **The landing zone's second half is three stages, split 2026-08-09**: **1b** (steps 1-6, 5.1, 8), **1c**
-  (step 7, the only irreversible one, in two sittings), **1d** (steps 9-11, independent of each other, and
-  not blocked on 1c). **Step numbers did not change** — `Stage 1c step 7` is the same step every file
-  already cites; **5.1 is the one number added** (2026-08-09). **1c and 1d have no `log/` file yet.**
+- **The landing zone's second half is three stages**: **1b** (steps 1-6, 5.1, 8), **1c** (step 7, the only
+  irreversible one, in two sittings), **1d** (steps 9-11, independent of each other, and not blocked on 1c).
+  **1c and 1d have no `log/` file yet.**
 - **The identity seam, settled 2026-08-09 by review** (`plan/conventions.md`): **people** — users, groups,
   memberships — stay in the directory; **entitlements** — permission sets, boundaries, group→account
   assignments — are Terraform. So **1b creates one permission set and specifies seven**; the other six are
