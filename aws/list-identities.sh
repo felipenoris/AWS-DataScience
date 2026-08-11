@@ -3,6 +3,19 @@
 # list-identities.sh - snapshot of the Organization tree and of the IAM Identity Center
 # directory, as seen from the Identity account.
 #
+#   needs:    a live SSO session - the ONLY prerequisite:
+#
+#                 aws sso login --sso-session awsds
+#
+#             The login authenticates against the access portal, not against an account:
+#             the cached token is keyed by the sso-session name, so one login covers every
+#             profile in ~/.aws/config that declares `sso_session = awsds`, and the profile
+#             below only matters one step later, when a call trades that token for the
+#             temporary credentials of its account's role. `aws sso login --profile
+#             awsds-infra-identity` reaches the same session and is equivalent.
+#             This is checked before any listing runs: a missing or expired token stops the
+#             script with that command, leaving the previous snapshot untouched.
+#
 #   run:      ./aws/list-identities.sh
 #   writes:   aws/output/list-identities.txt   (untracked - see .gitignore)
 #   reads:    everything; this script never creates, updates or deletes anything.
@@ -134,7 +147,7 @@ if ! CALLER=$(command aws --profile "$PROFILE" --region "$REGION" \
                 sts get-caller-identity --query 'Arn' --output text 2>&1); then
   note ""
   note "cannot authenticate with profile '$PROFILE':"
-  note "  $CALLER"
+  printf '%s\n' "$CALLER" | sed '/^[[:space:]]*$/d; s/^/  /' >&2
   note ""
   note "log in first:"
   note "  aws sso login --sso-session $SSO_SESSION"
