@@ -146,6 +146,25 @@ AWS Control Tower cannot complete the operation, because you must create a landi
 - **Still open in sitting A:** BPA in the six accounts, BPA in Management / Log Archive / Audit, the
   three `enable-policy-type` calls of 7.2, the 7.3 battery, and only then the two root attachments.
 
+- **7.4 step 1 — account-level S3 Block Public Access, six of the nine accounts.** Set from the laptop
+  as the **infrastructure user**, one `s3control put-public-access-block` per account with all four
+  flags `true`: `awsds-infra-sandbox-1`, `-dev`, `-prod`, `-data` and `-identity` through
+  `InfrastructureAccess`, and `awsds-policy-canary` through its direct `AWSAdministratorAccess`
+  assignment (D32). There is no cross-account API for this setting — every call is made from *inside*
+  the account it configures, which is the reason 7.4 states a list rather than an organization-wide
+  action.
+
+- `./aws/account-bpa.sh` re-run immediately afterwards: **6 of 6 measured accounts read `ALL FOUR
+  true`**, where the same script had read `NOT SET` in all six a few hours earlier.
+  `aws/output/account-bpa.txt` is the evidence. **Management, Log Archive and Audit are still unread
+  and unset** — they hold no profile on this laptop — so 7.5 stays blocked.
+
+- **The same thing is doable entirely from the console**, recorded because that is the screen a future
+  reader will be looking at: *Console → Amazon S3 → Account and organization settings → Block Public
+  Access settings for this account → Edit → Block all public access*. It writes the same account-level
+  setting, one account at a time, and it is the path to use in Management, Log Archive and Audit if
+  CloudShell is inconvenient there.
+
 ---
 
 *Log index: [log/INDEX.md](INDEX.md) · Stage index: [plan/stages/INDEX.md](../plan/stages/INDEX.md)*
