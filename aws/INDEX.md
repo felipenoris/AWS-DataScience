@@ -10,12 +10,24 @@ now*. Each answers a different question, and the three disagreeing is itself inf
 
 ## The scripts
 
-| Script | Profile it runs as | Writes | Captures |
-|---|---|---|---|
-| [`list-identities.sh`](list-identities.sh) | `awsds-infra-identity` (Identity account, IAM Identity Center delegated administrator — D10) | `output/list-identities.txt` | The Organization: management account id, root and its enabled policy types, the whole OU tree, every account. The directory: Identity Store instance, groups, users, group memberships. The entitlements: permission sets with what each grants, and every assignment triple. |
-| [`AZs.sh`](AZs.sh) | **every** `awsds-*` profile in `~/.aws/config`, or the ones named as arguments — the one script here that is not single-profile, see below | `output/AZs.txt` | The availability-zone **name → zone ID** mapping each account reports, one listing per account, the mappings side by side, and a check on whether they agree. |
-| [`org-trusted-access-services.sh`](org-trusted-access-services.sh) | `awsds-infra-identity` by default; takes another profile as its argument, or `-` to run with no profile at all — inside CloudShell on Management | `output/org-trusted-access-services.txt` | Which AWS services hold **trusted access** across the organization, which account is each one's **delegated administrator**, and the `access-analyzer` registration on its own. |
-| [`audit-iam-analyser.sh`](audit-iam-analyser.sh) | **no profile — CloudShell on the Audit account**, as `AWS Control Tower Admin`. Takes a profile as its argument if one ever exists there; see below | `output/audit-iam-analyser.txt` | The IAM Access Analyzer analyzers of that account and Region: type (the **zone of trust**), status, tags, archive rules, findings — and a check that there is exactly one, `ORGANIZATION`, `ACTIVE`. |
+| Script | SSO user signed in | Profile it runs as | Writes | Captures |
+|---|---|---|---|---|
+| [`list-identities.sh`](list-identities.sh) | [Infrastructure](../ORGANIZATION.md#infrastructure-user) | `awsds-infra-identity` (Identity account, IAM Identity Center delegated administrator — D10) | `output/list-identities.txt` | The Organization: management account id, root and its enabled policy types, the whole OU tree, every account. The directory: Identity Store instance, groups, users, group memberships. The entitlements: permission sets with what each grants, and every assignment triple. |
+| [`AZs.sh`](AZs.sh) | [Infrastructure](../ORGANIZATION.md#infrastructure-user) — including behind `awsds-policy-canary`, which is the **same human** through a different permission set (D32) | **every** `awsds-*` profile in `~/.aws/config`, or the ones named as arguments — the one script here that is not single-profile, see below | `output/AZs.txt` | The availability-zone **name → zone ID** mapping each account reports, one listing per account, the mappings side by side, and a check on whether they agree. |
+| [`org-trusted-access-services.sh`](org-trusted-access-services.sh) | [Infrastructure](../ORGANIZATION.md#infrastructure-user); [`AWS Control Tower Admin`](../ORGANIZATION.md#aws-control-tower-admin-d33) on the `-` fallback | `awsds-infra-identity` by default; takes another profile as its argument, or `-` to run with no profile at all — inside CloudShell on Management | `output/org-trusted-access-services.txt` | Which AWS services hold **trusted access** across the organization, which account is each one's **delegated administrator**, and the `access-analyzer` registration on its own. |
+| [`audit-iam-analyser.sh`](audit-iam-analyser.sh) | [`AWS Control Tower Admin`](../ORGANIZATION.md#aws-control-tower-admin-d33) — **the only one**, no laptop path | **no profile — CloudShell on the Audit account**, as `AWS Control Tower Admin`. Takes a profile as its argument if one ever exists there; see below | `output/audit-iam-analyser.txt` | The IAM Access Analyzer analyzers of that account and Region: type (the **zone of trust**), status, tags, archive rules, findings — and a check that there is exactly one, `ORGANIZATION`, `ACTIVE`. |
+| [`org-policy-baseline.sh`](org-policy-baseline.sh) | [Infrastructure](../ORGANIZATION.md#infrastructure-user) — **open, and what section 7 answers**; [`AWS Control Tower Admin`](../ORGANIZATION.md#aws-control-tower-admin-d33) on the `-` fallback, which section 5 is expected to need anyway | `awsds-infra-identity` by default; takes another profile, or `-` for CloudShell on **Management** as `AWS Control Tower Admin` — which is the fallback if the policy reads are denied | `output/org-policy-baseline.txt` | **The ceiling that already exists.** Organization id and feature set, the root and its enabled policy types, every node with its **id, ARN and full path**, the policies attached per node per type, the **documents** of the ones found, the Control Tower controls enabled per node, and the policy quota. Stage 1c step 7.0 steps 1, 2, 3 and 5 in one pass. |
+| [`account-bpa.sh`](account-bpa.sh) | [Infrastructure](../ORGANIZATION.md#infrastructure-user); [`AWS Control Tower Admin`](../ORGANIZATION.md#aws-control-tower-admin-d33) for the `-` runs in Management, Log Archive and Audit | **every** `awsds-*` profile, or the ones named as arguments, or `-` inside CloudShell for the three accounts that have no profile — the second script here that is not single-profile, see below | `output/account-bpa.txt` | The **account-level** S3 Block Public Access configuration of each account, the four flags side by side, and which accounts nothing is measuring. Read three times: before 7.4, after 7.4 and before 7.5, and at every vend. |
+
+**The first two columns are different questions, and the whole table above collapses into two identities.** A
+profile is a *(account, permission set)* pair; the **user** is whoever holds the assignment for that pair
+([`ORGANIZATION.md`](../ORGANIZATION.md), "Assignments"). Every `awsds-*` profile resolves to the
+**infrastructure user** — the five `awsds-infra-*` through `sso-group-infrastructure` → `InfrastructureAccess`,
+and `awsds-policy-canary` through the permanent Account Factory direct assignment of Control Tower's
+`AWSAdministratorAccess` (D32) — so **everything runnable from this laptop is one person and one login**.
+Everything run with `-` is `AWS Control Tower Admin` in CloudShell, and that is not a convenience: `-` exists
+exactly for Management, Log Archive and Audit, the three accounts where **no persona holds an assignment by
+design** and where that standing identity (D33, D34) is the only way in.
 
 Run any of them from anywhere; each one `cd`s to the repository root itself:
 
@@ -33,6 +45,14 @@ Run any of them from anywhere; each one `cd`s to the repository root itself:
 
 ```bash
 ./aws/audit-iam-analyser.sh
+```
+
+```bash
+./aws/org-policy-baseline.sh
+```
+
+```bash
+./aws/account-bpa.sh
 ```
 
 They need a live SSO session. If the run stops with `cannot authenticate`:
@@ -166,17 +186,61 @@ table to be read as a pass. And an `ACCOUNT`-type analyzer sitting in Audit stay
 near-empty account and raises nothing, which is why the `type` is a checked field and not a column
 (Lesson 13).
 
+## Finding an answer in `output/org-policy-baseline.txt`
+
+| Question | Section |
+|---|---|
+| What is the organization id, and is `FeatureSet` `ALL` (which RCPs require)? | 1 |
+| Which policy types may be attached at all? | 1.2 — the same reading as `list-identities.txt` 2.2, kept here so this file stands alone |
+| What is an OU's **id**, its **ARN** (which `enable-control` takes), or its **full path** (which `aws:PrincipalOrgPaths` takes)? | 2 |
+| What is already attached to this node, and is it AWS's or ours? | 3 — one block per node, one line per policy type |
+| **What is already denied** — i.e. what should Stage 1c *not* write again? | 4 — the policy documents themselves, and the carve-outs inside them |
+| Is this OU registered with Control Tower, and which controls does it already have? | 5 — **an error means unregistered**, an empty list means registered with nothing elective |
+| How many policies still fit on this node, and how large may each be? | 6 |
+| Did something not answer? | 7 — and *which* calls failed is the answer to Stage 1c verification (x) |
+
+**The two sections that change what gets written are 4 and 6, and both are read *before* the first
+`create-policy`.** Control Tower's mandatory controls already deny changes to CloudTrail and to the Config
+recorder on every registered OU, with the service-role carve-outs that keep the landing zone able to update
+itself — so a hand-written duplicate costs SCP budget and adds a second place to get those carve-outs wrong.
+That is Stage 1c verification (iii), and it is a thing to read first rather than to notice afterwards.
+
+**Section 5 is the one place in `aws/` where an error is the answer.** `controltower
+list-enabled-controls` rejects an unregistered target instead of returning an empty list, which is exactly
+the Lesson 13 shape inverted: here the empty result and the failure genuinely mean different things, so the
+report keeps them apart rather than tidying them together.
+
+## Finding an answer in `output/account-bpa.txt`
+
+| Question | Section |
+|---|---|
+| Does this account have account-level S3 Block Public Access, and are all four flags set? | 3 — the verdict table; 2 for the raw answer |
+| Which accounts is nobody measuring? | 4 — **read it before reading section 3 as a pass** |
+| Which identity produced each row? | 1 — a `(failed)` row is a profile that did not authenticate, never a compliant one |
+| How is it set, and in which order relative to the SCP? | 5 — the command, and the interlock that must not be reversed |
+
+**`NoSuchPublicAccessBlockConfiguration` is the "not set" answer, not a failure**, and it is what to expect
+before Stage 1c step 7.4 — so it is reported as `NOT SET` in sections 2 and 3 and kept out of the failure
+section. The other direction matters as much: **a missing account is not a passing account.** Management,
+Log Archive and Audit hold no project persona, so they are read from CloudShell (`./aws/account-bpa.sh -`)
+and recorded by hand; `Staging` and every Sandbox beyond the first have no profile yet, and `EXC-01` is not
+ours. An account in neither section 3 nor section 4 is the hole this snapshot exists to expose.
+
 ## Adding a script here
 
 Keep the shape, so that one file explains all of them:
 
 - **Read-only.** A script that changes something does not belong in `aws/`.
-- **One profile per script**, named at the top, with the reason that profile can see what it sees.
-  **`AZs.sh` is the one exception, and it is what an exception has to look like:** the comparison *between*
-  accounts is the measurement, so a single-profile version would answer nothing. It pays the rule back by
-  printing the caller ARN of every profile in section 1 — which is what naming one profile at the top exists
-  to make visible. Multi-profile is not a licence; it is for a script whose subject is the difference
-  between accounts.
+- **One profile per script**, named at the top, with the reason that profile can see what it sees — and
+  **name the SSO user behind it in the table above**, since a profile is a *(account, permission set)* pair
+  and the user is a second fact, not a restatement of it.
+  **`AZs.sh` and `account-bpa.sh` are the exceptions, and they are what an exception has to look like:** in
+  both, the subject is a *per-account* fact whose meaning is the comparison **between** accounts — an AZ
+  name→ID mapping is only interesting next to another account's, and an account-level setting that is right
+  in five accounts and unset in the sixth is the sixth account's hole. A single-profile version would answer
+  nothing. Both pay the rule back by printing the caller ARN of every profile in section 1 — which is what
+  naming one profile at the top exists to make visible. Multi-profile is not a licence; it is for a script
+  whose subject is the difference between accounts.
 - **Output to `aws/output/<script-name>.txt`**, one file per script, `mkdir -p` its own folder.
 - **Print the command above its output** — `show` in `list-identities.sh` — so any line can be re-derived
   by hand, and prefer `--output table` over post-processing.

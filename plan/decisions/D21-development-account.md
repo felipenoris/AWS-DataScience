@@ -55,7 +55,53 @@ The AWS MLOps roadmap draws a line that the previous revision had collapsed "bec
 **The decision is held as written.** This section records the reasoning so the question is not re-derived
 from scratch the next time it is asked, and so the thing that would actually settle it is written down.
 
-### The question, in D17's vocabulary
+### Two questions, and they turn on different facts
+
+The review conflated them once; keeping them apart is what makes either one answerable.
+
+| Question | What settles it |
+|---|---|
+| Does Development need an **interactive surface**? | **The data test** below. It is a question about duplicated tooling |
+| Should Development be the **origin of the promotion chain**? | **Who carries the code convergence** — see below. It is a question about where the promotion anchors |
+
+**The data test does not reach the second question**, and this is the trap: Development's role in the chain
+was never to be where the data is, it was to be the **funnel** — N sandboxes converge on one Development,
+one Staging, one Production. Finding that Sandbox holds the same data removes the duplicated Studio and says
+nothing about the funnel. Answering the first question does **not** license acting on the second.
+
+### The funnel is a repository namespace, not an account (settled 2026-08-13)
+
+The second question was first written as *"it turns on N"*, on the reading that N sandboxes deploying into
+Staging would multiply the trust paths into it. **That reading was wrong on the mechanism**, and correcting
+it is what produced the answer:
+
+- **The deploy path does not multiply with N.** The runner lives in Production (D14) and assumes **one**
+  deploy role in Staging. A Sandbox is where the person was sitting when they committed; it is not in the
+  deploy path at all. What multiplies is **artifact streams**, not credentials and not trust directions.
+- **What the funnel actually buys is a place where N units' work meets *as code*** — one review, one
+  standard, a home for shared libraries — and that is a **GitLab group**, which lives in Production and in
+  no environment account.
+- **Remove the funnel from git and three things break together:** Staging is where two units first meet, and
+  they meet as *deployed artifacts* rather than as code; `terraform-live/staging/app/app-etl/` is one state
+  and one set of resources, so N streams either collide or force Staging to namespace per unit — the
+  multiplication does not vanish, it lands somewhere less free than upstream; and a shared transform needed
+  by two units has no owner.
+- **Remove it from AWS but keep it in git and none of them break**, because convergence has already happened
+  before the tag. The chain reads: N sandboxes → one shared repository namespace → tag → Staging.
+
+**So the deciding fact is narrower than N.** If a shared repository namespace carries the convergence, the
+Development *account* has only two residual jobs — cost attribution (benefit 3), plausibly carried by tags
+instead, and being a runtime target for data Sandbox does not hold, which is the data test again. Neither
+holds a whole account on its own, and **Sandbox → Staging becomes defensible even with N > 1**.
+
+**One correction to carry, on how expensive the reversal is.** Rebuilding the funnel later is not expensive
+because of the *account* — Account Factory vends it and [Stage 14](../stages/stage-14-sandbox-vending.md) is
+already the machinery for exactly that. It is expensive because of **repository structure and habit**: N
+units that each grew their own layout, CI configuration and Terraform tree are N divergent structures to
+merge. The irreversibility is structural and social, not technical — which also says where to spend the care
+if the branch is ever taken.
+
+### Back to the first question, in D17's vocabulary
 
 SageMaker is two halves and D17 runs the account boundary between them.
 
@@ -124,9 +170,14 @@ Studio is a separate claim.
   intention becomes a **control** rather than a convention (Lesson 5).
 - **Files that would be revised:** this one (benefit 1 moves to Sandbox), **D17**, **D18**, **D19**, **D23**
   (`Interactive` collapses onto `Sandboxes`), **D26** and Stage 6 (domain associations become N, not N + 1;
-  the `engineering` profile changes target or disappears), **D35**, Stage 8 (INT-18 loses half), Stage 10,
-  and `plan/cost-model.md` — which gets back one whole set of interface endpoints, the term that dominates
-  the model.
+  the `engineering` profile changes target or disappears), **D35**, Stage 8 (INT-18 loses half) and
+  Stage 10.
+- **The cost model barely moves, and an earlier draft of this section said otherwise.** Losing the Studio
+  does **not** return Development's interface endpoints: the account keeps running pipeline jobs, those jobs
+  are VPC-only, and the endpoints are what they resolve through — which is the term that dominates
+  `plan/cost-model.md`. What is saved is the domain and its apps, which are `[E]` and idle-cheap anyway.
+  **The endpoints only come back in the larger branch below**, where the account leaves the chain entirely.
+  Stating it the other way makes the cheaper, likelier move look like the one that pays.
 
 ### The larger branch — CI/CD deploying from Sandbox into Sandbox
 
@@ -137,9 +188,15 @@ If experimentation shows the two accounts are barely distinguishable in practice
   the account the person is already working in.
 - The promotion chain shortens to **Sandbox → Staging → Production**, and Development stops being the
   pipeline's test target rather than merely losing its Studio.
-- **It needs its own argument before anyone reaches for it**, for two reasons: it puts CI-applied
-  infrastructure in the account with the loosest policy set, and it removes the boundary that makes
-  graduation a visible act — leaving only the git tag to carry it.
+- **Its precondition is the shared repository namespace above**, not the data test. Taken without one, this
+  is the branch that scatters N divergent repository structures and makes the reversal expensive.
+- **One objection survives and it is worth keeping:** it puts CI-applied infrastructure in the account with
+  the loosest policy set and the widest human access. That is an argument about *where an apply runs*, and
+  it is unaffected by anything above.
+- **The objection that does not survive, recorded so it is not raised again:** that removing the account
+  removes the visible graduation act. The account boundary never *enforced* the rewrite — it prompted it,
+  and a prompt is not a control (Lesson 5). What carries the act is an immutable tag on a reviewed
+  repository, which is in GitLab either way.
 
 ### Why this stays open, and what would close it
 

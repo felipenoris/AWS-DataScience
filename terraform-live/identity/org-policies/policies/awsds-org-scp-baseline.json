@@ -1,0 +1,73 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "DenyLeaveOrganization",
+      "Effect": "Deny",
+      "Action": "organizations:LeaveOrganization",
+      "Resource": "*"
+    },
+    {
+      "Sid": "DenyIamUserCreation",
+      "Effect": "Deny",
+      "Action": [
+        "iam:CreateUser",
+        "iam:CreateAccessKey"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "DenyAccountBpaChangeExceptInfrastructure",
+      "Effect": "Deny",
+      "Action": "s3:PutAccountPublicAccessBlock",
+      "Resource": "*",
+      "Condition": {
+        "ArnNotLike": {
+          "aws:PrincipalArn": "arn:aws:iam::*:role/aws-reserved/sso.amazonaws.com/*AWSReservedSSO_InfrastructureAccess_*"
+        }
+      }
+    },
+    {
+      "Sid": "DenySnapshotAndImageSharing",
+      "Effect": "Deny",
+      "Action": [
+        "ec2:ModifySnapshotAttribute",
+        "ec2:ModifyImageAttribute",
+        "rds:ModifyDBSnapshotAttribute",
+        "rds:ModifyDBClusterSnapshotAttribute"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "DenyEcrPublicEntirely",
+      "Effect": "Deny",
+      "Action": "ecr-public:*",
+      "Resource": "*"
+    },
+    {
+      "Sid": "DenyGuardDutyTampering",
+      "Effect": "Deny",
+      "Action": [
+        "guardduty:DeleteDetector",
+        "guardduty:UpdateDetector",
+        "guardduty:DeleteMembers",
+        "guardduty:DisassociateFromMasterAccount"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "DenyDataZoneDomainOutsideDataOu",
+      "Effect": "Deny",
+      "Action": "datazone:CreateDomain",
+      "Resource": "*",
+      "Condition": {
+        "ForAllValues:StringNotLike": {
+          "aws:PrincipalOrgPaths": "<ORG_PATH_DATA>"
+        },
+        "BoolIfExists": {
+          "aws:PrincipalIsAWSService": "false"
+        }
+      }
+    }
+  ]
+}

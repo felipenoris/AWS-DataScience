@@ -107,6 +107,16 @@ write anything into it. Claude can read the files in this folder to gather infor
   `[P]`/`[D]`/`[E]` layer of every slice, is in [`plan/conventions.md`](plan/conventions.md) §6** —
   kept in one place on purpose, so the two copies cannot drift.
 
+- never run `terraform apply` (or scripts that perform infrastructure changes), unless explicitly authorized. You are free to run *read-only* operations.
+
+## aws cli
+
+- you are free to run read-only operations using aws client.
+
+- Never run write operations using aws, unless explicitly authorized.
+
+- all scripts inside `aws/*` should perform only read-only operations. You are free to run them to gather information.
+
 ## Upkeep — the files this project maintains
 
 | File | What it holds, and the rule |
@@ -232,12 +242,27 @@ The `§` numbers inside `plan/` files are historical anchors, not addresses.
   decision** (2026-08-09), not pending — do not offer to close them in passing. D12 holds the trade and its
   revision trigger.
 - **The OU tree is not the one D23 first described** — revised 2026-08-09 by execution; full tree in
-  [`plan/architecture.md`](plan/architecture.md). `Identity` has an OU of its own and inherits no
-  guardrails, so **1c step 7 must attach its set**; `Sandboxes` is nested under `Interactive` and carries no
-  policy set of its own. **Depth is 2 — Stage 2's OU `for_each` must recurse**, or every Sandbox account is
-  invisible to it.
-- **The repository is documentation only**; `terraform/` is empty until Stage 2 replaces it with
-  `terraform-live/` + `terraform-modules/`.
+  [`plan/architecture.md`](plan/architecture.md). `Identity` has an OU of its own; `Sandboxes` is nested
+  under `Interactive` and carries no policy set of its own. **Depth is 2 — Stage 2's OU `for_each` must
+  recurse**, or every Sandbox account is invisible to it.
+- **1c's preflight (7.0) is measured — 2026-08-13, `./aws/org-policy-baseline.sh` + `./aws/account-bpa.sh`,
+  and it contradicted three things this file used to assert.** (a) **`Identity` does carry Control Tower's
+  standard 8-statement guardrail** — it is registered; what `Security` has extra is three statements about
+  the log-archive and audit buckets, which mean nothing there, so 7.6's `Identity`/`Security` diff is
+  already done. (b) **Control Tower denies the Config recorder and *nothing* about CloudTrail** — the
+  CloudTrail deny is **skipped by decision** (user, 2026-08-13: the trail is organization-level in
+  Management, which is SCP-exempt), not pending. (c) **`Sandboxes` is the one OU with no guardrail policy at
+  all**, which is either non-registration or CT relying on inheritance — it decides whether 7.7 can enable
+  `CT.MULTISERVICE.PV.1` there, and only the Management run of section 5 answers it (verification xi).
+  Also: **Service Quotas publishes no policy quota for `organizations`**, so the size budget is the
+  documentation's number, and the count fits either way (4 policies on the root, 4 per OU). **Verification
+  (x) is answered yes** — every Organizations *policy* read answers from Identity; only `controltower
+  list-enabled-controls` needs Management, where a member account gets *"you must create a landing zone
+  first"*.
+- **The repository is documentation only, with one exception since 2026-08-13**:
+  `terraform-live/identity/org-policies/` holds 1c's policy **documents** (templates with placeholders, plus
+  `render.sh`, which writes the pasteable copies into untracked `aws/output/`). No `.tf` anywhere until
+  Stage 2.
 - **All thirty-six decisions are closed** ([`plan/decisions/INDEX.md`](plan/decisions/INDEX.md)). The four
   governing what happens next: **D32** (`SSOUserEmail`), **D33**/**D34** (who vends), **D35** (`Sandbox` is
   one per business unit; every other account is exactly one).

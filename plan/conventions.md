@@ -428,6 +428,19 @@ turn the blanket off in an account the module never touches. The rule is unchang
   requires `iam:CreateRole` in that account, which is administrator, which is the identity the carve-out
   already names. **A second exception is a decision, not a precedent** — and `make check` failing on this
   one `Sid` is the check working, so whitelist it explicitly rather than loosening the rule.
+- **In a deny keyed on a *resource* condition, the action list is enumerated and every action in it must
+  populate that key — never an action wildcard** (found 2026-08-13, writing 1c step 7.5's perimeter
+  document). This is the mirror image of the rule above, and it is the more dangerous of the two because it
+  fails *closed* over something legitimate rather than open. A negated or `IfExists` condition **evaluates
+  true when the key is absent**, so a `Deny` conditioned on `aws:ResourceOrgID` catches every action that
+  carries no resource for the key to come from. `s3:Put*` therefore reaches
+  **`s3:PutAccountPublicAccessBlock`**, which is account-level: the perimeter document would deny, in every
+  account at once and for *every* principal, the exact call 7.4 depends on — and the decision-7 carve-out
+  would not save it, because that carve-out lives in a different statement in a different document. The same
+  applies to `ecr:GetAuthorizationToken`, which is registry-scoped and is left out of the ECR half of the
+  same statement for exactly this reason. **So enumerate object- and repository-scoped actions**, and when
+  the temptation to future-proof with a wildcard returns, note that the failure it buys is silent until
+  somebody vends an account.
 
 ### Application repository layout
 
