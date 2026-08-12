@@ -39,10 +39,19 @@ join it. So the fallback that step named fired, exactly as written. **This is no
 the test above rejects**, and the reason matters: `Security`'s policy set was never ours — it is Control
 Tower's guardrails, which the account inherits by being *foundational*, not by being in a folder. `Identity`
 therefore carries a policy set of its own or it carries none at all, which makes it an OU by the test rather
-than in spite of it. **The consequence is a real one and it is in Stage 1c step 7: a new OU carries no policy
-set until code attaches one** (D34). Before treating this as settled, enumerate the Control Tower controls
-applied to `Security` and to `Identity` and **attach explicitly whatever differs** — the account did not
-become less sensitive by moving, and "it used to inherit that" is not a control (Lesson 5).
+than in spite of it.
+
+**The consequence this paragraph drew — "a new OU carries no policy set until code attaches one" — was
+measured on 2026-08-13 and is not what happened here** (Stage 1c step 7.0; `log/stage-01c-preventive-policies.md`).
+`Identity` carries `aws-guardrails-coSzJr`, Control Tower's standard eight statements, identical to every
+other registered OU: creating it through the console **registered** it, and registration is what attaches
+the guardrail — not being foundational. What `Security` has extra is three statements about the log-archive
+and audit buckets, which mean nothing for an account that holds neither. **The rule survives where it is
+actually load-bearing** — an OU created outside Control Tower entirely, or by Terraform at Stage 2, would
+carry nothing, and D34 keeps vending outside every state — so the instruction stands in its narrow form:
+compare the **enabled controls** of `Security` and `Identity`, which are a separate registration from the
+SCP, and attach explicitly whatever differs. "It used to inherit that" is still not a control (Lesson 5),
+and neither is "the OU next to it has one".
 
 **`Sandboxes` is nested under `Interactive` and groups the class that multiplies.** It holds every business
 unit's `Sandbox` account; `Development` stays directly under `Interactive`. **It carries no policy set of its

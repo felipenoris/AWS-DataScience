@@ -37,9 +37,13 @@
 #     the landing zone able to update itself. Section 4 prints those documents so that 7.5
 #     writes only what is missing instead of a second, thinner copy of them (verification
 #     (iii) - which is a thing to read BEFORE writing, not to notice afterwards).
-#   - The BUDGET. 10 SCPs and 10 240 characters per node, but 5 RCPs and 5 120 for RCPs, and
-#     7.7 spends one more SCP slot on every OU it touches. Section 6 measures rather than
-#     trusting a remembered number (Lesson 6 applied to a quota).
+#   - The BUDGET. 10 SCPs per node and 10 240 characters per document since May 2026, but
+#     RCPs are still 5 and 5 120, and 7.7 spends one more SCP slot on every OU it touches.
+#     Section 6 goes looking for those numbers rather than trusting a remembered one
+#     (Lesson 6 applied to a quota) - and its first run, 2026-08-13, found that Service
+#     Quotas publishes NONE of them for `organizations`, only account counts. That is a
+#     finding about the API, not about the limits: the numbers above are AWS's own, from the
+#     announcement recorded in REFERENCES.md.
 #
 # IDENTITY, and the question this script answers by running. Organizations is administered
 # from the management account, for which there is no local profile and never will be

@@ -2,11 +2,11 @@
 
 | | |
 |---|---|
-| **Status** | not started — **every prerequisite is met** (revised 2026-08-13) |
+| **Status** | **sitting A in progress — 7.0 is done** (2026-08-13). Everything measured is in [`log/stage-01c-preventive-policies.md`](../../log/stage-01c-preventive-policies.md) and in `aws/output/org-policy-baseline.txt` + `account-bpa.txt`; **nothing is attached and nothing in AWS has been changed yet.** What remains of sitting A: BPA in nine accounts (7.4 step 1), the three `enable-policy-type` calls (7.2), the battery (7.3), the two root attachments (7.5) |
 | **Prerequisites** | **[Stage 1b](stage-01b-identity-and-controls.md) is complete** (closed 2026-08-12; its log is authoritative). What this stage actually consumes from it: the six SSO profiles of step 5 — `awsds-infra-sandbox-1`, `-dev`, `-prod`, `-data`, `-identity` and **`awsds-policy-canary`** — and an administrator principal in the canary account (1b step 3.1). **Not its permission sets**: no policy written here names one, which is why the `Consumes` row carries no persona decision. `Staging` is unvended, so nothing in the `Workloads` tier can be exercised against it |
 | **Consumes** | [D6](../decisions/D06-dlp-approach.md), [D10](../decisions/D10-identity-center-delegation.md), [D15](../decisions/D15-tls-internal.md), [D16](../decisions/D16-break-glass.md), [D17](../decisions/D17-interactive-vs-runtime.md), [D19](../decisions/D19-derived-zone.md), [D20](../decisions/D20-staging-account.md), [D21](../decisions/D21-development-account.md), [D22](../decisions/D22-data-governance-account.md), [D23](../decisions/D23-ou-structure.md), [D25](../decisions/D25-drop-box-consumer.md), [D26](../decisions/D26-unified-studio.md), [D27](../decisions/D27-catalog-maintenance.md), [D28](../decisions/D28-workflow-contract.md), [D29](../decisions/D29-policy-canary.md), [D30](../decisions/D30-scp-recovery.md), [D33](../decisions/D33-control-tower-admin-user.md), [D34](../decisions/D34-account-vending.md), [D35](../decisions/D35-sandbox-cardinality.md) |
 | **Proves** | **Constrains** [INT-12](../integrations.md), whose fallback 7.6 forbids until the policy is amended. **Touches [INT-01](../integrations.md) and [INT-07](../integrations.md)**: the perimeter RCP now covers ECR, so both cross-account image paths run through its service carve-out — admitted by `aws:PrincipalOrgID`, but only exercised in 7.8 |
-| **Log** | `log/stage-01c-preventive-policies.md` — **create it before starting**; the policy IDs recorded there are what makes the detach command executable |
+| **Log** | [`log/stage-01c-preventive-policies.md`](../../log/stage-01c-preventive-policies.md) — **it exists and carries 7.0**; the policy IDs recorded there as each one is attached are what makes the detach command executable |
 
 *Read with [`plan/conventions.md`](../conventions.md) (naming, layout, `[P]`/`[D]`/`[E]`, IAM rules).*
 
@@ -25,7 +25,7 @@ while they run; the battery of 7.3 is per policy and reads CloudTrail, which lag
 
 | Sitting | Covers | Ends with |
 |---|---|---|
-| **A** | 7.0 (preflight), 7.2 (policy types), 7.4 step 1 (account-level BPA everywhere), 7.5 (the organization-root set) | The root set attached and exercised |
+| **A** | 7.0 (preflight — **done**, but for its step 3), 7.2 (policy types), 7.4 step 1 (account-level BPA everywhere), 7.5 (the organization-root set) | The root set attached and exercised |
 | **B** | 7.6 (per-OU sets), 7.7 (the managed controls), 7.8 (RCP, tag, declarative) | The whole ceiling attached |
 
 **What is genuinely uninterruptible is one attachment, not one stage.** The precondition below — Management
@@ -81,11 +81,29 @@ account named `Sandbox` sitting directly on the organization root ([`AWS_STATE.m
 It is not this project's, it runs nothing, and **it is not in any list in this stage**: no BPA, no profile,
 no attachment. A suspended account cannot be acted on anyway.
 
+## What 7.0 measured on 2026-08-13, and the five places it changes what is left
+
+**The preflight did the thing it was added to do: four of these were assumptions this file stated as
+fact.** The evidence is in the log and in the snapshots; what follows is only the consequence for the steps
+that have not run. Each row is settled where it lands, not here.
+
+| What was assumed | What was measured | Where it lands |
+|---|---|---|
+| Control Tower already denies changes to **CloudTrail and Config** on every registered OU | **Config yes, CloudTrail nowhere** — no `cloudtrail:` action appears in any of the six guardrail documents | **7.5**, and the user settled it the same day: **no CloudTrail deny is written**, deliberately |
+| `Identity` "carries no policy set until code attaches one", being outside Control Tower's own flow | **False — it carries the standard 8-statement guardrail.** The only OU that differs is `Security`, by three statements about the log-archive and audit buckets | **7.6**: the `Security`/`Identity` diff it asks for is *done* for the SCP half; only the enabled-control half is left |
+| All six non-foundational OUs are registered, because each received an Account Factory vend | **`Sandboxes` is the one OU with no guardrail policy at all**, and `Sandbox Account 1` is inside it | **7.7**: whether `CT.MULTISERVICE.PV.1` can be enabled there at all. Verification (xi) |
+| 7.0 step 5 measures the policy quota | **Service Quotas publishes no policy quota for `organizations`** — only account counts | **7.1**: the budget is the documentation's number. The count fits regardless, and the documents are now written and sized |
+| The Organizations read surface may not reach the *policy* calls | **It does** — every policy read answered from Identity; only `controltower list-enabled-controls` needs Management | **7.0 step 3** is the only part of the preflight still owed, and it is a CloudShell run |
+
+**One thing 7.0 did *not* change, stated because it is the load-bearing one:** account-level BPA is
+**unset in all six accounts** that have a profile, exactly as 7.4 assumed. Nothing there is a no-op, and
+the interlock with 7.5 is unaffected.
+
 ## The stage at a glance
 
 | # | What | Identity | Sitting |
 |---|---|---|---|
-| 7.0 | **Preflight — measure the ground before writing a line of JSON** | Infra user (`awsds-infra-identity`) + CT Admin @ Management | A |
+| 7.0 | **Preflight — measure the ground before writing a line of JSON** — **DONE 2026-08-13** except step 3, which needs Management | Infra user (`awsds-infra-identity`) + CT Admin @ Management | A |
 | 7.1 | What makes this step different, and the two rules that survive from D30 | — (read first) | both |
 | 7.2 | Preconditions, in this order | CT Admin @ Management | A |
 | 7.3 | The battery, against `Policy Canary` before anything real (D29) | Infra user, laptop (`awsds-policy-canary`) | both — it runs per policy |
@@ -126,6 +144,22 @@ forbids account ids in tracked files), and three of them need to know what Contr
 attached. Collect all of it in one pass, into `log/stage-01c-preventive-policies.md`, before the first
 `create-policy`.
 
+> **RUN 2026-08-13, and it is now two scripts rather than a dozen commands with ids threaded between
+> them.** [`aws/org-policy-baseline.sh`](../../aws/INDEX.md) covers steps 1, 2, 3 and 5;
+> [`aws/account-bpa.sh`](../../aws/INDEX.md) covers step 4. Both are read-only, both write to
+> `aws/output/`, and both are re-run rather than remembered — step 4 in particular is read three times
+> (before 7.4, after 7.4 and before 7.5, and at every vend).
+>
+> **What each numbered step below now says is what AWS answered**, with the command kept so it can be
+> re-derived. The one part still owed is **step 3**, which no profile can answer: it is a `controltower`
+> call, and a member account is told *"you must create a landing zone first"* — the member-account answer,
+> not evidence about the landing zone. Run `bash org-policy-baseline.sh -` in CloudShell on **Management**
+> as `AWS Control Tower Admin`.
+>
+> **Verification (x) is therefore answered: yes.** `ListPoliciesForTarget`, `DescribePolicy`,
+> `DescribeOrganization`, `ListRoots` and `ListOrganizationalUnitsForParent` all answer from the Identity
+> account, so 7.0 *is* a script — which extends Stage 1b step 4's read boundary once more.
+
 **1. The organization's own coordinates.** Read-only; these answer from Identity (measured 2026-08-12), so
 no Management session is needed yet:
 
@@ -158,11 +192,21 @@ for OU in <ou-id> ...; do
 done
 ```
 
-**Expect `aws-guardrails-*` policies on every registered OU, and expect them to already deny what 7.5's
-second bullet was going to write by hand** — Control Tower's *mandatory* controls include "disallow changes
-to CloudTrail" and "disallow changes to AWS Config" and are applied to every registered OU without being
-asked for. Read the documents (`aws organizations describe-policy --policy-id <p-xxxx>`), and **write only
-the gap.** Two consequences, and both are the point of doing this first:
+**Measured 2026-08-13, and it is the reading that shrank the work — but not in the direction this file
+predicted.** There is one `aws-guardrails-*` policy on every OU **except `Sandboxes`**, plus
+`FullAWSAccess` everywhere. Reading the documents (`aws organizations describe-policy --policy-id <p-xxxx>`,
+which the script does for you) produced three findings:
+
+- **Config is already denied** — `GRCONFIGENABLED`, carved out for `AWSControlTowerExecution`. **7.5 must
+  not write a second one.**
+- **CloudTrail is denied nowhere.** No `cloudtrail:` action appears in any of the six documents; this file
+  used to assert the opposite. The user settled it the same day as a **deliberate gap** — see 7.5.
+- **Also already covered**, and so also not to be duplicated: tampering with `aws-controltower-*` /
+  `*AWSControlTower*` / `stacksets-exec-*` roles, the Control Tower log groups, SNS topics, EventBridge
+  rules, Lambda functions and S3 buckets. **GuardDuty is not covered by any of them**, which is why its
+  four denies stay in the baseline.
+
+The two consequences below are why this is read before writing, and both still hold:
 
 - A hand-written deny that duplicates a Control Tower one costs SCP budget and adds a second place to get
   the carve-outs wrong — and Control Tower's carve-outs (`AWSControlTowerExecution`,
@@ -170,6 +214,14 @@ the gap.** Two consequences, and both are the point of doing this first:
 - If a policy read is denied from the Identity profile, that is information rather than a failure: the read
   surface 1b measured did not include the policy calls. **Re-run it from CloudShell on Management as CT
   Admin** and record which way it went — it is the honest answer to whether 7.0 can ever be a script.
+  *(Answered 2026-08-13: none was denied.)*
+
+**And one finding that belongs to 7.7 rather than to 7.5: `Sandboxes` carries no guardrail policy at all.**
+Every other OU has one, so the absence is not the listing failing — `FullAWSAccess` is there, and the
+failure section was empty. Two readings, and they are not equivalent: the nested OU is **not registered**
+with Control Tower, or Control Tower **relies on inheritance** from `Interactive` and attaches nothing to
+children. The discriminating evidence is step 3, which needs Management. It matters because a managed
+control cannot be enabled on an unregistered target, and 7.7's order names `Sandboxes` explicitly.
 
 **3. What each OU's control baseline already is**, from Management as CT Admin — and the same command is
 7.7's registration check, which is why it is collected once:
@@ -179,9 +231,23 @@ aws controltower list-enabled-controls --target-identifier <ou-arn> --query 'ena
 ```
 
 **An unregistered target errors rather than returning an empty list**, and that distinction is the check
-(Lesson 13). Registration is *expected* for all six non-foundational OUs — every one of them received an
-Account Factory vend (1a log) and Account Factory only offers registered OUs — but expected is not
-measured. Record the result per OU; 7.7 may not enable a control on an OU this call rejected.
+(Lesson 13). Registration was *expected* for all six non-foundational OUs — every one of them received an
+Account Factory vend (1a log) and Account Factory only offers registered OUs — **and step 2 has already
+made `Sandboxes` the exception worth going in expecting**: it is the one OU with no guardrail policy.
+Record the result per OU; 7.7 may not enable a control on an OU this call rejected.
+
+**This is the one step of 7.0 still owed, and it cannot be answered from a profile.** Under
+`awsds-infra-identity` all seven targets returned `ResourceNotFoundException — you must create a landing
+zone first`, which is what a *member* account is told; the API only answers in Management. So:
+
+```bash
+bash org-policy-baseline.sh -
+```
+
+in CloudShell on **Management** as `AWS Control Tower Admin` (upload the script through *Actions → Upload
+file*; with `-` it uses ambient credentials and writes the report beside itself). It answers three things
+at once: whether `Sandboxes` is a registered target, the enabled-control diff between `Security` and
+`Identity` that 7.6 asks for, and the baseline 7.7 is going to add to.
 
 **4. The account-level Block Public Access state, before changing it.** 7.4 assumes it is off everywhere;
 that assumption has never been measured, and if Control Tower or the Account Factory blueprint already
@@ -201,6 +267,13 @@ done
 Archive and Audit have no profile** — run the same call for them from CloudShell as CT Admin, with
 `--account-id` set to that account's own id.
 
+**Measured 2026-08-13: all six accounts with a profile are `NOT SET`**, `awsds-policy-canary` included. So
+7.4 step 1 has real work in every one of them, nothing is a no-op, and decision 7 got neither easier nor
+harder. `./aws/account-bpa.sh` is the loop above with the failure modes separated — a `(failed)` profile is
+never counted as compliant, and `NoSuchPublicAccessBlockConfiguration` is reported as `NOT SET` rather than
+as an error. **The three accounts with no profile are still unread**; the same script with `-` answers each
+one from its own CloudShell.
+
 **5. The quota that decides whether the set fits.** The policy count per node is the constraint 7.1
 describes, and it is worth reading rather than remembering — Organizations quotas answer in `us-east-1`:
 
@@ -209,9 +282,20 @@ aws service-quotas list-service-quotas --service-code organizations --region us-
   --query 'Quotas[?contains(QuotaName, `policies`)].[QuotaName,Value]' --output table
 ```
 
-**Count the slots before writing, per node, and remember that 7.7 consumes one more on every OU it
-touches:** the OU-scoped Region deny is implemented as an SCP that Control Tower attaches. An OU that fits
-today and not after 7.7 is the failure this count exists to prevent.
+**Measured 2026-08-13, and the measurement is that there is nothing to measure: Service Quotas publishes no
+policy quota for `organizations` at all** — only `Maximum number of accounts` and the billing-transfer
+quotas, every one of them returning `0.0`. **The numbers themselves are not unknown**, they are just not
+readable from the API: AWS's May 2026 announcement ([`REFERENCES.md`](../../REFERENCES.md)) puts SCPs at
+**10 per node and 10 240 characters per policy**, with **RCPs unchanged at 5 and 5 120**. Record in the log
+which number was used and where it came from — this is the one place in the stage where Lesson 6's
+"measured, not reasoned" cannot be honoured, and saying so is better than implying a reading.
+
+**It does not bind, under either the old caps or the new ones, and the count is now exact rather than
+prospective.** The **root** carries `FullAWSAccess` + baseline + perimeter + the tag-forcing SCP = 4;
+**each OU** carries `FullAWSAccess` + its Control Tower guardrail + its tier + the Region control 7.7
+attaches = 4. The two written documents are **1279** and **716** characters minified. Even against the
+pre-increase 5-per-node/5 120 limits there is room. **Count again if a fifth document is ever proposed for
+a node, and remember the RCP budget is the tighter one** — 7.8 puts seven services in one document.
 
 #### 7.1 — What makes this step different, and the two rules that survive from D30
 
@@ -227,26 +311,33 @@ today and not after 7.7 is the failure this count exists to prevent.
 - **A condition that has to appear in several policies is generated, not typed** — which is why these
   policies live in `terraform-live/identity/org-policies/` from Stage 2 rather than in the console
   (Lesson 14).
-- **Write each document as a file *before* pasting it, and keep the file.** Put it in
-  `terraform-live/identity/org-policies/policies/<name>.json` — the folder does not exist yet and creating
-  it early costs nothing — paste those exact bytes into the console, and record the returned policy ID
-  beside the filename in `log/stage-01c-preventive-policies.md`. Two things come free: the detach command
+- **Write each document as a file *before* pasting it, and keep the file.** The folder exists since
+  2026-08-13: [`terraform-live/identity/org-policies/`](../../terraform-live/identity/org-policies/README.md),
+  with `policies/` for the real documents and `canary/` for the throwaway ones. Record the returned policy
+  ID beside the filename in `log/stage-01c-preventive-policies.md`. Two things come free: the detach command
   above becomes executable (you have the ID), and **Stage 2 step 5.5's import compares a document against
   itself** instead of against a re-typing, which is the difference between an empty plan and an evening
   spent on JSON whitespace.
+  **The tracked files carry placeholders, and the paste comes from the rendered copy.** `<ORG_ID>` and the
+  `Data` OU path appear in four documents between 7.5 and 7.8, and a value typed four times is eventually
+  wrong in one of them, in the silent direction (Lesson 14) — so `render.sh` fills them from the API into
+  untracked `aws/output/rendered-policies/`, refuses to leave a placeholder unsubstituted, and prints each
+  document's size against the limit. It is also the shape Stage 2 needs, where the id comes from
+  `data.aws_organizations_organization` rather than from a literal.
 - **Any ARN condition uses an enumerated list, never a wildcard account** — `arn:aws:iam::*:role/x` means
   "anyone who can create a role named `x`, anywhere". **One exception is adopted here, deliberately and
   once:** the BPA carve-out of 7.4/7.5, whose whole purpose is to reach accounts that do not exist yet and
   whose Identity Center role suffix is therefore unknowable. It is argued where it is used, not here, and
   `plan/conventions.md` carries the rule it bends.
-- **There is a size budget, and it is small enough to hit.** AWS Organizations caps how many policies
-  attach to one node and how large each is — **10 SCPs per node and 10 240 characters** since the May 2026
-  increase, but **RCPs are still 5 per node and 5 120 characters**; 7.0 step 5 measures both rather than
-  trusting this line. Control Tower's own guardrails consume part of the SCP allowance at every OU it
-  registers, **and 7.7 consumes one more slot per OU**. The organization root is asked to carry three
-  documents (7.5's two plus 7.8's tag-forcing SCP) and 7.8's RCP covers five services in one document.
-  **Count before writing, and prefer one well-`Sid`-ed policy per node to several thin ones** — a policy
-  that will not attach is discovered at the end of the work rather than at the start.
+- **There is a size budget, and it cannot be read from the API — only from AWS's documentation.**
+  **10 SCPs per node and 10 240 characters** since the May 2026 increase, **RCPs still 5 and 5 120**
+  ([`REFERENCES.md`](../../REFERENCES.md)); 7.0 step 5 went looking for those numbers in Service Quotas and
+  found that it publishes **none** of them for `organizations`. Control Tower's guardrails consume part of
+  the SCP allowance at every OU, **and 7.7 consumes one more slot per OU**. The root is asked to carry three
+  documents (7.5's two plus 7.8's tag-forcing SCP) and 7.8's RCP covers **seven** services in one document.
+  **It fits with room under the *old* caps too: 4 policies on the root and 4 on each OU**, the two written
+  documents being 1279 and 716 characters. **Prefer one well-`Sid`-ed policy per node to several thin
+  ones**, and watch the RCP side rather than the SCP side — that is the tighter budget now.
 - **A third rule arrives with D34, and it is the one that survives an account being added later.** OUs
   and accounts are created from the console, outside every Terraform state — which cannot cause drift,
   because nothing here declares them, but *can* leave a new OU with no policy attached and a new account
@@ -337,7 +428,10 @@ recovery. It is a procedure, not a gesture:
   **So exercise the condition, which is the part that can actually be wrong.** Attach to `Policy Test` a
   throwaway SCP that is the real 7.5 statement with its condition **inverted** — deny the same S3 writes
   when `aws:ResourceOrgID` **equals** this organization, keeping `StringEqualsIfExists` beside
-  `"BoolIfExists": {"aws:PrincipalIsAWSService": "false"}` — then attempt a write to a bucket you *do*
+  `"BoolIfExists": {"aws:PrincipalIsAWSService": "false"}`. **That document is written and rendered:**
+  `terraform-live/identity/org-policies/canary/awsds-canary-scp-perimeter-inverted.json`, whose only
+  difference from the real one is the direction of one comparison — which is what makes the review of it a
+  one-character review rather than a re-reading. Then attempt a write to a bucket you *do*
   own from `awsds-policy-canary`. It must fail, and the error must name an explicit deny in a service
   control policy. That proves the three things worth proving: the key populates, the `IfExists` pair
   evaluates the way it reads, and the deny reaches an ordinary principal. Detach it, then attach the real
@@ -401,8 +495,11 @@ Two pairs interlock, and following the old "attach to the OUs, in this order" li
 1. **Account-level S3 Block Public Access in every account, enumerated rather than implied.** The
    module-level block from Stage 2 only covers buckets the module creates; the account-level setting is
    the blanket that also covers the bucket someone creates outside it — so "every member account" has to
-   be a list, or the one account nobody had a profile for is the one that keeps the hole. **Measure first
-   (7.0 step 4)**, then set only what is unset:
+   be a list, or the one account nobody had a profile for is the one that keeps the hole. **Measured
+   2026-08-13 (7.0 step 4): every one of the six accounts with a profile is `NOT SET`**, so none of this is
+   a no-op and the list below is the work rather than a checklist to tick. The three without a profile are
+   still unread. **Re-run `./aws/account-bpa.sh` after setting them** — every row must read `ALL FOUR true`
+   *before* 7.5 attaches the deny:
    - `AWS Control Tower Admin`, from the console or CloudShell: **Management**, **Log Archive**, **Audit**.
    - `awsds-infra-sandbox-1`, `-dev`, `-prod`, `-data`, `-identity` (`aws s3control put-public-access-block`).
    - **`awsds-policy-canary`** — the easiest one to forget, because the account is supposed to stay empty.
@@ -473,9 +570,14 @@ Tower guardrails (those go to registered OUs), so the budget there is spent only
 
 | File in `policies/` | Attaches to | Carries |
 |---|---|---|
-| `awsds-org-scp-baseline.json` | organization root | `LeaveOrganization`, IAM-user denies, the BPA deny with its carve-out, the snapshot/AMI sharing deny, the `ecr-public:*` deny, `datazone:CreateDomain` with the `Data` carve-out, and whatever of the CloudTrail/Config/GuardDuty denies 7.0 step 2 shows Control Tower is *not* already doing |
-| `awsds-org-scp-perimeter.json` | organization root | the `aws:ResourceOrgID` write deny — **S3 and ECR**, alone |
-| `awsds-org-scp-require-tags.json` | organization root | 7.8's tag-forcing SCP — written last, because its scope is decision 5 |
+| `awsds-org-scp-baseline.json` | organization root | `LeaveOrganization`, IAM-user denies, the BPA deny with its carve-out, the snapshot/AMI sharing deny, the `ecr-public:*` deny, `datazone:CreateDomain` with the `Data` carve-out, and the GuardDuty denies — **seven statements, 1279 characters.** No Config statement (Control Tower has it) and **no CloudTrail statement** (measured gap, kept open by decision) |
+| `awsds-org-scp-perimeter.json` | organization root | the `aws:ResourceOrgID` write deny — **S3 and ECR**, alone. Two statements, 716 characters |
+| `awsds-org-scp-require-tags.json` | organization root | 7.8's tag-forcing SCP — **not written yet**, because its scope is decision 5 and that is settled while executing |
+
+**The first two exist as of 2026-08-13** — written before anything was attached, which is the order 7.1
+asks for. They carry placeholders; `render.sh` produces the pasteable copy. The
+[folder's README](../../terraform-live/identity/org-policies/README.md) carries what each document may not
+become.
 
 - **Deny `organizations:LeaveOrganization` — not hygiene: a real principal can call it, and it is now
   measured rather than reasoned.** Every vended account carries `AWSOrganizationsFullAccess` →
@@ -486,14 +588,27 @@ Tower guardrails (those go to registered OUs), so the budget there is spent only
   waiting for exactly this session: assume that permission set in one vended account and run the
   Organizations reads plus one harmless write. Whether anything *else* in that managed policy needs denying
   is the open half, and it costs minutes now versus a re-derivation later.
-- **CloudTrail, Config and GuardDuty: write only the gap.** The old text said "deny disabling CloudTrail,
-  Config and GuardDuty" as though none of it existed. Control Tower's mandatory controls already deny
-  changes to the trail and to the Config recorder on every registered OU, with the service-role carve-outs
-  that keep the landing zone able to update itself — **7.0 step 2 is what turns that expectation into a
-  reading.** What is *not* covered is **GuardDuty**, which Control Tower does not manage here, so
-  `guardduty:DeleteDetector`, `guardduty:DisassociateFromMasterAccount`, `guardduty:UpdateDetector` and
-  `guardduty:DeleteMembers` belong in `awsds-org-scp-baseline`. They are inert until Stage 4 turns
-  GuardDuty on, and that is the correct order under principle 9 rather than an oversight.
+- **CloudTrail, Config and GuardDuty: the gap is measured, and it is not the gap this file predicted**
+  (7.0 step 2, 2026-08-13). Three different answers, and writing them as one line is how the wrong one
+  gets written:
+  - **Config — already denied, do not write it again.** `GRCONFIGENABLED` is in every OU's guardrail,
+    covering the recorder, the delivery channel and the retention configuration, carved out for
+    `AWSControlTowerExecution`. A second copy costs SCP budget and adds a second place to get that
+    carve-out wrong.
+  - **GuardDuty — not covered by anything**, exactly as predicted, so `guardduty:DeleteDetector`,
+    `guardduty:DisassociateFromMasterAccount`, `guardduty:UpdateDetector` and `guardduty:DeleteMembers`
+    belong in `awsds-org-scp-baseline`. They are inert until Stage 4 turns GuardDuty on, and that is the
+    correct order under principle 9 rather than an oversight.
+  - **CloudTrail — denied nowhere, and deliberately left that way** (user, 2026-08-13). This file used to
+    assert that Control Tower's mandatory controls covered it; **no `cloudtrail:` action appears in any of
+    the six guardrail documents.** The deny was still not written, and the reason is the one that makes it
+    a choice rather than an omission: the trail is **organization-level and lives in the Management
+    account**, which is exempt from SCPs by AWS's design (D16), so a member-account deny would protect
+    nothing that is reachable. What *is* protected, and by Control Tower rather than by us, is the
+    destination — `logs:DeleteLogGroup` and `logs:PutRetentionPolicy` on `*aws-controltower*` log groups,
+    and the log-archive buckets under the `Security` OU's three extra statements. **Revision trigger:** the
+    first trail this project creates in a member account — Stage 11's data events are the candidate — at
+    which point the deny has something to bind and is written with that reason recorded.
   *(Considered and deliberately not adopted: a deny on `access-analyzer:DeleteAnalyzer`, protecting the
   organization analyzer 1b step 8.2 created in Audit. The analyzer is re-creatable in one call and its
   deletion is a management event the trail records; the deny would bind the Audit administrator, which is
@@ -512,10 +627,18 @@ Tower guardrails (those go to registered OUs), so the budget there is spent only
     **`ecr:PutImage`, `ecr:InitiateLayerUpload`, `ecr:UploadLayerPart` and `ecr:CompleteLayerUpload`**. A
     deny on the manifest write alone is a completeness control that reads like an exfiltration control,
     which is the worse of the two failure modes.
-  - **`ecr:GetAuthorizationToken` is deliberately not in the list.** It is registry-scoped and carries no
-    resource, so `aws:ResourceOrgID` never populates for it and an `IfExists` deny would either miss it or
-    catch everything. Authenticating against an outside registry is harmless on its own; the write is the
-    event, and the write is covered.
+  - **`ecr:GetAuthorizationToken` is deliberately not in the list, and the reason generalizes into a rule
+    the whole document is written under** (added to `plan/conventions.md`, 2026-08-13). It is
+    registry-scoped and carries no resource, so `aws:ResourceOrgID` never populates for it — **and a
+    negated or `IfExists` condition evaluates *true* when the key is absent**, which means an action with
+    no resource is not missed by this deny, it is **caught unconditionally**. So the action lists here are
+    enumerated to actions that populate the key, and **an action wildcard is forbidden**: `s3:Put*` would
+    reach the account-level `s3:PutAccountPublicAccessBlock` and deny, in every account and for every
+    principal, the exact call 7.4 depends on — with decision 7's carve-out unable to help, because it lives
+    in a different statement in a different document. This is the one trap in 1c that fails *closed* over
+    something legitimate rather than open, and it is invisible until somebody vends an account.
+    Authenticating against an outside registry is harmless on its own; the write is the event, and the
+    write is covered.
   - **No carve-out, and the pull-through cache objection was checked rather than assumed.** This plan
     flagged pull-through cache as the likely casualty — **it is not one.** A cache rule writes the fetched
     image **into your own registry**, so `aws:ResourceOrgID` equals this organization and the deny never
@@ -783,15 +906,17 @@ One tier per OU policy set (D23), on top of the root set above. One file each:
 
 - **`Identity` OU** (D10, D23 as revised 2026-08-09) — **the tier this plan did not have, because the
   account was supposed to be in `Security`.** It is not: Control Tower refused the vend into a
-  foundational OU (1a log), so the account sits in a sibling OU — and **an OU created outside Control
-  Tower's own flow carries no policy set until code attaches one** (D34). Two things, in this order:
-  - **Establish the baseline before writing anything.** 7.0 step 3 already listed the controls enabled on
-    every OU: diff `Security` against `Identity`. **The expected difference is small and knowing that
-    saves an hour** — Control Tower's *mandatory* controls reach every registered OU, so what `Security`
-    has extra is the foundational set about the log-archive and audit buckets, most of which means nothing
-    for an account that holds neither. Enable the equivalent elective controls on `Identity` where they
-    exist and where they apply. **Record the diff in `log/stage-01c-preventive-policies.md`** — "it used to
-    inherit that" is not a control (Lesson 5), and neither is "it probably inherits it".
+  foundational OU (1a log), so the account sits in a sibling OU. Two things, in this order:
+  - **The baseline is established, and it is not what this file assumed** (7.0 step 2, 2026-08-13). The
+    assumption was that *"an OU created outside Control Tower's own flow carries no policy set until code
+    attaches one"* — **false here: `Identity` carries `aws-guardrails-coSzJr`, the standard eight
+    statements, identical to `Workloads`, `Data`, `Interactive` and `Policy Test`.** It is registered. What
+    `Security` has extra is exactly three statements — `CTSNSPV1`, `CTS3PV7`, `CTS3PV8` — about the
+    log-archive, access-logs and cloudtrail buckets and the centralized-logging SNS topic, **none of which
+    means anything for an account that holds neither bucket**. So the SCP half of the diff this bullet asks
+    for is done, it is in the log, and **no elective control is owed to `Identity` on that basis**. The
+    *enabled-control* half is still open and comes from 7.0 step 3 on Management — a control is not an SCP,
+    and "it carries the same guardrail policy" is not evidence that it carries the same controls.
   - **Then the hand-written set.** The root SCPs and RCPs already reach this account by inheritance, so
     what belongs *here* is what makes the identity plane's own blast radius smaller: deny the account
     creating compute at all — there is no workload here, only Terraform managing Identity Center, so
@@ -814,10 +939,25 @@ denying it in the Interactive OU would deny the feature `CLAUDE.md` asks for. Se
 
 **Before anything in this subsection: 7.0 step 3 must have returned a control list for every target OU.**
 A managed control can only be enabled on a *registered* OU, and an unregistered target **errors rather than
-returning an empty list** — which reads like a permissions problem and is not. Registration is expected for
-all six (each received an Account Factory vend, and Account Factory only offers registered OUs), but D29's
-whole battery assumes `Policy Test` is registered, and an unregistered OU has no control baseline, so a
-test against it would measure something else.
+returning an empty list** — which reads like a permissions problem and is not. D29's whole battery assumes
+`Policy Test` is registered, and an unregistered OU has no control baseline, so a test against it would
+measure something else.
+
+> **`Sandboxes` is the one to go in expecting trouble from, and 7.0 step 2 is why** (2026-08-13). It is the
+> only OU in the organization with **no `aws-guardrails-*` policy at all** — every other OU has one. Two
+> readings, and step 3 on Management is what separates them:
+>
+> - **It is not registered.** Then `CT.MULTISERVICE.PV.1` **cannot be enabled on it**, and the choice is to
+>   register it first (a Control Tower operation, and the honest fix) or to rely on inheritance.
+> - **Control Tower attaches nothing to nested children and relies on inheritance from `Interactive`.**
+>   Then the accounts inside `Sandboxes` are already governed by `Interactive`'s guardrail, and the Region
+>   control enabled on `Interactive` reaches them the same way — because a Control Tower control of this
+>   kind *is* an SCP, and SCP inheritance does not care whether the child OU is a registered target.
+>
+> **Either way the accounts end up covered; what differs is whether `Sandboxes` is a place policy can be
+> attached at all** — which is a Stage 14 question as much as a 7.7 one, since that is where the OU starts
+> filling up. Record which reading was true, and if it is the first, register the OU before enabling
+> anything on it rather than skipping it silently.
 
 - **Region restriction** (revised 2026-08-08; **corrected 2026-08-09 — there are two of these controls,
   and the plan knew only the one that cannot be canary-tested**). Goal unchanged: **`us-west-2` as the
@@ -863,9 +1003,12 @@ test against it would measure something else.
   from 7.3 under `awsds-policy-canary` (`us-east-1` → `UnauthorizedOperation`, `us-west-2` →
   `DryRunOperation`), and confirm the *must still succeed* list — `iam:ListRoles`, `budgets:DescribeBudgets`,
   `ce:GetCostAndUsage`. Only then enable it on `Interactive`, `Sandboxes`, `Workloads`, `Data` and
-  `Identity`. **`Sandboxes` is on that list on purpose:** it is a separate registered OU, and a control
-  enabled on `Interactive` is not automatically enabled on a nested child — verify that against the first
-  one you enable rather than assuming it either way, and record which it was.
+  `Identity`. **`Sandboxes` is on that list on purpose, and it is now the one with a known question mark:**
+  a control enabled on `Interactive` is not automatically *enabled* on a nested child, but the SCP such a
+  control attaches **is inherited** by one — and 7.0 step 2 found that `Sandboxes` carries no policy of its
+  own at all. Read the box at the top of this subsection first, enable `Interactive`, then look at
+  `Sandboxes` again: whether it needs its own enablement, cannot take one, or is already covered is
+  verification (xi) — and the answer is the same for every OU Stage 14 ever nests there.
 
   **Two facts to have before you start.** The home region cannot be denied, and *nothing must already
   exist in the regions being denied* — trivially true here, and it is the reason to do this now rather
@@ -1031,9 +1174,11 @@ Each one is written so that its output differs between working and broken (Lesso
   a service-linked role. A failure here is the carve-out, not the organization condition, and the log should
   say which. The DynamoDB clause is recorded as **inert on attachment** — no table exists to test it against,
   and that sentence is the deliverable.
-- **The baseline was read, not assumed:** 7.0's output is in the log — org id, root id, every OU id and
-  ARN, the Control Tower SCPs already on each OU, the enabled-control list per OU, the pre-existing BPA
-  state per account, and the measured policy quota.
+- **The baseline was read, not assumed — DONE 2026-08-13, except one line.** 7.0's output is in the log:
+  org id, root id, every OU id and its path, the Control Tower SCP on each OU **with its policy id and its
+  document**, the pre-existing BPA state per account, and the finding that **the policy quota is not
+  published at all**. What is still owed is **the enabled-control list per OU**, which needs the Management
+  run — and it is the deliverable 7.7 cannot start without.
 - **Every attached policy ID is recorded** in `log/stage-01c-preventive-policies.md`, beside the filename
   in `terraform-live/identity/org-policies/policies/`, which is what makes the detach command executable
   rather than aspirational — and what makes Stage 2 step 5.5's import land on an empty plan.
@@ -1054,6 +1199,7 @@ them, and each one is still written into `log/stage-01c-preventive-policies.md` 
 | — | The perimeter RCP's service scope | **Seven, not five** — S3, STS, KMS, SQS, Secrets Manager plus **DynamoDB and ECR** (user, 2026-08-12). ECR is load-bearing and needs the service carve-out exercised; DynamoDB is inert on attachment and is recorded as such | 7.8 |
 | — | The perimeter SCP's service scope | **S3 and ECR** (user, 2026-08-12) — four push actions, not `PutImage` alone, because the layers are the data. No carve-out: the pull-through cache writes in-org | 7.5 |
 | — | Publication to ECR Public | **Denied outright**, `ecr-public:*` in the baseline (user, 2026-08-12). Anonymous gallery pulls are unaffected — no IAM action. Tested **before** 7.7, or the Region control makes the result ambiguous | 7.5 |
+| — | Whether the baseline denies CloudTrail tampering | **No — and it is a decision, not an omission** (user, 2026-08-13, on the 7.0 finding that Control Tower denies nothing there). The trail is organization-level and lives in Management, which is SCP-exempt, so a member-account deny binds nothing reachable. **Revision trigger:** the first trail this project creates in a member account | 7.5 |
 
 **One decision remains open and it is made while executing, not before:**
 
@@ -1086,13 +1232,22 @@ them, and each one is still written into `log/stage-01c-preventive-policies.md` 
 Record every answer in `log/stage-01c-preventive-policies.md`, including the ones that come out fine.
 **The numerals are the landing zone's**, so they are not contiguous here.
 
+**Three are already answered, on 2026-08-13, and they are kept here with their answers rather than deleted
+— a verification whose answer is only in a log is one the next reader re-runs.**
+
+| # | Question | Step | Answer |
+|---|---|---|---|
+| iii | Do the hand-written SCPs/RCPs conflict with, or merely duplicate, the SCPs Control Tower manages itself? | 7.0 step 2 | **Duplicate on Config, nothing on CloudTrail, nothing on GuardDuty.** No conflict found. 7.5 rewritten accordingly |
+| x | Does the Organizations *policy* read surface answer from the Identity account? | 7.0 step 2 | **Yes**, all of it. 7.0 is a script (`aws/org-policy-baseline.sh`) except for its `controltower` section |
+| xi | Is a control enabled on `Interactive` inherited by the nested `Sandboxes` OU? | 7.7 | **Half-answered before it was asked:** `Sandboxes` carries no policy of its own at all, so the live question is now whether it is a registered target — 7.0 step 3 on Management |
+
+**Still open**, with (xi) carried forward as the sharper question it became:
+
 | # | Question | Step |
 |---|---|---|
-| iii | Do the hand-written SCPs/RCPs conflict with, or merely duplicate, the SCPs Control Tower manages itself? **Read before writing** | 7.0 step 2 |
 | vii | Does `CT.MULTISERVICE.PV.1`'s current default `NotAction` still cover everything this project calls from `us-east-1`? Read it off the control's `Artifacts` tab and diff | 7.7 |
 | viii | Which namespace does each Unified Studio action evaluate under — `datazone:*`, `sagemaker:*`, `glue:*`, `athena:*` or `bedrock:*`? **Ask it of the `Data` OU as well as of `Workloads`**, and settle in particular whether `sagemaker:StartSession` and `sagemaker:CreateSpace` are the right names today | 7.6 |
-| x | **New.** Does the Organizations *policy* read surface (`ListPolicies`, `ListPoliciesForTarget`, `DescribePolicy`) answer from the Identity account, or only from Management? Decides whether 7.0 can ever become a script in `aws/` | 7.0 step 2 |
-| xi | **New.** Is a Control Tower control enabled on `Interactive` inherited by the nested `Sandboxes` OU, or does `Sandboxes` need its own enablement? | 7.7 |
+| xi | **Sharpened by 7.0 step 2.** Is `Sandboxes` a *registered* Control Tower target at all — and if it is not, is it registered before 7.7 enables the Region control, or left to inherit `Interactive`'s? | 7.7 |
 | xii | **New.** Does `ec2:modify-snapshot-attribute --dry-run` evaluate permissions *before* validating the snapshot id? If it does, the snapshot deny is testable without creating anything and the battery's planned-cleanup exception is not needed for it | 7.3 / 7.5 |
 
 **Was (vii), now answered from the documentation rather than by execution:** *"is Region deny

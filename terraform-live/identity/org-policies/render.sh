@@ -95,10 +95,12 @@ note ""
 
 # ------------------------------------------------------------------------- rendering
 
-# SCP: 5120 characters is the documented per-document limit, and 5 policies per node the
-# documented per-node one. Stage 1c step 7.0 step 5 measured that Service Quotas publishes
-# NEITHER for `organizations` - only account counts - so these are the documentation's
-# numbers and the run below reports the margin rather than asserting a pass.
+# The documented limits, since Service Quotas publishes none of them for `organizations`
+# (Stage 1c step 7.0 step 5, measured): SCPs are 10 per node and 10 240 characters per
+# document since the May 2026 increase; RCPs were not part of it and are still 5 and 5 120.
+# This script checks every document against the TIGHTER number on purpose - the same folder
+# holds 7.8's RCP, one file among several, and a limit that is right for most of them is the
+# kind that is discovered by the one it was wrong for.
 LIMIT=5120
 
 RENDERED=0

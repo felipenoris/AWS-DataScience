@@ -25,7 +25,9 @@ This folder is documents only. There is no `.tf` here until Stage 2.
 `<ORG_ID>`, `<ROOT_ID>`, `<OU_ID_DATA>` and `<ORG_PATH_DATA>` are filled from the Organizations API, and
 the result lands in `aws/output/rendered-policies/` — which is untracked, so **no identifier enters a
 tracked file** (`aws/INDEX.md` rule 1). `render.sh` also refuses to leave a placeholder unsubstituted,
-checks that the JSON parses, and prints each document's size against the 5 120-character limit.
+checks that the JSON parses, and prints each document's size against **5 120 characters** — the RCP limit,
+which is the tighter of the two since SCPs went to 10 240 in May 2026, and the right one to check when the
+same folder holds both kinds.
 
 Two reasons the ids are not baked in, and either alone would be enough: the organization id has to appear
 in four documents and a value typed four times is eventually wrong in one of them, in the silent direction

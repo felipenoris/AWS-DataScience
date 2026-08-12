@@ -229,13 +229,16 @@ that multiplies.
      This step had flagged it as a thing to verify rather than assume, for the right reason: `Security` is a
      *foundational* OU in Control Tower's model, and a non-Control-Tower-created account does not simply
      join one.
-   - `Identity` OU → `Identity`. **This is the fallback this step named, and it fired.** Take the one
-     consequence seriously rather than treating the OU as a rename: `Security`'s policy set was never
-     written by this project — it is Control Tower's guardrails, inherited by the OU being *foundational* —
-     so a brand-new sibling OU inherits **none** of it. **Enumerate the controls applied to `Security` and to
-     `Identity`, compare them, and attach whatever differs explicitly in 1c step 7** (D34: a console-created
-     OU carries no policy set until code attaches one). This is the account whose administrator can grant
-     access to every other account; it did not become less sensitive by moving.
+   - `Identity` OU → `Identity`. **This is the fallback this step named, and it fired.** The consequence
+     this file predicted — that a brand-new sibling OU inherits **none** of `Security`'s policy set, since
+     that set is Control Tower's guardrails reaching it by being *foundational* — **was measured on
+     2026-08-13 and is wrong.** `Identity` carries `aws-guardrails-coSzJr`, Control Tower's standard eight
+     statements, the same document every other registered OU has: it was registered when it was created.
+     What `Security` has extra is three statements about the log-archive and audit buckets, which mean
+     nothing for an account that holds neither. **The instruction stands in weakened form** — compare the
+     *enabled controls* of the two in 1c step 7.0 step 3, which is a different registration from the SCP
+     and is still unread. This is the account whose administrator can grant access to every other account;
+     it did not become less sensitive by moving.
 
    **The accounts listed above are the complete set *for this stage*, which is not the same as the complete
    set (D34).** D14 places the tooling in Production rather than in a separate Shared Services account,
