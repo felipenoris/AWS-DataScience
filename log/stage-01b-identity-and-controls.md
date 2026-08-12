@@ -654,7 +654,87 @@ for P in awsds-infra-sandbox-1 awsds-infra-dev awsds-infra-prod awsds-infra-data
 
 - Ended step 6. Moving to 8.2
 
+- Login as `AWS Control Tower Admin` -> AWSAdministratorAccess on management account.
 
+- Listing current state for trusted access services Using CloudShell:
+
+```
+$ aws organizations list-aws-service-access-for-organization --query 'EnabledServicePrincipals[].ServicePrincipal' --output table
+-------------------------------------------------------
+|         ListAWSServiceAccessForOrganization         |
++-----------------------------------------------------+
+|  cloudtrail.amazonaws.com                           |
+|  config.amazonaws.com                               |
+|  controltower.amazonaws.com                         |
+|  iam.amazonaws.com                                  |
+|  member.org.stacksets.cloudformation.amazonaws.com  |
+|  sso.amazonaws.com                                  |
++-----------------------------------------------------+
+```
+
+- IAM -> Access Analyser -> Create Analyser. Selected `Resource analysis - External access` for `Current organization`.
+
+- Repeated on CloudShell. See that `access-analyzer.amazonaws.com` was added to the list.
+
+```
+$ aws organizations list-aws-service-access-for-organization --query 'EnabledServicePrincipals[].ServicePrincipal' --output table
+-------------------------------------------------------
+|         ListAWSServiceAccessForOrganization         |
++-----------------------------------------------------+
+|  access-analyzer.amazonaws.com                      |
+|  cloudtrail.amazonaws.com                           |
+|  config.amazonaws.com                               |
+|  controltower.amazonaws.com                         |
+|  iam.amazonaws.com                                  |
+|  member.org.stacksets.cloudformation.amazonaws.com  |
+|  sso.amazonaws.com                                  |
++-----------------------------------------------------+
+```
+
+- Analyser settings -> Add delegated administrator. Added `Audit Account` ID.
+
+- Checking delegated admins:
+
+```
+$ aws organizations list-delegated-administrators --service-principal access-analyzer.amazonaws.com --query 'DelegatedAdministrators[].[Name,Id,Status]' --output table
+---------------------------------------------
+|        ListDelegatedAdministrators        |
++----------------+----------------+---------+
+|  Audit Account |  xxxxxx  |  ACTIVE |
++----------------+----------------+---------+
+```
+
+- Note: `enable-aws-service-access` was never called explicitly. Used the console's Create-analyzer.
+
+- The Analysed should have been created inside the Audit account. So I deleted the analyser in the Management account.
+
+- Login as `AWS Control Tower Admin` -> AWSAdministratorAccess on Audit account.
+
+- Executed on cloudshell:
+
+```
+aws accessanalyzer create-analyzer --region us-west-2 --analyzer-name awsds-org-external-access --type ORGANIZATION --tags Project=AWS-DataScience,Environment=org,ManagedBy=console,Owner=sso-group-infrastructure,CostCenter=stage-01b
+
+{
+    "arn": "arn:aws:access-analyzer:us-west-2:660820513855:analyzer/awsds-org-external-access"
+}
+```
+
+- listing analyser:
+
+```
+$ aws accessanalyzer get-analyzer --region us-west-2 --analyzer-name awsds-org-external-access --query 'analyzer.[name,type,status,createdAt]' --output table
+-------------------------------
+|         GetAnalyzer         |
++-----------------------------+
+|  awsds-org-external-access  |
+|  ORGANIZATION               |
+|  ACTIVE                     |
+|  2026-08-12T03:38:38+00:00  |
++-----------------------------+
+```
+
+- Ended step 8.2. Stage 1b complete.
 
 ---
 

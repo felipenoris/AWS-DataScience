@@ -14,6 +14,8 @@ now*. Each answers a different question, and the three disagreeing is itself inf
 |---|---|---|---|
 | [`list-identities.sh`](list-identities.sh) | `awsds-infra-identity` (Identity account, IAM Identity Center delegated administrator — D10) | `output/list-identities.txt` | The Organization: management account id, root and its enabled policy types, the whole OU tree, every account. The directory: Identity Store instance, groups, users, group memberships. The entitlements: permission sets with what each grants, and every assignment triple. |
 | [`AZs.sh`](AZs.sh) | **every** `awsds-*` profile in `~/.aws/config`, or the ones named as arguments — the one script here that is not single-profile, see below | `output/AZs.txt` | The availability-zone **name → zone ID** mapping each account reports, one listing per account, the mappings side by side, and a check on whether they agree. |
+| [`org-trusted-access-services.sh`](org-trusted-access-services.sh) | `awsds-infra-identity` by default; takes another profile as its argument, or `-` to run with no profile at all — inside CloudShell on Management | `output/org-trusted-access-services.txt` | Which AWS services hold **trusted access** across the organization, which account is each one's **delegated administrator**, and the `access-analyzer` registration on its own. |
+| [`audit-iam-analyser.sh`](audit-iam-analyser.sh) | **no profile — CloudShell on the Audit account**, as `AWS Control Tower Admin`. Takes a profile as its argument if one ever exists there; see below | `output/audit-iam-analyser.txt` | The IAM Access Analyzer analyzers of that account and Region: type (the **zone of trust**), status, tags, archive rules, findings — and a check that there is exactly one, `ORGANIZATION`, `ACTIVE`. |
 
 Run any of them from anywhere; each one `cd`s to the repository root itself:
 
@@ -23,6 +25,14 @@ Run any of them from anywhere; each one `cd`s to the repository root itself:
 
 ```bash
 ./aws/AZs.sh
+```
+
+```bash
+./aws/org-trusted-access-services.sh
+```
+
+```bash
+./aws/audit-iam-analyser.sh
 ```
 
 They need a live SSO session. If the run stops with `cannot authenticate`:
@@ -102,6 +112,59 @@ success and vacuity is Lesson 13 again.
 **What was decided from this measurement is not in the file** (rule 2 below): it is
 [`plan/architecture.md`](../plan/architecture.md) §4.1 and [`plan/open-questions.md`](../plan/open-questions.md)
 item 3.
+
+## Finding an answer in `output/org-trusted-access-services.txt`
+
+| Question | Section |
+|---|---|
+| Which services may act across every account in this organization? | 1 |
+| Is the Audit account registered as the Access Analyzer delegated administrator? | 2 — the one row Stage 1b step 8.2 creates |
+| Who administers GuardDuty / Security Hub / RAM / Config / Identity Center org-wide? | 3 — one row per enabled principal |
+| Did something not answer? | 4 |
+
+**Two registrations, and section 3 is where they stop looking alike.** *Trusted access* says a **service**
+may read the organization and create its own service-linked roles inside member accounts; *delegated
+administration* says an **account** operates that service for the whole organization. The first is the
+prerequisite for the second, not a weaker form of it — so a service can appear in section 1 and have no row
+worth reading in section 3, which means it is administered from Management. That is the default, not a gap.
+A third case, `(no delegated administration for this service)`, is the API rejecting the question — Control
+Tower is one.
+
+**Section 1 is an inventory nobody in this project wrote**, which is why it is worth re-reading rather than
+remembering: most of it is what Control Tower switched on when the landing zone was installed, and a service
+there that no stage accounts for is a finding (Lesson 17 — a service that "sets itself up" creates principals
+nobody chose). The expected content is `INV-09` in [`AWS_STATE.md`](../AWS_STATE.md).
+
+**Both calls answer from the Identity account** — measured on this script's first run, 2026-08-12. That
+extends the read boundary Stage 1b step 4 established: a delegated administrator for *any* service may make
+these Organizations reads, so the management account is needed to *change* this state and not to read it.
+If a future run is denied anyway, section 4 says so and the fallback is in the script header.
+
+## Finding an answer in `output/audit-iam-analyser.txt`
+
+| Question | Section |
+|---|---|
+| Was this run in the account it was meant to be run in? | 1 — read it **first**; every other section is about whatever account answered |
+| Which analyzers exist here, and since when? | 2 |
+| **Is the zone of trust the organization, or just this account?** | 2 and 5 — the `type` column |
+| Is anything suppressing findings? | 3 — archive rules; none is expected |
+| What has been found, and in which account? | 4 — `resourceOwnerAccount` names the account the exposed resource is in |
+| Did something not answer? | 6 |
+
+**This is the one script here that does not run from a profile, and the absence is the design.** The
+organization analyzer lives in **Audit** (Stage 1b step 8.2), and no project persona holds an assignment
+there — [`ORGANIZATION.md`](../ORGANIZATION.md) records that as permanent. The only identity that reaches
+Audit is `AWS Control Tower Admin`, which D33/D34 keep in the console. So the run is CloudShell inside
+Audit, and section 1 resolves the **account name** through Organizations rather than trusting the operator
+to be where they think they are — the check the console wizard did not have on 2026-08-12, when it named
+the zone of trust and never the account the analyzer was being created in (Lesson 16).
+
+**Two ways this file can mislead, both answered inside it.** An empty findings table is not evidence: access
+*inside* the organization is not external to an organization zone of trust, and the estate is nearly empty
+until Stages 2-3 — so section 4 prints a **count**, which is a measurement, rather than leaving an absent
+table to be read as a pass. And an `ACCOUNT`-type analyzer sitting in Audit stays `ACTIVE`, reports on one
+near-empty account and raises nothing, which is why the `type` is a checked field and not a column
+(Lesson 13).
 
 ## Adding a script here
 

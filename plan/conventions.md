@@ -19,7 +19,7 @@ Example: `awsds-sandbox-vpc`, `awsds-data-raw` (the lake lives in Data Governanc
 
 **Mandatory tags on every resource:**
 `Project=AWS-DataScience`, `Environment=sandbox|development|data|staging|production|org`,
-`ManagedBy=terraform`, `Owner=<sso-group>`, `CostCenter=<stage>`. (`org` marks org-level and **platform**
+`ManagedBy=terraform|console`, `Owner=<sso-group>`, `CostCenter=<stage>`. (`org` marks org-level and **platform**
 resources — the identity slice, and D29's Policy Canary. **It was `shared` until 2026-08-09 and was renamed
 before anything was built**, because D14's revision trigger can fire and the account it would create is
 conventionally called `shared`: two different things answering to one token in cost reports is a defect that
@@ -27,6 +27,16 @@ is free to avoid now and means renaming deployed resources later. **`shared` is 
 it names a Shared Services account if one is ever vended, and nothing else. `data` marks the Data
 Governance account, which is not an environment at all: it sits on the ownership axis, not the lifecycle
 one, so cost reports should be able to separate it from every environment.)
+
+**`ManagedBy=console` is admitted, and it is not a lapse — settled 2026-08-12, when the first resource
+needed it.** Stage 2 names six artefacts that stay outside Terraform for structural reasons (wrong account,
+Control Tower's object, or an SCP that would deny the apply), and the organization Access Analyzer in Audit
+is one of them. Tagging it `terraform` would be false at the only moment the tag is read — when somebody is
+working out where a resource's source of truth is. So the value is the honest one, and the rule that keeps
+it from spreading is that **`console` is admissible only for a resource Stage 2's out-of-Terraform table
+names**: anywhere else it is a resource that should have been code. Note it is outside the forcing SCP of
+1c step 7.8, which requires `Environment` and `Project` and nothing else — so this enumeration is a
+convention, not a control, and a tag policy that later enumerates `ManagedBy` values has to admit both.
 
 **`Owner` names a group, never a person — settled 2026-08-10, while one resource carried it.** The value is
 one of the project's `sso-group-*` groups (Stage 1b step 2), and it records **who owns the resource, not who
