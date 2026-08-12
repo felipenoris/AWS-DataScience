@@ -486,10 +486,12 @@ establishes. **Stage 8 steps 5 and 6 move them into the pipeline** — step 5 is
 this repository's own `fmt`/`validate`/`plan` pipeline. Write them as scripts so that move is a
 `.gitlab-ci.yml` line and not a rewrite.
 
-**9.1 — No region literals** (`plan/architecture.md` §4.1). `var.region` in every slice, AZs from
-`data.aws_availability_zones` (or `zone_ids`, if 1b step 6 found the mappings differ), AMIs from SSM public
+**9.1 — No region literals** (`plan/architecture.md` §4.1). `var.region` in every slice, AZs anchored on
+**`zone_ids` from `.tfvars`** (settled by 1b step 6, 2026-08-12 — not on list position), AMIs from SSM public
 parameters. A `grep` over `*.tf` that fails on a hardcoded region keeps this honest at no cost — and it
-**must skip `backend.hcl`**, for the reason in 2.5.
+**must skip `backend.hcl`**, for the reason in 2.5. **Worth a second check in the same script:** an AZ
+selected by index (`data.aws_availability_zones.this.names[0]`) is the failure §4.1 describes, and it is a
+pattern a `grep` catches as cheaply as a region literal.
 
 **9.2 — No wildcard account in an ARN condition.** This one guards a control rather than a convention: fail
 if any policy document in `terraform-live/identity/` — either slice — carries `arn:aws:iam::*:role/...`.

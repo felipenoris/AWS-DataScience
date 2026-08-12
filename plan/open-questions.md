@@ -22,15 +22,21 @@ what is genuinely still unanswered:
    no Airflow UI — is livable for a data scientist debugging a failed run, which only the Stage 10
    comparison can answer. Keep application entry points as plain containers so both implementations, and
    the two options that were not built, remain viable.
-3. **AZ name-to-ID mapping across accounts.** AWS maps AZ names to physical datacenters independently per
-   account, so `data.aws_availability_zones` indexed by position can place "the same" AZ in different
-   datacenters in Sandbox, Development and Production — which turns peering traffic that looks intra-AZ
-   into cross-AZ traffic at USD 0.01/GB each way. **D14 and D21 made this concrete rather than
-   theoretical:** the VPN, SageMaker and GitLab talk across the two peerings constantly. Check it in
-   Stage 1b step 6
-   (`aws ec2 describe-availability-zones --query 'AvailabilityZones[].[ZoneName,ZoneId]'` under each
-   profile). If the mappings differ, Stage 3 anchors subnets on `zone_ids` (`usw2-az1`, passed per
-   environment in `.tfvars`) instead of on list position, and `plan/architecture.md` §4.1 is updated accordingly.
+3. ~~**AZ name-to-ID mapping across accounts**~~ — **measured 2026-08-12 in Stage 1b step 6, and the answer
+   did not decide the question the way the question expected.** Every account that has a profile returns
+   an identical mapping (`us-west-2a` → `usw2-az2`, `b` → `az1`, `c` → `az3`, `d` → `az4`; the names are
+   *not* in ID order). The full table is in
+   [`log/stage-01b-identity-and-controls.md`](../log/stage-01b-identity-and-controls.md), and
+   `./aws/AZs.sh` regenerates it into `aws/output/AZs.txt`.
+   **Stage 3 anchors subnets on `zone_id` anyway** — this item used to say "if the mappings differ", and
+   that conditional was written without knowing that the measurement can only ever speak for the accounts
+   that exist. `Staging` is unvended and D35 plus [Stage 14](stages/stage-14-sandbox-vending.md) multiply
+   Sandboxes; each new account gets its own mapping at vend time and nothing makes it match. Index-based
+   placement would work today and break silently on the first account that disagrees, at USD 0.01/GB each
+   way across the two peerings D14 and D21 keep busy — **no error, only a line on the invoice**. Anchoring
+   on `zone_id` costs a `.tfvars` entry now and a VPC rebuild later.
+   **What stays open is small and named:** re-run `./aws/AZs.sh` after every vend, and treat a disagreement
+   as information rather than as a problem — with `zone_id` anchoring it changes nothing, which is the point.
 4. **Layer assignments.** `[P]`/`[D]`/`[E]` are cost judgements based on estimates. Revisit them at Stage 12
    against the real bill — especially the interface endpoints (the largest hourly item, and since
    2026-08-08 a **per-account** list rather than one list: Stage 3 step 8)
@@ -101,8 +107,8 @@ what is genuinely still unanswered:
 
 ### Blocking Stage 1 — the choices the user has to make, added 2026-08-08 by the pre-Stage-1 review
 
-Items 1-9 above are things to *find out*. These are things to *decide*, they have no defensible
-default, and each one is referenced from the step that needs it.
+Items 1-11 above are things to *find out* (item 3 is answered and struck through). These are things to
+*decide*, they have no defensible default, and each one is referenced from the step that needs it.
 
 10. ~~**What "apply these to a test OU first" means, since there is no test OU**~~ — **closed 2026-08-08 as
     D29:** a tenth account, `Policy Canary`, alone in a fifth OU, `Policy Test`. The reasoning that closed
@@ -150,8 +156,9 @@ default, and each one is referenced from the step that needs it.
     *encryption* rather than by *design* — a property that evaporates the first time a bucket is created
     without a CMK, which is exactly the kind of accident this plan should not depend on.
 
-**Every item in this section that was a *decision* is now closed. Items 1-10 remain, and they are all
-things to find out by doing.** Stage 1a has no outstanding prerequisite.
+**Every item in this section that was a *decision* is now closed, and the first question to be answered by
+execution is item 3** (Stage 1b step 6, 2026-08-12). The rest remain, and they are all things to find out by
+doing. Stage 1a has no outstanding prerequisite.
 
 ---
 

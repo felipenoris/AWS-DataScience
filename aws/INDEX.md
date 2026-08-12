@@ -13,11 +13,16 @@ now*. Each answers a different question, and the three disagreeing is itself inf
 | Script | Profile it runs as | Writes | Captures |
 |---|---|---|---|
 | [`list-identities.sh`](list-identities.sh) | `awsds-infra-identity` (Identity account, IAM Identity Center delegated administrator — D10) | `output/list-identities.txt` | The Organization: management account id, root and its enabled policy types, the whole OU tree, every account. The directory: Identity Store instance, groups, users, group memberships. The entitlements: permission sets with what each grants, and every assignment triple. |
+| [`AZs.sh`](AZs.sh) | **every** `awsds-*` profile in `~/.aws/config`, or the ones named as arguments — the one script here that is not single-profile, see below | `output/AZs.txt` | The availability-zone **name → zone ID** mapping each account reports, one listing per account, the mappings side by side, and a check on whether they agree. |
 
 Run any of them from anywhere; each one `cd`s to the repository root itself:
 
 ```bash
 ./aws/list-identities.sh
+```
+
+```bash
+./aws/AZs.sh
 ```
 
 They need a live SSO session. If the run stops with `cannot authenticate`:
@@ -79,12 +84,36 @@ the file end to end.
 denied look identical otherwise, and reading one as the other is Lesson 13
 ([`plan/lessons.md`](../plan/lessons.md)). Section 6 empty means every `(none)` in the file is a real none.
 
+## Finding an answer in `output/AZs.txt`
+
+| Question | Section |
+|---|---|
+| Which zone ID is `us-west-2a` **in this account**? | 2 — one listing per account, or 3 for all of them at once |
+| Do the accounts name the same physical datacenter the same way? | 4 — the verdict, with the differing rows printed if they do not |
+| Which accounts were actually measured? | 1 — a `(failed)` row is a profile that did not authenticate |
+| Is a zone something other than a plain, available AZ? | 2 — `ZoneType`, `State` and `OptInStatus` are in the per-account listing |
+
+**Two ways this file can mislead, both stated inside it.** An account with **no profile** on this laptop
+does not appear at all — `Staging` today, and every Sandbox until Stage 14 gives it one — so the file is
+silent about it rather than reassuring. And a **single** measured profile agrees with itself, which the
+check reports as *"nothing was compared"* rather than as a pass: a verification that returns OK on both
+success and vacuity is Lesson 13 again.
+
+**What was decided from this measurement is not in the file** (rule 2 below): it is
+[`plan/architecture.md`](../plan/architecture.md) §4.1 and [`plan/open-questions.md`](../plan/open-questions.md)
+item 3.
+
 ## Adding a script here
 
 Keep the shape, so that one file explains all of them:
 
 - **Read-only.** A script that changes something does not belong in `aws/`.
 - **One profile per script**, named at the top, with the reason that profile can see what it sees.
+  **`AZs.sh` is the one exception, and it is what an exception has to look like:** the comparison *between*
+  accounts is the measurement, so a single-profile version would answer nothing. It pays the rule back by
+  printing the caller ARN of every profile in section 1 — which is what naming one profile at the top exists
+  to make visible. Multi-profile is not a licence; it is for a script whose subject is the difference
+  between accounts.
 - **Output to `aws/output/<script-name>.txt`**, one file per script, `mkdir -p` its own folder.
 - **Print the command above its output** — `show` in `list-identities.sh` — so any line can be re-derived
   by hand, and prefer `--output table` over post-processing.

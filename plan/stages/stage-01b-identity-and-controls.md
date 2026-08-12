@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Status** | **next** — not started |
+| **Status** | **in progress** — 8.3, 1, 2, 3, 4, 5, 5.1 and 6 done; **only 8.2 is left** |
 | **Prerequisites** | Stage 1a complete, bar the deferred `Staging` vend. **Steps 3, 5 and 6 skip their `Staging` items**; the full list of what the deferral owes, across every stage, is in [Stage 1a](stage-01a-landing-zone.md) ("What the deferral leaves owed") and is worked at the vend rather than remembered here |
 | **Consumes** | [D10](../decisions/D10-identity-center-delegation.md), [D11](../decisions/D11-lab-lifecycle.md), [D14](../decisions/D14-supply-chain-account.md), [D16](../decisions/D16-break-glass.md), [D18](../decisions/D18-data-scientist-access.md), [D19](../decisions/D19-derived-zone.md), [D20](../decisions/D20-staging-account.md), [D21](../decisions/D21-development-account.md), [D22](../decisions/D22-data-governance-account.md), [D29](../decisions/D29-policy-canary.md), [D30](../decisions/D30-scp-recovery.md), [D31](../decisions/D31-approver-read.md), [D32](../decisions/D32-account-factory-sso-user.md), [D33](../decisions/D33-control-tower-admin-user.md), [D34](../decisions/D34-account-vending.md), [D35](../decisions/D35-sandbox-cardinality.md) |
 | **Proves** | Nothing cross-account; this stage is what makes every later stage reachable. Step 5's profiles are the precondition for **Stage 1c**, **Stage 1d** and everything from Stage 2 onwards |
@@ -533,10 +533,12 @@ both now, because it is the one act in this stage that can lock the only adminis
   separate step because the *sequence* is what is dangerous, not the operation.
 
 
-### Step 6 — Check the AZ name-to-ID mapping
+### Step 6 — Check the AZ name-to-ID mapping — **DONE 2026-08-12**
 
 - **Do**, under each of `awsds-infra-sandbox-1`, `awsds-infra-dev` and `awsds-infra-prod`:
-  `aws ec2 describe-availability-zones --query 'AvailabilityZones[].[ZoneName,ZoneId]'`.
+  `aws ec2 describe-availability-zones --query 'AvailabilityZones[].[ZoneName,ZoneId]'`. **Now scripted** as
+  [`aws/AZs.sh`](../../aws/INDEX.md), which runs every `awsds-*` profile and compares them — written during
+  this step so the check survives each future vend as a re-run rather than as a remembered command.
 - **Why it has a bill attached.** AWS maps AZ names to physical datacenters independently per account, so
   `data.aws_availability_zones` indexed by position can place "the same" AZ in different datacenters.
   D14 and D21 make this concrete: both peerings into Production are free within an AZ and USD 0.01/GB
@@ -544,9 +546,13 @@ both now, because it is the one act in this stage that can lock the only adminis
 - **Staging and every future Sandbox get the same check when they are vended** — the *cost* argument does
   not apply to Staging (D20 leaves it unpeered), but Stage 3 anchors its subnets the same way, so the
   mapping has to be on record before it writes one.
-- **Record the full table in `log/stage-01b-identity-and-controls.md`.** If the mappings differ, Stage 3
-  anchors subnets on `zone_ids` (`usw2-az1`, passed per environment in `.tfvars`) instead of on list
-  position, and `plan/architecture.md` §4.1 is updated. See `plan/open-questions.md` item 3.
+- **Outcome: every measured account is identical, and Stage 3 anchors on `zone_id` anyway.** The full
+  table is in `log/stage-01b-identity-and-controls.md`. This step used to end "*if* the mappings differ,
+  anchor on `zone_ids`" — **the conditional was the wrong shape**, and saying so is the point worth keeping:
+  the measurement covers only the accounts that exist, while `Staging` is unvended and D35 plus Stage 14
+  multiply Sandboxes, each getting its own mapping at vend time. A rule that holds only while the account
+  set is frozen is not a rule (Lesson 5), and the failure it would allow is silent — cross-AZ transfer, no
+  error. `plan/architecture.md` §4.1 carries the reasoning; `plan/open-questions.md` item 3 is closed on it.
 
 
 ### Step 8 — Security delegation, the free detective control, and the alarm that has no preventive control above it

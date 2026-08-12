@@ -175,12 +175,16 @@ The `§` numbers inside `plan/` files are historical anchors, not addresses.
   authoritative. 1a: Control Tower enabled (`us-west-2`), budget set, `Development`, `Sandbox Account 1`,
   `Production`, `Data Governance`, `Policy Canary` and `Identity` vended, centralized root access on.
   Break-glass built and **tested 2026-08-09 on both channels** — the thing 1c step 7 may not start without.
-- **1b: 8.3, 1, 2, 3, 4, 5 and 5.1 are done, and i, ii and ix answered. Next is 6**, then 8.2. The six SSO
+- **1b: 8.3, 1, 2, 3, 4, 5, 5.1 and 6 are done, and i, ii and ix answered. Only 8.2 is left.** The six SSO
   profiles were re-checked *after* 5.1: the five `awsds-infra-*` return
   `AWSReservedSSO_InfrastructureAccess_*`, `awsds-policy-canary` returns
   `AWSReservedSSO_AWSAdministratorAccess_*`. **Only `Policy Canary` still carries an Account Factory direct
   assignment**, permanently. **(vi) is open by construction** — whether the removals stick is re-checked at
   the next landing-zone update, account update or re-enrollment, not now.
+- **Subnets anchor on the AZ `zone_id`, never on list position** — step 6, 2026-08-12. Every measured
+  account returns the *same* mapping (`us-west-2a` → `usw2-az2`; the names are not in ID order), so position
+  would work today; it is forbidden because an unvended account gets its own mapping and the failure is
+  silent. `./aws/AZs.sh` re-measures — **run it after every vend**. Open question 3 is closed.
 - **A permission set provisioned into Management cannot be altered from the Identity account** — measured
   2026-08-12, and it is a *second* delegated-administrator boundary, distinct from the Management-targeted
   one step 4 found. The deny is anchored on the **permission set** ARN, so it covers that set's assignments

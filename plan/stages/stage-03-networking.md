@@ -233,10 +233,12 @@ account somebody is working in.
 The isolated tier is created empty on purpose — adding a fourth tier later means re-cutting the address
 plan of every VPC, and subnets are free.
 
-**1.5 — What the subnets are anchored on depends on 1b step 6.** If the AZ name→ID mapping differs between
-accounts, anchor on `zone_ids` (`usw2-az1`, passed per environment in `.tfvars`); if it does not, index
-`data.aws_availability_zones` by position (`plan/architecture.md` §4.1). This is not cosmetic: both peerings
-carry constant traffic, and cross-AZ traffic is USD 0.01/GB each way (`plan/open-questions.md` item 3).
+**1.5 — Subnets anchor on `zone_ids`, settled by 1b step 6 (2026-08-12).** Pass them per environment in
+`.tfvars` (`usw2-az1`, …) and match through `data.aws_availability_zones`'s `zone_ids`; **never index by
+list position.** The measurement found all six measured accounts identical, so position *would* work today
+— it is rejected because `Staging` and every Stage 14 Sandbox get their own mapping at vend time, and the
+failure is silent: both peerings carry constant traffic and cross-AZ is USD 0.01/GB each way, with no error
+anywhere. Reasoning in `plan/architecture.md` §4.1; the mapping itself is `./aws/AZs.sh`.
 
 #### 2. Gateways, route tables, NACLs, security groups
 
@@ -522,7 +524,8 @@ hourly table is per business unit (D35)** and is the term that multiplies.
 
 1. **The Sandbox supernet and the allocation table** (1.2, 1.3) — confirm `10.16.0.0/13` and record where
    the table lives, since Stage 14 reads it.
-2. **Whether subnets anchor on `zone_ids` or on list position** (1.5), which is 1b step 6's answer applied.
+2. ~~**Whether subnets anchor on `zone_ids` or on list position**~~ — **not a decision any more** (1.5):
+   1b step 6 settled it as `zone_ids`. What is left is recording the ID per environment in `.tfvars`.
 3. **The flow-log retention** (5.1) — a cost choice, not a compliance one.
 4. **Which `egress_mode` is the default** (10.1). Recommended: **A**, so that an ordinary session works
    while B's package path is still being built; B is exercised deliberately at Stage 6, which is where D5

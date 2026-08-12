@@ -628,6 +628,34 @@ for P in awsds-infra-sandbox-1 awsds-infra-dev awsds-infra-prod awsds-infra-data
 
 - Ended step 5.1. Moving to step 6.
 
+- Ran under each profile, `us-west-2`:
+
+```
+    aws ec2 describe-availability-zones \
+      --query 'AvailabilityZones[].[ZoneName,ZoneId,ZoneType,State]'
+```
+
+-All six accounts return the **same** mapping. All four zones `available`, all `availability-zone` (no Local Zones offered):
+
+```
+| Zone name | Zone ID |
+|---|---|
+| `us-west-2a` | `usw2-az2` |
+| `us-west-2b` | `usw2-az1` |
+| `us-west-2c` | `usw2-az3` |
+| `us-west-2d` | `usw2-az4` |
+```
+
+- Accounts checked: `Sandbox Account 1`, `Development`, `Production` (the three the step names — the three that get a VPC), plus `Data Governance`, `Identity` and `Policy Canary`, which the step does not require and which get no VPC. They were checked anyway, at the cost of two read-only calls, to see whether the shuffle is per-account or org-wide. Note the names are **not** in ID order: `a` is `az2`, `b` is `az1`.
+
+- `Staging` is not checked — not yet vended. Its check is owed at the vend, with the rest of what Stage 1a's deferral leaves owed.
+
+- **Outcome: Stage 3 anchors subnets on `zone_id`, not on list position** — even though nothing diverges today. The measurement can only speak for the accounts that exist, and D35 plus Stage 14 mean the account set grows; a mismatch in a future account produces no error, only cross-AZ charges on the D14/D21 peerings. `plan/open-questions.md` item 3 closes on this.
+
+- Ended step 6. Moving to 8.2
+
+
+
 ---
 
 *Log index: [log/INDEX.md](INDEX.md) · Stage index: [plan/stages/INDEX.md](../plan/stages/INDEX.md)*

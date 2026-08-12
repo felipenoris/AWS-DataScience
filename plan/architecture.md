@@ -188,9 +188,21 @@ What remains is ordinary Terraform hygiene, which costs nothing and is worth doi
 | Thing | Rule |
 |---|---|
 | Region | A single `var.region`, set per environment in `.tfvars`. No `us-west-2` literal in `.tf` files. |
-| Availability zones | `data.aws_availability_zones` indexed by position, never `us-west-2a`. |
+| Availability zones | **Anchor on the AZ ID** — `zone_ids = ["usw2-az1", …]` per environment in `.tfvars`, matched through `data.aws_availability_zones`'s `zone_ids` attribute. Never a literal `us-west-2a`, and **never list position**. |
 | AMI IDs | AMI IDs are region-scoped. Resolve through SSM public parameters (e.g. `/aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-arm64`), never a literal `ami-…`. |
 | Bucket names | S3 names are globally unique — build them from variables rather than pasting a region in. |
+
+**The AZ row is the one that stopped being hygiene and became a control, and the reason is worth keeping
+because the measurement argues the other way.** AWS maps AZ *names* to physical datacenters independently
+per account. Stage 1b step 6 measured it across every account that has a profile and found them
+**identical** — `us-west-2a` → `usw2-az2`, `b` → `az1`, `c` → `az3`, `d` → `az4`, so the names are not even
+in ID order. Index-based placement would therefore work today. It is still forbidden, for one reason: the
+measurement can only speak for accounts that exist. `Staging` is unvended, D35 and Stage 14 multiply
+Sandboxes, and each new account is assigned its own mapping at vend time. **The failure is silent** — two
+peered subnets land in different datacenters, nothing errors, and the only symptom is cross-AZ transfer at
+USD 0.01/GB each way on the two peerings D14 and D21 keep constantly busy. A rule that holds only while the
+account set is frozen is not a rule (Lesson 5). Re-run `./aws/AZs.sh` after each vend; with `zone_id`
+anchoring, a disagreement is information rather than a rebuild.
 
 Recorded for reference, from the check on 2026-08-07 and **corrected on 2026-08-08**: `sa-east-1` has
 endpoints for almost every service this plan uses — Control Tower, IAM Identity Center, SageMaker (Studio

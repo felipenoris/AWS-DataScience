@@ -21,8 +21,9 @@ Two rules keep this file from becoming a stale copy of the three above:
 - **No reasoning.** *Why* something is so belongs in [`plan/decisions/`](plan/decisions/INDEX.md); *what was
   done* belongs in `log/`. Here: only what is expected, and what a deviation from it means.
 
-Everything below was measured on **2026-08-11**, from the first run of `aws/list-identities.sh`. Section
-references are to `aws/output/list-identities.txt`.
+Everything below was measured from a script in [`aws/`](aws/INDEX.md). **A bare section number refers to
+`aws/output/list-identities.txt`** (first run 2026-08-11); a reference prefixed with a file name, such as
+`AZs.txt` 3, refers to that snapshot instead (`aws/AZs.sh`, 2026-08-12).
 
 ## A. Invariants — what a snapshot must show
 
@@ -35,6 +36,7 @@ references are to `aws/output/list-identities.txt`.
 | **INV-05** | Six Control Tower groups are **empty**: `AWSAuditAccountAdmins`, `AWSLogArchiveAdmins`, `AWSLogArchiveViewers`, `AWSSecurityAuditors`, `AWSSecurityAuditPowerUsers`, `AWSServiceCatalogAdmins`. `AWSControlTowerAdmins` and `AWSAccountFactory` hold the Control Tower admin user, and nothing else does | 3.5 | Each of those six already **holds live assignments** — `AWSAuditAccountAdmins` is administrator on the Audit account. They grant nothing only because they are empty, so one added member is one granted access |
 | **INV-06** | `InfrastructureAccess` carries the **five** project tags and a `PT4H` session | 4.2, 4.3 | A tag missing here is the tag convention failing at its first instance, which is where a tag policy would later fail silently |
 | **INV-07** | Each account shows the assignment rows in **A.1** below, and no others | 5.1, 5.2 | A path exists that nobody wrote. Check A.1 first — most of those rows are Control Tower's, not this project's |
+| **INV-08** | Every account returns the **same** AZ name→ID mapping, four zones, all `available` and `opt-in-not-required` | `AZs.txt` 3, 4 | **Not a finding, and not drift** — a vended account is assigned its own mapping and may legitimately differ. It is recorded because the plan anchors subnets on the **ID** precisely so a divergence costs nothing; if one appears, confirm no slice indexes AZs by list position, and leave it. The reverse — accounts agreeing while a slice indexes by position — is the state that looks fine and bills |
 
 ### A.1 — the assignment shape, per class of account
 
