@@ -1,0 +1,151 @@
+# Log — Stage 1c — Preventive policies: SCP, RCP, tag and declarative
+
+*Manual actions performed by the user. Written by the user, **never** by Claude.
+Stage: [`plan/stages/stage-01c-preventive-policies.md`](../plan/stages/stage-01c-preventive-policies.md).*
+
+*One exception, recorded so the provenance is not guessed later: **the 7.0 entries below were drafted by
+Claude on 2026-08-13 at the user's explicit request**, from the two snapshots the same session produced.
+Everything after them is the user's, as usual.*
+
+---
+
+- Started sitting A with step 7.0, the preflight. Nothing has been attached and nothing has been
+  changed in AWS as of this entry — everything below is measurement.
+
+- 7.0 was run from the laptop as the **infrastructure user**, profile `awsds-infra-identity`, through
+  two read-only scripts written for this step. Both write to `aws/output/`, which is untracked:
+
+```
+./aws/org-policy-baseline.sh      # 7.0 steps 1, 2, 3 and 5
+./aws/account-bpa.sh              # 7.0 step 4
+```
+
+- **7.0 step 1 — the organization's coordinates.** `FeatureSet` reads `ALL`, so RCPs are possible.
+  Root is `r-zhj6`, organization is `o-4z1leiit0c`. The root's policy types:
+  **`SERVICE_CONTROL_POLICY` `ENABLED` and nothing else** — as `AWS_STATE.md` section C expected.
+  Step 7.2 still has to enable the other three.
+
+- The OU tree, ids as measured. Depth is 2 (`Sandboxes` nested under `Interactive`), which is INV-03.
+  Every ARN is `arn:aws:organizations::<MGMT_ACCOUNT_ID>:ou/o-4z1leiit0c/<ou-id>`; the literal ARNs are
+  in section 2 of the snapshot.
+
+  | OU | Id | Parent |
+  |---|---|---|
+  | Policy Test | `ou-zhj6-ebwso7wp` | root |
+  | Workloads | `ou-zhj6-hisvfbzq` | root |
+  | Identity | `ou-zhj6-hrcu9hog` | root |
+  | Security | `ou-zhj6-u9qe0l0h` | root |
+  | Interactive | `ou-zhj6-vn5q14hi` | root |
+  | Data | `ou-zhj6-z3drywoq` | root |
+  | Sandboxes | `ou-zhj6-mojnh3rs` | Interactive |
+
+- The `Data` OU path that 7.5's `datazone:CreateDomain` carve-out is written from, with the trailing
+  slash: `o-4z1leiit0c/r-zhj6/ou-zhj6-z3drywoq/`.
+
+- **7.0 step 2 — what Control Tower already attaches.** `FullAWSAccess` (`p-FullAWSAccess`) is on the
+  root and on every OU. One `aws-guardrails-*` policy per OU:
+
+  | OU | Policy | Id |
+  |---|---|---|
+  | Policy Test | `aws-guardrails-vldGRP` | `p-kve97k0o` |
+  | Workloads | `aws-guardrails-QWkHhe` | `p-xss3mf3w` |
+  | Identity | `aws-guardrails-coSzJr` | `p-5wfd3ory` |
+  | Security | `aws-guardrails-rFWRFL` | `p-2xyaqn66` |
+  | Interactive | `aws-guardrails-lBxFwY` | `p-o32xhs2d` |
+  | Data | `aws-guardrails-IErlqi` | `p-5weyyc6d` |
+  | **Sandboxes** | **none** | — |
+
+  No RCP, tag policy or declarative policy is attached anywhere — the listing returns
+  `(policy type not enabled)`, which is the same fact as step 1 read from the other side.
+
+- **Verification (iii), answered by reading the documents rather than by assuming.** Three findings, and
+  two of them contradict what the stage file assumed:
+
+  - **Config is already denied** on every OU that has a guardrail — `GRCONFIGENABLED` covers
+    `config:DeleteConfigurationRecorder`, `PutConfigurationRecorder`, `StopConfigurationRecorder`,
+    the delivery channel and the retention configuration, carved out for
+    `arn:*:iam::*:role/AWSControlTowerExecution`. **7.5 must not write a second one.**
+  - **CloudTrail is denied nowhere.** No `cloudtrail:` action appears in any of the six documents. The
+    stage file assumed Control Tower covered it; it does not.
+  - Also already covered, and therefore not to be duplicated: tampering with `aws-controltower-*` and
+    `*AWSControlTower*` IAM roles and with `stacksets-exec-*`; `logs:DeleteLogGroup` and
+    `logs:PutRetentionPolicy` on `*aws-controltower*` log groups; the Control Tower SNS topics,
+    EventBridge rules, Lambda functions and S3 buckets. **GuardDuty is not covered**, which is why its
+    four denies stay in `awsds-org-scp-baseline.json`.
+
+- **`Identity` carries the standard Control Tower guardrail** — the same 8 statements as Workloads,
+  Data, Interactive and Policy Test — so it is registered, contrary to what the plan assumed about an OU
+  created outside Control Tower's own flow. `Security` is the only different one: 11 statements, the
+  extra three (`CTSNSPV1`, `CTS3PV7`, `CTS3PV8`) being about the log-archive, access-logs and
+  cloudtrail buckets and the centralized-logging SNS topic. **This is the `Security` vs `Identity` diff
+  that 7.6 asks for, and it means nothing for an account that holds neither bucket** — so no elective
+  control is owed to `Identity` on that basis.
+
+- **`Sandboxes` is the only OU with no guardrail policy**, and `Sandbox Account 1` is inside it. Either
+  the nested OU is not registered with Control Tower, or Control Tower relies on inheritance from
+  `Interactive`. This is verification (xi) and it decides whether 7.7 can enable `CT.MULTISERVICE.PV.1`
+  there. **Open until the Management run of 7.0 step 3.**
+
+- **7.0 step 3 could not be answered from the laptop.** `controltower list-enabled-controls` failed on
+  all seven OUs under `awsds-infra-identity` with:
+
+```
+An error occurred (ResourceNotFoundException) when calling the ListEnabledControls operation:
+AWS Control Tower cannot complete the operation, because you must create a landing zone first.
+```
+
+  That is the answer a **member account** gets, not evidence about the landing zone — the API only
+  answers in Management. Pending: run `bash org-policy-baseline.sh -` in CloudShell on Management as
+  `AWS Control Tower Admin`.
+
+- **Verification (x), answered: yes.** Every Organizations *policy* read — `ListPoliciesForTarget`,
+  `DescribePolicy`, `DescribeOrganization`, `ListRoots`, `ListOrganizationalUnitsForParent` — answered
+  from the Identity account. So 7.0 is a script, except for its Control Tower section. This extends the
+  read boundary of Stage 1b step 4 once more.
+
+- **7.0 step 5 — the quota is not published.** `service-quotas list-service-quotas --service-code
+  organizations --region us-east-1` returns only account-related quotas (`Maximum number of accounts`,
+  the billing-transfer ones), all with value `0.0`, and **nothing about policies per node or document
+  size**. So the budget is the documented number and not a measured one. Counted against the
+  conservative 5-per-node reading: the root will carry `FullAWSAccess` + baseline + perimeter +
+  require-tags = **4**; each OU will carry `FullAWSAccess` + its guardrail + its tier + the Region
+  control = **4**. It fits either way.
+
+- **7.0 step 4 — account-level Block Public Access, before changing anything.** All six accounts with a
+  profile — `awsds-infra-data`, `-dev`, `-identity`, `-prod`, `-sandbox-1` and `awsds-policy-canary` —
+  return `NoSuchPublicAccessBlockConfiguration`, i.e. **NOT SET**. So 7.4 step 1 has real work in every
+  one of them; nothing is a no-op. Management, Log Archive and Audit have no profile and are still to be
+  read from CloudShell.
+
+- **Decision recorded while executing: `awsds-org-scp-baseline.json` carries no CloudTrail deny.**
+  Control Tower denies nothing about CloudTrail (above), and the deny was still not written: the trail
+  is organization-level and lives in the Management account, which is exempt from SCPs by AWS's design,
+  so a member-account deny would protect nothing. Recorded as a measured, deliberate gap rather than as
+  an oversight.
+
+- **The 7.5 documents were written before anything was attached**, as templates with placeholders, in
+  `terraform-live/identity/org-policies/`:
+
+  | File | Attaches to | Rendered size (minified) |
+  |---|---|---|
+  | `policies/awsds-org-scp-baseline.json` | organization root | 1279 characters |
+  | `policies/awsds-org-scp-perimeter.json` | organization root | 716 characters |
+  | `canary/awsds-canary-scp-perimeter-inverted.json` | `Policy Test`, throwaway | 724 characters |
+
+  `./terraform-live/identity/org-policies/render.sh` substitutes the organization, root and `Data` OU
+  ids and writes the pasteable copies into `aws/output/rendered-policies/`. **The console paste comes
+  from there, not from the templates.** No policy has been created yet, so there is no policy id to
+  record in this entry.
+
+- One rule was added to `plan/conventions.md` while writing the perimeter document, because it decides
+  its shape: in a deny conditioned on a resource key, the action list must be enumerated —
+  `StringNotEqualsIfExists` evaluates *true* when the key is absent, so `s3:Put*` would reach the
+  account-level `s3:PutAccountPublicAccessBlock` and deny, in every account and for every principal, the
+  exact call 7.4 depends on. `ecr:GetAuthorizationToken` is left out of the ECR half for the same reason.
+
+- **Still open in sitting A:** BPA in the six accounts, BPA in Management / Log Archive / Audit, the
+  three `enable-policy-type` calls of 7.2, the 7.3 battery, and only then the two root attachments.
+
+---
+
+*Log index: [log/INDEX.md](INDEX.md) · Stage index: [plan/stages/INDEX.md](../plan/stages/INDEX.md)*

@@ -268,7 +268,7 @@ The `§` numbers inside `plan/` files are historical anchors, not addresses.
   one per business unit; every other account is exactly one).
 - **The landing zone's second half is three stages**: **1b** (done), **1c** (step 7, the only irreversible
   one, in two sittings), **1d** (steps 9-11, independent of each other, and not blocked on 1c — a short
-  session can take 1d first). **1c and 1d have no `log/` file yet; 1c's must be created before it starts.**
+  session can take 1d first). **1c's `log/` file exists and carries 7.0; 1d still has none.**
 - **The identity seam, settled 2026-08-09 by review** (`plan/conventions.md`): **people** — users, groups,
   memberships — stay in the directory; **entitlements** — permission sets, boundaries, group→account
   assignments — are Terraform. So **1b creates one permission set and specifies seven**; the other six are
