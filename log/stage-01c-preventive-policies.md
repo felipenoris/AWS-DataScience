@@ -174,6 +174,7 @@ AWS Control Tower cannot complete the operation, because you must create a landi
 ```
 aws organizations enable-policy-type --root-id r-zhj6 --policy-type RESOURCE_CONTROL_POLICY
 aws organizations enable-policy-type --root-id r-zhj6 --policy-type TAG_POLICY
+aws organizations enable-policy-type --root-id r-zhj6 --policy-type DECLARATIVE_POLICY_EC2
 ```
 
 - Checked that policies are ENABLED, on the same CloudShell session:
@@ -220,6 +221,8 @@ aws s3control put-public-access-block --account-id "$(aws sts get-caller-identit
 
 - **The account quota reads 10, not the requested 15.** A member account reads 0.0, so only this
   Management run is evidence. The `Staging` vend stays held.
+
+- 
 
 ---
 

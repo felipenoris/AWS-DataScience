@@ -244,7 +244,13 @@ printf 'features enabled, and half of Stage 1c has nowhere to attach without it.
 
 run organizations describe-organization --query 'Organization.Id' --output text
 ORG_ID="${RUN_OUT:-<o-unknown>}"
-printf 'ORG_ID=%s\n' "$ORG_ID"
+printf 'ORG_ID=%s\n\n' "$ORG_ID"
+
+printf 'ORG_ID is the value both data-perimeter condition keys are compared against:\n'
+printf 'aws:PrincipalOrgID (is the CALLER inside my organization?) and aws:ResourceOrgID\n'
+printf '(is the RESOURCE being written to?) - the two axes of plan/architecture.md. It is\n'
+printf 'also what terraform-live/identity/org-policies/render.sh substitutes for the\n'
+printf '<ORG_ID> placeholder of the Stage 1c documents, so no paste of it is done by hand.\n'
 
 h2 "1.2 The root, and the policy types that may be attached at all"
 

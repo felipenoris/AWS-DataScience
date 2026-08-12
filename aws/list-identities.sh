@@ -170,7 +170,7 @@ printf 'produced  : aws/list-identities.sh   (index: aws/INDEX.md)\n'
 printf '\n'
 printf 'SECTIONS\n'
 printf '  1. Caller - the identity that produced this file\n'
-printf '  2. Organization        2.1 MGMT_ID  2.2 ROOT_ID and policy types\n'
+printf '  2. Organization        2.1 ORG_ID and MGMT_ID  2.2 ROOT_ID and policy types\n'
 printf '                         2.3 the OU tree  2.4 every account\n'
 printf '  3. Identity Center     3.1 instances  3.2 CHECK: exactly one  3.3 groups\n'
 printf '                         3.4 users  3.5 group memberships\n'
@@ -200,7 +200,26 @@ show sts get-caller-identity --output table
 # --------------------------------------------------------------------------------------
 h1 "2. Organization"
 
-h2 "2.1 MGMT_ID - the management account"
+h2 "2.1 ORG_ID and MGMT_ID - the organization, and the account that manages it"
+
+# ORG_ID is not a curiosity: it is the value both data-perimeter condition keys take, so it
+# is printed as a named variable rather than left as an unlabelled row of the table below.
+run organizations describe-organization \
+    --query 'Organization.Id' \
+    --output text
+ORG_ID="$RUN_OUT"
+
+printf '$ ORG_ID=$(aws organizations describe-organization \\\n'
+printf '      --query Organization.Id \\\n'
+printf '      --output text)\n'
+printf '$ echo $ORG_ID\n'
+printf '%s\n\n' "${ORG_ID:-(call failed - see section 6)}"
+
+printf 'This id is what the two data-perimeter condition keys of plan/architecture.md are\n'
+printf 'compared against: aws:PrincipalOrgID (is the CALLER inside my organization?) and\n'
+printf 'aws:ResourceOrgID (is the RESOURCE being written to?). It is also the value\n'
+printf 'terraform-live/identity/org-policies/render.sh substitutes for the <ORG_ID>\n'
+printf 'placeholder of the Stage 1c policy documents - read it here, never paste it by hand.\n\n'
 
 run organizations describe-organization \
     --query 'Organization.MasterAccountId' \

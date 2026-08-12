@@ -12,7 +12,7 @@ now*. Each answers a different question, and the three disagreeing is itself inf
 
 | Script | SSO user signed in | Profile it runs as | Writes | Captures |
 |---|---|---|---|---|
-| [`list-identities.sh`](list-identities.sh) | [Infrastructure](../ORGANIZATION.md#infrastructure-user) | `awsds-infra-identity` (Identity account, IAM Identity Center delegated administrator — D10) | `output/list-identities.txt` | The Organization: management account id, root and its enabled policy types, the whole OU tree, every account. The directory: Identity Store instance, groups, users, group memberships. The entitlements: permission sets with what each grants, and every assignment triple. |
+| [`list-identities.sh`](list-identities.sh) | [Infrastructure](../ORGANIZATION.md#infrastructure-user) | `awsds-infra-identity` (Identity account, IAM Identity Center delegated administrator — D10) | `output/list-identities.txt` | The Organization: **organization id** — the value `aws:PrincipalOrgID` and `aws:ResourceOrgID` are compared against — management account id, root and its enabled policy types, the whole OU tree, every account. The directory: Identity Store instance, groups, users, group memberships. The entitlements: permission sets with what each grants, and every assignment triple. |
 | [`AZs.sh`](AZs.sh) | [Infrastructure](../ORGANIZATION.md#infrastructure-user) — including behind `awsds-policy-canary`, which is the **same human** through a different permission set (D32) | **every** `awsds-*` profile in `~/.aws/config`, or the ones named as arguments — the one script here that is not single-profile, see below | `output/AZs.txt` | The availability-zone **name → zone ID** mapping each account reports, one listing per account, the mappings side by side, and a check on whether they agree. |
 | [`org-trusted-access-services.sh`](org-trusted-access-services.sh) | [Infrastructure](../ORGANIZATION.md#infrastructure-user); [`AWS Control Tower Admin`](../ORGANIZATION.md#aws-control-tower-admin-d33) on the `-` fallback | `awsds-infra-identity` by default; takes another profile as its argument, or `-` to run with no profile at all — inside CloudShell on Management | `output/org-trusted-access-services.txt` | Which AWS services hold **trusted access** across the organization, which account is each one's **delegated administrator**, and the `access-analyzer` registration on its own. |
 | [`audit-iam-analyser.sh`](audit-iam-analyser.sh) | [`AWS Control Tower Admin`](../ORGANIZATION.md#aws-control-tower-admin-d33) — **the only one**, no laptop path | **no profile — CloudShell on the Audit account**, as `AWS Control Tower Admin`. Takes a profile as its argument if one ever exists there; see below | `output/audit-iam-analyser.txt` | The IAM Access Analyzer analyzers of that account and Region: type (the **zone of trust**), status, tags, archive rules, findings — and a check that there is exactly one, `ORGANIZATION`, `ACTIVE`. |
@@ -96,6 +96,7 @@ the file end to end.
 
 | Question | Section |
 |---|---|
+| **What is the organization id** — the value `aws:PrincipalOrgID` and `aws:ResourceOrgID` take? | 2.1 — `ORG_ID`; the same value, with the enabled policy types beside it, is section 1 of `org-policy-baseline.txt` |
 | What is the management account id? | 2.1 — `MGMT_ID` |
 | Which policy types can be attached at all (SCP, RCP, tag, declarative)? | 2.2 — the root's `PolicyTypes`, `ENABLED` or not |
 | What does the OU tree look like, and how deep is it? | 2.3 — the indented tree first, then one pair of tables per parent |
@@ -190,7 +191,7 @@ near-empty account and raises nothing, which is why the `type` is a checked fiel
 
 | Question | Section |
 |---|---|
-| What is the organization id, and is `FeatureSet` `ALL` (which RCPs require)? | 1 |
+| What is the organization id, and is `FeatureSet` `ALL` (which RCPs require)? | 1 — `ORG_ID`, printed as a named variable because it is the value `aws:ResourceOrgID` and `aws:PrincipalOrgID` are compared against, and what `render.sh` puts in place of `<ORG_ID>` |
 | Which policy types may be attached at all? | 1.2 — the same reading as `list-identities.txt` 2.2, kept here so this file stands alone |
 | What is an OU's **id**, its **ARN** (which `enable-control` takes), or its **full path** (which `aws:PrincipalOrgPaths` takes)? | 2 |
 | What is already attached to this node, and is it AWS's or ours? | 3 — one block per node, one line per policy type |
