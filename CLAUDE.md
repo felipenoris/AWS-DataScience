@@ -7,7 +7,16 @@ The goal is to achieve the following:
 
 - All user access to the cloud infrastructure will be performed through a VPN.
 
-- Use SageMaker as a development tool for Data Scientists.
+- Use SageMaker Unified Studio as a development tool for Data Scientists.
+
+- The main features Data Scientists can use inside SageMaker to develop data-science products are:
+
+  - the use of Jupyter notebooks built in SageMaker Unified Studio: users can instantiate as many Jupyter notebook instances as they like, each one on a selected compute and dev-env image.
+  - the user of vscode instances built in SageMaker Unified Studio: users can instantiate as many vscode web instances they wish, with possibility of remote connecting their local computer vscode to a remote session.
+  - the use of data catalog and explorer, issuing SQL statements, built in SageMaker Unified Studio.
+  - use of S3 buckets for storage, built in SageMaker Unified Studio user interface.
+  - use of sagemaker's workflows and Visual ETL feature built in SageMaker Unified Studio.
+  - use of IA models built in SageMaker Unified Studio
 
 - Protect data against leakage (DLP), mainly targeting SageMaker. There is no single AWS product that does
   this, so the requirement is broken into the four problems it has to solve:
