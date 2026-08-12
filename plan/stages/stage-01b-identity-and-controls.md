@@ -46,7 +46,7 @@ describes but does not perform. Read this table to plan a session; read the step
 | 4 | 3 | **One** permission set — the administrator — and its assignments | Infra user @ Identity | to execute: D16, D29, D32 · to *specify* the other six (3.4-3.7): D14, D18, D19, D20, D21, D22, D31 | The other six are specified here and **created in Stage 2 step 5**, in code (3.9) |
 | 5 | 4 | Confirm no persona reaches Management | Infra user @ Identity | D34 | Closes the assignment path 8.3 then watches |
 | 6 | 5 | Local `aws configure sso` profiles | Infra user, laptop | D29 | **Stages 1c, 1d and 2 cannot start without a member-account profile.** It depends on nothing above it — see the note in step 5 |
-| 7 | **5.1** | Retire the Account Factory direct assignments, or record that they cannot be | Infra user @ Identity + laptop | D32 | Described in 3.8, performed here, because it is only safe once the group path is proven **and** it invalidates the profiles step 5 just wrote |
+| 7 | **5.1** | Retire the Account Factory direct assignments, or record that they cannot be | **CT Admin @ Management** + Infra user's laptop | D32 | Described in 3.8, performed here, because it is only safe once the group path is proven **and** it invalidates the profiles step 5 just wrote. **Not executable from Identity** — measured 2026-08-12, see the step |
 | 8 | 6 | AZ name→ID mapping per account | Infra user, laptop | D14, D20, D21 | Stage 3 anchors subnets on the answer |
 | 9 | 8.2 | IAM Access Analyzer, org-wide from Audit | CT Admin @ Management / Audit | D33, D34 | Free, and it catches what Stages 2-3 create. Nothing else waits on it |
 
@@ -64,14 +64,16 @@ and it makes step 2 the alarm's test rather than requiring a deliberate edit to 
 ## Who executes what
 
 **Every manual step names the identity that performs it, not only what it does** (Lesson 17). **Two
-identities do all of it, through three sign-in paths** — and it is the *path* that is easy to get
-wrong, which is how a step stalls on an `AccessDenied` that looks like a policy bug.
+identities do all of it, through four sign-in paths** — and it is the *path* that is easy to get
+wrong, which is how a step stalls on an `AccessDenied` that looks like a policy bug. 5.1 is the step that
+proved the point: it was written against the wrong path and stalled on exactly that `AccessDenied`.
 
 | Steps | Identity | Sign-in path |
 |---|---|---|
 | 8.3 (the metric filter and the alarm), 1 and 8.1 (delegations) | **`AWS Control Tower Admin`** (D33/D34) | access portal → `AWSAdministratorAccess` on **Management** |
 | 8.2 (creating the analyzer *in Audit*) | **`AWS Control Tower Admin`** | access portal → `AWSAdministratorAccess` on **Audit** — the infrastructure user has *no* assignment there (`ORGANIZATION.md`) |
-| 2, 3, 4, 5.1 | **Infrastructure user** | access portal → `AWSAdministratorAccess` on **Identity** (the direct Account Factory assignment from 1a step 4 — this is what bootstraps the whole stage) |
+| **5.1's removals** | **`AWS Control Tower Admin`** | access portal → `AWSAdministratorAccess` on **Management**. **This row is a correction**, measured 2026-08-12: the removals are *not* performable from Identity by any principal there — see 5.1 |
+| 2, 3, 4 | **Infrastructure user** | access portal → `AWSAdministratorAccess` on **Identity** (the direct Account Factory assignment from 1a step 4 — this is what bootstraps the whole stage) |
 | 5, 5.1's re-check, 6 | **Infrastructure user**, from the laptop | the `awsds-infra-*` and `awsds-policy-canary` profiles created in step 5 |
 
 **Nothing in this stage is performed by root**, and nothing is performed by a project persona other than
@@ -487,17 +489,43 @@ both now, because it is the one act in this stage that can lock the only adminis
   `sso-group-infrastructure` → `InfrastructureAccess` → the account actually resolves. A profile still bound to
   `AWSAdministratorAccess` means the group path is untested in that account, and removing the direct
   assignment there is removing the only thing that is known to work.
+- **Do it as `AWS Control Tower Admin` on the Management account, not from Identity** — measured
+  2026-08-12, after the step stalled on an `AccessDenied` that the "Who executes what" table had
+  mispredicted. **The delegated administrator cannot alter a permission set that is provisioned into the
+  management account** (IAM Identity Center User Guide, "Delegated administration"), and Control Tower's
+  `AWSAdministratorAccess` is provisioned there — it is what `AWSControlTowerAdmins` holds on Management.
+  The protection is anchored on the **permission set** ARN rather than on the target account, so it reaches
+  that set's assignments in *every* account, not only Management's. Both principals available in Identity
+  were tried and both were denied, which is the part worth carrying: this is not fixable by choosing a
+  different permission set in Identity, because it is not a property of the caller.
+  - **It is a second, distinct boundary from the one step 4 measured, and the two are told apart by the
+    error text.** Step 4's denial named `arn:aws:sso:::account/<MGMT_ID>` **with an explicit deny in a
+    resource-based policy** — scoped by *target account*. This one names
+    `arn:aws:sso:::permissionSet/<...>` with **no** explicit-deny clause — an implicit deny against a
+    principal holding `AdministratorAccess`, scoped by *permission set*. Step 4 recorded that its probe
+    could not tell whether Management-targeted assignments were the only thing out of reach and answered
+    "no, not the only thing" on expectation; this is the measurement behind that answer.
+  - **`InfrastructureAccess` is not provisioned into Management and is therefore outside this
+    restriction** — so the delegated administrator keeps full control of the set Stage 2 step 5 imports and
+    manages from `awsds-infra-identity`. Stated here because the `AccessDenied` above is exactly the
+    evidence that would otherwise put that in doubt.
 - **Do:** remove the direct user assignment of `AWSAdministratorAccess` from Sandbox, Development,
   Production, Data Governance and — **last, and only if the four others survived it** — Identity. The
   Identity account's assignment is what bootstrapped this whole stage; it is the last one to touch and the
-  first one to restore.
+  first one to restore. **Executing from Management removes the self-lockout hazard but not the ordering
+  rule:** the reason Identity goes last is that each removal is a claim that the group path carries that
+  account, and the claim is cheapest to withdraw while the bootstrap is still standing.
 - **Never `Policy Canary`** (3.8). Its direct assignment is the only way into the account and it is
   permanent.
 - **Then re-check, don't assume:** `aws sts get-caller-identity --profile <each>` again, after the
   removal. If a profile was bound to the set that was just removed, it fails here — which is the cheap
   version of that discovery, and the reason this step is not the last thing done in a session.
-- **This is where verification (vi) is answered.** If the assignments come back — on a landing-zone
-  update, an account update or a re-enrollment — the honest outcome is to stop removing them and record
+- **This is where verification (vi) is *opened*, and it cannot be closed here.** The question is whether
+  the removal sticks, and the events that could undo it — a landing-zone update, an account update, a
+  re-enrollment — are all in the future at the moment 5.1 runs. So the honest record is "removed on
+  &lt;date&gt;, not re-created as of that date", plus the named event to re-check under. **Writing (vi) down
+  as answered on the strength of the removal succeeding is the failure this bullet exists to prevent**: it
+  reads as evidence and is only a timestamp. If the assignments do come back, stop removing them and record
   the direct assignment as a **permanent property of an Account Factory-vended account**, in
   `log/stage-01b-identity-and-controls.md` and in D32. Stage 2 step 5.2 then models nothing about them,
   which is already what it says.
@@ -728,8 +756,8 @@ landing zone's** — iii, iv, v, vii and viii are asked in Stages 1c and 1d.
 | # | Question | Step |
 |---|---|---|
 | i | Does the Identity Center delegation coexist with the landing zone without raising drift? | 1 |
-| ii | Are Management-targeted assignments the *only* thing the delegated administrator cannot manage? | 4 |
-| vi | Does removing an Account Factory direct assignment stick, or is it re-created? | 5.1 (described in 3.8) |
+| ii | Are Management-targeted assignments the *only* thing the delegated administrator cannot manage? | 4 asks it; **5.1 answers it: no** — a permission set provisioned into Management is out of reach in every account |
+| vi | Does removing an Account Factory direct assignment stick, or is it re-created? | 5.1 (described in 3.8). **Cannot be closed in-session** — it needs a landing-zone update, an account update or a re-enrollment, so 5.1 records it as provisional and names the event that settles it |
 | ix | Are Identity Center membership events recorded in Management's org-trail log group after the delegation, and under which of the three event sources? | 8.3, answered by step 2 |
 
 **Was (ix), and it does not belong to this stage:** *"does Macie's delegation enable Macie, as GuardDuty's

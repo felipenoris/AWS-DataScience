@@ -175,11 +175,20 @@ The `§` numbers inside `plan/` files are historical anchors, not addresses.
   authoritative. 1a: Control Tower enabled (`us-west-2`), budget set, `Development`, `Sandbox Account 1`,
   `Production`, `Data Governance`, `Policy Canary` and `Identity` vended, centralized root access on.
   Break-glass built and **tested 2026-08-09 on both channels** — the thing 1c step 7 may not start without.
-- **1b: 8.3, 1, 2, 3, 4 and 5 are done and verifications i, ii and ix answered. Next is 5.1**, then 6 and
-  8.2. All six SSO profiles exist; the five `awsds-infra-*` return
-  `AWSReservedSSO_InfrastructureAccess_*` and `awsds-policy-canary` returns `AWSReservedSSO_AWSAdministratorAccess_*`
-  — 5.1's precondition, met. **`sso-directory.amazonaws.com` (the console path) is still unexercised** by
-  8.3's filter; everything so far went through the CLI.
+- **1b: 8.3, 1, 2, 3, 4, 5 and 5.1 are done, and i, ii and ix answered. Next is 6**, then 8.2. The six SSO
+  profiles were re-checked *after* 5.1: the five `awsds-infra-*` return
+  `AWSReservedSSO_InfrastructureAccess_*`, `awsds-policy-canary` returns
+  `AWSReservedSSO_AWSAdministratorAccess_*`. **Only `Policy Canary` still carries an Account Factory direct
+  assignment**, permanently. **(vi) is open by construction** — whether the removals stick is re-checked at
+  the next landing-zone update, account update or re-enrollment, not now.
+- **A permission set provisioned into Management cannot be altered from the Identity account** — measured
+  2026-08-12, and it is a *second* delegated-administrator boundary, distinct from the Management-targeted
+  one step 4 found. The deny is anchored on the **permission set** ARN, so it covers that set's assignments
+  in every account. **Anything touching `AWSAdministratorAccess` runs as CT Admin on Management.**
+  `InfrastructureAccess` is not provisioned into Management and is unaffected — Stage 2 step 5 still manages
+  it from `awsds-infra-identity`.
+- **`sso-directory.amazonaws.com` (the console path) is still unexercised** by 8.3's filter — 5.1's console
+  removals emitted `sso.amazonaws.com`, not the directory pair.
 - **The Sandbox per-unit token is an ordinal** — `awsds-infra-sandbox-1`, `-2`, … (user, 2026-08-11),
   matching the account name AWS shows. How far it propagates past the profile is
   [`plan/open-questions.md`](plan/open-questions.md) item 10, due before 1c step 7.8 writes the tag policy.

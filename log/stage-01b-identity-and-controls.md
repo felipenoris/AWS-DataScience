@@ -556,6 +556,78 @@ yields:
 
 - Ended step 5 (header). Starting step 5.1.
 
+- First, cleaning aws/cli/cache:
+
+```
+rm -f ~/.aws/cli/cache/*.json
+```
+
+- listing cache files, returns session.db and no JSON files.
+
+```
+$ ls ~/.aws/cli/cache 
+session.db
+```
+
+- running:
+
+```
+for P in awsds-infra-sandbox-1 awsds-infra-dev awsds-infra-prod awsds-infra-data awsds-infra-identity; do printf '%-24s ' "$P"; aws sts get-caller-identity --profile "$P" --query Arn --output text 2>&1; done
+```
+
+- All five returned `AWSReservedSSO_InfrastructureAccess_*`.
+
+- running:
+
+```
+for P in awsds-infra-sandbox-1 awsds-infra-dev awsds-infra-prod awsds-infra-data awsds-infra-identity; do printf '%-24s ' "$P"; aws iam get-role --role-name AWSControlTowerExecution --profile "$P" --query 'Role.AssumeRolePolicyDocument.Statement[0].Principal.AWS' --output text 2>&1; done
+```
+
+- All five returned `arn:aws:iam::*:root`
+
+- Login AWS Console using Infrastructure SSO user, account Identity, AWSAdministratorAccess.
+
+- IAM Identity Center -> AWS Accounts. Selected the `Data Governance Account`. On Users and Groups, selected `AWSAdministratorAccess` , `User` associated with sso user `Infrastructure User`. Selected `Remove access`. It errors with Access Denied. After debugging, it was found that The delegated administrator can't alter permission sets provisioned in the management account" (IAM Identity Center User Guide, "Delegated administration").
+
+- Login AWS Console using sso user `AWS Control Tower Admin` -> AWSAdministratorAccess, on management account.
+
+- IAM Identity Center -> AWS Accounts. Selected the `Data Governance Account`. On Users and Groups, selected `AWSAdministratorAccess` , `User` associated with sso user `Infrastructure User`. Selected `Remove access`. It worked. Repeated the same for accounts: Identity Account, Sandbox Account 1, Development Account, Production Account.
+
+- I left Policy Canary Account untouched. It remains with direct SSO Infrastructure User attribution with Permission Set AWSAdministratorAccess.
+
+- executed cleaning aws/cli/cache:
+
+```
+rm -f ~/.aws/cli/cache/*.json
+```
+
+- Verification: re-checked all six profiles after the removals, from a cleared cache:
+
+```
+for P in awsds-infra-sandbox-1 awsds-infra-dev awsds-infra-prod awsds-infra-data awsds-infra-identity awsds-policy-canary; do printf '%-24s ' "$P"; aws sts get-caller-identity --profile "$P" --query Arn --output text; done
+```
+
+  The five `awsds-infra-*` returned `AWSReservedSSO_InfrastructureAccess_*` and `awsds-policy-canary`
+  returned `AWSReservedSSO_AWSAdministratorAccess_*` — the same ARNs as before 5.1. So the group path
+  carries every account with no direct assignment standing behind it.
+
+- Ordering, stated because it differed from the step: `Identity` was removed second rather than last.
+  The step puts it last so the bootstrap is the last thing withdrawn; executing from Management made that
+  moot — the session was in an account not being touched, and all five profiles had already returned
+  `InfrastructureAccess` before the first removal. Recorded so the sequence is not read back as the
+  planned one.
+
+- Re-ran `./aws/list-identities.sh`. `AWSAdministratorAccess` now has exactly one USER assignment in the
+  whole organization, on `Policy Canary`, and the report shows no `(provisioned, no assignment)` rows —
+  the five removals deprovisioned the set cleanly rather than leaving an orphaned role behind.
+
+- Verification (vi) — **opened, not answered.** The removals took effect on 2026-08-12 and had not been
+  re-created as of that date. Whether they stick is only observable at the next landing-zone update,
+  account update or Account Factory re-enrollment. Re-run `./aws/list-identities.sh` after the first of
+  those and answer (vi) then; D32 is amended only if they come back.
+
+- Ended step 5.1. Moving to step 6.
+
 ---
 
 *Log index: [log/INDEX.md](INDEX.md) · Stage index: [plan/stages/INDEX.md](../plan/stages/INDEX.md)*
