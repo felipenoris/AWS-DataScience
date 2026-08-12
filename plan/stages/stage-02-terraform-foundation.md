@@ -500,6 +500,12 @@ That pattern means
 anybody can create. It is invisible in a `plan` and cheap in a script. *(This check used to also require an
 `awsds-scp-recovery` carve-out in every `Deny`; that half went away with D30. The wildcard half did not,
 because it applies to the per-function carve-outs the design still has — D26, D27.)*
+**One `Sid` is whitelisted by name, and the whitelist is part of the check rather than a loosening of it**
+(1c decision 7, 2026-08-13): `DenyAccountBpaChangeExceptInfrastructure` in `awsds-org-scp-baseline.json`
+carves the `InfrastructureAccess` Identity Center role out of the account-level BPA deny, and it *must*
+carry a wildcard account because its whole purpose is to reach accounts that do not exist yet — the role's
+ARN suffix is minted per account. **Whitelist that one `Sid` explicitly and fail on every other match**; a
+check that is relaxed to accommodate its one exception stops being a check (`plan/conventions.md`, IAM rules).
 
 **9.3 — Every OU is matched by an attachment** (5.3). Enumerate the organization's OUs and fail if one of
 them appears in no `for_each` result. This is the check that turns D34's silent failure mode into a red

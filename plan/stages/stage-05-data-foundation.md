@@ -110,6 +110,15 @@ before Stage 9 repeats it for Production.
    whether the fine-grained access control objective in `CLAUDE.md` is a control or a decoration.
    Record any exception through Lake Formation **hybrid access mode** rather than by quietly widening a
    role.
+   **What that objective's *grain* is has been open since 2026-08-13, and it is decided here rather than
+   assumed.** `CLAUDE.md` asks to "restrict who can read which database, table, column and row" — a
+   statement about a **person** — while Unified Studio **notebooks do not support trusted identity
+   propagation**: in an Identity Center domain they fall back to *compatibility permission mode*, so the
+   principal Lake Formation actually sees is the project/compute role, not the human. Grant accordingly and
+   say which it is: either per-user filtering exists on the SQL path and not on the notebook path — a
+   two-grain design that has to be stated, not discovered — or the grain is the **project**, and the
+   objective is met at that grain with the difference written down (`plan/open-questions.md` item 13). A
+   row filter that silently applies to a role shared by four people is Lesson 5 with a `WHERE` clause.
 7. **The cross-account shares (D22, INT-03 and 11).** **Prerequisite, and it is not optional:**
    Stage 1d step 11 must have enabled `ram:EnableSharingWithAwsOrganization` and raised the Lake Formation
    cross-account version to 3 or above. Without them the grant appears to succeed on this side and the

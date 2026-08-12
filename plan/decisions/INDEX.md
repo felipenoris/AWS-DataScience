@@ -11,7 +11,7 @@ reasoning, its consequences or its revision trigger.
 | [D3](D03-terraform-state.md) | Terraform state location | Terraform state in a per-account S3 bucket with native S3 locking; no DynamoDB, nothing in Management. | S2 |
 | [D4](D04-vpn-wireguard.md) | VPN technology | Self-managed WireGuard on `t4g.nano`, layer `[D]`; Client VPN documented as the managed alternative. | S4 |
 | [D5](D05-sagemaker-egress.md) | SageMaker internet restriction mechanism | Two egress designs built behind a switch and compared: (A) NAT plus allowlist, (B) no NAT at all. | S3, S6, S8, S11 |
-| [D6](D06-dlp-approach.md) | DLP approach | DLP is four problems with four native controls, all sitting on top of the data perimeter. | S11 |
+| [D6](D06-dlp-approach.md) | DLP approach | DLP is four problems with four native controls on top of the data perimeter, and IAM Access Analyzer is the one component that checks the others instead of adding to them. | S1b, S11, S12 |
 | [D7](D07-orchestration.md) | Workflow orchestration in production | Two orchestrators built and compared: (A) MWAA Serverless, (B) EventBridge Scheduler + Step Functions. | S10 |
 | [D8](D08-gitlab-hosting.md) | GitLab hosting | GitLab CE self-managed on EC2 in Production, layer `[D]` — stopped between sessions, not destroyed. | S7, S8 |
 | [D9](D09-az-count.md) | Number of AZs | Two AZs for free subnet plumbing, one AZ for metered interface endpoints. | S3 |

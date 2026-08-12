@@ -244,8 +244,13 @@ it belongs in the landing zone (Stage 1) rather than in the DLP stage:
 | Trusted networks | Can my identities reach my resources from outside my networks? | **VPC endpoint policies** and resource policies with `aws:SourceVpce` / `aws:SourceVpc` | Stage 3 |
 
 **Resource Control Policies (RCPs)** are the piece that does the most work here and the piece most easily
-missed: applied at the OU or organization root, they set a maximum permission on the *resource* side for
-S3, STS, KMS, SQS and Secrets Manager, regardless of what any account-level policy says. An RCP denying S3
+missed: applied at the OU or organization root, they set a maximum permission on the *resource* side
+regardless of what any account-level policy says. They cover **a subset of AWS services, and the subset
+grows** — S3, STS, KMS, SQS, Secrets Manager, DynamoDB, ECR, CloudWatch Logs, EventBridge and others.
+**Re-read AWS's list rather than trusting a list written here**: until 2026-08-12 this sentence named the
+five services RCPs launched with, and the list had grown past it — the failure mode a copied enumeration
+always has, and the reason it matters is below, where the *gap* between that list and Access Analyzer's
+coverage is the thing being reasoned about. An RCP denying S3
 access to principals outside the organization is, for the stated goal of preventing data leakage, worth more
 than Macie — it removes the path instead of reporting on it afterwards.
 
@@ -270,6 +275,61 @@ request is denied. Every place this plan applies a trusted-resources condition t
 allow-list of AWS-owned bucket ARNs: the S3 gateway endpoint policy (Stage 3 step 9) is the one that bites
 first and hardest, since under egress design B it is the *only* route to those buckets. Treat "which
 AWS-owned buckets does this environment depend on" as a maintained list, not as a one-off discovery.
+
+#### Measuring the perimeter — IAM Access Analyzer (Stage 1b step 8.2), and where it *is* the perimeter
+
+The three axes above are preventive, and **a preventive control that works is silent**. Nothing in that
+table emits a signal saying the perimeter holds; a missing carve-out and a missing policy look identical
+from outside. IAM Access Analyzer's external-access findings are that signal, and they are free: with the
+organization as the zone of trust, it enumerates every supported resource whose resource-based policy grants
+to a principal outside it, by logic-based reasoning over all possible requests rather than by matching
+patterns. D6 carries its place in the DLP strategy; what belongs *here* is its relationship to these three
+axes, which is not the one the word "detective" suggests.
+
+**Read the findings before attaching the RCPs, not after.** They are the inventory of what an organization-
+wide `aws:PrincipalOrgID` deny is about to break — which is AWS's own recommended order, and the second
+reason 8.2 comes before Stage 1c is repeated in code at Stage 2.
+
+**And the two coverage sets do not coincide. The difference is where this perimeter is blind:**
+
+| Reachable from outside the organization, and… | Resource types |
+|---|---|
+| …an RCP can deny it — the analyzer is a *check* on the perimeter | S3 buckets and directory buckets, KMS keys, SQS queues, Secrets Manager secrets, DynamoDB tables and streams, ECR repositories, IAM role trust policies (via `sts`) |
+| **…no RCP reaches it — the analyzer is the *only* control** | **Lambda functions and layers, SNS topics, EBS volume snapshots, RDS DB and DB-cluster snapshots, EFS file systems** |
+
+Three entries in the second row are data-bearing *in this design*, which turns an informational finding into
+an operational one. **An EBS or RDS snapshot shared with an account outside the organization is a whole-volume
+or whole-database copy, and no policy in the axis table can stop it** — the sharing is an EC2/RDS API call
+against a resource type the RCP list does not cover. **EFS is D24's shared filesystem**, the one place a POSIX
+copy of anything accumulates. For these, "the perimeter contains it" — the sentence D19 leans on — is simply
+not true, and D19 was narrowed on 2026-08-12 to say so.
+
+**The two do not end in the same place, and the difference is the point.** The snapshot route is closed
+preventively after all — not by the axis table but **beside** it, with an unconditional SCP deny on
+`ec2:ModifySnapshotAttribute`, `ec2:ModifyImageAttribute` and the RDS pair, in **Stage 1c step 7.5**.
+The asymmetry worth carrying away: **RCPs are limited to a service list; SCPs are not.** So a resource type
+the trusted-identities axis cannot reach is often still reachable from the trusted-resources side, and "no
+RCP covers it" is a reason to look at the identity half, not a reason to fall back on detection. EFS is
+where that runs out: no RCP, no SCP worth writing (opening the file system policy still needs NFS
+reachability into the VPC, which the network design does not provide), and therefore the analyzer's finding
+really is the whole control — an accepted risk carried into Stage 11's deliverable rather than a covered one.
+
+Two structural exemptions belong beside them, because they are holes in the axis table that no amount of
+policy authoring closes: **RCPs do not apply to resources in the management account**, and **not to
+service-linked roles** — principals created by services rather than chosen by anyone (Lesson 17). The
+analyzer sees both.
+
+**Region portability (§4.1) reaches this too, and silently.** An external-access analyzer only analyzes
+resources in **its own Region**. One analyzer in `us-west-2` is complete exactly while the environment is
+single-region; the day a second Region is added, the perimeter stops being measured there and nothing says so
+(Lesson 13). Region-count is therefore an input to §4.1's cost of moving, not only to the resource inventory.
+*(Unused-access findings are the exception — they are not Region-scoped.)*
+
+**One thing named here so it is not mistaken for something built:** Access Analyzer's **custom policy checks**
+(`CheckNoNewAccess`, `CheckAccessNotGranted`, `CheckNoPublicAccess`) are the mechanism that would make these
+perimeter rules fail a merge request instead of relying on review — the natural home being the Terraform
+pipeline over `terraform-live/`. **No stage owns it.** It is written down as an available mechanism and an
+open gap, not as a control (Lesson 5).
 
 ---
 
@@ -373,12 +433,17 @@ contradicts some part of it.
     not there**, and this is the account whose administrator can grant access to every other one.
   - **`Sandboxes` carries none, by design**: it groups the per-unit Sandbox accounts (D35) and inherits
     `Interactive`. Depth is therefore 2, which any OU enumeration has to be written against (D34).
-  - **`Interactive` carries none either — today, and that is an open decision rather than a property.** It
-    holds Development plus the nested `Sandboxes`, it is the only OU where a domain may exist (D17), and
-    interactive compute is allowed there because nothing denies it: the organization-root set is the whole
-    ceiling. What holds infrastructure change off the data scientist is `DataScientistAccess`, an
-    **identity** policy, not this OU. Whether it gains a set of its own is Stage 1c step 7.6 — the one
-    blocking question of that stage.
+  - **`Interactive` gains a set of exactly one statement — settled 2026-08-13** (Stage 1c step 7.6,
+    decision 1): deny `sagemaker:CreateNotebookInstance` and `CreatePresignedNotebookInstanceUrl`. It holds
+    Development plus the nested `Sandboxes`, it is the only OU where a domain may exist (D17), and every
+    *other* interactive surface is allowed there because nothing denies it — the organization-root set plus
+    that one statement is the whole ceiling. What holds infrastructure change off the data scientist is
+    `DataScientistAccess`, an **identity** policy, not this OU.
+    **Why that one statement and nothing more:** the classic notebook instance is the one interactive
+    surface this design uses nowhere — Unified Studio notebooks and VS Code are *spaces and apps*
+    (`sagemaker:CreateSpace`/`CreateApp`) — so denying it needs **no carve-out at all** and binds the
+    builder as hard as anyone, which is what separates a control from a convention. Any broader deny here
+    would have to exempt the identity that *builds* these accounts, which is the shape D30 had reverted.
   - **`Policy Test` (D29) carries none on purpose** — it is where a *candidate* SCP/RCP is attached and
     exercised against the disposable `Policy Canary` account before it reaches anything real. It exists as
     an account and not just a folder because an SCP is only evaluated when a principal makes a call, so an

@@ -9,7 +9,7 @@ The goal is to achieve the following:
 
 - Use SageMaker Unified Studio as a development tool for Data Scientists.
 
-- The main features Data Scientists can use inside SageMaker to develop data-science products are:
+- The main features Data Scientists can use inside SageMaker Unified Studio to develop data-science products are:
 
   - the use of Jupyter notebooks built in SageMaker Unified Studio: users can instantiate as many Jupyter notebook instances as they like, each one on a selected compute and dev-env image.
   - the user of vscode instances built in SageMaker Unified Studio: users can instantiate as many vscode web instances they wish, with possibility of remote connecting their local computer vscode to a remote session.
@@ -17,6 +17,8 @@ The goal is to achieve the following:
   - use of S3 buckets for storage, built in SageMaker Unified Studio user interface.
   - use of sagemaker's workflows and Visual ETL feature built in SageMaker Unified Studio.
   - use of IA models built in SageMaker Unified Studio
+
+- The data scientist can promote Artifacts built in SageMaker (dev-env, ML models, workflows) to production (Sandbox -> Development -> Staging -> Production), making use of CI/CD pipelines (see below).
 
 - Protect data against leakage (DLP), mainly targeting SageMaker. There is no single AWS product that does
   this, so the requirement is broken into the four problems it has to solve:
@@ -180,17 +182,25 @@ The `§` numbers inside `plan/` files are historical anchors, not addresses.
 
 ### Current position
 
-- **Stage 1a is done but for the `Staging` vend, and Stage 1b is mid-execution** — the two `log/` files are
-  authoritative. 1a: Control Tower enabled (`us-west-2`), budget set, `Development`, `Sandbox Account 1`,
-  `Production`, `Data Governance`, `Policy Canary` and `Identity` vended, centralized root access on.
-  Break-glass built and **tested 2026-08-09 on both channels** — the thing 1c step 7 may not start without.
-- **1b: 8.3, 1, 2, 3, 4, 5, 5.1 and 6 are done, and i, ii and ix answered. Only 8.2 is left.** The six SSO
-  profiles were re-checked *after* 5.1: the five `awsds-infra-*` return
-  `AWSReservedSSO_InfrastructureAccess_*`, `awsds-policy-canary` returns
-  `AWSReservedSSO_AWSAdministratorAccess_*`. **Only `Policy Canary` still carries an Account Factory direct
-  assignment**, permanently. **(vi) is open by construction** — whether the removals stick is re-checked at
-  the next landing-zone update, account update or re-enrollment, not now.
-- **Subnets anchor on the AZ `zone_id`, never on list position** — step 6, 2026-08-12. Every measured
+- **Stage 1a is done but for the `Staging` vend; Stage 1b is DONE (2026-08-12); Stage 1c is next and has no
+  blocking input** — the `log/` files are authoritative. 1a: Control Tower enabled (`us-west-2`), budget
+  set, `Development`, `Sandbox Account 1`, `Production`, `Data Governance`, `Policy Canary` and `Identity`
+  vended, centralized root access on. Break-glass built and **tested 2026-08-09 on both channels** — the
+  thing 1c step 7 may not start without, and it is done.
+- **1b's residue, all of it:** the six SSO profiles resolve (five `awsds-infra-*` →
+  `AWSReservedSSO_InfrastructureAccess_*`, `awsds-policy-canary` → `AWSReservedSSO_AWSAdministratorAccess_*`);
+  **only `Policy Canary` still carries an Account Factory direct assignment**, permanently; the org IAM
+  Access Analyzer lives in **Audit** (`ORGANIZATION` zone of trust) after the console wizard first put it in
+  the wrong account. **(vi) is open by construction** — whether 5.1's removals stick is re-checked at the
+  next landing-zone update, account update or re-enrollment, not now.
+- **1c was revised 2026-08-13 and four things were settled**, so it starts without a question: `Interactive`
+  gets one deny (`sagemaker:CreateNotebookInstance`, `CreatePresignedNotebookInstanceUrl`) — decision 1;
+  the BPA deny **carries a carve-out** for `InfrastructureAccess`, the design's one wildcard-account ARN —
+  decision 7; the Region deny is **`CT.MULTISERVICE.PV.1` per OU**, never `GRREGIONDENY` — decision 6; and
+  `Environment=sandbox` is **one shared value** at any N. Only decision 5 (tag-forcing SCP scope) is left,
+  and it is made while executing. **7.0 is new and is the reason the stage is executable**: measure OU ids,
+  what Control Tower already denies, the BPA state and the quota *before* writing JSON.
+- **Subnets anchor on the AZ `zone_id`, never on list position** — 1b step 6, 2026-08-12. Every measured
   account returns the *same* mapping (`us-west-2a` → `usw2-az2`; the names are not in ID order), so position
   would work today; it is forbidden because an unvended account gets its own mapping and the failure is
   silent. `./aws/AZs.sh` re-measures — **run it after every vend**. Open question 3 is closed.
@@ -203,8 +213,18 @@ The `§` numbers inside `plan/` files are historical anchors, not addresses.
 - **`sso-directory.amazonaws.com` (the console path) is still unexercised** by 8.3's filter — 5.1's console
   removals emitted `sso.amazonaws.com`, not the directory pair.
 - **The Sandbox per-unit token is an ordinal** — `awsds-infra-sandbox-1`, `-2`, … (user, 2026-08-11),
-  matching the account name AWS shows. How far it propagates past the profile is
-  [`plan/open-questions.md`](plan/open-questions.md) item 10, due before 1c step 7.8 writes the tag policy.
+  matching the account name AWS shows. **It does *not* propagate to the `Environment` tag**, settled
+  2026-08-13; the other four tokens of [`plan/open-questions.md`](plan/open-questions.md) item 10 are open
+  and none blocks anything before Stage 2.
+- **`CLAUDE.md`'s objectives gained six named Unified Studio features on 2026-08-13, and reading them
+  against AWS's docs produced four findings that are Stage 5/6/10's, not the landing zone's**
+  ([`plan/open-questions.md`](plan/open-questions.md) items 12-15, summarized in the table at the top of
+  [Stage 6](plan/stages/stage-06-unified-studio.md)). The load-bearing one: **the default notebook Spark
+  runtime is Athena for Spark, which does not support VPC** — principle 4 is about the account, not about
+  what the data scientist actually runs, until Stage 6 disables it. Also: **notebooks have no trusted
+  identity propagation**, so D13's fine-grained grain may be the *project* and not the user; and
+  **`sagemaker:StartSession`** (local VS Code onto a space) is a real objective *and* a file channel to a
+  laptop. SMUS notebooks/VS Code are **spaces and apps** — which is what made 1c's decision 1 free.
 - **The `Staging` vend is held on the account cap** — the increase to 15 is *requested*; confirm before
   vending. **What the deferral owes is one list, in [Stage 1a](plan/stages/stage-01a-landing-zone.md)**
   ("What the deferral leaves owed"), not five per-stage footnotes.
@@ -221,19 +241,16 @@ The `§` numbers inside `plan/` files are historical anchors, not addresses.
 - **All thirty-six decisions are closed** ([`plan/decisions/INDEX.md`](plan/decisions/INDEX.md)). The four
   governing what happens next: **D32** (`SSOUserEmail`), **D33**/**D34** (who vends), **D35** (`Sandbox` is
   one per business unit; every other account is exactly one).
-- **The landing zone's second half is three stages**: **1b** (steps 1-6, 5.1, 8), **1c** (step 7, the only
-  irreversible one, in two sittings), **1d** (steps 9-11, independent of each other, and not blocked on 1c).
-  **1c and 1d have no `log/` file yet.**
+- **The landing zone's second half is three stages**: **1b** (done), **1c** (step 7, the only irreversible
+  one, in two sittings), **1d** (steps 9-11, independent of each other, and not blocked on 1c — a short
+  session can take 1d first). **1c and 1d have no `log/` file yet; 1c's must be created before it starts.**
 - **The identity seam, settled 2026-08-09 by review** (`plan/conventions.md`): **people** — users, groups,
   memberships — stay in the directory; **entitlements** — permission sets, boundaries, group→account
   assignments — are Terraform. So **1b creates one permission set and specifies seven**; the other six are
   *written* in Stage 2 step 5, never typed into a console. **1b step 8.3's alarm is unfiltered** by
   decision, with the filtered variant in `plan/institutional-delta.md` for real headcount.
-- **Still needed from the user**, none blocking now: **the domain name** (D15 phase 2, blocking **Stage 13
-  alone**), the AZ name-to-ID check (1b step 6, which decides how Stage 3 anchors subnets), and — due at
-  1c step 7 — whether the `Interactive` OU gets a policy set of its own (decision 1) and whether the
-  `s3:PutAccountPublicAccessBlock` deny is carved (**decision 7**, new: without it no future account can
-  ever have account-level BPA).
+- **Still needed from the user: one thing, and it blocks Stage 13 alone** — **the domain name** (D15
+  phase 2). Everything the landing zone was waiting on is settled.
 - **No public DNS before Stage 13** (D15); internal names are `*.internal` off an internal CA (D36, INT-19).
 - **Settle earliest:** **INT-11** (fails *silently*) and **INT-13** (no convenience-preserving fallback).
 

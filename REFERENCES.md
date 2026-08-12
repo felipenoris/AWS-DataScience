@@ -69,7 +69,23 @@
 
 - S3 condition keys, including `s3:signatureAge` (limits the lifetime of presigned URLs): <https://docs.aws.amazon.com/service-authorization/latest/reference/list_amazons3.html>.
 
-- IAM Access Analyzer: <https://docs.aws.amazon.com/IAM/latest/UserGuide/what-is-access-analyzer.html>.
+- Block public access for EBS snapshots — free, **account-level and Regional**, settable org-wide only
+  through a declarative policy (and then no longer changeable inside the account). The sentence Stage 1c
+  step 7.8 turns on: *"Block public access for snapshots does not prevent private snapshot sharing"*, which
+  is why the cross-account share is denied by SCP in 7.5 instead. It also does not cover EBS-backed AMIs —
+  those need block public access for AMIs, separately:
+  <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/block-public-access-snapshots.html>.
+
+- IAM Access Analyzer — the six capabilities and, in the same page, the three things D6 and
+  `plan/architecture.md` §4.2 depend on: the **resource-type list for external access** (it includes EBS and
+  RDS snapshots, EFS, Lambda and SNS, none of which any RCP covers), the **narrower resource-type list for
+  internal access** (S3, RDS snapshots, DynamoDB — no EFS, no catalog), and the statement that an
+  external-access analyzer analyzes **only its own Region** while unused access does not:
+  <https://docs.aws.amazon.com/IAM/latest/UserGuide/what-is-access-analyzer.html>. The billing dimensions are
+  named on the same page — per principal-month for unused access, **per resource-month for internal access**,
+  per request for custom policy checks — but the numbers are not; measure them (Lesson 6). Creating the
+  internal analyzer:
+  <https://docs.aws.amazon.com/IAM/latest/UserGuide/access-analyzer-create-internal.html>.
 
 - IAM root user (including centralized root access management for member accounts): <https://docs.aws.amazon.com/IAM/latest/UserGuide/id_root-user.html>.
 
@@ -370,3 +386,11 @@
 - **AWS Organizations increases SCP quotas (May 2026)** — 10 SCPs per node and 10 240 characters per policy, up from 5 and 5 120; RCP quotas are not part of the same increase, which is the sizing budget Stage 1c step 7.1 now states: <https://aws.amazon.com/about-aws/whats-new/2026/05/aws-organizations-increased-scp-quotas/>.
 
 - **Establish permissions guardrails using data perimeters** — the trusted-resources SCP shape that Stage 1c step 7.5 now uses for `aws:ResourceOrgID`: `StringNotEqualsIfExists` beside `BoolIfExists` on `aws:PrincipalIsAWSService`, so a call that does not populate the key is not denied and calls AWS makes on your behalf are not caught: <https://docs.aws.amazon.com/IAM/latest/UserGuide/access_policies_data-perimeters.html> and <https://aws.amazon.com/blogs/security/establishing-a-data-perimeter-on-aws-allow-only-trusted-resources-from-my-organization/>.
+
+- **Notebooks in SageMaker Unified Studio** — the page that settles three things at once for the 2026-08-13 objectives: notebooks run on **JupyterLab spaces**, the default Spark runtime is **Amazon Athena for Apache Spark, which "doesn't support Virtual Private Cloud (VPC)"** with EMR Serverless / EMR / Glue as the VPC-capable alternatives and a *Network isolation* procedure for disabling it, and **notebooks do not support trusted identity propagation** — in an Identity Center domain they use *compatibility permission mode* for data access (Stage 1c step 7.6's action table; `plan/open-questions.md` items 12 and 13): <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/notebooks.html>.
+
+- **Spaces in SageMaker Studio / Unified Studio** — a space is "a combination of a compute instance, storage and other runtime configurations" behind a JupyterLab or Code Editor application, created through `sagemaker:CreateSpace` / `sagemaker:CreateApp`. This is the evidence that settled **decision 1** of Stage 1c: denying the *classic* `sagemaker:CreateNotebookInstance` costs none of the `CLAUDE.md` notebook objectives, because they are a different product surface: <https://docs.aws.amazon.com/sagemaker/latest/dg/studio-updated-jl-user-guide-create-space.html> and <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/jupyterlab.html>.
+
+- **Remote access to SageMaker spaces from a local IDE** — the `sagemaker:StartSession` API behind "connect your local VS Code to a Unified Studio space", the three connection methods (deep link, AWS Toolkit, SSH), and AWS's own recommendation to scope `StartSession` by tag to a user's *own* private applications. It is the action that matches neither `sagemaker:Create*` nor `datazone:*`, which is why Stage 1c step 7.6 names it explicitly and why `plan/open-questions.md` item 14 treats it as an egress channel: <https://docs.aws.amazon.com/sagemaker/latest/dg/remote-access.html> and <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/adminguide/local-ide-support.html>.
+
+- **Workflows in SageMaker Unified Studio** — the Workflows tool is **Amazon MWAA**, in both a *serverless* and a *provisioned* form, and existing MWAA environments can be connected to a project. It confirms rather than changes D7/D28: the `CLAUDE.md` "workflows" feature and Stage 10's orchestration comparison are the same surface (`plan/open-questions.md` item 15): <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/workflow-orchestration.html>.

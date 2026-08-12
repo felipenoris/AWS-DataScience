@@ -47,16 +47,17 @@ calling a Control Tower row "drift" is the mistake this table exists to prevent.
 
 | Account class | Assignment rows expected |
 |---|---|
-| **Vended** — Data Governance, Development, Identity, Production, Sandbox Account 1 | `InfrastructureAccess` → `sso-group-infrastructure`; `AWSAdministratorAccess` → the infrastructure user **directly** (D32); `AWSOrganizationsFullAccess` → `AWSControlTowerAdmins`; `AWSPowerUserAccess` → `AWSSecurityAuditPowerUsers`; `AWSReadOnlyAccess` → `AWSSecurityAuditors` |
-| **Policy Canary** | The same, **minus `InfrastructureAccess`** — it holds an administrator principal and nothing else, by design (D29) |
+| **Vended** — Data Governance, Development, Identity, Production, Sandbox Account 1 | `InfrastructureAccess` → `sso-group-infrastructure`; `AWSOrganizationsFullAccess` → `AWSControlTowerAdmins`; `AWSPowerUserAccess` → `AWSSecurityAuditPowerUsers`; `AWSReadOnlyAccess` → `AWSSecurityAuditors`. **No direct `USER` assignment** — the D32 Account Factory ones were removed in 1b step 5.1 (2026-08-12), and their return is what verification (vi) is watching for |
+| **Policy Canary** | **`AWSAdministratorAccess` → the infrastructure user *directly*** (D32) and nothing else of this project's — no `InfrastructureAccess`, by design (D29). It is the **only** direct `USER` assignment left in the organization, and it is permanent: there is no group and no `awsds-infra-*` profile behind it, so removing it removes the only way in |
 | **Audit** | `AWSAdministratorAccess` → `AWSAuditAccountAdmins` and → `AWSControlTowerAdmins`; `AWSPowerUserAccess` → `AWSSecurityAuditPowerUsers`; `AWSReadOnlyAccess` → `AWSSecurityAuditors` |
 | **Log Archive** | `AWSAdministratorAccess` → `AWSControlTowerAdmins` and → `AWSLogArchiveAdmins`; `AWSPowerUserAccess` → `AWSSecurityAuditPowerUsers`; `AWSReadOnlyAccess` → `AWSLogArchiveViewers` and → `AWSSecurityAuditors` |
 | **Management** | Control Tower's own only: `AWSAdministratorAccess`, `AWSPowerUserAccess`, `AWSReadOnlyAccess`, `AWSServiceCatalogAdminFullAccess` → `AWSServiceCatalogAdmins`, `AWSServiceCatalogEndUserAccess` → `AWSAccountFactory`. **No `InfrastructureAccess` and no direct user assignment** |
 
 **Only three of those rows reach a principal that exists today**; the rest point at the empty groups of
-INV-05. They are `sso-group-infrastructure` and the direct D32 assignment — both the infrastructure user —
-and **`AWSControlTowerAdmins` through `AWSOrganizationsFullAccess`, which reaches every vended account**.
-The third one is Control Tower's, not the plan's.
+INV-05. They are `sso-group-infrastructure` on the vended accounts and the one surviving direct D32
+assignment on `Policy Canary` — both the infrastructure user — and **`AWSControlTowerAdmins` through
+`AWSOrganizationsFullAccess`, which reaches every vended account**. The third one is Control Tower's, not
+the plan's, and **Stage 1c step 7.5 is where its reach finally gets measured** (open question 11).
 
 ## B. Known exceptions
 
@@ -73,7 +74,7 @@ Listed so that a future session does not "fix" something that a later stage is g
 | Only `SERVICE_CONTROL_POLICY` is `ENABLED` on the root — no RCP, no tag policy, no declarative policy | Stage 1c step 7.2, which enables the other three. Until then, half of 1c's policy set has nowhere to attach |
 | `InfrastructureAccess` is the only permission set that is not Control Tower's, and it has **no permissions boundary** | Stage 2 step 5 writes the other six and their boundaries. One permission set was created by hand on purpose; six were only *specified* |
 | Only `sso-group-infrastructure` holds any assignment — the other four `sso-group-*` groups reach no account | Same place: the group→account assignments are Terraform, not console |
-| The infrastructure user reaches vended accounts **twice**: through the group, and through a direct `USER` assignment of `AWSAdministratorAccess` | D32 — the Account Factory direct assignment. It is landing-zone state, not drift, and removing it is a decision, not a cleanup |
+| No account-level S3 Block Public Access is expected anywhere, and no RCP, tag or declarative policy is attached | **Stage 1c**: 7.4 step 1 sets BPA in every account (measuring first), 7.5 then denies changing it with one carve-out, and 7.8 attaches the rest. Until then, a bucket created outside a module is the exposure |
 | There is no `Staging` account | The vend is held on the account cap; see the Current position in [`CLAUDE.md`](CLAUDE.md) |
 | Audit holds one analyzer, external-access only (INV-10) | **Stage 12** adds the unused-access analyzer, which is the paid half. Until then a second analyzer there is a finding, not a head start |
 | The trusted-access list of INV-09 has seven principals and three delegations | It grows by one at each of **Stage 1d step 11** (`ram`), **Stage 4** (GuardDuty), **Stage 5** (Security Hub) and **Stage 11** (Macie). For those three services delegating *is* enabling, which is why they are not there yet — restate INV-09 as each one lands |

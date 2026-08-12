@@ -21,6 +21,16 @@ verified to apply under a permission boundary). The metadata-database question f
 of this stage applies **only if the provisioned fallback is ever used** — Serverless has no environment
 to destroy, so its run history is not state inside an `[E]` resource.
 
+**And one thing this stage stopped being separate from, 2026-08-13.** `CLAUDE.md` now names "SageMaker
+workflows" as a data-scientist feature, and the Unified Studio *Workflows* tool **is Amazon MWAA** — in both
+a serverless and a provisioned form, with existing environments connectable to a project. So the workflow a
+data scientist authors in Stage 6 and the orchestrator compared here are the same product, not two that
+happen to meet at D28's artifact contract. Two consequences: the D7 comparison should be run against a
+workflow **authored in the Studio**, not a hand-written DAG, or it measures the wrong thing; and whatever
+Stage 6 turns on for the Workflows capability is already the provisioned/serverless choice this stage
+believes it is making — check what exists before building either
+(`plan/open-questions.md` item 15).
+
 **To execute:**
 
 1. Implement **both** orchestrators against the same workflow, behind a switch, in

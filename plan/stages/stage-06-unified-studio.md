@@ -14,6 +14,18 @@
 **Objective:** the data scientist's working environment — since the 2026-08-08 revision (D26), one
 SageMaker unified domain (DataZone V2) with projects, rather than two classic Studio domains.
 
+**Four mechanics of the product, read off AWS's documentation on 2026-08-13 when `CLAUDE.md` named six
+Unified Studio features as objectives.** They are here rather than in the steps because each one changes
+what a step has to *decide*, and the first one contradicts a principle rather than a detail. The full
+statement of each, with its reference, is [`plan/open-questions.md`](../open-questions.md) items 12-15.
+
+| What the product does | What this stage owes because of it |
+|---|---|
+| **Notebooks run Spark on Amazon Athena for Apache Spark by default, and Athena for Spark does not support VPC.** The VPC-capable runtimes are EMR Serverless, EMR and Glue, selected per notebook; the Admin Guide documents disabling Athena Spark under *Network isolation* | **Disable it, and choose the runtime deliberately** — a notebook whose compute is outside the VPC is outside the endpoint policies, the flow logs and every `aws:SourceVpce` condition the data perimeter is built from (principle 4, `plan/architecture.md` §4.2). Price the replacement: the default was free of hourly cost and EMR Serverless and Glue are not |
+| **Notebooks do not support trusted identity propagation.** In an Identity Center domain they use *compatibility permission mode*, so data access resolves through the project/compute role, not the signed-in human | Decide, and write down, **what the real grain of D13's fine-grained access is**: per-user Lake Formation row/column filters describe a *user*. Either the SQL path carries per-user identity and the notebook path does not — which is a two-grain design and has to be said out loud — or the grain is the project, and `CLAUDE.md`'s DLP objective is met at that grain with the difference recorded |
+| **`sagemaker:StartSession` attaches a local VS Code to a running space** — a `CLAUDE.md` objective, and a file-transfer channel to a laptop that no browser-side restriction reaches | This is the concrete form of open question 6, not a separate one. AWS documents tag-scoping `StartSession` to a user's own private apps; that is the lever, and whatever is left over is an accepted risk in **Stage 11**'s threat model rather than an unexamined one. 1c denies the action everywhere it should not happen and deliberately not here |
+| **"As many spaces as they like" is billed by the hour**, and **workflows are MWAA** (serverless or provisioned) | D11 is a property of the design, not of the user's habits: **idle shutdown plus a restricted instance-type list** is what closes it, priced into `plan/cost-model.md` against the USD 50 ceiling. The workflows half *confirms* D7/D28 — this feature and Stage 10's orchestration comparison are one surface |
+
 **Read this before the steps, because it is the thing most easily misread:** the domain is registered in
 **Data Governance**, but *no compute runs there*. A domain is a registry — projects, profiles, blueprints,
 memberships, the catalog. The compute lands in whichever account the project profile names, which is

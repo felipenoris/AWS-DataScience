@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Status** | **in progress** — 8.3, 1, 2, 3, 4, 5, 5.1 and 6 done; **only 8.2 is left** |
+| **Status** | **DONE** — closed 2026-08-12 (8.3, 1, 2, 3, 4, 5, 5.1, 6, 8.2). Verifications (i), (ii), (a) and (ix) answered; **(vi) is open by construction** and is re-checked at the next landing-zone update, account update or Account Factory re-enrollment, not on a schedule |
 | **Prerequisites** | Stage 1a complete, bar the deferred `Staging` vend. **Steps 3, 5 and 6 skip their `Staging` items**; the full list of what the deferral owes, across every stage, is in [Stage 1a](stage-01a-landing-zone.md) ("What the deferral leaves owed") and is worked at the vend rather than remembered here |
 | **Consumes** | [D10](../decisions/D10-identity-center-delegation.md), [D11](../decisions/D11-lab-lifecycle.md), [D14](../decisions/D14-supply-chain-account.md), [D16](../decisions/D16-break-glass.md), [D18](../decisions/D18-data-scientist-access.md), [D19](../decisions/D19-derived-zone.md), [D20](../decisions/D20-staging-account.md), [D21](../decisions/D21-development-account.md), [D22](../decisions/D22-data-governance-account.md), [D29](../decisions/D29-policy-canary.md), [D30](../decisions/D30-scp-recovery.md), [D31](../decisions/D31-approver-read.md), [D32](../decisions/D32-account-factory-sso-user.md), [D33](../decisions/D33-control-tower-admin-user.md), [D34](../decisions/D34-account-vending.md), [D35](../decisions/D35-sandbox-cardinality.md) |
 | **Proves** | Nothing cross-account; this stage is what makes every later stage reachable. Step 5's profiles are the precondition for **Stage 1c**, **Stage 1d** and everything from Stage 2 onwards |

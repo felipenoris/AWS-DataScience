@@ -359,10 +359,13 @@ its permissions boundary — an **identity** policy. The distinction is not peda
 mistake in a permission set and a permission set does not survive a mistake in itself. The literal SCP was
 considered and is not written for a reason worth knowing: it would have to exempt the identity that *builds*
 all the infrastructure in these accounts, and a standing exemption for the builder is the shape D30 proposed
-and had reverted. So `Interactive` is currently the OU where the organization-root ceiling is the whole
-ceiling — interactive compute is allowed because nothing denies it — and whether it should gain denies of its
-own is a choice recorded at the step that attaches policy (Stage 1c step 7), together with the one candidate
-that would need no exemption at all.
+and had reverted. So `Interactive` is the OU where the organization-root ceiling is very nearly the whole
+ceiling — interactive compute is allowed because nothing denies it — **plus exactly one statement, adopted
+2026-08-13**: no *classic* SageMaker notebook instance. That one was adopted precisely because it is the
+candidate that needs no exemption at all. Unified Studio's notebooks and VS Code editors are **spaces and
+apps**, a different API surface, so the deny removes an ungoverned way in — one that bypasses the domain,
+the VPC-only app configuration and the `dev-env` image gate in a single call — without costing a single
+feature the environment is for.
 
 **Why `Policy Test` is not that mistake, despite holding one account.** It is the one OU here whose value is
 not inheritance at all. A Service Control Policy is a permission ceiling that AWS evaluates only when a

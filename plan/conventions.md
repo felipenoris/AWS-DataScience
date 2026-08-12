@@ -90,6 +90,13 @@ ordinal buys and one it costs:
   exist. [Stage 14](stages/stage-14-sandbox-vending.md) owns that duty; until N is 2 there is nothing to
   record and nothing yet lost.
 
+**The `Environment` tag value is decided and it is *not* the ordinal — settled by the user, 2026-08-13.**
+Every Sandbox account, at any N, tags `Environment=sandbox`. The enumeration above therefore stands exactly
+as written, and 1c step 7.8's tag policy enumerates it with no ordinal anywhere. The reason is the failure
+mode rather than the aesthetics: an enumerated value that does not admit a future unit turns the first
+apply in a freshly vended account into an `AccessDenied` (Lesson 14), and per-unit cost attribution is
+already available by **account** without spending an organization-policy edit at every vend.
+
 **What is left to [Stage 14](stages/stage-14-sandbox-vending.md)** — alongside the CIDR allocation table
 (Stage 3) and the VPN topology (Stage 4) — **is the directory shape and the `sandbox-unit` module's
 interface, and no longer the token.** Guessing at the interface of a module that does not exist yet still
@@ -370,6 +377,10 @@ Five rules follow, and each has a failure mode that is silent:
 account-level setting is made by hand in Stage 1c step 7.4, and Stage 1c step 7.5 then denies
 `s3:PutAccountPublicAccessBlock` — so an apply or a drift correction that touches it fails. It reads like
 something that belongs in `foundation/`, which is exactly why it is written down here.
+**The 2026-08-13 carve-out does not soften this and would make it worse if read as permission.** The deny
+exempts exactly the principal Terraform runs as, so an apply declaring this resource would *succeed* — and
+the setting would then have two owners, a hand-made one and a state file, with drift correction able to
+turn the blanket off in an account the module never touches. The rule is unchanged: it is not declared.
 
 **IAM rules** (these are conventions because they are easy to violate one role at a time):
 
@@ -409,6 +420,14 @@ something that belongs in `foundation/`, which is exactly why it is written down
   role that anybody able to create a role can mint. This applies to the per-function carve-outs above and
   is checked by **`make check`** (Stage 2 step 9.2) — there is no CI before Stage 7 — moving into the
   pipeline at Stage 8.
+  **One exception exists, it is named rather than tacit, and the check has to know it by name** (decision 7,
+  2026-08-13): the `Sid` that carves `InfrastructureAccess` out of the organization-root deny on
+  `s3:PutAccountPublicAccessBlock` (1c step 7.5). It must reach accounts that **do not exist yet** — the
+  Identity Center role ARN carries a per-account random suffix, so the accounts that matter most cannot be
+  enumerated even in principle. The residual it admits is bounded: minting a role that matches the pattern
+  requires `iam:CreateRole` in that account, which is administrator, which is the identity the carve-out
+  already names. **A second exception is a decision, not a precedent** — and `make check` failing on this
+  one `Sid` is the check working, so whitelist it explicitly rather than loosening the rule.
 
 ### Application repository layout
 

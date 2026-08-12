@@ -88,8 +88,11 @@ what is genuinely still unanswered:
       there for that reason. This is the one place where the business-unit name may still be the better
       token, and holding both shapes is not a contradiction — the group is on the people axis, the profile
       on the account axis (Lesson 9).
-    Decide with N=2 in hand, or when 1c step 7.8 writes the tag policy — whichever comes first. Nothing
-    before Stage 2 depends on it.
+    **The first of those two is closed (user, 2026-08-13): `Environment=sandbox`, one shared value for
+    every business unit**, written into 1c step 7.8. Per-unit cost attribution is by *account*, which the
+    bill gives for free, and the alternative would have meant editing an organization policy at every vend
+    with an `AccessDenied` in a brand-new account as the cost of forgetting. **The group token stays open**,
+    as do the `<env>` token, the `terraform-live/` tree and `ENV=sandbox`; decide those with N=2 in hand.
 11. **What `AWSOrganizationsFullAccess` reaches from inside a vended account.** Measured 2026-08-11, from
     the first `aws/list-identities.sh` snapshots: **every vended account carries
     `AWSOrganizationsFullAccess` → `AWSControlTowerAdmins`**, a group whose one member is the Control Tower
@@ -103,7 +106,50 @@ what is genuinely still unanswered:
     it by assuming that permission set in one vended account and running the reads and one harmless write;
     it costs minutes. Two things ride on it — whether 1c's policy set has to deny anything for it, and
     whether the assignment should be removed at all, which is landing-zone state and therefore a decision
-    in D32's neighbourhood rather than a cleanup.
+    in D32's neighbourhood rather than a cleanup. **1c step 7.5 is where it gets answered**, because the
+    `organizations:LeaveOrganization` deny is written against exactly this path.
+
+### The Unified Studio mechanics, added 2026-08-13
+
+`CLAUDE.md` named six SageMaker Unified Studio features as objectives on 2026-08-13. Reading them against
+AWS's documentation produced four findings that are not decisions and are not risks either — they are
+things the product does that the plan assumed differently, and each one is answered by a stage that has not
+started. **The first one is load-bearing against principle 4.**
+
+12. **The default notebook compute path does not support VPC.** SMUS notebooks run Spark through
+    **Amazon Athena for Apache Spark by default**, and AWS documents plainly that Athena for Spark does not
+    support VPC; the VPC-capable runtimes are **EMR Serverless, EMR and Glue**, selected per notebook
+    through Spark Connect, and the Admin Guide carries a *Network isolation* procedure for **disabling
+    Athena Spark** outright. A notebook whose compute is outside the VPC is outside the endpoint policies,
+    outside the flow logs and outside the `aws:SourceVpce` conditions the whole data perimeter
+    (`plan/architecture.md` §4.2) is built from — so "private by default" would be true of the account and
+    false of the thing the data scientist actually runs. **Answer at Stage 6**, by disabling Athena Spark
+    and choosing the runtime deliberately; record which, and what it costs, because EMR Serverless and Glue
+    are metered differently from a free default. This may deserve a decision file rather than a question.
+13. **Notebooks do not support trusted identity propagation, and that reaches a `CLAUDE.md` objective.**
+    In an IAM Identity Center domain, notebooks fall back to **compatibility permission mode**, so data
+    access resolves through the project/compute role rather than through the signed-in human. The DLP
+    requirement *"restrict who can read which database, table, column and row"* is a Lake Formation
+    row/column-filter statement about a **user**, and without TIP the unit of grant is the **project**.
+    Two honest outcomes and they are very different: either per-user filtering is achievable through a
+    different surface (the SQL/query path, which is not the notebook path), or the design's real grain is
+    the project and `CLAUDE.md`'s objective is met at that grain with the difference written down.
+    **Answer at Stage 5 while granting, and at Stage 6 while running.**
+14. **The remote-IDE path is a file-transfer channel to a laptop.** `sagemaker:StartSession` plus the AWS
+    Toolkit lets a local VS Code attach to a running space — a `CLAUDE.md` objective, so it is not
+    something to deny. It also bypasses whatever a browser IDE could be made to restrict, which makes it
+    the concrete version of **item 6** ("whether Studio can block file download") rather than a separate
+    question: if the answer to 6 is "yes, in the browser", the remote session is the hole. AWS documents
+    tag-based scoping of `StartSession` to a user's own private apps, which is the lever. **Answer at
+    Stage 6, and record the residual in Stage 11's threat model either way.** 1c denies the action in
+    `Workloads`, `Data` and `Identity` — where nobody should be running a space at all — and deliberately
+    not in `Interactive`.
+15. **"As many instances as they like" is a cost statement before it is an access statement.** Each
+    JupyterLab or Code Editor space is a running instance billed by the hour, and D11 ("pay nothing while
+    idle") is a property of the *design*, not of the user's habits. What closes it is idle shutdown plus a
+    restricted instance-type list, not a policy — **Stage 6**, priced into `plan/cost-model.md` against the
+    USD 50 ceiling. Also confirms rather than changes D7/D28: **SMUS workflows are MWAA**, serverless or
+    provisioned, so Stage 10's orchestration comparison and this feature are one surface, not two.
 
 ### Blocking Stage 1 — the choices the user has to make, added 2026-08-08 by the pre-Stage-1 review
 
@@ -157,8 +203,10 @@ Items 1-11 above are things to *find out* (item 3 is answered and struck through
     without a CMK, which is exactly the kind of accident this plan should not depend on.
 
 **Every item in this section that was a *decision* is now closed, and the first question to be answered by
-execution is item 3** (Stage 1b step 6, 2026-08-12). The rest remain, and they are all things to find out by
-doing. Stage 1a has no outstanding prerequisite.
+execution was item 3** (Stage 1b step 6, 2026-08-12). The rest remain, and they are all things to find out by
+doing. **Items 10 (`Environment` half), 11 and the three landing-zone decisions 1c used to open with were
+settled on 2026-08-13**, so Stage 1c starts with no blocking input; items 12-15 arrived on the same day and
+are all Stage 5/6/10 questions, none of which blocks the landing zone.
 
 ---
 
