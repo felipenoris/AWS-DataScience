@@ -378,6 +378,11 @@ a node, and remember the RCP budget is the tighter one** — 7.8 puts seven serv
 
 #### 7.3 — The battery, run against `Policy Canary` before anything reaches a real OU (D29)
 
+> **The executable form is [`plan/runbooks/scp-battery.md`](../runbooks/scp-battery.md)** — every probe with
+> its exact command and, for each one, *the two outcomes that are distinguishable*. It lives in `runbooks/`
+> rather than here because it is re-run whenever a policy is amended, and Stage 6 and Stage 9 both come back
+> to the perimeter document. **What stays below is why each rule is a rule**; the runbook does not repeat it.
+
 An SCP mistake is the fastest way to lock yourself out of your own organization — recoverable, because the
 Management account is exempt from SCPs and 1a step 5's break-glass path exists, but recoverable is not
 the same as cheap. Since D30 was reverted this is the only thing standing between a mistake and that

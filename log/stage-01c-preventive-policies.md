@@ -165,6 +165,62 @@ AWS Control Tower cannot complete the operation, because you must create a landi
   setting, one account at a time, and it is the path to use in Management, Log Archive and Audit if
   CloudShell is inconvenient there.
 
+- Login as CT Admin on Management account, AWSAdministratorAccess.
+
+- On Console, I can see that page AWS Organizations -> Policies says that these are not enabled: Resource Control Policies, Tag Policies, EC2 Policies.
+
+- Executed on CloudShell:
+
+```
+aws organizations enable-policy-type --root-id r-zhj6 --policy-type RESOURCE_CONTROL_POLICY
+aws organizations enable-policy-type --root-id r-zhj6 --policy-type TAG_POLICY
+```
+
+- Checked that policies are ENABLED, on the same CloudShell session:
+
+```
+$ aws organizations list-roots --query 'Roots[0].PolicyTypes' --output table
+----------------------------------------
+|               ListRoots              |
++----------+---------------------------+
+|  Status  |           Type            |
++----------+---------------------------+
+|  ENABLED |  DECLARATIVE_POLICY_EC2   |
+|  ENABLED |  RESOURCE_CONTROL_POLICY  |
+|  ENABLED |  SERVICE_CONTROL_POLICY   |
+|  ENABLED |  TAG_POLICY               |
++----------+---------------------------+
+```
+
+- uploaded `org-policy-baseline.sh` script using Actions → Upload file. Executed on CloudShell. The result is at `aws/output/org-policy-baseline.txt`.
+
+- Executed the following on accounts Management, Log and Audit, using CT Admin:
+
+```
+aws s3control put-public-access-block --account-id "$(aws sts get-caller-identity --query Account --output text)" --public-access-block-configuration BlockPublicAcls=true,IgnorePublicAcls=true,BlockPublicPolicy=true,RestrictPublicBuckets=true
+```
+
+- Checked on each one that Block Public access on S3 was enabled (Amazon S3 -> Account and organization settings).
+
+
+- Enabling RCP made AWS attach `RCPFullAWSAccess` to every node by itself, the way `FullAWSAccess` mirrors
+  the SCP type. Nothing here attached it.
+
+- **7.0 step 3 — controls per OU, which only Management answers.** `Workloads`, `Data`, `Interactive`,
+  `Identity` and `Policy Test`: the same 9 `AWS-GR_*`, all `SUCCEEDED`. `Security`: those 9 plus
+  `CT.S3.PV.7`, `CT.S3.PV.8`, `CT.SNS.PV.1` — the control half of its three extra SCP statements, so
+  **7.6's `Security`/`Identity` diff is answered on both halves**. `Security` names them as
+  `controlcatalog:::control/<opaque>`, every other OU as `controltower:…/AWS-GR_*`; `controlcatalog
+  get-control` resolves either, `Aliases[0]` being the `AWS-GR_*` name.
+
+- **`Sandboxes` returned an empty list, not an error** — no controls, no guardrail SCP. The plan's
+  discriminator is that an unregistered target *errors*, but no call in the report failed (section 7:
+  "None"), so it was never exercised in the failing direction. **Verification (xi) stays open; 7.7's
+  `enable-control` settles it.**
+
+- **The account quota reads 10, not the requested 15.** A member account reads 0.0, so only this
+  Management run is evidence. The `Staging` vend stays held.
+
 ---
 
 *Log index: [log/INDEX.md](INDEX.md) · Stage index: [plan/stages/INDEX.md](../plan/stages/INDEX.md)*

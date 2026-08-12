@@ -184,6 +184,7 @@ its `Consumes` row lists.
 | Running an `aws` command by hand | [`AWS-CLI.md`](AWS-CLI.md) — the recipes, and which identity runs them |
 | "What would an institution do?" | [`plan/institutional-delta.md`](plan/institutional-delta.md) — so a lab compromise is not learned as a pattern |
 | Root is needed, or its alarm chain is being changed | [`plan/runbooks/break-glass.md`](plan/runbooks/break-glass.md) |
+| **A policy is about to be attached, or was amended** | [`plan/runbooks/scp-battery.md`](plan/runbooks/scp-battery.md) — the probes, and the two distinguishable outcomes of each |
 | Explaining the design to someone | [`README.md`](README.md) — the argument for the account split and the three distinctions |
 | How the plan got here | [`plan/history.md`](plan/history.md) — almost never |
 
@@ -192,8 +193,9 @@ The `§` numbers inside `plan/` files are historical anchors, not addresses.
 
 ### Current position
 
-- **Stage 1a is done but for the `Staging` vend; Stage 1b is DONE (2026-08-12); Stage 1c is next and has no
-  blocking input** — the `log/` files are authoritative. 1a: Control Tower enabled (`us-west-2`), budget
+- **Stage 1a is done but for the `Staging` vend; Stage 1b is DONE; Stage 1c sitting A is in progress —
+  7.0, 7.2 and 7.4 step 1 are done, and what is left in it is 7.3 then 7.5** — the `log/` files are
+  authoritative. 1a: Control Tower enabled (`us-west-2`), budget
   set, `Development`, `Sandbox Account 1`, `Production`, `Data Governance`, `Policy Canary` and `Identity`
   vended, centralized root access on. Break-glass built and **tested 2026-08-09 on both channels** — the
   thing 1c step 7 may not start without, and it is done.
@@ -208,8 +210,7 @@ The `§` numbers inside `plan/` files are historical anchors, not addresses.
   the BPA deny **carries a carve-out** for `InfrastructureAccess`, the design's one wildcard-account ARN —
   decision 7; the Region deny is **`CT.MULTISERVICE.PV.1` per OU**, never `GRREGIONDENY` — decision 6; and
   `Environment=sandbox` is **one shared value** at any N. Only decision 5 (tag-forcing SCP scope) is left,
-  and it is made while executing. **7.0 is new and is the reason the stage is executable**: measure OU ids,
-  what Control Tower already denies, the BPA state and the quota *before* writing JSON.
+  and it is made while executing.
 - **Subnets anchor on the AZ `zone_id`, never on list position** — 1b step 6, 2026-08-12. Every measured
   account returns the *same* mapping (`us-west-2a` → `usw2-az2`; the names are not in ID order), so position
   would work today; it is forbidden because an unvended account gets its own mapping and the failure is
@@ -235,9 +236,11 @@ The `§` numbers inside `plan/` files are historical anchors, not addresses.
   identity propagation**, so D13's fine-grained grain may be the *project* and not the user; and
   **`sagemaker:StartSession`** (local VS Code onto a space) is a real objective *and* a file channel to a
   laptop. SMUS notebooks/VS Code are **spaces and apps** — which is what made 1c's decision 1 free.
-- **The `Staging` vend is held on the account cap** — the increase to 15 is *requested*; confirm before
-  vending. **What the deferral owes is one list, in [Stage 1a](plan/stages/stage-01a-landing-zone.md)**
-  ("What the deferral leaves owed"), not five per-stage footnotes.
+- **The `Staging` vend is held on the account cap, and the increase has *not* landed** — measured from
+  Management during 7.0: `Maximum number of accounts` reads **10**, not the requested 15. (From a member
+  account the same quota reads `0.0`, so only the Management run is evidence.) **What the deferral owes is
+  one list, in [Stage 1a](plan/stages/stage-01a-landing-zone.md)** ("What the deferral leaves owed"), not
+  five per-stage footnotes.
 - **The USD 50 budget notifies nobody.** Its 50/80/100% alerts and Cost Anomaly Detection are **skipped by
   decision** (2026-08-09), not pending — do not offer to close them in passing. D12 holds the trade and its
   revision trigger.
@@ -245,20 +248,28 @@ The `§` numbers inside `plan/` files are historical anchors, not addresses.
   [`plan/architecture.md`](plan/architecture.md). `Identity` has an OU of its own; `Sandboxes` is nested
   under `Interactive` and carries no policy set of its own. **Depth is 2 — Stage 2's OU `for_each` must
   recurse**, or every Sandbox account is invisible to it.
-- **1c's preflight (7.0) is measured — 2026-08-13, `./aws/org-policy-baseline.sh` + `./aws/account-bpa.sh`,
-  and it contradicted three things this file used to assert.** (a) **`Identity` does carry Control Tower's
-  standard 8-statement guardrail** — it is registered; what `Security` has extra is three statements about
-  the log-archive and audit buckets, which mean nothing there, so 7.6's `Identity`/`Security` diff is
-  already done. (b) **Control Tower denies the Config recorder and *nothing* about CloudTrail** — the
-  CloudTrail deny is **skipped by decision** (user, 2026-08-13: the trail is organization-level in
-  Management, which is SCP-exempt), not pending. (c) **`Sandboxes` is the one OU with no guardrail policy at
-  all**, which is either non-registration or CT relying on inheritance — it decides whether 7.7 can enable
-  `CT.MULTISERVICE.PV.1` there, and only the Management run of section 5 answers it (verification xi).
-  Also: **Service Quotas publishes no policy quota for `organizations`**, so the size budget is the
+- **1c's preflight (7.0) is CLOSED, from Identity and then from CloudShell on Management, and it
+  contradicted four things this file used to assert.** (a) **`Identity` carries Control Tower's standard
+  guardrail and the same 9 `AWS-GR_*` controls as every ordinary OU** — it is registered; `Security` adds
+  exactly three (`CT.S3.PV.7`, `CT.S3.PV.8`, `CT.SNS.PV.1`), matching its three extra SCP statements, **so
+  7.6's `Identity`/`Security` diff is done on both halves**. `Security` expresses them in the
+  `controlcatalog:::control/<opaque>` namespace while every other OU uses `controltower:…/AWS-GR_*` — same
+  controls, two id schemes. (b) **Control Tower denies the Config recorder and *nothing* about CloudTrail**
+  — the CloudTrail deny is **skipped by decision** (user: the trail is organization-level in Management,
+  which is SCP-exempt), not pending. (c) **`Sandboxes` has no guardrail SCP and zero enabled controls, and
+  `list-enabled-controls` returned *empty rather than erroring*** — which under the plan's own discriminator
+  means an addressable target, but **nothing errored anywhere in the run, so the discriminator was never
+  exercised**. Verification (xi) is narrowed, not closed: **7.7's `enable-control` is what answers it.**
+  (d) **Service Quotas publishes no policy quota for `organizations`**, so the size budget is the
   documentation's number, and the count fits either way (4 policies on the root, 4 per OU). **Verification
   (x) is answered yes** — every Organizations *policy* read answers from Identity; only `controltower
   list-enabled-controls` needs Management, where a member account gets *"you must create a landing zone
   first"*.
+- **7.2 and 7.4 step 1 are done.** All four policy types read `ENABLED` on the root, and enabling RCP made
+  AWS attach **`RCPFullAWSAccess` to every node** on its own (INV-11). Account-level BPA reads all four
+  flags `true` in **all nine accounts** — the six with a profile are re-measurable with
+  `./aws/account-bpa.sh`; Management, Log Archive and Audit were set and console-verified by the user and
+  **this laptop cannot read them**. 7.5's interlock is therefore satisfied.
 - **The repository is documentation only, with one exception since 2026-08-13**:
   `terraform-live/identity/org-policies/` holds 1c's policy **documents** (templates with placeholders, plus
   `render.sh`, which writes the pasteable copies into untracked `aws/output/`). No `.tf` anywhere until
