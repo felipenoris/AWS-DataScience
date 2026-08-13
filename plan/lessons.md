@@ -191,6 +191,23 @@ lesson can be *recognised* without opening this file; the reasoning that makes e
    running, because the *must still succeed* half only gets stricter under composition, and the denial
    message naming the policy id is what let the gap be spotted at all rather than assumed away.
 
+21. **"The service validates before authorizing" is a property of the *action*, not of the service — so a
+   validation error on the first try is a reason to retry with a real id, not a result.** Stage 1c had
+   already met the wall twice and generalised it one step too far: `ec2:ModifySnapshotAttribute` and
+   `datazone:CreateDomain` both rejected invented inputs before authorization, so the amendment of 7.5a was
+   written expecting the same of every EC2 and RDS probe. In one run, in one account, three different
+   answers came back: `ec2:ExportImage` and `ec2:CreateInstanceExportTask` authorized against a **malformed**
+   AMI id and returned the deny; `ec2:CreateStoreImageTask` rejected that same id shape and only reached
+   authorization once a **real public AMI** was passed; `ec2:StartInstances` never reached it at any id
+   length. `ec2:CreateFleet` had been predicted untestable for want of a launch template and was denied
+   anyway, because `--dry-run` authorizes before resolving the template. **The cost of the wrong default is
+   asymmetric and that is what makes this a lesson**: recording *untested* too early leaves a statement that
+   is in fact exercised carried in the notes as unproven, and the next reader either re-tests it or, worse,
+   trusts the note and treats a live control as a gap. **The general form:** a negative result from a probe
+   is only a result once the probe has been given inputs that exist — the public AMI from SSM, a subnet from
+   `describe-subnets`, the account's own id in an ARN — and "the API validates first" is a claim about one
+   API call, to be re-established each time rather than inherited from the last one.
+
 ---
 
 *Plan core: [GENERAL_PLAN.md](../GENERAL_PLAN.md) · Decisions: [plan/decisions/INDEX.md](decisions/INDEX.md) · Stages: [plan/stages/INDEX.md](stages/INDEX.md)*

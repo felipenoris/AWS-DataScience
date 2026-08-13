@@ -117,6 +117,13 @@ write anything into it. Claude can read the files in this folder to gather infor
 
 - all scripts inside `aws/*` should perform only read-only operations. You are free to run them to gather information.
 
+- **The one exception, and it is fenced: [`aws/probes/`](aws/probes/README.md)** — the SCP battery, which
+  has to *attempt* the calls a policy forbids, because that is the only way to measure a preventive control.
+  It creates nothing (every probe is read-only, `--dry-run`, or aimed at a prerequisite that does not exist),
+  it never attaches or changes a policy, and the three probes that *would* act if a deny were missing are
+  refused by the driver anywhere but `Policy Canary`. **Run it deliberately, not to gather information** —
+  which is the difference from every other script in that folder.
+
 - before running `aws` commands, check if the current session uses the correct `sso` user using `aws sts get-caller-identity`.
 
 - **Whenever an SSO login is needed — asked for, or implied by a command Claude is about to hand over —
@@ -210,7 +217,7 @@ its `Consumes` row lists.
 | Running an `aws` command by hand | [`AWS-CLI.md`](AWS-CLI.md) — the recipes, and which identity runs them |
 | "What would an institution do?" | [`plan/institutional-delta.md`](plan/institutional-delta.md) — so a lab compromise is not learned as a pattern |
 | Root is needed, or its alarm chain is being changed | [`plan/runbooks/break-glass.md`](plan/runbooks/break-glass.md) |
-| **A policy is about to be attached, or was amended** | [`plan/runbooks/scp-battery.md`](plan/runbooks/scp-battery.md) — the probes, and the two distinguishable outcomes of each |
+| **A policy is about to be attached, or was amended** | [`plan/runbooks/scp-battery.md`](plan/runbooks/scp-battery.md) — the probes, and the two distinguishable outcomes of each. **Running them is `./aws/probes/scp-battery.sh`** ([`aws/probes/README.md`](aws/probes/README.md)); the probe list is `aws/probes/probes.sh`, and amending the ceiling means editing that file. The script measures and never attaches — **it is the one place under `aws/` that is not read-only** |
 | Explaining the design to someone | [`README.md`](README.md) — the argument for the account split and the three distinctions |
 | How the plan got here | [`plan/history.md`](plan/history.md) — almost never |
 
@@ -321,16 +328,30 @@ The `§` numbers inside `plan/` files are historical anchors, not addresses.
 - **The denial message names the policy id**, so attribution needs no CloudTrail — **but AWS names only one
   matching policy**, which is how a document sits attached and unexercised (Lesson 20). **What is left of 1c
   is 7.7 and 7.8.**
-- **Three documents are amended and NOT uploaded**, so `policies/` is ahead of AWS: **7.6a** (`Data`,
-  `Identity` — four EC2 launch actions, `RunInstances` was one door of several; plus the service guard on
-  the D27 carve-out) and **7.5a** (`baseline` — GuardDuty named the *deprecated* `…FromMasterAccount` and
-  not the live `…FromAdministratorAccount`; plus a new `DenyImageAndSnapshotExport`, because sharing an
-  image and *writing it to a bucket* are two routes). **Closed by `update-policy` plus the re-probe**:
-  phase 4b for the OU pair, **phases 1-3 on the canary** for the root. Three things are now *stated* rather
-  than open: **Athena is allowed in `Data`** on purpose (Stage 5's Iceberg maintenance), Stage 11's to
-  detect; an ASG launches through a service-linked role and no SCP reaches it; and
-  **`guardduty:UpdateDetector` blocks Stage 11 step 4 in Audit** by design, with the procedure written in
-  three places.
+- **7.5a and 7.6a are uploaded and exercised** (2026-08-13): `baseline` gained `DenyImageAndSnapshotExport`
+  (8 statements) and 5 GuardDuty actions — it had named the *deprecated* `…FromMasterAccount` and not the
+  live `…FromAdministratorAccount`; `Data`/`Identity` gained the four EC2 launch doors (`RunInstances` was
+  one of several) and the D27 service guard. **`CreateFleet` and `RequestSpotInstances` denied in both
+  accounts; the three GuardDuty probes and all four export actions denied on the canary.** Three things are
+  now *stated* rather than open: **Athena is allowed in `Data`** on purpose (Stage 5's Iceberg maintenance),
+  Stage 11's to detect; an ASG launches through a service-linked role and no SCP reaches it; and
+  **`guardduty:UpdateDetector` blocks Stage 11 step 4 in Audit** by design, procedure written in three places.
+- **The battery is a script: `./aws/probes/scp-battery.sh`** (2026-08-13), probes in `probes/probes.sh`, phases
+  `root`/`ou`/`region`. It read-backs deployed policies against `policies/` first, aborts on a dead SSO
+  session, and **never attaches** — that stays a human act on Management. Full run today: **46 as expected,
+  0 unexpected, 0 untested**. Every probe declares a mandatory `safety` (`ro`/`dryrun`/`blocked`/`creates`);
+  the **three `creates` run in `Policy Canary` and nowhere else**, enforced by the driver, so the whole `ou`
+  phase cannot create anything in a real account even with the ceiling removed.
+- **7.7 is started: `CT.MULTISERVICE.PV.1` is enabled on `Policy Test`** (`aws-guardrails-njKkvb`,
+  `p-q3y11w1n`) and **verification (vii) is answered from the attached document** — 86 `NotAction` entries,
+  no `ExemptedActions` of ours, every global prefix this project calls present. **It falsified a plan
+  prediction: `ecr-public:*` is exempt**, so the Region control never denied it and `DenyEcrPublicEntirely`
+  is the only thing that does. `ssm:GetParameter` *is* denied in `us-east-1`, which is what broke the first
+  region probe. **Left: the five remaining OUs, then the two root-user controls with `ExemptAssumeRoot`.**
+- **The validation-before-authorization wall is per *action*, not per service** — measured: `ExportImage`
+  authorized against a malformed AMI id, `CreateStoreImageTask` needed a real one, `StartInstances` never
+  authorized at all. **A first-try validation error is a reason to retry with a real id, not a result**
+  (Lesson 21).
 - **A carve-out keyed on a principal ARN cannot defend itself** — whoever can create a role matching the
   pattern, or edit the exempted role's trust policy, inherits the exemption. Both carve-outs (BPA, D27) are
   now a written requirement on **Stage 2's boundaries** and Stage 5's role. Unverified and cheap: whether
@@ -384,4 +405,5 @@ the reasoning that makes it *usable* is in the file. Recognising one is the sign
 18. **A policy never constrains the principal that authors it.**
 19. **A blocking input is re-checked against the requirement, not against the mechanism.**
 20. **When several policies deny the same call, only one is proven — the rest are attached, not exercised.**
+21. **"Validates before authorizing" is a property of the action, not the service — retry with a real id.**
 

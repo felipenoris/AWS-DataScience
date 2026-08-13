@@ -807,6 +807,51 @@ aws ec2 run-instances --dry-run --image-id <AMI> --instance-type t3.micro --subn
 
 - Nothing was created in any account: every probe used a non-existent id or `--dry-run`.
 
+- **7.5a and 7.6a uploaded and exercised.** All three documents read back from Organizations before any
+  probe: `awsds-org-scp-baseline` `p-1fp032g8` at **8 statements** (`DenyImageAndSnapshotExport` added,
+  `DenyGuardDutyTampering` at 9 actions), `awsds-org-scp-ou-data` `p-gl01bcdm` and
+  `awsds-org-scp-ou-identity` `p-mmfc17ac` at **18 actions** in `DenyUserCompute`, with the
+  `BoolIfExists: aws:PrincipalIsAWSService=false` guard live in the `Data` carve-out. Rendered sizes:
+  baseline 1651, data 1028, identity 494 — the other three documents were byte-identical to what was
+  already attached and were not re-uploaded.
+
+- **Phase 4b, in each OU's own account** (the canary cannot reach these OUs):
+
+| Probe | `awsds-infra-data` | `awsds-infra-identity` |
+|---|---|---|
+| `ec2:RequestSpotInstances`, real AMI + real subnet, `--dry-run` | denied by `p-gl01bcdm` | denied by `p-mmfc17ac` |
+| `ec2:CreateFleet`, `--dry-run` | denied by `p-gl01bcdm` | denied by `p-mmfc17ac` |
+| `ec2:StartInstances`, `--dry-run` | **untested** — `Malformed` at 17 chars, `NotFound` at 8 | **untested** |
+| `glue:StartCrawler` | denied by `p-gl01bcdm` | **allowed** (`EntityNotFoundException`) |
+| floor: `sts`, `s3 ls`, `describe-vpcs`, `glue get-databases` | all OK | all OK |
+
+  The crawler row is the regression that mattered: the new service guard did **not** invert the carve-out —
+  a human principal still lands on the deny side in Data — and the Data/Identity asymmetry still holds.
+
+- **Phases 1-3 on `awsds-policy-canary`, for the root document. Seven probes, seven denies, every one
+  naming `p-1fp032g8`:** `guardduty:DisassociateFromAdministratorAccount` (the spelling that was open
+  before this amendment), `guardduty:UpdateDetector`, `guardduty:StopMonitoringMembers`,
+  `ec2:ExportImage`, `ec2:CreateInstanceExportTask`, `ec2:CreateStoreImageTask` and `rds:StartExportTask`.
+  Floor intact (`sts`, `s3 ls`, `describe-vpcs`).
+
+- **GuardDuty authorizes before validating the detector id**, so all three of its probes measured with an
+  invented id — which is what made the amendment provable while the service is still off everywhere.
+
+- **Two predictions in the runbook were wrong, both in the same direction, and the correction is the
+  finding worth keeping.** `ec2:CreateFleet` was expected to be untestable for want of a launch template
+  and was denied anyway — `--dry-run` authorizes before resolving the template — so the door this
+  amendment was written for is proven directly rather than by inference. And the EC2/RDS block was expected
+  to come back mostly *untested*: **the validation-before-authorization wall is per *action*, not per
+  service.** `ExportImage` and `CreateInstanceExportTask` authorized against a malformed AMI id;
+  `CreateStoreImageTask` rejected the same shape and only reached authorization with a real public AMI;
+  `StartInstances` never reached it. Written up as **Lesson 21**: a first-try validation error is a reason
+  to retry with an id that exists, not a result.
+
+- Nothing was created anywhere: spot requests, fleets, store-image tasks and both flavours of export task
+  all read zero afterwards.
+
+- Login as CT Admin -> Management Account. AWS Control Tower -> Controls -> Control Catalog. Searched for `CT.MULTISERVICE.PV.1` (Deny access to AWS based on the requested AWS Region for an organizational unit). Selected -> Enable -> Policy Test  -> Regions to allow access = `us-west-2`. Generated a policy named `aws-guardrails-njKkvb` with ARN `arn:aws:organizations::885931358757:policy/o-4z1leiit0c/service_control_policy/p-q3y11w1n` attached to `Policy Test` OU.
+
 ---
 
 *Log index: [log/INDEX.md](INDEX.md) · Stage index: [plan/stages/INDEX.md](../plan/stages/INDEX.md)*

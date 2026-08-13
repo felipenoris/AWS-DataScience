@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Status** | **Sitting A done; 7.6 done too** (2026-08-13). Attached and exercised: the two root documents (7.5) and **one per-OU document on each of `Workloads`, `Data`, `Interactive` and `Identity`** (7.6), each parked on `Policy Test` first, then moved and re-probed from that OU's own account. **Three documents are amended and pending upload** — 7.6a's EC2 launch siblings and the D27 service guard in `Data` and `Identity`, and **7.5a's GuardDuty vocabulary fix plus the new `DenyImageAndSnapshotExport` in the root baseline**; `policies/` is ahead of what is deployed until `update-policy` runs. **The two re-probes are different**: the OU pair goes through phase 4b, the root document through phases 1-3 on the canary. **What is left of the stage is 7.7 and 7.8.** Policy ids are in [`log/stage-01c-preventive-policies.md`](../../log/stage-01c-preventive-policies.md); what each statement does is in [`SCPs.md`](../../terraform-live/identity/org-policies/SCPs.md) |
+| **Status** | **Sitting A done; 7.6 done too** (2026-08-13). Attached and exercised: the two root documents (7.5) and **one per-OU document on each of `Workloads`, `Data`, `Interactive` and `Identity`** (7.6), each parked on `Policy Test` first, then moved and re-probed from that OU's own account. **The three amendments of 7.5a and 7.6a are uploaded and exercised** (2026-08-13): the EC2 launch siblings and the D27 service guard in `Data` and `Identity`, and the GuardDuty vocabulary fix plus the new `DenyImageAndSnapshotExport` in the root baseline — read back from Organizations, then re-probed, the OU pair through phase 4b and the root document through phases 1-3 on the canary. **What is left of the stage is 7.7 and 7.8.** Policy ids are in [`log/stage-01c-preventive-policies.md`](../../log/stage-01c-preventive-policies.md); what each statement does is in [`SCPs.md`](../../terraform-live/identity/org-policies/SCPs.md) |
 | **Prerequisites** | **[Stage 1b](stage-01b-identity-and-controls.md) is complete** (closed 2026-08-12; its log is authoritative). What this stage actually consumes from it: the six SSO profiles of step 5 — `awsds-infra-sandbox-1`, `-dev`, `-prod`, `-data`, `-identity` and **`awsds-policy-canary`** — and an administrator principal in the canary account (1b step 3.1). **Not its permission sets**: no policy written here names one, which is why the `Consumes` row carries no persona decision. `Staging` is unvended, so nothing in the `Workloads` tier can be exercised against it |
 | **Consumes** | [D6](../decisions/D06-dlp-approach.md), [D10](../decisions/D10-identity-center-delegation.md), [D15](../decisions/D15-tls-internal.md), [D16](../decisions/D16-break-glass.md), [D17](../decisions/D17-interactive-vs-runtime.md), [D19](../decisions/D19-derived-zone.md), [D20](../decisions/D20-staging-account.md), [D21](../decisions/D21-development-account.md), [D22](../decisions/D22-data-governance-account.md), [D23](../decisions/D23-ou-structure.md), [D25](../decisions/D25-drop-box-consumer.md), [D26](../decisions/D26-unified-studio.md), [D27](../decisions/D27-catalog-maintenance.md), [D28](../decisions/D28-workflow-contract.md), [D29](../decisions/D29-policy-canary.md), [D30](../decisions/D30-scp-recovery.md), [D33](../decisions/D33-control-tower-admin-user.md), [D34](../decisions/D34-account-vending.md), [D35](../decisions/D35-sandbox-cardinality.md) |
 | **Proves** | **Constrains** [INT-12](../integrations.md), whose fallback 7.6 forbids until the policy is amended. **Touches [INT-01](../integrations.md) and [INT-07](../integrations.md)**: the perimeter RCP now covers ECR, so both cross-account image paths run through its service carve-out — admitted by `aws:PrincipalOrgID`, but only exercised in 7.8 |
@@ -716,18 +716,22 @@ become.
     that would force an amendment** is an authenticated pull taken for the higher rate limit
     (`ecr-public:GetAuthorizationToken`); if the Stage 8 image build turns out to need it, carve that single
     action with the reason recorded, rather than dropping the statement.
-  - **It overlaps the Region control, and the overlap is the reason to write it rather than a reason not
-    to.** ECR Public is a `us-east-1`-only API, so `CT.MULTISERVICE.PV.1` (7.7) very likely denies it
-    already — as a **side effect** of an exemption list AWS maintains and changes, which is what
-    verification (vii) exists to re-read. That is a deny by accident: it states no intent, and it silently
-    disappears the day `ecr-public` is added to the `NotAction` list. **This is not the CloudTrail/Config
+  - **It does *not* overlap the Region control — measured 2026-08-13, and the prediction here was wrong in
+    the direction that would have mattered.** This paragraph used to say ECR Public is a `us-east-1`-only
+    API so `CT.MULTISERVICE.PV.1` "very likely denies it already". It does not: **`ecr-public:*` is one of
+    the 86 entries in AWS's `NotAction` list**, so the Region control exempts it outright and
+    `DenyEcrPublicEntirely` is the *only* thing standing between this organization and a world-readable
+    registry. Had the statement been skipped as redundant, nothing would have denied it. **The general
+    shape is worth more than the fact:** "another control probably covers this" is a guess about a list
+    somebody else maintains, and the honest version is to read the list — which is exactly what
+    verification (vii) is for. It also removes the ambiguity the next paragraph worried about. **This is not the CloudTrail/Config
     case above** — there the duplication was of a Control Tower control with the *same* intent, and the
     instruction was to write only the gap. Here a different control catches the action for a different
     reason, and one statement is the cost of not depending on that.
-  - **Test it in the 7.5 window, before 7.7 enables the Region control**, or the result is ambiguous: after
-    7.7 an `ecr-public:CreateRepository` from `awsds-policy-canary` fails under *either* policy and the CLI
-    error cannot tell you which (Lesson 13). Run it here, and record the policy id from the CloudTrail
-    `errorMessage`.
+  - Tested in the 7.5 window, before 7.7, on the reasoning that the two policies would otherwise be
+    indistinguishable — and **re-run after the Region control was enabled on `Policy Test`, where it still
+    comes back naming `p-1fp032g8`**, the baseline. That is the same finding as above from the other side:
+    the ambiguity never existed, because the Region control never reaches this action.
 - **Deny `iam:CreateUser` and `iam:CreateAccessKey`.** Principle 2 ("no IAM Users") is otherwise a
   convention with no enforcement. Break-glass (D16) is unaffected: the Management account is exempt from
   SCPs.
@@ -854,10 +858,35 @@ machine-readable action list is the source in each case. `awsds-org-scp-perimete
   `DenyImageAndSnapshotExport`**, rather than into the old one: two mechanisms, two probes, and the log's
   existing entry keeps describing a statement that still exists under that name.
 
-Minified: **baseline 1629**, perimeter unchanged at **708**. **Amending a root document is not a phase 4b
-re-probe** — the root set reaches `Policy Canary`, so this one goes back through **phases 1-3** of
-[`plan/runbooks/scp-battery.md`](../runbooks/scp-battery.md), which is the reason it is a separate sitting's
-work from 7.6a's and not a footnote to it.
+Minified: **baseline 1629** in the template, **1651** rendered; perimeter unchanged at **708**. **Amending a
+root document is not a phase 4b re-probe** — the root set reaches `Policy Canary`, so this one went back
+through **phases 1-3** of [`plan/runbooks/scp-battery.md`](../runbooks/scp-battery.md).
+
+**UPLOADED AND EXERCISED 2026-08-13. Six probes on the canary, six denies, all naming `p-1fp032g8`:**
+
+| Probe | Outcome |
+|---|---|
+| `guardduty:DisassociateFromAdministratorAccount` | **denied** — the spelling that was open before this amendment, and the one call that justifies it |
+| `guardduty:UpdateDetector` | denied (regression: it was already covered) |
+| `guardduty:StopMonitoringMembers` | denied |
+| `ec2:ExportImage` | **denied** — `DenyImageAndSnapshotExport`'s first real answer |
+| `ec2:CreateInstanceExportTask` | denied |
+| `ec2:CreateStoreImageTask` | denied, **on the second attempt** — see below |
+| `rds:StartExportTask` | denied |
+
+**GuardDuty authorizes before validating the detector id**, so all three of its probes measured with an
+invented id — the opposite of what EC2 and RDS do, and the reason the amendment could be proven at all
+while the service is still off in every account.
+
+**The finding that outlives this sitting is about probing, not about GuardDuty.** The
+validation-before-authorization wall is **per action, not per service**: in the same run, `ec2:ExportImage`
+and `ec2:CreateInstanceExportTask` authorized against a *malformed* AMI id and came back denied, while
+`ec2:CreateStoreImageTask` rejected the same id shape as `InvalidAMIID.Malformed` and only reached
+authorization once a **real public AMI** was passed. So a first-try validation error is **a reason to retry
+with something that exists, not a result** — recorded as a boxed rule in the battery runbook, because
+recording *untested* too early understates the ceiling and costs the next reader an evening.
+`ec2:StartInstances` is the one that stayed genuinely untested: `Malformed` at 17 characters, `NotFound` at
+8, never authorization.
 
 **One collision was found and deliberately not fixed here.** `guardduty:UpdateDetector` is denied
 unconditionally on the root, so it reaches **Audit**, the GuardDuty administrator: org-wide administration
@@ -897,6 +926,24 @@ are what close it** — until then the deployed content is the 2026-08-13 origin
   in this design uses them. Both are now stated in [`SCPs.md`](../../terraform-live/identity/org-policies/SCPs.md),
   and the Athena path is written into [Stage 11](stage-11-dlp.md) as a detection target. **A hole that is
   documented is a decision; the same hole undocumented is the finding of a later audit.**
+
+**UPLOADED AND EXERCISED 2026-08-13, in each OU's own account** (phase 4b — the canary cannot reach these
+OUs). `DenyUserCompute` now carries **18 actions** in both documents, and the read-back from Organizations
+confirms the `BoolIfExists` guard is live in `Data`:
+
+| Probe | `awsds-infra-data` | `awsds-infra-identity` |
+|---|---|---|
+| `ec2:RequestSpotInstances` (real AMI + real subnet, `--dry-run`) | **denied**, `p-gl01bcdm` | **denied**, `p-mmfc17ac` |
+| `ec2:CreateFleet` (`--dry-run`, launch template that does not exist) | **denied**, `p-gl01bcdm` | **denied**, `p-mmfc17ac` |
+| `ec2:StartInstances` (`--dry-run`) | **untested** — validated first | **untested** |
+| `glue:StartCrawler` | denied, `p-gl01bcdm` — **the guard did not invert the carve-out** | *allowed* (`EntityNotFoundException`), the cross-check still holding |
+| floor: `sts`, `s3 ls`, `describe-vpcs`, `glue get-databases` | all OK | all OK |
+
+**`ec2:CreateFleet` was expected to be untestable and is not** — `--dry-run` authorizes *before* resolving
+the launch template, so a name that exists nowhere still produces a real answer. That matters beyond the
+probe: `CreateFleet` was the launch door this amendment was written for, and it is now the one proven
+directly rather than by inference from its siblings. Nothing was created: spot requests and fleets both read
+zero in both accounts afterwards.
 
 **What the review did *not* change, and why the reasoning is worth keeping:** `s3:DeleteBucket` stays
 unconditional in `Data` even though it reaches every bucket in the account and will stop a
@@ -1154,7 +1201,14 @@ measure something else.
   **The order.** Enable it on **`Policy Test`** with `AllowedRegions=["us-west-2"]`, run the region pair
   from 7.3 under `awsds-policy-canary` (`us-east-1` → `UnauthorizedOperation`, `us-west-2` →
   `DryRunOperation`), and confirm the *must still succeed* list — `iam:ListRoles`, `budgets:DescribeBudgets`,
-  `ce:GetCostAndUsage`. Only then enable it on `Interactive`, `Sandboxes`, `Workloads`, `Data` and
+  `ce:GetCostAndUsage`.
+  > **That pair is `./aws/probes/scp-battery.sh --phase region`, and the *before* reading is already
+  > taken** (2026-08-13): `us-east-1` came back `DryRunOperation` — allowed — while all four global-service
+  > floor calls succeeded. So the phase currently reports one `FAIL`, and **that failing row is the
+  > baseline**: it is what says the control is genuinely not enabled yet rather than enabled and inert.
+  > Re-run the same phase after enabling, and the single row that must flip is the `us-east-1` one. A run
+  > where *both* rows flip is the loose construction (`us-east-1` added to the allowed list) rather than the
+  > control this step asks for. Only then enable it on `Interactive`, `Sandboxes`, `Workloads`, `Data` and
   `Identity`. **`Sandboxes` is on that list on purpose, and it is now the one with a known question mark:**
   a control enabled on `Interactive` is not automatically *enabled* on a nested child, but the SCP such a
   control attaches **is inherited** by one — and 7.0 step 2 found that `Sandboxes` carries no policy of its
@@ -1165,6 +1219,38 @@ measure something else.
   **Two facts to have before you start.** The home region cannot be denied, and *nothing must already
   exist in the regions being denied* — trivially true here, and it is the reason to do this now rather
   than at Stage 12. The control is reversible from the Control Tower console.
+
+  **ENABLED ON `Policy Test` 2026-08-13, and verification (vii) is answered from the deployed document
+  rather than from a console tab.** The control lands as an ordinary SCP — `aws-guardrails-njKkvb`
+  (`p-q3y11w1n`), one statement, `Sid: CTMULTISERVICEPV1` — which means it can be read back with
+  `organizations describe-policy` from Identity and diffed like anything else. That is a better answer than
+  the `Artifacts` tab the plan originally pointed at, and it is repeatable per OU.
+
+  | Read from the attached document | Value |
+  |---|---|
+  | `NotAction` entries | **86**, all AWS's; this project added **no** `ExemptedActions` |
+  | Condition | `StringNotEquals` on `aws:RequestedRegion = ["us-west-2"]`, and `ArnNotLike` on **`aws:PrincipalARN`** — note AWS's own spelling of the key differs in case from the `aws:PrincipalArn` this project writes; IAM keys are case-insensitive, so both are the same key |
+  | Exempted principals | exactly the four the plan predicted: `AWSControlTowerExecution`, `aws-controltower-ConfigRecorderRole`, `aws-controltower-ForwardSnsNotificationRole`, `AWSControlTower_VPCFlowLogsRole` |
+
+  **Every global-service prefix this project calls is present**, checked one by one rather than assumed:
+  `iam`, `organizations`, `sts`, `kms`, `sso`, `config`, `access-analyzer`, `route53`, **`route53domains`**
+  (Stage 13's registration, `us-east-1`-only), `acm`, `cloudfront`, `shield`, `waf`/`wafv2`, the whole
+  billing family (`billing`, `budgets`, `ce`, `cur`, `pricing`, `tax`), `support`, `health`, `account`,
+  `notifications`, and the three S3 account-level actions 7.4 depends on — `PutAccountPublicAccessBlock`,
+  `GetAccountPublicAccessBlock`, `ListAllMyBuckets`. **Plus `ecr-public:*`, which is the correction above.**
+
+  **What is deliberately absent is the control working**: `sagemaker`, `glue`, `datazone`, `lakeformation`,
+  `ecr`, `ram`, `guardduty`, `securityhub`, `macie2` and `ssm` are all regional and are all denied outside
+  `us-west-2`. Two consequences worth carrying rather than rediscovering:
+
+  - **`ssm:GetParameter` is denied in `us-east-1`**, which broke the first version of the region probe — it
+    resolved its AMI through the public SSM parameter *in the region being denied*, so the probe degraded
+    to `UNTESTED` at the exact moment it finally had something to measure. The probe now uses
+    `ec2:CreateKeyPair --dry-run`, which needs no resource at all.
+  - **`cloudshell:*` and `servicequotas:*` are not exempt either.** Neither has bitten yet because both are
+    used from **Management**, which is SCP-exempt — but a CloudShell opened in a *governed* account must be
+    opened in `us-west-2`, and that is the kind of thing that reads as a broken console rather than as a
+    control doing its job.
 
 - **The two root-user controls, and the one parameter that decides whether they break 1a step 6.**
   `AWS-GR_RESTRICT_ROOT_USER_ACCESS_KEYS` and `AWS-GR_RESTRICT_ROOT_USER` are *strongly recommended*
@@ -1399,7 +1485,7 @@ Record every answer in `log/stage-01c-preventive-policies.md`, including the one
 
 | # | Question | Step |
 |---|---|---|
-| vii | Does `CT.MULTISERVICE.PV.1`'s current default `NotAction` still cover everything this project calls from `us-east-1`? Read it off the control's `Artifacts` tab and diff | 7.7 |
+| vii | **Answered 2026-08-13, and better than asked.** The control lands as an ordinary SCP, so the list was read from the **attached document** (`aws-guardrails-njKkvb`, `p-q3y11w1n`) rather than from the `Artifacts` tab — repeatable per OU and diffable. **86 entries, no `ExemptedActions` of ours, and every global prefix this project calls is present**, `route53domains` and the three S3 account-level actions included. It also **falsified one of this stage's own predictions**: `ecr-public:*` is exempt, so the Region control never denied it and `DenyEcrPublicEntirely` is the only thing that does | 7.7, done |
 | xi | **Sharpened twice, and now half answered by measurement.** The **SCP half is settled**: `Interactive`'s document denies `sagemaker:CreateNotebookInstance` in `awsds-infra-sandbox-1`, so the nested OU is governed by inheritance and needs no attachment of its own (7.6, 2026-08-13). **What is still open is whether it is a *registered Control Tower target***: 7.0 step 3 returned an **empty list rather than an error**, and nothing errored anywhere in that run, so the discriminator was never exercised (Lesson 13). **7.7's `enable-control` against `Sandboxes` is what answers it** — for every OU Stage 14 ever nests there | 7.7 |
 
 **Was (vii), now answered from the documentation rather than by execution:** *"is Region deny

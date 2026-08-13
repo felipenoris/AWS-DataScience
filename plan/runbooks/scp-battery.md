@@ -7,6 +7,26 @@ never exercised is an intention rather than a control (Lesson 5).
 
 A policy that passed both halves is a control. One that was only attached is a hope.
 
+> ## The probes are a script now — [`aws/probes/`](../../aws/probes/README.md)
+>
+> ```bash
+> ./aws/probes/scp-battery.sh              # read-back, then every phase
+> ./aws/probes/scp-battery.sh --phase ou   # root | ou | region
+> ./aws/probes/scp-battery.sh --list       # what would run, and where
+> ```
+>
+> **This file stayed, and the division of labour is the point.** The script executes and classifies; this
+> runbook is *why each probe is shaped the way it is* and what each outcome means — which is the part that
+> cannot be automated and the part a reader needs before trusting a green run. The probe list itself lives
+> in `aws/probes/probes.sh`, so **amending the ceiling means editing that file**, and the tables below are what
+> tell you what to write in it.
+>
+> Three things the script encodes because the hand-run version kept getting them wrong: a dead SSO session
+> **aborts** instead of being recorded as a battery of denies; the outcome is read from the error *wording*
+> and never from the exit code; and each probe declares the wording that proves *that action* reached
+> authorization, so anything else is reported `UNTESTED` rather than assumed allowed. **What the script does
+> not do is attach anything** — policy changes stay a deliberate act by a human on the Management console.
+
 ## The two identities, and why each one is the one it is
 
 | Role in the battery | Identity | Why not the other one |
@@ -297,17 +317,25 @@ does not change, so nothing is created, moved or detached.
 |---|---|---|
 | `aws guardduty disassociate-from-administrator-account --detector-id 00000000000000000000000000000000 --region us-west-2` | `AccessDenied` naming the policy — **this is the whole point of the amendment**, the modern spelling that used to be open | `BadRequestException` / detector-not-found = validated first, **untested** |
 | `aws guardduty update-detector --detector-id 00000000000000000000000000000000 --no-enable --region us-west-2` | `AccessDenied` | validation error = untested. Regression only: it was already denied |
-| `aws ec2 create-store-image-task --image-id ami-00000000000000000 --bucket awsds-canary-does-not-exist --region us-west-2` | `AccessDenied` | an AMI or bucket validation error = **untested**, and expected — EC2 validating the image id first is the same wall `ModifySnapshotAttribute` hit in 7.5 |
-| `aws ec2 export-image --image-id ami-00000000000000000 --disk-image-format VMDK --s3-export-location S3Bucket=awsds-canary-does-not-exist --region us-west-2` | `AccessDenied` | validation error = untested |
+| `aws ec2 create-store-image-task --image-id <REAL public AMI> --bucket awsds-canary-does-not-exist --region us-west-2` | `UnauthorizedOperation` | an AMI validation error = untested. **The AMI must be real** — measured 2026-08-13: `ami-0123456789abcdef0` returns `InvalidAMIID.Malformed`, the public Amazon Linux AMI reaches authorization and is denied |
+| `aws ec2 export-image --image-id ami-0123456789abcdef0 --disk-image-format VMDK --s3-export-location S3Bucket=awsds-canary-does-not-exist --region us-west-2` | `UnauthorizedOperation` | validation error = untested. **This one authorizes even with a malformed AMI**, which is the whole point of the rule below |
+| `aws ec2 create-instance-export-task --instance-id i-1234abcd --target-environment vmware --export-to-s3-task '{"S3Bucket":"awsds-canary-does-not-exist","DiskImageFormat":"VMDK","ContainerFormat":"ova"}' --region us-west-2` | `UnauthorizedOperation` | validation error = untested |
 | `aws rds start-export-task --export-task-identifier awsds-canary-probe --source-arn arn:aws:rds:us-west-2:<ACCT>:snapshot:nonexistent --s3-bucket-name awsds-canary-does-not-exist --iam-role-arn arn:aws:iam::<ACCT>:role/nonexistent --kms-key-id alias/aws/rds --region us-west-2` | `AccessDenied` | `DBSnapshotNotFound` = untested |
 
-**Expect most of this block to come back *untested*, and record it that way.** EC2 and RDS both validate
-resource ids before authorizing — 7.5 already measured that for `ModifySnapshotAttribute` — so the honest
-outcome for a statement about images and snapshots that do not exist is "attached, unexercised" (Lesson 20's
-neighbour: a statement can be unexercised for want of a *resource*, not only for want of a unique deny).
-**The GuardDuty pair is the one that must produce a real answer**, because a detector id is checked after
-authorization often enough to be worth the attempt; if it does not, the amendment is carried on the argument
-that the added strings are verified names in the same statement as an already-denied action.
+> ### Before recording *untested*, retry with a **real** resource id
+>
+> **The validation-before-authorization wall is per-action, not per-service, and this was measured rather
+> than assumed (2026-08-13).** In the same account, in the same run: `ec2:ExportImage` and
+> `ec2:CreateInstanceExportTask` authorized against a **malformed** id and came back denied, while
+> `ec2:CreateStoreImageTask` rejected the same shape of id as malformed and only reached authorization once
+> a **real public AMI** was passed. `ec2:StartInstances` never reached it at all — a 17-character id is
+> rejected as `Malformed` and an 8-character one as `NotFound`, both before authorization.
+>
+> So "the service validates first" is a property of the API being probed, and **a first-try validation error
+> is a reason to retry, not a result**. Reach for something that exists: the public Amazon Linux AMI from
+> SSM, a subnet from `describe-subnets`, the account's own id in an ARN. Recording *untested* on the first
+> error understates the ceiling — a statement that is in fact exercised gets carried in the notes as
+> unproven, and the next reader spends an evening re-testing it.
 
 ### Phase 4b — re-probing an amended document, in place
 
@@ -324,8 +352,8 @@ describes a version that no longer exists.
 | Where | Probe | Denied | Allowed |
 |---|---|---|---|
 | `awsds-infra-data`, `awsds-infra-identity` | `aws ec2 request-spot-instances --dry-run --instance-count 1 --launch-specification '{"ImageId":"<REAL AMI>","InstanceType":"t3.micro","SubnetId":"<REAL SUBNET>"}' --region us-west-2` | `UnauthorizedOperation`, naming the policy | `DryRunOperation`. **Same real-ids trick as `run-instances`** — an invented AMI or a missing subnet is rejected before authorization |
-| `awsds-infra-data`, `awsds-infra-identity` | `aws ec2 start-instances --dry-run --instance-ids i-00000000000000000 --region us-west-2` | `UnauthorizedOperation` | `InvalidInstanceID.NotFound` = validated first, **untested** |
-| `awsds-infra-data`, `awsds-infra-identity` | `aws ec2 create-fleet --dry-run …` | `UnauthorizedOperation` | **expected to be untestable**: `create-fleet` needs a real launch template, and neither account has one. Recorded as *untested* rather than manufactured — its two siblings above are the evidence that the launch surface is closed |
+| `awsds-infra-data`, `awsds-infra-identity` | `aws ec2 start-instances --dry-run --instance-ids i-1234abcd --region us-west-2` | `UnauthorizedOperation` | `InvalidInstanceID.NotFound` = validated first, **untested** — which is what it returned on 2026-08-13, in both accounts and at both id lengths |
+| `awsds-infra-data`, `awsds-infra-identity` | `aws ec2 create-fleet --dry-run --launch-template-configs '[{"LaunchTemplateSpecification":{"LaunchTemplateName":"awsds-canary-probe","Version":"1"}}]' --target-capacity-specification '{"TotalTargetCapacity":1,"DefaultTargetCapacityType":"on-demand"}' --region us-west-2` | `UnauthorizedOperation` on `…:fleet/*` | a launch-template error = untested. **This was predicted to be untestable and is not**: `--dry-run` authorizes *before* resolving the launch template, so a template name that does not exist still produces a real answer |
 | `awsds-infra-data` | `aws glue start-crawler --name awsds-canary-probe --region us-west-2` | `AccessDenied` | `EntityNotFoundException` = the carve-out matched a principal it should not. **Re-run after the guard was added**: `BoolIfExists` evaluates *true* when the key is absent, so a human principal must still land on the deny side — if this one flips to allowed, the guard is inverted and the whole carve-out is open |
 
 **The guard's own effect cannot be probed from a CLI session**, because `aws:PrincipalIsAWSService` is set by

@@ -8,6 +8,15 @@ Why this exists: [`GENERAL_PLAN.md`](../GENERAL_PLAN.md) and `plan/` say what *s
 [`log/`](../log/INDEX.md) files say what was *done by hand*, and these snapshots say what AWS *reports right
 now*. Each answers a different question, and the three disagreeing is itself information.
 
+**One subfolder is the exception to the sentence above, and it is fenced rather than hidden:
+[`probes/`](probes/README.md).** The SCP battery has to *attempt* the calls a policy forbids — that is the
+only way to measure a preventive control — so it reaches authorization and leaves `AccessDenied` events in
+CloudTrail. It still creates nothing: every probe is read-only, carries `--dry-run`, or names a prerequisite
+that does not exist, and the three that would really act if a deny were missing are refused by the driver
+anywhere but `Policy Canary`. **The difference that matters for this index: the scripts above are safe to
+run to gather information; the battery is run deliberately.** Its reports land in `output/` alongside these
+snapshots.
+
 ## The scripts
 
 | Script | SSO user signed in | Profile it runs as | Writes | Captures |
