@@ -117,11 +117,31 @@ write anything into it. Claude can read the files in this folder to gather infor
 
 - all scripts inside `aws/*` should perform only read-only operations. You are free to run them to gather information.
 
+- **Whenever an SSO login is needed — asked for, or implied by a command Claude is about to hand over —
+  Claude states three things, every time and without being asked**: the **SSO user** to sign in as, the
+  **account** the work lands in, and the **permission set** behind it. Never "log in and run this".
+
+  | Say | Example |
+  |---|---|
+  | SSO user | the infrastructure user (`felipenoris+infrastructure_user@…`) — the only one with CLI profiles; `AWS Control Tower Admin` is a *different* user, console-only |
+  | Account | `Policy Canary`, `Development`, `Management`, … — by **name**, never by id |
+  | Permission set | `InfrastructureAccess`, `AWSAdministratorAccess` — and the profile that reaches it |
+
+  **"Role" and "permission set" are the same thing seen from two sides**, and the distinction only matters
+  when writing a policy: a permission set is the Identity Center object; what it provisions into each
+  account is an IAM role named `AWSReservedSSO_<PermissionSetName>_<per-account random suffix>`. A
+  condition keyed on `aws:PrincipalArn` must name **that role ARN**, which is why the suffix being
+  per-account is what forced decision 7's wildcard.
+
+  **One `aws sso login --sso-session awsds` covers every profile** — the token is keyed by the
+  `sso-session` name, not by profile or account — so the answer is never "which profile do I log in
+  with", it is *which identity to pick in the browser*, plus where the work is about to land.
+
 ## Upkeep — the files this project maintains
 
 | File | What it holds, and the rule |
 |---|---|
-| [`log/`](log/INDEX.md)`stage-NN-*.md` | Every step performed by hand in AWS, one file per stage, mirroring `plan/stages/`. **Written by the user — Claude never edits a stage log.** Claude may draft wording for the user to paste, and says so |
+| [`log/`](log/INDEX.md)`stage-NN-*.md` | Every step performed by hand in AWS, one file per stage, mirroring `plan/stages/`. **Written by the user — Claude never edits a stage log.** Claude may draft wording for the user to paste, and says so. **Drafts are concise by default**: the command, the outcome, and any finding that does **not** survive elsewhere. Leave out what `aws/output/` already holds (it is regenerated on demand), what a `plan/` file explains, and the reasoning behind a choice — a log entry restating either is a copy that will go stale. Prose belongs in `plan/`; the log carries *what happened, in order* |
 | [`log/INDEX.md`](log/INDEX.md) | The one exception under `log/`: **Claude maintains it.** After reading a stage log, bring its `Records` cell to what the file now contains — a cell saying less than the file is what the index exists to prevent. Never restate a step there: the cell says *what is inside*, in one line |
 | [`ORGANIZATION.md`](ORGANIZATION.md) | The AWS OUs, accounts and users |
 | [`REFERENCES.md`](REFERENCES.md) | Every internet link used as a reference, added on the interaction that used it |

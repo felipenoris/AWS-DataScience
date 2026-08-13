@@ -166,7 +166,7 @@ aws organizations attach-policy --policy-id <POLICY_ID> --target-id <ROOT_ID>
 | # | Probe | Statement | Denied vs allowed |
 |---|---|---|---|
 | 1 | `aws iam create-user --user-name awsds-canary-probe --profile awsds-policy-canary` | `DenyIamUserCreation` | **No dry-run exists.** If it succeeds, a user was created — `aws iam delete-user --user-name awsds-canary-probe` immediately |
-| 2 | `aws ec2 modify-snapshot-attribute --snapshot-id snap-0000000000000000f --attribute createVolumePermission --operation-type add --user-ids 000000000000 --region us-west-2 --profile awsds-policy-canary` | `DenySnapshotAndImageSharing` | `AccessDenied` = denied. **`InvalidSnapshot.NotFound` = allowed** — the call got past the ceiling and failed on the fake id |
+| 2 | ~~`aws ec2 modify-snapshot-attribute --snapshot-id snap-…`~~ **— unrunnable with a fake id, measured 1c** | `DenySnapshotAndImageSharing` | EC2 rejects an invented snapshot id as `InvalidSnapshotID.Malformed` **before authorizing, `--dry-run` included**, so no fake-id probe reaches the SCP. It needs a *real* snapshot. Left untested in 1c on the argument that the statement carries **no condition** and probe 3 exercises the same statement — so the only untested thing is the spelling of one action string, which is a read. Create a volume and a snapshot if that argument is ever not enough |
 | 3 | `aws ec2 modify-image-attribute --image-id ami-0000000000000000f --launch-permission "Add=[{UserId=000000000000}]" --region us-west-2 --profile awsds-policy-canary` | same statement, separate action — snapshot controls do not cover EBS-backed AMIs | `AccessDenied` vs `InvalidAMIID.NotFound` |
 | 4 | `aws ecr-public describe-registries --region us-east-1 --profile awsds-policy-canary` | `DenyEcrPublicEntirely` | The deny is `ecr-public:*`, so even this read must fail. A registry list = the deny is not reaching the namespace |
 | 5 | `aws guardduty delete-detector --detector-id 00000000000000000000000000000000 --region us-west-2 --profile awsds-policy-canary` | `DenyGuardDutyTampering` | `AccessDenied` vs `BadRequestException`. **Inert until Stage 4 turns GuardDuty on** — this probe is what says the statement is nonetheless live |
@@ -226,8 +226,14 @@ aws ecr delete-repository --repository-name awsds-canary-throwaway --force --reg
   `aws ec2 run-instances --dry-run` in `us-east-1` must return **`UnauthorizedOperation`** and in
   `us-west-2` must return **`DryRunOperation`**. Under the loose construction this plan once described —
   adding `us-east-1` to the allowed list — the first call would succeed and look like a pass.
-- **The `datazone` carve-out, positive direction.** It needs a principal in the `Data` OU and a real
-  execution role; it is exercised at **Stage 6**, not here. Only the negative direction is provable today.
+- **The `datazone` carve-out — *neither* direction, and this was measured rather than assumed.** DataZone
+  validates `--domain-execution-role` **before** authorizing, so a call with a throwaway role returns
+  `Cross-account pass role is not allowed` and never reaches the SCP. The same error comes back from the
+  exempt account (`awsds-infra-data`), which is what proves the probe measures nothing — an authorization
+  difference would have made the two accounts differ. It needs a role DataZone accepts, so it is
+  **[Stage 6 step 0](../stages/stage-06-unified-studio.md)**, run before the domain is created rather than
+  after. Note the direction of the risk: `ForAllValues:` over a key that does not populate evaluates
+  **true**, so the untested failure is the deny applying to *everyone*, `Data` included.
 - **The RCP, tag and declarative policies.** 7.8, in sitting B, and the RCP's denial wording differs — see
   the table above.
 

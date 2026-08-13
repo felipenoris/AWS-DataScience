@@ -64,6 +64,36 @@ Two consequences worth stating rather than discovering:
 
 **To execute:**
 
+0. **Before anything else: prove that 1c's `datazone:CreateDomain` deny lets *this* account through.**
+   Step 1 creates the domain, and the deny that governs it — `DenyDataZoneDomainOutsideDataOu`, in
+   `awsds-org-scp-baseline` on the organization root — **was never exercised in either direction.** Stage 1c
+   step 7.3 tried, and found the probe unrunnable: DataZone validates `--domain-execution-role` *before*
+   authorization, so a call with a throwaway role returns `Cross-account pass role is not allowed` and never
+   reaches the SCP. That the same error comes back from the exempt account is what proved the probe measures
+   nothing, not that the carve-out works.
+
+   **The failure direction is closed, not open, which is why this is step 0 and not a verification at the
+   end.** The condition is `ForAllValues:StringNotLike` on `aws:PrincipalOrgPaths`, and **a `ForAllValues:`
+   operator over a multi-valued key that does not populate evaluates *true*** — so if DataZone requests do
+   not carry `aws:PrincipalOrgPaths`, the deny applies to **everyone, including `Data`**, and step 1 simply
+   cannot create the domain. Discovering that while debugging a Terraform apply costs an evening; the probe
+   below costs one call.
+
+   Run it as the principal that will own the domain, in **Data Governance**, with a role DataZone will
+   accept — the module's own execution role, or one created for the purpose with a `datazone.amazonaws.com`
+   trust policy. Three outcomes, and they are distinguishable:
+
+   | What comes back | What it means |
+   |---|---|
+   | the domain is created | the carve-out matches. Delete it if step 1 is going to create it properly, and carry on |
+   | `AccessDenied … explicit deny in a service control policy` | **`aws:PrincipalOrgPaths` is not populating for DataZone.** Stop. The statement has to be re-keyed — `aws:PrincipalAccount` against the enumerated Data Governance account is the fallback, and it is a 1c amendment run through [`plan/runbooks/scp-battery.md`](../runbooks/scp-battery.md), not an edit made here |
+   | any DataZone validation error (`Cross-account pass role…`, trust-policy failures) | the probe is still not reaching authorization. Fix the role before reading anything into it — this is the outcome Stage 1c already had, and it is not evidence |
+
+   **And run the negative half in the same sitting**, from any account outside the `Data` OU: the same call
+   must come back with the explicit-deny wording. Without it, "the domain was created" is equally consistent
+   with the statement never firing anywhere — which would mean any account can create a domain, and INT-12's
+   one-domain-per-account fallback has already happened by accident.
+
 1. **The unified domain (D26), from the official module** — `aws-ia/terraform-aws-sagemaker-unified-studio`
    (`aws` ≥ 6.51 for the domain and its IAM roles, `awscc` ≥ 1.89 for project profiles, blueprints and
    projects): a single **DataZone V2 domain** in the **Data Governance** account

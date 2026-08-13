@@ -222,7 +222,202 @@ aws s3control put-public-access-block --account-id "$(aws sts get-caller-identit
 - **The account quota reads 10, not the requested 15.** A member account reads 0.0, so only this
   Management run is evidence. The `Staging` vend stays held.
 
-- 
+- **7.3 phase 0 — baseline in `Policy Canary`, nothing attached.** As `awsds-policy-canary`
+  (`AWSAdministratorAccess`). Must-succeed half: `sts:GetCallerIdentity`, `s3 ls`
+  (`s3:ListAllMyBuckets`, empty), `ec2:DescribeVpcs` `us-west-2`, `iam:ListRoles` (18),
+  `budgets:DescribeBudgets` `us-east-1` (none) — all permitted. The last two answer in `us-east-1` and
+  are the pre-state for 7.7's Region control.
+
+- Throwaway resources created, to be deleted in phase 3: bucket `awsds-canary-throwaway-1786569935`
+  and ECR repository `awsds-canary-throwaway`. Both writes baselined and **passing**: `s3:PutObject`
+  (confirmed with `head-object` — `aws s3 cp` exits 0 with empty output, which is not evidence) and
+  `ecr:InitiateLayerUpload` (`uploadId 1fceb2bf-…`, no bytes uploaded).
+
+- Executing Stage 1c, step 7, sitting A, 7.3, phase 1. Login on console using CT Admin on Management account. AWS Organizations -> Policies -> Service control policies. Create policy:
+  - policy name: `awsds-canary-scp-perimeter-inverted`
+  - Description: THROWAWAY - Stage 1c step 7.3 battery. Detach and delete in the same sitting.
+  - Used this JSON:
+
+```
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "InvertedDenyS3ObjectWriteInsideOrganization",
+      "Effect": "Deny",
+      "Action": [
+        "s3:PutObject",
+        "s3:PutObjectAcl",
+        "s3:PutObjectTagging",
+        "s3:PutObjectVersionAcl",
+        "s3:PutObjectVersionTagging",
+        "s3:PutObjectRetention",
+        "s3:PutObjectLegalHold"
+      ],
+      "Resource": "*",
+      "Condition": {
+        "StringEqualsIfExists": {
+          "aws:ResourceOrgID": "o-4z1leiit0c"
+        },
+        "BoolIfExists": {
+          "aws:PrincipalIsAWSService": "false"
+        }
+      }
+    },
+    {
+      "Sid": "InvertedDenyEcrPushInsideOrganization",
+      "Effect": "Deny",
+      "Action": [
+        "ecr:InitiateLayerUpload",
+        "ecr:UploadLayerPart",
+        "ecr:CompleteLayerUpload",
+        "ecr:PutImage"
+      ],
+      "Resource": "*",
+      "Condition": {
+        "StringEqualsIfExists": {
+          "aws:ResourceOrgID": "o-4z1leiit0c"
+        },
+        "BoolIfExists": {
+          "aws:PrincipalIsAWSService": "false"
+        }
+      }
+    }
+  ]
+}
+```
+
+- I can see a new policy listed with name `awsds-canary-scp-perimeter-inverted`, with ARN `arn:aws:organizations::885931358757:policy/o-4z1leiit0c/service_control_policy/p-539eaz19`.
+
+- On the policy, clicked attach, selected org Policy Test (ou-zhj6-ebwso7wp). The console new lists that policy attached to Policy Test OU.
+
+- **7.3 phase 1 — the inverted perimeter, `p-539eaz19` on `ou-zhj6-ebwso7wp` (`Policy Test`).**
+  First run of both probes returned an **expired SSO session**, not a deny — discarded, re-logged in
+  and re-run. Reading the error *wording* rather than the exit code is what caught it.
+
+- Both probes then failed as required, and the message names the policy:
+
+```
+s3:PutObject             AccessDenied ... explicit deny in a service control policy: ... p-539eaz19
+ecr:InitiateLayerUpload  AccessDeniedException ... explicit deny in a service control policy: ... p-539eaz19
+```
+
+  Same bucket, same repository, same principal as phase 0, so the only variable was the policy. Proves
+  the `IfExists` pair evaluates as written, that the deny reaches an ordinary principal, and — the half
+  S3 could not answer — that **`aws:ResourceOrgID` populates on an ECR request**. It does not prove a
+  write to a genuinely external bucket is denied; that rests on the production document being the
+  complement, `StringNotEqualsIfExists` where this one has `StringEqualsIfExists`.
+
+- Login as CT Admin on Management Account. Detached `awsds-canary-scp-perimeter-inverted` from `Policy Test` OU an deleted the policy.
+
+- Starting 7.3 phase 2. Login as CT Admin on Management Account. AWS Organizations -> Policies -> Service control policies. Create policy:
+  - policy name: `awsds-org-scp-baseline`
+  - Description: Stage 1c step 7.5 - organization baseline: LeaveOrganization, IAM users, account BPA (carve-out), snapshot and AMI sharing, ecr-public, GuardDuty, datazone outside Data OU.
+  - Used this JSON:
+
+```
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "DenyLeaveOrganization",
+      "Effect": "Deny",
+      "Action": "organizations:LeaveOrganization",
+      "Resource": "*"
+    },
+    {
+      "Sid": "DenyIamUserCreation",
+      "Effect": "Deny",
+      "Action": [
+        "iam:CreateUser",
+        "iam:CreateAccessKey"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "DenyAccountBpaChangeExceptInfrastructure",
+      "Effect": "Deny",
+      "Action": "s3:PutAccountPublicAccessBlock",
+      "Resource": "*",
+      "Condition": {
+        "ArnNotLike": {
+          "aws:PrincipalArn": "arn:aws:iam::*:role/aws-reserved/sso.amazonaws.com/*AWSReservedSSO_InfrastructureAccess_*"
+        }
+      }
+    },
+    {
+      "Sid": "DenySnapshotAndImageSharing",
+      "Effect": "Deny",
+      "Action": [
+        "ec2:ModifySnapshotAttribute",
+        "ec2:ModifyImageAttribute",
+        "rds:ModifyDBSnapshotAttribute",
+        "rds:ModifyDBClusterSnapshotAttribute"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "DenyEcrPublicEntirely",
+      "Effect": "Deny",
+      "Action": "ecr-public:*",
+      "Resource": "*"
+    },
+    {
+      "Sid": "DenyGuardDutyTampering",
+      "Effect": "Deny",
+      "Action": [
+        "guardduty:DeleteDetector",
+        "guardduty:UpdateDetector",
+        "guardduty:DeleteMembers",
+        "guardduty:DisassociateFromMasterAccount"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "DenyDataZoneDomainOutsideDataOu",
+      "Effect": "Deny",
+      "Action": "datazone:CreateDomain",
+      "Resource": "*",
+      "Condition": {
+        "ForAllValues:StringNotLike": {
+          "aws:PrincipalOrgPaths": "o-4z1leiit0c/r-zhj6/ou-zhj6-z3drywoq/"
+        },
+        "BoolIfExists": {
+          "aws:PrincipalIsAWSService": "false"
+        }
+      }
+    }
+  ]
+}
+```
+
+- Policy `awsds-org-scp-baseline` created with ARN `arn:aws:organizations::885931358757:policy/o-4z1leiit0c/service_control_policy/p-1fp032g8`. Attached to root account `r-zhj6`.
+
+- **7.3 phase 2 — `awsds-org-scp-baseline` (`p-1fp032g8`) attached to the root `r-zhj6`.** Probes as
+  `awsds-policy-canary`. Five denied, each naming `p-1fp032g8`: `iam:CreateUser`,
+  `ec2:ModifyImageAttribute`, `ecr-public:DescribeRegistries`, `guardduty:DeleteDetector`, and
+  `s3control:PutAccountPublicAccessBlock` from a principal outside the carve-out.
+
+- **Decision 7 holds — the probe this phase was for.** The same `put-public-access-block` as
+  `awsds-infra-dev` (`InfrastructureAccess`) **succeeded** with the policy attached, so
+  `aws:PrincipalArn` names the right form: the `role/aws-reserved/sso.amazonaws.com/...` ARN, not the
+  `assumed-role` one `get-caller-identity` prints. Had it failed, every future account would be
+  permanently without account-level BPA and no principal could set it.
+
+- Must-still-succeed half re-run under the new ceiling: the five phase-0 reads plus both in-org writes,
+  all still permitted.
+
+- **Two probes measured nothing, both because the service validates input before authorizing.**
+  - `ec2:ModifySnapshotAttribute`: any invented snapshot id returns `InvalidSnapshotID.Malformed`,
+    `--dry-run` included, so it never reaches the SCP. Left untested — the statement carries **no
+    condition** and `ec2:ModifyImageAttribute`, denied above, is the **same statement**, so the only
+    untested thing is one action string, verified by reading the rendered document.
+  - `datazone:CreateDomain`: returns `Cross-account pass role is not allowed`. **The same error comes
+    back from `awsds-infra-data`, the account the carve-out exempts** — an authorization difference
+    would have made the two differ, so the probe measures nothing in either direction. Moved to
+    **Stage 6 step 0**, before the domain is created, because `ForAllValues:` over a key that does not
+    populate evaluates *true*: the untested failure is the deny applying to everyone, `Data` included.
+
 
 ---
 
