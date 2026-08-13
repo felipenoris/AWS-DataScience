@@ -15,6 +15,7 @@ This folder is documents only. There is no `.tf` here until Stage 2.
 | `policies/` | The real documents. One file per policy, named exactly as the policy is named in Organizations |
 | `canary/` | **Throwaway** documents, attached to `Policy Test` during the step 7.3 battery and detached in the same sitting. Never attached to anything real |
 | `render.sh` | Substitutes this organization's identifiers into the templates and writes the pasteable copies to `aws/output/rendered-policies/` |
+| `check-index.sh` | Verifies that `SCPs.md` still lists exactly the `Sid`s in `policies/`, in order, and names both directions of a mismatch. No AWS session, no side effects, exits non-zero when it drifts |
 | [`SCPs.md`](SCPs.md) | **The statement-level index**: every `Sid` in `policies/`, what it denies and why it exists. JSON carries no comments, so that file is where the reasoning lives — **and it is updated in the same sitting as any SCP change** |
 
 ## The templates carry placeholders. Paste the *rendered* files

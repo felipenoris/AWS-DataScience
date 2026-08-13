@@ -309,6 +309,23 @@ it into `ORGANIZATION.md`'s description of that account rather than leaving it h
   boundary, or the sets stay inline-only until Stage 3 exists. Attaching a customer-managed reference before
   the policy exists in the target account fails the *provisioning*, in that account only — which is the
   quiet version of this mistake.
+- **Every boundary written here must deny two things that have nothing to do with this account's
+  resources, because 1c's SCPs are only as strong as control over the principals they exempt.** Two
+  carve-outs exist in the attached ceiling and both name a principal:
+  `DenyAccountBpaChangeExceptInfrastructure` matches the ARN *pattern*
+  `…:role/aws-reserved/sso.amazonaws.com/*AWSReservedSSO_InfrastructureAccess_*` (decision 7, the one
+  wildcard-account ARN), and `DenyCatalogMaintenanceRunsExceptMaintenanceRole` names one exact role in Data
+  Governance (D27). So:
+  - **`iam:CreateRole` under the `/aws-reserved/` path** would mint a principal matching the first pattern.
+    Whether IAM permits that path at all is **unverified** — one `create-role` in `Policy Canary` answers
+    it, and it is worth running before the boundaries are written rather than after.
+  - **`iam:UpdateAssumeRolePolicy` on an exempted role** hands its exemption to whoever can edit the trust
+    policy, without them ever having to *be* that principal. This one needs no verification: it is how IAM
+    works.
+  Neither is exploitable today — `iam:CreateRole` lives with `InfrastructureAccess`, which is already the
+  exempted identity, and the maintenance role does not exist yet. **Both become exploitable the moment this
+  step creates a set that is neither**, which is why the requirement is recorded against the boundaries and
+  not against the SCPs: a carve-out cannot defend itself.
 - **There is a size cap on a permission set's inline policy**, and three of these sets are long enumerated
   denies (1b step 3.5). Count before writing, the same discipline 1c step 7.1 applies to SCPs; the way out
   is a customer-managed policy, which lands back on the paragraph above.

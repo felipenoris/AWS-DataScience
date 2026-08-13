@@ -6,6 +6,10 @@
       "Effect": "Deny",
       "Action": [
         "ec2:RunInstances",
+        "ec2:StartInstances",
+        "ec2:CreateFleet",
+        "ec2:RequestSpotInstances",
+        "ec2:RequestSpotFleet",
         "sagemaker:Create*",
         "sagemaker:StartSession",
         "glue:CreateDevEndpoint",
@@ -35,6 +39,9 @@
       "Condition": {
         "ArnNotEquals": {
           "aws:PrincipalArn": "arn:aws:iam::<ACCOUNT_ID_DATA>:role/awsds-data-catalog-maintenance"
+        },
+        "BoolIfExists": {
+          "aws:PrincipalIsAWSService": "false"
         }
       }
     },

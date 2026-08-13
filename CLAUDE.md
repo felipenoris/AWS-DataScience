@@ -149,7 +149,7 @@ write anything into it. Claude can read the files in this folder to gather infor
 | [`REFERENCES.md`](REFERENCES.md) | Every internet link used as a reference, added on the interaction that used it |
 | [`README.md`](README.md) | How the AWS resources are structured, and the project layout, so people can understand the components |
 | [`terraform-live/README.md`](terraform-live/README.md) | How the deployed tree is organised. Updated when an account folder or a top-level rule changes — **never a copy of the slice tree**, which lives in `plan/conventions.md` §6 |
-| [`terraform-live/identity/org-policies/SCPs.md`](terraform-live/identity/org-policies/SCPs.md) | One row per SCP `Sid`: what it denies, why it exists, what it does once attached. **Reviewed in the same sitting as any SCP change** — a statement added, removed, renamed or re-conditioned, and any attach or detach. The file carries the one-line check that says whether it drifted |
+| [`terraform-live/identity/org-policies/SCPs.md`](terraform-live/identity/org-policies/SCPs.md) | One row per SCP `Sid`: what it denies, why it exists, what it does once attached. **Reviewed in the same sitting as any SCP change** — a statement added, removed, renamed or re-conditioned, and any attach or detach. `./terraform-live/identity/org-policies/check-index.sh` decides the mechanical half (rows = `Sid`s, in order, both directions); whether a row is still *true* is the reading |
 | [`PRICING.md`](PRICING.md) | A row for every new AWS service referenced |
 
 # Claude memory
@@ -310,14 +310,31 @@ The `§` numbers inside `plan/` files are historical anchors, not addresses.
 - **The SSO token expires faster than a battery does** — it died twice mid-run, and both times every probe
   came back as a non-answer that reads like a deny. **Check the token immediately before each block of
   probes**, and read the error *wording* (`explicit deny in a service control policy`), never the exit code.
-- **Sitting B is open at 7.6: the four per-OU documents are written and nothing is attached** —
-  `awsds-org-scp-ou-{workloads,data,interactive,identity}.json`, rendered by the same `render.sh` (new
-  placeholder `<ACCOUNT_ID_DATA>`). **Verification (viii) is answered**: an SMUS domain is `datazone:*`, so
-  `Data`'s `sagemaker:Create*` wildcard stands, while `Workloads` is enumerated because Staging and
-  Production legitimately call `CreateModel`/`CreateEndpoint`. The `Data` crawler carve-out names
-  **`awsds-data-catalog-maintenance`** — a contract with Stage 5, whose *positive* half cannot be tested
-  before then. **Each of the four has a real account to be exercised in** (`awsds-infra-prod`, `-data`,
-  `-dev`/`-sandbox-1`, `-identity`), which the root set never had — battery **phase 4**.
+- **7.6 IS DONE: one document per OU on `Workloads`, `Data`, `Interactive` and `Identity`, each exercised in
+  that OU's own account.** Verification (viii) answered (an SMUS domain is `datazone:*`, so `Data`'s
+  `sagemaker:Create*` wildcard stands; `Workloads` is enumerated because Staging and Production legitimately
+  call `CreateModel`/`CreateEndpoint`). **Decision 1 costs no feature, measured:** `CreateNotebookInstance`
+  denied while `CreateSpace` and `datazone:ListDomains` still work in Development and Sandbox. **`Sandboxes`
+  is governed by inheritance** — verification (xi)'s SCP half; the *registered-target* half is still 7.7's.
+  Untested and recorded so: `s3:DeleteBucket` (validated before authorization) and the **positive** half of
+  the `Data` crawler carve-out, which needs Stage 5's **`awsds-data-catalog-maintenance`** role.
+- **The denial message names the policy id**, so attribution needs no CloudTrail — **but AWS names only one
+  matching policy**, which is how a document sits attached and unexercised (Lesson 20). **What is left of 1c
+  is 7.7 and 7.8.**
+- **Three documents are amended and NOT uploaded**, so `policies/` is ahead of AWS: **7.6a** (`Data`,
+  `Identity` — four EC2 launch actions, `RunInstances` was one door of several; plus the service guard on
+  the D27 carve-out) and **7.5a** (`baseline` — GuardDuty named the *deprecated* `…FromMasterAccount` and
+  not the live `…FromAdministratorAccount`; plus a new `DenyImageAndSnapshotExport`, because sharing an
+  image and *writing it to a bucket* are two routes). **Closed by `update-policy` plus the re-probe**:
+  phase 4b for the OU pair, **phases 1-3 on the canary** for the root. Three things are now *stated* rather
+  than open: **Athena is allowed in `Data`** on purpose (Stage 5's Iceberg maintenance), Stage 11's to
+  detect; an ASG launches through a service-linked role and no SCP reaches it; and
+  **`guardduty:UpdateDetector` blocks Stage 11 step 4 in Audit** by design, with the procedure written in
+  three places.
+- **A carve-out keyed on a principal ARN cannot defend itself** — whoever can create a role matching the
+  pattern, or edit the exempted role's trust policy, inherits the exemption. Both carve-outs (BPA, D27) are
+  now a written requirement on **Stage 2's boundaries** and Stage 5's role. Unverified and cheap: whether
+  IAM even permits `CreateRole` under `/aws-reserved/`.
 - **The repository is documentation only, with one exception since 2026-08-13**:
   `terraform-live/identity/org-policies/` holds 1c's policy **documents** (templates with placeholders, plus
   `render.sh`, which writes the pasteable copies into untracked `aws/output/`). No `.tf` anywhere until
@@ -366,4 +383,5 @@ the reasoning that makes it *usable* is in the file. Recognising one is the sign
 17. **A service that "sets itself up" creates principals nobody chose.**
 18. **A policy never constrains the principal that authors it.**
 19. **A blocking input is re-checked against the requirement, not against the mechanism.**
+20. **When several policies deny the same call, only one is proven — the rest are attached, not exercised.**
 

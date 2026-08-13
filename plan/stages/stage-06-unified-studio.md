@@ -94,6 +94,18 @@ Two consequences worth stating rather than discovering:
    with the statement never firing anywhere — which would mean any account can create a domain, and INT-12's
    one-domain-per-account fallback has already happened by accident.
 
+   **Second half of the same preflight, and it is about a different document: `sagemaker:Create*` is denied
+   in Data Governance** by `awsds-org-scp-ou-data` (1c step 7.6, measured — five denies in that account).
+   This step's whole premise is that the domain account is a *registry* and no blueprint is enabled there,
+   which is what makes that wildcard free. **Verify the premise before the apply, not during it**: if the
+   `aws-ia` module — or SMUS itself, on domain creation — provisions anything SageMaker-shaped in the domain
+   account, the apply dies half-built, in the account where a half-built domain is hardest to unpick. A
+   `terraform plan` that shows no `aws_sagemaker_*` or `awscc_sagemaker_*` resource in
+   `data-governance/governance/` answers it; a single `sagemaker:Create…` in the plan output is the signal
+   to stop. **The correction in that case is to re-check "no blueprint enabled in the domain account", never
+   to weaken the OU document** — the wildcard is the statement that no user compute exists in the lake
+   account, and a carve-out shaped like "except what SMUS needs" is that statement withdrawn.
+
 1. **The unified domain (D26), from the official module** — `aws-ia/terraform-aws-sagemaker-unified-studio`
    (`aws` ≥ 6.51 for the domain and its IAM roles, `awscc` ≥ 1.89 for project profiles, blueprints and
    projects): a single **DataZone V2 domain** in the **Data Governance** account

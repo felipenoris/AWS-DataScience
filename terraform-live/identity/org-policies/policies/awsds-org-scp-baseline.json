@@ -39,6 +39,17 @@
       "Resource": "*"
     },
     {
+      "Sid": "DenyImageAndSnapshotExport",
+      "Effect": "Deny",
+      "Action": [
+        "ec2:CreateStoreImageTask",
+        "ec2:ExportImage",
+        "ec2:CreateInstanceExportTask",
+        "rds:StartExportTask"
+      ],
+      "Resource": "*"
+    },
+    {
       "Sid": "DenyEcrPublicEntirely",
       "Effect": "Deny",
       "Action": "ecr-public:*",
@@ -51,7 +62,12 @@
         "guardduty:DeleteDetector",
         "guardduty:UpdateDetector",
         "guardduty:DeleteMembers",
-        "guardduty:DisassociateFromMasterAccount"
+        "guardduty:DisassociateMembers",
+        "guardduty:StopMonitoringMembers",
+        "guardduty:DisassociateFromMasterAccount",
+        "guardduty:DisassociateFromAdministratorAccount",
+        "guardduty:DeletePublishingDestination",
+        "guardduty:UpdatePublishingDestination"
       ],
       "Resource": "*"
     },

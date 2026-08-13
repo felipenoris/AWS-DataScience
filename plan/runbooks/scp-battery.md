@@ -45,6 +45,14 @@ are indistinguishable at the CLI. The discriminating string is in the error body
 | *"with an explicit deny in an identity-based policy"* | the permission set, **not** the ceiling — the probe is measuring the wrong thing |
 | no explicit-deny clause at all | an implicit deny: nothing granted it. Same note — wrong thing measured |
 
+**The error body also names the policy, and this plan under-sold it until 2026-08-13.** An SCP denial ends
+with `… with an explicit deny in a service control policy: arn:aws:organizations::…/service_control_policy/p-xxxxxxxx`
+— **the policy id, in the CLI response itself**, no CloudTrail and no lag. That is what makes it survivable
+to have several candidates parked on `Policy Test` at once. **Its one limit, and it decides whether a
+document was really exercised:** when more than one attached policy denies the same call, AWS names **one**
+of them, so a document can be attached and never be the deciding one — attached is not exercised. Isolate
+it, or re-probe it after it reaches its own OU, where nothing else denies that action.
+
 **Prefer a probe whose two outcomes are different errors over one whose outcomes are success and failure.**
 `--dry-run`, a non-existent resource id, and a call that needs no resource all give that shape, and none of
 them leaves anything behind in an account whose whole point is to stay empty.
@@ -254,11 +262,12 @@ honest record is *untested*, not *passed*.
 | workloads | `aws datazone list-domains --region us-west-2` | `AccessDenied` naming an SCP | a list, empty or not — the namespace deny is not reaching reads |
 | workloads | `aws sagemaker create-space --domain-id d-0000000000000 --space-name awsds-canary-probe --region us-west-2` | `AccessDenied` | `ValidationException` / `ResourceNotFound` = SageMaker validated first, so **untested** |
 | workloads | `aws sagemaker start-session --resource-identifier arn:aws:sagemaker:us-west-2:<ACCT>:space/d-0000000000000/none` | `AccessDenied` | any validation error = untested |
-| data, identity | `aws ec2 run-instances --dry-run --image-id ami-0000000000000000f --instance-type t3.micro --region us-west-2` | `UnauthorizedOperation` | `DryRunOperation` = allowed; an `InvalidAMIID.*` = validated first, untested |
+| data, identity | `aws ec2 run-instances --dry-run --image-id <REAL AMI> --instance-type t3.micro --subnet-id <REAL SUBNET>` | `UnauthorizedOperation`, naming the policy | `DryRunOperation` = allowed |
+| | **Both ids must be real, and that is the whole trick** (measured 2026-08-13): an invented AMI returns `InvalidAMIID.Malformed`, a well-formed but non-existent one `InvalidAMIID.NotFound`, and omitting the subnet `VPCIdNotSpecified` — **all three before authorization**, so the naive probe reports "untested" and reads like a pass. Take the AMI from the public SSM parameter and the subnet from the account itself; `--dry-run` still creates nothing: `aws ssm get-parameter --name /aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-x86_64 --query Parameter.Value --output text` and `aws ec2 describe-subnets --query 'Subnets[0].SubnetId' --output text` | |
 | data, identity | `aws glue start-job-run --job-name awsds-canary-probe --region us-west-2` | `AccessDenied` | `EntityNotFoundException` |
 | data | `aws glue start-crawler --name awsds-canary-probe --region us-west-2` | `AccessDenied` — **the negative half of the D27 carve-out** | `EntityNotFoundException` = the `ArnNotEquals` matched a principal it should not |
 | data | `aws lakeformation deregister-resource --resource-arn arn:aws:s3:::awsds-canary-does-not-exist --region us-west-2` | `AccessDenied` | `EntityNotFoundException` |
-| data | `aws s3api delete-bucket --bucket awsds-canary-does-not-exist-$(date +%s)` | `AccessDenied` | `NoSuchBucket`. **Name a bucket that cannot exist** — this is the one probe whose "allowed" outcome would be destructive against a real name |
+| data | `aws s3api delete-bucket --bucket awsds-canary-does-not-exist-$(date +%s)` | `AccessDenied` | `NoSuchBucket` — **which is what it actually returns** (measured 2026-08-13): S3 checks existence before authorizing, so this probe measures nothing and `s3:DeleteBucket` is recorded **untested**. Its statement is not: `lakeformation:DeregisterResource` sits in the same `Sid` and *was* denied, so what is unverified is the spelling of one action string, which is a read. Testing it for real costs a bucket that cannot then be deleted until the policy moves — **name a bucket that cannot exist** rather than a real one |
 | interactive | `aws sagemaker create-notebook-instance --notebook-instance-name awsds-canary-probe --instance-type ml.t3.medium --role-arn arn:aws:iam::<ACCT>:role/nonexistent --region us-west-2` | `AccessDenied` | a role/validation error. **The nonexistent role is deliberate**: it is what keeps an "allowed" outcome from billing a notebook instance |
 
 **The positive half of the D27 carve-out cannot be run in this stage and is recorded as such.**
@@ -271,6 +280,57 @@ nothing is a job that will not run, and it does not announce itself.
 attachment, from that OU's own profile: `aws sts get-caller-identity`, `aws s3 ls`, and
 `aws ec2 describe-vpcs --region us-west-2`. Denies compose, so a failure here is real no matter which
 document caused it — and this is the half the canary cannot give you for these four.
+
+### Amending a **root** document is phases 1-3, not phase 4b
+
+**The distinction is which targets the document reaches.** A per-OU document is attached to one OU the
+canary is not in, so an amendment to it can only be measured in that OU's own account — phase 4b below.
+The two root documents reach **`Policy Canary` as well**, which means the canary is available again and the
+amendment goes back through the normal battery: probe the amended statements there, confirm the *must still
+succeed* floor, and only then treat it as done. `update-policy` replaces the content in place and the id
+does not change, so nothing is created, moved or detached.
+
+**The 2026-08-13 amendment to `awsds-org-scp-baseline`** — five GuardDuty actions and the new
+`DenyImageAndSnapshotExport` statement:
+
+| Probe (from `awsds-policy-canary`) | Denied | Allowed |
+|---|---|---|
+| `aws guardduty disassociate-from-administrator-account --detector-id 00000000000000000000000000000000 --region us-west-2` | `AccessDenied` naming the policy — **this is the whole point of the amendment**, the modern spelling that used to be open | `BadRequestException` / detector-not-found = validated first, **untested** |
+| `aws guardduty update-detector --detector-id 00000000000000000000000000000000 --no-enable --region us-west-2` | `AccessDenied` | validation error = untested. Regression only: it was already denied |
+| `aws ec2 create-store-image-task --image-id ami-00000000000000000 --bucket awsds-canary-does-not-exist --region us-west-2` | `AccessDenied` | an AMI or bucket validation error = **untested**, and expected — EC2 validating the image id first is the same wall `ModifySnapshotAttribute` hit in 7.5 |
+| `aws ec2 export-image --image-id ami-00000000000000000 --disk-image-format VMDK --s3-export-location S3Bucket=awsds-canary-does-not-exist --region us-west-2` | `AccessDenied` | validation error = untested |
+| `aws rds start-export-task --export-task-identifier awsds-canary-probe --source-arn arn:aws:rds:us-west-2:<ACCT>:snapshot:nonexistent --s3-bucket-name awsds-canary-does-not-exist --iam-role-arn arn:aws:iam::<ACCT>:role/nonexistent --kms-key-id alias/aws/rds --region us-west-2` | `AccessDenied` | `DBSnapshotNotFound` = untested |
+
+**Expect most of this block to come back *untested*, and record it that way.** EC2 and RDS both validate
+resource ids before authorizing — 7.5 already measured that for `ModifySnapshotAttribute` — so the honest
+outcome for a statement about images and snapshots that do not exist is "attached, unexercised" (Lesson 20's
+neighbour: a statement can be unexercised for want of a *resource*, not only for want of a unique deny).
+**The GuardDuty pair is the one that must produce a real answer**, because a detector id is checked after
+authorization often enough to be worth the attempt; if it does not, the amendment is carried on the argument
+that the added strings are verified names in the same statement as an already-denied action.
+
+### Phase 4b — re-probing an amended document, in place
+
+**An amendment is not a smaller version of phase 4; it is the same phase with a shorter probe list.** Once a
+document sits on its real OU, `update-policy` replaces its content in place and the id does not change — so
+there is nothing to park on `Policy Test` and nothing to move. What must happen is that **every statement
+the amendment touched is probed again in that OU's own account**, plus the *must still succeed* trio, before
+the sitting is called done. A document amended and not re-probed is a document whose last measurement
+describes a version that no longer exists.
+
+**The 2026-08-13 amendment — the EC2 launch siblings in `awsds-org-scp-ou-data` and
+`awsds-org-scp-ou-identity`, and the service guard on the D27 carve-out:**
+
+| Where | Probe | Denied | Allowed |
+|---|---|---|---|
+| `awsds-infra-data`, `awsds-infra-identity` | `aws ec2 request-spot-instances --dry-run --instance-count 1 --launch-specification '{"ImageId":"<REAL AMI>","InstanceType":"t3.micro","SubnetId":"<REAL SUBNET>"}' --region us-west-2` | `UnauthorizedOperation`, naming the policy | `DryRunOperation`. **Same real-ids trick as `run-instances`** — an invented AMI or a missing subnet is rejected before authorization |
+| `awsds-infra-data`, `awsds-infra-identity` | `aws ec2 start-instances --dry-run --instance-ids i-00000000000000000 --region us-west-2` | `UnauthorizedOperation` | `InvalidInstanceID.NotFound` = validated first, **untested** |
+| `awsds-infra-data`, `awsds-infra-identity` | `aws ec2 create-fleet --dry-run …` | `UnauthorizedOperation` | **expected to be untestable**: `create-fleet` needs a real launch template, and neither account has one. Recorded as *untested* rather than manufactured — its two siblings above are the evidence that the launch surface is closed |
+| `awsds-infra-data` | `aws glue start-crawler --name awsds-canary-probe --region us-west-2` | `AccessDenied` | `EntityNotFoundException` = the carve-out matched a principal it should not. **Re-run after the guard was added**: `BoolIfExists` evaluates *true* when the key is absent, so a human principal must still land on the deny side — if this one flips to allowed, the guard is inverted and the whole carve-out is open |
+
+**The guard's own effect cannot be probed from a CLI session**, because `aws:PrincipalIsAWSService` is set by
+AWS, not by the caller: there is no way to present as a service principal on purpose. What the re-run above
+proves is the half that matters for regression — that adding the guard did not open the deny for people.
 
 ## What this battery does not cover, and where each one goes
 

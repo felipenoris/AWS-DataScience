@@ -83,6 +83,13 @@ somewhere real to run, and the end of this stage is where the first fully meanin
    read access to job inputs and outputs for a bounded window. CloudTrail alarm on every assumption of it.
    This exists because "nobody ever needs to look at production interactively" is not true, and an
    undesigned need becomes a permanent permission.
+   **Its shape is now imposed rather than chosen.** `DenyInteractiveSageMakerSurface`
+   (`awsds-org-scp-ou-workloads`, attached to the `Workloads` OU in 1c step 7.6 and measured there) denies
+   `CreateSpace`, `CreateApp`, `StartSession` and `CreatePresignedDomainUrl` with **no carve-out for any
+   principal** — so this role can only ever be read-by-API, and the pressure that would otherwise turn it
+   into "give them a notebook in Production, just this once" has nowhere to go. Building it as a session
+   would fail at the SCP, and the correct response to that failure is to keep the read-only shape, not to
+   amend the OU document.
 7. Cross-account IAM: the two deploy roles from Stage 8 step 3 (`awsds-deploy-staging` and
    `awsds-deploy-prod`, both assumed by the runner in Production), and the KMS key grants that let Staging
    decrypt what it pulls from the Production ECR.

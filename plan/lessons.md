@@ -175,6 +175,22 @@ lesson can be *recognised* without opening this file; the reasoning that makes e
    publishes its names to Certificate Transparency logs. **A prerequisite that has quietly become optional is
    usually also carrying a cost nobody has priced**, since nothing was forcing anyone to look at it.
 
+20. **When several policies deny the same call, only one of them is proven — the others are attached, not
+   exercised.** Stage 1c step 7.6 parked all four per-OU documents on `Policy Test` at once and ran the
+   battery there. Every probe was denied and every denial named a policy id in the API error itself, so the
+   run looked complete. It was not: `awsds-org-scp-ou-interactive`'s two actions are also denied by the
+   `Workloads` document and matched by the `Identity` document's `sagemaker:Create*`, and AWS names **one**
+   matching policy — so that document decided nothing, and a document that never decides is a document whose
+   condition, `Sid` and action spelling have never been evaluated. **The tell is cheap and worth looking for
+   by name: a candidate that appears in *no* probe's attribution column.** The fix is not more probes but the
+   right target — moved to `Interactive`, where nothing else denies `CreateNotebookInstance`, it was proven
+   in one call. **The general form:** overlapping denies compose into a *result* that is indistinguishable
+   from any one of them working, which is Lesson 13's shape moved from the verification into the policy set —
+   and the same argument applies to a deny you inherit from the root while testing an OU-level candidate.
+   **The other half, and it is the reason to keep doing it this way:** the composed run was still worth
+   running, because the *must still succeed* half only gets stricter under composition, and the denial
+   message naming the policy id is what let the gap be spotted at all rather than assumed away.
+
 ---
 
 *Plan core: [GENERAL_PLAN.md](../GENERAL_PLAN.md) · Decisions: [plan/decisions/INDEX.md](decisions/INDEX.md) · Stages: [plan/stages/INDEX.md](stages/INDEX.md)*

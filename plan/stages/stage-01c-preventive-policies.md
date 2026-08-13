@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Status** | **SITTING A IS DONE** (2026-08-13): 7.0, 7.2, 7.3, 7.4 step 1 and 7.5 — the two root documents are attached (`awsds-org-scp-baseline` `p-1fp032g8`, `awsds-org-scp-perimeter` `p-4vs49ztw`) and were exercised in three battery phases. **Sitting B is what is left: 7.6, 7.7, 7.8.** The four per-OU documents of 7.6 are **written but not created** — `terraform-live/identity/org-policies/policies/awsds-org-scp-ou-*.json`; nothing new is attached. Everything measured is in [`log/stage-01c-preventive-policies.md`](../../log/stage-01c-preventive-policies.md) and in `aws/output/` |
+| **Status** | **Sitting A done; 7.6 done too** (2026-08-13). Attached and exercised: the two root documents (7.5) and **one per-OU document on each of `Workloads`, `Data`, `Interactive` and `Identity`** (7.6), each parked on `Policy Test` first, then moved and re-probed from that OU's own account. **Three documents are amended and pending upload** — 7.6a's EC2 launch siblings and the D27 service guard in `Data` and `Identity`, and **7.5a's GuardDuty vocabulary fix plus the new `DenyImageAndSnapshotExport` in the root baseline**; `policies/` is ahead of what is deployed until `update-policy` runs. **The two re-probes are different**: the OU pair goes through phase 4b, the root document through phases 1-3 on the canary. **What is left of the stage is 7.7 and 7.8.** Policy ids are in [`log/stage-01c-preventive-policies.md`](../../log/stage-01c-preventive-policies.md); what each statement does is in [`SCPs.md`](../../terraform-live/identity/org-policies/SCPs.md) |
 | **Prerequisites** | **[Stage 1b](stage-01b-identity-and-controls.md) is complete** (closed 2026-08-12; its log is authoritative). What this stage actually consumes from it: the six SSO profiles of step 5 — `awsds-infra-sandbox-1`, `-dev`, `-prod`, `-data`, `-identity` and **`awsds-policy-canary`** — and an administrator principal in the canary account (1b step 3.1). **Not its permission sets**: no policy written here names one, which is why the `Consumes` row carries no persona decision. `Staging` is unvended, so nothing in the `Workloads` tier can be exercised against it |
 | **Consumes** | [D6](../decisions/D06-dlp-approach.md), [D10](../decisions/D10-identity-center-delegation.md), [D15](../decisions/D15-tls-internal.md), [D16](../decisions/D16-break-glass.md), [D17](../decisions/D17-interactive-vs-runtime.md), [D19](../decisions/D19-derived-zone.md), [D20](../decisions/D20-staging-account.md), [D21](../decisions/D21-development-account.md), [D22](../decisions/D22-data-governance-account.md), [D23](../decisions/D23-ou-structure.md), [D25](../decisions/D25-drop-box-consumer.md), [D26](../decisions/D26-unified-studio.md), [D27](../decisions/D27-catalog-maintenance.md), [D28](../decisions/D28-workflow-contract.md), [D29](../decisions/D29-policy-canary.md), [D30](../decisions/D30-scp-recovery.md), [D33](../decisions/D33-control-tower-admin-user.md), [D34](../decisions/D34-account-vending.md), [D35](../decisions/D35-sandbox-cardinality.md) |
 | **Proves** | **Constrains** [INT-12](../integrations.md), whose fallback 7.6 forbids until the policy is amended. **Touches [INT-01](../integrations.md) and [INT-07](../integrations.md)**: the perimeter RCP now covers ECR, so both cross-account image paths run through its service carve-out — admitted by `aws:PrincipalOrgID`, but only exercised in 7.8 |
@@ -805,9 +805,104 @@ become.
 One tier per OU policy set (D23), on top of the root set above. One file each:
 `awsds-org-scp-ou-workloads.json`, `-data.json`, `-interactive.json`, `-identity.json`.
 
-**The four documents exist as of 2026-08-13 and none of them is attached** — written before anything was
-created, which is the order 7.1 asks for. Sizes minified: **451**, **886**, **201** and **405** characters,
-so the per-node count of 7.0 step 5 is unchanged and nothing is close to a limit.
+**DONE 2026-08-13 — all four attached to their OUs and exercised there.** Sizes minified: **451**, **886**,
+**201** and **405** characters, so the per-node count of 7.0 step 5 is unchanged. What the run settled,
+beyond the deny half working:
+
+- **The API's denial message names the policy id** (`… explicit deny in a service control policy: …/p-xxxxxxxx`),
+  so attribution needs no CloudTrail. **But when several attached policies deny the same call AWS names one
+  of them** — parked together on `Policy Test`, the `Interactive` document decided *nothing* and was
+  attached-but-unexercised until it reached its own OU (**Lesson 20**).
+- **Decision 1 costs no feature, and that is now measured rather than argued.** From `awsds-infra-dev` and
+  `awsds-infra-sandbox-1`: `sagemaker:CreateNotebookInstance` is denied by the `Interactive` document while
+  **`sagemaker:CreateSpace` and `datazone:ListDomains` still succeed** — the SMUS surface and the blueprint
+  path are untouched.
+- **`Sandboxes` is governed by inheritance, with no policy of its own** — the same deny fires in
+  `awsds-infra-sandbox-1`. That is the **SCP half of verification (xi)**; whether the OU can carry an
+  *enabled control* is still 7.7's, and the two are not the same question.
+- **`Data` and `Identity` differ exactly where they were written to differ:** `glue:StartCrawler` and
+  `lakeformation:DeregisterResource` are denied in Data Governance and **allowed in Identity**, which is the
+  cross-check that says neither statement is leaking from the root set.
+- **`datazone:*` is denied in `Workloads` and allowed in `Data`** — D26's control plane stays reachable in
+  the account that holds the domain.
+- **Untested, and recorded as such:** `s3:DeleteBucket` (S3 answers `NoSuchBucket` before authorizing; its
+  `Sid` is proven through `lakeformation:DeregisterResource`) and the **positive** half of the D27 carve-out,
+  which needs the Stage 5 role.
+
+##### 7.5a — the root document, re-read against AWS's action list (2026-08-13)
+
+*Recorded here, under 7.6, rather than back in 7.5: both amendments came out of **one** review held after
+the per-OU documents were attached, and splitting them across two sections would hide that the root
+document and the OU documents were re-read in the same sitting, by the same method.*
+
+**The same review, run a second time over the two documents on the root, found two statements written
+against the wrong vocabulary.** Neither is a design error and both were verified rather than reasoned — the
+machine-readable action list is the source in each case. `awsds-org-scp-perimeter` survived unchanged.
+
+- **`DenyGuardDutyTampering` named a deprecated action and not its replacement.** GuardDuty renamed
+  master→administrator and **both spellings exist as actions today**: the document denied
+  `DisassociateFromMasterAccount` and left `DisassociateFromAdministratorAccount` open. Four more went in
+  with it — `DisassociateMembers` and `StopMonitoringMembers` (the current member-detach pair, of which
+  only `DeleteMembers` was covered) and `DeletePublishingDestination`/`UpdatePublishingDestination`, which
+  kill or redirect the export of findings without touching a detector. **The statement is inert until
+  Stage 4 turns GuardDuty on, which is why fixing it now costs nothing and fixing it later costs a
+  detection gap nobody would see.**
+- **`DenySnapshotAndImageSharing` claimed to close "the one exfiltration route that bypasses every other
+  control" and closed half of it.** Sharing an attribute is one way an image leaves the organization;
+  **writing it into a bucket is another**, and `ec2:CreateStoreImageTask`, `ec2:ExportImage`,
+  `ec2:CreateInstanceExportTask` and `rds:StartExportTask` all exist. They went into a **new `Sid`,
+  `DenyImageAndSnapshotExport`**, rather than into the old one: two mechanisms, two probes, and the log's
+  existing entry keeps describing a statement that still exists under that name.
+
+Minified: **baseline 1629**, perimeter unchanged at **708**. **Amending a root document is not a phase 4b
+re-probe** — the root set reaches `Policy Canary`, so this one goes back through **phases 1-3** of
+[`plan/runbooks/scp-battery.md`](../runbooks/scp-battery.md), which is the reason it is a separate sitting's
+work from 7.6a's and not a footnote to it.
+
+**One collision was found and deliberately not fixed here.** `guardduty:UpdateDetector` is denied
+unconditionally on the root, so it reaches **Audit**, the GuardDuty administrator: org-wide administration
+is unaffected (`UpdateOrganizationConfiguration`, `UpdateMemberDetectors`), but enabling a feature on
+*Audit's own detector* is denied — which is [Stage 11 step 4](stage-11-dlp.md) exactly. It stays
+unconditional because the alternative is a carve-out naming a role that does not exist yet, and a carve-out
+written before its principal is Lesson 14 waiting to happen. **Recorded in three places so it cannot be met
+cold**: [Stage 4 step 10](stage-04-vpn.md), Stage 11 step 4, and the note under the baseline table in
+[`SCPs.md`](../../terraform-live/identity/org-policies/SCPs.md).
+
+##### 7.6a — the amendment the post-attachment review produced (2026-08-13)
+
+**Re-reading the four documents against what the probes had just measured found no error and three gaps of
+scope.** Two of them changed `awsds-org-scp-ou-data` and `awsds-org-scp-ou-identity`; the third changed only
+what is written down. **The documents in `policies/` are amended; `update-policy` and the phase 4b re-probe
+are what close it** — until then the deployed content is the 2026-08-13 original.
+
+- **`DenyUserCompute` did not hold its own name (Lesson 5).** It denied `ec2:RunInstances`, which is one
+  launch door of several: `ec2:CreateFleet`, `RequestSpotInstances` and `RequestSpotFleet` all start
+  instances without ever calling it, and `StartInstances` restarts a stopped one. All four verified as real
+  action names against the machine-readable list, and added to both documents. Minified sizes go
+  **886 → 1033** (`Data`) and **405 → 494** (`Identity`), so the per-node budget of 7.0 step 5 is still not
+  in question. The residual is named rather than closed: an Auto Scaling group launches through a
+  **service-linked role**, which AWS exempts from SCPs, so `autoscaling:CreateAutoScalingGroup` remains
+  outside any document's reach.
+- **The D27 carve-out was the one conditioned statement without the service guard (Lesson 14).** The two
+  root statements both carry `BoolIfExists: aws:PrincipalIsAWSService=false`; this one carried only
+  `ArnNotEquals`. An `ArnNotEquals` carve-out can only exempt principals it can spell, so a crawler run
+  *initiated by Glue itself* would land on the deny side of a principal test it was never meant to take.
+  **Nothing measured this and nothing can** — `aws:PrincipalIsAWSService` is set by AWS, not by the caller —
+  and the schedule that would provoke it is the one [Stage 5](stage-05-data-foundation.md) deliberately does
+  not create. It is fixed because the asymmetry is what the next reader would have had to re-derive.
+- **Two absences in `DenyUserCompute` are deliberate and were not written anywhere.** `athena:StartQueryExecution`
+  is *allowed* in `Data`, because Stage 5's Iceberg `OPTIMIZE`/`VACUUM` runs through it — so the lake
+  account keeps a full read path with results written to S3, which the perimeter document only stops when
+  the destination is outside the organization. EMR, EMR Serverless and Batch are uncovered because nothing
+  in this design uses them. Both are now stated in [`SCPs.md`](../../terraform-live/identity/org-policies/SCPs.md),
+  and the Athena path is written into [Stage 11](stage-11-dlp.md) as a detection target. **A hole that is
+  documented is a decision; the same hole undocumented is the finding of a later audit.**
+
+**What the review did *not* change, and why the reasoning is worth keeping:** `s3:DeleteBucket` stays
+unconditional in `Data` even though it reaches every bucket in the account and will stop a
+`terraform destroy` — the amendment procedure went into [Stage 5](stage-05-data-foundation.md) instead,
+because a statement scoped to a bucket-name pattern leaves anything outside the pattern unprotected in
+silence, and this one binding the builder is the property that makes it a control.
 
 **Verification (viii) is answered, and it was answered against AWS's own machine-readable action list**
 (`https://servicereference.us-east-1.amazonaws.com/v1/<service>/<service>.json`) rather than against
@@ -1305,7 +1400,7 @@ Record every answer in `log/stage-01c-preventive-policies.md`, including the one
 | # | Question | Step |
 |---|---|---|
 | vii | Does `CT.MULTISERVICE.PV.1`'s current default `NotAction` still cover everything this project calls from `us-east-1`? Read it off the control's `Artifacts` tab and diff | 7.7 |
-| xi | **Sharpened twice.** 7.0 step 3 ran on Management and `Sandboxes` returned an **empty list rather than an error** — but nothing errored anywhere in that run, so the discriminator was never exercised (Lesson 13). **7.7's `enable-control` against `Sandboxes` is what answers it**, and it answers it for every OU Stage 14 ever nests there | 7.7 |
+| xi | **Sharpened twice, and now half answered by measurement.** The **SCP half is settled**: `Interactive`'s document denies `sagemaker:CreateNotebookInstance` in `awsds-infra-sandbox-1`, so the nested OU is governed by inheritance and needs no attachment of its own (7.6, 2026-08-13). **What is still open is whether it is a *registered Control Tower target***: 7.0 step 3 returned an **empty list rather than an error**, and nothing errored anywhere in that run, so the discriminator was never exercised (Lesson 13). **7.7's `enable-control` against `Sandboxes` is what answers it** — for every OU Stage 14 ever nests there | 7.7 |
 
 **Was (vii), now answered from the documentation rather than by execution:** *"is Region deny
 landing-zone-wide, i.e. untestable against `Policy Test` first?"* — **the landing-zone control

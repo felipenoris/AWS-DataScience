@@ -89,12 +89,32 @@ organization, which is exactly the movement this stage exists to control.
 4. Turn on GuardDuty's **S3 Protection and Malware Protection** — the base service has been running since
    Stage 4 step 10, and these two are billed separately and were deferred specifically so the decision
    could be made against a real bill (`plan/cost-model.md`).
+   **This step is blocked by an SCP of this project's, on purpose, and the block is known in advance.**
+   `DenyGuardDutyTampering` in `awsds-org-scp-baseline` denies `guardduty:UpdateDetector` unconditionally
+   on the organization root, so it reaches Audit — the administrator account — as hard as any member.
+   Enabling a feature **org-wide** is unaffected (`UpdateOrganizationConfiguration` and
+   `UpdateMemberDetectors` are not denied); enabling it on **Audit's own detector** is the call that fails.
+   Either detach the baseline document, make the change, re-attach and re-run phases 1-3 of
+   [`plan/runbooks/scp-battery.md`](../runbooks/scp-battery.md) — the re-attach is not done until the probes
+   have run — or, if this recurs, carve out the named administration role in Stage 4, exactly the way D27's
+   carve-out names one role. **The mistake to avoid is reading the `AccessDenied` as a broken policy and
+   deleting the statement**: it is the statement that stops a compromised account from turning off its own
+   detection.
 5. CloudTrail data events on the sensitive buckets; CloudWatch alarms for exfiltration patterns: mass
    `GetObject`, unusual egress volume, `PutObject` to an unexpected destination.
    **Correction:** the previous version listed an alarm on "presigned URL creation". That is not
    detectable — signing a presigned URL is a local SigV4 operation against credentials already held, it
    makes no API call and appears nowhere in CloudTrail. What *is* detectable is the **use** of one, which
    shows up as a request whose authentication method differs from a normal SigV4 call. Alarm on that.
+   **One read path is in scope specifically because no SCP covers it: Athena inside Data Governance.**
+   The `Data` OU document denies user compute and deliberately leaves `athena:StartQueryExecution` alone,
+   because Stage 5's Iceberg `OPTIMIZE`/`VACUUM` runs through it — so a principal in the lake account can
+   query any table the catalog exposes and land the result in S3, with the perimeter SCP only stopping
+   that write when the destination is outside the organization. **Preventively, that hole is deliberate
+   and documented** ([`SCPs.md`](../../terraform-live/identity/org-policies/SCPs.md), `awsds-org-scp-ou-data`);
+   detecting it is this step's. The signal is a query in the Data Governance account whose principal is
+   not the catalog-maintenance role and whose statement is not a table-maintenance one — an inversion of
+   the usual alarm, since in every *other* account Athena is the normal way to read.
 6. Only then evaluate whether a third-party DLP agent adds anything the above does not cover.
 
 **Deliverables:** a documented threat model with the control that addresses each item — and, for the items

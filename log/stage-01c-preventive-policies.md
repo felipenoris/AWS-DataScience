@@ -473,7 +473,7 @@ ecr:InitiateLayerUpload  AccessDeniedException ... explicit deny in a service co
 }
 ```
 
-- Policy awsds-org-scp-perimeter create with ARN `arn:aws:organizations::885931358757:policy/o-4z1leiit0c/service_control_policy/p-4vs49ztw`. Policy was attached to root account `r-zhj6`.
+- Policy awsds-org-scp-perimeter created with ARN `arn:aws:organizations::885931358757:policy/o-4z1leiit0c/service_control_policy/p-4vs49ztw`. Policy was attached to root account `r-zhj6`.
 
 - - **7.3 phase 3 / 7.5 complete — `awsds-org-scp-perimeter` (`p-4vs49ztw`) attached to the root.** The
   root now carries `FullAWSAccess`, `p-1fp032g8` and `p-4vs49ztw`. The direction phase 1 could not test:
@@ -531,6 +531,281 @@ awsds-org-scp-ou-identity.json
   `terraform-live/identity/org-policies/SCPs.md` (both new), the battery runbook's **phase 4** (the four
   documents, parked on `Policy Test`, then re-probed from each OU's own account), and the role-name
   contract in Stage 5.
+
+- Login in Console as AWS Control Tower Admin, management account, ps AWSAdministratorAccess. AWS Organizations -> Policies -> Service control policies. Create policy:
+  - policy name: `awsds-org-scp-ou-workloads`
+  - Description: Stage 1c step 7.6 - Workloads OU: no interactive SageMaker surface, no DataZone.
+  - Used this JSON:
+
+```
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "DenyInteractiveSageMakerSurface",
+      "Effect": "Deny",
+      "Action": [
+        "sagemaker:CreateDomain",
+        "sagemaker:CreateUserProfile",
+        "sagemaker:CreatePresignedDomainUrl",
+        "sagemaker:CreateSpace",
+        "sagemaker:CreateApp",
+        "sagemaker:StartSession",
+        "sagemaker:CreateNotebookInstance",
+        "sagemaker:CreatePresignedNotebookInstanceUrl"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "DenyDataZoneEntirely",
+      "Effect": "Deny",
+      "Action": "datazone:*",
+      "Resource": "*"
+    }
+  ]
+}
+```
+
+- policy `awsds-org-scp-ou-workloads` created with ARN `arn:aws:organizations::885931358757:policy/o-4z1leiit0c/service_control_policy/p-83t232f4`. Policy attached to `Policy Test` OU.
+
+- Create policy:
+  - policy name: `awsds-org-scp-ou-interactive`
+  - Description: Stage 1c step 7.6 - Interactive OU (Development + the nested Sandboxes): deny the classic SageMaker notebook instance and its presigned URL. SMUS notebooks are spaces and apps and are unaffected.
+  - Used this JSON:
+
+```
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "DenyClassicNotebookInstances",
+      "Effect": "Deny",
+      "Action": [
+        "sagemaker:CreateNotebookInstance",
+        "sagemaker:CreatePresignedNotebookInstanceUrl"
+      ],
+      "Resource": "*"
+    }
+  ]
+}
+```
+
+- Policy `awsds-org-scp-ou-interactive` created with ARN `arn:aws:organizations::885931358757:policy/o-4z1leiit0c/service_control_policy/p-tgda7n58`. Policy attached to `Policy Test` OU.
+
+
+- Create policy:
+  - policy name: `awsds-org-scp-ou-identity`
+  - Description: 
+  - Used this JSON:
+
+```JSON
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "DenyUserCompute",
+      "Effect": "Deny",
+      "Action": [
+        "ec2:RunInstances",
+        "sagemaker:Create*",
+        "sagemaker:StartSession",
+        "glue:CreateDevEndpoint",
+        "glue:CreateJob",
+        "glue:StartJobRun",
+        "glue:CreateSession",
+        "glue:RunStatement",
+        "glue:CreateMLTransform",
+        "glue:StartNotebook",
+        "lambda:CreateFunction",
+        "ecs:RegisterTaskDefinition",
+        "ecs:RunTask",
+        "ecs:CreateService"
+      ],
+      "Resource": "*"
+    }
+  ]
+}
+```
+
+- Policy `awsds-org-scp-ou-identity` created with ARN `arn:aws:organizations::885931358757:policy/o-4z1leiit0c/service_control_policy/p-mmfc17ac`. Policy attached to `Policy Test` OU.
+
+- Create policy:
+  - policy name: `awsds-org-scp-ou-data`
+  - Description: Stage 1c step 7.6 - Data OU: deny user compute; crawler and column-statistics runs allowed only for awsds-data-catalog-maintenance (D27); deny bucket deletion and Lake Formation deregistration.
+  - Used this JSON:
+
+```
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "DenyUserCompute",
+      "Effect": "Deny",
+      "Action": [
+        "ec2:RunInstances",
+        "sagemaker:Create*",
+        "sagemaker:StartSession",
+        "glue:CreateDevEndpoint",
+        "glue:CreateJob",
+        "glue:StartJobRun",
+        "glue:CreateSession",
+        "glue:RunStatement",
+        "glue:CreateMLTransform",
+        "glue:StartNotebook",
+        "lambda:CreateFunction",
+        "ecs:RegisterTaskDefinition",
+        "ecs:RunTask",
+        "ecs:CreateService"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "DenyCatalogMaintenanceRunsExceptMaintenanceRole",
+      "Effect": "Deny",
+      "Action": [
+        "glue:StartCrawler",
+        "glue:StartCrawlerSchedule",
+        "glue:StartColumnStatisticsTaskRun",
+        "glue:StartColumnStatisticsTaskRunSchedule"
+      ],
+      "Resource": "*",
+      "Condition": {
+        "ArnNotEquals": {
+          "aws:PrincipalArn": "arn:aws:iam::782981553460:role/awsds-data-catalog-maintenance"
+        }
+      }
+    },
+    {
+      "Sid": "DenyLakeDeletionAndDeregistration",
+      "Effect": "Deny",
+      "Action": [
+        "s3:DeleteBucket",
+        "lakeformation:DeregisterResource"
+      ],
+      "Resource": "*"
+    }
+  ]
+}
+```
+
+- policy `awsds-org-scp-ou-data` created with ARN `arn:aws:organizations::885931358757:policy/o-4z1leiit0c/service_control_policy/p-gl01bcdm`. Attached to `Policy Test` OU.
+
+- **7.6 — the four policies created (CT Admin @ Management, console) and all four attached to
+  `Policy Test` at once**, deliberately, for the battery's phase 4. None has moved to its target OU yet:
+
+| Policy | Id | Target during the battery |
+|---|---|---|
+| `awsds-org-scp-ou-workloads` | `p-83t232f4` | `Policy Test` `ou-zhj6-ebwso7wp` |
+| `awsds-org-scp-ou-data` | `p-gl01bcdm` | idem |
+| `awsds-org-scp-ou-identity` | `p-mmfc17ac` | idem |
+| `awsds-org-scp-ou-interactive` | `p-tgda7n58` | idem |
+
+- The SSO token expired between the rendering and the battery — again. Re-login before the probes
+  (`aws sso login --sso-session awsds`); without it every probe comes back with an error that reads
+  like a deny.
+
+- **The floor, before any deny probe** (`awsds-policy-canary`): `sts:GetCallerIdentity`, `s3 ls` (empty,
+  no error), `ec2:DescribeVpcs`, `iam:ListRoles`, `budgets:DescribeBudgets`, `ce:GetCostAndUsage` — all
+  pass. Two read controls named by no document, `sagemaker:ListDomains` and `glue:GetDatabases`, are still
+  allowed: the denies are not a blanket.
+
+- **Deny probes — all denied, and the CLI error names the policy id:**
+
+| Probe | Outcome | Policy |
+|---|---|---|
+| `datazone:ListDomains` | denied | `p-83t232f4` |
+| `sagemaker:CreateSpace` | denied | `p-mmfc17ac` (`Create*`) |
+| `sagemaker:StartSession` | denied | `p-mmfc17ac` |
+| `sagemaker:CreateNotebookInstance` | denied | `p-83t232f4` |
+| `sagemaker:CreatePresignedNotebookInstanceUrl` | denied | `p-mmfc17ac` (`Create*`) |
+| `ec2:RunInstances --dry-run` | denied (`UnauthorizedOperation`) | `p-mmfc17ac` |
+| `glue:StartJobRun` | denied | `p-gl01bcdm` |
+| `glue:StartCrawler` | denied | `p-gl01bcdm` |
+| `lakeformation:DeregisterResource` | denied | `p-gl01bcdm` |
+| `s3:DeleteBucket` | **untested** — `NoSuchBucket`, before authorization | — |
+
+- **The API error carries the policy id** — `... with an explicit deny in a service control policy:
+  arn:aws:organizations::.../service_control_policy/p-xxxxxxxx` — no CloudTrail and no lag. That is what
+  makes it survivable to park four candidates on one target. **The limit:** when more than one attached
+  policy denies the same call, AWS names **one** of them, so `p-tgda7n58` (interactive) decided no probe
+  at all: it is **attached and unexercised**. It isolates itself in `Interactive`, where nothing else
+  denies `CreateNotebookInstance`.
+
+- **`ec2:RunInstances` only reaches authorization with a real AMI and a real subnet.** An invented AMI
+  returns `InvalidAMIID.Malformed`; a well-formed but non-existent one `InvalidAMIID.NotFound`; omitting
+  the subnet `VPCIdNotSpecified` — all three before authorizing. With real ids the `--dry-run` still
+  creates nothing:
+
+```
+aws ssm get-parameter --name /aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-x86_64 --region us-west-2 --profile awsds-policy-canary --query Parameter.Value --output text
+aws ec2 describe-subnets --region us-west-2 --profile awsds-policy-canary --query 'Subnets[0].SubnetId' --output text
+aws ec2 run-instances --dry-run --image-id <AMI> --instance-type t3.micro --subnet-id <SUBNET> --region us-west-2 --profile awsds-policy-canary
+```
+
+- **`s3:DeleteBucket` stays untested**, on sitting A's argument: its sibling in the same `Sid`
+  (`lakeformation:DeregisterResource`) was denied, so the statement evaluates; what is unverified is the
+  spelling of one action. Testing it for real would need a bucket that could not be deleted while the
+  policy stayed attached.
+
+- **`glue:StartCrawler` denied is the negative half of D27's carve-out** — the canary is not
+  `awsds-data-catalog-maintenance`, and the `ArnNotEquals` condition evaluated. The positive half remains
+  **untested until Stage 5**, when the role exists.
+
+- **Nothing was created in `Policy Canary`:** every probe used a non-existent id or `--dry-run`. The
+  account is still empty.
+
+- Login as CT Admin on management account, AWS Console. Detached all 4 policies (data, identity, interactive, workload) from Policy Test OU. Attached each one to the final OU.
+    - awsds-org-scp-ou-data -> Data OU
+    - awsds-org-scp-ou-identity -> Identity OU
+    - awsds-org-scp-ou-interactive -> Interactive OU
+    - awsds-org-scp-ou-workloads -> Workloads OU
+
+- **7.6 — the four documents moved to their target OUs and re-probed there.** Each OU now shows
+  `FullAWSAccess` + its Control Tower guardrail + exactly one of ours; `Policy Test` is back to its
+  baseline and `Sandboxes` still carries no policy of its own:
+
+| OU | Target id | Policy |
+|---|---|---|
+| `Workloads` | `ou-zhj6-hisvfbzq` | `awsds-org-scp-ou-workloads` `p-83t232f4` |
+| `Data` | `ou-zhj6-z3drywoq` | `awsds-org-scp-ou-data` `p-gl01bcdm` |
+| `Interactive` | `ou-zhj6-vn5q14hi` | `awsds-org-scp-ou-interactive` `p-tgda7n58` |
+| `Identity` | `ou-zhj6-hrcu9hog` | `awsds-org-scp-ou-identity` `p-mmfc17ac` |
+
+- **Isolation probes, each from that OU's own account** (the canary cannot reach these OUs):
+
+| Account / OU | Probe | Outcome |
+|---|---|---|
+| `awsds-infra-prod` / `Workloads` | `datazone:ListDomains`, `sagemaker:CreateSpace`, `CreateNotebookInstance` | denied, all by `p-83t232f4` |
+| `awsds-infra-dev`, `awsds-infra-sandbox-1` / `Interactive` | `sagemaker:CreateNotebookInstance` | denied by `p-tgda7n58` |
+| same | `sagemaker:CreateSpace`, `datazone:ListDomains` | **allowed** |
+| `awsds-infra-data` / `Data` | `glue:StartJobRun`, `StartCrawler`, `sagemaker:CreateSpace`, `lakeformation:DeregisterResource`, `ec2:RunInstances --dry-run` | denied, all by `p-gl01bcdm` |
+| same | `datazone:ListDomains`, `glue:GetDatabases`, `s3 ls`, `ec2:DescribeVpcs` | allowed |
+| `awsds-infra-identity` / `Identity` | `glue:StartJobRun`, `sagemaker:CreateSpace`, `ec2:RunInstances --dry-run` | denied by `p-mmfc17ac` |
+| same | `glue:StartCrawler`, `lakeformation:DeregisterResource` | **allowed** (`EntityNotFoundException`) |
+
+- **The `Interactive` document was only proven after the move.** Parked on `Policy Test` alongside the
+  other three it decided no probe at all — its two actions are also denied by the `Workloads` document and
+  matched by `Identity`'s `sagemaker:Create*`, and AWS names one policy per denial. In `Interactive`,
+  nothing else denies `CreateNotebookInstance` and one call settled it. Written up as **Lesson 20**.
+
+- **Decision 1 costs no feature, and it is now measured rather than argued:** in Development and in
+  Sandbox Account 1, `sagemaker:CreateSpace` and `datazone:ListDomains` still work while the classic
+  notebook instance is denied.
+
+- **`Sandboxes` is governed by inheritance** — the same deny fires in `awsds-infra-sandbox-1`, with no
+  policy attached to that OU. This is the **SCP half** of verification (xi); whether the OU can carry an
+  *enabled Control Tower control* is a different question and stays open for 7.7.
+
+- **The Data/Identity cross-check is the strongest single result of the sitting:** `glue:StartCrawler` and
+  `lakeformation:DeregisterResource` are denied in Data Governance and **allowed** in Identity. Those two
+  statements exist only in the `Data` document, so nothing is leaking from the root set and the two
+  documents differ exactly where they were written to differ.
+
+- Still **untested**, unchanged by the move: `s3:DeleteBucket` (S3 answers `NoSuchBucket` before
+  authorizing; its `Sid` is proven through `lakeformation:DeregisterResource`) and the **positive** half of
+  the D27 carve-out, which needs Stage 5's `awsds-data-catalog-maintenance` role.
+
+- Nothing was created in any account: every probe used a non-existent id or `--dry-run`.
 
 ---
 

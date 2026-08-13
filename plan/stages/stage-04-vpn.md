@@ -99,6 +99,14 @@ of a rewrite.
    logs on its own, without you enabling any of them. Route findings to the Audit account and an SNS topic.
    **Leave S3 Protection and Malware Protection off** — they are billed separately and are decided in
    Stage 11 step 4 against a real bill.
+   **One thing this step should settle while GuardDuty is being wired, because it is free here and costly
+   later:** `awsds-org-scp-baseline` denies `guardduty:UpdateDetector` on the organization root, Audit
+   included, so anything that changes **Audit's own detector** is denied — org-wide administration through
+   `UpdateOrganizationConfiguration`/`UpdateMemberDetectors` is not. Enabling the base service does not need
+   the denied call, so nothing blocks here; Stage 11 step 4 does. **If this stage ends up creating a named
+   GuardDuty administration role in Audit, record its exact ARN** — that is the carve-out Stage 11 would
+   otherwise have to improvise, and a carve-out written against a role that already exists is the one shape
+   this plan trusts (D27).
    **Cost:** free for the first 30 days per account, then driven by log volume (`plan/cost-model.md`).
    Note what that free window is *not*: it starts when the service is enabled, in every account at once, so
    it is a discount on this stage and the next, not a measurement instrument to be spent deliberately.

@@ -29,7 +29,19 @@ before Stage 9 repeats it for Production.
 1. KMS CMKs per data domain; S3 buckets `raw`, `curated`, `artifacts`, `logs` with
    versioning, encryption, **S3 Bucket Keys** (`plan/cost-model.md`), lifecycle rules, `prevent_destroy`, and a bucket policy
    that denies access not coming through the VPC endpoint (`aws:SourceVpce`) — the resource-side half of
-   the trusted-networks axis in `plan/architecture.md` §4.2, complementing the endpoint policies from Stage 3. **The deny must
+   the trusted-networks axis in `plan/architecture.md` §4.2, complementing the endpoint policies from Stage 3.
+   > **Every bucket created in this account is undeletable while the `Data` OU SCP is attached, and that
+   > includes the ones created by mistake.** `DenyLakeDeletionAndDeregistration` denies `s3:DeleteBucket`
+   > unconditionally — no principal carve-out, `InfrastructureAccess` included, which is the property that
+   > makes it a control rather than a convention. It was written for the lake buckets and it reaches all of
+   > them, so a `terraform destroy` of *anything* here stops at the first bucket, with an `AccessDenied`
+   > naming the OU policy. **The amendment procedure, when a bucket genuinely has to go:** detach
+   > `awsds-org-scp-ou-data` from the `Data` OU, delete, re-attach, and re-run phase 4 of
+   > [`plan/runbooks/scp-battery.md`](../runbooks/scp-battery.md) — the re-attach is not done until the
+   > probes have run again, because a policy detached "for a minute" is how a ceiling goes missing for a
+   > month. Two consequences to plan around rather than discover: name buckets as if they were permanent,
+   > because here they are; and **this is why 1c left the `s3:DeleteBucket` half untested** — exercising it
+   > means creating a bucket that then cannot be deleted. **The deny must
    carry the `aws:ViaAWSService` carve-out**, or it blocks Athena and Lake Formation vended access — the
    exact path D13 forces all tabular reads through; a bare `aws:SourceVpce` deny makes step 6 unusable.
    Take the policy shape from `data-perimeter-policy-examples` (`plan/architecture.md` §4.2). While in the bucket policy, add a
@@ -98,16 +110,48 @@ before Stage 9 repeats it for Production.
    > policy, not the role. **This is also where the carve-out's positive half is finally exercised**
    > ([`plan/runbooks/scp-battery.md`](../runbooks/scp-battery.md), phase 4): 1c could only prove that a
    > principal outside the carve-out is denied, because the role did not exist yet. Start a crawler as the
-   > role before anything is wired to trigger it. Event-driven (EventBridge on drop-box object creation) or run before a D25 pickup, never on a
+   > role before anything is wired to trigger it.
+   > **The carve-out names a principal, so it can only exempt principals it can spell.** Amended
+   > 2026-08-13 to carry `BoolIfExists: aws:PrincipalIsAWSService=false` alongside the ARN test, matching
+   > the two conditioned statements at the root: a run *initiated by Glue itself* presents no principal
+   > ARN the carve-out could match, and without the guard it would land on the deny side of a test it was
+   > never meant to take. Nothing measured this — the schedule that would provoke it is the one this step
+   > refuses to create — and that is exactly why it is written rather than left to be discovered.
+   > **And the role itself has to be protected, or the carve-out is a formality.** An SCP exemption keyed on
+   > a principal ARN belongs to whoever can *become* that principal, and editing a trust policy is a way of
+   > becoming it: anyone holding `iam:UpdateAssumeRolePolicy` on `awsds-data-catalog-maintenance` can add
+   > themselves to it and inherit the exemption without ever appearing in the SCP. Deny that action on this
+   > role — in the boundaries of every set that is not `InfrastructureAccess` (Stage 2), and in a resource
+   > policy here if this account ever gains a second administrator. The same reasoning applies to
+   > `iam:PassRole` for anything that could run *as* the role.
+
+   Event-driven (EventBridge on drop-box object creation) or run before a D25 pickup, never on a
    standing schedule: a crawler run bills per DPU-hour with a 10-minute minimum, so cron-always would
    out-cost the storage it catalogs. **No crawler ever points at an Iceberg table** — Iceberg is
    catalog-native, and a crawler would at best duplicate what the catalog already knows.
+
+   **Lake Formation blueprints are unusable in this account, and that is by construction:** a blueprint
+   workflow creates and runs Glue jobs, which `DenyUserCompute` denies. If an ingestion path ever wants
+   one, it runs from an environment account and writes across the boundary — the same shape D25 already
+   uses for the drop-box pickup. Reading this as "the SCP is in the way" is the error to avoid: the SCP is
+   the statement that nothing runs here, and a blueprint is compute.
 4. Iceberg tables on S3. **Table maintenance gets an owner on day one**: scheduled `OPTIMIZE`
    (compaction) and `VACUUM` (snapshot expiry) through Athena, or Glue's automatic compaction — an
    Iceberg table nobody compacts degrades quietly and pays storage for every dead snapshot. **Amazon S3
    Tables** — managed Iceberg with automatic maintenance and Lake Formation integration — is the
    AWS-native alternative, deliberately not used here: D13's registered/unregistered prefix split leans
    on general-purpose buckets. Recorded in `plan/institutional-delta.md`.
+
+   **The Athena branch is why `athena:StartQueryExecution` is not in `DenyUserCompute`, and that absence
+   has a cost worth naming here rather than in an audit:** a principal in this account can read any table
+   the catalog exposes and write the result to S3, and the perimeter document only stops that write when
+   the destination is outside the organization. The `Data` OU SCP therefore makes "nothing *runs* here"
+   true and leaves "nothing *reads everything* here" to detection, which is
+   [Stage 11](stage-11-dlp.md)'s; it is recorded in
+   [`SCPs.md`](../../terraform-live/identity/org-policies/SCPs.md) as a stated non-coverage. **If
+   maintenance ends up on Glue's automatic compaction instead, this hole can be closed** by adding
+   `athena:StartQueryExecution` to the statement — decide it here, when the maintenance path is chosen,
+   rather than leaving the wider version by default.
 5. Enable Lake Formation as the permission model for the catalog; register the S3 locations; apply the
    LF-Tags from step 2.
 6. **Implement D13 — make Lake Formation enforceable — which D22 makes structural.** In the old layout
