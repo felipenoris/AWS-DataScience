@@ -119,6 +119,12 @@ so a per-unit token is admissible before it is needed.
 
 Each slice carries its layer from §5.1: `[P]` persistent, `[D]` dormant (stop/start), `[E]` ephemeral.
 
+**This tree is the authority and is deliberately in one place.** The folder's own
+[`terraform-live/README.md`](../terraform-live/README.md) explains *how the tree is organised* — the three
+questions that decide where something goes, which profile applies which folder, what deliberately lives
+outside it, and what exists there today — and points back here rather than repeating the tree. Two copies of
+a directory listing drift, and the one that drifts is the one somebody reads first.
+
 ```
 terraform-live/
 ├── identity/             # THE IDENTITY PLANE. TWO slices, not one (Stage 2 step 5): they

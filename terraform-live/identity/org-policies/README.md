@@ -15,6 +15,7 @@ This folder is documents only. There is no `.tf` here until Stage 2.
 | `policies/` | The real documents. One file per policy, named exactly as the policy is named in Organizations |
 | `canary/` | **Throwaway** documents, attached to `Policy Test` during the step 7.3 battery and detached in the same sitting. Never attached to anything real |
 | `render.sh` | Substitutes this organization's identifiers into the templates and writes the pasteable copies to `aws/output/rendered-policies/` |
+| [`SCPs.md`](SCPs.md) | **The statement-level index**: every `Sid` in `policies/`, what it denies and why it exists. JSON carries no comments, so that file is where the reasoning lives — **and it is updated in the same sitting as any SCP change** |
 
 ## The templates carry placeholders. Paste the *rendered* files
 
@@ -139,6 +140,10 @@ review, and it is the honest limit of a lab with a single organization.
 
 ## Discipline
 
+- **[`SCPs.md`](SCPs.md) is updated in the same sitting as the document it describes** — a statement added,
+  removed, renamed or re-conditioned, a document attached to a new target or detached from one. That file
+  carries the check that says whether it drifted: the rows of a section must be that file's `Sid`s, in
+  order, and nothing else.
 - **Record the returned policy id beside the filename**, in `log/stage-01c-preventive-policies.md`, **as
   each one is attached.** The detach command is the whole recovery path and it needs that id:
 

@@ -318,6 +318,11 @@ a node, and remember the RCP budget is the tighter one** — 7.8 puts seven serv
   above becomes executable (you have the ID), and **Stage 2 step 5.5's import compares a document against
   itself** instead of against a re-typing, which is the difference between an empty plan and an evening
   spent on JSON whitespace.
+  **And every statement gets a row in [`SCPs.md`](../../terraform-live/identity/org-policies/SCPs.md), in
+  the same sitting** — what it denies, why it exists, what it does once attached. JSON carries no comments,
+  so a `Sid` whose reasoning lives only in the sitting that wrote it is one the next reader deletes or works
+  around. That file also holds the AWS reference for every action named, which is what makes a review of an
+  amendment a reading rather than a search.
   **The tracked files carry placeholders, and the paste comes from the rendered copy.** `<ORG_ID>` and the
   `Data` OU path appear in four documents between 7.5 and 7.8, and a value typed four times is eventually
   wrong in one of them, in the silent direction (Lesson 14) — so `render.sh` fills them from the API into

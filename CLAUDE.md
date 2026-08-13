@@ -148,6 +148,8 @@ write anything into it. Claude can read the files in this folder to gather infor
 | [`ORGANIZATION.md`](ORGANIZATION.md) | The AWS OUs, accounts and users |
 | [`REFERENCES.md`](REFERENCES.md) | Every internet link used as a reference, added on the interaction that used it |
 | [`README.md`](README.md) | How the AWS resources are structured, and the project layout, so people can understand the components |
+| [`terraform-live/README.md`](terraform-live/README.md) | How the deployed tree is organised. Updated when an account folder or a top-level rule changes — **never a copy of the slice tree**, which lives in `plan/conventions.md` §6 |
+| [`terraform-live/identity/org-policies/SCPs.md`](terraform-live/identity/org-policies/SCPs.md) | One row per SCP `Sid`: what it denies, why it exists, what it does once attached. **Reviewed in the same sitting as any SCP change** — a statement added, removed, renamed or re-conditioned, and any attach or detach. The file carries the one-line check that says whether it drifted |
 | [`PRICING.md`](PRICING.md) | A row for every new AWS service referenced |
 
 # Claude memory
@@ -194,6 +196,8 @@ its `Consumes` row lists.
 | Execute a stage | [`plan/stages/`](plan/stages/INDEX.md)`stage-NN-*.md`, the decisions in its **Consumes** row, and [`plan/conventions.md`](plan/conventions.md) |
 | Design, or reason about where something belongs | [`plan/architecture.md`](plan/architecture.md) — target architecture, region portability, the data perimeter, the two egress designs |
 | A naming, layout, Terraform or IAM rule | [`plan/conventions.md`](plan/conventions.md) — also the `[P]`/`[D]`/`[E]` layers and the `app-etl` repository template |
+| **How the deployed tree is organised, and what is in it today** | [`terraform-live/README.md`](terraform-live/README.md) — one folder per account, sliced by lifecycle layer, what deliberately lives outside it. **The slice-by-slice layout itself stays in `plan/conventions.md` §6**, which is the authority when the two disagree |
+| **What a given SCP statement denies, and why that statement exists** | [`terraform-live/identity/org-policies/SCPs.md`](terraform-live/identity/org-policies/SCPs.md) — one row per `Sid`, per document, plus the AWS reference for every action named. Policy ids and attachment dates are **not** there: those are in the stage log |
 | What was actually done by hand in a stage | [`log/`](log/INDEX.md)`stage-NN-*.md` — **the same slug as the stage file**; [`log/INDEX.md`](log/INDEX.md) first, so only one log is opened |
 | **What is deployed right now** — accounts, OUs, SSO groups, users, permission sets, assignments | [`aws/INDEX.md`](aws/INDEX.md) — read-only scripts and the snapshots they write to `aws/output/` (untracked). Its question table says which section answers what; **regenerate rather than trust a stale file, and never copy an account id or email out of one** |
 | **Whether something a snapshot shows is expected** — before reporting it as a finding | [`AWS_STATE.md`](AWS_STATE.md) — the invariants (`INV-nn`), the known exceptions (`EXC-nn`, e.g. the suspended `Sandbox` account that is **not** ours), and what a later stage is going to change anyway. **Read it whenever a snapshot is read** |

@@ -494,6 +494,44 @@ ecr:InitiateLayerUpload  AccessDeniedException ... explicit deny in a service co
 - **Sitting A is closed: 7.0, 7.2, 7.3, 7.4 step 1 and 7.5 are done.** Sitting B is 7.6 (per-OU sets),
   7.7 (managed controls, which settles verification (xi) on `Sandboxes`) and 7.8 (RCP, tag, declarative).
 
+- **7.6 — the four per-OU documents written; nothing created, nothing attached.**
+  `terraform-live/identity/org-policies/policies/awsds-org-scp-ou-{workloads,data,interactive,identity}.json`.
+  `render.sh` gained one placeholder, `<ACCOUNT_ID_DATA>`, resolved by
+  `organizations list-accounts-for-parent` over the `Data` OU — exactly one active account, or it stops.
+
+- Rendered (read-only), pasteable copies in `aws/output/rendered-policies/`:
+
+```
+./terraform-live/identity/org-policies/render.sh
+```
+
+```
+awsds-org-scp-ou-workloads.json
+awsds-org-scp-ou-data.json
+awsds-org-scp-ou-interactive.json
+awsds-org-scp-ou-identity.json
+```
+
+- **Verification (viii) answered by reading AWS's machine-readable action list**, one JSON per service at
+  `https://servicereference.us-east-1.amazonaws.com/v1/<service>/<service>.json`. `sagemaker:CreateSpace`,
+  `CreateApp` and `StartSession` all exist today — `StartSession` is the local-IDE-to-space connection —
+  and a Unified Studio domain is created through `datazone:CreateDomain`, with no `sagemaker:Create*` in
+  that path. So the `Data` OU keeps its `sagemaker:Create*` wildcard and **no carve-out was widened**;
+  `Workloads` stays enumerated, because `CreateModel`/`CreateEndpoint`/`CreateTrainingJob` are its job.
+
+- Attach targets read from `awsds-infra-identity` (read-only), recorded here because 7.6 needs them:
+  `Workloads ou-zhj6-hisvfbzq`, `Data ou-zhj6-z3drywoq`, `Interactive ou-zhj6-vn5q14hi`,
+  `Identity ou-zhj6-hrcu9hog`, `Policy Test ou-zhj6-ebwso7wp`. `Sandboxes ou-zhj6-mojnh3rs` gets
+  **nothing**: it inherits `Interactive`'s set.
+
+- The `Data` document's crawler carve-out names `awsds-data-catalog-maintenance`, which does not exist
+  until Stage 5 — its **positive half is untested**, not passed.
+
+- Documentation written in the same sitting: `terraform-live/README.md` and
+  `terraform-live/identity/org-policies/SCPs.md` (both new), the battery runbook's **phase 4** (the four
+  documents, parked on `Policy Test`, then re-probed from each OU's own account), and the role-name
+  contract in Stage 5.
+
 ---
 
 *Log index: [log/INDEX.md](INDEX.md) · Stage index: [plan/stages/INDEX.md](../plan/stages/INDEX.md)*
