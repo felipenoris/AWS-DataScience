@@ -219,6 +219,59 @@ aws s3 rm "s3://$BUCKET" --recursive --profile awsds-policy-canary && aws s3 rb 
 aws ecr delete-repository --repository-name awsds-canary-throwaway --force --region us-west-2 --profile awsds-policy-canary
 ```
 
+## Phase 4 — the four per-OU documents (step 7.6), one at a time
+
+**These are the first documents with a second, better place to exercise them**, and using only the canary
+would waste it. A per-OU document is attached to an OU the canary is not in, so the canary can only test it
+while it is parked on `Policy Test` — but each target OU already holds an account with a profile, and a
+probe there measures the document *where it will actually live*, composed with everything above it:
+
+| Document | Parked on `Policy Test` for | Then attached to | And re-probed as |
+|---|---|---|---|
+| `awsds-org-scp-ou-workloads` | the deny half | `Workloads` | `awsds-infra-prod` |
+| `awsds-org-scp-ou-data` | the deny half | `Data` | `awsds-infra-data` |
+| `awsds-org-scp-ou-interactive` | the deny half | `Interactive` | `awsds-infra-dev` **and** `awsds-infra-sandbox-1` — the second one is the nested-OU reading, and it is free here |
+| `awsds-org-scp-ou-identity` | the deny half | `Identity` | `awsds-infra-identity` |
+
+**It is one policy object, moved — not created twice.** `create-policy` once, `attach-policy` to
+`Policy Test`, probe, `detach-policy` from `Policy Test`, then `attach-policy` to the real OU. The
+throwaway-and-delete shape of phase 1 belongs to the *inverted* document, which must never reach anything
+real; these four are the real documents and their id is the one recorded in the log. **Left attached to
+both targets, a document governs an OU nobody meant to govern** — and `Policy Canary` would then be carrying
+a tier written for someone else's OU into every later battery.
+
+**Check the SSO token immediately before each block of probes.** It expired twice during sitting A, and
+both times every probe came back as a non-answer that reads exactly like a deny.
+
+### The probes, by document
+
+Every one of them is shaped so that *both* outcomes are errors and nothing is created. Where the service
+validates its input before authorizing — which 1c already met twice — the probe measures nothing, and the
+honest record is *untested*, not *passed*.
+
+| Document | Probe | Denied | Allowed |
+|---|---|---|---|
+| workloads | `aws datazone list-domains --region us-west-2` | `AccessDenied` naming an SCP | a list, empty or not — the namespace deny is not reaching reads |
+| workloads | `aws sagemaker create-space --domain-id d-0000000000000 --space-name awsds-canary-probe --region us-west-2` | `AccessDenied` | `ValidationException` / `ResourceNotFound` = SageMaker validated first, so **untested** |
+| workloads | `aws sagemaker start-session --resource-identifier arn:aws:sagemaker:us-west-2:<ACCT>:space/d-0000000000000/none` | `AccessDenied` | any validation error = untested |
+| data, identity | `aws ec2 run-instances --dry-run --image-id ami-0000000000000000f --instance-type t3.micro --region us-west-2` | `UnauthorizedOperation` | `DryRunOperation` = allowed; an `InvalidAMIID.*` = validated first, untested |
+| data, identity | `aws glue start-job-run --job-name awsds-canary-probe --region us-west-2` | `AccessDenied` | `EntityNotFoundException` |
+| data | `aws glue start-crawler --name awsds-canary-probe --region us-west-2` | `AccessDenied` — **the negative half of the D27 carve-out** | `EntityNotFoundException` = the `ArnNotEquals` matched a principal it should not |
+| data | `aws lakeformation deregister-resource --resource-arn arn:aws:s3:::awsds-canary-does-not-exist --region us-west-2` | `AccessDenied` | `EntityNotFoundException` |
+| data | `aws s3api delete-bucket --bucket awsds-canary-does-not-exist-$(date +%s)` | `AccessDenied` | `NoSuchBucket`. **Name a bucket that cannot exist** — this is the one probe whose "allowed" outcome would be destructive against a real name |
+| interactive | `aws sagemaker create-notebook-instance --notebook-instance-name awsds-canary-probe --instance-type ml.t3.medium --role-arn arn:aws:iam::<ACCT>:role/nonexistent --region us-west-2` | `AccessDenied` | a role/validation error. **The nonexistent role is deliberate**: it is what keeps an "allowed" outcome from billing a notebook instance |
+
+**The positive half of the D27 carve-out cannot be run in this stage and is recorded as such.**
+`awsds-data-catalog-maintenance` does not exist until [Stage 5](../stages/stage-05-data-foundation.md), so
+"the maintenance role *can* start a crawler" is **untested until Stage 5**, where it is the first thing to
+check after the role is created — before anything is wired to trigger it. A carve-out that silently matches
+nothing is a job that will not run, and it does not announce itself.
+
+**Then the *must still succeed* half, in the target account rather than in the canary.** After each real
+attachment, from that OU's own profile: `aws sts get-caller-identity`, `aws s3 ls`, and
+`aws ec2 describe-vpcs --region us-west-2`. Denies compose, so a failure here is real no matter which
+document caused it — and this is the half the canary cannot give you for these four.
+
 ## What this battery does not cover, and where each one goes
 
 - **The Region restriction.** It is not written in 7.5 or 7.6 — it is a Control Tower managed control
@@ -236,6 +289,8 @@ aws ecr delete-repository --repository-name awsds-canary-throwaway --force --reg
   **true**, so the untested failure is the deny applying to *everyone*, `Data` included.
 - **The RCP, tag and declarative policies.** 7.8, in sitting B, and the RCP's denial wording differs — see
   the table above.
+- **The positive half of the `Data` OU's catalog-maintenance carve-out** — phase 4 says why, and Stage 5 is
+  where it is answered.
 
 ## The canary's one permanent limitation
 

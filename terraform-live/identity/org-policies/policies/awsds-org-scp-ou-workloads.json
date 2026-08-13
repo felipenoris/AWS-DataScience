@@ -1,0 +1,26 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "DenyInteractiveSageMakerSurface",
+      "Effect": "Deny",
+      "Action": [
+        "sagemaker:CreateDomain",
+        "sagemaker:CreateUserProfile",
+        "sagemaker:CreatePresignedDomainUrl",
+        "sagemaker:CreateSpace",
+        "sagemaker:CreateApp",
+        "sagemaker:StartSession",
+        "sagemaker:CreateNotebookInstance",
+        "sagemaker:CreatePresignedNotebookInstanceUrl"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "DenyDataZoneEntirely",
+      "Effect": "Deny",
+      "Action": "datazone:*",
+      "Resource": "*"
+    }
+  ]
+}

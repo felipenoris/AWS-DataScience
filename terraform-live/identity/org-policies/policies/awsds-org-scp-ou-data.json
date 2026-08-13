@@ -1,0 +1,51 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "DenyUserCompute",
+      "Effect": "Deny",
+      "Action": [
+        "ec2:RunInstances",
+        "sagemaker:Create*",
+        "sagemaker:StartSession",
+        "glue:CreateDevEndpoint",
+        "glue:CreateJob",
+        "glue:StartJobRun",
+        "glue:CreateSession",
+        "glue:RunStatement",
+        "glue:CreateMLTransform",
+        "glue:StartNotebook",
+        "lambda:CreateFunction",
+        "ecs:RegisterTaskDefinition",
+        "ecs:RunTask",
+        "ecs:CreateService"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "DenyCatalogMaintenanceRunsExceptMaintenanceRole",
+      "Effect": "Deny",
+      "Action": [
+        "glue:StartCrawler",
+        "glue:StartCrawlerSchedule",
+        "glue:StartColumnStatisticsTaskRun",
+        "glue:StartColumnStatisticsTaskRunSchedule"
+      ],
+      "Resource": "*",
+      "Condition": {
+        "ArnNotEquals": {
+          "aws:PrincipalArn": "arn:aws:iam::<ACCOUNT_ID_DATA>:role/awsds-data-catalog-maintenance"
+        }
+      }
+    },
+    {
+      "Sid": "DenyLakeDeletionAndDeregistration",
+      "Effect": "Deny",
+      "Action": [
+        "s3:DeleteBucket",
+        "lakeformation:DeregisterResource"
+      ],
+      "Resource": "*"
+    }
+  ]
+}

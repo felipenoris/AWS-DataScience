@@ -35,6 +35,8 @@
 
 - AWS Organizations - Declarative policies: <https://docs.aws.amazon.com/organizations/latest/userguide/orgs_manage_policies_declarative.html>.
 
+- **AWS Service Reference Information — the machine-readable list of every IAM action a service publishes**, one JSON per service at `https://servicereference.us-east-1.amazonaws.com/v1/<service>/<service>.json`, indexed at <https://servicereference.us-east-1.amazonaws.com/>: <https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_policies_service-reference.html>. Used in Stage 1c step 7.6 to answer verification (viii) — it is the only source that says what an action is *called today*, and unlike the Service Authorization Reference pages it can be read by a script rather than by eye.
+
 - AWS Security Reference Architecture (SRA): <https://docs.aws.amazon.com/prescriptive-guidance/latest/security-reference-architecture/welcome.html>.
 
 - Building a data perimeter on AWS (whitepaper): <https://docs.aws.amazon.com/whitepapers/latest/building-a-data-perimeter-on-aws/building-a-data-perimeter-on-aws.html>.
@@ -172,6 +174,8 @@
 - SageMaker Model Registry (model promotion, Stage 10): <https://docs.aws.amazon.com/sagemaker/latest/dg/model-registry.html>.
 
 - Amazon SageMaker Unified Studio (the direction a large institution would evaluate first, §11): <https://aws.amazon.com/sagemaker/unified-studio/>.
+
+- Create a SageMaker Unified Studio domain, manual setup — the page that names the two roles the domain asks for, `AmazonSageMakerDomainExecution` and `AmazonSageMakerDomainService`, and shows the domain being created through the **DataZone** console: <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/adminguide/create-domain-sagemaker-unified-studio-manual.html>. Read in Stage 1c step 7.6 to settle which namespace the domain evaluates under.
 
 - MLOps foundation roadmap for enterprises with Amazon SageMaker (the AWS account model behind D17: an experimentation account with Studio, a dev account, and a tooling account holding the Model Registry and ECR): <https://aws.amazon.com/blogs/machine-learning/mlops-foundation-roadmap-for-enterprises-with-amazon-sagemaker/>.
 

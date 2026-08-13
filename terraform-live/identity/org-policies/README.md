@@ -71,6 +71,52 @@ Three things about its shape that are invisible in review and obvious in the can
   deny reaches calls AWS services make on your behalf, and service *principals* — unlike service-linked
   roles — are not exempt.
 
+### The four per-OU documents (step 7.6) → one OU each, never the root
+
+One tier per OU policy set (D23), on top of the root set above. They are separate documents because they
+are attached to separate targets — **not** because the split is editorial: a per-OU document is detached
+from that OU alone, which is what makes a mistake in one of them cost one OU rather than the organization.
+
+| File | Target | Statements |
+|---|---|---|
+| `awsds-org-scp-ou-workloads.json` | `Workloads` | the interactive SageMaker surface, and `datazone:*` outright |
+| `awsds-org-scp-ou-data.json` | `Data` | user compute, the catalog-maintenance carve-out, lake deletion |
+| `awsds-org-scp-ou-interactive.json` | `Interactive` | one statement — the classic notebook instance (decision 1) |
+| `awsds-org-scp-ou-identity.json` | `Identity` | user compute, and nothing else |
+
+**`Workloads` enumerates the SageMaker actions and may never use `sagemaker:Create*`.** Staging and
+Production are where models are *deployed*: `sagemaker:CreateModel`, `CreateEndpoint`,
+`CreateEndpointConfig` and `CreateTrainingJob` are the job of those accounts, so a prefix wildcard here
+denies the stage rather than the exfiltration route. The enumerated list is the Studio/notebook surface —
+domain, user profile, presigned URL, space, app, `StartSession`, and the two classic notebook-instance
+actions — and it is the exact mirror of the `Data` document, where the wildcard *is* correct because
+nothing is supposed to run there at all. **`datazone:*` is denied as a whole namespace** on the reasoning
+of D25's near miss: DataZone gains APIs, and an enumerated list of them goes stale in the direction of the
+false negative.
+
+**`Data` carves the catalog-maintenance role out of the crawler *runs*, and deliberately not out of their
+creation.** D27's mechanics line names `glue:CreateCrawler` as well; creating a crawler is authored by
+`InfrastructureAccess` — the identity Terraform runs as, and an administrator of that account — so a deny
+on the create action would have to exempt exactly the principal it was written to bind, which is notation
+rather than a control (Lesson 18). **The event D27 is about is the run**, because a crawler run is what
+samples object contents, so that is where the deny and its one named exception sit. The exempt ARN is
+`arn:aws:iam::<ACCOUNT_ID_DATA>:role/awsds-data-catalog-maintenance` — **a contract with
+[Stage 5](../../../plan/stages/stage-05-data-foundation.md), not a description of something that exists.**
+The role is created there, and if it is created under any other name the crawlers simply never run: the
+failure is fail-closed and it surfaces at the first crawl, which is the tolerable direction, but it is the
+reason the name is written in two places on purpose.
+
+**`Identity` gets the compute statement and none of `Data`'s others.** `s3:DeleteBucket` and
+`lakeformation:DeregisterResource` mean nothing in an account that holds neither, and an OU whose policy is
+*mostly* right is the kind nobody re-reads.
+
+**None of the four carves out `AWSControlTowerExecution`, and that is a choice with a revision trigger.**
+Control Tower's own guardrails exempt it from their Config deny, so the landing zone can update itself;
+these documents deny compute *creation*, which no landing-zone operation in this account map performs
+today. An unnecessary carve-out is a hole rather than a safety margin — so the exemption is not
+pre-written. **Revision trigger:** a landing-zone update, an account update or a re-enrollment that fails
+on a compute-creation call in `Data` or `Identity`. Carve that one action then, with the reason recorded.
+
 ### `canary/awsds-canary-scp-perimeter-inverted.json` → `Policy Test`, temporarily
 
 The perimeter statement with its comparison **inverted**: deny the same writes when `aws:ResourceOrgID`

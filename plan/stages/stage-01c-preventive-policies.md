@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Status** | **sitting A in progress — 7.0 is done** (2026-08-13). Everything measured is in [`log/stage-01c-preventive-policies.md`](../../log/stage-01c-preventive-policies.md) and in `aws/output/org-policy-baseline.txt` + `account-bpa.txt`; **nothing is attached and nothing in AWS has been changed yet.** What remains of sitting A: BPA in nine accounts (7.4 step 1), the three `enable-policy-type` calls (7.2), the battery (7.3), the two root attachments (7.5) |
+| **Status** | **SITTING A IS DONE** (2026-08-13): 7.0, 7.2, 7.3, 7.4 step 1 and 7.5 — the two root documents are attached (`awsds-org-scp-baseline` `p-1fp032g8`, `awsds-org-scp-perimeter` `p-4vs49ztw`) and were exercised in three battery phases. **Sitting B is what is left: 7.6, 7.7, 7.8.** The four per-OU documents of 7.6 are **written but not created** — `terraform-live/identity/org-policies/policies/awsds-org-scp-ou-*.json`; nothing new is attached. Everything measured is in [`log/stage-01c-preventive-policies.md`](../../log/stage-01c-preventive-policies.md) and in `aws/output/` |
 | **Prerequisites** | **[Stage 1b](stage-01b-identity-and-controls.md) is complete** (closed 2026-08-12; its log is authoritative). What this stage actually consumes from it: the six SSO profiles of step 5 — `awsds-infra-sandbox-1`, `-dev`, `-prod`, `-data`, `-identity` and **`awsds-policy-canary`** — and an administrator principal in the canary account (1b step 3.1). **Not its permission sets**: no policy written here names one, which is why the `Consumes` row carries no persona decision. `Staging` is unvended, so nothing in the `Workloads` tier can be exercised against it |
 | **Consumes** | [D6](../decisions/D06-dlp-approach.md), [D10](../decisions/D10-identity-center-delegation.md), [D15](../decisions/D15-tls-internal.md), [D16](../decisions/D16-break-glass.md), [D17](../decisions/D17-interactive-vs-runtime.md), [D19](../decisions/D19-derived-zone.md), [D20](../decisions/D20-staging-account.md), [D21](../decisions/D21-development-account.md), [D22](../decisions/D22-data-governance-account.md), [D23](../decisions/D23-ou-structure.md), [D25](../decisions/D25-drop-box-consumer.md), [D26](../decisions/D26-unified-studio.md), [D27](../decisions/D27-catalog-maintenance.md), [D28](../decisions/D28-workflow-contract.md), [D29](../decisions/D29-policy-canary.md), [D30](../decisions/D30-scp-recovery.md), [D33](../decisions/D33-control-tower-admin-user.md), [D34](../decisions/D34-account-vending.md), [D35](../decisions/D35-sandbox-cardinality.md) |
 | **Proves** | **Constrains** [INT-12](../integrations.md), whose fallback 7.6 forbids until the policy is amended. **Touches [INT-01](../integrations.md) and [INT-07](../integrations.md)**: the perimeter RCP now covers ECR, so both cross-account image paths run through its service carve-out — admitted by `aws:PrincipalOrgID`, but only exercised in 7.8 |
@@ -25,7 +25,7 @@ while they run; the battery of 7.3 is per policy and reads CloudTrail, which lag
 
 | Sitting | Covers | Ends with |
 |---|---|---|
-| **A** | 7.0 (preflight — **done**, but for its step 3), 7.2 (policy types), 7.4 step 1 (account-level BPA everywhere), 7.5 (the organization-root set) | The root set attached and exercised |
+| **A — DONE 2026-08-13** | 7.0 (preflight), 7.2 (policy types), 7.3 (the battery, phases 0-3), 7.4 step 1 (account-level BPA everywhere), 7.5 (the organization-root set) | The root set attached and exercised — it is |
 | **B** | 7.6 (per-OU sets), 7.7 (the managed controls), 7.8 (RCP, tag, declarative) | The whole ceiling attached |
 
 **What is genuinely uninterruptible is one attachment, not one stage.** The precondition below — Management
@@ -103,12 +103,12 @@ the interlock with 7.5 is unaffected.
 
 | # | What | Identity | Sitting |
 |---|---|---|---|
-| 7.0 | **Preflight — measure the ground before writing a line of JSON** — **DONE 2026-08-13** except step 3, which needs Management | Infra user (`awsds-infra-identity`) + CT Admin @ Management | A |
+| 7.0 | **Preflight — measure the ground before writing a line of JSON** — **DONE 2026-08-13**, step 3 included | Infra user (`awsds-infra-identity`) + CT Admin @ Management | A |
 | 7.1 | What makes this step different, and the two rules that survive from D30 | — (read first) | both |
-| 7.2 | Preconditions, in this order | CT Admin @ Management | A |
-| 7.3 | The battery, against `Policy Canary` before anything real (D29) | Infra user, laptop (`awsds-policy-canary`) | both — it runs per policy |
-| 7.4 | The order of attachment — an instruction, not a listing order | CT Admin @ Management; step 1 of 7.4 also in each member account | A |
-| 7.5 | The organization-root SCP set | CT Admin @ Management | A |
+| 7.2 | Preconditions, in this order — **DONE** | CT Admin @ Management | A |
+| 7.3 | The battery, against `Policy Canary` before anything real (D29) — **phases 0-3 done; it runs again per 7.6 document** | Infra user, laptop (`awsds-policy-canary`) | both — it runs per policy |
+| 7.4 | The order of attachment — an instruction, not a listing order — **step 1 DONE in all nine accounts** | CT Admin @ Management; step 1 of 7.4 also in each member account | A |
+| 7.5 | The organization-root SCP set — **DONE, both documents attached and exercised** | CT Admin @ Management | A |
 | 7.6 | The per-OU sets, one tier per OU policy set (D23) | CT Admin @ Management | B |
 | 7.7 | The Control Tower managed controls — use theirs | CT Admin @ Management | B |
 | 7.8 | RCPs, tag policies, declarative policies | CT Admin @ Management | B |
@@ -800,6 +800,53 @@ become.
 One tier per OU policy set (D23), on top of the root set above. One file each:
 `awsds-org-scp-ou-workloads.json`, `-data.json`, `-interactive.json`, `-identity.json`.
 
+**The four documents exist as of 2026-08-13 and none of them is attached** — written before anything was
+created, which is the order 7.1 asks for. Sizes minified: **451**, **886**, **201** and **405** characters,
+so the per-node count of 7.0 step 5 is unchanged and nothing is close to a limit.
+
+**Verification (viii) is answered, and it was answered against AWS's own machine-readable action list**
+(`https://servicereference.us-east-1.amazonaws.com/v1/<service>/<service>.json`) rather than against
+documentation prose — the names in these documents are the names the service publishes today:
+
+| Asked | Answered |
+|---|---|
+| Are `sagemaker:CreateSpace`, `CreateApp` and `StartSession` real names today? | **All three, yes.** `StartSession` is described by the API itself as *initiating a remote connection between a local IDE and a remote SageMaker space* — the local-VS-Code objective of `CLAUDE.md`, named exactly, and it matches neither `Create*` nor `datazone:*` |
+| Which namespace does the **domain** evaluate under, asked of the `Data` OU? | **`datazone:*`.** A Unified Studio domain is created through the DataZone control plane (`datazone:CreateDomain`), with two roles the administrator supplies — `AmazonSageMakerDomainExecution` and `AmazonSageMakerDomainService`. No `sagemaker:Create*` appears in that path, so the `Data` OU's wildcard stands and **no carve-out is widened** |
+| Where does `sagemaker:*` appear, then? | In whichever account a **project profile** targets when the ML surface provisions — Sandbox or Development by D26, never Data Governance. The multi-account mechanism has its own surface (`datazone:CreateAccountPool`, `StartAccountBootstrapAction`), which belongs to INT-12 and Stage 6 |
+
+**The residual, stated rather than closed:** if Stage 6 ever provisions a project *into* Data Governance,
+this deny is what stops it — five stages from here, with an `AccessDenied` naming the OU policy. That is
+the intended direction (D26 says projects do not land there), and
+[Stage 6 step 0](stage-06-unified-studio.md) is already the place where this and the
+`datazone:CreateDomain` carve-out are exercised together, before the domain is created.
+
+**Four things were added or narrowed while writing, each with its reason:**
+
+- **`Workloads` gains `sagemaker:CreateApp` and the two classic notebook-instance actions.** The table
+  below says an SMUS notebook is a space *plus an app*, so denying the space and not the app is half a
+  control. And decision 1's deny belongs here *a fortiori*: a deployment target able to stand up a classic
+  notebook instance is exactly the ungoverned interactive surface D17 forbids, and `Interactive` denying it
+  while `Workloads` permits it would be backwards.
+- **`Workloads` may never use `sagemaker:Create*`, and the document is enumerated for that reason.**
+  Staging and Production are where models are deployed — `CreateModel`, `CreateEndpoint` and
+  `CreateTrainingJob` are their job. The wildcard belongs to `Data` and `Identity`, where nothing is
+  supposed to run at all; the two documents are mirrors on purpose, and the failure of getting this
+  backwards is a stage that cannot deploy rather than a route that stays open.
+- **`Data`'s catalog-maintenance carve-out is on the crawler *runs*, not on their creation.** This narrows
+  D27's mechanics line, for Lesson 18's reason: creating a crawler is Terraform's work, which is
+  `InfrastructureAccess`, which is an administrator of that account — so a deny on the create action would
+  have to exempt precisely the principal it was written to bind. **What D27 protects is the run**, because
+  the run is what samples object contents. The exempt ARN names `awsds-data-catalog-maintenance` in the
+  Data Governance account: **a contract with [Stage 5](stage-05-data-foundation.md)**, whose failure
+  direction is closed (the crawler does not run) rather than open. **Its positive half cannot be exercised
+  in this stage** — the role does not exist yet — so the battery records it as *untested until Stage 5*,
+  which is a different sentence from "passed".
+- **`Data` and `Identity` spell "interactive sessions and notebooks" as actions.** D25 and D27 both use
+  those words; the actions behind them are `glue:CreateSession` and `glue:RunStatement` (a notebook
+  attached to a Glue interactive session), `glue:StartNotebook` and `glue:CreateMLTransform` — none of
+  which `CreateJob`/`StartJobRun` reaches. This is D25's own lesson applied once more: the gap that decision
+  found was an enumerated list missing the action that mattered.
+
 > **The Unified Studio surface, and why every deny below is now written against an API and not against a
 > feature name.** `CLAUDE.md` gained six named SMUS features on 2026-08-13, and one of them —
 > *"users can instantiate as many Jupyter notebook instances as they like"* — reads exactly like the thing
@@ -1245,15 +1292,15 @@ Record every answer in `log/stage-01c-preventive-policies.md`, including the one
 | iii | Do the hand-written SCPs/RCPs conflict with, or merely duplicate, the SCPs Control Tower manages itself? | 7.0 step 2 | **Duplicate on Config, nothing on CloudTrail, nothing on GuardDuty.** No conflict found. 7.5 rewritten accordingly |
 | x | Does the Organizations *policy* read surface answer from the Identity account? | 7.0 step 2 | **Yes**, all of it. 7.0 is a script (`aws/org-policy-baseline.sh`) except for its `controltower` section |
 | xi | Is a control enabled on `Interactive` inherited by the nested `Sandboxes` OU? | 7.7 | **Half-answered before it was asked:** `Sandboxes` carries no policy of its own at all, so the live question is now whether it is a registered target — 7.0 step 3 on Management |
+| viii | Which namespace does each Unified Studio action evaluate under, asked of `Data` as well as of `Workloads`? | 7.6 | **The domain is `datazone:*`** — `datazone:CreateDomain` plus the two administrator-supplied roles, no `sagemaker:Create*` in the path — **so the `Data` wildcard stands and nothing is widened.** `sagemaker:*` appears in the account a *project profile* targets, which D26 keeps out of Data Governance. `CreateSpace`, `CreateApp` and `StartSession` are all real names today, read off AWS's machine-readable action list. The table in 7.6 carries the whole answer |
+| xii | Does `ec2:modify-snapshot-attribute --dry-run` evaluate permissions before validating the snapshot id? | 7.3 / 7.5 | **No** — an invented id is rejected as `InvalidSnapshotID.Malformed` before authorization, `--dry-run` included, so no fake-id probe reaches the SCP. The statement is left exercised only through its AMI sibling, and [`plan/runbooks/scp-battery.md`](../runbooks/scp-battery.md) records why that was accepted |
 
 **Still open**, with (xi) carried forward as the sharper question it became:
 
 | # | Question | Step |
 |---|---|---|
 | vii | Does `CT.MULTISERVICE.PV.1`'s current default `NotAction` still cover everything this project calls from `us-east-1`? Read it off the control's `Artifacts` tab and diff | 7.7 |
-| viii | Which namespace does each Unified Studio action evaluate under — `datazone:*`, `sagemaker:*`, `glue:*`, `athena:*` or `bedrock:*`? **Ask it of the `Data` OU as well as of `Workloads`**, and settle in particular whether `sagemaker:StartSession` and `sagemaker:CreateSpace` are the right names today | 7.6 |
-| xi | **Sharpened by 7.0 step 2.** Is `Sandboxes` a *registered* Control Tower target at all — and if it is not, is it registered before 7.7 enables the Region control, or left to inherit `Interactive`'s? | 7.7 |
-| xii | **New.** Does `ec2:modify-snapshot-attribute --dry-run` evaluate permissions *before* validating the snapshot id? If it does, the snapshot deny is testable without creating anything and the battery's planned-cleanup exception is not needed for it | 7.3 / 7.5 |
+| xi | **Sharpened twice.** 7.0 step 3 ran on Management and `Sandboxes` returned an **empty list rather than an error** — but nothing errored anywhere in that run, so the discriminator was never exercised (Lesson 13). **7.7's `enable-control` against `Sandboxes` is what answers it**, and it answers it for every OU Stage 14 ever nests there | 7.7 |
 
 **Was (vii), now answered from the documentation rather than by execution:** *"is Region deny
 landing-zone-wide, i.e. untestable against `Policy Test` first?"* — **the landing-zone control

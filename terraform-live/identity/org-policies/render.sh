@@ -11,7 +11,8 @@
 #             ./terraform-live/identity/org-policies/render.sh awsds-infra-dev   # other profile
 #   writes:   aws/output/rendered-policies/<name>.json   (UNTRACKED - .gitignore)
 #   reads:    organizations:DescribeOrganization, ListRoots,
-#             ListOrganizationalUnitsForParent, sts:GetCallerIdentity.
+#             ListOrganizationalUnitsForParent, ListAccountsForParent,
+#             sts:GetCallerIdentity.
 #             It never creates, updates or deletes anything in AWS.
 #
 # WHY THE TEMPLATES CARRY PLACEHOLDERS AND NOT THE REAL IDS. Two independent reasons, and
@@ -87,10 +88,28 @@ OU_ID_DATA=$(aws_ organizations list-organizational-units-for-parent \
 # `*` in place of the final slash only if the carve-out is meant to reach children.
 ORG_PATH_DATA="$ORG_ID/$ROOT_ID/$OU_ID_DATA/"
 
+# The Data Governance account id, resolved by OU MEMBERSHIP rather than pasted. The Data OU
+# document (step 7.6) carves the catalog-maintenance role out of its crawler deny (D27), and
+# an ARN condition may not name a wildcard account (`plan/conventions.md`) - so the id has to
+# come from somewhere, and the only source that cannot go stale is the organization itself.
+# Exactly one account is expected: `Data` holds Data Governance alone, and every account in
+# this design except `Sandbox` is structural (D35). Two accounts here is not a rendering
+# problem to route around, it is a change to the account map, so it stops.
+ACCT_IDS_DATA=$(aws_ organizations list-accounts-for-parent --parent-id "$OU_ID_DATA" \
+                  --query 'Accounts[?Status==`ACTIVE`].Id' --output text 2>/dev/null)
+# shellcheck disable=SC2086
+set -- $ACCT_IDS_DATA
+[ "$#" -eq 1 ] || die "expected exactly ONE active account in the Data OU ($OU_ID_DATA), found $# - the account map changed, and the carve-out cannot be rendered until the plan says which account it names"
+ACCOUNT_ID_DATA="$1"
+
 note "org    : $ORG_ID"
 note "root   : $ROOT_ID"
 note "Data OU: $OU_ID_DATA"
 note "path   : $ORG_PATH_DATA"
+# Masked on purpose: this line is read off a terminal that gets pasted into log/, and an
+# account id is one of the three things `CLAUDE.md` keeps out of tracked files. The full id
+# is in the rendered document under aws/output/, which is untracked.
+note "Data ac: ...${ACCOUNT_ID_DATA: -4}"
 note ""
 
 # ------------------------------------------------------------------------- rendering
@@ -115,6 +134,7 @@ render_one() { # render_one <path-to-template>
       -e "s|<ROOT_ID>|$ROOT_ID|g" \
       -e "s|<OU_ID_DATA>|$OU_ID_DATA|g" \
       -e "s|<ORG_PATH_DATA>|$ORG_PATH_DATA|g" \
+      -e "s|<ACCOUNT_ID_DATA>|$ACCOUNT_ID_DATA|g" \
       "$src" >"$out"
 
   # 1. no placeholder may survive

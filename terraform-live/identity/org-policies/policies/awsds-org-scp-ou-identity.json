@@ -1,0 +1,26 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "DenyUserCompute",
+      "Effect": "Deny",
+      "Action": [
+        "ec2:RunInstances",
+        "sagemaker:Create*",
+        "sagemaker:StartSession",
+        "glue:CreateDevEndpoint",
+        "glue:CreateJob",
+        "glue:StartJobRun",
+        "glue:CreateSession",
+        "glue:RunStatement",
+        "glue:CreateMLTransform",
+        "glue:StartNotebook",
+        "lambda:CreateFunction",
+        "ecs:RegisterTaskDefinition",
+        "ecs:RunTask",
+        "ecs:CreateService"
+      ],
+      "Resource": "*"
+    }
+  ]
+}

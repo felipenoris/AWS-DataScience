@@ -117,6 +117,8 @@ write anything into it. Claude can read the files in this folder to gather infor
 
 - all scripts inside `aws/*` should perform only read-only operations. You are free to run them to gather information.
 
+- before running `aws` commands, check if the current session uses the correct `sso` user using `aws sts get-caller-identity`.
+
 - **Whenever an SSO login is needed — asked for, or implied by a command Claude is about to hand over —
   Claude states three things, every time and without being asked**: the **SSO user** to sign in as, the
   **account** the work lands in, and the **permission set** behind it. Never "log in and run this".
@@ -304,6 +306,14 @@ The `§` numbers inside `plan/` files are historical anchors, not addresses.
 - **The SSO token expires faster than a battery does** — it died twice mid-run, and both times every probe
   came back as a non-answer that reads like a deny. **Check the token immediately before each block of
   probes**, and read the error *wording* (`explicit deny in a service control policy`), never the exit code.
+- **Sitting B is open at 7.6: the four per-OU documents are written and nothing is attached** —
+  `awsds-org-scp-ou-{workloads,data,interactive,identity}.json`, rendered by the same `render.sh` (new
+  placeholder `<ACCOUNT_ID_DATA>`). **Verification (viii) is answered**: an SMUS domain is `datazone:*`, so
+  `Data`'s `sagemaker:Create*` wildcard stands, while `Workloads` is enumerated because Staging and
+  Production legitimately call `CreateModel`/`CreateEndpoint`. The `Data` crawler carve-out names
+  **`awsds-data-catalog-maintenance`** — a contract with Stage 5, whose *positive* half cannot be tested
+  before then. **Each of the four has a real account to be exercised in** (`awsds-infra-prod`, `-data`,
+  `-dev`/`-sandbox-1`, `-identity`), which the root set never had — battery **phase 4**.
 - **The repository is documentation only, with one exception since 2026-08-13**:
   `terraform-live/identity/org-policies/` holds 1c's policy **documents** (templates with placeholders, plus
   `render.sh`, which writes the pasteable copies into untracked `aws/output/`). No `.tf` anywhere until

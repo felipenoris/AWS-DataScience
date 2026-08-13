@@ -89,7 +89,16 @@ before Stage 9 repeats it for Production.
 3. Glue Data Catalog databases (`raw`, `curated`). **Glue Crawlers where schema arrives from outside,
    and only there (D27):** one over the raw zone, one over the ingestion drop-box — in this account,
    under the named catalog-maintenance exception to the `Data` OU SCP, startable only by the maintenance
-   role. Event-driven (EventBridge on drop-box object creation) or run before a D25 pickup, never on a
+   role.
+   > **The role's name is fixed, and it is a contract rather than a preference: `awsds-data-catalog-maintenance`.**
+   > The `Data` OU SCP attached in [Stage 1c step 7.6](stage-01c-preventive-policies.md) denies
+   > `glue:StartCrawler`, `StartCrawlerSchedule` and the column-statistics runs to every principal
+   > *except* that exact ARN in this account. Create the role under any other name and the crawlers never
+   > run — a fail-closed failure that surfaces at the first crawl with an `AccessDenied` naming the OU
+   > policy, not the role. **This is also where the carve-out's positive half is finally exercised**
+   > ([`plan/runbooks/scp-battery.md`](../runbooks/scp-battery.md), phase 4): 1c could only prove that a
+   > principal outside the carve-out is denied, because the role did not exist yet. Start a crawler as the
+   > role before anything is wired to trigger it. Event-driven (EventBridge on drop-box object creation) or run before a D25 pickup, never on a
    standing schedule: a crawler run bills per DPU-hour with a 10-minute minimum, so cron-always would
    out-cost the storage it catalogs. **No crawler ever points at an Iceberg table** — Iceberg is
    catalog-native, and a crawler would at best duplicate what the catalog already knows.
