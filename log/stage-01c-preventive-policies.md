@@ -419,6 +419,81 @@ ecr:InitiateLayerUpload  AccessDeniedException ... explicit deny in a service co
     populate evaluates *true*: the untested failure is the deny applying to everyone, `Data` included.
 
 
+- Login CT Admin on Management Account. AWS Organizations -> Policies -> Service control policies. Create policy:
+  - policy name: `awsds-org-scp-perimeter`
+  - Description: Stage 1c step 7.5 - trusted resources: deny S3 object writes and ECR layer/image pushes to resources outside this organization.
+  - Used this JSON:
+
+```
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "DenyS3ObjectWriteOutsideOrganization",
+      "Effect": "Deny",
+      "Action": [
+        "s3:PutObject",
+        "s3:PutObjectAcl",
+        "s3:PutObjectTagging",
+        "s3:PutObjectVersionAcl",
+        "s3:PutObjectVersionTagging",
+        "s3:PutObjectRetention",
+        "s3:PutObjectLegalHold"
+      ],
+      "Resource": "*",
+      "Condition": {
+        "StringNotEqualsIfExists": {
+          "aws:ResourceOrgID": "o-4z1leiit0c"
+        },
+        "BoolIfExists": {
+          "aws:PrincipalIsAWSService": "false"
+        }
+      }
+    },
+    {
+      "Sid": "DenyEcrPushOutsideOrganization",
+      "Effect": "Deny",
+      "Action": [
+        "ecr:InitiateLayerUpload",
+        "ecr:UploadLayerPart",
+        "ecr:CompleteLayerUpload",
+        "ecr:PutImage"
+      ],
+      "Resource": "*",
+      "Condition": {
+        "StringNotEqualsIfExists": {
+          "aws:ResourceOrgID": "o-4z1leiit0c"
+        },
+        "BoolIfExists": {
+          "aws:PrincipalIsAWSService": "false"
+        }
+      }
+    }
+  ]
+}
+```
+
+- Policy awsds-org-scp-perimeter create with ARN `arn:aws:organizations::885931358757:policy/o-4z1leiit0c/service_control_policy/p-4vs49ztw`. Policy was attached to root account `r-zhj6`.
+
+- - **7.3 phase 3 / 7.5 complete — `awsds-org-scp-perimeter` (`p-4vs49ztw`) attached to the root.** The
+  root now carries `FullAWSAccess`, `p-1fp032g8` and `p-4vs49ztw`. The direction phase 1 could not test:
+  both in-org writes **still succeed** — `s3:PutObject` (7 bytes confirmed) and
+  `ecr:InitiateLayerUpload`. The statement does not over-reach, which was the expensive failure: it
+  would have broken `docker push` to our own registry and every Stage 2 module writing to our own
+  buckets.
+
+- Must-still-succeed re-run with **both** documents attached: the five reads from the canary, plus
+  `ec2:DescribeVpcs` and `s3 ls` from `awsds-infra-dev` — added outside the runbook, because a policy
+  verified only in an empty account is verified against nothing.
+
+- **Cleanup, same sitting.** Deleted `probe.txt`, `probe3.txt`, `probe4.txt`, `probe5.txt`, the bucket
+  `awsds-canary-throwaway-1786569935` and the repository `awsds-canary-throwaway`. `Policy Canary` reads
+  back empty: no buckets, no ECR repositories, 0 IAM users. `Policy Test` carries only `FullAWSAccess`
+  and `aws-guardrails-vldGRP`.
+
+- **Sitting A is closed: 7.0, 7.2, 7.3, 7.4 step 1 and 7.5 are done.** Sitting B is 7.6 (per-OU sets),
+  7.7 (managed controls, which settles verification (xi) on `Sandboxes`) and 7.8 (RCP, tag, declarative).
+
 ---
 
 *Log index: [log/INDEX.md](INDEX.md) · Stage index: [plan/stages/INDEX.md](../plan/stages/INDEX.md)*

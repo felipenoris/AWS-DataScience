@@ -213,8 +213,8 @@ The `§` numbers inside `plan/` files are historical anchors, not addresses.
 
 ### Current position
 
-- **Stage 1a is done but for the `Staging` vend; Stage 1b is DONE; Stage 1c sitting A is in progress —
-  7.0, 7.2 and 7.4 step 1 are done, and what is left in it is 7.3 then 7.5** — the `log/` files are
+- **Stage 1a is done but for the `Staging` vend; Stage 1b is DONE; Stage 1c SITTING A IS DONE — what is
+  left of 1c is sitting B, i.e. 7.6, 7.7 and 7.8** — the `log/` files are
   authoritative. 1a: Control Tower enabled (`us-west-2`), budget
   set, `Development`, `Sandbox Account 1`, `Production`, `Data Governance`, `Policy Canary` and `Identity`
   vended, centralized root access on. Break-glass built and **tested 2026-08-09 on both channels** — the
@@ -289,7 +289,21 @@ The `§` numbers inside `plan/` files are historical anchors, not addresses.
   AWS attach **`RCPFullAWSAccess` to every node** on its own (INV-11). Account-level BPA reads all four
   flags `true` in **all nine accounts** — the six with a profile are re-measurable with
   `./aws/account-bpa.sh`; Management, Log Archive and Audit were set and console-verified by the user and
-  **this laptop cannot read them**. 7.5's interlock is therefore satisfied.
+  **this laptop cannot read them**.
+- **7.5 is attached and exercised: `awsds-org-scp-baseline` (`p-1fp032g8`) and `awsds-org-scp-perimeter`
+  (`p-4vs49ztw`) on the root.** The battery ran in three phases and the canary was emptied afterwards
+  ([`plan/runbooks/scp-battery.md`](plan/runbooks/scp-battery.md) is the executable form, re-run at every
+  amendment). **Decision 7 is measured, not assumed** — `InfrastructureAccess` still sets account BPA with
+  the deny attached, so `aws:PrincipalArn` names the `role/aws-reserved/...` form and not the
+  `assumed-role` one. **`aws:ResourceOrgID` populates for S3 *and* ECR**, proven by the inverted document.
+  **Two statements are attached but unexercised, both because the service validates input before
+  authorizing**: `ec2:ModifySnapshotAttribute` (no fake snapshot id reaches authorization, `--dry-run`
+  included; its statement is unconditional and its AMI sibling *was* denied) and `datazone:CreateDomain`
+  — **that one is [Stage 6 step 0](plan/stages/stage-06-unified-studio.md)**, because `ForAllValues:` over a
+  key that does not populate evaluates *true* and the untested failure is the deny reaching `Data` too.
+- **The SSO token expires faster than a battery does** — it died twice mid-run, and both times every probe
+  came back as a non-answer that reads like a deny. **Check the token immediately before each block of
+  probes**, and read the error *wording* (`explicit deny in a service control policy`), never the exit code.
 - **The repository is documentation only, with one exception since 2026-08-13**:
   `terraform-live/identity/org-policies/` holds 1c's policy **documents** (templates with placeholders, plus
   `render.sh`, which writes the pasteable copies into untracked `aws/output/`). No `.tf` anywhere until
