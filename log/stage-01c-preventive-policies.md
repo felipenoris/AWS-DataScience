@@ -852,6 +852,12 @@ aws ec2 run-instances --dry-run --image-id <AMI> --instance-type t3.micro --subn
 
 - Login as CT Admin -> Management Account. AWS Control Tower -> Controls -> Control Catalog. Searched for `CT.MULTISERVICE.PV.1` (Deny access to AWS based on the requested AWS Region for an organizational unit). Selected -> Enable -> Policy Test  -> Regions to allow access = `us-west-2`. Generated a policy named `aws-guardrails-njKkvb` with ARN `arn:aws:organizations::885931358757:policy/o-4z1leiit0c/service_control_policy/p-q3y11w1n` attached to `Policy Test` OU.
 
+- <PROBE LOG TEXT MISSING>
+
+- Login as CT Admin -> Management Account. AWS Control Tower -> Controls -> Control Catalog. Enabled control `CT.MULTISERVICE.PV.1` with allow region `us-west-2` for OUs: Interactive, Workloads, Data, Identity, Sandboxes.
+
+- Also, enabled `AWS-GR_RESTRICT_ROOT_USER` (ARN `arn:aws:controlcatalog:::control/5kvme4m5d2b4d7if2fs5yg2ui`) for `Policy Test` OU.
+
 ---
 
 *Log index: [log/INDEX.md](INDEX.md) · Stage index: [plan/stages/INDEX.md](../plan/stages/INDEX.md)*
