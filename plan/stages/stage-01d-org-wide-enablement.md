@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Status** | not started — **revised 2026-08-14 against Stage 1c's findings and four fresh measurements**. Read "What 1c measured that changes this stage" before anything else: step 9 is **blocked as written**, step 11.2 is **already satisfied**, and the stage gained a fourth step |
+| **Status** | **in progress — steps 11 and 12 are DONE (2026-08-14), step 10 is half measured, step 9 has not been touched.** Decision 10 is taken (the ceiling went on `Security`) and open question 16 is closed with it; what remains is **step 9 in full** — decisions 9 and 3, the only permanent act in the stage — and **step 10's volume half plus decisions 4 and 8**. Read "What 1c measured that changes this stage" before touching step 9: it is **blocked as written** and runs, if it runs, as `AWSControlTowerExecution` |
 | **Prerequisites** | **[Stage 1b](stage-01b-identity-and-controls.md) complete** — every step here runs inside a member account and needs step 5's profiles. **Stage 1c was not a prerequisite and is now done anyway** (2026-08-14): none of these steps depends on a policy being attached, but three of 1c's attached documents and one of Control Tower's own now sit across this stage's path, which is what the revision below is about |
 | **Consumes** | [D12](../decisions/D12-budget-ceiling.md), [D16](../decisions/D16-break-glass.md), [D22](../decisions/D22-data-governance-account.md), [D23](../decisions/D23-ou-structure.md) (step 12), [D29](../decisions/D29-policy-canary.md), [D33](../decisions/D33-control-tower-admin-user.md), [D34](../decisions/D34-account-vending.md), [D35](../decisions/D35-sandbox-cardinality.md) |
 | **Proves** | **The two organization-level halves of [INT-11](../integrations.md)** — org-wide RAM sharing and the Lake Formation cross-account version, **the second of which was already true before the stage started and is now a reading plus an instruction to Stage 5**. **Also closes [D16](../decisions/D16-break-glass.md)'s last unbuilt deliverable** (10.4) and **[open question 16](../open-questions.md)** (step 12). The third INT-11 item (`AWSLakeFormationCrossAccountManager` on the grantor) is Stage 5 step 7, because the role does not exist yet (11.4) |
@@ -438,7 +438,17 @@ the version is not a thing this account has to be argued into, and the contingen
 ("if it cannot, the setting moves into Stage 5") is void. What moves into Stage 5 instead is the *defence*
 of a value nobody set: 11.2's last bullet.
 
-### Step 12 — The Region ceiling on `Security`, the OU 7.7 never targeted (open question 16)
+### Step 12 — The Region ceiling on `Security`, the OU 7.7 never targeted (open question 16) — **DONE 2026-08-14**
+
+**Decision 10 was taken and it was yes**: all three controls are on `Security`, `ExemptAssumeRoot` set on
+`AWS-GR_RESTRICT_ROOT_USER` and deliberately absent from the access-key one (D16), both confirmed by
+reading the document (`CHK-1`/`CHK-2` in `./aws/org-policies.sh`) rather than by probing, because no
+principal here is root (Lesson 22). **The step's one real unknown is answered: `Security` accepts
+`enable-control` even though it is Control Tower's foundational OU.** Control Tower packed the enablements
+in a **third** shape — a new document (`aws-guardrails-KAmzSQ`, `p-idgyiios`) for the Region control, the
+pre-existing AWS guardrail (`p-2xyaqn66`, 11 → 13 statements) for the root ones — so Lesson 23's rule is
+not "one of two layouts" but that the layout is unknowable without reading. The text below is kept as
+written, because it is the reasoning that produced the decision.
 
 **Added 2026-08-14.** 1c step 7.7 enabled `CT.MULTISERVICE.PV.1` (allow `us-west-2`) on the five OUs its own
 order named — `Policy Test`, `Workloads`, `Data`, `Interactive`, `Identity` — and deliberately not on
@@ -610,7 +620,7 @@ Record every answer in `log/stage-01d-org-wide-enablement.md`, including the one
 | iv | Does enabling Object Lock on the Control Tower-managed bucket raise landing-zone drift — **and does it survive a landing-zone update, an account update or a re-enrollment?** | 9.5 | Open. The second half was added 2026-08-14 and **cannot be closed in-session**: record it provisionally and name the event that settles it, as 1b 5.1 did for (vi) |
 | v | Can the Lake Formation cross-account version be raised to 3+ with no lake in the account? | 11.6 | **Answered 2026-08-14, before execution: the question is void.** It reads **4** already, with `SET_CONTEXT: TRUE`, in an account with no lake and no administrator |
 | **xiii** | **Does the Control Tower landing zone record the Management account at all?** `plan/cost-model.md` assumes it does not and asks Stage 1 to confirm; 10.4 is the first step that has to know, and the Config row's account count is wrong by one either way | 10.4 | Open. **Renumbered from (x) on 2026-08-14** — 1c had already answered a different question under that numeral, and the landing-zone numerals are one sequence across 1a-1d |
-| **xiv** | Does a Region control on `Security` deny `us-east-1` and leave `us-west-2` working in **both** Log Archive and Audit, without touching Control Tower's own operations there? | 12.5 | Open, and new. **Measured by hand** — the battery has no profile for either account |
+| **xiv** | Does a Region control on `Security` deny `us-east-1` and leave `us-west-2` working in **both** Log Archive and Audit, without touching Control Tower's own operations there? | 12.5 | **First half answered 2026-08-14** in both accounts, by hand in CloudShell: `us-east-1` denied naming `p-idgyiios`, `us-west-2` `DryRunOperation`. **Second half provisional** — the exemption reading covers it (the four Control Tower roles are exempt, `config:*` entirely), and it is re-checked at the **next landing-zone update, account update or re-enrollment**, exactly as (iv) and (vi) are |
 
 ---
 

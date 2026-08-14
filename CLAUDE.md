@@ -237,7 +237,8 @@ The `§` numbers inside `plan/` files are historical anchors, not addresses.
   records a lockout instead of aborting on it, and `classify` no longer reads a declarative policy's
   message *echoed by a successful read* as a deny.
 - **Stage 1a is done but for the `Staging` vend; 1b and 1c are DONE. Stage 1d is the landing zone's last
-  stage and is ready to start** — the `log/` files are authoritative. 1a: Control Tower enabled
+  stage and is *in progress*: steps 11 and 12 done, step 10 half measured, step 9 untouched** — the `log/`
+  files are authoritative. 1a: Control Tower enabled
   (`us-west-2`), budget set, `Development`, `Sandbox Account 1`, `Production`, `Data Governance`,
   `Policy Canary` and `Identity` vended, centralized root access on, break-glass **tested 2026-08-09 on both
   channels**.
@@ -252,9 +253,26 @@ The `§` numbers inside `plan/` files are historical anchors, not addresses.
   from Identity. (c) **11.2 is already satisfied** — `CROSS_ACCOUNT_VERSION` reads **4** with
   `SET_CONTEXT: TRUE` in Data Governance with no lake, so verification (v) is answered, no
   `put-data-lake-settings` is made, and what survives is the instruction to Stage 5 to carry **both** keys.
-  `ram.amazonaws.com` is confirmed **absent**, so 11.1 has real work. (d) **New step 12**: the Region ceiling
-  on `Security` (open question 16, decision 10) — and the battery can never test it, since neither Log
-  Archive nor Audit has a CLI profile and creating one is refused.
+  **Step 11 is now DONE** — 11.1 ran 2026-08-14, `ram.amazonaws.com` is the eighth trusted-access principal
+  and the RAM service-linked role exists in Management, so INT-11's org-level halves are settled and every
+  remaining INT-11 risk is Stage 5's. (d) **Step 12 is DONE and decision 10 was yes** — the Region ceiling
+  and both root-user controls are on `Security`, so **every governed account now sits under `us-west-2`**
+  and open question 16 is closed. `Security` **accepts `enable-control`** despite being foundational;
+  Control Tower packed it in a **third** shape (new document for the Region control, the pre-existing AWS
+  guardrail for the root ones, 11 → 13 statements). **Nothing here is regression-testable** — Log Archive
+  and Audit hold no CLI profile, so `CHK-1`/`CHK-2` and section 4 of `./aws/org-policies.sh` are the only
+  standing instruments, and the probes were by hand. It **commits Stages 4, 5 and 11 to `us-west-2`**:
+  `guardduty`, `securityhub` and `macie2` are not exempt.
+- **Step 10's spend half is measured and it argues for leaving the recorder alone**: Cost Explorer reports
+  **one** usage type, `USW2-ConfigurationItemRecorded` (no rule evaluations), **USD 2.28 month-to-date of
+  which USD 2.20 is a one-day enrollment spike** spread evenly across accounts — a recurring rate near
+  USD 0.5/month at this (nearly empty) account count, well under `PRICING.md`'s USD 2.50-5.00 band. **The
+  spike is the number that matters for Stages 2-3**: ~730 configuration items for nine empty accounts
+  recording once is what an apply storm costs. Still open: 10.3's volume half and decisions 4 and 8.
+- **`ce:*` in a permission set is not enough for Cost Explorer** — measured 2026-08-14: CT Admin was refused
+  on the Cost Management console until **root** activated *IAM user and role access to Billing*. Any future
+  billing reading needs that toggle, not a policy edit, and the root sign-ins it took should have tripped
+  `awsds-org-root-activity`.
 - **1b's residue, all of it:** the six SSO profiles resolve (five `awsds-infra-*` →
   `AWSReservedSSO_InfrastructureAccess_*`, `awsds-policy-canary` → `AWSReservedSSO_AWSAdministratorAccess_*`);
   **only `Policy Canary` still carries an Account Factory direct assignment**, permanently; the org IAM
@@ -342,8 +360,7 @@ The `§` numbers inside `plan/` files are historical anchors, not addresses.
   phase cannot create anything in a real account even with the ceiling removed.
 - **7.7 IS DONE. `CT.MULTISERVICE.PV.1` on five OUs and the two root-user controls on the same five**
   (`Policy Test`, `Workloads`, `Data`, `Interactive`, `Identity`) — **not `Sandboxes`, by the rule below;
-  not `Security`, which was never a target, so `Log Archive` and `Audit` have no Region ceiling and that is
-  now Stage 1d step 12's decision.** Region
+  `Security` was never 7.7's target and got the same three from 1d step 12 instead.** Region
   half measured 61/61 by the battery. **Verification (vii) answered** from the attached document (86
   `NotAction` entries, none of ours) — and it **falsified a plan prediction: `ecr-public:*` is exempt**, so
   `DenyEcrPublicEntirely` is the only thing denying it. `ssm:GetParameter` *is* denied in `us-east-1`.
@@ -379,9 +396,9 @@ The `§` numbers inside `plan/` files are historical anchors, not addresses.
 - **All thirty-six decisions are closed** ([`plan/decisions/INDEX.md`](plan/decisions/INDEX.md)). The four
   governing what happens next: **D32** (`SSOUserEmail`), **D33**/**D34** (who vends), **D35** (`Sandbox` is
   one per business unit; every other account is exactly one).
-- **The landing zone's second half is three stages, and only 1d is left**: **1b** (done), **1c** (done),
-  **1d** (steps 9, 10, 11 and the new 12, independent of each other and doable in any order).
-  **1d has no `log/` file yet** — the user creates it from an existing header.
+- **The landing zone's second half is three stages, and 1d is the last — two items in it**: **step 9** in
+  full (decisions 9 then 3, the only permanent act of the stage) and **step 10's remainder** (the volume
+  half, decisions 4 and 8). Independent of each other.
 - **The identity seam, settled 2026-08-09 by review** (`plan/conventions.md`): **people** — users, groups,
   memberships — stay in the directory; **entitlements** — permission sets, boundaries, group→account
   assignments — are Terraform. So **1b creates one permission set and specifies seven**; the other six are

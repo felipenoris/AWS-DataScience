@@ -153,7 +153,18 @@ started. **The first one is load-bearing against principle 4.**
 
 ### Raised by Stage 1c step 7.7, 2026-08-13
 
-16. **`Log Archive` and `Audit` have no Region ceiling, and nothing in the plan ever said they should not.**
+16. ~~**`Log Archive` and `Audit` have no Region ceiling, and nothing in the plan ever said they should not.**~~
+    — **closed 2026-08-14 by Stage 1d step 12 (decision 10): the ceiling was enabled**, together with both
+    root-user controls, so every governed account now sits under `us-west-2` and `Sandboxes` is the only OU
+    carrying none (D37). **Three things the execution settled that the question could not:** `Security`
+    **accepts `enable-control`** despite being Control Tower's foundational OU — the step's one real
+    unknown; Control Tower packed the enablements in a **third** shape, a new document for the Region
+    control and the pre-existing AWS guardrail for the root ones (11 → 13 statements, Lesson 23 again); and
+    the by-hand probe answered in **both** accounts — `us-east-1` denied naming `p-idgyiios`, `us-west-2`
+    `DryRunOperation`. What the closure *commits*, and it is the only lasting cost: GuardDuty (Stage 4),
+    Security Hub (Stage 5) and Macie (Stage 11) are **not** exempt in the control, so each is `us-west-2`
+    or it is denied. The original question, kept because the reasoning is what a future reader needs:
+
     7.7 enabled `CT.MULTISERVICE.PV.1` on the five OUs its own order named — `Policy Test`, `Workloads`,
     `Data`, `Interactive`, `Identity` — and **`Security` was never on that list**. It is not a regression
     and not drift: the OU was simply outside the step. But the consequence is worth deciding rather than

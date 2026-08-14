@@ -96,3 +96,281 @@ CreateDatabaseDefaultPermissions / CreateTableDefaultPermissions: IAM_ALLOWED_PR
   Management** on this laptop, and there is not meant to be — the infrastructure user has no assignment in
   any of them. Every remaining reading of this stage is taken in **CloudShell as `AWS Control Tower Admin`**
   through `AWSAdministratorAccess`, and `./aws/probes/scp-battery.sh` can never reach those accounts.
+
+- Login as CT Admin -> Log Archive Account -> AWSAdministratorAccess.
+
+- Inspecting CT CloudTrail S3 logs bucket. No lock configuration, versioning is enabled, lifecycle with 365 days of expiration. Log commands executed on CloudShell:
+
+```
+~ $ aws s3api get-object-lock-configuration --bucket "$BUCKET"; aws s3api get-bucket-versioning --bucket "$BUCKET"; aws s3api get-bucket-lifecycle-configuration --bucket "$BUCKET"
+
+aws: [ERROR]: An error occurred (ObjectLockConfigurationNotFoundError) when calling the GetObjectLockConfiguration operation: Object Lock configuration does not exist for this bucket
+{
+    "Status": "Enabled"
+}
+{
+    "TransitionDefaultMinimumObjectSize": "all_storage_classes_128K",
+    "Rules": [
+        {
+            "Expiration": {
+                "Days": 365
+            },
+            "ID": "RetentionRule",
+            "Filter": {
+                "Prefix": ""
+            },
+            "Status": "Enabled",
+            "NoncurrentVersionExpiration": {
+                "NoncurrentDays": 365
+            }
+        }
+    ]
+}
+```
+
+- **Before-state only; nothing on the bucket was changed.** Object Lock absent, versioning already
+  `Enabled` — which is a precondition rather than a step, since `CTS3PV8` denies `s3:PutBucketVersioning`
+  too — and one lifecycle rule, `RetentionRule`, expiring current versions at **365 days** and noncurrent
+  versions at **365 days**. **That is the ceiling for decision 3**, and it is the noncurrent half that
+  binds: Object Lock protects object *versions*, so a compliance-mode retention at or above 365 days makes
+  the landing zone's own expirations start failing. Decision 9 is still open, so nothing was attempted.
+
+- Login as CT Admin -> Management Account -> AWSAdministratorAccess. Management is not recorded. Log of commands executed on CloudShell:
+
+```
+~ $ aws configservice describe-configuration-recorders --region us-west-2
+{
+    "ConfigurationRecorders": []
+}
+~ $ aws iam get-account-summary --query 'SummaryMap.AccountAccessKeysPresent'
+0
+```
+
+- **Verification (xiii) is answered: the landing zone does not record the management account.**
+  `ConfigurationRecorders: []` in `us-west-2`. So `plan/cost-model.md`'s assumption holds and its Config
+  row's account count is right as written. `describe-delivery-channels` was not run and does not need to
+  be: an empty recorder list already answers the question, and a delivery channel with no recorder records
+  nothing. **What this does to decision 8 is make it a real choice rather than a formality** — there is no
+  recorder in Management to attach a rule to, so 10.4's "yes" means creating the whole Config plane there
+  by hand, in the one account this project keeps out of Terraform.
+
+- `SummaryMap.AccountAccessKeysPresent` reads **`0`** — D16's invariant holds **today**. Recorded as a
+  measurement, not as a control: this is the free instrument 10.4 itself calls an intention (Lesson 5),
+  and it answers the state question only at the moment somebody runs it.
+
+- Login as CT Admin -> Audit Account -> AWSAdministratorAccess. Log of commands executed on CloudShell:
+
+```
+~ $ aws configservice describe-configuration-aggregators --region us-west-2
+{
+    "ConfigurationAggregators": [
+        {
+            "ConfigurationAggregatorName": "aws-controltower-ConfigAggregatorForOrganization",
+            "ConfigurationAggregatorArn": "arn:aws:config:us-west-2:660820513855:config-aggregator/aws-service-config-aggregator/controltower.amazonaws.com/config-aggregator-bmopj7ig",
+            "OrganizationAggregationSource": {
+                "RoleArn": "arn:aws:iam::660820513855:role/aws-service-role/config.amazonaws.com/AWSServiceRoleForConfig",
+                "AllAwsRegions": true
+            },
+            "CreationTime": "2026-08-09T01:54:42.782000+00:00",
+            "LastUpdatedTime": "2026-08-09T01:54:42.793000+00:00",
+            "CreatedBy": "controltower.amazonaws.com"
+        }
+    ]
+}
+```
+
+- **10.3's volume half has its instrument, and only that.** The aggregator is Control Tower's own,
+  `AllAwsRegions: true`, created with the landing zone on 2026-08-09 — so the per-account item counts are
+  readable in one place, from Audit. **The counts themselves are not measured yet**, and neither is the
+  spend half from Cost Explorer in Management. Step 10.3 stays open.
+
+- This enables organization-wide resource sharing (Allows sharing resources by specifying an Organization ID or OU ID, instead of listing individual account IDs). Login as CT Admin -> Management Account -> AWSAdministratorAccess. Log of commands executed on CloudShell:
+
+```
+~ $ aws ram enable-sharing-with-aws-organization --region us-west-2
+{
+    "returnValue": true
+}
+
+~ $ aws organizations list-aws-service-access-for-organization
+{
+    "EnabledServicePrincipals": [
+        {
+            "ServicePrincipal": "access-analyzer.amazonaws.com",
+            "DateEnabled": "2026-08-12T03:14:08.900000+00:00"
+        },
+        {
+            "ServicePrincipal": "cloudtrail.amazonaws.com",
+            "DateEnabled": "2026-08-09T01:46:52.709000+00:00"
+        },
+        {
+            "ServicePrincipal": "config.amazonaws.com",
+            "DateEnabled": "2026-08-09T01:46:53.911000+00:00"
+        },
+        {
+            "ServicePrincipal": "controltower.amazonaws.com",
+            "DateEnabled": "2026-08-09T01:46:50.307000+00:00"
+        },
+        {
+            "ServicePrincipal": "iam.amazonaws.com",
+            "DateEnabled": "2026-08-09T18:02:35.162000+00:00"
+        },
+        {
+            "ServicePrincipal": "member.org.stacksets.cloudformation.amazonaws.com",
+            "DateEnabled": "2026-08-09T01:46:51.502000+00:00"
+        },
+        {
+            "ServicePrincipal": "ram.amazonaws.com",
+            "DateEnabled": "2026-08-14T18:47:22.759000+00:00"
+        },
+        {
+            "ServicePrincipal": "sso.amazonaws.com",
+            "DateEnabled": "2026-08-01T21:30:39.047000+00:00"
+        }
+    ]
+}
+
+~ $ aws iam get-role --role-name AWSServiceRoleForResourceAccessManager --query 'Role.[RoleName,CreateDate]' --output text
+AWSServiceRoleForResourceAccessManager  2026-08-14T18:47:23+00:00
+```
+
+- **Step 11 is done.** `enable-sharing-with-aws-organization` returned `true`; the trusted-access list
+  went from the **seven** principals of the before-reading to **eight**, with `ram.amazonaws.com` at
+  18:47:22Z, and `AWSServiceRoleForResourceAccessManager` was created at 18:47:23Z. **The one-second gap
+  is the result worth keeping**: the RAM call made both halves. Enabling trusted access from the
+  Organizations side instead would have produced an identical list and no role — the list would read
+  correct and organization-wide sharing would still not work, which is INT-11's silent-failure shape
+  arriving one stage early.
+
+- **Re-read independently from the laptop** as the infrastructure user (`awsds-infra-identity`): eight
+  principals, `ram.amazonaws.com` among them. The after-reading answers from a member account, as the
+  before-reading did.
+
+- With 11.1 landed, **step 11 closes whole**: 11.2 stays a reading with its instruction to Stage 5 written
+  above, 11.3's two checks are both answered, 11.6 was answered before execution, and 11.4 is Stage 5
+  step 7 by construction. INT-11's two organization-level halves are settled; `INV-09` restated to eight.
+
+- **Where 1d stands after this sitting:** step 11 done; steps 9, 10 and 12 open. Decisions 3, 8, 9 and 10 are all still to be taken. Verifications (v) and (xiii) are answered; (iv) and (xiv) are open.
+
+- Login as CT Admin SSO on Management Account, AWSAdministratorAccess. Control Tower -> Control Catalog. Enabled on Security OU:
+  - CT.MULTISERVICE.PV.1 on us-west-2 region
+  - AWS-GR_RESTRICT_ROOT_USER with Exempt AssumeRoot sessions enabled
+  - AWS-GR_RESTRICT_ROOT_USER_ACCESS_KEYS
+
+- Login as CT Admin SSO on Log Archive Account, AWSAdministratorAccess. Probed `create-key-pair`, denied by SCP on us-east-1, allowed on `us-west-2`. Log of commands executed on CloudShell:
+
+```
+~ $ aws ec2 create-key-pair --key-name probe-region --dry-run --region us-east-1
+
+aws: [ERROR]: An error occurred (UnauthorizedOperation) when calling the CreateKeyPair operation: You are not authorized to perform this operation. User: arn:aws:sts::859928915710:assumed-role/AWSReservedSSO_AWSAdministratorAccess_b65279a07fc16dfa/felipenoris@gmail.com is not authorized to perform: ec2:CreateKeyPair on resource: arn:aws:ec2:us-east-1:859928915710:key-pair/probe-region with an explicit deny in a service control policy: arn:aws:organizations::885931358757:policy/o-4z1leiit0c/service_control_policy/p-idgyiios. Encoded authorization failure message: OIau77IwNA-RjpafXihrUW41WAUxaBKeALVOZxxGdy7u-JcfuZW95DlcUImc3Szcfs9IIqFOYM2Z0v7obHBXpzuilc2XBGMKH9lT0YXWsxwKU1BEnTXoYeUm2ETiSsvvNDRPi5HO5QWipU9S8biTwVu97C4iZdiUjoscgwFFWZC2X4F68zYENY3NPZ0MgtC_fQiLquKBKm6Hav--_nupIRF-ikk7Zu3DJI9ZmCwmEu-zClu9Xfs3x5iriekEfwh4kSaOpI2c-0LU0KItVhQb6QWZWDI5fEmE9UP4D-lvUckYp5L1yWGhR7IooYGT_IiQo5XbcGyaGzwOLwZYeG4y6wffkqNx2sDlWWoLVi6xkSehdxr-b8WURyY9Qi8l6064yCtISKLPq3Vtz3uOAYvwetmAZ-W3l6KZlUiTV6tp2-CX_hslr_XypZcFlOVvasEEVznCsYAh56UxhYURyVxHmA5AIvuqSY7rwwsBc_uu61XCKwRvIwVQGNdeP_WexnEFyfJ2eddvqeqsSWN778FzMQq5WcYOVQLYsoIgoVanOhwNOvYbLzwjKE_VsaOJyxVoMLmPfCLS7G0qx6JxN735_0pEr0ZRJMqfWeamg3U7jspS7w3OD0jAeP94QW5jRE0bIIHRVYzfxvm3mHAKhVI2Rf8T3mAa_6PhvP3vR07tRZzY9_emmmIS-riGp9sDQfgyuGwd1y2j89NtiWOM1tqx0E8ziO5UpOk47ugvAUWeWTwwOBPSIGlrtr0Bbsmu7CJaNH-SM4nK20fmS9IzUlFbjgCpoPjRNtDAGSc_TPK2k1jjYVXigus4loakCTAELNKKwkuQEDh1h7jRz_ZsGlZaxkVZa4uaXq3nNM9ya60FJ4moQRRtzzV5KXD9c1AiSIKtj3GWChLostz-U53GiINh63c19pZMTjK_6NV_Kj77ymsukbVCb3kpmELSiHgv-OREj8BmEYmiLZZxPJouWJzaGvFUzKZMYQd-LGKoCyxQ0Hm3cGnRcmqB27549P1BLJpu5uRZG3ARrrnBaDihaXOgXcBMBF_RWIx5VfkxQM0crgAoNLSDmdScEVZggFilZgTZKXaON3gZ2B8iXWIMRYb3PBJ0cwVZh9ISr45CgqnRnonOs059OxNGv5lZluPMyA0IMxj5edr7dyiIPcrQOq3zBA9iuaOfMrh-UheZou0rlqvdhEdQ5AQQYLZ-nU1a847_Z518V7NIbBRPjnvIIlw9MsdA3dDDro_9i0qDEM-aNBxxQkQn4UBpqXFxx5_KadskONbspeBL4CXKIVZUBlYJSDR5UYsWePd8tN6YpL44cE24zgxPG-HgIcESrBIGdnY1oxdldWoIjjvYAstKRFLf0NOb8_w02mvfhuBn8GIP39yVBaBFJIL_atCJUYDx9MfNBfG_3IHY5cNQ6-vZvUY_WYAPyamsXbmbiRdZLzKkag6wxbVK1VaSol3tIcFapEGTQE6skdPJCSiEDnMTf2eJmfXMgG7yASyfpx7Gsgxgv8IEBycLKayCT_Db32yizxUBjQoK5zZZizU63C0WlD4gH2nsai6hahzHNMtROjFgXxqMlSIQVy58Rg5VcDoAFjlFTZ4FcoMJoBOE75WiIly1Kh5g8lTeEg7YkqFpRtTJPqMBUsQvFUQd_PniBh0lyvAyf0GRvgcUDlq_J_tXKrpLPxbVdmykd2cqiZ8J4xN0FgCbp7-u-Vp5JG4FdUzorohuznWFk-0R1QlNIDcJ7slGv2sLSKa1ar7CRw
+~ $ aws ec2 create-key-pair --key-name probe-region --dry-run --region us-west-2
+
+aws: [ERROR]: An error occurred (DryRunOperation) when calling the CreateKeyPair operation: Request would have succeeded, but DryRun flag is set.
+```
+
+- Login as CT Admin SSO on Audit Account, AWSAdministratorAccess. Probed `create-key-pair`, denied by SCP on us-east-1, allowed on `us-west-2`. Log of commands executed on CloudShell:
+
+```
+~ $ aws ec2 create-key-pair --key-name probe-region --dry-run --region us-east-1
+
+aws: [ERROR]: An error occurred (UnauthorizedOperation) when calling the CreateKeyPair operation: You are not authorized to perform this operation. User: arn:aws:sts::660820513855:assumed-role/AWSReservedSSO_AWSAdministratorAccess_b987a8e362f41c3e/felipenoris@gmail.com is not authorized to perform: ec2:CreateKeyPair on resource: arn:aws:ec2:us-east-1:660820513855:key-pair/probe-region with an explicit deny in a service control policy: arn:aws:organizations::885931358757:policy/o-4z1leiit0c/service_control_policy/p-idgyiios. Encoded authorization failure message: toYXZzhniD2dKL4eg4qM-o_t_hzQkRg_fl4VPHC3HAEca0fK1RAQWk98dgDDb3IgA0eMY7bE_RUdQqa_4TYLzoDU__aomNIdtaHasobTTstDSYkTMU6LC-__3CSTieufv5WqXJQdZqACT46KWmkd7-Vi2LR3loULcahDTmDqkmIHdhgLHmXhahWzRbJhX4Qsd1yHSb0a9HppsTOlxo3Jp-9CspU-eImxDxRprm1CphCiNanW-7TN-P7rGYAn_D6h-F_cEKZqqK0FsXAEk_jXNrZU5UueVn6rLrnWMmLxuIQGTJrVtk4hp4aQy7aiTSJg8Ohf2qq__Rmy7aMR9L4_06yKGc_eadKofj4C1JtzELysRsQgzjJsfPVvsdPYsFv2hj4YeJkIejml0N_RADpdjBz4sfeSNMxboY3vkwdnGBid5uOe4rL5x-P02Ehe6qKolItfvJuovgW3dIq9epCyK2mjqSX8wwiB_dCD24O5AGU48bP5Yur_jbKbc97H7B1WHoS-gTgXDtGF-fX83QQ3J6ANOpSzouE0WjX9iGG6JCeVU0CNOM-7sAcS4Hf6KKMsPln8l-hLmmRLxqiTpVhVOe1ngixCCKPl7Ar7a2TNYfC6feKnTCVebxNSxnrwWXSkmIHVnBouo3zDu0-TZ-Cdy9bWzY3DxyUx-j9HYKCqjgojgohUKYGoouRRdSHscx8NWuApWdGXoaiNrmdNwvEbYGtJsrfH7BzpK5Wcryeo9w_xxhLLbi3wBoKyRP3-ZquHFZfFxCvTvRuM8MzC_WixOhutVJzZiUQ1KLssNZw_imMpVNreOHZywMnUu-GtnM0WI5eJH-JV989C17PNT_sV_4i5wUNAalT-vvryxXkusvJwc9WOQByq9tNZs2xkkGHMbWCvXD-eC60WrJWewvn-USiI4uhzlIjc3-hj30tqyPS5Ecf5JTTVPW5m57mMMUqsP1wFOoS0YSWkKYu6hqA8pNfdr7ua-iQud7NtzRhXNYPnVwXsJwHTLJxyP9vtU_wWlg_cRllI4X8zK3qnx2pMI8YZm2oPvdQb4oAEQ5reTsYRmaFKoIuhn2zGQZKFD-3_bOVrav62sCZpel9aOtXihsg1C_mOHhJHMUR6crmd9ad7uBDlQwqTGxdYXRUvosuAEDQGizXbNXpf5GSJj9OXFrQ8OQewZYAZOYX__swySq0T7snRklZFbatJ6-QrsY6DmQ9QTxE8SjS-9WShSRg-ru6Ky0WRNrKwNwR3OU7G-DwjQUEdrPvVRo6m4e5dqAkdWm8Fa_iLLsmIfshHMO7eEhlLuNypBnjp8J11OvP2aMqOZ5Xh7gzcrnRvhZeierMaxAL2DQYtyFCEdw2Qs1MgFL4hh8DptsJdFhaoNoKI4waKAQSZ82Rgbtq8ldr4ldmWmbx7ZiflUFceZOfZmKWHy5J6t4ZFkKJf8ybQHeCkfD2kSAtG0hZEb8xLQGckWe-3gVxFK5soggAv4R9wgJZHkOWWG3G4PRsbdL7AEyh-IE0elXeqwWOWHFYoMjbzkUSAKOieuCpgRWh6sIih7rQiiooL0kC3af1ZPiJ19Z9MaTzKEffLScIMLKZzCOpIewVeqWniBtNNibs-zoGYxQLc5S0Hgqk1HtqMAeECBehSPZc_fiwI98Ux4hbGg1kqd2sTlIxizjsGmrh6v6aI7nKbUgwxf_fdd1Y67yukbePlqONx8h_w_GJl5Fu-19dlinlE-k3J7HVeYgRJbBgtH-KcYcRF0r0O9O1Y-g
+~ $ aws ec2 create-key-pair --key-name probe-region --dry-run --region us-west-2
+
+aws: [ERROR]: An error occurred (DryRunOperation) when calling the CreateKeyPair operation: Request would have succeeded, but DryRun flag is set.
+```
+
+- Login with CT Admin SSO on management. Noticed it doesn't have access to budget features (`You don’t have permission to perform the following operation on the AWS Cost Management console: ce:DescribeReport. `), showing `access denied` on the page. So, I loged in with root account. Billing and Cost Management -> Cost Explorer. I noticed it was already enabled, maybe because my root account is old.
+
+- Login with root account at AWS Console. On Account Name -> Account -> IAM user and role access to Billing -> Edit. Market `Activate IAM Access` -> Update.
+
+- Login with CT Admin SSO on management account, AWSAdminstratorAccess. Billing and Cost Management. I can now see it has access to this page. The Cost Explorer is enabled. As I said before, this account is old, so the Cost Explorer has metrics for many months already.
+
+- Filtering all dates from the current month. Granularity Daily. Filtering Service = Config. Usage Type shows only `USW2-ConfigurationItemRecorded`. Last usage for Config service was yesterday, on Canary Account. It shows a spike in the first day of the series, distributed equally accross all accounts, summing $2.2. Total usage is $2.28. All usage on Audit account is for `USW2-ConfigurationItemRecorded`, summing $0.28.
+
+- Step 12 is done, and decision 10 was yes. All three controls on Security: CT.MULTISERVICE.PV.1
+allowing us-west-2, AWS-GR_RESTRICT_ROOT_USER with ExemptAssumeRoot, and
+AWS-GR_RESTRICT_ROOT_USER_ACCESS_KEYS without one (D16). The reasoning, so a later reader can tell
+a decision from an omission: the ceiling is free today — everything in Log Archive and Audit is already
+us-west-2 — and the alternative was leaving the two accounts holding the immutable trail and the
+organization's findings as the only governed accounts where a resource may be created in any Region.
+The exemption reading taken earlier this day is what made it safe: the four Control Tower roles are
+exempt and config:* is exempt entirely, so nothing Control Tower itself runs there is constrained.
+What it commits: guardduty, securityhub and macie2 are not in the NotAction list, so
+Stages 4, 5 and 11 are us-west-2 or they are denied — which is this design, stated now rather than
+discovered then.
+
+- The step's one real unknown is answered: Security accepts enable-control. Being Control Tower's
+own foundational OU did not make it a non-target, and a refusal would have turned decision 10 from
+"declined" into "impossible" — which is a different sentence in the log.
+
+- Control Tower packed the three enablements in a third shape. CT.MULTISERVICE.PV.1 went into a
+new document, aws-guardrails-KAmzSQ (p-idgyiios, one statement, CTMULTISERVICEPV1), while the
+two root-user controls went into the pre-existing AWS guardrail aws-guardrails-rFWRFL
+(p-2xyaqn66), taking it from 11 statements to 13. So the three measured layouts are now: original
+guardrail (Policy Test, Workloads, Interactive), Region document (Identity, Data), and both
+at once (Security). Lesson 23 is therefore not "one of two layouts" — it is that the layout cannot be
+inferred at all, only read. Log Archive and Audit resolve to 26 statements each, up from 23.
+
+- The half no probe can reach was verified by reading, and it passes. ./aws/org-policies.sh from the
+laptop as awsds-infra-identity: CHK-1 — ExemptAssumeRoot present on Security, so
+GRRESTRICTROOTUSER ANDs Null: aws:AssumedRoot = true with the root-ARN test; CHK-2 — the access-key
+control correctly carries no exemption. Every principal available here is an Identity Center role and
+ArnLike …:root never matches one, so the document read is the only instrument (Lesson 22). Section 4's
+table now reads yes/yes/yes for Security, and Sandboxes is the only blank row left.
+
+- Verification (xiv), first half: answered in both accounts by the two CloudShell probes above —
+us-east-1 denied with "explicit deny in a service control policy" naming p-idgyiios, us-west-2
+returning DryRunOperation. Second half provisional: that Control Tower's own operations in those two
+accounts are unaffected is answered by the exemption reading, not by a probe, and is re-checked at the
+next landing-zone update, account update or re-enrollment — the same shape as (iv) and 1b's (vi).
+
+- And this is now permanently untestable by the battery. ./aws/probes/scp-battery.sh maps probes to
+CLI profiles and neither account has one, by design. The probes above were run by hand, once. What stands
+behind them is CHK-1/CHK-2 and section 4 of ./aws/org-policies.sh — a regression on the Security
+row surfaces there or nowhere. Open question 16 is closed (AWS_STATE.md INV-11 and INV-12 restated).
+
+- Root was used twice, and the reason is a finding rather than a convenience. AWS Control Tower Admin
+holds AdministratorAccess, which includes ce:, and Management is exempt from SCPs — yet the Cost
+Management console refused it. The cause was IAM user and role access to Billing never having been
+activated, which only the root user can change. So the permission model was never the obstacle and no
+policy edit would have fixed it. Now that it is activated, every future billing and Cost Explorer
+reading is taken as CT Admin, and needing root for one is a signal that this toggle was reverted.
+
+- The break-glass alarm, which those two sign-ins tested for free. awsds-org-root-activity (1a step 5)
+fires on any root activity that is not an AWS service event, so both sign-ins should have notified.
+All break-glass notifications arrived on both channels.
+Recorded because this is an unplanned live test of the whole chain (trail → S3 → Logs → filter → alarm),
+distinct from the deliberate test of 2026-08-09, and because a silent alarm here would undermine the
+fallback that decision 8 is about to lean on.
+
+- Step 10's spend half is measured, and the shape matters more than the total. Cost Explorer from
+Management as CT Admin, current month, daily, Service = Config:
+
+  - One usage type only, USW2-ConfigurationItemRecorded. No rule-evaluation line at all — so 100% of
+the Config spend is configuration items, which is exactly what step 10 is about, and the usage-type
+split 10.3 asked for has a trivial answer.
+
+  - USD 2.28 month-to-date, of which USD 2.20 is a single-day spike on Aug 09, spread evenly across
+the accounts, with Audit's entire share at USD 0.28 and the most recent activity the previous day, in
+Policy Canary — which is the SCP battery.
+
+  - Derived, and worth checking against the per-account bars rather than trusting the arithmetic: the
+spike divided by the eight recorded accounts (Management is not recorded, (xiii)) is ≈ USD 0.275,
+and Audit's total is USD 0.28 — so Audit recorded essentially nothing after the spike day. At
+USD 0.003 per item the spike is ≈ 730 items, ≈ 90 per account for an account that was empty.
+What that says: Config cost here is event-driven, not time-driven. An idle account bills almost
+nothing; the recurring rate at this account count is on the order of USD 0.5/month, well under
+PRICING.md's USD 2.50-5.00 band. The spike is the number that generalises to Stages 2-3: an enrollment
+or an apply storm is what the recorder charges for, and ~90 items for an empty account is the ratio to
+carry into that estimate.
+
+  - Cost Explorer data lags ~24 h, so the last populated day being yesterday is expected and not a signal.
+
+- Where 1d stands after this sitting: steps 11 and 12 done; step 10 half done — the volume half from the
+Audit aggregator and decisions 4 and 8 remain; step 9 untouched, with decisions 9 and 3 still to be
+taken. Verifications (v), (xiii) and (xiv)'s first half are answered; (iv) is open and (xiv)'s second half
+is provisional.
+
+---
+
+*Log index: [log/INDEX.md](INDEX.md) · Stage index: [plan/stages/INDEX.md](../plan/stages/INDEX.md)*
