@@ -2,21 +2,22 @@
 
 | | |
 |---|---|
-| **Status** | not started |
-| **Prerequisites** | **[Stage 1b](stage-01b-identity-and-controls.md) complete** — every step here runs inside a member account and needs step 5's profiles. **Stage 1c is not a prerequisite**: none of these three steps depends on a policy being attached, so this stage can be executed before it if a session is short |
-| **Consumes** | [D12](../decisions/D12-budget-ceiling.md), [D16](../decisions/D16-break-glass.md), [D22](../decisions/D22-data-governance-account.md), [D29](../decisions/D29-policy-canary.md), [D33](../decisions/D33-control-tower-admin-user.md), [D34](../decisions/D34-account-vending.md), [D35](../decisions/D35-sandbox-cardinality.md) |
-| **Proves** | **The two organization-level halves of [INT-11](../integrations.md)** — org-wide RAM sharing and Lake Formation cross-account v3. **Also closes [D16](../decisions/D16-break-glass.md)'s last unbuilt deliverable** (10.4). The third (`AWSLakeFormationCrossAccountManager` on the grantor) is Stage 5 step 7, because the role does not exist yet (11.4) |
+| **Status** | not started — **revised 2026-08-14 against Stage 1c's findings and four fresh measurements**. Read "What 1c measured that changes this stage" before anything else: step 9 is **blocked as written**, step 11.2 is **already satisfied**, and the stage gained a fourth step |
+| **Prerequisites** | **[Stage 1b](stage-01b-identity-and-controls.md) complete** — every step here runs inside a member account and needs step 5's profiles. **Stage 1c was not a prerequisite and is now done anyway** (2026-08-14): none of these steps depends on a policy being attached, but three of 1c's attached documents and one of Control Tower's own now sit across this stage's path, which is what the revision below is about |
+| **Consumes** | [D12](../decisions/D12-budget-ceiling.md), [D16](../decisions/D16-break-glass.md), [D22](../decisions/D22-data-governance-account.md), [D23](../decisions/D23-ou-structure.md) (step 12), [D29](../decisions/D29-policy-canary.md), [D33](../decisions/D33-control-tower-admin-user.md), [D34](../decisions/D34-account-vending.md), [D35](../decisions/D35-sandbox-cardinality.md) |
+| **Proves** | **The two organization-level halves of [INT-11](../integrations.md)** — org-wide RAM sharing and the Lake Formation cross-account version, **the second of which was already true before the stage started and is now a reading plus an instruction to Stage 5**. **Also closes [D16](../decisions/D16-break-glass.md)'s last unbuilt deliverable** (10.4) and **[open question 16](../open-questions.md)** (step 12). The third INT-11 item (`AWSLakeFormationCrossAccountManager` on the grantor) is Stage 5 step 7, because the role does not exist yet (11.4) |
 | **Log** | `log/stage-01d-org-wide-enablement.md` |
 
 *Read with [`plan/conventions.md`](../conventions.md) (naming, layout, `[P]`/`[D]`/`[E]`, IAM rules).*
 
 ---
 
-**Three steps, and they keep their numbers: 9, 10 and 11.** The landing zone's second half was one stage
-until 2026-08-09, and the step numbers did not change in the split — every other file's `Stage 1d step 9`
-reference is this stage's step 9.
+**Three steps kept their numbers — 9, 10 and 11 — and a fourth was added as 12.** The landing zone's second
+half was one stage until 2026-08-09, and the step numbers did not change in the split: every other file's
+`Stage 1d step 9` reference is this stage's step 9. **Step 12 is new (2026-08-14)** and closes
+[open question 16](../open-questions.md), which 1c step 7.7 raised and addressed here by name.
 
-**The three steps are independent of each other** and can be done in any order, or in three separate
+**The four steps are independent of each other** and can be done in any order, or in four separate
 sittings. What they have in common is that each is organization-level, manual, and done from inside a
 member account rather than from Management alone.
 
@@ -24,16 +25,18 @@ member account rather than from Management alone.
 
 | # | What | Identity | Consumes | Why it is here and not later |
 |---|---|---|---|---|
-| 9 | Object Lock, compliance mode, on the log bucket | CT Admin @ Log Archive | D33, D34 | Before there is anything worth hiding in the trail |
+| 9 | Object Lock, compliance mode, on the CloudTrail log bucket — **blocked for every principal but one, see 9.6** | CT Admin @ Log Archive, **or `AWSControlTowerExecution`** | D33, D34 | Before there is anything worth hiding in the trail |
 | 10 | Measure AWS Config, then decide — **and, in 10.4, the rule D16 owes** | CT Admin @ Management + Audit | D12, D16, D29 | The landing zone's largest recurring line. **10.4 is not about that line at all** and is independent of what 10.3 decides |
-| 11 | Org-wide RAM sharing + LF cross-account v3 | CT Admin @ Management / Infra user @ Data | D22, D35 | Stage 5 fails **silently** without it |
+| 11 | Org-wide RAM sharing + LF cross-account version — **11.2 is already satisfied, it is now a reading** | CT Admin @ Management / Infra user @ Data | D22, D35 | Stage 5 fails **silently** without it |
+| **12** | **The Region ceiling on `Security`** — the one OU 7.7 never targeted | CT Admin @ Management, measured from Log Archive/Audit | D23 | This is the stage that touches those two accounts, and the ceiling is free |
 
 ## Who executes what
 
 | Steps | Identity | Sign-in path |
 |---|---|---|
-| 10.3 (Cost Explorer), **10.4 (the Config rule, which exists only in Management)**, 11.1 (RAM) | **`AWS Control Tower Admin`** (D33/D34) | access portal → `AWSAdministratorAccess` on **Management** |
-| 9 (Object Lock, *in Log Archive*), 10 (the Config aggregator lives in Audit) | **`AWS Control Tower Admin`** | access portal → `AWSAdministratorAccess` on **Log Archive** / **Audit** — the infrastructure user has *no* assignment in either (`ORGANIZATION.md`) |
+| 10.3 (Cost Explorer), **10.4 (the Config rule, which exists only in Management)**, 11.1 (RAM), **12 (enabling the control)** | **`AWS Control Tower Admin`** (D33/D34) | access portal → `AWSAdministratorAccess` on **Management** |
+| 9 (the *reading*, in Log Archive), 10 (the Config aggregator lives in Audit), **12's measurement** | **`AWS Control Tower Admin`** | access portal → `AWSAdministratorAccess` on **Log Archive** / **Audit** — the infrastructure user has *no* assignment in either (`ORGANIZATION.md`), so **there is no CLI profile for those two accounts and CloudShell is the only shell** |
+| **9's write, if decision 9 goes that way** | **`AWSControlTowerExecution`**, assumed **from Management** | `aws sts assume-role` from CloudShell in Management as CT Admin — it is the **only** principal `CTS3PV8` exempts, and using it by hand is what decision 9 is about |
 | 11.2 (Lake Formation) | **Infrastructure user**, from the laptop | the `awsds-infra-data` profile created in Stage 1b step 5 |
 
 ## What this stage costs
@@ -48,6 +51,29 @@ This is the stage that decides the largest recurring line in the whole landing z
 - **The one cost that is easy to create by accident** is step 9's: a retention longer than the bucket's
   lifecycle expiration turns the Log Archive into an archive nobody chose to pay for, and compliance mode
   means it cannot be shortened.
+- **Step 12 is free** and, if it goes the other way, so is not doing it: a Region control costs nothing
+  either way, which is why the decision is about blast radius and not about money.
+
+---
+
+## What 1c measured that changes this stage
+
+**Read this before executing anything.** Five facts, four of them measured after this stage was last
+written, and three of them change what a step actually is. None is a blocker for *starting*; one is a
+blocker for finishing step 9 the way it is written.
+
+| # | What was measured | What it does to this stage |
+|---|---|---|
+| 1 | **`CTS3PV8`**, in the Control Tower guardrail on the `Security` OU, is a `Deny` with a **`NotAction`** list over `aws-controltower-logs-*`, `aws-controltower-cloudtrail-*` and `aws-controltower-access-logs-*`, exempting **`arn:*:iam::*:role/AWSControlTowerExecution` alone**. `s3:PutBucketObjectLockConfiguration` and `s3:PutBucketVersioning` are **not** in that list | **Step 9 cannot be performed by `AWS Control Tower Admin`.** It is not a permissions gap to be widened — it is AWS's own guardrail, and the only principal that walks through it is Control Tower's execution role. **New sub-step 9.6 and decision 9** |
+| 2 | The same `NotAction` list **does** permit `s3:DeleteObject`, `s3:DeleteObjectVersion`, `s3:PutObject` and `s3:PutObjectRetention` to every principal | **The guardrail leaves object deletion open on purpose**, so step 9 is not redundant with it — the value of Object Lock is exactly in the actions `CTS3PV8` permits. This is the argument that keeps the step alive after finding 1, and it belongs in decision 9 |
+| 3 | **The bucket is not called what this file said it was.** The organization trail `aws-controltower-BaselineCloudTrail` (org trail, home region `us-west-2`) writes to **`aws-controltower-cloudtrail-logs-<account>-<suffix>`**, read from the Identity account on 2026-08-14 | 9.1's names were a landing-zone 2.x shape. The `aws-controltower-logs-` prefix in the old deliverable command returns **`None`**, which reads like a failed lock (Lesson 13). Corrected in 9.1 and in the deliverables |
+| 4 | **`CROSS_ACCOUNT_VERSION` already reads `4`** in Data Governance, alongside `SET_CONTEXT: TRUE`, with `DataLakeAdmins` empty and no lake registered (measured 2026-08-14, `awsds-infra-data`) | **11.2 has nothing to set** — it becomes a reading, and the dangerous `put-data-lake-settings` call is not made at all. **Verification (v) is answered before execution.** What survives, and grows, is 11.2's instruction to Stage 5 |
+| 5 | **`GRCONFIGENABLED`** denies `config:PutConfigurationRecorder`, `PutDeliveryChannel`, `Stop…` and the retention configuration in **every** governed OU, exempting `AWSControlTowerExecution` only (7.0, verification (iii)) | 10.2's "editing the recorder by hand is drift" is now the *weaker* of two reasons: **it is denied outright.** And 10.4 works only because **Management is exempt from SCPs** — which is the whole reason that sub-step is possible at all |
+
+**And one operational finding that applies to every step here** (1c, twice): the SSO token expires
+mid-session and a vended role credential lives 4 h in `~/.aws/cli/cache`, so a stale success is as likely as
+a stale failure. Check `aws sts get-caller-identity` immediately before each block, and read the *wording* of
+an error rather than its exit code (Lesson 24).
 
 ---
 
@@ -58,17 +84,33 @@ This is the stage that decides the largest recurring line in the whole landing z
 An audit log that the compromised party can edit is not an audit log. Do this before there is anything
 worth hiding in it.
 
-#### 9.1 — Identify the right bucket first, because there are at least two and one of them must not be touched
+#### 9.1 — Identify the right bucket first, because there are at least three and one of them must not be touched
 
-- **Object Lock goes on the CloudTrail log bucket, `aws-controltower-logs-*`, in the Log Archive
-  account.**
-- **It must never go on `aws-controltower-s3-access-logs-*`.** That bucket is the destination for S3
-  server access logging, and **S3 buckets with Object Lock cannot be used as a server access log
-  destination** — locking it silently stops access logging for the bucket beside it.
-- **Check the landing zone version while you are here.** From landing zone 4.0 the *Config* logs move to
-  `aws-controltower-config-logs-*` in the Config integration (Audit) account, while the CloudTrail logs
-  stay in Log Archive. The target of this step is the CloudTrail bucket either way; knowing the version
-  tells you whether a second bucket exists that this step deliberately does not cover.
+**The names below were measured on 2026-08-14, and they are not the ones this file carried until then.**
+Do not paste a prefix from a document; resolve the name from the trail, which is the only source that
+cannot be stale:
+
+```bash
+aws cloudtrail describe-trails --region us-west-2 \
+  --query "trailList[?Name=='aws-controltower-BaselineCloudTrail'].[S3BucketName,IsOrganizationTrail,LogFileValidationEnabled]" --output text
+```
+
+- **Object Lock goes on the CloudTrail log bucket, `aws-controltower-cloudtrail-logs-<account>-<suffix>`,
+  in the Log Archive account** — *not* `aws-controltower-logs-*`, which is this landing zone's
+  predecessor's name and matches nothing here.
+- **It must never go on the access-log bucket** — `aws-controltower-access-logs-*` in the same account.
+  That bucket is the destination for S3 server access logging, and **S3 buckets with Object Lock cannot be
+  used as a server access log destination**: locking it silently stops access logging for the bucket
+  beside it.
+- **The Config logs are a third bucket, `aws-controltower-config-*`, and they are in Audit** — that is the
+  landing-zone 4.x split, and Control Tower's own guardrail confirms it by protecting that prefix in a
+  separate statement (`CTS3PV7`) from the three log buckets (`CTS3PV8`). The target of this step is the
+  CloudTrail bucket; the other two are named here so that they are recognised and left alone.
+- **Read the state before changing it**, all of which `CTS3PV8` permits because `s3:Get*` is in its
+  `NotAction` list: `get-object-lock-configuration` (expect `ObjectLockConfigurationNotFoundError`),
+  `get-bucket-versioning` (expect `Enabled` — Object Lock needs it, and `PutBucketVersioning` is denied, so
+  versioning being already on is a precondition rather than a step) and
+  `get-bucket-lifecycle-configuration`, whose expiration is the ceiling for 9.3's retention.
 
 #### 9.2 — Use compliance mode, and this is the step that limits D33
 
@@ -80,6 +122,14 @@ locked object version cannot be deleted or overwritten by anyone, including that
 D34 that principal is permanent**, so this is not a control covering a two-week bootstrap window — it is
 what keeps the audit trail surviving its own administrator for as long as the organization exists.
 Getting the mode wrong here is a permanent hole, not a temporary one.
+
+**And this is where finding 2 lands, because it is the reason the step is not redundant.** Control Tower's
+own `CTS3PV8` already denies almost everything on these buckets to every principal but
+`AWSControlTowerExecution` — but its `NotAction` list **permits `s3:DeleteObject` and
+`s3:DeleteObjectVersion` to all of them.** AWS's guardrail protects the bucket's *configuration* and
+deliberately leaves its *contents* deletable. So the exposure step 9 closes is precisely the one the
+guardrail declines to close, and "Control Tower already protects that bucket" is not an argument against
+this step.
 
 #### 9.3 — Three practical constraints, all of which bite later if ignored
 
@@ -97,18 +147,54 @@ Getting the mode wrong here is a permanent hole, not a temporary one.
   to objects written *after* it, which is fine here and is the reason for "before there is anything worth
   hiding".
 
-#### 9.4 — CloudTrail log file validation
+#### 9.4 — CloudTrail log file validation — **answered 2026-08-14, before the stage started**
 
-Control Tower's `aws-controltower-BaselineCloudTrail` is
-expected to have it on already; **verify rather than enable**, because editing the trail is landing-zone
-drift (1a step 5 makes the same distinction: adding a metric filter to the log group is not an edit to
-the trail). `aws cloudtrail get-trail --name aws-controltower-BaselineCloudTrail` reports
-`LogFileValidationEnabled`.
+**`LogFileValidationEnabled` is `true`** on `aws-controltower-BaselineCloudTrail`, which is an
+**organization** trail with home region `us-west-2`. Measured from the *Identity* account with
+`awsds-infra-identity`, which is worth recording as a second small read-boundary result: a member account
+sees the organization trail's configuration, so this sub-step never needed Management or Log Archive.
+
+**Verify rather than enable** stands as the rule — editing the trail is landing-zone drift (1a step 5 makes
+the same distinction: adding a metric filter to the log group is not an edit to the trail). The re-check is
+the same command as 9.1's, whose third column is this flag. If it ever reads `false`, that is a finding
+about the landing zone and not a task for this step.
 
 #### 9.5 — Verify while executing (iv):
 
-that enabling Object Lock on the Control Tower-managed bucket does
-not raise landing-zone drift. Record the answer.
+that enabling Object Lock on the Control Tower-managed bucket does not raise landing-zone drift — **and,
+since finding 1 makes the write run as `AWSControlTowerExecution`, a second half: whether the setting
+survives a landing-zone update, an account update or a re-enrollment.** Neither half can be closed in the
+sitting that makes the change; record the first as measured and the second as provisional, naming the event
+that settles it — exactly as 1b step 5.1 did for verification (vi).
+
+#### 9.6 — **The wall, and it is AWS's own** (added 2026-08-14, finding 1)
+
+`CTS3PV8`, in the `aws-guardrails-*` document attached to the `Security` OU, is a `Deny` over the three log
+buckets with a **`NotAction`** list and one exemption, `arn:*:iam::*:role/AWSControlTowerExecution`.
+`s3:PutBucketObjectLockConfiguration` is not in the list, so **the write this step asks for is denied to
+`AWS Control Tower Admin`, to the Log Archive account's administrators, and to every other principal in the
+organization.** Read the document before acting — it is one call from the Identity account and 1c's
+`./aws/org-policies.sh` already condenses it by `Sid`.
+
+Three things follow, and the third is the decision:
+
+- **This is not a permissions gap to widen.** The account is administered by the identity the deny is
+  written against; there is no policy edit that fixes this without removing the guardrail.
+- **The one principal that walks through it is `AWSControlTowerExecution`**, which exists in every member
+  account and trusts the management account, so it is assumable from Management by `AWS Control Tower
+  Admin`. 1c measured the shape of the condition key that makes this work: `aws:PrincipalArn` populates
+  with the **role** ARN, not the `assumed-role` session ARN (decision 7's carve-out, proven in both
+  directions), so an `ArnNotLike …:role/AWSControlTowerExecution` test does exempt a session assumed into
+  it.
+- **Using it by hand is a deliberate act and it is decision 9.** AWS reserves that role for Control Tower
+  and it is unscoped in the account; borrowing it writes one permanent setting and hands nothing to anyone.
+  The alternatives are honest and both cost something: leave the trail's *contents* deletable by the Log
+  Archive administrator and record the residual, or stand up a second, project-owned trail with its own
+  locked bucket — which is a new recurring line and a second copy of the same data
+  (`plan/institutional-delta.md` is where that belongs, not here).
+
+**Whatever is decided, the reasoning goes in the log, not only the outcome.** A future reader finding
+Object Lock absent must be able to tell "decided against" from "was never attempted".
 
 
 ### Step 10 — Decide what the AWS Config recorder records — starting by measuring it
@@ -130,7 +216,11 @@ something Control Tower does not offer:
   already limits *global* resources to the home region, which is the one restriction you get for free.
 - **Editing the recorder by hand in a governed account is drift** and is liable to be reset by a
   landing-zone update, an account update or a re-enrollment — the same class of behaviour step 3.8
-  warns about for direct assignments.
+  warns about for direct assignments. **Since 2026-08-13 that is the weaker of two reasons: it is denied.**
+  1c's verification (iii) read `GRCONFIGENABLED` out of every OU's guardrail — `config:PutConfigurationRecorder`,
+  `DeleteConfigurationRecorder`, `StopConfigurationRecorder`, the delivery channel and the retention
+  configuration, all `Deny`, all exempting `arn:*:iam::*:role/AWSControlTowerExecution` and nothing else.
+  So there is no by-hand path to try and fail at; the only door is the same role point 3 below uses.
 - The documented path is a **deployed solution**: a Lambda driven by Control Tower lifecycle events
   (`UpdateLandingZone`, `CreateManagedAccount`, `UpdateManagedAccount`) that re-applies a chosen
   resource-type list through each account's `AWSControlTowerExecution` role. That is a real piece of
@@ -194,7 +284,15 @@ aws configservice describe-delivery-channels --region us-west-2
 ```
 
 An **empty list is the answer, not an error** (Lesson 13): `"ConfigurationRecorders": []` means Control Tower
-left Management unrecorded, a Config rule has nothing to run in, and **decision 8** below applies.
+left Management unrecorded, a Config rule has nothing to run in, and **decision 8** below applies. This is
+**verification (xiii)** — renumbered from (x) on 2026-08-14, because 1c had already used that numeral for a
+different question and the landing-zone numerals are one sequence across 1a-1d.
+
+**And this sub-step is only possible because of what blocks 10.2: Management is exempt from SCPs.** The
+`GRCONFIGENABLED` deny that makes a hand-made recorder impossible in every governed account does not reach
+the management account, so creating one there needs no exemption and borrows no role. The asymmetry is
+worth stating rather than discovering: the account this project keeps out of Terraform is also the only one
+where this particular resource can be made by hand.
 
 **Do not deploy it as an organization Config rule from the Audit delegated administrator** — the obvious
 route, and the one that fails on this particular target. AWS Config does not create the service-linked role
@@ -234,43 +332,63 @@ from there. Without it, a Lake Formation grant to another account produces an AW
 somebody has to accept by hand, and it reappears every time the share is recreated. With it, accounts
 inside the organization receive shares directly.
 
-#### 11.2 — Lake Formation cross-account version 3 or above, set in the Data Governance account
-(`awsds-infra-data`). Versions below 3 cannot grant to an Organization or an OU at all, only to an
-explicit list of account IDs — and this project has three consumers at N=1, one more per business unit
-(D35), with more implied by every `plan/institutional-delta.md` row about scale.
+#### 11.2 — Lake Formation cross-account version — **already satisfied; do not write anything** (measured 2026-08-14)
 
-**Prefer the console for this one, and if you use the CLI, read this first.** The version lives inside
-`DataLakeSettings`, and **`put-data-lake-settings` replaces that whole structure rather than patching
-it** — call it with only `Parameters` set and you have just cleared `DataLakeAdmins`,
-`CreateDatabaseDefaultPermissions` and `CreateTableDefaultPermissions` in the same call. The safe shape
-is get-modify-put:
+Versions below 3 cannot grant to an Organization or an OU at all, only to an explicit list of account IDs —
+and this project has three consumers at N=1, one more per business unit (D35), with more implied by every
+`plan/institutional-delta.md` row about scale. **This step used to set that version. It no longer has to.**
 
-```bash
-aws lakeformation get-data-lake-settings --profile awsds-infra-data > /tmp/lf.json
-# edit DataLakeSettings.Parameters.CROSS_ACCOUNT_VERSION to "3", keep every other key
-aws lakeformation put-data-lake-settings --profile awsds-infra-data --cli-input-json file:///tmp/lf.json
+`aws lakeformation get-data-lake-settings --profile awsds-infra-data --region us-west-2` reads, in an
+account with no lake and no administrator:
+
+```
+Parameters: { "CROSS_ACCOUNT_VERSION": "4", "SET_CONTEXT": "TRUE" }
+DataLakeAdmins: []   CreateDatabaseDefaultPermissions / CreateTableDefaultPermissions: IAM_ALLOWED_PRINCIPALS = ALL
 ```
 
-Today the structure is nearly empty, which is exactly why this is cheap to do now and expensive to do
-after Stage 5 has registered a lake and named its administrators. Note also that changing these settings
-requires being a Lake Formation **data lake administrator** or holding
-`lakeformation:PutDataLakeSettings` outright — the infrastructure user has the latter through
-`InfrastructureAccess`, so no administrator has to be registered first; Stage 5 still creates the real
-one.
+So the requirement is met by the account's default, **verification (v) is answered without acting** — the
+version is above 3 with no lake in the account — and the whole `put-data-lake-settings` hazard below is
+avoided by not making the call. **Record the reading in the log; do not "confirm" it by writing it back.**
 
-**And this is what the step owes Stage 5, because the value set here is the one Stage 5 will silently
-overwrite** (added 2026-08-09). `aws_lakeformation_data_lake_settings` is the Terraform face of the same
-replace-the-whole-structure API, and Stage 5 declares the data lake administrators through it. A resource
-that names `admins` and omits `parameters` **resets `CROSS_ACCOUNT_VERSION` to its default on the first
-apply** — and the failure that follows is INT-11's: the grant succeeds on the producer side and the share
-never arrives on the consumer side, with nothing anywhere reporting an error. So:
+**Why the hazard is still documented, in full:** it does not go away, it moves to Stage 5. The version lives
+inside `DataLakeSettings`, and **`put-data-lake-settings` replaces that whole structure rather than patching
+it** — called with only `Parameters` set, it clears `DataLakeAdmins`, `CreateDatabaseDefaultPermissions` and
+`CreateTableDefaultPermissions` in the same call. The safe shape is always get-modify-put:
 
-- **Write the requirement into `log/stage-01d-org-wide-enablement.md` as an instruction to Stage 5**, not
-  only the value that was set: the Stage 5 resource must carry
-  `parameters = { CROSS_ACCOUNT_VERSION = "3" }` alongside its `admins`.
+```bash
+aws lakeformation get-data-lake-settings --profile awsds-infra-data --region us-west-2 > "$SCRATCH/lf.json"
+# edit DataLakeSettings.Parameters, keep every other key
+aws lakeformation put-data-lake-settings --profile awsds-infra-data --cli-input-json "file://$SCRATCH/lf.json"
+```
+
+Note also that changing these settings requires being a Lake Formation **data lake administrator** or
+holding `lakeformation:PutDataLakeSettings` outright — the infrastructure user has the latter through
+`InfrastructureAccess`, so no administrator has to be registered first; Stage 5 still creates the real one.
+
+**And this is what the step owes Stage 5 — which is now the *only* thing 11.2 produces, and it grew**
+(added 2026-08-09, sharpened 2026-08-14). `aws_lakeformation_data_lake_settings` is the Terraform face of the
+same replace-the-whole-structure API, and Stage 5 declares the data lake administrators through it. A
+resource that names `admins` and omits `parameters` **resets both parameters on the first apply** — and the
+failure that follows is INT-11's: the grant succeeds on the producer side and the share never arrives on the
+consumer side, with nothing anywhere reporting an error. **The setting nobody chose is now the setting most
+likely to be lost**, precisely because it was never typed by anyone. So:
+
+- **Write the requirement into `log/stage-01d-org-wide-enablement.md` as an instruction to Stage 5**, with
+  the values as *read*, not as remembered: the Stage 5 resource must carry
+  `parameters = { CROSS_ACCOUNT_VERSION = "4", SET_CONTEXT = "TRUE" }` alongside its `admins` — **both
+  keys**, and re-read immediately before writing it, since an account default can move again between now
+  and then.
 - **Stage 5 step 7 repeats the check from 11.3 after its first apply**, not only before it. Verifying a
   setting before the thing that overwrites it runs is the same class of mistake as verifying with a
   command that returns empty either way.
+- **One new thing to test there rather than assume, and 1c is why.** Cross-account version 4 vends
+  credentials through **`sts:SetContext`**, and `awsds-org-rcp-perimeter`'s
+  `EnforceOrgIdentitiesOnRoleAssumption` names exactly that action. In-organization consumers populate
+  `aws:PrincipalOrgID` and the AWS-service path is carved out, so the expected answer is "no effect" — but
+  that is the same reasoning that was expected to hold for `AssumeRoleWithSAML` and cost every SSO user
+  access to six accounts (Lesson 24). **If the first cross-account grant fails, the RCP is the first
+  suspect**, and no `sts:` action is added to that document without re-reading `CT.STS.PV.1`'s exclusion
+  note.
 
 #### 11.3 — How to verify it, because the obvious command does not
 `aws ram get-resource-share-associations` requires an `--association-type` and lists the associations of
@@ -290,6 +408,13 @@ The first is run from Management and must return `ram.amazonaws.com`; the second
 cross-account version of 3 or above back. Confirming a silent-failure mode with a command that is itself
 silent is how INT-11 stays open for a month.
 
+**Both have a before-reading taken on 2026-08-14, so the after-reading has something to differ from.** The
+trusted-access list answers from **Identity**, not only from Management (`awsds-infra-identity`), and holds
+the **seven** principals of `INV-09` — `access-analyzer`, `cloudtrail`, `config`, `controltower`, `iam`,
+`member.org.stacksets.cloudformation`, `sso` — with **`ram.amazonaws.com` absent**. So 11.1 has real work,
+and its success is one name appearing in a list of seven that becomes eight; restate `INV-09` when it lands.
+The second reads `4` already (11.2).
+
 #### 11.4 — Not here, and deliberately: the third INT-11 item
 
 The
@@ -305,12 +430,81 @@ settled here; it is *executed* in Stage 5 step 7.
 It is organization-level and manual, like everything else in this stage. Stage 5 step 7 assumes it and will fail confusingly without it: the grant appears to succeed
 on the producer side and the resource simply never shows up on the consumer side.
 
-#### 11.6 — Verify while executing (v):
+#### 11.6 — Verify while executing (v): **answered 2026-08-14, before execution**
 
-that the Lake Formation cross-account version can be raised to 3+
-in an account that has no lake in it yet. If it cannot, that setting moves into Stage 5 and the rest of
-this step stays here.
+The question was whether the Lake Formation cross-account version can be *raised* to 3+ in an account with
+no lake in it. It reads **4** in Data Governance with no lake, no administrator and nothing registered — so
+the version is not a thing this account has to be argued into, and the contingency this sub-step carried
+("if it cannot, the setting moves into Stage 5") is void. What moves into Stage 5 instead is the *defence*
+of a value nobody set: 11.2's last bullet.
 
+### Step 12 — The Region ceiling on `Security`, the OU 7.7 never targeted (open question 16)
+
+**Added 2026-08-14.** 1c step 7.7 enabled `CT.MULTISERVICE.PV.1` (allow `us-west-2`) on the five OUs its own
+order named — `Policy Test`, `Workloads`, `Data`, `Interactive`, `Identity` — and deliberately not on
+`Sandboxes` (D37, which is governed by inheritance from `Interactive`). **`Security` was simply outside the
+step.** It is not drift and not a regression; it is a gap that was inherited rather than decided, and
+`Log Archive` and `Audit` are consequently **the only governed accounts where a resource may be created in
+any Region** — the two accounts holding the immutable copy of the trail and the organization's findings.
+
+#### 12.1 — Why this is not a copy of 7.7
+
+- **`Security` is Control Tower's own foundational OU**, its guardrail is AWS's rather than this project's
+  (11 statements, not 8), and **Control Tower places resources in those accounts itself.** A Region ceiling
+  there constrains a service that manages the landing zone, not a data scientist.
+- **So read the exemptions first, against the roles that actually operate there.** Verification (vii)
+  demonstrates the method and it is the same one: enable nowhere, read `describe-policy` from Identity, and
+  check the resulting document's `NotAction` list and its Control Tower role exemptions. **Bind to the
+  `Sid`, never to the document id or name** (Lesson 23) — 7.7 measured Control Tower packing the same
+  control into a *different* document on `Identity` and `Data` than on the other three OUs.
+- **What is in those accounts today is small and known**: the organization trail's bucket and the access-log
+  bucket in Log Archive, the Config aggregator and `awsds-org-external-access` in Audit — all `us-west-2`.
+  What arrives later is Stage 4's GuardDuty, Stage 5's Security Hub and Stage 11's Macie, each delegated to
+  Audit and each `us-west-2` in this design. **The ceiling is therefore free today and is a constraint on
+  those three stages**, which is the honest way to state it.
+
+#### 12.2 — The measurement problem, which is new here and has to be planned for
+
+**The battery cannot reach these two accounts.** `./aws/probes/scp-battery.sh` maps every probe's account
+token to a **CLI profile**, and the infrastructure user has no assignment in Log Archive or Audit by design
+(`ORGANIZATION.md`), so there is no profile to map. The alternatives, in order of preference:
+
+1. **By hand in CloudShell**, signed in as `AWS Control Tower Admin` → `AWSAdministratorAccess`, in each of
+   the two accounts: one call that must now fail in `us-east-1` and one that must still succeed in
+   `us-west-2` — `ec2 create-key-pair --dry-run` is 7.7's own choice, because it authorizes with nothing but
+   a name and needs no AMI lookup (the first version of that probe resolved an AMI through `ssm:GetParameter`
+   *in the denied region* and measured itself). Read the **wording** of the failure — *"explicit deny in a
+   service control policy"* — and the policy id it names, never the exit code.
+2. **The document read from Identity**, which is not optional and not a substitute: it is what proves the
+   exemption list, and it is the only instrument for anything a probe cannot produce a principal for
+   (Lesson 22).
+
+**Do not create a profile for these accounts to make the battery work.** That is an SSO assignment into the
+two most sensitive member accounts, bought to save two manual commands, and it would outlive the reason for
+it.
+
+#### 12.3 — The two root-user controls belong to the same decision
+
+7.7 also enabled `AWS-GR_RESTRICT_ROOT_USER` and `AWS-GR_RESTRICT_ROOT_USER_ACCESS_KEYS` on those same five
+OUs and not on `Security`. The argument that made them nearly free elsewhere holds identically here — member
+accounts hold no root credentials at all since 1a 6.4, so the population is empty and the one live side
+effect is `sts:AssumeRoot` — **which is exactly why the `ExemptAssumeRoot` parameter must be set if they are
+enabled, and why no probe can confirm it**: every principal available here is an Identity Center role and
+`ArnLike …:root` never matches one. Read `GRRESTRICTROOTUSER` back out of the attached document and check
+that it ANDs `Null: aws:AssumedRoot = true` (Lesson 22). The access-key control carries no exemption and must
+not (D16).
+
+#### 12.4 — Reversible, and known to be
+
+Disabling a control removes it: 7.7 disabled `CT.MULTISERVICE.PV.1` on `Sandboxes` and the document
+`p-h7lc62d0` ceased to exist with it. So decision 10 is a decision to be *taken*, not one to be feared —
+the cost of getting it wrong is one disable, plus whatever ran in the meantime.
+
+#### 12.5 — Verify while executing (xiv):
+
+that a Region control on `Security` denies `us-east-1` and leaves `us-west-2` working **in both Log Archive
+and Audit**, and that Control Tower's own operations in those accounts are unaffected — the second half is
+answered by the exemption reading of 12.1, not by a probe, and re-checked at the next landing-zone update.
 
 ---
 
@@ -318,25 +512,40 @@ this step stays here.
 
 Each one is written so that its output differs between working and broken (Lesson 13):
 
-- **The audit trail survives its own administrator:** resolve the real bucket name first — the `*` in
-  `aws-controltower-logs-*` is this document's shorthand, not a glob the CLI expands, and pasting it returns
-  a bucket-not-found that reads like a failed lock:
+- **The audit trail survives its own administrator — or the log says why it does not.** Resolve the real
+  bucket name first; the `*` below is this document's shorthand, not a glob the CLI expands, and the prefix
+  this file carried until 2026-08-14 (`aws-controltower-logs-`) matches **nothing** in this landing zone,
+  returning a `None` that reads like a failed lock:
 
   ```bash
-  BUCKET=$(aws s3api list-buckets --query "Buckets[?starts_with(Name,'aws-controltower-logs-')].Name | [0]" --output text)
+  BUCKET=$(aws s3api list-buckets --query "Buckets[?starts_with(Name,'aws-controltower-cloudtrail-logs-')].Name | [0]" --output text)
   aws s3api get-object-lock-configuration --bucket "$BUCKET"
   ```
 
   Run it **inside Log Archive** — CloudShell under `AWS Control Tower Admin` → `AWSAdministratorAccess`, per
   "Who executes what"; the infrastructure user has no assignment there and no profile to pass. It must
   report `COMPLIANCE`, with a retention shorter than the bucket's lifecycle expiration
-  (`aws s3api get-bucket-lifecycle-configuration --bucket "$BUCKET"`).
+  (`aws s3api get-bucket-lifecycle-configuration --bucket "$BUCKET"`). **If decision 9 went the other way,
+  this deliverable is the log entry instead**: which alternative was chosen, and the residual it leaves —
+  `CTS3PV8` permits `s3:DeleteObjectVersion` to the account's administrator, and that sentence is the
+  residual.
 - **Stage 5's shares have somewhere to land:**
-  `aws organizations list-aws-service-access-for-organization` (from Management) lists `ram.amazonaws.com`,
-  and `aws lakeformation get-data-lake-settings --profile awsds-infra-data` reports a cross-account version
-  of 3 or above. *(Note what this deliverable used to say:
+  `aws organizations list-aws-service-access-for-organization` lists `ram.amazonaws.com` — **eight
+  principals where the before-reading had seven** — and
+  `aws lakeformation get-data-lake-settings --profile awsds-infra-data` reports a cross-account version of 3
+  or above, which it **already did before the stage started** (4, with `SET_CONTEXT: TRUE`). The half of
+  this deliverable that can still fail is therefore the RAM half; the Lake Formation half is a reading whose
+  only failure mode is finding it *changed*. *(Note what this deliverable used to say:
   `aws ram get-resource-share-associations` from the Data Governance profile, which returns an empty list
   both when sharing is enabled and when it is not.)*
+- **Stage 5 is told, in writing, what to preserve:** the log carries
+  `parameters = { CROSS_ACCOUNT_VERSION = "4", SET_CONTEXT = "TRUE" }` as an instruction to Stage 5's
+  `aws_lakeformation_data_lake_settings`, with both keys. A value nobody typed is a value nobody defends,
+  and INT-11's failure mode is silent on both sides.
+- **The Region ceiling on `Security` is decided rather than inherited** (step 12): either the control is
+  enabled and one command in each of Log Archive and Audit shows `us-east-1` denied while `us-west-2` works,
+  or decision 10 declined it and the log says so. **The failure this deliverable prevents is the stage
+  closing with the question still merely written down** — which is how open question 16 got here.
 - **The Config number is measured and written down**, not estimated — both numbers from 10.3, in
   `log/stage-01d-org-wide-enablement.md` (Lesson 6).
 - **Something other than a person's memory reports whether the break-glass root has an access key** (10.4,
@@ -357,12 +566,16 @@ Each one is written so that its output differs between working and broken (Lesso
 | 3 | **The Object Lock retention period** | 9.3 | **No — compliance mode cannot be shortened and Object Lock cannot be disabled** |
 | 4 | Whether the Config recorder is left alone after the measurement | 10.3 | Yes |
 | **8** | **Whether a Config recorder is turned on in Management for the sake of one rule** — ~USD 0.50-1/month for the same shape of recorder every other governed account already carries, plus a hand-made resource in the account this project keeps out of Terraform — **or the invariant is left to 1a's alarm plus the `get-account-summary` check**, which is an intention rather than a control (Lesson 5) | 10.4 | Yes |
+| **9** | **Whether step 9 is performed at all, and by which principal.** `CTS3PV8` exempts `AWSControlTowerExecution` and nobody else, so the choices are: **borrow that role from Management** (one permanent setting, an unscoped role used by hand, and a setting whose survival across a landing-zone update is unknown); **decline and record the residual** (the Log Archive administrator can delete log object versions, which is the exposure the step exists to close); or **a second, project-owned trail with its own locked bucket** (a new recurring line and a second copy of the same data). **Decision 3 only exists if this one says yes** | 9.6 | The *choice* is; **its consequence is not** — see decision 3 |
+| **10** | **Whether `Security` gets the Region ceiling, and whether the two root-user controls go with it.** Free either way; the trade is a constraint on Stages 4, 5 and 11 (all `us-west-2` in this design) against being the only governed accounts with no Region ceiling. **If yes, `ExemptAssumeRoot` is not optional** and only a document read can confirm it | 12 | Yes — disabling a control deletes its document, measured on `Sandboxes` in 7.7 |
 
 *The numbering is the landing zone's: decision 2 belongs to
 [Stage 1b](stage-01b-identity-and-controls.md), and 1, 5, 6 and 7 to
 [Stage 1c](stage-01c-preventive-policies.md). **Decision 8 was added on 2026-08-11**, by the review that
-found D16 assigning `iam-root-access-key-check` to a step that never carried it — it continues the landing
-zone's sequence rather than renumbering anything.*
+found D16 assigning `iam-root-access-key-check` to a step that never carried it; **9 and 10 on 2026-08-14**,
+by this stage's revision against 1c's findings. Each continues the landing zone's sequence rather than
+renumbering anything. **Blocking questions for the user: still none** — 9 and 10 are both taken while
+executing, with the readings that inform them listed in the step.*
 
 ## Risks
 
@@ -370,9 +583,21 @@ zone's sequence rather than renumbering anything.*
   retention chosen too long makes the Log Archive bucket an archive nobody chose to pay for; one longer than
   the lifecycle expiration makes the landing zone's own deletions fail. This is the one permanent act in
   the stage, and it is the reason 9.3 is a decision row rather than an instruction.
+- **Step 9 now runs, if it runs, as `AWSControlTowerExecution` — the most privileged role in the account,
+  borrowed by hand.** Two risks ride along and they are different from each other: the *use* (an unscoped
+  session in the account holding the audit trail, which is why the log records the exact call), and the
+  *durability* (a manual change to a Control Tower-managed bucket, made through Control Tower's own role, may
+  be re-applied away by a landing-zone update — verification (iv)'s second half).
 - **Step 11 fails silently, and it fails at Stage 5 rather than here.** Nothing in this stage reports that
   org-wide sharing is missing; the Lake Formation grant appears to succeed on the producer side and the
-  resource never appears on the consumer side. 11.6's verification is what turns that into a result.
+  resource never appears on the consumer side. 11.3's before/after readings are what turn that into a
+  result — and since 11.2 now sets nothing, **the risk moved to Stage 5's first apply**, where a resource
+  omitting `parameters` resets a version nobody chose and reintroduces exactly this failure.
+- **Step 12 constrains the two accounts that no probe here can reach.** There is no CLI profile in Log
+  Archive or Audit, so the battery cannot regress-test whatever step 12 attaches, ever. Anything enabled
+  there is measured by hand at the time and re-read from the document afterwards; there is no automated
+  safety net behind it, which is a reason to keep what goes on that OU minimal rather than a reason to avoid
+  it.
 - **Nothing here is torn down between sessions** — everything is `[P]` (D11).
 
 ## Verifications to answer while executing
@@ -380,11 +605,12 @@ zone's sequence rather than renumbering anything.*
 Record every answer in `log/stage-01d-org-wide-enablement.md`, including the ones that come out fine.
 **The numerals are the landing zone's**, so they are not contiguous here.
 
-| # | Question | Step |
-|---|---|---|
-| iv | Does enabling Object Lock on the Control Tower-managed bucket raise landing-zone drift? | 9.5 |
-| v | Can the Lake Formation cross-account version be raised to 3+ with no lake in the account? | 11.6 |
-| x | **Does the Control Tower landing zone record the Management account at all?** `plan/cost-model.md` assumes it does not and asks Stage 1 to confirm; 10.4 is the first step that has to know, and the Config row's account count is wrong by one either way | 10.4 |
+| # | Question | Step | State |
+|---|---|---|---|
+| iv | Does enabling Object Lock on the Control Tower-managed bucket raise landing-zone drift — **and does it survive a landing-zone update, an account update or a re-enrollment?** | 9.5 | Open. The second half was added 2026-08-14 and **cannot be closed in-session**: record it provisionally and name the event that settles it, as 1b 5.1 did for (vi) |
+| v | Can the Lake Formation cross-account version be raised to 3+ with no lake in the account? | 11.6 | **Answered 2026-08-14, before execution: the question is void.** It reads **4** already, with `SET_CONTEXT: TRUE`, in an account with no lake and no administrator |
+| **xiii** | **Does the Control Tower landing zone record the Management account at all?** `plan/cost-model.md` assumes it does not and asks Stage 1 to confirm; 10.4 is the first step that has to know, and the Config row's account count is wrong by one either way | 10.4 | Open. **Renumbered from (x) on 2026-08-14** — 1c had already answered a different question under that numeral, and the landing-zone numerals are one sequence across 1a-1d |
+| **xiv** | Does a Region control on `Security` deny `us-east-1` and leave `us-west-2` working in **both** Log Archive and Audit, without touching Control Tower's own operations there? | 12.5 | Open, and new. **Measured by hand** — the battery has no profile for either account |
 
 ---
 

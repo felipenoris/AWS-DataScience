@@ -236,23 +236,31 @@ The `§` numbers inside `plan/` files are historical anchors, not addresses.
   it without reading that control's exclusion note.** Lesson 24 is the general form; the battery now
   records a lockout instead of aborting on it, and `classify` no longer reads a declarative policy's
   message *echoed by a successful read* as a deny.
-- **Stage 1a is done but for the `Staging` vend; Stage 1b is DONE; Stage 1c SITTING A IS DONE** — the `log/` files are
-  authoritative. 1a: Control Tower enabled (`us-west-2`), budget
-  set, `Development`, `Sandbox Account 1`, `Production`, `Data Governance`, `Policy Canary` and `Identity`
-  vended, centralized root access on. Break-glass built and **tested 2026-08-09 on both channels** — the
-  thing 1c step 7 may not start without, and it is done.
+- **Stage 1a is done but for the `Staging` vend; 1b and 1c are DONE. Stage 1d is the landing zone's last
+  stage and is ready to start** — the `log/` files are authoritative. 1a: Control Tower enabled
+  (`us-west-2`), budget set, `Development`, `Sandbox Account 1`, `Production`, `Data Governance`,
+  `Policy Canary` and `Identity` vended, centralized root access on, break-glass **tested 2026-08-09 on both
+  channels**.
+- **1d's roteiro was revised 2026-08-14 against 1c and four fresh readings, and three of its four steps
+  changed.** (a) **Step 9 is blocked as written**: Control Tower's own `CTS3PV8` on the `Security` OU is a
+  `Deny`+`NotAction` over the log buckets exempting **`AWSControlTowerExecution` alone**, and
+  `s3:PutBucketObjectLockConfiguration` is not in the list — so CT Admin cannot enable Object Lock, which is
+  **decision 9**. The step survives because the same `NotAction` **permits `s3:DeleteObjectVersion`**: AWS
+  protects the bucket's configuration and leaves its contents deletable. (b) **The bucket is
+  `aws-controltower-cloudtrail-logs-*`**, not `aws-controltower-logs-*`; the old prefix matches nothing and
+  returns a `None` that reads like a failed lock. CloudTrail log-file validation is **already `true`**, read
+  from Identity. (c) **11.2 is already satisfied** — `CROSS_ACCOUNT_VERSION` reads **4** with
+  `SET_CONTEXT: TRUE` in Data Governance with no lake, so verification (v) is answered, no
+  `put-data-lake-settings` is made, and what survives is the instruction to Stage 5 to carry **both** keys.
+  `ram.amazonaws.com` is confirmed **absent**, so 11.1 has real work. (d) **New step 12**: the Region ceiling
+  on `Security` (open question 16, decision 10) — and the battery can never test it, since neither Log
+  Archive nor Audit has a CLI profile and creating one is refused.
 - **1b's residue, all of it:** the six SSO profiles resolve (five `awsds-infra-*` →
   `AWSReservedSSO_InfrastructureAccess_*`, `awsds-policy-canary` → `AWSReservedSSO_AWSAdministratorAccess_*`);
   **only `Policy Canary` still carries an Account Factory direct assignment**, permanently; the org IAM
   Access Analyzer lives in **Audit** (`ORGANIZATION` zone of trust) after the console wizard first put it in
   the wrong account. **(vi) is open by construction** — whether 5.1's removals stick is re-checked at the
   next landing-zone update, account update or re-enrollment, not now.
-- **1c was revised 2026-08-13 and four things were settled**, so it starts without a question: `Interactive`
-  gets one deny (`sagemaker:CreateNotebookInstance`, `CreatePresignedNotebookInstanceUrl`) — decision 1;
-  the BPA deny **carries a carve-out** for `InfrastructureAccess`, the design's one wildcard-account ARN —
-  decision 7; the Region deny is **`CT.MULTISERVICE.PV.1` per OU**, never `GRREGIONDENY` — decision 6; and
-  `Environment=sandbox` is **one shared value** at any N. Only decision 5 (tag-forcing SCP scope) is left,
-  and it is made while executing.
 - **Subnets anchor on the AZ `zone_id`, never on list position** — 1b step 6, 2026-08-12. Every measured
   account returns the *same* mapping (`us-west-2a` → `usw2-az2`; the names are not in ID order), so position
   would work today; it is forbidden because an unvended account gets its own mapping and the failure is
@@ -290,69 +298,52 @@ The `§` numbers inside `plan/` files are historical anchors, not addresses.
   [`plan/architecture.md`](plan/architecture.md). `Identity` has an OU of its own; `Sandboxes` is nested
   under `Interactive` and carries no policy set of its own. **Depth is 2 — Stage 2's OU `for_each` must
   recurse**, or every Sandbox account is invisible to it.
-- **1c's preflight (7.0) is CLOSED, from Identity and then from CloudShell on Management, and it
-  contradicted four things this file used to assert.** (a) **`Identity` carries Control Tower's standard
-  guardrail and the same 9 `AWS-GR_*` controls as every ordinary OU** — it is registered; `Security` adds
-  exactly three (`CT.S3.PV.7`, `CT.S3.PV.8`, `CT.SNS.PV.1`), matching its three extra SCP statements, **so
-  7.6's `Identity`/`Security` diff is done on both halves**. `Security` expresses them in the
-  `controlcatalog:::control/<opaque>` namespace while every other OU uses `controltower:…/AWS-GR_*` — same
-  controls, two id schemes. (b) **Control Tower denies the Config recorder and *nothing* about CloudTrail**
-  — the CloudTrail deny is **skipped by decision** (user: the trail is organization-level in Management,
-  which is SCP-exempt), not pending. (c) **`Sandboxes` has no guardrail SCP and zero enabled controls, and
-  `list-enabled-controls` returned *empty rather than erroring*** — which under the plan's own discriminator
-  means an addressable target, but **nothing errored anywhere in the run, so the discriminator was never
-  exercised** — 7.7's `enable-control` is what answered it.
-  (d) **Service Quotas publishes no policy quota for `organizations`**, so the size budget is the
-  documentation's number, and the count fits either way (4 policies on the root, 4 per OU). **Verification
-  (x) is answered yes** — every Organizations *policy* read answers from Identity; only `controltower
-  list-enabled-controls` needs Management, where a member account gets *"you must create a landing zone
-  first"*.
-- **7.2 and 7.4 step 1 are done.** All four policy types read `ENABLED` on the root, and enabling RCP made
-  AWS attach **`RCPFullAWSAccess` to every node** on its own (INV-11). Account-level BPA reads all four
-  flags `true` in **all nine accounts** — the six with a profile are re-measurable with
-  `./aws/account-bpa.sh`; Management, Log Archive and Audit were set and console-verified by the user and
-  **this laptop cannot read them**.
-- **7.5 is attached and exercised: `awsds-org-scp-baseline` (`p-1fp032g8`) and `awsds-org-scp-perimeter`
-  (`p-4vs49ztw`) on the root.** The battery ran in three phases and the canary was emptied afterwards
-  ([`plan/runbooks/scp-battery.md`](plan/runbooks/scp-battery.md) is the executable form, re-run at every
-  amendment). **Decision 7 is measured, not assumed** — `InfrastructureAccess` still sets account BPA with
-  the deny attached, so `aws:PrincipalArn` names the `role/aws-reserved/...` form and not the
-  `assumed-role` one. **`aws:ResourceOrgID` populates for S3 *and* ECR**, proven by the inverted document.
-  **Two statements are attached but unexercised, both because the service validates input before
-  authorizing**: `ec2:ModifySnapshotAttribute` (no fake snapshot id reaches authorization, `--dry-run`
-  included; its statement is unconditional and its AMI sibling *was* denied) and `datazone:CreateDomain`
-  — **that one is [Stage 6 step 0](plan/stages/stage-06-unified-studio.md)**, because `ForAllValues:` over a
-  key that does not populate evaluates *true* and the untested failure is the deny reaching `Data` too.
+- **What 7.0's preflight established that still governs work.** **`Identity` is a registered OU** with the
+  same 9 `AWS-GR_*` controls as every ordinary one; **`Security` adds exactly three** (`CT.S3.PV.7`,
+  `CT.S3.PV.8`, `CT.SNS.PV.1`) and names them in the `controlcatalog:::control/<opaque>` namespace while
+  every other OU uses `controltower:…/AWS-GR_*` — same controls, two id schemes. **Control Tower denies the
+  Config recorder** (`GRCONFIGENABLED`, exempting `AWSControlTowerExecution` alone — which is why Stage 1d
+  10.4 is possible only in SCP-exempt Management) **and *nothing* about CloudTrail**, the CloudTrail deny
+  being **skipped by decision**. **Service Quotas publishes no policy quota for `organizations`**, so the
+  size budget is the documentation's number and the count fits either way. Account-level BPA reads all four
+  flags `true` in **all nine accounts** — `./aws/account-bpa.sh` re-measures the six with a profile;
+  Management, Log Archive and Audit are console-verified and **this laptop cannot read them**.
+- **The root set (7.5) is attached and exercised, and three of its measurements outlive the stage.**
+  **Decision 7 is measured, not assumed** — `aws:PrincipalArn` names the `role/aws-reserved/...` form and
+  not the `assumed-role` one, which is also what makes Stage 1d 9.6's `AWSControlTowerExecution` exemption
+  work. **`aws:ResourceOrgID` populates for S3 *and* ECR**, proven by an inverted document. **Two statements
+  are attached but unexercised**, both because the service validates input before authorizing:
+  `ec2:ModifySnapshotAttribute` (its AMI sibling *was* denied) and `datazone:CreateDomain` — **that one is
+  [Stage 6 step 0](plan/stages/stage-06-unified-studio.md)**, because `ForAllValues:` over a key that does
+  not populate evaluates *true* and the untested failure is the deny reaching `Data` too.
 - **The SSO token expires faster than a battery does** — it died twice mid-run, and both times every probe
   came back as a non-answer that reads like a deny. **Check the token immediately before each block of
   probes**, and read the error *wording* (`explicit deny in a service control policy`), never the exit code.
-- **7.6 IS DONE: one document per OU on `Workloads`, `Data`, `Interactive` and `Identity`, each exercised in
-  that OU's own account.** Verification (viii) answered (an SMUS domain is `datazone:*`, so `Data`'s
-  `sagemaker:Create*` wildcard stands; `Workloads` is enumerated because Staging and Production legitimately
-  call `CreateModel`/`CreateEndpoint`). **Decision 1 costs no feature, measured:** `CreateNotebookInstance`
-  denied while `CreateSpace` and `datazone:ListDomains` still work in Development and Sandbox. **`Sandboxes`
-  is governed by inheritance** — verification (xi)'s SCP half.
-  Untested and recorded so: `s3:DeleteBucket` (validated before authorization) and the **positive** half of
-  the `Data` crawler carve-out, which needs Stage 5's **`awsds-data-catalog-maintenance`** role.
+- **The per-OU set (7.6, amended by 7.6a) is attached and exercised in each OU's own account.**
+  Verification (viii) answered (an SMUS domain is `datazone:*`, so `Data`'s `sagemaker:Create*` wildcard
+  stands; `Workloads` is enumerated because Staging and Production legitimately call
+  `CreateModel`/`CreateEndpoint`). **Decision 1 costs no feature, measured:** `CreateNotebookInstance` denied
+  while `CreateSpace` and `datazone:ListDomains` still work. **`Sandboxes` is governed by inheritance.**
+  Three consequences are *stated* rather than open: **Athena is allowed in `Data`** on purpose (Stage 5's
+  Iceberg maintenance), Stage 11's to detect; an ASG launches through a service-linked role and no SCP
+  reaches it; and **`guardduty:UpdateDetector` blocks Stage 11 step 4 in Audit** by design. Untested and
+  recorded so: `s3:DeleteBucket`, and the **positive** half of the `Data` crawler carve-out, which needs
+  Stage 5's **`awsds-data-catalog-maintenance`** role.
 - **The denial message names the policy id**, so attribution needs no CloudTrail — **but AWS names only one
   matching policy**, which is how a document sits attached and unexercised (Lesson 20).
-- **7.5a and 7.6a are uploaded and exercised** (2026-08-13): `baseline` gained `DenyImageAndSnapshotExport`
-  (8 statements) and 5 GuardDuty actions — it had named the *deprecated* `…FromMasterAccount` and not the
-  live `…FromAdministratorAccount`; `Data`/`Identity` gained the four EC2 launch doors (`RunInstances` was
-  one of several) and the D27 service guard. **`CreateFleet` and `RequestSpotInstances` denied in both
-  accounts; the three GuardDuty probes and all four export actions denied on the canary.** Three things are
-  now *stated* rather than open: **Athena is allowed in `Data`** on purpose (Stage 5's Iceberg maintenance),
-  Stage 11's to detect; an ASG launches through a service-linked role and no SCP reaches it; and
-  **`guardduty:UpdateDetector` blocks Stage 11 step 4 in Audit** by design, procedure written in three places.
 - **The battery is a script: `./aws/probes/scp-battery.sh`** (2026-08-13), probes in `probes/probes.sh`, phases
-  `root`/`ou`/`region`. It read-backs deployed policies against `policies/` first, aborts on a dead SSO
-  session, and **never attaches** — that stays a human act on Management. Full run today: **46 as expected,
-  0 unexpected, 0 untested**. Every probe declares a mandatory `safety` (`ro`/`dryrun`/`blocked`/`creates`);
+  `root`/`ou`/`region`/`tags`/`rcp`/`decl`. It read-backs deployed policies against `policies/` first
+  (all four types — reading only `SERVICE_CONTROL_POLICY` reported three of them as absent both before and
+  after attachment), aborts on a dead SSO session, and **never attaches** — that stays a human act on
+  Management. Last full run: **93 as expected, 0 unexpected, 0 untested**. It has **no reach into Log Archive
+  or Audit** and never will: those accounts hold no profile, which is what Stage 1d step 12 has to plan
+  around. Every probe declares a mandatory `safety` (`ro`/`dryrun`/`blocked`/`creates`);
   the **three `creates` run in `Policy Canary` and nowhere else**, enforced by the driver, so the whole `ou`
   phase cannot create anything in a real account even with the ceiling removed.
 - **7.7 IS DONE. `CT.MULTISERVICE.PV.1` on five OUs and the two root-user controls on the same five**
   (`Policy Test`, `Workloads`, `Data`, `Interactive`, `Identity`) — **not `Sandboxes`, by the rule below;
-  not `Security`, which was never a target, so `Log Archive` and `Audit` have no Region ceiling.** Region
+  not `Security`, which was never a target, so `Log Archive` and `Audit` have no Region ceiling and that is
+  now Stage 1d step 12's decision.** Region
   half measured 61/61 by the battery. **Verification (vii) answered** from the attached document (86
   `NotAction` entries, none of ours) — and it **falsified a plan prediction: `ecr-public:*` is exempt**, so
   `DenyEcrPublicEntirely` is the only thing denying it. `ssm:GetParameter` *is* denied in `us-east-1`.
@@ -388,9 +379,9 @@ The `§` numbers inside `plan/` files are historical anchors, not addresses.
 - **All thirty-six decisions are closed** ([`plan/decisions/INDEX.md`](plan/decisions/INDEX.md)). The four
   governing what happens next: **D32** (`SSOUserEmail`), **D33**/**D34** (who vends), **D35** (`Sandbox` is
   one per business unit; every other account is exactly one).
-- **The landing zone's second half is three stages**: **1b** (done), **1c** (step 7, the only irreversible
-  one, in two sittings), **1d** (steps 9-11, independent of each other, and not blocked on 1c — a short
-  session can take 1d first). **1c's `log/` file exists and carries 7.0; 1d still has none.**
+- **The landing zone's second half is three stages, and only 1d is left**: **1b** (done), **1c** (done),
+  **1d** (steps 9, 10, 11 and the new 12, independent of each other and doable in any order).
+  **1d has no `log/` file yet** — the user creates it from an existing header.
 - **The identity seam, settled 2026-08-09 by review** (`plan/conventions.md`): **people** — users, groups,
   memberships — stay in the directory; **entitlements** — permission sets, boundaries, group→account
   assignments — are Terraform. So **1b creates one permission set and specifies seven**; the other six are
@@ -399,7 +390,9 @@ The `§` numbers inside `plan/` files are historical anchors, not addresses.
 - **Still needed from the user: one thing, and it blocks Stage 13 alone** — **the domain name** (D15
   phase 2). Everything the landing zone was waiting on is settled.
 - **No public DNS before Stage 13** (D15); internal names are `*.internal` off an internal CA (D36, INT-19).
-- **Settle earliest:** **INT-11** (fails *silently*) and **INT-13** (no convenience-preserving fallback).
+- **Settle earliest:** **INT-11** — half of it is measured already (LF cross-account reads **4**), so what
+  is left is 1d 11.1's RAM enablement plus **defending a value nobody set** against Stage 5's first apply —
+  and **INT-13** (no convenience-preserving fallback).
 
 **Budget: ~2 KB.** State, not reasoning — **a bullet here that explains *why*, or that a stage file should
 be carrying, is a stale copy of something that already lives elsewhere.** Re-trim whenever a stage closes.

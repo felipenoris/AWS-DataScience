@@ -165,6 +165,11 @@ started. **The first one is load-bearing against principle 4.**
     accounts before enabling anything, which is exactly the reading verification (vii) already
     demonstrates how to do. **Where it belongs:** Stage 1d, which is the stage that touches the log
     archive (Object Lock, step 9). Not a blocker for 7.8 or for anything before it.
+    **Given a step of its own on 2026-08-14: [Stage 1d step 12](stages/stage-01d-org-wide-enablement.md),
+    decision 10.** What the revision added beyond this paragraph: the two root-user controls belong to the
+    same decision, and **the battery can never regress-test whatever lands there** — there is no CLI profile
+    in Log Archive or Audit and creating one is refused, so the measurement is by hand in CloudShell plus a
+    document read.
 
 ### Blocking Stage 1 — the choices the user has to make, added 2026-08-08 by the pre-Stage-1 review
 
