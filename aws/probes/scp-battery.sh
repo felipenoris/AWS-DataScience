@@ -28,7 +28,10 @@
 # THE THREE THINGS THIS ENCODES THAT A HAND-RUN BATTERY KEPT GETTING WRONG:
 #   1. A dead SSO session makes every probe come back looking exactly like a deny. It
 #      happened twice in one sitting. So the session is checked per account per phase, and
-#      a non-answer ABORTS the run instead of being recorded (exit 2).
+#      a non-answer ABORTS the run instead of being recorded (exit 2). But ONLY an expired
+#      token aborts: credentials can also fail to vend because the ceiling denied the
+#      sign-in, and that is the most serious finding this battery can make rather than a
+#      reason to stop - so ensure_session reads the wording too (Lesson 24).
 #   2. The outcome is read from the error WORDING, never from the exit code - and an
 #      explicit-deny message names the policy id, which is the attribution.
 #   3. "The service validates before authorizing" is a property of the ACTION, not of the
@@ -62,6 +65,10 @@ RESULTS="$TMP/results"
 : >"$RESULTS"
 CHECKED="$TMP/checked"
 : >"$CHECKED"
+# Accounts whose credentials would not vend, per phase. Recorded once and then remembered, so
+# the breach is reported once and the probes behind it are marked untested rather than retried.
+BROKEN="$TMP/broken"
+: >"$BROKEN"
 trap 'rm -rf "$TMP"' EXIT
 
 N_OK=0; N_BAD=0; N_UNTESTED=0
@@ -88,19 +95,54 @@ profile_for() {
   esac
 }
 
+# The one place that decides "this is an expired token, not an answer". Shared by
+# ensure_session and classify on purpose: two copies of this regex would drift, and the
+# direction they drift in is silent - a real deny read as a dead session, or the reverse.
+EXPIRY_RE='SSO session associated with this profile has expired|ExpiredToken|InvalidGrantException|Error loading SSO Token|Unable to locate credentials|security token included in the request is (expired|invalid)'
+
 # The session is checked once per account per phase - "immediately before each block of
 # probes", which is what the runbook asks for and what the two mid-battery expiries taught.
+#
+# WHY THIS READS THE WORDING INSTEAD OF THE EXIT CODE (Lesson 24, 2026-08-14). There are two
+# reasons credentials fail to vend, they are indistinguishable by exit code, and they need
+# opposite handling:
+#   - the SSO token expired. Nothing can be measured, and continuing would record every probe
+#     as a deny. Stop the run - which is what this function did for every failure.
+#   - the ceiling denied the sign-in itself. `awsds-org-rcp-perimeter` did exactly that on
+#     2026-08-14: its STS statement named the actions Identity Center's SAML flow needs, so
+#     `GetRoleCredentials` returned `ForbiddenException ... No access` in all six member
+#     accounts. That is the single most serious finding the battery can produce - and the old
+#     code aborted with "dead SSO session" before recording it, so the six `rcp` floor probes
+#     written to catch it could never run. The defence against the first case swallowed the
+#     second.
+# So: expiry stops the run, anything else is recorded as a floor breach and the run continues
+# to the accounts that still answer. Returns non-zero when the account is unusable, and the
+# caller records the probes it could not run rather than dropping them.
 ensure_session() {
   _acct="$1"; _phase="$2"
   grep -qx "$_phase/$_acct" "$CHECKED" && return 0
+  grep -qx "$_phase/$_acct" "$BROKEN" && return 1
   _p=$(profile_for "$_acct") || die "unknown account token '$_acct' in probes.sh" 64
-  if ! aws sts get-caller-identity --profile "$_p" >/dev/null 2>&1; then
+
+  if _sess=$(aws sts get-caller-identity --profile "$_p" 2>&1); then
+    echo "$_phase/$_acct" >>"$CHECKED"; return 0
+  fi
+
+  if printf '%s' "$_sess" | grep -Eq "$EXPIRY_RE"; then
     die "no usable session for profile $_p.
    Sign in as the infrastructure user and run the battery again:
        aws sso login --sso-session awsds
    Nothing was recorded for this phase - a dead session makes every probe read like a deny." 2
   fi
-  echo "$_phase/$_acct" >>"$CHECKED"
+
+  # Not the token. The credential path itself is refusing, which is a finding and not a
+  # reason to stop: the other accounts still answer, and which ones do is the diagnosis.
+  _why=$(printf '%s' "$_sess" | grep -Eo '\([A-Za-z]+Exception\)' | head -1 | tr -d '()')
+  [ -n "$_why" ] || _why="no credentials"
+  echo "$_phase/$_acct" >>"$BROKEN"
+  record "$_phase" "$_acct" "allow" "floor: credentials vend at all in $_acct" \
+         "NO-CREDENTIALS" "$_why"
+  return 1
 }
 
 # ------------------------------------------------- real ids (Lesson 21)
@@ -143,7 +185,7 @@ resolve_account_id() {
 classify() { # stdin: command output; $1: regex proving authorization was reached; $2: exit code
   _allowed_re="$1"; _rc="$2"; _out=$(cat)
 
-  if printf '%s' "$_out" | grep -Eq 'SSO session associated with this profile has expired|ExpiredToken|InvalidGrantException|Error loading SSO Token|Unable to locate credentials|security token included in the request is (expired|invalid)'; then
+  if printf '%s' "$_out" | grep -Eq "$EXPIRY_RE"; then
     echo "NOANSWER|"; return
   fi
   if printf '%s' "$_out" | grep -q 'explicit deny in a service control policy'; then
@@ -160,10 +202,16 @@ classify() { # stdin: command output; $1: regex proving authorization was reache
   # is why this project sets a custom one. Matching our own marker first is what distinguishes
   # "the policy fired and delivered our message" from "the policy fired with AWS's default" -
   # and the second is a finding, because the custom message is half the point of the document.
-  if printf '%s' "$_out" | grep -q 'organization EC2 declarative policy'; then
+  # ...with one correction, measured 2026-08-14: the custom message is ALSO echoed back by a
+  # SUCCESSFUL read of a setting the policy manages. `ec2 get-instance-metadata-defaults`
+  # returns rc=0 with "ManagedBy": "declarative-policy" and "ManagedExceptionMessage": <our
+  # text>, so matching the marker alone classified the two decl FLOOR probes - the ones whose
+  # whole job is to prove the read still works - as denials. Enforcement arrives as an API
+  # error; an echo arrives as a result, and the exit code is the only thing separating them.
+  if [ "$_rc" -ne 0 ] && printf '%s' "$_out" | grep -q 'organization EC2 declarative policy'; then
     echo "DENY-DECL|custom-message"; return
   fi
-  if printf '%s' "$_out" | grep -Eq 'denied due to an organizational policy|declarative policy'; then
+  if [ "$_rc" -ne 0 ] && printf '%s' "$_out" | grep -Eq 'denied due to an organizational policy|declarative policy'; then
     echo "DENY-DECL|AWS-default-msg"; return
   fi
   if printf '%s' "$_out" | grep -q 'DryRunOperation'; then
@@ -227,7 +275,13 @@ probe() {
     return 0
   fi
 
-  ensure_session "$_acct" "$_phase"
+  # An account that cannot vend credentials has already been recorded as a floor breach. Its
+  # probes are marked untested rather than skipped: a probe that vanishes from the count reads
+  # as one that passed, and the whole point of this run is that the totals mean something.
+  if ! ensure_session "$_acct" "$_phase"; then
+    record "$_phase" "$_acct" "$_expect" "$_label" "UNTESTED" "no credentials in $_acct"
+    return 0
+  fi
   _p=$(profile_for "$_acct")
 
   # Substitute the placeholders that need a real, existing id.
@@ -280,6 +334,10 @@ verdict() { # $1 expect, $2 outcome -> OK | BAD | NOTE
     allow/DENY-DECL)    echo BAD ;;
     allow/DENY-NOT-SCP) echo BAD ;;
     allow/UNTESTED)     echo NOTE ;;
+    # Credentials that do not vend at all. Against an `allow` expectation this is the floor
+    # itself giving way - the most serious row the battery can print - and it is BAD even
+    # though nothing was measured, because what failed is the measurement's precondition.
+    allow/NO-CREDENTIALS) echo BAD ;;
     *)                  echo NOTE ;;
   esac
 }
@@ -303,7 +361,15 @@ record() {
 # previous content looks exactly like a battery run against the current one.
 readback() {
   bold "Read-back: what is attached, against terraform-live/.../policies/"
-  ensure_session identity readback
+  # If Identity cannot vend credentials the read-back cannot run - but that is itself the
+  # finding, and the probes below still discriminate *which* accounts are locked out. Say
+  # plainly that what follows is measured against unverified policy content, and continue.
+  if ! ensure_session identity readback; then
+    echo "  SKIPPED - no credentials in Identity, so the deployed policies were never read."
+    echo "  Every probe below is measured against policy content this run did not verify."
+    echo
+    return 0
+  fi
   python3 "$HERE/readback.py" "$POLICY_DIR" "$(profile_for identity)"
   echo
 }
@@ -344,9 +410,14 @@ echo "Report: ${REPORT#$REPO/}"
 
 if [ "$N_BAD" -gt 0 ]; then
   echo
-  echo "A 'FAIL' row is one of two things, and they are not the same:"
-  echo "  expect=deny,  outcome=ALLOWED   -> the ceiling has a hole. Read the row's probe."
-  echo "  expect=allow, outcome=DENY-*    -> the ceiling reaches something it should not."
+  echo "A 'FAIL' row is one of three things, and they are not the same:"
+  echo "  expect=deny,  outcome=ALLOWED        -> the ceiling has a hole. Read the row's probe."
+  echo "  expect=allow, outcome=DENY-*         -> the ceiling reaches something it should not."
+  echo "  expect=allow, outcome=NO-CREDENTIALS -> the account cannot vend credentials at all."
+  echo "     Not a probe result: the sign-in path itself is refusing, and every probe behind"
+  echo "     it reads 'no credentials in <account>' rather than passing. If the accounts that"
+  echo "     failed are the member accounts and Management still answers, suspect a policy"
+  echo "     reaching STS - see Lesson 24 and the awsds-org-rcp-perimeter row in SCPs.md."
   exit 1
 fi
 exit 0

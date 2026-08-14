@@ -254,6 +254,32 @@ lesson can be *recognised* without opening this file; the reasoning that makes e
    **The tell** is prose that refers to a managed document by the job it was created for rather than by
    what is in it — and the same caution applies to anything else a service names for you, from
    `AWSReservedSSO_*` role suffixes to service-linked roles.
+24. **A harness authenticates through the mechanism it is measuring, so the one result it cannot report is
+   a failure of that mechanism — and the defence built for the benign version of that failure is what
+   hides the serious one.** On 2026-08-14 `awsds-org-rcp-perimeter` was attached to the root with an STS
+   statement naming `sts:AssumeRoleWithSAML` and `sts:TagSession`. Those are the only two actions the
+   trust policy of an `AWSReservedSSO_*` role permits, so the deny did not restrict a perimeter — it made
+   every permission-set role in all six member accounts unreachable, from the CLI and the access portal
+   alike. The battery contained **six probes written for exactly this** (`rcp floor: credentials still
+   vend in …`), and not one of them could run: `ensure_session` tested credentials with a bare exit-code
+   check and aborted the run as a *dead SSO session*, which is the hardening added after two mid-battery
+   token expiries. The earlier lesson's fix produced this lesson's blindness, and it did so silently,
+   because at the exit code an expired token and a denied sign-in are the same event. **The discriminator,
+   to apply while writing a verification rather than after:** what does the harness itself need in order
+   to report at all — credentials, a network path, a role — and can the change under test reach it? If it
+   can, the verification cannot live inside that path. Here the outside instruments were the two that do
+   not depend on it: **Management, which RCPs do not affect by construction**, and reading the trust
+   policy of the role. **A second trap sits behind the first, and it is what makes a bad attach look
+   fine:** a vended role credential lives four hours in `~/.aws/cli/cache`, so nothing fails at attach
+   time — the probes run against a session minted before the policy existed and pass. Anything touching
+   the sign-in path has to be tested against a *fresh* vend, which means invalidating that cache first.
+   **Against Lesson 22**, which is its neighbour and not its twin: there the harness cannot *produce* the
+   principal a control names, and the silence is a row that was never written; here the harness cannot
+   *survive* the control, and the silence is an abort that confidently names the wrong cause — the worse
+   of the two, because it comes with an explanation. The script now reads the error wording, stops only
+   on an expiry, and records anything else as a floor breach with every probe behind it marked untested;
+   the general form outlives this project, and applies to any test rig that signs in through the system
+   it is testing.
 
 ---
 

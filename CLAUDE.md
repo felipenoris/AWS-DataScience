@@ -226,8 +226,17 @@ The `§` numbers inside `plan/` files are historical anchors, not addresses.
 
 ### Current position
 
-- **Stage 1a is done but for the `Staging` vend; Stage 1b is DONE; Stage 1c SITTING A IS DONE — what is
-  left of 1c is 7.8** — the `log/` files are
+- **7.8 IS ATTACHED AND MEASURED, so Stage 1c is done: full battery 93 as expected, 0 unexpected, 0
+  untested** (2026-08-14), all ten documents matching `policies/` on read-back. Four policy types now live
+  on the root — `baseline`, `perimeter`, `tag-enforcement` (SCP), `awsds-org-rcp-perimeter` (RCP),
+  `awsds-org-tag-policy`, `awsds-org-declarative-ec2`. **The RCP cost one outage first**: its STS statement
+  named `AssumeRoleWithSAML`/`TagSession`, which is all an `AWSReservedSSO_*` trust policy permits, and it
+  locked every SSO user out of all six member accounts while Management stayed reachable. Rescoped to
+  `sts:AssumeRole` + `sts:SetContext`, matching AWS's own `CT.STS.PV.1` — **never add an `sts:` action to
+  it without reading that control's exclusion note.** Lesson 24 is the general form; the battery now
+  records a lockout instead of aborting on it, and `classify` no longer reads a declarative policy's
+  message *echoed by a successful read* as a deny.
+- **Stage 1a is done but for the `Staging` vend; Stage 1b is DONE; Stage 1c SITTING A IS DONE** — the `log/` files are
   authoritative. 1a: Control Tower enabled (`us-west-2`), budget
   set, `Development`, `Sandbox Account 1`, `Production`, `Data Governance`, `Policy Canary` and `Identity`
   vended, centralized root access on. Break-glass built and **tested 2026-08-09 on both channels** — the
@@ -424,4 +433,6 @@ the reasoning that makes it *usable* is in the file. Recognising one is the sign
 21. **"Validates before authorizing" is a property of the action, not the service — retry with a real id.**
 22. **A control whose principal the harness cannot produce is verified by reading, not by attempting.**
 23. **A managed service owns its artifacts' packing — bind to contents, never to an id or a name.**
+24. **A harness authenticates through the mechanism it measures — and the defence against the benign
+    failure hides the serious one.**
 

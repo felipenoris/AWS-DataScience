@@ -1037,6 +1037,360 @@ Nothing attached yet. This entry is preparation and the measurement of the prior
   `organizations describe-effective-policy --policy-type DECLARATIVE_POLICY_EC2` answers **`{}`** with the
   policy type enabled and nothing attached, rather than raising `EffectivePolicyNotFoundException`.
 
+- Login at AWS Console with CT Admin -> Management Account -> AWSAdministratorAccess. AWS Organizations -> Resource control policies -> Create new. Policy name = awsds-org-rcp-perimeter, Description = "Stage 1c - Step 7.8 - deny access to S3, STS, KMS, SQS, Secrets Manager, DynamoDB and ECR from principals outside the organization", attached to Policy Test. `awsds-org-rcp-perimeter` created with ARN `arn:aws:organizations::885931358757:policy/o-4z1leiit0c/resource_control_policy/p-023nwzshh9`. Used the JSON:
+
+```JSON
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "EnforceOrgIdentitiesOnDataStores",
+      "Effect": "Deny",
+      "Principal": "*",
+      "Action": [
+        "s3:*",
+        "dynamodb:*",
+        "sqs:*"
+      ],
+      "Resource": "*",
+      "Condition": {
+        "StringNotEqualsIfExists": {
+          "aws:PrincipalOrgID": "<ORG_ID>"
+        },
+        "BoolIfExists": {
+          "aws:PrincipalIsAWSService": "false"
+        }
+      }
+    },
+    {
+      "Sid": "EnforceOrgIdentitiesOnSecretsAndKeys",
+      "Effect": "Deny",
+      "Principal": "*",
+      "Action": [
+        "kms:*",
+        "secretsmanager:*"
+      ],
+      "Resource": "*",
+      "Condition": {
+        "StringNotEqualsIfExists": {
+          "aws:PrincipalOrgID": "<ORG_ID>"
+        },
+        "BoolIfExists": {
+          "aws:PrincipalIsAWSService": "false"
+        }
+      }
+    },
+    {
+      "Sid": "EnforceOrgIdentitiesOnRegistry",
+      "Effect": "Deny",
+      "Principal": "*",
+      "Action": [
+        "ecr:*"
+      ],
+      "Resource": "*",
+      "Condition": {
+        "StringNotEqualsIfExists": {
+          "aws:PrincipalOrgID": "<ORG_ID>"
+        },
+        "BoolIfExists": {
+          "aws:PrincipalIsAWSService": "false"
+        }
+      }
+    },
+    {
+      "Sid": "EnforceOrgIdentitiesOnRoleAssumption",
+      "Effect": "Deny",
+      "Principal": "*",
+      "Action": [
+        "sts:AssumeRole",
+        "sts:AssumeRoleWithSAML",
+        "sts:AssumeRoleWithWebIdentity",
+        "sts:SetSourceIdentity",
+        "sts:TagSession"
+      ],
+      "Resource": "*",
+      "Condition": {
+        "StringNotEqualsIfExists": {
+          "aws:PrincipalOrgID": "<ORG_ID>"
+        },
+        "BoolIfExists": {
+          "aws:PrincipalIsAWSService": "false"
+        }
+      }
+    }
+  ]
+}
+```
+
+- Probes executed on `Policy Test`.
+
+- Detached `awsds-org-rcp-perimeter` policy from `Policy Test`. Attached to `Root OU`, ID `r-zhj6`.
+
+- AWS Organizations -> Policies -> EC2 Policies. Created `awsds-org-declarative-ec2`, with ARN `arn:aws:organizations::885931358757:policy/o-4z1leiit0c/declarative_policy_ec2/p-71m92mzcap`. Attached to `Root OU`. Used JSON:
+
+```JSON
+{
+  "ec2_attributes": {
+    "exception_message": {
+      "@@assign": "Blocked by the AWS-DataScience organization EC2 declarative policy (Stage 1c step 7.8). This setting is organization-managed and cannot be changed from inside the account."
+    },
+    "snapshot_block_public_access": {
+      "state": {
+        "@@assign": "block_all_sharing"
+      }
+    },
+    "image_block_public_access": {
+      "state": {
+        "@@assign": "block_new_sharing"
+      }
+    },
+    "instance_metadata_defaults": {
+      "http_tokens": {
+        "@@assign": "required"
+      },
+      "http_put_response_hop_limit": {
+        "@@assign": "2"
+      },
+      "http_endpoint": {
+        "@@assign": "enabled"
+      },
+      "instance_metadata_tags": {
+        "@@assign": "no_preference"
+      }
+    },
+    "serial_console_access": {
+      "status": {
+        "@@assign": "disabled"
+      }
+    }
+  }
+}
+```
+
+- AWS Organizations -> Policies. Create new service control policy. Policy name = `awsds-org-scp-tag-enforcement` with ARN `arn:aws:organizations::885931358757:policy/o-4z1leiit0c/service_control_policy/p-srfe5l5r`. Attached to `Root OU`.  Used JSON:
+
+```JSON
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "DenyRunInstancesWithoutEnvironmentTag",
+      "Effect": "Deny",
+      "Action": "ec2:RunInstances",
+      "Resource": "arn:aws:ec2:*:*:instance/*",
+      "Condition": {
+        "Null": {
+          "aws:RequestTag/Environment": "true"
+        },
+        "BoolIfExists": {
+          "aws:PrincipalIsAWSService": "false"
+        }
+      }
+    },
+    {
+      "Sid": "DenyRunInstancesWithoutProjectTag",
+      "Effect": "Deny",
+      "Action": "ec2:RunInstances",
+      "Resource": "arn:aws:ec2:*:*:instance/*",
+      "Condition": {
+        "Null": {
+          "aws:RequestTag/Project": "true"
+        },
+        "BoolIfExists": {
+          "aws:PrincipalIsAWSService": "false"
+        }
+      }
+    }
+  ]
+}
+
+```
+
+- AWS Organizations -> Policies -> Tag policies -> Create policy. Created policy `awsds-org-tag-policy` with ARN `arn:aws:organizations::885931358757:policy/o-4z1leiit0c/tag_policy/p-95lyaycq7l`. Attached to `Root OU`. Used JSON:
+
+```JSON
+{
+  "tags": {
+    "environment": {
+      "tag_key": {
+        "@@assign": "Environment"
+      },
+      "tag_value": {
+        "@@assign": [
+          "sandbox",
+          "development",
+          "data",
+          "staging",
+          "production",
+          "org"
+        ]
+      }
+    },
+    "project": {
+      "tag_key": {
+        "@@assign": "Project"
+      },
+      "tag_value": {
+        "@@assign": [
+          "AWS-DataScience"
+        ]
+      }
+    },
+    "managedby": {
+      "tag_key": {
+        "@@assign": "ManagedBy"
+      },
+      "tag_value": {
+        "@@assign": [
+          "terraform",
+          "console"
+        ]
+      }
+    },
+    "owner": {
+      "tag_key": {
+        "@@assign": "Owner"
+      }
+    },
+    "costcenter": {
+      "tag_key": {
+        "@@assign": "CostCenter"
+      }
+    }
+  }
+}
+
+```
+
+- AWS CLI stopped working for infrastructure user:
+
+```
+aws sts get-caller-identity --profile awsds-infra-dev
+
+aws: [ERROR]: An error occurred (ForbiddenException) when calling the GetRoleCredentials operation: No access
+```
+
+- Detached `awsds-org-rcp-perimeter` policy from `Root OU`. Now `aws sts get-caller-identity --profile awsds-infra-dev` runs without error. Looks like `awsds-org-rcp-perimeter` is locking out SSO users.
+
+- `awsds-org-rcp-perimeter` locked every SSO user out of all six member accounts. Symptom:
+  `aws sts get-caller-identity --profile awsds-infra-dev` -> `ForbiddenException ... GetRoleCredentials: No
+  access`, on every profile at once, while the CT Admin console on Management was unaffected. Detaching the
+  policy from the Root OU restored access immediately.
+
+- Cause, read from the account: the trust policy of `AWSReservedSSO_InfrastructureAccess_*` in `Development`
+  permits only `sts:AssumeRoleWithSAML` + `sts:TagSession`, from the per-account SAML provider
+  `AWSSSO_<id>_DO_NOT_DELETE`. `EnforceOrgIdentitiesOnRoleAssumption` denied both. A SAML assertion carries
+  no AWS credentials, so `aws:PrincipalOrgID` does not populate and `StringNotEqualsIfExists` matches.
+
+- Two measured properties the outage's shape depends on: RCPs do not apply to `Management`, so the failure
+  reads as a CLI-only problem; and a vended role credential lives 4 h in `~/.aws/cli/cache`, so the lockout
+  only lands at the next `GetRoleCredentials` - which is why the probes run on `Policy Test` right after the
+  attach had passed.
+
+- Fix: `EnforceOrgIdentitiesOnRoleAssumption` rescoped to `sts:AssumeRole` + `sts:SetContext`, matching
+  AWS's own `CT.STS.PV.1`. New policy version pasted from `aws/output/rendered-policies/`, attached to
+  <target>; policy id unchanged (`p-023nwzshh9`).
+
+- Edited ``awsds-org-rcp-perimeter` with the following JSON:
+
+```JSON
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "EnforceOrgIdentitiesOnDataStores",
+      "Effect": "Deny",
+      "Principal": "*",
+      "Action": [
+        "s3:*",
+        "dynamodb:*",
+        "sqs:*"
+      ],
+      "Resource": "*",
+      "Condition": {
+        "StringNotEqualsIfExists": {
+          "aws:PrincipalOrgID": "o-4z1leiit0c"
+        },
+        "BoolIfExists": {
+          "aws:PrincipalIsAWSService": "false"
+        }
+      }
+    },
+    {
+      "Sid": "EnforceOrgIdentitiesOnSecretsAndKeys",
+      "Effect": "Deny",
+      "Principal": "*",
+      "Action": [
+        "kms:*",
+        "secretsmanager:*"
+      ],
+      "Resource": "*",
+      "Condition": {
+        "StringNotEqualsIfExists": {
+          "aws:PrincipalOrgID": "o-4z1leiit0c"
+        },
+        "BoolIfExists": {
+          "aws:PrincipalIsAWSService": "false"
+        }
+      }
+    },
+    {
+      "Sid": "EnforceOrgIdentitiesOnRegistry",
+      "Effect": "Deny",
+      "Principal": "*",
+      "Action": [
+        "ecr:*"
+      ],
+      "Resource": "*",
+      "Condition": {
+        "StringNotEqualsIfExists": {
+          "aws:PrincipalOrgID": "o-4z1leiit0c"
+        },
+        "BoolIfExists": {
+          "aws:PrincipalIsAWSService": "false"
+        }
+      }
+    },
+    {
+      "Sid": "EnforceOrgIdentitiesOnRoleAssumption",
+      "Effect": "Deny",
+      "Principal": "*",
+      "Action": [
+        "sts:AssumeRole",
+        "sts:SetContext"
+      ],
+      "Resource": "*",
+      "Condition": {
+        "StringNotEqualsIfExists": {
+          "aws:PrincipalOrgID": "o-4z1leiit0c"
+        },
+        "BoolIfExists": {
+          "aws:PrincipalIsAWSService": "false"
+        }
+      }
+    }
+  ]
+}
+```
+
+- login with aws cli using infrastructure user profile. `aws sts get-caller-identity --profile awsds-infra-dev` returned success.
+
+- Amended `awsds-org-rcp-perimeter` (`p-023nwzshh9`) re-attached to the Root OU. Credential cache
+  invalidated (`rm -f ~/.aws/cli/cache/*.json`) before probing, so the six `rcp` floor probes measured a
+  fresh `GetRoleCredentials` rather than a session minted before the attach.
+
+- `./aws/probes/scp-battery.sh`, full run: **93 as expected, 0 unexpected, 0 not measured**. Read-back
+  clean on all ten documents. Step 7.8 is closed and Stage 1c with it.
+
+- Two `FAIL` rows in the first run were a defect in the harness, not in the policy: `ec2
+  get-instance-metadata-defaults` succeeds (`rc=0`) and echoes the declarative policy's custom text in
+  `ManagedExceptionMessage`, which `classify` was matching as a denial. Both declarative branches now
+  require a non-zero exit code; the four `decl` deny probes are unaffected.
+
+- Harness: `ensure_session` now distinguishes an expired token (still `exit 2`) from a denied sign-in
+  (recorded as `NO-CREDENTIALS`, probes behind it `UNTESTED`, run continues). Lesson 24 written.
+
+
 ---
 
 *Log index: [log/INDEX.md](INDEX.md) · Stage index: [plan/stages/INDEX.md](../plan/stages/INDEX.md)*

@@ -61,10 +61,7 @@
       "Principal": "*",
       "Action": [
         "sts:AssumeRole",
-        "sts:AssumeRoleWithSAML",
-        "sts:AssumeRoleWithWebIdentity",
-        "sts:SetSourceIdentity",
-        "sts:TagSession"
+        "sts:SetContext"
       ],
       "Resource": "*",
       "Condition": {

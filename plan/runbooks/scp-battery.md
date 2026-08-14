@@ -64,6 +64,17 @@ are indistinguishable at the CLI. The discriminating string is in the error body
 | *"with an explicit deny in a resource control policy"* | an RCP (7.8) |
 | *"with an explicit deny in an identity-based policy"* | the permission set, **not** the ceiling — the probe is measuring the wrong thing |
 | no explicit-deny clause at all | an implicit deny: nothing granted it. Same note — wrong thing measured |
+| *"`ForbiddenException` … `GetRoleCredentials`: No access"*, on **every profile at once** | **not a probe result — the sign-in path itself is denied.** Indistinguishable from an expired token at the exit code, which is why the battery reads the wording: it prints `FAIL … NO-CREDENTIALS` per account, marks every probe behind it untested, and keeps going. The tell that it is the ceiling and not the token: **Management still answers and the member accounts do not**, because RCPs do not apply to the management account (Lesson 24) |
+
+**A vended credential outlives the attach that should have broken it, and that is how a bad policy passes
+its own probes.** An Identity Center role session is cached in `~/.aws/cli/cache` for **four hours**
+(measured), so a document that denies the *sign-in* changes nothing until the next `GetRoleCredentials` —
+the probes run straight after the attach are answered by a session minted before it existed. Before probing
+anything that could reach STS, sign-in or federation, force a fresh vend:
+
+```bash
+rm -f ~/.aws/cli/cache/*.json && aws sts get-caller-identity --profile awsds-policy-canary
+```
 
 **The error body also names the policy, and this plan under-sold it until 2026-08-13.** An SCP denial ends
 with `… with an explicit deny in a service control policy: arn:aws:organizations::…/service_control_policy/p-xxxxxxxx`
@@ -401,11 +412,22 @@ effective policy answering at all.
 ### 3 — the RCP, which is staged because the failure mode is a lockout
 
 **Attach it to the `Policy Test` OU first and leave it there until `--phase rcp` is green.** The reason is
-`EnforceOrgIdentitiesOnRoleAssumption`: it covers `sts:AssumeRoleWithSAML` and `sts:AssumeRoleWithWebIdentity`,
-where the caller has **no AWS principal yet**, so `aws:PrincipalOrgID` cannot populate and the
-`StringNotEqualsIfExists` form denies **unconditionally**. Nothing federates that way today — Identity Center
-vends through `sso:GetRoleCredentials` — but that is the claim under test, and a root attach tests it in
-every account at once.
+`EnforceOrgIdentitiesOnRoleAssumption`: for `sts:AssumeRoleWithSAML` and `sts:AssumeRoleWithWebIdentity` the
+caller has **no AWS principal yet**, so `aws:PrincipalOrgID` cannot populate and the `StringNotEqualsIfExists`
+form denies **unconditionally**.
+
+**On 2026-08-14 that is exactly what happened, and this section used to end the paragraph above with the
+sentence that caused it:** *"nothing federates that way today — Identity Center vends through
+`sso:GetRoleCredentials`"*. It is false. **Identity Center *is* the external federation**: every account
+holds a SAML provider `AWSSSO_<id>_DO_NOT_DELETE`, and the trust policy of `AWSReservedSSO_*` permits
+**only** `sts:AssumeRoleWithSAML` + `sts:TagSession` from it — read it and see, it is two lines. The document
+named both, so the root attach made every permission-set role in all six member accounts unreachable, by
+CLI and by browser alike. The document is now scoped to `sts:AssumeRole` + `sts:SetContext`, matching AWS's
+own `CT.STS.PV.1`, whose usage note is the authority on which STS actions may not appear here.
+
+**So the rule that replaces the old claim: before adding any `sts:` action to an RCP, read the trust policy
+of the role that action reaches.** A statement that names an action a *trust policy* depends on is not a
+perimeter — it is a lockout, and it will not announce itself as one.
 
 Between the two attaches, and this is the step that cannot be delegated to a script: **sign in to `Policy
 Canary` through the access portal in a browser, as the infrastructure user** — not as `AWS Control Tower
@@ -417,6 +439,14 @@ something else — and only the console login exercises the federation half.
 
 If it locks the canary out: **detach from the Management account, which is exempt from RCPs.** That exemption
 is the reason this staging is safe, and it is also the reason the root attach must never be the first one.
+It is also the only reason the 2026-08-14 lockout was recoverable rather than terminal — **the recovery path
+is the console as `AWS Control Tower Admin` on `Management`, and it works precisely because RCPs cannot
+reach it.** Verify that identity still signs in *before* attaching an RCP that touches STS, not after.
+
+**The staging only proves something if the canary's credentials are re-vended between the two attaches** —
+see the cache rule under *How to read every outcome*. The first attempt at this section's procedure ran the
+`Policy Test` probes on a session minted before the attach, they passed, and the document went to the root
+on that evidence.
 
 The `rcp` phase is **all floor and no deny**, which is a finding rather than an omission — see the block at
 the top of that phase in `probes.sh`. Producing an out-of-organization principal needs an identity this

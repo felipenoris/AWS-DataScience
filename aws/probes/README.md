@@ -74,6 +74,13 @@ should not. Either exits 1. **A dead SSO session exits 2 and records nothing** â
 exactly like a deny, which happened twice in one hand-run sitting and is the single most expensive way to
 misread this battery.
 
+**There is a third kind of `FAIL`, and it is not a probe result: `NO-CREDENTIALS`.** Credentials that will
+not vend are not always an expired token â€” on 2026-08-14 the RCP denied the Identity Center sign-in itself,
+in all six member accounts at once. The two cases are identical at the exit code and differ only in the
+wording, so the driver reads it: an expiry still exits 2, anything else is recorded once per account as a
+floor breach and the probes behind it are marked `UNTESTED` rather than dropped, so the totals stay honest
+and *which* accounts failed becomes the diagnosis (Lesson 24).
+
 The report lands in `aws/output/scp-battery-<stamp>.txt`, untracked, with account ids masked.
 
 ## Amending the battery
