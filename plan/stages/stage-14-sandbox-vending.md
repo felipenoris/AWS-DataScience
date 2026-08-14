@@ -4,7 +4,7 @@
 |---|---|
 | **Status** | not started — the first stage that is about *scale* rather than about a new capability |
 | **Prerequisites** | Stages 2, 3, 4 and 6. Everything a business unit's Sandbox must arrive holding has to exist and have been applied by hand at least once |
-| **Consumes** | [D21](../decisions/D21-development-account.md), [D23](../decisions/D23-ou-structure.md), [D24](../decisions/D24-shared-filesystem.md), [D26](../decisions/D26-unified-studio.md), [D34](../decisions/D34-account-vending.md), [D35](../decisions/D35-sandbox-cardinality.md) |
+| **Consumes** | [D21](../decisions/D21-development-account.md), [D23](../decisions/D23-ou-structure.md), [D24](../decisions/D24-shared-filesystem.md), [D26](../decisions/D26-unified-studio.md), [D34](../decisions/D34-account-vending.md), [D35](../decisions/D35-sandbox-cardinality.md), [D37](../decisions/D37-nested-ou-inheritance.md) |
 | **Proves** | that a business unit's `Sandbox` can be created, made usable and closed without a hand-written slice |
 
 *Read with [`plan/conventions.md`](../conventions.md) (naming, layout, `[P]`/`[D]`/`[E]`, IAM rules).*
@@ -16,6 +16,17 @@
 domain association and a filesystem, and nothing about it is typed twice. The OU is what makes the account
 governed on arrival: the `Interactive` policy set inherits down into it, so `ManagedOrganizationalUnit` in
 step 2 points at `Sandboxes` and the account needs no policy attachment of its own.
+
+> **And neither does the OU — that is [D37](../decisions/D37-nested-ou-inheritance.md), settled 2026-08-13
+> and measured in Stage 1c 7.6/7.7.**
+> **Nothing is attached or enabled on `Sandboxes` — no SCP, no RCP, no tag policy, no Control Tower
+> control — unless it is a configuration that *differs* from `Interactive`'s.** The OU is a registered
+> target and would accept one; it is declined so that sameness is expressed by inheriting rather than by
+> copying, because a duplicated statement is a second place to forget an amendment (Lesson 14). So this
+> stage's `for_each` must not grow a per-OU policy attachment for the sandbox branch, and the one thing to
+> carry: **`Sandboxes` reads as zero enabled controls in Control Tower while its accounts are fully
+> governed** — an enabled control is per OU and is not inherited as an enablement, only the statements it
+> emits are. Read `Interactive` when asking what applies to a Sandbox account.
 
 **Scope, which is narrower than it first looks (D35).** Only `Sandbox` multiplies. `Development`, `Staging`
 and `Production` are structural and singular, so **the promotion chain is untouched by this stage** — one set

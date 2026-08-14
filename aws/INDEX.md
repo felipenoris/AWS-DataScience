@@ -26,6 +26,7 @@ snapshots.
 | [`org-trusted-access-services.sh`](org-trusted-access-services.sh) | [Infrastructure](../ORGANIZATION.md#infrastructure-user); [`AWS Control Tower Admin`](../ORGANIZATION.md#aws-control-tower-admin-d33) on the `-` fallback | `awsds-infra-identity` by default; takes another profile as its argument, or `-` to run with no profile at all — inside CloudShell on Management | `output/org-trusted-access-services.txt` | Which AWS services hold **trusted access** across the organization, which account is each one's **delegated administrator**, and the `access-analyzer` registration on its own. |
 | [`audit-iam-analyser.sh`](audit-iam-analyser.sh) | [`AWS Control Tower Admin`](../ORGANIZATION.md#aws-control-tower-admin-d33) — **the only one**, no laptop path | **no profile — CloudShell on the Audit account**, as `AWS Control Tower Admin`. Takes a profile as its argument if one ever exists there; see below | `output/audit-iam-analyser.txt` | The IAM Access Analyzer analyzers of that account and Region: type (the **zone of trust**), status, tags, archive rules, findings — and a check that there is exactly one, `ORGANIZATION`, `ACTIVE`. |
 | [`org-policy-baseline.sh`](org-policy-baseline.sh) | [Infrastructure](../ORGANIZATION.md#infrastructure-user) — **open, and what section 7 answers**; [`AWS Control Tower Admin`](../ORGANIZATION.md#aws-control-tower-admin-d33) on the `-` fallback, which section 5 is expected to need anyway | `awsds-infra-identity` by default; takes another profile, or `-` for CloudShell on **Management** as `AWS Control Tower Admin` — which is the fallback if the policy reads are denied | `output/org-policy-baseline.txt` | **The ceiling that already exists.** Organization id and feature set, the root and its enabled policy types, every node with its **id, ARN and full path**, the policies attached per node per type, the **documents** of the ones found, the Control Tower controls enabled per node, and the policy quota. Stage 1c step 7.0 steps 1, 2, 3 and 5 in one pass. |
+| [`org-policies.sh`](org-policies.sh) | [Infrastructure](../ORGANIZATION.md#infrastructure-user); [`AWS Control Tower Admin`](../ORGANIZATION.md#aws-control-tower-admin-d33) on the `-` fallback | `awsds-infra-identity` by default; takes another profile, or `-` for CloudShell on **Management** | `output/org-policies.txt` | **What governs each node right now, by `Sid`** — no document bodies. Attached per node condensed to its statement names; **what governs each *account* once inheritance is resolved**; the **read-only checks** that no probe can reach; and a per-OU ceiling table. **Exits 2 when a check fails**, so it can gate a change. |
 | [`account-bpa.sh`](account-bpa.sh) | [Infrastructure](../ORGANIZATION.md#infrastructure-user); [`AWS Control Tower Admin`](../ORGANIZATION.md#aws-control-tower-admin-d33) for the `-` runs in Management, Log Archive and Audit | **every** `awsds-*` profile, or the ones named as arguments, or `-` inside CloudShell for the three accounts that have no profile — the second script here that is not single-profile, see below | `output/account-bpa.txt` | The **account-level** S3 Block Public Access configuration of each account, the four flags side by side, and which accounts nothing is measuring. Read three times: before 7.4, after 7.4 and before 7.5, and at every vend. |
 
 **The first two columns are different questions, and the whole table above collapses into two identities.** A
@@ -37,6 +38,15 @@ and `awsds-policy-canary` through the permanent Account Factory direct assignmen
 Everything run with `-` is `AWS Control Tower Admin` in CloudShell, and that is not a convenience: `-` exists
 exactly for Management, Log Archive and Audit, the three accounts where **no persona holds an assignment by
 design** and where that standing identity (D33, D34) is the only way in.
+
+**`org-policy-baseline.sh` and `org-policies.sh` walk the same tree and are not duplicates — they are
+opposite ends of one change.** The baseline is a **preflight**, run *before* writing policy (step 7.0): it
+prints whole documents, the quota and the organization's metadata, and answers *what already exists that I
+must not duplicate*. `org-policies.sh` is a **check**, run *after* every attachment and at every vend: it
+prints no document bodies at all, binds to `Sid` because a managed document's id says nothing about its
+contents (Lesson 23), resolves inheritance down to each account, and **fails with exit 2** on the statements
+the SCP battery is structurally blind to (Lesson 22). Reach for the first when writing a policy and the
+second when verifying one.
 
 Run any of them from anywhere; each one `cd`s to the repository root itself:
 
@@ -62,6 +72,10 @@ Run any of them from anywhere; each one `cd`s to the repository root itself:
 
 ```bash
 ./aws/account-bpa.sh
+```
+
+```bash
+./aws/org-policies.sh
 ```
 
 They need a live SSO session. If the run stops with `cannot authenticate`:

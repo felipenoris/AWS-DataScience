@@ -1,6 +1,6 @@
 # Decisions — index
 
-D1-D36, all settled — **D30 settled as a revert**, which is a decision like any other and keeps its file
+D1-D37, all settled — **D30 settled as a revert**, which is a decision like any other and keeps its file
 so the record shows what happened. Read this table first; open a decision file only when you need its
 reasoning, its consequences or its revision trigger.
 
@@ -42,6 +42,8 @@ reasoning, its consequences or its revision trigger.
 | [D34](D34-account-vending.md) | Account vending as a standing capability | The account list is not static: that user is kept enabled as the permanent owner of OUs and accounts, console-only — and the Organization being outside Terraform is why that cannot break any state. | S1a, S1b, S2 |
 | [D35](D35-sandbox-cardinality.md) | Structural accounts vs. the Sandbox multiplied per business unit | `Sandbox` is one per business unit; everything else — `Development` included — is singular, so the cardinality boundary *is* D21's graduation boundary and the promotion chain is untouched by N. Automation goes where the multiplication is (S14); the singleton assumptions in S3/S4/S1b/S6 are loosened now, while they are still prose. | S1b, S3, S4, S6, S14 |
 | [D36](D36-internal-pki.md) | Custody of the internal PKI | The CA root D15 created gets **its own slice, state and KMS key** (`production/pki/`), applied early because the `dev-env` image must be built carrying it. **The second credential IAM cannot revoke** (after D16's root) and the one with *no* revocation path at all, so its controls are detective: data events on the state prefix, a KMS alarm, the fingerprint in `log/stage-07-gitlab-runners-ecr.md`, and a rehearsed rotation. | S7, S12, S14 |
+
+| [D37](D37-nested-ou-inheritance.md) | What a nested OU carries: inherit rather than copy | Nothing is attached or enabled on `Sandboxes` unless it *differs* from `Interactive` — sameness is inherited, never copied. Measured against both halves of verification (xi) first: the OU *is* a registered target, so declining is a choice. The price is that Control Tower reports it as zero controls while its accounts are fully governed. | S1c, S14 |
 
 ---
 

@@ -380,6 +380,29 @@ proves is the half that matters for regression — that adding the guard did not
 - **The positive half of the `Data` OU's catalog-maintenance carve-out** — phase 4 says why, and Stage 5 is
   where it is answered.
 
+### The class the battery cannot reach at all — verified by *reading*, never by attempting
+
+**A green run is silent about these, which is why they are listed by name** (Lesson 22). Every principal
+this project can obtain is an Identity Center role, so any statement whose condition selects a principal of
+a kind the harness cannot produce is invisible to a probe **in both directions** — the call is never made,
+nothing is recorded, and an absent row reads exactly like a covered one. The discriminator when a new
+statement is written: *can the harness produce a principal that satisfies this condition?* If not, the
+verification is a document read, and the plan states the string that proves it.
+
+| Statement | Why no probe reaches it | What to read instead |
+|---|---|---|
+| `GRRESTRICTROOTUSER` (Control Tower, per OU) | conditioned on `ArnLike aws:PrincipalArn = arn:*:iam::*:root`; no SSO role ever matches | `organizations describe-policy` on the OU's guardrail — **`aws:AssumedRoot` must appear** in the condition (the `ExemptAssumeRoot` parameter). Missing it denies `sts:AssumeRoot` into every account beneath, which is 1a step 6's only member-account recovery |
+| positive half of D27's catalog-maintenance carve-out | the exempted role does not exist until Stage 5 | the `ArnNotEquals` value against the role Stage 5 creates |
+| positive half of the `aws:PrincipalIsAWSService` guard | needs a service principal, which cannot be assumed | the `BoolIfExists` clause is present and spelled `false` |
+
+**All three are checked mechanically by [`aws/org-policies.sh`](../../aws/org-policies.sh)**, which reads
+the deployed documents and exits 2 if any of them stops saying what it must — run it after every attachment,
+in the same sitting as the battery. It is a *different instrument*, not a phase of the battery, and that is
+the whole point.
+
+**This is the one place where "0 untested" in the driver's summary is not the whole answer** — the driver
+counts probes that ran, and these were never probes. Re-read this table whenever a policy is amended.
+
 ## The canary's one permanent limitation
 
 **Once the root set is attached, `Policy Canary` inherits it forever**, so every later candidate is tested

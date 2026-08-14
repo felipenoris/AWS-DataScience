@@ -433,6 +433,19 @@ contradicts some part of it.
     not there**, and this is the account whose administrator can grant access to every other one.
   - **`Sandboxes` carries none, by design**: it groups the per-unit Sandbox accounts (D35) and inherits
     `Interactive`. Depth is therefore 2, which any OU enumeration has to be written against (D34).
+    **The rule (D37), settled 2026-08-13 by the user and stated once here because it governs Stage 14 as
+    much as Stage 1c: nothing is attached or enabled on `Sandboxes` — no SCP, no RCP, no tag policy, no Control
+    Tower control — *unless it is a configuration that differs from `Interactive`'s*.** Sameness is
+    expressed by inheriting, never by copying.
+    **Two measurements make that safe rather than merely tidy.** Stage 1c 7.6 proved the SCP half —
+    `sagemaker:CreateNotebookInstance` is denied in `awsds-infra-sandbox-1` by `Interactive`'s document,
+    with nothing on `Sandboxes` — and 7.7 proved the OU *can* take an enablement of its own, so carrying
+    nothing is a choice rather than a limitation. **What it costs is Control Tower's own reporting**: an
+    enabled control is per OU and is *not* inherited as an enablement, only the SCP statements it emits
+    are. So `Sandboxes` reads as having zero controls while its accounts are fully governed, and the drift
+    view is not the ceiling. Read the parent when asking what applies to a Sandbox account.
+    **What it buys is Lesson 14 in reverse**: a duplicated statement is a second place to forget an
+    amendment, and the `ExemptAssumeRoot` omission is the worked example of exactly that failure.
   - **`Interactive` gains a set of exactly one statement — settled 2026-08-13** (Stage 1c step 7.6,
     decision 1): deny `sagemaker:CreateNotebookInstance` and `CreatePresignedNotebookInstanceUrl`. It holds
     Development plus the nested `Sandboxes`, it is the only OU where a domain may exist (D17), and every

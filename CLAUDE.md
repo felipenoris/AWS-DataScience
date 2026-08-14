@@ -227,7 +227,7 @@ The `§` numbers inside `plan/` files are historical anchors, not addresses.
 ### Current position
 
 - **Stage 1a is done but for the `Staging` vend; Stage 1b is DONE; Stage 1c SITTING A IS DONE — what is
-  left of 1c is sitting B, i.e. 7.6, 7.7 and 7.8** — the `log/` files are
+  left of 1c is 7.8** — the `log/` files are
   authoritative. 1a: Control Tower enabled (`us-west-2`), budget
   set, `Development`, `Sandbox Account 1`, `Production`, `Data Governance`, `Policy Canary` and `Identity`
   vended, centralized root access on. Break-glass built and **tested 2026-08-09 on both channels** — the
@@ -292,7 +292,7 @@ The `§` numbers inside `plan/` files are historical anchors, not addresses.
   which is SCP-exempt), not pending. (c) **`Sandboxes` has no guardrail SCP and zero enabled controls, and
   `list-enabled-controls` returned *empty rather than erroring*** — which under the plan's own discriminator
   means an addressable target, but **nothing errored anywhere in the run, so the discriminator was never
-  exercised**. Verification (xi) is narrowed, not closed: **7.7's `enable-control` is what answers it.**
+  exercised** — 7.7's `enable-control` is what answered it.
   (d) **Service Quotas publishes no policy quota for `organizations`**, so the size budget is the
   documentation's number, and the count fits either way (4 policies on the root, 4 per OU). **Verification
   (x) is answered yes** — every Organizations *policy* read answers from Identity; only `controltower
@@ -322,12 +322,11 @@ The `§` numbers inside `plan/` files are historical anchors, not addresses.
   `sagemaker:Create*` wildcard stands; `Workloads` is enumerated because Staging and Production legitimately
   call `CreateModel`/`CreateEndpoint`). **Decision 1 costs no feature, measured:** `CreateNotebookInstance`
   denied while `CreateSpace` and `datazone:ListDomains` still work in Development and Sandbox. **`Sandboxes`
-  is governed by inheritance** — verification (xi)'s SCP half; the *registered-target* half is still 7.7's.
+  is governed by inheritance** — verification (xi)'s SCP half.
   Untested and recorded so: `s3:DeleteBucket` (validated before authorization) and the **positive** half of
   the `Data` crawler carve-out, which needs Stage 5's **`awsds-data-catalog-maintenance`** role.
 - **The denial message names the policy id**, so attribution needs no CloudTrail — **but AWS names only one
-  matching policy**, which is how a document sits attached and unexercised (Lesson 20). **What is left of 1c
-  is 7.7 and 7.8.**
+  matching policy**, which is how a document sits attached and unexercised (Lesson 20).
 - **7.5a and 7.6a are uploaded and exercised** (2026-08-13): `baseline` gained `DenyImageAndSnapshotExport`
   (8 statements) and 5 GuardDuty actions — it had named the *deprecated* `…FromMasterAccount` and not the
   live `…FromAdministratorAccount`; `Data`/`Identity` gained the four EC2 launch doors (`RunInstances` was
@@ -342,12 +341,29 @@ The `§` numbers inside `plan/` files are historical anchors, not addresses.
   0 unexpected, 0 untested**. Every probe declares a mandatory `safety` (`ro`/`dryrun`/`blocked`/`creates`);
   the **three `creates` run in `Policy Canary` and nowhere else**, enforced by the driver, so the whole `ou`
   phase cannot create anything in a real account even with the ceiling removed.
-- **7.7 is started: `CT.MULTISERVICE.PV.1` is enabled on `Policy Test`** (`aws-guardrails-njKkvb`,
-  `p-q3y11w1n`) and **verification (vii) is answered from the attached document** — 86 `NotAction` entries,
-  no `ExemptedActions` of ours, every global prefix this project calls present. **It falsified a plan
-  prediction: `ecr-public:*` is exempt**, so the Region control never denied it and `DenyEcrPublicEntirely`
-  is the only thing that does. `ssm:GetParameter` *is* denied in `us-east-1`, which is what broke the first
-  region probe. **Left: the five remaining OUs, then the two root-user controls with `ExemptAssumeRoot`.**
+- **7.7 IS DONE. `CT.MULTISERVICE.PV.1` on five OUs and the two root-user controls on the same five**
+  (`Policy Test`, `Workloads`, `Data`, `Interactive`, `Identity`) — **not `Sandboxes`, by the rule below;
+  not `Security`, which was never a target, so `Log Archive` and `Audit` have no Region ceiling.** Region
+  half measured 61/61 by the battery. **Verification (vii) answered** from the attached document (86
+  `NotAction` entries, none of ours) — and it **falsified a plan prediction: `ecr-public:*` is exempt**, so
+  `DenyEcrPublicEntirely` is the only thing denying it. `ssm:GetParameter` *is* denied in `us-east-1`.
+- **Control Tower's packing is per enablement and inconsistent across OUs** — the root statements went into
+  the *original* guardrail on `Policy Test`/`Workloads`/`Interactive` but into the *Region* document on
+  `Identity` (`p-fw2pctqw`) and `Data` (`p-pk85fvr1`). **Read the `Sid` list; a document's id says nothing
+  about its contents**, and "the region policy" is a name for two different things.
+- **Nothing is attached or enabled on `Sandboxes` unless it *differs* from `Interactive`** — **D37**,
+  2026-08-13, and it governs Stage 14. Verification (xi) was closed both ways first: the OU accepted
+  `enable-control` (registered target), *and* the deny that fires there names `Interactive`'s (Lesson 20) —
+  then the control was disabled and its document deleted. **Cost: `Sandboxes` reads as zero controls while
+  its accounts are governed** — an enablement is not inherited, only the statements are.
+- **`ExemptAssumeRoot` is set on all five, verified by reading every document** — `Policy Test` was enabled
+  without it first, and **no probe can see that**: every principal here is an SSO role and `ArnLike …:root`
+  never matches, so the document read is the only instrument. `GRRESTRICTROOTUSER` ANDs
+  `Null: aws:AssumedRoot=true` with the ARN test. **The omission was nearly free because member accounts
+  hold no root credentials at all (1a 6.4), so an unexempted control denies exactly and only
+  `AssumeRoot`** — empty population, one side effect, and it is self-sealing
+  (`IAMCreateRootUserPassword` runs *inside* such a session). The access-key control carries no exemption
+  and must not (D16).
 - **The validation-before-authorization wall is per *action*, not per service** — measured: `ExportImage`
   authorized against a malformed AMI id, `CreateStoreImageTask` needed a real one, `StartInstances` never
   authorized at all. **A first-try validation error is a reason to retry with a real id, not a result**
@@ -406,4 +422,6 @@ the reasoning that makes it *usable* is in the file. Recognising one is the sign
 19. **A blocking input is re-checked against the requirement, not against the mechanism.**
 20. **When several policies deny the same call, only one is proven — the rest are attached, not exercised.**
 21. **"Validates before authorizing" is a property of the action, not the service — retry with a real id.**
+22. **A control whose principal the harness cannot produce is verified by reading, not by attempting.**
+23. **A managed service owns its artifacts' packing — bind to contents, never to an id or a name.**
 

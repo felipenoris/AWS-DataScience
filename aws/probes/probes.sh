@@ -218,6 +218,45 @@ probe region canary allow - dryrun "region: ec2 in us-west-2 must still work" --
 
 # The global services that resolve in us-east-1 and must survive the control. AWS's own
 # NotAction list covers these; the probes are what say so rather than assume it.
+# The control is enabled per OU, so it is measured per OU. The canary above proves the
+# control works; these prove it was enabled where it was meant to be - which is a different
+# claim, and the one an enable-per-OU design can get wrong five times.
+#
+# `sandbox1` is not a repetition of `dev`: it is verification (xi)'s second half. The SCP an
+# enabled control attaches is *inherited* by a nested OU whether or not that OU is itself a
+# registered target, so a deny in Sandbox Account 1 says the accounts are covered and says
+# nothing about which OU covers them. What distinguishes the two readings is whether the
+# enablement on `Sandboxes` was *accepted*, and that is read from the OU's attached policies.
+probe region data     deny  - dryrun "region: us-east-1 denied in Data Governance" -- \
+  ec2 create-key-pair --key-name awsds-canary-probe --dry-run --region us-east-1
+probe region identity deny  - dryrun "region: us-east-1 denied in Identity" -- \
+  ec2 create-key-pair --key-name awsds-canary-probe --dry-run --region us-east-1
+probe region dev      deny  - dryrun "region: us-east-1 denied in Development" -- \
+  ec2 create-key-pair --key-name awsds-canary-probe --dry-run --region us-east-1
+probe region sandbox1 deny  - dryrun "region: us-east-1 denied in Sandbox 1 (nested OU)" -- \
+  ec2 create-key-pair --key-name awsds-canary-probe --dry-run --region us-east-1
+probe region prod     deny  - dryrun "region: us-east-1 denied in Production" -- \
+  ec2 create-key-pair --key-name awsds-canary-probe --dry-run --region us-east-1
+
+probe region data     allow - dryrun "region: us-west-2 still works in Data Governance" -- \
+  ec2 create-key-pair --key-name awsds-canary-probe --dry-run --region us-west-2
+probe region identity allow - dryrun "region: us-west-2 still works in Identity" -- \
+  ec2 create-key-pair --key-name awsds-canary-probe --dry-run --region us-west-2
+probe region dev      allow - dryrun "region: us-west-2 still works in Development" -- \
+  ec2 create-key-pair --key-name awsds-canary-probe --dry-run --region us-west-2
+probe region sandbox1 allow - dryrun "region: us-west-2 still works in Sandbox 1" -- \
+  ec2 create-key-pair --key-name awsds-canary-probe --dry-run --region us-west-2
+probe region prod     allow - dryrun "region: us-west-2 still works in Production" -- \
+  ec2 create-key-pair --key-name awsds-canary-probe --dry-run --region us-west-2
+
+# IAM answers in us-east-1 and is on AWS's NotAction list. One per account, because a region
+# deny that breaks IAM breaks the account outright and the symptom is not obviously regional.
+probe region data     allow - ro "region floor: iam:ListRoles in Data Governance" -- iam list-roles --max-items 1
+probe region identity allow - ro "region floor: iam:ListRoles in Identity"        -- iam list-roles --max-items 1
+probe region dev      allow - ro "region floor: iam:ListRoles in Development"     -- iam list-roles --max-items 1
+probe region sandbox1 allow - ro "region floor: iam:ListRoles in Sandbox 1"       -- iam list-roles --max-items 1
+probe region prod     allow - ro "region floor: iam:ListRoles in Production"      -- iam list-roles --max-items 1
+
 probe region canary allow - ro "region floor: iam:ListRoles"           -- iam list-roles --max-items 1
 probe region canary allow - ro "region floor: budgets:DescribeBudgets" -- budgets describe-budgets --account-id @ACCT@
 probe region canary allow - ro "region floor: ce:GetCostAndUsage"      -- \

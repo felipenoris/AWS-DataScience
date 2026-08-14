@@ -852,11 +852,99 @@ aws ec2 run-instances --dry-run --image-id <AMI> --instance-type t3.micro --subn
 
 - Login as CT Admin -> Management Account. AWS Control Tower -> Controls -> Control Catalog. Searched for `CT.MULTISERVICE.PV.1` (Deny access to AWS based on the requested AWS Region for an organizational unit). Selected -> Enable -> Policy Test  -> Regions to allow access = `us-west-2`. Generated a policy named `aws-guardrails-njKkvb` with ARN `arn:aws:organizations::885931358757:policy/o-4z1leiit0c/service_control_policy/p-q3y11w1n` attached to `Policy Test` OU.
 
-- <PROBE LOG TEXT MISSING>
+- **Probes after enabling `CT.MULTISERVICE.PV.1` on `Policy Test`** (`./aws/probes/scp-battery.sh --phase region`):
+  `us-east-1` denied naming `p-q3y11w1n`, `us-west-2` still `DryRunOperation`, and the four global floors
+  (`iam:ListRoles`, `budgets:DescribeBudgets`, `ce:GetCostAndUsage`, `organizations:DescribeOrganization`)
+  intact. **Exactly one row flipped**, which is what distinguishes the intended control from the loose
+  construction that adds `us-east-1` to the allowed list.
+  The first version of that probe was wrong and the control exposed it: it resolved its AMI through
+  `ssm:GetParameter` **in the region being denied**, so the resolution itself was denied and the probe
+  degraded to `UNTESTED` at the moment it finally had something to measure. Replaced with
+  `ec2:CreateKeyPair --dry-run`, which authorizes with nothing but a name.
+
+- **Verification (vii), read from the attached document rather than the console's `Artifacts` tab** —
+  the control lands as an ordinary SCP, so `describe-policy` answers it and the answer is repeatable per OU.
+  **86 `NotAction` entries, no `ExemptedActions` of ours**, condition `aws:RequestedRegion = ["us-west-2"]`
+  plus the four Control Tower roles the plan predicted. Every global prefix this project calls is present,
+  `route53domains` and the three S3 account-level actions included. **It falsified a prediction of this
+  stage: `ecr-public:*` is exempt**, so the Region control never denied it and `DenyEcrPublicEntirely` is
+  the only thing that does. `ssm:GetParameter`, `cloudshell:*` and `servicequotas:*` are **not** exempt.
 
 - Login as CT Admin -> Management Account. AWS Control Tower -> Controls -> Control Catalog. Enabled control `CT.MULTISERVICE.PV.1` with allow region `us-west-2` for OUs: Interactive, Workloads, Data, Identity, Sandboxes.
 
-- Also, enabled `AWS-GR_RESTRICT_ROOT_USER` (ARN `arn:aws:controlcatalog:::control/5kvme4m5d2b4d7if2fs5yg2ui`) for `Policy Test` OU.
+- Also, enabled `AWS-GR_RESTRICT_ROOT_USER` (ARN `arn:aws:controlcatalog:::control/5kvme4m5d2b4d7if2fs5yg2ui`) and `AWS-GR_RESTRICT_ROOT_USER_ACCESS_KEYS` (ARN `arn:aws:controlcatalog:::control/8ui9y3oace2513xarz8aqojl7`) for `Policy Test` OU.
+
+- **After enabling on the five remaining OUs, the battery ran whole: 61 as expected, 0 unexpected,
+  0 untested.** `us-east-1` denied and `us-west-2` working in Data Governance (`p-pk85fvr1`), Identity
+  (`p-fw2pctqw`), Development (`p-umksvu5a`), Sandbox Account 1 (`p-umksvu5a`), Production (`p-i0ney7mx`)
+  and Policy Canary (`p-q3y11w1n`), with `iam:ListRoles` alive in every one.
+
+- **Verification (xi) is closed in both halves.** `Sandboxes` accepted `enable-control` and now carries
+  `aws-guardrails-yvYgxw` (`p-h7lc62d0`) — the first policy that OU has ever held — so it **is** a
+  registered target. But the deny measured in Sandbox Account 1 names `p-umksvu5a`, `Interactive`'s policy:
+  two policies deny the call and AWS names one, and the inherited one won. **Attribution answered coverage
+  and said nothing about registration**; the OU's attached-policy list is what answered it.
+
+- **Every OU now carries two `aws-guardrails-*` documents** — its original guardrail plus one holding
+  `CT.MULTISERVICE.PV.1` — **except `Sandboxes`, which carries one**. `Policy Test` is different in kind:
+  its two root-user controls were folded into its **existing** guardrail document rather than a new one, so
+  Control Tower packs per enablement and counting policies is not counting controls.
+
+- **OPEN, and the one thing 7.7 leaves owed: `AWS-GR_RESTRICT_ROOT_USER` was enabled on `Policy Test`
+  without `ExemptAssumeRoot`.** Read from `aws-guardrails-vldGRP` (`p-kve97k0o`): `GRRESTRICTROOTUSER` is
+  `Deny *` on `ArnLike aws:PrincipalArn = arn:*:iam::*:root` with no second condition, and the string
+  `aws:AssumedRoot` appears in no policy in this organization. So `sts:AssumeRoot` into the canary — 1a
+  step 6's member-account recovery — is denied.
+  **No probe can measure this**: every principal available here is an Identity Center role and
+  `ArnLike …:root` never matches one, so the document read is the only instrument. Blast radius is one
+  throwaway account, and Management stays SCP-exempt (D16). **Fix: disable, re-enable with the parameter,
+  re-read the document, and only then take the control to the other five OUs.**
+
+- Edited - Also, enabled `AWS-GR_RESTRICT_ROOT_USER` (ARN `arn:aws:controlcatalog:::control/5kvme4m5d2b4d7if2fs5yg2ui`), setting `ExemptAssumeRoot` option.
+
+- **Read back after the fix, from Identity** (`organizations describe-policy p-kve97k0o`):
+  `GRRESTRICTROOTUSER` now ANDs `"Null": {"aws:AssumedRoot": "true"}` with the root-ARN test, so the deny
+  reaches every root principal *except* a privileged session. **The policy id did not change** — Control
+  Tower edited the document in place rather than issuing a new one. Org-wide, `aws:AssumedRoot` appears in
+  **exactly one** policy and the two root-user statements exist **only** there: the controls are still
+  `Policy Test`-only.
+  `GRRESTRICTROOTUSERACCESSKEYS` carries no exemption and should not — the parameter does not exist on that
+  control, and a root access key minted inside a privileged session is precisely what D16 forbids.
+  No battery run: nothing the probes measure changed, and this statement is invisible to them in both
+  directions.
+
+- Disabled `CT.MULTISERVICE.PV.1` for `Sandboxes` OU. This OU is under `Interactive` with the same control.
+
+- Enabled `AWS-GR_RESTRICT_ROOT_USER` (ARN `arn:aws:controlcatalog:::control/5kvme4m5d2b4d7if2fs5yg2ui`), setting `ExemptAssumeRoot` option, and `AWS-GR_RESTRICT_ROOT_USER_ACCESS_KEYS` (ARN `arn:aws:controlcatalog:::control/8ui9y3oace2513xarz8aqojl7`) on Interactive, Workloads, Data and Identity OUs.
+
+- Login as CT Admin -> Management Account. Enabled `AWS-GR_RESTRICT_ROOT_USER` (with `ExemptAssumeRoot`)
+  and `AWS-GR_RESTRICT_ROOT_USER_ACCESS_KEYS` on `Workloads`, `Data`, `Interactive` and `Identity`.
+  Disabled `CT.MULTISERVICE.PV.1` on `Sandboxes`.
+
+- **Read back per OU from Identity — `aws:AssumedRoot` is present in every document that carries
+  `GRRESTRICTROOTUSER`**, which is the whole test, on all five OUs that hold these controls
+  (`Policy Test`, `Workloads`, `Data`, `Interactive`, `Identity`). The parameter was not missed anywhere.
+
+- **Control Tower's packing is inconsistent across OUs, and this is the finding that outlives the step.**
+  The two root statements were folded into the **original guardrail** on `Policy Test` (`p-kve97k0o`),
+  `Workloads` (`p-xss3mf3w`) and `Interactive` (`p-o32xhs2d`), but into the **`CT.MULTISERVICE.PV.1`
+  document** on `Identity` (`p-fw2pctqw`) and `Data` (`p-pk85fvr1`) — the same two ids this log records as
+  "the Region policy" for those OUs. The battery's results stand, but **a document's id no longer says what
+  is inside it**. Read the `Sid` list; never infer from what the document was created for.
+
+- **`Sandboxes` is back to `FullAWSAccess` and nothing else**, and `p-h7lc62d0` no longer exists in the
+  organization — disabling the control deleted the document. **The rule this settles (user, 2026-08-13):
+  nothing is attached or enabled on `Sandboxes` unless it is a configuration that *differs* from
+  `Interactive`'s.** Verification (xi) had already answered both halves, so this is a knowing decline, not
+  a limitation: the OU is a registered target and would take an enablement. What it costs is Control
+  Tower's reporting — an enablement is per OU and is not inherited, only the statements are — so
+  `Sandboxes` reads as zero controls while its accounts are fully governed.
+
+- **`Security` carries neither the Region control nor the root ones**, having never been a target of 7.7.
+  So `Log Archive` and `Audit` are the two accounts with no Region ceiling. Recorded, not acted on: that
+  OU is Control Tower's own and Stage 1d is where it gets touched.
+
+- This closes 7.7.
 
 ---
 

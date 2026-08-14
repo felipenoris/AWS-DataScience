@@ -151,6 +151,21 @@ started. **The first one is load-bearing against principle 4.**
     USD 50 ceiling. Also confirms rather than changes D7/D28: **SMUS workflows are MWAA**, serverless or
     provisioned, so Stage 10's orchestration comparison and this feature are one surface, not two.
 
+### Raised by Stage 1c step 7.7, 2026-08-13
+
+16. **`Log Archive` and `Audit` have no Region ceiling, and nothing in the plan ever said they should not.**
+    7.7 enabled `CT.MULTISERVICE.PV.1` on the five OUs its own order named — `Policy Test`, `Workloads`,
+    `Data`, `Interactive`, `Identity` — and **`Security` was never on that list**. It is not a regression
+    and not drift: the OU was simply outside the step. But the consequence is worth deciding rather than
+    inheriting, because those are the two accounts holding the immutable copy of the trail and the
+    organization's findings, and they are now the only governed accounts where a resource may be created
+    in any Region. **What makes it non-trivial:** `Security` is Control Tower's own foundational OU, its
+    guardrail is AWS's rather than this project's, and Control Tower places resources there itself — so
+    the exemption list of a Region control needs to be read against *Control Tower's* roles in those
+    accounts before enabling anything, which is exactly the reading verification (vii) already
+    demonstrates how to do. **Where it belongs:** Stage 1d, which is the stage that touches the log
+    archive (Object Lock, step 9). Not a blocker for 7.8 or for anything before it.
+
 ### Blocking Stage 1 — the choices the user has to make, added 2026-08-08 by the pre-Stage-1 review
 
 Items 1-11 above are things to *find out* (item 3 is answered and struck through). These are things to

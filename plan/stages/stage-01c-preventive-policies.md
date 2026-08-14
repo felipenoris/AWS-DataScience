@@ -4,7 +4,7 @@
 |---|---|
 | **Status** | **Sitting A done; 7.6 done too** (2026-08-13). Attached and exercised: the two root documents (7.5) and **one per-OU document on each of `Workloads`, `Data`, `Interactive` and `Identity`** (7.6), each parked on `Policy Test` first, then moved and re-probed from that OU's own account. **The three amendments of 7.5a and 7.6a are uploaded and exercised** (2026-08-13): the EC2 launch siblings and the D27 service guard in `Data` and `Identity`, and the GuardDuty vocabulary fix plus the new `DenyImageAndSnapshotExport` in the root baseline — read back from Organizations, then re-probed, the OU pair through phase 4b and the root document through phases 1-3 on the canary. **What is left of the stage is 7.7 and 7.8.** Policy ids are in [`log/stage-01c-preventive-policies.md`](../../log/stage-01c-preventive-policies.md); what each statement does is in [`SCPs.md`](../../terraform-live/identity/org-policies/SCPs.md) |
 | **Prerequisites** | **[Stage 1b](stage-01b-identity-and-controls.md) is complete** (closed 2026-08-12; its log is authoritative). What this stage actually consumes from it: the six SSO profiles of step 5 — `awsds-infra-sandbox-1`, `-dev`, `-prod`, `-data`, `-identity` and **`awsds-policy-canary`** — and an administrator principal in the canary account (1b step 3.1). **Not its permission sets**: no policy written here names one, which is why the `Consumes` row carries no persona decision. `Staging` is unvended, so nothing in the `Workloads` tier can be exercised against it |
-| **Consumes** | [D6](../decisions/D06-dlp-approach.md), [D10](../decisions/D10-identity-center-delegation.md), [D15](../decisions/D15-tls-internal.md), [D16](../decisions/D16-break-glass.md), [D17](../decisions/D17-interactive-vs-runtime.md), [D19](../decisions/D19-derived-zone.md), [D20](../decisions/D20-staging-account.md), [D21](../decisions/D21-development-account.md), [D22](../decisions/D22-data-governance-account.md), [D23](../decisions/D23-ou-structure.md), [D25](../decisions/D25-drop-box-consumer.md), [D26](../decisions/D26-unified-studio.md), [D27](../decisions/D27-catalog-maintenance.md), [D28](../decisions/D28-workflow-contract.md), [D29](../decisions/D29-policy-canary.md), [D30](../decisions/D30-scp-recovery.md), [D33](../decisions/D33-control-tower-admin-user.md), [D34](../decisions/D34-account-vending.md), [D35](../decisions/D35-sandbox-cardinality.md) |
+| **Consumes** | [D6](../decisions/D06-dlp-approach.md), [D10](../decisions/D10-identity-center-delegation.md), [D15](../decisions/D15-tls-internal.md), [D16](../decisions/D16-break-glass.md), [D17](../decisions/D17-interactive-vs-runtime.md), [D19](../decisions/D19-derived-zone.md), [D20](../decisions/D20-staging-account.md), [D21](../decisions/D21-development-account.md), [D22](../decisions/D22-data-governance-account.md), [D23](../decisions/D23-ou-structure.md), [D25](../decisions/D25-drop-box-consumer.md), [D26](../decisions/D26-unified-studio.md), [D27](../decisions/D27-catalog-maintenance.md), [D28](../decisions/D28-workflow-contract.md), [D29](../decisions/D29-policy-canary.md), [D30](../decisions/D30-scp-recovery.md), [D33](../decisions/D33-control-tower-admin-user.md), [D34](../decisions/D34-account-vending.md), [D35](../decisions/D35-sandbox-cardinality.md), [D37](../decisions/D37-nested-ou-inheritance.md) |
 | **Proves** | **Constrains** [INT-12](../integrations.md), whose fallback 7.6 forbids until the policy is amended. **Touches [INT-01](../integrations.md) and [INT-07](../integrations.md)**: the perimeter RCP now covers ECR, so both cross-account image paths run through its service carve-out — admitted by `aws:PrincipalOrgID`, but only exercised in 7.8 |
 | **Log** | [`log/stage-01c-preventive-policies.md`](../../log/stage-01c-preventive-policies.md) — **it exists and carries 7.0**; the policy IDs recorded there as each one is attached are what makes the detach command executable |
 
@@ -1216,6 +1216,24 @@ measure something else.
   `Sandboxes` again: whether it needs its own enablement, cannot take one, or is already covered is
   verification (xi) — and the answer is the same for every OU Stage 14 ever nests there.
 
+  > **ANSWERED, AND THEN REVERSED BY DECISION (2026-08-13).** `Sandboxes` *can* take an enablement of its
+  > own — it accepted `enable-control` and carried `aws-guardrails-yvYgxw` (`p-h7lc62d0`), the first policy
+  > that OU ever held. **The control was then disabled again and the document ceased to exist**, because
+  > the user settled the general rule, now **[D37](../decisions/D37-nested-ou-inheritance.md)**: **nothing is attached or enabled on `Sandboxes` — no SCP, no RCP, no
+  > tag policy, no control — unless it is a configuration that differs from `Interactive`'s.** Sameness is
+  > expressed by inheriting, never by copying.
+  >
+  > **The measurement is what makes that a choice rather than a gap.** 7.6 proved the SCP half — the deny
+  > fires in `awsds-infra-sandbox-1` with nothing attached to `Sandboxes` — and this step proved the OU is
+  > a registered target, so the option was declined knowingly. What it costs is **Control Tower's own
+  > reporting**: an enabled control is per OU and is not inherited *as an enablement*, only the statements
+  > it emits are, so `Sandboxes` reads as zero controls while its accounts are fully governed. The drift
+  > view is not the ceiling — read the parent. What it buys is Lesson 14 run backwards: a duplicated
+  > statement is a second place to forget an amendment, and `ExemptAssumeRoot` is the worked example.
+  >
+  > **This governs Stage 14**, where every new per-unit Sandbox account lands under this OU
+  > ([`plan/architecture.md`](../architecture.md) carries the rule).
+
   **Two facts to have before you start.** The home region cannot be denied, and *nothing must already
   exist in the regions being denied* — trivially true here, and it is the reason to do this now rather
   than at Stage 12. The control is reversible from the Control Tower console.
@@ -1270,6 +1288,63 @@ measure something else.
   - **The asymmetry that makes this safe to enable at all:** the controls attach to OUs, and the
     Management account is exempt from SCPs, so the break-glass root is untouched either way (D16).
     Enabled from the Control Tower console, so this one is reversible without a detach.
+
+  > **ENABLED ON `Policy Test` 2026-08-13 — first *without* `ExemptAssumeRoot`, then corrected the same
+  > day. The correction is measured; what is left is the five real OUs.** Control Tower folded both
+  > statements into the OU's *existing* guardrail policy `aws-guardrails-vldGRP` (`p-kve97k0o`), and the
+  > first read showed `GRRESTRICTROOTUSER` as `Deny *` on `ArnLike aws:PrincipalArn = arn:*:iam::*:root`
+  > with **no second condition**. Re-enabling with the parameter produced exactly what 1a step 6.7
+  > predicted:
+  >
+  > ```json
+  > "Condition": { "Null":    { "aws:AssumedRoot": "true" },
+  >                "ArnLike": { "aws:PrincipalArn": ["arn:*:iam::*:root"] } }
+  > ```
+  >
+  > The two conditions are ANDed, so the deny fires only where the principal is a root ARN **and** the key
+  > is absent — which is every root principal *except* a privileged session. **The policy id did not
+  > change**: Control Tower edited the document in place rather than issuing a new one, so before and after
+  > are a clean diff on one object and there is no second id to track. Org-wide, `aws:AssumedRoot` now
+  > appears in **exactly one** policy, and the two root-user statements exist **only** there.
+  >
+  > **Why it was found rather than probed:** no CLI probe can measure this. Every principal available to
+  > this project is an Identity Center role, and `ArnLike …:root` never matches one, so the statement is
+  > invisible to the battery in both directions. **The document read is the only instrument**, which makes
+  > this the first control in the stage whose verification is *reading* rather than *attempting* — worth
+  > noticing, because the reflex by now is to reach for a probe.
+  >
+  > **What the omission would have cost, and why it was nearly free here.** 1a step 6.4 measured that **no
+  > member account holds root credentials** — no password, therefore no root sign-in and no root access
+  > key. So in a governed account the *only* way a request can carry `arn:aws:iam::<acct>:root` is an
+  > `AssumeRoot` session, and an unexempted control denies **exactly and only** that: the population it
+  > would otherwise restrict is empty by construction. It is also self-sealing — `IAMCreateRootUserPassword`
+  > runs *inside* such a session, so the control denies the one path that could create the principal it
+  > claims to restrict. The blast radius was one throwaway account, and Management, where the break-glass
+  > root lives, is SCP-exempt regardless (D16). **That is the whole reason the canary exists**: the mistake
+  > happened where mistakes are supposed to happen, before the control reached anything real.
+  >
+  > **The access-key control carries no exemption, and that asymmetry is correct rather than an oversight.**
+  > The parameter does not exist on `AWS-GR_RESTRICT_ROOT_USER_ACCESS_KEYS` — and should not: a root access
+  > key minted inside a privileged session would be a standing, unscoped, SCP-immune credential, which is
+  > the invariant D16 states outright.
+  >
+  > **DONE 2026-08-13 on `Workloads`, `Data`, `Interactive` and `Identity` — all four with the parameter,
+  > read back per OU.** `aws:AssumedRoot` is present in every document that carries `GRRESTRICTROOTUSER`,
+  > which is the whole test, and the five OUs holding these controls are `Policy Test` plus those four.
+  > **`Sandboxes` was deliberately left out** and is the rule stated below, not an omission.
+  >
+  > **The read-back found something the region half had hidden: Control Tower's packing is not consistent
+  > across OUs.** The two root statements were folded into the *original* guardrail document on
+  > `Policy Test`, `Workloads` and `Interactive`, but into the *`CT.MULTISERVICE.PV.1`* document on
+  > `Identity` (`p-fw2pctqw`) and `Data` (`p-pk85fvr1`) — the same two ids the battery had recorded as
+  > "the Region policy" for those OUs. **So a document cannot be identified by what it was created for**,
+  > and a future amendment that reads "the region policy" by id will find root statements in it on two OUs
+  > out of five. Read the `Sid` list; never infer it.
+  >
+  > **`Security` carries neither control**, having never been in 7.7's target list — it is foundational,
+  > its guardrail is Control Tower's own, and `Log Archive` and `Audit` are consequently the two accounts
+  > in the organization with no Region ceiling. Noted rather than fixed here: changing it is a Control Tower
+  > operation on the OU that holds the log archive, which is Stage 1d's ground, not this step's.
 
 #### 7.8 — RCPs, tag policies, declarative policies
 
@@ -1365,6 +1440,34 @@ measure something else.
   bootstrap. **Verify the current API before putting it back**; if `CreateBucket` does carry tags today,
   the second question is still whether the provider sends them on the create call, and the answer decides
   it. Until both are answered yes, S3 stays out of the scope.
+
+  > **MEASURED 2026-08-13, and the first half of that instruction came back *yes* — the premise this
+  > exclusion rested on is stale.** From the machine-readable service reference
+  > (`servicereference.us-east-1.amazonaws.com/v1/s3/s3.json`), **`s3:CreateBucket` maps
+  > `aws:RequestTag/${TagKey}` and `aws:TagKeys`** — one of 11 S3 actions that do. So the API carries tags
+  > and the 2026-08-09 reasoning no longer holds. **The second half is still unanswered and it is the one
+  > that decides**: whether Terraform's `aws` provider sends the tags *on the create call* or still calls
+  > `PutBucketTagging` afterwards. If it is the latter, the condition is unsatisfiable from the tool this
+  > project builds with and the deny lands on Stage 2's own bootstrap bucket. **Answer it at Stage 2, where
+  > it is free** — look at what the provider actually sends — not from documentation here.
+  >
+  > **`ec2:RunInstances` could not be measured the same way, and the shape of the failure is the finding.**
+  > The reference maps `aws:RequestTag` to **0 of EC2's 793 actions** while declaring the key in EC2's
+  > top-level `ConditionKeys` list — so the instrument knows the service supports it and does not say
+  > *where*. Compare S3 (11 of 180) and RDS (35 of 169), which map it per action. **A result that is
+  > negative for every action of one service and positive for others is a gap in the instrument, not a fact
+  > about the service** (Lesson 13) — do not read it as "`RunInstances` does not support tag-on-create".
+  > **Settle it by probe instead, which is cheap and is what the canary is for:** `ec2:RunInstances
+  > --dry-run` with and without `--tag-specifications` under the candidate policy gives the two-different-
+  > errors shape the battery prefers, and it answers from the authorization engine rather than from a
+  > document.
+  >
+  > **What this leaves decision 5 as**, stated so the scope is not re-derived: `rds:CreateDBInstance` is
+  > confirmed supported but **inert** — this project has no RDS and no plan for one — so including it is
+  > the DynamoDB argument from the RCP above, not a control. `s3:CreateBucket` is **blocked on the provider
+  > question**. `ec2:RunInstances` is the only member of the scope that is both live (WireGuard, GitLab,
+  > the runners) and answerable now. **So: write the forcing SCP for `ec2:RunInstances` alone, exercise
+  > both directions on the canary, and revisit S3 at Stage 2.**
 - **Declarative policies** — enforce IMDSv2 and EC2 public-access defaults org-wide. Policy type enabled
   in 7.2. One file, `awsds-org-declarative-ec2.json`.
   **Name what "public-access defaults" means, because the name hides the limit that matters (2026-08-12).**
@@ -1486,7 +1589,7 @@ Record every answer in `log/stage-01c-preventive-policies.md`, including the one
 | # | Question | Step |
 |---|---|---|
 | vii | **Answered 2026-08-13, and better than asked.** The control lands as an ordinary SCP, so the list was read from the **attached document** (`aws-guardrails-njKkvb`, `p-q3y11w1n`) rather than from the `Artifacts` tab — repeatable per OU and diffable. **86 entries, no `ExemptedActions` of ours, and every global prefix this project calls is present**, `route53domains` and the three S3 account-level actions included. It also **falsified one of this stage's own predictions**: `ecr-public:*` is exempt, so the Region control never denied it and `DenyEcrPublicEntirely` is the only thing that does | 7.7, done |
-| xi | **Sharpened twice, and now half answered by measurement.** The **SCP half is settled**: `Interactive`'s document denies `sagemaker:CreateNotebookInstance` in `awsds-infra-sandbox-1`, so the nested OU is governed by inheritance and needs no attachment of its own (7.6, 2026-08-13). **What is still open is whether it is a *registered Control Tower target***: 7.0 step 3 returned an **empty list rather than an error**, and nothing errored anywhere in that run, so the discriminator was never exercised (Lesson 13). **7.7's `enable-control` against `Sandboxes` is what answers it** — for every OU Stage 14 ever nests there | 7.7 |
+| xi | **ANSWERED IN BOTH HALVES, 2026-08-13.** SCP half (7.6): `Interactive`'s document denies `sagemaker:CreateNotebookInstance` in `awsds-infra-sandbox-1`, so the nested OU is governed by inheritance. Registered-target half (7.7): **`enable-control` against `Sandboxes` was accepted**, and the OU now carries `aws-guardrails-yvYgxw` (`p-h7lc62d0`) — **the first policy that OU has ever held**. So it is *both*: a registered target and a beneficiary of inheritance. **The probe cannot tell you that, and this is the sharpest instance of Lesson 20 in the stage:** the `us-east-1` deny in Sandbox Account 1 names `p-umksvu5a`, `Interactive`'s Region policy — not `Sandboxes`' own. Two policies deny the call, AWS names one, and the *inherited* one won. Attribution answered the question about coverage and said nothing about registration; only the OU's attached-policy list did. **For Stage 14 this is the useful form: a nested OU can carry its own controls, and does not need to in order to be governed** | 7.7, done |
 
 **Was (vii), now answered from the documentation rather than by execution:** *"is Region deny
 landing-zone-wide, i.e. untestable against `Policy Test` first?"* — **the landing-zone control

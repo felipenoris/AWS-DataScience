@@ -45,7 +45,7 @@ This is the **write** map. The **read** map — which file answers which questio
 | Audit | Security | platform | Security guardian: GuardDuty, Security Hub, Macie, Access Analyzer |
 | Identity | **Identity** | platform | Identity Center **delegated administration** (D10) — as sensitive as Management. Its own OU because Control Tower would not vend it into the foundational `Security` OU (D23, 2026-08-09) |
 | Policy Canary | Policy Test | platform | Deliberately empty. The disposable account a candidate SCP is exercised against (D29) |
-| Sandbox | Interactive → **Sandboxes** | lifecycle (before the chain) | **Experimentation** — the unit of work is a notebook. VPN terminates here; EFS lives here (D24). One per business unit (D35), grouped in a nested OU that carries no policy set of its own |
+| Sandbox | Interactive → **Sandboxes** | lifecycle (before the chain) | **Experimentation** — the unit of work is a notebook. VPN terminates here; EFS lives here (D24). One per business unit (D35), grouped in a nested OU that carries no policy set of its own and is not meant to (D37) |
 | Development | Interactive | lifecycle | **Engineering** — the unit of work is a pipeline. The promotion chain starts here (D21) |
 | Data Governance | Data | **ownership** | The governed lake + the Unified Studio domain (D22, D26). No VPC, no user compute, no interactive sign-in |
 | Staging | Workloads | lifecycle | Deployment target, written only by the pipeline; sampled or synthetic data (D20) |
@@ -128,7 +128,7 @@ its **Consumes** row names; that is the whole reading list.
 | [0 — Baseline](plan/stages/stage-00-baseline.md) | Management account by hand, local tooling, the documentation set | **DONE** |
 | [1a — Landing zone](plan/stages/stage-01a-landing-zone.md) | Control Tower, the accounts and OUs, root secured, budget — slow and hard to undo | **done except the `Staging` vend** |
 | [1b — Identity Center and the alarm](plan/stages/stage-01b-identity-and-controls.md) | The alarm first, then delegation, users and groups, the administrator permission set, SSO profiles, retiring the direct assignments, AZ mapping, Access Analyzer (steps 8.3, 1-6, 5.1, 8.2) | **DONE** (2026-08-12) |
-| [1c — Preventive policies](plan/stages/stage-01c-preventive-policies.md) | SCP, RCP, tag and declarative policies, the managed controls (step 7) — the one irreversible-from-inside sitting | **ready to start** — revised 2026-08-13; decisions 1, 6, 7 settled, no blocking input |
+| [1c — Preventive policies](plan/stages/stage-01c-preventive-policies.md) | SCP, RCP, tag and declarative policies, the managed controls (step 7) — the one irreversible-from-inside sitting | **in progress** — 7.0-7.7 done and exercised; **7.8 is all that remains** (RCP, tag policy with decision 5, declarative policy) |
 | [1d — Audit trail and org-wide enablement](plan/stages/stage-01d-org-wide-enablement.md) | Object Lock, the AWS Config decision, org-wide RAM + Lake Formation v3 (steps 9-11, independent of each other) | not started |
 | [2 — Terraform foundation](plan/stages/stage-02-terraform-foundation.md) | State buckets, module skeletons, the six persona permission sets written from scratch, the SCP import, the hygiene checks | not started |
 | [3 — Networking](plan/stages/stage-03-networking.md) | One VPC per account that has one, split `foundation/` + `egress/` | not started |
@@ -148,7 +148,7 @@ its **Consumes** row names; that is the whole reading list.
 
 ## 3. Decisions
 
-**D1-D36, all settled** — one of them, **D30, settled as a revert** and keeps its file so the record shows
+**D1-D37, all settled** — one of them, **D30, settled as a revert** and keeps its file so the record shows
 what was tried. One file each, with its reasoning, consequences and revision trigger:
 [`plan/decisions/INDEX.md`](plan/decisions/INDEX.md) — a one-line summary per decision, which is usually
 all that is needed.

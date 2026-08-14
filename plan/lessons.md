@@ -4,7 +4,7 @@
 planning period that re-reading the plan will not give back. Add to this list only what would otherwise
 be relearned the hard way.
 
-Read it before planning, reviewing, or settling a decision. `CLAUDE.md` carries the nineteen titles so a
+Read it before planning, reviewing, or settling a decision. `CLAUDE.md` carries the titles so a
 lesson can be *recognised* without opening this file; the reasoning that makes each one usable is here.
 
 ---
@@ -190,6 +190,14 @@ lesson can be *recognised* without opening this file; the reasoning that makes e
    **The other half, and it is the reason to keep doing it this way:** the composed run was still worth
    running, because the *must still succeed* half only gets stricter under composition, and the denial
    message naming the policy id is what let the gap be spotted at all rather than assumed away.
+   **A second instance arrived at 7.7 and it is sharper than the first, because there the attribution
+   answered a question nobody had asked.** `Sandboxes` was given its own enabled control, and the probe run
+   in `awsds-infra-sandbox-1` came back denied — naming `Interactive`'s policy, not the new one. The
+   question under test was *is this nested OU a registered target*, and what the probe measured was
+   *coverage*, which inheritance had already guaranteed and which would have looked identical had the
+   enablement silently failed. **A probe cannot distinguish a control you just added from a deny you
+   already had**; the OU's attached-policy list is what answered it. Read the *configuration* when the
+   question is about configuration, and keep probes for behaviour.
 
 21. **"The service validates before authorizing" is a property of the *action*, not of the service — so a
    validation error on the first try is a reason to retry with a real id, not a result.** Stage 1c had
@@ -207,6 +215,45 @@ lesson can be *recognised* without opening this file; the reasoning that makes e
    is only a result once the probe has been given inputs that exist — the public AMI from SSM, a subnet from
    `describe-subnets`, the account's own id in an ARN — and "the API validates first" is a claim about one
    API call, to be re-established each time rather than inherited from the last one.
+
+22. **A control whose principal the harness cannot produce is verified by *reading* the deployed document,
+   not by attempting the call — and a green battery is silent about that whole class.** Stage 1c step 7.7
+   enabled `AWS-GR_RESTRICT_ROOT_USER` on `Policy Test` without `ExemptAssumeRoot`, which denies
+   `sts:AssumeRoot` into every account beneath it — 1a step 6's only member-account recovery path, since
+   6.4 had established that no member account holds root credentials at all. The battery ran **61 of 61 as
+   expected** in the same sitting and could not have found it: every principal this project can obtain is
+   an Identity Center role, and the statement's condition is `ArnLike aws:PrincipalArn = arn:*:iam::*:root`,
+   which no such role matches. The defect was found by reading `p-kve97k0o`. **The discriminator, to apply
+   while *writing* a verification rather than after:** can this harness produce a principal that satisfies
+   the condition? If not, the plan must state what to **read** and which string proves it, never what to
+   attempt. Three statements in this project are already in that class — the root control
+   (`aws:AssumedRoot`), the positive half of D27's catalog-maintenance carve-out (needs Stage 5's role to
+   exist), and the positive half of the `aws:PrincipalIsAWSService` guard (needs a service principal) —
+   and the counter-example proves the discriminator does work: decision 7's BPA carve-out names
+   `InfrastructureAccess`, a principal that *does* exist, and was measured in both directions.
+   **What makes this worse than Lesson 21 rather than a variant of it:** a probe given a bad id at least
+   reports `UNTESTED`, which is visible. A probe that structurally cannot exist reports nothing at all, and
+   nothing reads as *fine* — the absence is indistinguishable from the case being covered. So the battery
+   needs a companion list of what it cannot see, which is why
+   [`plan/runbooks/scp-battery.md`](runbooks/scp-battery.md) now carries one. **The last half is a warning
+   against relief:** the omission cost almost nothing only because of an unrelated earlier decision — with
+   no root credentials anywhere, the unexempted control denied exactly and only the thing it was meant to
+   exempt. That alignment was luck, not design, and will not repeat.
+23. **When a managed service creates artifacts on your behalf, the container is its implementation detail —
+   bind to contents, never to the id or to the job the artifact was created for.** Control Tower emits each
+   enabled control as an ordinary SCP, which is what made verification (vii) readable at all. But its
+   *packing* is per enablement and is not consistent: in one console session, on the same day, the two
+   root-user controls were folded into the **original guardrail** document on `Policy Test`, `Workloads`
+   and `Interactive`, and into the **`CT.MULTISERVICE.PV.1`** document on `Identity` (`p-fw2pctqw`) and
+   `Data` (`p-pk85fvr1`). Nothing distinguished those two OUs; the same clicks produced two shapes. The
+   damage is not to the controls — they all work — but to **every record that named a document by its
+   job**: the log had those two ids written down as "the Region policy" for those OUs, and that sentence
+   became half-false the moment a second control was enabled. **The general form:** an artifact created for
+   you has an identity the service owns, may re-use, and may repack; its id, name and reason for existing
+   are all outside your control, and only its *contents* are what you asserted. Read the `Sid` list.
+   **The tell** is prose that refers to a managed document by the job it was created for rather than by
+   what is in it — and the same caution applies to anything else a service names for you, from
+   `AWSReservedSSO_*` role suffixes to service-linked roles.
 
 ---
 
