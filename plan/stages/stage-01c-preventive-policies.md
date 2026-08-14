@@ -1503,7 +1503,7 @@ because they change what the documents above should say.
   `--dry-run`: a declarative policy is enforced in the service's control plane, so a dry-run form returns
   `DryRunOperation` whether or not the policy is attached.
 
-**Two before-readings taken 2026-08-13, and both change what the attach is expected to do:**
+**Two before-readings taken 2026-08-14, and both change what the attach is expected to do:**
 
 | Measurement | Result | What it means for the attach |
 |---|---|---|

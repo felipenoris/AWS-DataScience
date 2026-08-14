@@ -86,7 +86,7 @@ from that OU alone, which is what makes a mistake in one of them cost one OU rat
 | `awsds-org-scp-ou-interactive.json` | `Interactive` | one statement — the classic notebook instance (decision 1) |
 | `awsds-org-scp-ou-identity.json` | `Identity` | user compute, and nothing else |
 
-**Step 7.8 added three more documents on the organization root, and two of them are not SCPs** — read
+**Step 7.8 added four more documents, all on the organization root, and three of them are not SCPs** — read
 [`SCPs.md`](SCPs.md) for the statement-level reasoning, which now covers all four policy types:
 
 | File | Type | What it does |

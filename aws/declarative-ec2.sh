@@ -233,7 +233,7 @@ while IFS=$'\t' read -r p acct; do
         "$p" "$(printf '%s' "$out" | head -2 | tr '\n' ' ')" >>"$ERRORS"
     fi
   elif [ -z "$out" ] || [ "$out" = "{}" ] || [ "$out" = "None" ]; then
-    # Measured 2026-08-13: with the policy type ENABLED but nothing attached, Organizations
+    # Measured 2026-08-14: with the policy type ENABLED but nothing attached, Organizations
     # answers `{}` rather than raising EffectivePolicyNotFoundException. An empty object and
     # a missing policy are the same fact and neither is an error - which is worth saying,
     # because a script that only handled the exception would print `{}` as if it were content.

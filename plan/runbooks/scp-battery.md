@@ -408,10 +408,12 @@ vends through `sso:GetRoleCredentials` — but that is the claim under test, and
 every account at once.
 
 Between the two attaches, and this is the step that cannot be delegated to a script: **sign in to `Policy
-Canary` through the access portal in a browser**, as `AWS Control Tower Admin` reaching
-`AWSAdministratorAccess`. The CLI path and the console path are not the same path, and 8.3's filter already
-showed that the console emits `sso.amazonaws.com` where the CLI emits something else. Only the console login
-exercises the federation half.
+Canary` through the access portal in a browser, as the infrastructure user** — not as `AWS Control Tower
+Admin`, who has no assignment there at all. `Policy Canary` is reached by the infrastructure user's
+**permanent direct assignment** of `AWSAdministratorAccess` (`ORGANIZATION.md`; Stage 1b step 3.8), which is
+the same identity behind the `awsds-policy-canary` profile. The CLI path and the console path are not the
+same path — 8.3's filter already showed the console emitting `sso.amazonaws.com` where the CLI emits
+something else — and only the console login exercises the federation half.
 
 If it locks the canary out: **detach from the Management account, which is exempt from RCPs.** That exemption
 is the reason this staging is safe, and it is also the reason the root attach must never be the first one.
