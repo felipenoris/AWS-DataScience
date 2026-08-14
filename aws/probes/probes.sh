@@ -8,7 +8,12 @@
 #
 #   probe <phase> <account> <expect> <allowed-regex|-> <safety> <label> -- <aws args...>
 #
-#     phase        root | ou | region        (--phase filters on this)
+#     phase        root | ou | region | rcp | tags | decl     (--phase filters on this)
+#
+#                  The last three are step 7.8's, one per document, because 7.8 is attached
+#                  one document at a time and each phase is the measurement for the attach
+#                  that just happened. `rcp` in particular is run BEFORE widening the RCP
+#                  from Policy Test to the root - see plan/runbooks/scp-battery.md.
 #     account      canary data identity dev sandbox1 prod
 #     expect       deny   the ceiling must stop it
 #                  allow  it must still work - a cross-check, or the floor
@@ -29,7 +34,8 @@
 #                             one step later. The reason is written next to it.
 #                    creates  mutating AND it would really do something if the deny were
 #                             absent. **The driver refuses to run these outside Policy
-#                             Canary.** There are three in this file and each is argued.
+#                             Canary.** There are seven in this file and each is argued:
+#                             three in `root`, four in `decl`.
 #
 #     @AMI@ @SUBNET@ @ACCT@ are substituted with real ids from the probed account.
 #
@@ -262,3 +268,182 @@ probe region canary allow - ro "region floor: budgets:DescribeBudgets" -- budget
 probe region canary allow - ro "region floor: ce:GetCostAndUsage"      -- \
   ce get-cost-and-usage --time-period Start=2026-08-01,End=2026-08-02 --granularity DAILY --metrics UnblendedCost
 probe region canary allow - ro "region floor: organizations:DescribeOrganization" -- organizations describe-organization
+
+# ==========================================================================
+# phase: rcp - awsds-org-rcp-perimeter (step 7.8). ALL FLOOR, ON PURPOSE, and
+# the absence of a deny probe here is the finding rather than an omission.
+#
+# WHY THERE IS NO DENY PROBE. An RCP denies principals from OUTSIDE the
+# organization. Producing one needs an identity this project does not have and
+# will not create: there are no IAM users (guiding principle), no second
+# organization, and no external IdP. Every principal the harness can produce
+# carries aws:PrincipalOrgID = our org, which is exactly the value that makes
+# the deny NOT fire. That is Lesson 22 - a control whose principal the harness
+# cannot produce is verified by READING, not by attempting - and the reading is
+# readback.py plus ./aws/org-policies.sh, which run anyway.
+#
+# An anonymous request was considered and rejected as evidence: it IS denied
+# (aws:PrincipalOrgID does not populate, StringNotEqualsIfExists is therefore
+# true), but a public request to any bucket here is already denied by account
+# BPA and by the absence of a bucket policy, and the answer names no policy. A
+# probe that passes for three reasons proves none of them (Lesson 20).
+#
+# WHAT IS MEASURABLE IS THE HALF THAT ACTUALLY BREAKS THINGS. This RCP names
+# s3, dynamodb, sqs, kms, secretsmanager, ecr and five sts actions with a
+# condition keyed on a value that is ABSENT for whole classes of caller. A
+# mistake does not show up as a hole; it shows up as the organization losing
+# access to its own data stores, which is what the rows below detect.
+# ==========================================================================
+
+# The sts half, and it is the reason the RCP is attached to Policy Test before the root.
+# EnforceOrgIdentitiesOnRoleAssumption covers AssumeRoleWithSAML and AssumeRoleWithWebIdentity,
+# where the caller has NO AWS principal yet, so aws:PrincipalOrgID cannot populate and the
+# IfExists form denies unconditionally. Nothing here federates that way today - Identity
+# Center vends through sso:GetRoleCredentials - but "today" is the whole claim being tested,
+# and the instrument is simply whether a session can still be obtained per account.
+# ensure_session runs before each probe below and ABORTS the battery (exit 2) if it cannot,
+# so these six rows are the AssumeRole floor even though the call they make is trivial.
+probe rcp canary   allow - ro "rcp floor: credentials still vend in Policy Canary"  -- sts get-caller-identity
+probe rcp dev      allow - ro "rcp floor: credentials still vend in Development"    -- sts get-caller-identity
+probe rcp data     allow - ro "rcp floor: credentials still vend in Data Governance" -- sts get-caller-identity
+probe rcp identity allow - ro "rcp floor: credentials still vend in Identity"       -- sts get-caller-identity
+probe rcp sandbox1 allow - ro "rcp floor: credentials still vend in Sandbox 1"      -- sts get-caller-identity
+probe rcp prod     allow - ro "rcp floor: credentials still vend in Production"     -- sts get-caller-identity
+
+# One read per SERVICE named in the document. An empty result is a pass: the question is
+# whether the call is authorized, not whether anything exists to return. These are the rows
+# that would fail if a condition key were mistyped - a typo in `aws:PrincipalOrgID` denies
+# EVERYONE, and the failure is not subtle once it is being looked for.
+probe rcp canary allow - ro "rcp floor: s3 reachable"             -- s3api list-buckets
+probe rcp canary allow - ro "rcp floor: dynamodb reachable"       -- dynamodb list-tables --region us-west-2
+probe rcp canary allow - ro "rcp floor: sqs reachable"            -- sqs list-queues --region us-west-2
+probe rcp canary allow - ro "rcp floor: kms reachable"            -- kms list-aliases --limit 1 --region us-west-2
+probe rcp canary allow - ro "rcp floor: secretsmanager reachable" -- secretsmanager list-secrets --max-results 1 --region us-west-2
+probe rcp canary allow - ro "rcp floor: ecr reachable"            -- ecr describe-repositories --max-results 1 --region us-west-2
+
+# Repeated in Data Governance, which is where the buckets and the catalog will actually live
+# (Stage 5) and therefore where an RCP mistake costs something. The canary is empty by design,
+# so a canary-only floor measures the policy against nothing.
+probe rcp data allow - ro "rcp floor: s3 reachable in Data Governance"   -- s3api list-buckets
+probe rcp data allow - ro "rcp floor: kms reachable in Data Governance"  -- kms list-aliases --limit 1 --region us-west-2
+probe rcp data allow - ro "rcp floor: ecr reachable in Data Governance"  -- ecr describe-repositories --max-results 1 --region us-west-2
+probe rcp data allow - ro "rcp floor: glue still reads the catalog"      -- glue get-databases --region us-west-2
+
+# ==========================================================================
+# phase: tags - awsds-org-scp-tag-enforcement (step 7.8, decision 5).
+#
+# THE TRIPLE IS THE MEASUREMENT, not any single row. The document is two
+# statements, one per required key, because two keys in ONE Null block are
+# ANDed and would deny only when BOTH were missing - the opposite of the
+# requirement. No denial message can name a Sid, so the two statements cannot
+# be told apart by attribution; what tells them apart is the middle row, which
+# supplies ONE tag and must STILL be denied. Drop it and the AND bug passes.
+#
+# WHERE THESE MAY NOT RUN: Data Governance and Identity, whose per-OU documents
+# deny ec2:RunInstances outright (7.6a). A deny there proves nothing about this
+# document and AWS names only one policy (Lesson 20). Development is the account
+# where a launch is legitimate, which is what makes the third row meaningful.
+# ==========================================================================
+
+probe tags canary deny - dryrun "tags: RunInstances with NO tags" -- \
+  ec2 run-instances --dry-run --image-id @AMI@ --instance-type t3.micro \
+  --subnet-id @SUBNET@ --region us-west-2
+
+# `Environment=org` is the enumerated value for every account that is not a workload
+# environment - Management, Log Archive, Audit, Identity and this one. The SCP tests presence
+# and not value, so this row would pass with any string; using the tag policy's own value
+# keeps the two documents from drifting into disagreement about what a legal tag looks like.
+probe tags canary deny - dryrun "tags: RunInstances with Environment ONLY (catches the AND bug)" -- \
+  ec2 run-instances --dry-run --image-id @AMI@ --instance-type t3.micro \
+  --subnet-id @SUBNET@ --region us-west-2 \
+  --tag-specifications 'ResourceType=instance,Tags=[{Key=Environment,Value=org}]'
+
+probe tags canary allow - dryrun "tags: RunInstances with BOTH tags must still work" -- \
+  ec2 run-instances --dry-run --image-id @AMI@ --instance-type t3.micro \
+  --subnet-id @SUBNET@ --region us-west-2 \
+  --tag-specifications 'ResourceType=instance,Tags=[{Key=Environment,Value=org},{Key=Project,Value=AWS-DataScience}]'
+
+# The same triple in Development. This is the half that says the document constrains rather
+# than forbids: Stage 4's VPN endpoint and Stage 7's GitLab both launch instances here, and
+# an over-broad Resource element (`*` instead of `instance/*`) denies EVERY launch, tagged or
+# not, because aws:RequestTag does not populate for the subnet and security group the same
+# call also references. The third row is the only thing that distinguishes the two.
+probe tags dev deny - dryrun "tags: RunInstances with NO tags (Development)" -- \
+  ec2 run-instances --dry-run --image-id @AMI@ --instance-type t3.micro \
+  --subnet-id @SUBNET@ --region us-west-2
+
+probe tags dev deny - dryrun "tags: RunInstances with Project ONLY (Development)" -- \
+  ec2 run-instances --dry-run --image-id @AMI@ --instance-type t3.micro \
+  --subnet-id @SUBNET@ --region us-west-2 \
+  --tag-specifications 'ResourceType=instance,Tags=[{Key=Project,Value=AWS-DataScience}]'
+
+probe tags dev allow - dryrun "tags: a properly tagged launch still works (Development)" -- \
+  ec2 run-instances --dry-run --image-id @AMI@ --instance-type t3.micro \
+  --subnet-id @SUBNET@ --region us-west-2 \
+  --tag-specifications 'ResourceType=instance,Tags=[{Key=Environment,Value=development},{Key=Project,Value=AWS-DataScience}]'
+
+# ==========================================================================
+# phase: decl - awsds-org-declarative-ec2 (step 7.8).
+#
+# WHY THESE FOUR CARRY NO --dry-run, WHICH IS THE OPPOSITE OF EVERY OTHER EC2
+# PROBE IN THIS FILE. A declarative policy is enforced in the SERVICE's control
+# plane, not in authorization (AWS Organizations user guide, "How declarative
+# policies work"). `--dry-run` stops after authorization and returns
+# DryRunOperation, so a dry-run form would come back ALLOWED whether the policy
+# is attached or not - a row that reads as a hole in the ceiling and is not one,
+# every single run. Measuring the wrong layer and reporting it as evidence is
+# worse than not measuring: it is Lesson 5 with a green tick on it.
+#
+# WHAT THEY RISK, WHICH IS WHY THEY ARE canary-ONLY. Each flips one account
+# setting IF AND ONLY IF the declarative policy is not doing its job. The canary
+# holds no AMI, no snapshot and no instance, so all four are inert there even
+# when they succeed - and each has a one-command undo, written next to it and
+# repeated in the runbook's cleanup step. If any of these comes back ALLOWED,
+# run the undo before anything else.
+#
+# WHAT THEY PROVE THAT A READ CANNOT. ./aws/declarative-ec2.sh reads the four
+# resulting VALUES, which is the authoritative check. These rows answer a
+# different question: that the account is refused when it tries to change them,
+# and that the caller receives OUR exception message rather than AWS's default.
+# The outcome column carries `custom-message` or `AWS-default-msg`, and the
+# second means the exception_message did not survive the upload.
+# ==========================================================================
+
+# undo: aws ec2 enable-image-block-public-access --image-block-public-access-state block-new-sharing
+probe decl canary deny - creates "decl: ec2:DisableImageBlockPublicAccess" -- \
+  ec2 disable-image-block-public-access --region us-west-2
+
+# undo: aws ec2 enable-snapshot-block-public-access --state block-all-sharing
+probe decl canary deny - creates "decl: ec2:DisableSnapshotBlockPublicAccess" -- \
+  ec2 disable-snapshot-block-public-access --region us-west-2
+
+# The one probe that ENABLES rather than disables: the policy asserts the console is off, so
+# the change it must refuse is turning it on.
+# undo: aws ec2 disable-serial-console-access --region us-west-2
+probe decl canary deny - creates "decl: ec2:EnableSerialConsoleAccess" -- \
+  ec2 enable-serial-console-access --region us-west-2
+
+# IMDSv1 is what this asks for, and it is the one setting the document deliberately leaves as
+# a DEFAULT rather than a ceiling: http_tokens_enforced is not set (7.8), so a per-launch
+# override is still legal. This row is about the ACCOUNT default, which the policy does own.
+# undo: aws ec2 modify-instance-metadata-defaults --http-tokens required --region us-west-2
+probe decl canary deny - creates "decl: ec2:ModifyInstanceMetadataDefaults to optional" -- \
+  ec2 modify-instance-metadata-defaults --http-tokens optional --region us-west-2
+
+# The floor: reading the settings must keep working everywhere, in every account, because
+# ./aws/declarative-ec2.sh depends on exactly these four calls and a policy that broke them
+# would leave the project with no instrument at all.
+probe decl canary allow - ro "decl floor: read image BPA state"       -- ec2 get-image-block-public-access-state --region us-west-2
+probe decl canary allow - ro "decl floor: read snapshot BPA state"    -- ec2 get-snapshot-block-public-access-state --region us-west-2
+probe decl canary allow - ro "decl floor: read serial console status" -- ec2 get-serial-console-access-status --region us-west-2
+probe decl canary allow - ro "decl floor: read IMDS defaults"         -- ec2 get-instance-metadata-defaults --region us-west-2
+probe decl dev    allow - ro "decl floor: read IMDS defaults (Development)" -- ec2 get-instance-metadata-defaults --region us-west-2
+
+# Launching with IMDSv1 explicitly requested. This is NOT expected to be denied and the row
+# says so: without http_tokens_enforced the account default is a default, and a launch may
+# override it. The row exists so that the day 7.8's follow-up sets http_tokens_enforced, the
+# expectation flips to `deny` and the battery measures the change instead of assuming it.
+probe decl dev allow - dryrun "decl: a launch may still ask for IMDSv1 (no http_tokens_enforced yet)" -- \
+  ec2 run-instances --dry-run --image-id @AMI@ --instance-type t3.micro \
+  --subnet-id @SUBNET@ --region us-west-2 --metadata-options 'HttpTokens=optional' \
+  --tag-specifications 'ResourceType=instance,Tags=[{Key=Environment,Value=development},{Key=Project,Value=AWS-DataScience}]'

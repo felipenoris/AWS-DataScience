@@ -360,6 +360,101 @@ describes a version that no longer exists.
 AWS, not by the caller: there is no way to present as a service principal on purpose. What the re-run above
 proves is the half that matters for regression — that adding the guard did not open the deny for people.
 
+## Phase 5 — step 7.8's four documents, one attach at a time
+
+**7.8 is the first sitting where the four documents are not all the same kind of thing**, and the ordering
+below is not taste: each document is attached alone, measured, and only then is the next one touched. Two of
+them break in ways the previous phases have no equivalent for.
+
+| Order | Document | Attach to | Measure with | Undo |
+|---|---|---|---|---|
+| 1 | `awsds-org-scp-tag-enforcement` | root | `--phase tags` | detach |
+| 2 | `awsds-org-tag-policy` | root | `./aws/org-policies.sh` — no probe exists | detach |
+| 3 | `awsds-org-rcp-perimeter` | **`Policy Test` OU first**, root after | `--phase rcp` | detach |
+| 4 | `awsds-org-declarative-ec2` | root | `--phase decl` **and** `./aws/declarative-ec2.sh` | detach **rolls state back** |
+
+### 1 — the tag-enforcement SCP, and why the middle probe is the whole test
+
+`--phase tags` is six rows and only the pattern is evidence. The **before** reading was taken 2026-08-13 in
+`Development`: all four command forms returned `DryRunOperation`, so an untagged launch succeeded. After the
+attach, the two untagged and the two single-tag rows must read `DENY-SCP` and the two fully tagged rows must
+still read `DryRunOperation`.
+
+**A run where every row denies is a failure, not a strict pass.** It is what an over-broad `Resource` element
+produces: `aws:RequestTag` does not populate for the subnet, security group or volume that the same
+`RunInstances` call references, so `Resource: "*"` denies every launch, tagged or not. The fully tagged row
+is the only thing that separates the intended control from that.
+
+### 2 — the tag policy, which has no probe and is not supposed to have one
+
+It carries no `enforced_for`, so it **reports** and prevents nothing; there is no call it refuses and
+therefore nothing for the battery to attempt. It is read, not probed:
+
+```bash
+aws organizations describe-effective-policy --policy-type TAG_POLICY --profile awsds-infra-dev --region us-east-1
+```
+
+Reading a compliance *report* needs the Resource Groups Tagging API and a resource population this project
+does not have yet — Stage 2 is where that becomes meaningful. Until then the attach is verified by the
+effective policy answering at all.
+
+### 3 — the RCP, which is staged because the failure mode is a lockout
+
+**Attach it to the `Policy Test` OU first and leave it there until `--phase rcp` is green.** The reason is
+`EnforceOrgIdentitiesOnRoleAssumption`: it covers `sts:AssumeRoleWithSAML` and `sts:AssumeRoleWithWebIdentity`,
+where the caller has **no AWS principal yet**, so `aws:PrincipalOrgID` cannot populate and the
+`StringNotEqualsIfExists` form denies **unconditionally**. Nothing federates that way today — Identity Center
+vends through `sso:GetRoleCredentials` — but that is the claim under test, and a root attach tests it in
+every account at once.
+
+Between the two attaches, and this is the step that cannot be delegated to a script: **sign in to `Policy
+Canary` through the access portal in a browser**, as `AWS Control Tower Admin` reaching
+`AWSAdministratorAccess`. The CLI path and the console path are not the same path, and 8.3's filter already
+showed that the console emits `sso.amazonaws.com` where the CLI emits something else. Only the console login
+exercises the federation half.
+
+If it locks the canary out: **detach from the Management account, which is exempt from RCPs.** That exemption
+is the reason this staging is safe, and it is also the reason the root attach must never be the first one.
+
+The `rcp` phase is **all floor and no deny**, which is a finding rather than an omission — see the block at
+the top of that phase in `probes.sh`. Producing an out-of-organization principal needs an identity this
+project does not have and will not create, so the deny half is Lesson 22: verified by `readback.py` and
+`./aws/org-policies.sh`, never by attempting.
+
+### 4 — the declarative policy, the only document that changes state
+
+Three things separate it from every other document in `policies/`:
+
+- **It is enforced in the service's control plane, not in authorization.** It names no policy id and emits no
+  *"explicit deny"* wording. The attribution is the **exception message**, which is why the document sets a
+  custom one — and the `decl` phase reports `custom-message` or `AWS-default-msg` precisely so that an
+  `exception_message` lost in the upload is visible.
+- **`--dry-run` measures the wrong layer.** It stops after authorization and returns `DryRunOperation`
+  whether or not the policy is attached. The four probes therefore carry **no** `--dry-run` and are
+  `creates`, canary-only; each has a one-command undo written beside it in `probes.sh`. **If any comes back
+  `ALLOWED`, run its undo before doing anything else** — the canary has been left in the state the policy
+  exists to prevent.
+- **Attaching changes existing settings**, and detaching **rolls each attribute back** to what it was before.
+  So "attached" and "in effect" are two facts. `./aws/declarative-ec2.sh` is what reads the second, and it is
+  the authoritative check; the probes only show that the account is refused when it tries to change them.
+
+**It is also the first root-attached document expected to reach the management account.** SCPs and RCPs skip
+Management by design; AWS documents no such exemption for declarative policies, and control-plane enforcement
+is not where that exemption lives. **This is unmeasured** — run `./aws/declarative-ec2.sh -` in CloudShell on
+Management, as `AWS Control Tower Admin`, and record the answer. It is a reading nobody else will take.
+
+### The canary cleanup gains four commands
+
+The existing step empties `Policy Canary` after a battery. Add, and only if the corresponding `decl` row came
+back `ALLOWED`:
+
+```bash
+aws ec2 enable-image-block-public-access --image-block-public-access-state block-new-sharing --region us-west-2 --profile awsds-policy-canary
+```
+
+The other three are in `probes.sh` next to their probes: `enable-snapshot-block-public-access`,
+`disable-serial-console-access`, and `modify-instance-metadata-defaults --http-tokens required`.
+
 ## What this battery does not cover, and where each one goes
 
 - **The Region restriction.** It is not written in 7.5 or 7.6 — it is a Control Tower managed control
@@ -375,8 +470,11 @@ proves is the half that matters for regression — that adding the guard did not
   **[Stage 6 step 0](../stages/stage-06-unified-studio.md)**, run before the domain is created rather than
   after. Note the direction of the risk: `ForAllValues:` over a key that does not populate evaluates
   **true**, so the untested failure is the deny applying to *everyone*, `Data` included.
-- **The RCP, tag and declarative policies.** 7.8, in sitting B, and the RCP's denial wording differs — see
-  the table above.
+- **The RCP's deny half.** Phase 5 covers 7.8, but the RCP is measured **only on its floor**: an
+  out-of-organization principal is an identity this project cannot produce, so the deny is read and never
+  attempted (Lesson 22, and the table below).
+- **A tag policy's compliance report.** It enforces nothing and refuses no call, so there is nothing to
+  probe; it needs a resource population that does not exist before Stage 2.
 - **The positive half of the `Data` OU's catalog-maintenance carve-out** — phase 4 says why, and Stage 5 is
   where it is answered.
 
@@ -394,6 +492,7 @@ verification is a document read, and the plan states the string that proves it.
 | `GRRESTRICTROOTUSER` (Control Tower, per OU) | conditioned on `ArnLike aws:PrincipalArn = arn:*:iam::*:root`; no SSO role ever matches | `organizations describe-policy` on the OU's guardrail — **`aws:AssumedRoot` must appear** in the condition (the `ExemptAssumeRoot` parameter). Missing it denies `sts:AssumeRoot` into every account beneath, which is 1a step 6's only member-account recovery |
 | positive half of D27's catalog-maintenance carve-out | the exempted role does not exist until Stage 5 | the `ArnNotEquals` value against the role Stage 5 creates |
 | positive half of the `aws:PrincipalIsAWSService` guard | needs a service principal, which cannot be assumed | the `BoolIfExists` clause is present and spelled `false` |
+| all four statements of `awsds-org-rcp-perimeter` | an RCP denies principals from **outside** the organization; there is no IAM user, no second organization and no external IdP here, so every principal the harness can produce carries the org id that makes the deny *not* fire | `readback.py` (four `Sid`s, correct action counts) and the org id in each `StringNotEqualsIfExists`. An anonymous request is denied for three other reasons and names no policy — it proves nothing (Lesson 20) |
 
 **All three are checked mechanically by [`aws/org-policies.sh`](../../aws/org-policies.sh)**, which reads
 the deployed documents and exits 2 if any of them stops saying what it must — run it after every attachment,

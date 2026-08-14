@@ -27,11 +27,23 @@ The documents themselves carry no comments — JSON has none — so this file is
 > [`log/stage-01c-preventive-policies.md`](../../../log/stage-01c-preventive-policies.md), recorded as each
 > document is attached, and duplicating them here would produce a second, staler answer.
 
-**Scope:** SCPs only. The RCP, tag and declarative documents of
-[step 7.8](../../../plan/stages/stage-01c-preventive-policies.md) are different policy *types* with
-different evaluation rules and are not indexed here — except the **tag-forcing SCP**, which is an SCP and
-gets a section of its own when decision 5 settles. The throwaway documents in [`canary/`](canary/) are
-never attached to anything real and are described in [`README.md`](README.md).
+**Scope: every document in [`policies/`](policies/), of all four policy types — widened 2026-08-13 when
+step 7.8 wrote the other three.** The filename is historical and the split it once described was not worth
+keeping: a second index is a second place to forget an amendment (Lesson 14), and "why does this statement
+exist" is the same question whatever the type. **What differs is what plays the part of a `Sid`**, and
+`check-index.sh` knows all four: the `Sid` list for an SCP or an RCP, the **tag keys** for a tag policy, the
+**attribute names** under `ec2_attributes` for a declarative policy. A document of a type it does not
+recognise stops the run rather than being skipped.
+
+**The four types do not compose the same way, and reading a row without knowing which type it is on will
+mislead you.** An SCP bounds what a *principal in this organization* may do and never applies to the
+management account. An **RCP** bounds who may reach a *resource in this organization* — including principals
+outside it — and also never applies to the management account. A **tag policy** enforces nothing at all
+unless `enforced_for` is set, which it is not here; it reports. A **declarative policy** is not a permission
+boundary in either direction: it sets a service attribute that an account administrator then cannot change.
+
+The throwaway documents in [`canary/`](canary/) are never attached to anything real and are described in
+[`README.md`](README.md).
 
 **Reading the whole ceiling:** every account is governed by the root documents **plus** its OU's, and denies
 only ever compose. A call that fails may be failing on a statement in a different file — the CloudTrail
@@ -137,6 +149,126 @@ Identity Center. The tier exists to make its blast radius smaller.
 | `DenyUserCompute` | The same statement as the `Data` OU's first row, for the same reason and with none of its neighbours: there is nothing to run in this account, so the four EC2 launch actions, `sagemaker:Create*`/`StartSession`, the Glue compute list, `lambda:CreateFunction` and the ECS creation actions are all denied. **Deliberately not `Data`'s other two statements** — `s3:DeleteBucket` and `lakeformation:DeregisterResource` mean nothing in an account that holds neither, and an OU whose policy is *mostly* right is the kind nobody re-reads. **The two documents must stay identical in this statement**: they are one idea in two files, and the moment they drift, the next reader has to diff them to find out which is authoritative (Lesson 14 — the check at the top of this file compares `Sid`s, not action lists). **Effect:** a compromise of the identity plane cannot be turned into compute inside it. Athena, EMR and Batch are uncovered here too, for the same reasons as in `Data` — with the difference that this account has no lake to read, so the Athena hole is a shape without content |
 
 ---
+
+## `awsds-org-rcp-perimeter.json` → organization **root**  *(RESOURCE_CONTROL_POLICY)*
+
+**The trusted-*identities* axis** (`plan/architecture.md` §4.2), and the mirror of the SCP perimeter above:
+that one stops *our* principals writing *outside*, this one stops *outside* principals reaching *our*
+resources. **Seven services, because seven is what RCPs support** — S3, STS, KMS, SQS, Secrets Manager,
+DynamoDB and ECR — widened from five by the user on 2026-08-12. EC2, RDS and EFS are outside RCP reach
+entirely, which is why the snapshot route is an SCP deny in `awsds-org-scp-baseline.json` and why EFS has no
+preventive control at all.
+
+**Two grammar differences from every other document here, both of which make it fail closed if forgotten:**
+an RCP statement **requires a `Principal` element** (`"*"`), and the **budget is half** — 5 policies per node
+and 5 120 characters, not the SCP's 10 and 10 240, because RCPs were not part of the May 2026 increase.
+
+**`BoolIfExists: aws:PrincipalIsAWSService=false` is on every statement and is not optional decoration.**
+Service-*linked* roles are exempt from RCPs by construction; **service principals are not**, and that
+distinction is the entire bug: without the carve-out the first things denied are CloudTrail and Config
+writing into the Log Archive bucket — in the account whose only job is to receive them. The organization IAM
+Access Analyzer in Audit (1b step 8.2) reads resource policies across every account under
+`access-analyzer.amazonaws.com` and depends on the same pair; confirm it after attaching by checking the
+analyzer still reports `ACTIVE` with a finding count (`./aws/audit-iam-analyser.sh`), not by re-reading this
+JSON.
+
+**Split into four statements on purpose, and the reason is future carve-outs.** These services will not need
+the *same* exemptions — ECR already has a service-fetch story that S3 does not — and one statement covering
+all seven would force any future carve-out onto services that never needed it, which is a hole rather than a
+convenience.
+
+| `Sid` | Effect |
+|---|---|
+| `EnforceOrgIdentitiesOnDataStores` | Denies `s3:*`, `dynamodb:*` and `sqs:*` to any principal whose `aws:PrincipalOrgID` is not this organization. **Whole namespaces here, unlike the SCP perimeter** — the asymmetry is deliberate and comes from the direction: the SCP had to enumerate because `s3:Put*` would have caught the account-level `PutAccountPublicAccessBlock` that step 7.4 depends on, while an RCP is evaluated against *our* resources and a principal outside the organization has no legitimate call to make against any of them. **`StringNotEqualsIfExists` also denies the anonymous request**, where the key does not populate at all — which is the public-bucket case, and it is wanted. **DynamoDB is inert on attachment and is adopted anyway**: this project has no table and no plan for one (D3 chose native S3 locking precisely to avoid it), so the clause protects nothing today and costs nothing to have in place before it does |
+| `EnforceOrgIdentitiesOnSecretsAndKeys` | Denies `kms:*` and `secretsmanager:*` under the same condition pair. The one to think about before Stage 5: a KMS key policy that grants an outside account is *overridden* by this — the RCP is evaluated on the resource side, so it wins over a permissive resource policy, which is the whole point of the type. **Revision trigger:** the first legitimate cross-organization share, which this design does not have and D31's derived-zone CMK does not need |
+| `EnforceOrgIdentitiesOnRegistry` | Denies `ecr:*` under the same pair. **The load-bearing one, and the only one whose carve-out is exercised in normal operation.** D14 puts the registry in Production and three integrations cross an account boundary to reach it — INT-01 (the Studio custom image pulled into the Sandbox and Development domains), INT-07 (Staging pulling the application image) and INT-01's replication fallback — and **all of those are inside the organization, so `aws:PrincipalOrgID` admits them**; that is the reason to key on the organization rather than on an account list. What is *not* admitted by that argument is the **service** half: ECR performs pull-through cache fetches and replication writes itself, under a service principal, so those depend entirely on the `IsAWSService` carve-out. **Test a pull-through cache fetch and a cross-account pull after attaching** — the cross-account half proves the org key, the cache proves the carve-out, and neither proves the other |
+| `EnforceOrgIdentitiesOnRoleAssumption` | Denies `sts:AssumeRole`, `AssumeRoleWithSAML`, `AssumeRoleWithWebIdentity`, `SetSourceIdentity` and `TagSession` to principals outside the organization — the third-party-access route, closed at the resource. **Enumerated rather than `sts:*`, and the two federated actions are named deliberately: for those the caller has no AWS principal yet, so `aws:PrincipalOrgID` never populates and `IfExists` denies them unconditionally.** That is correct for this design — no external identity provider federates into these accounts, and D14 already records that GitLab CI cannot use OIDC because IAM cannot fetch a VPN-only issuer's JWKS — but it is a deny by *key absence* rather than by comparison, so it would not announce itself as the cause. **Revision trigger, and it is the likeliest of the four: the first external federation or third-party integration.** Identity Center's own sign-in is unaffected — its roles are inside the organization and the service principal is carved out |
+
+## `awsds-org-scp-tag-enforcement.json` → organization **root**
+
+**Decision 5, settled 2026-08-13 by measurement rather than by argument.** A tag policy cannot force a
+resource to be created with tags — it constrains *tagging operations* — so the forcing function has to be an
+SCP with `aws:RequestTag` conditions on the create actions. The question was only ever *which* create
+actions, and the plan's instruction was to verify the API before including one.
+
+**What was measured, from the machine-readable service reference:** `s3:CreateBucket` **does** map
+`aws:RequestTag`/`aws:TagKeys` today, so the 2026-08-09 reasoning that excluded S3 is stale — but the
+deciding question is now whether Terraform's `aws` provider sends the tags **on the create call** or still
+calls `PutBucketTagging` afterwards, and if it is the latter the condition is unsatisfiable by the tool this
+project builds with and the first thing denied is Stage 2's own state bucket. **That is answered at Stage 2,
+free, by looking at what the provider sends.** `rds:CreateDBInstance` maps it too and is **inert** — no RDS
+here and none planned. So `ec2:RunInstances` is the only member of the scope that is both live (WireGuard,
+GitLab, the runners) and answerable now.
+
+**Two mechanics that decide whether this document works at all, and both fail silently in the same
+direction — a deny that fires on everything:**
+
+- **The `Resource` is `arn:aws:ec2:*:*:instance/*`, never `*`.** `RunInstances` creates and references
+  several resource types in one call — subnet, security group, image, volume, network interface — and
+  `aws:RequestTag` only populates for the ones the request actually tags. With `Resource: "*"` the `Null`
+  test is true for the untagged resource types and **every launch is denied**, tags or no tags.
+- **One statement per required key.** Two keys inside a single `Null` block are ANDed, which would deny only
+  when *both* tags are missing — the opposite of the requirement. Two statements is the only way to say
+  "either one missing is a deny".
+
+**Volumes are deliberately out of scope**: `TagSpecifications` for `volume` is optional on a launch, so
+including `volume/*` would deny any launch that did not tag its root volume. Cost attribution for volumes
+rides on the instance.
+
+| `Sid` | Effect |
+|---|---|
+| `DenyRunInstancesWithoutEnvironmentTag` | Denies `ec2:RunInstances` on `instance/*` when `aws:RequestTag/Environment` is absent, with the service carve-out beside it. `Environment` is the tag the cost model actually groups by, and its enumeration is fixed at `sandbox\|development\|data\|staging\|production\|org` with **no ordinal at any N** (user, 2026-08-13) — a per-unit value would mean editing an organization policy at every vend, and forgetting is an `AccessDenied` on the first apply in a brand-new account |
+| `DenyRunInstancesWithoutProjectTag` | The same for `aws:RequestTag/Project`. Two keys and no more: this is the one document in 7.5-7.8 that binds the builder exactly as hard as it binds anyone (Lesson 18 read forwards), so the scope is the two keys whose absence actually costs something and nothing else. **`ManagedBy`, `Owner` and `CostCenter` are conventions, not controls** — they are in the tag policy below, which reports and does not enforce |
+
+**Exercise both directions before trusting it** — `ec2:RunInstances --dry-run` with and without
+`--tag-specifications` in `Policy Canary`, which is the two-different-errors shape the battery prefers and
+which settles from the authorization engine what the service reference could not say: it maps
+`aws:RequestTag` to **0 of EC2's 793 actions** while declaring the key at the service level, so its silence
+about `RunInstances` is a gap in the instrument, not a fact about EC2 (Lesson 13).
+
+## `awsds-org-tag-policy.json` → organization **root**  *(TAG_POLICY)*
+
+**This document reports; it does not enforce, and the distinction is the whole reason to read this
+paragraph.** A tag policy defines the canonical capitalisation of a tag key and, optionally, the values that
+key may take — and then evaluates *tagging operations* against that definition. Without an `enforced_for`
+list it **prevents nothing**: a non-compliant tag is flagged in the Resource Groups console and applied
+anyway. `enforced_for` is deliberately **not** set here, because it covers only a subset of resource types
+and would make the failure mode depend on which service you happened to be using. **Reading "we have a tag
+policy" as a control is exactly the shape of Lesson 5** — what forces tags is
+`awsds-org-scp-tag-enforcement.json` above, on two keys, on one action.
+
+**Revision trigger:** the first cost report that cannot answer a question because of a mistyped tag. At that
+point `enforced_for` becomes worth its per-resource-type surprise.
+
+| `Sid` | Effect |
+|---|---|
+| `Environment` | Fixes the capitalisation and enumerates `sandbox`, `development`, `data`, `staging`, `production`, `org`. `org` marks org-level and platform resources (the identity slice, `Policy Canary`); `data` marks Data Governance, which is not an environment at all but sits on the ownership axis, so cost reports can separate it. **`shared` is reserved and unused** — it names a Shared Services account if D14's revision trigger ever fires |
+| `Project` | Fixes the capitalisation and pins the single value `AWS-DataScience`. One value is not pointless: it is what makes a resource created outside this project visible in a cost report that filters on it |
+| `ManagedBy` | Fixes the capitalisation and enumerates `terraform` and `console`. **Both, deliberately** — `console` is admitted for the six artefacts Stage 2 names as structurally outside Terraform (wrong account, Control Tower's object, or an SCP that would deny the apply), and tagging those `terraform` would be false at the only moment anyone reads the tag: when working out where a resource's source of truth is |
+| `Owner` | Fixes the capitalisation only, with **no value enumeration**: the value is one of the project's `sso-group-*` groups and that list grows per business unit at Stage 14, so enumerating it here would need an organization-policy edit at every vend — the same failure this project already refused for `Environment` |
+| `CostCenter` | Fixes the capitalisation only. The value is a **stage**, which is an open set by construction |
+
+## `awsds-org-declarative-ec2.json` → organization **root**  *(DECLARATIVE_POLICY_EC2)*
+
+**Not a permission boundary in either direction.** A declarative policy sets an EC2 *service attribute* for
+every account in scope and then makes it unchangeable from inside those accounts — `DisableSnapshotBlockPublicAccess`
+and friends stop working there. That is why this is the right instrument for an account-level, Regional
+setting: it is the only way to apply one across every account and every Region at once, and it cannot be
+switched off locally afterwards.
+
+**The one thing this document must not be read as covering.** AWS states plainly that snapshot block public
+access **does not prevent private sharing**. It blocks the *public* snapshot — the accident — and leaves
+sharing with a named outside account, the deliberate exfiltration, completely open. That route is closed by
+`DenySnapshotAndImageSharing` in `awsds-org-scp-baseline.json`, and **the two are not substitutes**: reading
+the words "block public access" as coverage is the shape of Lesson 5.
+
+| `Sid` | Effect |
+|---|---|
+| `exception_message` | The text a user sees when one of these attributes refuses their call. Says which policy did it and that the setting is organization-managed, because the default message reads like a broken console rather than a control working as intended |
+| `snapshot_block_public_access` | `block_all_sharing` — blocks all public sharing of EBS snapshots **and treats already-public snapshots as private**. The stronger of the two blocking values, chosen because nothing is shared today, so there is nothing to grandfather and no reason to leave a weaker setting to be tightened later |
+| `image_block_public_access` | `block_new_sharing`. **A deliberate asymmetry with the row above, and it is AWS's, not a choice:** the AMI attribute has no `block_all_sharing` value at all — an AMI that is already public stays public. Nothing here is, and the SCP baseline denies `ec2:ModifyImageAttribute`, so the gap is closed from the other side. It is recorded because "both are blocked" is the sentence someone will write later |
+| `instance_metadata_defaults` | `http_tokens: required` (IMDSv2), `http_put_response_hop_limit: "2"` (AWS's own recommendation once tokens are required — 1 breaks containerised workloads reaching IMDS), `http_endpoint: enabled`, `instance_metadata_tags: no_preference`. **`http_tokens_enforced` is deliberately NOT set, and the difference matters:** `http_tokens: required` sets the account *default*, which a launch may still override by asking for `optional`; `http_tokens_enforced: enabled` is what makes an IMDSv1 launch impossible. So this row is a default and not yet a ceiling — Lesson 5 acknowledged rather than tripped over. **Revision trigger, and it is concrete: turn `http_tokens_enforced` on once Stage 4's WireGuard instance and Stage 7's GitLab and runners have launched successfully with IMDSv2**, because AWS's own warning is that enforcing while anything still asks for `optional` fails the launch |
+| `serial_console_access` | `disabled`. **Beyond what step 7.8 listed, and flagged here rather than folded in quietly.** The EC2 serial console is console-based access to an instance that traverses no network at all, so it is a path around `CLAUDE.md`'s first objective — all user access through the VPN — and around every security group and endpoint policy Stages 3, 4 and 9 write. It is off by default per account, which is exactly what makes pinning it cheap and forgetting it easy. **Drop this row if the trade is unwanted**: the cost is that recovering a mis-networked instance then needs a rebuild rather than a serial session |
 
 ## What is not in any of these documents
 

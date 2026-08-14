@@ -946,6 +946,47 @@ aws ec2 run-instances --dry-run --image-id <AMI> --instance-type t3.micro --subn
 
 - This closes 7.7.
 
+### After 7.7 — the review pass, 2026-08-13
+
+- **Reviewed the section against plan, rules, decisions and lessons.** What came out of it that is not a
+  restatement of something already written: **Lesson 22** — a control whose principal the harness cannot
+  produce is verified by *reading*, and the `ExemptAssumeRoot` omission proved it by surviving a 61/61
+  battery; **Lesson 23** — Control Tower packs per enablement and inconsistently, so bind to the `Sid`;
+  **D37** — nothing on `Sandboxes` unless it differs from `Interactive`; and **open question 16** —
+  `Log Archive` and `Audit` have no Region ceiling, addressed to Stage 1d.
+
+- **`./aws/org-policies.sh` written**, the post-attachment counterpart to `org-policy-baseline.sh`'s
+  preflight: condensed by `Sid`, inheritance resolved per account, and it runs the checks no probe can
+  reach — **exits 2 when one fails**. First run: 20 checks, 0 failures. Two bugs found by running it, both
+  worth recording because they produce *plausible* output rather than an error: a variable set inside a
+  command substitution never returns to the parent, and BSD `paste -sd ', '` reads the string as a rotating
+  list of delimiters.
+
+### 7.8 — the documents, none of them attached yet
+
+- **Decision 5 settled by measurement, and the measurement inverted this plan's own premise.** From the
+  machine-readable service reference: **`s3:CreateBucket` does map `aws:RequestTag`/`aws:TagKeys`** (1 of 11
+  S3 actions), so the 2026-08-09 reasoning that excluded S3 is stale — but the deciding question is now
+  whether the Terraform provider sends the tags *on the create call*, and that is answered at Stage 2 for
+  free. `rds:CreateDBInstance` maps it and is **inert** — no RDS here. **`ec2:RunInstances` could not be
+  measured this way at all: 0 of EC2's 793 actions map the key while EC2 declares it at the service level**
+  — a gap in the instrument, not a fact about EC2, recorded beside the link in `REFERENCES.md`. Scope is
+  therefore `ec2:RunInstances` alone, to be settled by probe after attachment.
+
+- **Four documents written and rendered**, all minified well inside the tighter 5 120 limit:
+  `awsds-org-rcp-perimeter.json` (RCP, 1150), `awsds-org-scp-tag-enforcement.json` (SCP, 518),
+  `awsds-org-tag-policy.json` (tag policy, 430), `awsds-org-declarative-ec2.json` (declarative EC2, 640).
+
+- **`SCPs.md` now indexes all four policy types** and `check-index.sh` is type-aware — `Sid`s for SCP/RCP,
+  tag keys for a tag policy, `ec2_attributes` names for a declarative one, with an unrecognised document
+  stopping the run rather than being skipped. Ten documents, `clean`.
+
+- Three choices made while writing, recorded because a later reader will otherwise assume the opposite:
+  **the tag policy enforces nothing** (no `enforced_for` — it reports); **`http_tokens_enforced` is
+  deliberately not set**, so IMDSv2 is the account default and not yet a ceiling, to be turned on once
+  Stage 4 and Stage 7 have launched successfully; and **`serial_console_access: disabled` is beyond what
+  7.8 listed**, added because the serial console reaches an instance without traversing any network.
+
 ---
 
 *Log index: [log/INDEX.md](INDEX.md) · Stage index: [plan/stages/INDEX.md](../plan/stages/INDEX.md)*

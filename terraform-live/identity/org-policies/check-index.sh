@@ -30,9 +30,26 @@ md = open("SCPs.md").read()
 sections = re.split(r"\n## ", md)
 bad = 0
 
+# What plays the part of a `Sid` differs by policy TYPE, and step 7.8 put three types in
+# this folder. The property being checked is the same in all three - "the index lists
+# exactly what the document contains, in order" - so the extraction is what varies, and a
+# document whose type is not recognised STOPS the run rather than being skipped quietly: a
+# checker that silently ignores a file is not a checker (Lesson 13).
+def entries(doc, name):
+    if "Statement" in doc:                       # SCP and RCP: the IAM grammar
+        return [s["Sid"] for s in doc["Statement"]]
+    if "tags" in doc:                            # tag policy: one entry per tag key
+        return [v["tag_key"]["@@assign"] for v in doc["tags"].values()]
+    if "ec2_attributes" in doc:                  # declarative policy: one per attribute
+        return list(doc["ec2_attributes"].keys())
+    raise SystemExit(
+        f"{name}: unrecognised policy document - no Statement, tags or ec2_attributes key. "
+        "Teach check-index.sh what plays the part of a Sid for this type before adding it."
+    )
+
 for path in sorted(glob.glob("policies/*.json")):
     name = path.split("/")[-1]
-    sids = [s["Sid"] for s in json.load(open(path))["Statement"]]
+    sids = entries(json.load(open(path)), name)
     section = [s for s in sections if s.startswith("`" + name + "`")]
     if not section:
         print(f"DIFF {name}: no section in SCPs.md")

@@ -7,9 +7,21 @@ script every time.
 
 ```bash
 ./aws/probes/scp-battery.sh              # read-back, then every phase
-./aws/probes/scp-battery.sh --phase ou   # one phase: root | ou | region
+./aws/probes/scp-battery.sh --phase ou   # one phase — see the table below
 ./aws/probes/scp-battery.sh --list       # what would run, and in which account
 ```
+
+| Phase | Measures | Notes |
+|---|---|---|
+| `root` | the two documents on the organization root (7.5) | three `creates` probes, canary only |
+| `ou` | the four per-OU documents (7.6) | nothing here can create anything, in any account |
+| `region` | `CT.MULTISERVICE.PV.1` (7.7) | the pair — `us-east-1` denied *and* `us-west-2` still working |
+| `rcp` | `awsds-org-rcp-perimeter` (7.8) | **all floor, no deny** — and that is the finding, not an omission |
+| `tags` | `awsds-org-scp-tag-enforcement` (7.8) | the triple; the single-tag row is the whole test |
+| `decl` | `awsds-org-declarative-ec2` (7.8) | four `creates` probes with **no** `--dry-run`, canary only |
+
+**`awsds-org-tag-policy` has no phase**, and should not: it carries no `enforced_for`, refuses no call, and
+therefore offers nothing to attempt. It is read, not probed.
 
 | File | What it is |
 |---|---|
@@ -45,11 +57,13 @@ ok   ou   identity allow ALLOWED   reached-authorization   identity: glue:StartC
 FAIL region canary deny ALLOWED    dry-run      region: ec2:RunInstances in us-east-1 must be denied
 ```
 
-Four outcomes, and the distinctions are the point:
+Six outcomes, and the distinctions are the point:
 
 | Outcome | Means |
 |---|---|
 | `DENY-SCP` | An explicit deny in a **service control policy**, and the detail column is the policy id the API named — attribution without CloudTrail. **AWS names one policy even when several deny**, so a document that appears in no row is attached but unexercised (Lesson 20) |
+| `DENY-RCP` | The same, in a **resource control policy**. Different wording, same attribution |
+| `DENY-DECL` | A **declarative policy**, which is enforced in the service's control plane and so names no policy id at all. The attribution is the exception message, and the detail column says which one arrived: `custom-message` is ours, `AWS-default-msg` means the `exception_message` did not survive the upload |
 | `DENY-NOT-SCP` | `AccessDenied` naming **no** policy — an IAM or permission-set deny. It answers a different question from the one being asked, and it is never counted as the ceiling working |
 | `ALLOWED` | `DryRunOperation`, an exit code of 0, or the wording that proves *this action* reached authorization — declared per probe, because "the service validates first" is a property of the action, not of the service (Lesson 21) |
 | `UNTESTED` | The call never reached authorization. **Not a pass and not a failure** — a probe that needs a better input, usually a real id |
@@ -78,7 +92,10 @@ probe <phase> <account> <expect> <allowed-regex|-> <flags|-> <label> -- <aws arg
   is reported `UNTESTED` rather than assumed allowed. **Getting this field wrong is the one way to make
   the script lie**, and it lies in the flattering direction.
 - **`flags`** — `creates` for a creation-shaped probe with no `--dry-run`. The driver **refuses to run
-  those outside `Policy Canary`**; give it a `--dry-run` form or leave it on the canary.
+  those outside `Policy Canary`**; give it a `--dry-run` form or leave it on the canary. **There are seven,
+  and `--dry-run` is not always the safer choice**: a declarative policy is enforced in the service's
+  control plane, so a dry-run form returns `DryRunOperation` whether or not the policy is attached — it
+  would report a hole in the ceiling on every single run.
 - **`@AMI@`, `@SUBNET@`, `@ACCT@`** are substituted with real ids read from the account being probed.
   Use them wherever an invented id would be rejected before authorization.
 

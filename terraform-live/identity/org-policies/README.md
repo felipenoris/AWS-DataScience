@@ -15,8 +15,8 @@ This folder is documents only. There is no `.tf` here until Stage 2.
 | `policies/` | The real documents. One file per policy, named exactly as the policy is named in Organizations |
 | `canary/` | **Throwaway** documents, attached to `Policy Test` during the step 7.3 battery and detached in the same sitting. Never attached to anything real |
 | `render.sh` | Substitutes this organization's identifiers into the templates and writes the pasteable copies to `aws/output/rendered-policies/` |
-| `check-index.sh` | Verifies that `SCPs.md` still lists exactly the `Sid`s in `policies/`, in order, and names both directions of a mismatch. No AWS session, no side effects, exits non-zero when it drifts |
-| [`SCPs.md`](SCPs.md) | **The statement-level index**: every `Sid` in `policies/`, what it denies and why it exists. JSON carries no comments, so that file is where the reasoning lives — **and it is updated in the same sitting as any SCP change** |
+| `check-index.sh` | Verifies that `SCPs.md` still lists exactly what each document in `policies/` contains, in order, and names both directions of a mismatch. **Type-aware since 7.8**: `Sid`s for an SCP or RCP, tag keys for a tag policy, `ec2_attributes` names for a declarative policy — and an unrecognised document stops the run rather than being skipped. No AWS session, no side effects, exits non-zero when it drifts |
+| [`SCPs.md`](SCPs.md) | **The statement-level index for every document in `policies/`, of all four policy types** (the filename is historical): what each entry does and why it exists. JSON carries no comments, so that file is where the reasoning lives — **and it is updated in the same sitting as any SCP change** |
 
 ## The templates carry placeholders. Paste the *rendered* files
 
@@ -85,6 +85,16 @@ from that OU alone, which is what makes a mistake in one of them cost one OU rat
 | `awsds-org-scp-ou-data.json` | `Data` | user compute, the catalog-maintenance carve-out, lake deletion |
 | `awsds-org-scp-ou-interactive.json` | `Interactive` | one statement — the classic notebook instance (decision 1) |
 | `awsds-org-scp-ou-identity.json` | `Identity` | user compute, and nothing else |
+
+**Step 7.8 added three more documents on the organization root, and two of them are not SCPs** — read
+[`SCPs.md`](SCPs.md) for the statement-level reasoning, which now covers all four policy types:
+
+| File | Type | What it does |
+|---|---|---|
+| `awsds-org-rcp-perimeter.json` | `RESOURCE_CONTROL_POLICY` | The trusted-*identities* axis: seven services closed to principals outside the organization. **Requires a `Principal` element and gets half the budget** — 5 policies and 5 120 characters, not 10 and 10 240 |
+| `awsds-org-scp-tag-enforcement.json` | `SERVICE_CONTROL_POLICY` | Decision 5: `Environment` and `Project` required on `ec2:RunInstances`, scoped to `instance/*` and split one statement per key — both of those are correctness requirements, not style |
+| `awsds-org-tag-policy.json` | `TAG_POLICY` | Canonical capitalisation and value enumerations for the five mandatory tags. **Reports, does not enforce** — no `enforced_for` |
+| `awsds-org-declarative-ec2.json` | `DECLARATIVE_POLICY_EC2` | Snapshot and AMI public-access blocks, IMDSv2 as the account default, serial console off. Not a permission boundary — an unchangeable service attribute |
 
 **`Workloads` enumerates the SageMaker actions and may never use `sagemaker:Create*`.** Staging and
 Production are where models are *deployed*: `sagemaker:CreateModel`, `CreateEndpoint`,

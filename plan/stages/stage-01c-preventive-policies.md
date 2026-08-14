@@ -1482,6 +1482,43 @@ measure something else.
   7.5, and **the two are not substitutes**: attaching this one and reading the words "block public access"
   as coverage is exactly the shape of Lesson 5.
 
+##### How 7.8 is attached and measured
+
+**One document at a time, each measured before the next is touched.** The order, the instrument and the
+staging are [`plan/runbooks/scp-battery.md`](../runbooks/scp-battery.md), phase 5; three things belong here
+because they change what the documents above should say.
+
+- **The battery gained three phases, one per probeable document** — `--phase tags`, `--phase rcp`,
+  `--phase decl`. The tag policy has none and should not: it carries no `enforced_for`, refuses no call, and
+  so offers nothing to attempt.
+- **The RCP is attached to `Policy Test` first, not to the root.** `EnforceOrgIdentitiesOnRoleAssumption`
+  covers `sts:AssumeRoleWithSAML` and `AssumeRoleWithWebIdentity`, where the caller has no AWS principal yet,
+  so `aws:PrincipalOrgID` cannot populate and the `IfExists` form denies **unconditionally**. The staging
+  costs one extra attach and bounds a lockout to one account; the repair either way is a detach from
+  Management, which is exempt. **Its deny half is never probed** — an out-of-organization principal is an
+  identity this project cannot produce (Lesson 22), so only the floor is measured and the runbook's
+  read-instead table carries the four statements.
+- **The declarative policy is measured by reading, with `./aws/declarative-ec2.sh`**, because the battery can
+  only show that a *change* is refused, never what the setting **is**. Its four probes deliberately carry no
+  `--dry-run`: a declarative policy is enforced in the service's control plane, so a dry-run form returns
+  `DryRunOperation` whether or not the policy is attached.
+
+**Two before-readings taken 2026-08-13, and both change what the attach is expected to do:**
+
+| Measurement | Result | What it means for the attach |
+|---|---|---|
+| `./aws/declarative-ec2.sh`, five profiled accounts | `image_block_public_access` **already** `block-new-sharing` and `serial_console_access` **already** off, in all five | Two of the four attributes are a **lock**, not a change. Only `snapshot_block_public_access` (`unblocked` → blocked) and `instance_metadata_defaults.http_tokens` (`not-set` → `required`) actually move state |
+| `ec2:RunInstances --dry-run` in `Development`, four tag forms | **all four** returned `DryRunOperation` | The tag SCP's before-reading. After the attach, the untagged and single-tag forms must read `DENY-SCP` and the fully tagged form must still read `DryRunOperation` — **a run where every row denies is the over-broad-`Resource` failure, not a strict pass** |
+
+`organizations describe-effective-policy --policy-type DECLARATIVE_POLICY_EC2` answers **`{}`** with the type
+enabled and nothing attached, rather than raising — so an empty object is the before-reading, not an error.
+
+**Making `http_tokens: required` the account default is the one line here that can break a launch**, and it
+lands before Stage 4's WireGuard host and Stage 7's GitLab. It is a *default*, not a ceiling —
+`http_tokens_enforced` is deliberately unset — so a launch may still override it, which is what the
+`decl` phase's last row records. Tightening that is the follow-up, after both stages have launched
+successfully, and only then.
+
 ---
 
 ## Deliverables of 1c

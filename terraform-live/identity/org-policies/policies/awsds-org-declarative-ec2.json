@@ -1,0 +1,36 @@
+{
+  "ec2_attributes": {
+    "exception_message": {
+      "@@assign": "Blocked by the AWS-DataScience organization EC2 declarative policy (Stage 1c step 7.8). This setting is organization-managed and cannot be changed from inside the account."
+    },
+    "snapshot_block_public_access": {
+      "state": {
+        "@@assign": "block_all_sharing"
+      }
+    },
+    "image_block_public_access": {
+      "state": {
+        "@@assign": "block_new_sharing"
+      }
+    },
+    "instance_metadata_defaults": {
+      "http_tokens": {
+        "@@assign": "required"
+      },
+      "http_put_response_hop_limit": {
+        "@@assign": "2"
+      },
+      "http_endpoint": {
+        "@@assign": "enabled"
+      },
+      "instance_metadata_tags": {
+        "@@assign": "no_preference"
+      }
+    },
+    "serial_console_access": {
+      "status": {
+        "@@assign": "disabled"
+      }
+    }
+  }
+}

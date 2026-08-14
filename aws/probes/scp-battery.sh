@@ -21,9 +21,9 @@
 #   dryrun   carries --dry-run, which the driver verifies is actually there
 #   blocked  mutating, but a prerequisite named in the command does not exist, so removing
 #            the deny only moves the failure one step later
-#   creates  would really do something if the deny lifted. THREE probes, all in the root
-#            phase, and the driver REFUSES to run them outside Policy Canary - that account
-#            is the one place this project accepts the residual risk of an "allowed".
+#   creates  would really do something if the deny lifted. SEVEN probes - three in the root
+#            phase, four in `decl` - and the driver REFUSES to run them outside Policy Canary,
+#            which is the one place this project accepts the residual risk of an "allowed".
 #
 # THE THREE THINGS THIS ENCODES THAT A HAND-RUN BATTERY KEPT GETTING WRONG:
 #   1. A dead SSO session makes every probe come back looking exactly like a deny. It
@@ -154,6 +154,18 @@ classify() { # stdin: command output; $1: regex proving authorization was reache
     _pid=$(printf '%s' "$_out" | grep -Eo 'p-[a-z0-9]{8,}' | head -1)
     echo "DENY-RCP|$_pid"; return
   fi
+  # A DECLARATIVE policy is enforced in the SERVICE's control plane, not in authorization
+  # (AWS Organizations user guide, "How declarative policies work"). So it names no policy id
+  # and produces no "explicit deny" wording: the attribution is the EXCEPTION MESSAGE, which
+  # is why this project sets a custom one. Matching our own marker first is what distinguishes
+  # "the policy fired and delivered our message" from "the policy fired with AWS's default" -
+  # and the second is a finding, because the custom message is half the point of the document.
+  if printf '%s' "$_out" | grep -q 'organization EC2 declarative policy'; then
+    echo "DENY-DECL|custom-message"; return
+  fi
+  if printf '%s' "$_out" | grep -Eq 'denied due to an organizational policy|declarative policy'; then
+    echo "DENY-DECL|AWS-default-msg"; return
+  fi
   if printf '%s' "$_out" | grep -q 'DryRunOperation'; then
     echo "ALLOWED|dry-run"; return
   fi
@@ -258,12 +270,14 @@ verdict() { # $1 expect, $2 outcome -> OK | BAD | NOTE
   case "$1/$2" in
     deny/DENY-SCP)      echo OK ;;
     deny/DENY-RCP)      echo OK ;;
+    deny/DENY-DECL)     echo OK ;;
     deny/ALLOWED)       echo BAD ;;
     deny/DENY-NOT-SCP)  echo NOTE ;;
     deny/UNTESTED)      echo NOTE ;;
     allow/ALLOWED)      echo OK ;;
     allow/DENY-SCP)     echo BAD ;;
     allow/DENY-RCP)     echo BAD ;;
+    allow/DENY-DECL)    echo BAD ;;
     allow/DENY-NOT-SCP) echo BAD ;;
     allow/UNTESTED)     echo NOTE ;;
     *)                  echo NOTE ;;

@@ -28,6 +28,7 @@ snapshots.
 | [`org-policy-baseline.sh`](org-policy-baseline.sh) | [Infrastructure](../ORGANIZATION.md#infrastructure-user) — **open, and what section 7 answers**; [`AWS Control Tower Admin`](../ORGANIZATION.md#aws-control-tower-admin-d33) on the `-` fallback, which section 5 is expected to need anyway | `awsds-infra-identity` by default; takes another profile, or `-` for CloudShell on **Management** as `AWS Control Tower Admin` — which is the fallback if the policy reads are denied | `output/org-policy-baseline.txt` | **The ceiling that already exists.** Organization id and feature set, the root and its enabled policy types, every node with its **id, ARN and full path**, the policies attached per node per type, the **documents** of the ones found, the Control Tower controls enabled per node, and the policy quota. Stage 1c step 7.0 steps 1, 2, 3 and 5 in one pass. |
 | [`org-policies.sh`](org-policies.sh) | [Infrastructure](../ORGANIZATION.md#infrastructure-user); [`AWS Control Tower Admin`](../ORGANIZATION.md#aws-control-tower-admin-d33) on the `-` fallback | `awsds-infra-identity` by default; takes another profile, or `-` for CloudShell on **Management** | `output/org-policies.txt` | **What governs each node right now, by `Sid`** — no document bodies. Attached per node condensed to its statement names; **what governs each *account* once inheritance is resolved**; the **read-only checks** that no probe can reach; and a per-OU ceiling table. **Exits 2 when a check fails**, so it can gate a change. |
 | [`account-bpa.sh`](account-bpa.sh) | [Infrastructure](../ORGANIZATION.md#infrastructure-user); [`AWS Control Tower Admin`](../ORGANIZATION.md#aws-control-tower-admin-d33) for the `-` runs in Management, Log Archive and Audit | **every** `awsds-*` profile, or the ones named as arguments, or `-` inside CloudShell for the three accounts that have no profile — the second script here that is not single-profile, see below | `output/account-bpa.txt` | The **account-level** S3 Block Public Access configuration of each account, the four flags side by side, and which accounts nothing is measuring. Read three times: before 7.4, after 7.4 and before 7.5, and at every vend. |
+| [`declarative-ec2.sh`](declarative-ec2.sh) | [Infrastructure](../ORGANIZATION.md#infrastructure-user); [`AWS Control Tower Admin`](../ORGANIZATION.md#aws-control-tower-admin-d33) for the `-` runs | **every** `awsds-*` profile, the ones named, or `-` inside CloudShell — the third non-single-profile script, and for the same reason | `output/declarative-ec2.txt` | **The four EC2 settings `awsds-org-declarative-ec2` declares, read back per account** against the document. A declarative policy is enforced in the service's control plane, so the battery can only show that a *change* is refused — this shows what the setting **is**, which is the control. Also the one instrument that can answer whether a root-attached declarative policy reaches **Management**, which AWS documentation leaves undecided. |
 
 **The first two columns are different questions, and the whole table above collapses into two identities.** A
 profile is a *(account, permission set)* pair; the **user** is whoever holds the assignment for that pair
@@ -76,6 +77,10 @@ Run any of them from anywhere; each one `cd`s to the repository root itself:
 
 ```bash
 ./aws/org-policies.sh
+```
+
+```bash
+./aws/declarative-ec2.sh
 ```
 
 They need a live SSO session. If the run stops with `cannot authenticate`:
@@ -258,13 +263,13 @@ Keep the shape, so that one file explains all of them:
 - **One profile per script**, named at the top, with the reason that profile can see what it sees — and
   **name the SSO user behind it in the table above**, since a profile is a *(account, permission set)* pair
   and the user is a second fact, not a restatement of it.
-  **`AZs.sh` and `account-bpa.sh` are the exceptions, and they are what an exception has to look like:** in
-  both, the subject is a *per-account* fact whose meaning is the comparison **between** accounts — an AZ
-  name→ID mapping is only interesting next to another account's, and an account-level setting that is right
-  in five accounts and unset in the sixth is the sixth account's hole. A single-profile version would answer
-  nothing. Both pay the rule back by printing the caller ARN of every profile in section 1 — which is what
-  naming one profile at the top exists to make visible. Multi-profile is not a licence; it is for a script
-  whose subject is the difference between accounts.
+  **`AZs.sh`, `account-bpa.sh` and `declarative-ec2.sh` are the exceptions, and they are what an exception
+  has to look like:** in all three, the subject is a *per-account* fact whose meaning is the comparison
+  **between** accounts — an AZ name→ID mapping is only interesting next to another account's, and a setting
+  that is right in five accounts and unset in the sixth is the sixth account's hole. A single-profile version
+  would answer nothing. All three pay the rule back by printing the caller ARN of every profile in section 1
+  — which is what naming one profile at the top exists to make visible. Multi-profile is not a licence; it is
+  for a script whose subject is the difference between accounts.
 - **Output to `aws/output/<script-name>.txt`**, one file per script, `mkdir -p` its own folder.
 - **Print the command above its output** — `show` in `list-identities.sh` — so any line can be re-derived
   by hand, and prefer `--output table` over post-processing.

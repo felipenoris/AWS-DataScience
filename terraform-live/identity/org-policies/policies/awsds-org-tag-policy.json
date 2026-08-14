@@ -1,0 +1,50 @@
+{
+  "tags": {
+    "environment": {
+      "tag_key": {
+        "@@assign": "Environment"
+      },
+      "tag_value": {
+        "@@assign": [
+          "sandbox",
+          "development",
+          "data",
+          "staging",
+          "production",
+          "org"
+        ]
+      }
+    },
+    "project": {
+      "tag_key": {
+        "@@assign": "Project"
+      },
+      "tag_value": {
+        "@@assign": [
+          "AWS-DataScience"
+        ]
+      }
+    },
+    "managedby": {
+      "tag_key": {
+        "@@assign": "ManagedBy"
+      },
+      "tag_value": {
+        "@@assign": [
+          "terraform",
+          "console"
+        ]
+      }
+    },
+    "owner": {
+      "tag_key": {
+        "@@assign": "Owner"
+      }
+    },
+    "costcenter": {
+      "tag_key": {
+        "@@assign": "CostCenter"
+      }
+    }
+  }
+}
