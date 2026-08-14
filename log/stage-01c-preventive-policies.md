@@ -987,6 +987,56 @@ aws ec2 run-instances --dry-run --image-id <AMI> --instance-type t3.micro --subn
   Stage 4 and Stage 7 have launched successfully; and **`serial_console_access: disabled` is beyond what
   7.8 listed**, added because the serial console reaches an instance without traversing any network.
 
+### 7.8 — the probes, and two before-readings. 2026-08-14
+
+Nothing attached yet. This entry is preparation and the measurement of the prior state.
+
+- **The battery gained three phases, one per probeable document** — `--phase tags` (6), `--phase rcp` (16),
+  `--phase decl` (10); 32 new probes, 93 in total. **`awsds-org-tag-policy` has no phase and should not
+  have one**: with no `enforced_for` it refuses no call, so there is nothing to attempt. The attach order,
+  the RCP's staging and what each outcome means are phase 5 of
+  [`plan/runbooks/scp-battery.md`](../plan/runbooks/scp-battery.md).
+
+- **`readback.py` was defective, and the defect was silent in the reassuring direction.** It listed only
+  `SERVICE_CONTROL_POLICY`, and `list-policies` takes exactly one `--filter` — so the RCP, the tag policy
+  and the declarative policy would have read *"no policy of that name in the organization"* both **before
+  and after** being attached, which is indistinguishable from "not uploaded yet". It now queries all four
+  types and derives each document's type from its **shape**: `Principal` present is the discriminator
+  between an RCP and an SCP, mandatory in one and forbidden in the other.
+
+- **New `DENY-DECL` outcome in the classifier.** A declarative policy is enforced in the service's control
+  plane rather than in authorization: it names no policy id and emits no *"explicit deny"* wording. The
+  attribution is the exception message, and the detail column separates `custom-message` from
+  `AWS-default-msg` — the second means the `exception_message` did not survive the upload.
+
+- **Wrote `./aws/declarative-ec2.sh`**, which reads the four settings per account and compares them against
+  the document. It exists because the battery can only show that a *change* is refused, never what the
+  setting **is** — and the setting is the control. It is also the only instrument that can answer whether a
+  root-attached declarative policy reaches **Management**, which AWS documentation leaves undecided:
+  `./aws/declarative-ec2.sh -` in CloudShell there is the reading that settles it, and nobody else will
+  take it.
+
+#### The two before-readings
+
+- **`./aws/declarative-ec2.sh`, five accounts** (`data`, `dev`, `identity`, `prod`, `sandbox-1`; the
+  `awsds-policy-canary` profile's token had expired). Identical in all five: **`image_block_public_access`
+  already reads `block-new-sharing`, and serial console access is already off.** Only two of the four
+  attributes move state at the attach — `snapshot_block_public_access` (`unblocked` → blocked) and
+  `instance_metadata_defaults.http_tokens` (`not-set` → `required`). The other two are a **lock, not a
+  change**, which lowers the risk of the attach. `http_tokens: required` is the one line here that can break
+  a launch, and it lands before Stage 4 and Stage 7.
+
+- **`ec2:RunInstances --dry-run` in `Development`, four tag forms** (no tags; `Project` only; both tags;
+  both tags plus `HttpTokens=optional`): **all four returned `DryRunOperation`.** The
+  `--tag-specifications` syntax is validated, and this is the tag SCP's before-reading. After the attach the
+  untagged and single-tag forms must read `DENY-SCP` and the fully tagged form must still read
+  `DryRunOperation` — **a run where *every* row denies is the over-broad-`Resource` failure, not a strict
+  pass.**
+
+- Measured in passing, because the documentation does not say and the two halves look alike:
+  `organizations describe-effective-policy --policy-type DECLARATIVE_POLICY_EC2` answers **`{}`** with the
+  policy type enabled and nothing attached, rather than raising `EffectivePolicyNotFoundException`.
+
 ---
 
 *Log index: [log/INDEX.md](INDEX.md) · Stage index: [plan/stages/INDEX.md](../plan/stages/INDEX.md)*
