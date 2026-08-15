@@ -456,6 +456,32 @@ RESULTS {"COUNT(*)":79,"accountId":"<Log Archive Account>"}
 0
 ```
 
+- **Decision 8 is taken: no.** `describe-delivery-channels` returning `[]` alongside the recorder is what
+  decided it — this was never one resource. A delivery channel needs an S3 bucket, and Control Tower's
+  `aws-controltower-config-*` bucket lives in Audit with a policy written for enrolled accounts, which
+  Management is not; so D16's `iam-root-access-key-check` meant **a bucket, a bucket policy, a delivery
+  channel, a recorder and the rule** — five hand-made resources in the one account kept out of Terraform,
+  to answer one boolean. **`AccountAccessKeysPresent` reading `0` is what made declining safe rather than
+  merely cheap**: the rule's value over 1a's alarm was state versus event, and the only window the alarm
+  cannot see — a key created before it existed — is now permanently excluded, while the alarm itself was
+  measured live on both channels earlier the same day.
+
+- **The instrument changed; the invariant did not.** The state read is now **step 4 of `break-glass.md`
+  §6**, performed by the tester who is already signed in as Management root. Hanging it on an existing
+  procedure is not a control, but it is not an intention either (Lesson 5). **The residual, accepted and
+  written rather than argued away:** if the alarm chain breaks silently and a root access key is created
+  in that window, nothing reports it until a human looks. **Revision trigger:** Management becoming
+  recorded for any other reason — Stage 5's Security Hub central configuration — makes the rule nearly
+  free, and it should go on then.
+
+- **The wider gap this decision accepts is not the missing rule, it is the missing history.** Management
+  has no configuration record at all, so "what changed here, and what does it look like now" is answerable
+  only from CloudTrail, which records calls and not state. Written as a row in
+  `plan/institutional-delta.md` rather than left as a consequence nobody named.
+
+- **Step 10 is closed. Stage 1d is down to step 9**, whose before-state was already read: no Object Lock,
+  versioning `Enabled`, lifecycle expiring current and noncurrent versions at 365 days.
+
 ---
 
 *Log index: [log/INDEX.md](INDEX.md) · Stage index: [plan/stages/INDEX.md](../plan/stages/INDEX.md)*
