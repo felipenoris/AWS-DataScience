@@ -263,12 +263,18 @@ The `§` numbers inside `plan/` files are historical anchors, not addresses.
   and Audit hold no CLI profile, so `CHK-1`/`CHK-2` and section 4 of `./aws/org-policies.sh` are the only
   standing instruments, and the probes were by hand. It **commits Stages 4, 5 and 11 to `us-west-2`**:
   `guardduty`, `securityhub` and `macie2` are not exempt.
-- **Step 10's spend half is measured and it argues for leaving the recorder alone**: Cost Explorer reports
-  **one** usage type, `USW2-ConfigurationItemRecorded` (no rule evaluations), **USD 2.28 month-to-date of
-  which USD 2.20 is a one-day enrollment spike** spread evenly across accounts — a recurring rate near
-  USD 0.5/month at this (nearly empty) account count, well under `PRICING.md`'s USD 2.50-5.00 band. **The
-  spike is the number that matters for Stages 2-3**: ~730 configuration items for nine empty accounts
-  recording once is what an apply storm costs. Still open: 10.3's volume half and decisions 4 and 8.
+- **10.3 is done and decision 4 is taken: the Config recorder is left alone, revisited at Stage 12 step 5.**
+  One usage type only, `USW2-ConfigurationItemRecorded` (no rule evaluations), **USD 2.28 month-to-date of
+  which USD 2.20 is a one-day enrollment spike**; recurring ~USD 0.5/month, five times under
+  `PRICING.md`'s projection — **which was wrong in shape, not in rate: an item is an event per change, not
+  a monthly rate per account.** Volume confirms it independently: **80-82 recorded resources per account**,
+  a third of them AWS service defaults recorded once and never changed, so the whole exclusion list is
+  worth under a dollar org-wide. **Two traps recorded so they are not re-proposed**: `recordingFrequency:
+  DAILY` is the *expensive* mode here (USD 0.012/item-day vs 0.003/change → break-even at four changes per
+  resource per day), and an exclusion list that is wrong blinds a Control Tower control or a Stage 5
+  Security Hub check silently. **The Stages 2-3 number is the spike** (~730 items for nine empty accounts
+  recording once); **the Stage 12 revision signal is EC2/ENI churn, not the resource count.** Still open in
+  step 10: **10.4 only** — verification (xiii) and decision 8.
 - **`ce:*` in a permission set is not enough for Cost Explorer** — measured 2026-08-14: CT Admin was refused
   on the Cost Management console until **root** activated *IAM user and role access to Billing*. Any future
   billing reading needs that toggle, not a policy edit, and the root sign-ins it took should have tripped
@@ -397,8 +403,9 @@ The `§` numbers inside `plan/` files are historical anchors, not addresses.
   governing what happens next: **D32** (`SSOUserEmail`), **D33**/**D34** (who vends), **D35** (`Sandbox` is
   one per business unit; every other account is exactly one).
 - **The landing zone's second half is three stages, and 1d is the last — two items in it**: **step 9** in
-  full (decisions 9 then 3, the only permanent act of the stage) and **step 10's remainder** (the volume
-  half, decisions 4 and 8). Independent of each other.
+  full (decisions 9 then 3, the only permanent act of the stage) and **10.4** (verification (xiii), then
+  decision 8). Independent of each other; 10.4 also owes the aggregator run in `Audit` for `Log Archive`
+  and `Audit`, the two accounts no profile reaches.
 - **The identity seam, settled 2026-08-09 by review** (`plan/conventions.md`): **people** — users, groups,
   memberships — stay in the directory; **entitlements** — permission sets, boundaries, group→account
   assignments — are Terraform. So **1b creates one permission set and specifies seven**; the other six are

@@ -371,6 +371,61 @@ Audit aggregator and decisions 4 and 8 remain; step 9 untouched, with decisions 
 taken. Verifications (v), (xiii) and (xiv)'s first half are answered; (iv) is open and (xiv)'s second half
 is provisional.
 
+- updated `aws/output/org-policies.txt` using `aws/org-policies.sh`.
+
+- Step 10's volume half, measured from the laptop instead of from the Audit aggregator. 10.3 said to
+read the item counts from the aggregator in Audit, on the grounds that going account by account "gives
+the same answer for more work, and misses Log Archive and Audit". Half of that is wrong and the other
+half is the reason the aggregator is still needed. One loop over the six awsds-infra-* profiles with
+aws configservice select-resource-config --expression `"SELECT COUNT(*)"` is a single command, no
+sign-in, and it returns more than the aggregator's summary — it groups by resource type per account.
+What it cannot reach is Log Archive and Audit, which hold no profile, so the aggregator run keeps
+exactly that job and no other.
+
+- Recorded resources, us-west-2, 2026-08-14: Development 82, Sandbox Account 1 80, Production 81,
+Data Governance 80, Identity 82, Policy Canary 82.
+
+- This confirms the spend derivation independently. The USD 2.20 spike divided by USD 0.003 gave
+≈730 items, ≈90 per account, derived and flagged as such the same day. The inventory says 80-82. Six
+accounts at ~81, plus Log Archive and Audit (which hold more — buckets, topics, keys), lands close to
+730; the gap is precisely what an inventory cannot show, being resources created and then deleted, which
+bill an item each and leave nothing behind.
+
+- The composition is what decides the step, and it is identical type-for-type in Development and Policy
+Canary. 18 AWS::IAM::Role, 17 AWS::CodeDeploy::DeploymentConfig, 6 AWS::CloudFormation::Stack,
+4 AWS::AppConfig::DeploymentStrategy, 4 AWS::Cassandra::Keyspace, 4 AWS::EC2::RouteTable,
+3 AWS::EC2::Subnet, 2 AWS::ECS::CapacityProvider, 1 AWS::Athena::WorkGroup, and ~20 types at one
+each. ≈28 of the 82 — a third — are defaults AWS creates by itself and that nobody will ever change:
+the CodeDeploy deployment configurations, the AppConfig strategies, the Keyspaces system keyspaces, the
+two Fargate capacity providers, the primary Athena workgroup. That is the obvious exclusion list, and
+measuring it is what kills it: they are recorded once and never change, so they cost USD 0.08 per
+account in total, not per month. Excluding them saves under a dollar across the organization, forever.
+
+- The battery creates nothing, now proven from the other side. Policy Canary's inventory is identical
+to Development's, type for type, after 93 probes including three creates. The residual USD 0.08
+attributed to it in Cost Explorer did not come from resources that survived.
+
+- The recorder's actual shape, read from Development — allSupported: true,
+includeGlobalResourceTypes: true, recordingFrequency: CONTINUOUS, recordingScope: PAID, delivered
+through AWSServiceRoleForConfig. 10.3 names only one lever and there are two: besides the
+resource-type list there is recordingFrequency: DAILY bills USD 0.012 per item-day against USD 0.003 per change, so the break-even is four changes per resource per day and it would multiply this line rather than divide it.
+
+- Decision 4 is taken: leave the recorder alone, revisit at Stage 12 step 5. The measured recurring
+rate is ~USD 0.5/month, below PRICING.md's USD 2.50-5.00 band, and the two sides of the trade are not
+comparable: the alternative is a Lambda driven by Control Tower lifecycle events, with a StackSet, a role
+per account and re-application on every re-enrollment, to save less than a dollar — and an exclusion list
+that is wrong breaks a detective control silently, since both Control Tower's controls and Stage 5's
+Security Hub consume Config. The honest limit of the measurement, and its answer: these are empty
+accounts, but the shape covers that — the cost is event-driven, not time-driven, and an idle account
+bills almost nothing. What will move it is churn, not inventory: AWS::IAM::Role is already the
+largest real type at 18 and Stage 2 writes dozens more, and Stage 6's Spark clusters churn EC2 and ENIs.
+The revision signal at Stage 12 step 5 is EC2/ENI churn, not the resource count.
+
+- What is left in step 10: the aggregator run in Audit for the two profile-less accounts, and 10.4 —
+verification (xiii) and decision 8.
+
+
+
 ---
 
 *Log index: [log/INDEX.md](INDEX.md) · Stage index: [plan/stages/INDEX.md](../plan/stages/INDEX.md)*

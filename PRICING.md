@@ -189,7 +189,7 @@ Paid every month even with the lab shut down. Same rows as `plan/cost-model.md`,
 | KMS customer-managed keys (one per Terraform-managed account, plus a derived-zone key per Interactive account (D31), plus the PKI key (D36)) | 1.00 USD/key-mo | 1.00 USD/key-mo | 9.00 | 9.00 |
 | S3 data + state + backups (~25 GB Standard) | 0.0405 USD/GB-mo | 0.023 USD/GB-mo | ~1.50 | ~1.00 |
 | ECR images (~10 GB) | 0.10 USD/GB-mo | 0.10 USD/GB-mo | 1.00 | 1.00 |
-| AWS Config, every governed account (Management is the one not recorded) | 0.003 USD/item | 0.003 USD/item | 2.50-5.00 | 2.50-5.00 |
+| AWS Config, every governed account (Management is the one not recorded — still verification (xiii)) | 0.003 USD/item | 0.003 USD/item | 2.50-5.00 → **billed ~0.5** | 2.50-5.00 |
 | Route 53 **private** hosted zones (**3 at N=1**: `sandbox.internal` per business unit, plus `prod.internal` and `pages.internal`, both in Production — Development and Staging get none, Stage 3 step 4.2) | 0.50 USD/zone-mo (global) | 0.50 USD/zone-mo | 1.00-1.50 | 1.00-1.50 |
 | Route 53 **public** hosted zone (D15 phase 2 — **Stage 13 only**) | 0.50 USD/zone-mo (global) | 0.50 USD/zone-mo | 0 → 0.50 | 0 → 0.50 |
 | Public domain registration (D15 phase 2 — **Stage 13 only**) | registrar, region-independent | idem | 0 → ~1.00 | 0 → ~1.00 |
@@ -210,6 +210,18 @@ Elastic IP are identical in both regions.
 The low end of each range is the first thirty days, while GuardDuty is inside its free window; the high end
 is an ordinary month with GuardDuty billing, Config at the top of its range and Security Hub at the top of
 its.
+
+**And one correction from a real bill, 2026-08-14 (Stage 1d step 10) — the first row here to move from
+list-rate arithmetic to what was actually charged.** The Config row projected USD 2.50-5.00/month and the
+organization is billing **~USD 0.5**. The error was not in the rate, which is right, but in the *shape*: the
+projection treated configuration items as a rate per account per month, and they are an event per change.
+Nine accounts recording once, at enrollment, cost USD 2.20 in a single day and then almost nothing. **What
+this row is really sensitive to is churn, so it will move with the build-out and not with the account
+count** — which is why the range is kept beside the measurement rather than replaced by it, and why
+Stage 12 step 5 re-reads it after Stages 2-3 rather than accepting ~0.5 as steady state. **The related trap,
+priced in §4 and worth naming here:** `recordingFrequency: DAILY` is *not* the cheaper mode at this change
+rate — USD 0.012 per item-day against USD 0.003 per change puts the break-even at four changes per resource
+per day.
 
 **Two corrections applied on 2026-08-08, in opposite directions.** The "Staging, Development, Data
 Governance at rest" row charged a Config recorder and a KMS key for those accounts a second time —

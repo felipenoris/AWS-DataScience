@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Status** | **in progress — steps 11 and 12 are DONE (2026-08-14), step 10 is half measured, step 9 has not been touched.** Decision 10 is taken (the ceiling went on `Security`) and open question 16 is closed with it; what remains is **step 9 in full** — decisions 9 and 3, the only permanent act in the stage — and **step 10's volume half plus decisions 4 and 8**. Read "What 1c measured that changes this stage" before touching step 9: it is **blocked as written** and runs, if it runs, as `AWSControlTowerExecution` |
+| **Status** | **in progress — steps 11 and 12 are DONE (2026-08-14), 10.3 is done and decision 4 is taken, step 9 has not been touched.** Decision 10 is taken (the ceiling went on `Security`) and open question 16 is closed with it; decision 4 is taken (the recorder is left alone). What remains is **step 9 in full** — decisions 9 and 3, the only permanent act in the stage — plus **10.4**, which is verification (xiii) and decision 8, and the aggregator run for the two profile-less accounts. Read "What 1c measured that changes this stage" before touching step 9: it is **blocked as written** and runs, if it runs, as `AWSControlTowerExecution` |
 | **Prerequisites** | **[Stage 1b](stage-01b-identity-and-controls.md) complete** — every step here runs inside a member account and needs step 5's profiles. **Stage 1c was not a prerequisite and is now done anyway** (2026-08-14): none of these steps depends on a policy being attached, but three of 1c's attached documents and one of Control Tower's own now sit across this stage's path, which is what the revision below is about |
 | **Consumes** | [D12](../decisions/D12-budget-ceiling.md), [D16](../decisions/D16-break-glass.md), [D22](../decisions/D22-data-governance-account.md), [D23](../decisions/D23-ou-structure.md) (step 12), [D29](../decisions/D29-policy-canary.md), [D33](../decisions/D33-control-tower-admin-user.md), [D34](../decisions/D34-account-vending.md), [D35](../decisions/D35-sandbox-cardinality.md) |
 | **Proves** | **The two organization-level halves of [INT-11](../integrations.md)** — org-wide RAM sharing and the Lake Formation cross-account version, **the second of which was already true before the stage started and is now a reading plus an instruction to Stage 5**. **Also closes [D16](../decisions/D16-break-glass.md)'s last unbuilt deliverable** (10.4) and **[open question 16](../open-questions.md)** (step 12). The third INT-11 item (`AWSLakeFormationCrossAccountManager` on the grantor) is Stage 5 step 7, because the role does not exist yet (11.4) |
@@ -232,11 +232,19 @@ something Control Tower does not offer:
    - **Spend**, from **Management**: Cost Explorer filtered to `AWS Config`, grouped by **usage type**
      and by **linked account**, for the last full month. The usage-type breakdown is what separates
      configuration items from rule evaluations, and only one of those is what step 10 is about.
-   - **Volume**, from **Audit**: 1a made Audit the **Config aggregator** account, so the item counts for
-     every enrolled account are readable there in one place —
-     `aws configservice describe-configuration-aggregators` to find it, then the Config console's
-     aggregated view. Going account by account under the `awsds-infra-*` profiles gives the same answer
-     for more work, and misses Log Archive and Audit, where the infrastructure user has no assignment.
+   - **Volume — and this bullet was half wrong, corrected 2026-08-14 by executing it.** It used to send
+     the whole reading to the **Audit** aggregator on the grounds that going account by account "gives the
+     same answer for more work". It does not: one loop over the six `awsds-infra-*` profiles with
+     `aws configservice select-resource-config --expression "SELECT COUNT(*)"` is a single command, needs
+     no sign-in, and grouping the same query by `resourceType` returns **more** than the aggregator's
+     summary. **What survives is the second half of the objection, and it is the whole reason the
+     aggregator is still needed**: `Log Archive` and `Audit` hold no profile, so those two accounts are
+     readable only from the aggregator —
+     `aws configservice describe-configuration-aggregators` to find it, then
+     `select-aggregate-resource-config`. **Measured: 80-82 recorded resources per account** across the six
+     with profiles; the composition is in the log, and a third of it is AWS service defaults that never
+     change. **Read the aggregator with Lesson 13 in hand** — Management absent from it does *not* mean
+     Management is unrecorded, only that it does not aggregate; (xiii) is answered in 10.4 and nowhere else.
    Record both numbers in `log/stage-01d-org-wide-enablement.md`. Prices are measured, not reasoned
    (Lesson 6), and the same rule applies to volumes.
    **Two caveats on the number you will get, and the first changes what to ask for.** There is no "last
@@ -252,6 +260,17 @@ something Control Tower does not offer:
    revisit at **Stage 12 step 5**, when there is a real bill and Stage 2-3's apply storm is over.
 3. **Only if it does not**, deploy the lifecycle-event solution — and note that it must exclude nothing
    Control Tower's own controls and Security Hub's checks depend on, since both consume Config.
+   **There are two levers, not one — and the second one points the wrong way here, which is worth writing
+   down so it is not proposed again.** The recorder was read in Development on 2026-08-14:
+   `allSupported: true`, `includeGlobalResourceTypes: true`, **`recordingFrequency: CONTINUOUS`**,
+   `recordingScope: PAID`. The alternative is **`recordingFrequency: DAILY`**, which bills per *item-day*
+   rather than per change — and `PRICING.md` §2 measures those at **USD 0.012 per item-day against
+   USD 0.003 per change**, so **the break-even is four changes per resource per day, sustained**. Nothing
+   in this project is near that: 1d measured an idle account recording essentially nothing, and Stage 6's
+   Spark churn creates and destroys resources rather than modifying the same one repeatedly. **`DAILY`
+   would multiply this line, not divide it** (Lesson 6 — the intuition that "daily is the cheap one" is
+   AWS's framing for a workload this is not). Both levers sit behind the same locked door anyway:
+   `GRCONFIGENABLED` denies `PutConfigurationRecorder` whichever field is changed.
 4. **Do not unenroll an account to cut the bill.** It is the documented lever and it is the wrong one
    here: `Policy Canary` is the tempting candidate and unenrolling it removes the Control Tower control
    baseline that makes D29's battery a valid test rather than a false pass.
@@ -574,7 +593,7 @@ Each one is written so that its output differs between working and broken (Lesso
 | # | Decision | Step | Reversible? |
 |---|---|---|---|
 | 3 | **The Object Lock retention period** | 9.3 | **No — compliance mode cannot be shortened and Object Lock cannot be disabled** |
-| 4 | Whether the Config recorder is left alone after the measurement | 10.3 | Yes |
+| 4 | ~~Whether the Config recorder is left alone after the measurement~~ **TAKEN 2026-08-14: left alone, revisit at Stage 12 step 5.** ~USD 0.5/month recurring, below `PRICING.md`'s band, against a lifecycle-event Lambda with a StackSet and a role per account — and an exclusion list that is wrong breaks a detective control silently, since Control Tower's controls and Stage 5's Security Hub both consume Config. **The measured composition is what killed the exclusion list**: a third of each account's 82 items are AWS service defaults, recorded once and never changed, so removing them saves under a dollar across the organization *in total*. **The revision signal is EC2/ENI churn, not the resource count** | 10.3 | Yes |
 | **8** | **Whether a Config recorder is turned on in Management for the sake of one rule** — ~USD 0.50-1/month for the same shape of recorder every other governed account already carries, plus a hand-made resource in the account this project keeps out of Terraform — **or the invariant is left to 1a's alarm plus the `get-account-summary` check**, which is an intention rather than a control (Lesson 5) | 10.4 | Yes |
 | **9** | **Whether step 9 is performed at all, and by which principal.** `CTS3PV8` exempts `AWSControlTowerExecution` and nobody else, so the choices are: **borrow that role from Management** (one permanent setting, an unscoped role used by hand, and a setting whose survival across a landing-zone update is unknown); **decline and record the residual** (the Log Archive administrator can delete log object versions, which is the exposure the step exists to close); or **a second, project-owned trail with its own locked bucket** (a new recurring line and a second copy of the same data). **Decision 3 only exists if this one says yes** | 9.6 | The *choice* is; **its consequence is not** — see decision 3 |
 | **10** | **Whether `Security` gets the Region ceiling, and whether the two root-user controls go with it.** Free either way; the trade is a constraint on Stages 4, 5 and 11 (all `us-west-2` in this design) against being the only governed accounts with no Region ceiling. **If yes, `ExemptAssumeRoot` is not optional** and only a document read can confirm it | 12 | Yes — disabling a control deletes its document, measured on `Sandboxes` in 7.7 |
