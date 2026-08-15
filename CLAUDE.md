@@ -226,210 +226,52 @@ The `§` numbers inside `plan/` files are historical anchors, not addresses.
 
 ### Current position
 
-- **7.8 IS ATTACHED AND MEASURED, so Stage 1c is done: full battery 93 as expected, 0 unexpected, 0
-  untested** (2026-08-14), all ten documents matching `policies/` on read-back. Four policy types now live
-  on the root — `baseline`, `perimeter`, `tag-enforcement` (SCP), `awsds-org-rcp-perimeter` (RCP),
-  `awsds-org-tag-policy`, `awsds-org-declarative-ec2`. **The RCP cost one outage first**: its STS statement
-  named `AssumeRoleWithSAML`/`TagSession`, which is all an `AWSReservedSSO_*` trust policy permits, and it
-  locked every SSO user out of all six member accounts while Management stayed reachable. Rescoped to
-  `sts:AssumeRole` + `sts:SetContext`, matching AWS's own `CT.STS.PV.1` — **never add an `sts:` action to
-  it without reading that control's exclusion note.** Lesson 24 is the general form; the battery now
-  records a lockout instead of aborting on it, and `classify` no longer reads a declarative policy's
-  message *echoed by a successful read* as a deny.
-- **THE LANDING ZONE IS DONE — 1a, 1b, 1c and 1d all closed (2026-08-15)**, but for the `Staging` vend,
-  which is held on the account cap. The `log/` files are authoritative. 1a: Control Tower (`us-west-2`),
-  budget, six accounts vended, centralized root access, break-glass tested on both channels. 1d step 11
-  enabled RAM organization-wide sharing, so INT-11's org-level halves are settled and every remaining
-  INT-11 risk is Stage 5's; 11.2 needed no write (`CROSS_ACCOUNT_VERSION` **4** with `SET_CONTEXT: TRUE`
-  in a lakeless account), leaving an instruction to Stage 5 to carry **both** keys. 1d step 12 put the
-  Region ceiling and both root-user controls on `Security`, so **every governed account now sits under
-  `us-west-2`**, open question 16 is closed, and **Stages 4, 5 and 11 are committed to `us-west-2`**
-  (`guardduty`, `securityhub`, `macie2` are not exempt). Control Tower packed step 12 in a **third** shape
-  (11 → 13 statements). **Log Archive and Audit hold no CLI profile**, so nothing there is
-  regression-testable: `CHK-1`/`CHK-2` and section 4 of `./aws/org-policies.sh` are the standing
-  instruments and the probes were by hand.
-- **Step 9 is done: the org CloudTrail bucket is locked, `COMPLIANCE`/90 days (INV-14)**, written through
-  **`AWSControlTowerExecution` assumed from Management** — the only principal `CTS3PV8` exempts, and
-  recorded as **the only sanctioned by-hand use of that role**. The step survives `CTS3PV8` at all because
-  the same `NotAction` **permits `s3:DeleteObjectVersion` to everyone**: AWS protects the bucket's
-  configuration and leaves its contents deletable. **Decision 3 cost zero** — the lifecycle already keeps
-  every version 365 days — and what it created instead is a **floor: that lifecycle can never be shortened
-  below 90 days**, binding Stage 12 step 5. Verified on an object delivered *after* the write, not only on
-  the bucket. **Three traps recorded**: the trail's **`S3KeyPrefix` is the org id**, so a key carries it
-  twice and an `AWSLogs/`-only path lists empty; the account is **`Log Archive Account`**, so a name filter
-  returns `None` (`ORGANIZATION.md` now carries the mapping and the rule — **never resolve an account by
-  name**; derive the id from a resource, or read `aws/output/list-identities.txt`); and **a borrowed
-  session leaks into the shell**, making later errors name the wrong account (Lesson 25).
-- **10.3 is done and decision 4 is taken: the Config recorder is left alone, revisited at Stage 12 step 5.**
-  One usage type only, `USW2-ConfigurationItemRecorded` (no rule evaluations), **USD 2.28 month-to-date of
-  which USD 2.20 is a one-day enrollment spike**; recurring ~USD 0.5/month, five times under
-  `PRICING.md`'s projection — **which was wrong in shape, not in rate: an item is an event per change, not
-  a monthly rate per account.** Volume confirms it independently: **80-82 recorded resources per account**,
-  a third of them AWS service defaults recorded once and never changed, so the whole exclusion list is
-  worth under a dollar org-wide. **Two traps recorded so they are not re-proposed**: `recordingFrequency:
-  DAILY` is the *expensive* mode here (USD 0.012/item-day vs 0.003/change → break-even at four changes per
-  resource per day), and an exclusion list that is wrong blinds a Control Tower control or a Stage 5
-  Security Hub check silently. **The Stages 2-3 number is the spike** (~730 items for nine empty accounts
-  recording once); **the Stage 12 revision signal is EC2/ENI churn, not the resource count.**
-- **Step 10 is DONE: (xiii) is answered and decision 8 was no.** **Management has neither a Config recorder
-  nor a delivery channel**, so D16's named instrument (`iam-root-access-key-check`) was never one resource
-  — it was a bucket, a bucket policy, a delivery channel, a recorder and the rule, all hand-made in the
-  account kept out of Terraform. `AccountAccessKeysPresent` reads **`0`**, which permanently excludes a key
-  predating 1a step 5's alarm, and that alarm is **live** (both channels, unplanned test). **So the
-  instrument changed and the invariant did not**: the state read is now **step 4 of `break-glass.md` §6**,
-  hung on a ritual instead of on memory. **Residual, accepted and written**: chain breaks silently + key
-  created in that window = nobody knows until someone looks. **Revision trigger: Management becoming
-  recorded for any other reason — Stage 5's Security Hub central configuration — makes the rule free.**
-  The wider delta is *not* the rule but that **Management has no configuration history at all**
-  (`plan/institutional-delta.md`, "Watching the management account").
-- **`ce:*` in a permission set is not enough for Cost Explorer** — measured 2026-08-14: CT Admin was refused
-  on the Cost Management console until **root** activated *IAM user and role access to Billing*. Any future
-  billing reading needs that toggle, not a policy edit, and the root sign-ins it took should have tripped
-  `awsds-org-root-activity`.
-- **1b's residue, all of it:** the six SSO profiles resolve (five `awsds-infra-*` →
-  `AWSReservedSSO_InfrastructureAccess_*`, `awsds-policy-canary` → `AWSReservedSSO_AWSAdministratorAccess_*`);
-  **only `Policy Canary` still carries an Account Factory direct assignment**, permanently; the org IAM
-  Access Analyzer lives in **Audit** (`ORGANIZATION` zone of trust) after the console wizard first put it in
-  the wrong account. **(vi) is open by construction** — whether 5.1's removals stick is re-checked at the
-  next landing-zone update, account update or re-enrollment, not now.
-- **Subnets anchor on the AZ `zone_id`, never on list position** — 1b step 6, 2026-08-12. Every measured
-  account returns the *same* mapping (`us-west-2a` → `usw2-az2`; the names are not in ID order), so position
-  would work today; it is forbidden because an unvended account gets its own mapping and the failure is
-  silent. `./aws/AZs.sh` re-measures — **run it after every vend**. Open question 3 is closed.
-- **A permission set provisioned into Management cannot be altered from the Identity account** — measured
-  2026-08-12, and it is a *second* delegated-administrator boundary, distinct from the Management-targeted
-  one step 4 found. The deny is anchored on the **permission set** ARN, so it covers that set's assignments
-  in every account. **Anything touching `AWSAdministratorAccess` runs as CT Admin on Management.**
-  `InfrastructureAccess` is not provisioned into Management and is unaffected — Stage 2 step 5 still manages
-  it from `awsds-infra-identity`.
-- **`sso-directory.amazonaws.com` (the console path) is still unexercised** by 8.3's filter — 5.1's console
-  removals emitted `sso.amazonaws.com`, not the directory pair.
-- **The Sandbox per-unit token is an ordinal** — `awsds-infra-sandbox-1`, `-2`, … (user, 2026-08-11),
-  matching the account name AWS shows. **It does *not* propagate to the `Environment` tag**, settled
-  2026-08-13; the other four tokens of [`plan/open-questions.md`](plan/open-questions.md) item 10 are open
-  and none blocks anything before Stage 2.
-- **`CLAUDE.md`'s objectives gained six named Unified Studio features on 2026-08-13, and reading them
-  against AWS's docs produced four findings that are Stage 5/6/10's, not the landing zone's**
-  ([`plan/open-questions.md`](plan/open-questions.md) items 12-15, summarized in the table at the top of
-  [Stage 6](plan/stages/stage-06-unified-studio.md)). The load-bearing one: **the default notebook Spark
-  runtime is Athena for Spark, which does not support VPC** — principle 4 is about the account, not about
-  what the data scientist actually runs, until Stage 6 disables it. Also: **notebooks have no trusted
-  identity propagation**, so D13's fine-grained grain may be the *project* and not the user; and
-  **`sagemaker:StartSession`** (local VS Code onto a space) is a real objective *and* a file channel to a
-  laptop. SMUS notebooks/VS Code are **spaces and apps** — which is what made 1c's decision 1 free.
-- **The `Staging` vend is held on the account cap, and the increase has *not* landed** — measured from
-  Management during 7.0: `Maximum number of accounts` reads **10**, not the requested 15. (From a member
-  account the same quota reads `0.0`, so only the Management run is evidence.) **What the deferral owes is
-  one list, in [Stage 1a](plan/stages/stage-01a-landing-zone.md)** ("What the deferral leaves owed"), not
-  five per-stage footnotes.
-- **The USD 50 budget notifies nobody.** Its 50/80/100% alerts and Cost Anomaly Detection are **skipped by
-  decision** (2026-08-09), not pending — do not offer to close them in passing. D12 holds the trade and its
-  revision trigger.
-- **The OU tree is not the one D23 first described** — revised 2026-08-09 by execution; full tree in
-  [`plan/architecture.md`](plan/architecture.md). `Identity` has an OU of its own; `Sandboxes` is nested
-  under `Interactive` and carries no policy set of its own. **Depth is 2 — Stage 2's OU `for_each` must
-  recurse**, or every Sandbox account is invisible to it.
-- **What 7.0's preflight established that still governs work.** **`Identity` is a registered OU** with the
-  same 9 `AWS-GR_*` controls as every ordinary one; **`Security` adds exactly three** (`CT.S3.PV.7`,
-  `CT.S3.PV.8`, `CT.SNS.PV.1`) and names them in the `controlcatalog:::control/<opaque>` namespace while
-  every other OU uses `controltower:…/AWS-GR_*` — same controls, two id schemes. **Control Tower denies the
-  Config recorder** (`GRCONFIGENABLED`, exempting `AWSControlTowerExecution` alone — which is why Stage 1d
-  10.4 is possible only in SCP-exempt Management) **and *nothing* about CloudTrail**, the CloudTrail deny
-  being **skipped by decision**. **Service Quotas publishes no policy quota for `organizations`**, so the
-  size budget is the documentation's number and the count fits either way. Account-level BPA reads all four
-  flags `true` in **all nine accounts** — `./aws/account-bpa.sh` re-measures the six with a profile;
-  Management, Log Archive and Audit are console-verified and **this laptop cannot read them**.
-- **The root set (7.5) is attached and exercised, and three of its measurements outlive the stage.**
-  **Decision 7 is measured, not assumed** — `aws:PrincipalArn` names the `role/aws-reserved/...` form and
-  not the `assumed-role` one, which is also what makes Stage 1d 9.6's `AWSControlTowerExecution` exemption
-  work. **`aws:ResourceOrgID` populates for S3 *and* ECR**, proven by an inverted document. **Two statements
-  are attached but unexercised**, both because the service validates input before authorizing:
-  `ec2:ModifySnapshotAttribute` (its AMI sibling *was* denied) and `datazone:CreateDomain` — **that one is
-  [Stage 6 step 0](plan/stages/stage-06-unified-studio.md)**, because `ForAllValues:` over a key that does
-  not populate evaluates *true* and the untested failure is the deny reaching `Data` too.
-- **The SSO token expires faster than a battery does** — it died twice mid-run, and both times every probe
-  came back as a non-answer that reads like a deny. **Check the token immediately before each block of
-  probes**, and read the error *wording* (`explicit deny in a service control policy`), never the exit code.
-- **The per-OU set (7.6, amended by 7.6a) is attached and exercised in each OU's own account.**
-  Verification (viii) answered (an SMUS domain is `datazone:*`, so `Data`'s `sagemaker:Create*` wildcard
-  stands; `Workloads` is enumerated because Staging and Production legitimately call
-  `CreateModel`/`CreateEndpoint`). **Decision 1 costs no feature, measured:** `CreateNotebookInstance` denied
-  while `CreateSpace` and `datazone:ListDomains` still work. **`Sandboxes` is governed by inheritance.**
-  Three consequences are *stated* rather than open: **Athena is allowed in `Data`** on purpose (Stage 5's
-  Iceberg maintenance), Stage 11's to detect; an ASG launches through a service-linked role and no SCP
-  reaches it; and **`guardduty:UpdateDetector` blocks Stage 11 step 4 in Audit** by design. Untested and
-  recorded so: `s3:DeleteBucket`, and the **positive** half of the `Data` crawler carve-out, which needs
-  Stage 5's **`awsds-data-catalog-maintenance`** role.
-- **The denial message names the policy id**, so attribution needs no CloudTrail — **but AWS names only one
-  matching policy**, which is how a document sits attached and unexercised (Lesson 20).
-- **The battery is a script: `./aws/probes/scp-battery.sh`** (2026-08-13), probes in `probes/probes.sh`, phases
-  `root`/`ou`/`region`/`tags`/`rcp`/`decl`. It read-backs deployed policies against `policies/` first
-  (all four types — reading only `SERVICE_CONTROL_POLICY` reported three of them as absent both before and
-  after attachment), aborts on a dead SSO session, and **never attaches** — that stays a human act on
-  Management. Last full run: **93 as expected, 0 unexpected, 0 untested**. It has **no reach into Log Archive
-  or Audit** and never will: those accounts hold no profile, which is what Stage 1d step 12 has to plan
-  around. Every probe declares a mandatory `safety` (`ro`/`dryrun`/`blocked`/`creates`);
-  the **three `creates` run in `Policy Canary` and nowhere else**, enforced by the driver, so the whole `ou`
-  phase cannot create anything in a real account even with the ceiling removed.
-- **7.7 IS DONE. `CT.MULTISERVICE.PV.1` on five OUs and the two root-user controls on the same five**
-  (`Policy Test`, `Workloads`, `Data`, `Interactive`, `Identity`) — **not `Sandboxes`, by the rule below;
-  `Security` was never 7.7's target and got the same three from 1d step 12 instead.** Region
-  half measured 61/61 by the battery. **Verification (vii) answered** from the attached document (86
-  `NotAction` entries, none of ours) — and it **falsified a plan prediction: `ecr-public:*` is exempt**, so
-  `DenyEcrPublicEntirely` is the only thing denying it. `ssm:GetParameter` *is* denied in `us-east-1`.
-- **Control Tower's packing is per enablement and inconsistent across OUs** — the root statements went into
-  the *original* guardrail on `Policy Test`/`Workloads`/`Interactive` but into the *Region* document on
-  `Identity` (`p-fw2pctqw`) and `Data` (`p-pk85fvr1`). **Read the `Sid` list; a document's id says nothing
-  about its contents**, and "the region policy" is a name for two different things.
-- **Nothing is attached or enabled on `Sandboxes` unless it *differs* from `Interactive`** — **D37**,
-  2026-08-13, and it governs Stage 14. Verification (xi) was closed both ways first: the OU accepted
-  `enable-control` (registered target), *and* the deny that fires there names `Interactive`'s (Lesson 20) —
-  then the control was disabled and its document deleted. **Cost: `Sandboxes` reads as zero controls while
-  its accounts are governed** — an enablement is not inherited, only the statements are.
-- **`ExemptAssumeRoot` is set on all five, verified by reading every document** — `Policy Test` was enabled
-  without it first, and **no probe can see that**: every principal here is an SSO role and `ArnLike …:root`
-  never matches, so the document read is the only instrument. `GRRESTRICTROOTUSER` ANDs
-  `Null: aws:AssumedRoot=true` with the ARN test. **The omission was nearly free because member accounts
-  hold no root credentials at all (1a 6.4), so an unexempted control denies exactly and only
-  `AssumeRoot`** — empty population, one side effect, and it is self-sealing
-  (`IAMCreateRootUserPassword` runs *inside* such a session). The access-key control carries no exemption
-  and must not (D16).
-- **The validation-before-authorization wall is per *action*, not per service** — measured: `ExportImage`
-  authorized against a malformed AMI id, `CreateStoreImageTask` needed a real one, `StartInstances` never
-  authorized at all. **A first-try validation error is a reason to retry with a real id, not a result**
-  (Lesson 21).
-- **A carve-out keyed on a principal ARN cannot defend itself** — whoever can create a role matching the
-  pattern, or edit the exempted role's trust policy, inherits the exemption. Both carve-outs (BPA, D27) are
-  now a written requirement on **Stage 2's boundaries** and Stage 5's role. Unverified and cheap: whether
-  IAM even permits `CreateRole` under `/aws-reserved/`.
-- **The repository is documentation only, with one exception since 2026-08-13**:
-  `terraform-live/identity/org-policies/` holds 1c's policy **documents** (templates with placeholders, plus
-  `render.sh`, which writes the pasteable copies into untracked `aws/output/`). No `.tf` anywhere until
-  Stage 2.
-- **All thirty-six decisions are closed** ([`plan/decisions/INDEX.md`](plan/decisions/INDEX.md)). The four
-  governing what happens next: **D32** (`SSOUserEmail`), **D33**/**D34** (who vends), **D35** (`Sandbox` is
-  one per business unit; every other account is exactly one).
-- **Next is Stage 2, roteiro revised 2026-08-15; three things moved.** **The delegation goes first** (5.0/5.1):
-  **six of the ten documents are on the organization *root***, and INT-20's plausible failure is "the
-  delegation works and still cannot touch a root attachment", so the answer sizes the stage first.
-  **Per-OU attachments are authored, not discovered** — the four OU documents differ and three OUs carry
-  none, so a `for_each` over discovered OUs would attach to `Sandboxes` and reverse D37 silently; discovery
-  is spent on 9.3's *check* (correction in `plan/conventions.md`'s D34 bullet). **Modules move last** —
-  nothing in the stage consumes one. Unchanged: boundaries for the two ARN-keyed carve-outs (BPA, D27),
-  `InfrastructureAccess` from `awsds-infra-identity` while `AWSAdministratorAccess` is CT Admin on
-  Management, and the OU walk must **recurse** (depth 2). **`org-policies.sh` under-reports**: ids for
-  `SERVICE_CONTROL_POLICY` only, so three of the ten documents have no id in any snapshot.
-- **The identity seam, settled 2026-08-09 by review** (`plan/conventions.md`): **people** — users, groups,
-  memberships — stay in the directory; **entitlements** — permission sets, boundaries, group→account
-  assignments — are Terraform. So **1b creates one permission set and specifies seven**; the other six are
-  *written* in Stage 2 step 5, never typed into a console. **1b step 8.3's alarm is unfiltered** by
-  decision, with the filtered variant in `plan/institutional-delta.md` for real headcount.
-- **Still needed from the user: one thing, and it blocks Stage 13 alone** — **the domain name** (D15
-  phase 2). Everything the landing zone was waiting on is settled.
-- **No public DNS before Stage 13** (D15); internal names are `*.internal` off an internal CA (D36, INT-19).
-- **Settle earliest:** **INT-11** — its organization halves are done (RAM enabled 2026-08-14, LF
-  cross-account reads **4**), so all that is left is **defending a value nobody set** against Stage 5's
-  first apply — and **INT-13** (no convenience-preserving fallback).
+- **The landing zone is closed — Stages 0-1d DONE (2026-08-15)** — except the `Staging` vend, held on the
+  account cap (`./aws/quotas.sh` re-asks, meaningful only from Management; the deferral's debts are one
+  list in Stage 1a). Ten policy documents, four types, attached — **six on the organization root, four
+  per-OU** — battery 93/93. The `log/` files are authoritative.
+- **Next is Stage 2 — roteiro revised and review-corrected 2026-08-15.** The delegation goes first
+  (5.0/5.1): INT-20's plausible failure — "works and still cannot touch a root attachment" — sizes the
+  stage. **5.1's delegation `Resource` list must carry the four policy-type ARNs**
+  (`policy/o-<org>/<type>/*`): a target-only list denies every write and reads exactly like "all
+  refused" — `org-delegation.sh` `DEL-9` checks it. Per-OU attachments are **authored, not discovered**
+  (a discovered `for_each` would reverse D37 on `Sandboxes`); discovery feeds check 9.3. Modules move
+  last. Boundaries carry the two ARN-keyed carve-outs (BPA decision 7, D27), written once and referenced
+  — **a carve-out keyed on a principal ARN cannot defend itself**; unverified and cheap: whether IAM
+  permits `CreateRole` under `/aws-reserved/`. `InfrastructureAccess` runs from `awsds-infra-identity`;
+  `AWSAdministratorAccess` only as CT Admin on Management (a set provisioned into Management cannot be
+  altered from Identity). The OU walk recurses (depth 2). The five instruments exist (`aws/INDEX.md`);
+  `org-policies.sh` lists ids for all four policy types since 2026-08-15. The stage log exists,
+  header-only.
+- **Standing rules that outlive their stages:** never add an `sts:` action to the RCP without reading
+  `CT.STS.PV.1`'s exclusion note (its first shape locked every SSO user out of every member account);
+  1d step 9 is the **only** sanctioned by-hand use of `AWSControlTowerExecution`; never resolve an
+  account by name (`ORGANIZATION.md`); subnets anchor on AZ `zone_id` — run `./aws/AZs.sh` after every
+  vend; check the SSO token before each probe block and read the denial *wording*, never the exit code;
+  account-level BPA is hand-managed — its SCP deny carves out the very principal Terraform applies as, so
+  the guard is Stage 2's repository grep.
+- **Log Archive and Audit hold no CLI profile** — nothing there is regression-testable; `CHK-1`/`CHK-2`
+  and `org-policies.sh` §4 are the standing instruments. **Every governed account sits under
+  `us-west-2`**; Stages 4, 5 and 11 are committed there (`guardduty`, `securityhub`, `macie2` not exempt).
+- **1b residue:** only `Policy Canary` keeps an Account Factory direct assignment (permanent, not
+  modelled); verification (vi) and `sso-directory.amazonaws.com` re-check at the next landing-zone update.
+- **Unexercised denies** (verify by reading, not probing — `POLICIES.md` and the 1c log):
+  `ec2:ModifySnapshotAttribute`; `datazone:CreateDomain` (= Stage 6 step 0); `s3:DeleteBucket`; the
+  positive D27 half (Stage 5's `awsds-data-catalog-maintenance` role). Athena is allowed in `Data` on
+  purpose (Stage 11 detects); `guardduty:UpdateDetector` blocks Stage 11 step 4 in Audit by design.
+- **SMUS findings for Stages 5/6/10:** open questions 12-15, summarized atop Stage 6. The load-bearing
+  one: the default notebook Spark runtime has no VPC until Stage 6 disables it.
+- **Deferred by decision — do not offer to close:** the USD 50 budget notifies nobody (D12); open
+  question 10's per-unit tokens wait for N=2. **Stage 12 hooks:** Config recorder left alone (1d decision
+  4), Management deliberately unrecorded (decision 8), INV-14 floors the log-bucket lifecycle at 90 days;
+  billing reads need root's billing toggle (active).
+- **All thirty-seven decisions are closed** (D30 as a revert). Still needed from the user: the domain
+  name alone, blocking Stage 13 (D15 phase 2). No public DNS before Stage 13; internal names are
+  `*.internal` off the internal CA (D36, INT-19).
+- **Settle earliest:** INT-11 — organization halves done; what remains is Stage 5 defending
+  `CROSS_ACCOUNT_VERSION` **4** + `SET_CONTEXT: TRUE` (values nobody set) at its first apply, carrying
+  **both** keys — and INT-13 (no convenience-preserving fallback). The repository is documentation-only
+  except `terraform-live/identity/org-policies/`; the first `.tf` arrives with Stage 2.
 
 **Budget: ~2 KB.** State, not reasoning — **a bullet here that explains *why*, or that a stage file should
 be carrying, is a stale copy of something that already lives elsewhere.** Re-trim whenever a stage closes.

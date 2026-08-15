@@ -6,7 +6,7 @@
 
 **Related decisions:** [D23](D23-ou-structure.md), [D29](D29-policy-canary.md), [D34](D34-account-vending.md), [D35](D35-sandbox-cardinality.md)
 
-**Referenced by stages:** [Stage 1c](../stages/stage-01c-preventive-policies.md), [Stage 14](../stages/stage-14-sandbox-vending.md)
+**Referenced by stages:** [Stage 1c](../stages/stage-01c-preventive-policies.md), [Stage 2](../stages/stage-02-terraform-foundation.md) (5.3's authored OU→document map and check 9.3), [Stage 14](../stages/stage-14-sandbox-vending.md)
 
 ---
 

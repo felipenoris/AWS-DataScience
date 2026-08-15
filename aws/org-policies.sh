@@ -12,7 +12,7 @@
 #                                                     # MANAGEMENT, as CT Admin
 #   writes:   aws/output/org-policies.txt   (untracked - see .gitignore)
 #   reads:    organizations:ListRoots, ListOrganizationalUnitsForParent, ListAccountsForParent,
-#             DescribeOrganizationalUnit, ListPoliciesForTarget, DescribePolicy,
+#             ListPoliciesForTarget, DescribePolicy,
 #             sts:GetCallerIdentity. This script never creates, updates or deletes anything.
 #   exits:    0 all checks passed | 1 a call failed | 2 a check FAILED
 #

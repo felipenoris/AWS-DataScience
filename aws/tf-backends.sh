@@ -11,7 +11,7 @@
 #             ./aws/tf-backends.sh awsds-infra-prod       # only the ones named
 #             ./aws/tf-backends.sh -                      # CloudShell, ambient credentials
 #   writes:   aws/output/tf-backends.txt   (untracked - see .gitignore)
-#   reads:    s3api:ListBuckets, GetBucketLocation, GetBucketVersioning, GetBucketEncryption,
+#   reads:    s3api:ListBuckets, GetBucketVersioning, GetBucketEncryption,
 #             GetPublicAccessBlock, GetBucketPolicy, GetBucketLifecycleConfiguration,
 #             GetObjectLockConfiguration, kms:ListAliases, sts:GetCallerIdentity.
 #             It never creates, updates or deletes anything.

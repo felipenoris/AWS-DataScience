@@ -10,7 +10,7 @@
 #   writes:   aws/output/quotas.txt   (untracked - see .gitignore)
 #   reads:    servicequotas:ListServiceQuotas, GetServiceQuota,
 #             ListRequestedServiceQuotaChangeHistoryByQuota,
-#             organizations:ListAccounts, sts:GetCallerIdentity.
+#             organizations:DescribeOrganization, ListAccounts, sts:GetCallerIdentity.
 #             It never creates, updates or deletes anything, and it never REQUESTS an increase.
 #   exits:    0 the report was produced | 1 a call failed
 #
@@ -284,7 +284,8 @@ printf '        --service-code organizations \\\n'
 printf '        --quota-code %s \\\n' "${CAP_CODE:-<resolve from section 2>}"
 printf '        --desired-value 15\n\n'
 printf 'Run it in CloudShell on Management as `AWS Control Tower Admin`, and record the\n'
-printf 'request id in log/stage-01a-landing-zone.md - the deferral`s owed list lives there.\n'
+printf 'request id in log/stage-01a-landing-zone.md. The deferral`s owed list lives in\n'
+printf 'plan/stages/stage-01a-landing-zone.md, "What the deferral leaves owed".\n'
 
 # ======================================================================================
 h1 "6. Calls that failed"

@@ -29,9 +29,9 @@ Governance account, which is not an environment at all: it sits on the ownership
 one, so cost reports should be able to separate it from every environment.)
 
 **`ManagedBy=console` is admitted, and it is not a lapse — settled 2026-08-12, when the first resource
-needed it.** Stage 2 names six artefacts that stay outside Terraform for structural reasons (wrong account,
-Control Tower's object, or an SCP that would deny the apply), and the organization Access Analyzer in Audit
-is one of them. Tagging it `terraform` would be false at the only moment the tag is read — when somebody is
+needed it.** Stage 2 names seven artefacts that stay outside Terraform for structural reasons (wrong
+account, Control Tower's object, the identity seam, or a setting hand-managed by decision), and the
+organization Access Analyzer in Audit is one of them. Tagging it `terraform` would be false at the only moment the tag is read — when somebody is
 working out where a resource's source of truth is. So the value is the honest one, and the rule that keeps
 it from spreading is that **`console` is admissible only for a resource Stage 2's out-of-Terraform table
 names**: anywhere else it is a resource that should have been code. Note it is outside the forcing SCP of

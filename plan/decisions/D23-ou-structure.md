@@ -6,7 +6,7 @@
 
 **Related decisions:** [D10](D10-identity-center-delegation.md), [D20](D20-staging-account.md), [D26](D26-unified-studio.md), [D27](D27-catalog-maintenance.md), [D29](D29-policy-canary.md), [D35](D35-sandbox-cardinality.md)
 
-**Referenced by stages:** [Stage 1a](../stages/stage-01a-landing-zone.md), [Stage 1c](../stages/stage-01c-preventive-policies.md)
+**Referenced by stages:** [Stage 1a](../stages/stage-01a-landing-zone.md), [Stage 1c](../stages/stage-01c-preventive-policies.md), [Stage 1d](../stages/stage-01d-org-wide-enablement.md), [Stage 2](../stages/stage-02-terraform-foundation.md), [Stage 14](../stages/stage-14-sandbox-vending.md)
 
 ---
 

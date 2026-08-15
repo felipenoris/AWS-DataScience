@@ -87,10 +87,16 @@ matters:
   wildcards. A new account is silently outside every one of them — Lesson 14, arriving through a new door.
 
 **The rule, and it is a mechanism rather than a checklist line: the floor is discovered, the grants are
-enumerated.** In `terraform-live/identity/org-policies/`, anything that must cover *everything* — the organization-root
-SCP/RCP set, the tag policy, the per-OU attachments — is driven by `for_each` over
-`aws_organizations_organizational_units` / `aws_organizations_organization` data sources, so an OU or account
-created yesterday from the console is covered by the next apply with nobody remembering. Permission set
+enumerated.** *(Mechanism corrected 2026-08-15, after 1c's execution — the same correction as
+`plan/conventions.md`'s D34 bullet carries.)* In `terraform-live/identity/org-policies/`, everything that
+must cover *everything* — the root SCP/RCP set, the tag policy, the declarative policy — turned out to be
+**attached to the organization root and inherited**, so an OU or account created yesterday from the console
+is covered the moment it exists, with no `for_each` to run: coverage is bought by the attachment point.
+**The per-OU attachments cannot be discovered** — the four OU documents differ and three OUs carry none by
+decision (D37), so a `for_each` over discovered OUs would attach something to `Sandboxes` and silently
+reverse D37. The OU→document map is **authored**, and the `aws_organizations_*` data-source walk feeds
+**Stage 2 step 9.3's check** instead: an OU in no map is a red `make check`, not a silent attachment.
+Permission set
 assignments stay **explicit**, because a new account silently acquiring `DataScientistAccess` is precisely the
 failure this design exists to prevent — and they live in the sibling slice, `terraform-live/identity/sso/`,
 because the two halves are reached through two different delegations (Stage 2 step 5). *To verify while writing Stage 2:* that the data sources enumerate OUs

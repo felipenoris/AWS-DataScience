@@ -6,7 +6,7 @@
 
 **Related decisions:** [D25](D25-drop-box-consumer.md)
 
-**Referenced by stages:** [Stage 1a](../stages/stage-01a-landing-zone.md), [Stage 5](../stages/stage-05-data-foundation.md)
+**Referenced by stages:** [Stage 1a](../stages/stage-01a-landing-zone.md), [Stage 1c](../stages/stage-01c-preventive-policies.md), [Stage 2](../stages/stage-02-terraform-foundation.md) (the boundary requirement — a carve-out keyed on a principal ARN cannot defend itself), [Stage 5](../stages/stage-05-data-foundation.md)
 
 ---
 

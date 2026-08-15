@@ -193,9 +193,10 @@ while [ -s "$QUEUE" ]; do
   mv "$NEXT" "$QUEUE"
 done
 
-# The `Data` OU and its single account - the two values awsds-org-scp-ou-data.json needs, and
-# Stage 2 step 5.5a(ii)'s "derive it from the OU, never by account NAME" (1d step 9 recorded
-# why a name lookup returns None here).
+# The `Data` OU and its single account. <ACCOUNT_ID_DATA> feeds awsds-org-scp-ou-data.json;
+# <ORG_PATH_DATA> feeds awsds-org-scp-BASELINE.json (the DenyDataZoneDomainOutsideDataOu
+# condition). Stage 2 step 5.5a(ii): derive from the OU, never by account NAME (1d step 9
+# recorded why a name lookup returns None here).
 OU_ID_DATA=$(awk -F'\t' '$2=="Data" {print $3; exit}' "$NODES")
 ORG_PATH_DATA=$(awk -F'\t' '$2=="Data" {print $4; exit}' "$NODES")
 ACCOUNT_ID_DATA=""

@@ -1,13 +1,13 @@
 # Open questions
 
-Only things to find out by doing. **All thirty-six decisions are closed** — a question that
+Only things to find out by doing. **All thirty-seven decisions are closed** — a question that
 turns into a choice becomes a decision file, not a longer entry here.
 
 ---
 
 ## 9. Open questions
 
-Everything that was open before execution started is now closed in `plan/decisions/` (D1-D36). What follows is
+Everything that was open before execution started is now closed in `plan/decisions/` (D1-D37). What follows is
 what is genuinely still unanswered:
 
 1. **Which domain name to register (D15 phase 2).** Still the one input needed from the user, but the
@@ -54,10 +54,11 @@ what is genuinely still unanswered:
    and whether the VPN restriction reaches the Unified Studio portal at all (INT-16). Each can invalidate an
    objective stated in `CLAUDE.md`, so they are answered at Stages 6 and 4 respectively and their outcome is
    written down either way.
-   INT-11 (organization-wide RAM sharing and the Lake Formation cross-account version) is the one to
-   settle earliest, because it is enabled in Stage 1d and consumed in Stage 5 — and since D26 it also
-   carries the domain's account associations (INT-12) — and its failure mode is silence rather than an
-   error. INT-13 (CodeConnections from the unified domain to the self-hosted GitLab in a private subnet)
+   INT-11's organization halves were **enabled in Stage 1d** (RAM org-wide sharing on 2026-08-14; the LF
+   cross-account version already read 4 with `SET_CONTEXT: TRUE`); what remains is Stage 5's — defending
+   both values, which nobody set, against the first `aws_lakeformation_data_lake_settings` apply — and
+   since D26 the row also carries the domain's account associations (INT-12); its failure mode is silence
+   rather than an error. INT-13 (CodeConnections from the unified domain to the self-hosted GitLab in a private subnet)
    is the one with no convenience-preserving fallback: check it while building Stage 7, when GitLab first
    exists.
 8. **How much of the S3 console survives the `aws:SourceVpce` condition** (INT-06, Stage 9). This
@@ -104,10 +105,11 @@ what is genuinely still unanswered:
     whole organization tree from an account that has no business seeing it. **The policy document cannot
     answer this**: what is left is exactly what the *service* refuses, which only a call finds out. Answer
     it by assuming that permission set in one vended account and running the reads and one harmless write;
-    it costs minutes. Two things ride on it — whether 1c's policy set has to deny anything for it, and
-    whether the assignment should be removed at all, which is landing-zone state and therefore a decision
-    in D32's neighbourhood rather than a cleanup. **1c step 7.5 is where it gets answered**, because the
-    `organizations:LeaveOrganization` deny is written against exactly this path.
+    it costs minutes. Two things rode on it, and one is settled: **the deny half closed with 1c step 7.5**
+    (`DenyLeaveOrganization` is attached against exactly this path; `POLICIES.md` records it as
+    deliberately never probed, since its allowed outcome is the damage). Still open: the reach measurement
+    itself, and whether the assignment should be removed at all — landing-zone state, so a decision in
+    D32's neighbourhood rather than a cleanup.
 
 ### The Unified Studio mechanics, added 2026-08-13
 
@@ -182,67 +184,20 @@ started. **The first one is load-bearing against principle 4.**
     in Log Archive or Audit and creating one is refused, so the measurement is by hand in CloudShell plus a
     document read.
 
-### Blocking Stage 1 — the choices the user has to make, added 2026-08-08 by the pre-Stage-1 review
+### Blocking Stage 1 — closed, condensed to one note (2026-08-15)
 
-Items 1-11 above are things to *find out* (item 3 is answered and struck through). These are things to
-*decide*, they have no defensible default, and each one is referenced from the step that needs it.
-
-10. ~~**What "apply these to a test OU first" means, since there is no test OU**~~ — **closed 2026-08-08 as
-    D29:** a tenth account, `Policy Canary`, alone in a fifth OU, `Policy Test`. The reasoning that closed
-    it is worth keeping in one line, because the obvious answer was the wrong one: an *empty* policy
-    staging OU tests nothing, since an SCP is only evaluated when a principal makes a call, so the OU is
-    worth having only because there is a disposable account inside it. Stage 1c step 7 now carries the
-    procedure — one policy at a time, exercised from an administrator principal, in both directions
-    (what must still succeed *and* what must now fail), with the detach command ready. Two verifications
-    ride along with it and are answered while executing: whether the **IAM Policy Simulator** evaluates
-    SCPs for member-account principals — if it does, it is a cheaper first pass than any OU — and whether
-    the OU has to be **registered with Control Tower** for the test to run against the real control
-    baseline, which D29 assumes and Stage 1a step 4 instructs.
-11. ~~**What the break-glass credential actually is**~~ — **closed 2026-08-08: the Management account root,
-    and nothing else** (D16). It removes the exception from principle 2 rather than documenting one, since
-    the root is not an IAM user; it merges Stage 1a steps 1 and 5, which were describing the same credential;
-    and it composes with centralized root access management, which strips root from the member accounts and
-    leaves exactly one. The cost, recorded rather than hidden: the root cannot be scoped, so every
-    compensating control is detective — MFA, offline password, no access keys (with
-    `iam-root-access-key-check` as the instrument, since SCPs cannot reach Management), and an alarm whose
-    SNS destination is deliberately *not* the mailbox that is the login.
-    **That instrument was declined on 2026-08-14** by Stage 1d decision 8 — Management carries no Config
-    recorder, so the rule meant five hand-made resources there — and what stands in its place is the alarm
-    (measured live the same day, both channels) plus a state read that is now step 4 of the break-glass
-    test. D16 carries the reasoning and the residual. **The invariant did not change; only its instrument
-    did.**
-    **The MFA type is deliberately left unspecified**, which is a decision and not an omission: nothing in
-    this plan depends on it, and the user already has MFA on this root. What survives is not about the type
-    — with a single registered device, recovery runs through AWS support and depends on the account's phone
-    number and payment method, so those are part of the design.
-    **The second half of this item went the other way and then came back (D30):** the SCP recovery
-    principal — a role exempt from every custom deny — was recommended against, **adopted by the user's
-    decision, and then reverted**, once a review found the role could not be delivered to the account whose
-    repair path justified it. So there is **one** recovery credential and it is the root. What the round
-    trip left behind is worth keeping: the SCPs now live in code (`terraform-live/identity/org-policies/`),
-    because a
-    policy set that nobody owns after Stage 1c is one whose only record is the console — and, with no
-    exemption anywhere, it is the artefact that most needs a diff and a rollback.
-12. ~~**Whether the deployment manager keeps blanket `ReadOnlyAccess` on the lifecycle accounts**~~ — **closed
-    2026-08-08 as D31: it does not.** Two changes, and the more durable one is the second. `ReadOnlyAccess`
-    is replaced by a bespoke **`DeploymentManagerAccess`** in the shape D18 already uses — diagnosis, not
-    reading: logs, job and pipeline status, catalog metadata, scan findings, enumerated artifact prefixes;
-    `athena:*` and `kms:Decrypt` denied explicitly. And the **derived zone gets its own KMS CMK** in each
-    Interactive account, whose key policy is where "who may read materialised `restricted` data" is
-    expressed — default-deny, so a derived prefix nobody enumerated is still covered. That second half
-    closes a gap in D19 that had nothing to do with this persona: five practices for the derived zone, none
-    of them about the key. Cost: two more CMKs, ~USD 2/month.
-    **One precision worth keeping, because it is why the old arrangement looked fine:** `ReadOnlyAccess`
-    grants neither `athena:StartQueryExecution` nor `kms:Decrypt`, so it could not originate a read of the
-    lake and could not decrypt an SSE-KMS object. The exposure was real but was being prevented by
-    *encryption* rather than by *design* — a property that evaporates the first time a bucket is created
-    without a CMK, which is exactly the kind of accident this plan should not depend on.
-
-**Every item in this section that was a *decision* is now closed, and the first question to be answered by
-execution was item 3** (Stage 1b step 6, 2026-08-12). The rest remain, and they are all things to find out by
-doing. **Items 10 (`Environment` half), 11 and the three landing-zone decisions 1c used to open with were
-settled on 2026-08-13**, so Stage 1c starts with no blocking input; items 12-15 arrived on the same day and
-are all Stage 5/6/10 questions, none of which blocks the landing zone.
+The three blocking decisions of the 2026-08-08 pre-Stage-1 review all closed the same day, and their
+reasoning lives in the decision files, not here: **D29** (the test-OU question — `Policy Canary`, a
+disposable account alone in `Policy Test`, because an *empty* staging OU tests nothing: an SCP is only
+evaluated when a principal calls), **D16** (break-glass = the Management account root and nothing else;
+its named instrument was replaced by 1d decision 8 with the live alarm plus a state read in the
+break-glass test, and the MFA type is deliberately unspecified), and **D31** (no blanket `ReadOnlyAccess`
+for the deployment manager — a bespoke `DeploymentManagerAccess` plus the derived-zone CMK, closing a D19
+gap). D16's second half round-tripped through **D30** — adopted, then reverted when the recovery role
+could not be delivered where its own justification needed it — leaving one lasting consequence: the
+policy set lives in code, which is Stage 2 step 5's mandate. *(This section used to restate all three at
+length, under item numbers 10-12 that collided with the live items above; the duplicates were retired
+2026-08-15 — "item 10" and "items 12-15" now name only the live items.)*
 
 ---
 

@@ -12,7 +12,7 @@
 #                                                     # MANAGEMENT, as CT Admin
 #   writes:   aws/output/org-delegation.txt   (untracked - see .gitignore)
 #   reads:    organizations:DescribeResourcePolicy, DescribeOrganization, ListRoots,
-#             ListOrganizationalUnitsForParent, ListPoliciesForTarget, DescribePolicy,
+#             ListOrganizationalUnitsForParent, ListPoliciesForTarget,
 #             sts:GetCallerIdentity. It never creates, updates or deletes anything.
 #   exits:    0 the report was produced | 1 a call failed unexpectedly | 2 a check FAILED
 #
@@ -36,11 +36,12 @@
 # deliberately does not perform. That line is the same one aws/probes/ draws: a measurement
 # that changes a policy is a human act on Management.
 #
-# So what this script decides is SCOPE, by reading (Lesson 22): does a delegation exist, does
-# it name this account, which policy TYPES does it admit, and - the half that fails silently -
-# does its Resource list reach the ROOT and the NESTED OUs. AWS documents that naming a single
-# OU "excludes child OUs and accounts under child OUs", and this organization is two levels
-# deep (D23: `Sandboxes` under `Interactive`).
+# So what this script decides is SCOPE, by reading: does a delegation exist, does it name
+# this account, which policy TYPES does it admit, and - the half that fails silently - does
+# its Resource list reach the ROOT, the NESTED OUs, and the POLICY-type ARNs at all (DEL-9:
+# a target-only list denies every write). AWS documents that naming a single OU "excludes
+# child OUs and accounts under child OUs", and this organization is two levels deep (D23:
+# `Sandboxes` under `Interactive`).
 #
 # IDENTITY. Default profile is `awsds-infra-identity` - the account the delegation is FOR,
 # which is the only place the answer means anything. The `-` fallback is CloudShell on
@@ -286,6 +287,24 @@ READ = ["organizations:DescribeOrganization", "organizations:ListRoots",
         "organizations:ListPolicies", "organizations:ListPoliciesForTarget",
         "organizations:ListTargetsForPolicy", "organizations:ListTagsForResource"]
 
+# DEL-9 (added 2026-08-15). Create/Update/DeletePolicy authorize against the POLICY ARN
+# and Attach/DetachPolicy against target AND policy, so a target-only Resource list denies
+# every write. Shape: arn:aws:organizations::<mgmt>:policy/o-<org>/<policy_type>/<id-or-*>;
+# a bare "*" or a policy/o-<org>/* entry covers every type.
+REQUIRED_POLICY_TYPES = ["service_control_policy", "resource_control_policy",
+                         "tag_policy", "declarative_policy_ec2"]
+
+def policy_arn_covers(t):
+    for r in resources:
+        if r == "*":
+            return True
+        if ":policy/" not in r:
+            continue
+        parts = r.split(":policy/", 1)[1].split("/")
+        if len(parts) > 1 and parts[1] in ("*", t):
+            return True
+    return False
+
 out = {
     "principals": sorted(principals),
     "resources": sorted(resources),
@@ -302,6 +321,7 @@ out = {
         r == "*" or (":ou/" in r and r.rstrip().endswith("*")) for r in resources),
     "ou_single_named": sorted(
         r for r in resources if ":ou/" in r and not r.rstrip().endswith("*")),
+    "policy_types_missing": [t for t in REQUIRED_POLICY_TYPES if not policy_arn_covers(t)],
     "policy_type_conditions": sorted({
         v for c in conds
         for op, kv in c.items()
@@ -405,6 +425,15 @@ if [ "$RESPOL_STATE" = "present" ]; then
       "no PolicyType condition - the delegation admits EVERY policy type, present and future. Wider than Stage 2 step 5.1 designs, and it is a Deny-by-omission that will not announce itself."
   else
     check pass "DEL-8" "scoped by organizations:PolicyType" "$PT"
+  fi
+
+  MISSING_PARN=$(jq_ policy_types_missing)
+  if [ "$MISSING_PARN" = "[]" ]; then
+    check pass "DEL-9" "the Resource list carries the POLICY-type ARNs" \
+      "all four types covered. Create/Update/DeletePolicy authorize against the policy ARN, Attach/DetachPolicy against target AND policy."
+  else
+    check fail "DEL-9" "the Resource list carries the POLICY-type ARNs" \
+      "missing: $MISSING_PARN. A target-only Resource list denies EVERY write on EVERY document - the absent class is arn:...:policy/o-<org>/<policy_type>/* - so 5.0's write test fails everywhere and reads exactly like 'the delegation cannot touch a root attachment'. Fix the delegation before reading DEL-6's answer into scope. (Added 2026-08-15; Stage 2 step 5.1.)"
   fi
 fi
 
@@ -541,7 +570,10 @@ printf 'WHAT A FAILED DEL-6 MEANS, since it is the outcome INT-20 predicts. It d
 printf 'the delegation is broken. It means terraform-live/identity/org-policies/ holds the four\n'
 printf 'per-OU documents and the six on the root stay console-managed - Stage 2 step 5.0 records\n'
 printf 'that as a scope decision rather than as a defect, and step 9.2 keeps all ten in scope by\n'
-printf 'reading policies/*.json regardless of who manages them.\n'
+printf 'reading policies/*.json regardless of who manages them.\n\n'
+printf 'AND ONE FALSE READING OF IT: a Resource list of TARGETS ALONE - no policy/ ARNs -\n'
+printf 'denies every write on every document, which at the keyboard reads exactly like "all\n'
+printf 'refused". Read DEL-9 before reading a denied write as DEL-6'"'"'s answer.\n'
 
 # ======================================================================================
 h1 "5. The documents a write would have to reach"

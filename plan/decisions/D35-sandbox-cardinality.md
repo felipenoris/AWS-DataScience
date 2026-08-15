@@ -6,7 +6,7 @@
 
 **Related decisions:** [D17](D17-interactive-vs-runtime.md), [D18](D18-data-scientist-access.md), [D20](D20-staging-account.md), [D21](D21-development-account.md), [D23](D23-ou-structure.md), [D24](D24-shared-filesystem.md), [D26](D26-unified-studio.md), [D34](D34-account-vending.md)
 
-**Referenced by stages:** [Stage 1b](../stages/stage-01b-identity-and-controls.md), [Stage 1c](../stages/stage-01c-preventive-policies.md), [Stage 1d](../stages/stage-01d-org-wide-enablement.md), [Stage 3](../stages/stage-03-networking.md), [Stage 4](../stages/stage-04-vpn.md), [Stage 6](../stages/stage-06-unified-studio.md), [Stage 14](../stages/stage-14-sandbox-vending.md)
+**Referenced by stages:** [Stage 1b](../stages/stage-01b-identity-and-controls.md), [Stage 1c](../stages/stage-01c-preventive-policies.md), [Stage 1d](../stages/stage-01d-org-wide-enablement.md), [Stage 2](../stages/stage-02-terraform-foundation.md), [Stage 3](../stages/stage-03-networking.md), [Stage 4](../stages/stage-04-vpn.md), [Stage 6](../stages/stage-06-unified-studio.md), [Stage 14](../stages/stage-14-sandbox-vending.md)
 
 ---
 

@@ -11,7 +11,8 @@ VPC" — and because it cannot be revoked, what watches it is written down here 
 [D16](D16-break-glass.md) (the other credential IAM cannot revoke), [D3](D03-terraform-state.md),
 [D31](D31-approver-read.md) (the same key-policy-as-control shape)
 
-**Referenced by stages:** [Stage 7](../stages/stage-07-gitlab-runners-ecr.md),
+**Referenced by stages:** [Stage 2](../stages/stage-02-terraform-foundation.md) (step 3.4 — the PKI state
+key), [Stage 7](../stages/stage-07-gitlab-runners-ecr.md),
 [Stage 12](../stages/stage-12-observability-finops.md), [Stage 14](../stages/stage-14-sandbox-vending.md)
 
 ---
