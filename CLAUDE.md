@@ -25,7 +25,7 @@ All infrastructure will be deployed in the `us-west-2` Region.
 
 ## Tools installed in the current environment
 
-`terraform` **1.15.8**, the `aws` client, `uv` **0.11.23**, `jq`, and — Stage 2 step 6.1, 2026-08-15 —
+`terraform` **1.15.8**, the `aws` client, `uv` **v0.12.5**, `jq`, and — Stage 2 step 6.1, 2026-08-15 —
 `pre-commit` **4.6.2**, `checkov` **3.3.11** (`uv tool install`), `tflint` **v0.64.0**.
 
 ## `secrets` folder
