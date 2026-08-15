@@ -6,7 +6,7 @@
 | **Prerequisites** | Stage 1a complete, bar the deferred `Staging` vend. **Steps 3, 5 and 6 skip their `Staging` items**; the full list of what the deferral owes, across every stage, is in [Stage 1a](stage-01a-landing-zone.md) ("What the deferral leaves owed") and is worked at the vend rather than remembered here |
 | **Consumes** | [D10](../decisions/D10-identity-center-delegation.md), [D11](../decisions/D11-lab-lifecycle.md), [D14](../decisions/D14-supply-chain-account.md), [D16](../decisions/D16-break-glass.md), [D18](../decisions/D18-data-scientist-access.md), [D19](../decisions/D19-derived-zone.md), [D20](../decisions/D20-staging-account.md), [D21](../decisions/D21-development-account.md), [D22](../decisions/D22-data-governance-account.md), [D29](../decisions/D29-policy-canary.md), [D30](../decisions/D30-scp-recovery.md), [D31](../decisions/D31-approver-read.md), [D32](../decisions/D32-account-factory-sso-user.md), [D33](../decisions/D33-control-tower-admin-user.md), [D34](../decisions/D34-account-vending.md), [D35](../decisions/D35-sandbox-cardinality.md) |
 | **Proves** | Nothing cross-account; this stage is what makes every later stage reachable. Step 5's profiles are the precondition for **Stage 1c**, **Stage 1d** and everything from Stage 2 onwards |
-| **Log** | [`log/stage-01b-identity-and-controls.md`](../../log/stage-01b-identity-and-controls.md) |
+| **Log** | [`log/log-stage-01b-identity-and-controls.md`](../../log/log-stage-01b-identity-and-controls.md) |
 
 *Read with [`plan/conventions.md`](../conventions.md) (naming, layout, `[P]`/`[D]`/`[E]`, IAM rules).*
 
@@ -126,7 +126,7 @@ table above, and it is the whole reason the alarm is in this stage rather than i
   both delegations, so it is worth building well rather than quickly.
 - **Verify while executing (i):** that the delegation coexists with the landing zone without raising
   Control Tower drift. Control Tower's handling of Identity Center has changed more than once. Record
-  the answer in `log/stage-01b-identity-and-controls.md`.
+  the answer in `log/log-stage-01b-identity-and-controls.md`.
 
 
 ### Step 2 — Create this project's users and groups in IAM Identity Center — beside Control Tower's, never inside them
@@ -527,7 +527,7 @@ both now, because it is the one act in this stage that can lock the only adminis
   as answered on the strength of the removal succeeding is the failure this bullet exists to prevent**: it
   reads as evidence and is only a timestamp. If the assignments do come back, stop removing them and record
   the direct assignment as a **permanent property of an Account Factory-vended account**, in
-  `log/stage-01b-identity-and-controls.md` and in D32. Stage 2 step 5.2 then models nothing about them,
+  `log/log-stage-01b-identity-and-controls.md` and in D32. Stage 2 step 5.2 then models nothing about them,
   which is already what it says.
 - **Reversible**, and cheaply: the assignment can be re-created from the Identity account. It is a
   separate step because the *sequence* is what is dangerous, not the operation.
@@ -547,7 +547,7 @@ both now, because it is the one act in this stage that can lock the only adminis
   not apply to Staging (D20 leaves it unpeered), but Stage 3 anchors its subnets the same way, so the
   mapping has to be on record before it writes one.
 - **Outcome: every measured account is identical, and Stage 3 anchors on `zone_id` anyway.** The full
-  table is in `log/stage-01b-identity-and-controls.md`. This step used to end "*if* the mappings differ,
+  table is in `log/log-stage-01b-identity-and-controls.md`. This step used to end "*if* the mappings differ,
   anchor on `zone_ids`" — **the conditional was the wrong shape**, and saying so is the point worth keeping:
   the measurement covers only the accounts that exist, while `Staging` is unvended and D35 plus Stage 14
   multiply Sandboxes, each getting its own mapping at vend time. A rule that holds only while the account
@@ -756,7 +756,7 @@ matched by the object in the console is the failure this table exists to prevent
 ## Verifications to answer while executing
 
 Each is stated in its step; the list is the index, not a second copy. Record every answer in
-`log/stage-01b-identity-and-controls.md`, including the ones that come out fine. **The numerals are the
+`log/log-stage-01b-identity-and-controls.md`, including the ones that come out fine. **The numerals are the
 landing zone's** — iii, iv, v, vii and viii are asked in Stages 1c and 1d.
 
 | # | Question | Step |

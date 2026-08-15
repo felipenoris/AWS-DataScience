@@ -308,6 +308,19 @@ not in concept. `Policy Test` and `Policy Canary` keep the word `Staging` naming
   the account did not become less sensitive by moving, and this is the account whose administrator can grant
   access to every other one.
 
+- **Since 2026-08-15 it also edits the organization's policy ceiling — the second widening of its blast
+  radius, and it is wider than the sentence above.** Stage 2 step 5.1 attached a **resource-based delegation
+  policy** on the organization naming this account as principal, so that
+  `terraform-live/identity/org-policies/` can own the ten SCP / RCP / tag / declarative documents instead of
+  a browser tab. AWS's own caution is the part to carry: the delegation reaches policies *"created by any
+  account in the organization, including the management account"*, which includes **Control Tower's own
+  guardrail SCPs**, and it cannot be narrowed by policy ARN because this project's policies have no ARN
+  until they are created. So this account can now both **grant access to every other account** and **change
+  what any account is permitted to do at all** — the two halves of the same authority, in one place. The
+  controls are unchanged and detective, not preventive: the Identity Center membership alarm (1b step 8.3)
+  and the CloudTrail record. The document, its three `Sid`s and the reasons it stays out of Terraform are in
+  [`terraform-live/identity/org-policies/POLICIES.md`](terraform-live/identity/org-policies/POLICIES.md).
+
 # The two families of IAM role
 
 **Every IAM role in this project answers one of two questions, and the axis separating them is *who assumes

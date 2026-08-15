@@ -155,7 +155,7 @@ review, and it is the honest limit of a lab with a single organization.
   removed, renamed or re-conditioned, a document attached to a new target or detached from one. That file
   carries the check that says whether it drifted: the rows of a section must be that file's `Sid`s, in
   order, and nothing else.
-- **Record the returned policy id beside the filename**, in `log/stage-01c-preventive-policies.md`, **as
+- **Record the returned policy id beside the filename**, in `log/log-stage-01c-preventive-policies.md`, **as
   each one is attached.** The detach command is the whole recovery path and it needs that id:
 
   ```bash

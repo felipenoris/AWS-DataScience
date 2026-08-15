@@ -6,7 +6,7 @@
 | **Prerequisites** | **[Stage 1b](stage-01b-identity-and-controls.md) complete** — every step here runs inside a member account and needs step 5's profiles. **Stage 1c was not a prerequisite and is now done anyway** (2026-08-14): none of these steps depends on a policy being attached, but three of 1c's attached documents and one of Control Tower's own now sit across this stage's path, which is what the revision below is about |
 | **Consumes** | [D12](../decisions/D12-budget-ceiling.md), [D16](../decisions/D16-break-glass.md), [D22](../decisions/D22-data-governance-account.md), [D23](../decisions/D23-ou-structure.md) (step 12), [D29](../decisions/D29-policy-canary.md), [D33](../decisions/D33-control-tower-admin-user.md), [D34](../decisions/D34-account-vending.md), [D35](../decisions/D35-sandbox-cardinality.md) |
 | **Proves** | **The two organization-level halves of [INT-11](../integrations.md)** — org-wide RAM sharing and the Lake Formation cross-account version, **the second of which was already true before the stage started and is now a reading plus an instruction to Stage 5**. **Also closes [D16](../decisions/D16-break-glass.md)'s last unbuilt deliverable** (10.4) and **[open question 16](../open-questions.md)** (step 12). The third INT-11 item (`AWSLakeFormationCrossAccountManager` on the grantor) is Stage 5 step 7, because the role does not exist yet (11.4) |
-| **Log** | `log/stage-01d-org-wide-enablement.md` |
+| **Log** | `log/log-stage-01d-org-wide-enablement.md` |
 
 *Read with [`plan/conventions.md`](../conventions.md) (naming, layout, `[P]`/`[D]`/`[E]`, IAM rules).*
 
@@ -265,7 +265,7 @@ something Control Tower does not offer:
      with profiles; the composition is in the log, and a third of it is AWS service defaults that never
      change. **Read the aggregator with Lesson 13 in hand** — Management absent from it does *not* mean
      Management is unrecorded, only that it does not aggregate; (xiii) is answered in 10.4 and nowhere else.
-   Record both numbers in `log/stage-01d-org-wide-enablement.md`. Prices are measured, not reasoned
+   Record both numbers in `log/log-stage-01d-org-wide-enablement.md`. Prices are measured, not reasoned
    (Lesson 6), and the same rule applies to volumes.
    **Two caveats on the number you will get, and the first changes what to ask for.** There is no "last
    full month" — the organization is days old — so ask Cost Explorer for the **last 7 days, daily**, and
@@ -371,7 +371,7 @@ organization-rule mechanism buys nothing here and adds a failure mode.
 **So create it by hand, in Management, as `AWS Control Tower Admin`** — the same identity and the same
 precedent as 1a step 5's metric filter and alarm, which are also hand-made Management resources this project
 accepts as permanently outside Terraform. Record the rule name and its first evaluation in
-`log/stage-01d-org-wide-enablement.md`, beside the two numbers from 10.3.
+`log/log-stage-01d-org-wide-enablement.md`, beside the two numbers from 10.3.
 
 **What it adds over the alarm 1a already built — because if the answer were "nothing" this sub-step would be
 deleted rather than written.** `awsds-org-root-activity` fires on *any* root activity that is not an AWS
@@ -441,7 +441,7 @@ failure that follows is INT-11's: the grant succeeds on the producer side and th
 consumer side, with nothing anywhere reporting an error. **The setting nobody chose is now the setting most
 likely to be lost**, precisely because it was never typed by anyone. So:
 
-- **Write the requirement into `log/stage-01d-org-wide-enablement.md` as an instruction to Stage 5**, with
+- **Write the requirement into `log/log-stage-01d-org-wide-enablement.md` as an instruction to Stage 5**, with
   the values as *read*, not as remembered: the Stage 5 resource must carry
   `parameters = { CROSS_ACCOUNT_VERSION = "4", SET_CONTEXT = "TRUE" }` alongside its `admins` — **both
   keys**, and re-read immediately before writing it, since an account default can move again between now
@@ -625,7 +625,7 @@ Each one is written so that its output differs between working and broken (Lesso
   or decision 10 declined it and the log says so. **The failure this deliverable prevents is the stage
   closing with the question still merely written down** — which is how open question 16 got here.
 - **The Config number is measured and written down**, not estimated — both numbers from 10.3, in
-  `log/stage-01d-org-wide-enablement.md` (Lesson 6).
+  `log/log-stage-01d-org-wide-enablement.md` (Lesson 6).
 - **Something other than a person's memory reports whether the break-glass root has an access key** (10.4,
   D16). Either the rule exists and answers — from Management,
   `aws configservice describe-compliance-by-config-rule --config-rule-names <name>` reports `COMPLIANT` —
@@ -637,7 +637,7 @@ Each one is written so that its output differs between working and broken (Lesso
 ## Decisions due while executing
 
 **Blocking questions for the user: none.** Two decisions are *made* during this stage, each written into
-`log/stage-01d-org-wide-enablement.md` (Lesson 16) — and **the first of them is permanent**:
+`log/log-stage-01d-org-wide-enablement.md` (Lesson 16) — and **the first of them is permanent**:
 
 | # | Decision | Step | Reversible? |
 |---|---|---|---|
@@ -683,7 +683,7 @@ executing, with the readings that inform them listed in the step.*
 
 ## Verifications to answer while executing
 
-Record every answer in `log/stage-01d-org-wide-enablement.md`, including the ones that come out fine.
+Record every answer in `log/log-stage-01d-org-wide-enablement.md`, including the ones that come out fine.
 **The numerals are the landing zone's**, so they are not contiguous here.
 
 | # | Question | Step | State |

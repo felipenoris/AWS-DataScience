@@ -150,7 +150,7 @@ write anything into it. Claude can read the files in this folder to gather infor
 
 | File | What it holds, and the rule |
 |---|---|
-| [`log/`](log/INDEX.md)`stage-NN-*.md` | Every step performed by hand in AWS, one file per stage, mirroring `plan/stages/`. **Written by the user — Claude never edits a stage log.** Claude may draft wording for the user to paste, and says so. **Every draft is delivered in English, in Markdown, inside a single fenced code block in the chat** — never as ordinary chat prose — so the user copies it into the file untouched and nothing is reformatted on the way. Use a ` ```markdown ` fence; replace real account IDs by `<Account Name>`; use use `<Management Account>` when replacing the ID from the Management Account on logs; if the draft itself has to contain a fenced block, use a longer outer fence (` ````markdown `) so the nesting survives. **Drafts are concise by default**: the command, the outcome, and any finding that does **not** survive elsewhere. Leave out what `aws/output/` already holds (it is regenerated on demand), what a `plan/` file explains, and the reasoning behind a choice — a log entry restating either is a copy that will go stale. Prose belongs in `plan/`; the log carries *what happened, in order* |
+| [`log/`](log/INDEX.md)`log-stage-NN-*.md` | Every step performed by hand in AWS, one file per stage, mirroring `plan/stages/` — **the same slug as the stage file, with a `log-` prefix**, so the two never share a filename and an editor cannot confuse them. **Written by the user — Claude never edits a stage log.** Claude may draft wording for the user to paste, and says so. **Every draft is delivered in English, in Markdown, inside a single fenced code block in the chat** — never as ordinary chat prose — so the user copies it into the file untouched and nothing is reformatted on the way. Use a ` ```markdown ` fence; replace real account IDs by `<Account Name>`; use use `<Management Account>` when replacing the ID from the Management Account on logs; if the draft itself has to contain a fenced block, use a longer outer fence (` ````markdown `) so the nesting survives. **Drafts are concise by default**: the command, the outcome, and any finding that does **not** survive elsewhere. Leave out what `aws/output/` already holds (it is regenerated on demand), what a `plan/` file explains, and the reasoning behind a choice — a log entry restating either is a copy that will go stale. Prose belongs in `plan/`; the log carries *what happened, in order* |
 | [`log/INDEX.md`](log/INDEX.md) | The one exception under `log/`: **Claude maintains it.** After reading a stage log, bring its `Records` cell to what the file now contains — a cell saying less than the file is what the index exists to prevent. Never restate a step there: the cell says *what is inside*, in one line |
 | [`ORGANIZATION.md`](ORGANIZATION.md) | The AWS OUs, accounts and users |
 | [`REFERENCES.md`](REFERENCES.md) | Every internet link used as a reference, added on the interaction that used it |
@@ -205,7 +205,7 @@ its `Consumes` row lists.
 | A naming, layout, Terraform or IAM rule | [`plan/conventions.md`](plan/conventions.md) — also the `[P]`/`[D]`/`[E]` layers and the `app-etl` repository template |
 | **How the deployed tree is organised, and what is in it today** | [`terraform-live/README.md`](terraform-live/README.md) — one folder per account, sliced by lifecycle layer, what deliberately lives outside it. **The slice-by-slice layout itself stays in `plan/conventions.md` §6**, which is the authority when the two disagree |
 | **What a given SCP statement denies, and why that statement exists** | [`terraform-live/identity/org-policies/POLICIES.md`](terraform-live/identity/org-policies/POLICIES.md) — one row per `Sid`, per document, plus the AWS reference for every action named. Policy ids and attachment dates are **not** there: those are in the stage log |
-| What was actually done by hand in a stage | [`log/`](log/INDEX.md)`stage-NN-*.md` — **the same slug as the stage file**; [`log/INDEX.md`](log/INDEX.md) first, so only one log is opened |
+| What was actually done by hand in a stage | [`log/`](log/INDEX.md)`log-stage-NN-*.md` — **the stage file's slug, prefixed `log-`**; [`log/INDEX.md`](log/INDEX.md) first, so only one log is opened |
 | **What is deployed right now** — accounts, OUs, SSO groups, users, permission sets, assignments | [`aws/INDEX.md`](aws/INDEX.md) — read-only scripts and the snapshots they write to `aws/output/` (untracked). Its question table says which section answers what; **regenerate rather than trust a stale file, and never copy an account id or email out of one** |
 | **Whether something a snapshot shows is expected** — before reporting it as a finding | [`AWS_STATE.md`](AWS_STATE.md) — the invariants (`INV-nn`), the known exceptions (`EXC-nn`, e.g. the suspended `Sandbox` account that is **not** ours), and what a later stage is going to change anyway. **Read it whenever a snapshot is read** |
 | Plan, review, or settle a decision | add [`plan/lessons.md`](plan/lessons.md) and [`plan/open-questions.md`](plan/open-questions.md) |
@@ -230,11 +230,22 @@ The `§` numbers inside `plan/` files are historical anchors, not addresses.
   account cap (`./aws/quotas.sh` re-asks, meaningful only from Management; the deferral's debts are one
   list in Stage 1a). Ten policy documents, four types, attached — **six on the organization root, four
   per-OU** — battery 93/93. The `log/` files are authoritative.
-- **Next is Stage 2 — roteiro revised and review-corrected 2026-08-15.** The delegation goes first
-  (5.0/5.1): INT-20's plausible failure — "works and still cannot touch a root attachment" — sizes the
-  stage. **5.1's delegation `Resource` list must carry the four policy-type ARNs**
-  (`policy/o-<org>/<type>/*`): a target-only list denies every write and reads exactly like "all
-  refused" — `org-delegation.sh` `DEL-9` checks it. Per-OU attachments are **authored, not discovered**
+- **Stage 2 IN PROGRESS. 5.0 and 5.1 are CLOSED (2026-08-15) and INT-20 did not bite:** the delegation
+  exists, three `Sid`s, principal Identity, 9/9 `DEL-*`, and all three readings ran — the `update-policy`
+  **write** on the root-attached tag policy succeeded from `awsds-infra-identity`. **`org-policies/` holds
+  all ten documents.** Applied by hand and **staying out of Terraform** (principle 1 + it is this folder's
+  own authorization); documented in `POLICIES.md`'s one section `check-index.sh` cannot see, `INV-15`,
+  `ORGANIZATION.md` Identity. AWS rejects `NotAction`/`NotResource` in a delegation since 2026-06-30; the
+  operator must be `StringLikeIfExists`, and `DEL-8` now fails a strict one.
+- **The target half of the delegation is exercised too, by reading 4 (2026-08-15).** `UpdatePolicy`
+  authorizes on the **policy** ARN only; `Attach`/`DetachPolicy` on the **target** as well — and 5.5
+  *imports* attachments, so nothing in the stage would ever call it (Lesson 20). The duplicate-attach on an
+  already-attached pair returned `DuplicatePolicyAttachmentException`, so `root/…/r-zhj6` matched.
+  **Two cheap threads still open:** the negative control from `awsds-policy-canary` — without it the
+  duplicate answer may not be evidence at all (Lesson 21 reversed) — and the `ou/…/*` **wildcard**, still
+  only read by `DEL-7`.
+- **Rest of Stage 2 — roteiro revised and review-corrected 2026-08-15.** Per-OU attachments are
+  **authored, not discovered**
   (a discovered `for_each` would reverse D37 on `Sandboxes`); discovery feeds check 9.3. Modules move
   last. Boundaries carry the two ARN-keyed carve-outs (BPA decision 7, D27), written once and referenced
   — **a carve-out keyed on a principal ARN cannot defend itself**; unverified and cheap: whether IAM

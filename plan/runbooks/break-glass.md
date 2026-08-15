@@ -5,7 +5,7 @@
 | **Credential** | The **Management account root user**, and nothing else ([D16](../decisions/D16-break-glass.md)) |
 | **Built by** | [Stage 1a](../stages/stage-01a-landing-zone.md) steps 1 and 5 |
 | **Detects use** | CloudWatch alarm **`AWS Break Glass Alert`** → SNS `awsds-org-break-glass-alerts` (e-mail + SMS) |
-| **Last tested** | **2026-08-14** — **unplanned, and it counts**: two root sign-ins to activate *IAM user and role access to Billing* (Stage 1d step 10) notified on **both** channels, and `AccountAccessKeysPresent` read `0` the same day, so §6 steps 3 and 4 were both exercised end to end. The last *deliberate* test is **2026-08-09** — root sign-in, no actions, delivered on both channels ([log](../../log/stage-01a-landing-zone.md)) |
+| **Last tested** | **2026-08-14** — **unplanned, and it counts**: two root sign-ins to activate *IAM user and role access to Billing* (Stage 1d step 10) notified on **both** channels, and `AccountAccessKeysPresent` read `0` the same day, so §6 steps 3 and 4 were both exercised end to end. The last *deliberate* test is **2026-08-09** — root sign-in, no actions, delivered on both channels ([log](../../log/log-stage-01a-landing-zone.md)) |
 
 ---
 
@@ -93,7 +93,7 @@ If any of these is the reason you are reaching for root, stop — the answer is 
 ## 3. Before you sign in
 
 1. **Write down why**, in one sentence, before the login page — you will need it in the log of whichever
-   stage is current (`log/stage-NN-*.md`) afterwards, and
+   stage is current (`log/log-stage-NN-*.md`) afterwards, and
    the sentence is what distinguishes an emergency from a shortcut. If you cannot write it, see §2.
 2. **Have the password and the MFA device in hand.** The password lives **offline** — a password manager or
    paper, never in this repository and never in `secrets/` (D16).
@@ -125,7 +125,7 @@ If any of these is the reason you are reaching for root, stop — the answer is 
 
 1. **Confirm the alarm arrived**, on both channels (e-mail and SMS). A missing channel is a finding — fix it
    the same day, while the reason is still fresh.
-2. **Record it in the current stage's `log/stage-NN-*.md`** (the user's file, never written by Claude):
+2. **Record it in the current stage's `log/log-stage-NN-*.md`** (the user's file, never written by Claude):
    date, the one-sentence reason, what
    was changed, and whether both alarm channels fired.
 3. **Ask what made root necessary, and close that gap.** A bad SCP means the `Policy Canary` battery (D29)

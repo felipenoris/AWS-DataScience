@@ -284,7 +284,7 @@ printf '        --service-code organizations \\\n'
 printf '        --quota-code %s \\\n' "${CAP_CODE:-<resolve from section 2>}"
 printf '        --desired-value 15\n\n'
 printf 'Run it in CloudShell on Management as `AWS Control Tower Admin`, and record the\n'
-printf 'request id in log/stage-01a-landing-zone.md. The deferral`s owed list lives in\n'
+printf 'request id in log/log-stage-01a-landing-zone.md. The deferral`s owed list lives in\n'
 printf 'plan/stages/stage-01a-landing-zone.md, "What the deferral leaves owed".\n'
 
 # ======================================================================================

@@ -25,7 +25,7 @@ The documents themselves carry no comments — JSON has none — so this file is
 >
 > A statement whose reasoning is only in the sitting that wrote it is a statement the next reader either
 > deletes or works around. **What is *not* here**: policy ids and attachment dates — those are in
-> [`log/stage-01c-preventive-policies.md`](../../../log/stage-01c-preventive-policies.md), recorded as each
+> [`log/log-stage-01c-preventive-policies.md`](../../../log/log-stage-01c-preventive-policies.md), recorded as each
 > document is attached, and duplicating them here would produce a second, staler answer.
 
 **Scope: every document in [`policies/`](policies/), of all four policy types — widened 2026-08-13 when
@@ -272,6 +272,82 @@ the words "block public access" as coverage is the shape of Lesson 5.
 | `instance_metadata_defaults` | `http_tokens: required` (IMDSv2), `http_put_response_hop_limit: "2"` (AWS's own recommendation once tokens are required — 1 breaks containerised workloads reaching IMDS), `http_endpoint: enabled`, `instance_metadata_tags: no_preference`. **`http_tokens_enforced` is deliberately NOT set, and the difference matters:** `http_tokens: required` sets the account *default*, which a launch may still override by asking for `optional`; `http_tokens_enforced: enabled` is what makes an IMDSv1 launch impossible. So this row is a default and not yet a ceiling — Lesson 5 acknowledged rather than tripped over. **Revision trigger, and it is concrete: turn `http_tokens_enforced` on once Stage 4's WireGuard instance and Stage 7's GitLab and runners have launched successfully with IMDSv2**, because AWS's own warning is that enforcing while anything still asks for `optional` fails the launch |
 | `serial_console_access` | `disabled`. **Beyond what step 7.8 listed, and flagged here rather than folded in quietly.** The EC2 serial console is console-based access to an instance that traverses no network at all, so it is a path around `CLAUDE.md`'s first objective — all user access through the VPN — and around every security group and endpoint policy Stages 3, 4 and 9 write. It is off by default per account, which is exactly what makes pinning it cheap and forgetting it easy. **Drop this row if the trade is unwanted**: the cost is that recovering a mis-networked instance then needs a rebuild rather than a serial session |
 
+## The organization delegation policy — the grant that lets this folder exist
+
+*Not a file in [`policies/`](policies/), not attached to a target, and **not Terraform-managed**. Applied by
+hand on 2026-08-15 (Stage 2 step 5.1, INT-20); ids and dates are in
+[`log/log-stage-02-terraform-foundation.md`](../../../log/log-stage-02-terraform-foundation.md).*
+
+**1. What it is for.** Every other document indexed above is a **ceiling on what accounts may do**. This one
+is the opposite kind of object: a **grant of who may edit those ceilings**. It is a *resource-based
+delegation policy* on the organization itself — `organizations:PutResourcePolicy`, one per organization,
+naming the **Identity** account as principal — and by AWS's default only the management account may create,
+update, delete, attach or detach any of the ten documents above. Without it this folder could hold JSON and
+never apply it. It is **not** `register-delegated-administrator`: that is a different mechanism and it does
+not cover policy management. The Identity Center delegation of 1b step 1 does not cover it either, which is
+why nothing before this stage had exercised it.
+
+**The scope was decided by measurement, not by assumption:** the `Resource` list reaches the root, nested
+OUs (depth 2 — `Sandboxes` under `Interactive`) and accounts, **and** all four policy-type ARNs, so all ten
+documents are in reach rather than only the four attached to an OU.
+
+| `Sid` | Effect |
+|---|---|
+| `DelegateOrganizationNavigationToIdentity` | Sixteen read actions on `Resource: "*"`, no condition — walking the organization and refreshing what this folder manages. **Two of the sixteen are load-bearing rather than navigational.** `DescribePolicy` is what the provider calls on every refresh of an `aws_organizations_policy`: without it an import succeeds and the *next* `plan` fails. `DescribeResourcePolicy` is what [`aws/org-delegation.sh`](../../../aws/org-delegation.sh) reads to report on this very document — deny it and `DEL-1` reports *denied*, every check below it goes vacuous, and the instrument blinds itself at the moment it starts being useful. The statement is otherwise belt-and-braces: reads already answered from Identity **before** this policy existed, because a delegated administrator for *any* service may read the organization. It is written out anyway so this folder's scope does not silently depend on a different delegation staying in place |
+| `DelegatePolicyLifecycleToIdentity` | The five writes — `CreatePolicy`, `UpdatePolicy`, `DeletePolicy`, `AttachPolicy`, `DetachPolicy` — over seven ARNs in **two classes, both required**: the targets (`root/o-<org>/r-<root>`, the wildcard `ou/o-<org>/*`, the account wildcard) and the four `policy/o-<org>/<type>/*` ARNs. Create/Update/Delete authorize against the **policy** ARN and Attach/Detach against target **and** policy, so a target-only list denies **every** write on **every** document — which at the keyboard reads exactly like *"the delegation cannot reach a root attachment"*, the one thing step 5.0 exists to measure. The wildcard OU form is not tidiness: AWS documents that naming a **single** OU *"excludes child OUs and accounts under child OUs"*, and this organization is two levels deep. **The condition operator is `StringLikeIfExists` and that is not decorative** — with a bare `StringEquals`, any call that does not carry `organizations:PolicyType` in its request context fails the condition and is denied, producing the same false *"all refused"*. Confinement to the four types is still carried by the ARN path |
+| `DelegatePolicyTaggingToIdentity` | `TagResource` and `UntagResource`, **policy ARNs only, no condition** — the two actions do not accept `organizations:PolicyType`, which is why AWS's own tagging example puts them in a separate statement. Nothing needs this today: all ten documents carry **zero tags** (measured). It is here because the provider's `default_tags` will try to tag an `aws_organizations_policy` at the first apply, and that denial would land on the *import*, long after step 5.0 had declared the delegation good. Deliberately **not** extended to account, OU or root ARNs — re-tagging the organization's structure is not something this folder needs, and an unnecessary grant is a hole rather than a safety margin |
+
+**Excluded on purpose, and the third one is not a choice.** `EnablePolicyType` / `DisablePolicyType` — AWS
+supports delegating them; they act on the **root** and disabling a type detaches every policy of that type
+at once, and nothing has needed them since 1c step 7.2. The **AWS-managed** policy ARN class
+(`arn:aws:organizations::aws:policy/…`) that AWS's CRUD example carries — this project manages no
+AWS-managed policy. And `NotAction` / `NotResource`: **AWS has rejected delegation policies containing them
+since 2026-06-30**, as incompatible with the allowlist model, so an exemption-shaped document of the kind
+used elsewhere in this folder is not available here even in principle.
+
+**The blast radius, stated rather than discovered.** AWS's own note is that the delegation reaches policies
+*"created by any account in the organization, including the management account"* — which includes **Control
+Tower's own guardrail SCPs**. Scoping by policy ARN would fix it and cannot: this project's policies have no
+ARN until they are created. This is the **second** widening of the Identity account's blast radius, after
+the group-membership path of 1b step 1, and its control is the same one — 1b step 8.3's alarm plus the
+CloudTrail record.
+
+**2. How it was created and associated with the organization.** Signed in as the **`AWS Control Tower Admin`**
+user, permission set **`AWSAdministratorAccess`**, in the **Management** account — the only Management
+action in Stage 2, and the only account from which this can be written at all. Then, in the AWS
+Organizations console: **Settings** → the **Delegated administrator for AWS Organizations** section →
+**Delegate** → the JSON editor → **Create policy**. The CLI equivalent, not used here, is
+`aws organizations put-resource-policy --content file://<document>.json`; either path needs
+`organizations:PutResourcePolicy` and `organizations:DescribeResourcePolicy`. AWS also requires the
+delegated account's principals to hold the matching **identity-based** permissions — satisfied here because
+`InfrastructureAccess` carries `AdministratorAccess` — so the grant is only ever the *resource* half.
+**Verify from the other side**, as the infrastructure user through `awsds-infra-identity`:
+
+```bash
+./aws/org-delegation.sh
+```
+
+**3. Why this one document stays outside Terraform.** Three reasons, and any one of them decides it:
+
+1. **It lives in Management, and Management is bootstrap-only — "console only, never Terraform"**
+   (`GENERAL_PLAN.md`, principle 1 and the account map). There is no state bucket, no profile and no slice
+   for Management by design: the account whose root user is the break-glass credential (D16) does not get an
+   automation path.
+2. **It is this folder's own authorization.** A slice that managed the grant it runs under can revoke it in
+   a single apply and then be unable to restore it — the recovery would be the Management console, which is
+   precisely the manual step Terraform was meant to remove. Terraform is the wrong owner for a resource
+   whose deletion disables Terraform. It is also the reason step 5.0 tests this by **writing**, from the
+   delegated account, rather than by reading the document back from the account that wrote it.
+3. **This is a decision, not a provider gap** — recorded so nobody re-opens it as one.
+   `aws_organizations_resource_policy` exists (arguments `content` and `tags`, import id `rp-…`). Adopting
+   it would require a **Management** slice, which reason 1 forbids. If principle 1 is ever revisited, that
+   is the resource to use, and this section is the design that would move.
+
+**Maintenance — and this section does not get the mechanical half.** `check-index.sh` iterates
+`policies/*.json`; this document is not a file there, so **nothing checks these three rows against what is
+attached**. They are maintained by reading, in the same sitting as any change to the delegation, and
+`./aws/org-delegation.sh` re-derives every claim above about actions, `Resource` classes and the condition.
+
 ## What is not in any of these documents
 
 - **The Region restriction** — `CT.MULTISERVICE.PV.1`, a Control Tower **managed control** enabled per OU
@@ -322,4 +398,4 @@ fail silently:
 
 *Documents: [`README.md`](README.md) · Stage: [1c step 7](../../../plan/stages/stage-01c-preventive-policies.md) ·
 Probes: [`plan/runbooks/scp-battery.md`](../../../plan/runbooks/scp-battery.md) · Policy ids and dates:
-[`log/stage-01c-preventive-policies.md`](../../../log/stage-01c-preventive-policies.md)*
+[`log/log-stage-01c-preventive-policies.md`](../../../log/log-stage-01c-preventive-policies.md)*

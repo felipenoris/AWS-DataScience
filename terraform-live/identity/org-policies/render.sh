@@ -192,6 +192,6 @@ fi
 note ""
 note "PASTE FROM $OUT_DIR/, not from $SRC_DIR/ - the templates still hold placeholders."
 note "Record the returned policy id beside each filename in"
-note "log/stage-01c-preventive-policies.md, as you attach it. An id read back out of a"
+note "log/log-stage-01c-preventive-policies.md, as you attach it. An id read back out of a"
 note "console you have just denied yourself access to is the failure that note prevents."
 exit 0

@@ -24,7 +24,7 @@
 # IAM Identity Center delegated administrator (D10). Reads are not restricted from there -
 # only *writes* against Management-targeted objects are - which is why the Organizations
 # calls below answer even though only Management could change what they return
-# (log/stage-01b-identity-and-controls.md, step 4).
+# (log/log-stage-01b-identity-and-controls.md, step 4).
 #
 # Two call styles, on purpose:
 #   show  - prints the command and the CLI's own `--output table` under it. What a reader

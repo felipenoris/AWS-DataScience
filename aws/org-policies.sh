@@ -20,7 +20,7 @@
 # cosmetic. Section 1 used to list `SERVICE_CONTROL_POLICY` documents with their ids and
 # reduce the RCP to a presence check, while the tag policy and the declarative policy did
 # not appear at all - so THREE OF THE TEN ATTACHED DOCUMENTS had no id in any snapshot and
-# existed only in log/stage-01c-preventive-policies.md. That was survivable while they were
+# existed only in log/log-stage-01c-preventive-policies.md. That was survivable while they were
 # console-managed and stops being survivable at Stage 2 step 5.5, where the id is the
 # argument `terraform import` takes. Reading one filter is also how a read-back reports
 # three attached documents as absent (Lesson 13, and 1c nearly did it).

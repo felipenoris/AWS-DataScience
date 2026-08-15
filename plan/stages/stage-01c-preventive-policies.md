@@ -2,11 +2,11 @@
 
 | | |
 |---|---|
-| **Status** | **DONE — 2026-08-14, 7.0 through 7.8.** Ten documents attached across four policy types, full battery **93 as expected, 0 unexpected, 0 untested**, read-back clean. The one thing that went wrong is worth carrying at the top: **7.8's RCP locked every SSO user out of all six member accounts** by naming `sts:AssumeRoleWithSAML`/`TagSession`, the only actions an `AWSReservedSSO_*` trust policy permits — rescoped to `sts:AssumeRole` + `sts:SetContext` after AWS's `CT.STS.PV.1`, and **no `sts:` action is added to that document without reading that control's exclusion note** (Lesson 24). *What follows is the history of the sittings, kept because the order the work happened in is the reason several things were caught.* **Sitting A done; 7.6 done too** (2026-08-13). Attached and exercised: the two root documents (7.5) and **one per-OU document on each of `Workloads`, `Data`, `Interactive` and `Identity`** (7.6), each parked on `Policy Test` first, then moved and re-probed from that OU's own account. **The three amendments of 7.5a and 7.6a are uploaded and exercised** (2026-08-13): the EC2 launch siblings and the D27 service guard in `Data` and `Identity`, and the GuardDuty vocabulary fix plus the new `DenyImageAndSnapshotExport` in the root baseline — read back from Organizations, then re-probed, the OU pair through phase 4b and the root document through phases 1-3 on the canary. **What is left of the stage is 7.7 and 7.8.** Policy ids are in [`log/stage-01c-preventive-policies.md`](../../log/stage-01c-preventive-policies.md); what each statement does is in [`POLICIES.md`](../../terraform-live/identity/org-policies/POLICIES.md) |
+| **Status** | **DONE — 2026-08-14, 7.0 through 7.8.** Ten documents attached across four policy types, full battery **93 as expected, 0 unexpected, 0 untested**, read-back clean. The one thing that went wrong is worth carrying at the top: **7.8's RCP locked every SSO user out of all six member accounts** by naming `sts:AssumeRoleWithSAML`/`TagSession`, the only actions an `AWSReservedSSO_*` trust policy permits — rescoped to `sts:AssumeRole` + `sts:SetContext` after AWS's `CT.STS.PV.1`, and **no `sts:` action is added to that document without reading that control's exclusion note** (Lesson 24). *What follows is the history of the sittings, kept because the order the work happened in is the reason several things were caught.* **Sitting A done; 7.6 done too** (2026-08-13). Attached and exercised: the two root documents (7.5) and **one per-OU document on each of `Workloads`, `Data`, `Interactive` and `Identity`** (7.6), each parked on `Policy Test` first, then moved and re-probed from that OU's own account. **The three amendments of 7.5a and 7.6a are uploaded and exercised** (2026-08-13): the EC2 launch siblings and the D27 service guard in `Data` and `Identity`, and the GuardDuty vocabulary fix plus the new `DenyImageAndSnapshotExport` in the root baseline — read back from Organizations, then re-probed, the OU pair through phase 4b and the root document through phases 1-3 on the canary. **What is left of the stage is 7.7 and 7.8.** Policy ids are in [`log/log-stage-01c-preventive-policies.md`](../../log/log-stage-01c-preventive-policies.md); what each statement does is in [`POLICIES.md`](../../terraform-live/identity/org-policies/POLICIES.md) |
 | **Prerequisites** | **[Stage 1b](stage-01b-identity-and-controls.md) is complete** (closed 2026-08-12; its log is authoritative). What this stage actually consumes from it: the six SSO profiles of step 5 — `awsds-infra-sandbox-1`, `-dev`, `-prod`, `-data`, `-identity` and **`awsds-policy-canary`** — and an administrator principal in the canary account (1b step 3.1). **Not its permission sets**: no policy written here names one, which is why the `Consumes` row carries no persona decision. `Staging` is unvended, so nothing in the `Workloads` tier can be exercised against it |
 | **Consumes** | [D6](../decisions/D06-dlp-approach.md), [D10](../decisions/D10-identity-center-delegation.md), [D15](../decisions/D15-tls-internal.md), [D16](../decisions/D16-break-glass.md), [D17](../decisions/D17-interactive-vs-runtime.md), [D19](../decisions/D19-derived-zone.md), [D20](../decisions/D20-staging-account.md), [D21](../decisions/D21-development-account.md), [D22](../decisions/D22-data-governance-account.md), [D23](../decisions/D23-ou-structure.md), [D25](../decisions/D25-drop-box-consumer.md), [D26](../decisions/D26-unified-studio.md), [D27](../decisions/D27-catalog-maintenance.md), [D28](../decisions/D28-workflow-contract.md), [D29](../decisions/D29-policy-canary.md), [D30](../decisions/D30-scp-recovery.md), [D33](../decisions/D33-control-tower-admin-user.md), [D34](../decisions/D34-account-vending.md), [D35](../decisions/D35-sandbox-cardinality.md), [D37](../decisions/D37-nested-ou-inheritance.md) |
 | **Proves** | **Constrains** [INT-12](../integrations.md), whose fallback 7.6 forbids until the policy is amended. **Touches [INT-01](../integrations.md) and [INT-07](../integrations.md)**: the perimeter RCP now covers ECR, so both cross-account image paths run through its service carve-out — admitted by `aws:PrincipalOrgID`, but only exercised in 7.8 |
-| **Log** | [`log/stage-01c-preventive-policies.md`](../../log/stage-01c-preventive-policies.md) — **it exists and carries 7.0**; the policy IDs recorded there as each one is attached are what makes the detach command executable |
+| **Log** | [`log/log-stage-01c-preventive-policies.md`](../../log/log-stage-01c-preventive-policies.md) — **it exists and carries 7.0**; the policy IDs recorded there as each one is attached are what makes the detach command executable |
 
 *Read with [`plan/conventions.md`](../conventions.md) (naming, layout, `[P]`/`[D]`/`[E]`, IAM rules).*
 
@@ -50,7 +50,7 @@ SCPs by AWS's design (D16), and that is the *whole* recovery path since D30 was 
    aws organizations detach-policy --policy-id <POLICY_ID> --target-id <OU_OR_ACCOUNT_ID>
    ```
 
-   Record the ID of every policy **as you attach it**, in `log/stage-01c-preventive-policies.md`. Reading
+   Record the ID of every policy **as you attach it**, in `log/log-stage-01c-preventive-policies.md`. Reading
    an ID back out of a console you have just denied yourself access to is the failure this line exists to
    prevent.
 3. **The break-glass chain is live.** Built in 1a and **tested 2026-08-09 on both channels** (e-mail and
@@ -141,7 +141,7 @@ account. Read all of 7.0 and 7.1 before attaching anything.
 **New in the 2026-08-13 revision, and it is the reason the rest of the step can be executed rather than
 interpreted.** Every policy below needs identifiers this plan deliberately does not carry (`CLAUDE.md`
 forbids account ids in tracked files), and three of them need to know what Control Tower has *already*
-attached. Collect all of it in one pass, into `log/stage-01c-preventive-policies.md`, before the first
+attached. Collect all of it in one pass, into `log/log-stage-01c-preventive-policies.md`, before the first
 `create-policy`.
 
 > **RUN 2026-08-13, and it is now two scripts rather than a dozen commands with ids threaded between
@@ -314,7 +314,7 @@ a node, and remember the RCP budget is the tighter one** — 7.8 puts seven serv
 - **Write each document as a file *before* pasting it, and keep the file.** The folder exists since
   2026-08-13: [`terraform-live/identity/org-policies/`](../../terraform-live/identity/org-policies/README.md),
   with `policies/` for the real documents and `canary/` for the throwaway ones. Record the returned policy
-  ID beside the filename in `log/stage-01c-preventive-policies.md`. Two things come free: the detach command
+  ID beside the filename in `log/log-stage-01c-preventive-policies.md`. Two things come free: the detach command
   above becomes executable (you have the ID), and **Stage 2 step 5.5's import compares a document against
   itself** instead of against a re-typing, which is the difference between an empty plan and an evening
   spent on JSON whitespace.
@@ -1557,7 +1557,7 @@ Each one is written so that its output differs between working and broken (Lesso
   document**, the pre-existing BPA state per account, and the finding that **the policy quota is not
   published at all**. What is still owed is **the enabled-control list per OU**, which needs the Management
   run — and it is the deliverable 7.7 cannot start without.
-- **Every attached policy ID is recorded** in `log/stage-01c-preventive-policies.md`, beside the filename
+- **Every attached policy ID is recorded** in `log/log-stage-01c-preventive-policies.md`, beside the filename
   in `terraform-live/identity/org-policies/policies/`, which is what makes the detach command executable
   rather than aspirational — and what makes Stage 2 step 5.5's import land on an empty plan.
 
@@ -1565,7 +1565,7 @@ Each one is written so that its output differs between working and broken (Lesso
 
 **Three of the landing zone's decisions were settled before execution, on 2026-08-13, so this stage no
 longer opens with a blocking question.** They are recorded here rather than only in the chat that settled
-them, and each one is still written into `log/stage-01c-preventive-policies.md` at the moment it is applied
+them, and each one is still written into `log/log-stage-01c-preventive-policies.md` at the moment it is applied
 (Lesson 16):
 
 | # | Decision | Settled as | Step |
@@ -1607,7 +1607,7 @@ them, and each one is still written into `log/stage-01c-preventive-policies.md` 
 
 ## Verifications to answer while executing
 
-Record every answer in `log/stage-01c-preventive-policies.md`, including the ones that come out fine.
+Record every answer in `log/log-stage-01c-preventive-policies.md`, including the ones that come out fine.
 **The numerals are the landing zone's**, so they are not contiguous here.
 
 **Three are already answered, on 2026-08-13, and they are kept here with their answers rather than deleted

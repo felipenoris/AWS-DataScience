@@ -259,7 +259,7 @@ printf 'policies, and they are enforced in the service control plane rather than
 printf 'authorization, which is where that exemption lives. So a root attach is EXPECTED to\n'
 printf 'reach Management - the first time in this project that a root-attached document\n'
 printf 'does - and the only way to find out is to read it there. Record the answer in\n'
-printf 'log/stage-01c-preventive-policies.md.\n\n'
+printf 'log/log-stage-01c-preventive-policies.md.\n\n'
 printf 'Also absent, and none is a gap: `Staging` (not vended), every Sandbox beyond the\n'
 printf 'first (no profile until Stage 14), and EXC-01, the suspended `Sandbox` that is not\n'
 printf 'this project account.\n'

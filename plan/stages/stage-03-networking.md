@@ -6,7 +6,7 @@
 | **Prerequisites** | Stage 2. **Plus one answer from [1b step 6](stage-01b-identity-and-controls.md)**: whether the AZ name→ID mapping is the same in every account, which decides how step 1 anchors subnets |
 | **Consumes** | [D5](../decisions/D05-sagemaker-egress.md), [D9](../decisions/D09-az-count.md), [D14](../decisions/D14-supply-chain-account.md), [D15](../decisions/D15-tls-internal.md), [D18](../decisions/D18-data-scientist-access.md), [D20](../decisions/D20-staging-account.md), [D21](../decisions/D21-development-account.md), [D22](../decisions/D22-data-governance-account.md), [D35](../decisions/D35-sandbox-cardinality.md) — **plus, for step 8's endpoint lists only**, [D7](../decisions/D07-orchestration.md), [D13](../decisions/D13-lake-formation-enforcement.md), [D24](../decisions/D24-shared-filesystem.md) |
 | **Proves** | [INT-09](../integrations.md) (Development ↔ Production peering). **Supplies** what [INT-05](../integrations.md) later depends on: the `[P]` gateway endpoint IDs of step 3 |
-| **Log** | `log/stage-03-networking.md` — to be created by the user, with its row in [`log/INDEX.md`](../../log/INDEX.md) |
+| **Log** | `log/log-stage-03-networking.md` — to be created by the user, with its row in [`log/INDEX.md`](../../log/INDEX.md) |
 
 *Read with [`plan/conventions.md`](../conventions.md) (naming, layout, `[P]`/`[D]`/`[E]`, IAM rules).*
 
@@ -520,7 +520,7 @@ hourly table is per business unit (D35)** and is the term that multiplies.
 ## Decisions due while executing
 
 **Blocking questions for the user: none.** Each is decided during the stage and written into
-`log/stage-03-networking.md` rather than left to whoever is at the keyboard (Lesson 16).
+`log/log-stage-03-networking.md` rather than left to whoever is at the keyboard (Lesson 16).
 
 1. **The Sandbox supernet and the allocation table** (1.2, 1.3) — confirm `10.16.0.0/13` and record where
    the table lives, since Stage 14 reads it.

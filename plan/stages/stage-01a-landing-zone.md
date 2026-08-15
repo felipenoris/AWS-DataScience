@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Status** | **done on 2026-08-09, except the deferred `Staging` vend** (step 4). Step 2's budget alerts + Cost Anomaly Detection are **skipped by decision**, not outstanding — [`log/stage-01a-landing-zone.md`](../../log/stage-01a-landing-zone.md) is authoritative |
+| **Status** | **done on 2026-08-09, except the deferred `Staging` vend** (step 4). Step 2's budget alerts + Cost Anomaly Detection are **skipped by decision**, not outstanding — [`log/log-stage-01a-landing-zone.md`](../../log/log-stage-01a-landing-zone.md) is authoritative |
 | **Prerequisites** | none outstanding (D1 decided, an e-mail registered for every account this stage creates) |
 | **Consumes** | [D1](../decisions/D01-region.md), [D12](../decisions/D12-budget-ceiling.md), [D14](../decisions/D14-supply-chain-account.md), [D16](../decisions/D16-break-glass.md), [D20](../decisions/D20-staging-account.md), [D21](../decisions/D21-development-account.md), [D22](../decisions/D22-data-governance-account.md), [D23](../decisions/D23-ou-structure.md), [D25](../decisions/D25-drop-box-consumer.md), [D26](../decisions/D26-unified-studio.md), [D27](../decisions/D27-catalog-maintenance.md), [D29](../decisions/D29-policy-canary.md), [D32](../decisions/D32-account-factory-sso-user.md), [D33](../decisions/D33-control-tower-admin-user.md), [D34](../decisions/D34-account-vending.md) |
 | **Proves** | — |
@@ -44,9 +44,9 @@ project, is already attached to the organization** and consumes a slot, so this 
 **eleven against a cap of ten**. Two things follow, and neither is optional:
 
 - **A quota increase was requested at 15** (Service Quotas → AWS Organizations → "Maximum number of
-  accounts"; it is a global setting but the request is filed from `us-east-1`). It is recorded in `log/stage-01a-landing-zone.md`
+  accounts"; it is a global setting but the request is filed from `us-east-1`). It is recorded in `log/log-stage-01a-landing-zone.md`
   as *requested*. **Confirm it was granted before vending the last accounts** — the granted value goes in
-  `log/stage-01a-landing-zone.md`.
+  `log/log-stage-01a-landing-zone.md`.
 - **Until it is granted, defer `Staging`.** It is the right one to defer and the reason is structural, not
   arbitrary: its first hard dependency is Stage 8, and D20 keeps it unpeered from everything, so nothing
   earlier is waiting on it. **Deferring costs nothing now that D34 has withdrawn the retirement of the only
@@ -56,7 +56,7 @@ project, is already attached to the organization** and consumes a slot, so this 
 **What the deferral leaves owed, in one list — because it is currently owed by five different files.**
 Each of the stages below carries its own "skip the Staging cell" note, which is right for someone executing
 that stage and useless for someone vending the account six weeks later. **When `Staging` is vended, work
-this list**, and record it in `log/stage-01a-landing-zone.md` beside the vend itself:
+this list**, and record it in `log/log-stage-01a-landing-zone.md` beside the vend itself:
 
 | Owed by | What |
 |---|---|
@@ -84,7 +84,7 @@ quota headroom is a standing item**, because vending is a standing capability �
 recurring consumer of slots is named: **one slot per business unit**, since `Sandbox` is the one account
 that multiplies.
 
-**To execute (all manual, by the user, recorded in `log/stage-01a-landing-zone.md`):**
+**To execute (all manual, by the user, recorded in `log/log-stage-01a-landing-zone.md`):**
 
 1. **Secure the Management account root user — which since D16 is also the break-glass credential, so this
    step and step 5 are two halves of one thing rather than two mechanisms.** MFA enabled (the *type* is
@@ -194,7 +194,7 @@ that multiplies.
      step 7 carries the correction and the choice of whether to give the OU a set at all. The only OU into
      which project blueprints may provision (D26). **If a set is written, attach it to `Interactive`, not to
      `Sandboxes`** — the nested OU carries none of its own and inherits, which is what would make a newly
-     vended unit governed the moment it lands. Created this way on 2026-08-09 (`log/stage-01a-landing-zone.md`); it is the reason the
+     vended unit governed the moment it lands. Created this way on 2026-08-09 (`log/log-stage-01a-landing-zone.md`); it is the reason the
      organization's OU nesting depth is 2, which Stage 2 has to write its `for_each` against.
    - `Data` OU → `Data Governance` (D22, D26, D27). **No *user* compute** — the SCP denies EC2 and
      SageMaker outright, plus Glue job creation and execution (D25) — and deletion protection is the
@@ -225,7 +225,7 @@ that multiplies.
      against a different baseline than the one it will meet in production — which is worse than not
      testing, because it produces a false pass.
    - `Security` OU → the Log Archive and Audit accounts Control Tower created, **and nothing else.**
-     `Identity` was meant to join them and **could not** — the vend was refused on 2026-08-09 (`log/stage-01a-landing-zone.md`).
+     `Identity` was meant to join them and **could not** — the vend was refused on 2026-08-09 (`log/log-stage-01a-landing-zone.md`).
      This step had flagged it as a thing to verify rather than assume, for the right reason: `Security` is a
      *foundational* OU in Control Tower's model, and a non-Control-Tower-created account does not simply
      join one.
@@ -324,7 +324,7 @@ that multiplies.
    past ~20 minutes it is a failure, not latency. Confirm the message arrived on **both** channels — a
    missing channel is a finding — and that the alarm returns to `OK` on its own.
 
-   **5.6 — Record it.** Resource names and the test result in `log/stage-01a-landing-zone.md` (the user's file), and the date in
+   **5.6 — Record it.** Resource names and the test result in `log/log-stage-01a-landing-zone.md` (the user's file), and the date in
    the **Last tested** row of the runbook.
 6. **Centralized root access management.** Every member account — the ones Control Tower created (Log
    Archive, Audit) and the ones Account Factory created — arrives with its own root user and its own
@@ -367,7 +367,7 @@ that multiplies.
    account → **Take privileged action** → **Delete root credentials**. The console shows a credential report
    first — password present, access key present and when it was last used, signing certificates, MFA — and
    **that report is the only time anybody will ever look at that account's root**: anything in it other than
-   "nothing" belongs in `log/stage-01a-landing-zone.md`. The deletion removes password, access keys and signing certificates and
+   "nothing" belongs in `log/log-stage-01a-landing-zone.md`. The deletion removes password, access keys and signing certificates and
    deactivates MFA. **There is no bulk action in the console**; the per-account CLI equivalent is
 
    ```bash
@@ -388,7 +388,7 @@ that multiplies.
    activity anywhere", and a privileged session is told apart from a real root sign-in only by correlating
    the `sts.amazonaws.com` `AssumeRoot` event (`sessionContext.assumedRoot = true`, plus
    `requestParameters.targetPrincipal`) with the `accessKeyId` on the member-account events. And **if nothing
-   arrives on both channels here, step 5 never worked**: `log/stage-01a-landing-zone.md` records the 5.5 test as performed but not
+   arrives on both channels here, step 5 never worked**: `log/log-stage-01a-landing-zone.md` records the 5.5 test as performed but not
    its result, so this is where that gets settled.
 
    **6.6 — What it costs, and the reversal.** Afterwards a member account cannot sign in as root and cannot
@@ -409,7 +409,7 @@ that multiplies.
    `"Null": {"aws:AssumedRoot": "true"}` to the condition. Without that, the control and this step's own
    recovery action cancel out — the escape hatch is denied by the guardrail meant to protect it.
 
-   **6.8 — Record it in `log/stage-01a-landing-zone.md`**: date, which capabilities were enabled, whether a delegated administrator
+   **6.8 — Record it in `log/log-stage-01a-landing-zone.md`**: date, which capabilities were enabled, whether a delegated administrator
    was set, what each account's credential report showed, and whether both alarm channels fired.
 
 **Deliverables of 1a:** every account exists, in its OU, each with the **same** infrastructure user holding

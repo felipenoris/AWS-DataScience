@@ -23,7 +23,8 @@ Blueprint for using AWS as a Data Science infrastructure provider.
   Unlike the cost figures in `plan/cost-model.md`, which are order-of-magnitude estimates, these are
   measured; the cost model says what is consumed, `PRICING.md` says what a unit of it costs.
 - `log/` — record of every step performed manually through the console, **one file per stage**, mirroring
-  `plan/stages/` (`log/stage-NN-*.md` ↔ `plan/stages/stage-NN-*.md`). `log/INDEX.md` says what each file
+  `plan/stages/` (`log/log-stage-NN-*.md` ↔ `plan/stages/stage-NN-*.md` — the same slug, with a `log-`
+  prefix, so the two files never share a name). `log/INDEX.md` says what each file
   records, so finding a step never means reading every log.
 - `AWS-CLI.md` — the `aws` recipes run by hand, and which identity runs each of them.
 - `aws/` — read-only scripts that photograph what is actually deployed, one text snapshot per script under
@@ -443,7 +444,7 @@ is recorded in D32, D33, D34 and D35.
 The first principle of the plan keeps the Management account out of Terraform entirely. Nothing in this
 repository will ever declare `aws_organizations_account` or `aws_organizations_organizational_unit`, and the
 landing zone itself — Control Tower, its guardrails, its baseline — is enabled through the console and
-recorded in `log/stage-01a-landing-zone.md`.
+recorded in `log/log-stage-01a-landing-zone.md`.
 
 That is not a temporary shortcut awaiting codification. It has a direct and useful consequence: **creating an
 OU or an account from the console cannot make any Terraform state inconsistent**, because a state file only

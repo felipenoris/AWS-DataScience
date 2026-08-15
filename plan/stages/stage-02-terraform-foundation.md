@@ -162,7 +162,7 @@ one for either is the kind of thing that looks like tidiness and is not.
    descendant-OU data source really recurses — and a verification whose subject was never written down is a
    verification nobody can repeat. `terraform` is **v1.15.8** on this laptop (measured 2026-08-15), which is
    what `use_lockfile` needs (2.5); the provider version is chosen here.
-4. **`log/stage-02-terraform-foundation.md` already exists** (header-only, created 2026-08-15) and its row
+4. **`log/log-stage-02-terraform-foundation.md` already exists** (header-only, created 2026-08-15) and its row
    in [`log/INDEX.md`](../../log/INDEX.md) links it. Every decision this stage names as "record which way
    it went" lands there. *(The user writes it; Claude never edits `log/`.)*
 
@@ -354,6 +354,12 @@ order, and record all three** (the reads cost nothing, and the first is informat
    `awsds-infra-identity`, `organizations update-policy` on the **least dangerous** document with its own content — the tag policy,
    whose enforcement is off (`enforced_for` unset), so an identical rewrite changes nothing even if it lands
    in a way nobody expected. Not `awsds-org-scp-baseline`; not from the canary, which has no delegation.
+   **"Its own content" needs a mechanism, the same way 5.5's import does** *(added 2026-08-15)*: read the
+   document back with `describe-policy --query 'Policy.Content' --output text` into a file, and feed **that
+   file** to `update-policy --content file://…`. Retyping it is a different test — a document differing by a
+   byte measures the delegation *and* edits the policy, and the two are no longer separable in the result.
+   `update-policy` leaves `Name` and `Description` unchanged when neither is passed, so `--content` alone is
+   the whole call.
 
 **What each outcome costs, decided here rather than at the keyboard:** all three succeed → `org-policies/`
 is written as designed. Root refused, OU allowed → the slice holds **four** documents, the six on the root
@@ -362,6 +368,46 @@ manages them. All refused → 5.6's fallback, unchanged. **One reading disciplin
 refusal:** a denied write is evidence about *root reach* only if the delegation's `Resource` list carries
 the **policy-type ARNs** (5.1) — a list of targets alone denies every write, on every document, and reads
 exactly like "all refused". `DEL-9` is the check.
+
+**Answered 2026-08-15 — all three readings ran, all three succeeded, and `org-policies/` is written as
+designed with all ten documents.** The write landed on `awsds-org-tag-policy`, a **root-attached** document,
+from `awsds-infra-identity`. INT-20's predicted failure did not occur.
+
+**But it settled less than "a root attachment is manageable", and the gap is a Lesson 20 gap.**
+`UpdatePolicy` authorizes against the **policy** ARN alone; only `AttachPolicy`/`DetachPolicy` authorize
+against the **target** as well. So the successful write proves the `policy/o-<org>/<type>/*` half of the
+`Resource` list and proves the condition does not block — it says **nothing** about the `root/…` and `ou/…`
+entries, which are still supported only by *reading* them (`DEL-6`, `DEL-7`). And the stage will not exercise
+them either: 5.5 **imports** attachments that already exist, so a matching configuration plans clean and
+calls no `AttachPolicy` at all. The delegation's target half therefore stays attached-but-unexercised past
+the end of this stage, and the first call that needs it — Stage 3 attaching a new document, or any
+re-attachment — is where a denial would surface, far from anything that would explain it.
+
+4. **Closing the target half, non-mutating and worth the two minutes** *(added 2026-08-15)*: from
+   `awsds-infra-identity`, `organizations attach-policy` for a pair that is **already attached** — the tag
+   policy on the root, read out of `aws/output/org-delegation.txt` §5 immediately before, never from memory.
+   The two outcomes are distinguishable and neither changes anything: `DuplicatePolicyAttachmentException`
+   means authorization **passed** and the service then refused the duplicate; `AccessDenied` means the target
+   half is not reachable, and `org-policies/` must then own documents without owning their attachments. The
+   idiom is `aws/probes/`'s own — a call aimed at something that cannot take effect — and it carries that
+   folder's rule with it: **it is a deliberate act, and the pair must be verified as attached first**, because
+   the same call against an unattached pair is a real attachment.
+
+   **Ran 2026-08-15: `DuplicatePolicyAttachmentException`.** The `root/…/r-zhj6` entry is exercised, not
+   merely read — `AttachPolicy` authorizes against target **and** policy, so both matched.
+
+   **And this reading needs a negative control, which is Lesson 21 arriving from the other side.** It is
+   only evidence if IAM authorization runs *before* the service's duplicate check; if the order were
+   reversed, an unauthorized principal would get `DuplicatePolicyAttachmentException` too and the reading
+   would be worth nothing. The discriminator costs one command and cannot mutate anything either: **the same
+   call from `awsds-policy-canary`**, a principal with no delegation at all. `AccessDenied` there proves the
+   ordering and retroactively makes the Identity result proof; `DuplicatePolicyAttachmentException` there
+   voids it. **A probe with no negative control is a check that returns the same answer on success and
+   failure** (Lesson 13).
+
+   **What stays unexercised even so: the `ou/o-<org>/*` entry.** The root entry is an exact ARN; the OU entry
+   is a **wildcard**, and a wildcard that fails to match is the shape that does not announce itself. The same
+   duplicate-attach against an already-attached per-OU pair closes it, and `DEL-7` is a reading until it does.
 
 **5.1 — The precondition no stage creates yet, and `org-policies/` does not run without it.**
 
@@ -373,8 +419,18 @@ AWS Organizations objects, and by default only the Management account can touch 
 - **What it is:** a **resource-based delegation policy** on the organization
   (`organizations:PutResourcePolicy`), naming the Identity account as principal. It is not
   `register-delegated-administrator`; that is a different mechanism and it does not cover policy management.
-- **Who runs it:** `AWS Control Tower Admin`, from Management (D34) — the only Management action in this
-  stage. Record the exact document in `log/stage-02-terraform-foundation.md`.
+- **Who runs it, and by which path:** `AWS Control Tower Admin` / `AWSAdministratorAccess`, from Management
+  (D34) — the only Management action in this stage. In the console: **Settings** → the **Delegated
+  administrator for AWS Organizations** section → **Delegate** → the JSON editor → **Create policy**. The CLI
+  equivalent is `aws organizations put-resource-policy --content file://<document>.json`; either path needs
+  `organizations:PutResourcePolicy` **and** `organizations:DescribeResourcePolicy`. AWS additionally requires
+  the delegated account's principals to hold the matching **identity-based** permissions — the resource half
+  alone grants nothing — which is satisfied because `InfrastructureAccess` carries `AdministratorAccess` and
+  the `Identity` OU's `CT.MULTISERVICE.PV.1` keeps `organizations:*` wholly inside its `NotAction`
+  (verification (vii), answered by reading). Record the exact document in
+  `log/log-stage-02-terraform-foundation.md`; its `Sid`s are indexed in
+  [`POLICIES.md`](../../terraform-live/identity/org-policies/POLICIES.md), in the one section
+  `check-index.sh` cannot see.
 - **What it must grant**, per AWS's own examples: the read half (`DescribeOrganization`,
   `ListRoots`, `ListOrganizationalUnitsForParent`, `ListChildren`, `ListParents`, `ListAccounts`,
   `ListPolicies`, `ListPoliciesForTarget`, `ListTargetsForPolicy`, `ListTagsForResource`) **plus**
@@ -396,8 +452,10 @@ AWS Organizations objects, and by default only the Management account can touch 
   the keyboard as *"every write refused"*, indistinguishable from 5.0's "the delegation cannot reach a root
   attachment", the one outcome 5.0 exists to measure. `IfExists` makes the condition act only when the key
   is present, and confinement to the four types is still carried by the policy ARN path in `Resource`.
-  **`DEL-8` cannot catch this**: it reads the condition operator-agnostically (it iterates the operator and
-  discards it), so a `StringEquals` document passes the check and fails the apply.
+  ~~**`DEL-8` cannot catch this**~~ — **it can, since 2026-08-15.** The check used to iterate the operator
+  and discard it, so a `StringEquals` document passed and failed every apply; it now reports the operator
+  and **fails** on any form without an `IfExists` suffix. Demonstrated against the live document with the
+  operator name as the only edit.
 - **Tagging is a third statement, unconditioned and policy-scoped** *(added 2026-08-15)*.
   `organizations:TagResource` / `UntagResource` do **not** accept the `organizations:PolicyType` condition —
   AWS's tagging example puts them in a separate statement with no condition for exactly that reason — so
@@ -422,6 +480,13 @@ AWS Organizations objects, and by default only the Management account can touch 
   exactly this: no policy-type ARN class in the `Resource` list is a **fail**, not a note.
 - **Exclude `DisablePolicyType` and `EnablePolicyType`.** They act on the root and turning a policy type off
   detaches every policy of that type at once. Nothing in this design needs them after 1c step 7.2.
+- **Two AWS-side constraints on the *shape* of this document, neither of which is a choice**
+  *(found 2026-08-15, on the procedure page)*. **`NotAction` and `NotResource` are rejected outright since
+  2026-06-30** — AWS calls them incompatible with the delegation allowlist model — so the exemption-shaped
+  idiom used throughout `policies/` is unavailable here even in principle, and a document written that way
+  fails at creation rather than at use. And **the delegable actions are a published closed list**: an action
+  absent from it cannot be delegated however the document is written, which is the first thing to check if a
+  later stage wants to widen this grant.
 
 **The blast radius this creates, stated rather than discovered.** AWS's own note is that the delegation
 *"allows delegated administrators to perform the specified actions on policies created by any account in the
@@ -488,8 +553,8 @@ it into `ORGANIZATION.md`'s description of that account rather than leaving it h
   managed and is recorded as such (Lesson 5 — an unowned artefact is worse when nobody wrote down that it is
   unowned).
 - **Read the three landing-zone logs before writing anything** —
-  `log/stage-01b-identity-and-controls.md`, `log/stage-01c-preventive-policies.md` and
-  `log/stage-01d-org-wide-enablement.md`. Three of their execute-time decisions change what exists here:
+  `log/log-stage-01b-identity-and-controls.md`, `log/log-stage-01c-preventive-policies.md` and
+  `log/log-stage-01d-org-wide-enablement.md`. Three of their execute-time decisions change what exists here:
   whether the `Interactive` OU got a policy set at all (1c step 7.6), what this project's administrator
   permission set is actually called (1b step 3.2), and whether the Account Factory direct assignments could
   be removed (1b step 5.1).
@@ -630,7 +695,7 @@ does not error, it plans a create alongside an orphan.
 
 **None of these ids should be typed by hand** — `./aws/import-ids.sh` emits every one (see "The instruments
 this stage runs on"). Until the 2026-08-15 fix to `org-policies.sh`, three of the ten policy ids existed
-only in `log/stage-01c-preventive-policies.md`; a fresh snapshot now carries all ten.
+only in `log/log-stage-01c-preventive-policies.md`; a fresh snapshot now carries all ten.
 
 If the groundwork above was somehow not done, expect an iteration or two here and **do not "converge" by
 applying** — read the diff first (see the Risks).
@@ -649,7 +714,7 @@ cheap:
   move, because the boundary was drawn before the attempt rather than after it.
 - **`identity/org-policies/` stays empty and the four policy types stay console-managed**, exactly as 1c left
   them. Step 9.2's wildcard check degrades from a script to a manual review — strictly worse, and
-  **recorded as such in `log/stage-02-terraform-foundation.md`**, not absorbed (Lesson 5: an unowned artefact
+  **recorded as such in `log/log-stage-02-terraform-foundation.md`**, not absorbed (Lesson 5: an unowned artefact
   is worse when nobody wrote down that it is unowned).
 - **Keep the empty slice, with a `README.md` naming INT-20 as the blocker.** An empty folder that says why is
   the only thing that will make somebody retry this; a deleted folder is a plan that quietly gave up.
@@ -788,7 +853,7 @@ control nobody can explain, and this is the script that catches it.
 ### 10. Documentation
 
 Update **`README.md`** with the repository layout and the AWS resource structure (required by `CLAUDE.md`),
-add the links used to **`REFERENCES.md`**, and record in **`log/stage-02-terraform-foundation.md`** the
+add the links used to **`REFERENCES.md`**, and record in **`log/log-stage-02-terraform-foundation.md`** the
 decisions listed below.
 
 ---
@@ -855,7 +920,11 @@ Each is written so its output differs between working and broken (Lesson 13):
   tag policy with its own content — succeeds **under `awsds-infra-identity`**, and `./aws/org-delegation.sh`
   passes `DEL-6` (root reach), `DEL-7` (nested OUs) and `DEL-9` (policy-type ARNs) on the read-back
   document. A `describe-policy` read is not the evidence: it succeeds identically with no delegation at all
-  (Lesson 13).
+  (Lesson 13). **Met 2026-08-15**, and reading 4 met the half `UpdatePolicy` cannot reach: it authorizes on
+  the policy ARN only, so the `Resource` list's **target** entries needed the duplicate-attach —
+  `DuplicatePolicyAttachmentException` on the root, Lesson 20 closed for that entry. **Two threads left
+  open, both cheap:** the negative control from `awsds-policy-canary` that makes the duplicate reading
+  evidence at all, and the `ou/…/*` wildcard, which is still a reading.
 - **The checks fail on purpose:** a commit introducing `us-west-2` in a `.tf` file, and one introducing
   `arn:aws:iam::*:role/x`, are both rejected. A check nobody has seen fail is a hypothesis.
 - **The `Makefile` refuses what it must:** `make down ENV=sandbox` is a **safe no-op** at this point — no
@@ -873,7 +942,7 @@ Each is written so its output differs between working and broken (Lesson 13):
 ## Decisions due while executing
 
 **Blocking questions for the user: none.** Six decisions are *made* during the stage and each is written
-into `log/stage-02-terraform-foundation.md` rather than left to whoever is at the keyboard (Lesson 16):
+into `log/log-stage-02-terraform-foundation.md` rather than left to whoever is at the keyboard (Lesson 16):
 
 1. **The exact Organizations delegation document** (5.1) — which actions, which resource ARNs, and the
    explicit note that it reaches Control Tower's own SCPs.
@@ -923,7 +992,7 @@ could not be left open.)*
 
 ## Verifications to answer while executing
 
-Record every answer in `log/stage-02-terraform-foundation.md`, including the ones that come out fine.
+Record every answer in `log/log-stage-02-terraform-foundation.md`, including the ones that come out fine.
 
 | # | Question | Step |
 |---|---|---|

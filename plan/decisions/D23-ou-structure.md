@@ -32,7 +32,7 @@ Root
 
 **`Identity` is its own OU because Control Tower would not put the account anywhere else.** The account was
 to live in `Security` alongside Log Archive and Audit; vending it there was blocked
-(`log/stage-01a-landing-zone.md`, 2026-08-09),
+(`log/log-stage-01a-landing-zone.md`, 2026-08-09),
 and the most likely reason is the one Stage 1a step 4 had already written down as a thing to verify —
 `Security` is a **foundational** OU in Control Tower's model, and a non-foundational account does not simply
 join it. So the fallback that step named fired, exactly as written. **This is not the "folder with one file"
@@ -42,7 +42,7 @@ therefore carries a policy set of its own or it carries none at all, which makes
 than in spite of it.
 
 **The consequence this paragraph drew — "a new OU carries no policy set until code attaches one" — was
-measured on 2026-08-13 and is not what happened here** (Stage 1c step 7.0; `log/stage-01c-preventive-policies.md`).
+measured on 2026-08-13 and is not what happened here** (Stage 1c step 7.0; `log/log-stage-01c-preventive-policies.md`).
 `Identity` carries `aws-guardrails-coSzJr`, Control Tower's standard eight statements, identical to every
 other registered OU: creating it through the console **registered** it, and registration is what attaches
 the guardrail — not being foundational. What `Security` has extra is three statements about the log-archive

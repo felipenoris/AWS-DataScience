@@ -336,8 +336,24 @@ out = {
         for k, vals in kv.items() if k.lower() == "organizations:policytype"
         for v in (vals if isinstance(vals, list) else [vals])
     }),
+    # DEL-8's operator half (added 2026-08-15, after step 5.0's write). The value list alone
+    # cannot tell a working delegation from one that refuses every write: without IfExists,
+    # any call whose request context omits organizations:PolicyType fails the condition and is
+    # DENIED. That arrives at the keyboard as "every write refused" - which is exactly what a
+    # delegation unable to reach a root attachment looks like, the one thing step 5.0 exists to
+    # distinguish. The check that cannot separate them is Lesson 13.
+    "policy_type_operators": sorted({
+        op for c in conds
+        for op, kv in c.items()
+        for k in kv if k.lower() == "organizations:policytype"
+    }),
     "n_statements": len(stmts),
 }
+# Any/Value-set prefixes are irrelevant here; what matters is the IfExists suffix. Operators
+# are ANDed inside a Condition block, so ONE strict operator on this key denies the call
+# regardless of what its siblings say.
+out["policy_type_operators_strict"] = [
+    op for op in out["policy_type_operators"] if not op.lower().endswith("ifexists")]
 json.dump(out, sys.stdout, indent=2, sort_keys=True)
 PY
 
@@ -428,11 +444,17 @@ if [ "$RESPOL_STATE" = "present" ]; then
   fi
 
   PT=$(jq_ policy_type_conditions)
+  PTOP=$(jq_ policy_type_operators)
+  PTSTRICT=$(jq_ policy_type_operators_strict)
   if [ "$PT" = "[]" ]; then
-    check note "DEL-8" "scoped by organizations:PolicyType" \
+    check note "DEL-8" "scoped by organizations:PolicyType, via IfExists" \
       "no PolicyType condition - the delegation admits EVERY policy type, present and future. Wider than Stage 2 step 5.1 designs, and it is a Deny-by-omission that will not announce itself."
+  elif [ "$PTSTRICT" != "[]" ]; then
+    check fail "DEL-8" "scoped by organizations:PolicyType, via IfExists" \
+      "types $PT, but the operator is $PTSTRICT - NOT an IfExists form. A strict operator denies every call whose request context omits organizations:PolicyType, and not every write supplies it. The result is 'all writes refused', which is indistinguishable at the keyboard from a delegation that cannot reach a root attachment - DEL-6's failing answer. Use StringLikeIfExists (Stage 2 step 5.1). Until this is fixed, do not read a denied write as scope."
   else
-    check pass "DEL-8" "scoped by organizations:PolicyType" "$PT"
+    check pass "DEL-8" "scoped by organizations:PolicyType, via IfExists" \
+      "$PT, via $PTOP - the IfExists form, so a call that does not carry the key is not denied by this condition"
   fi
 
   MISSING_PARN=$(jq_ policy_types_missing)

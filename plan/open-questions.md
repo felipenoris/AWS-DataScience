@@ -26,7 +26,7 @@ what is genuinely still unanswered:
    did not decide the question the way the question expected.** Every account that has a profile returns
    an identical mapping (`us-west-2a` → `usw2-az2`, `b` → `az1`, `c` → `az3`, `d` → `az4`; the names are
    *not* in ID order). The full table is in
-   [`log/stage-01b-identity-and-controls.md`](../log/stage-01b-identity-and-controls.md), and
+   [`log/log-stage-01b-identity-and-controls.md`](../log/log-stage-01b-identity-and-controls.md), and
    `./aws/AZs.sh` regenerates it into `aws/output/AZs.txt`.
    **Stage 3 anchors subnets on `zone_id` anyway** — this item used to say "if the mappings differ", and
    that conditional was written without knowing that the measurement can only ever speak for the accounts

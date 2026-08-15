@@ -548,4 +548,4 @@ policy id.
 *Stage: [1c step 7.3](../stages/stage-01c-preventive-policies.md) · Decision:
 [D29](../decisions/D29-policy-canary.md) · Documents:
 [`terraform-live/identity/org-policies/`](../../terraform-live/identity/org-policies/README.md) · Record
-every outcome in [`log/stage-01c-preventive-policies.md`](../../log/stage-01c-preventive-policies.md)*
+every outcome in [`log/log-stage-01c-preventive-policies.md`](../../log/log-stage-01c-preventive-policies.md)*
