@@ -17,7 +17,7 @@
     "be distinguishable, or the check either fails forever or passes on a real gap (Lesson 13).",
     "",
     "TARGETS ARE NAMES, NEVER IDS. No account id enters a tracked file (aws/INDEX.md rule 1), and",
-    "an OU id is resolved by the consumer: scripts/check-ou-coverage.sh through the Organizations",
+    "an OU id is resolved by the consumer: scripts/check-ou-coverage.py through the Organizations",
     "API, and step 5's slice through the same data-source walk. A document name is the file's own",
     "basename in policies/, which is also the name the policy carries in Organizations.",
     "",

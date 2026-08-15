@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env -S uv run --quiet
 """Compare the policies attached in the organization against the documents in policies/.
 
     readback.py <policy-dir> <profile>

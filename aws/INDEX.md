@@ -147,6 +147,8 @@ profile or account: every `awsds-*` profile in `~/.aws/config` declares `sso_ses
 The profile only matters one step later, when a call trades that token for temporary credentials of its
 account's role (`sso_account_id` + `sso_role_name`). `aws sso login --profile awsds-infra-identity` reaches
 the same session through the profile and is equivalent; naming the session says what is happening.
+[`login.py`](login.py) wraps that exact command and nothing else, so the login sits in the same folder as
+the scripts it unblocks.
 
 ## `aws/output/` — the snapshots
 

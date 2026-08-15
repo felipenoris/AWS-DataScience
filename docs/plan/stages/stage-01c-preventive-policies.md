@@ -153,8 +153,8 @@ attached. Collect all of it in one pass, into `docs/log/log-stage-01c-preventive
 > **What each numbered step below now says is what AWS answered**, with the command kept so it can be
 > re-derived. The one part still owed is **step 3**, which no profile can answer: it is a `controltower`
 > call, and a member account is told *"you must create a landing zone first"* — the member-account answer,
-> not evidence about the landing zone. Run `bash org-policy-baseline.py -` in CloudShell on **Management**
-> as `AWS Control Tower Admin`.
+> not evidence about the landing zone. Run `python3 aws/org-policy-baseline.py -` in CloudShell on
+> **Management** as `AWS Control Tower Admin`.
 >
 > **Verification (x) is therefore answered: yes.** `ListPoliciesForTarget`, `DescribePolicy`,
 > `DescribeOrganization`, `ListRoots` and `ListOrganizationalUnitsForParent` all answer from the Identity
@@ -241,11 +241,13 @@ Record the result per OU; 7.7 may not enable a control on an OU this call reject
 zone first`, which is what a *member* account is told; the API only answers in Management. So:
 
 ```bash
-bash org-policy-baseline.py -
+python3 aws/org-policy-baseline.py -
 ```
 
-in CloudShell on **Management** as `AWS Control Tower Admin` (upload the script through *Actions → Upload
-file*; with `-` it uses ambient credentials and writes the report beside itself). It answers three things
+in CloudShell on **Management** as `AWS Control Tower Admin` (bring the whole `aws/` folder — the script
+imports `awslib`, so a single-file upload does not run; clone the repository, or upload it zipped and
+unzip, per [`aws/INDEX.md`](../../../aws/INDEX.md); with `-` it uses ambient credentials and writes the
+report under `aws/output/`). It answers three things
 at once: whether `Sandboxes` is a registered target, the enabled-control diff between `Security` and
 `Identity` that 7.6 asks for, and the baseline 7.7 is going to add to.
 
