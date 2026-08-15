@@ -45,6 +45,35 @@ repos:
   # CLAUDE.md - rather than letting pre-commit build a second copy at a version nobody chose.
   - repo: local
     hooks:
+      # ---------------------------------------------------------------- step 9's own checks
+      # THE SAME SCRIPTS `make check` CALLS, and that is the point: a commit gate and a target
+      # that disagree are two rules. Stage 8 step 6 adds a third caller - .gitlab-ci.yml - and
+      # it is a line, not a rewrite. Step 9.3 is deliberately absent: it needs an SSO session,
+      # and a commit gate that demands one is a gate nobody can run offline (`make check-ou`).
+      - id: check-tf-conventions
+        name: no region literals, indexed AZs or account-level BPA (9.1)
+        entry: ./scripts/check-tf-conventions.sh
+        language: system
+        pass_filenames: false
+        files: \.tf$
+
+      - id: check-iam-wildcards
+        name: no wildcard-account ARN in the identity plane (9.2)
+        entry: ./scripts/check-iam-wildcards.sh
+        language: system
+        pass_filenames: false
+        files: ^terraform-live/identity/.*\.(json|tf)$
+
+      # 9.4 - it already existed and was run by hand, which is exactly the state step 9 ends.
+      # Once org-policies/ manages these documents, a statement added in Terraform with no row
+      # in POLICIES.md is a control nobody can explain a year later.
+      - id: check-policies-index
+        name: POLICIES.md still describes policies/ (9.4)
+        entry: ./terraform-live/identity/org-policies/check-index.sh
+        language: system
+        pass_filenames: false
+        files: ^terraform-live/identity/org-policies/(policies/.*\.json|POLICIES\.md)$
+
       - id: checkov
         name: checkov (terraform)
         entry: checkov

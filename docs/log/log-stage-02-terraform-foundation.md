@@ -518,6 +518,68 @@ checkov (terraform) ................................................. Passed
   under the 20 KB its own check enforces. `docs/REFERENCES.md` gained the four tool references. Link check
   after the documentation was consolidated under `docs/`: **1044 links resolve, none broken.**
 
+## 2026-08-15 — step 9: the four checks, and the two surfaces that run them
+
+**No AWS call in this entry.** Everything below is local. Step 9.3 is **written but not yet run**: it
+needs an SSO session and is recorded as open at the end.
+
+- **Four checks, two enforcement surfaces, the same scripts behind both** — so the commit gate and the
+  `make` target cannot disagree, and Stage 8 step 6 adds a third caller rather than a rewrite:
+
+  | Check | Script | Runs in |
+  |---|---|---|
+  | 9.1 | `scripts/check-tf-conventions.sh` | `make check` + `pre-commit` on any `*.tf` |
+  | 9.2 | `scripts/check-iam-wildcards.sh` | `make check` + `pre-commit` on `terraform-live/identity/**` |
+  | 9.3 | `scripts/check-ou-coverage.sh` | **`make check-ou` only** — needs a session |
+  | 9.4 | `terraform-live/identity/org-policies/check-index.sh` | `make check` + `pre-commit` on `policies/` or `POLICIES.md` |
+
+- **`Makefile` created** with `check`, `check-ou`, `check-docs`, `check-all`. It is the same file step 8
+  will add `up`/`down`/`status` to.
+
+- **The authored OU→document map is a file, and it is the file step 5 will read:**
+  `terraform-live/identity/org-policies/attachments.json` — the root's six documents, the four OU pairs,
+  and the three OUs that carry none with the reason each is empty. Names, never ids. One file, two
+  consumers: 9.3's check and step 5's `for_each`.
+
+- **`check-plan-refs.sh` was deliberately left out of `make check` and given `make check-docs`.** It is
+  **red today**, on prose that predates this stage: `stage-01c`, `stage-01d` record dated measurements
+  phrased as *"all six accounts with a profile"*, and the check cannot tell a historical measurement from
+  a count that goes stale. Unresolved — it is either a check that needs a date-aware exemption or three
+  sentences to rewrite, and it was not decided here.
+
+- **Two defects found by testing the check rather than by reading it, both in 9.1 and both silent:**
+
+  - **The first `perl` form did not compile.** It printed its error on stderr, matched nothing, and
+    reported `none` over a fixture holding all three violations — the same output as a clean tree
+    (Lesson 13). The scanner's exit status is now checked and a failed scan is a `FAIL`.
+  - **`$.` counts cumulatively across the file list.** Without `close ARGV if eof`, a violation on line 2
+    of the sixth file was reported as line 162 of a three-line file.
+
+- **Demonstrated failing, which is the deliverable.** With a region literal and a wildcard-account ARN
+  staged together, `pre-commit` exits 1 and three hooks go red — 9.1, 9.2, and 9.4 on the new document
+  with no row in `POLICIES.md`. Each of 9.1's three rules was also fired separately against a fixture, as
+  was the scanner-failure path. Fixtures deleted, index restored.
+
+- **Green afterwards:** `make check` exit 0; the twelve-hook `pre-commit` chain passes `--all-files`;
+  1045 links resolve.
+
+- **Repository, same sitting:** stage file — status row, the step 9 record, 5.3 point 1 and 9.3 now name
+  `attachments.json`, the deliverable marked met; `terraform-live/README.md` and
+  `identity/org-policies/README.md`; `README.md` gained the `Makefile` and the checks; `CLAUDE.md`
+  brought current and re-trimmed to stay under its 20 KB budget.
+
+- **Open, and the next action:** run 9.3 against the organization, as the **infrastructure user** on
+  **Identity** through **`InfrastructureAccess`** (`awsds-infra-identity`):
+
+  ```
+  aws sso login --sso-session awsds
+  make check-ou
+  ```
+
+  Its section 4 compares what is attached against what `attachments.json` authors. A disagreement there
+  means the map — written from today's snapshot — is wrong and must be corrected **before step 5 reads
+  it**, not after.
+
 ---
 
 *Log index: [docs/log/INDEX.md](INDEX.md) · Stage index: [docs/plan/stages/INDEX.md](../plan/stages/INDEX.md)*

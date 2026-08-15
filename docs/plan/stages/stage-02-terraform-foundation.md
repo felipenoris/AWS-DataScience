@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Status** | **IN PROGRESS. Steps 5.0, 5.1, 1 and 6 closed 2026-08-15** — the delegation applied and *exercised* (INT-20 answered: `identity/org-policies/` is scoped to all ten documents), the five `bootstrap/` slices created with the version pin and a committed multi-platform lock, and the `pre-commit`/`tflint`/`checkov` chain installed and passing end to end. **Next by the stage's own dependency order is step 9** — the `make check` scripts, one of which step 5 is written to be guarded by. **Roteiro revised 2026-08-15 against the closed landing zone**, see the table below |
+| **Status** | **IN PROGRESS. Steps 5.0, 5.1, 1, 6 and 9 closed 2026-08-15** — the delegation applied and *exercised* (INT-20 answered: `identity/org-policies/` is scoped to all ten documents), the five `bootstrap/` slices created with the version pin and a committed multi-platform lock, the `pre-commit`/`tflint`/`checkov` chain passing end to end, and the four checks written, wired into **`make check`** and into the commit gate, each demonstrated failing on purpose. **Next is step 2** — the first bootstrap slice, and the first `terraform apply` of the project. **Roteiro revised 2026-08-15 against the closed landing zone**, see the table below |
 | **Prerequisites** | **Stage 1a and Stages 1b, 1c and 1d**, all complete (the landing zone closed 2026-08-15). `Staging` is still unvended, so **step 3 skips `terraform-live/staging/bootstrap/`** and step 5 skips its Staging assignments — the same carve-out 1b steps 3 and 5 already carry, picked up at the vend |
 | **Consumes** | [D3](../decisions/D03-terraform-state.md), [D10](../decisions/D10-identity-center-delegation.md), [D11](../decisions/D11-lab-lifecycle.md), [D16](../decisions/D16-break-glass.md), [D23](../decisions/D23-ou-structure.md), [D27](../decisions/D27-catalog-maintenance.md), [D30](../decisions/D30-scp-recovery.md) *(reverted; its surviving consequence is step 5's rationale)*, [D32](../decisions/D32-account-factory-sso-user.md), [D33](../decisions/D33-control-tower-admin-user.md), [D34](../decisions/D34-account-vending.md), [D35](../decisions/D35-sandbox-cardinality.md), [D36](../decisions/D36-internal-pki.md), [D37](../decisions/D37-nested-ou-inheritance.md) *(5.3/9.3 — `Sandboxes` deliberately carries nothing)* — **plus, for step 5's six permission sets, the design of record in [Stage 1b step 3](stage-01b-identity-and-controls.md) and the decisions it lists** (D14, D18-D22, D31). They are written here and specified there; neither file restates the other |
 | **Proves** | [INT-20](../integrations.md) — the Organizations **policy** delegation into the Identity account, which step 5 assumes and no earlier stage creates |
@@ -654,9 +654,13 @@ and its second half together:
    of the seven, and for `Sandboxes` it would attach something and **silently reverse D37** — an apply that
    undoes a decision is worse than one that fails. **So the OU→document map is authored**, in the same sense
    `docs/plan/conventions.md` admits for the business-unit map: a document reaches an OU because somebody wrote
-   the pair down. What the Organizations data sources buy here is **step 9.3's check** — an OU in no map is
-   a red `make check`, not a silent attachment — which moves this whole risk out of an `apply` and into a
-   script, where it is cheap.
+   the pair down. **Written down since 2026-08-15 in
+   [`terraform-live/identity/org-policies/attachments.json`](../../../terraform-live/identity/org-policies/attachments.json)**
+   (step 9) — the root's six, the four OU pairs, and the three OUs that carry none with the reason each is
+   empty, by **name**. This slice's `for_each` reads that file rather than restating it, so the map the
+   check guards is the map the apply uses. What the Organizations data sources buy here is **step 9.3's
+   check** — an OU in no map is a red `make check-ou`, not a silent attachment — which moves this whole risk
+   out of an `apply` and into a script, where it is cheap.
 2. **Enumerated, in `sso/`** — **permission set assignments stay written out one by one**, because an account
    silently acquiring `DataScientistAccess` on the next apply is the failure this design exists to prevent.
 3. **The nesting depth is 2 and is no longer an open question** (D23, 2026-08-09): `Sandboxes` sits under
@@ -898,6 +902,42 @@ establishes. **Stage 8 steps 5 and 6 move them into the pipeline** — step 5 is
 this repository's own `fmt`/`validate`/`plan` pipeline. Write them as scripts so that move is a
 `.gitlab-ci.yml` line and not a rewrite.
 
+**Done 2026-08-15. Four scripts, one `Makefile`, three new `pre-commit` hooks — and both surfaces call the
+same scripts, so a gate and a target cannot disagree.**
+
+| Check | Script | Where it runs |
+|---|---|---|
+| 9.1 | [`scripts/check-tf-conventions.sh`](../../../scripts/check-tf-conventions.sh) | `make check` + `pre-commit` on any `*.tf` |
+| 9.2 | [`scripts/check-iam-wildcards.sh`](../../../scripts/check-iam-wildcards.sh) | `make check` + `pre-commit` on `terraform-live/identity/**` |
+| 9.3 | [`scripts/check-ou-coverage.sh`](../../../scripts/check-ou-coverage.sh) | **`make check-ou` only** — it needs an SSO session |
+| 9.4 | `terraform-live/identity/org-policies/check-index.sh` | `make check` + `pre-commit` on `policies/` or `POLICIES.md` |
+
+**Four things settled while writing them, none of which the step had decided:**
+
+- **9.3's authored map is a file, and it is the file step 5 will read** —
+  [`terraform-live/identity/org-policies/attachments.json`](../../../terraform-live/identity/org-policies/attachments.json).
+  It carries the root's six documents, the four OU pairs and the three OUs that carry none **with the reason
+  each one is empty**, and it holds **names, never ids**. One file with two consumers is the whole point: the
+  `for_each` of 5.3 and the check that guards it read the same bytes, so the thing that is checked is the
+  thing that is applied (Lesson 14). A map living only inside the configuration would be checked by nothing
+  until after an apply.
+- **`make check` excludes `check-plan-refs.sh`, which is red on prose that predates this stage** — three
+  stage files record dated measurements phrased as *"all six accounts with a profile"*, and the check cannot
+  tell a historical measurement from a count that goes stale. It keeps a target of its own, `make
+  check-docs`. Folding a known-red check into the commit gate teaches people to bypass the gate, which costs
+  more than the drift it catches.
+- **9.1 skips full-line comments, and 9.2 does not skip anything.** A comment creates nothing and these files
+  carry their reasoning in prose, so a check forbidding the *word* `us-west-2` in an explanation would buy
+  vagueness and no safety. 9.2's exception is a `Sid`, not a line, and it is checked in **both** directions —
+  a whitelist entry whose statement no longer carries a wildcard is a **failure**, because a
+  permanently-satisfied exemption is how the next wildcard arrives under a name nobody re-reads.
+- **A scanner that did not run must not report a clean section**, and this was measured rather than
+  imagined: the first form of 9.1's `perl` failed to compile, printed its error on stderr and reported
+  `none` over a file holding all three violations — the same output as a clean tree (Lesson 13). The exit
+  status is now checked, and a failed scanner is a `FAIL`. The same afternoon produced the other scar in
+  that function: without `close ARGV if eof`, `$.` counts across the whole file list and reports a violation
+  at line 162 of a three-line file.
+
 **9.1 — No region literals** (`docs/plan/architecture.md` §4.1). `var.region` in every slice, AZs anchored on
 **`zone_ids` from `.tfvars`** (settled by 1b step 6, 2026-08-12 — not on list position), AMIs from SSM public
 parameters. A `grep` over `*.tf` that fails on a hardcoded region keeps this honest at no cost — and it
@@ -930,6 +970,16 @@ Test`, `Security` and `Sandboxes` carry nothing **on purpose**, and a check that
 "deliberately absent" alike either fails permanently or passes on a real gap — Lesson 13, in a script.
 `Sandboxes` is the one that must be listed by name with D37 beside it, because it is the only OU whose
 emptiness a future reader will try to fix.
+
+**As written it does four things, and the last two were not in the step.** The OU walk is
+**breadth-first over the whole tree**, not two levels, so a depth nobody planned is enumerated rather than
+missed. Then: (1) every OU is in one of the two lists; (2) every OU the map names still exists — a map entry
+for a deleted OU is a `for_each` key that fails an apply; (3) every document the map names is a file in
+`policies/`; and (4) **what is attached matches what the map authors**, per target, for all four policy
+types. (4) is what makes the map a control rather than a comment, and it is scoped to *our* documents by
+testing for `policies/<name>.json` — a stronger binding than a name prefix, and the reason Lesson 23's
+"never bind to a name" does not apply: these are the documents this project owns. It looks at **no
+account-level attachment**, because this design has none; that census is `./aws/org-policies.sh` §1.
 
 **9.4 — `check-index.sh` joins `make check`.** It already exists, it already decides the mechanical half of
 "does `POLICIES.md` still describe `policies/`", it needs no AWS session and it exits non-zero when it
@@ -1015,6 +1065,10 @@ Each is written so its output differs between working and broken (Lesson 13):
   an over-grant nothing here needs.
 - **The checks fail on purpose:** a commit introducing `us-west-2` in a `.tf` file, and one introducing
   `arn:aws:iam::*:role/x`, are both rejected. A check nobody has seen fail is a hypothesis.
+  **Met 2026-08-15**, with both violations staged together: `pre-commit` exits 1 and three hooks go red —
+  9.1 on the region literal, 9.2 on the wildcard, and 9.4 on the document with no row in `POLICIES.md`.
+  Each of 9.1's three rules was also fired separately against a fixture, **and so was the failure mode
+  underneath them all**: a scanner made to break reports `FAIL … this section checked NOTHING`, not `none`.
 - **The `Makefile` refuses what it must:** `make down ENV=sandbox` is a **safe no-op** at this point — no
   `[E]` or `[D]` slice exists yet — and `bootstrap/` is untouched; `make down` with no `ENV` exits non-zero.
 

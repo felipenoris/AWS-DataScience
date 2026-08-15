@@ -61,6 +61,13 @@ Blueprint for using AWS as a Data Science infrastructure provider.
   links and stable-ID references, and `gen-backend-hcl.sh` writes each slice's untracked `backend.hcl`. A
   `backend` block interpolates nothing, so the state bucket, the key and the **Region** have to be literals
   somewhere; that one place is a generated file which is not a `.tf` file and is never committed.
+  Three more are the **checks over the Terraform tree** — no Region literal or index-selected AZ in a `.tf`,
+  no `aws_s3_account_public_access_block` in any slice, no wildcard-account ARN in an identity-plane policy,
+  and no OU left out of the authored attachment map.
+- `Makefile` — how those checks are run: `make check` offline, `make check-ou` with an SSO session. The same
+  scripts sit behind the `pre-commit` hooks, so the commit gate and the target cannot disagree. **There is
+  no CI yet** — GitLab is Stage 7 — and Stage 8 adds a third caller rather than a rewrite. `make up` /
+  `make down` (D11) arrive with Stage 2 step 8.
 
 ---
 

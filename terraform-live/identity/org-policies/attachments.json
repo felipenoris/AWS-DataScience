@@ -1,0 +1,49 @@
+{
+  "_note": [
+    "THE AUTHORED ATTACHMENT MAP - Stage 2 step 5.3, read by step 9.3's check.",
+    "",
+    "It answers one question: which of THIS PROJECT'S documents is attached where. Control",
+    "Tower's own aws-guardrails-* documents are not here and must never be added - they are the",
+    "landing zone's objects, and a map that claimed them would invite an apply that fights it.",
+    "",
+    "WHY IT IS AUTHORED AND NOT DISCOVERED. 1c attached four DIFFERENT documents to four OUs and",
+    "left three OUs carrying none, one of them - Sandboxes - deliberately (D37). A for_each over",
+    "the discovered OUs attaching 'the OU document' therefore has nothing to attach for three of",
+    "the seven and would attach something to Sandboxes, silently reversing a decision. An apply",
+    "that undoes a decision is worse than one that fails, so a document reaches an OU because",
+    "somebody wrote the pair down here.",
+    "",
+    "WHY THE EMPTY OUs ARE LISTED RATHER THAN OMITTED. 'absent' and 'deliberately absent' have to",
+    "be distinguishable, or the check either fails forever or passes on a real gap (Lesson 13).",
+    "",
+    "TARGETS ARE NAMES, NEVER IDS. No account id enters a tracked file (aws/INDEX.md rule 1), and",
+    "an OU id is resolved by the consumer: scripts/check-ou-coverage.sh through the Organizations",
+    "API, and step 5's slice through the same data-source walk. A document name is the file's own",
+    "basename in policies/, which is also the name the policy carries in Organizations.",
+    "",
+    "ONE FILE, TWO CONSUMERS, ON PURPOSE (Lesson 14): the check and the Terraform for_each read",
+    "the same bytes, so the thing that is checked is the thing that is applied."
+  ],
+
+  "root": [
+    "awsds-org-scp-baseline",
+    "awsds-org-scp-perimeter",
+    "awsds-org-scp-tag-enforcement",
+    "awsds-org-rcp-perimeter",
+    "awsds-org-tag-policy",
+    "awsds-org-declarative-ec2"
+  ],
+
+  "ou": {
+    "Workloads": ["awsds-org-scp-ou-workloads"],
+    "Identity": ["awsds-org-scp-ou-identity"],
+    "Interactive": ["awsds-org-scp-ou-interactive"],
+    "Data": ["awsds-org-scp-ou-data"]
+  },
+
+  "ou_with_no_document": {
+    "Policy Test": "D29 - the canary OU holds CANDIDATE documents under test and nothing standing. A document of this project's found attached here means a battery is in progress or was interrupted.",
+    "Security": "Foundational OU. It carries Control Tower's own guardrails by being foundational, and this project attaches nothing on top of them (1c step 7.6).",
+    "Sandboxes": "D37 - nested under Interactive and governed by inheritance. Nothing is attached here unless it DIFFERS from Interactive; sameness is inherited, never copied. This is the entry a future reader will try to 'fix'."
+  }
+}

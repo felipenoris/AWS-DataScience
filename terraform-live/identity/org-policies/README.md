@@ -13,6 +13,7 @@ This folder is documents only. There is no `.tf` here until Stage 2.
 | Path | What it is |
 |---|---|
 | `policies/` | The real documents. One file per policy, named exactly as the policy is named in Organizations |
+| [`attachments.json`](attachments.json) | **Which of these documents is attached where** — the root's six, the four OU pairs, and the three OUs that carry none *with the reason each is empty*. Names, never ids. Written at Stage 2 step 9 and read by **two** consumers on purpose: step 9.3's check and, from step 5, this slice's `for_each`. Attachments cannot be discovered — a `for_each` over the OUs the API returns would attach a document to `Sandboxes` and silently reverse [D37](../../../docs/plan/decisions/D37-nested-ou-inheritance.md) |
 | `canary/` | **Throwaway** documents, attached to `Policy Test` during the step 7.3 battery and detached in the same sitting. Never attached to anything real |
 | `render.sh` | Substitutes this organization's identifiers into the templates and writes the pasteable copies to `aws/output/rendered-policies/` |
 | `check-index.sh` | Verifies that `POLICIES.md` still lists exactly what each document in `policies/` contains, in order, and names both directions of a mismatch. **Type-aware since 7.8**: `Sid`s for an SCP or RCP, tag keys for a tag policy, `ec2_attributes` names for a declarative policy — and an unrecognised document stops the run rather than being skipped. No AWS session, no side effects, exits non-zero when it drifts |

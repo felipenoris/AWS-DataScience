@@ -173,22 +173,22 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   deferral's debts are one list in Stage 1a). Ten policy documents, four types, attached — **six on the
   root, four per-OU** — battery 93/93. The `docs/log/` files are authoritative.
 - **Stage 2 IN PROGRESS. 5.0 and 5.1 CLOSED (2026-08-15); INT-20 did not bite.** The delegation is
-  **exercised, not merely present** (Lesson 26), so **`org-policies/` holds all ten documents**,
-  hand-applied and **staying out of Terraform**; recorded in `POLICIES.md`/`INV-15`. AWS rejects
+  **exercised, not merely present** (Lesson 26), so **`org-policies/` holds all ten documents**; the
+  delegation itself is hand-applied and **stays out of Terraform** (`POLICIES.md`/`INV-15`). AWS rejects
   `NotAction`/`NotResource` in a delegation since 2026-06-30; the operator must be `StringLikeIfExists`.
-  Only `account/…/*` stays unexercised — over-grant, not gap.
-- **Open question 11 closed by measurement (2026-08-15):** 5.1's principal is the *account*, so **CT Admin
-  reaches the organization's policy writes through `Identity`**. It gains nothing it did not already hold,
-  so **the assignment stays**; the fix is **step 5.1a** — an `aws:PrincipalArn` condition **the document may
-  not accept**. **1b 8.3's alarm is blind to this path**; CloudTrail is the only residual.
-- **Stage 2 steps 1 and 6 CLOSED (2026-08-15).** Five `bootstrap/` slices — no `staging/` — with a
+  Only `account/…/*` is unexercised — over-grant, not gap.
+- **Open question 11 closed (2026-08-15):** 5.1's principal is the *account*, so **CT Admin reaches policy
+  writes through `Identity`** — nothing it did not hold, so the assignment **stays**; the fix is **step
+  5.1a**, unapplied. **1b 8.3's alarm is blind to this path**; CloudTrail is the only residual.
+- **Stage 2 steps 1, 6 and 9 CLOSED (2026-08-15).** Five `bootstrap/` slices — no `staging/` — with a
   byte-identical `versions.tf` (`~> 1.15`, `aws ~> 6.60`) and one lock file at 6.60.0 covering three
-  platforms; `scripts/gen-backend-hcl.sh` is the single source of the backend literals; the nine-hook
-  chain passes end to end. **The §6 tree is deliberately not on disk** — a slice folder is created by the
-  stage that writes its first `.tf`.
-- **Rest of Stage 2** — the stage file carries the roteiro (revised 2026-08-15). **Next is step 9**, the
-  `make check` scripts, before step 5 which one of them guards. Hold one thing outside the file:
-  per-OU attachments are **authored, not discovered**, or a `for_each` reverses D37 on `Sandboxes`.
+  platforms; `scripts/gen-backend-hcl.sh` is the single source of the backend literals; **the §6 tree is
+  deliberately not on disk** — a slice folder is created by the stage that writes its first `.tf`.
+  Step 9: `make check` (offline) / `make check-ou` (session), the same scripts behind three commit hooks,
+  each seen failing. Per-OU attachments are **authored, not discovered** — `org-policies/attachments.json`,
+  read by 9.3 *and* step 5's `for_each`; discovering them reverses D37 on `Sandboxes`.
+  `check-plan-refs.sh` is **red** on pre-Stage-2 prose, in its own `make check-docs`.
+  **Next is step 2** (roteiro in the stage file): the project's first `terraform apply`.
 - **Stage 3 pre-instrumented (2026-08-15):** `aws/networking.sh`, `aws/egress.sh`. First run found **an
   Account Factory VPC in every vended account** (`docs/AWS_STATE.md` §C) — the stage's new **step 0** decides
   it, and its network-configuration half must land **before the `Staging` vend**.
@@ -209,8 +209,8 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
 - **All thirty-seven decisions are closed** (D30 as a revert). **Still needed from the user: the domain
   name**, blocking Stage 13. **Settle earliest:** INT-11's remaining half — Stage 5 defending
   `CROSS_ACCOUNT_VERSION` **4** + `SET_CONTEXT: TRUE`, values nobody set — and INT-13.
-- **The repository is not documentation-only**, and less so at every stage: the read-only `aws/` scripts,
-  `terraform-live/` + `terraform-modules/` (**first `.tf` 2026-08-15**), `scripts/`, and the
+- **The repository is not documentation-only:** the read-only `aws/` scripts, `terraform-live/` +
+  `terraform-modules/` (**first `.tf` 2026-08-15**), `scripts/`, the `Makefile`, and the
   `pre-commit`/`tflint`/`checkov` gates.
 
 **Budget: ~2 KB.** State, not reasoning — **a bullet here that explains *why*, or that a stage file should

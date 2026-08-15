@@ -27,6 +27,20 @@ by the stage that first writes a `.tf` file into it, and **§6 stays the one pla
 **`versions.tf` is byte-identical in every slice**, because Terraform has no repository-wide pin: the
 constraint belongs to each root module. Step 9's check is what keeps the copies from drifting (Lesson 14).
 
+**Four checks stand over this tree — Stage 2 step 9, 2026-08-15 — and there is no CI to run them in.**
+Until Stage 8 puts them in a pipeline the surfaces are `pre-commit` and the repository's `Makefile`, both
+calling the same scripts:
+
+```bash
+make check      # offline: region literals, indexed AZs, account-level BPA, wildcard ARNs, the policy index
+make check-ou   # needs an SSO session as the infrastructure user on Identity
+```
+
+Two of them exist because nothing else can enforce their rule: **no `.tf` in this tree may declare
+`aws_s3_account_public_access_block`** (the SCP that denies the API carves out exactly the principal every
+slice applies as, so the apply would *succeed*), and **no policy document in `identity/` may carry a
+wildcard-account ARN** except the one statement whitelisted by `Sid`.
+
 **Set `TF_PLUGIN_CACHE_DIR` before working in this tree**, or every slice downloads its own ~250 MB copy of
 the AWS provider — `terraform validate` in the pre-commit hook runs `init` per slice:
 
