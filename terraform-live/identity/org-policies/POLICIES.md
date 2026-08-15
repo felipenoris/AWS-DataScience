@@ -14,7 +14,7 @@ The documents themselves carry no comments — JSON has none — so this file is
 > already believes the file is right. It needs no AWS session and changes nothing:
 >
 > ```bash
-> ./terraform-live/identity/org-policies/check-index.sh
+> ./terraform-live/identity/org-policies/check-index.py
 > ```
 >
 > It names both directions of the failure, and the second is the one that is easy to miss: a statement in
@@ -33,7 +33,7 @@ step 7.8 wrote the other three, and the file was renamed from `SCPs.md` on 2026-
 contradicting the scope.** The split the old name described was not worth keeping: a second index is a
 second place to forget an amendment (Lesson 14), and "why does this statement exist" is the same question
 whatever the type. **What differs is what plays the part of a `Sid`**, and
-`check-index.sh` knows all four: the `Sid` list for an SCP or an RCP, the **tag keys** for a tag policy, the
+`check-index.py` knows all four: the `Sid` list for an SCP or an RCP, the **tag keys** for a tag policy, the
 **attribute names** under `ec2_attributes` for a declarative policy. A document of a type it does not
 recognise stops the run rather than being skipped.
 
@@ -171,7 +171,7 @@ distinction is the entire bug: without the carve-out the first things denied are
 writing into the Log Archive bucket — in the account whose only job is to receive them. The organization IAM
 Access Analyzer in Audit (1b step 8.2) reads resource policies across every account under
 `access-analyzer.amazonaws.com` and depends on the same pair; confirm it after attaching by checking the
-analyzer still reports `ACTIVE` with a finding count (`./aws/audit-iam-analyser.sh`), not by re-reading this
+analyzer still reports `ACTIVE` with a finding count (`./aws/cloudshell/audit-iam-analyser.sh`), not by re-reading this
 JSON.
 
 **Split into four statements on purpose, and the reason is future carve-outs.** These services will not need
@@ -293,7 +293,7 @@ documents are in reach rather than only the four attached to an OU.
 
 | `Sid` | Effect |
 |---|---|
-| `DelegateOrganizationNavigationToIdentity` | Sixteen read actions on `Resource: "*"`, no condition — walking the organization and refreshing what this folder manages. **Two of the sixteen are load-bearing rather than navigational.** `DescribePolicy` is what the provider calls on every refresh of an `aws_organizations_policy`: without it an import succeeds and the *next* `plan` fails. `DescribeResourcePolicy` is what [`aws/org-delegation.sh`](../../../aws/org-delegation.sh) reads to report on this very document — deny it and `DEL-1` reports *denied*, every check below it goes vacuous, and the instrument blinds itself at the moment it starts being useful. The statement is otherwise belt-and-braces: reads already answered from Identity **before** this policy existed, because a delegated administrator for *any* service may read the organization. It is written out anyway so this folder's scope does not silently depend on a different delegation staying in place |
+| `DelegateOrganizationNavigationToIdentity` | Sixteen read actions on `Resource: "*"`, no condition — walking the organization and refreshing what this folder manages. **Two of the sixteen are load-bearing rather than navigational.** `DescribePolicy` is what the provider calls on every refresh of an `aws_organizations_policy`: without it an import succeeds and the *next* `plan` fails. `DescribeResourcePolicy` is what [`aws/org-delegation.py`](../../../aws/org-delegation.py) reads to report on this very document — deny it and `DEL-1` reports *denied*, every check below it goes vacuous, and the instrument blinds itself at the moment it starts being useful. The statement is otherwise belt-and-braces: reads already answered from Identity **before** this policy existed, because a delegated administrator for *any* service may read the organization. It is written out anyway so this folder's scope does not silently depend on a different delegation staying in place |
 | `DelegatePolicyLifecycleToIdentity` | The five writes — `CreatePolicy`, `UpdatePolicy`, `DeletePolicy`, `AttachPolicy`, `DetachPolicy` — over seven ARNs in **two classes, both required**: the targets (`root/o-<org>/r-<root>`, the wildcard `ou/o-<org>/*`, the account wildcard) and the four `policy/o-<org>/<type>/*` ARNs. Create/Update/Delete authorize against the **policy** ARN and Attach/Detach against target **and** policy, so a target-only list denies **every** write on **every** document — which at the keyboard reads exactly like *"the delegation cannot reach a root attachment"*, the one thing step 5.0 exists to measure. The wildcard OU form is not tidiness: AWS documents that naming a **single** OU *"excludes child OUs and accounts under child OUs"*, and this organization is two levels deep. **The condition operator is `StringLikeIfExists` and that is not decorative** — with a bare `StringEquals`, any call that does not carry `organizations:PolicyType` in its request context fails the condition and is denied, producing the same false *"all refused"*. Confinement to the four types is still carried by the ARN path |
 | `DelegatePolicyTaggingToIdentity` | `TagResource` and `UntagResource`, **policy ARNs only, no condition** — the two actions do not accept `organizations:PolicyType`, which is why AWS's own tagging example puts them in a separate statement. Nothing needs this today: all ten documents carry **zero tags** (measured). It is here because the provider's `default_tags` will try to tag an `aws_organizations_policy` at the first apply, and that denial would land on the *import*, long after step 5.0 had declared the delegation good. Deliberately **not** extended to account, OU or root ARNs — re-tagging the organization's structure is not something this folder needs, and an unnecessary grant is a hole rather than a safety margin |
 
@@ -331,7 +331,7 @@ delegated account's principals to hold the matching **identity-based** permissio
 **Verify from the other side**, as the infrastructure user through `awsds-infra-identity`:
 
 ```bash
-./aws/org-delegation.sh
+./aws/org-delegation.py
 ```
 
 **3. Why this one document stays outside Terraform.** Three reasons, and any one of them decides it:
@@ -350,10 +350,10 @@ delegated account's principals to hold the matching **identity-based** permissio
    it would require a **Management** slice, which reason 1 forbids. If principle 1 is ever revisited, that
    is the resource to use, and this section is the design that would move.
 
-**Maintenance — and this section does not get the mechanical half.** `check-index.sh` iterates
+**Maintenance — and this section does not get the mechanical half.** `check-index.py` iterates
 `policies/*.json`; this document is not a file there, so **nothing checks these three rows against what is
 attached**. They are maintained by reading, in the same sitting as any change to the delegation, and
-`./aws/org-delegation.sh` re-derives every claim above about actions, `Resource` classes and the condition.
+`./aws/org-delegation.py` re-derives every claim above about actions, `Resource` classes and the condition.
 
 ## What is not in any of these documents
 

@@ -2,6 +2,17 @@ secrets
 **/.DS_Store
 aws/output/
 
+# ---------------------------------------------------------------- Python (uv)
+#
+# The environment is DERIVED, byte for byte, from pyproject.toml + uv.lock +
+# .python-version - all three tracked. Everything below is what uv or the
+# interpreter materialises from them.
+
+.venv/
+__pycache__/
+*.pyc
+.ruff_cache/
+
 # ---------------------------------------------------------------- Terraform (Stage 2 step 6.2)
 #
 # This has to be right BEFORE step 2 runs, not after. Step 2.2 applies the first bootstrap

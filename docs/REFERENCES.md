@@ -10,7 +10,15 @@
 - Docs to install `terraform`: <https://developer.hashicorp.com/terraform/install>.
 
 - uv: <https://docs.astral.sh/uv/>. Used to install the two Python gates below, so the versions in
-  `CLAUDE.md` are reproducible on another machine with one command each.
+  `CLAUDE.md` are reproducible on another machine with one command each — and, since 2026-08-15, to run
+  **every script in this repository**: they are Python 3 on the project in `pyproject.toml`, and their
+  `#!/usr/bin/env -S uv run --quiet` shebang makes `uv run` resolve the pinned interpreter
+  (`.python-version`) and the locked environment (`uv.lock`) per invocation. Read for the project /
+  script-running model: <https://docs.astral.sh/uv/guides/projects/>.
+
+- `ruff`: <https://docs.astral.sh/ruff/>. Linter + formatter for the repository's Python (dev-only
+  dependency of the uv project); runs through `pre-commit` via `uv run`, so the gate binds to the locked
+  version rather than to whatever is on PATH.
 
 - `pre-commit`: <https://pre-commit.com/>. The hook collection the repository configures is
   `antonbabenko/pre-commit-terraform`: <https://github.com/antonbabenko/pre-commit-terraform> — read for the
@@ -47,7 +55,7 @@
 
 - AWS Organizations - Tag policies: <https://docs.aws.amazon.com/organizations/latest/userguide/orgs_manage_policies_tag-policies.html>.
 
-- AWS Organizations - Declarative policies: <https://docs.aws.amazon.com/organizations/latest/userguide/orgs_manage_policies_declarative.html>. **Read for 7.8, and it settled three things the battery's shape depends on.** (i) *"Declarative policies are enforced in the service's control plane"*, not in authorization — so they name no policy id, emit no *"explicit deny"* wording, and **govern service-linked roles**, which SCPs and RCPs do not. That is why `--phase decl`'s probes carry no `--dry-run`: a dry run stops after authorization and would report `DryRunOperation` whether or not the policy is attached. (ii) **Detaching rolls each attribute back to its previous state**, which makes the attach far more reversible than it looks. (iii) With no custom `exception_message`, AWS supplies its own — *"This action is denied due to an organizational policy in effect"* — so the message that arrives is the attribution, and the driver reports `custom-message` or `AWS-default-msg` to tell them apart. **What the page does not say, and what cost two false failures on 2026-08-14: the same message is echoed by a *successful* read of a managed attribute** — `ec2 get-instance-metadata-defaults` returns rc=0 with `"ManagedBy": "declarative-policy"` and the custom text in `"ManagedExceptionMessage"` — so the marker distinguishes *this* policy from AWS's default wording but not enforcement from confirmation. Only the exit code does that, which is why `classify` now gates both declarative branches on it. **What the page does *not* say is also load-bearing: it names no management-account exemption**, unlike the SCP and RCP pages, and control-plane enforcement is not where that exemption lives — so a root attach is expected to reach Management, and `./aws/declarative-ec2.sh -` run there is the only way to find out.
+- AWS Organizations - Declarative policies: <https://docs.aws.amazon.com/organizations/latest/userguide/orgs_manage_policies_declarative.html>. **Read for 7.8, and it settled three things the battery's shape depends on.** (i) *"Declarative policies are enforced in the service's control plane"*, not in authorization — so they name no policy id, emit no *"explicit deny"* wording, and **govern service-linked roles**, which SCPs and RCPs do not. That is why `--phase decl`'s probes carry no `--dry-run`: a dry run stops after authorization and would report `DryRunOperation` whether or not the policy is attached. (ii) **Detaching rolls each attribute back to its previous state**, which makes the attach far more reversible than it looks. (iii) With no custom `exception_message`, AWS supplies its own — *"This action is denied due to an organizational policy in effect"* — so the message that arrives is the attribution, and the driver reports `custom-message` or `AWS-default-msg` to tell them apart. **What the page does not say, and what cost two false failures on 2026-08-14: the same message is echoed by a *successful* read of a managed attribute** — `ec2 get-instance-metadata-defaults` returns rc=0 with `"ManagedBy": "declarative-policy"` and the custom text in `"ManagedExceptionMessage"` — so the marker distinguishes *this* policy from AWS's default wording but not enforcement from confirmation. Only the exit code does that, which is why `classify` now gates both declarative branches on it. **What the page does *not* say is also load-bearing: it names no management-account exemption**, unlike the SCP and RCP pages, and control-plane enforcement is not where that exemption lives — so a root attach is expected to reach Management, and `./aws/declarative-ec2.py -` run there is the only way to find out.
 
 - **AWS Service Reference Information — the machine-readable list of every IAM action a service publishes**, one JSON per service at `https://servicereference.us-east-1.amazonaws.com/v1/<service>/<service>.json`, indexed at <https://servicereference.us-east-1.amazonaws.com/>: <https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_policies_service-reference.html>. Used in Stage 1c step 7.6 to answer verification (viii) — it is the only source that says what an action is *called today*, and unlike the Service Authorization Reference pages it can be read by a script rather than by eye. **Known gap, measured 2026-08-13 while scoping decision 5: it does not map `aws:RequestTag` to any of EC2's 793 actions** while declaring the key in EC2's top-level `ConditionKeys` — where S3 maps it on 11 of 180 actions and RDS on 35 of 169. So a negative answer from this file is only evidence when the same service answers positively somewhere else (Lesson 13); for EC2, use the Service Authorization Reference page or a probe.
 
@@ -109,7 +117,7 @@
 
 - Granting a user permissions to pass a role (`iam:PassRole`): <https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_use_passrole.html>.
 
-- `aws organizations` CLI reference (the calls `aws/list-identities.sh` uses to walk the OU tree and list the accounts): <https://docs.aws.amazon.com/cli/latest/reference/organizations/>.
+- `aws organizations` CLI reference (the calls `aws/list-identities.py` uses to walk the OU tree and list the accounts): <https://docs.aws.amazon.com/cli/latest/reference/organizations/>.
 
 - `aws sso-admin` CLI reference (Identity Center *entitlements*: instances, permission sets, assignments): <https://docs.aws.amazon.com/cli/latest/reference/sso-admin/>.
 

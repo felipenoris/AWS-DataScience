@@ -27,13 +27,13 @@ The two that move work are the first and the last.
 |---|---|---|
 | **Three project SCPs sit on the organization *root*** — `awsds-org-scp-baseline`, `awsds-org-scp-perimeter`, `awsds-org-scp-tag-enforcement` — **and so do the RCP, the tag policy and the declarative policy.** Only **four** documents are per-OU | 1c step 7, `aws/output/org-policies.txt` §1 | INT-20's sharp edge is now the stage's **first** action, not its fifth: six of the ten documents are reachable only if the delegation reaches **root** attachments. **5.0** is new |
 | **The per-OU documents are all different**, and three OUs carry none — `Policy Test`, `Security`, and `Sandboxes` **by decision** (D37) | 1c 7.6, D37, `org-policies.txt` §4 | **5.3 was wrong in shape.** Attachments cannot be discovered: a `for_each` that attaches "the OU document" to every discovered OU would put one on `Sandboxes` and silently reverse D37. Rewritten below |
-| **Organizations reads succeed from the Identity account under the Region ceiling** — `org-policies.sh` runs as `awsds-infra-identity` and every call returns | 1d step 12, `org-policies.txt` §5 | Removes the fear that `CTMULTISERVICEPV1` blocks this slice outright (Organizations answers in `us-east-1`). **The write half is not proven by it** — verification (vii) below |
+| **Organizations reads succeed from the Identity account under the Region ceiling** — `org-policies.py` runs as `awsds-infra-identity` and every call returns | 1d step 12, `org-policies.txt` §5 | Removes the fear that `CTMULTISERVICEPV1` blocks this slice outright (Organizations answers in `us-east-1`). **The write half is not proven by it** — verification (vii) below |
 | **A permission set provisioned into Management cannot be altered from Identity**, and the deny is anchored on the **permission set** ARN, so it covers that set in every account | 1b step 5.1 | Confirms 5.2's "leave `AWSAdministratorAccess` alone" is a *wall*, not a convention. `InfrastructureAccess` is not provisioned into Management and is unaffected |
 | **`awsds-org-scp-tag-enforcement` names `ec2:RunInstances` and nothing else** | 1c 7.8, the document | No create in this stage can be denied for a missing tag. The mandatory-tag *convention* still applies and 2.1 now says how it is satisfied once |
-| **`policies/*.json` are templates — eight placeholders across four files**: `<ORG_ID>` ×6 (the RCP ×4, the perimeter SCP ×2), `<ORG_PATH_DATA>` ×1 in the **baseline** document, `<ACCOUNT_ID_DATA>` ×1 in the `Data` document *(census corrected 2026-08-15; an earlier row counted `<ORG_ID>` ×8 and put `<ORG_PATH_DATA>` in the `Data` file)* | measured over `policies/`, `render.sh` | 5.5's "the import compares a document against itself" needs a **mechanism**, and `templatefile()` is not it — the placeholder syntax is wrong for it. Written out below |
+| **`policies/*.json` are templates — eight placeholders across four files**: `<ORG_ID>` ×6 (the RCP ×4, the perimeter SCP ×2), `<ORG_PATH_DATA>` ×1 in the **baseline** document, `<ACCOUNT_ID_DATA>` ×1 in the `Data` document *(census corrected 2026-08-15; an earlier row counted `<ORG_ID>` ×8 and put `<ORG_PATH_DATA>` in the `Data` file)* | measured over `policies/`, `render.py` | 5.5's "the import compares a document against itself" needs a **mechanism**, and `templatefile()` is not it — the placeholder syntax is wrong for it. Written out below |
 | ~~**`tflint`, `checkov` and `pre-commit` are absent**~~; `terraform` is v1.15.8 and `uv` is present; the placeholder `terraform/` folder no longer exists | measured on this laptop, 2026-08-15 | 6.1 stands as written and 1.1 is **obsolete**. **All three installed the same day** (6.1 below); `tflint` **v0.64.0** by release download, the other two by `uv tool install` |
 | **A borrowed session outlives the command that needed it** (Lesson 25) | 1d step 9 | One rule, stated in "Who executes what": this stage uses `AWS_PROFILE` and never `eval $(aws sts assume-role …)` |
-| **Until 2026-08-15 no snapshot listed the policy id of the RCP, the tag policy or the declarative policy** — `org-policies.sh` §1 read `SERVICE_CONTROL_POLICY` with ids and the RCP only as a presence check, so three of the ten ids existed only in the 1c log | `org-policies.txt` | The import needs all ten ids. The script is fixed, and `import-ids.sh` emits every import string — see "The instruments this stage runs on" |
+| **Until 2026-08-15 no snapshot listed the policy id of the RCP, the tag policy or the declarative policy** — `org-policies.py` §1 read `SERVICE_CONTROL_POLICY` with ids and the RCP only as a presence check, so three of the ten ids existed only in the 1c log | `org-policies.txt` | The import needs all ten ids. The script is fixed, and `import-ids.py` emits every import string — see "The instruments this stage runs on" |
 
 ## Step numbers are identifiers, not an order
 
@@ -435,7 +435,7 @@ AWS Organizations objects, and by default only the Management account can touch 
   (verification (vii), answered by reading). Record the exact document in
   `docs/log/log-stage-02-terraform-foundation.md`; its `Sid`s are indexed in
   [`POLICIES.md`](../../../terraform-live/identity/org-policies/POLICIES.md), in the one section
-  `check-index.sh` cannot see.
+  `check-index.py` cannot see.
 - **What it must grant**, per AWS's own examples: the read half (`DescribeOrganization`,
   `ListRoots`, `ListOrganizationalUnitsForParent`, `ListChildren`, `ListParents`, `ListAccounts`,
   `ListPolicies`, `ListPoliciesForTarget`, `ListTargetsForPolicy`, `ListTagsForResource`) **plus**
@@ -448,7 +448,7 @@ AWS Organizations objects, and by default only the Management account can touch 
   `aws_organizations_policy`: without it 5.5's import succeeds and the next `plan` fails. Add
   **`DescribeResourcePolicy`** as well, for the instrument rather than for Terraform: it answers from the
   Identity account *today* with no delegation at all (that is how 5.0's reading 1 ran), and if creating the
-  policy were to change that, `org-delegation.sh` would report `DEL-1` as *denied* and every check below it
+  policy were to change that, `org-delegation.py` would report `DEL-1` as *denied* and every check below it
   would go vacuous — the instrument blinding itself at the moment it starts being useful.
 - **The condition operator is `StringLikeIfExists`, not `StringEquals`** *(corrected 2026-08-15; every AWS
   example uses it and the earlier wording named no operator at all)*. The difference is the failure this
@@ -481,7 +481,7 @@ AWS Organizations objects, and by default only the Management account can touch 
   them, because `CreatePolicy`/`UpdatePolicy`/`DeletePolicy` authorize against the **policy** ARN and
   `AttachPolicy`/`DetachPolicy` against target *and* policy. A delegation without the policy class denies
   **every** write on **every** document — indistinguishable at the keyboard from 5.0's "all refused", which
-  is the outcome 5.0 exists to detect. `org-delegation.sh`'s **`DEL-9`** reads the delegation document for
+  is the outcome 5.0 exists to detect. `org-delegation.py`'s **`DEL-9`** reads the delegation document for
   exactly this: no policy-type ARN class in the `Resource` list is a **fail**, not a note.
 - **Exclude `DisablePolicyType` and `EnablePolicyType`.** They act on the root and turning a policy type off
   detaches every policy of that type at once. Nothing in this design needs them after 1c step 7.2.
@@ -539,7 +539,7 @@ the role.
 1. **It is a second place a principal is enumerated** (Lesson 14). Anything else that must ever write an
    organization policy — a Stage 8 pipeline role is the candidate — has to be added here, and forgetting
    surfaces as an `AccessDenied` on an apply, far from this file.
-2. **`org-delegation.sh` needs a `DEL-10`**, or nothing checks the condition and it becomes an intention
+2. **`org-delegation.py` needs a `DEL-10`**, or nothing checks the condition and it becomes an intention
    rather than a control (Lesson 5). It reads the two write statements and fails if either lacks it.
 3. **If the condition is wrong, every write against `org-policies/` stops** — and the repair is the
    Management console, which is D16's design rather than a surprise.
@@ -705,8 +705,8 @@ administrator set and its assignments in `sso/`, and everything in `org-policies
 cosmetic — the JSON typed into the console and the JSON rendered from the configuration differ in
 whitespace or key order, and the plan shows a rewrite of a policy nobody changed. So **1c wrote each
 document as a tracked template in `terraform-live/identity/org-policies/policies/*.json` first and pasted
-the rendered copies into the console** (`render.sh` → untracked `aws/output/rendered-policies/`; the policy
-ids landed in the 1c log, and come from `import-ids.sh` now). The import then compares the same template,
+the rendered copies into the console** (`render.py` → untracked `aws/output/rendered-policies/`; the policy
+ids landed in the 1c log, and come from `import-ids.py` now). The import then compares the same template,
 substituted the same way. **The groundwork is in place** — but "the same way" needs one more step than the
 sentence implies, and that step is below.
 
@@ -721,7 +721,7 @@ baseline**, and in 5.0's "root refused, OU allowed" outcome it stays with the co
 `<ACCOUNT_ID_DATA>` ×1 in `awsds-org-scp-ou-data.json`. *(An earlier version of this step counted
 `<ORG_ID>` ×8 and put `<ORG_PATH_DATA>` in the `Data` document — a substitution wired from that map would
 have left the baseline's placeholder literal, a deny that never fires.)* The placeholders are
-angle-bracketed on purpose — `render.sh` explains why,
+angle-bracketed on purpose — `render.py` explains why,
 and it explicitly anticipated this stage — but they are **not** `${…}`, so Terraform's `templatefile()` does
 not substitute them. The configuration therefore reads the same tracked file and substitutes explicitly:
 
@@ -731,8 +731,8 @@ jsonencode(jsondecode(replace(file("policies/awsds-org-scp-perimeter.json"), "<O
 
 The `jsonencode(jsondecode(…))` wrapper is not decoration: it **normalises both sides the same way**, which
 is what turns "the same document" from a claim about whitespace into a claim about content. The alternative
-— converting the placeholders to `${…}` — is admissible but costs a matching edit to `render.sh` in the same
-commit, and `render.sh` is what produced the bytes that are attached right now.
+— converting the placeholders to `${…}` — is admissible but costs a matching edit to `render.py` in the same
+commit, and `render.py` is what produced the bytes that are attached right now.
 
 **(ii) `<ACCOUNT_ID_DATA>` must not become a literal, and that is not a style rule here.** No account id
 enters a tracked file (`aws/INDEX.md` rule 1). It also must not be resolved *by account name* — 1d step 9
@@ -740,7 +740,7 @@ recorded why (`Log Archive` returns `None`; the account is `Log Archive Account`
 `Data` OU**, which holds exactly one account, through the same data-source walk 5.3 already performs. That
 is discovery in the safe direction: the id follows from the OU the document is about. `<ORG_PATH_DATA>`
 rides the same walk plus two values already in hand: it renders as `<org-id>/<root-id>/<Data-OU-id>/`
-(exactly what `render.sh` computes), so the **baseline** document's substitution needs the root id and the
+(exactly what `render.py` computes), so the **baseline** document's substitution needs the root id and the
 `Data` OU id as well as the org id.
 
 **(iii) The import ids, and the one that goes wrong.** Four resource types, four formats, and the last two
@@ -756,15 +756,15 @@ carry commas rather than colons:
 Two more formats ride along with the `InfrastructureAccess` import and are easy to miss:
 `aws_ssoadmin_managed_policy_attachment` (`<managed_policy_arn>,<ps_arn>,<instance_arn>`) and, if the set
 carries one, `aws_ssoadmin_permission_set_inline_policy` (`<ps_arn>,<instance_arn>`). The table above lists
-the four principal formats, not the whole manifest — that is `import-ids.sh` §5.
+the four principal formats, not the whole manifest — that is `import-ids.py` §5.
 
 **The one that goes wrong is an import into a `for_each` resource**: the address is
 `aws_organizations_policy_attachment.this["<key>"]` and **the key has to be exactly what the configuration
 computes**, not what reads naturally. Import one, run `plan`, and only then import the rest — a wrong key
 does not error, it plans a create alongside an orphan.
 
-**None of these ids should be typed by hand** — `./aws/import-ids.sh` emits every one (see "The instruments
-this stage runs on"). Until the 2026-08-15 fix to `org-policies.sh`, three of the ten policy ids existed
+**None of these ids should be typed by hand** — `./aws/import-ids.py` emits every one (see "The instruments
+this stage runs on"). Until the 2026-08-15 fix to `org-policies.py`, three of the ten policy ids existed
 only in `docs/log/log-stage-01c-preventive-policies.md`; a fresh snapshot now carries all ten.
 
 If the groundwork above was somehow not done, expect an iteration or two here and **do not "converge" by
@@ -897,7 +897,7 @@ and leave it empty — a hook added later is a hook that is missing from the fir
 
 **None of these run in "CI", because there is no CI.** GitLab arrives at Stage 7 and `.gitlab-ci.yml` at
 Stage 8. Until then the enforcement surfaces are **`pre-commit`** and a **`make check`** target calling
-scripts in `scripts/` — the shape [`scripts/check-plan-refs.sh`](../../../scripts/check-plan-refs.sh) already
+scripts in `scripts/` — the shape [`scripts/check-plan-refs.py`](../../../scripts/check-plan-refs.py) already
 establishes. **Stage 8 steps 5 and 6 move them into the pipeline** — step 5 is the `checkov` gate, step 6 is
 this repository's own `fmt`/`validate`/`plan` pipeline. Write them as scripts so that move is a
 `.gitlab-ci.yml` line and not a rewrite.
@@ -907,10 +907,10 @@ same scripts, so a gate and a target cannot disagree.**
 
 | Check | Script | Where it runs |
 |---|---|---|
-| 9.1 | [`scripts/check-tf-conventions.sh`](../../../scripts/check-tf-conventions.sh) | `make check` + `pre-commit` on any `*.tf` |
-| 9.2 | [`scripts/check-iam-wildcards.sh`](../../../scripts/check-iam-wildcards.sh) | `make check` + `pre-commit` on `terraform-live/identity/**` |
-| 9.3 | [`scripts/check-ou-coverage.sh`](../../../scripts/check-ou-coverage.sh) | **`make check-ou` only** — it needs an SSO session |
-| 9.4 | `terraform-live/identity/org-policies/check-index.sh` | `make check` + `pre-commit` on `policies/` or `POLICIES.md` |
+| 9.1 | [`scripts/check-tf-conventions.py`](../../../scripts/check-tf-conventions.py) | `make check` + `pre-commit` on any `*.tf` |
+| 9.2 | [`scripts/check-iam-wildcards.py`](../../../scripts/check-iam-wildcards.py) | `make check` + `pre-commit` on `terraform-live/identity/**` |
+| 9.3 | [`scripts/check-ou-coverage.py`](../../../scripts/check-ou-coverage.py) | **`make check-ou` only** — it needs an SSO session |
+| 9.4 | `terraform-live/identity/org-policies/check-index.py` | `make check` + `pre-commit` on `policies/` or `POLICIES.md` |
 
 **Four things settled while writing them, none of which the step had decided:**
 
@@ -921,7 +921,7 @@ same scripts, so a gate and a target cannot disagree.**
   `for_each` of 5.3 and the check that guards it read the same bytes, so the thing that is checked is the
   thing that is applied (Lesson 14). A map living only inside the configuration would be checked by nothing
   until after an apply.
-- **`make check` excludes `check-plan-refs.sh`, which is red on prose that predates this stage** — three
+- **`make check` excludes `check-plan-refs.py`, which is red on prose that predates this stage** — three
   stage files record dated measurements phrased as *"all six accounts with a profile"*, and the check cannot
   tell a historical measurement from a count that goes stale. It keeps a target of its own, `make
   check-docs`. Folding a known-red check into the commit gate teaches people to bypass the gate, which costs
@@ -932,11 +932,14 @@ same scripts, so a gate and a target cannot disagree.**
   a whitelist entry whose statement no longer carries a wildcard is a **failure**, because a
   permanently-satisfied exemption is how the next wildcard arrives under a name nobody re-reads.
 - **A scanner that did not run must not report a clean section**, and this was measured rather than
-  imagined: the first form of 9.1's `perl` failed to compile, printed its error on stderr and reported
-  `none` over a file holding all three violations — the same output as a clean tree (Lesson 13). The exit
-  status is now checked, and a failed scanner is a `FAIL`. The same afternoon produced the other scar in
-  that function: without `close ARGV if eof`, `$.` counts across the whole file list and reports a violation
-  at line 162 of a three-line file.
+  imagined: the first (shell) form of 9.1's `perl` failed to compile, printed its error on stderr and
+  reported `none` over a file holding all three violations — the same output as a clean tree (Lesson 13).
+  The exit status was then checked, and a failed scanner is a `FAIL`. The same afternoon produced the other
+  scar in that function: without `close ARGV if eof`, `$.` counts across the whole file list and reports a
+  violation at line 162 of a three-line file. *The 2026-08-15 rewrite of every script into Python on `uv`
+  (same paths, same checks, same callers; `scripts/tfhygiene` and `scripts/repohygiene` hold the shared
+  logic) keeps both properties structurally: a pattern that does not compile raises before anything is
+  scanned, and line numbers restart per file because the loop is per file.*
 
 **9.1 — No region literals** (`docs/plan/architecture.md` §4.1). `var.region` in every slice, AZs anchored on
 **`zone_ids` from `.tfvars`** (settled by 1b step 6, 2026-08-12 — not on list position), AMIs from SSM public
@@ -979,9 +982,9 @@ for a deleted OU is a `for_each` key that fails an apply; (3) every document the
 types. (4) is what makes the map a control rather than a comment, and it is scoped to *our* documents by
 testing for `policies/<name>.json` — a stronger binding than a name prefix, and the reason Lesson 23's
 "never bind to a name" does not apply: these are the documents this project owns. It looks at **no
-account-level attachment**, because this design has none; that census is `./aws/org-policies.sh` §1.
+account-level attachment**, because this design has none; that census is `./aws/org-policies.py` §1.
 
-**9.4 — `check-index.sh` joins `make check`.** It already exists, it already decides the mechanical half of
+**9.4 — `check-index.py` joins `make check`.** It already exists, it already decides the mechanical half of
 "does `POLICIES.md` still describe `policies/`", it needs no AWS session and it exits non-zero when it
 drifts — and it is run by hand today, which is exactly the state 6.4 and 9 exist to end. Once
 `org-policies/` manages those documents, a statement added in Terraform with no row in `POLICIES.md` is a
@@ -1005,19 +1008,19 @@ starts with its instruments rather than building them.**
 
 | Instrument | What it answers here | Run it at |
 |---|---|---|
-| [`./aws/org-delegation.sh`](../../../aws/org-delegation.sh) | **INT-20 / verification (vi)** — whether a delegation exists, and whether its `Resource` list reaches the **root** (`DEL-6`), **nested** OUs (`DEL-7`) and the **policy-type ARNs** (`DEL-9`, added 2026-08-15 — a target-only list denies every write). Reports the resource policy in **three** states, so "not delegated" and "the read was denied" stay apart | **5.0**, before and after 5.1; then at every landing-zone update |
-| [`./aws/import-ids.sh`](../../../aws/import-ids.sh) | Every `terraform import` string, in the four formats of 5.5a(iii); the resolved values of the three template placeholders; and **section 4, what must not be imported** | **5.5**, immediately before importing |
-| [`./aws/tf-backends.sh`](../../../aws/tf-backends.sh) | Before step 2: *is anything already there*. After step 3: *did every bootstrapped account get the same treatment* — and whether **Production carries the two keys of 3.4** | **2** and **3**, on both sides |
-| [`./aws/quotas.sh`](../../../aws/quotas.sh) | Whether the account-cap increase has landed — the number **3.2** is waiting on. Refuses to interpret the value outside Management, where the same quota reads `0.0` | before **3.2**, whenever it is worth re-asking |
-| [`./aws/org-policies.sh`](../../../aws/org-policies.sh) | **Fixed 2026-08-15**: §1 listed ids for `SERVICE_CONTROL_POLICY` only, so **three of the ten attached documents had no id in any snapshot**. All four types now carry theirs | after any attach, and at every vend |
+| [`./aws/org-delegation.py`](../../../aws/org-delegation.py) | **INT-20 / verification (vi)** — whether a delegation exists, and whether its `Resource` list reaches the **root** (`DEL-6`), **nested** OUs (`DEL-7`) and the **policy-type ARNs** (`DEL-9`, added 2026-08-15 — a target-only list denies every write). Reports the resource policy in **three** states, so "not delegated" and "the read was denied" stay apart | **5.0**, before and after 5.1; then at every landing-zone update |
+| [`./aws/import-ids.py`](../../../aws/import-ids.py) | Every `terraform import` string, in the four formats of 5.5a(iii); the resolved values of the three template placeholders; and **section 4, what must not be imported** | **5.5**, immediately before importing |
+| [`./aws/tf-backends.py`](../../../aws/tf-backends.py) | Before step 2: *is anything already there*. After step 3: *did every bootstrapped account get the same treatment* — and whether **Production carries the two keys of 3.4** | **2** and **3**, on both sides |
+| [`./aws/cloudshell/management-quotas.sh`](../../../aws/cloudshell/management-quotas.sh) | Whether the account-cap increase has landed — the number **3.2** is waiting on. Refuses to interpret the value outside Management, where the same quota reads `0.0` | before **3.2**, whenever it is worth re-asking |
+| [`./aws/org-policies.py`](../../../aws/org-policies.py) | **Fixed 2026-08-15**: §1 listed ids for `SERVICE_CONTROL_POLICY` only, so **three of the ten attached documents had no id in any snapshot**. All four types now carry theirs | after any attach, and at every vend |
 
 **Two disciplines these carry that this stage depends on, and neither is a detail of the scripts.**
 
-- **`import-ids.sh` owns the right-hand side and not the left.** The id is measured; the Terraform
+- **`import-ids.py` owns the right-hand side and not the left.** The id is measured; the Terraform
   *address* is a suggestion, because only the configuration knows whether a resource is `.baseline` or
   `.this["awsds-org-scp-baseline"]`. That division is what makes 5.5a(iii)'s `for_each` warning actionable
   rather than a caution.
-- **`org-delegation.sh` stops before the write, and says why.** Organizations *reads* already answer from
+- **`org-delegation.py` stops before the write, and says why.** Organizations *reads* already answer from
   the Identity account with no policy delegation at all (1c verification (x)), so a read-based check would
   return OK before **and** after 5.1 — not a verification (Lesson 13). It therefore decides **scope by
   reading the delegation document** — not Lesson 22's case (the harness *can* produce the principal;
@@ -1054,7 +1057,7 @@ Each is written so its output differs between working and broken (Lesson 13):
   `aws_organizations_*` resource, and `org-policies/` names no `aws_ssoadmin_*` one. Neither reads the other
   through `terraform_remote_state`.
 - **The delegation took effect** (INT-20): 5.0 step 3's **write** — `organizations update-policy` on the
-  tag policy with its own content — succeeds **under `awsds-infra-identity`**, and `./aws/org-delegation.sh`
+  tag policy with its own content — succeeds **under `awsds-infra-identity`**, and `./aws/org-delegation.py`
   passes `DEL-6` (root reach), `DEL-7` (nested OUs) and `DEL-9` (policy-type ARNs) on the read-back
   document. A `describe-policy` read is not the evidence: it succeeds identically with no delegation at all
   (Lesson 13). **Met 2026-08-15**, and reading 4 met the half `UpdatePolicy` cannot reach: it authorizes on
@@ -1098,7 +1101,7 @@ into `docs/log/log-stage-02-terraform-foundation.md` rather than left to whoever
    customer-managed reference that is missing in *one* account fails provisioning **in that account only**,
    and with one Sandbox per business unit (D35) the number of places it can be missing grows.
 5. **How the placeholders in `policies/*.json` are substituted** (5.5a(i)) — `replace(file(…))` against the
-   templates as they stand, or a conversion to `${…}` with a matching edit to `render.sh` in the same
+   templates as they stand, or a conversion to `${…}` with a matching edit to `render.py` in the same
    commit. Either works; taking one and not writing it down leaves two mechanisms for the same substitution,
    which is the shape Lesson 14 keeps producing.
 6. **`import {}` blocks or `terraform import` on the command line** (the `aws/` section above). Blocks are

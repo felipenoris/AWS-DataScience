@@ -34,7 +34,7 @@ onwards the file records how the environment changed, not just the plan.
   - **Identifiers are stable, section numbers are not.** `§4.4 row N` became **`INT-nn`**, because a table
     row renumbers silently when a row is inserted. Every stage file declares the decisions it **consumes**,
     so the reading list for a stage is closed rather than exploratory.
-  - **`scripts/check-plan-refs.sh` is the guard.** It fails on a broken relative link, an unknown
+  - **`scripts/check-plan-refs.py` is the guard.** It fails on a broken relative link, an unknown
     `D`/`INT` identifier, a stale `§`/`row` reference, a pointer into `docs/GENERAL_PLAN.md` for content that
     now lives in `docs/plan/`, or either core file growing past 20 KB.
 
@@ -175,7 +175,7 @@ onwards the file records how the environment changed, not just the plan.
     withdrew ("it holds no duty, signs nothing, and has an end date") in the same section that announces
     the withdrawal, and `docs/REFERENCES.md` still annotated a link as the cleanup path for it.
   - **A count is a premise in disguise.** D32's "the same address on all *N* vended accounts" spelled the
-    number out, in six files, and was tripping `check-plan-refs.sh`'s own account-count rule. The stale part
+    number out, in six files, and was tripping `check-plan-refs.py`'s own account-count rule. The stale part
     was not the arithmetic — it was that a fixed number *is* the frequency premise D34 retired. Made generic
     in D32, D33, Stage 1a, `lessons.md`, `CLAUDE.md` and the decisions index; the script passes again.
   - **D35 reached the prose and not the files that become code**, which is the expensive half: the

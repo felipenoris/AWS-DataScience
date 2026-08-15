@@ -1,0 +1,72 @@
+# The uv project behind every Python script in this repository (aws/, scripts/,
+# terraform-live/identity/org-policies/, aws/probes/).
+#
+# HOW THE SCRIPTS RUN. Each script is executable and carries the shebang
+# `#!/usr/bin/env -S uv run --quiet`, so `./aws/org-policies.py` works exactly as the shell
+# version did: uv resolves this project (walking up from the working directory), pins the
+# interpreter to .python-version, installs the three packages below editable, and runs the
+# script inside that environment. Nothing is installed globally and no activation step exists.
+#
+# WHY requires-python IS 3.9 WHILE .python-version PINS 3.14. The laptop always runs the
+# pinned interpreter through uv. CloudShell does not have uv, and the fallback there is the
+# system interpreter (`python3 aws/<script>.py -`), which is 3.9 on Amazon Linux 2023 - so the
+# code is written to the older floor while the environment everyone actually develops in is
+# the pinned one. Raising the floor means checking what CloudShell ships first.
+#
+# ZERO RUNTIME DEPENDENCIES, deliberately. Everything is standard library + the aws CLI as a
+# subprocess. That is what keeps the CloudShell fallback a one-liner (nothing to pip-install
+# in a throwaway shell) and keeps uv sync instant. ruff is a dev tool, not a dependency.
+
+[project]
+name = "awsds-tools"
+version = "0.1.0"
+description = "Read-only AWS snapshot scripts and repository hygiene checks for AWS-DataScience"
+requires-python = ">=3.9"
+dependencies = []
+
+[dependency-groups]
+dev = [
+    "ruff>=0.12",
+]
+
+# The three packages, each living NEXT TO the scripts it serves so that the script's own
+# directory puts it on sys.path even without uv (that is the whole CloudShell story):
+#
+#   aws/awslib           shared plumbing for the aws/ snapshot scripts: repo/output location,
+#                        aws CLI subprocess wrapper, report writer, profile preflight, small
+#                        pure helpers (CIDR math, policy-document entries)
+#   scripts/repohygiene  regulates PROJECT files (markdown links, stable IDs, size budgets).
+#                        Independent: imports nothing from the other two, touches no AWS
+#   scripts/tfhygiene    regulates TERRAFORM files (convention greps, IAM wildcard walk,
+#                        backend.hcl generation, the authored attachments map).
+#                        Independent: imports nothing from the other two, touches no AWS
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["aws/awslib", "scripts/repohygiene", "scripts/tfhygiene"]
+
+[tool.ruff]
+line-length = 100
+# The floor CloudShell imposes, not the pinned interpreter - ruff flags syntax above it.
+target-version = "py39"
+extend-exclude = [".venv", "terraform-live", "terraform-modules"]
+# Honour the excludes even for files passed explicitly on the command line. pre-commit
+# invokes ruff with the staged filenames as arguments, and without this the format
+# exclusion below is silently ignored exactly there - `ruff format --check .` passes while
+# the commit gate fails on aws/probes/probes.py.
+force-exclude = true
+
+[tool.ruff.lint]
+# An EXPLICIT select, so a ruff upgrade cannot widen the gate silently: pycodestyle errors,
+# pyflakes, warnings, import order, and pyupgrade (whose 3.10+ rewrites stay legal under
+# `from __future__ import annotations`, which every module carries). The scripts are
+# reports, not an API surface, so no docstring/annotation policing.
+select = ["E4", "E7", "E9", "F", "W", "I", "UP"]
+
+[tool.ruff.format]
+quote-style = "double"
+# The battery-as-data file keeps its own compact one-probe-per-block layout: exploding each
+# argv onto fifteen lines is tidier for code and worse for a file people edit as a table.
+exclude = ["aws/probes/probes.py"]

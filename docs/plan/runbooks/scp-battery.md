@@ -10,15 +10,15 @@ A policy that passed both halves is a control. One that was only attached is a h
 > ## The probes are a script now — [`aws/probes/`](../../../aws/probes/README.md)
 >
 > ```bash
-> ./aws/probes/scp-battery.sh              # read-back, then every phase
-> ./aws/probes/scp-battery.sh --phase ou   # root | ou | region
-> ./aws/probes/scp-battery.sh --list       # what would run, and where
+> ./aws/probes/scp-battery.py              # read-back, then every phase
+> ./aws/probes/scp-battery.py --phase ou   # root | ou | region
+> ./aws/probes/scp-battery.py --list       # what would run, and where
 > ```
 >
 > **This file stayed, and the division of labour is the point.** The script executes and classifies; this
 > runbook is *why each probe is shaped the way it is* and what each outcome means — which is the part that
 > cannot be automated and the part a reader needs before trusting a green run. The probe list itself lives
-> in `aws/probes/probes.sh`, so **amending the ceiling means editing that file**, and the tables below are what
+> in `aws/probes/probes.py`, so **amending the ceiling means editing that file**, and the tables below are what
 > tell you what to write in it.
 >
 > Three things the script encodes because the hand-run version kept getting them wrong: a dead SSO session
@@ -48,7 +48,7 @@ hangs off the root like every other OU — which is what makes the root set test
    aws organizations detach-policy --policy-id <POLICY_ID> --target-id <TARGET_ID>
    ```
 
-3. `./terraform-live/identity/org-policies/render.sh` has been run, and **the paste comes from
+3. `./terraform-live/identity/org-policies/render.py` has been run, and **the paste comes from
    `aws/output/rendered-policies/`** — the tracked templates still hold placeholders.
 4. Account-level BPA reads all four flags `true` in every account (7.4 step 1). The baseline document
    denies changing it; attached first, it would deny the call that sets it.
@@ -380,9 +380,9 @@ them break in ways the previous phases have no equivalent for.
 | Order | Document | Attach to | Measure with | Undo |
 |---|---|---|---|---|
 | 1 | `awsds-org-scp-tag-enforcement` | root | `--phase tags` | detach |
-| 2 | `awsds-org-tag-policy` | root | `./aws/org-policies.sh` — no probe exists | detach |
+| 2 | `awsds-org-tag-policy` | root | `./aws/org-policies.py` — no probe exists | detach |
 | 3 | `awsds-org-rcp-perimeter` | **`Policy Test` OU first**, root after | `--phase rcp` | detach |
-| 4 | `awsds-org-declarative-ec2` | root | `--phase decl` **and** `./aws/declarative-ec2.sh` | detach **rolls state back** |
+| 4 | `awsds-org-declarative-ec2` | root | `--phase decl` **and** `./aws/declarative-ec2.py` | detach **rolls state back** |
 
 ### 1 — the tag-enforcement SCP, and why the middle probe is the whole test
 
@@ -449,9 +449,9 @@ see the cache rule under *How to read every outcome*. The first attempt at this 
 on that evidence.
 
 The `rcp` phase is **all floor and no deny**, which is a finding rather than an omission — see the block at
-the top of that phase in `probes.sh`. Producing an out-of-organization principal needs an identity this
+the top of that phase in `probes.py`. Producing an out-of-organization principal needs an identity this
 project does not have and will not create, so the deny half is Lesson 22: verified by `readback.py` and
-`./aws/org-policies.sh`, never by attempting.
+`./aws/org-policies.py`, never by attempting.
 
 ### 4 — the declarative policy, the only document that changes state
 
@@ -463,16 +463,16 @@ Three things separate it from every other document in `policies/`:
   `exception_message` lost in the upload is visible.
 - **`--dry-run` measures the wrong layer.** It stops after authorization and returns `DryRunOperation`
   whether or not the policy is attached. The four probes therefore carry **no** `--dry-run` and are
-  `creates`, canary-only; each has a one-command undo written beside it in `probes.sh`. **If any comes back
+  `creates`, canary-only; each has a one-command undo written beside it in `probes.py`. **If any comes back
   `ALLOWED`, run its undo before doing anything else** — the canary has been left in the state the policy
   exists to prevent.
 - **Attaching changes existing settings**, and detaching **rolls each attribute back** to what it was before.
-  So "attached" and "in effect" are two facts. `./aws/declarative-ec2.sh` is what reads the second, and it is
+  So "attached" and "in effect" are two facts. `./aws/declarative-ec2.py` is what reads the second, and it is
   the authoritative check; the probes only show that the account is refused when it tries to change them.
 
 **It is also the first root-attached document expected to reach the management account.** SCPs and RCPs skip
 Management by design; AWS documents no such exemption for declarative policies, and control-plane enforcement
-is not where that exemption lives. **This is unmeasured** — run `./aws/declarative-ec2.sh -` in CloudShell on
+is not where that exemption lives. **This is unmeasured** — run `./aws/declarative-ec2.py -` in CloudShell on
 Management, as `AWS Control Tower Admin`, and record the answer. It is a reading nobody else will take.
 
 ### The canary cleanup gains four commands
@@ -484,7 +484,7 @@ back `ALLOWED`:
 aws ec2 enable-image-block-public-access --image-block-public-access-state block-new-sharing --region us-west-2 --profile awsds-policy-canary
 ```
 
-The other three are in `probes.sh` next to their probes: `enable-snapshot-block-public-access`,
+The other three are in `probes.py` next to their probes: `enable-snapshot-block-public-access`,
 `disable-serial-console-access`, and `modify-instance-metadata-defaults --http-tokens required`.
 
 ## What this battery does not cover, and where each one goes
@@ -526,7 +526,7 @@ verification is a document read, and the plan states the string that proves it.
 | positive half of the `aws:PrincipalIsAWSService` guard | needs a service principal, which cannot be assumed | the `BoolIfExists` clause is present and spelled `false` |
 | all four statements of `awsds-org-rcp-perimeter` | an RCP denies principals from **outside** the organization; there is no IAM user, no second organization and no external IdP here, so every principal the harness can produce carries the org id that makes the deny *not* fire | `readback.py` (four `Sid`s, correct action counts) and the org id in each `StringNotEqualsIfExists`. An anonymous request is denied for three other reasons and names no policy — it proves nothing (Lesson 20) |
 
-**All three are checked mechanically by [`aws/org-policies.sh`](../../../aws/org-policies.sh)**, which reads
+**All three are checked mechanically by [`aws/org-policies.py`](../../../aws/org-policies.py)**, which reads
 the deployed documents and exits 2 if any of them stops saying what it must — run it after every attachment,
 in the same sitting as the battery. It is a *different instrument*, not a phase of the battery, and that is
 the whole point.

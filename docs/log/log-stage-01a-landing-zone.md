@@ -87,6 +87,17 @@ Stage: [`docs/plan/stages/stage-01a-landing-zone.md`](../plan/stages/stage-01a-l
 	- Sandbox Account 1
 	- Identity Account
 
+- **2026-08-15 — the cap has not moved, first authoritative reading.** CloudShell on
+  Management as `AWS Control Tower Admin`, `aws/cloudshell/management-quotas.sh`
+  (single-file upload): applied value **10.0** = default, **10 accounts** in the
+  organization — the cap fully spent, EXC-01's suspended account among the 10. The
+  increase request is visible in Service Quotas itself: `CASE_OPENED`, desired **15**,
+  created 2026-08-08, still in flight. No policy-size quota published for
+  `organizations` (re-confirms 1c 7.0 step 5). The run also exposed and fixed the
+  script's Region defect: these quotas answer only in us-east-1 —
+  NoSuchResourceException elsewhere — matching how the ticket had to be raised.
+  Report at `aws/output/cloudshell/management-quotas.txt`.
+
 - No user has `Delegated administrator for centralized root access`.
 
 ---

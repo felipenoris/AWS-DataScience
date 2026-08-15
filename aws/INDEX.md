@@ -21,20 +21,20 @@ snapshots.
 
 | Script | SSO user signed in | Profile it runs as | Writes | Captures |
 |---|---|---|---|---|
-| [`list-identities.sh`](list-identities.sh) | [Infrastructure](../docs/ORGANIZATION.md#infrastructure-user) | `awsds-infra-identity` (Identity account, IAM Identity Center delegated administrator — D10) | `output/list-identities.txt` | The Organization: **organization id** — the value `aws:PrincipalOrgID` and `aws:ResourceOrgID` are compared against — management account id, root and its enabled policy types, the whole OU tree, every account. The directory: Identity Store instance, groups, users, group memberships. The entitlements: permission sets with what each grants, and every assignment triple. |
-| [`AZs.sh`](AZs.sh) | [Infrastructure](../docs/ORGANIZATION.md#infrastructure-user) — including behind `awsds-policy-canary`, which is the **same human** through a different permission set (D32) | **every** `awsds-*` profile in `~/.aws/config`, or the ones named as arguments — the one script here that is not single-profile, see below | `output/AZs.txt` | The availability-zone **name → zone ID** mapping each account reports, one listing per account, the mappings side by side, and a check on whether they agree. |
-| [`org-trusted-access-services.sh`](org-trusted-access-services.sh) | [Infrastructure](../docs/ORGANIZATION.md#infrastructure-user); [`AWS Control Tower Admin`](../docs/ORGANIZATION.md#aws-control-tower-admin-d33) on the `-` fallback | `awsds-infra-identity` by default; takes another profile as its argument, or `-` to run with no profile at all — inside CloudShell on Management | `output/org-trusted-access-services.txt` | Which AWS services hold **trusted access** across the organization, which account is each one's **delegated administrator**, and the `access-analyzer` registration on its own. |
-| [`audit-iam-analyser.sh`](audit-iam-analyser.sh) | [`AWS Control Tower Admin`](../docs/ORGANIZATION.md#aws-control-tower-admin-d33) — **the only one**, no laptop path | **no profile — CloudShell on the Audit account**, as `AWS Control Tower Admin`. Takes a profile as its argument if one ever exists there; see below | `output/audit-iam-analyser.txt` | The IAM Access Analyzer analyzers of that account and Region: type (the **zone of trust**), status, tags, archive rules, findings — and a check that there is exactly one, `ORGANIZATION`, `ACTIVE`. |
-| [`org-policy-baseline.sh`](org-policy-baseline.sh) | [Infrastructure](../docs/ORGANIZATION.md#infrastructure-user) — **open, and what section 7 answers**; [`AWS Control Tower Admin`](../docs/ORGANIZATION.md#aws-control-tower-admin-d33) on the `-` fallback, which section 5 is expected to need anyway | `awsds-infra-identity` by default; takes another profile, or `-` for CloudShell on **Management** as `AWS Control Tower Admin` — which is the fallback if the policy reads are denied | `output/org-policy-baseline.txt` | **The ceiling that already exists.** Organization id and feature set, the root and its enabled policy types, every node with its **id, ARN and full path**, the policies attached per node per type, the **documents** of the ones found, the Control Tower controls enabled per node, and the policy quota. Stage 1c step 7.0 steps 1, 2, 3 and 5 in one pass. |
-| [`org-policies.sh`](org-policies.sh) | [Infrastructure](../docs/ORGANIZATION.md#infrastructure-user); [`AWS Control Tower Admin`](../docs/ORGANIZATION.md#aws-control-tower-admin-d33) on the `-` fallback | `awsds-infra-identity` by default; takes another profile, or `-` for CloudShell on **Management** | `output/org-policies.txt` | **What governs each node right now, by `Sid`** — no document bodies. Attached per node condensed to its statement names; **what governs each *account* once inheritance is resolved**; the **read-only checks** that no probe can reach; and a per-OU ceiling table. **Exits 2 when a check fails**, so it can gate a change. **Gap found and fixed the same day (2026-08-15):** section 1 used to list ids for `SERVICE_CONTROL_POLICY` only, leaving three of the ten attached documents with no id in any snapshot (the [1c log](../docs/log/log-stage-01c-preventive-policies.md) alone carried them). **All four policy types now carry their ids** — which is what [Stage 2](../docs/plan/stages/stage-02-terraform-foundation.md) step 5.5 needs, where an id is an argument |
-| [`account-bpa.sh`](account-bpa.sh) | [Infrastructure](../docs/ORGANIZATION.md#infrastructure-user); [`AWS Control Tower Admin`](../docs/ORGANIZATION.md#aws-control-tower-admin-d33) for the `-` runs in Management, Log Archive and Audit | **every** `awsds-*` profile, or the ones named as arguments, or `-` inside CloudShell for the three accounts that have no profile — the second script here that is not single-profile, see below | `output/account-bpa.txt` | The **account-level** S3 Block Public Access configuration of each account, the four flags side by side, and which accounts nothing is measuring. Read three times: before 7.4, after 7.4 and before 7.5, and at every vend. |
-| [`declarative-ec2.sh`](declarative-ec2.sh) | [Infrastructure](../docs/ORGANIZATION.md#infrastructure-user); [`AWS Control Tower Admin`](../docs/ORGANIZATION.md#aws-control-tower-admin-d33) for the `-` runs | **every** `awsds-*` profile, the ones named, or `-` inside CloudShell — the third non-single-profile script, and for the same reason | `output/declarative-ec2.txt` | **The four EC2 settings `awsds-org-declarative-ec2` declares, read back per account** against the document. A declarative policy is enforced in the service's control plane, so the battery can only show that a *change* is refused — this shows what the setting **is**, which is the control. Also the one instrument that can answer whether a root-attached declarative policy reaches **Management**, which AWS documentation leaves undecided. |
-| [`org-delegation.sh`](org-delegation.sh) | [Infrastructure](../docs/ORGANIZATION.md#infrastructure-user); [`AWS Control Tower Admin`](../docs/ORGANIZATION.md#aws-control-tower-admin-d33) on the `-` fallback | `awsds-infra-identity` by default; takes another profile, or `-` for CloudShell on **Management** | `output/org-delegation.txt` | **INT-20 — can the Identity account manage the organization's *policies*, and which of them.** The organization **resource policy**, kept in three distinguishable states (present / absent / the read itself denied), then decomposed into nine checks: the principal, the read and write halves, the two actions that must be **absent**, and — the three that fail silently — whether the `Resource` list reaches the **root**, **nested** OUs, and the **policy-type ARNs** at all (`DEL-9`, added 2026-08-15: a target-only list denies every write and reads exactly like "all refused"). Plus the documents a write would have to reach, split by target class. **Exits 2 when a check fails.** |
-| [`import-ids.sh`](import-ids.sh) | [Infrastructure](../docs/ORGANIZATION.md#infrastructure-user) | `awsds-infra-identity` — one profile reaches both planes: Identity Center delegated administrator (D10) *and* Organizations reads (1c verification (x)) | `output/import-ids.txt` | **The import manifest for Stage 2 step 5** — the exact strings `terraform import` takes, in the four formats, for every policy, every attachment, the `InfrastructureAccess` set and its assignments. Also the resolved values of the three template placeholders. **Section 4 lists what must *not* be imported**, with the reason, rather than filtering it out. |
-| [`tf-backends.sh`](tf-backends.sh) | [Infrastructure](../docs/ORGANIZATION.md#infrastructure-user) | **every** `awsds-*` profile, or the ones named, or `-` — the fourth non-single-profile script, same reason | `output/tf-backends.txt` | **The Terraform state buckets and their keys, side by side.** Existence, versioning, SSE-KMS and the key's **alias**, the four BPA flags, the TLS-only statement, the noncurrent-version lifecycle, Object Lock — plus every bucket in each account, so one under an unexpected name is visible. Section 4 is where Stage 2 step 3.4's **two keys in Production** are either true or not. **Exits 2 when a check fails.** |
-| [`networking.sh`](networking.sh) | [Infrastructure](../docs/ORGANIZATION.md#infrastructure-user); [`AWS Control Tower Admin`](../docs/ORGANIZATION.md#aws-control-tower-admin-d33) for `-` runs | **every** `awsds-*` profile, the ones named, or `-` inside CloudShell — the fifth non-single-profile script, and for the standing reason: a CIDR overlap, a peering and a cross-account zone association are facts *between* accounts | `output/networking.txt` | **The `[P]` networking half, per account, side by side** — [Stage 3](../docs/plan/stages/stage-03-networking.md)'s preflight and its standing regression. VPCs with **default and Account Factory vend artifacts flagged** (every vended account carries one — `docs/AWS_STATE.md` §C), the two DNS attributes of step 4.1, subnets with their **zone IDs** (step 1.5), route tables and routes, IGWs, the **gateway endpoint IDs that are the INT-05 anchor** (the only endpoint IDs any policy may name — Lesson 3), peerings **from both sides** (INT-09), the three private zones with associations and **pending authorizations** (the 4.5 trap made visible), flow logs with retention, NACLs and SGs. Checks `NT-1`–`NT-8` mechanise validation 2 (no route into `10.40.0.0/16`, local routes excluded on purpose), step 6.5 (`10.90.0.0/24` nowhere), step 1.2 (no overlap), 4.1, 4.4 and 5. **Exits 2 when a check fails.** The `[P]`-stability deliverable is a **diff of two runs** of this file, either side of a `make down`/`make up` |
-| [`egress.sh`](egress.sh) | [Infrastructure](../docs/ORGANIZATION.md#infrastructure-user); [`AWS Control Tower Admin`](../docs/ORGANIZATION.md#aws-control-tower-admin-d33) for `-` runs | same multi-profile shape, same reason: step 8's endpoint list is deliberately **per account role**, so "is the set right" is only readable with the columns side by side | `output/egress.txt` | **The `[E]` networking half, plus the burn meter.** Interface endpoints (subnet count per D9, private DNS per 8.5), NAT gateways, elastic addresses, every endpoint **policy** read against step 9 — the org condition (9.1) and the AWS-owned-bucket allow (9.3), **presence, never completeness** (the no-NAT `dnf` probe is the stage's) — the service×account **matrix** read against step 8's lists (deliberately not encoded here — Lesson 14), the **hourly burn right now** (the manual instrument the forgotten-egress risk gets, D12 having skipped the alerts; zero everywhere is D11 working), and the region's **endpoint service-name catalog**, which answers stage verification (i) and the `VpcEndpointPolicySupported` flag read-only, before anything is paid for. Checks `EG-1`–`EG-4`; **exits 2 when a check fails** |
-| [`quotas.sh`](quotas.sh) | [`AWS Control Tower Admin`](../docs/ORGANIZATION.md#aws-control-tower-admin-d33) — **the only one**, no laptop path | **no profile — CloudShell on Management.** Takes a profile if one ever exists there | `output/quotas.txt` | **Has the account-cap increase landed** — the one number the `Staging` vend is held on. The applied value (not the default), how much of it is spent, and any pending request. **Refuses to interpret the number outside Management**, where the same quota reads `0.0`. |
+| [`list-identities.py`](list-identities.py) | [Infrastructure](../docs/ORGANIZATION.md#infrastructure-user) | `awsds-infra-identity` (Identity account, IAM Identity Center delegated administrator — D10) | `output/list-identities.txt` | The Organization: **organization id** — the value `aws:PrincipalOrgID` and `aws:ResourceOrgID` are compared against — management account id, root and its enabled policy types, the whole OU tree, every account. The directory: Identity Store instance, groups, users, group memberships. The entitlements: permission sets with what each grants, and every assignment triple. |
+| [`AZs.py`](AZs.py) | [Infrastructure](../docs/ORGANIZATION.md#infrastructure-user) — including behind `awsds-policy-canary`, which is the **same human** through a different permission set (D32) | **every** `awsds-*` profile in `~/.aws/config`, or the ones named as arguments — the one script here that is not single-profile, see below | `output/AZs.txt` | The availability-zone **name → zone ID** mapping each account reports, one listing per account, the mappings side by side, and a check on whether they agree. |
+| [`org-trusted-access-services.py`](org-trusted-access-services.py) | [Infrastructure](../docs/ORGANIZATION.md#infrastructure-user); [`AWS Control Tower Admin`](../docs/ORGANIZATION.md#aws-control-tower-admin-d33) on the `-` fallback | `awsds-infra-identity` by default; takes another profile as its argument, or `-` to run with no profile at all — inside CloudShell on Management | `output/org-trusted-access-services.txt` | Which AWS services hold **trusted access** across the organization, which account is each one's **delegated administrator**, and the `access-analyzer` registration on its own. |
+| [`cloudshell/audit-iam-analyser.sh`](cloudshell/audit-iam-analyser.sh) | [`AWS Control Tower Admin`](../docs/ORGANIZATION.md#aws-control-tower-admin-d33) — **the only one**, no laptop path | **no profile — CloudShell on the Audit account**, as `AWS Control Tower Admin`. Takes a profile as its argument if one ever exists there; see below | `output/cloudshell/audit-iam-analyser.txt` | The IAM Access Analyzer analyzers of that account and Region: type (the **zone of trust**), status, tags, archive rules, findings — and a check that there is exactly one, `ORGANIZATION`, `ACTIVE`. |
+| [`org-policy-baseline.py`](org-policy-baseline.py) | [Infrastructure](../docs/ORGANIZATION.md#infrastructure-user) — **open, and what section 7 answers**; [`AWS Control Tower Admin`](../docs/ORGANIZATION.md#aws-control-tower-admin-d33) on the `-` fallback, which section 5 is expected to need anyway | `awsds-infra-identity` by default; takes another profile, or `-` for CloudShell on **Management** as `AWS Control Tower Admin` — which is the fallback if the policy reads are denied | `output/org-policy-baseline.txt` | **The ceiling that already exists.** Organization id and feature set, the root and its enabled policy types, every node with its **id, ARN and full path**, the policies attached per node per type, the **documents** of the ones found, the Control Tower controls enabled per node, and the policy quota. Stage 1c step 7.0 steps 1, 2, 3 and 5 in one pass. |
+| [`org-policies.py`](org-policies.py) | [Infrastructure](../docs/ORGANIZATION.md#infrastructure-user); [`AWS Control Tower Admin`](../docs/ORGANIZATION.md#aws-control-tower-admin-d33) on the `-` fallback | `awsds-infra-identity` by default; takes another profile, or `-` for CloudShell on **Management** | `output/org-policies.txt` | **What governs each node right now, by `Sid`** — no document bodies. Attached per node condensed to its statement names; **what governs each *account* once inheritance is resolved**; the **read-only checks** that no probe can reach; and a per-OU ceiling table. **Exits 2 when a check fails**, so it can gate a change. **Gap found and fixed the same day (2026-08-15):** section 1 used to list ids for `SERVICE_CONTROL_POLICY` only, leaving three of the ten attached documents with no id in any snapshot (the [1c log](../docs/log/log-stage-01c-preventive-policies.md) alone carried them). **All four policy types now carry their ids** — which is what [Stage 2](../docs/plan/stages/stage-02-terraform-foundation.md) step 5.5 needs, where an id is an argument |
+| [`account-bpa.py`](account-bpa.py) | [Infrastructure](../docs/ORGANIZATION.md#infrastructure-user); [`AWS Control Tower Admin`](../docs/ORGANIZATION.md#aws-control-tower-admin-d33) for the `-` runs in Management, Log Archive and Audit | **every** `awsds-*` profile, or the ones named as arguments, or `-` inside CloudShell for the three accounts that have no profile — the second script here that is not single-profile, see below | `output/account-bpa.txt` | The **account-level** S3 Block Public Access configuration of each account, the four flags side by side, and which accounts nothing is measuring. Read three times: before 7.4, after 7.4 and before 7.5, and at every vend. |
+| [`declarative-ec2.py`](declarative-ec2.py) | [Infrastructure](../docs/ORGANIZATION.md#infrastructure-user); [`AWS Control Tower Admin`](../docs/ORGANIZATION.md#aws-control-tower-admin-d33) for the `-` runs | **every** `awsds-*` profile, the ones named, or `-` inside CloudShell — the third non-single-profile script, and for the same reason | `output/declarative-ec2.txt` | **The four EC2 settings `awsds-org-declarative-ec2` declares, read back per account** against the document. A declarative policy is enforced in the service's control plane, so the battery can only show that a *change* is refused — this shows what the setting **is**, which is the control. Also the one instrument that can answer whether a root-attached declarative policy reaches **Management**, which AWS documentation leaves undecided. |
+| [`org-delegation.py`](org-delegation.py) | [Infrastructure](../docs/ORGANIZATION.md#infrastructure-user); [`AWS Control Tower Admin`](../docs/ORGANIZATION.md#aws-control-tower-admin-d33) on the `-` fallback | `awsds-infra-identity` by default; takes another profile, or `-` for CloudShell on **Management** | `output/org-delegation.txt` | **INT-20 — can the Identity account manage the organization's *policies*, and which of them.** The organization **resource policy**, kept in three distinguishable states (present / absent / the read itself denied), then decomposed into nine checks: the principal, the read and write halves, the two actions that must be **absent**, and — the three that fail silently — whether the `Resource` list reaches the **root**, **nested** OUs, and the **policy-type ARNs** at all (`DEL-9`, added 2026-08-15: a target-only list denies every write and reads exactly like "all refused"). Plus the documents a write would have to reach, split by target class. **Exits 2 when a check fails.** |
+| [`import-ids.py`](import-ids.py) | [Infrastructure](../docs/ORGANIZATION.md#infrastructure-user) | `awsds-infra-identity` — one profile reaches both planes: Identity Center delegated administrator (D10) *and* Organizations reads (1c verification (x)) | `output/import-ids.txt` | **The import manifest for Stage 2 step 5** — the exact strings `terraform import` takes, in the four formats, for every policy, every attachment, the `InfrastructureAccess` set and its assignments. Also the resolved values of the three template placeholders. **Section 4 lists what must *not* be imported**, with the reason, rather than filtering it out. |
+| [`tf-backends.py`](tf-backends.py) | [Infrastructure](../docs/ORGANIZATION.md#infrastructure-user) | **every** `awsds-*` profile, or the ones named, or `-` — the fourth non-single-profile script, same reason | `output/tf-backends.txt` | **The Terraform state buckets and their keys, side by side.** Existence, versioning, SSE-KMS and the key's **alias**, the four BPA flags, the TLS-only statement, the noncurrent-version lifecycle, Object Lock — plus every bucket in each account, so one under an unexpected name is visible. Section 4 is where Stage 2 step 3.4's **two keys in Production** are either true or not. **Exits 2 when a check fails.** |
+| [`networking.py`](networking.py) | [Infrastructure](../docs/ORGANIZATION.md#infrastructure-user); [`AWS Control Tower Admin`](../docs/ORGANIZATION.md#aws-control-tower-admin-d33) for `-` runs | **every** `awsds-*` profile, the ones named, or `-` inside CloudShell — the fifth non-single-profile script, and for the standing reason: a CIDR overlap, a peering and a cross-account zone association are facts *between* accounts | `output/networking.txt` | **The `[P]` networking half, per account, side by side** — [Stage 3](../docs/plan/stages/stage-03-networking.md)'s preflight and its standing regression. VPCs with **default and Account Factory vend artifacts flagged** (every vended account carries one — `docs/AWS_STATE.md` §C), the two DNS attributes of step 4.1, subnets with their **zone IDs** (step 1.5), route tables and routes, IGWs, the **gateway endpoint IDs that are the INT-05 anchor** (the only endpoint IDs any policy may name — Lesson 3), peerings **from both sides** (INT-09), the three private zones with associations and **pending authorizations** (the 4.5 trap made visible), flow logs with retention, NACLs and SGs. Checks `NT-1`–`NT-8` mechanise validation 2 (no route into `10.40.0.0/16`, local routes excluded on purpose), step 6.5 (`10.90.0.0/24` nowhere), step 1.2 (no overlap), 4.1, 4.4 and 5. **Exits 2 when a check fails.** The `[P]`-stability deliverable is a **diff of two runs** of this file, either side of a `make down`/`make up` |
+| [`egress.py`](egress.py) | [Infrastructure](../docs/ORGANIZATION.md#infrastructure-user); [`AWS Control Tower Admin`](../docs/ORGANIZATION.md#aws-control-tower-admin-d33) for `-` runs | same multi-profile shape, same reason: step 8's endpoint list is deliberately **per account role**, so "is the set right" is only readable with the columns side by side | `output/egress.txt` | **The `[E]` networking half, plus the burn meter.** Interface endpoints (subnet count per D9, private DNS per 8.5), NAT gateways, elastic addresses, every endpoint **policy** read against step 9 — the org condition (9.1) and the AWS-owned-bucket allow (9.3), **presence, never completeness** (the no-NAT `dnf` probe is the stage's) — the service×account **matrix** read against step 8's lists (deliberately not encoded here — Lesson 14), the **hourly burn right now** (the manual instrument the forgotten-egress risk gets, D12 having skipped the alerts; zero everywhere is D11 working), and the region's **endpoint service-name catalog**, which answers stage verification (i) and the `VpcEndpointPolicySupported` flag read-only, before anything is paid for. Checks `EG-1`–`EG-4`; **exits 2 when a check fails** |
+| [`cloudshell/management-quotas.sh`](cloudshell/management-quotas.sh) | [`AWS Control Tower Admin`](../docs/ORGANIZATION.md#aws-control-tower-admin-d33) — **the only one**, no laptop path | **no profile — CloudShell on Management.** Takes a profile if one ever exists there | `output/cloudshell/management-quotas.txt` | **Has the account-cap increase landed** — the one number the `Staging` vend is held on. The applied value (not the default), how much of it is spent, and any pending request. **Refuses to interpret the number outside Management**, where the same quota reads `0.0`. |
 
 **The first two columns are different questions, and the whole table above collapses into two identities.** A
 profile is a *(account, permission set)* pair; the **user** is whoever holds the assignment for that pair
@@ -46,76 +46,94 @@ Everything run with `-` is `AWS Control Tower Admin` in CloudShell, and that is 
 exactly for Management, Log Archive and Audit, the three accounts where **no persona holds an assignment by
 design** and where that standing identity (D33, D34) is the only way in.
 
-**`org-policy-baseline.sh` and `org-policies.sh` walk the same tree and are not duplicates — they are
+**`org-policy-baseline.py` and `org-policies.py` walk the same tree and are not duplicates — they are
 opposite ends of one change.** The baseline is a **preflight**, run *before* writing policy (step 7.0): it
 prints whole documents, the quota and the organization's metadata, and answers *what already exists that I
-must not duplicate*. `org-policies.sh` is a **check**, run *after* every attachment and at every vend: it
+must not duplicate*. `org-policies.py` is a **check**, run *after* every attachment and at every vend: it
 prints no document bodies at all, binds to `Sid` because a managed document's id says nothing about its
 contents (Lesson 23), resolves inheritance down to each account, and **fails with exit 2** on the statements
 the SCP battery is structurally blind to (Lesson 22). Reach for the first when writing a policy and the
 second when verifying one.
 
-Run any of them from anywhere; each one `cd`s to the repository root itself:
+**All but the `cloudshell/` pair are Python scripts on the uv project at the repository root
+(2026-08-15)**, sharing the [`awslib`](awslib/__init__.py) package that sits beside them. The shebang is
+`#!/usr/bin/env -S uv run --quiet`, so the invocations below stay one path: uv resolves
+`pyproject.toml`, pins the interpreter to `.python-version` and provides the packages —
+nothing to install or activate beyond uv itself. Run any of them from anywhere; each one
+locates the repository root itself:
 
 ```bash
-./aws/list-identities.sh
+./aws/list-identities.py
 ```
 
 ```bash
-./aws/AZs.sh
+./aws/AZs.py
 ```
 
 ```bash
-./aws/org-trusted-access-services.sh
+./aws/org-trusted-access-services.py
 ```
 
 ```bash
-./aws/audit-iam-analyser.sh
+./aws/org-policy-baseline.py
 ```
 
 ```bash
-./aws/org-policy-baseline.sh
+./aws/account-bpa.py
 ```
 
 ```bash
-./aws/account-bpa.sh
+./aws/org-policies.py
 ```
 
 ```bash
-./aws/org-policies.sh
+./aws/declarative-ec2.py
 ```
 
 ```bash
-./aws/declarative-ec2.sh
+./aws/org-delegation.py
 ```
 
 ```bash
-./aws/org-delegation.sh
+./aws/import-ids.py
 ```
 
 ```bash
-./aws/import-ids.sh
+./aws/tf-backends.py
 ```
 
 ```bash
-./aws/tf-backends.sh
+./aws/networking.py
 ```
 
 ```bash
-./aws/networking.sh
+./aws/egress.py
+```
+
+**`cloudshell/` holds the two scripts with no laptop path — and they are shell on purpose.**
+`management-quotas.sh` answers only from **Management**, `audit-iam-analyser.sh` only from **Audit**: the
+two accounts that hold no CLI profile by design (D33/D34). Both run inside **CloudShell**,
+signed in as `AWS Control Tower Admin` through `AWSAdministratorAccess` — and CloudShell has
+no uv, so they stay shell and **standalone**: no `awslib`, no environment, one self-contained
+file each. Upload just the file (Actions → Upload file) and run it where it lands:
+
+```bash
+bash management-quotas.sh
 ```
 
 ```bash
-./aws/egress.sh
+bash audit-iam-analyser.sh
 ```
 
-`quotas.sh` is the exception: it has no laptop path, because Management holds no CLI profile.
-Run it inside **CloudShell on the Management account**, signed in as `AWS Control Tower Admin`
-through `AWSAdministratorAccess`:
+In a clone they are [`cloudshell/management-quotas.sh`](cloudshell/management-quotas.sh) and
+[`cloudshell/audit-iam-analyser.sh`](cloudshell/audit-iam-analyser.sh), and their reports land
+in `aws/output/cloudshell/` rather than beside the script.
 
-```bash
-./aws/quotas.sh
-```
+**A *Python* script run in CloudShell still needs the whole `aws/` folder**: the `-` modes of
+`account-bpa.py`, `declarative-ec2.py`, `networking.py`, `egress.py` and the `org-*` scripts
+import `awslib`, which sits beside them, so the system `python3` runs them as long as the
+folder is present — clone the repository, or upload it zipped and unzip. A single `.py` file
+alone is the one shape that does not work.
 
 They need a live SSO session. If the run stops with `cannot authenticate`:
 
@@ -223,7 +241,7 @@ extends the read boundary Stage 1b step 4 established: a delegated administrator
 these Organizations reads, so the management account is needed to *change* this state and not to read it.
 If a future run is denied anyway, section 4 says so and the fallback is in the script header.
 
-## Finding an answer in `output/audit-iam-analyser.txt`
+## Finding an answer in `output/cloudshell/audit-iam-analyser.txt`
 
 | Question | Section |
 |---|---|
@@ -234,7 +252,8 @@ If a future run is denied anyway, section 4 says so and the fallback is in the s
 | What has been found, and in which account? | 4 — `resourceOwnerAccount` names the account the exposed resource is in |
 | Did something not answer? | 6 |
 
-**This is the one script here that does not run from a profile, and the absence is the design.** The
+**This script and `cloudshell/management-quotas.sh` are the two that do not run from a profile, and the
+absence is the design.** The
 organization analyzer lives in **Audit** (Stage 1b step 8.2), and no project persona holds an assignment
 there — [`docs/ORGANIZATION.md`](../docs/ORGANIZATION.md) records that as permanent. The only identity that reaches
 Audit is `AWS Control Tower Admin`, which D33/D34 keep in the console. So the run is CloudShell inside
@@ -253,7 +272,7 @@ near-empty account and raises nothing, which is why the `type` is a checked fiel
 
 | Question | Section |
 |---|---|
-| What is the organization id, and is `FeatureSet` `ALL` (which RCPs require)? | 1 — `ORG_ID`, printed as a named variable because it is the value `aws:ResourceOrgID` and `aws:PrincipalOrgID` are compared against, and what `render.sh` puts in place of `<ORG_ID>` |
+| What is the organization id, and is `FeatureSet` `ALL` (which RCPs require)? | 1 — `ORG_ID`, printed as a named variable because it is the value `aws:ResourceOrgID` and `aws:PrincipalOrgID` are compared against, and what `render.py` puts in place of `<ORG_ID>` |
 | Which policy types may be attached at all? | 1.2 — the same reading as `list-identities.txt` 2.2, kept here so this file stands alone |
 | What is an OU's **id**, its **ARN** (which `enable-control` takes), or its **full path** (which `aws:PrincipalOrgPaths` takes)? | 2 |
 | What is already attached to this node, and is it AWS's or ours? | 3 — one block per node, one line per policy type |
@@ -285,7 +304,7 @@ report keeps them apart rather than tidying them together.
 **`NoSuchPublicAccessBlockConfiguration` is the "not set" answer, not a failure**, and it is what to expect
 before Stage 1c step 7.4 — so it is reported as `NOT SET` in sections 2 and 3 and kept out of the failure
 section. The other direction matters as much: **a missing account is not a passing account.** Management,
-Log Archive and Audit hold no project persona, so they are read from CloudShell (`./aws/account-bpa.sh -`)
+Log Archive and Audit hold no project persona, so they are read from CloudShell (`./aws/account-bpa.py -`)
 and recorded by hand; `Staging` and every Sandbox beyond the first have no profile yet, and `EXC-01` is not
 ours. An account in neither section 3 nor section 4 is the hole this snapshot exists to expose.
 
@@ -367,10 +386,10 @@ a correctly-named bucket as missing.
 | What is the Studio endpoint's real service name (verification (i)), does CodeArtifact exist here (8.4), and which services can carry a policy at all? | 7 |
 | Which accounts is nobody measuring? | 9 — Staging's list (8.3) is unmeasurable until the vend |
 
-**`networking.sh` and `egress.sh` split one stage the way the stage itself does, and the split is a
-cadence.** `foundation/` is `[P]` and never destroyed, so `networking.sh` is run at each vend, after each
+**`networking.py` and `egress.py` split one stage the way the stage itself does, and the split is a
+cadence.** `foundation/` is `[P]` and never destroyed, so `networking.py` is run at each vend, after each
 Stage 3 pass, and on **both sides of a lifecycle cycle** — the diff of two runs *is* the stability
-deliverable. `egress/` is `[E]` and dies with the session, so `egress.sh` is run at the session's two ends:
+deliverable. `egress/` is `[E]` and dies with the session, so `egress.py` is run at the session's two ends:
 after `make up` (is the set right) and after `make down` (is anything still burning — the one question
 nothing else in this design asks, since D12 declined the budget alerts). Both are **control-plane
 readings**: the stage's behavioural proofs — `dnf` through the endpoint, `NXDOMAIN` from Staging, the probe
@@ -379,23 +398,23 @@ for them (Lesson 20's rule: configuration for configuration questions, probes fo
 
 ## The four written for Stage 2, and the one thing they have in common
 
-**Written 2026-08-15**: `org-delegation.sh`, `import-ids.sh`, `tf-backends.sh` and `quotas.sh`.
+**Written 2026-08-15**: `org-delegation.py`, `import-ids.py`, `tf-backends.py` and `cloudshell/management-quotas.sh`.
 [Stage 2](../docs/plan/stages/stage-02-terraform-foundation.md) is the first stage that has to **feed an
 AWS-generated identifier back into a command** rather than read it, and that is a different job from every
 snapshot above. A snapshot tolerates a stale line because a human reads it and notices; **an import id is
 pasted into a state file, and a wrong one produces an orphan and a create rather than an error.** So the
 three Stage 2 scripts are stricter about one thing than the rest of this folder: each of them says out loud
-what it is *not* authoritative about — `import-ids.sh` owns the id and not the Terraform address,
-`org-delegation.sh` owns the delegation's scope and not whether a write will land, `tf-backends.sh` owns
+what it is *not* authoritative about — `import-ids.py` owns the id and not the Terraform address,
+`org-delegation.py` owns the delegation's scope and not whether a write will land, `tf-backends.py` owns
 what is there and not what should be.
 
-**One defect was found and fixed in an existing script at the same time.** `org-policies.sh` §1 listed ids
+**One defect was found and fixed in an existing script at the same time.** `org-policies.py` §1 listed ids
 for `SERVICE_CONTROL_POLICY` only and reduced the RCP to a presence check, so **three of the ten attached
 documents had no id in any snapshot** and existed only in the 1c log. All four types now carry theirs.
 
 ## The two written for Stage 3, and what their first run already found
 
-**Written 2026-08-15**: `networking.sh` and `egress.sh`, from the
+**Written 2026-08-15**: `networking.py` and `egress.py`, from the
 [Stage 3](../docs/plan/stages/stage-03-networking.md) roteiro *before* the stage starts — because the stage's
 own validations are exactly the kind of reading that otherwise gets done once, in one console tab, per
 account. **Their first run measured something no plan file had:** every vended account carries an
@@ -408,21 +427,32 @@ rows tied to that decision, so today's known state reads clean and a *new* devia
 Keep the shape, so that one file explains all of them:
 
 - **Read-only.** A script that changes something does not belong in `aws/`.
+- **Build on [`awslib`](awslib/__init__.py)**, the package beside the scripts: `context`
+  (repo root, output dir, the CloudShell fallback), `awscli` (the CLI as a subprocess, with
+  `run`'s capture/tolerate semantics), `report` (sections, `column -t` tables, the
+  failed-calls log), `profiles` (discovery and the preflight). The scripts shell out to the
+  `aws` CLI rather than using an SDK on purpose: the report prints the exact command above
+  each block, and the battery reads the CLI's error wording - both are the contract.
+  `awslib` must stay standard-library-only and must import nothing from outside `aws/`,
+  or the CloudShell fallback dies.
+  **[`cloudshell/`](cloudshell/management-quotas.sh) is the deliberate exception**: its two scripts run
+  where neither uv nor the repository may exist, so they stay standalone shell — one
+  self-contained file each, no `awslib`, uploadable alone.
 - **One profile per script**, named at the top, with the reason that profile can see what it sees — and
   **name the SSO user behind it in the table above**, since a profile is a *(account, permission set)* pair
   and the user is a second fact, not a restatement of it.
-  **`AZs.sh`, `account-bpa.sh` and `declarative-ec2.sh` are the exceptions, and they are what an exception
+  **`AZs.py`, `account-bpa.py` and `declarative-ec2.py` are the exceptions, and they are what an exception
   has to look like:** in all three, the subject is a *per-account* fact whose meaning is the comparison
   **between** accounts — an AZ name→ID mapping is only interesting next to another account's, and a setting
   that is right in five accounts and unset in the sixth is the sixth account's hole. A single-profile version
   would answer nothing. All three pay the rule back by printing the caller ARN of every profile in section 1
   — which is what naming one profile at the top exists to make visible. Multi-profile is not a licence; it is
   for a script whose subject is the difference between accounts.
-- **Output to `aws/output/<script-name>.txt`**, one file per script, `mkdir -p` its own folder.
-- **Print the command above its output** — `show` in `list-identities.sh` — so any line can be re-derived
+- **Output to `aws/output/<script-name>.txt`**, one file per script (`awslib.context` creates the folder).
+- **Print the command above its output** — `Report.show` — so any line can be re-derived
   by hand, and prefer `--output table` over post-processing.
-- **Share arguments through shell variables** (`MGMT_ID`, `ROOT_ID`, `IDS`, `INST`), printed as
-  `NAME=value` where they are set, so a reader can re-run any later command.
+- **Print reused identifiers as `NAME=value` lines** (`MGMT_ID`, `ROOT_ID`, `IDS`, `INST`) where they are
+  resolved, so a reader can re-run any later command by hand.
 - **Log every failed call into a final section** rather than letting it read as an empty result.
 - **Number the sections** and list them in the header, then add the row to the table above and to the
   question table.

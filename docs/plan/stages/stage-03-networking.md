@@ -38,7 +38,7 @@ subnets, no IGW, a flow log at 90 days, **and an S3 gateway endpoint on the defa
 policy** (Lesson 17: a service that sets itself up creates resources nobody chose). Data Governance has
 one too, so D22's "no VPC at all" is today an intention rather than a state (Lesson 5); all six overlap
 each other by construction. The record is [`docs/AWS_STATE.md`](../../AWS_STATE.md) §C; the measurement is
-`./aws/networking.sh` (checks `NT-1`) and `./aws/egress.sh` (`EG-1`), written for this stage. **Step 0
+`./aws/networking.py` (checks `NT-1`) and `./aws/egress.py` (`EG-1`), written for this stage. **Step 0
 decides their fate, and the Account Factory network configuration half of it must land before the
 `Staging` vend** — otherwise the next account arrives with one more.
 
@@ -236,7 +236,7 @@ why this half must land **before the `Staging` vend**. The existing six are then
 account. **Verify at execution (verification vi)** whether the hand-deletion leaves the stack instance
 reporting drift and whether anything ever reconciles it; record the answer either way.
 
-**0.4 — Close the loop by re-running `./aws/networking.sh`**: the `NT-1` notes disappear with the VPCs,
+**0.4 — Close the loop by re-running `./aws/networking.py`**: the `NT-1` notes disappear with the VPCs,
 and the `docs/AWS_STATE.md` §C row is updated in the same sitting — a row describing a state that no longer
 exists is worse than no row.
 
@@ -275,7 +275,7 @@ plan of every VPC, and subnets are free.
 list position.** The measurement found all six measured accounts identical, so position *would* work today
 — it is rejected because `Staging` and every Stage 14 Sandbox get their own mapping at vend time, and the
 failure is silent: both peerings carry constant traffic and cross-AZ is USD 0.01/GB each way, with no error
-anywhere. Reasoning in `docs/plan/architecture.md` §4.1; the mapping itself is `./aws/AZs.sh`.
+anywhere. Reasoning in `docs/plan/architecture.md` §4.1; the mapping itself is `./aws/AZs.py`.
 
 #### 2. Gateways, route tables, NACLs, security groups
 
@@ -348,7 +348,7 @@ associations:**
 (Terraform's destroy of `aws_route53_vpc_association_authorization` does the equivalent) — it is not
 promised to vanish on its own, so verify the observed lifecycle at execution and record it. What is
 certain either way: a re-created association after a VPC rebuild needs a **fresh** authorization, and a
-pending authorization whose second half never ran is visible in `./aws/networking.sh` §7. Both zones are
+pending authorization whose second half never ran is visible in `./aws/networking.py` §7. Both zones are
 `[P]`, which makes this a once-per-account operation — and is the argument for putting the association in
 `foundation/` rather than anywhere `make down` can reach.
 
@@ -504,7 +504,7 @@ for the minutes a promotion or a build runs.
 ## Deliverables
 
 Each is written so its output differs between working and broken (Lesson 13). **The mechanical half of
-every reading below is `./aws/networking.sh` and `./aws/egress.sh`** ([`aws/INDEX.md`](../../../aws/INDEX.md)),
+every reading below is `./aws/networking.py` and `./aws/egress.py`** ([`aws/INDEX.md`](../../../aws/INDEX.md)),
 written for this stage; the probes carry only what a describe call cannot. Two throwaway `t4g.nano`
 probes — one in the Sandbox public subnet, one in the Production GitLab subnet — carry the reachability
 proofs and are destroyed in the same sitting; at ~USD 0.004/h that is the cheapest honest evidence available
@@ -523,7 +523,7 @@ before Stage 4 exists.
   probe on the GitLab port; the same probe reaches **nothing** in a Production subnet outside the permitted
   one; `aws ec2 describe-vpc-peering-connections` in **Staging** returns empty, which is the proof that the
   missing peering is missing on purpose — **deferred until the vend**, since the account does not exist;
-  until then `NT-3`/`NT-6` in `./aws/networking.sh` hold the near half: no measured account routes or peers
+  until then `NT-3`/`NT-6` in `./aws/networking.py` hold the near half: no measured account routes or peers
   toward `10.40.0.0/16`.
 - **The perimeter allows what it must and denies what it must**, from a private-subnet probe with no NAT
   route: `aws s3 ls s3://<a bucket outside the organization>` is **denied** through the gateway endpoint,
@@ -537,13 +537,13 @@ before Stage 4 exists.
 
 1. Compare the `foundation/` resource IDs before and after a `make down`/`make up` cycle, by reading the
    plan output rather than by trusting the target list — and as a `diff` of two runs of
-   `./aws/networking.sh`, one either side of the cycle: only the timestamp may change.
+   `./aws/networking.py`, one either side of the cycle: only the timestamp may change.
 2. Confirm no route table in any account carries a **non-local** destination inside `10.40.0.0/16` — a
    vended Staging VPC's own `local` route is the one legitimate appearance, and the original wording
-   ("no destination") would have failed against it. Mechanised as `./aws/networking.sh` `NT-3`, which
+   ("no destination") would have failed against it. Mechanised as `./aws/networking.py` `NT-3`, which
    excludes `local` routes for exactly that reason.
 3. **Destroy both probes and delete the temporary DNS record** when the checks pass, and read
-   `./aws/egress.sh` §6 (the burn meter) on the way out.
+   `./aws/egress.py` §6 (the burn meter) on the way out.
 
 ## Cost
 
@@ -592,7 +592,7 @@ Record every answer, including the ones that come out fine.
 
 | # | Question | Step |
 |---|---|---|
-| i | Does the `sagemaker.studio` endpoint use the non-standard `aws.sagemaker.<region>.studio` service name rather than the `com.amazonaws.*` form? **Answered 2026-08-15, read-only** (`./aws/egress.sh` §7, the service catalog): **yes** — `aws.sagemaker.us-west-2.studio` is listed in exactly that form, and 8.4's two CodeArtifact services both exist in `us-west-2` | 8.3 |
+| i | Does the `sagemaker.studio` endpoint use the non-standard `aws.sagemaker.<region>.studio` service name rather than the `com.amazonaws.*` form? **Answered 2026-08-15, read-only** (`./aws/egress.py` §7, the service catalog): **yes** — `aws.sagemaker.us-west-2.studio` is listed in exactly that form, and 8.4's two CodeArtifact services both exist in `us-west-2` | 8.3 |
 | ii | Is `lakeformation` actually called from the VPC in the flows this project uses, or only service-side? If only service-side, it leaves the core list at Stage 6 | 8.2 |
 | iii | Does the `dnf` path work through the gateway endpoint with **no NAT route at all**, i.e. is the allow-list of 9.3 complete? | 9.3 |
 | iv | Does a second `apply` of `production/foundation/` add the accepters and authorizations without touching what pass 1 created? | pass 2 |
@@ -609,7 +609,7 @@ Record every answer, including the ones that come out fine.
   hanging rather than as an `AccessDenied` anyone reads.
 - **A forgotten `egress/` costs ~USD 4.08 per day** at 0.170/h, and since the budget alerts were skipped by
   decision (D12) nothing *alerts* until the end of the month (`docs/plan/cost-model.md`). The manual instrument
-  that risk gets is `./aws/egress.sh` §6, the burn meter — run it at the end of every session; zero
+  that risk gets is `./aws/egress.py` §6, the burn meter — run it at the end of every session; zero
   everywhere is D11 working.
 
 ---

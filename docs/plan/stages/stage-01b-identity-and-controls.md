@@ -537,7 +537,7 @@ both now, because it is the one act in this stage that can lock the only adminis
 
 - **Do**, under each of `awsds-infra-sandbox-1`, `awsds-infra-dev` and `awsds-infra-prod`:
   `aws ec2 describe-availability-zones --query 'AvailabilityZones[].[ZoneName,ZoneId]'`. **Now scripted** as
-  [`aws/AZs.sh`](../../../aws/INDEX.md), which runs every `awsds-*` profile and compares them — written during
+  [`aws/AZs.py`](../../../aws/INDEX.md), which runs every `awsds-*` profile and compares them — written during
   this step so the check survives each future vend as a re-run rather than as a remembered command.
 - **Why it has a bill attached.** AWS maps AZ names to physical datacenters independently per account, so
   `data.aws_availability_zones` indexed by position can place "the same" AZ in different datacenters.

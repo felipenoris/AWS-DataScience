@@ -25,8 +25,9 @@ All infrastructure will be deployed in the `us-west-2` Region.
 
 ## Tools installed in the current environment
 
-`terraform` **1.15.8**, the `aws` client, `uv` **v0.12.5**, `jq`, and — Stage 2 step 6.1, 2026-08-15 —
-`pre-commit` **4.6.2**, `checkov` **3.3.11** (`uv tool install`), `tflint` **v0.64.0**.
+`terraform` **1.15.8**, the `aws` client, `uv` **v0.12.5**, `jq`,
+`pre-commit` **4.6.2**, `checkov` **3.3.11** (`uv tool install`), `tflint` **v0.64.0**. Python **3.14**
+pinned by `uv` (`pyproject.toml`/`uv.lock`); `ruff` lints/formats.
 
 ## `secrets` folder
 
@@ -98,7 +99,7 @@ write anything into it. Claude can read the files in this folder to gather infor
 | [`docs/REFERENCES.md`](docs/REFERENCES.md) | Every internet link used as a reference, added on the interaction that used it |
 | [`README.md`](README.md) | How the AWS resources are structured, and the project layout, so people can understand the components |
 | [`terraform-live/README.md`](terraform-live/README.md) | How the deployed tree is organised. Updated when an account folder or a top-level rule changes — **never a copy of the slice tree**, which lives in `docs/plan/conventions.md` §6 |
-| [`terraform-live/identity/org-policies/POLICIES.md`](terraform-live/identity/org-policies/POLICIES.md) | One row per entry in **every** document in `policies/`, all four policy types: what it does, why, and what it does once attached. **Reviewed in the same sitting as any policy change**, attachments included. `./terraform-live/identity/org-policies/check-index.sh` decides the mechanical half; whether a row is still *true* is the reading |
+| [`terraform-live/identity/org-policies/POLICIES.md`](terraform-live/identity/org-policies/POLICIES.md) | One row per entry in **every** document in `policies/`, all four policy types: what it does, why, and what it does once attached. **Reviewed in the same sitting as any policy change**, attachments included. `./terraform-live/identity/org-policies/check-index.py` decides the mechanical half; whether a row is still *true* is the reading |
 | [`docs/PRICING.md`](docs/PRICING.md) | A row for every new AWS service referenced |
 
 # Claude memory
@@ -159,7 +160,7 @@ its `Consumes` row lists.
 | Running an `aws` command by hand, or signing in | [`aws/AWS-CLI.md`](aws/AWS-CLI.md) — the recipes, and which identity runs them |
 | "What would an institution do?" | [`docs/plan/institutional-delta.md`](docs/plan/institutional-delta.md) — so a lab compromise is not learned as a pattern |
 | Root is needed, or its alarm chain is being changed | [`docs/plan/runbooks/break-glass.md`](docs/plan/runbooks/break-glass.md) |
-| **A policy is about to be attached, or was amended** | [`docs/plan/runbooks/scp-battery.md`](docs/plan/runbooks/scp-battery.md) — the probes, and the two distinguishable outcomes of each. **Running them is `./aws/probes/scp-battery.sh`** ([`aws/probes/README.md`](aws/probes/README.md)); amending the ceiling means editing `probes.sh` |
+| **A policy is about to be attached, or was amended** | [`docs/plan/runbooks/scp-battery.md`](docs/plan/runbooks/scp-battery.md) — the probes, and the two distinguishable outcomes of each. **Running them is `./aws/probes/scp-battery.py`** ([`aws/probes/README.md`](aws/probes/README.md)); amending the ceiling means editing `probes.py` |
 | Explaining the design to someone | [`README.md`](README.md) — the argument for the account split and the three distinctions |
 | How the plan got here | [`docs/plan/history.md`](docs/plan/history.md) — almost never |
 
@@ -169,9 +170,8 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
 ### Current position
 
 - **The landing zone is closed — Stages 0-1d DONE (2026-08-15)** — except the `Staging` vend, held on the
-  account cap: an **open AWS support ticket** (`./aws/quotas.sh` re-asks, from Management only; the
-  deferral's debts are one list in Stage 1a). Ten policy documents, four types, attached — **six on the
-  root, four per-OU** — battery 93/93. The `docs/log/` files are authoritative.
+  account cap: an **open AWS support ticket** (`aws/cloudshell/management-quotas.sh` re-asks). Ten policy documents, four types, attached — **six on the
+  root, four per-OU** — battery 93/93.
 - **Stage 2 IN PROGRESS. 5.0 and 5.1 CLOSED (2026-08-15); INT-20 did not bite.** The delegation is
   **exercised, not merely present** (Lesson 26), so **`org-policies/` holds all ten documents**; the
   delegation itself is hand-applied and **stays out of Terraform** (`POLICIES.md`/`INV-15`). AWS rejects
@@ -180,29 +180,27 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
 - **Open question 11 closed (2026-08-15):** 5.1's principal is the *account*, so **CT Admin reaches policy
   writes through `Identity`** — nothing it did not hold, so the assignment **stays**; the fix is **step
   5.1a**, unapplied. **1b 8.3's alarm is blind to this path**; CloudTrail is the only residual.
-- **Stage 2 steps 1, 6 and 9 CLOSED (2026-08-15).** Five `bootstrap/` slices — no `staging/` — with a
-  byte-identical `versions.tf` (`~> 1.15`, `aws ~> 6.60`) and one lock file at 6.60.0 covering three
-  platforms; `scripts/gen-backend-hcl.sh` is the single source of the backend literals; **the §6 tree is
-  deliberately not on disk** — a slice folder is created by the stage that writes its first `.tf`.
+- **Stage 2 steps 1, 6 and 9 CLOSED (2026-08-15).** Five `bootstrap/` slices — no `staging/` — one
+  byte-identical `versions.tf` (`~> 1.15`, `aws ~> 6.60`), one lock file; `scripts/gen-backend-hcl.py` is the single source of the backend literals; **the §6 tree is
+  deliberately not on disk** — a slice folder arrives with its first `.tf`.
   Step 9: `make check` (offline) / `make check-ou` (session), the same scripts behind three commit hooks,
   each seen failing. Per-OU attachments are **authored, not discovered** — `org-policies/attachments.json`,
-  read by 9.3 *and* step 5's `for_each`; discovering them reverses D37 on `Sandboxes`.
-  `check-plan-refs.sh` is **red** on pre-Stage-2 prose, in its own `make check-docs`.
-  **Next is step 2** (roteiro in the stage file): the project's first `terraform apply`.
-- **Stage 3 pre-instrumented (2026-08-15):** `aws/networking.sh`, `aws/egress.sh`. First run found **an
+  read by 9.3 *and* step 5's `for_each`.
+  `check-plan-refs.py` is **red** on pre-Stage-2 prose, in its own `make check-docs`.
+  **Next is step 2**: the project's first `terraform apply`.
+- **Stage 3 pre-instrumented (2026-08-15):** `aws/networking.py`, `aws/egress.py`. First run found **an
   Account Factory VPC in every vended account** (`docs/AWS_STATE.md` §C) — the stage's new **step 0** decides
   it, and its network-configuration half must land **before the `Staging` vend**.
 - **Standing rules that outlive their stages:** never add an `sts:` action to the RCP without reading
-  `CT.STS.PV.1`'s exclusion note (its first shape locked every SSO user out of every member account);
+  `CT.STS.PV.1`'s exclusion note;
   1d step 9 is the **only** sanctioned by-hand use of `AWSControlTowerExecution`; never resolve an
-  account by name; subnets anchor on AZ `zone_id` — run `./aws/AZs.sh` after every vend; check the SSO
+  account by name; subnets anchor on AZ `zone_id` — run `./aws/AZs.py` after every vend; check the SSO
   token before each probe block and read the denial *wording*, never the exit code; account-level BPA is
-  hand-managed, guarded by Stage 2's repository grep. **Log Archive and Audit hold no CLI profile**, so
-  nothing there is regression-testable (`CHK-1`/`CHK-2` and `org-policies.sh` §4 are the instruments).
+  hand-managed, guarded by Stage 2's repository grep. **Log Archive and Audit hold no CLI profile**
+  (`CHK-1`/`CHK-2` and `org-policies.py` §4 are the instruments there).
 - **Before reporting a gap, read the file that owns it:** unexercised denies and deliberate allowances →
   `POLICIES.md`; 1b residue and every "expected" reading → `docs/AWS_STATE.md`; the SMUS findings for Stages
-  5/6/10 → open questions 12-15, atop Stage 6 (load-bearing: the default notebook Spark runtime has no VPC
-  until Stage 6 disables it).
+  5/6/10 → open questions 12-15, atop Stage 6 (load-bearing for its notebook-VPC default).
 - **Deferred by decision — do not offer to close:** the USD 50 budget notifies nobody (D12); open question
   10's per-unit tokens wait for N=2; Config recorder left alone and Management unrecorded (Stage 12 hooks).
   **Every governed account sits under `us-west-2`** — Stages 4, 5 and 11 are committed there.
@@ -211,7 +209,11 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   `CROSS_ACCOUNT_VERSION` **4** + `SET_CONTEXT: TRUE`, values nobody set — and INT-13.
 - **The repository is not documentation-only:** the read-only `aws/` scripts, `terraform-live/` +
   `terraform-modules/` (**first `.tf` 2026-08-15**), `scripts/`, the `Makefile`, and the
-  `pre-commit`/`tflint`/`checkov` gates.
+  `pre-commit`/`tflint`/`checkov`/`ruff` gates. **Every script is Python 3 on `uv` since 2026-08-15**
+  (same paths, uv shebang) — shared code in `aws/awslib`, `scripts/repohygiene`,
+  `scripts/tfhygiene`; CloudShell = plain `python3` with `aws/` present. **Exception
+  `aws/cloudshell/`: `management-quotas.sh` + `audit-iam-analyser.sh` stay shell, standalone, for the
+  no-profile accounts; output `aws/output/cloudshell/`.**
 
 **Budget: ~2 KB.** State, not reasoning — **a bullet here that explains *why*, or that a stage file should
 be carrying, is a stale copy of something that already lives elsewhere.** Re-trim whenever a stage closes.

@@ -201,7 +201,7 @@ measurement can only speak for accounts that exist. `Staging` is unvended, D35 a
 Sandboxes, and each new account is assigned its own mapping at vend time. **The failure is silent** — two
 peered subnets land in different datacenters, nothing errors, and the only symptom is cross-AZ transfer at
 USD 0.01/GB each way on the two peerings D14 and D21 keep constantly busy. A rule that holds only while the
-account set is frozen is not a rule (Lesson 5). Re-run `./aws/AZs.sh` after each vend; with `zone_id`
+account set is frozen is not a rule (Lesson 5). Re-run `./aws/AZs.py` after each vend; with `zone_id`
 anchoring, a disagreement is information rather than a rebuild.
 
 Recorded for reference, from the check on 2026-08-07 and **corrected on 2026-08-08**: `sa-east-1` has

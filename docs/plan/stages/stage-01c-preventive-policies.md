@@ -69,9 +69,9 @@ can be executed and one that has to be re-derived at the keyboard.
 
 | What 1b or the revision established | What it changes in this stage |
 |---|---|
-| **Only `SERVICE_CONTROL_POLICY` is `ENABLED` on the root** — measured 2026-08-11, `aws/list-identities.sh` §2.2 | 7.2 precondition 1 is confirmed, not assumed. All three other types still have to be enabled, and half of this stage has nowhere to attach until they are |
+| **Only `SERVICE_CONTROL_POLICY` is `ENABLED` on the root** — measured 2026-08-11, `aws/list-identities.py` §2.2 | 7.2 precondition 1 is confirmed, not assumed. All three other types still have to be enabled, and half of this stage has nowhere to attach until they are |
 | **The six SSO profiles all resolve**, and `awsds-policy-canary` is bound to `AWSAdministratorAccess` **permanently** (1b 3.1, 5, 5.1) | The canary has a profile of its own: 7.4's BPA call there is a CLI call like the other five, not a console visit. The battery runs from the laptop |
-| **The Organizations *read* surface answers from the Identity account** (1b step 4 and `aws/org-trusted-access-services.sh`, 2026-08-12) | 7.0's preflight reads can run under `awsds-infra-identity` without touching Management. **Writes cannot** — every `create-policy`, `attach-policy` and `enable-policy-type` here is CT Admin on Management |
+| **The Organizations *read* surface answers from the Identity account** (1b step 4 and `aws/org-trusted-access-services.py`, 2026-08-12) | 7.0's preflight reads can run under `awsds-infra-identity` without touching Management. **Writes cannot** — every `create-policy`, `attach-policy` and `enable-policy-type` here is CT Admin on Management |
 | **A permission set provisioned into Management cannot be altered from Identity** (1b 5.1) | Nothing in this stage alters a permission set — stated so it is not re-discovered. It does mean that if a policy attached here breaks `awsds-policy-canary`, the repair is CT Admin on Management, not the Identity profile |
 | **`AWSOrganizationsFullAccess` → `AWSControlTowerAdmins` reaches every vended account** (measured 2026-08-11; `docs/AWS_STATE.md` A.1) | 7.5's `organizations:LeaveOrganization` deny stops being hygiene and becomes the answer to a measured path. Its reach is [`docs/plan/open-questions.md`](../open-questions.md) item 11, and this stage is where it gets answered |
 | **`CLAUDE.md` now names six SageMaker Unified Studio features as objectives** (2026-08-13) | 7.6 settles decision 1 **against the verified API surface** rather than against the feature names, and verification (viii) becomes a named list of actions instead of a question. See the box in 7.6 |
@@ -145,15 +145,15 @@ attached. Collect all of it in one pass, into `docs/log/log-stage-01c-preventive
 `create-policy`.
 
 > **RUN 2026-08-13, and it is now two scripts rather than a dozen commands with ids threaded between
-> them.** [`aws/org-policy-baseline.sh`](../../../aws/INDEX.md) covers steps 1, 2, 3 and 5;
-> [`aws/account-bpa.sh`](../../../aws/INDEX.md) covers step 4. Both are read-only, both write to
+> them.** [`aws/org-policy-baseline.py`](../../../aws/INDEX.md) covers steps 1, 2, 3 and 5;
+> [`aws/account-bpa.py`](../../../aws/INDEX.md) covers step 4. Both are read-only, both write to
 > `aws/output/`, and both are re-run rather than remembered — step 4 in particular is read three times
 > (before 7.4, after 7.4 and before 7.5, and at every vend).
 >
 > **What each numbered step below now says is what AWS answered**, with the command kept so it can be
 > re-derived. The one part still owed is **step 3**, which no profile can answer: it is a `controltower`
 > call, and a member account is told *"you must create a landing zone first"* — the member-account answer,
-> not evidence about the landing zone. Run `bash org-policy-baseline.sh -` in CloudShell on **Management**
+> not evidence about the landing zone. Run `bash org-policy-baseline.py -` in CloudShell on **Management**
 > as `AWS Control Tower Admin`.
 >
 > **Verification (x) is therefore answered: yes.** `ListPoliciesForTarget`, `DescribePolicy`,
@@ -241,7 +241,7 @@ Record the result per OU; 7.7 may not enable a control on an OU this call reject
 zone first`, which is what a *member* account is told; the API only answers in Management. So:
 
 ```bash
-bash org-policy-baseline.sh -
+bash org-policy-baseline.py -
 ```
 
 in CloudShell on **Management** as `AWS Control Tower Admin` (upload the script through *Actions → Upload
@@ -269,7 +269,7 @@ Archive and Audit have no profile** — run the same call for them from CloudShe
 
 **Measured 2026-08-13: all six accounts with a profile are `NOT SET`**, `awsds-policy-canary` included. So
 7.4 step 1 has real work in every one of them, nothing is a no-op, and decision 7 got neither easier nor
-harder. `./aws/account-bpa.sh` is the loop above with the failure modes separated — a `(failed)` profile is
+harder. `./aws/account-bpa.py` is the loop above with the failure modes separated — a `(failed)` profile is
 never counted as compliant, and `NoSuchPublicAccessBlockConfiguration` is reported as `NOT SET` rather than
 as an error. **The three accounts with no profile are still unread**; the same script with `-` answers each
 one from its own CloudShell.
@@ -325,7 +325,7 @@ a node, and remember the RCP budget is the tighter one** — 7.8 puts seven serv
   amendment a reading rather than a search.
   **The tracked files carry placeholders, and the paste comes from the rendered copy.** `<ORG_ID>` and the
   `Data` OU path appear in four documents between 7.5 and 7.8, and a value typed four times is eventually
-  wrong in one of them, in the silent direction (Lesson 14) — so `render.sh` fills them from the API into
+  wrong in one of them, in the silent direction (Lesson 14) — so `render.py` fills them from the API into
   untracked `aws/output/rendered-policies/`, refuses to leave a placeholder unsubstituted, and prints each
   document's size against the limit. It is also the shape Stage 2 needs, where the id comes from
   `data.aws_organizations_organization` rather than from a literal.
@@ -508,7 +508,7 @@ Two pairs interlock, and following the old "attach to the OUs, in this order" li
    be a list, or the one account nobody had a profile for is the one that keeps the hole. **Measured
    2026-08-13 (7.0 step 4): every one of the six accounts with a profile is `NOT SET`**, so none of this is
    a no-op and the list below is the work rather than a checklist to tick. The three without a profile are
-   still unread. **Re-run `./aws/account-bpa.sh` after setting them** — every row must read `ALL FOUR true`
+   still unread. **Re-run `./aws/account-bpa.py` after setting them** — every row must read `ALL FOUR true`
    *before* 7.5 attaches the deny:
    - `AWS Control Tower Admin`, from the console or CloudShell: **Management**, **Log Archive**, **Audit**.
    - `awsds-infra-sandbox-1`, `-dev`, `-prod`, `-data`, `-identity` (`aws s3control put-public-access-block`).
@@ -585,7 +585,7 @@ Tower guardrails (those go to registered OUs), so the budget there is spent only
 | `awsds-org-scp-require-tags.json` | organization root | 7.8's tag-forcing SCP — **not written yet**, because its scope is decision 5 and that is settled while executing |
 
 **The first two exist as of 2026-08-13** — written before anything was attached, which is the order 7.1
-asks for. They carry placeholders; `render.sh` produces the pasteable copy. The
+asks for. They carry placeholders; `render.py` produces the pasteable copy. The
 [folder's README](../../../terraform-live/identity/org-policies/README.md) carries what each document may not
 become.
 
@@ -1202,7 +1202,7 @@ measure something else.
   from 7.3 under `awsds-policy-canary` (`us-east-1` → `UnauthorizedOperation`, `us-west-2` →
   `DryRunOperation`), and confirm the *must still succeed* list — `iam:ListRoles`, `budgets:DescribeBudgets`,
   `ce:GetCostAndUsage`.
-  > **That pair is `./aws/probes/scp-battery.sh --phase region`, and the *before* reading is already
+  > **That pair is `./aws/probes/scp-battery.py --phase region`, and the *before* reading is already
   > taken** (2026-08-13): `us-east-1` came back `DryRunOperation` — allowed — while all four global-service
   > floor calls succeeded. So the phase currently reports one `FAIL`, and **that failing row is the
   > baseline**: it is what says the control is genuinely not enabled yet rather than enabled and inert.
@@ -1396,7 +1396,7 @@ measure something else.
     organization IAM Access Analyzer in Audit (1b step 8.2) reads resource policies across every account
     under `access-analyzer.amazonaws.com`. It is covered by the same `IfExists` pair — confirm it is, by
     checking that the analyzer still reports `ACTIVE` and still produces a finding count after the
-    attachment (`./aws/audit-iam-analyser.sh`), rather than by reading the JSON again.
+    attachment (`./aws/cloudshell/audit-iam-analyser.sh`), rather than by reading the JSON again.
   - **RCPs do not apply to the Management account at all**, so nothing here protects it and nothing here
     can lock it out. That is the same asymmetry D16 relies on.
 - **Tag policies** — standardize the mandatory tags from `docs/plan/conventions.md`, with a precision the
@@ -1498,7 +1498,7 @@ because they change what the documents above should say.
   Management, which is exempt. **Its deny half is never probed** — an out-of-organization principal is an
   identity this project cannot produce (Lesson 22), so only the floor is measured and the runbook's
   read-instead table carries the four statements.
-- **The declarative policy is measured by reading, with `./aws/declarative-ec2.sh`**, because the battery can
+- **The declarative policy is measured by reading, with `./aws/declarative-ec2.py`**, because the battery can
   only show that a *change* is refused, never what the setting **is**. Its four probes deliberately carry no
   `--dry-run`: a declarative policy is enforced in the service's control plane, so a dry-run form returns
   `DryRunOperation` whether or not the policy is attached.
@@ -1507,7 +1507,7 @@ because they change what the documents above should say.
 
 | Measurement | Result | What it means for the attach |
 |---|---|---|
-| `./aws/declarative-ec2.sh`, five profiled accounts | `image_block_public_access` **already** `block-new-sharing` and `serial_console_access` **already** off, in all five | Two of the four attributes are a **lock**, not a change. Only `snapshot_block_public_access` (`unblocked` → blocked) and `instance_metadata_defaults.http_tokens` (`not-set` → `required`) actually move state |
+| `./aws/declarative-ec2.py`, five profiled accounts | `image_block_public_access` **already** `block-new-sharing` and `serial_console_access` **already** off, in all five | Two of the four attributes are a **lock**, not a change. Only `snapshot_block_public_access` (`unblocked` → blocked) and `instance_metadata_defaults.http_tokens` (`not-set` → `required`) actually move state |
 | `ec2:RunInstances --dry-run` in `Development`, four tag forms | **all four** returned `DryRunOperation` | The tag SCP's before-reading. After the attach, the untagged and single-tag forms must read `DENY-SCP` and the fully tagged form must still read `DryRunOperation` — **a run where every row denies is the over-broad-`Resource` failure, not a strict pass** |
 
 `organizations describe-effective-policy --policy-type DECLARATIVE_POLICY_EC2` answers **`{}`** with the type
@@ -1616,7 +1616,7 @@ Record every answer in `docs/log/log-stage-01c-preventive-policies.md`, includin
 | # | Question | Step | Answer |
 |---|---|---|---|
 | iii | Do the hand-written SCPs/RCPs conflict with, or merely duplicate, the SCPs Control Tower manages itself? | 7.0 step 2 | **Duplicate on Config, nothing on CloudTrail, nothing on GuardDuty.** No conflict found. 7.5 rewritten accordingly |
-| x | Does the Organizations *policy* read surface answer from the Identity account? | 7.0 step 2 | **Yes**, all of it. 7.0 is a script (`aws/org-policy-baseline.sh`) except for its `controltower` section |
+| x | Does the Organizations *policy* read surface answer from the Identity account? | 7.0 step 2 | **Yes**, all of it. 7.0 is a script (`aws/org-policy-baseline.py`) except for its `controltower` section |
 | xi | Is a control enabled on `Interactive` inherited by the nested `Sandboxes` OU? | 7.7 | **Half-answered before it was asked:** `Sandboxes` carries no policy of its own at all, so the live question is now whether it is a registered target — 7.0 step 3 on Management |
 | viii | Which namespace does each Unified Studio action evaluate under, asked of `Data` as well as of `Workloads`? | 7.6 | **The domain is `datazone:*`** — `datazone:CreateDomain` plus the two administrator-supplied roles, no `sagemaker:Create*` in the path — **so the `Data` wildcard stands and nothing is widened.** `sagemaker:*` appears in the account a *project profile* targets, which D26 keeps out of Data Governance. `CreateSpace`, `CreateApp` and `StartSession` are all real names today, read off AWS's machine-readable action list. The table in 7.6 carries the whole answer |
 | xii | Does `ec2:modify-snapshot-attribute --dry-run` evaluate permissions before validating the snapshot id? | 7.3 / 7.5 | **No** — an invented id is rejected as `InvalidSnapshotID.Malformed` before authorization, `--dry-run` included, so no fake-id probe reaches the SCP. The statement is left exercised only through its AMI sibling, and [`docs/plan/runbooks/scp-battery.md`](../runbooks/scp-battery.md) records why that was accepted |

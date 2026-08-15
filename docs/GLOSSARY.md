@@ -51,7 +51,7 @@ are now officially just the acronym.
 | Acronym | Expansion | What it means here |
 |---|---|---|
 | **VPC** | Virtual Private Cloud | A private, isolated network inside an AWS account. One per account in this project, non-overlapping so they can be peered. |
-| **AZ** | Availability Zone | A physically separate datacenter within a region. AZ *names* (`us-west-2a`) are per-account labels and can point at different physical AZs in different accounts; the AZ *ID* (`usw2-az1`) is the stable identifier. This distinction has a bill attached, so **this project anchors subnets on the ID** (`docs/plan/architecture.md` §4.1). The current mapping: `./aws/AZs.sh`. |
+| **AZ** | Availability Zone | A physically separate datacenter within a region. AZ *names* (`us-west-2a`) are per-account labels and can point at different physical AZs in different accounts; the AZ *ID* (`usw2-az1`) is the stable identifier. This distinction has a bill attached, so **this project anchors subnets on the ID** (`docs/plan/architecture.md` §4.1). The current mapping: `./aws/AZs.py`. |
 | **CIDR** | Classless Inter-Domain Routing | The `10.20.0.0/16` notation for an address range. |
 | **IGW** | Internet Gateway | The VPC component that allows traffic to and from the public internet. |
 | **NAT** | Network Address Translation | Rewriting source addresses so many private hosts share one public address. A **NAT Gateway** lets private subnets reach the internet without being reachable from it — and is the single largest hourly cost in this project, which is why egress design B removes it. |

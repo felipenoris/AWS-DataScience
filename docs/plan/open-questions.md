@@ -27,7 +27,7 @@ what is genuinely still unanswered:
    an identical mapping (`us-west-2a` → `usw2-az2`, `b` → `az1`, `c` → `az3`, `d` → `az4`; the names are
    *not* in ID order). The full table is in
    [`docs/log/log-stage-01b-identity-and-controls.md`](../log/log-stage-01b-identity-and-controls.md), and
-   `./aws/AZs.sh` regenerates it into `aws/output/AZs.txt`.
+   `./aws/AZs.py` regenerates it into `aws/output/AZs.txt`.
    **Stage 3 anchors subnets on `zone_id` anyway** — this item used to say "if the mappings differ", and
    that conditional was written without knowing that the measurement can only ever speak for the accounts
    that exist. `Staging` is unvended and D35 plus [Stage 14](stages/stage-14-sandbox-vending.md) multiply
@@ -35,7 +35,7 @@ what is genuinely still unanswered:
    placement would work today and break silently on the first account that disagrees, at USD 0.01/GB each
    way across the two peerings D14 and D21 keep busy — **no error, only a line on the invoice**. Anchoring
    on `zone_id` costs a `.tfvars` entry now and a VPC rebuild later.
-   **What stays open is small and named:** re-run `./aws/AZs.sh` after every vend, and treat a disagreement
+   **What stays open is small and named:** re-run `./aws/AZs.py` after every vend, and treat a disagreement
    as information rather than as a problem — with `zone_id` anchoring it changes nothing, which is the point.
 4. **Layer assignments.** `[P]`/`[D]`/`[E]` are cost judgements based on estimates. Revisit them at Stage 12
    against the real bill — especially the interface endpoints (the largest hourly item, and since

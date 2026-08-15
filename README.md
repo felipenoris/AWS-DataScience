@@ -3,7 +3,7 @@
 Blueprint for using AWS as a Data Science infrastructure provider.
 
 - `CLAUDE.md` — the working rules, and where the current position is recorded. It is size-budgeted
-  (20 KB, enforced by `scripts/check-plan-refs.sh`), so narrative that grows lives in `docs/plan/`.
+  (20 KB, enforced by `scripts/check-plan-refs.py`), so narrative that grows lives in `docs/plan/`.
 - `docs/` — **the documentation tree**, and the only place documentation lives: the plan core, `docs/plan/`,
   `docs/log/`, and the reference files named below. Everything outside it is code, configuration, or the
   working rules themselves.
@@ -57,17 +57,41 @@ Blueprint for using AWS as a Data Science infrastructure provider.
   stage will change. Carries no identifiers and no reasoning on purpose — those live in the snapshot and in
   `docs/plan/decisions/`.
 - `docs/REFERENCES.md` — external references used along the way.
-- `scripts/` — repository hygiene, not infrastructure: `check-plan-refs.sh` validates the plan's internal
-  links and stable-ID references, and `gen-backend-hcl.sh` writes each slice's untracked `backend.hcl`. A
+- `scripts/` — repository hygiene, not infrastructure: `check-plan-refs.py` validates the plan's internal
+  links and stable-ID references, and `gen-backend-hcl.py` writes each slice's untracked `backend.hcl`. A
   `backend` block interpolates nothing, so the state bucket, the key and the **Region** have to be literals
   somewhere; that one place is a generated file which is not a `.tf` file and is never committed.
   Three more are the **checks over the Terraform tree** — no Region literal or index-selected AZ in a `.tf`,
   no `aws_s3_account_public_access_block` in any slice, no wildcard-account ARN in an identity-plane policy,
   and no OU left out of the authored attachment map.
 - `Makefile` — how those checks are run: `make check` offline, `make check-ou` with an SSO session. The same
-  scripts sit behind the `pre-commit` hooks, so the commit gate and the target cannot disagree. **There is
+  scripts sit behind the `pre-commit` hooks, so the commit gate and the target cannot disagree.
+  `make` itself is a convenience, not a dependency - every target is a direct call to scripts
+  that also run standalone - and `make clean` returns a clone to its just-cloned state: it
+  removes `aws/output/`, `.venv/` and the caches, by name, and never touches `secrets/`.
+  `make` itself is a convenience, not a dependency - every target is a direct call to scripts
+  that also run standalone - and `make clean` returns a clone to its just-cloned state: it
+  removes `aws/output/`, `.venv/` and the caches, by name, and never touches `secrets/`. **There is
   no CI yet** — GitLab is Stage 7 — and Stage 8 adds a third caller rather than a rewrite. `make up` /
   `make down` (D11) arrive with Stage 2 step 8.
+- `pyproject.toml`, `.python-version`, `uv.lock` — **every script in this repository but two is Python 3,
+  run through uv** (2026-08-15; they began as shell). The scripts keep their paths and carry the shebang
+  `#!/usr/bin/env -S uv run --quiet`, so `./scripts/<name>.py` and `./aws/<name>.py` resolve the pinned
+  interpreter and the three shared packages with no activation step: `aws/awslib` (the snapshot scripts'
+  common plumbing), `scripts/repohygiene` (project-file checks) and `scripts/tfhygiene` (Terraform-tree
+  checks) — the last two deliberately independent of AWS and of each other. Runtime dependencies: none,
+  standard library only, which is what keeps the CloudShell fallback (`python3 aws/<name>.py -`) working
+  where uv does not exist. The two scripts that exist *only* for CloudShell —
+  `aws/cloudshell/management-quotas.sh` and `aws/cloudshell/audit-iam-analyser.sh`, the readings of the
+  accounts no profile reaches — stay shell on purpose: standalone single files, needing no
+  environment, writing `aws/output/cloudshell/`. `ruff` (dev-only) lints and formats the tree
+  through `pre-commit`. A fresh clone needs no setup step: the first script invocation
+  bootstraps everything - `uv run` fetches the pinned interpreter if it is absent, creates
+  `.venv/` and installs the packages - so `uv sync` exists only as a way to do the same
+  thing ahead of time. A fresh clone needs no setup step: the first script invocation
+  bootstraps everything - `uv run` fetches the pinned interpreter if it is absent, creates
+  `.venv/` and installs the packages - so `uv sync` exists only as a way to do the same
+  thing ahead of time.
 
 ---
 

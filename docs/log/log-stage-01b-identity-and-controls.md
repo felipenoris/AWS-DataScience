@@ -734,6 +734,14 @@ $ aws accessanalyzer get-analyzer --region us-west-2 --analyzer-name awsds-org-e
 +-----------------------------+
 ```
 
+- **2026-08-15 — first authoritative read of the organization analyzer** (CloudShell inside
+  Audit, as `AWS Control Tower Admin`, via `aws/cloudshell/audit-iam-analyser.sh`, single-file
+  upload). CHECK OK: one analyzer, `awsds-org-external-access`, ORGANIZATION, ACTIVE, five
+  project tags, no archive rules; scan current. 35 ExternalAccess findings, all
+  `AWSReservedSSO_*` permission-set roles trusting the directory's SAML provider — the
+  assignment table restated, recorded as INV-16 in `docs/AWS_STATE.md`. Report stored at
+  `aws/output/cloudshell/audit-iam-analyser.txt`.
+
 - Ended step 8.2. Stage 1b complete.
 
 ---

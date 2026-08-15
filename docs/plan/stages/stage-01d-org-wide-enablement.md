@@ -194,7 +194,7 @@ buckets with a **`NotAction`** list and one exemption, `arn:*:iam::*:role/AWSCon
 `s3:PutBucketObjectLockConfiguration` is not in the list, so **the write this step asks for is denied to
 `AWS Control Tower Admin`, to the Log Archive account's administrators, and to every other principal in the
 organization.** Read the document before acting — it is one call from the Identity account and 1c's
-`./aws/org-policies.sh` already condenses it by `Sid`.
+`./aws/org-policies.py` already condenses it by `Sid`.
 
 Three things follow, and the third is the decision:
 
@@ -510,7 +510,7 @@ of a value nobody set: 11.2's last bullet.
 
 **Decision 10 was taken and it was yes**: all three controls are on `Security`, `ExemptAssumeRoot` set on
 `AWS-GR_RESTRICT_ROOT_USER` and deliberately absent from the access-key one (D16), both confirmed by
-reading the document (`CHK-1`/`CHK-2` in `./aws/org-policies.sh`) rather than by probing, because no
+reading the document (`CHK-1`/`CHK-2` in `./aws/org-policies.py`) rather than by probing, because no
 principal here is root (Lesson 22). **The step's one real unknown is answered: `Security` accepts
 `enable-control` even though it is Control Tower's foundational OU.** Control Tower packed the enablements
 in a **third** shape — a new document (`aws-guardrails-KAmzSQ`, `p-idgyiios`) for the Region control, the
@@ -543,7 +543,7 @@ any Region** — the two accounts holding the immutable copy of the trail and th
 
 #### 12.2 — The measurement problem, which is new here and has to be planned for
 
-**The battery cannot reach these two accounts.** `./aws/probes/scp-battery.sh` maps every probe's account
+**The battery cannot reach these two accounts.** `./aws/probes/scp-battery.py` maps every probe's account
 token to a **CLI profile**, and the infrastructure user has no assignment in Log Archive or Audit by design
 (`docs/ORGANIZATION.md`), so there is no profile to map. The alternatives, in order of preference:
 

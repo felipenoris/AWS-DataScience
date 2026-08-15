@@ -45,6 +45,23 @@ repos:
   # CLAUDE.md - rather than letting pre-commit build a second copy at a version nobody chose.
   - repo: local
     hooks:
+      # -------------------------------------------------- the Python scripts' own gate
+      # The repository's scripts are Python on the uv project in pyproject.toml
+      # (2026-08-15), so they get the same treatment the Terraform tree gets: a linter and
+      # a formatter, at the version the lock file pins (`uv run` binds to the project
+      # environment, never to whatever ruff is on PATH).
+      - id: ruff-check
+        name: ruff (lint)
+        entry: uv run --quiet ruff check
+        language: system
+        types: [python]
+
+      - id: ruff-format
+        name: ruff (format check)
+        entry: uv run --quiet ruff format --check
+        language: system
+        types: [python]
+
       # ---------------------------------------------------------------- step 9's own checks
       # THE SAME SCRIPTS `make check` CALLS, and that is the point: a commit gate and a target
       # that disagree are two rules. Stage 8 step 6 adds a third caller - .gitlab-ci.yml - and
@@ -52,14 +69,14 @@ repos:
       # and a commit gate that demands one is a gate nobody can run offline (`make check-ou`).
       - id: check-tf-conventions
         name: no region literals, indexed AZs or account-level BPA (9.1)
-        entry: ./scripts/check-tf-conventions.sh
+        entry: ./scripts/check-tf-conventions.py
         language: system
         pass_filenames: false
         files: \.tf$
 
       - id: check-iam-wildcards
         name: no wildcard-account ARN in the identity plane (9.2)
-        entry: ./scripts/check-iam-wildcards.sh
+        entry: ./scripts/check-iam-wildcards.py
         language: system
         pass_filenames: false
         files: ^terraform-live/identity/.*\.(json|tf)$
@@ -69,7 +86,7 @@ repos:
       # in POLICIES.md is a control nobody can explain a year later.
       - id: check-policies-index
         name: POLICIES.md still describes policies/ (9.4)
-        entry: ./terraform-live/identity/org-policies/check-index.sh
+        entry: ./terraform-live/identity/org-policies/check-index.py
         language: system
         pass_filenames: false
         files: ^terraform-live/identity/org-policies/(policies/.*\.json|POLICIES\.md)$

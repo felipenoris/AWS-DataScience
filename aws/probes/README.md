@@ -6,9 +6,9 @@ outcome means. The script runs them, classifies the answers and reports. Read th
 script every time.
 
 ```bash
-./aws/probes/scp-battery.sh              # read-back, then every phase
-./aws/probes/scp-battery.sh --phase ou   # one phase — see the table below
-./aws/probes/scp-battery.sh --list       # what would run, and in which account
+./aws/probes/scp-battery.py              # read-back, then every phase
+./aws/probes/scp-battery.py --phase ou   # one phase — see the table below
+./aws/probes/scp-battery.py --list       # what would run, and in which account
 ```
 
 | Phase | Measures | Notes |
@@ -25,8 +25,8 @@ therefore offers nothing to attempt. It is read, not probed.
 
 | File | What it is |
 |---|---|
-| `scp-battery.sh` | The driver: sessions, real-id resolution, classification, report, exit code |
-| `probes.sh` | **The battery itself, as data.** Amending the ceiling means editing this file and nothing else |
+| `scp-battery.py` | The driver: sessions, real-id resolution, classification, report, exit code. Runs on the repository's uv project like every other script (`#!/usr/bin/env -S uv run --quiet`) |
+| `probes.py` | **The battery itself, as data** - a list of `probe(...)` calls, no AWS in it. Amending the ceiling means editing this file and nothing else |
 | `readback.py` | Compares the SCPs *attached in the organization* against the documents in `terraform-live/identity/org-policies/policies/`, before any probe runs |
 
 ## The one folder under `aws/` that is not read-only
@@ -43,7 +43,7 @@ run deliberately, when a policy has just been attached or amended.
 
 ## The seam: the script measures, the human attaches
 
-**`scp-battery.sh` never creates, updates, attaches or detaches a policy.** Policy changes are made by
+**`scp-battery.py` never creates, updates, attaches or detaches a policy.** Policy changes are made by
 hand in the Management console, as `AWS Control Tower Admin`; the script only measures what the attached
 ceiling does. That separation is deliberate: a tool that could both change the ceiling and report on it
 would be able to report on a ceiling it had just changed, and this project's whole preventive layer rests
@@ -85,10 +85,11 @@ The report lands in `aws/output/scp-battery-<stamp>.txt`, untracked, with accoun
 
 ## Amending the battery
 
-Add the probe next to its statement's siblings in `probes.sh`:
+Add the probe next to its statement's siblings in `probes.py`:
 
-```bash
-probe <phase> <account> <expect> <allowed-regex|-> <flags|-> <label> -- <aws args...>
+```python
+probe(<phase>, <account>, <expect>, <allowed-regex or None>, <safety>, <label>,
+      [<aws args...>])
 ```
 
 - **`expect`** — `deny` (the ceiling must stop it) or `allow` (a cross-check, or the must-still-succeed
@@ -98,7 +99,7 @@ probe <phase> <account> <expect> <allowed-regex|-> <flags|-> <label> -- <aws arg
   (`EntityNotFoundException`, `ValidationException`, …). Omit it with `-` and anything that is not a deny
   is reported `UNTESTED` rather than assumed allowed. **Getting this field wrong is the one way to make
   the script lie**, and it lies in the flattering direction.
-- **`flags`** — `creates` for a creation-shaped probe with no `--dry-run`. The driver **refuses to run
+- **`safety`** — `creates` for a creation-shaped probe with no `--dry-run`. The driver **refuses to run
   those outside `Policy Canary`**; give it a `--dry-run` form or leave it on the canary. **There are seven,
   and `--dry-run` is not always the safer choice**: a declarative policy is enforced in the service's
   control plane, so a dry-run form returns `DryRunOperation` whether or not the policy is attached — it
