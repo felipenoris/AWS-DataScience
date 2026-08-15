@@ -281,6 +281,25 @@ lesson can be *recognised* without opening this file; the reasoning that makes e
    the general form outlives this project, and applies to any test rig that signs in through the system
    it is testing.
 
+25. **A borrowed session outlives the command that needed it, and every later error then describes the
+   wrong account.** Stage 1d step 9 had to write past `CTS3PV8`, which exempts `AWSControlTowerExecution`
+   alone, so the credentials were assumed from Management and exported into the shell. The write was not
+   made in that sitting. In the next one, three commands ran as that role without anybody choosing it:
+   `list-accounts` was denied — correctly, since it is a management-account API and the caller was now in
+   Log Archive — and because the `&&` chain stopped there, the account variable stayed **empty** and the
+   following command built `arn:aws:iam:::role/AWSControlTowerExecution`, producing a second
+   `AccessDenied` about the role failing to assume *itself*. **Two authorization errors, neither of them
+   an authorization problem, and both naming an account the operator had not selected.** The general form
+   has two halves and they compound. First: **an exported credential is ambient state with no visible
+   marker** — the prompt, the console tab and the CLI profile all still say what they said before, so the
+   only instrument is `get-caller-identity`, and `unset` of the three variables is the *pair* of assuming
+   them, not an optional tidy-up. Second: **a `&&` chain that carries an empty value forward converts a
+   missing input into an authorization failure**, which is strictly worse than crashing, because the error
+   text is plausible and sends the reader to the policy instead of to the variable. Resolution steps abort
+   on empty; borrowed sessions are unset in the same block that used them. Against Lesson 24, its
+   neighbour: there the harness could not survive the control it measured; here the operator could not
+   *see* the identity they were using, and the wrong identity was one they had legitimately created.
+
 ---
 
 *Plan core: [GENERAL_PLAN.md](../GENERAL_PLAN.md) · Decisions: [plan/decisions/INDEX.md](decisions/INDEX.md) · Stages: [plan/stages/INDEX.md](stages/INDEX.md)*

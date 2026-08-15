@@ -236,33 +236,30 @@ The `§` numbers inside `plan/` files are historical anchors, not addresses.
   it without reading that control's exclusion note.** Lesson 24 is the general form; the battery now
   records a lockout instead of aborting on it, and `classify` no longer reads a declarative policy's
   message *echoed by a successful read* as a deny.
-- **Stage 1a is done but for the `Staging` vend; 1b and 1c are DONE. Stage 1d is the landing zone's last
-  stage and is *in progress*: steps 11 and 12 done, step 10 half measured, step 9 untouched** — the `log/`
-  files are authoritative. 1a: Control Tower enabled
-  (`us-west-2`), budget set, `Development`, `Sandbox Account 1`, `Production`, `Data Governance`,
-  `Policy Canary` and `Identity` vended, centralized root access on, break-glass **tested 2026-08-09 on both
-  channels**.
-- **1d's roteiro was revised 2026-08-14 against 1c and four fresh readings, and three of its four steps
-  changed.** (a) **Step 9 is blocked as written**: Control Tower's own `CTS3PV8` on the `Security` OU is a
-  `Deny`+`NotAction` over the log buckets exempting **`AWSControlTowerExecution` alone**, and
-  `s3:PutBucketObjectLockConfiguration` is not in the list — so CT Admin cannot enable Object Lock, which is
-  **decision 9**. The step survives because the same `NotAction` **permits `s3:DeleteObjectVersion`**: AWS
-  protects the bucket's configuration and leaves its contents deletable. (b) **The bucket is
-  `aws-controltower-cloudtrail-logs-*`**, not `aws-controltower-logs-*`; the old prefix matches nothing and
-  returns a `None` that reads like a failed lock. CloudTrail log-file validation is **already `true`**, read
-  from Identity. (c) **11.2 is already satisfied** — `CROSS_ACCOUNT_VERSION` reads **4** with
-  `SET_CONTEXT: TRUE` in Data Governance with no lake, so verification (v) is answered, no
-  `put-data-lake-settings` is made, and what survives is the instruction to Stage 5 to carry **both** keys.
-  **Step 11 is now DONE** — 11.1 ran 2026-08-14, `ram.amazonaws.com` is the eighth trusted-access principal
-  and the RAM service-linked role exists in Management, so INT-11's org-level halves are settled and every
-  remaining INT-11 risk is Stage 5's. (d) **Step 12 is DONE and decision 10 was yes** — the Region ceiling
-  and both root-user controls are on `Security`, so **every governed account now sits under `us-west-2`**
-  and open question 16 is closed. `Security` **accepts `enable-control`** despite being foundational;
-  Control Tower packed it in a **third** shape (new document for the Region control, the pre-existing AWS
-  guardrail for the root ones, 11 → 13 statements). **Nothing here is regression-testable** — Log Archive
-  and Audit hold no CLI profile, so `CHK-1`/`CHK-2` and section 4 of `./aws/org-policies.sh` are the only
-  standing instruments, and the probes were by hand. It **commits Stages 4, 5 and 11 to `us-west-2`**:
-  `guardduty`, `securityhub` and `macie2` are not exempt.
+- **THE LANDING ZONE IS DONE — 1a, 1b, 1c and 1d all closed (2026-08-15)**, but for the `Staging` vend,
+  which is held on the account cap. The `log/` files are authoritative. 1a: Control Tower (`us-west-2`),
+  budget, six accounts vended, centralized root access, break-glass tested on both channels. 1d step 11
+  enabled RAM organization-wide sharing, so INT-11's org-level halves are settled and every remaining
+  INT-11 risk is Stage 5's; 11.2 needed no write (`CROSS_ACCOUNT_VERSION` **4** with `SET_CONTEXT: TRUE`
+  in a lakeless account), leaving an instruction to Stage 5 to carry **both** keys. 1d step 12 put the
+  Region ceiling and both root-user controls on `Security`, so **every governed account now sits under
+  `us-west-2`**, open question 16 is closed, and **Stages 4, 5 and 11 are committed to `us-west-2`**
+  (`guardduty`, `securityhub`, `macie2` are not exempt). Control Tower packed step 12 in a **third** shape
+  (11 → 13 statements). **Log Archive and Audit hold no CLI profile**, so nothing there is
+  regression-testable: `CHK-1`/`CHK-2` and section 4 of `./aws/org-policies.sh` are the standing
+  instruments and the probes were by hand.
+- **Step 9 is done: the org CloudTrail bucket is locked, `COMPLIANCE`/90 days (INV-14)**, written through
+  **`AWSControlTowerExecution` assumed from Management** — the only principal `CTS3PV8` exempts, and
+  recorded as **the only sanctioned by-hand use of that role**. The step survives `CTS3PV8` at all because
+  the same `NotAction` **permits `s3:DeleteObjectVersion` to everyone**: AWS protects the bucket's
+  configuration and leaves its contents deletable. **Decision 3 cost zero** — the lifecycle already keeps
+  every version 365 days — and what it created instead is a **floor: that lifecycle can never be shortened
+  below 90 days**, binding Stage 12 step 5. Verified on an object delivered *after* the write, not only on
+  the bucket. **Three traps recorded**: the trail's **`S3KeyPrefix` is the org id**, so a key carries it
+  twice and an `AWSLogs/`-only path lists empty; the account is **`Log Archive Account`**, so a name filter
+  returns `None` (`ORGANIZATION.md` now carries the mapping and the rule — **never resolve an account by
+  name**; derive the id from a resource, or read `aws/output/list-identities.txt`); and **a borrowed
+  session leaks into the shell**, making later errors name the wrong account (Lesson 25).
 - **10.3 is done and decision 4 is taken: the Config recorder is left alone, revisited at Stage 12 step 5.**
   One usage type only, `USW2-ConfigurationItemRecorded` (no rule evaluations), **USD 2.28 month-to-date of
   which USD 2.20 is a one-day enrollment spike**; recurring ~USD 0.5/month, five times under
@@ -412,9 +409,10 @@ The `§` numbers inside `plan/` files are historical anchors, not addresses.
 - **All thirty-six decisions are closed** ([`plan/decisions/INDEX.md`](plan/decisions/INDEX.md)). The four
   governing what happens next: **D32** (`SSOUserEmail`), **D33**/**D34** (who vends), **D35** (`Sandbox` is
   one per business unit; every other account is exactly one).
-- **The landing zone's second half is three stages, 1d is the last, and it is down to ONE item: step 9** —
-  decisions 9 then 3, the only permanent act in the stage, blocked as written by `CTS3PV8` and running, if
-  it runs, as `AWSControlTowerExecution` assumed from Management. Steps 10, 11 and 12 are done.
+- **Next is Stage 2 — the first Terraform**, and it inherits three written requirements from the landing
+  zone: the two ARN-keyed carve-outs need boundaries (BPA and D27), `InfrastructureAccess` is managed from
+  `awsds-infra-identity` while anything touching `AWSAdministratorAccess` runs as CT Admin on Management,
+  and the OU `for_each` must **recurse** (depth is 2, `Sandboxes` is nested).
 - **The identity seam, settled 2026-08-09 by review** (`plan/conventions.md`): **people** — users, groups,
   memberships — stay in the directory; **entitlements** — permission sets, boundaries, group→account
   assignments — are Terraform. So **1b creates one permission set and specifies seven**; the other six are
@@ -461,4 +459,6 @@ the reasoning that makes it *usable* is in the file. Recognising one is the sign
 23. **A managed service owns its artifacts' packing — bind to contents, never to an id or a name.**
 24. **A harness authenticates through the mechanism it measures — and the defence against the benign
     failure hides the serious one.**
+25. **A borrowed session outlives the command that needed it, and every later error names the wrong
+    account.**
 

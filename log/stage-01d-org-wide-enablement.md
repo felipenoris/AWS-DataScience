@@ -21,7 +21,7 @@ world that had changed — the revision they produced is in the stage file, not 
 
 ```
 Name:       aws-controltower-BaselineCloudTrail
-Bucket:     aws-controltower-cloudtrail-logs-859928915710-gcs-gsx
+Bucket:     aws-controltower-cloudtrail-logs-<Log Archive Account>-gcs-gsx
 IsOrganizationTrail: true      LogFileValidationEnabled: true      HomeRegion: us-west-2
 ```
 
@@ -262,7 +262,7 @@ AWSServiceRoleForResourceAccessManager  2026-08-14T18:47:23+00:00
 ```
 ~ $ aws ec2 create-key-pair --key-name probe-region --dry-run --region us-east-1
 
-aws: [ERROR]: An error occurred (UnauthorizedOperation) when calling the CreateKeyPair operation: You are not authorized to perform this operation. User: arn:aws:sts::859928915710:assumed-role/AWSReservedSSO_AWSAdministratorAccess_b65279a07fc16dfa/felipenoris@gmail.com is not authorized to perform: ec2:CreateKeyPair on resource: arn:aws:ec2:us-east-1:859928915710:key-pair/probe-region with an explicit deny in a service control policy: arn:aws:organizations::885931358757:policy/o-4z1leiit0c/service_control_policy/p-idgyiios. Encoded authorization failure message: OIau77IwNA-RjpafXihrUW41WAUxaBKeALVOZxxGdy7u-JcfuZW95DlcUImc3Szcfs9IIqFOYM2Z0v7obHBXpzuilc2XBGMKH9lT0YXWsxwKU1BEnTXoYeUm2ETiSsvvNDRPi5HO5QWipU9S8biTwVu97C4iZdiUjoscgwFFWZC2X4F68zYENY3NPZ0MgtC_fQiLquKBKm6Hav--_nupIRF-ikk7Zu3DJI9ZmCwmEu-zClu9Xfs3x5iriekEfwh4kSaOpI2c-0LU0KItVhQb6QWZWDI5fEmE9UP4D-lvUckYp5L1yWGhR7IooYGT_IiQo5XbcGyaGzwOLwZYeG4y6wffkqNx2sDlWWoLVi6xkSehdxr-b8WURyY9Qi8l6064yCtISKLPq3Vtz3uOAYvwetmAZ-W3l6KZlUiTV6tp2-CX_hslr_XypZcFlOVvasEEVznCsYAh56UxhYURyVxHmA5AIvuqSY7rwwsBc_uu61XCKwRvIwVQGNdeP_WexnEFyfJ2eddvqeqsSWN778FzMQq5WcYOVQLYsoIgoVanOhwNOvYbLzwjKE_VsaOJyxVoMLmPfCLS7G0qx6JxN735_0pEr0ZRJMqfWeamg3U7jspS7w3OD0jAeP94QW5jRE0bIIHRVYzfxvm3mHAKhVI2Rf8T3mAa_6PhvP3vR07tRZzY9_emmmIS-riGp9sDQfgyuGwd1y2j89NtiWOM1tqx0E8ziO5UpOk47ugvAUWeWTwwOBPSIGlrtr0Bbsmu7CJaNH-SM4nK20fmS9IzUlFbjgCpoPjRNtDAGSc_TPK2k1jjYVXigus4loakCTAELNKKwkuQEDh1h7jRz_ZsGlZaxkVZa4uaXq3nNM9ya60FJ4moQRRtzzV5KXD9c1AiSIKtj3GWChLostz-U53GiINh63c19pZMTjK_6NV_Kj77ymsukbVCb3kpmELSiHgv-OREj8BmEYmiLZZxPJouWJzaGvFUzKZMYQd-LGKoCyxQ0Hm3cGnRcmqB27549P1BLJpu5uRZG3ARrrnBaDihaXOgXcBMBF_RWIx5VfkxQM0crgAoNLSDmdScEVZggFilZgTZKXaON3gZ2B8iXWIMRYb3PBJ0cwVZh9ISr45CgqnRnonOs059OxNGv5lZluPMyA0IMxj5edr7dyiIPcrQOq3zBA9iuaOfMrh-UheZou0rlqvdhEdQ5AQQYLZ-nU1a847_Z518V7NIbBRPjnvIIlw9MsdA3dDDro_9i0qDEM-aNBxxQkQn4UBpqXFxx5_KadskONbspeBL4CXKIVZUBlYJSDR5UYsWePd8tN6YpL44cE24zgxPG-HgIcESrBIGdnY1oxdldWoIjjvYAstKRFLf0NOb8_w02mvfhuBn8GIP39yVBaBFJIL_atCJUYDx9MfNBfG_3IHY5cNQ6-vZvUY_WYAPyamsXbmbiRdZLzKkag6wxbVK1VaSol3tIcFapEGTQE6skdPJCSiEDnMTf2eJmfXMgG7yASyfpx7Gsgxgv8IEBycLKayCT_Db32yizxUBjQoK5zZZizU63C0WlD4gH2nsai6hahzHNMtROjFgXxqMlSIQVy58Rg5VcDoAFjlFTZ4FcoMJoBOE75WiIly1Kh5g8lTeEg7YkqFpRtTJPqMBUsQvFUQd_PniBh0lyvAyf0GRvgcUDlq_J_tXKrpLPxbVdmykd2cqiZ8J4xN0FgCbp7-u-Vp5JG4FdUzorohuznWFk-0R1QlNIDcJ7slGv2sLSKa1ar7CRw
+aws: [ERROR]: An error occurred (UnauthorizedOperation) when calling the CreateKeyPair operation: You are not authorized to perform this operation. User: arn:aws:sts::<Log Archive Account>:assumed-role/AWSReservedSSO_AWSAdministratorAccess_b65279a07fc16dfa/felipenoris@gmail.com is not authorized to perform: ec2:CreateKeyPair on resource: arn:aws:ec2:us-east-1:<Log Archive Account>:key-pair/probe-region with an explicit deny in a service control policy: arn:aws:organizations::<MANAGEMENT ACCOUNT>:policy/o-4z1leiit0c/service_control_policy/p-idgyiios. Encoded authorization failure message: OIau77IwNA-RjpafXihrUW41WAUxaBKeALVOZxxGdy7u-JcfuZW95DlcUImc3Szcfs9IIqFOYM2Z0v7obHBXpzuilc2XBGMKH9lT0YXWsxwKU1BEnTXoYeUm2ETiSsvvNDRPi5HO5QWipU9S8biTwVu97C4iZdiUjoscgwFFWZC2X4F68zYENY3NPZ0MgtC_fQiLquKBKm6Hav--_nupIRF-ikk7Zu3DJI9ZmCwmEu-zClu9Xfs3x5iriekEfwh4kSaOpI2c-0LU0KItVhQb6QWZWDI5fEmE9UP4D-lvUckYp5L1yWGhR7IooYGT_IiQo5XbcGyaGzwOLwZYeG4y6wffkqNx2sDlWWoLVi6xkSehdxr-b8WURyY9Qi8l6064yCtISKLPq3Vtz3uOAYvwetmAZ-W3l6KZlUiTV6tp2-CX_hslr_XypZcFlOVvasEEVznCsYAh56UxhYURyVxHmA5AIvuqSY7rwwsBc_uu61XCKwRvIwVQGNdeP_WexnEFyfJ2eddvqeqsSWN778FzMQq5WcYOVQLYsoIgoVanOhwNOvYbLzwjKE_VsaOJyxVoMLmPfCLS7G0qx6JxN735_0pEr0ZRJMqfWeamg3U7jspS7w3OD0jAeP94QW5jRE0bIIHRVYzfxvm3mHAKhVI2Rf8T3mAa_6PhvP3vR07tRZzY9_emmmIS-riGp9sDQfgyuGwd1y2j89NtiWOM1tqx0E8ziO5UpOk47ugvAUWeWTwwOBPSIGlrtr0Bbsmu7CJaNH-SM4nK20fmS9IzUlFbjgCpoPjRNtDAGSc_TPK2k1jjYVXigus4loakCTAELNKKwkuQEDh1h7jRz_ZsGlZaxkVZa4uaXq3nNM9ya60FJ4moQRRtzzV5KXD9c1AiSIKtj3GWChLostz-U53GiINh63c19pZMTjK_6NV_Kj77ymsukbVCb3kpmELSiHgv-OREj8BmEYmiLZZxPJouWJzaGvFUzKZMYQd-LGKoCyxQ0Hm3cGnRcmqB27549P1BLJpu5uRZG3ARrrnBaDihaXOgXcBMBF_RWIx5VfkxQM0crgAoNLSDmdScEVZggFilZgTZKXaON3gZ2B8iXWIMRYb3PBJ0cwVZh9ISr45CgqnRnonOs059OxNGv5lZluPMyA0IMxj5edr7dyiIPcrQOq3zBA9iuaOfMrh-UheZou0rlqvdhEdQ5AQQYLZ-nU1a847_Z518V7NIbBRPjnvIIlw9MsdA3dDDro_9i0qDEM-aNBxxQkQn4UBpqXFxx5_KadskONbspeBL4CXKIVZUBlYJSDR5UYsWePd8tN6YpL44cE24zgxPG-HgIcESrBIGdnY1oxdldWoIjjvYAstKRFLf0NOb8_w02mvfhuBn8GIP39yVBaBFJIL_atCJUYDx9MfNBfG_3IHY5cNQ6-vZvUY_WYAPyamsXbmbiRdZLzKkag6wxbVK1VaSol3tIcFapEGTQE6skdPJCSiEDnMTf2eJmfXMgG7yASyfpx7Gsgxgv8IEBycLKayCT_Db32yizxUBjQoK5zZZizU63C0WlD4gH2nsai6hahzHNMtROjFgXxqMlSIQVy58Rg5VcDoAFjlFTZ4FcoMJoBOE75WiIly1Kh5g8lTeEg7YkqFpRtTJPqMBUsQvFUQd_PniBh0lyvAyf0GRvgcUDlq_J_tXKrpLPxbVdmykd2cqiZ8J4xN0FgCbp7-u-Vp5JG4FdUzorohuznWFk-0R1QlNIDcJ7slGv2sLSKa1ar7CRw
 ~ $ aws ec2 create-key-pair --key-name probe-region --dry-run --region us-west-2
 
 aws: [ERROR]: An error occurred (DryRunOperation) when calling the CreateKeyPair operation: Request would have succeeded, but DryRun flag is set.
@@ -481,6 +481,203 @@ RESULTS {"COUNT(*)":79,"accountId":"<Log Archive Account>"}
 
 - **Step 10 is closed. Stage 1d is down to step 9**, whose before-state was already read: no Object Lock,
   versioning `Enabled`, lifecycle expiring current and noncurrent versions at 365 days.
+
+### Step 9 — S3 Object Lock on the CloudTrail log bucket
+
+- **Preflight.** Login as CT Admin -> Log Archive Account -> AWSAdministratorAccess. The bucket name is
+  resolved from the trail rather than pasted from a document, since the trail is the only source that
+  cannot be stale. Log of commands executed on CloudShell:
+
+```
+~ $ BUCKET=$(aws cloudtrail describe-trails --region us-west-2 --query "trailList[?Name=='aws-controltower-BaselineCloudTrail'].S3BucketName | [0]" --output text) && echo "$BUCKET"
+aws-controltower-cloudtrail-logs-<Log Archive Account>-gcs-gsx
+
+~ $ aws s3api list-buckets --query "Buckets[?starts_with(Name,'aws-controltower-')].Name" --output text | tr '\t' '\n' | while read -r b; do echo "$b => $(aws s3api get-bucket-logging --bucket "$b" --query 'LoggingEnabled.TargetBucket' --output text)"; done
+aws-controltower-cloudtrail-access-logs-<Log Archive Account>-gcs-gsx => None
+aws-controltower-cloudtrail-logs-<Log Archive Account>-gcs-gsx => aws-controltower-cloudtrail-access-logs-<Log Archive Account>-gcs-gsx
+```
+
+- **The check that mattered: the target bucket appears only on the left of the arrow.** Nothing writes S3
+  server access logs into it, so enabling Object Lock does not silently stop access logging for a bucket
+  beside it. The CloudTrail bucket is a *source* of access logs, and its destination is the access-log
+  bucket, which is correctly left untouched.
+
+- **Two corrections to 9.1's names, both found here.** The access-log bucket is
+  **`aws-controltower-cloudtrail-access-logs-*`**, not `aws-controltower-access-logs-*`. And **there is no
+  `aws-controltower-config-*` bucket in this account** — only two `aws-controltower-*` buckets exist — which
+  confirms by inventory what 9.1 argued from policy: the Config bucket is in Audit.
+
+- **A first borrow succeeded before the preflight was finished, and that is what broke the next attempt.**
+  Login as CT Admin -> Management Account -> AWSAdministratorAccess. Log of commands executed on CloudShell:
+
+```
+$ eval $(aws sts assume-role --role-arn arn:aws:iam::<Log Archive Account>:role/AWSControlTowerExecution --role-session-name stage1d-objectlock --query 'Credentials.[`export AWS_ACCESS_KEY_ID=`,AccessKeyId,`export AWS_SECRET_ACCESS_KEY=`,SecretAccessKey,`export AWS_SESSION_TOKEN=`,SessionToken]' --output text | tr '\t' ' ' | sed 's/= /=/g')
+
+~ $ aws sts get-caller-identity --region us-west-2
+{
+    "UserId": "AROA4QN6B537DE4I3UXJA:stage1d-objectlock",
+    "Account": "<Log Archive Account>",
+    "Arn": "arn:aws:sts::<Log Archive Account>:assumed-role/AWSControlTowerExecution/stage1d-objectlock"
+}
+```
+
+  **Nothing was written from this session and it was never ended.** It stayed exported in the shell, which
+  is exactly the leak the next attempt then ran into — so the borrow was proven to work before the run
+  that appears to fail on permissions, and the two entries below describe one shell, not two problems.
+
+- **First attempt from Management, which failed and is recorded because the failure is instructive.** Login
+  as CT Admin -> Management Account -> AWSAdministratorAccess. Log of commands executed on CloudShell:
+
+```
+~ $ LOG_ARCHIVE=$(aws organizations list-accounts --query "Accounts[?Name=='Log Archive'].Id | [0]" --output text) && BUCKET=$(aws cloudtrail describe-trails --region us-west-2 --query "trailList[?Name=='aws-controltower-BaselineCloudTrail'].S3BucketName | [0]" --output text) && echo "$LOG_ARCHIVE / $BUCKET"
+aws: [ERROR]: An error occurred (AccessDeniedException) when calling the ListAccounts operation: You don't have permissions to access this resource.
+
+~ $ read -r AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY AWS_SESSION_TOKEN < <(aws sts assume-role --role-arn "arn:aws:iam::${LOG_ARCHIVE}:role/AWSControlTowerExecution" --role-session-name stage1d-objectlock --query 'Credentials.[AccessKeyId,SecretAccessKey,SessionToken]' --output text) && export AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY AWS_SESSION_TOKEN && aws sts get-caller-identity --region us-west-2
+aws: [ERROR]: An error occurred (AccessDenied) when calling the AssumeRole operation: User: arn:aws:sts::<Log Archive Account>:assumed-role/AWSControlTowerExecution/stage1d-objectlock is not authorized to perform: sts:AssumeRole on resource: arn:aws:iam:::role/AWSControlTowerExecution
+```
+
+- **Neither error was a permissions problem, and both messages named the wrong cause.** The shell still
+  carried exported credentials from an earlier borrowed session, so every command ran as
+  `AWSControlTowerExecution` in Log Archive Account, not as CT Admin in Management — `ListAccounts` is a
+  management-account API and was correctly denied to it. Because the `&&` chain stopped there,
+  `LOG_ARCHIVE` stayed **empty** and the next command built `arn:aws:iam:::role/...` with no account,
+  producing a second `AccessDenied` that described the role failing to assume itself. **Nothing was written
+  and `CTS3PV8` was never reached.**
+
+- **Two operational rules taken from this.** A borrowed-role session leaks into every later command in the
+  same shell, so **`unset` of the three credential variables is the pair of "leave the shell when done"**,
+  not an optional tidy-up. And a resolution step must **abort on an empty value instead of building an ARN
+  from it** — a chain that carries an empty variable forward turns a missing input into an authorization
+  error, which is the wrong thing to debug.
+
+- **Recovery and the write.** Login as CT Admin -> Management Account -> AWSAdministratorAccess. Log of
+  commands executed on CloudShell:
+
+```
+~ $ unset AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY AWS_SESSION_TOKEN; aws sts get-caller-identity --region us-west-2
+{
+    "UserId": "AROA44RM7XIS6JKXK5MYL:<sso-user>",
+    "Account": "<Management Account>",
+    "Arn": "arn:aws:sts::<Management Account>:assumed-role/AWSReservedSSO_AWSAdministratorAccess_a52d69579a1e4756/<sso-user>"
+}
+
+~ $ LOG_ARCHIVE=$(aws organizations list-accounts --query "Accounts[?Name=='Log Archive'].Id | [0]" --output text) && BUCKET=$(aws cloudtrail describe-trails --region us-west-2 --query "trailList[?Name=='aws-controltower-BaselineCloudTrail'].S3BucketName | [0]" --output text) && case "${LOG_ARCHIVE}:${BUCKET}" in ''*|*:''|None*|*:None) echo "ABORT: LOG_ARCHIVE='$LOG_ARCHIVE' BUCKET='$BUCKET'";; *) echo "OK $LOG_ARCHIVE / $BUCKET";; esac
+ABORT: LOG_ARCHIVE='None' BUCKET='aws-controltower-cloudtrail-logs-<Log Archive Account>-gcs-gsx'
+
+~ $ LOG_ARCHIVE=$(echo "$BUCKET" | grep -oE '[0-9]{12}' | head -1) && echo "derived: $LOG_ARCHIVE" && aws organizations list-accounts --query "Accounts[?Id=='${LOG_ARCHIVE}'].[Name,Id]" --output text
+derived: <Log Archive Account>
+Log Archive Account     <Log Archive Account>
+
+~ $ read -r AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY AWS_SESSION_TOKEN < <(aws sts assume-role --role-arn "arn:aws:iam::${LOG_ARCHIVE}:role/AWSControlTowerExecution" --role-session-name stage1d-objectlock --query 'Credentials.[AccessKeyId,SecretAccessKey,SessionToken]' --output text) && export AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY AWS_SESSION_TOKEN && aws sts get-caller-identity --region us-west-2
+{
+    "UserId": "AROA4QN6B537DE4I3UXJA:stage1d-objectlock",
+    "Account": "<Log Archive Account>",
+    "Arn": "arn:aws:sts::<Log Archive Account>:assumed-role/AWSControlTowerExecution/stage1d-objectlock"
+}
+
+~ $ aws s3api put-object-lock-configuration --region us-west-2 --bucket "$BUCKET" --object-lock-configuration '{"ObjectLockEnabled":"Enabled","Rule":{"DefaultRetention":{"Mode":"COMPLIANCE","Days":90}}}'
+
+~ $ aws s3api get-object-lock-configuration --region us-west-2 --bucket "$BUCKET"
+{
+    "ObjectLockConfiguration": {
+        "ObjectLockEnabled": "Enabled",
+        "Rule": {
+            "DefaultRetention": {
+                "Mode": "COMPLIANCE",
+                "Days": 90
+            }
+        }
+    }
+}
+
+~ $ unset AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY AWS_SESSION_TOKEN; aws sts get-caller-identity --region us-west-2
+{
+    "UserId": "AROA44RM7XIS6JKXK5MYL:<sso-user>",
+    "Account": "<Management Account>",
+    "Arn": "arn:aws:sts::<Management Account>:assumed-role/AWSReservedSSO_AWSAdministratorAccess_a52d69579a1e4756/<sso-user>"
+}
+```
+
+- **Filtering the account by name failed, and the fix is general.** No account is named `Log Archive`; it
+  is **`Log Archive Account`**, which `ORGANIZATION.md` had wrong. Rather than correct the string, the id
+  was **derived from the trail's own bucket name** — `list-buckets` returns only buckets the calling
+  account owns, so the preflight already proved which account that is. Matching on an account name is
+  matching on an editable field nobody guaranteed; the trail is the resource the step modifies
+  (Lesson 23).
+
+- **Decision 9 is taken: option A — borrow `AWSControlTowerExecution` from Management.** Declining leaves
+  open exactly what the step exists to close: `CTS3PV8`'s `NotAction` **permits `s3:DeleteObject` and
+  `s3:DeleteObjectVersion` to everyone**, so AWS protects the bucket's configuration and leaves its
+  contents deletable on purpose, and D34 made the principal this defends against permanent. A
+  project-owned second trail is a full second copy of CloudTrail in S3 to solve by duplication what one
+  call solves. **What option A actually costs is precedent, not privilege** — whoever performs it is
+  already administrator of that account, and the session adds exactly the set `CTS3PV8` denies. **So this
+  is recorded as the only sanctioned by-hand use of `AWSControlTowerExecution`; any future one is a new
+  decision.** The asymmetry that settled it: Object Lock cannot be undone, by us or by Control Tower, so
+  the usual "a landing-zone update silently reverts a manual change" risk does not apply — an update can
+  only fail, not revert.
+
+- **Decision 7 is now exercised rather than only measured.** The `CTS3PV8` exemption is keyed on
+  `ArnNotLike …:role/AWSControlTowerExecution` and it matched an assumed-role session, which is the same
+  property 1c measured on `aws:PrincipalArn`.
+
+- **Decision 3 is taken: 90 days, compliance mode — and its cost is zero, which the plan did not expect.**
+  9.3 treats a long retention as the one cost easy to create by accident. The 9.1 reading removes that
+  entirely: the bucket already expires current *and* noncurrent versions at 365 days, so for any retention
+  **below** 365 the objects would be kept that long regardless — **Object Lock adds no storage and no
+  spend.** The real trade is therefore how much of the trail is undeletable, and the only way to get it
+  wrong is to collide with the lifecycle. 90 days gives a quarter of detection window and keeps wide
+  clearance.
+
+- **This creates a standing constraint that outlives the stage: the lifecycle rule on this bucket may
+  never be shortened below the lock retention.** A future cost pass that cuts the 365 days to 90 or below
+  makes the landing zone's own expirations start failing against locked versions, and the retention cannot
+  be shortened to fix it. **This binds Stage 12 step 5.**
+
+- **Verification (iv) is provisional by construction.** Whether the adjustment survives a landing-zone
+  update, an account update or a re-enrollment is answerable only at the next such event — same shape as
+  (xiv) and as 1b's (vi).
+
+- **Step 9 is done, so Stage 1d is done, and with it the landing zone.**
+
+- Login as CT Admin on Log Archive Account.
+
+- **Verification that the default retention reaches new deliveries — which the bucket-level read-back does
+  not prove.** Login as CT Admin -> Log Archive Account -> AWSAdministratorAccess. Log of commands executed
+  on CloudShell (account ids replaced with names):
+
+```
+~ $ aws cloudtrail describe-trails --region us-west-2 --query "trailList[?Name=='aws-controltower-BaselineCloudTrail'].[S3BucketName,S3KeyPrefix,IsOrganizationTrail,IsMultiRegionTrail]" --output text; aws s3 ls "s3://$BUCKET/"
+aws-controltower-cloudtrail-logs-<Log Archive Account>-gcs-gsx   <org-id>    True    True
+                           PRE <org-id>/
+
+~ $ aws s3 ls --recursive "s3://$BUCKET/" | grep "/CloudTrail/us-west-2/$(date -u +%Y/%m)/" | tail -3
+2026-08-15 01:31:48       2457 <org-id>/AWSLogs/<org-id>/<Development Account>/CloudTrail/us-west-2/2026/08/15/..._20260815T0130Z_....json.gz
+2026-08-15 02:11:29      18588 <org-id>/AWSLogs/<org-id>/<Development Account>/CloudTrail/us-west-2/2026/08/15/..._20260815T0210Z_....json.gz
+2026-08-15 03:12:01      19678 <org-id>/AWSLogs/<org-id>/<Development Account>/CloudTrail/us-west-2/2026/08/15/..._20260815T0310Z_....json.gz
+
+~ $ aws s3api get-object-retention --region us-west-2 --bucket "$BUCKET" --key <the 03:12 key above>
+{
+    "Retention": {
+        "Mode": "COMPLIANCE",
+        "RetainUntilDate": "2026-11-13T03:12:00.325000+00:00"
+    }
+}
+```
+
+- **The control is exercised, not just configured.** The object was delivered at 03:12 on 2026-08-15,
+  *after* the write, and carries `COMPLIANCE` until 2026-11-13 — 90 days, applied by the bucket default
+  rather than by the caller. **Three deliveries the same day prove the lock did not stop delivery**, which
+  was the opposite risk. A pre-existing object returns `NoSuchObjectLockConfiguration` and that is correct:
+  a default retention binds objects written after it, never retroactively.
+
+- **The trail carries an `S3KeyPrefix`, and it is the organization id**, so the real layout is
+  `<org-id>/AWSLogs/<org-id>/<account>/CloudTrail/<region>/<yyyy>/<mm>/<dd>/` — the org id appears
+  **twice**. A path built from `AWSLogs/` alone lists empty, which reads like "no deliveries" rather than
+  "wrong prefix" (Lesson 13). **Read `S3KeyPrefix` from the trail before constructing any key**; the trail
+  is again the only non-stale source, as it was for the bucket name.
+
+
 
 ---
 

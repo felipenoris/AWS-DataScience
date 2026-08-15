@@ -21,6 +21,11 @@
 2. Alarms → SNS → e-mail for: budget thresholds, failed pipelines, VPN down, GitLab unhealthy,
    unusual data scans.
 3. Log retention policies everywhere (default retention is "forever", which quietly costs money).
+   **One retention here is floored and the floor cannot be lifted:** the organization CloudTrail bucket
+   in Log Archive carries S3 Object Lock in **compliance** mode at 90 days (Stage 1d step 9, decision 3),
+   and its lifecycle rule expires versions at 365 days. **Shortening that lifecycle below 90 days makes
+   the landing zone's own expirations start failing against locked versions, and the lock cannot be
+   shortened to fix it.** 365 → anything ≥ 90 is safe; below 90 is unrecoverable. See INV-14.
 4. Cost allocation tags activated in Billing; a monthly cost review against `plan/cost-model.md`.
 5. **Review the `[P]`/`[D]`/`[E]` assignments against the real bill**, which by this point exists. The two
    estimates most likely to be wrong are the interface endpoints (the largest hourly item) and GitLab

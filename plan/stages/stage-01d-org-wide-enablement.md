@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Status** | **in progress — steps 10, 11 and 12 are DONE (2026-08-14). Step 9 is the only one left, and 9.1 and 9.4 are already read.** Decisions 4, 8 and 10 are taken; verifications (v), (xiii) and (xiv)'s first half are answered; open question 16 is closed. What remains is **decision 9, then decision 3 and the write** — the only permanent act in the stage. **The before-state is already measured**: no Object Lock, versioning `Enabled`, and one lifecycle rule expiring current *and* noncurrent versions at **365 days**, which is the ceiling decision 3 must sit under. Read "What 1c measured that changes this stage" first: the step is **blocked as written** and runs, if it runs, as `AWSControlTowerExecution` assumed from Management |
+| **Status** | **DONE — all four steps executed, 2026-08-14/15. This closes the landing zone.** Every decision (3, 4, 8, 9, 10) is taken and every verification answered, with (iv)'s and (xiv)'s second halves provisional by construction. **Step 9 went ahead**: decision 9 chose to borrow `AWSControlTowerExecution` from Management past `CTS3PV8`, decision 3 set **compliance mode, 90 days**, and the control is exercised rather than only configured — an object delivered *after* the write carries `COMPLIANCE` to +90 days while deliveries continue. **Decision 3's cost turned out to be zero**, because the bucket already expires current *and* noncurrent versions at 365 days; what it creates instead is a standing constraint on **Stage 12 step 5** — that lifecycle may never be shortened below the lock retention |
 | **Prerequisites** | **[Stage 1b](stage-01b-identity-and-controls.md) complete** — every step here runs inside a member account and needs step 5's profiles. **Stage 1c was not a prerequisite and is now done anyway** (2026-08-14): none of these steps depends on a policy being attached, but three of 1c's attached documents and one of Control Tower's own now sit across this stage's path, which is what the revision below is about |
 | **Consumes** | [D12](../decisions/D12-budget-ceiling.md), [D16](../decisions/D16-break-glass.md), [D22](../decisions/D22-data-governance-account.md), [D23](../decisions/D23-ou-structure.md) (step 12), [D29](../decisions/D29-policy-canary.md), [D33](../decisions/D33-control-tower-admin-user.md), [D34](../decisions/D34-account-vending.md), [D35](../decisions/D35-sandbox-cardinality.md) |
 | **Proves** | **The two organization-level halves of [INT-11](../integrations.md)** — org-wide RAM sharing and the Lake Formation cross-account version, **the second of which was already true before the stage started and is now a reading plus an instruction to Stage 5**. **Also closes [D16](../decisions/D16-break-glass.md)'s last unbuilt deliverable** (10.4) and **[open question 16](../open-questions.md)** (step 12). The third INT-11 item (`AWSLakeFormationCrossAccountManager` on the grantor) is Stage 5 step 7, because the role does not exist yet (11.4) |
@@ -98,14 +98,24 @@ aws cloudtrail describe-trails --region us-west-2 \
 - **Object Lock goes on the CloudTrail log bucket, `aws-controltower-cloudtrail-logs-<account>-<suffix>`,
   in the Log Archive account** — *not* `aws-controltower-logs-*`, which is this landing zone's
   predecessor's name and matches nothing here.
-- **It must never go on the access-log bucket** — `aws-controltower-access-logs-*` in the same account.
-  That bucket is the destination for S3 server access logging, and **S3 buckets with Object Lock cannot be
-  used as a server access log destination**: locking it silently stops access logging for the bucket
-  beside it.
+- **It must never go on the access-log bucket** — **`aws-controltower-cloudtrail-access-logs-*`** in the
+  same account (corrected on execution, 2026-08-15; this file said `aws-controltower-access-logs-*`, which
+  matches nothing). That bucket is the destination for S3 server access logging, and **S3 buckets with
+  Object Lock cannot be used as a server access log destination**: locking it silently stops access
+  logging for the bucket beside it. **The check that closes this is one loop** — `get-bucket-logging` over
+  every `aws-controltower-*` bucket, confirming the target bucket appears only as a *source*, never as
+  anyone's `TargetBucket`.
 - **The Config logs are a third bucket, `aws-controltower-config-*`, and they are in Audit** — that is the
   landing-zone 4.x split, and Control Tower's own guardrail confirms it by protecting that prefix in a
-  separate statement (`CTS3PV7`) from the three log buckets (`CTS3PV8`). The target of this step is the
-  CloudTrail bucket; the other two are named here so that they are recognised and left alone.
+  separate statement (`CTS3PV7`) from the three log buckets (`CTS3PV8`). **Confirmed by inventory on
+  2026-08-15: Log Archive holds exactly two `aws-controltower-*` buckets and no `config` one.** The target
+  of this step is the CloudTrail bucket; the other two are named here so that they are recognised and left
+  alone.
+- **The trail carries an `S3KeyPrefix`, and it is the organization id**, so a key looks like
+  `<org-id>/AWSLogs/<org-id>/<account>/CloudTrail/<region>/<yyyy>/<mm>/<dd>/…` — **the org id appears
+  twice**. A path built from `AWSLogs/` alone lists empty, which reads like "no deliveries" rather than
+  "wrong prefix" (Lesson 13). Read `S3KeyPrefix` from the trail before constructing any key; the trail is
+  again the only non-stale source, as it is for the bucket name.
 - **Read the state before changing it**, all of which `CTS3PV8` permits because `s3:Get*` is in its
   `NotAction` list: `get-object-lock-configuration` (expect `ObjectLockConfigurationNotFoundError`),
   `get-bucket-versioning` (expect `Enabled` — Object Lock needs it, and `PutBucketVersioning` is denied, so
@@ -166,6 +176,16 @@ since finding 1 makes the write run as `AWSControlTowerExecution`, a second half
 survives a landing-zone update, an account update or a re-enrollment.** Neither half can be closed in the
 sitting that makes the change; record the first as measured and the second as provisional, naming the event
 that settles it — exactly as 1b step 5.1 did for verification (vi).
+
+**And a verification this file was missing, added on execution: read the retention off an object delivered
+*after* the write.** `get-object-lock-configuration` proves the configuration exists; it does not prove the
+default retention reaches CloudTrail's deliveries, and it does not prove the lock left delivery working —
+the opposite risk, and the more damaging one. Both are answered by `get-object-retention` on the newest key
+under the trail's prefix: expect `COMPLIANCE` with `RetainUntilDate` at +90 days, and **more than one
+object dated after the change**. A *pre-existing* object returning `NoSuchObjectLockConfiguration` is
+correct and not a finding — a default retention binds objects written after it, never retroactively.
+Measured 2026-08-15: an object delivered at 03:12 carries `COMPLIANCE` to 2026-11-13, with three deliveries
+that day.
 
 #### 9.6 — **The wall, and it is AWS's own** (added 2026-08-14, finding 1)
 
@@ -621,10 +641,10 @@ Each one is written so that its output differs between working and broken (Lesso
 
 | # | Decision | Step | Reversible? |
 |---|---|---|---|
-| 3 | **The Object Lock retention period** | 9.3 | **No — compliance mode cannot be shortened and Object Lock cannot be disabled** |
+| 3 | ~~The Object Lock retention period~~ **TAKEN 2026-08-15: 90 days, compliance mode.** **Its cost is zero, which this file did not expect** — 9.3 treats a long retention as the one expense easy to create by accident, and 9.1's reading removes that entirely: the bucket already expires current *and* noncurrent versions at 365 days, so for any retention **below** 365 the objects are kept that long regardless. The real trade is how much of the trail is undeletable, and the only way to get it wrong is to collide with the lifecycle; 90 days gives a quarter of detection window with wide clearance. **It creates a constraint that outlives the stage: the lifecycle on this bucket may never be shortened below the retention** — a cost pass that cuts 365 to 90 or below makes the landing zone's own expirations start failing against locked versions, unfixably. **This binds Stage 12 step 5** | 9.3 | **No — compliance mode cannot be shortened and Object Lock cannot be disabled** |
 | 4 | ~~Whether the Config recorder is left alone after the measurement~~ **TAKEN 2026-08-14: left alone, revisit at Stage 12 step 5.** ~USD 0.5/month recurring, below `PRICING.md`'s band, against a lifecycle-event Lambda with a StackSet and a role per account — and an exclusion list that is wrong breaks a detective control silently, since Control Tower's controls and Stage 5's Security Hub both consume Config. **The measured composition is what killed the exclusion list**: a third of each account's 82 items are AWS service defaults, recorded once and never changed, so removing them saves under a dollar across the organization *in total*. **The revision signal is EC2/ENI churn, not the resource count** | 10.3 | Yes |
 | **8** | ~~Whether a Config recorder is turned on in Management for the sake of one rule~~ **TAKEN 2026-08-14: no.** The invariant is left to 1a's alarm plus the `get-account-summary` read, and **the residual is written rather than assumed away** — see 10.4. Two measurements decided it: Management has **neither** a recorder nor a delivery channel, so this was never "one resource" but a bucket, a delivery channel, a recorder and a rule, all hand-made in the account kept out of Terraform; and `AccountAccessKeysPresent` reads **`0`**, which closes the one window the alarm cannot see — a key created before 1a step 5 existed. **Revision trigger: if Management becomes recorded for any other reason, the rule costs nothing and goes on then** — Stage 5's Security Hub central configuration is the candidate | 10.4 | Yes |
-| **9** | **Whether step 9 is performed at all, and by which principal.** `CTS3PV8` exempts `AWSControlTowerExecution` and nobody else, so the choices are: **borrow that role from Management** (one permanent setting, an unscoped role used by hand, and a setting whose survival across a landing-zone update is unknown); **decline and record the residual** (the Log Archive administrator can delete log object versions, which is the exposure the step exists to close); or **a second, project-owned trail with its own locked bucket** (a new recurring line and a second copy of the same data). **Decision 3 only exists if this one says yes** | 9.6 | The *choice* is; **its consequence is not** — see decision 3 |
+| **9** | ~~Whether step 9 is performed at all, and by which principal~~ **TAKEN 2026-08-15: borrow `AWSControlTowerExecution` from Management.** Declining leaves open exactly what the step exists to close — finding 2's `NotAction` permits `s3:DeleteObject` and `s3:DeleteObjectVersion` to everyone, and D34 made the principal this defends against permanent. A project-owned second trail solves by duplication what one call solves. **What the borrow actually costs is precedent, not privilege**: whoever performs it already administers that account, and the session adds exactly the set `CTS3PV8` denies — so this is recorded as **the only sanctioned by-hand use of that role, and any future one is a new decision**. The asymmetry that settled it: **Object Lock cannot be undone, by us or by Control Tower**, so the durability risk in "Risks" is not that an update reverts the change — an update can only fail | 9.6 | The *choice* is; **its consequence is not** — see decision 3 |
 | **10** | **Whether `Security` gets the Region ceiling, and whether the two root-user controls go with it.** Free either way; the trade is a constraint on Stages 4, 5 and 11 (all `us-west-2` in this design) against being the only governed accounts with no Region ceiling. **If yes, `ExemptAssumeRoot` is not optional** and only a document read can confirm it | 12 | Yes — disabling a control deletes its document, measured on `Sandboxes` in 7.7 |
 
 *The numbering is the landing zone's: decision 2 belongs to
@@ -637,10 +657,13 @@ executing, with the readings that inform them listed in the step.*
 
 ## Risks
 
-- **Step 9's compliance-mode retention cannot be shortened, and Object Lock cannot be disabled.** A
-  retention chosen too long makes the Log Archive bucket an archive nobody chose to pay for; one longer than
-  the lifecycle expiration makes the landing zone's own deletions fail. This is the one permanent act in
-  the stage, and it is the reason 9.3 is a decision row rather than an instruction.
+- **Step 9's compliance-mode retention cannot be shortened, and Object Lock cannot be disabled.** ~~A
+  retention chosen too long makes the Log Archive bucket an archive nobody chose to pay for~~ — **the first
+  half of this risk was falsified on execution**: the bucket's own lifecycle already keeps every version
+  365 days, so a retention below that adds no storage at all. **The second half is the whole risk, and it
+  inverted into a standing constraint**: a retention at or above the lifecycle expiration makes the landing
+  zone's own deletions fail, so the lifecycle can now never be *shortened* below 90 days either
+  (decision 3, binding Stage 12 step 5). This is the one permanent act in the stage.
 - **Step 9 now runs, if it runs, as `AWSControlTowerExecution` — the most privileged role in the account,
   borrowed by hand.** Two risks ride along and they are different from each other: the *use* (an unscoped
   session in the account holding the audit trail, which is why the log records the exact call), and the
@@ -665,7 +688,7 @@ Record every answer in `log/stage-01d-org-wide-enablement.md`, including the one
 
 | # | Question | Step | State |
 |---|---|---|---|
-| iv | Does enabling Object Lock on the Control Tower-managed bucket raise landing-zone drift — **and does it survive a landing-zone update, an account update or a re-enrollment?** | 9.5 | Open. The second half was added 2026-08-14 and **cannot be closed in-session**: record it provisionally and name the event that settles it, as 1b 5.1 did for (vi) |
+| iv | Does enabling Object Lock on the Control Tower-managed bucket raise landing-zone drift — **and does it survive a landing-zone update, an account update or a re-enrollment?** | 9.5 | **The object-level check 9.5 gained on execution is answered 2026-08-15**: an object delivered after the write carries `COMPLIANCE` to +90 days and deliveries continued. **The drift reading itself is still open** — one console read on Management. **Second half provisional and re-checked at the next landing-zone update, account update or re-enrollment**, though decision 9 narrowed what it can find: Object Lock cannot be removed by Control Tower either, so the failure mode is an update erroring, not reverting |
 | v | Can the Lake Formation cross-account version be raised to 3+ with no lake in the account? | 11.6 | **Answered 2026-08-14, before execution: the question is void.** It reads **4** already, with `SET_CONTEXT: TRUE`, in an account with no lake and no administrator |
 | **xiii** | **Does the Control Tower landing zone record the Management account at all?** `plan/cost-model.md` assumes it does not and asks Stage 1 to confirm; 10.4 is the first step that has to know, and the Config row's account count is wrong by one either way | 10.4 | **Answered 2026-08-14: it does not.** From Management as CT Admin, both `describe-configuration-recorders` and `describe-delivery-channels` return an **empty list** — the answer, not an error (Lesson 13). Corroborated from the other side: the organization aggregator in Audit lists **eight** accounts and Management is not among them. `plan/cost-model.md`'s assumption is confirmed and the Config row's account count is right. **Renumbered from (x) on 2026-08-14** — 1c had already answered a different question under that numeral, and the landing-zone numerals are one sequence across 1a-1d |
 | **xiv** | Does a Region control on `Security` deny `us-east-1` and leave `us-west-2` working in **both** Log Archive and Audit, without touching Control Tower's own operations there? | 12.5 | **First half answered 2026-08-14** in both accounts, by hand in CloudShell: `us-east-1` denied naming `p-idgyiios`, `us-west-2` `DryRunOperation`. **Second half provisional** — the exemption reading covers it (the four Control Tower roles are exempt, `config:*` entirely), and it is re-checked at the **next landing-zone update, account update or re-enrollment**, exactly as (iv) and (vi) are |
