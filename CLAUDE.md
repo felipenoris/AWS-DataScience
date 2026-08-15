@@ -273,8 +273,18 @@ The `§` numbers inside `plan/` files are historical anchors, not addresses.
   DAILY` is the *expensive* mode here (USD 0.012/item-day vs 0.003/change → break-even at four changes per
   resource per day), and an exclusion list that is wrong blinds a Control Tower control or a Stage 5
   Security Hub check silently. **The Stages 2-3 number is the spike** (~730 items for nine empty accounts
-  recording once); **the Stage 12 revision signal is EC2/ENI churn, not the resource count.** Still open in
-  step 10: **10.4 only** — verification (xiii) and decision 8.
+  recording once); **the Stage 12 revision signal is EC2/ENI churn, not the resource count.**
+- **Step 10 is DONE: (xiii) is answered and decision 8 was no.** **Management has neither a Config recorder
+  nor a delivery channel**, so D16's named instrument (`iam-root-access-key-check`) was never one resource
+  — it was a bucket, a bucket policy, a delivery channel, a recorder and the rule, all hand-made in the
+  account kept out of Terraform. `AccountAccessKeysPresent` reads **`0`**, which permanently excludes a key
+  predating 1a step 5's alarm, and that alarm is **live** (both channels, unplanned test). **So the
+  instrument changed and the invariant did not**: the state read is now **step 4 of `break-glass.md` §6**,
+  hung on a ritual instead of on memory. **Residual, accepted and written**: chain breaks silently + key
+  created in that window = nobody knows until someone looks. **Revision trigger: Management becoming
+  recorded for any other reason — Stage 5's Security Hub central configuration — makes the rule free.**
+  The wider delta is *not* the rule but that **Management has no configuration history at all**
+  (`plan/institutional-delta.md`, "Watching the management account").
 - **`ce:*` in a permission set is not enough for Cost Explorer** — measured 2026-08-14: CT Admin was refused
   on the Cost Management console until **root** activated *IAM user and role access to Billing*. Any future
   billing reading needs that toggle, not a policy edit, and the root sign-ins it took should have tripped
@@ -402,10 +412,9 @@ The `§` numbers inside `plan/` files are historical anchors, not addresses.
 - **All thirty-six decisions are closed** ([`plan/decisions/INDEX.md`](plan/decisions/INDEX.md)). The four
   governing what happens next: **D32** (`SSOUserEmail`), **D33**/**D34** (who vends), **D35** (`Sandbox` is
   one per business unit; every other account is exactly one).
-- **The landing zone's second half is three stages, and 1d is the last — two items in it**: **step 9** in
-  full (decisions 9 then 3, the only permanent act of the stage) and **10.4** (verification (xiii), then
-  decision 8). Independent of each other; 10.4 also owes the aggregator run in `Audit` for `Log Archive`
-  and `Audit`, the two accounts no profile reaches.
+- **The landing zone's second half is three stages, 1d is the last, and it is down to ONE item: step 9** —
+  decisions 9 then 3, the only permanent act in the stage, blocked as written by `CTS3PV8` and running, if
+  it runs, as `AWSControlTowerExecution` assumed from Management. Steps 10, 11 and 12 are done.
 - **The identity seam, settled 2026-08-09 by review** (`plan/conventions.md`): **people** — users, groups,
   memberships — stay in the directory; **entitlements** — permission sets, boundaries, group→account
   assignments — are Terraform. So **1b creates one permission set and specifies seven**; the other six are

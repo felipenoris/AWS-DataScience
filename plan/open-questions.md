@@ -206,6 +206,11 @@ Items 1-11 above are things to *find out* (item 3 is answered and struck through
     compensating control is detective — MFA, offline password, no access keys (with
     `iam-root-access-key-check` as the instrument, since SCPs cannot reach Management), and an alarm whose
     SNS destination is deliberately *not* the mailbox that is the login.
+    **That instrument was declined on 2026-08-14** by Stage 1d decision 8 — Management carries no Config
+    recorder, so the rule meant five hand-made resources there — and what stands in its place is the alarm
+    (measured live the same day, both channels) plus a state read that is now step 4 of the break-glass
+    test. D16 carries the reasoning and the residual. **The invariant did not change; only its instrument
+    did.**
     **The MFA type is deliberately left unspecified**, which is a decision and not an omission: nothing in
     this plan depends on it, and the user already has MFA on this root. What survives is not about the type
     — with a single registered device, recovery runs through AWS support and depends on the account's phone

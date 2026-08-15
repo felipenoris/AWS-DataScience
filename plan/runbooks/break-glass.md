@@ -5,7 +5,7 @@
 | **Credential** | The **Management account root user**, and nothing else ([D16](../decisions/D16-break-glass.md)) |
 | **Built by** | [Stage 1a](../stages/stage-01a-landing-zone.md) steps 1 and 5 |
 | **Detects use** | CloudWatch alarm **`AWS Break Glass Alert`** → SNS `awsds-org-break-glass-alerts` (e-mail + SMS) |
-| **Last tested** | **2026-08-09** — root sign-in, no actions; delivered on **both** channels ([log](../../log/stage-01a-landing-zone.md)) |
+| **Last tested** | **2026-08-14** — **unplanned, and it counts**: two root sign-ins to activate *IAM user and role access to Billing* (Stage 1d step 10) notified on **both** channels, and `AccountAccessKeysPresent` read `0` the same day, so §6 steps 3 and 4 were both exercised end to end. The last *deliberate* test is **2026-08-09** — root sign-in, no actions, delivered on both channels ([log](../../log/stage-01a-landing-zone.md)) |
 
 ---
 
@@ -142,7 +142,18 @@ trail, the log group, the metric filter, the alarm or the subscriptions.
 2. Wait — CloudTrail delivery is not instantaneous; allow **up to ~15 minutes** end to end
    (CloudTrail → CloudWatch Logs → metric → alarm → SNS).
 3. Expect: the alarm goes to `In alarm`, and a message arrives on **both** subscriptions.
-4. Update the **Last tested** row at the top of this file.
+4. **While signed in, check that the root still has no access key** — *Security credentials* → *Access
+   keys*, which must be empty. **Added 2026-08-14 by Stage 1d decision 8**, which declined the AWS Config
+   rule D16 named (`iam-root-access-key-check`) because Management carries no configuration recorder and
+   building one meant five hand-made resources there. This read is what replaces it, and it is deliberately
+   hung on this procedure rather than left to memory: the alarm above sees the *act* of creating a key, this
+   sees the *state*, and the tester is already signed in as the only principal that can look. It is
+   read-only and does not disturb the test — the alarm has already been triggered by the sign-in itself.
+   The equivalent from CloudShell as `AWS Control Tower Admin` on Management, if the check is ever wanted
+   outside a test, is `aws iam get-account-summary --query 'SummaryMap.AccountAccessKeysPresent'`, where
+   `0` is the expected answer. **A non-empty list is an incident, not a finding**: that key is permanent,
+   unscoped and beyond every SCP in the organization.
+5. Update the **Last tested** row at the top of this file.
 
 ### 6.1 Attributing an alarm to an event — read this before concluding anything from one
 

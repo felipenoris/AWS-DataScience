@@ -424,7 +424,37 @@ The revision signal at Stage 12 step 5 is EC2/ENI churn, not the resource count.
 - What is left in step 10: the aggregator run in Audit for the two profile-less accounts, and 10.4 —
 verification (xiii) and decision 8.
 
+- Login as AWS Control Tower Admin, Audit Account, AWSAdministratorAccess. Executed on CloudShell (replaced account IDs with account name to mark the identitiers on this log):
 
+```
+~ $ aws configservice describe-configuration-aggregators --region us-west-2 --query 'ConfigurationAggregators[].ConfigurationAggregatorName' --output text
+aws-controltower-ConfigAggregatorForOrganization
+
+~ $ aws configservice select-aggregate-resource-config --region us-west-2 --configuration-aggregator-name aws-controltower-ConfigAggregatorForOrganization --expression "SELECT accountId, COUNT(*) GROUP BY accountId ORDER BY COUNT(*) DESC" --output text
+SELECTFIELDS    accountId
+SELECTFIELDS    COUNT(*)
+RESULTS {"COUNT(*)":86,"accountId":"<Audit Account>"}
+RESULTS {"COUNT(*)":82,"accountId":"<Development Account>"}
+RESULTS {"COUNT(*)":82,"accountId":"<Policy Canary Account>"}
+RESULTS {"COUNT(*)":82,"accountId":"<Identity Account>"}
+RESULTS {"COUNT(*)":81,"accountId":"<Production Account>"}
+RESULTS {"COUNT(*)":80,"accountId":"<Data Governance Account>"}
+RESULTS {"COUNT(*)":80,"accountId":"<Sandbox Account 1>"}
+RESULTS {"COUNT(*)":79,"accountId":"<Log Archive Account>"}
+```
+
+- Login as AWS Control Tower Admin, Management Account, AWSAdministratorAccess. Executed on CloudShell:
+
+```
+~ $ aws configservice describe-configuration-recorders --region us-west-2 && aws configservice describe-delivery-channels --region us-west-2 && aws iam get-account-summary --query 'SummaryMap.AccountAccessKeysPresent'
+{
+    "ConfigurationRecorders": []
+}
+{
+    "DeliveryChannels": []
+}
+0
+```
 
 ---
 

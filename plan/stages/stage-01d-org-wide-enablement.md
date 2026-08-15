@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Status** | **in progress — steps 11 and 12 are DONE (2026-08-14), 10.3 is done and decision 4 is taken, step 9 has not been touched.** Decision 10 is taken (the ceiling went on `Security`) and open question 16 is closed with it; decision 4 is taken (the recorder is left alone). What remains is **step 9 in full** — decisions 9 and 3, the only permanent act in the stage — plus **10.4**, which is verification (xiii) and decision 8, and the aggregator run for the two profile-less accounts. Read "What 1c measured that changes this stage" before touching step 9: it is **blocked as written** and runs, if it runs, as `AWSControlTowerExecution` |
+| **Status** | **in progress — steps 10, 11 and 12 are DONE (2026-08-14). Step 9 is the only one left, and 9.1 and 9.4 are already read.** Decisions 4, 8 and 10 are taken; verifications (v), (xiii) and (xiv)'s first half are answered; open question 16 is closed. What remains is **decision 9, then decision 3 and the write** — the only permanent act in the stage. **The before-state is already measured**: no Object Lock, versioning `Enabled`, and one lifecycle rule expiring current *and* noncurrent versions at **365 days**, which is the ceiling decision 3 must sit under. Read "What 1c measured that changes this stage" first: the step is **blocked as written** and runs, if it runs, as `AWSControlTowerExecution` assumed from Management |
 | **Prerequisites** | **[Stage 1b](stage-01b-identity-and-controls.md) complete** — every step here runs inside a member account and needs step 5's profiles. **Stage 1c was not a prerequisite and is now done anyway** (2026-08-14): none of these steps depends on a policy being attached, but three of 1c's attached documents and one of Control Tower's own now sit across this stage's path, which is what the revision below is about |
 | **Consumes** | [D12](../decisions/D12-budget-ceiling.md), [D16](../decisions/D16-break-glass.md), [D22](../decisions/D22-data-governance-account.md), [D23](../decisions/D23-ou-structure.md) (step 12), [D29](../decisions/D29-policy-canary.md), [D33](../decisions/D33-control-tower-admin-user.md), [D34](../decisions/D34-account-vending.md), [D35](../decisions/D35-sandbox-cardinality.md) |
 | **Proves** | **The two organization-level halves of [INT-11](../integrations.md)** — org-wide RAM sharing and the Lake Formation cross-account version, **the second of which was already true before the stage started and is now a reading plus an instruction to Stage 5**. **Also closes [D16](../decisions/D16-break-glass.md)'s last unbuilt deliverable** (10.4) and **[open question 16](../open-questions.md)** (step 12). The third INT-11 item (`AWSLakeFormationCrossAccountManager` on the grantor) is Stage 5 step 7, because the role does not exist yet (11.4) |
@@ -275,7 +275,36 @@ something Control Tower does not offer:
    here: `Policy Canary` is the tempting candidate and unenrolling it removes the Control Tower control
    baseline that makes D29's battery a valid test rather than a false pass.
 
-#### 10.4 — The one thing in step 10 that is not about cost: `iam-root-access-key-check`
+#### 10.4 — The one thing in step 10 that is not about cost: `iam-root-access-key-check` — **DONE 2026-08-14, and the rule was NOT built**
+
+**Decision 8 is no, and this is the residual, written out.** Read the sub-step below for the reasoning it
+was decided against; what follows is what execution added.
+
+**Two measurements decided it, and the first changed the price.** Management holds **neither** a
+configuration recorder **nor** a delivery channel (verification (xiii)), so decision 8 was never "turn on a
+recorder": a delivery channel needs an S3 bucket, and Control Tower's `aws-controltower-config-*` bucket is
+in Audit with a policy written for enrolled accounts, which Management is not. The real shape was **a
+bucket, a bucket policy, a delivery channel, a recorder and a rule — five hand-made resources in the one
+account this project deliberately keeps out of Terraform** (principle 1), for a control whose whole job is
+to answer one boolean.
+
+**And the second closed the window the alarm cannot see.** `AccountAccessKeysPresent` reads **`0`**: there
+is no root access key on Management today. The rule's value over 1a's alarm was always *state versus
+event* — a key created before the alarm existed, or one whose event was missed. **The first of those is now
+excluded for good, and the second is a live channel**: the two root sign-ins earlier the same day notified
+on **both** subscriptions, an unplanned end-to-end test of trail → S3 → Logs → filter → alarm.
+
+**What is left uncovered, stated so it is not discovered later as a surprise.** If the alarm chain breaks
+silently *and* someone creates a root access key inside that window, nothing reports it until a human looks.
+That is a real gap and it is accepted, not closed. **It is made smaller by hanging the state read on a
+ritual that already exists** rather than on memory (Lesson 5): the break-glass runbook's §6 test already
+requires a Management root sign-in, and it now carries the access-key check as one of its steps. A check
+that rides an existing procedure is not a control, but it is not an intention either.
+
+**The revision trigger is written rather than left to judgement:** if Management becomes recorded for any
+other reason — **Stage 5's Security Hub central configuration is the candidate** — the rule costs nothing
+beyond itself and should be enabled at that point. Nothing else needs to change for that to happen.
+
 
 [D16](../decisions/D16-break-glass.md) makes an access key on the Management root an **invariant** rather
 than hygiene — it would be a permanent, unscoped, SCP-immune credential sitting in a file — and, since SCPs
@@ -594,7 +623,7 @@ Each one is written so that its output differs between working and broken (Lesso
 |---|---|---|---|
 | 3 | **The Object Lock retention period** | 9.3 | **No — compliance mode cannot be shortened and Object Lock cannot be disabled** |
 | 4 | ~~Whether the Config recorder is left alone after the measurement~~ **TAKEN 2026-08-14: left alone, revisit at Stage 12 step 5.** ~USD 0.5/month recurring, below `PRICING.md`'s band, against a lifecycle-event Lambda with a StackSet and a role per account — and an exclusion list that is wrong breaks a detective control silently, since Control Tower's controls and Stage 5's Security Hub both consume Config. **The measured composition is what killed the exclusion list**: a third of each account's 82 items are AWS service defaults, recorded once and never changed, so removing them saves under a dollar across the organization *in total*. **The revision signal is EC2/ENI churn, not the resource count** | 10.3 | Yes |
-| **8** | **Whether a Config recorder is turned on in Management for the sake of one rule** — ~USD 0.50-1/month for the same shape of recorder every other governed account already carries, plus a hand-made resource in the account this project keeps out of Terraform — **or the invariant is left to 1a's alarm plus the `get-account-summary` check**, which is an intention rather than a control (Lesson 5) | 10.4 | Yes |
+| **8** | ~~Whether a Config recorder is turned on in Management for the sake of one rule~~ **TAKEN 2026-08-14: no.** The invariant is left to 1a's alarm plus the `get-account-summary` read, and **the residual is written rather than assumed away** — see 10.4. Two measurements decided it: Management has **neither** a recorder nor a delivery channel, so this was never "one resource" but a bucket, a delivery channel, a recorder and a rule, all hand-made in the account kept out of Terraform; and `AccountAccessKeysPresent` reads **`0`**, which closes the one window the alarm cannot see — a key created before 1a step 5 existed. **Revision trigger: if Management becomes recorded for any other reason, the rule costs nothing and goes on then** — Stage 5's Security Hub central configuration is the candidate | 10.4 | Yes |
 | **9** | **Whether step 9 is performed at all, and by which principal.** `CTS3PV8` exempts `AWSControlTowerExecution` and nobody else, so the choices are: **borrow that role from Management** (one permanent setting, an unscoped role used by hand, and a setting whose survival across a landing-zone update is unknown); **decline and record the residual** (the Log Archive administrator can delete log object versions, which is the exposure the step exists to close); or **a second, project-owned trail with its own locked bucket** (a new recurring line and a second copy of the same data). **Decision 3 only exists if this one says yes** | 9.6 | The *choice* is; **its consequence is not** — see decision 3 |
 | **10** | **Whether `Security` gets the Region ceiling, and whether the two root-user controls go with it.** Free either way; the trade is a constraint on Stages 4, 5 and 11 (all `us-west-2` in this design) against being the only governed accounts with no Region ceiling. **If yes, `ExemptAssumeRoot` is not optional** and only a document read can confirm it | 12 | Yes — disabling a control deletes its document, measured on `Sandboxes` in 7.7 |
 
@@ -638,7 +667,7 @@ Record every answer in `log/stage-01d-org-wide-enablement.md`, including the one
 |---|---|---|---|
 | iv | Does enabling Object Lock on the Control Tower-managed bucket raise landing-zone drift — **and does it survive a landing-zone update, an account update or a re-enrollment?** | 9.5 | Open. The second half was added 2026-08-14 and **cannot be closed in-session**: record it provisionally and name the event that settles it, as 1b 5.1 did for (vi) |
 | v | Can the Lake Formation cross-account version be raised to 3+ with no lake in the account? | 11.6 | **Answered 2026-08-14, before execution: the question is void.** It reads **4** already, with `SET_CONTEXT: TRUE`, in an account with no lake and no administrator |
-| **xiii** | **Does the Control Tower landing zone record the Management account at all?** `plan/cost-model.md` assumes it does not and asks Stage 1 to confirm; 10.4 is the first step that has to know, and the Config row's account count is wrong by one either way | 10.4 | Open. **Renumbered from (x) on 2026-08-14** — 1c had already answered a different question under that numeral, and the landing-zone numerals are one sequence across 1a-1d |
+| **xiii** | **Does the Control Tower landing zone record the Management account at all?** `plan/cost-model.md` assumes it does not and asks Stage 1 to confirm; 10.4 is the first step that has to know, and the Config row's account count is wrong by one either way | 10.4 | **Answered 2026-08-14: it does not.** From Management as CT Admin, both `describe-configuration-recorders` and `describe-delivery-channels` return an **empty list** — the answer, not an error (Lesson 13). Corroborated from the other side: the organization aggregator in Audit lists **eight** accounts and Management is not among them. `plan/cost-model.md`'s assumption is confirmed and the Config row's account count is right. **Renumbered from (x) on 2026-08-14** — 1c had already answered a different question under that numeral, and the landing-zone numerals are one sequence across 1a-1d |
 | **xiv** | Does a Region control on `Security` deny `us-east-1` and leave `us-west-2` working in **both** Log Archive and Audit, without touching Control Tower's own operations there? | 12.5 | **First half answered 2026-08-14** in both accounts, by hand in CloudShell: `us-east-1` denied naming `p-idgyiios`, `us-west-2` `DryRunOperation`. **Second half provisional** — the exemption reading covers it (the four Control Tower roles are exempt, `config:*` entirely), and it is re-checked at the **next landing-zone update, account update or re-enrollment**, exactly as (iv) and (vi) are |
 
 ---
