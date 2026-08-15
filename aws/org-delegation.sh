@@ -285,7 +285,15 @@ READ = ["organizations:DescribeOrganization", "organizations:ListRoots",
         "organizations:ListOrganizationalUnitsForParent", "organizations:ListChildren",
         "organizations:ListParents", "organizations:ListAccounts",
         "organizations:ListPolicies", "organizations:ListPoliciesForTarget",
-        "organizations:ListTargetsForPolicy", "organizations:ListTagsForResource"]
+        "organizations:ListTargetsForPolicy", "organizations:ListTagsForResource",
+        # Added 2026-08-15 with Stage 2 step 5.1's correction, so DEL-4 covers what 5.1 now
+        # names. DescribePolicy is the load-bearing one - the provider calls it on every
+        # refresh of an aws_organizations_policy, so without it 5.5's import succeeds and the
+        # next plan fails. DescribeResourcePolicy is for THIS script: if it were ever denied,
+        # DEL-1 would report "denied" and every check below it would go vacuous.
+        "organizations:DescribeOrganizationalUnit", "organizations:DescribeAccount",
+        "organizations:DescribePolicy", "organizations:DescribeEffectivePolicy",
+        "organizations:DescribeResourcePolicy", "organizations:ListAccountsForParent"]
 
 # DEL-9 (added 2026-08-15). Create/Update/DeletePolicy authorize against the POLICY ARN
 # and Attach/DetachPolicy against target AND policy, so a target-only Resource list denies

@@ -380,6 +380,33 @@ AWS Organizations objects, and by default only the Management account can touch 
   `ListPolicies`, `ListPoliciesForTarget`, `ListTargetsForPolicy`, `ListTagsForResource`) **plus**
   `CreatePolicy` / `UpdatePolicy` / `DeletePolicy` / `AttachPolicy` / `DetachPolicy`, each scoped by a
   `organizations:PolicyType` condition to the four types this project writes.
+  **Four reads this list omitted, added after reading the examples rather than paraphrasing them**
+  *(corrected 2026-08-15)*: `DescribeOrganizationalUnit`, `DescribeAccount`, `DescribeEffectivePolicy` and
+  `ListAccountsForParent` appear in **every** AWS example, and — the load-bearing one —
+  **`DescribePolicy`**, which is what the provider calls on every refresh of an
+  `aws_organizations_policy`: without it 5.5's import succeeds and the next `plan` fails. Add
+  **`DescribeResourcePolicy`** as well, for the instrument rather than for Terraform: it answers from the
+  Identity account *today* with no delegation at all (that is how 5.0's reading 1 ran), and if creating the
+  policy were to change that, `org-delegation.sh` would report `DEL-1` as *denied* and every check below it
+  would go vacuous — the instrument blinding itself at the moment it starts being useful.
+- **The condition operator is `StringLikeIfExists`, not `StringEquals`** *(corrected 2026-08-15; every AWS
+  example uses it and the earlier wording named no operator at all)*. The difference is the failure this
+  whole step is built to avoid: with a bare `StringEquals`, any call that does **not** carry
+  `organizations:PolicyType` in its request context fails the condition and is **denied** — which arrives at
+  the keyboard as *"every write refused"*, indistinguishable from 5.0's "the delegation cannot reach a root
+  attachment", the one outcome 5.0 exists to measure. `IfExists` makes the condition act only when the key
+  is present, and confinement to the four types is still carried by the policy ARN path in `Resource`.
+  **`DEL-8` cannot catch this**: it reads the condition operator-agnostically (it iterates the operator and
+  discards it), so a `StringEquals` document passes the check and fails the apply.
+- **Tagging is a third statement, unconditioned and policy-scoped** *(added 2026-08-15)*.
+  `organizations:TagResource` / `UntagResource` do **not** accept the `organizations:PolicyType` condition —
+  AWS's tagging example puts them in a separate statement with no condition for exactly that reason — so
+  folding them into the write statement grants nothing. The ten attached documents carry **no tags today**
+  (measured), so nothing needs this yet; it is here because `default_tags` in the provider block will try to
+  tag an `aws_organizations_policy` at 5.5, *after* 5.0 has already declared the delegation good, and the
+  denial would land on the import rather than on the delegation. Scope the `Resource` list to the four
+  **policy** ARN classes only — not to accounts, OUs or the root, which would hand the Identity account
+  re-tagging of the organization's structure for no benefit here.
 - **The `Resource` list is four ARN classes — targets *and* policies — and the earlier wording named only
   the targets** *(corrected 2026-08-15)*. The targets: `arn:aws:organizations::<mgmt>:ou/o-<org>/*` (the
   wildcard OU form), the `root/o-<org>/r-<root>` ARN and the account wildcard. AWS documents that naming a
