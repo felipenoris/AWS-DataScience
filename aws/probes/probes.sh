@@ -13,7 +13,7 @@
 #                  The last three are step 7.8's, one per document, because 7.8 is attached
 #                  one document at a time and each phase is the measurement for the attach
 #                  that just happened. `rcp` in particular is run BEFORE widening the RCP
-#                  from Policy Test to the root - see plan/runbooks/scp-battery.md.
+#                  from Policy Test to the root - see docs/plan/runbooks/scp-battery.md.
 #     account      canary data identity dev sandbox1 prod
 #     expect       deny   the ceiling must stop it
 #                  allow  it must still work - a cross-check, or the floor

@@ -1,3 +1,32 @@
 secrets
 **/.DS_Store
 aws/output/
+
+# ---------------------------------------------------------------- Terraform (Stage 2 step 6.2)
+#
+# This has to be right BEFORE step 2 runs, not after. Step 2.2 applies the first bootstrap
+# slice with LOCAL state - the bucket that will hold that state is what the slice creates -
+# so for the length of one apply a terraform.tfstate sits in the working tree of a repository
+# hosted on GitHub, carrying account IDs, bucket names and key ARNs.
+
+.terraform/
+*.tfstate
+*.tfstate.*
+crash.log
+crash.*.log
+
+# Committed on purpose (step 6.3), and named explicitly so a later `.terraform*` rule cannot
+# swallow it: the lock file is the reproducibility of the build, not a local artefact.
+!.terraform.lock.hcl
+
+# Ignored WHOLESALE rather than by content, because the rule "the ones that carry account IDs"
+# cannot be enforced by a glob and the failure is one-way: a variables file that should have
+# been committed is noticed the next time somebody clones, while one that should not have been
+# is noticed by whoever reads the repository. Anything genuinely shareable is committed with an
+# explicit `git add -f` and a reason.
+*.tfvars
+*.tfvars.json
+
+# Generated per slice by scripts/gen-backend-hcl.sh - the one file allowed to hold the region
+# literal (step 2.5). Ignored unconditionally, whichever mechanism writes it.
+backend.hcl

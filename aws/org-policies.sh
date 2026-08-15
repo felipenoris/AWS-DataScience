@@ -20,7 +20,7 @@
 # cosmetic. Section 1 used to list `SERVICE_CONTROL_POLICY` documents with their ids and
 # reduce the RCP to a presence check, while the tag policy and the declarative policy did
 # not appear at all - so THREE OF THE TEN ATTACHED DOCUMENTS had no id in any snapshot and
-# existed only in log/log-stage-01c-preventive-policies.md. That was survivable while they were
+# existed only in docs/log/log-stage-01c-preventive-policies.md. That was survivable while they were
 # console-managed and stops being survivable at Stage 2 step 5.5, where the id is the
 # argument `terraform import` takes. Reading one filter is also how a read-back reports
 # three attached documents as absent (Lesson 13, and 1c nearly did it).
@@ -344,7 +344,7 @@ printf '  - AN OU ROW SAYING "nothing attached" IS NOT AN UNGOVERNED OU. `Sandbo
 printf '    nothing by decision (D37) and is fully governed by inheritance - section 2 is\n'
 printf '    where that question is actually answered, per account.\n'
 printf '  - This is a point-in-time snapshot, not a source of truth. Regenerate rather than\n'
-printf '    trusting a stale copy; expectations live in AWS_STATE.md, intent in plan/.\n'
+printf '    trusting a stale copy; expectations live in docs/AWS_STATE.md, intent in docs/plan/.\n'
 
 # ======================================================================================
 h1 "1. Attached per node, all four policy types, with ids"
@@ -413,7 +413,7 @@ h1 "3. The read-only checks - the class no probe can reach"
 
 printf 'Each of these is a statement whose condition selects a principal this project cannot\n'
 printf 'produce, so attempting the call proves nothing and reading the document is the only\n'
-printf 'instrument (Lesson 22). See plan/runbooks/scp-battery.md, "the class the battery\n'
+printf 'instrument (Lesson 22). See docs/plan/runbooks/scp-battery.md, "the class the battery\n'
 printf 'cannot reach", for the same table written as a procedure.\n\n'
 
 # --- CHK-1 / CHK-2: the two root-user controls -----------------------------------------
@@ -536,7 +536,7 @@ printf 'Every other OU carries a guardrail, a Region ceiling and the root contro
 printf 'joined them on 2026-08-14 (Stage 1d step 12, decision 10), which closed open question\n'
 printf '16 - so a `Security` row reading `-` under REGION CEILING or ROOT CONTROLS is now a\n'
 printf 'REGRESSION, not the inherited gap it used to be.\n'
-printf 'Anything else missing from this table is drift. AWS_STATE.md INV-11 and INV-12 hold\n'
+printf 'Anything else missing from this table is drift. docs/AWS_STATE.md INV-11 and INV-12 hold\n'
 printf 'the expected shape, and are what this table should be diffed against.\n'
 printf '\n'
 printf 'AND THE TABLE CANNOT BE REGRESSION-TESTED FOR TWO OF THE NINE ACCOUNTS. `Log Archive`\n'

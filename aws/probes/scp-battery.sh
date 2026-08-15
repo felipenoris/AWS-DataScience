@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# scp-battery.sh - run the SCP probe battery of plan/runbooks/scp-battery.md.
+# scp-battery.sh - run the SCP probe battery of docs/plan/runbooks/scp-battery.md.
 #
 #   run:      ./aws/probes/scp-battery.sh              # every phase
 #             ./aws/probes/scp-battery.sh --phase ou   # one phase
@@ -389,7 +389,7 @@ if [ "$LIST_ONLY" -eq 1 ]; then
 fi
 
 bold "SCP battery - $(date '+%Y-%m-%d %H:%M:%S')${PHASE_FILTER:+  (phase $PHASE_FILTER)}"
-echo "Runbook: plan/runbooks/scp-battery.md   Nothing here creates anything."
+echo "Runbook: docs/plan/runbooks/scp-battery.md   Nothing here creates anything."
 echo
 
 [ "$DO_READBACK" -eq 1 ] && [ -z "$PHASE_FILTER" ] && readback

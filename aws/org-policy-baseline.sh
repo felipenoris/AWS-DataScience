@@ -43,7 +43,7 @@
 #     (Lesson 6 applied to a quota) - and its first run, 2026-08-13, found that Service
 #     Quotas publishes NONE of them for `organizations`, only account counts. That is a
 #     finding about the API, not about the limits: the numbers above are AWS's own, from the
-#     announcement recorded in REFERENCES.md.
+#     announcement recorded in docs/REFERENCES.md.
 #
 # IDENTITY, and the question this script answers by running. Organizations is administered
 # from the management account, for which there is no local profile and never will be
@@ -57,7 +57,7 @@
 #
 #     ./aws/org-policy-baseline.sh -
 #
-# Record in log/ which identity the answer actually required. `controltower
+# Record in docs/log/ which identity the answer actually required. `controltower
 # list-enabled-controls` (section 5) is expected to need that fallback even if the
 # Organizations reads do not - it is not an Organizations call at all.
 #
@@ -209,7 +209,7 @@ printf '  7. Calls that failed\n'
 printf '\n'
 printf 'HOW TO READ THIS FILE\n'
 printf '  - THIS IS AN INPUT TO WRITING POLICY, not a record of it. Stage 1c step 7.0.\n'
-printf '    What was decided from it goes in log/log-stage-01c-preventive-policies.md; the\n'
+printf '    What was decided from it goes in docs/log/log-stage-01c-preventive-policies.md; the\n'
 printf '    documents themselves go in terraform-live/identity/org-policies/policies/.\n'
 printf '  - SECTION 4 IS THE ONE THAT SHRINKS THE WORK. Control Tower mandatory controls\n'
 printf '    already deny changes to CloudTrail and to the Config recorder on every\n'
@@ -226,7 +226,7 @@ printf '    7.7 may not enable a control on a target this call rejected (Lesson 
 printf '  - Every "$ aws ..." line is the exact command that produced the block under it,\n'
 printf '    minus `--region` and the profile, which every command carries.\n'
 printf '  - This is a point-in-time snapshot, not a source of truth: regenerate it rather\n'
-printf '    than trusting a stale copy, and record intent in plan/ or log/, never here.\n'
+printf '    than trusting a stale copy, and record intent in docs/plan/ or docs/log/, never here.\n'
 printf '\n'
 printf 'THIS FILE IS NOT VERSIONED (aws/output/ is in .gitignore) AND CONTAINS ACCOUNT IDS.\n'
 printf 'Do not copy one into a tracked file.\n'
@@ -248,7 +248,7 @@ printf 'ORG_ID=%s\n\n' "$ORG_ID"
 
 printf 'ORG_ID is the value both data-perimeter condition keys are compared against:\n'
 printf 'aws:PrincipalOrgID (is the CALLER inside my organization?) and aws:ResourceOrgID\n'
-printf '(is the RESOURCE being written to?) - the two axes of plan/architecture.md. It is\n'
+printf '(is the RESOURCE being written to?) - the two axes of docs/plan/architecture.md. It is\n'
 printf 'also what terraform-live/identity/org-policies/render.sh substitutes for the\n'
 printf '<ORG_ID> placeholder of the Stage 1c documents, so no paste of it is done by hand.\n'
 
@@ -467,7 +467,7 @@ if [ -s "$ERRORS" ]; then
   printf '  - only controltower: denied   -> expected; that call is not an Organizations one.\n'
   printf 'Either way, re-run in CloudShell on MANAGEMENT as `AWS Control Tower Admin`:\n'
   printf '  ./aws/org-policy-baseline.sh -\n'
-  printf 'and record in log/log-stage-01c-preventive-policies.md which identity each answer\n'
+  printf 'and record in docs/log/log-stage-01c-preventive-policies.md which identity each answer\n'
   printf 'actually required.\n'
 else
   printf 'None. Every call in this report returned successfully - which also answers\n'

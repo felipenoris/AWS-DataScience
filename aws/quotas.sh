@@ -228,7 +228,7 @@ if [ -n "${CAP_LINE:-}" ]; then
   printf 'exactly when an increase has been granted, which is the whole question here.\n'
   printf '\n'
   printf 'Expected as of 2026-08-15: applied 10, requested 15, NOT yet granted. The count\n'
-  printf 'includes the suspended account at the root that is not ours (AWS_STATE.md EXC-01),\n'
+  printf 'includes the suspended account at the root that is not ours (docs/AWS_STATE.md EXC-01),\n'
   printf 'so it is one higher than the accounts this project owns.\n'
   printf '\n'
   printf 'WHAT IS WAITING ON IT: the `Staging` vend (Stage 1a, deferred), and with it\n'
@@ -284,8 +284,8 @@ printf '        --service-code organizations \\\n'
 printf '        --quota-code %s \\\n' "${CAP_CODE:-<resolve from section 2>}"
 printf '        --desired-value 15\n\n'
 printf 'Run it in CloudShell on Management as `AWS Control Tower Admin`, and record the\n'
-printf 'request id in log/log-stage-01a-landing-zone.md. The deferral`s owed list lives in\n'
-printf 'plan/stages/stage-01a-landing-zone.md, "What the deferral leaves owed".\n'
+printf 'request id in docs/log/log-stage-01a-landing-zone.md. The deferral`s owed list lives in\n'
+printf 'docs/plan/stages/stage-01a-landing-zone.md, "What the deferral leaves owed".\n'
 
 # ======================================================================================
 h1 "6. Calls that failed"

@@ -4,8 +4,8 @@
 produce.** Nothing here creates, changes or deletes a resource, and nothing here is infrastructure code —
 that is `terraform-live/` from Stage 2 on.
 
-Why this exists: [`GENERAL_PLAN.md`](../GENERAL_PLAN.md) and `plan/` say what *should* be there, the
-[`log/`](../log/INDEX.md) files say what was *done by hand*, and these snapshots say what AWS *reports right
+Why this exists: [`docs/GENERAL_PLAN.md`](../docs/GENERAL_PLAN.md) and `docs/plan/` say what *should* be there, the
+[`docs/log/`](../docs/log/INDEX.md) files say what was *done by hand*, and these snapshots say what AWS *reports right
 now*. Each answers a different question, and the three disagreeing is itself information.
 
 **One subfolder is the exception to the sentence above, and it is fenced rather than hidden:
@@ -21,22 +21,24 @@ snapshots.
 
 | Script | SSO user signed in | Profile it runs as | Writes | Captures |
 |---|---|---|---|---|
-| [`list-identities.sh`](list-identities.sh) | [Infrastructure](../ORGANIZATION.md#infrastructure-user) | `awsds-infra-identity` (Identity account, IAM Identity Center delegated administrator — D10) | `output/list-identities.txt` | The Organization: **organization id** — the value `aws:PrincipalOrgID` and `aws:ResourceOrgID` are compared against — management account id, root and its enabled policy types, the whole OU tree, every account. The directory: Identity Store instance, groups, users, group memberships. The entitlements: permission sets with what each grants, and every assignment triple. |
-| [`AZs.sh`](AZs.sh) | [Infrastructure](../ORGANIZATION.md#infrastructure-user) — including behind `awsds-policy-canary`, which is the **same human** through a different permission set (D32) | **every** `awsds-*` profile in `~/.aws/config`, or the ones named as arguments — the one script here that is not single-profile, see below | `output/AZs.txt` | The availability-zone **name → zone ID** mapping each account reports, one listing per account, the mappings side by side, and a check on whether they agree. |
-| [`org-trusted-access-services.sh`](org-trusted-access-services.sh) | [Infrastructure](../ORGANIZATION.md#infrastructure-user); [`AWS Control Tower Admin`](../ORGANIZATION.md#aws-control-tower-admin-d33) on the `-` fallback | `awsds-infra-identity` by default; takes another profile as its argument, or `-` to run with no profile at all — inside CloudShell on Management | `output/org-trusted-access-services.txt` | Which AWS services hold **trusted access** across the organization, which account is each one's **delegated administrator**, and the `access-analyzer` registration on its own. |
-| [`audit-iam-analyser.sh`](audit-iam-analyser.sh) | [`AWS Control Tower Admin`](../ORGANIZATION.md#aws-control-tower-admin-d33) — **the only one**, no laptop path | **no profile — CloudShell on the Audit account**, as `AWS Control Tower Admin`. Takes a profile as its argument if one ever exists there; see below | `output/audit-iam-analyser.txt` | The IAM Access Analyzer analyzers of that account and Region: type (the **zone of trust**), status, tags, archive rules, findings — and a check that there is exactly one, `ORGANIZATION`, `ACTIVE`. |
-| [`org-policy-baseline.sh`](org-policy-baseline.sh) | [Infrastructure](../ORGANIZATION.md#infrastructure-user) — **open, and what section 7 answers**; [`AWS Control Tower Admin`](../ORGANIZATION.md#aws-control-tower-admin-d33) on the `-` fallback, which section 5 is expected to need anyway | `awsds-infra-identity` by default; takes another profile, or `-` for CloudShell on **Management** as `AWS Control Tower Admin` — which is the fallback if the policy reads are denied | `output/org-policy-baseline.txt` | **The ceiling that already exists.** Organization id and feature set, the root and its enabled policy types, every node with its **id, ARN and full path**, the policies attached per node per type, the **documents** of the ones found, the Control Tower controls enabled per node, and the policy quota. Stage 1c step 7.0 steps 1, 2, 3 and 5 in one pass. |
-| [`org-policies.sh`](org-policies.sh) | [Infrastructure](../ORGANIZATION.md#infrastructure-user); [`AWS Control Tower Admin`](../ORGANIZATION.md#aws-control-tower-admin-d33) on the `-` fallback | `awsds-infra-identity` by default; takes another profile, or `-` for CloudShell on **Management** | `output/org-policies.txt` | **What governs each node right now, by `Sid`** — no document bodies. Attached per node condensed to its statement names; **what governs each *account* once inheritance is resolved**; the **read-only checks** that no probe can reach; and a per-OU ceiling table. **Exits 2 when a check fails**, so it can gate a change. **Gap found and fixed the same day (2026-08-15):** section 1 used to list ids for `SERVICE_CONTROL_POLICY` only, leaving three of the ten attached documents with no id in any snapshot (the [1c log](../log/log-stage-01c-preventive-policies.md) alone carried them). **All four policy types now carry their ids** — which is what [Stage 2](../plan/stages/stage-02-terraform-foundation.md) step 5.5 needs, where an id is an argument |
-| [`account-bpa.sh`](account-bpa.sh) | [Infrastructure](../ORGANIZATION.md#infrastructure-user); [`AWS Control Tower Admin`](../ORGANIZATION.md#aws-control-tower-admin-d33) for the `-` runs in Management, Log Archive and Audit | **every** `awsds-*` profile, or the ones named as arguments, or `-` inside CloudShell for the three accounts that have no profile — the second script here that is not single-profile, see below | `output/account-bpa.txt` | The **account-level** S3 Block Public Access configuration of each account, the four flags side by side, and which accounts nothing is measuring. Read three times: before 7.4, after 7.4 and before 7.5, and at every vend. |
-| [`declarative-ec2.sh`](declarative-ec2.sh) | [Infrastructure](../ORGANIZATION.md#infrastructure-user); [`AWS Control Tower Admin`](../ORGANIZATION.md#aws-control-tower-admin-d33) for the `-` runs | **every** `awsds-*` profile, the ones named, or `-` inside CloudShell — the third non-single-profile script, and for the same reason | `output/declarative-ec2.txt` | **The four EC2 settings `awsds-org-declarative-ec2` declares, read back per account** against the document. A declarative policy is enforced in the service's control plane, so the battery can only show that a *change* is refused — this shows what the setting **is**, which is the control. Also the one instrument that can answer whether a root-attached declarative policy reaches **Management**, which AWS documentation leaves undecided. |
-| [`org-delegation.sh`](org-delegation.sh) | [Infrastructure](../ORGANIZATION.md#infrastructure-user); [`AWS Control Tower Admin`](../ORGANIZATION.md#aws-control-tower-admin-d33) on the `-` fallback | `awsds-infra-identity` by default; takes another profile, or `-` for CloudShell on **Management** | `output/org-delegation.txt` | **INT-20 — can the Identity account manage the organization's *policies*, and which of them.** The organization **resource policy**, kept in three distinguishable states (present / absent / the read itself denied), then decomposed into nine checks: the principal, the read and write halves, the two actions that must be **absent**, and — the three that fail silently — whether the `Resource` list reaches the **root**, **nested** OUs, and the **policy-type ARNs** at all (`DEL-9`, added 2026-08-15: a target-only list denies every write and reads exactly like "all refused"). Plus the documents a write would have to reach, split by target class. **Exits 2 when a check fails.** |
-| [`import-ids.sh`](import-ids.sh) | [Infrastructure](../ORGANIZATION.md#infrastructure-user) | `awsds-infra-identity` — one profile reaches both planes: Identity Center delegated administrator (D10) *and* Organizations reads (1c verification (x)) | `output/import-ids.txt` | **The import manifest for Stage 2 step 5** — the exact strings `terraform import` takes, in the four formats, for every policy, every attachment, the `InfrastructureAccess` set and its assignments. Also the resolved values of the three template placeholders. **Section 4 lists what must *not* be imported**, with the reason, rather than filtering it out. |
-| [`tf-backends.sh`](tf-backends.sh) | [Infrastructure](../ORGANIZATION.md#infrastructure-user) | **every** `awsds-*` profile, or the ones named, or `-` — the fourth non-single-profile script, same reason | `output/tf-backends.txt` | **The Terraform state buckets and their keys, side by side.** Existence, versioning, SSE-KMS and the key's **alias**, the four BPA flags, the TLS-only statement, the noncurrent-version lifecycle, Object Lock — plus every bucket in each account, so one under an unexpected name is visible. Section 4 is where Stage 2 step 3.4's **two keys in Production** are either true or not. **Exits 2 when a check fails.** |
-| [`quotas.sh`](quotas.sh) | [`AWS Control Tower Admin`](../ORGANIZATION.md#aws-control-tower-admin-d33) — **the only one**, no laptop path | **no profile — CloudShell on Management.** Takes a profile if one ever exists there | `output/quotas.txt` | **Has the account-cap increase landed** — the one number the `Staging` vend is held on. The applied value (not the default), how much of it is spent, and any pending request. **Refuses to interpret the number outside Management**, where the same quota reads `0.0`. |
+| [`list-identities.sh`](list-identities.sh) | [Infrastructure](../docs/ORGANIZATION.md#infrastructure-user) | `awsds-infra-identity` (Identity account, IAM Identity Center delegated administrator — D10) | `output/list-identities.txt` | The Organization: **organization id** — the value `aws:PrincipalOrgID` and `aws:ResourceOrgID` are compared against — management account id, root and its enabled policy types, the whole OU tree, every account. The directory: Identity Store instance, groups, users, group memberships. The entitlements: permission sets with what each grants, and every assignment triple. |
+| [`AZs.sh`](AZs.sh) | [Infrastructure](../docs/ORGANIZATION.md#infrastructure-user) — including behind `awsds-policy-canary`, which is the **same human** through a different permission set (D32) | **every** `awsds-*` profile in `~/.aws/config`, or the ones named as arguments — the one script here that is not single-profile, see below | `output/AZs.txt` | The availability-zone **name → zone ID** mapping each account reports, one listing per account, the mappings side by side, and a check on whether they agree. |
+| [`org-trusted-access-services.sh`](org-trusted-access-services.sh) | [Infrastructure](../docs/ORGANIZATION.md#infrastructure-user); [`AWS Control Tower Admin`](../docs/ORGANIZATION.md#aws-control-tower-admin-d33) on the `-` fallback | `awsds-infra-identity` by default; takes another profile as its argument, or `-` to run with no profile at all — inside CloudShell on Management | `output/org-trusted-access-services.txt` | Which AWS services hold **trusted access** across the organization, which account is each one's **delegated administrator**, and the `access-analyzer` registration on its own. |
+| [`audit-iam-analyser.sh`](audit-iam-analyser.sh) | [`AWS Control Tower Admin`](../docs/ORGANIZATION.md#aws-control-tower-admin-d33) — **the only one**, no laptop path | **no profile — CloudShell on the Audit account**, as `AWS Control Tower Admin`. Takes a profile as its argument if one ever exists there; see below | `output/audit-iam-analyser.txt` | The IAM Access Analyzer analyzers of that account and Region: type (the **zone of trust**), status, tags, archive rules, findings — and a check that there is exactly one, `ORGANIZATION`, `ACTIVE`. |
+| [`org-policy-baseline.sh`](org-policy-baseline.sh) | [Infrastructure](../docs/ORGANIZATION.md#infrastructure-user) — **open, and what section 7 answers**; [`AWS Control Tower Admin`](../docs/ORGANIZATION.md#aws-control-tower-admin-d33) on the `-` fallback, which section 5 is expected to need anyway | `awsds-infra-identity` by default; takes another profile, or `-` for CloudShell on **Management** as `AWS Control Tower Admin` — which is the fallback if the policy reads are denied | `output/org-policy-baseline.txt` | **The ceiling that already exists.** Organization id and feature set, the root and its enabled policy types, every node with its **id, ARN and full path**, the policies attached per node per type, the **documents** of the ones found, the Control Tower controls enabled per node, and the policy quota. Stage 1c step 7.0 steps 1, 2, 3 and 5 in one pass. |
+| [`org-policies.sh`](org-policies.sh) | [Infrastructure](../docs/ORGANIZATION.md#infrastructure-user); [`AWS Control Tower Admin`](../docs/ORGANIZATION.md#aws-control-tower-admin-d33) on the `-` fallback | `awsds-infra-identity` by default; takes another profile, or `-` for CloudShell on **Management** | `output/org-policies.txt` | **What governs each node right now, by `Sid`** — no document bodies. Attached per node condensed to its statement names; **what governs each *account* once inheritance is resolved**; the **read-only checks** that no probe can reach; and a per-OU ceiling table. **Exits 2 when a check fails**, so it can gate a change. **Gap found and fixed the same day (2026-08-15):** section 1 used to list ids for `SERVICE_CONTROL_POLICY` only, leaving three of the ten attached documents with no id in any snapshot (the [1c log](../docs/log/log-stage-01c-preventive-policies.md) alone carried them). **All four policy types now carry their ids** — which is what [Stage 2](../docs/plan/stages/stage-02-terraform-foundation.md) step 5.5 needs, where an id is an argument |
+| [`account-bpa.sh`](account-bpa.sh) | [Infrastructure](../docs/ORGANIZATION.md#infrastructure-user); [`AWS Control Tower Admin`](../docs/ORGANIZATION.md#aws-control-tower-admin-d33) for the `-` runs in Management, Log Archive and Audit | **every** `awsds-*` profile, or the ones named as arguments, or `-` inside CloudShell for the three accounts that have no profile — the second script here that is not single-profile, see below | `output/account-bpa.txt` | The **account-level** S3 Block Public Access configuration of each account, the four flags side by side, and which accounts nothing is measuring. Read three times: before 7.4, after 7.4 and before 7.5, and at every vend. |
+| [`declarative-ec2.sh`](declarative-ec2.sh) | [Infrastructure](../docs/ORGANIZATION.md#infrastructure-user); [`AWS Control Tower Admin`](../docs/ORGANIZATION.md#aws-control-tower-admin-d33) for the `-` runs | **every** `awsds-*` profile, the ones named, or `-` inside CloudShell — the third non-single-profile script, and for the same reason | `output/declarative-ec2.txt` | **The four EC2 settings `awsds-org-declarative-ec2` declares, read back per account** against the document. A declarative policy is enforced in the service's control plane, so the battery can only show that a *change* is refused — this shows what the setting **is**, which is the control. Also the one instrument that can answer whether a root-attached declarative policy reaches **Management**, which AWS documentation leaves undecided. |
+| [`org-delegation.sh`](org-delegation.sh) | [Infrastructure](../docs/ORGANIZATION.md#infrastructure-user); [`AWS Control Tower Admin`](../docs/ORGANIZATION.md#aws-control-tower-admin-d33) on the `-` fallback | `awsds-infra-identity` by default; takes another profile, or `-` for CloudShell on **Management** | `output/org-delegation.txt` | **INT-20 — can the Identity account manage the organization's *policies*, and which of them.** The organization **resource policy**, kept in three distinguishable states (present / absent / the read itself denied), then decomposed into nine checks: the principal, the read and write halves, the two actions that must be **absent**, and — the three that fail silently — whether the `Resource` list reaches the **root**, **nested** OUs, and the **policy-type ARNs** at all (`DEL-9`, added 2026-08-15: a target-only list denies every write and reads exactly like "all refused"). Plus the documents a write would have to reach, split by target class. **Exits 2 when a check fails.** |
+| [`import-ids.sh`](import-ids.sh) | [Infrastructure](../docs/ORGANIZATION.md#infrastructure-user) | `awsds-infra-identity` — one profile reaches both planes: Identity Center delegated administrator (D10) *and* Organizations reads (1c verification (x)) | `output/import-ids.txt` | **The import manifest for Stage 2 step 5** — the exact strings `terraform import` takes, in the four formats, for every policy, every attachment, the `InfrastructureAccess` set and its assignments. Also the resolved values of the three template placeholders. **Section 4 lists what must *not* be imported**, with the reason, rather than filtering it out. |
+| [`tf-backends.sh`](tf-backends.sh) | [Infrastructure](../docs/ORGANIZATION.md#infrastructure-user) | **every** `awsds-*` profile, or the ones named, or `-` — the fourth non-single-profile script, same reason | `output/tf-backends.txt` | **The Terraform state buckets and their keys, side by side.** Existence, versioning, SSE-KMS and the key's **alias**, the four BPA flags, the TLS-only statement, the noncurrent-version lifecycle, Object Lock — plus every bucket in each account, so one under an unexpected name is visible. Section 4 is where Stage 2 step 3.4's **two keys in Production** are either true or not. **Exits 2 when a check fails.** |
+| [`networking.sh`](networking.sh) | [Infrastructure](../docs/ORGANIZATION.md#infrastructure-user); [`AWS Control Tower Admin`](../docs/ORGANIZATION.md#aws-control-tower-admin-d33) for `-` runs | **every** `awsds-*` profile, the ones named, or `-` inside CloudShell — the fifth non-single-profile script, and for the standing reason: a CIDR overlap, a peering and a cross-account zone association are facts *between* accounts | `output/networking.txt` | **The `[P]` networking half, per account, side by side** — [Stage 3](../docs/plan/stages/stage-03-networking.md)'s preflight and its standing regression. VPCs with **default and Account Factory vend artifacts flagged** (every vended account carries one — `docs/AWS_STATE.md` §C), the two DNS attributes of step 4.1, subnets with their **zone IDs** (step 1.5), route tables and routes, IGWs, the **gateway endpoint IDs that are the INT-05 anchor** (the only endpoint IDs any policy may name — Lesson 3), peerings **from both sides** (INT-09), the three private zones with associations and **pending authorizations** (the 4.5 trap made visible), flow logs with retention, NACLs and SGs. Checks `NT-1`–`NT-8` mechanise validation 2 (no route into `10.40.0.0/16`, local routes excluded on purpose), step 6.5 (`10.90.0.0/24` nowhere), step 1.2 (no overlap), 4.1, 4.4 and 5. **Exits 2 when a check fails.** The `[P]`-stability deliverable is a **diff of two runs** of this file, either side of a `make down`/`make up` |
+| [`egress.sh`](egress.sh) | [Infrastructure](../docs/ORGANIZATION.md#infrastructure-user); [`AWS Control Tower Admin`](../docs/ORGANIZATION.md#aws-control-tower-admin-d33) for `-` runs | same multi-profile shape, same reason: step 8's endpoint list is deliberately **per account role**, so "is the set right" is only readable with the columns side by side | `output/egress.txt` | **The `[E]` networking half, plus the burn meter.** Interface endpoints (subnet count per D9, private DNS per 8.5), NAT gateways, elastic addresses, every endpoint **policy** read against step 9 — the org condition (9.1) and the AWS-owned-bucket allow (9.3), **presence, never completeness** (the no-NAT `dnf` probe is the stage's) — the service×account **matrix** read against step 8's lists (deliberately not encoded here — Lesson 14), the **hourly burn right now** (the manual instrument the forgotten-egress risk gets, D12 having skipped the alerts; zero everywhere is D11 working), and the region's **endpoint service-name catalog**, which answers stage verification (i) and the `VpcEndpointPolicySupported` flag read-only, before anything is paid for. Checks `EG-1`–`EG-4`; **exits 2 when a check fails** |
+| [`quotas.sh`](quotas.sh) | [`AWS Control Tower Admin`](../docs/ORGANIZATION.md#aws-control-tower-admin-d33) — **the only one**, no laptop path | **no profile — CloudShell on Management.** Takes a profile if one ever exists there | `output/quotas.txt` | **Has the account-cap increase landed** — the one number the `Staging` vend is held on. The applied value (not the default), how much of it is spent, and any pending request. **Refuses to interpret the number outside Management**, where the same quota reads `0.0`. |
 
 **The first two columns are different questions, and the whole table above collapses into two identities.** A
 profile is a *(account, permission set)* pair; the **user** is whoever holds the assignment for that pair
-([`ORGANIZATION.md`](../ORGANIZATION.md), "Assignments"). Every `awsds-*` profile resolves to the
+([`docs/ORGANIZATION.md`](../docs/ORGANIZATION.md), "Assignments"). Every `awsds-*` profile resolves to the
 **infrastructure user** — the five `awsds-infra-*` through `sso-group-infrastructure` → `InfrastructureAccess`,
 and `awsds-policy-canary` through the permanent Account Factory direct assignment of Control Tower's
 `AWSAdministratorAccess` (D32) — so **everything runnable from this laptop is one person and one login**.
@@ -99,6 +101,14 @@ Run any of them from anywhere; each one `cd`s to the repository root itself:
 ./aws/tf-backends.sh
 ```
 
+```bash
+./aws/networking.sh
+```
+
+```bash
+./aws/egress.sh
+```
+
 `quotas.sh` is the exception: it has no laptop path, because Management holds no CLI profile.
 Run it inside **CloudShell on the Management account**, signed in as `AWS Control Tower Admin`
 through `AWSAdministratorAccess`:
@@ -130,12 +140,12 @@ Three rules, in the order they matter:
    the `secrets` folder carries, for the same reason ([`CLAUDE.md`](../CLAUDE.md)). A snapshot may be read
    freely; what it says may be *used* freely; the identifiers themselves stay here.
 2. **A snapshot is evidence, not intent.** It records what AWS answered at one instant. Why a resource
-   exists belongs in [`plan/decisions/`](../plan/decisions/INDEX.md), what was typed to create it belongs in
-   [`log/`](../log/INDEX.md), and neither is derivable from a listing.
+   exists belongs in [`docs/plan/decisions/`](../docs/plan/decisions/INDEX.md), what was typed to create it belongs in
+   [`docs/log/`](../docs/log/INDEX.md), and neither is derivable from a listing.
 3. **Check the timestamp in the header before trusting a line.** If the file predates the work being
    reasoned about, re-run the script — it costs seconds and only reads.
 
-**Before reporting anything in a snapshot as a finding, read [`AWS_STATE.md`](../AWS_STATE.md).** It holds
+**Before reporting anything in a snapshot as a finding, read [`docs/AWS_STATE.md`](../docs/AWS_STATE.md).** It holds
 what a snapshot is expected to show (`INV-nn`), the differences already accounted for (`EXC-nn` — the
 suspended `Sandbox` account at the root is not ours), and what a later stage is going to change anyway. A
 snapshot read without it produces false alarms, which is worse than not reading it: a real finding stops
@@ -165,7 +175,7 @@ the file end to end.
 
 **Section 6 is what makes an empty block readable.** A listing that returns nothing and a listing that was
 denied look identical otherwise, and reading one as the other is Lesson 13
-([`plan/lessons.md`](../plan/lessons.md)). Section 6 empty means every `(none)` in the file is a real none.
+([`docs/plan/lessons.md`](../docs/plan/lessons.md)). Section 6 empty means every `(none)` in the file is a real none.
 
 ## Finding an answer in `output/AZs.txt`
 
@@ -183,7 +193,7 @@ check reports as *"nothing was compared"* rather than as a pass: a verification 
 success and vacuity is Lesson 13 again.
 
 **What was decided from this measurement is not in the file** (rule 2 below): it is
-[`plan/architecture.md`](../plan/architecture.md) §4.1 and [`plan/open-questions.md`](../plan/open-questions.md)
+[`docs/plan/architecture.md`](../docs/plan/architecture.md) §4.1 and [`docs/plan/open-questions.md`](../docs/plan/open-questions.md)
 item 3.
 
 ## Finding an answer in `output/org-trusted-access-services.txt`
@@ -206,7 +216,7 @@ Tower is one.
 **Section 1 is an inventory nobody in this project wrote**, which is why it is worth re-reading rather than
 remembering: most of it is what Control Tower switched on when the landing zone was installed, and a service
 there that no stage accounts for is a finding (Lesson 17 — a service that "sets itself up" creates principals
-nobody chose). The expected content is `INV-09` in [`AWS_STATE.md`](../AWS_STATE.md).
+nobody chose). The expected content is `INV-09` in [`docs/AWS_STATE.md`](../docs/AWS_STATE.md).
 
 **Both calls answer from the Identity account** — measured on this script's first run, 2026-08-12. That
 extends the read boundary Stage 1b step 4 established: a delegated administrator for *any* service may make
@@ -226,7 +236,7 @@ If a future run is denied anyway, section 4 says so and the fallback is in the s
 
 **This is the one script here that does not run from a profile, and the absence is the design.** The
 organization analyzer lives in **Audit** (Stage 1b step 8.2), and no project persona holds an assignment
-there — [`ORGANIZATION.md`](../ORGANIZATION.md) records that as permanent. The only identity that reaches
+there — [`docs/ORGANIZATION.md`](../docs/ORGANIZATION.md) records that as permanent. The only identity that reaches
 Audit is `AWS Control Tower Admin`, which D33/D34 keep in the console. So the run is CloudShell inside
 Audit, and section 1 resolves the **account name** through Organizations rather than trusting the operator
 to be where they think they are — the check the console wizard did not have on 2026-08-12, when it named
@@ -329,10 +339,48 @@ bootstrapped. Bucket names are **discovered** by matching `tfstate`, not compose
 `<env>` token for the Identity account is not settled in any plan file, and a hardcoded guess would report
 a correctly-named bucket as missing.
 
+## Finding an answer in `output/networking.txt`
+
+| Question | Section |
+|---|---|
+| Which VPCs exist here, and which of them did **nobody in this project create**? | 2 — the DEFAULT column, plus `NT-1` in 10: every vended account carries an **Account Factory VPC** (`docs/AWS_STATE.md` §C), which is not the default VPC and not ours |
+| Are both DNS attributes on (step 4.1)? | 2; checked as `NT-2` |
+| Which **zone ID** is each subnet in — is a peering about to be cross-AZ? | 3, read next to `AZs.txt` |
+| Does any route table reach into Staging's range (validation 2), or carry the WireGuard client range (step 6.5)? | 4, decided by `NT-3`/`NT-4` — `NT-3` excludes `local` routes on purpose, so a future Staging VPC does not fail against its own local route |
+| **What may Stage 5's bucket policies anchor on (INT-05)?** | 5 — the gateway endpoint IDs, and only those; the interface endpoints of `egress.txt` are `[E]` and may anchor nothing (Lesson 3) |
+| Are the two peerings there — and only the two? | 6, with both sides printed; `NT-6` holds the D20 half |
+| Did the step 4.4 zone handshake complete, and is an authorization still pending (the 4.5 trap)? | 7, decided by `NT-8` |
+| Is a flow log missing, or retaining forever? | 8; `NT-7` |
+| Did somebody add a NACL rule (2.3), or open an SG to the world? | 9 — the SG listing is informational: from Stage 4 on, exactly one world-open rule is expected (UDP 51820) |
+| **Is the `[P]` half byte-stable across `make down`/`make up`?** | the whole file: run, copy aside, cycle, run, `diff` — only the timestamp may change |
+| Which accounts is nobody measuring? | 11 — **Staging above all**, whose "peering list is empty" deliverable is unrunnable until the vend |
+
+## Finding an answer in `output/egress.txt`
+
+| Question | Section |
+|---|---|
+| Which interface endpoints are up, in how many AZs (D9), with private DNS (8.5)? | 2; `EG-2`/`EG-3` |
+| Is a NAT running, and which elastic addresses exist? | 3 |
+| Does every endpoint policy name the organization (9.1), and does the S3 gateway policy carry the AWS-owned-bucket allow (9.3)? | 4; `EG-1`/`EG-4` — **presence, never sufficiency**: only the stage's no-NAT `dnf` probe shows the allow-list is complete. Account Factory endpoints are notes, not step 9 failures |
+| Does each account's endpoint set match step 8's per-role list? | 5 — the matrix, read against the stage file rather than a copy here |
+| **What is the burn right now — did I forget `make down`?** | 6 — the D12 instrument. Zero everywhere is D11 working, not an absent reading |
+| What is the Studio endpoint's real service name (verification (i)), does CodeArtifact exist here (8.4), and which services can carry a policy at all? | 7 |
+| Which accounts is nobody measuring? | 9 — Staging's list (8.3) is unmeasurable until the vend |
+
+**`networking.sh` and `egress.sh` split one stage the way the stage itself does, and the split is a
+cadence.** `foundation/` is `[P]` and never destroyed, so `networking.sh` is run at each vend, after each
+Stage 3 pass, and on **both sides of a lifecycle cycle** — the diff of two runs *is* the stability
+deliverable. `egress/` is `[E]` and dies with the session, so `egress.sh` is run at the session's two ends:
+after `make up` (is the set right) and after `make down` (is anything still burning — the one question
+nothing else in this design asks, since D12 declined the budget alerts). Both are **control-plane
+readings**: the stage's behavioural proofs — `dnf` through the endpoint, `NXDOMAIN` from Staging, the probe
+reaching GitLab's port — belong to the stage's throwaway probe instances, and no describe call substitutes
+for them (Lesson 20's rule: configuration for configuration questions, probes for behaviour).
+
 ## The four written for Stage 2, and the one thing they have in common
 
 **Written 2026-08-15**: `org-delegation.sh`, `import-ids.sh`, `tf-backends.sh` and `quotas.sh`.
-[Stage 2](../plan/stages/stage-02-terraform-foundation.md) is the first stage that has to **feed an
+[Stage 2](../docs/plan/stages/stage-02-terraform-foundation.md) is the first stage that has to **feed an
 AWS-generated identifier back into a command** rather than read it, and that is a different job from every
 snapshot above. A snapshot tolerates a stale line because a human reads it and notices; **an import id is
 pasted into a state file, and a wrong one produces an orphan and a create rather than an error.** So the
@@ -344,6 +392,16 @@ what is there and not what should be.
 **One defect was found and fixed in an existing script at the same time.** `org-policies.sh` §1 listed ids
 for `SERVICE_CONTROL_POLICY` only and reduced the RCP to a presence check, so **three of the ten attached
 documents had no id in any snapshot** and existed only in the 1c log. All four types now carry theirs.
+
+## The two written for Stage 3, and what their first run already found
+
+**Written 2026-08-15**: `networking.sh` and `egress.sh`, from the
+[Stage 3](../docs/plan/stages/stage-03-networking.md) roteiro *before* the stage starts — because the stage's
+own validations are exactly the kind of reading that otherwise gets done once, in one console tab, per
+account. **Their first run measured something no plan file had:** every vended account carries an
+**Account Factory VPC** with an S3 gateway endpoint on the default full-access policy — recorded in
+[`docs/AWS_STATE.md`](../docs/AWS_STATE.md) §C, decided in Stage 3. Both scripts report those artifacts as `note`
+rows tied to that decision, so today's known state reads clean and a *new* deviation still fails loudly.
 
 ## Adding a script here
 
@@ -371,5 +429,5 @@ Keep the shape, so that one file explains all of them:
 
 ---
 
-*Project root: [`README.md`](../README.md) · CLI recipes run by hand: [`AWS-CLI.md`](../AWS-CLI.md) ·
-What was done by hand: [`log/INDEX.md`](../log/INDEX.md)*
+*Project root: [`README.md`](../README.md) · CLI recipes run by hand: [`aws/AWS-CLI.md`](AWS-CLI.md) ·
+What was done by hand: [`docs/log/INDEX.md`](../docs/log/INDEX.md)*

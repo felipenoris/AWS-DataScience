@@ -45,7 +45,7 @@
 #
 # WHAT IT CANNOT SEE, stated because an empty column and a missing account look alike:
 #   - MANAGEMENT, LOG ARCHIVE and AUDIT have no profile on this laptop and never will
-#     (guiding principle 1; ORGANIZATION.md). They are invisible here. Run this script with
+#     (guiding principle 1; docs/ORGANIZATION.md). They are invisible here. Run this script with
 #     `-` inside CloudShell in each of them, as `AWS Control Tower Admin`, and record the
 #     three answers by hand - section 4 prints the exact command.
 #   - `Staging` is not vended, and every Sandbox beyond the first has no profile until
@@ -202,7 +202,7 @@ printf '  - ORDER MATTERS AND IS IRREVERSIBLE-ISH: set BPA everywhere FIRST, the
 printf '    SCP that denies changing it (7.5). Reversed, the deny blocks the enabling call in\n'
 printf '    every account at once and the repair is a detach from the management account.\n'
 printf '  - This is a point-in-time snapshot, not a source of truth: regenerate it rather\n'
-printf '    than trusting a stale copy, and record intent in plan/ or log/, never here.\n'
+printf '    than trusting a stale copy, and record intent in docs/plan/ or docs/log/, never here.\n'
 printf '\n'
 printf 'THIS FILE IS NOT VERSIONED (aws/output/ is in .gitignore) AND CONTAINS ACCOUNT IDS.\n'
 printf 'Do not copy one into a tracked file.\n'
@@ -287,13 +287,13 @@ printf 'measures is exactly the hole the account-level setting exists to close.\
 h1 "4. The accounts this laptop cannot reach, and how to read them"
 
 printf 'MANAGEMENT, LOG ARCHIVE and AUDIT hold no project persona (guiding principle 1,\n'
-printf 'ORGANIZATION.md), so they cannot appear above. The identity that reaches them is\n'
+printf 'docs/ORGANIZATION.md), so they cannot appear above. The identity that reaches them is\n'
 printf '`AWS Control Tower Admin` through the access portal, and the reading is done in\n'
 printf 'CloudShell inside each one:\n\n'
 printf '    ./aws/account-bpa.sh -\n\n'
 printf 'With `-` the script uses ambient credentials and resolves the account id from\n'
 printf 'sts:GetCallerIdentity, so the same command works in all three. Record each answer in\n'
-printf 'log/log-stage-01c-preventive-policies.md by hand - a CloudShell run cannot write into\n'
+printf 'docs/log/log-stage-01c-preventive-policies.md by hand - a CloudShell run cannot write into\n'
 printf 'this snapshot.\n\n'
 printf 'ALSO NOT HERE, and none of the three is a gap:\n'
 printf '  - `Staging` - not vended. It gets BPA AT THE VEND, with everything else deferred\n'
@@ -316,7 +316,7 @@ printf 'except the carved-out InfrastructureAccess role (Stage 1c decision 7).\n
 printf 'AND NEVER DECLARE aws_s3_account_public_access_block IN A TERRAFORM SLICE. It looks\n'
 printf 'exactly like something that belongs in foundation/, and after the deny is attached\n'
 printf 'any apply or drift correction touching it fails from every principal except that\n'
-printf 'one. plan/conventions.md carries the exclusion.\n'
+printf 'one. docs/plan/conventions.md carries the exclusion.\n'
 
 # --------------------------------------------------------------------------------------
 h1 "6. Calls that failed"

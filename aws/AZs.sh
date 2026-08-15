@@ -21,7 +21,7 @@
 # (`usw2-az1`) is the stable identifier. The distinction has a bill attached: the two
 # peerings into Production (D14, D21) are free within an AZ and USD 0.01/GB each way across
 # AZs, and the divergence produces no error - only a line on the invoice. Measured first in
-# Stage 1b step 6; the outcome is in plan/architecture.md §4.1 and plan/open-questions.md
+# Stage 1b step 6; the outcome is in docs/plan/architecture.md §4.1 and docs/plan/open-questions.md
 # item 3, and is not repeated here (aws/INDEX.md: a snapshot is evidence, not intent).
 #
 # ONE DELIBERATE DEVIATION from aws/INDEX.md's "one profile per script": this script runs
@@ -188,9 +188,9 @@ printf '  - A "(failed)" profile is excluded from the section 4 check, never cou
 printf '    agreeing. Section 5 lists every call that failed.\n'
 printf '  - An account with no profile on this laptop does not appear at all.\n'
 printf '  - This is a point-in-time snapshot, not a source of truth: regenerate it rather\n'
-printf '    than trusting a stale copy, and record intent in plan/ or log/, never here.\n'
-printf '    What was decided from this measurement: plan/architecture.md 4.1 and\n'
-printf '    plan/open-questions.md item 3.\n'
+printf '    than trusting a stale copy, and record intent in docs/plan/ or docs/log/, never here.\n'
+printf '    What was decided from this measurement: docs/plan/architecture.md 4.1 and\n'
+printf '    docs/plan/open-questions.md item 3.\n'
 printf '\n'
 printf 'THIS FILE IS NOT VERSIONED (aws/output/ is in .gitignore) AND CONTAINS ACCOUNT IDS.\n'
 printf 'Do not copy one into a tracked file.\n'
@@ -291,7 +291,7 @@ elif [ "$DISAGREE" -eq 0 ]; then
   printf 'This says nothing about an account that was not measured. A newly vended account\n'
   printf 'gets its own mapping at vend time, and nothing makes it match the ones above -\n'
   printf 'which is why anchoring on zone IDs is the standing rule rather than a reaction to\n'
-  printf 'a divergence (plan/architecture.md 4.1).\n'
+  printf 'a divergence (docs/plan/architecture.md 4.1).\n'
 else
   printf '!! CHECK FAILED: %s profile(s) disagree with %s. The differing rows:\n\n' "$DISAGREE" "$REF"
   while IFS= read -r p; do

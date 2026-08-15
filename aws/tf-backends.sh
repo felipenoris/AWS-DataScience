@@ -43,7 +43,7 @@
 # alias list should read two rather than one. Section 4 is where that is either true or not.
 #
 # BUCKET NAMES ARE DISCOVERED, NEVER ASSUMED. The convention is awsds-<env>-tfstate
-# (plan/conventions.md), but the <env> token for the Identity account is not settled in any
+# (docs/plan/conventions.md), but the <env> token for the Identity account is not settled in any
 # plan file, and a script that hardcodes a guess reports a correctly-named bucket as missing.
 # So it lists what is there and matches on `tfstate`, which also catches the failure a
 # hardcoded name cannot see: a state bucket somebody named something else.
@@ -415,7 +415,7 @@ printf 'Read this BEFORE reading section 3 as a pass.\n\n'
 printf '  - Management, Log Archive and Audit hold NO CLI profile, by design, and none of\n'
 printf '    them is a Terraform-managed account: Management is bootstrap-only (principle 1),\n'
 printf '    and the other two are Control Tower`s. They have no state bucket and must not.\n'
-printf '  - `Policy Canary` deliberately gets NO state bucket either (D29, plan/architecture\n'
+printf '  - `Policy Canary` deliberately gets NO state bucket either (D29, docs/plan/architecture\n'
 printf '    §3): an account whose point is to stay empty. Its profile authenticates, so it\n'
 printf '    appears in section 1 with no bucket - and that is the correct reading, not a gap.\n'
 printf '  - `Staging` has no profile because the account is UNVENDED, held on the account cap\n'

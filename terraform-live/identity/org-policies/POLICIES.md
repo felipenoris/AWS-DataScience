@@ -25,7 +25,7 @@ The documents themselves carry no comments — JSON has none — so this file is
 >
 > A statement whose reasoning is only in the sitting that wrote it is a statement the next reader either
 > deletes or works around. **What is *not* here**: policy ids and attachment dates — those are in
-> [`log/log-stage-01c-preventive-policies.md`](../../../log/log-stage-01c-preventive-policies.md), recorded as each
+> [`docs/log/log-stage-01c-preventive-policies.md`](../../../docs/log/log-stage-01c-preventive-policies.md), recorded as each
 > document is attached, and duplicating them here would produce a second, staler answer.
 
 **Scope: every document in [`policies/`](policies/), of all four policy types — widened 2026-08-13 when
@@ -59,14 +59,14 @@ The statements that must reach every account, including the ones that do not exi
 
 | `Sid` | Effect |
 |---|---|
-| `DenyLeaveOrganization` | Denies `organizations:LeaveOrganization`. Every vended account carries `AWSOrganizationsFullAccess` → `AWSControlTowerAdmins` (measured, `AWS_STATE.md` A.1), so this is one of the few Organizations calls a *member* account can really make — and one call drops every SCP and every Control Tower control for that account at once. **Effect:** no principal in any governed account can detach it from the organization. **Deliberately never probed:** its "allowed" outcome *is* the damage |
+| `DenyLeaveOrganization` | Denies `organizations:LeaveOrganization`. Every vended account carries `AWSOrganizationsFullAccess` → `AWSControlTowerAdmins` (measured, `docs/AWS_STATE.md` A.1), so this is one of the few Organizations calls a *member* account can really make — and one call drops every SCP and every Control Tower control for that account at once. **Effect:** no principal in any governed account can detach it from the organization. **Deliberately never probed:** its "allowed" outcome *is* the damage |
 | `DenyIamUserCreation` | Denies `iam:CreateUser` and `iam:CreateAccessKey`. Principle 2 — *no IAM Users, no long-lived keys* — is otherwise a convention with nothing enforcing it. **Effect:** humans and machines can only obtain credentials by assuming a role. Break-glass (D16) is untouched: the Management account is exempt from SCPs by AWS's design |
 | `DenyAccountBpaChangeExceptInfrastructure` | Denies `s3:PutAccountPublicAccessBlock` unless the principal ARN matches the `InfrastructureAccess` Identity Center role. **One action covers both directions** — the `DeletePublicAccessBlock` API is governed by the `Put` permission, so a `Delete…` action string would be a statement that silently does nothing. Protects the account-level Block Public Access set in step 7.4. **The carve-out is decision 7 and is the single wildcard-account ARN in this design**, because it must reach accounts that do not exist yet and whose role suffix is unknowable; Stage 2 step 9.2's check whitelists this `Sid` by name. **Effect, proven in both directions:** the canary (`AWSAdministratorAccess`) is denied, an `awsds-infra-*` profile still sets it |
 | `DenySnapshotAndImageSharing` | Denies `ec2:ModifySnapshotAttribute`, `ec2:ModifyImageAttribute`, `rds:ModifyDBSnapshotAttribute`, `rds:ModifyDBClusterSnapshotAttribute`. **This is an exfiltration route that bypasses every other control here**: a Studio space's volume becomes an outside account's in two API calls with **no network path**, so NAT, the DNS firewall, endpoint policies and the `aws:ResourceOrgID` deny are all irrelevant to it — and no RCP reaches EC2 or RDS. Denied outright rather than conditioned on the destination: nothing in this design shares a snapshot at all. **It is half of the route and the other half is the row below** — this one is *granting someone else access to the image where it sits*; the sibling is *writing the image somewhere else*. **Effect:** the sharing route is closed for every principal, the builder included. The EC2 snapshot action is **attached but unexercised** — an invented snapshot id is rejected before authorization, `--dry-run` included — while its AMI sibling *was* denied; the RDS pair stays untested until an RDS exists |
 | `DenyImageAndSnapshotExport` | Denies `ec2:CreateStoreImageTask`, `ec2:ExportImage`, `ec2:CreateInstanceExportTask` and `rds:StartExportTask`. **Added 2026-08-13, by re-reading the row above against AWS's action list rather than against its own claim.** That statement said it closed "the one exfiltration route that bypasses every other control", and it did not: sharing an attribute is one way an image leaves, and **writing it into a bucket is another** — `CreateStoreImageTask` stores an AMI into an S3 bucket that may belong to another account, `ExportImage`/`CreateInstanceExportTask` export a VM image, and `rds:StartExportTask` writes a DB snapshot out as Parquet. Both routes move the *same* bytes and neither needs a network path from the instance. **Why a separate `Sid` and not four more actions in the row above:** they are two different mechanisms, they will be exercised by different probes, and the log already records the original statement under its own name — a renamed `Sid` would make that entry describe something that no longer exists. **Effect:** unconditional, like its sibling; nothing in this design exports an image or a snapshot. **Revision trigger, and it is a plausible one:** exporting an RDS snapshot to S3 as Parquet is a real ingestion pattern, so the first time a relational source has to reach the lake, `rds:StartExportTask` is the action to reconsider — deliberately, with a named principal, not by deleting the statement |
 | `DenyEcrPublicEntirely` | Denies `ecr-public:*`. Publishing to ECR Public is the case the perimeter document cannot reach: the repository is *inside* the organization, so `aws:ResourceOrgID` matches correctly and says nothing about the gallery being world-readable. The **whole namespace** rather than the publish actions, so it cannot fall one AWS release behind. **Effect:** no account can create or push to a public repository. **Anonymous pulls from `public.ecr.aws` are unaffected** — they involve no IAM action, so no SCP evaluates. Amendment trigger: an authenticated pull taken for the higher rate limit |
 | `DenyGuardDutyTampering` | Denies `guardduty:DeleteDetector`, `UpdateDetector`, `DeleteMembers`, `DisassociateMembers`, `StopMonitoringMembers`, `DisassociateFromMasterAccount`, `DisassociateFromAdministratorAccount`, `DeletePublishingDestination` and `UpdatePublishingDestination`. Measured gap: **no Control Tower guardrail covers GuardDuty**, while Config already is covered (which is why no Config statement is written here). **Five of those nine were added 2026-08-13 and the reason is worth keeping: the statement had been written against the API's old vocabulary.** GuardDuty renamed master→administrator and **both spellings still exist as actions** — denying only `DisassociateFromMasterAccount` left the modern call open, which is a statement that reads as protection and is not (verified against the machine-readable list, where both names appear). `DisassociateMembers`/`StopMonitoringMembers` are the current member-detach pair, and the publishing-destination pair kills or redirects the export of findings without touching a detector at all. **Effect:** inert until Stage 4 turns GuardDuty on — and that is the correct order under principle 9, not an oversight. The battery probe is what says the statement is nonetheless live |
-| `DenyDataZoneDomainOutsideDataOu` | Denies `datazone:CreateDomain` unless the principal's org path is the `Data` OU's. D26 says there is **one** unified domain; without this, a second domain anywhere reintroduces a second interactive entry point with its own blueprints and project roles. Three mechanics carry it and each fails toward a deny that never lifts: `aws:PrincipalOrgPaths` is multi-valued, so `ForAllValues:StringNotLike`; `ForAllValues` is vacuously true over an empty set, so `BoolIfExists: aws:PrincipalIsAWSService=false` is required; the path is the **full path with a trailing slash**. **`CreateDomain` alone, never `datazone:*` at the root** — Sandbox and Development need `PutEnvironmentBlueprintConfiguration`. **Effect: attached but unexercised** — DataZone validates the execution role before authorizing, so the probe measures nothing; it is [Stage 6 step 0](../../../plan/stages/stage-06-unified-studio.md), and the untested failure direction is the deny reaching `Data` too |
+| `DenyDataZoneDomainOutsideDataOu` | Denies `datazone:CreateDomain` unless the principal's org path is the `Data` OU's. D26 says there is **one** unified domain; without this, a second domain anywhere reintroduces a second interactive entry point with its own blueprints and project roles. Three mechanics carry it and each fails toward a deny that never lifts: `aws:PrincipalOrgPaths` is multi-valued, so `ForAllValues:StringNotLike`; `ForAllValues` is vacuously true over an empty set, so `BoolIfExists: aws:PrincipalIsAWSService=false` is required; the path is the **full path with a trailing slash**. **`CreateDomain` alone, never `datazone:*` at the root** — Sandbox and Development need `PutEnvironmentBlueprintConfiguration`. **Effect: attached but unexercised** — DataZone validates the execution role before authorizing, so the probe measures nothing; it is [Stage 6 step 0](../../../docs/plan/stages/stage-06-unified-studio.md), and the untested failure direction is the deny reaching `Data` too |
 
 **Not in this document, and each absence is a decision:** no Config statement (Control Tower's guardrail
 already denies the recorder, with the `AWSControlTowerExecution` carve-out that keeps the landing zone able
@@ -74,7 +74,7 @@ to update itself) and **no CloudTrail statement** (measured: nothing denies it a
 organization-level and lives in Management, which is SCP-exempt, so a member-account deny would bind
 nothing reachable. Revision trigger: the first trail this project creates in a member account).
 
-**`guardduty:UpdateDetector` collides with [Stage 11 step 4](../../../plan/stages/stage-11-dlp.md), and the
+**`guardduty:UpdateDetector` collides with [Stage 11 step 4](../../../docs/plan/stages/stage-11-dlp.md), and the
 collision is deliberate rather than unnoticed.** The deny is unconditional and this document sits on the
 root, so it reaches **Audit** — the GuardDuty administrator — as hard as any member. Org-wide administration
 is unaffected, because turning a feature on across the organization goes through
@@ -82,7 +82,7 @@ is unaffected, because turning a feature on across the organization goes through
 is changing **Audit's own detector**, which is exactly what enabling S3 Protection and Malware Protection
 there will try to do. **The procedure is the same shape as the `s3:DeleteBucket` one in `Data`:** detach
 `awsds-org-scp-baseline` from the root, make the change, re-attach, and re-run phases 1-3 of
-[`scp-battery.md`](../../../plan/runbooks/scp-battery.md) before the sitting is called done. Carving out a
+[`scp-battery.md`](../../../docs/plan/runbooks/scp-battery.md) before the sitting is called done. Carving out a
 named administration role instead is the alternative, and it is a decision for Stage 4 — when that role
 exists and can be named exactly, the way D27's is. **What is not acceptable is discovering this at the
 console on the evening of Stage 11**, which is the only reason it is written here.
@@ -114,15 +114,15 @@ supposed to *run* there. This is the one OU where a `Create*` wildcard is the co
 | `Sid` | Effect |
 |---|---|
 | `DenyUserCompute` | Denies the four EC2 launch actions (`RunInstances`, `StartInstances`, `CreateFleet`, `RequestSpotInstances`, `RequestSpotFleet`), `sagemaker:Create*`, `sagemaker:StartSession`, `glue:CreateDevEndpoint`, `CreateJob`, `StartJobRun`, `CreateSession`, `RunStatement`, `CreateMLTransform`, `StartNotebook`, plus `lambda:CreateFunction` and the three ECS creation actions. The Glue list is D25's lesson applied twice over: its own gap was `CreateJob`/`StartJobRun` — *a perfectly legal way to run the whole ingestion in the account whose policy set says nothing runs there* — and `CreateSession`/`RunStatement`/`StartNotebook` are what "interactive sessions and notebooks" are actually called. **The EC2 list is that same lesson a third time:** `RunInstances` is one door of several, and `CreateFleet`/`RequestSpot*` launch instances without ever calling it, so a one-action deny would have carried the name of a control while being a convention (Lesson 5). **The `sagemaker:Create*` wildcard is safe here and is not in `Workloads`**, because nothing in this account deploys anything; verification (viii) confirmed the unified domain evaluates as `datazone:*`, so the wildcard does not reach it. **Effect:** the lake account can hold and govern data and cannot execute anyone's code — with the two exceptions below, which are stated rather than accidental |
-| `DenyCatalogMaintenanceRunsExceptMaintenanceRole` | Denies `glue:StartCrawler`, `StartCrawlerSchedule`, `StartColumnStatisticsTaskRun` and `StartColumnStatisticsTaskRunSchedule` unless the principal is `arn:aws:iam::<Data Governance>:role/awsds-data-catalog-maintenance`, with `BoolIfExists: aws:PrincipalIsAWSService=false` beside it. D27's exception, made *narrow* rather than wide: a crawler samples object contents, so it **does** read data, and the honest statement is "no compute here **except** the bounded set that produces catalog metadata, under one role". **The deny is on the run and not on the creation** — creating a crawler is Terraform's work, i.e. `InfrastructureAccess`, i.e. an administrator of that account, so a deny there would have to exempt the very principal it binds (Lesson 18); the run is the event that reads. **The service guard is the same one the two root conditioned statements carry, and it is here for consistency rather than for a measured failure**: an `ArnNotEquals` carve-out can only name principals it can spell, so a run *initiated by Glue itself* — a standing schedule, which Stage 5 deliberately does not create — would fall on the deny side of a principal test it never meant to take (Lesson 14). **The role name is a contract with [Stage 5](../../../plan/stages/stage-05-data-foundation.md)**: created under another name, the crawlers simply never run. **Effect: the negative half is exercisable now, the positive half is untested until Stage 5** — the role does not exist yet |
-| `DenyLakeDeletionAndDeregistration` | Denies `s3:DeleteBucket` and `lakeformation:DeregisterResource`. The lake buckets are `[P]` and are never destroyed, so the first is a deny nothing legitimate hits. The second is the quieter one: **deregistering a prefix returns it to plain IAM without deleting anything**, so D13's whole enforcement model disappears while every object stays exactly where it was. **Effect:** unconditional — it binds the builder as hard as anyone, which is what separates it from a convention. **It reaches every bucket in the account, not only the lake's**, so a `terraform destroy` of anything with a bucket in it stops here; the amendment procedure is [Stage 5](../../../plan/stages/stage-05-data-foundation.md)'s, and it is also why the `s3:DeleteBucket` half stays **untested** — exercising it means creating a bucket that cannot then be deleted |
+| `DenyCatalogMaintenanceRunsExceptMaintenanceRole` | Denies `glue:StartCrawler`, `StartCrawlerSchedule`, `StartColumnStatisticsTaskRun` and `StartColumnStatisticsTaskRunSchedule` unless the principal is `arn:aws:iam::<Data Governance>:role/awsds-data-catalog-maintenance`, with `BoolIfExists: aws:PrincipalIsAWSService=false` beside it. D27's exception, made *narrow* rather than wide: a crawler samples object contents, so it **does** read data, and the honest statement is "no compute here **except** the bounded set that produces catalog metadata, under one role". **The deny is on the run and not on the creation** — creating a crawler is Terraform's work, i.e. `InfrastructureAccess`, i.e. an administrator of that account, so a deny there would have to exempt the very principal it binds (Lesson 18); the run is the event that reads. **The service guard is the same one the two root conditioned statements carry, and it is here for consistency rather than for a measured failure**: an `ArnNotEquals` carve-out can only name principals it can spell, so a run *initiated by Glue itself* — a standing schedule, which Stage 5 deliberately does not create — would fall on the deny side of a principal test it never meant to take (Lesson 14). **The role name is a contract with [Stage 5](../../../docs/plan/stages/stage-05-data-foundation.md)**: created under another name, the crawlers simply never run. **Effect: the negative half is exercisable now, the positive half is untested until Stage 5** — the role does not exist yet |
+| `DenyLakeDeletionAndDeregistration` | Denies `s3:DeleteBucket` and `lakeformation:DeregisterResource`. The lake buckets are `[P]` and are never destroyed, so the first is a deny nothing legitimate hits. The second is the quieter one: **deregistering a prefix returns it to plain IAM without deleting anything**, so D13's whole enforcement model disappears while every object stays exactly where it was. **Effect:** unconditional — it binds the builder as hard as anyone, which is what separates it from a convention. **It reaches every bucket in the account, not only the lake's**, so a `terraform destroy` of anything with a bucket in it stops here; the amendment procedure is [Stage 5](../../../docs/plan/stages/stage-05-data-foundation.md)'s, and it is also why the `s3:DeleteBucket` half stays **untested** — exercising it means creating a bucket that cannot then be deleted |
 
 **What `DenyUserCompute` does not cover here, both by decision:**
 
 - **Athena.** `athena:StartQueryExecution` is allowed, because Stage 5's Iceberg maintenance — `OPTIMIZE`
   (compaction) and `VACUUM` (snapshot expiry) — runs through it. So a full-lake read path exists inside the
   account that "runs nothing", with results written to S3, and the perimeter document only stops that write
-  when the destination is outside the organization. **That path is [Stage 11](../../../plan/stages/stage-11-dlp.md)'s
+  when the destination is outside the organization. **That path is [Stage 11](../../../docs/plan/stages/stage-11-dlp.md)'s
   to detect, and it is named here so it is not rediscovered as a surprise.**
 - **EMR, EMR Serverless and AWS Batch.** Not denied, because nothing in this design uses them anywhere; an
   action nobody can explain is one nobody re-reads. **Revision trigger:** the first appearance of any of
@@ -154,7 +154,7 @@ Identity Center. The tier exists to make its blast radius smaller.
 
 ## `awsds-org-rcp-perimeter.json` → organization **root**  *(RESOURCE_CONTROL_POLICY)*
 
-**The trusted-*identities* axis** (`plan/architecture.md` §4.2), and the mirror of the SCP perimeter above:
+**The trusted-*identities* axis** (`docs/plan/architecture.md` §4.2), and the mirror of the SCP perimeter above:
 that one stops *our* principals writing *outside*, this one stops *outside* principals reaching *our*
 resources. **Seven services, because seven is what RCPs support** — S3, STS, KMS, SQS, Secrets Manager,
 DynamoDB and ECR — widened from five by the user on 2026-08-12. EC2, RDS and EFS are outside RCP reach
@@ -276,7 +276,7 @@ the words "block public access" as coverage is the shape of Lesson 5.
 
 *Not a file in [`policies/`](policies/), not attached to a target, and **not Terraform-managed**. Applied by
 hand on 2026-08-15 (Stage 2 step 5.1, INT-20); ids and dates are in
-[`log/log-stage-02-terraform-foundation.md`](../../../log/log-stage-02-terraform-foundation.md).*
+[`docs/log/log-stage-02-terraform-foundation.md`](../../../docs/log/log-stage-02-terraform-foundation.md).*
 
 **1. What it is for.** Every other document indexed above is a **ceiling on what accounts may do**. This one
 is the opposite kind of object: a **grant of who may edit those ceilings**. It is a *resource-based
@@ -309,8 +309,15 @@ used elsewhere in this folder is not available here even in principle.
 *"created by any account in the organization, including the management account"* — which includes **Control
 Tower's own guardrail SCPs**. Scoping by policy ARN would fix it and cannot: this project's policies have no
 ARN until they are created. This is the **second** widening of the Identity account's blast radius, after
-the group-membership path of 1b step 1, and its control is the same one — 1b step 8.3's alarm plus the
-CloudTrail record.
+the group-membership path of 1b step 1 — and **the control is *not* the same one, which was measured on
+2026-08-15 rather than assumed**. 1b step 8.3's alarm fires on a *change of group membership*; the
+principal this delegation newly reaches — `AWSOrganizationsFullAccess` → `AWSControlTowerAdmins`, which
+Control Tower assigns into every vended account, this one included — **is already a member**, so its use of
+the grant raises nothing. **What is left is the CloudTrail record alone**: detection after the fact, with
+no alarm above it. The reach was measured from both sides and the reasoning is in `docs/ORGANIZATION.md` under
+the Identity account; narrowing it with a `Condition` on `aws:PrincipalArn` is **Stage 2 step 5.1a**, and
+the untested part there is whether this document accepts such a condition at all — it already rejects
+`NotAction`/`NotResource`.
 
 **2. How it was created and associated with the organization.** Signed in as the **`AWS Control Tower Admin`**
 user, permission set **`AWSAdministratorAccess`**, in the **Management** account — the only Management
@@ -330,7 +337,7 @@ delegated account's principals to hold the matching **identity-based** permissio
 **3. Why this one document stays outside Terraform.** Three reasons, and any one of them decides it:
 
 1. **It lives in Management, and Management is bootstrap-only — "console only, never Terraform"**
-   (`GENERAL_PLAN.md`, principle 1 and the account map). There is no state bucket, no profile and no slice
+   (`docs/GENERAL_PLAN.md`, principle 1 and the account map). There is no state bucket, no profile and no slice
    for Management by design: the account whose root user is the break-glass credential (D16) does not get an
    automation path.
 2. **It is this folder's own authorization.** A slice that managed the grant it runs under can revoke it in
@@ -396,6 +403,6 @@ fail silently:
 
 ---
 
-*Documents: [`README.md`](README.md) · Stage: [1c step 7](../../../plan/stages/stage-01c-preventive-policies.md) ·
-Probes: [`plan/runbooks/scp-battery.md`](../../../plan/runbooks/scp-battery.md) · Policy ids and dates:
-[`log/log-stage-01c-preventive-policies.md`](../../../log/log-stage-01c-preventive-policies.md)*
+*Documents: [`README.md`](README.md) · Stage: [1c step 7](../../../docs/plan/stages/stage-01c-preventive-policies.md) ·
+Probes: [`docs/plan/runbooks/scp-battery.md`](../../../docs/plan/runbooks/scp-battery.md) · Policy ids and dates:
+[`docs/log/log-stage-01c-preventive-policies.md`](../../../docs/log/log-stage-01c-preventive-policies.md)*

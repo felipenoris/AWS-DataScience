@@ -11,7 +11,7 @@
 #
 #             It notices there is no repository around it and writes the report beside
 #             itself instead of into aws/output/. Download it from the same menu, or read it
-#             there and paste what matters into log/.
+#             there and paste what matters into docs/log/.
 #
 #             with a named profile, if one ever exists for this account:
 #
@@ -27,7 +27,7 @@
 # `aws/INDEX.md` asks for one named profile per script, with the reason that profile can
 # see what it sees. The reason here is that there is no profile, and that is deliberate
 # rather than missing: the organization-level analyzer lives in the **Audit** account
-# (Stage 1b step 8.2), and no project persona holds an assignment there - `ORGANIZATION.md`
+# (Stage 1b step 8.2), and no project persona holds an assignment there - `docs/ORGANIZATION.md`
 # records that as permanent, for the same reason Log Archive has none. The only human who
 # reaches Audit is `AWS Control Tower Admin`, through Control Tower's own group, and D33/D34
 # keep that identity in the console. So the intended run is CloudShell **inside Audit**, and
@@ -219,7 +219,7 @@ printf '    minus `--region %s` and the profile, which every command carries.\n'
 printf '  - AN EMPTY BLOCK AND A DENIED CALL ARE NOT THE SAME THING. A call that failed is\n'
 printf '    printed with its error and listed again in section 6.\n'
 printf '  - This is a point-in-time snapshot, not a source of truth: regenerate it rather\n'
-printf '    than trusting a stale copy, and record intent in plan/ or log/, never here.\n'
+printf '    than trusting a stale copy, and record intent in docs/plan/ or docs/log/, never here.\n'
 printf '\n'
 printf 'THIS FILE IS NOT VERSIONED (aws/output/ is in .gitignore) AND CONTAINS ACCOUNT IDS.\n'
 printf 'Do not copy one into a tracked file.\n'

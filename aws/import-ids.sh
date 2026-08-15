@@ -449,7 +449,7 @@ if [ -s "$ASSIGN" ]; then
   } | tabulate
   printf '\n'
   printf 'THE PRINCIPAL ID IS A GUID AND THE IMPORT NEEDS IT - but the CONFIGURATION must not\n'
-  printf 'carry it. `plan/conventions.md` requires a group to be resolved by DISPLAY NAME\n'
+  printf 'carry it. `docs/plan/conventions.md` requires a group to be resolved by DISPLAY NAME\n'
   printf 'through `data.aws_identitystore_group`, because group IDs are properties of ONE\n'
   printf 'directory instance: federate to a corporate IdP and every hardcoded GUID becomes a\n'
   printf 'resource that matches nothing. So the GUID goes on the import command line and the\n'
@@ -501,7 +501,7 @@ printf 'carries one, permanently - it is the only way into that account. A direc
 printf 'a property of a vended account, not an entitlement this repository designs.\n'
 printf '\n'
 printf 'AND NOT IN ANY STATE FILE, EVER: the four users, the five groups and the memberships.\n'
-printf 'They are people. `plan/conventions.md`, "The identity seam".\n'
+printf 'They are people. `docs/plan/conventions.md`, "The identity seam".\n'
 
 # ======================================================================================
 h1 "5. THE MANIFEST - the \`terraform import\` lines"

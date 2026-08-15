@@ -1,7 +1,7 @@
 # `org-policies/` — the organization's preventive documents
 
 **The JSON that is attached to the organization root and to the OUs.** Written by hand in
-[Stage 1c](../../../plan/stages/stage-01c-preventive-policies.md) step 7, pasted into the Management
+[Stage 1c](../../../docs/plan/stages/stage-01c-preventive-policies.md) step 7, pasted into the Management
 console as `AWS Control Tower Admin`, and **imported into Terraform at Stage 2 step 5.5** — which is the
 reason the documents live in a file at all rather than only in the console: an import compares a document
 against itself instead of against a re-typing.
@@ -61,7 +61,7 @@ on its own rather than inside the document that also holds `iam:CreateUser`.
 
 Three things about its shape that are invisible in review and obvious in the canary:
 
-- **The action lists are enumerated, and an action wildcard is forbidden here** — `plan/conventions.md`
+- **The action lists are enumerated, and an action wildcard is forbidden here** — `docs/plan/conventions.md`
   carries the rule. `StringNotEqualsIfExists` evaluates **true when the key is absent**, so `s3:Put*` would
   reach the account-level `s3:PutAccountPublicAccessBlock` and deny, everywhere and for every principal,
   the call step 7.4 depends on. `ecr:GetAuthorizationToken` is left out for the same reason.
@@ -113,7 +113,7 @@ on the create action would have to exempt exactly the principal it was written t
 rather than a control (Lesson 18). **The event D27 is about is the run**, because a crawler run is what
 samples object contents, so that is where the deny and its one named exception sit. The exempt ARN is
 `arn:aws:iam::<ACCOUNT_ID_DATA>:role/awsds-data-catalog-maintenance` — **a contract with
-[Stage 5](../../../plan/stages/stage-05-data-foundation.md), not a description of something that exists.**
+[Stage 5](../../../docs/plan/stages/stage-05-data-foundation.md), not a description of something that exists.**
 The role is created there, and if it is created under any other name the crawlers simply never run: the
 failure is fail-closed and it surfaces at the first crawl, which is the tolerable direction, but it is the
 reason the name is written in two places on purpose.
@@ -155,7 +155,7 @@ review, and it is the honest limit of a lab with a single organization.
   removed, renamed or re-conditioned, a document attached to a new target or detached from one. That file
   carries the check that says whether it drifted: the rows of a section must be that file's `Sid`s, in
   order, and nothing else.
-- **Record the returned policy id beside the filename**, in `log/log-stage-01c-preventive-policies.md`, **as
+- **Record the returned policy id beside the filename**, in `docs/log/log-stage-01c-preventive-policies.md`, **as
   each one is attached.** The detach command is the whole recovery path and it needs that id:
 
   ```bash
@@ -164,11 +164,11 @@ review, and it is the honest limit of a lab with a single organization.
 
   Reading an id out of a console you have just denied yourself access to is the failure this rule prevents.
 - **One policy at a time**: attach, exercise both halves in `Policy Canary`, record, move on.
-- **Never add `aws_s3_account_public_access_block` to a slice** — `plan/conventions.md` says why, and the
+- **Never add `aws_s3_account_public_access_block` to a slice** — `docs/plan/conventions.md` says why, and the
   decision-7 carve-out makes the temptation worse rather than safer.
 
 ---
 
-*Stage: [1c step 7](../../../plan/stages/stage-01c-preventive-policies.md) · Rules:
-[`plan/conventions.md`](../../../plan/conventions.md) · What was measured:
+*Stage: [1c step 7](../../../docs/plan/stages/stage-01c-preventive-policies.md) · Rules:
+[`docs/plan/conventions.md`](../../../docs/plan/conventions.md) · What was measured:
 [`aws/INDEX.md`](../../../aws/INDEX.md)*

@@ -90,7 +90,7 @@ ORG_PATH_DATA="$ORG_ID/$ROOT_ID/$OU_ID_DATA/"
 
 # The Data Governance account id, resolved by OU MEMBERSHIP rather than pasted. The Data OU
 # document (step 7.6) carves the catalog-maintenance role out of its crawler deny (D27), and
-# an ARN condition may not name a wildcard account (`plan/conventions.md`) - so the id has to
+# an ARN condition may not name a wildcard account (`docs/plan/conventions.md`) - so the id has to
 # come from somewhere, and the only source that cannot go stale is the organization itself.
 # Exactly one account is expected: `Data` holds Data Governance alone, and every account in
 # this design except `Sandbox` is structural (D35). Two accounts here is not a rendering
@@ -106,7 +106,7 @@ note "org    : $ORG_ID"
 note "root   : $ROOT_ID"
 note "Data OU: $OU_ID_DATA"
 note "path   : $ORG_PATH_DATA"
-# Masked on purpose: this line is read off a terminal that gets pasted into log/, and an
+# Masked on purpose: this line is read off a terminal that gets pasted into docs/log/, and an
 # account id is one of the three things `CLAUDE.md` keeps out of tracked files. The full id
 # is in the rendered document under aws/output/, which is untracked.
 note "Data ac: ...${ACCOUNT_ID_DATA: -4}"
@@ -192,6 +192,6 @@ fi
 note ""
 note "PASTE FROM $OUT_DIR/, not from $SRC_DIR/ - the templates still hold placeholders."
 note "Record the returned policy id beside each filename in"
-note "log/log-stage-01c-preventive-policies.md, as you attach it. An id read back out of a"
+note "docs/log/log-stage-01c-preventive-policies.md, as you attach it. An id read back out of a"
 note "console you have just denied yourself access to is the failure that note prevents."
 exit 0

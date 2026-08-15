@@ -1,64 +1,13 @@
 
 # General Objective
 
-The objective of this project is to create a Data Science environment based on AWS cloud infrastructure, using my personal AWS account.
+A Data Science environment on AWS, in one personal account tree: VPN-only access, SageMaker Unified Studio
+as the workbench, a governed Iceberg lake, GitLab and its pipelines promoting artifacts along
+**Sandbox → Development → Staging → Production**, and data-leakage protection as its own requirement.
 
-The goal is to achieve the following:
-
-- All user access to the cloud infrastructure will be performed through a VPN.
-
-- Use SageMaker Unified Studio as a development tool for Data Scientists.
-
-- The main features Data Scientists can use inside SageMaker Unified Studio to develop data-science products are:
-
-  - the use of Jupyter notebooks built in SageMaker Unified Studio: users can instantiate as many Jupyter notebook instances as they like, each one on a selected compute and dev-env image.
-  - the user of vscode instances built in SageMaker Unified Studio: users can instantiate as many vscode web instances they wish, with possibility of remote connecting their local computer vscode to a remote session.
-  - the use of data catalog and explorer, issuing SQL statements, built in SageMaker Unified Studio.
-  - use of S3 buckets for storage, built in SageMaker Unified Studio user interface.
-  - use of sagemaker's workflows and Visual ETL feature built in SageMaker Unified Studio.
-  - use of IA models built in SageMaker Unified Studio
-
-- The data scientist can promote Artifacts built in SageMaker (dev-env, ML models, workflows) to production (Sandbox -> Development -> Staging -> Production), making use of CI/CD pipelines (see below).
-
-- Protect data against leakage (DLP), mainly targeting SageMaker. There is no single AWS product that does
-  this, so the requirement is broken into the four problems it has to solve:
-
-	- sensitive-data discovery and classification: know which sensitive data exists and where it is stored.
-	- fine-grained access control: restrict who can read which database, table, column and row.
-	- egress control: restrict where data can be sent to from the development environment.
-	- exfiltration detection: detect and alert on abnormal data access or data movement.
-
-- SageMaker should have access to the internet. We'll explore implementing some restrictions, keeping the possibility of software updates, installing packages, and accessing a few websites.
-
-- Use GitLab hosted on AWS for source-code control, accessible only through intranet (VPN), not facing public internet.
-
-- Use GitLab Pages to host docs, accessible only through intranet (VPN), not facing public internet.
-
-- Use GitLab CI/CD to automate tests, docs and deployment.
-
-- Use three kinds of CI/CD pipelines:
-
-	- pipeline to build a development environment: this will be the Docker container (or image) used by developers on SageMaker.
-	- pipeline to build an application: this should build a Docker image of the app.
-	- pipeline to deploy an application into the production environment.
-
-- Explore the possibility of deploying a workflow developed in SageMaker (Airflow/MWAA) to production.
-
-- Use an NFS solution to exchange files between users, the SageMaker environment and S3 buckets.
-
-- Data-science assets and databases should not face the public internet. Later in the project we'll experiment with setting up a web server facing the public internet, accessing a backend or database protected in the private subnet.
-
-- Let's avoid using IAM Users, in favor of assuming IAM Roles temporarily.
-
-- Use AWS CloudWatch to monitor the cloud infrastructure.
-
-- Use AWS Organizations + Control Tower to set up account permissions.
-
-- Use AWS Lake Formation to share data cross-account.
-
-- Use AWS Glue Data Catalog with data stored on S3 buckets, using ICEBERG format, as Data Warehouse.
-
-- Use Amazon ECR as container registry.
+**The requirements brief is [`docs/plan/objectives.md`](docs/plan/objectives.md)** — the full list, in the
+user's words. **It is the specification a stage is measured against, so it is summarised nowhere**: the
+paragraph above is an orientation, not a substitute. Read it before planning or reviewing a stage.
 
 ## How this will be done
 
@@ -68,9 +17,6 @@ The project will be implemented incrementally.
 
 I'll ask Claude to plan the next step and Claude will guide me on each step until we reach the project goals.
 
-The application repository template (`app-etl`) is a layout convention, and lives with the others:
-[`plan/conventions.md`](plan/conventions.md), "Application repository layout".
-
 # Guidelines
 
 ## AWS Region
@@ -79,14 +25,15 @@ All infrastructure will be deployed in the `us-west-2` Region.
 
 ## Tools installed in the current environment
 
-`terraform`, the `aws` client and `uv` — install links in [`REFERENCES.md`](REFERENCES.md), "Tools".
+`terraform` **1.15.8**, the `aws` client, `uv` **0.11.23**, `jq`, and — Stage 2 step 6.1, 2026-08-15 —
+`pre-commit` **4.6.2**, `checkov` **3.3.11** (`uv tool install`), `tflint` **v0.64.0**.
 
 ## `secrets` folder
 
 This folder is ignored by git. It contains personal information. Never edit this folder, and never
 write anything into it. Claude can read the files in this folder to gather information.
 
-**Never read the file `serets/prompts.md`!**
+**Never read the file `secrets/prompts.md`!**
 
 **Never copy or reproduce any email addresses, telephone numbers, account IDs contained in this folder into any other project files.**.
 
@@ -103,9 +50,9 @@ write anything into it. Claude can read the files in this folder to gather infor
 - All infrastructure code will be in Terraform.
 
 - Two trees: `terraform-live/` (one subfolder per controlled account, sliced by lifecycle layer) and
-  `terraform-modules/` (reusable modules, consumed by git tag). **The authoritative layout, with the
-  `[P]`/`[D]`/`[E]` layer of every slice, is in [`plan/conventions.md`](plan/conventions.md) §6** —
-  kept in one place on purpose, so the two copies cannot drift.
+  `terraform-modules/` (reusable modules, consumed by git tag). **The authoritative layout, with every
+  slice's `[P]`/`[D]`/`[E]` layer, is [`docs/plan/conventions.md`](docs/plan/conventions.md) §6** — one copy, so two
+  cannot drift.
 
 - never run `terraform apply` (or scripts that perform infrastructure changes), unless explicitly authorized. You are free to run *read-only* operations.
 
@@ -117,12 +64,11 @@ write anything into it. Claude can read the files in this folder to gather infor
 
 - all scripts inside `aws/*` should perform only read-only operations. You are free to run them to gather information.
 
-- **The one exception, and it is fenced: [`aws/probes/`](aws/probes/README.md)** — the SCP battery, which
-  has to *attempt* the calls a policy forbids, because that is the only way to measure a preventive control.
-  It creates nothing (every probe is read-only, `--dry-run`, or aimed at a prerequisite that does not exist),
-  it never attaches or changes a policy, and the three probes that *would* act if a deny were missing are
-  refused by the driver anywhere but `Policy Canary`. **Run it deliberately, not to gather information** —
-  which is the difference from every other script in that folder.
+- **The one exception, and it is fenced: [`aws/probes/`](aws/probes/README.md)** — the SCP battery has to
+  *attempt* the calls a policy forbids, because that is the only way to measure a preventive control. It
+  creates nothing and attaches nothing; the probes that would act without a deny are refused anywhere but
+  `Policy Canary`. **Run it deliberately, not to gather information** — the difference from every other
+  script in that folder.
 
 - before running `aws` commands, check if the current session uses the correct `sso` user using `aws sts get-caller-identity`.
 
@@ -132,32 +78,28 @@ write anything into it. Claude can read the files in this folder to gather infor
 
   | Say | Example |
   |---|---|
-  | SSO user | the infrastructure user (`felipenoris+infrastructure_user@…`) — the only one with CLI profiles; `AWS Control Tower Admin` is a *different* user, console-only |
+  | SSO user | the infrastructure user (`felipenoris+infrastructure_user@…`) — behind every `awsds-infra-*` and `awsds-policy-canary` profile; `AWS Control Tower Admin` is a *different* user, console-only **until the `awsds-ctadmin-orgfull-*` profiles of 2026-08-15**, which are the only CLI it has |
   | Account | `Policy Canary`, `Development`, `Management`, … — by **name**, never by id |
   | Permission set | `InfrastructureAccess`, `AWSAdministratorAccess` — and the profile that reaches it |
 
-  **"Role" and "permission set" are the same thing seen from two sides**, and the distinction only matters
-  when writing a policy: a permission set is the Identity Center object; what it provisions into each
-  account is an IAM role named `AWSReservedSSO_<PermissionSetName>_<per-account random suffix>`. A
-  condition keyed on `aws:PrincipalArn` must name **that role ARN**, which is why the suffix being
-  per-account is what forced decision 7's wildcard.
-
-  **One `aws sso login --sso-session awsds` covers every profile** — the token is keyed by the
-  `sso-session` name, not by profile or account — so the answer is never "which profile do I log in
-  with", it is *which identity to pick in the browser*, plus where the work is about to land.
+  **"Role" and "permission set" are two views of one object** — what it provisions, and why its ARN is
+  never hard-coded, are in [`docs/GLOSSARY.md`](docs/GLOSSARY.md), "Permission set". **One login covers every profile
+  on its `sso-session`, and there are two** (`awsds`, `awsds-ctadmin`), so the answer is never *which
+  profile do I log in with* — it is which identity to pick in the browser
+  ([`aws/AWS-CLI.md`](aws/AWS-CLI.md), "Signing in").
 
 ## Upkeep — the files this project maintains
 
 | File | What it holds, and the rule |
 |---|---|
-| [`log/`](log/INDEX.md)`log-stage-NN-*.md` | Every step performed by hand in AWS, one file per stage, mirroring `plan/stages/` — **the same slug as the stage file, with a `log-` prefix**, so the two never share a filename and an editor cannot confuse them. **Written by the user — Claude never edits a stage log.** Claude may draft wording for the user to paste, and says so. **Every draft is delivered in English, in Markdown, inside a single fenced code block in the chat** — never as ordinary chat prose — so the user copies it into the file untouched and nothing is reformatted on the way. Use a ` ```markdown ` fence; replace real account IDs by `<Account Name>`; use use `<Management Account>` when replacing the ID from the Management Account on logs; if the draft itself has to contain a fenced block, use a longer outer fence (` ````markdown `) so the nesting survives. **Drafts are concise by default**: the command, the outcome, and any finding that does **not** survive elsewhere. Leave out what `aws/output/` already holds (it is regenerated on demand), what a `plan/` file explains, and the reasoning behind a choice — a log entry restating either is a copy that will go stale. Prose belongs in `plan/`; the log carries *what happened, in order* |
-| [`log/INDEX.md`](log/INDEX.md) | The one exception under `log/`: **Claude maintains it.** After reading a stage log, bring its `Records` cell to what the file now contains — a cell saying less than the file is what the index exists to prevent. Never restate a step there: the cell says *what is inside*, in one line |
-| [`ORGANIZATION.md`](ORGANIZATION.md) | The AWS OUs, accounts and users |
-| [`REFERENCES.md`](REFERENCES.md) | Every internet link used as a reference, added on the interaction that used it |
+| [`docs/log/`](docs/log/INDEX.md)`log-stage-NN-*.md` | Every step performed by hand in AWS, one file per stage, mirroring `docs/plan/stages/` — **the same slug as the stage file, with a `log-` prefix**, so the two never share a filename. **Written by the user — Claude never edits a stage log.** Claude may draft wording for the user to paste, and says so: **English, Markdown, one single fenced code block in the chat**, no account ids, concise. The full drafting rules are in [`docs/log/INDEX.md`](docs/log/INDEX.md), "How Claude drafts an entry" |
+| [`docs/log/INDEX.md`](docs/log/INDEX.md) | The one exception under `docs/log/`: **Claude maintains it.** After reading a stage log, bring its `Records` cell to what the file now contains — a cell saying less than the file is what the index exists to prevent. Never restate a step there: the cell says *what is inside*, in one line |
+| [`docs/ORGANIZATION.md`](docs/ORGANIZATION.md) | The AWS OUs, accounts and users |
+| [`docs/REFERENCES.md`](docs/REFERENCES.md) | Every internet link used as a reference, added on the interaction that used it |
 | [`README.md`](README.md) | How the AWS resources are structured, and the project layout, so people can understand the components |
-| [`terraform-live/README.md`](terraform-live/README.md) | How the deployed tree is organised. Updated when an account folder or a top-level rule changes — **never a copy of the slice tree**, which lives in `plan/conventions.md` §6 |
-| [`terraform-live/identity/org-policies/POLICIES.md`](terraform-live/identity/org-policies/POLICIES.md) | One row per entry in **every** document in `policies/`, all four policy types since 7.8 (**called `SCPs.md` until 2026-08-15**): what it does, why it exists, what it does once attached. **Reviewed in the same sitting as any policy change** — an entry added, removed, renamed or re-conditioned, and any attach or detach. `./terraform-live/identity/org-policies/check-index.sh` decides the mechanical half and is type-aware (`Sid`s for SCP/RCP, tag keys for a tag policy, `ec2_attributes` names for a declarative one); whether a row is still *true* is the reading |
-| [`PRICING.md`](PRICING.md) | A row for every new AWS service referenced |
+| [`terraform-live/README.md`](terraform-live/README.md) | How the deployed tree is organised. Updated when an account folder or a top-level rule changes — **never a copy of the slice tree**, which lives in `docs/plan/conventions.md` §6 |
+| [`terraform-live/identity/org-policies/POLICIES.md`](terraform-live/identity/org-policies/POLICIES.md) | One row per entry in **every** document in `policies/`, all four policy types: what it does, why, and what it does once attached. **Reviewed in the same sitting as any policy change**, attachments included. `./terraform-live/identity/org-policies/check-index.sh` decides the mechanical half; whether a row is still *true* is the reading |
+| [`docs/PRICING.md`](docs/PRICING.md) | A row for every new AWS service referenced |
 
 # Claude memory
 
@@ -189,7 +131,7 @@ When I authorize you, you can commit, push and open Pull Requests on GitHub. I'l
 For every project step, review this section and add your own LOG, so that you can remember the current
 stage of this project.
 
-Stage numbers refer to `plan/stages/`. **Always read `GENERAL_PLAN.md` before planning or executing a
+Stage numbers refer to `docs/plan/stages/`. **Always read `docs/GENERAL_PLAN.md` before planning or executing a
 step** — it is the plan core and carries both indexes — then read only the stage file and the decisions
 its `Consumes` row lists.
 
@@ -199,98 +141,84 @@ its `Consumes` row lists.
 
 | Task | Read |
 |---|---|
-| Anything | this file + [`GENERAL_PLAN.md`](GENERAL_PLAN.md) (plan core: principles, the account map, the route) |
-| Execute a stage | [`plan/stages/`](plan/stages/INDEX.md)`stage-NN-*.md`, the decisions in its **Consumes** row, and [`plan/conventions.md`](plan/conventions.md) |
-| Design, or reason about where something belongs | [`plan/architecture.md`](plan/architecture.md) — target architecture, region portability, the data perimeter, the two egress designs |
-| A naming, layout, Terraform or IAM rule | [`plan/conventions.md`](plan/conventions.md) — also the `[P]`/`[D]`/`[E]` layers and the `app-etl` repository template |
-| **How the deployed tree is organised, and what is in it today** | [`terraform-live/README.md`](terraform-live/README.md) — one folder per account, sliced by lifecycle layer, what deliberately lives outside it. **The slice-by-slice layout itself stays in `plan/conventions.md` §6**, which is the authority when the two disagree |
-| **What a given SCP statement denies, and why that statement exists** | [`terraform-live/identity/org-policies/POLICIES.md`](terraform-live/identity/org-policies/POLICIES.md) — one row per `Sid`, per document, plus the AWS reference for every action named. Policy ids and attachment dates are **not** there: those are in the stage log |
-| What was actually done by hand in a stage | [`log/`](log/INDEX.md)`log-stage-NN-*.md` — **the stage file's slug, prefixed `log-`**; [`log/INDEX.md`](log/INDEX.md) first, so only one log is opened |
-| **What is deployed right now** — accounts, OUs, SSO groups, users, permission sets, assignments | [`aws/INDEX.md`](aws/INDEX.md) — read-only scripts and the snapshots they write to `aws/output/` (untracked). Its question table says which section answers what; **regenerate rather than trust a stale file, and never copy an account id or email out of one** |
-| **Whether something a snapshot shows is expected** — before reporting it as a finding | [`AWS_STATE.md`](AWS_STATE.md) — the invariants (`INV-nn`), the known exceptions (`EXC-nn`, e.g. the suspended `Sandbox` account that is **not** ours), and what a later stage is going to change anyway. **Read it whenever a snapshot is read** |
-| Plan, review, or settle a decision | add [`plan/lessons.md`](plan/lessons.md) and [`plan/open-questions.md`](plan/open-questions.md) |
-| Look up a decision | [`plan/decisions/INDEX.md`](plan/decisions/INDEX.md) first — open a decision file only for its reasoning |
-| Cost of a new service | [`PRICING.md`](PRICING.md) — measured from the Price List API, never estimated (Lesson 6) |
-| The projection, and whether the ceiling still holds | [`plan/cost-model.md`](plan/cost-model.md) |
-| Cross-account wiring | [`plan/integrations.md`](plan/integrations.md), the `INT-nn` rows |
-| An unfamiliar acronym, or the notation | [`GLOSSARY.md`](GLOSSARY.md) |
-| Running an `aws` command by hand | [`AWS-CLI.md`](AWS-CLI.md) — the recipes, and which identity runs them |
-| "What would an institution do?" | [`plan/institutional-delta.md`](plan/institutional-delta.md) — so a lab compromise is not learned as a pattern |
-| Root is needed, or its alarm chain is being changed | [`plan/runbooks/break-glass.md`](plan/runbooks/break-glass.md) |
-| **A policy is about to be attached, or was amended** | [`plan/runbooks/scp-battery.md`](plan/runbooks/scp-battery.md) — the probes, and the two distinguishable outcomes of each. **Running them is `./aws/probes/scp-battery.sh`** ([`aws/probes/README.md`](aws/probes/README.md)); the probe list is `aws/probes/probes.sh`, and amending the ceiling means editing that file. The script measures and never attaches — **it is the one place under `aws/` that is not read-only** |
+| Anything | this file + [`docs/GENERAL_PLAN.md`](docs/GENERAL_PLAN.md) (plan core: principles, the account map, the route) |
+| **What the project must achieve** — before planning or reviewing a stage | [`docs/plan/objectives.md`](docs/plan/objectives.md) — the requirements brief in the user's words. **The specification, summarised nowhere** |
+| Execute a stage | [`docs/plan/stages/`](docs/plan/stages/INDEX.md)`stage-NN-*.md`, the decisions in its **Consumes** row, and [`docs/plan/conventions.md`](docs/plan/conventions.md) |
+| Design, or reason about where something belongs | [`docs/plan/architecture.md`](docs/plan/architecture.md) — target architecture, region portability, the data perimeter, the two egress designs |
+| A naming, layout, Terraform or IAM rule | [`docs/plan/conventions.md`](docs/plan/conventions.md) — also the `[P]`/`[D]`/`[E]` layers, the identity seam and the `app-etl` template |
+| **How the deployed tree is organised, and what is in it today** | [`terraform-live/README.md`](terraform-live/README.md) — **the slice-by-slice layout itself stays in `docs/plan/conventions.md` §6**, the authority when the two disagree |
+| **What a given policy statement denies, and why that statement exists** | [`terraform-live/identity/org-policies/POLICIES.md`](terraform-live/identity/org-policies/POLICIES.md) — one row per `Sid`, per document, all four types. Policy ids and attachment dates are **not** there: those are in the stage log |
+| What was actually done by hand in a stage | [`docs/log/`](docs/log/INDEX.md)`log-stage-NN-*.md` — **the stage file's slug, prefixed `log-`**; [`docs/log/INDEX.md`](docs/log/INDEX.md) first, so only one log is opened |
+| **What is deployed right now** — accounts, OUs, SSO groups, users, permission sets, assignments | [`aws/INDEX.md`](aws/INDEX.md) — read-only scripts and their snapshots in `aws/output/` (untracked). **Regenerate rather than trust a stale file, and never copy an account id or email out of one** |
+| **Whether something a snapshot shows is expected** — before reporting it as a finding | [`docs/AWS_STATE.md`](docs/AWS_STATE.md) — the invariants (`INV-nn`), the known exceptions (`EXC-nn`), and what a later stage will change anyway. **Read it whenever a snapshot is read** |
+| Plan, review, or settle a decision | add [`docs/plan/lessons.md`](docs/plan/lessons.md) and [`docs/plan/open-questions.md`](docs/plan/open-questions.md) |
+| Look up a decision | [`docs/plan/decisions/INDEX.md`](docs/plan/decisions/INDEX.md) first — open a decision file only for its reasoning |
+| Cost of a new service | [`docs/PRICING.md`](docs/PRICING.md) — measured, never estimated (Lesson 6). The projection is [`docs/plan/cost-model.md`](docs/plan/cost-model.md) |
+| Cross-account wiring | [`docs/plan/integrations.md`](docs/plan/integrations.md), the `INT-nn` rows |
+| An unfamiliar acronym, or the notation | [`docs/GLOSSARY.md`](docs/GLOSSARY.md) |
+| Running an `aws` command by hand, or signing in | [`aws/AWS-CLI.md`](aws/AWS-CLI.md) — the recipes, and which identity runs them |
+| "What would an institution do?" | [`docs/plan/institutional-delta.md`](docs/plan/institutional-delta.md) — so a lab compromise is not learned as a pattern |
+| Root is needed, or its alarm chain is being changed | [`docs/plan/runbooks/break-glass.md`](docs/plan/runbooks/break-glass.md) |
+| **A policy is about to be attached, or was amended** | [`docs/plan/runbooks/scp-battery.md`](docs/plan/runbooks/scp-battery.md) — the probes, and the two distinguishable outcomes of each. **Running them is `./aws/probes/scp-battery.sh`** ([`aws/probes/README.md`](aws/probes/README.md)); amending the ceiling means editing `probes.sh` |
 | Explaining the design to someone | [`README.md`](README.md) — the argument for the account split and the three distinctions |
-| How the plan got here | [`plan/history.md`](plan/history.md) — almost never |
+| How the plan got here | [`docs/plan/history.md`](docs/plan/history.md) — almost never |
 
 Reference things by **stable ID** — `D26`, `INT-11`, `Stage 1c step 7` — never by section or row number.
-The `§` numbers inside `plan/` files are historical anchors, not addresses.
+The `§` numbers inside `docs/plan/` files are historical anchors, not addresses.
 
 ### Current position
 
 - **The landing zone is closed — Stages 0-1d DONE (2026-08-15)** — except the `Staging` vend, held on the
-  account cap (`./aws/quotas.sh` re-asks, meaningful only from Management; the deferral's debts are one
-  list in Stage 1a). Ten policy documents, four types, attached — **six on the organization root, four
-  per-OU** — battery 93/93. The `log/` files are authoritative.
-- **Stage 2 IN PROGRESS. 5.0 and 5.1 are CLOSED (2026-08-15) and INT-20 did not bite:** the delegation
-  exists, three `Sid`s, principal Identity, 9/9 `DEL-*`, and all three readings ran — the `update-policy`
-  **write** on the root-attached tag policy succeeded from `awsds-infra-identity`. **`org-policies/` holds
-  all ten documents.** Applied by hand and **staying out of Terraform** (principle 1 + it is this folder's
-  own authorization); documented in `POLICIES.md`'s one section `check-index.sh` cannot see, `INV-15`,
-  `ORGANIZATION.md` Identity. AWS rejects `NotAction`/`NotResource` in a delegation since 2026-06-30; the
-  operator must be `StringLikeIfExists`, and `DEL-8` now fails a strict one.
-- **The target half of the delegation is exercised too, by reading 4 (2026-08-15).** `UpdatePolicy`
-  authorizes on the **policy** ARN only; `Attach`/`DetachPolicy` on the **target** as well — and 5.5
-  *imports* attachments, so nothing in the stage would ever call it (Lesson 20). The duplicate-attach on an
-  already-attached pair returned `DuplicatePolicyAttachmentException` on **both** `root/…/r-zhj6` and the
-  `ou/…/*` wildcard, and the negative control from `awsds-policy-canary` returned `AccessDeniedException` —
-  authorization precedes the duplicate check, so the two answers are evidence and not coincidence.
-  **Only `account/…/*` is unexercised**, and it cannot be: nothing is attached to an account, so no inert
-  call exists. An over-grant, not a gap.
-- **Rest of Stage 2 — roteiro revised and review-corrected 2026-08-15.** Per-OU attachments are
-  **authored, not discovered**
-  (a discovered `for_each` would reverse D37 on `Sandboxes`); discovery feeds check 9.3. Modules move
-  last. Boundaries carry the two ARN-keyed carve-outs (BPA decision 7, D27), written once and referenced
-  — **a carve-out keyed on a principal ARN cannot defend itself**; unverified and cheap: whether IAM
-  permits `CreateRole` under `/aws-reserved/`. `InfrastructureAccess` runs from `awsds-infra-identity`;
-  `AWSAdministratorAccess` only as CT Admin on Management (a set provisioned into Management cannot be
-  altered from Identity). The OU walk recurses (depth 2). The five instruments exist (`aws/INDEX.md`);
-  `org-policies.sh` lists ids for all four policy types since 2026-08-15. The stage log exists,
-  header-only.
+  account cap: an **open AWS support ticket** (`./aws/quotas.sh` re-asks, from Management only; the
+  deferral's debts are one list in Stage 1a). Ten policy documents, four types, attached — **six on the
+  root, four per-OU** — battery 93/93. The `docs/log/` files are authoritative.
+- **Stage 2 IN PROGRESS. 5.0 and 5.1 CLOSED (2026-08-15); INT-20 did not bite.** The delegation is
+  **exercised, not merely present** (Lesson 26), so **`org-policies/` holds all ten documents**,
+  hand-applied and **staying out of Terraform**; recorded in `POLICIES.md`/`INV-15`. AWS rejects
+  `NotAction`/`NotResource` in a delegation since 2026-06-30; the operator must be `StringLikeIfExists`.
+  Only `account/…/*` stays unexercised — over-grant, not gap.
+- **Open question 11 closed by measurement (2026-08-15):** 5.1's principal is the *account*, so **CT Admin
+  reaches the organization's policy writes through `Identity`**. It gains nothing it did not already hold,
+  so **the assignment stays**; the fix is **step 5.1a** — an `aws:PrincipalArn` condition **the document may
+  not accept**. **1b 8.3's alarm is blind to this path**; CloudTrail is the only residual.
+- **Stage 2 steps 1 and 6 CLOSED (2026-08-15).** Five `bootstrap/` slices — no `staging/` — with a
+  byte-identical `versions.tf` (`~> 1.15`, `aws ~> 6.60`) and one lock file at 6.60.0 covering three
+  platforms; `scripts/gen-backend-hcl.sh` is the single source of the backend literals; the nine-hook
+  chain passes end to end. **The §6 tree is deliberately not on disk** — a slice folder is created by the
+  stage that writes its first `.tf`.
+- **Rest of Stage 2** — the stage file carries the roteiro (revised 2026-08-15). **Next is step 9**, the
+  `make check` scripts, before step 5 which one of them guards. Hold one thing outside the file:
+  per-OU attachments are **authored, not discovered**, or a `for_each` reverses D37 on `Sandboxes`.
+- **Stage 3 pre-instrumented (2026-08-15):** `aws/networking.sh`, `aws/egress.sh`. First run found **an
+  Account Factory VPC in every vended account** (`docs/AWS_STATE.md` §C) — the stage's new **step 0** decides
+  it, and its network-configuration half must land **before the `Staging` vend**.
 - **Standing rules that outlive their stages:** never add an `sts:` action to the RCP without reading
   `CT.STS.PV.1`'s exclusion note (its first shape locked every SSO user out of every member account);
   1d step 9 is the **only** sanctioned by-hand use of `AWSControlTowerExecution`; never resolve an
-  account by name (`ORGANIZATION.md`); subnets anchor on AZ `zone_id` — run `./aws/AZs.sh` after every
-  vend; check the SSO token before each probe block and read the denial *wording*, never the exit code;
-  account-level BPA is hand-managed — its SCP deny carves out the very principal Terraform applies as, so
-  the guard is Stage 2's repository grep.
-- **Log Archive and Audit hold no CLI profile** — nothing there is regression-testable; `CHK-1`/`CHK-2`
-  and `org-policies.sh` §4 are the standing instruments. **Every governed account sits under
-  `us-west-2`**; Stages 4, 5 and 11 are committed there (`guardduty`, `securityhub`, `macie2` not exempt).
-- **1b residue:** only `Policy Canary` keeps an Account Factory direct assignment (permanent, not
-  modelled); verification (vi) and `sso-directory.amazonaws.com` re-check at the next landing-zone update.
-- **Unexercised denies** (verify by reading, not probing — `POLICIES.md` and the 1c log):
-  `ec2:ModifySnapshotAttribute`; `datazone:CreateDomain` (= Stage 6 step 0); `s3:DeleteBucket`; the
-  positive D27 half (Stage 5's `awsds-data-catalog-maintenance` role). Athena is allowed in `Data` on
-  purpose (Stage 11 detects); `guardduty:UpdateDetector` blocks Stage 11 step 4 in Audit by design.
-- **SMUS findings for Stages 5/6/10:** open questions 12-15, summarized atop Stage 6. The load-bearing
-  one: the default notebook Spark runtime has no VPC until Stage 6 disables it.
-- **Deferred by decision — do not offer to close:** the USD 50 budget notifies nobody (D12); open
-  question 10's per-unit tokens wait for N=2. **Stage 12 hooks:** Config recorder left alone (1d decision
-  4), Management deliberately unrecorded (decision 8), INV-14 floors the log-bucket lifecycle at 90 days;
-  billing reads need root's billing toggle (active).
-- **All thirty-seven decisions are closed** (D30 as a revert). Still needed from the user: the domain
-  name alone, blocking Stage 13 (D15 phase 2). No public DNS before Stage 13; internal names are
-  `*.internal` off the internal CA (D36, INT-19).
-- **Settle earliest:** INT-11 — organization halves done; what remains is Stage 5 defending
-  `CROSS_ACCOUNT_VERSION` **4** + `SET_CONTEXT: TRUE` (values nobody set) at its first apply, carrying
-  **both** keys — and INT-13 (no convenience-preserving fallback). The repository is documentation-only
-  except `terraform-live/identity/org-policies/`; the first `.tf` arrives with Stage 2.
+  account by name; subnets anchor on AZ `zone_id` — run `./aws/AZs.sh` after every vend; check the SSO
+  token before each probe block and read the denial *wording*, never the exit code; account-level BPA is
+  hand-managed, guarded by Stage 2's repository grep. **Log Archive and Audit hold no CLI profile**, so
+  nothing there is regression-testable (`CHK-1`/`CHK-2` and `org-policies.sh` §4 are the instruments).
+- **Before reporting a gap, read the file that owns it:** unexercised denies and deliberate allowances →
+  `POLICIES.md`; 1b residue and every "expected" reading → `docs/AWS_STATE.md`; the SMUS findings for Stages
+  5/6/10 → open questions 12-15, atop Stage 6 (load-bearing: the default notebook Spark runtime has no VPC
+  until Stage 6 disables it).
+- **Deferred by decision — do not offer to close:** the USD 50 budget notifies nobody (D12); open question
+  10's per-unit tokens wait for N=2; Config recorder left alone and Management unrecorded (Stage 12 hooks).
+  **Every governed account sits under `us-west-2`** — Stages 4, 5 and 11 are committed there.
+- **All thirty-seven decisions are closed** (D30 as a revert). **Still needed from the user: the domain
+  name**, blocking Stage 13. **Settle earliest:** INT-11's remaining half — Stage 5 defending
+  `CROSS_ACCOUNT_VERSION` **4** + `SET_CONTEXT: TRUE`, values nobody set — and INT-13.
+- **The repository is not documentation-only**, and less so at every stage: the read-only `aws/` scripts,
+  `terraform-live/` + `terraform-modules/` (**first `.tf` 2026-08-15**), `scripts/`, and the
+  `pre-commit`/`tflint`/`checkov` gates.
 
 **Budget: ~2 KB.** State, not reasoning — **a bullet here that explains *why*, or that a stage file should
 be carrying, is a stale copy of something that already lives elsewhere.** Re-trim whenever a stage closes.
 
 ### Lessons carried forward
 
-**Read [`plan/lessons.md`](plan/lessons.md) before planning, reviewing, or settling a decision.**
+**Read [`docs/plan/lessons.md`](docs/plan/lessons.md) before planning, reviewing, or settling a decision.**
 These are recognition keys, not the lessons: each one is a title trimmed to what makes it identifiable, and
 the reasoning that makes it *usable* is in the file. Recognising one is the signal to open it.
 
@@ -323,4 +251,3 @@ the reasoning that makes it *usable* is in the file. Recognising one is the sign
     account.**
 26. **An "already exists" error is a free authorization probe — and proves nothing without a negative
     control.**
-

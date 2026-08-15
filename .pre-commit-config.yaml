@@ -1,0 +1,59 @@
+# Stage 2 steps 6.4 and 6.5.
+#
+# Install the git hook once per clone:  pre-commit install
+# Run against everything:               pre-commit run --all-files
+#
+# terraform_validate runs `terraform init -backend=false` per slice, which is network- and
+# disk-heavy the first time. Export TF_PLUGIN_CACHE_DIR (see terraform-live/README.md) so the
+# provider is downloaded once for the whole tree instead of once per slice.
+
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: end-of-file-fixer
+      - id: trailing-whitespace
+      - id: check-merge-conflict
+      - id: check-added-large-files
+      # D36 puts the internal CA's root private key inside a Terraform state file. State is
+      # gitignored (6.2), but this is the cheap second net for a key that arrives some other
+      # way - a scratch .pem, a copied output, a paste into a .tf.
+      - id: detect-private-key
+
+  - repo: https://github.com/antonbabenko/pre-commit-terraform
+    rev: v1.108.1
+    hooks:
+      - id: terraform_fmt
+
+      # -backend=false because a slice's backend is partial configuration + a gitignored
+      # backend.hcl (2.5), and because validate must not need AWS credentials: a check that
+      # only runs for someone holding a session is not a repository check.
+      - id: terraform_validate
+        args:
+          - --tf-init-args=-backend=false
+
+      - id: terraform_tflint
+        args:
+          - --args=--config=__GIT_WORKING_DIR__/.tflint.hcl
+
+  # checkov is a REQUIRED gate, not an advisory one (6.5) - a policy check that can be skipped
+  # is one that will be skipped on the day it would have mattered. Suppressions are inline
+  # `# checkov:skip=CKV_... reason` on the resource, never a global exclusion here, so every
+  # one of them is a line somebody wrote on purpose and a reviewer can see.
+  #
+  # `language: system` binds to the checkov on PATH - the uv-installed one recorded in
+  # CLAUDE.md - rather than letting pre-commit build a second copy at a version nobody chose.
+  - repo: local
+    hooks:
+      - id: checkov
+        name: checkov (terraform)
+        entry: checkov
+        language: system
+        pass_filenames: false
+        files: \.tf$
+        args:
+          - --quiet
+          - --compact
+          - --framework=terraform
+          - --directory=terraform-live
+          - --directory=terraform-modules

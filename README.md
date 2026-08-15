@@ -2,40 +2,65 @@
 
 Blueprint for using AWS as a Data Science infrastructure provider.
 
-- `CLAUDE.md` — goals and working rules.
-- `GENERAL_PLAN.md` — the **plan core**: guiding principles, the account map, the two indexes
+- `CLAUDE.md` — the working rules, and where the current position is recorded. It is size-budgeted
+  (20 KB, enforced by `scripts/check-plan-refs.sh`), so narrative that grows lives in `docs/plan/`.
+- `docs/` — **the documentation tree**, and the only place documentation lives: the plan core, `docs/plan/`,
+  `docs/log/`, and the reference files named below. Everything outside it is code, configuration, or the
+  working rules themselves.
+- `docs/GENERAL_PLAN.md` — the **plan core**: guiding principles, the account map, the two indexes
   (stages and decisions), and the **write** map that says where new content goes. Read this first. The
   **read** map — which file answers which question — is kept only in `CLAUDE.md`, "What to read, and when".
-- `plan/` — the plan itself, split so that a task reads only what it needs:
-  - `plan/stages/` — one file per stage, each declaring the decisions it **consumes**.
-  - `plan/decisions/` — one file per decision `D1`…`D36`, plus a one-line-per-decision `INDEX.md`. All
+- `docs/plan/` — the plan itself, split so that a task reads only what it needs:
+  - `docs/plan/objectives.md` — **what the project must achieve**, in the user's own words. The specification
+    every stage is measured against; it lived in `CLAUDE.md` until 2026-08-15 and is copied nowhere.
+  - `docs/plan/stages/` — one file per stage, each declaring the decisions it **consumes**.
+  - `docs/plan/decisions/` — one file per decision `D1`…`D37`, plus a one-line-per-decision `INDEX.md`. All
     are settled; `D30` was settled as a *revert* and keeps its file, so the record shows what was tried.
-  - `plan/runbooks/` — procedures to follow when something is on fire. Today: `break-glass.md`, which
-    says when the Management account root may be used, what to do with it, and what watches its use.
-  - `plan/architecture.md`, `plan/conventions.md`, `plan/integrations.md` (the `INT-nn` rows),
-    `plan/cost-model.md`, `plan/open-questions.md`, `plan/lessons.md`,
-    `plan/institutional-delta.md`, `plan/history.md`.
-- `GLOSSARY.md` — every acronym the plan uses, plus its notation and the IAM condition keys it quotes.
-- `ORGANIZATION.md` — the account map (one section per account, and the axis each sits on), **the two
+  - `docs/plan/runbooks/` — a procedure followed in full and in order, rather than remembered. Two today:
+    `break-glass.md`, which says when the Management account root may be used, what to do with it, and what
+    watches its use; and `scp-battery.md`, the probe battery run whenever a policy is attached or amended —
+    the two distinguishable outcomes of each probe, so a deny is *measured* rather than assumed.
+  - `docs/plan/architecture.md`, `docs/plan/conventions.md`, `docs/plan/integrations.md` (the `INT-nn` rows),
+    `docs/plan/cost-model.md`, `docs/plan/open-questions.md`, `docs/plan/lessons.md`,
+    `docs/plan/institutional-delta.md`, `docs/plan/history.md`.
+- `docs/GLOSSARY.md` — every acronym the plan uses, plus its notation and the IAM condition keys it quotes.
+- `docs/ORGANIZATION.md` — the account map (one section per account, and the axis each sits on), **the two
   families of IAM role**, and the entitlement plane above them: the SSO users, the seven permission sets,
   the five groups, and the assignment triples binding them to accounts.
-- `PRICING.md` — per-unit AWS rates for `sa-east-1` and `us-west-2`, read from the AWS Price List bulk API.
-  Unlike the cost figures in `plan/cost-model.md`, which are order-of-magnitude estimates, these are
-  measured; the cost model says what is consumed, `PRICING.md` says what a unit of it costs.
-- `log/` — record of every step performed manually through the console, **one file per stage**, mirroring
-  `plan/stages/` (`log/log-stage-NN-*.md` ↔ `plan/stages/stage-NN-*.md` — the same slug, with a `log-`
-  prefix, so the two files never share a name). `log/INDEX.md` says what each file
+- `docs/PRICING.md` — per-unit AWS rates for `sa-east-1` and `us-west-2`, read from the AWS Price List bulk API.
+  Unlike the cost figures in `docs/plan/cost-model.md`, which are order-of-magnitude estimates, these are
+  measured; the cost model says what is consumed, `docs/PRICING.md` says what a unit of it costs.
+- `docs/log/` — record of every step performed manually through the console, **one file per stage**, mirroring
+  `docs/plan/stages/` (`docs/log/log-stage-NN-*.md` ↔ `docs/plan/stages/stage-NN-*.md` — the same slug, with a `log-`
+  prefix, so the two files never share a name). `docs/log/INDEX.md` says what each file
   records, so finding a step never means reading every log.
-- `AWS-CLI.md` — the `aws` recipes run by hand, and which identity runs each of them.
+- `terraform-live/` — the deployed tree: **one folder per controlled account, sliced into independently
+  applied units**, each slice carrying a `[P]`/`[D]`/`[E]` layer. `terraform-live/README.md` explains how it
+  is organised and what is in it today; the authoritative slice-by-slice layout is `docs/plan/conventions.md` §6,
+  so the two cannot drift. Two things already live here: the five `bootstrap/` slices of Stage 2, and
+  `identity/org-policies/`, which holds the ten organization policy documents (SCP, RCP, tag, declarative
+  EC2) with `POLICIES.md` indexing every statement and its reason.
+- `terraform-modules/` — the reusable modules, consumed **by git tag, never by branch**. `terraform-live/`
+  composes; it does not define.
+- `.pre-commit-config.yaml` and `.tflint.hcl` — the repository's Terraform gates (Stage 2 step 6):
+  `terraform fmt`, `terraform validate`, `tflint` and `checkov` as a *required* check, since a policy gate
+  that can be skipped is a policy suggestion.
+- `aws/AWS-CLI.md` — the `aws` recipes run by hand, and which identity runs each of them.
 - `aws/` — read-only scripts that photograph what is actually deployed, one text snapshot per script under
   the untracked `aws/output/`. `aws/INDEX.md` says which script writes which file and which section of it
-  answers which question. Not infrastructure code: nothing here creates or changes a resource.
-- `AWS_STATE.md` — the reconciliation layer between the three above: what a snapshot is *expected* to show
-  (`INV-nn`), which differences are already accounted for (`EXC-nn`), and what a later stage will change.
-  Carries no identifiers and no reasoning on purpose — those live in the snapshot and in `plan/decisions/`.
-- `REFERENCES.md` — external references used along the way.
+  answers which question. Not infrastructure code: nothing here creates or changes a resource — **with one
+  fenced exception, `aws/probes/`**, the SCP battery, which has to *attempt* the calls a policy forbids
+  because that is the only way to measure a preventive control. It creates nothing, attaches nothing, and is
+  run deliberately rather than to gather information.
+- `docs/AWS_STATE.md` — the reconciliation layer between the plan, the `docs/log/` and the snapshots: what a snapshot
+  is *expected* to show (`INV-nn`), which differences are already accounted for (`EXC-nn`), and what a later
+  stage will change. Carries no identifiers and no reasoning on purpose — those live in the snapshot and in
+  `docs/plan/decisions/`.
+- `docs/REFERENCES.md` — external references used along the way.
 - `scripts/` — repository hygiene, not infrastructure: `check-plan-refs.sh` validates the plan's internal
-  links and stable-ID references.
+  links and stable-ID references, and `gen-backend-hcl.sh` writes each slice's untracked `backend.hcl`. A
+  `backend` block interpolates nothing, so the state bucket, the key and the **Region** have to be literals
+  somewhere; that one place is a generated file which is not a `.tf` file and is never committed.
 
 ---
 
@@ -74,7 +99,7 @@ package the notebook installs — a typosquatted PyPI name is enough, and it exe
 **Whose credential that is, is the whole argument.** The code runs as the *execution role* — the role
 SageMaker assumes — and not as the role the person signed in with. So restricting what a data scientist may
 *click* does not restrict what their notebook may *reach*, and a control written against the wrong one of the
-two constrains nothing. `ORGANIZATION.md`, "The two families of IAM role", carries the distinction and what
+two constrains nothing. `docs/ORGANIZATION.md`, "The two families of IAM role", carries the distinction and what
 actually happens when a job runs.
 
 In a conventional environment, code reaches production through review, CI and a deploy. In a data science
@@ -331,12 +356,12 @@ policy it carries but the disposable account it contains:
 | OU | Accounts | The policy set it carries |
 |---|---|---|
 | Security | Log Archive, Audit | Control Tower guardrails. **Foundational** — Control Tower owns it, and it will not accept an account it did not create there |
-| Identity | Identity | Delegated Identity Center administration. Split out of `Security` on 2026-08-09 because the vend into a foundational OU was refused (D23) — so whatever guardrails `Security` carried by being foundational have to be attached here explicitly |
-| Interactive | Development, and the nested `Sandboxes` OU | Interactive compute **allowed** — and this is the one OU that adds no deny to the organization-root set, which is why. What keeps the data scientist from changing infrastructure is `DataScientistAccess`, an *identity* policy, not this OU (see below the table) |
-| Interactive → Sandboxes | Sandbox, one per business unit (D35) | **None of its own** — and `Interactive` above has none either today, so what reaches a Sandbox is the organization-root set. It is a container for a *cardinality class*, not a policy boundary |
+| Identity | Identity | No user compute — `DenyUserCompute`, the same statement as `Data`'s and none of its neighbours (1c step 7.6): there is nothing to run in the identity plane, so a compromise of it cannot be turned into compute inside it. Split out of `Security` on 2026-08-09 because the vend into a foundational OU was refused (D23) — so whatever guardrails `Security` carried by being foundational have to be attached here explicitly |
+| Interactive | Development, and the nested `Sandboxes` OU | Interactive compute **allowed**, minus **exactly one statement**: no *classic* SageMaker notebook instance (1c step 7.6, 2026-08-13). The lightest set in the tree, and why it is not heavier is below the table. What keeps the data scientist from changing infrastructure is `DataScientistAccess`, an *identity* policy, not this OU |
+| Interactive → Sandboxes | Sandbox, one per business unit (D35) | **None of its own, by rule** (D37): nothing is attached or enabled here unless it *differs* from `Interactive`, so what reaches a Sandbox is the organization-root set plus that one deny, inherited. It is a container for a *cardinality class*, not a policy boundary |
 | Data | Data Governance | No *user* compute (the DataZone control plane and the catalog-maintenance role are carved out by name); deletion denied |
 | Workloads | Staging, Production | No interactive compute; no human control plane |
-| Policy Test | Policy Canary | **None** — this is the OU a *candidate* policy is attached to and exercised against, before it reaches anything real (D29) |
+| Policy Test | Policy Canary | **None of this project's** — this is the OU a *candidate* policy is attached to and exercised against, before it reaches anything real (D29). It does carry the Control Tower controls every governed OU has (the `us-west-2` ceiling and the two root-user controls, 1c step 7.7), so a candidate is measured against the same floor as everything else |
 
 A per-environment OU tree (`Development` OU, `Staging` OU, `Production` OU, one account each) was
 considered and rejected — every OU would hold exactly one account, so the tree would add names without
@@ -413,7 +438,7 @@ is the only path by which governed data is ever written.
 
 All under one AWS Organization governed by Control Tower.
 
-**The account map is in [`ORGANIZATION.md`](ORGANIZATION.md)**: an index table of account → OU → axis →
+**The account map is in [`docs/ORGANIZATION.md`](docs/ORGANIZATION.md)**: an index table of account → OU → axis →
 purpose → the policy set that OU carries, then one section per account saying what it holds and what it
 deliberately does not — and, after them, the two families of IAM role, the seven permission sets, the
 five SSO groups and the assignment triples binding them to accounts.
@@ -427,14 +452,14 @@ does, and the sections below are how an account comes into existence.
 The full rationale for each placement — why the tooling sits in Production rather than in a separate Shared
 Services account (D14), why Identity is its own account (D10), what the Staging account is and is not
 (D20), where experimentation ends and development begins (D21), why the lake has its own account (D22), and
-how the OUs were chosen (D23) — is recorded one file per decision in `plan/decisions/`
-(index: `plan/decisions/INDEX.md`).
+how the OUs were chosen (D23) — is recorded one file per decision in `docs/plan/decisions/`
+(index: `docs/plan/decisions/INDEX.md`).
 
 ---
 
 ## How OUs and accounts are created
 
-`ORGANIZATION.md` says *which* accounts exist. This section says *how one comes into existence* — a process
+`docs/ORGANIZATION.md` says *which* accounts exist. This section says *how one comes into existence* — a process
 that is deliberately not uniform: most accounts are created by hand from the console, and exactly one class
 of account is destined for a Terraform-driven flow. The asymmetry is the point, and the reasoning behind it
 is recorded in D32, D33, D34 and D35.
@@ -444,7 +469,7 @@ is recorded in D32, D33, D34 and D35.
 The first principle of the plan keeps the Management account out of Terraform entirely. Nothing in this
 repository will ever declare `aws_organizations_account` or `aws_organizations_organizational_unit`, and the
 landing zone itself — Control Tower, its guardrails, its baseline — is enabled through the console and
-recorded in `log/log-stage-01a-landing-zone.md`.
+recorded in `docs/log/log-stage-01a-landing-zone.md`.
 
 That is not a temporary shortcut awaiting codification. It has a direct and useful consequence: **creating an
 OU or an account from the console cannot make any Terraform state inconsistent**, because a state file only
@@ -483,7 +508,7 @@ Accounts are vended through **Control Tower's Account Factory**, from the AWS ac
 `AWS Control Tower Admin` user — **never from the root user**, which gets a Service Catalog portfolio error
 by design (D33). That user is Control Tower's own creation rather than this project's, and **its reach is
 wider than its name suggests** — wide enough that it is worth reading before trusting any other claim in this
-section. `ORGANIZATION.md` ("`AWS Control Tower Admin`") carries the group matrix, what it reaches in each
+section. `docs/ORGANIZATION.md` ("`AWS Control Tower Admin`") carries the group matrix, what it reaches in each
 account, and what permanently limits it.
 
 This was originally sized as a bootstrap credential with an end date. **D34 withdrew that retirement**, on a
@@ -499,16 +524,16 @@ one of them holds anyway buys nothing. What the choice does buy is that **the in
 *standing* reach into the Management account**, which keeps D32's shape intact — *standing* being the precise
 word, since that user administers the `Identity` account and an Identity Center delegated administrator can
 edit `AWSControlTowerAdmins` membership. The assignment is absent; the path is watched rather than closed
-(`ORGANIZATION.md`, "The limit of the separation of duties").
+(`docs/ORGANIZATION.md`, "The limit of the separation of duties").
 
 Keeping that identity standing has a price, and it is paid as three permanent controls rather than as a
 window that closes — MFA on the user, S3 Object Lock in *compliance* mode on the log archive, and the alarm
 on Control Tower group membership. Why none of the three is optional, and why compliance mode specifically,
-is in `ORGANIZATION.md`.
+is in `docs/ORGANIZATION.md`.
 
 What belongs here is the part that is an argument rather than a control: **separation of duties, none, and
 that is the honest word.** The identity that creates accounts also administers the account holding the audit
-trail, and nobody approves a vend. One human, one lab — recorded in `plan/institutional-delta.md` rather than
+trail, and nobody approves a vend. One human, one lab — recorded in `docs/plan/institutional-delta.md` rather than
 argued away.
 
 ### 4. What is filled into the vending form
@@ -523,7 +548,7 @@ Note also that the Identity Center directory is **not empty** at this point: Con
 its own groups and permission sets, and those groups are **pre-wired permission ceilings** — each already
 carries its assignments, so adding one person to one of them is an organization-wide grant made by a single
 membership edit. No project persona ever joins one. Which groups they are, what each already grants, and the
-one that is no longer empty are in `ORGANIZATION.md` ("The groups and permission sets that arrived with it").
+one that is no longer empty are in `docs/ORGANIZATION.md` ("The groups and permission sets that arrived with it").
 
 ### 5. The gate, which comes before the account exists
 
@@ -532,9 +557,10 @@ An account request is answered in this order (D34):
 1. **Which axis is it on, and which OU's policy set does it need?** The axes are lifecycle (dev / staging /
    prod), data ownership, and platform. If an existing placement fits — and "another sandbox" almost always
    means the nested `Sandboxes` OU — the account joins it and inherits SCP, RCP, tag policy and the region
-   control for free. Note where that inheritance actually comes from today: `Sandboxes` carries no set,
-   `Interactive` above it carries none either, so what a new Sandbox inherits is the **organization-root**
-   set. That is the ceiling, and it is the reason placing the account correctly is enough.
+   control for free. Note where that inheritance actually comes from today: `Sandboxes` carries no set of
+   its own by rule (D37) and `Interactive` above it carries a single deny, so what a new Sandbox inherits is
+   the **organization-root** set plus that one statement and `Interactive`'s Control Tower controls. That is
+   the ceiling, and it is the reason placing the account correctly is enough.
 2. **If no policy set fits, the request is an OU decision, not an account decision** (D23: an OU earns its
    existence when two or more accounts need the same policy set). It then goes through the `Policy Canary`
    battery (D29) before being attached anywhere real.
@@ -605,7 +631,7 @@ once per account and read every time it is changed.
 
 **When this is revisited.** Account creation becoming frequent enough that the post-vend baseline is run from
 memory rather than read, or a second human joining — at which point the ladder is walked from rung 1, not
-jumped to rung 3, with the cost of whichever rung is chosen *measured* into `PRICING.md` first. For the
+jumped to rung 3, with the cost of whichever rung is chosen *measured* into `docs/PRICING.md` first. For the
 Sandbox class specifically, the trigger is a business unit needing its own **Development**, which would move
 an account off the structural side of the table and break the "the chain is untouched by N" property the
 whole split rests on.

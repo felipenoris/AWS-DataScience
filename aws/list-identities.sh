@@ -24,7 +24,7 @@
 # IAM Identity Center delegated administrator (D10). Reads are not restricted from there -
 # only *writes* against Management-targeted objects are - which is why the Organizations
 # calls below answer even though only Management could change what they return
-# (log/log-stage-01b-identity-and-controls.md, step 4).
+# (docs/log/log-stage-01b-identity-and-controls.md, step 4).
 #
 # Two call styles, on purpose:
 #   show  - prints the command and the CLI's own `--output table` under it. What a reader
@@ -187,7 +187,7 @@ printf '    calls; the calls are named in the paragraph next to it.\n'
 printf '  - An empty block says which kind of empty it is. Section 6 lists every call that\n'
 printf '    failed, so "(none)" always means none.\n'
 printf '  - This is a point-in-time snapshot, not a source of truth: regenerate it rather\n'
-printf '    than trusting a stale copy, and record intent in plan/ or log/, never here.\n'
+printf '    than trusting a stale copy, and record intent in docs/plan/ or docs/log/, never here.\n'
 printf '\n'
 printf 'THIS FILE IS NOT VERSIONED (aws/output/ is in .gitignore) AND CONTAINS ACCOUNT IDS\n'
 printf 'AND EMAIL ADDRESSES. Do not copy either into a tracked file.\n'
@@ -215,7 +215,7 @@ printf '      --output text)\n'
 printf '$ echo $ORG_ID\n'
 printf '%s\n\n' "${ORG_ID:-(call failed - see section 6)}"
 
-printf 'This id is what the two data-perimeter condition keys of plan/architecture.md are\n'
+printf 'This id is what the two data-perimeter condition keys of docs/plan/architecture.md are\n'
 printf 'compared against: aws:PrincipalOrgID (is the CALLER inside my organization?) and\n'
 printf 'aws:ResourceOrgID (is the RESOURCE being written to?). It is also the value\n'
 printf 'terraform-live/identity/org-policies/render.sh substitutes for the <ORG_ID>\n'

@@ -1,6 +1,6 @@
 # `probes/` — the SCP battery, executable
 
-**The reasoning is [`plan/runbooks/scp-battery.md`](../../plan/runbooks/scp-battery.md); this folder is the
+**The reasoning is [`docs/plan/runbooks/scp-battery.md`](../../docs/plan/runbooks/scp-battery.md); this folder is the
 same battery as a program.** The runbook says *why* each probe is shaped the way it is and what each
 outcome means. The script runs them, classifies the answers and reports. Read the runbook once; run the
 script every time.
@@ -111,6 +111,6 @@ unexercised — which is the state this battery exists to make visible.
 
 ---
 
-*Runbook: [`plan/runbooks/scp-battery.md`](../../plan/runbooks/scp-battery.md) ·
+*Runbook: [`docs/plan/runbooks/scp-battery.md`](../../docs/plan/runbooks/scp-battery.md) ·
 Documents: [`terraform-live/identity/org-policies/`](../../terraform-live/identity/org-policies/README.md) ·
 Statements: [`POLICIES.md`](../../terraform-live/identity/org-policies/POLICIES.md)*

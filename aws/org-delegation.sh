@@ -621,7 +621,7 @@ if [ -s "$TARGETS" ]; then
   NROOT=$(awk -F'\t' '$1=="ROOT"' "$TARGETS" | wc -l | tr -d ' ')
   NOU=$(awk -F'\t' '$1=="OU"' "$TARGETS" | wc -l | tr -d ' ')
   printf '%s document(s) on the ROOT, %s on an OU.\n' "$NROOT" "$NOU"
-  printf 'Expected shape as of 2026-08-15: 6 on the root, 4 on OUs (AWS_STATE.md).\n'
+  printf 'Expected shape as of 2026-08-15: 6 on the root, 4 on OUs (docs/AWS_STATE.md).\n'
 else
   printf '(nothing found - see section 6)\n'
 fi
