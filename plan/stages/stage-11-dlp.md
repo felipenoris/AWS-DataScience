@@ -111,7 +111,7 @@ organization, which is exactly the movement this stage exists to control.
    because Stage 5's Iceberg `OPTIMIZE`/`VACUUM` runs through it — so a principal in the lake account can
    query any table the catalog exposes and land the result in S3, with the perimeter SCP only stopping
    that write when the destination is outside the organization. **Preventively, that hole is deliberate
-   and documented** ([`SCPs.md`](../../terraform-live/identity/org-policies/SCPs.md), `awsds-org-scp-ou-data`);
+   and documented** ([`POLICIES.md`](../../terraform-live/identity/org-policies/POLICIES.md), `awsds-org-scp-ou-data`);
    detecting it is this step's. The signal is a query in the Data Governance account whose principal is
    not the catalog-maintenance role and whose statement is not a table-maintenance one — an inversion of
    the usual alarm, since in every *other* account Athena is the normal way to read.

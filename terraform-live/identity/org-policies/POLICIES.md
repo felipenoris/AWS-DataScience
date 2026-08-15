@@ -1,10 +1,11 @@
-# SCPs — every statement in `policies/`, and what it is for
+# Organization policies — every statement in `policies/`, and what it is for
 
-**The index of the `SERVICE_CONTROL_POLICY` documents in [`policies/`](policies/).** One section per file,
-one row per `Sid`: what it denies, why the statement exists, and what it actually does once attached.
+**The index of every document in [`policies/`](policies/), of all four policy types.** One section per file,
+one row per `Sid` — or per tag key, or per declarative attribute: what it denies, why the statement exists,
+and what it actually does once attached.
 The documents themselves carry no comments — JSON has none — so this file is where their reasoning lives.
 
-> ## Review this file at every SCP change — in the same sitting
+> ## Review this file at every policy change — in the same sitting
 >
 > **A statement added, removed, renamed or re-conditioned in `policies/` is a change to this file**, and so
 > is attaching a document to a new target or detaching it. The check is mechanical: **the rows in a section
@@ -28,9 +29,10 @@ The documents themselves carry no comments — JSON has none — so this file is
 > document is attached, and duplicating them here would produce a second, staler answer.
 
 **Scope: every document in [`policies/`](policies/), of all four policy types — widened 2026-08-13 when
-step 7.8 wrote the other three.** The filename is historical and the split it once described was not worth
-keeping: a second index is a second place to forget an amendment (Lesson 14), and "why does this statement
-exist" is the same question whatever the type. **What differs is what plays the part of a `Sid`**, and
+step 7.8 wrote the other three, and the file was renamed from `SCPs.md` on 2026-08-15 to stop the name
+contradicting the scope.** The split the old name described was not worth keeping: a second index is a
+second place to forget an amendment (Lesson 14), and "why does this statement exist" is the same question
+whatever the type. **What differs is what plays the part of a `Sid`**, and
 `check-index.sh` knows all four: the `Sid` list for an SCP or an RCP, the **tag keys** for a tag policy, the
 **attribute names** under `ec2_attributes` for a declarative policy. A document of a type it does not
 recognise stops the run rather than being skipped.

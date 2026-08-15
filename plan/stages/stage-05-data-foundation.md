@@ -148,7 +148,7 @@ before Stage 9 repeats it for Production.
    the destination is outside the organization. The `Data` OU SCP therefore makes "nothing *runs* here"
    true and leaves "nothing *reads everything* here" to detection, which is
    [Stage 11](stage-11-dlp.md)'s; it is recorded in
-   [`SCPs.md`](../../terraform-live/identity/org-policies/SCPs.md) as a stated non-coverage. **If
+   [`POLICIES.md`](../../terraform-live/identity/org-policies/POLICIES.md) as a stated non-coverage. **If
    maintenance ends up on Glue's automatic compaction instead, this hole can be closed** by adding
    `athena:StartQueryExecution` to the statement — decide it here, when the maintenance path is chosen,
    rather than leaving the wider version by default.

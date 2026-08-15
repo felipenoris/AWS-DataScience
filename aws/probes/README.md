@@ -113,4 +113,4 @@ unexercised — which is the state this battery exists to make visible.
 
 *Runbook: [`plan/runbooks/scp-battery.md`](../../plan/runbooks/scp-battery.md) ·
 Documents: [`terraform-live/identity/org-policies/`](../../terraform-live/identity/org-policies/README.md) ·
-Statements: [`SCPs.md`](../../terraform-live/identity/org-policies/SCPs.md)*
+Statements: [`POLICIES.md`](../../terraform-live/identity/org-policies/POLICIES.md)*

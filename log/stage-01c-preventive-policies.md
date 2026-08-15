@@ -528,7 +528,7 @@ awsds-org-scp-ou-identity.json
   until Stage 5 — its **positive half is untested**, not passed.
 
 - Documentation written in the same sitting: `terraform-live/README.md` and
-  `terraform-live/identity/org-policies/SCPs.md` (both new), the battery runbook's **phase 4** (the four
+  `terraform-live/identity/org-policies/POLICIES.md` (both new), the battery runbook's **phase 4** (the four
   documents, parked on `Policy Test`, then re-probed from each OU's own account), and the role-name
   contract in Stage 5.
 
@@ -977,7 +977,7 @@ aws ec2 run-instances --dry-run --image-id <AMI> --instance-type t3.micro --subn
   `awsds-org-rcp-perimeter.json` (RCP, 1150), `awsds-org-scp-tag-enforcement.json` (SCP, 518),
   `awsds-org-tag-policy.json` (tag policy, 430), `awsds-org-declarative-ec2.json` (declarative EC2, 640).
 
-- **`SCPs.md` now indexes all four policy types** and `check-index.sh` is type-aware — `Sid`s for SCP/RCP,
+- **`terraform-live/identity/org-policies/POLICIES.md` now indexes all four policy types** and `check-index.sh` is type-aware — `Sid`s for SCP/RCP,
   tag keys for a tag policy, `ec2_attributes` names for a declarative one, with an unrecognised document
   stopping the run rather than being skipped. Ten documents, `clean`.
 

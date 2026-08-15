@@ -16,6 +16,15 @@
 #             sts:GetCallerIdentity. This script never creates, updates or deletes anything.
 #   exits:    0 all checks passed | 1 a call failed | 2 a check FAILED
 #
+# ALL FOUR POLICY TYPES CARRY THEIR ID SINCE 2026-08-15, and the omission it fixes was not
+# cosmetic. Section 1 used to list `SERVICE_CONTROL_POLICY` documents with their ids and
+# reduce the RCP to a presence check, while the tag policy and the declarative policy did
+# not appear at all - so THREE OF THE TEN ATTACHED DOCUMENTS had no id in any snapshot and
+# existed only in log/stage-01c-preventive-policies.md. That was survivable while they were
+# console-managed and stops being survivable at Stage 2 step 5.5, where the id is the
+# argument `terraform import` takes. Reading one filter is also how a read-back reports
+# three attached documents as absent (Lesson 13, and 1c nearly did it).
+#
 # WHY THIS EXISTS, AND HOW IT DIFFERS FROM org-policy-baseline.sh - which walks the same
 # tree and would otherwise be a duplicate of it.
 #
@@ -78,11 +87,20 @@ trap 'rm -rf "$TMP"' EXIT
 
 NODES="$TMP/nodes.tsv"       # KIND <tab> NAME <tab> ID <tab> ANCESTORS(space-sep, incl self)
 ACCTS="$TMP/accounts.tsv"    # NAME <tab> ID <tab> PARENT_ID <tab> ANCESTORS
-NODEPOL="$TMP/nodepol.tsv"   # NODE_ID <tab> PID <tab> PNAME
-NODERCP="$TMP/nodercp.tsv"   # NODE_ID <tab> PNAME
+NODEPOL="$TMP/nodepol.tsv"   # NODE_ID <tab> PID <tab> PNAME   - SCP ONLY
+NODERCP="$TMP/nodercp.tsv"   # NODE_ID <tab> PNAME            - RCP names, for CHK-5
+NODEALL="$TMP/nodeall.tsv"   # NODE_ID <tab> TYPE <tab> PID <tab> PNAME - all four types
 ERRORS="$TMP/errors.txt"
 CHECKS="$TMP/checks.tsv"     # RESULT <tab> ID <tab> WHAT <tab> DETAIL
-: >"$NODES"; : >"$ACCTS"; : >"$NODEPOL"; : >"$NODERCP"; : >"$ERRORS"; : >"$CHECKS"
+: >"$NODES"; : >"$ACCTS"; : >"$NODEPOL"; : >"$NODERCP"; : >"$NODEALL"; : >"$ERRORS"; : >"$CHECKS"
+
+# NODEPOL stays SCP-only ON PURPOSE. Sections 2, 3 and 4 resolve inheritance and read
+# conditions, and only an SCP composes down the tree the way those sections describe: an RCP
+# bounds a resource rather than a principal, a tag policy reports instead of denying, and a
+# declarative policy is not a permission boundary in either direction. Widening NODEPOL
+# would have made section 2's "N statements in force over this account" quietly wrong.
+# NODEALL is the inventory; NODEPOL is the ceiling.
+POLICY_TYPES="SERVICE_CONTROL_POLICY RESOURCE_CONTROL_POLICY TAG_POLICY DECLARATIVE_POLICY_EC2"
 
 if [ "$PROFILE" = "-" ] || [ "$PROFILE" = "none" ]; then
   PROFILE_OPT=""
@@ -168,6 +186,41 @@ sids_of() {        # $1 = policy id -> "SID, SID, ..."  or the unreadable marker
 }
 nstmts_of() { policy_stmts "$1" | wc -l | tr -d ' '; }
 
+# WHAT PLAYS THE PART OF A `Sid` DIFFERS BY TYPE, and section 1 lists all four since
+# 2026-08-15. This is deliberately the same extraction as
+# terraform-live/identity/org-policies/check-index.sh, and for the same reason: the property
+# worth printing is "what entries does this document contain", and a type nobody taught the
+# script about is named rather than skipped - a listing that silently drops a document is
+# exactly the omission this section was widened to fix.
+cat >"$TMP/entries.py" <<'PY'
+import json, sys
+doc = json.load(open(sys.argv[1]))
+if "Statement" in doc:                       # SCP and RCP: the IAM grammar
+    stmts = doc["Statement"]
+    if isinstance(stmts, dict):
+        stmts = [stmts]
+    out = [s.get("Sid", "(no Sid)") for s in stmts]
+elif "tags" in doc:                          # tag policy: one entry per tag key
+    out = [v["tag_key"]["@@assign"] for v in doc["tags"].values()]
+elif "ec2_attributes" in doc:                # declarative policy: one per attribute
+    out = list(doc["ec2_attributes"].keys())
+else:
+    out = ["(unrecognised document - no Statement, tags or ec2_attributes key)"]
+print(", ".join(out))
+PY
+
+entries_of() {     # $1 = policy id -> "ENTRY, ENTRY, ..."  or the unreadable marker
+  local pid="$1" f="$TMP/pol-$pid.json" out
+  if [ ! -s "$f" ]; then
+    run organizations describe-policy --policy-id "$pid" --query 'Policy.Content' --output text
+    [ -n "$RUN_OUT" ] || { printf '(document unreadable - see section 5)'; return 0; }
+    printf '%s\n' "$RUN_OUT" >"$f"
+  fi
+  out=$(python3 "$TMP/entries.py" "$f" 2>>"$ERRORS")
+  if [ -n "$out" ]; then printf '%s' "$out"
+  else printf '(document unreadable - see section 5)'; fi
+}
+
 # ---------------------------------------------------------------------------- preflight
 
 note "profile: $PROFILE_LABEL (region $REGION)"
@@ -232,25 +285,22 @@ while IFS=$'\t' read -r kind name id anc; do
   done
 done <"$NODES"
 
-note "listing attached policies per node..."
+note "listing attached policies per node, all four types..."
 while IFS=$'\t' read -r kind name id anc; do
   [ -n "${id:-}" ] || continue
-  run organizations list-policies-for-target --target-id "$id" \
-      --filter SERVICE_CONTROL_POLICY --query 'Policies[].[Id,Name]' --output text
-  if [ -n "$RUN_OUT" ]; then
+  for ptype in $POLICY_TYPES; do
+    run organizations list-policies-for-target --target-id "$id" \
+        --filter "$ptype" --query 'Policies[].[Id,Name]' --output text
+    [ -n "$RUN_OUT" ] || continue
     printf '%s\n' "$RUN_OUT" | while IFS=$'\t' read -r pid pname; do
       [ -n "${pid:-}" ] || continue
-      printf '%s\t%s\t%s\n' "$id" "$pid" "$pname" >>"$NODEPOL"
+      printf '%s\t%s\t%s\t%s\n' "$id" "$ptype" "$pid" "$pname" >>"$NODEALL"
+      case "$ptype" in
+        SERVICE_CONTROL_POLICY)  printf '%s\t%s\t%s\n' "$id" "$pid" "$pname" >>"$NODEPOL" ;;
+        RESOURCE_CONTROL_POLICY) printf '%s\t%s\n'     "$id" "$pname"        >>"$NODERCP" ;;
+      esac
     done
-  fi
-  run organizations list-policies-for-target --target-id "$id" \
-      --filter RESOURCE_CONTROL_POLICY --query 'Policies[].[Name]' --output text
-  if [ -n "$RUN_OUT" ]; then
-    printf '%s\n' "$RUN_OUT" | while read -r rname; do
-      [ -n "${rname:-}" ] || continue
-      printf '%s\t%s\n' "$id" "$rname" >>"$NODERCP"
-    done
-  fi
+  done
 done <"$NODES"
 
 # --------------------------------------------------------------------------- the report
@@ -266,8 +316,8 @@ printf 'caller    : %s\n' "$CALLER"
 printf 'produced  : aws/org-policies.sh   (index: aws/INDEX.md)\n'
 printf '\n'
 printf 'SECTIONS\n'
-printf '  1. Attached per node, by Sid - no document bodies\n'
-printf '  2. What governs each ACCOUNT, inheritance resolved\n'
+printf '  1. Attached per node, all four policy types, with ids - no document bodies\n'
+printf '  2. What governs each ACCOUNT, inheritance resolved - SCPs only, see below\n'
 printf '  3. The read-only checks - the class no probe can reach\n'
 printf '  4. The ceiling at a glance, per OU\n'
 printf '  5. Calls that failed\n'
@@ -284,6 +334,12 @@ printf '  - SECTION 3 IS THE POINT OF THIS SCRIPT. Those statements are invisibl
 printf '    SCP battery in BOTH directions, because every principal this project can obtain\n'
 printf '    is an Identity Center role (Lesson 22). A green battery says nothing about them,\n'
 printf '    and a FAIL here is a real defect however clean ./aws/probes/scp-battery.sh ran.\n'
+printf '  - SECTION 1 LISTS ALL FOUR TYPES; SECTION 2 RESOLVES ONLY SCPs, and that is not an\n'
+printf '    omission. Only an SCP composes down the tree as a ceiling over a principal. An\n'
+printf '    RCP bounds a RESOURCE, a tag policy REPORTS rather than denying (enforced_for is\n'
+printf '    unset here), and a declarative policy sets a service attribute rather than an\n'
+printf '    authorization boundary. Folding them into "N statements in force" would produce\n'
+printf '    a number that is confidently wrong.\n'
 printf '  - AN OU ROW SAYING "nothing attached" IS NOT AN UNGOVERNED OU. `Sandboxes` carries\n'
 printf '    nothing by decision (D37) and is fully governed by inheritance - section 2 is\n'
 printf '    where that question is actually answered, per account.\n'
@@ -291,23 +347,34 @@ printf '  - This is a point-in-time snapshot, not a source of truth. Regenerate 
 printf '    trusting a stale copy; expectations live in AWS_STATE.md, intent in plan/.\n'
 
 # ======================================================================================
-h1 "1. Attached per node, by Sid"
+h1 "1. Attached per node, all four policy types, with ids"
 
 printf 'FullAWSAccess and RCPFullAWSAccess are omitted here - they allow everything and\n'
 printf 'their presence is checked in section 4 instead. What is left is the ceiling.\n'
+printf '\n'
+printf 'THE ID IN BRACKETS IS THE ONLY PLACE OUTSIDE THE 1c LOG THAT CARRIES IT, and it is\n'
+printf 'what Stage 2 step 5.5 passes to `terraform import`. Bind your READING to the entry\n'
+printf 'names (Lesson 23); use the id as an argument, never as a name for the document.\n'
+printf 'The entry column means something different per type, on purpose: `Sid`s for an SCP\n'
+printf 'or an RCP, tag KEYS for a tag policy, ATTRIBUTE names for a declarative policy.\n'
 
 while IFS=$'\t' read -r kind name id anc; do
   [ -n "${id:-}" ] || continue
   h2 "$kind $name  ($id)"
   FOUND=0
-  while IFS=$'\t' read -r nid pid pname; do
-    [ "$nid" = "$id" ] || continue
-    case "$pname" in FullAWSAccess) continue ;; esac
-    FOUND=1
-    printf '  %s  (%s)\n' "$pname" "$pid"
-    printf '      %s\n' "$(sids_of "$pid")"
-  done <"$NODEPOL"
-  [ "$FOUND" -eq 0 ] && printf '  (nothing attached beyond FullAWSAccess)\n'
+  for ptype in $POLICY_TYPES; do
+    TFOUND=0
+    while IFS=$'\t' read -r nid ntype pid pname; do
+      [ "$nid" = "$id" ] || continue
+      [ "$ntype" = "$ptype" ] || continue
+      case "$pname" in FullAWSAccess|RCPFullAWSAccess) continue ;; esac
+      if [ "$TFOUND" -eq 0 ]; then printf '  [%s]\n' "$ptype"; TFOUND=1; fi
+      FOUND=1
+      printf '    %s  (%s)\n' "$pname" "$pid"
+      printf '        %s\n' "$(entries_of "$pid")"
+    done <"$NODEALL"
+  done
+  [ "$FOUND" -eq 0 ] && printf '  (nothing attached beyond FullAWSAccess / RCPFullAWSAccess)\n'
 done <"$NODES"
 
 # ======================================================================================

@@ -566,11 +566,14 @@ The mechanism that answers this — a mechanism, not a checklist line — is:
 > **The floor is discovered, the grants are enumerated.**
 
 In [`terraform-live/identity/org-policies/`](terraform-live/identity/org-policies/README.md) — the tree is
-explained in [`terraform-live/README.md`](terraform-live/README.md), and every SCP statement in it is
-indexed, with its reason, in [`SCPs.md`](terraform-live/identity/org-policies/SCPs.md) — anything that must
-cover *everything* (the organization-root SCP/RCP set, the
-tag policy, the per-OU attachments) is driven by `for_each` over the AWS Organizations data sources, so an OU
-or account created yesterday from the console is covered by the next apply with nobody having to remember.
+explained in [`terraform-live/README.md`](terraform-live/README.md), and every statement in it — of all four
+policy types — is
+indexed, with its reason, in [`POLICIES.md`](terraform-live/identity/org-policies/POLICIES.md) — anything that must
+cover *everything* (the organization-root SCP/RCP set, the tag policy, the declarative policy) is attached
+to the **root**, so an OU or account created yesterday from the console inherits it with nobody having to
+remember. The **per-OU** documents are a different shape and cannot be discovered — each OU has a *different*
+document — so they are an authored map, and what `for_each` over the Organizations data sources buys there is
+the **check** that fails when a new OU appears in no map (Stage 2 step 9.3).
 Permission set assignments stay **explicit**, because a new account silently acquiring `DataScientistAccess`
 is precisely the failure the design exists to prevent.
 

@@ -417,7 +417,7 @@ if [ "$N_BAD" -gt 0 ]; then
   echo "     Not a probe result: the sign-in path itself is refusing, and every probe behind"
   echo "     it reads 'no credentials in <account>' rather than passing. If the accounts that"
   echo "     failed are the member accounts and Management still answers, suspect a policy"
-  echo "     reaching STS - see Lesson 24 and the awsds-org-rcp-perimeter row in SCPs.md."
+  echo "     reaching STS - see Lesson 24 and the awsds-org-rcp-perimeter row in POLICIES.md."
   exit 1
 fi
 exit 0

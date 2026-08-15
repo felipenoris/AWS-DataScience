@@ -65,8 +65,10 @@ created there, the account has stopped being what it is for.
 - **OUs and accounts.** They are created from the console (D34), outside every state. Nothing here declares
   them, so they cannot drift — but a new OU can end up with no policy attached and a new account outside
   every enumerated condition, with `terraform plan` reporting *"No changes"* either way. Hence the rule that
-  survives it: **the floor is discovered** (`for_each` over the Organizations data sources) **and the grants
-  are enumerated**.
+  survives it: **the floor is discovered and the grants are enumerated** — where "discovered", since 1c put
+  every must-cover-everything document on the **organization root**, means *inherited* coverage plus a
+  `make check` that fails on an OU nobody accounted for, **not** a `for_each` that attaches. See
+  [`plan/conventions.md`](../plan/conventions.md), the D34 bullet, for why the distinction is load-bearing.
 - **`aws_s3_account_public_access_block`** — never declared in any slice. The account-level setting is made
   by hand in Stage 1c step 7.4 and then denied by the SCP of step 7.5; it reads exactly like something that
   belongs in `foundation/`, which is why the exclusion is written down in three places.
@@ -80,7 +82,7 @@ created there, the account has stopped being what it is for.
 | The full slice-by-slice tree, with the `[P]`/`[D]`/`[E]` layer of each | [`plan/conventions.md`](../plan/conventions.md) §6 — **the authority** |
 | Naming, tags, the IAM rules, the identity seam | [`plan/conventions.md`](../plan/conventions.md) |
 | What the policy documents are and what each may not become | [`identity/org-policies/README.md`](identity/org-policies/README.md) |
-| **What every SCP statement does, and why it exists** | [`identity/org-policies/SCPs.md`](identity/org-policies/SCPs.md) |
+| **What every policy statement does, and why it exists** — all four types | [`identity/org-policies/POLICIES.md`](identity/org-policies/POLICIES.md) |
 | Which stage builds a given slice | [`plan/stages/INDEX.md`](../plan/stages/INDEX.md) |
 | What is deployed right now | [`aws/INDEX.md`](../aws/INDEX.md) and [`AWS_STATE.md`](../AWS_STATE.md) |
 

@@ -312,11 +312,22 @@ CI is the same bug as one that only works by hand — but the expected caller is
   drift. What it *can* do is leave a console-created OU or account outside code that was written as a list —
   invisible rather than drifted, with `terraform plan` reporting "No changes". So, across the two identity
   slices: **the floor is discovered, the grants are enumerated.** Anything that must cover everything —
-  SCP/RCP attachments, the organization-root set, the tag policy, all in `identity/org-policies/` — is
-  `for_each` over the `aws_organizations_*` data sources; permission set assignments, in `identity/sso/`,
-  are written out one by one, because an account acquiring a grant by simply existing is the opposite of the
-  intended failure mode. **The split runs along the same seam** — discovered on one side, enumerated on the
-  other — which is a second reason to keep it.
+  the organization-root SCP/RCP set, the tag policy, the declarative policy, all in
+  `identity/org-policies/` — has to be covered *whatever* exists tomorrow; permission set assignments, in
+  `identity/sso/`, are written out one by one, because an account acquiring a grant by simply existing is
+  the opposite of the intended failure mode. **The split runs along the same seam** — discovered on one
+  side, enumerated on the other — which is a second reason to keep it.
+  **What "discovered" turned out to mean — corrected 2026-08-15, after Stage 1c was executed.** This rule
+  was written expecting `for_each` over the `aws_organizations_*` data sources to *create the attachments*.
+  1c attached every must-cover-everything document to the **organization root** instead, and SCPs inherit —
+  so a new OU or account is covered the moment it exists, with no attachment to create. The four **per-OU**
+  documents are all *different*, and three OUs deliberately carry **none** (`Policy Test`, `Security`, and
+  `Sandboxes` under D37), so a `for_each` attaching "the OU document" everywhere would put one on
+  `Sandboxes` and reverse a decision with `terraform plan` reading like ordinary coverage. **So: coverage is
+  bought by the attachment point, and discovery is spent on the *check*** — `make check` enumerates the OUs
+  at both levels and fails on one that appears in neither the authored OU→document map nor its explicit *no
+  document* list ([Stage 2](stages/stage-02-terraform-foundation.md) step 9.3). The failure mode this rule
+  exists to prevent is unchanged; what changed is which instrument prevents it.
   **What "enumerated" means once the Sandbox multiplies (D35), because the obvious reading forbids
   something it should not:** a `for_each` over a **human-authored map of business units**, kept in a
   `.tfvars`, is still enumeration — a unit acquires its assignment because somebody wrote its name down, not

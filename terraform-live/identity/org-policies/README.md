@@ -15,8 +15,8 @@ This folder is documents only. There is no `.tf` here until Stage 2.
 | `policies/` | The real documents. One file per policy, named exactly as the policy is named in Organizations |
 | `canary/` | **Throwaway** documents, attached to `Policy Test` during the step 7.3 battery and detached in the same sitting. Never attached to anything real |
 | `render.sh` | Substitutes this organization's identifiers into the templates and writes the pasteable copies to `aws/output/rendered-policies/` |
-| `check-index.sh` | Verifies that `SCPs.md` still lists exactly what each document in `policies/` contains, in order, and names both directions of a mismatch. **Type-aware since 7.8**: `Sid`s for an SCP or RCP, tag keys for a tag policy, `ec2_attributes` names for a declarative policy — and an unrecognised document stops the run rather than being skipped. No AWS session, no side effects, exits non-zero when it drifts |
-| [`SCPs.md`](SCPs.md) | **The statement-level index for every document in `policies/`, of all four policy types** (the filename is historical): what each entry does and why it exists. JSON carries no comments, so that file is where the reasoning lives — **and it is updated in the same sitting as any SCP change** |
+| `check-index.sh` | Verifies that `POLICIES.md` still lists exactly what each document in `policies/` contains, in order, and names both directions of a mismatch. **Type-aware since 7.8**: `Sid`s for an SCP or RCP, tag keys for a tag policy, `ec2_attributes` names for a declarative policy — and an unrecognised document stops the run rather than being skipped. No AWS session, no side effects, exits non-zero when it drifts |
+| [`POLICIES.md`](POLICIES.md) | **The statement-level index for every document in `policies/`, of all four policy types**: what each entry does and why it exists. JSON carries no comments, so that file is where the reasoning lives — **and it is updated in the same sitting as any policy change**. *(Called `SCPs.md` until 2026-08-15; renamed because it stopped being SCP-only at step 7.8.)* |
 
 ## The templates carry placeholders. Paste the *rendered* files
 
@@ -87,7 +87,7 @@ from that OU alone, which is what makes a mistake in one of them cost one OU rat
 | `awsds-org-scp-ou-identity.json` | `Identity` | user compute, and nothing else |
 
 **Step 7.8 added four more documents, all on the organization root, and three of them are not SCPs** — read
-[`SCPs.md`](SCPs.md) for the statement-level reasoning, which now covers all four policy types:
+[`POLICIES.md`](POLICIES.md) for the statement-level reasoning, which now covers all four policy types:
 
 | File | Type | What it does |
 |---|---|---|
@@ -151,7 +151,7 @@ review, and it is the honest limit of a lab with a single organization.
 
 ## Discipline
 
-- **[`SCPs.md`](SCPs.md) is updated in the same sitting as the document it describes** — a statement added,
+- **[`POLICIES.md`](POLICIES.md) is updated in the same sitting as the document it describes** — a statement added,
   removed, renamed or re-conditioned, a document attached to a new target or detached from one. That file
   carries the check that says whether it drifted: the rows of a section must be that file's `Sid`s, in
   order, and nothing else.
