@@ -300,6 +300,26 @@ lesson can be *recognised* without opening this file; the reasoning that makes e
    neighbour: there the harness could not survive the control it measured; here the operator could not
    *see* the identity they were using, and the wrong identity was one they had legitimately created.
 
+26. **An "already exists" error is the cheapest authorization probe there is — and it proves nothing until
+   an unprivileged principal has been shown to get a different one.** Stage 2 step 5.0 had to establish that
+   the organization delegation reached its `Resource` list's **target** entries, and could not: the write it
+   had already run, `UpdatePolicy`, authorizes against the *policy* ARN alone, and the stage's only other
+   contact with attachments is an **import**, which calls nothing. The move was to attach a policy that was
+   **already attached** — `DuplicatePolicyAttachmentException` if authorization passed, `AccessDenied` if it
+   did not, and no possible mutation either way, because the end state is the state that already held. The
+   general form: **any create/attach/put with an idempotency conflict can be aimed at an existing object and
+   read as an authorization test**, which is how a preventive grant gets measured without exercising it for
+   real. **The half that is easy to skip is the one that makes it a measurement.** The reading holds only if
+   IAM authorization runs *before* the service's own conflict check, and that ordering is a property of the
+   action, not of AWS (Lesson 21, from the other side) — if it were reversed, a principal with no permission
+   at all would receive the same conflict, and the probe would return the same answer on success and failure
+   (Lesson 13). So the probe is a **pair**: the call from the principal under test, and the same call from
+   one known to hold nothing. Here the canary returned `AccessDeniedException`, which is what converted the
+   two conflicts into evidence. **And the shape has a boundary worth recognising rather than working
+   around:** an entry with no existing object to aim at — `account/…/*`, since nothing in this design is
+   attached to an account — cannot be probed inertly at all, and stays a reading. That is the honest
+   outcome, not a reason to create an object so the probe becomes available.
+
 ---
 
 *Plan core: [GENERAL_PLAN.md](../GENERAL_PLAN.md) · Decisions: [plan/decisions/INDEX.md](decisions/INDEX.md) · Stages: [plan/stages/INDEX.md](stages/INDEX.md)*

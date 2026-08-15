@@ -394,7 +394,9 @@ re-attachment — is where a denial would surface, far from anything that would 
    the same call against an unattached pair is a real attachment.
 
    **Ran 2026-08-15: `DuplicatePolicyAttachmentException`.** The `root/…/r-zhj6` entry is exercised, not
-   merely read — `AttachPolicy` authorizes against target **and** policy, so both matched.
+   merely read — `AttachPolicy` authorizes against target **and** policy, so both matched. The `ou/…/*`
+   wildcard was closed the same way, against an already-attached per-OU pair: same exception, so the
+   wildcard matches a real call.
 
    **And this reading needs a negative control, which is Lesson 21 arriving from the other side.** It is
    only evidence if IAM authorization runs *before* the service's duplicate check; if the order were
@@ -403,11 +405,14 @@ re-attachment — is where a denial would surface, far from anything that would 
    call from `awsds-policy-canary`**, a principal with no delegation at all. `AccessDenied` there proves the
    ordering and retroactively makes the Identity result proof; `DuplicatePolicyAttachmentException` there
    voids it. **A probe with no negative control is a check that returns the same answer on success and
-   failure** (Lesson 13).
+   failure** (Lesson 13). **It returned `AccessDeniedException`** — so the ordering holds and both duplicate
+   readings above are evidence rather than coincidence.
 
-   **What stays unexercised even so: the `ou/o-<org>/*` entry.** The root entry is an exact ARN; the OU entry
-   is a **wildcard**, and a wildcard that fails to match is the shape that does not announce itself. The same
-   duplicate-attach against an already-attached per-OU pair closes it, and `DEL-7` is a reading until it does.
+   **One entry stays a reading, and by construction rather than by omission: `account/o-<org>/*`.** This
+   design attaches nothing to an account — the census is 6 root + 4 OU, zero account-level — so there is no
+   already-attached pair to aim an inert call at, and the only call that would exercise it is one that
+   really attaches. It is an unexercised **over-grant**, not a gap: nothing in Stages 2-3 needs it, and if
+   it is ever removed the delegation gets narrower rather than broken.
 
 **5.1 — The precondition no stage creates yet, and `org-policies/` does not run without it.**
 
@@ -922,9 +927,10 @@ Each is written so its output differs between working and broken (Lesson 13):
   document. A `describe-policy` read is not the evidence: it succeeds identically with no delegation at all
   (Lesson 13). **Met 2026-08-15**, and reading 4 met the half `UpdatePolicy` cannot reach: it authorizes on
   the policy ARN only, so the `Resource` list's **target** entries needed the duplicate-attach —
-  `DuplicatePolicyAttachmentException` on the root, Lesson 20 closed for that entry. **Two threads left
-  open, both cheap:** the negative control from `awsds-policy-canary` that makes the duplicate reading
-  evidence at all, and the `ou/…/*` wildcard, which is still a reading.
+  `DuplicatePolicyAttachmentException` on the root **and** on the `ou/…/*` wildcard, with the negative
+  control from `awsds-policy-canary` returning `AccessDeniedException` — which is what makes the two
+  duplicate answers evidence at all. **Step 5.0 is closed**; only `account/…/*` is unexercised, and it is
+  an over-grant nothing here needs.
 - **The checks fail on purpose:** a commit introducing `us-west-2` in a `.tf` file, and one introducing
   `arn:aws:iam::*:role/x`, are both rejected. A check nobody has seen fail is a hypothesis.
 - **The `Makefile` refuses what it must:** `make down ENV=sandbox` is a **safe no-op** at this point — no

@@ -240,10 +240,11 @@ The `§` numbers inside `plan/` files are historical anchors, not addresses.
 - **The target half of the delegation is exercised too, by reading 4 (2026-08-15).** `UpdatePolicy`
   authorizes on the **policy** ARN only; `Attach`/`DetachPolicy` on the **target** as well — and 5.5
   *imports* attachments, so nothing in the stage would ever call it (Lesson 20). The duplicate-attach on an
-  already-attached pair returned `DuplicatePolicyAttachmentException`, so `root/…/r-zhj6` matched.
-  **Two cheap threads still open:** the negative control from `awsds-policy-canary` — without it the
-  duplicate answer may not be evidence at all (Lesson 21 reversed) — and the `ou/…/*` **wildcard**, still
-  only read by `DEL-7`.
+  already-attached pair returned `DuplicatePolicyAttachmentException` on **both** `root/…/r-zhj6` and the
+  `ou/…/*` wildcard, and the negative control from `awsds-policy-canary` returned `AccessDeniedException` —
+  authorization precedes the duplicate check, so the two answers are evidence and not coincidence.
+  **Only `account/…/*` is unexercised**, and it cannot be: nothing is attached to an account, so no inert
+  call exists. An over-grant, not a gap.
 - **Rest of Stage 2 — roteiro revised and review-corrected 2026-08-15.** Per-OU attachments are
   **authored, not discovered**
   (a discovered `for_each` would reverse D37 on `Sandboxes`); discovery feeds check 9.3. Modules move
@@ -320,4 +321,6 @@ the reasoning that makes it *usable* is in the file. Recognising one is the sign
     failure hides the serious one.**
 25. **A borrowed session outlives the command that needed it, and every later error names the wrong
     account.**
+26. **An "already exists" error is a free authorization probe — and proves nothing without a negative
+    control.**
 

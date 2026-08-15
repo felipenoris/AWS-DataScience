@@ -221,7 +221,10 @@ aws organizations update-policy --policy-id p-95lyaycq7l \
   the unexercised target half; `aws/INDEX.md` gained the operator question; the stage file carries the
   outcome, reading 4, and the corrected `DEL-8` note.
 
-- Probing duplicate policy attachment. Executed on local aws client:
+## 2026-08-15 — step 5.0 reading 4: the target half
+
+- **Step 5.0, reading 4** — the non-mutating close on the `Resource` list's target entries, from
+  `awsds-infra-identity`, against a pair read out of `aws/output/org-delegation.txt` §5 immediately before. Probing duplicate policy attachment. Executed on local aws client:
 
 ```
 ➜  AWS-DataScience git:(main) ✗ grep -A 20 "CLASS" aws/output/org-delegation.txt | grep "ROOT.*p-95lyaycq7l"
@@ -230,6 +233,57 @@ ROOT   Root         r-zhj6            TAG_POLICY               p-95lyaycq7l  aws
 
 aws: [ERROR]: An error occurred (DuplicatePolicyAttachmentException) when calling the AttachPolicy operation: A policy with the specified name and type already exists.
 ```
+
+  **`DuplicatePolicyAttachmentException`** — authorization passed and the service then refused the
+  duplicate. `AttachPolicy` authorizes against target **and** policy, so `root/<org>/r-zhj6` matched a real
+  call rather than a reading. Nothing was attached, detached or changed.
+
+- **Two threads this leaves open, recorded because neither will announce itself later:**
+
+  - **The negative control.** The duplicate answer is evidence only if IAM authorization runs *before* the
+    service's duplicate check. The same call from `awsds-policy-canary` — no delegation at all — settles
+    it: `AccessDenied` there makes the reading above proof, the same exception voids it.
+  - **The `ou/<org>/*` entry has still never been matched by a call.** The root entry is an exact ARN;
+    this one is a wildcard, and `DEL-7` reads it rather than exercising it. The same duplicate-attach
+    against an already-attached per-OU pair closes it.
+
+## 2026-08-15 — step 5.0 reading 4 completed, with its negative control. Step 5.0 CLOSED
+
+- **The negative control, run first in reading order even though it was run second** — the same
+  duplicate-attach from `awsds-policy-canary`, a principal holding no delegation at all:
+
+```
+aws organizations attach-policy --policy-id p-95lyaycq7l --target-id r-zhj6 --profile awsds-policy-canary
+-> AccessDeniedException: You don't have permissions to access this resource.
+```
+
+  IAM authorization therefore runs **before** the service's duplicate check. Without this answer the two
+  conflicts below would be the same answer on success and on failure, and would mean nothing.
+
+- **The `ou/<org>/*` wildcard, the last unexercised entry that could be reached inertly** — from
+  `awsds-infra-identity`, against a per-OU pair read out of `aws/output/org-delegation.txt` §5:
+
+```
+aws organizations attach-policy --policy-id p-mmfc17ac --target-id ou-zhj6-hrcu9hog
+-> DuplicatePolicyAttachmentException
+```
+
+  The wildcard matches a real call. Nothing was attached, detached or changed by either command.
+
+- **Step 5.0 is closed.** All four readings ran: the pre-delegation `describe-resource-policy`, the two
+  reads, the `update-policy` write, and the target-side duplicate-attach with its control.
+  `terraform-live/identity/org-policies/` is scoped to **all ten documents**.
+
+- **What remains a reading, and cannot stop being one here:** the delegation's `account/<org>/*` entry.
+  Nothing in this design is attached to an account — the census is 6 root + 4 OU — so there is no existing
+  pair to aim an inert call at, and the only call that would exercise it is one that really attaches. An
+  unexercised over-grant, not a gap; narrowing it later removes reach nobody uses.
+
+- **Recorded as [Lesson 26](../plan/lessons.md)**, since the technique outlives this step: an
+  "already exists" error is a free authorization probe, and it is only a measurement when paired with the
+  same call from a principal known to hold nothing.
+
+
 ---
 
 *Log index: [log/INDEX.md](INDEX.md) · Stage index: [plan/stages/INDEX.md](../plan/stages/INDEX.md)*
