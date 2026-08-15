@@ -166,9 +166,9 @@ aws: [ERROR]: An error occurred (ObjectLockConfigurationNotFoundError) when call
     "ConfigurationAggregators": [
         {
             "ConfigurationAggregatorName": "aws-controltower-ConfigAggregatorForOrganization",
-            "ConfigurationAggregatorArn": "arn:aws:config:us-west-2:660820513855:config-aggregator/aws-service-config-aggregator/controltower.amazonaws.com/config-aggregator-bmopj7ig",
+            "ConfigurationAggregatorArn": "arn:aws:config:us-west-2:<Audit Account>:config-aggregator/aws-service-config-aggregator/controltower.amazonaws.com/config-aggregator-bmopj7ig",
             "OrganizationAggregationSource": {
-                "RoleArn": "arn:aws:iam::660820513855:role/aws-service-role/config.amazonaws.com/AWSServiceRoleForConfig",
+                "RoleArn": "arn:aws:iam::<Audit Account>:role/aws-service-role/config.amazonaws.com/AWSServiceRoleForConfig",
                 "AllAwsRegions": true
             },
             "CreationTime": "2026-08-09T01:54:42.782000+00:00",
@@ -652,9 +652,9 @@ aws-controltower-cloudtrail-logs-<Log Archive Account>-gcs-gsx   <org-id>    Tru
                            PRE <org-id>/
 
 ~ $ aws s3 ls --recursive "s3://$BUCKET/" | grep "/CloudTrail/us-west-2/$(date -u +%Y/%m)/" | tail -3
-2026-08-15 01:31:48       2457 <org-id>/AWSLogs/<org-id>/<Development Account>/CloudTrail/us-west-2/2026/08/15/..._20260815T0130Z_....json.gz
-2026-08-15 02:11:29      18588 <org-id>/AWSLogs/<org-id>/<Development Account>/CloudTrail/us-west-2/2026/08/15/..._20260815T0210Z_....json.gz
-2026-08-15 03:12:01      19678 <org-id>/AWSLogs/<org-id>/<Development Account>/CloudTrail/us-west-2/2026/08/15/..._20260815T0310Z_....json.gz
+2026-08-15 01:31:48       2457 <org-id>/AWSLogs/<org-id>/<Sandbox Account 1>/CloudTrail/us-west-2/2026/08/15/..._20260815T0130Z_....json.gz
+2026-08-15 02:11:29      18588 <org-id>/AWSLogs/<org-id>/<Sandbox Account 1>/CloudTrail/us-west-2/2026/08/15/..._20260815T0210Z_....json.gz
+2026-08-15 03:12:01      19678 <org-id>/AWSLogs/<org-id>/<Sandbox Account 1>/CloudTrail/us-west-2/2026/08/15/..._20260815T0310Z_....json.gz
 
 ~ $ aws s3api get-object-retention --region us-west-2 --bucket "$BUCKET" --key <the 03:12 key above>
 {
@@ -677,7 +677,39 @@ aws-controltower-cloudtrail-logs-<Log Archive Account>-gcs-gsx   <org-id>    Tru
   "wrong prefix" (Lesson 13). **Read `S3KeyPrefix` from the trail before constructing any key**; the trail
   is again the only non-stale source, as it was for the bucket name.
 
+- Login as AWS Control Tower Admin -> Management Account -> AWSAdministrator Access. Executed on cloudshell:
 
+```
+$ LZ=$(aws controltower list-landing-zones --region us-west-2 --query 'landingZones[0].arn' --output text) && aws controltower get-landing-zone --region us-west-2 --landing-zone-identifier "$LZ" --query 'landingZone.{status:status,drift:driftStatus,version:version,latest:latestAvailableVersion}'
+{
+    "status": "ACTIVE",
+    "drift": {
+        "status": "IN_SYNC"
+    },
+    "version": "4.0",
+    "latest": "4.0"
+}
+```
+
+- **Verification (iv), first half: read, and it is a weaker answer than it looks.** `status: ACTIVE`,
+  `driftStatus: IN_SYNC`, `version 4.0` equal to `latestAvailableVersion`, so there is no pending landing-
+  zone update either. **What this does not do is predict one.** Control Tower's drift detection watches a
+  closed list of things *it* owns — its own `aws-guardrails-*` policies, OU and account placement, the
+  `AWSControlTowerExecution` role, the Config recorder, the log bucket's **policy**, the trail's
+  configuration — and an arbitrary bucket setting like Object Lock is very likely not among them. So
+  `IN_SYNC` is a **weak negative**: it confirms nothing was tripped, not that the baseline and the lock
+  agree. **This also explains why Stage 1c's ten attached documents never raised drift**: a customer SCP
+  is not Control Tower's, so it is neither claimed nor watched.
+
+- **The second half is unchanged, and decision 9 narrowed what it can find.** It is settled by the next
+  landing-zone update, account update or re-enrollment, because an update re-applies the baseline without
+  consulting `driftStatus`. Object Lock cannot be removed by Control Tower either, so the failure mode is
+  an update **erroring**, not reverting — noisy instead of silent, which is the good side of an
+  irreversible control.
+
+- **Stage 1d is complete, and the landing zone with it.** All four steps executed, decisions 3, 4, 8, 9
+  and 10 taken, verifications (iv), (v), (xiii) and (xiv) answered — (iv)'s and (xiv)'s second halves
+  provisional by construction, each naming the event that settles it.
 
 ---
 

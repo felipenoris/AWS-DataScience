@@ -421,9 +421,9 @@ The `§` numbers inside `plan/` files are historical anchors, not addresses.
 - **Still needed from the user: one thing, and it blocks Stage 13 alone** — **the domain name** (D15
   phase 2). Everything the landing zone was waiting on is settled.
 - **No public DNS before Stage 13** (D15); internal names are `*.internal` off an internal CA (D36, INT-19).
-- **Settle earliest:** **INT-11** — half of it is measured already (LF cross-account reads **4**), so what
-  is left is 1d 11.1's RAM enablement plus **defending a value nobody set** against Stage 5's first apply —
-  and **INT-13** (no convenience-preserving fallback).
+- **Settle earliest:** **INT-11** — its organization halves are done (RAM enabled 2026-08-14, LF
+  cross-account reads **4**), so all that is left is **defending a value nobody set** against Stage 5's
+  first apply — and **INT-13** (no convenience-preserving fallback).
 
 **Budget: ~2 KB.** State, not reasoning — **a bullet here that explains *why*, or that a stage file should
 be carrying, is a stale copy of something that already lives elsewhere.** Re-trim whenever a stage closes.
