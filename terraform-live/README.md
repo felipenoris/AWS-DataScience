@@ -62,7 +62,7 @@ make check-ou   # needs an SSO session as the infrastructure user on Identity
 
 **Every slice folder in this tree must declare its D11 layer** in
 [`scripts/tfhygiene/layers.py`](../scripts/tfhygiene/layers.py) — `[P]` persistent, `[D]` dormant, `[E]`
-ephemeral (Stage 2 step 8.1, 2026-08-16). **Today all seven rows say `[P]`**, so `make up ENV=…` and
+ephemeral (Stage 2 step 8.1, 2026-08-16). **Today every row says `[P]`**, so `make up ENV=…` and
 `make down ENV=…` are no-ops; the first `[E]` slice is Stage 3's `egress/`. A slice created without a row
 fails the sixth check, because `make down` skips what it has never heard of in silence — and for an
 ephemeral slice that is a bill nobody is told about. `make slices` prints the table.
@@ -78,6 +78,10 @@ the AWS provider — `terraform validate` in the pre-commit hook runs `init` per
 ```bash
 export TF_PLUGIN_CACHE_DIR="$HOME/.terraform.d/plugin-cache"
 ```
+
+**The by-hand change procedure is [`docs/plan/runbooks/terraform-changes.md`](../docs/plan/runbooks/terraform-changes.md)** —
+the recipes, the two-commit tag order a module change requires, and the table of what to do when a hook
+blocks the commit. Until Stage 8 there is no CI: that runbook *is* the pipeline.
 
 **And [`identity/sso/`](identity/sso/README.md) — the entitlement plane, written 2026-08-16 (Stage 2 step 5).**
 The **six persona permission sets**, their inline policies, and every **group→account assignment**; the
