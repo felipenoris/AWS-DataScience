@@ -217,7 +217,7 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   `scripts/repohygiene`, `scripts/tfhygiene`; CloudShell = plain `python3` with `aws/` present.
   **Exception: `aws/cloudshell/` stays shell, standalone, for the no-profile accounts.**
 
-**Budget: ~2 KB.** State, not reasoning — **a bullet here that explains *why*, or that a stage file should
+**Budget: ~4 KB.** State, not reasoning — **a bullet here that explains *why*, or that a stage file should
 be carrying, is a stale copy of something that already lives elsewhere.** Re-trim whenever a stage closes.
 
 ### Lessons carried forward
