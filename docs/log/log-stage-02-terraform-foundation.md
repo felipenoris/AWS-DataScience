@@ -910,6 +910,48 @@ retiring a document or detaching one deliberately is from now on a two-commit op
   does not evaluate `locals`, so the OU name-to-id lookups, the single-account assertion on the
   `Data` OU and the six preconditions are all unexercised until the first `plan`.
 
+## Step 5.5 — `identity/org-policies/` imported and applied (2026-08-16)
+
+**From the slice, as the infrastructure user on the Identity account through
+`InfrastructureAccess`** (`AWS_PROFILE` on every command, never an exported credential — Lesson 25).
+Twenty objects imported, none created, and the plan after the apply reads `No changes`.
+
+- **Init against the real backend**; the committed multi-platform lock survived untouched; the
+  state born empty, confirmed before the first import.
+
+- **The import ran incrementally the way 5.5a(iii) demands, twice.** One policy → `plan` → the
+  imported one moved to "1 to change" with **tags only** and no create beside it → the nine. One
+  attachment → `plan` → the imported one **vanished from the plan** — an attachment has no mutable
+  attribute, so faithful means absent — with `0 to destroy`, which is the no-orphan proof → the
+  nine. Every id came from `./aws/import-ids.py`; none was typed.
+
+- **The full plan was the prediction to the line**: `0 to add, 10 to change, 0 to destroy`; not one
+  `content` or `type` diff anywhere in it; five tags per policy; `description` on exactly four —
+  three `+` for the empty and absent ones, one `~` on the RCP where the literal double quotes go
+  out. The six descriptions that were already correct produced no line at all: byte-equal with what
+  `locals.tf` authors.
+
+- **The apply was of a saved plan file, written outside the repository**, so what was read is what
+  ran: `0 added, 10 changed, 0 destroyed`, one to two seconds per policy. The first exercise of the
+  delegation's `organizations:TagResource` statement; `UpdatePolicy` repaired the four
+  descriptions. **The second plan is empty** — not small, `No changes` — which is 5.5's gate met on
+  the half it was written for.
+
+- **Read back from AWS rather than from state.** `organizations list-policies` once per policy
+  type, all four filters: ten ids, identical to what the state holds. The four descriptions read
+  back as authored. All ten policies carry exactly the five mandatory tags with
+  `CostCenter=stage-01c`. `make check-ou` green — root 6, four OUs 1 each, three empty as authored —
+  and `make check` green.
+
+- **And the ceiling was never rewritten, proven by the bytes rather than by the plan.** The live
+  documents still hold the console-pasted, order-preserving minification from 1c — not
+  `jsonencode`'s sorted form — so the apply never sent `content`: it changed descriptions and tags
+  around documents it did not touch.
+
+- **The slice-independence deliverable, measured on both sides**: state here holds ten
+  `aws_organizations_policy` and ten `aws_organizations_policy_attachment` and zero `aws_ssoadmin_*`;
+  the only `aws_organizations_*` entry in `sso/`'s state is the data source.
+
 ---
 
 *Log index: [docs/log/INDEX.md](INDEX.md) · Stage index: [docs/plan/stages/INDEX.md](../plan/stages/INDEX.md)*

@@ -177,12 +177,14 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   (`prod` carries D36's second key); `identity/sso/` — seven persona/admin sets, ten enumerated assignments,
   29 objects, empty plan; the Organizations delegation narrowed to the `InfrastructureAccess` role
   (`DEL-10` green). The delegation itself is hand-applied and **stays out of Terraform**
-  (`POLICIES.md`/`INV-15`). Decisions 4/5/6 settled. **`org-policies/` is WRITTEN but NOT IMPORTED
-  (2026-08-16)** — ten policies + ten attachments, `for_each` keys pre-matched against `import-ids.py`,
-  every offline gate green; `prevent_destroy` on both resources; `type`/`description` authored in
-  `locals.tf` (nowhere else). **Next: import one, plan, then the rest.** The first apply is *not* empty by
-  design — five tags × ten policies and four repaired descriptions; the gate is zero diff on
-  `content`/`type`. One template changed: the RCP's `["ecr:*"]` → `"ecr:*"`.
+  (`POLICIES.md`/`INV-15`). Decisions 4/5/6 settled. **`org-policies/` IMPORTED AND APPLIED
+  (2026-08-16)** — ten policies + ten attachments adopted, none created; second plan `No changes`;
+  read-back: ten ids across the four type filters match state, five tags everywhere
+  (`CostCenter=stage-01c`), four descriptions repaired, **content never sent** (live bytes still the
+  1c console paste). `prevent_destroy` on both resources — detaching is a two-commit operation.
+  `type`/`description` live in `locals.tf` and nowhere else. One template changed: the RCP's
+  `["ecr:*"]` → `"ecr:*"` (provider compares content structurally). **Step 5 is fully closed — what
+  remains of Stage 2 is its own close-out (status header, verifications table).**
 - **Gates, and there is no CI:** `make check` (offline, five checks), `make check-ou` (session),
   `make check-docs` — **the last one is red** on pre-Stage-2 prose and stays out of the commit gate.
 - **Stage 3 pre-instrumented (2026-08-15); its five execute-time decisions settled 2026-08-16:**
