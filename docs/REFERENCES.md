@@ -617,3 +617,17 @@
   on the consumer side; and the consumer's own admin regrants received permissions to local principals
   (Stage 9 steps 2.1-2.3, `DT-6`'s pending-invitation check):
   <https://docs.aws.amazon.com/lake-formation/latest/dg/cross-account-permissions.html>.
+
+- **CloudWatch agent configuration file — the `logs` section** — every field of the config the Stage 4
+  WireGuard host writes in its user data was read here rather than remembered: `agent.run_as_user`
+  (optional, root when absent), and `logs.logs_collected.files.collect_list[]` with `file_path`,
+  `log_group_name`, `log_stream_name` — where `{instance_id}`, `{hostname}`, `{local_hostname}` and
+  `{ip_address}` are the substitutions allowed in the stream name — and `timezone`, whose only valid
+  values are `UTC` and `Local`. It also names the diagnostic the first boot needs: on start the agent
+  copies each configuration into `…/etc/amazon-cloudwatch-agent.d/` prefixed `file_` for a local source
+  and `ssm_` for a Parameter Store one, so the prefix says where the running configuration came from:
+  <https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/CloudWatch-Agent-Configuration-File-Details.html>.
+  **What this page does *not* cover, and it is recorded as unverified rather than assumed:** the
+  `amazon-cloudwatch-agent-ctl -a fetch-config -m ec2 -s -c file:…` invocation itself, whose page did
+  not render on three fetch attempts (2026-08-16). The user data therefore reports that command's exit
+  status and follows it with `-a status`, so the first boot answers it.

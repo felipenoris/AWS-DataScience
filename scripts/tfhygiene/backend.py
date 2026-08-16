@@ -104,7 +104,7 @@ CIDRS = {
 
 # Outside every VPC range and never seen inside AWS - the WireGuard instance SNATs (Stage 3
 # step 6.5, Stage 4 step 4.2). Recorded here because this table is where address literals
-# live; emitted to no slice until Stage 4's vpn/ consumes it.
+# live; emitted as `peer_cidr` to the vpn/ slice since Stage 4 pass 1, and to nothing else.
 WIREGUARD_PEER_CIDR = "10.90.0.0/24"
 
 # Subnets anchor on ZONE IDS, never on AZ names and never on list position (Stage 3 step 1.5,
@@ -220,6 +220,12 @@ def tfvars_values(account: str, slice_name: str) -> dict:
             # .tf file may re-derive from the env token: the reverse map would be a
             # second copy of ENV_TOKENS (Lesson 14). So the folder name rides along.
             values["account_folder"] = account
+            if slice_name == "vpn":
+                # Stage 4 step 4.2 - the WireGuard client range, which is NOT chosen in the
+                # slice. It is the one address literal in this table that never appears
+                # inside AWS: the host SNATs, so no VPC, route table or security group ever
+                # sees it, and its single job is not colliding with a home or cafe LAN.
+                values["peer_cidr"] = WIREGUARD_PEER_CIDR
             if slice_name == "probes":
                 # Each side's security group names the OTHER side's VPC range: Production
                 # admits the source, Sandbox egresses to the target. Keeping the peer range
@@ -253,6 +259,8 @@ def render_tfvars(account: str, slice_name: str) -> str:
         out += f"zone_ids        = [{zone_list}]\n"
     if "account_folder" in v:
         out += f'account_folder  = "{v["account_folder"]}"\n'
+    if "peer_cidr" in v:
+        out += f'peer_cidr       = "{v["peer_cidr"]}"\n'
     if "peer_cidrs" in v:
         cidr_list = ", ".join(f'"{c}"' for c in v["peer_cidrs"])
         out += f"peer_cidrs      = [{cidr_list}]\n"

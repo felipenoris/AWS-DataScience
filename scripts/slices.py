@@ -13,14 +13,15 @@
 # names the bundles, scripts do the work, and Stage 8 moves them into a pipeline by adding a
 # .gitlab-ci.yml line rather than by rewriting anything.
 #
-# EVERY SLICE ON DISK IS [P] TODAY, so `up` and `down` do nothing at all. That is the reason to
-# write them now rather than later: the first [E] slice is Stage 3's `egress/` and the first
-# [D] one is Stage 4's WireGuard `vpn/` (Stage 5's EFS is [P] - conventions 5.1 rule 2, D24),
-# and both should arrive to a `make down` that already refuses what it must. It is step 8.6's
-# argument applied to the whole target - a hook added later is a hook that was missing from the
-# first teardown that needed it.
+# THIS FILE WAS WRITTEN WHILE EVERY SLICE ON DISK WAS STILL [P] and both targets were honest
+# no-ops - step 8.6's argument applied to the whole target, since a hook added later is a hook
+# that was missing from the first teardown that needed it. Both customers have since arrived
+# and each corrected something: Stage 3's `egress/` was the first [E] slice (and showed that
+# `status` counted a child module as one resource), Stage 4's `vpn/` is the first [D] one (and
+# showed that nothing refused a [D] slice, refusal 5 below). Stage 5's EFS will NOT be a third:
+# it is [P] by rule 2 (conventions 5.1, D24).
 #
-# THE FOUR REFUSALS OF 8.3, and where each is enforced:
+# THE FIVE REFUSALS - 8.3's four, and the one Stage 4's first [D] row exposed:
 #
 #   1. never touch a [P] slice          layers.is_refused, per slice, reason printed
 #   2. `down` with no ENV must fail     argparse `required=True` AND the Makefile guard - two
@@ -29,6 +30,11 @@
 #   3. production/pki/ never destroyed  layers.NEVER_DESTROY (D36), independent of its layer
 #   4. bootstrap/ unreachable, both     layers.NEVER_ANY_TARGET_SLICE_NAMES - it holds its own
 #      targets                          state (step 2.2)
+#   5. a [D] slice is never destroyed   layers.is_refused on the LAYER (2026-08-16). Nothing
+#      and never applied from here      said this while nothing was [D], so a [D] row would
+#                                       have joined the list `down` destroys - against D11,
+#                                       against conventions 5.1, and against the line two
+#                                       paragraphs up in this very header
 #
 # HOW IT AUTHENTICATES, and it is not a detail: AWS_PROFILE is set ON EACH COMMAND, from
 # backend.PROFILES, and no credential is ever exported into this process's environment. A
@@ -81,27 +87,75 @@ def prepare(sl: layers.Slice, dry: bool) -> bool:
 
 # ------------------------------------------------------------------ the two dormant hooks
 #
-# [D] IS "STOP, NEVER DESTROY" (D11), AND NOTHING ON DISK IS [D] YET. The first is Stage 4's
-# WireGuard `vpn/` and the second Stage 7's GitLab EC2 with its EBS volume - conventions 5.1
-# names exactly those two, and the EFS of `nfs/` is NOT among them: it is [P] by rule 2 (D24),
-# which is the distinction to keep, since "stateful" is what makes a slice [D] *or* [P].
+# [D] IS "STOP, NEVER DESTROY" (D11). The first row is Stage 4's WireGuard `vpn/` and the
+# second will be Stage 7's GitLab EC2 with its EBS volume - conventions 5.1 names exactly
+# those two, and the EFS of `nfs/` is NOT among them: it is [P] by rule 2 (D24), which is the
+# distinction to keep, since "stateful" is what makes a slice [D] *or* [P].
 # These two functions exist so that the stage which
 # creates the first [D] slice adds a body here instead of discovering that `make down` never
 # had a place to put one - and they print what they did NOT do, because a hook that is silent
 # when empty is indistinguishable from a hook that ran (Lesson 13).
 
 
+def instance_name(env: str, slice_name: str) -> str:
+    """The Name tag a [D] slice's host carries - DERIVED from the row, never written twice.
+
+    `sandbox`+`vpn` is `awsds-sandbox-vpn`, which is the contract Stage 4 step 1.1 writes into
+    the module and `./aws/vpn.py` reads back; Stage 7's row becomes `awsds-prod-gitlab` without
+    touching this file.
+    """
+    return f"awsds-{backend.env_token(env)}-{slice_name}"
+
+
+def instance_states(env: str, slice_name: str, dry: bool) -> list | None:
+    """[(instance id, power state)] for one [D] slice, found by Name tag - or None.
+
+    None means NOTHING WAS READ, and the caller is the one that can tell the two causes
+    apart because it passed `dry` itself: under --dry-run the command was printed and not
+    run, otherwise the call failed and the error is already on stderr. What must never
+    happen is a caller reading None as "nothing is running" (Lesson 13) - `status` reports
+    UNREADABLE for exactly that reason, and its total is a floor rather than a measurement.
+    """
+    res = run(
+        [
+            "aws",
+            "ec2",
+            "describe-instances",
+            "--region",
+            backend.REGION,
+            "--filters",
+            f"Name=tag:Name,Values={instance_name(env, slice_name)}",
+            "Name=instance-state-name,Values=pending,running,stopping,stopped",
+            "--query",
+            "Reservations[].Instances[].[InstanceId,State.Name]",
+            "--output",
+            "text",
+        ],
+        env_extra={"AWS_PROFILE": backend.profile(env)},
+        dry=dry,
+        capture=True,
+    )
+    if res is None:
+        return None
+    if res.returncode != 0:
+        print(
+            f"    FAILED to read instances tagged {instance_name(env, slice_name)}", file=sys.stderr
+        )
+        print(res.stderr.strip(), file=sys.stderr)
+        return None
+    return [tuple(ln.split("\t")) for ln in res.stdout.split("\n") if ln.strip()]
+
+
 def dormant(env: str, action: str, dry: bool) -> None:
     """[D] is stop/start and NEVER destroy (D11). Stage 4 step 1.3 gave this hook its body.
 
-    THE INSTANCES ARE FOUND BY NAME TAG, NOT BY STATE FILE, and the tag is derived from the
-    row rather than written a second time: `awsds-<env token>-<slice name>` is what a [D]
-    slice's module already tags with, so `sandbox`+`vpn` is `awsds-sandbox-vpn` and Stage 7's
-    GitLab row will be `awsds-prod-gitlab` without touching this function. Two consequences
-    are worth naming. It keeps working when the slice's state is empty - it finds nothing and
-    says which of the two nothings it found. And IT CANNOT DESTROY: the only mutating calls
-    below are start-instances and stop-instances, so the refusal that matters most for a [D]
-    slice is structural rather than a check that could be forgotten.
+    THE INSTANCES ARE FOUND BY NAME TAG, NOT BY STATE FILE (instance_name above). Two
+    consequences are worth naming. It keeps working when the slice's state is empty - it finds
+    nothing and says which of the two nothings it found. And IT CANNOT DESTROY: the only
+    mutating calls below are start-instances and stop-instances, so the refusal that matters
+    most for a [D] slice is structural rather than a check that could be forgotten - which is
+    the older half of refusal 5, the other half being that `down` no longer hands the slice to
+    `terraform destroy` at all (layers.py).
 
     EVERY OUTCOME IS PRINTED, including the ones that did nothing (Lesson 13). "No instance
     tagged X" and "already stopped" are different findings - the first means the slice was
@@ -114,42 +168,20 @@ def dormant(env: str, action: str, dry: bool) -> None:
         print("      (the first is Stage 4's WireGuard vpn/; Stage 7 adds GitLab's instance)")
         return
 
-    token = backend.env_token(env)
     profile = backend.profile(env)
     verb, wanted, ready = (
         ("start", "running", "stopped") if action == "up" else ("stop", "stopped", "running")
     )
 
     for sl in declared:
-        name = f"awsds-{token}-{sl.name}"
-        res = run(
-            [
-                "aws",
-                "ec2",
-                "describe-instances",
-                "--region",
-                backend.REGION,
-                "--filters",
-                f"Name=tag:Name,Values={name}",
-                "Name=instance-state-name,Values=pending,running,stopping,stopped",
-                "--query",
-                "Reservations[].Instances[].[InstanceId,State.Name]",
-                "--output",
-                "text",
-            ],
-            env_extra={"AWS_PROFILE": profile},
-            dry=dry,
-            capture=True,
-        )
-        if res is None:  # --dry-run: the command above was printed and not run
-            print(f"    would {verb} whatever is tagged {name} and currently {ready}")
-            continue
-        if res.returncode != 0:
-            print(f"    FAILED to read instances tagged {name}", file=sys.stderr)
-            print(res.stderr.strip(), file=sys.stderr)
+        name = instance_name(env, sl.name)
+        found = instance_states(env, sl.name, dry)
+        if found is None:
+            if dry:  # the command above was printed and not run
+                print(f"    would {verb} whatever is tagged {name} and currently {ready}")
+                continue
             raise SystemExit(1)
 
-        found = [ln.split("\t") for ln in res.stdout.split("\n") if ln.strip()]
         if not found:
             print(f"    no instance tagged {name} - {sl.path} is not applied, or its host is gone")
             continue
@@ -285,17 +317,28 @@ def cmd_updown(args) -> int:
         elif studio_apps(args.env, args.dry_run) != 0:
             return 1
 
-    print("\n  dormant [D] (step 8.2):")
-    dormant(args.env, action, args.dry_run)
+    # THE [D] HOOK RUNS ON THE SIDE OF THE [E] LOOP ITS RANK SAYS IT SHOULD, and until
+    # 2026-08-16 it ran before the loop on BOTH actions - which contradicted the rank it was
+    # written to honour. Stage 4 step 1.3 put `vpn` at 40, below `egress` at 50, for one
+    # reason stated in words: "the tunnel is the first thing up and the last thing down",
+    # because from step 8.3 onwards every AWS API call has to exit through its Elastic IP.
+    # Stopping the host and only then destroying two slices over the AWS API is the exact
+    # order that becomes a self-inflicted lockout the day InfrastructureAccess joins the deny.
+    #
+    # A rank is not an intention (Lesson 5): it decides the order inside the [E] loop, and it
+    # has to decide which side of that loop the hook sits on too.
+    def run_dormant() -> None:
+        print("\n  dormant [D] (step 8.2):")
+        dormant(args.env, action, args.dry_run)
+
+    if action == "up":
+        run_dormant()
 
     print(
         f"\n  ephemeral [E] ({len(take)}), in {'reverse ' if action == 'down' else ''}dependency order:"
     )
     if not take:
-        print("    none - every slice in this env is refused above, so this is a NO-OP.")
-        print("    The first [E] slice is Stage 3's egress/.")
-        return 0
-
+        print("    none - every [E] slice in this env is refused above, so this half is a NO-OP.")
     for sl in take:
         print(f"\n  --- {sl.path}")
         if not prepare(sl, args.dry_run):
@@ -306,7 +349,20 @@ def cmd_updown(args) -> int:
             cmd.append("-auto-approve")
         res = run(cmd, env_extra={"AWS_PROFILE": backend.profile(sl.account)}, dry=args.dry_run)
         if res is not None and res.returncode != 0:
+            # THE HOST IS LEFT RUNNING ON PURPOSE when a destroy fails: the operator now has
+            # something to fix over the very tunnel this hook would otherwise have closed.
+            print(
+                "\n  dormant [D]: NOT stopped - an [E] destroy failed above and the",
+                file=sys.stderr,
+            )
+            print(
+                "  tunnel is how the account is reached. Re-run `make down` once it is fixed.",
+                file=sys.stderr,
+            )
             return 1
+
+    if action == "down":
+        run_dormant()
     return 0
 
 
@@ -349,6 +405,29 @@ def cmd_status(args) -> int:
 
     total, unreadable = 0.0, 0
     for sl in metered:
+        # A [D] SLICE IS NOT MEASURED BY ITS STATE FILE, and this is the second thing Stage 4's
+        # first [D] row exposed. `terraform show` reports the instance as present whether it is
+        # running or stopped - which is the whole point of [D] - so counting resources would
+        # add 0.0042/h to the burn forever and the 0.0000/h reading Stage 3 closed on could
+        # never come back. What is metered by the hour here is the POWER STATE, so it is read
+        # from EC2 by the same Name tag the dormant hook uses, and no `terraform init` is
+        # needed to answer it.
+        if sl.layer == layers.DORMANT:
+            found = instance_states(sl.account, sl.name, args.dry_run)
+            if found is None:
+                if args.dry_run:
+                    continue
+                print(f"  {sl.path:<40} UNREADABLE")
+                unreadable += 1
+                continue
+            running = [i for i, st in found if st in ("running", "pending")]
+            total += sl.usd_per_hour if running else 0.0
+            state = "UP" if running else ("stopped" if found else "absent")
+            print(
+                f"  {sl.path:<40} {state:<7} {len(found):>3} instance(s)"
+                f"   {sl.usd_per_hour if running else 0.0:.4f} USD/h"
+            )
+            continue
         if not prepare(sl, args.dry_run):
             print(f"  {sl.path:<40} UNREADABLE")
             unreadable += 1
@@ -375,6 +454,13 @@ def cmd_status(args) -> int:
         )
 
     print(f"\n  estimated burn: USD {total:.4f}/h   (rates: docs/PRICING.md 3, static)")
+    if any(s.layer == layers.DORMANT for s in metered):
+        # 0.0000/h IS NOT "FREE" ONCE A [D] SLICE EXISTS, and the two are easy to confuse
+        # after Stage 3, where the number meant exactly that. A stopped host keeps its EBS
+        # volume and its [P] Elastic IP, both billed monthly - so the hourly total is silent
+        # about them by construction, and saying so is cheaper than the reader assuming.
+        print("  a stopped [D] host still bills its EBS volume and its [P] Elastic IP,")
+        print("  monthly rather than hourly - the floor lines of docs/plan/cost-model.md.")
     if unreadable:
         # A slice that could not be read is not a slice that is down.
         print(f"  {unreadable} slice(s) UNREADABLE - this total is a floor, not a measurement")

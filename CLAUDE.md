@@ -27,7 +27,7 @@ All infrastructure will be deployed in the `us-west-2` Region.
 
 `terraform` **1.15.8**, the `aws` client, `uv` **v0.12.5**, `jq`,
 `pre-commit` **4.6.2**, `checkov` **3.3.11** (`uv tool install`), `tflint` **v0.64.0**. Python **3.14**
-pinned by `uv` (`pyproject.toml`/`uv.lock`); `ruff` lints/formats.
+pinned by `uv` (`pyproject.toml`/`uv.lock`), `WireGuard` **v1.0.16**, `wireguard-tools` **v1.0.20260223** (homebrew) which provides `wg` utility; `ruff` lints/formats.
 
 ## `secrets` folder
 

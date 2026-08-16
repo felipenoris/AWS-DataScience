@@ -154,6 +154,13 @@ SLICES = [
         "INT-09 reachability + the DNS half Sandbox cannot answer",
         0.0042,
     ),
+    # Stage 4 pass 1 (step 1.3, third edit) - THE REPOSITORY'S FIRST [D] ROW, and the rank
+    # above it (40, between foundation and egress) landed early because the ORDER is what was
+    # got wrong once. usd_per_hour is the t4g.nano row of docs/PRICING.md 3, measured us-west-2
+    # (Lesson 6) - and it is the WHILE-RUNNING figure: the EBS volume and the [P] Elastic IP go
+    # on billing while the host is stopped, monthly rather than hourly, and they are floor lines
+    # in docs/plan/cost-model.md rather than anything this column can carry.
+    Slice("sandbox", "vpn", DORMANT, "WireGuard host - the only human path in (Stage 4)", 0.0042),
 ]
 
 
@@ -164,6 +171,9 @@ SLICES = [
 # REDUNDANT with the layer filter - a `bootstrap/` row is already [P], so `up` and `down` would
 # skip it anyway. The redundancy is the point: the day somebody mislabels a row, the layer
 # filter fails open and this list does not.
+#
+# A FIFTH JOINED THEM AT STAGE 4 (2026-08-16) and it was missing rather than deliberately
+# absent: nothing refused a [D] slice, because none existed. Its note is below refusal 4.
 
 # Refusal 3 - D36. production/pki/ holds the internal root CA's private key in its state.
 # Rotating a root on a session boundary invalidates three client surfaces at 09:00, so the
@@ -174,6 +184,25 @@ NEVER_DESTROY = {("production", "pki")}
 # 2.2), so a destroy would delete the bucket that records the destroy. This is the case the
 # stage's Validation tests by reading the plan rather than by trusting the target list.
 NEVER_ANY_TARGET_SLICE_NAMES = {"bootstrap"}
+
+# REFUSAL 5 - THE ONE THE FIRST [D] ROW EXPOSED, and it is enforced in is_refused() below
+# rather than as a set, because it is a property of the LAYER and not of a named slice.
+#
+# Stage 4's `sandbox/vpn` is the first row that is neither [P] nor [E], and until it existed
+# the refusal list had no reason to say anything about [D]: `is_refused` returned None for
+# any non-[P] slice, so a [D] row would have gone into the SAME list as the [E] ones - the one
+# `down` runs `terraform destroy` over. D11 and conventions 5.1 say the opposite in as many
+# words ("`make down` stops them, `make up` starts them"), and so do this repository's own two
+# docstrings: slices.py's header reads "up: start the [D] slices, apply the [E] ones". The
+# code did not implement its own contract, and the failure mode is the expensive direction -
+# `make down ENV=sandbox` destroying the tunnel endpoint, its instance profile and its
+# handshake log, which is exactly what the [P]/[D] split of Stage 4 step 2 exists to prevent.
+#
+# SO A [D] SLICE IS REFUSED BY BOTH TARGETS, and the power state is handled by the dormant
+# hook instead. `up` is refused as well as `down`, which is the half worth arguing: applying a
+# [D] slice on every `make up` would re-plan the SSM-resolved AMI, and a moved AL2023 release
+# REPLACES the instance (Stage 4 step 1.1) - a silent rebuild of the VPN host on a routine
+# start. Creating and changing a [D] slice is a deliberate `terraform apply`, read first.
 
 
 def all_slices() -> list:
@@ -201,6 +230,11 @@ def is_refused(sl: Slice, action: str) -> str | None:
         return "refusal 3: D36 - production/pki/ is excluded from every down path"
     if sl.layer == PERSISTENT:
         return "refusal 1: [P] slices are never touched by up or down (D11)"
+    if sl.layer == DORMANT:
+        return (
+            "refusal 5: [D] is stopped and started, never destroyed and never applied by "
+            "this target (D11) - see the dormant hook, which acts on it"
+        )
     return None
 
 
