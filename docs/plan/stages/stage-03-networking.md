@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Status** | not started — **its five execute-time decisions were settled with the user on 2026-08-16**, before the stage, each recorded at the step that owns it ("Decisions due while executing" is the index). **Revised 2026-08-16 into the action-checklist format**, with three corrections taken from the official documentation: **step 0's supported removal path is deleting the stack instances from the Account Factory StackSet on Management** — not a per-account hand-deletion, which is what the log's first entry still records; **AL2023 serves its mirror list from the repository bucket itself**, so the design-B caveat 9.3 carried is withdrawn; and **verification (vii) is answered by the Route 53 documentation** (the authorization persists until deleted; deleting it does not affect the association) |
+| **Status** | **pass 1 DONE (2026-08-16)** — step 0: the stack instances deleted from Management, `DELETE_COMPLETE` in every vended account, **nothing survived** (verification (vi)), Account Factory creates no VPC; steps 1-5: the four modules tagged `*-v0.1.0`, `foundation/` **applied in Sandbox (31), Development (30) and Production (32)** — re-plan `No changes` in all three, `networking.py` green except the four `NT-8` rows, which are pass 2's own work. Next: **pass 2** (4.4-4.5, 6). **Its five execute-time decisions were settled with the user on 2026-08-16**, before the stage, each recorded at the step that owns it ("Decisions due while executing" is the index). **Revised 2026-08-16 into the action-checklist format**, with three corrections taken from the official documentation: **step 0's supported removal path is deleting the stack instances from the Account Factory StackSet on Management** — not a per-account hand-deletion, which is what the log's first entry still records; **AL2023 serves its mirror list from the repository bucket itself**, so the design-B caveat 9.3 carried is withdrawn; and **verification (vii) is answered by the Route 53 documentation** (the authorization persists until deleted; deleting it does not affect the association) |
 | **Prerequisites** | Stage 2. The AZ name→ID question from 1b step 6 is settled — subnets anchor on `zone_ids` (1.5), the mapping is `./aws/AZs.py`. **`Staging` is unvended** — the quota-increase request sits in an open AWS support ticket (2026-08-15) — so its `foundation/` and `egress/` apply **at vend**, and the two proofs that name it (its VPC, its empty peering list) defer with it; nothing else in this stage waits on it |
 | **Consumes** | [D5](../decisions/D05-sagemaker-egress.md), [D9](../decisions/D09-az-count.md), [D14](../decisions/D14-supply-chain-account.md), [D15](../decisions/D15-tls-internal.md), [D18](../decisions/D18-data-scientist-access.md), [D20](../decisions/D20-staging-account.md), [D21](../decisions/D21-development-account.md), [D22](../decisions/D22-data-governance-account.md), [D35](../decisions/D35-sandbox-cardinality.md) — **plus, for step 8's endpoint lists only**, [D7](../decisions/D07-orchestration.md), [D13](../decisions/D13-lake-formation-enforcement.md), [D24](../decisions/D24-shared-filesystem.md) |
 | **Proves** | [INT-09](../integrations.md) (Development ↔ Production peering). **Supplies** what [INT-05](../integrations.md) later depends on: the `[P]` gateway endpoint IDs of step 3 |
@@ -235,6 +235,13 @@ through the same machinery that created them — not a per-account hand-deletion
 first entry still records as the intent. Both halves are Management console acts; only the configuration
 half has a deadline (**before the `Staging` vend**).
 
+> **RAN 2026-08-16, all four sub-steps.** 0.1 clean (one Account Factory VPC per vended account, zero
+> ENIs in each, one `CREATE_COMPLETE` stack per account); 0.2 and 0.3 by the user from Management, the
+> log has the field-by-field record; 0.4 closed the loop — **no VPC in any measured account**, every
+> `NT-1`/`EG-1` note gone, `docs/AWS_STATE.md` §C rewritten. Verification (vi): **nothing survives** the
+> stack-instance deletion, the flow-log log group included. What remains of step 0 is only the proof of
+> the configuration half, at the `Staging` vend.
+
 - **0.1 — [Claude] Re-measure what exists** before touching anything: run `./aws/networking.py` and
   `./aws/egress.py`, and confirm the `NT-1`/`EG-1` notes still describe one Account Factory VPC per vended
   account (`docs/AWS_STATE.md` §C) and nothing new.
@@ -257,6 +264,16 @@ half has a deadline (**before the `Staging` vend**).
   that no longer exists is worse than no row. **[user]** Record 0.2 and 0.3 in the stage log.
 
 ### `foundation/` — layer `[P]`, free at rest, never destroyed
+
+> **RAN 2026-08-16 — pass 1 applied in Sandbox, Development and Production** (31, 30 and 32
+> resources; **only-create plans, re-plan `No changes` everywhere**). Modules tagged `vpc-v0.1.0`,
+> `iam-role-v0.1.0`, `kms-key-v0.1.0`, `s3-bucket-v0.1.0` on GitHub; the two-commit order (modules +
+> tags pushed **before** the slices' commit) is what lets `terraform_validate` init the callers. The
+> post-apply `./aws/networking.py` reads green except the **four `NT-8` rows — pass 2's own pending
+> work** (4.4). Measuring pass 1 also exposed that `NT-3`/`NT-4` flagged the mandatory public
+> `0.0.0.0/0 → igw` route as an "overlap"; the instrument now excludes exactly the internet-exit
+> default route, which cannot deliver into an RFC1918 range. What remains of pass 1 is nothing;
+> next is pass 2 (4.4-4.5, 6) — cross-account, both sides now exist.
 
 #### 1. The VPC and the address plan
 
@@ -283,8 +300,11 @@ home were settled 2026-08-16 (decision 1); subnets anchor on `zone_ids` (settled
     and **GitLab from Stage 7** (D8): record which host the first callers pin and what moving it will cost —
     a `source` that changes host is every caller's `init` changing with it. Note `terraform init` will fetch
     over the user's own git credentials; a failure there is auth, not Terraform.
-  - **[Claude] Have `foundation/` consume only what it instantiates** — the flow-log role and key, and the
-    `vpc` module itself; nothing written for symmetry.
+  - **[Claude] Have `foundation/` consume only what it instantiates** — the flow-log delivery role
+    (`iam-role`'s first caller) and the `vpc` module itself. `kms-key` and `s3-bucket` are written and
+    tagged now with **Stage 5 as their first caller** (its buckets and CMKs consume both); **a CMK on the
+    flow-log log group was declined at build time (2026-08-16)** — ~USD 1/key-month per account for a
+    debugging log, a line the cost table does not carry.
 
 - **1.2 — [Claude] Record the address plan** — settled here because D35 said this is where it is settled.
   Ranges are non-overlapping even between accounts that will never peer (Staging is unpeered by D20, but an
@@ -422,7 +442,8 @@ Logs Insights — the wrong trade for a debugging log), 30 days because it answe
 
 - **5.1 — [Claude] One flow log per VPC → CloudWatch Logs, retention 30 days**, in the same `foundation/`
   slice — ingestion (~USD 0.50/GB) bills only while traffic flows, so this is free at rest. The delivery
-  role and the log-group key are 1.1a's `iam-role`/`kms-key` modules' first callers.
+  role is 1.1a's `iam-role` module's first caller; the log group stays on **default encryption** — a CMK
+  would put ~USD 1/key-month per account on the floor for a debugging log (declined at build, 2026-08-16).
 - **5.2 — Detection needs nothing here**: GuardDuty (Stage 4 step 10) reads flow logs on its own without
   anything being enabled.
 
@@ -679,6 +700,7 @@ sitting.
    documentation, after the log entry that recorded it:** the removal mechanism is the **StackSet
    stack-instance deletion from Management** (0.2), not the per-account hand-deletion the log's entry
    describes — the decision itself is unchanged, and both halves are now one Management sitting.
+   **Executed 2026-08-16** — step 0's RAN record above.
 
 ## Verifications to answer while executing
 
@@ -691,7 +713,7 @@ Record every answer, including the ones that come out fine.
 | iii | Does the `dnf` path work through the gateway endpoint with **no NAT route at all** — is the 9.3 allow-list complete, and do the AMI's repo files use the default S3 mirrorlist (9.3's correction) rather than `cdn.amazonlinux.com`? | 9.3 |
 | iv | Does a second `apply` of `production/foundation/` add the accepters and authorizations without touching what pass 1 created? | pass 2 |
 | v | Do the AZ mappings differ between accounts, and therefore is any peering traffic cross-AZ? | 1.5 |
-| vi | Does deleting the stack instances from `AWSControlTowerBP-VPC-ACCOUNT-FACTORY-V1` (RetainStacks off) remove everything the vend created — VPC, subnets, the S3 gateway endpoint, the flow log **and its log group** — in every account, `Policy Canary` included? Record what, if anything, survives | 0.2 |
+| vi | Does deleting the stack instances from `AWSControlTowerBP-VPC-ACCOUNT-FACTORY-V1` (RetainStacks off) remove everything the vend created? **Answered 2026-08-16: yes, completely** — every stack reads `DELETE_COMPLETE` from its own account (`Policy Canary` included), no VPC remains anywhere, and the flow-log **log group went too**, consistent with the template reading (the stack owns it, no `DeletionPolicy: Retain`). Nothing survived | 0.2 |
 | vii | ~~Does the Route 53 association authorization persist after the association completes?~~ **Answered by the documentation (2026-08-16):** it persists until deleted; deleting it is recommended, does not affect the association, and a re-association needs a fresh authorization. Residual: confirm at execution that `list-vpc-association-authorizations` shows exactly the rows Terraform holds | 4.5 |
 
 ## Risks

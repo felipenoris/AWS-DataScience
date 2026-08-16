@@ -375,6 +375,10 @@ than discoveries:
 | Macie automated object monitoring (USD per 100k object-days) | 0.0225 | 0.01 | 2.25 |
 | **Security Hub** checks, first 100k (each) | 0.001 | 0.001 | **1.00** |
 | Security Hub finding ingestion above 10k (each) | 0.00003 | 0.00003 | **1.00** |
+| **Amazon Inspector** ECR enhanced scanning, initial scan (USD/image) | 0.11 | 0.09 | 1.22 |
+| Inspector ECR re-scan (each — continuous scanning re-scans on every new CVE) | 0.01 | 0.01 | **1.00** |
+| **Secrets Manager** secret (USD/secret-mo; `gitlab-secrets.json`, Stage 7 step 1.1) | 0.40 | 0.40 | **1.00** |
+| Secrets Manager API calls (per 10k) | 0.05 | 0.05 | **1.00** |
 | **CloudWatch** logs ingested, Standard class (USD/GB) | 0.90 | 0.50 | 1.80 |
 | CloudWatch logs, Infrequent Access class (USD/GB) | 0.45 | — | |
 | CloudWatch logs storage (USD/GB-mo) | 0.0408 | 0.03 | 1.36 |

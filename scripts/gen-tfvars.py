@@ -15,10 +15,10 @@
 #
 # It writes a file. It makes no AWS call and creates nothing.
 #
-# WHAT IT DOES NOT CARRY, on purpose: zone_ids. The AZ anchors are per-environment and belong
-# to a network slice's own tfvars (1b step 6, ./aws/AZs.py) - bootstrap has no subnet, and a
-# generator that emitted an unused zone list would make the next reader look for the resource
-# that consumes it.
+# SINCE STAGE 3 (decision 1) A NETWORK SLICE ALSO GETS vpc_cidr AND zone_ids, from the
+# allocation table in the same module. bootstrap/ still does not, on purpose: it has no
+# subnet, and a generator that emitted an unused zone list would make the next reader look
+# for the resource that consumes it - the emission is scoped by backend.NETWORK_SLICES.
 
 from __future__ import annotations
 

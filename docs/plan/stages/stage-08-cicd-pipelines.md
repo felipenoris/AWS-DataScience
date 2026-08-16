@@ -44,7 +44,9 @@
    2. **smoke-test the image** — it starts, every language runtime resolves, the pinned versions are the
       ones the manifest asked for, the key libraries import. This is the analogue of step 3's integration
       tests: cheap, and it catches the class of failure that otherwise reaches every workstation at once;
-   3. **ECR enhanced scanning**, blocking on critical findings (step 5);
+   3. **ECR scanning**, blocking on critical findings — basic scan-on-push per Stage 7 decision 2; the
+      gate reads `DescribeImageScanFindings` either way, so a Stage 11 upgrade to enhanced changes nothing
+      here;
    4. push to the Production ECR under the immutable tag — **visible to nobody yet**;
    5. **manual approval, assigned to the `dev-env-stewards` group**, with the image diff, the scan report
       and the smoke-test output attached. Same GitLab edition caveat as step 3.5 and Stage 7 step 3: a
@@ -130,9 +132,9 @@
    `app/*` slices only, `terraform plan` output attached to the approval, and CloudTrail alarms on any use
    of either deploy role outside a pipeline context. `docs/plan/institutional-delta.md` records the build/deploy account split an
    institution would use instead.
-5. **Security gates in every pipeline:** `checkov` on Terraform, ECR enhanced scanning results blocking a
-   promotion on critical findings, and dependency scanning on the application. A gate that only warns is
-   documentation, not a gate — decide explicitly which findings block.
+5. **Security gates in every pipeline:** `checkov` on Terraform, ECR scan findings (basic per Stage 7
+   decision 2) blocking a promotion on critical findings, and dependency scanning on the application. A
+   gate that only warns is documentation, not a gate — decide explicitly which findings block.
 6. A pipeline for this infrastructure repository as well: `fmt` / `validate` / `plan` on merge requests,
    `apply` gated by approval. This infrastructure repository lives on GitHub — GitLab hosts the *application* repositories, not this one — so that pipeline is either GitHub
    Actions — with its own OIDC role into AWS; GitHub's issuer *is* public, so federation works there — or

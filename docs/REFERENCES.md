@@ -283,6 +283,52 @@
 
 - GitLab CI/CD OIDC federation with AWS: <https://docs.gitlab.com/ee/ci/cloud_services/aws/>.
 
+- **Read for the Stage 7 revision (2026-08-16)** — the pass that produced the corrections in that stage's
+  status row:
+  - *Protected environments and deployment approvals are Premium* — the tier line behind Lesson 12 and the
+    two Stage 8 gates (Stage 7 step 3.3): <https://docs.gitlab.com/ci/environments/protected_environments/>.
+  - *SAML Group Sync is Premium* (login itself is Free; memberships stay hand-maintained):
+    <https://docs.gitlab.com/user/group/saml_sso/group_sync/>.
+  - *Runner authentication tokens* — runners are created first (UI/API), then registered with a `glrt-…`
+    token; registration tokens are deprecated with removal scheduled for 20.0 (Stage 7 step 6.1):
+    <https://docs.gitlab.com/runner/register/>.
+  - *GitLab backups* — `gitlab-backup create` uploads to S3 via `backup_upload_connection`;
+    **`gitlab-secrets.json` and `gitlab.rb` are excluded** and a restore without the secrets file cannot
+    decrypt the database — the reason for Stage 7 step 1.5's restore-or-generate flow:
+    <https://docs.gitlab.com/administration/backup_restore/backup_gitlab/>.
+  - *Consolidated object storage* — one configuration block for artifacts/LFS/uploads, `use_iam_profile`
+    (no keys — principle 2), single-bucket virtual buckets documented, **backups excluded from this form**
+    (Stage 7 step 1.3): <https://docs.gitlab.com/administration/object_storage/>.
+  - *GitLab Pages on Omnibus* — a domain **distinct from the GitLab host** (the cookie/XSS rationale behind
+    `pages.internal`), the wildcard record + wildcard certificate shape, `pages_external_url` +
+    `pages_nginx` TLS keys, and access control as a Free-tier feature (Stage 7 step 4):
+    <https://docs.gitlab.com/administration/pages/>.
+  - *Omnibus supported OSes* — Amazon Linux 2023 is supported since 16.3.0, amd64 **and arm64**, which is
+    what lets the GitLab host keep the project's AL2023/SSM-parameter AMI pattern (Stage 7 step 1.2):
+    <https://docs.gitlab.com/administration/package_information/supported_os/>.
+  - *Kaniko is archived* (2025-06) and its GitLab tutorial removed — container builds use BuildKit rootless
+    or Buildah (Stage 7 step 6.2): <https://github.com/GoogleContainerTools/kaniko> and the removed page
+    <https://docs.gitlab.com/ci/docker/using_kaniko/>.
+  - *ECR pull-through cache* — the supported upstreams, the `ecr-pullthroughcache/…` secret-name
+    requirement for credentialed ones, the **immutability trap** (an immutable tag blocks the cache
+    update) and the **first-pull internet-route requirement** (Stage 7 step 5.2):
+    <https://docs.aws.amazon.com/AmazonECR/latest/userguide/pull-through-cache.html>.
+  - *ECR scanning types* — basic (free, OS-only, scan-on-push, findings via
+    `DescribeImageScanFindings`) versus enhanced (Amazon Inspector, OS + language packages, continuous,
+    metered) — Stage 7 decision 2: <https://docs.aws.amazon.com/AmazonECR/latest/userguide/image-scanning.html>.
+  - *CodeArtifact Cargo support* (GA 2024-06, external connection `public:crates-io` — closes the
+    confirm-half of `docs/plan/open-questions.md` item 5's Rust row at the documentation level; the
+    in-practice half stays at Stage 6): <https://docs.aws.amazon.com/codeartifact/latest/ug/configure-use-cargo.html>.
+  - *Custom SAML 2.0 applications in IAM Identity Center* — the ACS URL / SAML audience fields and
+    attribute mappings Stage 7 step 3.1 names: <https://docs.aws.amazon.com/singlesignon/latest/userguide/samlapps.html>.
+  - *CodeConnections hosts for self-managed GitLab* — a host needs network reach to the instance, which the
+    no-VPC domain account does not have (INT-13's expected failure, Stage 7 step 7.2):
+    <https://docs.aws.amazon.com/dtconsole/latest/userguide/connections-host.html>.
+  - *Prices measured for this revision* (Lesson 6, the bulk API): Secrets Manager
+    <https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AWSSecretsManager/current/us-west-2/index.json>
+    and Amazon Inspector v2
+    <https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AmazonInspectorV2/current/us-west-2/index.json>.
+
 - Amazon MWAA (Managed Workflows for Apache Airflow): <https://docs.aws.amazon.com/mwaa/latest/userguide/what-is-mwaa.html>.
 
 - Amazon MWAA pricing (environment fee billed hourly, at one-second resolution, for as long as the environment exists): <https://aws.amazon.com/managed-workflows-for-apache-airflow/pricing/>.
@@ -404,6 +450,16 @@
 - **Configuring S3 Object Lock** — enabling it on an *existing* bucket from the console or `put-object-lock-configuration`, the permanence ("you can't disable Object Lock or suspend versioning for that bucket"), and the constraint that decides which Control Tower bucket this applies to: **a bucket with Object Lock cannot be a destination for S3 server access logs** (Stage 1d step 9): <https://docs.aws.amazon.com/AmazonS3/latest/userguide/object-lock-configure.html>.
 
 - **Managing GuardDuty accounts with AWS Organizations** — "For this administrator account, GuardDuty gets enabled automatically only in the current AWS Region", which is why the delegation moves to Stage 4 with the enablement rather than happening in Stage 1b step 8: <https://docs.aws.amazon.com/guardduty/latest/ug/guardduty_organizations.html>.
+
+- **Setting GuardDuty organization auto-enable preferences** — `ALL` covers "all the accounts in an organization", including "those accounts that may have been suspended or removed" and "the delegated GuardDuty administrator account", with up to 24 h to propagate. The reading that corrected Stage 4 step 10.2's "existing members need the explicit add"; what remains for verification (v) is Management's own coverage: <https://docs.aws.amazon.com/guardduty/latest/ug/set-guardduty-auto-enable-preferences.html>.
+
+- **How EC2 instance stop and start works** — Elastic IP addresses belong to the network interface, which is listed under "resources that persist" across a stop/start (and the address bills while the instance is stopped). Answers Stage 4 verification (ii) by documentation: "re-associate on start" is unnecessary code: <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/how-ec2-instance-stop-start-works.html>.
+
+- **AWS: Denies access to AWS based on the source IP** — the deny-by-IP example, with the note that "the policy does not deny requests made by AWS services using forward access sessions, as the original requester's IP address is preserved". That re-scopes Stage 4 step 8.1's `aws:ViaAWSService` carve-out: FAS flows survive the bare `NotIpAddress`, and the carve-out defends the on-behalf calls that are *not* FAS: <https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_policies_examples_aws_deny-ip.html>.
+
+- **Quotas and limits in IAM Identity Center** — a permission set's inline policy holds at most 32,768 bytes and **10,240 non-whitespace bytes**, not increasable — the ceiling Stage 4 verification (vii) watches, because the overflow fails at provisioning rather than in `plan`: <https://docs.aws.amazon.com/singlesignon/latest/userguide/limits.html>.
+
+- **The AL2023 core repository index for `us-west-2`, read through the repo bucket itself** — the measurement (2026-08-16) that `wireguard-tools`, `amazon-cloudwatch-agent` and `iptables-nft` all exist in the repository the 9.3 allow-list admits, so Stage 4's user data installs everything through the S3 gateway endpoint (Stage 4 steps 1.2 and 7.2; the repo's `primary.xml.gz` was grepped from the mirror the bucket names): <https://al2023-repos-us-west-2-de612dc2.s3.dualstack.us-west-2.amazonaws.com/core/mirrors/latest/x86_64/mirror.list>.
 
 - **Integrating Security Hub CSPM with AWS Organizations** — designating the delegated administrator "enables Security Hub CSPM in the current AWS Region for the delegated administrator account", the same coupling as GuardDuty (Stage 1b step 8.1): <https://docs.aws.amazon.com/securityhub/latest/userguide/designate-orgs-admin-account.html>.
 
