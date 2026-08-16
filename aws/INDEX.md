@@ -36,6 +36,7 @@ snapshots.
 | [`egress.py`](egress.py) | [Infrastructure](../docs/ORGANIZATION.md#infrastructure-user); [`AWS Control Tower Admin`](../docs/ORGANIZATION.md#aws-control-tower-admin-d33) for `-` runs | same multi-profile shape, same reason: step 8's endpoint list is deliberately **per account role**, so "is the set right" is only readable with the columns side by side | `output/egress.txt` | **The `[E]` networking half, plus the burn meter.** Interface endpoints (subnet count per D9, private DNS per 8.5), NAT gateways, elastic addresses, every endpoint **policy** read against step 9 — the org condition (9.1) and the AWS-owned-bucket allow (9.3), **presence, never completeness** (the no-NAT `dnf` probe is the stage's) — the service×account **matrix** read against step 8's lists (deliberately not encoded here — Lesson 14), the **hourly burn right now** (the manual instrument the forgotten-egress risk gets, D12 having skipped the alerts; zero everywhere is D11 working), and the region's **endpoint service-name catalog**, which answers stage verification (i) and the `VpcEndpointPolicySupported` flag read-only, before anything is paid for. Checks `EG-1`–`EG-4`; **exits 2 when a check fails** |
 | [`vpn.py`](vpn.py) | [Infrastructure](../docs/ORGANIZATION.md#infrastructure-user); [`AWS Control Tower Admin`](../docs/ORGANIZATION.md#aws-control-tower-admin-d33) for `-` runs | **every** `awsds-*` profile, the ones named, or `-` — multi-profile for the standing reason: GuardDuty coverage is a fact *across* accounts, and the step 8 deny lives in Identity while the Elastic IP it names lives in the VPN home | `output/vpn.txt` | **[Stage 4](../docs/plan/stages/stage-04-vpn.md)'s evidence.** The WireGuard host (`[D]` — type, state, IMDSv2), the `[P]` Elastic IP (`WG_EIP=` printed — the value step 8 and Stage 5's bucket policy name), the **one world-open SG rule** (UDP/51820 and nothing else, never port 22), the handshake log and alarm, **which permission sets carry `DenyControlPlaneOffVpn`** (read back through the Identity Center delegated admin — the six persona sets move together, `InfrastructureAccess` reported as the separate 8.3 decision), and **GuardDuty per account** with the two Stage-11-deferred add-ons that must read `DISABLED`. Checks `VP-1`–`VP-8`; **exits 2 when a check fails** |
 | [`datalake.py`](datalake.py) | [Infrastructure](../docs/ORGANIZATION.md#infrastructure-user); [`AWS Control Tower Admin`](../docs/ORGANIZATION.md#aws-control-tower-admin-d33) for `-` runs | same multi-profile shape, same reason: the lake and its policy live in Data Governance while every legitimate reader is in a consumer account (D22), and a pending RAM invitation is visible only from the consumer | `output/datalake.txt` | **[Stage 5](../docs/plan/stages/stage-05-data-foundation.md)'s evidence, producer and consumers side by side.** The lake buckets with their policy **branches** (vpce/ip/via/sigage/prin — presence, never sufficiency), KMS aliases, the Glue catalog with **resource links** flagged, crawlers (never scheduled, never at an Iceberg target), the `awsds-data-catalog-maintenance` role and its trust, **the Lake Formation `Parameters` reading that defends INT-11** (`DL-5` — the check to read after *any* apply in `data-governance/data/`), RAM shares + **pending invitations**, consumer workgroup enforcement, the derived zone's expiry, EFS (including the mount-target SG shape Stage 4's NAT forces), and Security Hub per account. Checks `DL-1`–`DL-11`; **exits 2 when a check fails** |
+| [`cloudshell/management-landing-zone-drift.sh`](cloudshell/management-landing-zone-drift.sh) | [`AWS Control Tower Admin`](../docs/ORGANIZATION.md#aws-control-tower-admin-d33) — **the only one**, no laptop path | **no profile — CloudShell on Management.** Takes a profile if one ever exists there | `output/cloudshell/management-landing-zone-drift.txt` | **Stage 2 verification (iii)** — whether the Organizations **resource policy** of step 5.1 shows up as landing-zone drift. The `driftStatus` flag, the **manifest** that says what the flag is even comparing, the **operation history** (an update that ran *after* the delegation and succeeded is the only positive evidence available without writing), and whether the document is still there and still narrowed to two statements. **Sections 2-4 are suppressed outside Management and the run exits 2** — measured: from a member account both landing-zone calls *succeed and return empty*, so an unguarded report would state "the landing zone has never run". Section 5 answers from Identity too, because the delegation grants it. |
 | [`cloudshell/management-quotas.sh`](cloudshell/management-quotas.sh) | [`AWS Control Tower Admin`](../docs/ORGANIZATION.md#aws-control-tower-admin-d33) — **the only one**, no laptop path | **no profile — CloudShell on Management.** Takes a profile if one ever exists there | `output/cloudshell/management-quotas.txt` | **Has the account-cap increase landed** — the one number the `Staging` vend is held on. The applied value (not the default), how much of it is spent, and any pending request. **Refuses to interpret the number outside Management**, where the same quota reads `0.0`. |
 
 **The first two columns are different questions, and the whole table above collapses into two identities.** A
@@ -120,9 +121,10 @@ locates the repository root itself:
 ./aws/datalake.py
 ```
 
-**`cloudshell/` holds the two scripts with no laptop path — and they are shell on purpose.**
-`management-quotas.sh` answers only from **Management**, `audit-iam-analyser.sh` only from **Audit**: the
-two accounts that hold no CLI profile by design (D33/D34). Both run inside **CloudShell**,
+**`cloudshell/` holds the three scripts with no laptop path — and they are shell on purpose.**
+`management-quotas.sh` and `management-landing-zone-drift.sh` answer only from **Management**,
+`audit-iam-analyser.sh` only from **Audit**: the two accounts that hold no CLI profile by design
+(D33/D34). Both run inside **CloudShell**,
 signed in as `AWS Control Tower Admin` through `AWSAdministratorAccess` — and CloudShell has
 no uv, so they stay shell and **standalone**: no `awslib`, no environment, one self-contained
 file each. Upload just the file (Actions → Upload file) and run it where it lands:
@@ -135,9 +137,16 @@ bash management-quotas.sh
 bash audit-iam-analyser.sh
 ```
 
-In a clone they are [`cloudshell/management-quotas.sh`](cloudshell/management-quotas.sh) and
-[`cloudshell/audit-iam-analyser.sh`](cloudshell/audit-iam-analyser.sh), and their reports land
-in `aws/output/cloudshell/` rather than beside the script.
+```bash
+bash management-landing-zone-drift.sh
+```
+
+In a clone they are [`cloudshell/management-quotas.sh`](cloudshell/management-quotas.sh),
+[`cloudshell/audit-iam-analyser.sh`](cloudshell/audit-iam-analyser.sh) and
+[`cloudshell/management-landing-zone-drift.sh`](cloudshell/management-landing-zone-drift.sh), and their
+reports land in `aws/output/cloudshell/` rather than beside the script. **All three refuse to interpret
+a result from the wrong account**, which is the failure mode this folder exists around: the calls in
+question do not error there, they answer with something meaningless that looks like an answer.
 
 **A *Python* script run in CloudShell still needs the whole `aws/` folder**: the `-` modes of
 `account-bpa.py`, `declarative-ec2.py`, `networking.py`, `egress.py` and the `org-*` scripts
