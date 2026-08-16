@@ -13,12 +13,19 @@ is a broken caller.
 
 ## What is here today
 
-**Five `bootstrap/` folders — Stage 2 step 1, 2026-08-15 — and `sandbox/bootstrap/` now holds the
-resources.** All five (`sandbox/`, `development/`, `data-governance/`, `production/` and `identity/`) carry
-`versions.tf` and a committed `.terraform.lock.hcl`; **`sandbox/bootstrap/` also carries the state bucket and
-its KMS key (step 2)**, and the other four acquire theirs at step 3. **No `staging/`**: the account is
-unvended (step 3.2), and a folder for an account that does not exist is a folder that fails at `init` with a
-message about S3.
+**Five `bootstrap/` slices, and they are one slice copied five times — Stage 2 steps 1, 2 and 3, 2026-08-15.**
+`sandbox/`, `development/`, `data-governance/`, `production/` and `identity/` each carry the same
+`main.tf`, `variables.tf`, `outputs.tf`, `providers.tf`, `versions.tf` and `.terraform.lock.hcl` — **the state
+bucket and the KMS key that encrypts it, and nothing else**. Only `sandbox/` has applied (step 2); the other
+four are written and awaiting theirs (step 3.6). **No `staging/`**: the account is unvended (step 3.2), and a
+folder for an account that does not exist is a folder that fails at `init` with a message about S3.
+
+**Two files are allowed to differ, and both are files of their own so the rule can be blunt:** `backend.tf`,
+which is commented out until a slice has migrated, and `production/bootstrap/pki-key.tf`, D36's second state
+key (step 3.4). **`./scripts/check-bootstrap-parity.py` enforces the rest** — byte-identical, `backend.tf`
+compared with the comment markers stripped, and any other unshared file a failure. A module would have been
+the other answer and step 2.3 rules it out: modules are consumed **by git tag**, which cannot exist before
+`terraform-modules/` does.
 
 **Two files per slice are GENERATED and untracked**, because a `.tf` file may hold neither of the values they
 carry — the backend cannot interpolate anything, and the region may not be a literal (step 9.1's check
@@ -30,9 +37,9 @@ region the backend records and the region the provider uses cannot disagree:
 ./scripts/gen-backend-hcl.py sandbox bootstrap   # backend.hcl: bucket, key, region, kms alias
 ```
 
-`bootstrap/` is the one slice whose `backend "s3" {}` block starts **commented out**: it creates the bucket
-that will hold its own state, so it applies once with local state and then migrates (step 2.2). Every other
-slice declares its backend from the first `init` and never holds local state at all.
+**`bootstrap/` is the only slice whose `backend.tf` starts commented out**: it creates the bucket that will
+hold its own state, so it applies once with local state and then migrates (step 2.2). Every other slice in
+this tree declares its backend from the first `init` and never holds local state at all.
 
 **The rest of `docs/plan/conventions.md` §6's tree is not on disk, and that is the deliberate reading of step 1.**
 Git does not track empty directories, so a skeleton of ~35 empty slices means ~35 `.gitkeep` files — a second
@@ -40,14 +47,16 @@ copy of §6's listing, in a form that drifts silently and that no reader consult
 by the stage that first writes a `.tf` file into it, and **§6 stays the one place the layout is written down**.
 
 **`versions.tf` is byte-identical in every slice**, because Terraform has no repository-wide pin: the
-constraint belongs to each root module. Step 9's check is what keeps the copies from drifting (Lesson 14).
+constraint belongs to each root module. The parity check above is what keeps the copies from drifting
+(Lesson 14).
 
-**Four checks stand over this tree — Stage 2 step 9, 2026-08-15 — and there is no CI to run them in.**
+**Five checks stand over this tree — Stage 2 steps 9 and 3.5, 2026-08-15 — and there is no CI to run them in.**
 Until Stage 8 puts them in a pipeline the surfaces are `pre-commit` and the repository's `Makefile`, both
 calling the same scripts:
 
 ```bash
-make check      # offline: region literals, indexed AZs, account-level BPA, wildcard ARNs, the policy index
+make check      # offline: region literals, indexed AZs, account-level BPA, wildcard ARNs,
+                #          bootstrap parity, the policy index
 make check-ou   # needs an SSO session as the infrastructure user on Identity
 ```
 

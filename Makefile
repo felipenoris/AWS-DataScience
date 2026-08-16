@@ -17,6 +17,12 @@
 # WHAT IS NOT HERE YET: `up`, `down` and `status` - the teardown/rebuild tooling of D11.
 # That is step 8, and it adds targets to this file rather than a second one.
 #
+# THE CHECK LIST GREW ONE ENTRY AT STEP 3 (2026-08-15): check-bootstrap-parity.py. The five
+# bootstrap slices are one slice copied five times, by decision (step 2.3 - a module would need
+# a git tag that cannot exist yet), and a copy that stops being one announces nothing. It is in
+# `check` rather than in a target of its own because it is offline, fast, and it fails on
+# exactly the mistake this stage makes possible.
+#
 #   make check       step 9's checks that need no AWS session - what a commit must pass
 #   make check-ou    step 9.3 - needs a live SSO session as the infrastructure user
 #   make check-docs  the plan's own reference check, which predates this stage
@@ -40,7 +46,7 @@ SHELL := /bin/bash
 
 help:
 	@printf 'targets:\n'
-	@printf '  check       step 9 offline - conventions, wildcard ARNs, the policy index\n'
+	@printf '  check       step 9 offline - conventions, wildcard ARNs, bootstrap parity, the policy index\n'
 	@printf '  check-ou    step 9.3 - OU coverage, needs an SSO session (Identity)\n'
 	@printf '  check-docs  the plan reference check (known red, see the note in this file)\n'
 	@printf '  check-all   all of the above\n'
@@ -52,6 +58,7 @@ check:
 	@fail=0; \
 	for c in "./scripts/check-tf-conventions.py" \
 	         "./scripts/check-iam-wildcards.py" \
+	         "./scripts/check-bootstrap-parity.py" \
 	         "./terraform-live/identity/org-policies/check-index.py"; do \
 	  printf '\n\033[1m--- %s\033[0m\n' "$$c"; \
 	  $$c || fail=1; \

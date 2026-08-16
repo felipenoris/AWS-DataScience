@@ -62,9 +62,11 @@ Blueprint for using AWS as a Data Science infrastructure provider.
   `backend.hcl` and `terraform.auto.tfvars`. A `backend` block interpolates nothing and a `.tf` file may not
   carry a **Region** literal, so those values have to live somewhere else; that somewhere is two generated
   files, neither a `.tf` and neither ever committed, both written from one table so they cannot disagree.
-  Three more are the **checks over the Terraform tree** — no Region literal or index-selected AZ in a `.tf`,
+  Four more are the **checks over the Terraform tree** — no Region literal or index-selected AZ in a `.tf`,
   no `aws_s3_account_public_access_block` in any slice, no wildcard-account ARN in an identity-plane policy,
-  and no OU left out of the authored attachment map.
+  no OU left out of the authored attachment map, and — `check-bootstrap-parity.py` — no drift between the
+  five `bootstrap/` slices, which are one slice copied five times because a module would have to be consumed
+  by a git tag that does not exist yet.
 - `Makefile` — how those checks are run: `make check` offline, `make check-ou` with an SSO session. The same
   scripts sit behind the `pre-commit` hooks, so the commit gate and the target cannot disagree.
   `make` itself is a convenience, not a dependency - every target is a direct call to scripts

@@ -81,6 +81,16 @@ repos:
         pass_filenames: false
         files: ^terraform-live/identity/.*\.(json|tf)$
 
+      # 3.5 - the five bootstrap slices are one slice, copied. Step 2.3 rules out a module
+      # (consumed by git tag, which cannot exist before the module does), so the copy's own
+      # failure mode - a setting changed in four places out of five - needs an instrument.
+      - id: check-bootstrap-parity
+        name: the bootstrap slices are still copies of one another (3.5)
+        entry: ./scripts/check-bootstrap-parity.py
+        language: system
+        pass_filenames: false
+        files: ^terraform-live/[^/]+/bootstrap/
+
       # 9.4 - it already existed and was run by hand, which is exactly the state step 9 ends.
       # Once org-policies/ manages these documents, a statement added in Terraform with no row
       # in POLICIES.md is a control nobody can explain a year later.

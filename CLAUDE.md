@@ -192,7 +192,10 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   files per slice** — `backend.hcl` *and* `terraform.auto.tfvars` (`gen-backend-hcl.py`/`gen-tfvars.py`, one
   table in `tfhygiene/backend.py`): a `.tf` may carry neither the region nor *the* sandbox. Three checkov
   skips (access logging, replication, event notifications) — **and a skip above the block is silently
-  ignored**. **Next is step 3**, `production/` with its two keys (3.4).
+  ignored**. **Step 3 authored, four applies pending** (`dev`, `data`, `prod`, `identity`; `prod` carries
+  D36's second key in `pki-key.tf`): the five slices are **one slice copied**, so the backend moved into its
+  own `backend.tf` and a **fifth check** — `check-bootstrap-parity.py`, in `make check` and the gate —
+  makes byte-identity the rule. **Verification (i) is still unanswered** (per-slice `kms_key_id` override).
 - **Stage 3 pre-instrumented (2026-08-15):** `aws/networking.py`, `aws/egress.py`. First run found **an
   Account Factory VPC in every vended account** (`docs/AWS_STATE.md` §C) — the stage's new **step 0** decides
   it, and its network-configuration half must land **before the `Staging` vend**.

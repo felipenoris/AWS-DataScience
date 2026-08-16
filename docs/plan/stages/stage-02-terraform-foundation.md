@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Status** | **IN PROGRESS. Steps 5.0, 5.1, 1, 6, 9 and 2 closed 2026-08-15** — the delegation applied and *exercised* (INT-20 answered: `identity/org-policies/` is scoped to all ten documents), the five `bootstrap/` slices created with the version pin and a committed multi-platform lock, the `pre-commit`/`tflint`/`checkov` chain passing end to end, the four checks written, wired into **`make check`** and into the commit gate, each demonstrated failing on purpose — **and the project's first `terraform apply`**: `sandbox/bootstrap/` applied local, migrated into its own bucket, second plan empty, locking proven by two concurrent plans. **Next is step 3** — the same slice in the four remaining accounts, `production/` with its two keys (3.4). **Roteiro revised 2026-08-15 against the closed landing zone**, see the table below |
+| **Status** | **IN PROGRESS. Steps 5.0, 5.1, 1, 6, 9 and 2 closed 2026-08-15** — the delegation applied and *exercised* (INT-20 answered: `identity/org-policies/` is scoped to all ten documents), the five `bootstrap/` slices created with the version pin and a committed multi-platform lock, the `pre-commit`/`tflint`/`checkov` chain passing end to end, the four checks written, wired into **`make check`** and into the commit gate, each demonstrated failing on purpose — **and the project's first `terraform apply`**: `sandbox/bootstrap/` applied local, migrated into its own bucket, second plan empty, locking proven by two concurrent plans. **Step 3 is written and waiting on its four applies** — the same slice copied into the four remaining accounts, `production/` carrying the second key of 3.4, and the copy's own failure mode answered by a fifth check (3.5). **Roteiro revised 2026-08-15 against the closed landing zone**, see the table below |
 | **Prerequisites** | **Stage 1a and Stages 1b, 1c and 1d**, all complete (the landing zone closed 2026-08-15). `Staging` is still unvended, so **step 3 skips `terraform-live/staging/bootstrap/`** and step 5 skips its Staging assignments — the same carve-out 1b steps 3 and 5 already carry, picked up at the vend |
 | **Consumes** | [D3](../decisions/D03-terraform-state.md), [D10](../decisions/D10-identity-center-delegation.md), [D11](../decisions/D11-lab-lifecycle.md), [D16](../decisions/D16-break-glass.md), [D23](../decisions/D23-ou-structure.md), [D27](../decisions/D27-catalog-maintenance.md), [D30](../decisions/D30-scp-recovery.md) *(reverted; its surviving consequence is step 5's rationale)*, [D32](../decisions/D32-account-factory-sso-user.md), [D33](../decisions/D33-control-tower-admin-user.md), [D34](../decisions/D34-account-vending.md), [D35](../decisions/D35-sandbox-cardinality.md), [D36](../decisions/D36-internal-pki.md), [D37](../decisions/D37-nested-ou-inheritance.md) *(5.3/9.3 — `Sandboxes` deliberately carries nothing)* — **plus, for step 5's six permission sets, the design of record in [Stage 1b step 3](stage-01b-identity-and-controls.md) and the decisions it lists** (D14, D18-D22, D31). They are written here and specified there; neither file restates the other |
 | **Proves** | [INT-20](../integrations.md) — the Organizations **policy** delegation into the Identity account, which step 5 assumes and no earlier stage creates |
@@ -118,7 +118,8 @@ are already inside `docs/plan/cost-model.md`'s floor:
 At **~USD 6-7/month these keys are most of the KMS row — the largest line in the floor**, so it is worth stating
 what it buys: the key policy is where "who can read this state" is expressed, which is the only mechanism
 D36 has (Lesson 18 — the infrastructure user authors it and is not constrained by it, so what is left is the
-CloudTrail record of a `kms:Decrypt`).
+CloudTrail record of a `kms:Decrypt`). **That record is narrower than the sentence sounds, and 2.7 measures
+exactly how narrow** — it names who, when and which key, and neither what was decrypted nor which object.
 
 ## What this stage deliberately leaves outside Terraform
 
@@ -217,7 +218,8 @@ that key and it cannot be: `foundation/` does not exist yet at bootstrap time, a
 apply.** A `backend` block **cannot interpolate variables** — no `var.region`, no locals. Reconcile it, do
 not let step 9's grep discover it:
 
-- Use **partial backend configuration**: keep `backend "s3" {}` in `providers.tf` and put `bucket`, `key`,
+- Use **partial backend configuration**: keep `backend "s3" {}` in **`backend.tf`** — a file of its own
+  since step 3 (3.5); it was in `providers.tf` for the sandbox slice's own apply — and put `bucket`, `key`,
   `region`, `kms_key_id` and `use_lockfile = true` in a per-slice **`backend.hcl`**, passed as
   `terraform init -backend-config=backend.hcl`.
 - `backend.hcl` is not a `.tf` file, so step 9's check does not read it, and the region literal sits in one
@@ -239,6 +241,37 @@ variables with no defaults, from a generated, gitignored **`terraform.auto.tfvar
 the provider uses cannot disagree, which they could the moment the second one was typed (Lesson 14). It
 carries no `zone_ids` — those are per-environment and belong to a network slice's own tfvars, and a
 generator emitting an unused list sends the next reader looking for the resource that consumes it.
+
+**2.7 — What the `kms:Decrypt` record actually contains, measured rather than assumed** *(added on
+execution, 2026-08-16)*. This stage leans on that record twice — in "What this stage costs" above and in
+D36 — because Lesson 18 leaves nothing else: the infrastructure user authors the key policy. So the record
+was read, from the trail of this slice's own applies and its lock test, and it is **narrower on two axes
+than "the CloudTrail record of a `kms:Decrypt`" suggests**:
+
+- **It never carries plaintext, and no setting makes it.** `GenerateDataKey`'s `responseElements` **is** the
+  data key, and KMS logs it as `null`; `Decrypt` logs neither the ciphertext in nor the plaintext out. The
+  event is *that* a decryption happened — `userIdentity`, `eventTime`, the key ARN in `resources`, and the
+  `keyMaterialId`, which is what will distinguish material generations after the first rotation.
+- **It does not name the object, because S3 Bucket Keys coarsen the encryption context to the bucket.**
+  Measured: `"encryptionContext": {"aws:s3:arn": "arn:aws:s3:::awsds-sandbox-tfstate"}`, where without the
+  bucket key it would have been the object ARN — the `<account>/<slice>/terraform.tfstate` path. **Today
+  there is one object per bucket and nothing is lost. From step 4 on, every slice of an account shares that
+  bucket and that key**, and the trail then answers "something in this bucket was decrypted" rather than
+  "the `foundation` state was read". **S3 data events would close it and are off by default** — Stage 11
+  owns them and prices them, and this is a second reason for that stage to exist, not a new item here.
+- **The call is made by S3 under the caller's identity** — `invokedBy: fas.s3.amazonaws.com`, a forward
+  access session — so reading a state file requires `s3:GetObject` **and** `kms:Decrypt`, and denying only
+  the second is enough. That is what makes the key policy load-bearing rather than decorative.
+- **D36's alarm survives the coarsening, for a reason worth writing down before 3.4 relies on it**: it is
+  scoped to the *key*, which the event names in `resources`, and the PKI state key encrypts exactly one
+  file — so there the key **is** the object. What 3.4 still has to measure, next to verification (i), is
+  whether a bucket key applies to a per-slice `kms_key_id` override at all or only to the bucket default.
+  The two questions are one read, on the same apply.
+
+The trade is accepted as it stands: at lab scale the bucket key is a real line in `docs/plan/cost-model.md`
+and the lost axis is recoverable at Stage 11. It is recorded because **a control whose record is thinner
+than the sentence describing it is Lesson 5's shape** — an intention is not a control — and the thinning
+here happened for a cost reason two subsections away from the claim.
 
 ### 3. The remaining bootstrap slices
 
@@ -276,6 +309,40 @@ detail that decides whether D36 is a control or a folder:
 - **Verify while executing (i):** that the bucket's default-encryption setting and its TLS-only policy do
   not force a single key and reject the override. If they do, `pki/` gets its **own bucket**, which costs
   nothing and is the honest fallback.
+
+**3.5 — The five slices are one slice, copied — and the copy needs an instrument** *(added on execution,
+2026-08-15)*. Step 2.3 already ruled out the obvious alternative: a module is consumed **by git tag**, a tag
+cannot exist before `terraform-modules/` does, and bootstrap is the slice that makes every other slice
+possible — a relative-path module inside `terraform-live/` would dodge the tag rule and keep the cycle. So
+the copy stands, by decision. What the step owes in exchange is an answer to the copy's own failure mode,
+which is **Lesson 14 in its purest form: a bucket setting changed in four places out of five, with the fifth
+still applying and nothing announcing that the copy stopped being one.**
+
+- **`./scripts/check-bootstrap-parity.py`, in `make check` and in the commit gate** — the fifth check of a
+  stage that had four. `main.tf`, `variables.tf`, `outputs.tf`, `providers.tf`, `versions.tf` and
+  `.terraform.lock.hcl` must be **byte-identical** across every `terraform-live/*/bootstrap/`.
+- **The two legitimate differences were pushed into files of their own so that the rule can be that blunt:**
+  - **`backend.tf`** now holds the `terraform { backend "s3" {} }` block, alone. A slice that has not
+    migrated yet (2.2) must not declare a backend, so this is the one file that differs — and it is
+    compared **with the comment markers stripped**, so the commented and the live forms must still be the
+    same three lines. It also turns the phase-2 edit into *uncomment a file* rather than surgery inside
+    `providers.tf`, which is what `git status` should show.
+  - **`production/bootstrap/pki-key.tf`** is the one extra file in the tree, 3.4's second key, **allow-listed
+    by name**. A second entry has to be added deliberately. It carries a `precondition` on `var.env == "prod"`,
+    so a copy of it into another account's slice fails the plan instead of quietly creating a key.
+- **The generated files are deliberately outside the comparison** — `backend.hcl` and `terraform.auto.tfvars`
+  are per-slice by construction, and `gen-backend-hcl.py`/`gen-tfvars.py` are what keep *them* honest, from
+  one table (2.6).
+- **`staging/bootstrap/` is optional to the check, not unknown to it.** Absent, it prints a note naming 3.2;
+  the day it is written, the check starts comparing it with no edit.
+
+**3.6 — Four applies, one per account, each the two-phase dance of 2.2.** Nothing is shared between them and
+they are independent, so the order is a convenience: `development`, `data-governance`, `production`,
+`identity`. Each runs as the **infrastructure user** on **that account** through **`InfrastructureAccess`**
+(`awsds-infra-dev`, `awsds-infra-data`, `awsds-infra-prod`, `awsds-infra-identity`), and `AWS_PROFILE` is set
+on every command rather than exported once — **Lesson 25**, a borrowed session outlives the command that
+needed it and every later error names the wrong account. `./aws/tf-backends.py` is the read-back, and its
+section 5 already states the expected shape: **five state buckets, six once `Staging` is vended.**
 
 ### 4. Backends for every other slice
 
@@ -930,6 +997,7 @@ same scripts, so a gate and a target cannot disagree.**
 | 9.2 | [`scripts/check-iam-wildcards.py`](../../../scripts/check-iam-wildcards.py) | `make check` + `pre-commit` on `terraform-live/identity/**` |
 | 9.3 | [`scripts/check-ou-coverage.py`](../../../scripts/check-ou-coverage.py) | **`make check-ou` only** — it needs an SSO session |
 | 9.4 | `terraform-live/identity/org-policies/check-index.py` | `make check` + `pre-commit` on `policies/` or `POLICIES.md` |
+| 3.5 | [`scripts/check-bootstrap-parity.py`](../../../scripts/check-bootstrap-parity.py) | `make check` + `pre-commit` on `terraform-live/*/bootstrap/` — **a fifth, added by step 3** rather than by this step, because it guards a rule step 3 creates |
 
 **Four things settled while writing them, none of which the step had decided:**
 
@@ -1160,7 +1228,7 @@ Record every answer in `docs/log/log-stage-02-terraform-foundation.md`, includin
 
 | # | Question | Step |
 |---|---|---|
-| i | Does the bucket's default encryption / TLS policy accept a per-slice `kms_key_id` override for `pki/`? | 3.4 |
+| i | Does the bucket's default encryption / TLS policy accept a per-slice `kms_key_id` override for `pki/`? **And does an S3 Bucket Key apply to that override, or only to the bucket default** (2.7 — it decides how D36's alarm reads)? | 3.4 |
 | ii | Does the pinned provider support `aws_organizations_policy` with `type = "DECLARATIVE_POLICY_EC2"`? | 5.2 |
 | iii | Does the Organizations **policy** delegation coexist with the Control Tower landing zone without raising drift? | 5.1 |
 | iv | Does `aws_organizations_organizational_unit_descendant_organizational_units` really recurse, in the pinned version? | 5.3 |
