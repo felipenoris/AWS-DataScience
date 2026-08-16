@@ -2,11 +2,11 @@
 
 | | |
 |---|---|
-| **Status** | not started |
+| **Status** | not started — **its five execute-time decisions were settled with the user on 2026-08-16**, before the stage, and each is recorded at the step that owns it ("Decisions due while executing"). The verifications are untouched and stay for the execution |
 | **Prerequisites** | Stage 2. **Plus one answer from [1b step 6](stage-01b-identity-and-controls.md)**: whether the AZ name→ID mapping is the same in every account, which decides how step 1 anchors subnets. **`Staging` is unvended** — the quota-increase request sits in an open AWS support ticket (2026-08-15) — so its `foundation/` and `egress/` apply **at vend**, and the two proofs that name it (its VPC, its empty peering list) defer with it; nothing else in this stage waits on it |
 | **Consumes** | [D5](../decisions/D05-sagemaker-egress.md), [D9](../decisions/D09-az-count.md), [D14](../decisions/D14-supply-chain-account.md), [D15](../decisions/D15-tls-internal.md), [D18](../decisions/D18-data-scientist-access.md), [D20](../decisions/D20-staging-account.md), [D21](../decisions/D21-development-account.md), [D22](../decisions/D22-data-governance-account.md), [D35](../decisions/D35-sandbox-cardinality.md) — **plus, for step 8's endpoint lists only**, [D7](../decisions/D07-orchestration.md), [D13](../decisions/D13-lake-formation-enforcement.md), [D24](../decisions/D24-shared-filesystem.md) |
 | **Proves** | [INT-09](../integrations.md) (Development ↔ Production peering). **Supplies** what [INT-05](../integrations.md) later depends on: the `[P]` gateway endpoint IDs of step 3 |
-| **Log** | `docs/log/log-stage-03-networking.md` — to be created by the user, with its row in [`docs/log/INDEX.md`](../../log/INDEX.md) |
+| **Log** | [`docs/log/log-stage-03-networking.md`](../../log/log-stage-03-networking.md) — created 2026-08-16, one entry: the five decisions settled before the stage. Its row is in [`docs/log/INDEX.md`](../../log/INDEX.md) |
 
 *Read with [`docs/plan/conventions.md`](../conventions.md) (naming, layout, `[P]`/`[D]`/`[E]`, IAM rules).*
 
@@ -229,6 +229,15 @@ recorded in the log. They duplicate nothing this stage builds, their address ran
 plan, and in Data Governance the decision is forced — D22 says the account holds no VPC at all. Deleting
 a VPC is free and loses nothing: they are empty.
 
+**Settled 2026-08-16 (with the user, before the stage): delete all six, and turn the creation off in
+Account Factory.** No argument for keeping one survived the reading: they are empty, they overlap each
+other by construction, their range is outside the 1.2 plan, D22 forces the Data Governance one — and each
+carries the **S3 gateway endpoint on the default full-access policy**, which is the exact shape step 9
+exists to forbid. **The two halves are independent and only the second has a deadline**: the Account
+Factory network configuration on Management governs *future* vends and must land **before the `Staging`
+vend**; the six deletions are by hand, per account, whenever. Closing is 0.4 — re-run `./aws/networking.py`
+and update `docs/AWS_STATE.md` §C in the same sitting.
+
 **0.3 — They are CloudFormation StackSet artifacts** (`StackSet-AWSControlTowerBP-VPC-ACCOUNT-FACTORY-V1-*`),
 so the supported half of the fix is the **Account Factory network configuration** on Management: set it
 to create **no VPC**, which governs every future vend — `Staging` and every Stage 14 Sandbox — and is
@@ -265,6 +274,27 @@ the sandbox range is an *allocation* rather than a constant: record the table in
 [Stage 14](stage-14-sandbox-vending.md) read it to allocate the next unit. A literal per account written by
 hand is Lesson 14 in address space, and doing this after the third business unit costs a VPC rebuild in an
 account somebody is working in.
+
+**Settled 2026-08-16 (with the user): the allocation lives in
+[`scripts/tfhygiene/backend.py`](../../../scripts/tfhygiene/backend.py) and reaches each slice through the
+generated `terraform.auto.tfvars` — no new file.** That module is already "the one place that builds a
+slice's two generated files" (Stage 2 step 2.6), and 2.6 already said the `zone_ids` "belong to a network
+slice's own tfvars" while declining to emit them *because no consumer existed yet*. This stage is that
+consumer arriving, for both values. A second table — a tracked `address-plan.json` in the shape of
+`attachments.json` — was the alternative and was declined: it would be a second vocabulary for the same
+per-environment values, which is the defect 2.6 was written to prevent.
+
+**Three things that ride with the choice, recorded rather than discovered:**
+
+- **The entries are authored, never computed.** The rule for whoever adds one is *the lowest free `/16` in
+  the supernet* — so unit 2 is `10.16.0.0/16`, not `10.21`, because `10.20` is the fifth slot and the table
+  need not be dense (1.2). It goes in the module's docstring. A CIDR computed at vend time is a `[P]` value
+  that can move on a rebuild, in an account somebody is working in.
+- **`Stage 14` reads this table**, which is the whole reason it is tracked Python and not a generated file.
+- **It touches open question 10.** `ENV_TOKENS` is keyed by account *folder* and `sandbox` is singular; the
+  per-unit token is still open and is deliberately deferred to N=2. Write the `sandbox` row as an
+  allocation, not as a final name. **The duplicate-`/16` check is born with N=2** — at N=1 it has nothing to
+  compare.
 
 **1.4 — Subnets: three tiers × 2 AZs (D9).** Public, private, and an **isolated** tier with no route out.
 The isolated tier is created empty on purpose — adding a fourth tier later means re-cutting the address
@@ -362,9 +392,18 @@ is why the provisioned-MWAA fallback carries a DNS step (Stage 10 step 4).
 
 #### 5. VPC Flow Logs
 
-**5.1 — One per VPC, to CloudWatch Logs**, with an explicit short retention (7 days). Retention is what
+**5.1 — One per VPC, to CloudWatch Logs**, with an explicit short retention. Retention is what
 accumulates; ingestion (~USD 0.50/GB) is billed only while traffic flows, so this is free at rest and a
 small per-hour cost while the lab is up.
+
+**Settled 2026-08-16 (with the user): CloudWatch Logs, retention 30 days.** The number is not a cost
+argument — between 7 and 30 days the difference is cents of storage, because the lab is off most of the
+time and ingestion is what costs. What decided it is the *use*: 5.2 says these logs are for debugging, and
+30 days answers "what happened last week" while 7 answers only "what happened this session". **The
+destination was the real axis and it stays CloudWatch Logs**: S3 delivery is roughly half the price and
+pays for it in Logs Insights, turning "which packet was dropped" into an Athena query — the wrong trade for
+a log whose stated purpose is debugging. It would also mean a new measured row in `docs/PRICING.md`
+(Lesson 6), for a saving in cents.
 
 **5.2 — This is for debugging, not for detection.** GuardDuty (Stage 4 step 10) reads flow logs on its own
 without anything being enabled here. What these buy is the ability to see *which* packet was dropped —
@@ -479,18 +518,61 @@ S3 gateway endpoint policy therefore needs a second, explicitly enumerated `Allo
 - **SageMaker's regional buckets** for built-in images, sample data and JumpStart artifacts;
 - the **SSM agent and CloudWatch agent** distribution buckets.
 
+**Settled 2026-08-16 (with the user): five families, enumerated now as the module variable's documented
+default.** The list above gains one entry and the whole step gains a correction that moves *when* it
+matters.
+
+**The correction first, because it was stated backwards in the session that settled this: a NAT does not
+bypass an endpoint policy.** A gateway endpoint works by putting a route to the S3 **prefix list** in the
+route table, and the more specific route wins — so while the endpoint is associated, in-region S3 traffic
+goes through it and is judged by its policy, `0.0.0.0/0` notwithstanding. Design A carries only what is
+*not* in-region S3 (a CloudFront mirror list, a cross-region bucket). **So this list is load-bearing from
+[Stage 4](stage-04-vpn.md), not from Stage 6** — the first EC2 instance in the project is the WireGuard
+host, and it installs WireGuard from `dnf` in its user data. 9.5's closing sentence used to imply the
+opposite and is corrected below.
+
+| Family | Shape | Who needs it, and where it surfaces |
+|---|---|---|
+| AL2023 repositories | `al2023-repos-<region>-*` | every EC2 instance. **Stage 4** — a host that boots and never finishes its user data |
+| CloudWatch agent | `amazoncloudwatch-agent-<region>` | **Stage 4 step 7**, the handshake log behind the health alarm |
+| SSM agent / Session Manager | the `amazon-ssm-<region>` family | **Stage 7** — and it is the *only* way into the GitLab host, since port 22 does not exist (Stage 4 step 3) |
+| **ECR layer storage** — `prod-<region>-starport-layer-bucket` | **the entry this step was missing** | **every `docker pull`**, Stages 6-8. `ecr.api`/`ecr.dkr` (8.2) authorise the pull; the **layers** come from S3, so it fails *after* a successful login, pointing at S3 rather than at ECR |
+| SageMaker regional buckets | JumpStart, sample files | **Stage 6** |
+
+Two of the five have no consumer until Stage 6, and they are written now anyway: the failure they prevent
+is not an `AccessDenied` anybody reads (9.5), and the policy is `[E]` — correcting a wrong name is a
+`make up`, so the cost of writing them early is close to nothing while the cost of discovering them late is
+an evening.
+
+**What is *not* settled by this, and must not be read as settled:** the bucket names above are taken from
+AWS's documentation, **not measured** — Lesson 23 says a managed service owns its artifacts' packing, so
+each one is confirmed at execution by verification (iii). And **AL2023 resolves its mirror list from a
+public HTTPS endpoint before fetching from S3**: under A that leaves through the NAT and works, while under
+B no entry in this list can rescue it. **That is a design-B input, and it is due at Stage 6 rather than
+here** — if the mirror list is not S3, B's package path needs a different answer (a prebuilt image,
+CodeArtifact, or an accepted NAT on the one host that patches).
+
 **9.4 — `aws:ViaAWSService` does not rescue these.** A `dnf` process on an instance is not an AWS service
 calling on your behalf; it is your own credential fetching an object.
 
 **9.5 — Write the list as a module variable with a documented default, never inline.** It is the statement
 most likely to be trimmed by somebody tidying up, and its failure mode is a package manager that hangs
-rather than an `AccessDenied` anyone can read. Under design B the endpoint is the *only* route to those
-buckets, so this is not optional in any sense.
+rather than an `AccessDenied` anyone can read. **It is not optional under either design**, and the
+sentence that used to sit here — "under design B the endpoint is the *only* route to those buckets" — was
+true and misleading: it reads as though design A had a second route. It does not, for in-region S3. See
+9.3's correction.
 
 #### 10. Keep the egress path parameterised
 
 **10.1 — The default route is an input, not a literal.** An `egress_mode = "A" | "B"` switch selects
 NAT-or-nothing, and the private tier's default route target comes from a variable.
+
+**Settled 2026-08-16 (with the user): the default is `A`.** The USD 0.030/h the table below reports
+decides nothing; what decides it is that under B there is no default route at all, and B's package path —
+CodeArtifact, with Julia and R still uncovered (open question 5) — is not built until Stages 6 and 7. A
+default of B means an ordinary working session that cannot install anything. **Choosing A as the default
+is not choosing A as the outcome**: the switch is per account (10.3), Staging and Production keep a NAT
+either way, and D5's comparison happens at Stage 6, deliberately.
 
 **10.2 — So Stage 6 can insert a DNS Firewall or a proxy into the path, or remove the path entirely under
 design B, without reshaping `foundation/`.** That comparison is the point of D5, and it must not require a
@@ -572,19 +654,39 @@ hourly table is per business unit (D35)** and is the term that multiplies.
 **Blocking questions for the user: none.** Each is decided during the stage and written into
 `docs/log/log-stage-03-networking.md` rather than left to whoever is at the keyboard (Lesson 16).
 
+**All five were settled with the user on 2026-08-16, before the stage started**, which is why each carries
+its answer below rather than a recommendation. They were brought forward deliberately: two of them (5 and
+6) have consequences outside this stage — an ordering against the `Staging` vend, and a list the WireGuard
+host of Stage 4 depends on — and a decision that reaches another stage is cheaper made than discovered.
+**The reasoning stays at the step that owns it**; these rows are the index, and the user's log records that
+the sitting happened.
+
 1. **The Sandbox supernet and the allocation table** (1.2, 1.3) — confirm `10.16.0.0/13` and record where
    the table lives, since Stage 14 reads it.
+   **Settled: `10.16.0.0/13` confirmed, unit 1 at `10.20.0.0/16`, and the allocation lives in
+   `scripts/tfhygiene/backend.py`** — reaching each slice through the generated `terraform.auto.tfvars`,
+   alongside the region and the `zone_ids`. No new file, one vocabulary (1.3). Entries are authored, the
+   rule is the lowest free `/16`, and the duplicate check is born with N=2.
 2. ~~**Whether subnets anchor on `zone_ids` or on list position**~~ — **not a decision any more** (1.5):
    1b step 6 settled it as `zone_ids`. What is left is recording the ID per environment in `.tfvars`.
 3. **The flow-log retention** (5.1) — a cost choice, not a compliance one.
+   **Settled: CloudWatch Logs, 30 days.** Not a cost argument — the axis was the destination, and S3 was
+   declined for costing Logs Insights on a log whose purpose is debugging (5.1).
 4. **Which `egress_mode` is the default** (10.1). Recommended: **A**, so that an ordinary session works
    while B's package path is still being built; B is exercised deliberately at Stage 6, which is where D5
    says the comparison happens.
+   **Settled: `A`.** The switch stays per account and the D5 comparison is unaffected (10.1).
 5. **The AWS-owned bucket allow-list** (9.3) — the enumerated ARNs, recorded as a list that is maintained
    rather than discovered.
+   **Settled: five families, written now as the variable's documented default** — AL2023, CloudWatch
+   agent, SSM agent, **ECR layer storage** (the entry the step was missing) and SageMaker. **And the step
+   gained a correction that outranks the decision**: a NAT does not bypass an endpoint policy, so this list
+   is load-bearing from **Stage 4**, not Stage 6 (9.3).
 6. **The Account Factory VPCs** (step 0) — delete-or-keep per vended account, recorded in the log, and
    the Account Factory network configuration change on Management **before the `Staging` vend**, so the
    next account arrives without one. Update `docs/AWS_STATE.md` §C in the same sitting (0.4).
+   **Settled: delete all six, and turn creation off in Account Factory** — the Management half before the
+   vend, the deletions whenever (0.2).
 
 ## Verifications to answer while executing
 

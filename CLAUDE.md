@@ -185,9 +185,11 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   `content`/`type`. One template changed: the RCP's `["ecr:*"]` → `"ecr:*"`.
 - **Gates, and there is no CI:** `make check` (offline, five checks), `make check-ou` (session),
   `make check-docs` — **the last one is red** on pre-Stage-2 prose and stays out of the commit gate.
-- **Stage 3 pre-instrumented (2026-08-15):** `aws/networking.py`, `aws/egress.py`. First run found **an
-  Account Factory VPC in every vended account** (`docs/AWS_STATE.md` §C) — the stage's new **step 0** decides
-  it, and its network-configuration half must land **before the `Staging` vend**.
+- **Stage 3 pre-instrumented (2026-08-15); its five execute-time decisions settled 2026-08-16:**
+  `aws/networking.py`, `aws/egress.py`. Step 0 — **delete every Account Factory VPC** (`docs/AWS_STATE.md`
+  §C), creation off in Account Factory, that half **before the `Staging` vend**; flow logs 30d;
+  `egress_mode=A`; CIDR/`zone_ids` in `scripts/tfhygiene/backend.py`; the S3 allow-list is five families and
+  **a NAT does not bypass it** — load-bearing from Stage 4.
 - **Standing rules that outlive their stages:** never add an `sts:` action to the RCP without reading
   `CT.STS.PV.1`'s exclusion note; 1d step 9 is the **only** sanctioned by-hand use of
   `AWSControlTowerExecution`; **resolve an account by name only with the exact vended name** — every one

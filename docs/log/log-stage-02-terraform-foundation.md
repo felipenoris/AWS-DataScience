@@ -855,6 +855,61 @@ Lesson 25). Seven objects imported, 22 created, and the next `plan` reads `No ch
   filtered on ACTIVE, failing loudly" — every account carries an ` Account` suffix and a
   suspended `Sandbox` is still in the roster.
 
+## Step 5.5 — `identity/org-policies/` written, not yet imported (2026-08-16)
+
+**No AWS write.** The slice that adopts the ten documents and their ten attachments is on disk and
+every offline gate is green; the import and the first apply are the next sitting. Reads only:
+`describe-policy` and `list-policies` across all four types, `list-targets-for-policy`,
+`list-tags-for-resource`, and the OU walk. `prevent_destroy` is on both resource types, so
+retiring a document or detaching one deliberately is from now on a two-commit operation.
+
+- **One tracked document had to change, and a measurement is the reason.**
+  `awsds-org-rcp-perimeter.json` wrote `EnforceOrgIdentitiesOnRegistry`'s single action as
+  `["ecr:*"]`; Organizations holds `"ecr:*"`. The provider compares `content` **structurally**, not
+  semantically, so the two forms are identical to IAM and different to the plan — nine of the ten
+  documents round-tripped clean and this one would have stayed dirty forever. It was also the only
+  one-element action array in the folder: **seven of the eight single-action statements here were
+  already scalars**, so the fix moved the file toward the folder's own convention rather than away
+  from it. After it, all ten decode equal to what is attached. `check-index.py` clean, and
+  `POLICIES.md` needed no edit — its row describes content, not serialisation.
+
+- **`./aws/import-ids.py` was emitting an address the configuration does not compute — again.** It
+  keyed each attachment on the API's target `Name`, which is `Root`; the slice keys on
+  `attachments.json`, where the root is `root`. Six of the ten lines would have imported under a
+  wrong key, and 5.5a(iii)'s point is that this **does not error** — it plans creates beside
+  orphans. Corrected, and then the ten keys the `for_each` computes were **diffed against the ten
+  the manifest emits, before any import was run**: identical. Same correction as the `sso/`
+  assignments and in the same direction — the configuration owns the address, the script follows.
+
+- **What the first apply will change, measured before a line was written, so the plan gets read
+  rather than approved.** All ten policies carry **zero tags**, so `default_tags` adds five to each
+  — the first exercise of 5.1's `organizations:TagResource`. Four descriptions are defective:
+  `awsds-org-scp-tag-enforcement` is an empty string, `awsds-org-tag-policy` and
+  `awsds-org-declarative-ec2` have none at all, and `awsds-org-rcp-perimeter` carries its whole
+  text wrapped in **literal double quotes**, a console paste that kept its quoting. Neither
+  attribute lives in any tracked file, so the slice authors both and the apply repairs the four.
+  **The 5.5 gate that applies here is therefore zero diff on `content` and `type`, not an empty
+  plan** — the written half of `sso/` had the mirror-image exemption.
+
+- **`tflint` again turned its findings into the slice rather than into ignores**, exactly as it did
+  for `sso/`. `aws_partition` was deleted — this slice builds no ARN in HCL, since the ARNs live
+  inside the tracked JSON — and `aws_caller_identity` became the profile precondition. It earns its
+  place here more than there: applied from the wrong account, the failure is an `AccessDenied` on
+  `CreatePolicy`, which reads like a broken delegation and sends somebody to re-read a resource
+  policy that is fine.
+
+- **Step 9.1's check reads string VALUES and skips full-line comments, and the difference bit.** A
+  region literal inside the `description` of `variable "region"` failed the gate; the same sentence
+  in a comment directly above it passes, by the check's own rule that a comment creates nothing.
+  The `sso/` sitting hit the mirror image — 9.2 failing *on* a comment, deliberately. Worth knowing
+  which check reads which before writing prose into a `.tf` file.
+
+- **Gates:** `terraform fmt`, `validate`, `tflint`, `checkov` (0 failed, no suppressions),
+  `make check`, `make check-ou` and the twelve-hook `pre-commit` chain all green; `make check-docs`
+  stays red on the same pre-Stage-2 prose. **The honest limit of what that proves:** `validate`
+  does not evaluate `locals`, so the OU name-to-id lookups, the single-account assertion on the
+  `Data` OU and the six preconditions are all unexercised until the first `plan`.
+
 ---
 
 *Log index: [docs/log/INDEX.md](INDEX.md) · Stage index: [docs/plan/stages/INDEX.md](../plan/stages/INDEX.md)*
