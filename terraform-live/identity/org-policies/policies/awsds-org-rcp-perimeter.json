@@ -42,9 +42,7 @@
       "Sid": "EnforceOrgIdentitiesOnRegistry",
       "Effect": "Deny",
       "Principal": "*",
-      "Action": [
-        "ecr:*"
-      ],
+      "Action": "ecr:*",
       "Resource": "*",
       "Condition": {
         "StringNotEqualsIfExists": {

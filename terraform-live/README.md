@@ -85,9 +85,11 @@ The one older exception is [`identity/org-policies/`](identity/org-policies/READ
 **preventive policy documents** — the JSON attached to the organization root and to the OUs in
 [Stage 1c step 7](../docs/plan/stages/stage-01c-preventive-policies.md), plus `render.py`, which substitutes this
 organization's identifiers into the templates and writes the pasteable copies to untracked `aws/output/`.
-Those documents are pasted into the Management console by hand and **imported into Terraform at Stage 2
-step 5.5** — which is why they live in a file at all: an import compares a document against itself instead
-of against a re-typing.
+Those documents were pasted into the Management console by hand, which is why they live in a file at all:
+an import compares a document against itself instead of against a re-typing. **Since 2026-08-16 that folder
+is a slice as well as a document store** — ten policies and ten attachments, every one of them imported and
+none created, deriving the `for_each` keys from the same `attachments.json` that step 9.3's coverage check
+reads.
 
 ## The three questions that decide where something goes
 

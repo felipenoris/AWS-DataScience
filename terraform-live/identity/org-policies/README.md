@@ -6,13 +6,17 @@ console as `AWS Control Tower Admin`, and **imported into Terraform at Stage 2 s
 reason the documents live in a file at all rather than only in the console: an import compares a document
 against itself instead of against a re-typing.
 
-This folder is documents only. There is no `.tf` here until Stage 2.
+**Since 2026-08-16 this folder is also a Terraform slice.** The documents did not move and nothing about
+how they are written changed — what was added is the code that adopts them. The slice is written and its
+offline gates are green; **the import itself has not been run yet**, so what Organizations holds is still
+exactly what Stage 1c attached.
 
 ## Layout
 
 | Path | What it is |
 |---|---|
 | `policies/` | The real documents. One file per policy, named exactly as the policy is named in Organizations |
+| `*.tf` | **The slice** — see "What the Terraform slice does" below. Ten `aws_organizations_policy` resources and ten `aws_organizations_policy_attachment` ones, all imported, none created |
 | [`attachments.json`](attachments.json) | **Which of these documents is attached where** — the root's six, the four OU pairs, and the three OUs that carry none *with the reason each is empty*. Names, never ids. Written at Stage 2 step 9 and read by **two** consumers on purpose: step 9.3's check and, from step 5, this slice's `for_each`. Attachments cannot be discovered — a `for_each` over the OUs the API returns would attach a document to `Sandboxes` and silently reverse [D37](../../../docs/plan/decisions/D37-nested-ou-inheritance.md) |
 | `canary/` | **Throwaway** documents, attached to `Policy Test` during the step 7.3 battery and detached in the same sitting. Never attached to anything real |
 | `render.py` | Substitutes this organization's identifiers into the templates and writes the pasteable copies to `aws/output/rendered-policies/` |
@@ -36,6 +40,73 @@ Two reasons the ids are not baked in, and either alone would be enough: the orga
 in four documents and a value typed four times is eventually wrong in one of them, in the silent direction
 (Lesson 14); and at Stage 2 the id comes from `data.aws_organizations_organization.this.id`, so a template
 is already the right shape while a baked-in literal is an un-baking nobody remembers is pending.
+
+## What the Terraform slice does
+
+**It adopts. It does not author.** All ten documents and all ten attachments already exist — written by
+hand in Stage 1c step 7 — and every resource here is imported. The slice derives everything it can from the
+two files that were already authored, so nothing is typed twice:
+
+| Where it comes from | What it decides |
+|---|---|
+| `policies/*.json` | the `content` of each document, after the same five substitutions `render.py` performs |
+| [`attachments.json`](attachments.json) | which documents exist at all, and the ten `<document>:<target>` `for_each` keys |
+| the Organizations API | every identifier — org, root, each OU by name, and the `Data` OU's single account |
+
+**Two attributes have no home in a tracked file and are therefore written out in `locals.tf`:** the policy
+`type`, and the `description`. Both are checked against the document set in *both* directions, because a
+missing entry and a stale one fail differently and only the first is loud on its own.
+
+**Running it needs the infrastructure user, on the Identity account, through `InfrastructureAccess`** — the
+only principal the step 5.1 delegation names:
+
+```bash
+aws sso login --sso-session awsds
+```
+
+```bash
+AWS_PROFILE=awsds-infra-identity terraform plan
+```
+
+A session anywhere else fails the profile precondition in `policies.tf` by name, rather than at the
+Organizations API with an `AccessDenied` that reads like a broken delegation.
+
+### The first apply is not a no-op, and that is predicted rather than discovered
+
+Step 5.5's gate — *after the import, `terraform plan` must come back empty* — applies to `content` and to
+`type`. Two other things do change on the first apply, both measured on 2026-08-16 before a line was
+written:
+
+- **Five tags on ten policies.** All ten carry none today, and `default_tags` adds the mandatory five. This
+  is the first exercise of the delegation's `organizations:TagResource` statement.
+- **Four descriptions.** `awsds-org-scp-tag-enforcement` holds an empty string, `awsds-org-tag-policy` and
+  `awsds-org-declarative-ec2` hold none, and `awsds-org-rcp-perimeter` holds its text wrapped in literal
+  double quotes — a console paste that kept its quoting. The slice authors clean ones and the apply repairs
+  all four.
+
+**Anything else in that plan is a finding.** In particular a diff on `content` means the document differs
+from what is attached, which is a control that does not say what you think it says.
+
+### One template had to change so the import could be faithful
+
+`awsds-org-rcp-perimeter.json` wrote `EnforceOrgIdentitiesOnRegistry`'s single action as `["ecr:*"]`;
+Organizations holds `"ecr:*"`. The two are identical to IAM and **different to the provider**, which
+compares `content` structurally rather than semantically — so the array form would have produced a
+permanently dirty plan on a document nobody had changed. It was the only one-element action array in the
+ten documents; every other single-action statement here was already written as a scalar, so the fix moved
+the file toward the folder's own convention rather than away from it.
+
+### `prevent_destroy` is on both resources, and the attachment is the one that matters
+
+Organizations refuses to delete an attached policy, so a `terraform destroy` would detach all ten *first*
+and only then fail — taking the ceiling down on the way to an error. Guarding the attachment stops that at
+the plan. It also turns step 5.5a(iii)'s named failure into a hard stop: an attachment imported under a key
+the configuration does not compute is an orphan, the plan proposes a destroy for it, and *"a wrong key does
+not error"* stops being true.
+
+**The price, so nobody is surprised by it:** retiring a document or detaching one deliberately is now a
+two-commit operation — remove the `lifecycle` block, apply, then remove the entry. That friction is the
+same one the state buckets carry, and it is the point.
 
 ## What is here, and what each document may not become
 

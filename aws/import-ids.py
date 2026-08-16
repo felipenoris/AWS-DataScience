@@ -669,14 +669,23 @@ the command that needed it and every later error then names the wrong account
         rep.text("""# ONE PER (policy, target) PAIR. The import id is <target_id>:<policy_id>.
 # Import the FIRST one, run `terraform plan`, and only then the rest - if the
 # for_each key is wrong the import succeeds and the plan proposes a create.
+#
+# THE KEY'S TARGET HALF IS THE AUTHORED MAP'S VOCABULARY, NOT THE API'S. The slice
+# builds its for_each from attachments.json, where the root is the literal key
+# `root` and an OU is its NAME - so the composed key is `<document>:root` or
+# `<document>:<OU name>`. The Organizations API calls the root `Root`, and that is
+# the one place the two vocabularies differ. This script follows the slice (the
+# configuration owns the address, section 5's division of labour), which is the
+# same correction the sso/ assignments needed on 2026-08-16.
 
 """)
 
         if attach:
             for pid, pname, tid, tname, ttype in attach:
+                target_key = "root" if ttype == "ROOT" else tname
                 imp(
                     f"{pname} -> {tname} ({ttype})",
-                    f'aws_organizations_policy_attachment.this["{pname}:{tname}"]',
+                    f'aws_organizations_policy_attachment.this["{pname}:{target_key}"]',
                     f"{tid}:{pid}",
                 )
         else:
