@@ -294,8 +294,9 @@ documents are in reach rather than only the four attached to an OU.
 | `Sid` | Effect |
 |---|---|
 | `DelegateOrganizationNavigationToIdentity` | Sixteen read actions on `Resource: "*"`, no condition — walking the organization and refreshing what this folder manages. **Two of the sixteen are load-bearing rather than navigational.** `DescribePolicy` is what the provider calls on every refresh of an `aws_organizations_policy`: without it an import succeeds and the *next* `plan` fails. `DescribeResourcePolicy` is what [`aws/org-delegation.py`](../../../aws/org-delegation.py) reads to report on this very document — deny it and `DEL-1` reports *denied*, every check below it goes vacuous, and the instrument blinds itself at the moment it starts being useful. The statement is otherwise belt-and-braces: reads already answered from Identity **before** this policy existed, because a delegated administrator for *any* service may read the organization. It is written out anyway so this folder's scope does not silently depend on a different delegation staying in place |
-| `DelegatePolicyLifecycleToIdentity` | The five writes — `CreatePolicy`, `UpdatePolicy`, `DeletePolicy`, `AttachPolicy`, `DetachPolicy` — over seven ARNs in **two classes, both required**: the targets (`root/o-<org>/r-<root>`, the wildcard `ou/o-<org>/*`, the account wildcard) and the four `policy/o-<org>/<type>/*` ARNs. Create/Update/Delete authorize against the **policy** ARN and Attach/Detach against target **and** policy, so a target-only list denies **every** write on **every** document — which at the keyboard reads exactly like *"the delegation cannot reach a root attachment"*, the one thing step 5.0 exists to measure. The wildcard OU form is not tidiness: AWS documents that naming a **single** OU *"excludes child OUs and accounts under child OUs"*, and this organization is two levels deep. **The condition operator is `StringLikeIfExists` and that is not decorative** — with a bare `StringEquals`, any call that does not carry `organizations:PolicyType` in its request context fails the condition and is denied, producing the same false *"all refused"*. Confinement to the four types is still carried by the ARN path |
-| `DelegatePolicyTaggingToIdentity` | `TagResource` and `UntagResource`, **policy ARNs only, no condition** — the two actions do not accept `organizations:PolicyType`, which is why AWS's own tagging example puts them in a separate statement. Nothing needs this today: all ten documents carry **zero tags** (measured). It is here because the provider's `default_tags` will try to tag an `aws_organizations_policy` at the first apply, and that denial would land on the *import*, long after step 5.0 had declared the delegation good. Deliberately **not** extended to account, OU or root ARNs — re-tagging the organization's structure is not something this folder needs, and an unnecessary grant is a hole rather than a safety margin |
+| `DelegatePolicyLifecycleToIdentity` | The five writes — `CreatePolicy`, `UpdatePolicy`, `DeletePolicy`, `AttachPolicy`, `DetachPolicy` — over seven ARNs in **two classes, both required**: the targets (`root/o-<org>/r-<root>`, the wildcard `ou/o-<org>/*`, the account wildcard) and the four `policy/o-<org>/<type>/*` ARNs. Create/Update/Delete authorize against the **policy** ARN and Attach/Detach against target **and** policy, so a target-only list denies **every** write on **every** document — which at the keyboard reads exactly like *"the delegation cannot reach a root attachment"*, the one thing step 5.0 exists to measure. The wildcard OU form is not tidiness: AWS documents that naming a **single** OU *"excludes child OUs and accounts under child OUs"*, and this organization is two levels deep. **The condition operator is `StringLikeIfExists` and that is not decorative** — with a bare `StringEquals`, any call that does not carry `organizations:PolicyType` in its request context fails the condition and is denied, producing the same false *"all refused"*. Confinement to the four types is still carried by the ARN path. **Since 2026-08-16 it carries a second condition, and that one is about the principal rather than the policy** — see the `aws:PrincipalArn` row below |
+| `DelegatePolicyTaggingToIdentity` | `TagResource` and `UntagResource`, **policy ARNs only, and no `organizationsPolicyType` condition** — the two actions do not accept that key, which is why AWS's own tagging example puts them in a separate statement. Nothing needs this today: all ten documents carry **zero tags** (measured). It is here because the provider's `default_tags` will try to tag an `aws_organizations_policy` at the first apply, and that denial would land on the *import*, long after step 5.0 had declared the delegation good. Deliberately **not** extended to account, OU or root ARNs — re-tagging the organization's structure is not something this folder needs, and an unnecessary grant is a hole rather than a safety margin. **It does carry the `aws:PrincipalArn` condition** of the row below |
+| **`aws:PrincipalArn` — on both write statements, and on neither read** *(Stage 2 step 5.1a, applied 2026-08-16)* | `ArnLike` on `arn:…:iam::<any account>:role/aws-reserved/sso.amazonaws.com/*AWSReservedSSO_InfrastructureAccess_*`. **The reason is that a resource policy's `Principal` *is* an account and there is no narrower one to write** — 5.1 names `arn:aws:iam::<Identity>:root`, which reaches every principal in Identity that also holds `organizations:*` on the identity side, and Control Tower had put a second one there that nobody chose (`AWSOrganizationsFullAccess` → `AWSControlTowerAdmins`, assigned into every vended account). The wildcard account and the trailing `*` are **1c decision 7's, for decision 7's reason**: the SSO role suffix is minted per account, so an exact ARN breaks the first time Identity Center re-provisions the role. It is **not** on `DelegateOrganizationNavigationToIdentity`, which grants nothing the account does not already hold as a delegated administrator of another service. **`DEL-10` in [`aws/org-delegation.py`](../../../aws/org-delegation.py) is what keeps it a control rather than an intention** (Lesson 5): it reads both write statements and fails if either lacks the condition, and it reports the operator, so a `StringEquals`-shaped regression is visible rather than silent |
 
 **Excluded on purpose, and the third one is not a choice.** `EnablePolicyType` / `DisablePolicyType` — AWS
 supports delegating them; they act on the **root** and disabling a type detaches every policy of that type
@@ -315,9 +316,34 @@ principal this delegation newly reaches — `AWSOrganizationsFullAccess` → `AW
 Control Tower assigns into every vended account, this one included — **is already a member**, so its use of
 the grant raises nothing. **What is left is the CloudTrail record alone**: detection after the fact, with
 no alarm above it. The reach was measured from both sides and the reasoning is in `docs/ORGANIZATION.md` under
-the Identity account; narrowing it with a `Condition` on `aws:PrincipalArn` is **Stage 2 step 5.1a**, and
-the untested part there is whether this document accepts such a condition at all — it already rejects
-`NotAction`/`NotResource`.
+the Identity account.
+
+**Narrowed 2026-08-16 — Stage 2 step 5.1a is applied, and the open question in it is answered: this
+document *does* accept a `Condition` on `aws:PrincipalArn`**, unlike `NotAction`/`NotResource`, which it
+rejects. The two write statements now carry the `ArnLike` of the row above, so the account-wide `Principal`
+reaches **one role** rather than every administrator in Identity.
+
+**What was measured, and it is two readings because either alone proves nothing.** The same duplicate
+`AttachPolicy` against an already-attached pair — inert by construction, and verified as attached
+immediately before, never from memory:
+
+| From | Before 5.1a | After 5.1a |
+|---|---|---|
+| `awsds-ctadmin-orgfull-identity` — `AWS Control Tower Admin`, `AWSOrganizationsFullAccess` | `DuplicatePolicyAttachmentException` | **`AccessDeniedException`** |
+| `awsds-infra-identity` — the infrastructure user, `InfrastructureAccess` | `DuplicatePolicyAttachmentException` | **`DuplicatePolicyAttachmentException`** |
+
+The first row alone is indistinguishable from having broken the delegation outright, which is the failure
+this narrowing is most likely to cause and the one that would read as success. The second is what makes it
+a narrowing rather than a revocation. Both readings are evidence only because IAM authorization runs
+*before* the service's duplicate check — proved separately by the negative control of step 5.0, where the
+same call from `awsds-policy-canary` returns `AccessDeniedException`.
+
+**What this does not close, and it is the durable half rather than a leftover.** The account-wide
+`Principal` still reaches whatever else holds `organizations:*` in Identity — the condition is what narrows
+it, and a condition is a second place a principal is enumerated (Lesson 14). **Anything that must ever
+write an organization policy — a Stage 8 pipeline role is the candidate — has to be added to the `ArnLike`
+list here**, and forgetting surfaces as an `AccessDenied` on an apply, far from this file. The repair for a
+wrong condition is the Management console, which is D16's design rather than a surprise.
 
 **2. How it was created and associated with the organization.** Signed in as the **`AWS Control Tower Admin`**
 user, permission set **`AWSAdministratorAccess`**, in the **Management** account — the only Management

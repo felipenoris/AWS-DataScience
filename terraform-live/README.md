@@ -16,8 +16,8 @@ is a broken caller.
 **Five `bootstrap/` slices, and they are one slice copied five times — Stage 2 steps 1, 2 and 3, 2026-08-15.**
 `sandbox/`, `development/`, `data-governance/`, `production/` and `identity/` each carry the same
 `main.tf`, `variables.tf`, `outputs.tf`, `providers.tf`, `versions.tf` and `.terraform.lock.hcl` — **the state
-bucket and the KMS key that encrypts it, and nothing else**. Only `sandbox/` has applied (step 2); the other
-four are written and awaiting theirs (step 3.6). **No `staging/`**: the account is unvended (step 3.2), and a
+bucket and the KMS key that encrypts it, and nothing else**. **All five have applied and hold their own
+state** — `production/` with a second key besides. **No `staging/`**: the account is unvended (step 3.2), and a
 folder for an account that does not exist is a folder that fails at `init` with a message about S3.
 
 **Two files are allowed to differ, and both are files of their own so the rule can be blunt:** `backend.tf`,
@@ -71,6 +71,15 @@ the AWS provider — `terraform validate` in the pre-commit hook runs `init` per
 ```bash
 export TF_PLUGIN_CACHE_DIR="$HOME/.terraform.d/plugin-cache"
 ```
+
+**And [`identity/sso/`](identity/sso/README.md) — the entitlement plane, written 2026-08-16 (Stage 2 step 5).**
+The **six persona permission sets**, their inline policies, and every **group→account assignment**; the
+seventh set, `InfrastructureAccess`, is **imported**, because it is the credential the apply runs as. Users
+and groups are **not** here and never will be — that is the identity seam. Two rules shape every file in it:
+a group is resolved by **display name**, and the assignments are **enumerated** while the policy floor is
+discovered (D34). It reads one data source it does not own, `aws_organizations_organization`, for the single
+purpose of turning an authored account **name** into the id an assignment requires — the same shape
+`attachments.json` uses from the other side.
 
 The one older exception is [`identity/org-policies/`](identity/org-policies/README.md), which holds the organization's
 **preventive policy documents** — the JSON attached to the organization root and to the OUs in

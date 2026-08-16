@@ -76,6 +76,33 @@ POLICY_TYPES = [
     "DECLARATIVE_POLICY_EC2",
 ]
 
+# The account NAME as Organizations reports it -> the terraform-live/ FOLDER, which is the
+# for_each key terraform-live/identity/sso/ computes for an assignment (Stage 2 step 5.3).
+#
+# THIS SCRIPT FOLLOWS AND THE SLICE OWNS. The same five rows are locals.accounts there, and
+# that file is the authority: it is what the apply reads. They are repeated here rather than
+# parsed out of HCL because the alternative is a regex over a .tf file, which fails silently
+# on a reformat - and a wrong key is precisely the failure step 5.5a(iii) is about: it does not
+# error, it plans a create beside an orphan.
+#
+# AN ACCOUNT MISSING FROM THIS TABLE IS NOT AN ERROR. Management, Audit, Log Archive and Policy
+# Canary hold no assignment this repository manages, and `Staging` arrives at the vend - the
+# emitted key says <UNMAPPED:...> so the line is unrunnable rather than plausible.
+ACCOUNT_FOLDER_BY_NAME = {
+    "Sandbox Account 1": "sandbox",
+    "Development Account": "development",
+    "Data Governance Account": "data-governance",
+    "Production Account": "production",
+    "Identity Account": "identity",
+}
+
+
+def account_folder(account_id: str, account_name: str | None) -> str:
+    """The sso/ slice's for_each key for an account, or a marker that cannot be pasted."""
+    if account_name and account_name in ACCOUNT_FOLDER_BY_NAME:
+        return ACCOUNT_FOLDER_BY_NAME[account_name]
+    return f"<UNMAPPED:{account_name or account_id}>"
+
 
 def main(argv: list) -> int:
     profile = argv[0] if argv else os.environ.get("AWSDS_PROFILE", "awsds-infra-identity")
@@ -172,6 +199,24 @@ def main(argv: list) -> int:
         ids = [a for a in res.text.split() if a]
         account_id_data = ids[0] if ids else ""
         n_data_accts = len(ids)
+
+    # The roster, read for ONE purpose: turning an account id into the terraform-live/ FOLDER
+    # the sso/ slice keys its assignments on (section 5d). Names are the only handle the API
+    # offers, and they are not the names anybody would guess - Control Tower vended every
+    # account with an ` Account` suffix, and Stage 1d step 9 already paid for that once.
+    acct_names = {}
+    res = cli.run(
+        "organizations",
+        "list-accounts",
+        "--query",
+        "Accounts[?Status=='ACTIVE'].[Id,Name]",
+        "--output",
+        "text",
+    )
+    for line in res.text.splitlines():
+        f = line.split("\t")
+        if len(f) >= 2 and f[0]:
+            acct_names[f[0]] = f[1]
 
     # ----------------------------------------------------------------- the organization policies
     note("listing the organization policies, all four types...")
@@ -654,7 +699,11 @@ the command that needed it and every later error then names the wrong account
                 base = marn.rsplit("/", 1)[-1]
                 imp(
                     f"{psname} - managed policy {base}",
-                    f'aws_ssoadmin_managed_policy_attachment.infrastructure["{base}"]',
+                    # A SINGLETON, NOT A for_each - the configuration declares exactly one
+                    # (terraform-live/identity/sso/infrastructure-access.tf). This set carries
+                    # one managed policy and it is AdministratorAccess, the one named exception
+                    # in the IAM rules; a for_each here would suggest the list is open.
+                    "aws_ssoadmin_managed_policy_attachment.infrastructure_admin",
                     f"{marn},{psarn},{instance_arn}",
                 )
 
@@ -676,14 +725,23 @@ the command that needed it and every later error then names the wrong account
 #   <principal_id>,<principal_type>,<target_id>,<target_type>,<permission_set_arn>,<instance_arn>
 # The principal id is the GUID; the CONFIGURATION resolves the same group by display
 # name through data.aws_identitystore_group (section 3).
+#
+# THE ADDRESS KEY IS THE ACCOUNT FOLDER of terraform-live/, because that is what the
+# configuration computes - locals.accounts in terraform-live/identity/sso/, keyed on
+# the same vocabulary as scripts/tfhygiene/backend.py. It is resolved here through the
+# account NAME, which is the only handle the API offers, and the five rows of that map
+# are repeated in ACCOUNT_FOLDER_BY_NAME below: the slice owns them, this script
+# follows. A key that says <UNMAPPED:...> is an account the slice does not assign -
+# not a bug in either file, and not a line to run.
 
 """)
 
         if assign and instance_arn:
             for psarn, psname, acct, ptype2, prid, prname in assign:
+                folder = account_folder(acct, acct_names.get(acct))
                 imp(
                     f"{psname} for {prname} on account {acct}",
-                    f'aws_ssoadmin_account_assignment.infrastructure["{prname}:{acct}"]',
+                    f'aws_ssoadmin_account_assignment.infrastructure["{folder}"]',
                     f"{prid},{ptype2},{acct},AWS_ACCOUNT,{psarn},{instance_arn}",
                 )
         else:

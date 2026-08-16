@@ -177,9 +177,13 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   delegation itself is hand-applied and **stays out of Terraform** (`POLICIES.md`/`INV-15`). AWS rejects
   `NotAction`/`NotResource` in a delegation since 2026-06-30; the operator must be `StringLikeIfExists`.
   Only `account/…/*` is unexercised — over-grant, not gap.
-- **Open question 11 closed (2026-08-15):** 5.1's principal is the *account*, so **CT Admin reaches policy
-  writes through `Identity`** — nothing it did not hold, so the assignment **stays**; the fix is **step
-  5.1a**, unapplied. **1b 8.3's alarm is blind to this path**; CloudTrail is the only residual.
+- **Open question 11 closed (2026-08-15); its fix, step 5.1a, APPLIED 2026-08-16.** 5.1's principal is the
+  *account*, so CT Admin reached policy writes through `Identity`; the assignment **stays** and the
+  narrowing is an `ArnLike` on `aws:PrincipalArn` in both write statements — **the document accepts a
+  Condition** (it still rejects `NotAction`/`NotResource`). A/B: `AccessDeniedException` from
+  `awsds-ctadmin-orgfull-identity`, still `DuplicatePolicyAttachmentException` from `awsds-infra-identity`;
+  `DEL-10` green. **The condition is now a second place a principal is enumerated** — a Stage 8 pipeline
+  role must be added there. **1b 8.3's alarm is blind to this path**; CloudTrail is the only residual.
 - **Stage 2 steps 1, 6, 9 and 2 CLOSED (2026-08-15).** Five `bootstrap/` slices — no `staging/` — one
   byte-identical `versions.tf` (`~> 1.15`, `aws ~> 6.60`), one lock file; **the §6 tree is
   deliberately not on disk** — a slice folder arrives with its first `.tf`.
@@ -192,10 +196,20 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   files per slice** — `backend.hcl` *and* `terraform.auto.tfvars` (`gen-backend-hcl.py`/`gen-tfvars.py`, one
   table in `tfhygiene/backend.py`): a `.tf` may carry neither the region nor *the* sandbox. Three checkov
   skips (access logging, replication, event notifications) — **and a skip above the block is silently
-  ignored**. **Step 3 authored, four applies pending** (`dev`, `data`, `prod`, `identity`; `prod` carries
-  D36's second key in `pki-key.tf`): the five slices are **one slice copied**, so the backend moved into its
-  own `backend.tf` and a **fifth check** — `check-bootstrap-parity.py`, in `make check` and the gate —
-  makes byte-identity the rule. **Verification (i) is still unanswered** (per-slice `kms_key_id` override).
+  ignored**. **Step 3 CLOSED: five state buckets exist**, `prod` with D36's second key (`pki-key.tf`). The
+  five slices are **one slice copied**, so the backend moved into its own `backend.tf` and a **fifth check**
+  — `check-bootstrap-parity.py`, in `make check` and the gate — makes byte-identity the rule.
+  **Verification (i): the override is accepted (nothing in the bucket policy forces a key); whether a
+  Bucket Key applies to it is open and needs an object, not a reading.**
+- **Step 5: `identity/sso/` WRITTEN 2026-08-16, not applied.** Six persona sets + one shared deny fragment
+  (`source_policy_documents`), nine enumerated assignments, `InfrastructureAccess` staged for import
+  (PT4H, `AdministratorAccess`, no inline policy, `CostCenter=stage-01b` overriding `default_tags`).
+  **Decisions 4/5/6 settled:** inline-only boundary (Stage 3 adds the attachment; the two denies land now);
+  `replace(file(…))` with `render.py` untouched; `terraform import` on the CLI. **Allows scoped to objects
+  that do not exist yet are deliberately absent** — each owed to a named stage, in the slice README.
+  **Account names are exact and there is a SUSPENDED `Sandbox` in the roster**; six checkov `CKV_AWS_356`
+  skips (one document, N accounts — no ARN can name the account) and one `tflint-ignore` on `var.env`.
+  Next: `sso/` import + apply, then `org-policies/`.
 - **Stage 3 pre-instrumented (2026-08-15):** `aws/networking.py`, `aws/egress.py`. First run found **an
   Account Factory VPC in every vended account** (`docs/AWS_STATE.md` §C) — the stage's new **step 0** decides
   it, and its network-configuration half must land **before the `Staging` vend**.

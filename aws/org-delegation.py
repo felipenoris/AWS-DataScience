@@ -223,6 +223,40 @@ def decompose(doc: dict, org_id: str, root_id: str, identity_acct: str) -> dict:
     out["policy_type_operators_strict"] = [
         op for op in out["policy_type_operators"] if not op.lower().endswith("ifexists")
     ]
+
+    # DEL-10 (added 2026-08-15, Stage 2 step 5.1a). The delegation's Principal is the
+    # ACCOUNT - a resource policy has no narrower principal to write - so every principal
+    # in Identity that also holds organizations:* identity-side is reached, and Control
+    # Tower put one there nobody chose (AWSOrganizationsFullAccess -> AWSControlTowerAdmins,
+    # open question 11). 5.1a narrows the two WRITE statements with a Condition on
+    # aws:PrincipalArn matching the InfrastructureAccess role pattern; the navigation
+    # statement stays uncondiitoned by design (it grants nothing the account does not
+    # already hold as a delegated administrator of another service). Without this check
+    # the condition is an intention rather than a control (Lesson 5).
+    sso_pattern = "AWSReservedSSO_InfrastructureAccess_"
+    tag_actions = {"organizations:TagResource", "organizations:UntagResource"}
+
+    def principal_arn_operator(s: dict) -> str | None:
+        for op, kv in (s.get("Condition") or {}).items():
+            for k, vals in kv.items():
+                if k.lower() == "aws:principalarn":
+                    vals = vals if isinstance(vals, list) else [vals]
+                    if any(sso_pattern in v for v in vals):
+                        return op
+        return None
+
+    missing, operators = [], []
+    for s in stmts:
+        acts = set(as_list(s.get("Action")))
+        if not (acts & set(write) or acts & tag_actions):
+            continue
+        op = principal_arn_operator(s)
+        if op is None:
+            missing.append(s.get("Sid") or "<no Sid>")
+        else:
+            operators.append(f"{s.get('Sid') or '<no Sid>'}: {op}")
+    out["write_stmts_missing_principal_arn"] = missing
+    out["write_stmts_principal_arn_operators"] = operators
     return out
 
 
@@ -570,6 +604,29 @@ def main(argv: list) -> int:
                 "fails everywhere and reads exactly like 'the delegation cannot "
                 "touch a root attachment'. Fix the delegation before reading "
                 "DEL-6's answer into scope. (Added 2026-08-15; Stage 2 step 5.1.)",
+            )
+
+        # DEL-10 - the 5.1a narrowing. EXPECTED TO FAIL between 5.1's attach and 5.1a's
+        # console paste: the failing answer is the true state, not a broken script.
+        if not dec["write_stmts_missing_principal_arn"]:
+            checks.ok(
+                "DEL-10",
+                "the write statements are narrowed to the InfrastructureAccess role",
+                "aws:PrincipalArn condition present on every write statement "
+                f"({'; '.join(dec['write_stmts_principal_arn_operators'])}). The "
+                "account-wide principal no longer reaches policy writes through "
+                "principals nobody chose (open question 11).",
+            )
+        else:
+            checks.fail(
+                "DEL-10",
+                "the write statements are narrowed to the InfrastructureAccess role",
+                f"no aws:PrincipalArn condition on: {', '.join(dec['write_stmts_missing_principal_arn'])}. "
+                "Every principal in Identity holding organizations:* identity-side can "
+                "write organization policies - measured 2026-08-15, the CT admin "
+                "reaches them through AWSOrganizationsFullAccess. Expected until "
+                "step 5.1a's console paste lands; a fail AFTER it is a regression. "
+                "(Added 2026-08-15; Stage 2 step 5.1a.)",
             )
 
     # --------------------------------------------------------------------------- the report

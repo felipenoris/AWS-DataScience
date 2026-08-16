@@ -629,6 +629,177 @@ Management action, no borrowed role: `AWS_PROFILE` on every command (Lesson 25).
 - **`./aws/tf-backends.py awsds-infra-sandbox-1` after the apply: `BK-0` to `BK-5` all pass, 0
   FAILED.** From here, "no state bucket" in this account is a regression rather than a note.
 
+## Step 3 — the four remaining bootstrap slices — 2026-08-15
+
+Infrastructure user, `InfrastructureAccess`, one account at a time: `<Development Account>`,
+`<Data Governance Account>`, `<Production Account>`, `<Identity Account>`. `AWS_PROFILE` on every
+command (Lesson 25).
+
+- **Preflight, before writing anything.** `./aws/tf-backends.py` over the four: **no buckets at
+  all** in any of them and no `awsds-*` alias. The names were free, and the reading is stronger
+  than "no state bucket" — there was nothing in those accounts to confuse it with.
+
+- **Four two-phase applies, the same dance as step 2**, one per account. `production/` plans
+  **seven** resources rather than six: the second key of 3.4.
+
+- **The five slices are one slice copied, and the copy got an instrument.** Step 2.3 rules out a
+  module (consumed by git tag, which cannot exist before `terraform-modules/` does), which leaves
+  Lesson 14 in its purest form — a bucket setting changed in four places out of five. So the two
+  legitimate differences were pushed into files of their own and everything else is compared byte
+  for byte:
+
+  - **`backend.tf`** now holds the `terraform { backend "s3" {} }` block alone, so a slice that has
+    not migrated differs from a migrated one in exactly one file, and phase 2 is *replace a file*
+    rather than surgery inside `providers.tf`. It is compared with the comment markers stripped.
+  - **`production/bootstrap/pki-key.tf`** is the one extra file in the tree, allow-listed by name,
+    with a `precondition` on `var.env == "prod"` so a copy into another account fails the plan.
+  - **`scripts/check-bootstrap-parity.py`**, in `make check` and in the commit gate — the fifth
+    check of a stage that had four. **Demonstrated failing on all four of its paths before being
+    believed**: a drifted `main.tf`, an unlisted extra file, a `backend.tf` divergence that survives
+    the uncommenting, and an allow-listed file removed.
+
+- **Verified after the fact, beyond what the snapshot checks:** every second `plan` reads
+  `No changes`; each state object sits at `<account>/bootstrap/terraform.tfstate` under **its own
+  account's key** with `BucketKeyEnabled: true`, and Production's is 21985 bytes against ~18100
+  elsewhere — the two extra resources, visible without opening the file; rotation is enabled at 365
+  days on all five keys, the PKI key included; no local `terraform.tfstate` survives anywhere; and
+  the four `init` runs left the committed lock files untouched, which the parity check is what
+  would have caught.
+
+- **The `Environment` tag came out right in all three accounts where it is spelled differently from
+  the folder** — `development`, `data`, `org`. That is the vocabulary the generated
+  `terraform.auto.tfvars` exists to keep straight (2.6), and this is the first run where getting it
+  wrong was possible in four places at once.
+
+- **`./aws/tf-backends.py` over all five: `BK-0`–`BK-5` pass everywhere, `BK-7` pass on Production,
+  0 FAILED.** Section 5's expected shape is now met — five state buckets, a sixth when `Staging` is
+  vended.
+
+- **Verification (i), first half, answered by reading the applied bucket: the override is accepted,
+  and `production/pki/` keeps its own key inside the shared Production bucket.** The bucket policy
+  is a single statement — `DenyInsecureTransport` on `aws:SecureTransport = false` — with no
+  `s3:x-amz-server-side-encryption-aws-kms-key-id` condition anywhere, and SSE-KMS default
+  encryption is a default that a `PutObject` naming another key overrides. The own-bucket fallback
+  is not needed.
+
+- **Second half left open, and it is open for a reason worth recording: it cannot be answered by
+  reading.** Whether an S3 Bucket Key applies to a per-slice `kms_key_id` override is reported
+  **per object**, so it needs an object encrypted under the PKI key — which arrives at Stage 7's
+  first `production/pki/` init, or earlier from three calls. **D36's alarm is unaffected either
+  way**: it is scoped to the key, which the event names in `resources` (2.7). What is open is how
+  the record reads, not whether the control fires.
+
+## Step 5.1a — narrowing the delegation to one role (2026-08-16)
+
+**Applied from the Management account**, signed in as **`AWS Control Tower Admin`** through
+**`AWSAdministratorAccess`** — the second and last Management action of this stage. Organizations
+→ Settings → Delegated administrator for AWS Organizations → the JSON editor.
+
+- **The amended document was generated, not typed.** The live document was read back with
+  `describe-resource-policy` into untracked `aws/output/delegation-live.json` — which is also the
+  rollback copy — the two `ArnLike` blocks were inserted programmatically into
+  `DelegatePolicyLifecycleToIdentity` and `DelegatePolicyTaggingToIdentity`, and a diff asserted
+  that **nothing else changed**. That is step 5.0's "its own content" discipline applied to an
+  edit instead of to a rewrite: retyping the document would have measured the paste *and* changed
+  the policy, and the two would no longer be separable in the result.
+
+- **The condition:** `ArnLike` on `aws:PrincipalArn`, matching
+  `.../aws-reserved/sso.amazonaws.com/*AWSReservedSSO_InfrastructureAccess_*` with a wildcard
+  account. The wildcard is 1c decision 7's, for decision 7's reason — the SSO role suffix is minted
+  per account, so an exact ARN breaks the first time Identity Center re-provisions the role. It is
+  **not** on the navigation statement, which grants nothing the account does not already hold as a
+  delegated administrator of another service.
+
+- **The open question in 5.1a is answered: the document accepts a `Condition`.** It rejects
+  `NotAction`/`NotResource` outright, so a refusal was a live possibility — and a safe one, since
+  `put-resource-policy` would have errored and left the existing document standing. It did not.
+  So the two rejections are not one rule with two instances.
+
+- **The instrument arrived before the change.** `DEL-10` was written and demonstrated on both
+  document forms *before* the paste — red against the live document, with wording saying the red
+  state was the true one until 5.1a landed, and green against the amended one. After the paste it
+  reports `pass`, naming the operator on each statement. Without it the condition would have been
+  an intention rather than a control (Lesson 5).
+
+- **Verification (ix), both halves, because either alone proves nothing.** The same duplicate
+  `AttachPolicy` — the tag policy `p-95lyaycq7l` on the root `r-zhj6`, verified attached in
+  section 5 of the freshly generated snapshot immediately before, never from memory:
+
+  | From | Before | After |
+  |---|---|---|
+  | `awsds-ctadmin-orgfull-identity` | `DuplicatePolicyAttachmentException` | **`AccessDeniedException`** |
+  | `awsds-infra-identity` | `DuplicatePolicyAttachmentException` | **`DuplicatePolicyAttachmentException`** |
+
+  The first row alone is indistinguishable from having broken the delegation outright — the
+  failure this step was most likely to cause, and the one that would have read as success. Both
+  readings are evidence only because IAM authorization runs *before* the service's duplicate
+  check, which step 5.0 proved separately with `awsds-policy-canary` returning `AccessDeniedException`.
+
+- **What this does not close, recorded as a cost rather than as a leftover.** The `Principal` is
+  still the account; the condition is what narrows it, and a condition is a second place a
+  principal is enumerated (Lesson 14). Anything that must ever write an organization policy — a
+  Stage 8 pipeline role is the candidate — has to be added there, and forgetting surfaces as an
+  `AccessDenied` on an apply, far from the file that caused it.
+
+## Step 5 — decisions 4, 5 and 6, and `terraform-live/identity/sso/` written (2026-08-16)
+
+**Decision 4 — the permissions boundary: inline-only here, the boundary object deferred to Stage 3.**
+A customer-managed boundary must exist as an `aws_iam_policy` of the same name and path in *every*
+account a set is provisioned into, and no governed account has a `foundation/` slice yet — the
+reference would fail *provisioning*, per account, in an account nobody is watching. An AWS-managed
+policy is available and buys nothing: none expresses the two denies this design needs.
+**What is deferred is the container, not the content.** The two denies — `iam:CreateRole` and
+`iam:UpdateAssumeRolePolicy` — are in the shared deny fragment today, because the carve-outs they
+defend are attached today and a carve-out cannot defend itself.
+
+**Decision 5 — `replace(file(…))` wrapped in `jsonencode(jsondecode(…))`; `render.py` untouched.**
+The conversion to `${…}` is tidier and is the wrong one here: `render.py` produced the bytes that
+are attached right now, and editing the generator in the same commit that first compares against
+what it generated makes the reference and the comparison move together. Re-openable, with a named
+trigger: once the documents are imported, a normalising diff is a `plan`, not a leap.
+
+**Decision 6 — `terraform import` on the command line, manifest in untracked `aws/output/`.**
+Decided on a measured fact rather than on taste: an `aws_ssoadmin_account_assignment` import id is
+`<principal_id>,GROUP,<account_id>,AWS_ACCOUNT,<ps_arn>,<instance_arn>`, so an `import {}` block
+would put in git both an account id and the group GUID — the two values this design keeps out of
+it, for two different reasons.
+
+**`terraform-live/identity/sso/` — written, not yet applied.** Six persona permission sets with
+their inline policies, one shared deny fragment composed into all six through
+`source_policy_documents`, nine enumerated assignments, and `InfrastructureAccess` staged for
+import. Read back from the live set so the import can plan empty: `PT4H`, one managed policy
+(`AdministratorAccess`), no inline policy, no boundary, and `CostCenter=stage-01b` — set
+explicitly, because `default_tags` would otherwise rewrite a tag on the administrator set as the
+first act after the import.
+
+- **The line the slice draws, because these sets are written five stages before the resources they
+  govern.** Every deny is complete, and so is every allow whose resource is the service or the
+  account — catalog metadata, job and pipeline status, log reads, registry discovery. **No allow
+  is scoped to an object that does not exist yet**, and each is named against the stage that owes
+  it. Writing them from the naming convention would be guessing at an interface — which this stage
+  already refuses to do for a module — and an `awsds-*` wildcard in an S3 ARN means any bucket of
+  that shape on earth. The same wildcard is used in the state-bucket **deny**, where the direction
+  makes it safe.
+
+- **Three things the writing found that the plan had not.** The account names are not the names
+  anybody would guess — Control Tower vended every one with an ` Account` suffix — and there is a
+  **suspended account called plain `Sandbox`** in the roster, so the map filters on `ACTIVE` and
+  writes each name out in full. The for_each key is the **`terraform-live/` account folder**, and
+  `./aws/import-ids.py` was corrected to emit that key rather than one of its own: a wrong key does
+  not error, it plans a create beside an orphan.
+
+- **Three gates answered rather than obeyed.** `check-iam-wildcards.py` (9.2) failed on a *comment*
+  of mine naming the wildcard-account shape — the check does not skip comments, deliberately, so
+  the paragraph was rewritten instead of the check relaxed. `checkov` `CKV_AWS_356` fires on
+  `Resource: "*"` in six documents: suppressed with an inline reason, because one document
+  provisioned into N accounts cannot name the account in an ARN without the wildcard form 9.2
+  refuses — taking the advice literally would produce a worse policy. The narrowing that *is*
+  available is a condition on `aws:ResourceAccount`, and it is deferred to Stage 6 where a real
+  sign-in can measure it: several of these services do not populate the key, so it would need the
+  `IfExists` form, and a condition that silently denies everything is 5.1's failure one layer down.
+  `tflint` found two unused declarations — one became the profile precondition the slice was
+  missing, the other an annotated ignore.
+
 ---
 
 *Log index: [docs/log/INDEX.md](INDEX.md) · Stage index: [docs/plan/stages/INDEX.md](../plan/stages/INDEX.md)*

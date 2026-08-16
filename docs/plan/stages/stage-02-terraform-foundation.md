@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Status** | **IN PROGRESS. Steps 5.0, 5.1, 1, 6, 9 and 2 closed 2026-08-15** — the delegation applied and *exercised* (INT-20 answered: `identity/org-policies/` is scoped to all ten documents), the five `bootstrap/` slices created with the version pin and a committed multi-platform lock, the `pre-commit`/`tflint`/`checkov` chain passing end to end, the four checks written, wired into **`make check`** and into the commit gate, each demonstrated failing on purpose — **and the project's first `terraform apply`**: `sandbox/bootstrap/` applied local, migrated into its own bucket, second plan empty, locking proven by two concurrent plans. **Step 3 is written and waiting on its four applies** — the same slice copied into the four remaining accounts, `production/` carrying the second key of 3.4, and the copy's own failure mode answered by a fifth check (3.5). **Roteiro revised 2026-08-15 against the closed landing zone**, see the table below |
+| **Status** | **IN PROGRESS. Steps 5.0, 5.1, 1, 6, 9, 2 and 3 closed 2026-08-15** — the delegation applied and *exercised* (INT-20 answered: `identity/org-policies/` is scoped to all ten documents), the five `bootstrap/` slices created with the version pin and a committed multi-platform lock, the `pre-commit`/`tflint`/`checkov` chain passing end to end, the four checks written, wired into **`make check`** and into the commit gate, each demonstrated failing on purpose — **and the project's first `terraform apply`**: `sandbox/bootstrap/` applied local, migrated into its own bucket, second plan empty, locking proven by two concurrent plans. **Step 3 applied the same slice in the four remaining accounts** — **five state buckets now exist**, `production/` carries 3.4's second key, every second plan is empty, and the copy's failure mode is guarded by a fifth check (3.5). **Step 4 is a statement, not work.** **2026-08-16: step 5.1a closed** — the delegation is narrowed to the `InfrastructureAccess` role, verification (ix) answered in all three halves, `DEL-10` green; **decisions 4, 5 and 6 settled** (inline-only boundary, `replace(file(…))`, the CLI import); and **`terraform-live/identity/sso/` is written** — six persona sets, the shared deny fragment, nine enumerated assignments, and `InfrastructureAccess` staged for import. **Not yet applied.** What remains of step 5 is the `sso/` import + apply, then `org-policies/`. **Roteiro revised 2026-08-15 against the closed landing zone**, see the table below |
 | **Prerequisites** | **Stage 1a and Stages 1b, 1c and 1d**, all complete (the landing zone closed 2026-08-15). `Staging` is still unvended, so **step 3 skips `terraform-live/staging/bootstrap/`** and step 5 skips its Staging assignments — the same carve-out 1b steps 3 and 5 already carry, picked up at the vend |
 | **Consumes** | [D3](../decisions/D03-terraform-state.md), [D10](../decisions/D10-identity-center-delegation.md), [D11](../decisions/D11-lab-lifecycle.md), [D16](../decisions/D16-break-glass.md), [D23](../decisions/D23-ou-structure.md), [D27](../decisions/D27-catalog-maintenance.md), [D30](../decisions/D30-scp-recovery.md) *(reverted; its surviving consequence is step 5's rationale)*, [D32](../decisions/D32-account-factory-sso-user.md), [D33](../decisions/D33-control-tower-admin-user.md), [D34](../decisions/D34-account-vending.md), [D35](../decisions/D35-sandbox-cardinality.md), [D36](../decisions/D36-internal-pki.md), [D37](../decisions/D37-nested-ou-inheritance.md) *(5.3/9.3 — `Sandboxes` deliberately carries nothing)* — **plus, for step 5's six permission sets, the design of record in [Stage 1b step 3](stage-01b-identity-and-controls.md) and the decisions it lists** (D14, D18-D22, D31). They are written here and specified there; neither file restates the other |
 | **Proves** | [INT-20](../integrations.md) — the Organizations **policy** delegation into the Identity account, which step 5 assumes and no earlier stage creates |
@@ -619,12 +619,22 @@ the role.
    surfaces as an `AccessDenied` on an apply, far from this file.
 2. **`org-delegation.py` needs a `DEL-10`**, or nothing checks the condition and it becomes an intention
    rather than a control (Lesson 5). It reads the two write statements and fails if either lacks it.
+   **Written 2026-08-15, before the paste, and demonstrated on both forms**: red against the live document
+   (the true state until 5.1a lands — the wording says so), green against the amended one, operator named.
+   The amended document itself is generated, not typed: the live document read back through
+   `describe-resource-policy` into untracked `aws/output/delegation-live.json` (which is also the rollback
+   copy), the two `ArnLike` blocks added programmatically, the result in `aws/output/delegation-5.1a.json`
+   — and a diff asserting **nothing else changed**, which is 5.0's "its own content" discipline applied to
+   an edit instead of a rewrite.
 3. **If the condition is wrong, every write against `org-policies/` stops** — and the repair is the
    Management console, which is D16's design rather than a surprise.
 
-**Unverified, and cheap to find out: whether this document accepts a `Condition` on `aws:PrincipalArn` at
-all.** It already rejects `NotAction`/`NotResource` (5.1), so a refusal is a live possibility — and it is
-a **safe** failure: `put-resource-policy` errors and the existing document stands.
+~~**Unverified, and cheap to find out: whether this document accepts a `Condition` on `aws:PrincipalArn` at
+all.**~~ **Answered 2026-08-16: it does.** It already rejects `NotAction`/`NotResource` (5.1), so a refusal
+was a live possibility — and a safe one, since `put-resource-policy` would have errored and left the
+existing document standing. It did not: the amended document was accepted on the first paste. **The two
+rejections are therefore not one rule with two instances** — the allowlist model refuses
+`NotAction`/`NotResource` because they are exemption-shaped, and a `Condition` narrowing an allow is not.
 
 **Verification (ix), which reuses open question 11's harness and is the whole of it.** Both halves, because
 either alone proves nothing:
@@ -639,6 +649,20 @@ step is most likely to cause and the one that would read as success.
 
 **Who runs it:** `AWS Control Tower Admin` / `AWSAdministratorAccess` on **Management**, the same path as
 5.1.
+
+**Ran 2026-08-16, and both halves came back as designed — 5.1a is CLOSED.** The paste was accepted;
+`./aws/org-delegation.py` flipped `DEL-10` from red to `pass`, which is the instrument reporting the change
+it was written before. Then:
+
+| From | Expected | Got |
+|---|---|---|
+| (a) `awsds-ctadmin-orgfull-identity` | `AccessDenied`, where `DuplicatePolicyAttachmentException` came before | **`AccessDeniedException`** |
+| (b) `awsds-infra-identity` | still `DuplicatePolicyAttachmentException` | **`DuplicatePolicyAttachmentException`** |
+
+Both calls are writes that cannot take effect — the pair was verified attached first, `aws/probes/`'s own
+idiom — and the reading is the **wording** of the error, never the exit code. **The three costs above stand
+unchanged**: cost 1 (a second place a principal is enumerated) is now live, and the candidate that will hit
+it is a Stage 8 pipeline role.
 
 **5.2 — What is written, what is imported, and — the half that is easiest to get wrong — what is neither.**
 
@@ -668,6 +692,9 @@ step is most likely to cause and the one that would read as success.
   boundary, or the sets stay inline-only until Stage 3 exists. Attaching a customer-managed reference before
   the policy exists in the target account fails the *provisioning*, in that account only — which is the
   quiet version of this mistake.
+  **Decided 2026-08-16 — inline-only, and the two denies below do not wait with it.** The reasoning is in
+  decision 4; what it means for this slice is that no `aws_ssoadmin_permissions_boundary_attachment` is
+  written here yet, and that the file which will carry it says so by name rather than by absence.
 - **Every boundary written here must deny two things that have nothing to do with this account's
   resources, because 1c's SCPs are only as strong as control over the principals they exempt.** Two
   carve-outs exist in the attached ceiling and both name a principal:
@@ -1141,8 +1168,16 @@ Each is written so its output differs between working and broken (Lesson 13):
   `terraform state show` on one of them names a principal ID that
   `aws identitystore describe-group` resolves back to the expected display name.
 - **The two slices are independent, which is why they are two:** `terraform state list` in `sso/` names no
-  `aws_organizations_*` resource, and `org-policies/` names no `aws_ssoadmin_*` one. Neither reads the other
-  through `terraform_remote_state`.
+  `aws_organizations_*` **managed resource**, and `org-policies/` names no `aws_ssoadmin_*` one. Neither
+  reads the other through `terraform_remote_state`.
+  **The word "managed" is doing work and was added on execution, 2026-08-16, rather than discovered as a
+  failed check.** `sso/` *does* read `data.aws_organizations_organization` — one data source, and there is
+  no second way to turn an authored account **name** into the id `aws_ssoadmin_account_assignment` requires
+  while `aws/INDEX.md` rule 1 keeps ids out of tracked files. That is the same shape `attachments.json`
+  already uses on the other side: names in the file, ids resolved by the consumer. **The independence the
+  split exists to buy is about who *owns* an object** — a failed `apply` in one slice must not be able to
+  change anything the other declares — and a read does not own. State will list the data source; the claim
+  is that nothing under `aws_organizations_*` in `sso/` has a lifecycle.
 - **The delegation took effect** (INT-20): 5.0 step 3's **write** — `organizations update-policy` on the
   tag policy with its own content — succeeds **under `awsds-infra-identity`**, and `./aws/org-delegation.py`
   passes `DEL-6` (root reach), `DEL-7` (nested OUs) and `DEL-9` (policy-type ARNs) on the read-back
@@ -1187,14 +1222,56 @@ into `docs/log/log-stage-02-terraform-foundation.md` rather than left to whoever
    inline-only sets until Stage 3 exists. It is a decision rather than a preference because a
    customer-managed reference that is missing in *one* account fails provisioning **in that account only**,
    and with one Sandbox per business unit (D35) the number of places it can be missing grows.
+
+   **Settled 2026-08-16: inline-only here, the boundary *object* deferred to Stage 3 — and the two denies
+   that mattered are not deferred with it.** The three options are not equally available today. A
+   customer-managed reference needs an `aws_iam_policy` of that name and path in **every** account a set is
+   provisioned into, and no governed account has a `foundation/` slice yet, so the reference would fail
+   *provisioning* per account — the quiet form of the mistake. An AWS-managed policy as the boundary is
+   available and buys nothing: none of them expresses the two denies this design actually needs, and a
+   boundary that does not carry them is a boundary in name.
+   **What is deferred is therefore the container, not the content.** The two denies 5.2 requires of every
+   boundary — `iam:CreateRole` under the `/aws-reserved/` path, and `iam:UpdateAssumeRolePolicy` on a role
+   the ceiling exempts — go into the **shared deny fragment** of the six sets **now**, written once and
+   referenced by all six (Lesson 14), because the carve-outs they defend are attached *now*. A boundary
+   would have made them un-escapable rather than merely present; the inline deny makes them present, which
+   is the whole of what a set can do to itself. Stage 3's `foundation/` creates the `aws_iam_policy` per
+   account and this slice gains one `aws_ssoadmin_permissions_boundary_attachment` per set — a diff, in the
+   stage that can actually satisfy it.
+   **One thing that does *not* wait on Stage 3, and is now cheaper than the step assumed:** the
+   `Policy Canary` `create-role` probe. 5.2 wanted it *before* the boundaries were written; with the deny
+   written and no boundary, its answer no longer gates anything — it says whether the first deny is
+   load-bearing or belt-and-braces, and the deny costs nothing either way.
 5. **How the placeholders in `policies/*.json` are substituted** (5.5a(i)) — `replace(file(…))` against the
    templates as they stand, or a conversion to `${…}` with a matching edit to `render.py` in the same
    commit. Either works; taking one and not writing it down leaves two mechanisms for the same substitution,
    which is the shape Lesson 14 keeps producing.
+
+   **Settled 2026-08-16: `replace(file(…))` wrapped in `jsonencode(jsondecode(…))`, and `render.py` is not
+   touched.** The conversion to `${…}` is the tidier of the two and it is the wrong one *here*, for a
+   reason specific to this moment: **`render.py` produced the bytes that are attached to the organization
+   right now**, and 5.5's whole claim is that the import compares a document against itself. Editing the
+   generator in the same commit that first compares against what it generated makes the reference and the
+   comparison move together — the shape 5.0's "its own content" rule already refuses for `update-policy`.
+   The wrapper is what makes the choice safe rather than merely available: it normalises both sides
+   identically, so what is compared is content and not whitespace. **Re-openable, and the trigger is
+   named:** if a later stage needs `templatefile()` for something else in `policies/`, convert then — with
+   the documents already imported, a normalising diff is a `plan`, not a leap.
 6. **`import {}` blocks or `terraform import` on the command line** (the `aws/` section above). Blocks are
    reviewable and live in git — which is the problem: their `id` is an account id or a policy id, and no
    account id enters a tracked file. Record the choice and, if it is the CLI, that the manifest lives in
    untracked `aws/output/`.
+
+   **Settled 2026-08-16: the CLI, with the manifest in untracked `aws/output/import-ids.txt`.** The
+   argument for blocks is real — they are reviewable and they leave a record — and it loses on one
+   measured fact rather than on taste: **the `sso/` half cannot be written as blocks without putting five
+   account ids in a tracked file.** `aws_ssoadmin_account_assignment`'s import id is
+   `<principal_id>,GROUP,<account_id>,AWS_ACCOUNT,<ps_arn>,<instance_arn>` — the target account id is
+   *inside* the id — and `aws/INDEX.md` rule 1 admits no exception. The same id also carries the group
+   **GUID**, which the configuration is forbidden to hold for a different reason (conventions, "resolve a
+   group by display name"): a block would put in git precisely the two values the design keeps out of it.
+   **What replaces the reviewability:** `./aws/import-ids.py` is the record — regenerable, dated, and it
+   owns the right-hand side while the configuration owns the address.
 
 *(One more used to be here — whether to split `terraform-live/identity/`. It was settled on 2026-08-09,
 before execution: the split is the design, its reasoning is in step 5 and the layout is in
@@ -1228,7 +1305,7 @@ Record every answer in `docs/log/log-stage-02-terraform-foundation.md`, includin
 
 | # | Question | Step |
 |---|---|---|
-| i | Does the bucket's default encryption / TLS policy accept a per-slice `kms_key_id` override for `pki/`? **And does an S3 Bucket Key apply to that override, or only to the bucket default** (2.7 — it decides how D36's alarm reads)? | 3.4 |
+| i | **First half answered 2026-08-15, by reading the applied bucket: yes — `pki/` keeps its own key inside the shared Production bucket, and the own-bucket fallback is not needed.** The bucket policy is *one* statement (`DenyInsecureTransport`, `Bool aws:SecureTransport = false`) with **no `s3:x-amz-server-side-encryption-aws-kms-key-id` condition anywhere**, and SSE-KMS default encryption is a *default*: a `PutObject` naming another key overrides it. **The second half — does an S3 Bucket Key apply to that override — stays open, and it is not answerable by reading**: `BucketKeyEnabled` is reported per object, so it needs an object encrypted under the PKI key. It arrives free at Stage 7's first `production/pki/` init, or earlier from a three-call probe (`put-object --ssekms-key-id`, `head-object`, `delete-object`). **Either answer leaves D36's alarm intact** — it is scoped to the *key*, which the event names in `resources` (2.7) — so what is open is how the record reads, not whether the control fires | 3.4 |
 | ii | Does the pinned provider support `aws_organizations_policy` with `type = "DECLARATIVE_POLICY_EC2"`? | 5.2 |
 | iii | Does the Organizations **policy** delegation coexist with the Control Tower landing zone without raising drift? | 5.1 |
 | iv | Does `aws_organizations_organizational_unit_descendant_organizational_units` really recurse, in the pinned version? | 5.3 |
@@ -1236,7 +1313,7 @@ Record every answer in `docs/log/log-stage-02-terraform-foundation.md`, includin
 | **vi** | **Can the delegated administrator manage a *root-attached* document, not only an OU-attached one?** This is the one that decides the size of the stage, and it is answered first | **5.0** |
 | **vii** | ~~Does `CTMULTISERVICEPV1` exempt `organizations:*` for *writes*?~~ **Answered by reading — the 1d log already took the read (2026-08-14): the `CT.MULTISERVICE.PV.1` document on `Identity` (`p-fw2pctqw`) carries `organizations:*` wholly in its `NotAction`**, the service wildcard, so writes are exempt along with the reads. Every call this slice makes is out-of-Region by construction (Organizations answers in `us-east-1`) and none is Region-denied. Re-read in 5.0 only if the landing zone was updated since | 5.0 |
 | **viii** | **Does `jsonencode(jsondecode(replace(file(…))))` reproduce the attached bytes**, for all four policy types? Organizations may re-serialise on its side; the RCP and the declarative policy have never been round-tripped | 5.5a |
-| **ix** | **Does the delegation document accept a `Condition` on `aws:PrincipalArn` at all** — and, if it does, does the A/B come back (a) `AccessDenied` from `awsds-ctadmin-orgfull-identity` **and** (b) still `DuplicatePolicyAttachmentException` from `awsds-infra-identity`? Half an answer here is indistinguishable from a broken delegation | **5.1a** |
+| **ix** | ~~**Does the delegation document accept a `Condition` on `aws:PrincipalArn` at all** — and, if it does, does the A/B come back (a) `AccessDenied` from `awsds-ctadmin-orgfull-identity` **and** (b) still `DuplicatePolicyAttachmentException` from `awsds-infra-identity`?~~ **Answered 2026-08-16, all three halves: the document accepts the condition** (unlike `NotAction`/`NotResource`, which it still rejects — so those are not one rule with two instances); **(a) returned `AccessDeniedException` and (b) still returned `DuplicatePolicyAttachmentException`**, with `DEL-10` flipping red→`pass` on the read-back. Half an answer here would have been indistinguishable from a broken delegation, which is why both legs were run in the same sitting | **5.1a** |
 
 ---
 
