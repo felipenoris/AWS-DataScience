@@ -175,19 +175,21 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
 - **Stage 2 DONE (2026-08-16), all nine verifications answered.** Deployed: a state bucket per
   Terraform-managed account (`prod` carries D36's 2nd key); `identity/sso/` — 7 sets, 10 assignments;
   `identity/org-policies/` — ten policies + ten attachments **adopted, none created**, **content never
-  sent** (live bytes are still 1c's paste), `prevent_destroy` on both, so detaching costs two commits.
+  sent** (live bytes are still 1c's paste), `prevent_destroy` on both.
   Delegation narrowed to `InfrastructureAccess`, hand-applied, **out of Terraform** (`INV-15`). D11:
-  `scripts/tfhygiene/layers.py` + `make up`/`down`/`status`/`slices` — **all seven slices `[P]`, both
-  targets no-ops** until Stage 3's `egress/`; a slice with no row fails `make check`. (iii): `IN_SYNC`, but
-  the landing zone has run **once** (`CREATE`), so it has not yet had occasion to disagree (`INV-17`).
-  **Step 7 moved to Stage 3 step 1.1a.** **`awsds` is reserved in SSM Parameter Store** — project
-  parameters take `/datascience/<env>/…`.
-- **Gates, and there is no CI:** `make check` (offline, six checks), `make check-ou` (session),
+  `scripts/tfhygiene/layers.py` + `make up`/`down`/`status`/`slices` — **every slice `[P]`, both
+  targets no-ops** until Stage 3's `egress/`; a slice with no row fails `make check`. (iii): `IN_SYNC`
+  (`INV-17`). **`awsds` is reserved in SSM Parameter Store** — project parameters take
+  `/datascience/<env>/…`.
+- **Gates, and there is no CI:** `make check` (offline), `make check-ou` (session),
   `make check-docs` — **red** on pre-Stage-2 prose, outside the commit gate.
-- **Stage 3 started — step 0 DONE 2026-08-16:** AF VPCs removed via their **StackSet on Management**,
-  nothing survived, creation off (`docs/AWS_STATE.md` §C). Decisions settled 2026-08-16: flow logs 30d;
-  `egress_mode=A`; CIDR/`zone_ids` in `scripts/tfhygiene/backend.py`; S3 allow-list of five families,
-  **a NAT does not bypass it** (Stage 4); **AL2023's mirror list is in the repo bucket** (doc fix).
+- **Stage 3 pass 1 DONE 2026-08-16.** Step 0: AF VPCs removed via their **StackSet on Management**,
+  nothing survived, creation off. Steps 1-5: modules tagged `*-v0.1.0` (tags pushed **before** the
+  callers' commit), `foundation/` applied in Sandbox/Development/Production (31/30/32, re-plan
+  `No changes`); `networking.py` green except **4×`NT-8`, pass 2's pending associations**.
+  Execute-time decisions live at their steps; two reach other stages:
+  `egress_mode=A`, and the S3 allow-list — **a NAT does not bypass it** (Stage 4). CIDR/`zone_ids`:
+  `scripts/tfhygiene/backend.py`. Next: **pass 2** (4.4-4.5, 6).
 - **Stages 4-7 revised, pre-instrumented (2026-08-16):** `aws/vpn.py`, `aws/datalake.py`, `aws/studio.py`,
   `aws/supplychain.py` — `DL-5` guards INT-11's `Parameters`. Corrections: each status row; INT-16's
   portal half ends at Stage 6 step 1.7; Stage 7 pass 0 (`pki/`+`registry/`) lands before Stage 6.
@@ -206,11 +208,11 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
 - **Deferred by decision — do not offer to close:** the USD 50 budget notifies nobody (D12); open question
   10's per-unit tokens wait for N=2; Config recorder left alone and Management unrecorded (Stage 12 hooks).
   **Every governed account sits under `us-west-2`.**
-- **All thirty-seven decisions are closed** (D30 as a revert). **Still needed from the user: the domain
+- **All 37 decisions are closed** (D30 as a revert). **Still needed from the user: the domain
   name**, blocking Stage 13. **Settle earliest:** INT-11's remaining half (Stage 5 step 5.4, `DL-5`)
   and INT-13.
-- **The repository is not documentation-only:** the read-only `aws/` scripts, `terraform-live/` +
-  `terraform-modules/`, `scripts/`, the `Makefile`, and the `pre-commit`/`tflint`/`checkov`/`ruff` gates.
+- **The repository is not documentation-only:** the read-only `aws/` scripts, both Terraform trees,
+  `scripts/`, the `Makefile`, and the `pre-commit`/`tflint`/`checkov`/`ruff` gates.
   **Every script is Python 3 on `uv` since 2026-08-15** — shared code in `aws/awslib`,
   `scripts/repohygiene`, `scripts/tfhygiene`; CloudShell = plain `python3` with `aws/` present.
   **Exception `aws/cloudshell/`: `management-quotas.sh` + `audit-iam-analyser.sh` stay shell, standalone,

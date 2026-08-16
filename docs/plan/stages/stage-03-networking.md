@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Status** | **step 0 DONE (2026-08-16)** — the stack instances deleted from Management, `DELETE_COMPLETE` in every vended account, **nothing survived** (verification (vi)), Account Factory creates no VPC; the slices are not started. **Its five execute-time decisions were settled with the user on 2026-08-16**, before the stage, each recorded at the step that owns it ("Decisions due while executing" is the index). **Revised 2026-08-16 into the action-checklist format**, with three corrections taken from the official documentation: **step 0's supported removal path is deleting the stack instances from the Account Factory StackSet on Management** — not a per-account hand-deletion, which is what the log's first entry still records; **AL2023 serves its mirror list from the repository bucket itself**, so the design-B caveat 9.3 carried is withdrawn; and **verification (vii) is answered by the Route 53 documentation** (the authorization persists until deleted; deleting it does not affect the association) |
+| **Status** | **pass 1 DONE (2026-08-16)** — step 0: the stack instances deleted from Management, `DELETE_COMPLETE` in every vended account, **nothing survived** (verification (vi)), Account Factory creates no VPC; steps 1-5: the four modules tagged `*-v0.1.0`, `foundation/` **applied in Sandbox (31), Development (30) and Production (32)** — re-plan `No changes` in all three, `networking.py` green except the four `NT-8` rows, which are pass 2's own work. Next: **pass 2** (4.4-4.5, 6). **Its five execute-time decisions were settled with the user on 2026-08-16**, before the stage, each recorded at the step that owns it ("Decisions due while executing" is the index). **Revised 2026-08-16 into the action-checklist format**, with three corrections taken from the official documentation: **step 0's supported removal path is deleting the stack instances from the Account Factory StackSet on Management** — not a per-account hand-deletion, which is what the log's first entry still records; **AL2023 serves its mirror list from the repository bucket itself**, so the design-B caveat 9.3 carried is withdrawn; and **verification (vii) is answered by the Route 53 documentation** (the authorization persists until deleted; deleting it does not affect the association) |
 | **Prerequisites** | Stage 2. The AZ name→ID question from 1b step 6 is settled — subnets anchor on `zone_ids` (1.5), the mapping is `./aws/AZs.py`. **`Staging` is unvended** — the quota-increase request sits in an open AWS support ticket (2026-08-15) — so its `foundation/` and `egress/` apply **at vend**, and the two proofs that name it (its VPC, its empty peering list) defer with it; nothing else in this stage waits on it |
 | **Consumes** | [D5](../decisions/D05-sagemaker-egress.md), [D9](../decisions/D09-az-count.md), [D14](../decisions/D14-supply-chain-account.md), [D15](../decisions/D15-tls-internal.md), [D18](../decisions/D18-data-scientist-access.md), [D20](../decisions/D20-staging-account.md), [D21](../decisions/D21-development-account.md), [D22](../decisions/D22-data-governance-account.md), [D35](../decisions/D35-sandbox-cardinality.md) — **plus, for step 8's endpoint lists only**, [D7](../decisions/D07-orchestration.md), [D13](../decisions/D13-lake-formation-enforcement.md), [D24](../decisions/D24-shared-filesystem.md) |
 | **Proves** | [INT-09](../integrations.md) (Development ↔ Production peering). **Supplies** what [INT-05](../integrations.md) later depends on: the `[P]` gateway endpoint IDs of step 3 |
@@ -264,6 +264,16 @@ half has a deadline (**before the `Staging` vend**).
   that no longer exists is worse than no row. **[user]** Record 0.2 and 0.3 in the stage log.
 
 ### `foundation/` — layer `[P]`, free at rest, never destroyed
+
+> **RAN 2026-08-16 — pass 1 applied in Sandbox, Development and Production** (31, 30 and 32
+> resources; **only-create plans, re-plan `No changes` everywhere**). Modules tagged `vpc-v0.1.0`,
+> `iam-role-v0.1.0`, `kms-key-v0.1.0`, `s3-bucket-v0.1.0` on GitHub; the two-commit order (modules +
+> tags pushed **before** the slices' commit) is what lets `terraform_validate` init the callers. The
+> post-apply `./aws/networking.py` reads green except the **four `NT-8` rows — pass 2's own pending
+> work** (4.4). Measuring pass 1 also exposed that `NT-3`/`NT-4` flagged the mandatory public
+> `0.0.0.0/0 → igw` route as an "overlap"; the instrument now excludes exactly the internet-exit
+> default route, which cannot deliver into an RFC1918 range. What remains of pass 1 is nothing;
+> next is pass 2 (4.4-4.5, 6) — cross-account, both sides now exist.
 
 #### 1. The VPC and the address plan
 

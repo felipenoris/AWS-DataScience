@@ -90,6 +90,20 @@ WIREGUARD_CIDR = "10.90.0.0/24"
 AF_CIDR = "172.31.0.0/16"
 
 
+def internet_exit_default(dest: str, target: str) -> bool:
+    """The catch-all route out to the internet - the shape every public tier carries (2.1).
+
+    0.0.0.0/0 contains every RFC1918 range ARITHMETICALLY, but an internet exit cannot
+    deliver INTO one: an IGW or NAT forwards to the internet routing table, where 10/8 is
+    unroutable. Left in the overlap test, the mandatory public default route keeps NT-3 and
+    NT-4 red forever - and a permanently red check is one nobody reads (Lesson 13's
+    corollary; first tripped on the pass-1 measurement, 2026-08-16). Only exactly this
+    shape is excluded: a route naming a guarded range ITSELF, whatever its target, is still
+    flagged - somebody wrote that range deliberately, and NT-6 covers the peering side.
+    """
+    return dest == "0.0.0.0/0" and (target.startswith("igw-") or target.startswith("nat-"))
+
+
 def main(argv: list) -> int:
     ctx = context.locate(__file__)
     out_path = ctx.out_file(OUT_NAME)
@@ -394,10 +408,11 @@ def main(argv: list) -> int:
 
     # NT-3: no non-local route whose destination overlaps 10.40.0.0/16 (validation 2). The
     # local route of a future Staging VPC is excluded on purpose: the validation's intent is
-    # "no PEERING path into Staging" (D20), not "Staging may not route to itself".
+    # "no PEERING path into Staging" (D20), not "Staging may not route to itself" - and the
+    # internet-exit default route is excluded for the reason internet_exit_default() carries.
     nt3 = 0
     for p, rtb, _vpc, dest, target, state in routes:
-        if target == "local":
+        if target == "local" or internet_exit_default(dest, target):
             continue
         if cidr.overlap(dest, STAGING_CIDR):
             checks.fail(
@@ -418,9 +433,12 @@ def main(argv: list) -> int:
 
     # NT-4: 10.90.0.0/24 in no route table anywhere (step 6.5) - peering does no
     # edge-to-edge routing, so a route to the WireGuard client range is a route that can
-    # never work, and its presence means somebody is about to lose an evening to it.
+    # never work, and its presence means somebody is about to lose an evening to it. The
+    # internet-exit default route is excluded here for the same reason as in NT-3.
     nt4 = 0
     for p, rtb, _vpc, dest, target, state in routes:
+        if internet_exit_default(dest, target):
+            continue
         if cidr.overlap(dest, WIREGUARD_CIDR):
             checks.fail(
                 "NT-4",
@@ -915,8 +933,10 @@ What the checks are, and where each comes from:
   NT-1  default and Account Factory VPCs flagged (Lessons 16, 17); a
         project-range VPC in Data Governance (D22) or the canary (D29) FAILs
   NT-2  both DNS attributes on every non-default VPC (step 4.1)
-  NT-3  no non-local route overlapping 10.40.0.0/16 (validation 2, D20)
-  NT-4  no route overlapping 10.90.0.0/24 anywhere (step 6.5)
+  NT-3  no non-local route overlapping 10.40.0.0/16 (validation 2, D20);
+        the 0.0.0.0/0 -> igw/nat internet exit is excluded - it cannot
+        deliver into an RFC1918 range
+  NT-4  no route overlapping 10.90.0.0/24 anywhere (step 6.5); same exclusion
   NT-5  no CIDR overlap among project VPCs, across accounts (step 1.2);
         172.31.0.0/16 vend artifacts counted once, not pairwise
   NT-6  no peering touching the Staging range (D20, step 6.6)

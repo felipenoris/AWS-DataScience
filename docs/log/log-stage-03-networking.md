@@ -5,11 +5,13 @@ Stage: [`docs/plan/stages/stage-03-networking.md`](../plan/stages/stage-03-netwo
 
 ---
 
-*One exception, recorded so the provenance is not guessed later. **On 2026-08-16 the user authorised
+*Three exceptions, recorded so the provenance is not guessed later. **On 2026-08-16 the user authorised
 Claude, once and explicitly, to create this file and write the entry below** — a decision sitting held
 with the user in that same session, with no AWS call in it. **A second explicit authorisation, later the
 same day, covers the wording revision of the step 0 entry and its merged 0.4 subsection**, marked inline.
-Everything else is the user's, as usual, and the rule is unchanged.*
+**A third, later still, covers the pass-1 entry** — the user authorised the applies in chat and then asked
+for the progress to be written into this file directly, so that entry is Claude's account of commands the
+user authorised. Everything else is the user's, as usual, and the rule is unchanged.*
 
 ---
 
@@ -130,6 +132,65 @@ one.
 - `docs/AWS_STATE.md` §C rewritten in the same sitting. What remains open of step 0 is only the
   configuration half's proof: **verified at the `Staging` vend**, the first account that arrives after
   the change — run `./aws/networking.py` at that vend.
+
+## 2026-08-16 — Steps 1-5 (pass 1): `foundation/` applied in Sandbox, Development and Production
+
+*Written by Claude under the user's explicit authorisation, and the applies themselves were authorised in
+chat the same sitting ("autorizo o apply. pode rodar todos"). Signed in as the **infrastructure user**
+through **`InfrastructureAccess`** — profiles `awsds-infra-sandbox-1`, `awsds-infra-dev`,
+`awsds-infra-prod`.*
+
+### The git order, which the tooling forces
+
+Branch `claude/stage-03-pass-1`, **two commits with the tags between them**:
+
+1. the four modules, the address allocation in `scripts/tfhygiene/backend.py`, docs;
+2. the tags `vpc-v0.1.0`, `iam-role-v0.1.0`, `kms-key-v0.1.0`, `s3-bucket-v0.1.0`, pushed with the branch;
+3. the three `foundation/` slices and their `layers.py` rows.
+
+The order is not a preference. `terraform_validate` runs `terraform init` on each slice, which resolves
+`…/AWS-DataScience.git//terraform-modules/<name>?ref=<tag>` **from origin** — a first attempt staging
+everything as one commit failed there with `invalid ref`, and no local tag would have helped. **A module
+consumed by tag cannot be committed in the same commit as its first caller**, and 1.1a's "[user] Tag the
+modules" is therefore a step *between* two commits, not after both.
+
+### The applies
+
+- **Generated** `backend.hcl` + `terraform.auto.tfvars` per slice (`gen-backend-hcl.py`, `gen-tfvars.py` —
+  the allocation reaching the slices exactly as decision 1 specified); `terraform init` connected each
+  backend on the first attempt, so the wrong-account guard was never exercised in anger.
+- **Plans, read in chat before any apply, all three only-create:** Sandbox **31**, Development **30**,
+  Production **32** — the difference is only the zones (Development has none, Production has two).
+  Resource-by-resource the three plans are otherwise identical, which is what the single module promised.
+  Spot-checked in the plan text: CIDRs `10.20`/`10.50`/`10.30`, the authored subnet cut (`/18` private,
+  `/20` isolated, `/24` public, two AZs each), **no foreign CIDR in any plan**, both S3 endpoint policy
+  statements, flow logs `ALL`/600s/**30 days**, and the `Environment` tag per account.
+- **`Apply complete`** in all three: 31, 30 and 32 added, **0 changed, 0 destroyed**. A re-plan of each
+  slice afterwards reads **`No changes`**.
+
+### The post-apply reading, and the instrument it corrected
+
+- `./aws/networking.py`: **NT-2, NT-3, NT-4, NT-5 and NT-7 pass**; the S3 and DynamoDB gateway endpoints
+  (the INT-05 `[P]` anchors) are live in the three VPCs and present in all four route tables of each;
+  `sandbox.internal`, `prod.internal` and `pages.internal` exist.
+- **The four `NT-8` rows are red, and that is pass 2's work**, not a fault: the cross-account zone
+  associations of 4.4 have not been made. `docs/AWS_STATE.md` §C now says so, so a later reading does not
+  re-discover it as a finding.
+- **NT-3 and NT-4 were wrong, and the applies exposed it.** Both flagged the public tier's mandatory
+  `0.0.0.0/0 → igw` route as an "overlap" with the Staging and WireGuard ranges — arithmetically true,
+  operationally meaningless: an internet exit cannot deliver into an RFC1918 range. Left alone, the two
+  checks would have been permanently red from the first VPC onwards, which is a check nobody reads.
+  `aws/networking.py` now excludes **exactly** that shape (`0.0.0.0/0` to an `igw-`/`nat-` target); a route
+  naming a guarded range itself is still flagged, whatever its target.
+
+### Repository
+
+`docs/plan/stages/stage-03-networking.md` Status and a `RAN` note on the `foundation/` section;
+`docs/AWS_STATE.md` §C rewritten from "no VPC anywhere" to the three project VPCs and their contents;
+`CLAUDE.md` Current position re-trimmed to fit its 20 KB budget. `make check` green.
+
+**Next: pass 2** — the four cross-account zone associations (4.4-4.5) and the two peerings into Production
+(6). Both sides now exist, which is what they were waiting for.
 
 
 ---
