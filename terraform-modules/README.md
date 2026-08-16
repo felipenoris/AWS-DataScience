@@ -1,19 +1,26 @@
 # `terraform-modules/` — the reusable half
 
-**Empty on purpose today.** The tree exists from Stage 2 step 1; the first modules — `s3-bucket`,
-`iam-role`, `kms-key` — arrive with **step 7**, which this stage deliberately moved to the end.
+**Empty on purpose today.** The tree exists from Stage 2 step 1; the first modules — `vpc`, and with it
+`s3-bucket`, `iam-role`, `kms-key` — arrive with **Stage 3 step 1.1/1.1a**.
 
-## Why it is still empty at the end of Stage 2's first sitting
+## Why it is still empty at the end of Stage 2
 
-Step 7 used to sit between the bootstrap slices and the identity ones, on the argument that bootstrap
-consumes no module (step 2.3). That is true and does not reach far enough: **nothing else in Stage 2
+Stage 2 step 7 used to sit between the bootstrap slices and the identity ones, on the argument that
+bootstrap consumes no module (step 2.3). That is true and does not reach far enough: **nothing in Stage 2
 consumes one either.** `identity/sso/` and `identity/org-policies/` declare `aws_ssoadmin_*` and
-`aws_organizations_*` resources directly and call no module at all. The first real caller is Stage 3's
-`foundation/`.
+`aws_organizations_*` resources directly and call no module at all.
+
+That moved the step to the end of the stage on 2026-08-15, and **on 2026-08-16 it moved out of the stage
+altogether**: the argument does not expire when the stage does, and at the end of Stage 2 there is still no
+caller. The first is Stage 3's `foundation/`, which writes `vpc/` anyway.
 
 Writing a module before a caller exists is guessing at an interface — which
 [`docs/plan/conventions.md`](../docs/plan/conventions.md) already refuses to do for the `sandbox-unit` module. Same
 argument, one stage earlier.
+
+**The second reason the wait is cheap:** the `source` line below needs a **host** and a **tag scheme**, and
+this is a monorepo whose host is GitHub today and **GitLab from Stage 7** (D8). Settling that with no caller
+in hand settles it twice.
 
 ## The one rule that is not negotiable
 

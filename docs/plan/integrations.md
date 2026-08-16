@@ -60,7 +60,8 @@ is an integration that either works or has a fallback that costs convenience. Th
   incomplete — which is the same honesty Stage 11 step 3 demands about file download.
 - **INT-16 is the one that can invalidate a stated objective of the same file** — "all user access to the
   cloud infrastructure will be performed through a VPN". It is cheap to answer (open the portal with the
-  tunnel down) and it is answered at Stage 4, the first moment it can be.
+  tunnel down) and it is answered in two halves: the deny, the API/console pair and the IdC sign-in
+  reading at Stage 4, and the portal itself at Stage 6 step 1 — the first moment that surface exists.
 
 Both follow the pattern of Lessons 3 and 11 in `CLAUDE.md`: a decision taken for good reasons moved
 something, and the conditions that referenced it were not re-checked. Here the thing that moved was *who

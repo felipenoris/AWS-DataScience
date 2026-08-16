@@ -426,3 +426,18 @@
 - **Workflows in SageMaker Unified Studio** — the Workflows tool is **Amazon MWAA**, in both a *serverless* and a *provisioned* form, and existing MWAA environments can be connected to a project. It confirms rather than changes D7/D28: the `CLAUDE.md` "workflows" feature and Stage 10's orchestration comparison are the same surface (`docs/plan/open-questions.md` item 15): <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/workflow-orchestration.html>.
 
 - **AWS Control Tower RCP controls — the artifacts of the RCP-based controls, and `CT.STS.PV.1` in particular.** The page that diagnosed the 2026-08-14 SSO lockout and now sets the scope of `EnforceOrgIdentitiesOnRoleAssumption`: AWS's own trusted-identities control for STS names **only `sts:AssumeRole` and `sts:SetContext`**, and states why the other four are out of scope — *"the respective STS operations do not use AWS security credentials, and therefore do not include the `aws:PrincipalOrgID` condition key value in the request context"*, with `sts:SetSourceIdentity` and `sts:TagSession` excluded as well so that `AssumeRoleWithSAML` and `AssumeRoleWithWebIdentity` are not denied. The page is also the reference shape for the other five statements of the RCP — `CT.S3.PV.4`, `CT.SQS.PV.1`, `CT.KMS.PV.7` and `CT.SECRETSMANAGER.PV.1` are the same `BoolIfExists` + `StringNotEqualsIfExists` pair this document already used — and it carries the `ExemptedPrincipalArns` parameter that is the supported way to add a carve-out (Stage 1c step 7.8): <https://docs.aws.amazon.com/controltower/latest/controlreference/list-of-rcp-controls.html>.
+
+- **Restrictions on SSM Parameter Store parameter names** — the rule Stage 2's Validation hit at
+  `PutParameter`: a parameter name **can't be prefixed with `aws` or `ssm`, case-insensitive**, and the
+  refusal arrives as `AccessDeniedException: No access to reserved parameter name`, which reads like a
+  policy problem and is a naming one. This project's `awsds` prefix begins with `aws`, so Parameter Store is
+  the one service where the convention of `docs/plan/conventions.md` cannot be used verbatim (Stage 2, the
+  Validation; the rule is now in that file's naming section):
+  <https://docs.aws.amazon.com/systems-manager/latest/userguide/sysman-parameter-name-constraints.html>.
+
+- **`aws_organizations_organizational_unit_descendant_organizational_units` (Terraform AWS provider)** — the
+  data source Stage 2 verification (iv) is about: given a parent, it returns organizational units **at any
+  depth**, unlike `aws_organizations_organizational_units`, which returns one level of children. That is
+  what makes `make check-ou` see `Sandboxes` at depth 2 under `Interactive` (D23), and it was confirmed
+  against the pinned provider (aws 6.60.0) rather than taken from the page:
+  <https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/organizations_organizational_unit_descendant_organizational_units>.

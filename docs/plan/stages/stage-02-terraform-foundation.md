@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Status** | **IN PROGRESS. Steps 5.0, 5.1, 1, 6, 9, 2 and 3 closed 2026-08-15** — the delegation applied and *exercised* (INT-20 answered: `identity/org-policies/` is scoped to all ten documents), the five `bootstrap/` slices created with the version pin and a committed multi-platform lock, the `pre-commit`/`tflint`/`checkov` chain passing end to end, the four checks written, wired into **`make check`** and into the commit gate, each demonstrated failing on purpose — **and the project's first `terraform apply`**: `sandbox/bootstrap/` applied local, migrated into its own bucket, second plan empty, locking proven by two concurrent plans. **Step 3 applied the same slice in the four remaining accounts** — **five state buckets now exist**, `production/` carries 3.4's second key, every second plan is empty, and the copy's failure mode is guarded by a fifth check (3.5). **Step 4 is a statement, not work.** **2026-08-16: step 5.1a closed** — the delegation is narrowed to the `InfrastructureAccess` role, verification (ix) answered in all three halves, `DEL-10` green; **decisions 4, 5 and 6 settled** (inline-only boundary, `replace(file(…))`, the CLI import); and **`terraform-live/identity/sso/` is written** — six persona sets, the shared deny fragment, ten enumerated assignments, `InfrastructureAccess` **imported** (seven objects, `0 to change`) and the 22 creates **applied** — the next `plan` is empty, no provisioning failed, and the six sets reach exactly the accounts 1b step 3.1 assigns them. **What remains of step 5 is `org-policies/`.** **Roteiro revised 2026-08-15 against the closed landing zone**, see the table below |
+| **Status** | **DONE — 2026-08-16, with one verification carried out of the stage: (iii), a landing-zone drift read in Management that no `awsds-infra-*` profile can reach.** *What follows is the history of the three sittings, kept because the order the work happened in is why several things were caught.* **Steps 5.0, 5.1, 1, 6, 9, 2 and 3 closed 2026-08-15** — the delegation applied and *exercised* (INT-20 answered: `identity/org-policies/` is scoped to all ten documents), the five `bootstrap/` slices created with the version pin and a committed multi-platform lock, the `pre-commit`/`tflint`/`checkov` chain passing end to end, the four checks written, wired into **`make check`** and into the commit gate, each demonstrated failing on purpose — **and the project's first `terraform apply`**: `sandbox/bootstrap/` applied local, migrated into its own bucket, second plan empty, locking proven by two concurrent plans. **Step 3 applied the same slice in the four remaining accounts** — **five state buckets now exist**, `production/` carries 3.4's second key, every second plan is empty, and the copy's failure mode is guarded by a fifth check (3.5). **Step 4 is a statement, not work.** **2026-08-16: step 5.1a closed** — the delegation is narrowed to the `InfrastructureAccess` role, verification (ix) answered in all three halves, `DEL-10` green; **decisions 4, 5 and 6 settled** (inline-only boundary, `replace(file(…))`, the CLI import); and **`terraform-live/identity/sso/` is written** — six persona sets, the shared deny fragment, ten enumerated assignments, `InfrastructureAccess` **imported** (seven objects, `0 to change`) and the 22 creates **applied** — the next `plan` is empty, no provisioning failed, and the six sets reach exactly the accounts 1b step 3.1 assigns them. **Step 5 closed the same day with `org-policies/`** — ten documents and ten attachments **adopted, none created**, `0 to add / 10 to change / 0 to destroy` with not one `content` or `type` diff in it, second plan `No changes`, and the ceiling proven unrewritten by the bytes rather than by the plan. **Sitting C, 2026-08-16, closed the stage in three blocks.** *Step 8*: the layer table, `make up`/`down`/`status`/`slices`, all four refusals demonstrated (refusal 3 against a fixture that claimed `production/pki` was `[E]`), a sixth check in `make check` and in the commit gate. *The Validation*: `sandbox/scratch-test/` applied, destroyed and rebuilt — the destroy plan named one SSM parameter and `bootstrap/` sat in the refused list — then deleted, its orphan state object with it; **the run found that `awsds` is a reserved SSM Parameter Store prefix** and that the rebuild is proven by a restarted `Version`, not by the ARN. *The close-out*: **(ii), (iv), (v) and (viii) answered**, three of them by the step 5 applies and recorded here for the first time. **Step 7 left the stage** for Stage 3 step 1.1a. **Roteiro revised 2026-08-15 against the closed landing zone**, see the table below |
 | **Prerequisites** | **Stage 1a and Stages 1b, 1c and 1d**, all complete (the landing zone closed 2026-08-15). `Staging` is still unvended, so **step 3 skips `terraform-live/staging/bootstrap/`** and step 5 skips its Staging assignments — the same carve-out 1b steps 3 and 5 already carry, picked up at the vend |
 | **Consumes** | [D3](../decisions/D03-terraform-state.md), [D10](../decisions/D10-identity-center-delegation.md), [D11](../decisions/D11-lab-lifecycle.md), [D16](../decisions/D16-break-glass.md), [D23](../decisions/D23-ou-structure.md), [D27](../decisions/D27-catalog-maintenance.md), [D30](../decisions/D30-scp-recovery.md) *(reverted; its surviving consequence is step 5's rationale)*, [D32](../decisions/D32-account-factory-sso-user.md), [D33](../decisions/D33-control-tower-admin-user.md), [D34](../decisions/D34-account-vending.md), [D35](../decisions/D35-sandbox-cardinality.md), [D36](../decisions/D36-internal-pki.md), [D37](../decisions/D37-nested-ou-inheritance.md) *(5.3/9.3 — `Sandboxes` deliberately carries nothing)* — **plus, for step 5's six permission sets, the design of record in [Stage 1b step 3](stage-01b-identity-and-controls.md) and the decisions it lists** (D14, D18-D22, D31). They are written here and specified there; neither file restates the other |
 | **Proves** | [INT-20](../integrations.md) — the Organizations **policy** delegation into the Identity account, which step 5 assumes and no earlier stage creates |
@@ -57,26 +57,54 @@ addresses** and are kept as they are. They are not the sequence to work in. The 
 4. **Step 2** and **step 3** (the bootstrap slices).
 5. **Step 5** — `identity/sso/` first, `identity/org-policies/` second (5.5). **Step 4** is a rule these two
    obey, not work of its own.
-6. **Step 7** (the three modules). *(Moved after step 5 on 2026-08-15.)* It used to sit between the
-   bootstrap slices and the identity ones, on the argument that bootstrap deliberately consumes no module
-   (2.3) — which is true and does not reach far enough: **nothing else in this stage consumes one either.**
-   `sso/` and `org-policies/` declare `aws_ssoadmin_*` and `aws_organizations_*` resources and call no
-   module at all. Their first caller is Stage 3's `foundation/`. Writing and tagging a module before any
-   caller exists is guessing at an interface, which `docs/plan/conventions.md` already refuses to do for the
-   `sandbox-unit` module — the same argument, one stage earlier.
-7. **Step 8** (the `Makefile`), **step 10** (documentation).
+6. ~~**Step 7** (the three modules).~~ **Moved out of this stage entirely on 2026-08-16 — it is now Stage 3
+   work.** The reasoning is in step 7 below; the short form is that the argument which moved it to the end
+   of the stage on 2026-08-15 does not expire at the end of the stage.
+7. **Step 8** (the `Makefile`), the **Validation**, **step 10** (documentation), and the stage's own
+   **close-out** — the status header and the verifications table.
 
 **What the reordering does not change:** step 5.1 is still the only Management action, and it is still
 performed by `AWS Control Tower Admin`. What changes is that the stage now learns its own scope on the first
 evening rather than on the fourth.
 
-**Two sittings, and the seam is 5.0's answer** — the same shape Stage 1c used, and for the same reason.
-**Sitting A** is items 1-4 above: the delegation and its reachability question, the skeleton, the tooling,
-the checks, and the bootstrap slices. It ends with **state buckets that exist and a known scope for the
-second half** — which is a place the work can genuinely be put down. **Sitting B** is items 5-7: the
-identity slices, the modules, the `Makefile`, the documentation. What must not be split is **step 5 itself**:
-`sso/` and `org-policies/` are two applies, but an import left half-done is a state file that disagrees with
-the organization, and that is the one condition in this stage nobody wants to sleep on.
+**Three sittings, and the first seam is 5.0's answer** — the same shape Stage 1c used, and for the same
+reason. **Sitting A** is items 1-4 above: the delegation and its reachability question, the skeleton, the
+tooling, the checks, and the bootstrap slices. It ends with **state buckets that exist and a known scope for
+the second half** — which is a place the work can genuinely be put down. **Sitting B** is item 5, the two
+identity slices, and it is the one that **must not be split**: `sso/` and `org-policies/` are two applies,
+but an import left half-done is a state file that disagrees with the organization, and that is the one
+condition in this stage nobody wants to sleep on. *(Both closed 2026-08-16.)* **Sitting C is item 7** and is
+described next — it was called "the close-out" for a day, which under-counted it by three steps.
+
+### Sitting C — what is actually left, in order *(written 2026-08-16)*
+
+**The reason this needs writing down rather than being obvious:** on 2026-08-16 both `CLAUDE.md` and
+`docs/log/INDEX.md` said the stage had nothing left but its status header. Measured against the disk that
+was wrong in three places — `terraform-modules/` held only a `README.md`, the `Makefile` said in its own
+header that `up`/`down`/`status` were *"not here yet"*, and no `[E]` slice had ever existed, so the
+Validation had never run. **A stage is closed against its own file, not against a summary of it**, and the
+summary is what was current.
+
+| Block | What | AWS? |
+|---|---|---|
+| ~~**1**~~ | ~~**Step 8**~~ — **DONE 2026-08-16**: the layer table as data, `up`/`down`/`status`, the four refusals of 8.3 each demonstrated, and 8.6's Studio hook | none |
+| ~~**2**~~ | ~~**The Validation**~~ — **DONE 2026-08-16**: `sandbox/scratch-test/` applied, torn down, rebuilt and deleted; **verification (iv) answered** in the same session; the `awsds`/SSM reserved-prefix collision found | one session as `awsds-infra-sandbox-1` |
+| ~~**3**~~ | ~~**Step 10** and the **close-out**~~ — **DONE 2026-08-16**. **(iii) is the one thing left in the stage** and it is a **Management** read as `AWS Control Tower Admin` | none |
+
+**Block 1 has nothing to operate on, and that is the argument for doing it now rather than later.** All
+seven slices on disk are `[P]`, so `make up` and `make down` are no-ops until Stage 3's `egress/` — which is
+precisely why the machinery is written before the first `[E]` slice exists rather than after it. It is 8.6's
+own reasoning applied to the whole target: *a hook added later is a hook that is missing from the first
+teardown that needed it.*
+
+**Block 3 carries more than a header, because four verifications were answered by the step 5 applies and
+recorded nowhere.** (ii) — the pinned provider accepted `DECLARATIVE_POLICY_EC2`, since
+`awsds-org-declarative-ec2` is one of the ten imported. (viii) — zero `content` diff across all four policy
+types, the RCP and the declarative policy included, which is the round-trip the question asked for. (v) —
+answered **by reading**: the `for_each` keys come from `attachments.json`, which authors **names**, so an OU
+created later moves no key. Only (iv) still costs a call, and it costs exactly one: the descendant data
+source has to be seen returning `Sandboxes`, which sits at depth 2 — **the postconditions do not prove it**,
+because every name the map requires sits at depth 1.
 
 ## Who executes what
 
@@ -965,9 +993,11 @@ skips with a reason. **The mechanical detail that cost the first run:** checkov 
 `# checkov:skip=<ID>:<reason>` only **inside** the resource block; above it the line is an ordinary comment
 and the check fails anyway, with nothing saying the suppression was ignored.
 
-### 7. The first reusable modules
+### 7. The first reusable modules — **moved to Stage 3 on 2026-08-16**
 
-`terraform-modules/`: **`s3-bucket`, `iam-role`, `kms-key`.**
+`terraform-modules/`: **`s3-bucket`, `iam-role`, `kms-key`** — **no longer built here.** They are written in
+[Stage 3](stage-03-networking.md) step 1.1, in the same sitting as `vpc/`, and the requirements below travel
+with them unchanged:
 
 - **`s3-bucket`** enables **S3 Bucket Keys** by default (`docs/plan/cost-model.md`) and blocks public access
   unconditionally. The account-level block from 1c step 7.4 is the blanket; this is the module-level half,
@@ -976,6 +1006,23 @@ and the check fails anyway, with nothing saying the suppression was ignored.
   deliberate (`docs/plan/conventions.md`, IAM rules).
 - **`kms-key`** with rotation on and a deletion window, because both are easier to set than to change.
 - **Tag every module release; callers pin the tag** (`docs/plan/conventions.md` §6) — never a branch.
+
+**Why it moved, and it is the same argument twice rather than a new one.** On 2026-08-15 this step was moved
+to the *end* of the stage because nothing in Stage 2 consumes a module: `bootstrap/` is forbidden one (2.3),
+and `sso/` and `org-policies/` declare `aws_ssoadmin_*` and `aws_organizations_*` resources directly.
+**That argument does not expire when the stage does.** At the end of Stage 2 there is still no caller, so
+writing the three interfaces here is guessing — the thing `docs/plan/conventions.md` already refuses to do
+for the `sandbox-unit` module. The first caller is Stage 3's `foundation/`, and Stage 3 **already writes a
+module of its own** (`vpc/`), so the move costs that stage a sitting's structure rather than a new one.
+
+**And it un-blocks an input this stage cannot settle.** A module is consumed **by git tag**, and this is a
+monorepo: the reference is `…/AWS-DataScience.git//terraform-modules/s3-bucket?ref=s3-bucket-v1.0.0` against
+a host that is GitHub today and **GitLab from Stage 7** (D8). Choosing the tag scheme and the source host
+with no caller in hand is choosing them twice. Stage 3 settles both against a real `foundation/`, which is
+where a wrong answer is visible as a failed `init` rather than as a convention nobody exercised.
+
+*Recorded in [`docs/plan/history.md`](../history.md): this is a re-scope decided after the stage had already
+provisioned, which is the class of plan change that file keeps.*
 
 ### 8. Teardown/rebuild tooling (D11)
 
@@ -1006,6 +1053,62 @@ requires `make down` to delete running apps through `sagemaker:ListApps`/`Delete
 blueprint-provisioned domain, discovering the domain ID rather than having it pasted in. Write the hook now
 and leave it empty — a hook added later is a hook that is missing from the first teardown that needed it.
 
+**Built 2026-08-16, offline, with no AWS call in the sitting.** Two files own it and the `Makefile` owns
+none of it — the division step 9 established: [`scripts/tfhygiene/layers.py`](../../../scripts/tfhygiene/layers.py)
+is the table, [`scripts/slices.py`](../../../scripts/slices.py) is `list`/`check`/`up`/`down`/`status`, and
+`make up`/`make down`/`make status`/`make slices` call it. **Five things the step decided while being
+written, each of which it had left open:**
+
+- **8.1's table is a `dataclass` list, and the *rank* is not one of its fields.** Order is read from a
+  `RANKS` map keyed by **slice name** — `bootstrap` 0, `sso` 10, `org-policies` 11, `foundation` 20, `pki`
+  30, `egress` 50 — because the dependency runs along the slice axis and not the account one. A row cannot
+  carry a rank that disagrees with the map, and a slice name absent from the map **raises** rather than
+  defaulting to the end of the order, so a new kind of slice declares its position deliberately.
+- **The table is authored and the tree is discovered, and the disagreement is an error in both
+  directions** — `./scripts/slices.py check`, in `make check` and in `pre-commit` on any `terraform-live/`
+  `.tf`. **The expensive direction is a slice on disk with no row**: `make down` skips what it has never
+  heard of, in silence, and for an `[E]` slice that is a bill. **Both directions were demonstrated failing**
+  before being believed. It is `attachments.json`'s two-list shape (9.3) one target over.
+- **8.4's `status` distinguishes "nothing is declared" from "everything is down", and that is the whole of
+  what it can honestly say today.** It prints the empty set and *why* it is empty rather than `USD 0.00/h`,
+  which is the answer a broken read would also produce (Lesson 13). Once a `[D]`/`[E]` slice exists it reads
+  `terraform show -json` per slice and multiplies by that row's `usd_per_hour` — a **static** rate from
+  `docs/PRICING.md` §3 — and a slice it could not read is reported as `UNREADABLE` and makes the total a
+  floor rather than a measurement.
+- **8.6's hook detects its own obsolescence instead of exiting 0 forever.**
+  [`scripts/down-studio-apps.py`](../../../scripts/down-studio-apps.py) calls `sagemaker list-domains` in the
+  target account: no domain → nothing to delete; **a domain → exit 1** naming the stage that owes it a body;
+  a call that *failed* → exit 1 saying explicitly that this is not evidence no app is running. "Write the
+  hook and leave it empty" is right about the body and would be Lesson 13 about the exit code.
+  **It runs only when the `down` has something to destroy**, because it needs an SSO session and a no-op
+  `make down` must not fail on credentials it never needed.
+- **The `[D]` half is a stub that refuses to be reached silently.** Nothing on disk is `[D]` — **the first
+  is Stage 4's WireGuard `vpn/`**, and `docs/plan/conventions.md` §5.1 names only two dormant things ever,
+  that instance and Stage 7's GitLab EC2 with its EBS volume. **`nfs/`'s EFS is not one of them: it is `[P]`
+  by rule 2** (D24), which is the distinction worth keeping, because "stateful" is what makes a slice `[D]`
+  *or* `[P]` and the two readings diverge exactly there. So `up`/`down` print *"none declared"*, and a `[D]`
+  row arriving before the hook has a body raises, naming 8.2 — the same shape as 8.6, for the same reason.
+
+**All four refusals demonstrated in the same sitting** — 2 with `make down` and no `ENV` (exit 2, from the
+`Makefile` guard *and* from `argparse`, two independent guards for the one refusal whose failure mode is
+"destroyed the wrong account"); 4 against `production/bootstrap`; 1 against `identity/sso` and
+`identity/org-policies`; and **3 against a fixture row that deliberately claimed `production/pki` was
+`[E]`** — the only way to prove that the D36 exclusion is independent of the layer field rather than
+shadowed by it. The fixture was removed and `check` reported the stale row on the way out, which
+demonstrated the table's other direction for free.
+
+**One thing 8.5 did not settle and this build did not settle either:** `ENV` is the **account folder**
+(`sandbox`, `development`, `data-governance`, `production`, `identity`), and `sandbox` is written as unit 1's
+**allocation** rather than as *the* sandbox. The per-unit token is open question 10's and is deferred to
+N=2 — the same caveat `ENV_TOKENS` already carries, in the same file, so the two move together.
+
+**A fourth vocabulary landed in [`scripts/tfhygiene/backend.py`](../../../scripts/tfhygiene/backend.py):
+`PROFILES`**, the account folder → SSO profile map `up`/`down` authenticate through. It goes there because
+that file is already the one keyed by account folder (Lesson 14), and because the profile is passed as
+`AWS_PROFILE` **on each command** — never exported — which is Lesson 25 made structural rather than
+remembered. `--dry-run` prints every command and runs none, which is also how the Validation reads a plan
+instead of trusting a target list.
+
 ### 9. The checks that keep the conventions honest — four of them since 2026-08-15
 
 **None of these run in "CI", because there is no CI.** GitLab arrives at Stage 7 and `.gitlab-ci.yml` at
@@ -1025,6 +1128,7 @@ same scripts, so a gate and a target cannot disagree.**
 | 9.3 | [`scripts/check-ou-coverage.py`](../../../scripts/check-ou-coverage.py) | **`make check-ou` only** — it needs an SSO session |
 | 9.4 | `terraform-live/identity/org-policies/check-index.py` | `make check` + `pre-commit` on `policies/` or `POLICIES.md` |
 | 3.5 | [`scripts/check-bootstrap-parity.py`](../../../scripts/check-bootstrap-parity.py) | `make check` + `pre-commit` on `terraform-live/*/bootstrap/` — **a fifth, added by step 3** rather than by this step, because it guards a rule step 3 creates |
+| 8.1 | [`scripts/slices.py`](../../../scripts/slices.py)` check` | `make check` + `pre-commit` on any `terraform-live/**/*.tf` — **a sixth, added by step 8** (2026-08-16), same reason: it guards a rule step 8 creates. A slice with no layer row is skipped by `make down` in silence |
 
 **Four things settled while writing them, none of which the step had decided:**
 
@@ -1196,6 +1300,17 @@ Each is written so its output differs between working and broken (Lesson 13):
   underneath them all**: a scanner made to break reports `FAIL … this section checked NOTHING`, not `none`.
 - **The `Makefile` refuses what it must:** `make down ENV=sandbox` is a **safe no-op** at this point — no
   `[E]` or `[D]` slice exists yet — and `bootstrap/` is untouched; `make down` with no `ENV` exits non-zero.
+  **Met 2026-08-16**, and then met a second time in the way that matters more: **against a real `[E]`
+  slice.** A no-op proving a refusal is Lesson 13's shape — a target that refuses everything and a target
+  that does nothing print the same thing — so the Validation gave `make down` something it *could* destroy,
+  and the destroy plan named the SSM parameter and nothing else while `bootstrap/` sat in the refused list.
+  All four refusals were fired individually, refusal 3 against a fixture row that deliberately claimed
+  `production/pki` was `[E]`, which is the only way to show the D36 exclusion is not merely shadowed by the
+  layer filter.
+- **A slice that declares no layer cannot pass the gate:** creating `sandbox/scratch-test/` turned
+  `./scripts/slices.py check` red before its rows were written, and removing the slice while leaving a row
+  turned it red the other way. **Met 2026-08-16**, both directions, which is what makes the layer table
+  evidence rather than a listing.
 
 ## Validation
 
@@ -1205,6 +1320,67 @@ Each is written so its output differs between working and broken (Lesson 13):
 2. **Isolation:** confirm `make down` leaves `bootstrap/` untouched — by reading the plan output, not by
    trusting the target list.
 3. **Delete the throwaway slice** when both pass.
+
+**The recipe, written out 2026-08-16 so the sitting is a paste rather than a design** *(step 8 exists now,
+so the Validation has something to validate)*. **Who:** the infrastructure user on `Sandbox Account 1`
+through `InfrastructureAccess` — profile `awsds-infra-sandbox-1`, and `AWS_PROFILE` is on each command
+because `slices.py` puts it there (Lesson 25). One `aws sso login --sso-session awsds` first.
+
+1. **The slice.** `terraform-live/sandbox/scratch-test/` with `versions.tf` and `providers.tf` copied from
+   `sandbox/bootstrap/`, a `backend.tf` that is **live from the start** — only `bootstrap/` migrates
+   (step 4) — and one `main.tf` holding a single `aws_ssm_parameter` (`String`, one value, the five tags
+   arriving from `default_tags`). Free, instant, and it deletes cleanly.
+2. **Two rows, not one.** `layers.py` gains `Slice("sandbox", "scratch-test", EPHEMERAL, …)` **and**
+   `RANKS` gains `"scratch-test"` — the rank map raises on an unknown name rather than defaulting, which is
+   the guard 8.1 was given. `make check` is red between creating the folder and adding the rows, and that is
+   the check doing its job rather than an obstacle.
+3. **First apply** — `make up ENV=sandbox`, which is now non-trivial for the first time: the refusal list
+   still prints five `[P]` slices and the `[E]` one is applied. Record the parameter's ARN.
+4. **`make down ENV=sandbox`**, and **read the plan before approving** — the isolation test is that
+   `bootstrap/` appears in the *refused* list and in no destroy plan. `--dry-run` prints every command
+   without running one, which is the cheaper half of the same reading.
+5. **`make up ENV=sandbox` again**, and confirm the parameter comes back with the same name and value.
+   *An identical ARN is not the claim* — SSM parameters have no generation in their ARN, so what is
+   demonstrated is a slice rebuilt from code, not a resource that survived.
+6. **`make status`** now takes its other branch for the first time: a declared `[E]` slice, read rather
+   than assumed. It reports `UP` before the `down` and `down` after it — the distinction the empty-set
+   branch cannot make, and the reason 8.4 was written with two branches.
+7. **Delete the folder and both table rows**, then `make check` green again. The Validation is a
+   measurement, not a fixture: an `[E]` slice left behind would be the first row in a table whose whole
+   claim is that it matches the disk.
+
+**RAN 2026-08-16 — both halves pass, and the slice is gone.** Infrastructure user on `Sandbox Account 1`
+through `InfrastructureAccess` (`awsds-infra-sandbox-1`). **Four things the run produced that the recipe had
+not, and the first is the one that outlives this stage:**
+
+- **`awsds` is a reserved prefix in SSM Parameter Store, and the repository's own naming convention walked
+  straight into it.** The first apply used `/awsds/sandbox/scratch-test/validation` and AWS refused at
+  `PutParameter`: *`AccessDeniedException: No access to reserved parameter name`*. Parameter Store reserves
+  any name beginning with **`aws`** or **`ssm`**, and `awsds` begins with `aws`. **The collision is specific
+  to Parameter Store *names*** — `awsds-` is untouched everywhere else, which is why five state buckets, ten
+  policies and seven permission sets never met it. **Any stage that writes a project parameter needs a
+  different first segment**, and the failure is an `AccessDenied` that reads like a policy problem rather
+  than like a naming one. Recorded in `docs/plan/conventions.md` under naming.
+- **The value is read back from AWS, not exported from state — and the provider is what forced the
+  question.** `aws_ssm_parameter.value` is sensitive, so an output needs `sensitive = true`; that is
+  available and is the wrong answer, because the Validation's claim is *rebuilt from code* and a value read
+  out of the state file is the state agreeing with itself. Same discipline as step 5's read-backs.
+- **The rebuild is proven by the `Version`, not by the ARN.** After `down` then `up` the parameter reads
+  back with the same name and value at **`Version 1`**, not 2 — SSM's version counter restarts, so the
+  object is demonstrably **new** rather than a survivor. The ARN is derived from the name and would have
+  been identical either way, which is exactly why `outputs.tf` says so in the file.
+- **The Validation leaves an orphan state object and it was deleted deliberately.**
+  `sandbox/scratch-test/terraform.tfstate` (540 bytes, an empty resource list) survives a `destroy` because
+  a destroy empties a state, it does not remove it. Left behind, it is a state key for a slice that no
+  longer exists — the residue `./aws/tf-backends.py` would later have to explain. Deleted; versioning being
+  on, that is a delete marker whose noncurrent versions expire under 2.1's 90-day rule.
+
+**The two claims the Validation exists to make, measured rather than asserted:** `make down ENV=sandbox`
+planned **`0 to add, 0 to change, 1 to destroy`** and named only the parameter — `bootstrap/` appeared in
+the *refused* list and in no plan, and its bucket and key answered afterwards unchanged. And `make status`
+took **both** of its branches for the first time: `UP 1 resource(s)` before the teardown, `down 0
+resource(s)` after it, and the empty-set branch again once the rows were removed. **8.6's hook ran for
+real**, not as a stub: *"no SageMaker domain in sandbox - nothing to delete"*.
 
 ## Decisions due while executing
 
@@ -1306,13 +1482,13 @@ Record every answer in `docs/log/log-stage-02-terraform-foundation.md`, includin
 | # | Question | Step |
 |---|---|---|
 | i | **First half answered 2026-08-15, by reading the applied bucket: yes — `pki/` keeps its own key inside the shared Production bucket, and the own-bucket fallback is not needed.** The bucket policy is *one* statement (`DenyInsecureTransport`, `Bool aws:SecureTransport = false`) with **no `s3:x-amz-server-side-encryption-aws-kms-key-id` condition anywhere**, and SSE-KMS default encryption is a *default*: a `PutObject` naming another key overrides it. **The second half — does an S3 Bucket Key apply to that override — stays open, and it is not answerable by reading**: `BucketKeyEnabled` is reported per object, so it needs an object encrypted under the PKI key. It arrives free at Stage 7's first `production/pki/` init, or earlier from a three-call probe (`put-object --ssekms-key-id`, `head-object`, `delete-object`). **Either answer leaves D36's alarm intact** — it is scoped to the *key*, which the event names in `resources` (2.7) — so what is open is how the record reads, not whether the control fires | 3.4 |
-| ii | Does the pinned provider support `aws_organizations_policy` with `type = "DECLARATIVE_POLICY_EC2"`? | 5.2 |
-| iii | Does the Organizations **policy** delegation coexist with the Control Tower landing zone without raising drift? | 5.1 |
-| iv | Does `aws_organizations_organizational_unit_descendant_organizational_units` really recurse, in the pinned version? | 5.3 |
-| v | Is the `for_each` key stable enough that adding an OU does not re-create existing attachments? | 5.3 |
+| ii | ~~Does the pinned provider support `aws_organizations_policy` with `type = "DECLARATIVE_POLICY_EC2"`?~~ **Answered 2026-08-16 by the apply: yes.** `awsds-org-declarative-ec2` is one of the ten documents imported and tagged in `identity/org-policies/`, under **aws 6.60.0**, and its `type` produced no diff in a plan that read `0 to add, 10 to change, 0 to destroy`. The fallback the question was written for — that one policy stays console-managed and is *recorded* as unowned — is not needed | 5.2 |
+| iii | Does the Organizations **policy** delegation coexist with the Control Tower landing zone without raising drift? **The one verification Stage 2 leaves open, and by access rather than by difficulty:** it is a landing-zone read in **Management**, which no `awsds-infra-*` profile reaches — `AWS Control Tower Admin` / `AWSAdministratorAccess`, the same path as 5.1. **What 1d already settled about its shape:** Control Tower watches a closed list of objects it owns, so `IN_SYNC` confirms nothing was tripped rather than predicting an update, and 1c's ten customer documents never raised drift for the same reason. This asks the narrower question the delegation raises — a **resource policy on the organization**, which is Control Tower's own object class | 5.1 |
+| iv | ~~Does `aws_organizations_organizational_unit_descendant_organizational_units` really recurse, in the pinned version?~~ **Answered 2026-08-16: yes**, read from the applied slice with `terraform console` as `awsds-infra-identity`. It returns **seven** OUs — `Data`, `Identity`, `Interactive`, `Policy Test`, `Sandboxes`, `Security`, `Workloads` — and **`Sandboxes` is the evidence**: it sits at depth 2 under `Interactive` (D23), so a single-level source would have omitted exactly it. **The postconditions do not prove this and could not**: every name `attachments.json` requires sits at depth 1, so they pass identically against a non-recursing source. The stakes were already reduced by 5.3 point 1 — this feeds `make check-ou`, not the attachments | 5.3 |
+| v | ~~Is the `for_each` key stable enough that adding an OU does not re-create existing attachments?~~ **Answered by reading, 2026-08-16, and the reading is short because 5.3 point 1 made it so.** The keys are computed from `attachments.json`, which authors **names**; the OU data source only turns an authored name into an id. A new OU therefore adds no key, changes no key and is invisible to this `for_each` — it surfaces in `make check-ou` as an OU in neither list, which is where 9.3 was moved to catch it. This is Lesson 22's shape: the harness cannot produce a new OU without vending one, and the property is decided by what computes the key | 5.3 |
 | **vi** | **Can the delegated administrator manage a *root-attached* document, not only an OU-attached one?** This is the one that decides the size of the stage, and it is answered first | **5.0** |
 | **vii** | ~~Does `CTMULTISERVICEPV1` exempt `organizations:*` for *writes*?~~ **Answered by reading — the 1d log already took the read (2026-08-14): the `CT.MULTISERVICE.PV.1` document on `Identity` (`p-fw2pctqw`) carries `organizations:*` wholly in its `NotAction`**, the service wildcard, so writes are exempt along with the reads. Every call this slice makes is out-of-Region by construction (Organizations answers in `us-east-1`) and none is Region-denied. Re-read in 5.0 only if the landing zone was updated since | 5.0 |
-| **viii** | **Does `jsonencode(jsondecode(replace(file(…))))` reproduce the attached bytes**, for all four policy types? Organizations may re-serialise on its side; the RCP and the declarative policy have never been round-tripped | 5.5a |
+| **viii** | ~~**Does `jsonencode(jsondecode(replace(file(…))))` reproduce the attached bytes**, for all four policy types?~~ **Answered 2026-08-16: yes for all four, and the answer cost one tracked file.** The plan carried **no `content` diff on any of the ten documents**, RCP and declarative policy included, and the apply's read-back confirms the live bytes are still 1c's console paste — so the comparison is *structural*, not byte-for-byte, which is what `jsonencode(jsondecode(…))` was chosen to make true. **The one file that had to change is the finding**: `awsds-org-rcp-perimeter.json` wrote a single action as `["ecr:*"]` where Organizations holds `"ecr:*"` — identical to IAM, different to the provider — and it was the folder's only one-element action array against seven single-action statements already written as scalars | 5.5a |
 | **ix** | ~~**Does the delegation document accept a `Condition` on `aws:PrincipalArn` at all** — and, if it does, does the A/B come back (a) `AccessDenied` from `awsds-ctadmin-orgfull-identity` **and** (b) still `DuplicatePolicyAttachmentException` from `awsds-infra-identity`?~~ **Answered 2026-08-16, all three halves: the document accepts the condition** (unlike `NotAction`/`NotResource`, which it still rejects — so those are not one rule with two instances); **(a) returned `AccessDeniedException` and (b) still returned `DuplicatePolicyAttachmentException`**, with `DEL-10` flipping red→`pass` on the read-back. Half an answer here would have been indistinguishable from a broken delegation, which is why both legs were run in the same sitting | **5.1a** |
 
 ---

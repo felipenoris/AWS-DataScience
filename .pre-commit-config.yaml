@@ -91,6 +91,17 @@ repos:
         pass_filenames: false
         files: ^terraform-live/[^/]+/bootstrap/
 
+      # 8.1 - every slice on disk declares its D11 layer in scripts/tfhygiene/layers.py. The
+      # direction that costs money is a slice with no row: `make down` skips it in silence,
+      # and for an [E] slice that is a bill nobody is told about. It fires on any .tf under
+      # terraform-live/ so that CREATING a slice trips it, not only editing the table.
+      - id: check-slice-layers
+        name: every slice declares its [P]/[D]/[E] layer (8.1)
+        entry: ./scripts/slices.py check
+        language: system
+        pass_filenames: false
+        files: ^(terraform-live/[^/]+/[^/]+/.*\.tf|scripts/tfhygiene/layers\.py)$
+
       # 9.4 - it already existed and was run by hand, which is exactly the state step 9 ends.
       # Once org-policies/ manages these documents, a statement added in Terraform with no row
       # in POLICIES.md is a control nobody can explain a year later.

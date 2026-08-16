@@ -66,17 +66,23 @@ Blueprint for using AWS as a Data Science infrastructure provider.
   no `aws_s3_account_public_access_block` in any slice, no wildcard-account ARN in an identity-plane policy,
   no OU left out of the authored attachment map, and — `check-bootstrap-parity.py` — no drift between the
   five `bootstrap/` slices, which are one slice copied five times because a module would have to be consumed
-  by a git tag that does not exist yet.
+  by a git tag that does not exist yet. `slices.py` is the sixth and it is also a *target*: it owns D11's
+  layer table and the `up`/`down`/`status` machinery behind the `Makefile`, and as a check it fails when a
+  slice on disk declares no layer — the direction that costs money, since `make down` skips in silence what
+  it has never heard of.
 - `Makefile` — how those checks are run: `make check` offline, `make check-ou` with an SSO session. The same
   scripts sit behind the `pre-commit` hooks, so the commit gate and the target cannot disagree.
-  `make` itself is a convenience, not a dependency - every target is a direct call to scripts
-  that also run standalone - and `make clean` returns a clone to its just-cloned state: it
-  removes `aws/output/`, `.venv/` and the caches, by name, and never touches `secrets/`.
-  `make` itself is a convenience, not a dependency - every target is a direct call to scripts
-  that also run standalone - and `make clean` returns a clone to its just-cloned state: it
+  `make` itself is a convenience, not a dependency — every target is a direct call to scripts
+  that also run standalone — and `make clean` returns a clone to its just-cloned state: it
   removes `aws/output/`, `.venv/` and the caches, by name, and never touches `secrets/`. **There is
-  no CI yet** — GitLab is Stage 7 — and Stage 8 adds a third caller rather than a rewrite. `make up` /
-  `make down` (D11) arrive with Stage 2 step 8.
+  no CI yet** — GitLab is Stage 7 — and Stage 8 adds a third caller rather than a rewrite.
+  It also carries **D11's lifecycle** since Stage 2 step 8: `make slices` prints which slice is `[P]`,
+  `[D]` or `[E]`; `make up ENV=<account-folder>` applies the ephemeral ones and starts the dormant ones;
+  `make down ENV=…` reverses it; `make status` says what is up and what it burns per hour. **All four are
+  honest no-ops today** — every slice on disk is `[P]` — and they were written before the first `[E]` slice
+  (Stage 3's `egress/`) rather than after it, so the first teardown that matters meets a `make down` that
+  already refuses what it must: a `[P]` slice, a missing `ENV`, `production/pki/` (D36) and `bootstrap/`,
+  which holds its own state.
 - `pyproject.toml`, `.python-version`, `uv.lock` — **every script in this repository but two is Python 3,
   run through uv** (2026-08-15; they began as shell). The scripts keep their paths and carry the shebang
   `#!/usr/bin/env -S uv run --quiet`, so `./scripts/<name>.py` and `./aws/<name>.py` resolve the pinned

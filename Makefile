@@ -14,8 +14,16 @@
 # every target is a direct call to scripts that run standalone, and pre-commit invokes the
 # same scripts without it - this file exists to name the bundles, not to build anything.
 #
-# WHAT IS NOT HERE YET: `up`, `down` and `status` - the teardown/rebuild tooling of D11.
-# That is step 8, and it adds targets to this file rather than a second one.
+# `up`, `down` AND `status` ARRIVED WITH STEP 8 (2026-08-16), and they are D11's teardown and
+# rebuild tooling: destroy the [E] slices between sessions, stop the [D] ones, never touch a
+# [P] one. All three delegate to ./scripts/slices.py, which owns the layer table and the four
+# refusals of 8.3 - this file adds one of those refusals a second time, deliberately:
+# `make down` with no ENV must FAIL rather than mean "everything", and that is the one whose
+# failure mode is expensive enough to guard twice.
+#
+# EVERY SLICE ON DISK IS [P] TODAY, so `make up` and `make down` are honest no-ops. They were
+# written before the first [E] slice (Stage 3's egress/) rather than after it, which is step
+# 8.6's own argument applied to the whole target.
 #
 # THE CHECK LIST GREW ONE ENTRY AT STEP 3 (2026-08-15): check-bootstrap-parity.py. The five
 # bootstrap slices are one slice copied five times, by decision (step 2.3 - a module would need
@@ -42,14 +50,18 @@
 # fix it as its own piece of work.
 
 SHELL := /bin/bash
-.PHONY: help check check-ou check-docs check-all clean
+.PHONY: help check check-ou check-docs check-all clean up down status slices guard-env
 
 help:
 	@printf 'targets:\n'
-	@printf '  check       step 9 offline - conventions, wildcard ARNs, bootstrap parity, the policy index\n'
+	@printf '  check       step 9 offline - conventions, wildcard ARNs, bootstrap parity, slice layers, the policy index\n'
 	@printf '  check-ou    step 9.3 - OU coverage, needs an SSO session (Identity)\n'
 	@printf '  check-docs  the plan reference check (known red, see the note in this file)\n'
 	@printf '  check-all   all of the above\n'
+	@printf '  slices      the D11 layer table - which slice is [P], [D] or [E]\n'
+	@printf '  up   ENV=x  start the [D] slices and apply the [E] ones of one account folder\n'
+	@printf '  down ENV=x  delete Studio apps, destroy the [E] slices, stop the [D] ones\n'
+	@printf '  status      what is up and the estimated hourly burn (static rates, PRICING 3)\n'
 	@printf '  clean       remove the volatile artifacts (aws/output, .venv, caches) - never secrets/\n'
 
 # Each script runs even when an earlier one failed - a check suite that stops at the first red
@@ -59,6 +71,7 @@ check:
 	for c in "./scripts/check-tf-conventions.py" \
 	         "./scripts/check-iam-wildcards.py" \
 	         "./scripts/check-bootstrap-parity.py" \
+	         "./scripts/slices.py check" \
 	         "./terraform-live/identity/org-policies/check-index.py"; do \
 	  printf '\n\033[1m--- %s\033[0m\n' "$$c"; \
 	  $$c || fail=1; \
@@ -73,6 +86,35 @@ check-ou:
 
 check-docs:
 	@./scripts/check-plan-refs.py
+
+# ---------------------------------------------------------------- D11 lifecycle (step 8)
+#
+# REFUSAL 2 OF 8.3, AND IT IS HERE *AS WELL AS* IN slices.py ON PURPOSE. `make down` with no
+# ENV must fail, never default to everything - the one refusal whose failure mode is
+# "destroyed the wrong account". argparse enforces it inside the script; this guard catches it
+# one layer earlier, with a message about the target the user actually typed. Two independent
+# guards for one rule is not duplication when the rule is this one.
+guard-env:
+	@if [ -z "$(ENV)" ]; then \
+	  printf '\033[1mENV is required\033[0m - `make down` never means "everything" (step 8.3 refusal 2).\n'; \
+	  printf 'usage: make %s ENV=<account-folder>\n' "$(TARGET)"; \
+	  ./scripts/slices.py list >/dev/null 2>&1 && printf '\nknown slices:\n' && ./scripts/slices.py list; \
+	  exit 2; \
+	fi
+
+slices:
+	@./scripts/slices.py list $(ENV)
+
+up:
+	@$(MAKE) --no-print-directory guard-env TARGET=up
+	@./scripts/slices.py up --env $(ENV) $(if $(AUTO),--auto-approve,) $(if $(DRY),--dry-run,)
+
+down:
+	@$(MAKE) --no-print-directory guard-env TARGET=down
+	@./scripts/slices.py down --env $(ENV) $(if $(AUTO),--auto-approve,) $(if $(DRY),--dry-run,)
+
+status:
+	@./scripts/slices.py status $(if $(ENV),--env $(ENV),)
 
 # WHAT clean REMOVES, BY NAME. Only machine-generated artifacts: the snapshots (any aws/
 # script regenerates its own), uv's environment (the next script invocation rebuilds it,

@@ -55,8 +55,39 @@ ENVIRONMENT_TAGS = {
 }
 
 
+# THE FOURTH VOCABULARY, and it lands here for the reason the other three did: the account
+# folder is the key, and a second file keyed by the same thing is Lesson 14 waiting (Stage 2
+# step 8, 2026-08-16). `make up` / `make down` have to reach an account, and the only sanctioned
+# way is a NAMED SSO PROFILE on the command line - never `eval $(aws sts assume-role ...)`,
+# whose credential outlives the command and makes every later error name the wrong account
+# (Lesson 25). The profile is on the command line because that is where it can be read.
+#
+# `sandbox` IS AN ALLOCATION, NOT A FINAL NAME - the same caveat ENV_TOKENS carries. D35 vends
+# one Sandbox per business unit and N is 1, so `awsds-infra-sandbox-1` is unit 1's profile and
+# not "the sandbox profile". Open question 10's per-unit token is deferred to N=2, and this row
+# moves with it.
+#
+# TWO ACCOUNTS ARE ABSENT ON PURPOSE. `staging` is unvended (step 3.2), so it has no profile to
+# name; Log Archive and Audit hold no CLI profile at all and no Terraform slice either.
+PROFILES = {
+    "sandbox": "awsds-infra-sandbox-1",
+    "development": "awsds-infra-dev",
+    "data-governance": "awsds-infra-data",
+    "production": "awsds-infra-prod",
+    "identity": "awsds-infra-identity",
+}
+
+
 class UnknownAccountFolder(Exception):
     """An account folder outside the vocabulary above."""
+
+
+def profile(account: str) -> str:
+    """The SSO profile a slice in this account is applied through."""
+    try:
+        return PROFILES[account]
+    except KeyError:
+        raise UnknownAccountFolder(account) from None
 
 
 def env_token(account: str) -> str:

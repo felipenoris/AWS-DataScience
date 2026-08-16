@@ -17,6 +17,17 @@ before the call. A throwaway that outlives its battery is the thing this rule is
 Example: `awsds-sandbox-vpc`, `awsds-data-raw` (the lake lives in Data Governance since D22, so
 `awsds-prod-raw-data` would name a bucket that does not exist), `awsds-prod-ecr-dev-env`.
 
+**One service refuses this prefix outright, and it was measured rather than anticipated: SSM Parameter
+Store** (Stage 2's Validation, 2026-08-16). Parameter Store reserves every name beginning with **`aws`** or
+**`ssm`**, case-insensitive — and `awsds` begins with `aws`, so `/awsds/…` is rejected at `PutParameter`
+with **`AccessDeniedException: No access to reserved parameter name`**, a message that reads like a policy
+problem and is a naming one. **A project parameter therefore takes `/datascience/<env>/…` as its path** —
+the project name spelled out, since the abbreviation is precisely what collides. Nothing else in this
+design is affected: the collision is specific to Parameter Store *names*, and buckets, keys, roles, policies
+and permission sets all keep `awsds-`. *(Reading a **public** parameter — `/aws/service/ami-…` for an AMI,
+which `docs/plan/architecture.md` §4.1 requires — is unaffected: that is AWS's own namespace being read,
+not ours being written.)*
+
 **Mandatory tags on every resource:**
 `Project=AWS-DataScience`, `Environment=sandbox|development|data|staging|production|org`,
 `ManagedBy=terraform|console`, `Owner=<sso-group>`, `CostCenter=<stage>`. (`org` marks org-level and **platform**

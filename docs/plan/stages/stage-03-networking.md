@@ -256,6 +256,26 @@ exists is worse than no row.
 **1.1 — The module.** `terraform-modules/vpc/`, applied by **every account that has a VPC**: Sandbox (one
 per business unit, D35), Development, Staging, Production. Data Governance is not one of them (D22).
 
+**1.1a — And it is no longer the only module written here** *(moved in from Stage 2 on 2026-08-16)*.
+**`s3-bucket`, `iam-role` and `kms-key` — Stage 2 step 7 — are written in this sitting**, with the
+requirements that stage authored carried over verbatim: Bucket Keys on and public access blocked
+unconditionally; a **permissions boundary as a required argument**, so omitting one is deliberate; rotation
+and a deletion window. The move is the same argument Stage 2 used twice — *a module written before a caller
+exists is a guessed interface* — and **this stage is the caller**: `foundation/` is the first slice in the
+repository that instantiates any of the three.
+
+**Two things the move brings with it, and neither is optional here.**
+
+- **The tag scheme and the source host are settled in this stage, because this is where a wrong answer
+  fails at `init` rather than sitting unexercised.** Modules are consumed **by git tag, never by branch**
+  (`docs/plan/conventions.md` §6), and this is a **monorepo**: the reference is
+  `…/AWS-DataScience.git//terraform-modules/<name>?ref=<name>-vX.Y.Z`. The host is GitHub today and
+  **GitLab from Stage 7** (D8), so record which one the first callers pin and what moving it will cost —
+  a `source` that changes host is every caller's `init` changing with it.
+- **`foundation/` decides which of the three it actually consumes.** The flow logs of step 5 are the
+  candidate for `iam-role` and `kms-key`; a module nothing in this stage instantiates is the same guess one
+  stage later, so it waits for *its* caller rather than being written for symmetry.
+
 **1.2 — The address plan, settled here because D35 said this is where it is settled.** Ranges are
 non-overlapping even between accounts that will never peer: Staging is deliberately unpeered (D20), but a
 CIDR chosen to overlap cannot be revisited without rebuilding the VPC, and address space costs nothing.

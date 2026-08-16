@@ -292,6 +292,24 @@ onwards the file records how the environment changed, not just the plan.
   entry only because the stage it reorganises has not started: **[`docs/log/`](../log/INDEX.md) needs a file for
   1c and one for 1d, and only the user writes those.**
 
+- **2026-08-16 — Stage 2 step 7 leaves Stage 2 and becomes Stage 3 step 1.1a.** The three modules
+  (`s3-bucket`, `iam-role`, `kms-key`) were moved to the *end* of Stage 2 on 2026-08-15, on the finding that
+  nothing in the stage consumes one — `bootstrap/` is forbidden a module (step 2.3) and both identity slices
+  declare their resources directly. **The argument was applied one step short of its conclusion:** it does
+  not expire when the stage does, and at the end of Stage 2 there is still no caller. The first is Stage 3's
+  `foundation/`, which already writes a module of its own (`vpc/`), so the move costs that stage structure
+  rather than a new sitting. It also un-blocks an input Stage 2 cannot settle: modules are consumed **by git
+  tag** in a **monorepo**, and the host is GitHub today and GitLab from Stage 7 (D8) — choosing the tag
+  scheme with no caller in hand is choosing it twice. **This entry exists because the re-scope came after
+  the stage had provisioned** (five state buckets, two identity slices), which is the class of change this
+  file keeps.
+
+  **The re-scope was found by measuring the disk against the stage file, and that is the transferable
+  half.** `CLAUDE.md` and `docs/log/INDEX.md` both said Stage 2 had nothing left but its status header;
+  `terraform-modules/` held one `README.md`, the `Makefile` said in its own header that `up`/`down`/`status`
+  were not written yet (step 8), and no `[E]` slice had ever existed, so the Validation had never run. **A
+  stage is closed against its own file, never against a summary of it.**
+
 ---
 
 *Plan core: [GENERAL_PLAN.md](../GENERAL_PLAN.md) · Decisions: [docs/plan/decisions/INDEX.md](decisions/INDEX.md) · Stages: [docs/plan/stages/INDEX.md](stages/INDEX.md)*

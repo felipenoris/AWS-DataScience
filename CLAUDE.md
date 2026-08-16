@@ -170,28 +170,30 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
 ### Current position
 
 - **Landing zone closed — Stages 0-1d DONE (2026-08-15)**, except the `Staging` vend: held on the account
-  cap, **open AWS support ticket** (`aws/cloudshell/management-quotas.sh` re-asks). Ten policy documents,
-  four types, attached — six on the root, four per-OU — battery 93/93.
-- **Stage 2 IN PROGRESS — every step closed except `identity/org-policies/`.** 5.0, 5.1, 1, 6, 9, 2, 3
-  (2026-08-15); 5.1a and the `sso/` half of step 5 (2026-08-16). What is **deployed**: five state buckets
-  (`prod` carries D36's second key); `identity/sso/` — seven persona/admin sets, ten enumerated assignments,
-  29 objects, empty plan; the Organizations delegation narrowed to the `InfrastructureAccess` role
-  (`DEL-10` green). The delegation itself is hand-applied and **stays out of Terraform**
-  (`POLICIES.md`/`INV-15`). Decisions 4/5/6 settled. **`org-policies/` IMPORTED AND APPLIED
-  (2026-08-16)** — ten policies + ten attachments adopted, none created; second plan `No changes`;
-  read-back: ten ids across the four type filters match state, five tags everywhere
-  (`CostCenter=stage-01c`), four descriptions repaired, **content never sent** (live bytes still the
-  1c console paste). `prevent_destroy` on both resources — detaching is a two-commit operation.
-  `type`/`description` live in `locals.tf` and nowhere else. One template changed: the RCP's
-  `["ecr:*"]` → `"ecr:*"` (provider compares content structurally). **Step 5 is fully closed — what
-  remains of Stage 2 is its own close-out (status header, verifications table).**
-- **Gates, and there is no CI:** `make check` (offline, five checks), `make check-ou` (session),
-  `make check-docs` — **the last one is red** on pre-Stage-2 prose and stays out of the commit gate.
+  cap, **open AWS support ticket** (`aws/cloudshell/management-quotas.sh` re-asks). Ten documents, four
+  policy types — battery 93/93.
+- **Stage 2 DONE (2026-08-16) — one verification carried out: (iii)**, a landing-zone drift read in
+  **Management** as `AWS Control Tower Admin`, unreachable from any `awsds-infra-*` profile.
+  **Deployed**: five state buckets (`prod` carries D36's second key);
+  `identity/sso/` — seven sets, ten assignments, 29 objects, empty plan; `identity/org-policies/` — ten
+  policies + ten attachments **adopted, none created**, second plan `No changes`, `prevent_destroy` on both
+  (detaching = two commits), **content never sent** (live bytes are still 1c's paste);
+  `type`/`description` only in `locals.tf`. Decisions 4/5/6 settled. Delegation narrowed to
+  `InfrastructureAccess` (`DEL-10` green), hand-applied, **stays out of Terraform**
+  (`POLICIES.md`/`INV-15`). Step 8: layer table (`scripts/tfhygiene/layers.py`) +
+  `make up`/`down`/`status`/`slices`, four refusals demonstrated; all seven slices `[P]`, so both targets
+  are no-ops until Stage 3's `egress/`. **Step 7 moved to Stage 3 step 1.1a** — no caller exists yet.
+  **`awsds` is a reserved prefix in SSM Parameter Store**: project parameters take `/datascience/<env>/…`.
+- **Gates, and there is no CI:** `make check` (offline, six checks), `make check-ou` (session),
+  `make check-docs` — **red** on pre-Stage-2 prose, outside the commit gate.
 - **Stage 3 pre-instrumented (2026-08-15); its five execute-time decisions settled 2026-08-16:**
   `aws/networking.py`, `aws/egress.py`. Step 0 — **delete every Account Factory VPC** (`docs/AWS_STATE.md`
   §C), creation off in Account Factory, that half **before the `Staging` vend**; flow logs 30d;
   `egress_mode=A`; CIDR/`zone_ids` in `scripts/tfhygiene/backend.py`; the S3 allow-list is five families and
   **a NAT does not bypass it** — load-bearing from Stage 4.
+- **Stages 4 + 5 revised, pre-instrumented (2026-08-16):** `aws/vpn.py`, `aws/datalake.py` — `DL-5`
+  guards INT-11's `Parameters` (reads `4`/`TRUE`). The corrections folded in are each stage's status
+  row; INT-16's portal half ends at Stage 6.
 - **Standing rules that outlive their stages:** never add an `sts:` action to the RCP without reading
   `CT.STS.PV.1`'s exclusion note; 1d step 9 is the **only** sanctioned by-hand use of
   `AWSControlTowerExecution`; **resolve an account by name only with the exact vended name** — every one
@@ -203,19 +205,19 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   (`CHK-1`/`CHK-2` and `org-policies.py` §4 are the instruments there).
 - **Before reporting a gap, read the file that owns it:** unexercised denies and deliberate allowances →
   `POLICIES.md`; 1b residue and every "expected" reading → `docs/AWS_STATE.md`; the SMUS findings for Stages
-  5/6/10 → open questions 12-15, atop Stage 6 (load-bearing for its notebook-VPC default).
+  5/6/10 → open questions 12-15, atop Stage 6.
 - **Deferred by decision — do not offer to close:** the USD 50 budget notifies nobody (D12); open question
   10's per-unit tokens wait for N=2; Config recorder left alone and Management unrecorded (Stage 12 hooks).
-  **Every governed account sits under `us-west-2`** — Stages 4, 5 and 11 are committed there.
+  **Every governed account sits under `us-west-2`.**
 - **All thirty-seven decisions are closed** (D30 as a revert). **Still needed from the user: the domain
-  name**, blocking Stage 13. **Settle earliest:** INT-11's remaining half — Stage 5 defending
-  `CROSS_ACCOUNT_VERSION` **4** + `SET_CONTEXT: TRUE`, values nobody set — and INT-13.
+  name**, blocking Stage 13. **Settle earliest:** INT-11's remaining half (Stage 5 step 5.4, `DL-5`)
+  and INT-13.
 - **The repository is not documentation-only:** the read-only `aws/` scripts, `terraform-live/` +
   `terraform-modules/`, `scripts/`, the `Makefile`, and the `pre-commit`/`tflint`/`checkov`/`ruff` gates.
   **Every script is Python 3 on `uv` since 2026-08-15** — shared code in `aws/awslib`,
   `scripts/repohygiene`, `scripts/tfhygiene`; CloudShell = plain `python3` with `aws/` present.
   **Exception `aws/cloudshell/`: `management-quotas.sh` + `audit-iam-analyser.sh` stay shell, standalone,
-  for the no-profile accounts; output `aws/output/cloudshell/`.**
+  for the no-profile accounts.**
 
 **Budget: ~2 KB.** State, not reasoning — **a bullet here that explains *why*, or that a stage file should
 be carrying, is a stale copy of something that already lives elsewhere.** Re-trim whenever a stage closes.

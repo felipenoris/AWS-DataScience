@@ -34,6 +34,8 @@ snapshots.
 | [`tf-backends.py`](tf-backends.py) | [Infrastructure](../docs/ORGANIZATION.md#infrastructure-user) | **every** `awsds-*` profile, or the ones named, or `-` — the fourth non-single-profile script, same reason | `output/tf-backends.txt` | **The Terraform state buckets and their keys, side by side.** Existence, versioning, SSE-KMS and the key's **alias**, the four BPA flags, the TLS-only statement, the noncurrent-version lifecycle, Object Lock — plus every bucket in each account, so one under an unexpected name is visible. Section 4 is where Stage 2 step 3.4's **two keys in Production** are either true or not. **Exits 2 when a check fails.** |
 | [`networking.py`](networking.py) | [Infrastructure](../docs/ORGANIZATION.md#infrastructure-user); [`AWS Control Tower Admin`](../docs/ORGANIZATION.md#aws-control-tower-admin-d33) for `-` runs | **every** `awsds-*` profile, the ones named, or `-` inside CloudShell — the fifth non-single-profile script, and for the standing reason: a CIDR overlap, a peering and a cross-account zone association are facts *between* accounts | `output/networking.txt` | **The `[P]` networking half, per account, side by side** — [Stage 3](../docs/plan/stages/stage-03-networking.md)'s preflight and its standing regression. VPCs with **default and Account Factory vend artifacts flagged** (every vended account carries one — `docs/AWS_STATE.md` §C), the two DNS attributes of step 4.1, subnets with their **zone IDs** (step 1.5), route tables and routes, IGWs, the **gateway endpoint IDs that are the INT-05 anchor** (the only endpoint IDs any policy may name — Lesson 3), peerings **from both sides** (INT-09), the three private zones with associations and **pending authorizations** (the 4.5 trap made visible), flow logs with retention, NACLs and SGs. Checks `NT-1`–`NT-8` mechanise validation 2 (no route into `10.40.0.0/16`, local routes excluded on purpose), step 6.5 (`10.90.0.0/24` nowhere), step 1.2 (no overlap), 4.1, 4.4 and 5. **Exits 2 when a check fails.** The `[P]`-stability deliverable is a **diff of two runs** of this file, either side of a `make down`/`make up` |
 | [`egress.py`](egress.py) | [Infrastructure](../docs/ORGANIZATION.md#infrastructure-user); [`AWS Control Tower Admin`](../docs/ORGANIZATION.md#aws-control-tower-admin-d33) for `-` runs | same multi-profile shape, same reason: step 8's endpoint list is deliberately **per account role**, so "is the set right" is only readable with the columns side by side | `output/egress.txt` | **The `[E]` networking half, plus the burn meter.** Interface endpoints (subnet count per D9, private DNS per 8.5), NAT gateways, elastic addresses, every endpoint **policy** read against step 9 — the org condition (9.1) and the AWS-owned-bucket allow (9.3), **presence, never completeness** (the no-NAT `dnf` probe is the stage's) — the service×account **matrix** read against step 8's lists (deliberately not encoded here — Lesson 14), the **hourly burn right now** (the manual instrument the forgotten-egress risk gets, D12 having skipped the alerts; zero everywhere is D11 working), and the region's **endpoint service-name catalog**, which answers stage verification (i) and the `VpcEndpointPolicySupported` flag read-only, before anything is paid for. Checks `EG-1`–`EG-4`; **exits 2 when a check fails** |
+| [`vpn.py`](vpn.py) | [Infrastructure](../docs/ORGANIZATION.md#infrastructure-user); [`AWS Control Tower Admin`](../docs/ORGANIZATION.md#aws-control-tower-admin-d33) for `-` runs | **every** `awsds-*` profile, the ones named, or `-` — multi-profile for the standing reason: GuardDuty coverage is a fact *across* accounts, and the step 8 deny lives in Identity while the Elastic IP it names lives in the VPN home | `output/vpn.txt` | **[Stage 4](../docs/plan/stages/stage-04-vpn.md)'s evidence.** The WireGuard host (`[D]` — type, state, IMDSv2), the `[P]` Elastic IP (`WG_EIP=` printed — the value step 8 and Stage 5's bucket policy name), the **one world-open SG rule** (UDP/51820 and nothing else, never port 22), the handshake log and alarm, **which permission sets carry `DenyControlPlaneOffVpn`** (read back through the Identity Center delegated admin — the six persona sets move together, `InfrastructureAccess` reported as the separate 8.3 decision), and **GuardDuty per account** with the two Stage-11-deferred add-ons that must read `DISABLED`. Checks `VP-1`–`VP-8`; **exits 2 when a check fails** |
+| [`datalake.py`](datalake.py) | [Infrastructure](../docs/ORGANIZATION.md#infrastructure-user); [`AWS Control Tower Admin`](../docs/ORGANIZATION.md#aws-control-tower-admin-d33) for `-` runs | same multi-profile shape, same reason: the lake and its policy live in Data Governance while every legitimate reader is in a consumer account (D22), and a pending RAM invitation is visible only from the consumer | `output/datalake.txt` | **[Stage 5](../docs/plan/stages/stage-05-data-foundation.md)'s evidence, producer and consumers side by side.** The lake buckets with their policy **branches** (vpce/ip/via/sigage/prin — presence, never sufficiency), KMS aliases, the Glue catalog with **resource links** flagged, crawlers (never scheduled, never at an Iceberg target), the `awsds-data-catalog-maintenance` role and its trust, **the Lake Formation `Parameters` reading that defends INT-11** (`DL-5` — the check to read after *any* apply in `data-governance/data/`), RAM shares + **pending invitations**, consumer workgroup enforcement, the derived zone's expiry, EFS (including the mount-target SG shape Stage 4's NAT forces), and Security Hub per account. Checks `DL-1`–`DL-11`; **exits 2 when a check fails** |
 | [`cloudshell/management-quotas.sh`](cloudshell/management-quotas.sh) | [`AWS Control Tower Admin`](../docs/ORGANIZATION.md#aws-control-tower-admin-d33) — **the only one**, no laptop path | **no profile — CloudShell on Management.** Takes a profile if one ever exists there | `output/cloudshell/management-quotas.txt` | **Has the account-cap increase landed** — the one number the `Staging` vend is held on. The applied value (not the default), how much of it is spent, and any pending request. **Refuses to interpret the number outside Management**, where the same quota reads `0.0`. |
 
 **The first two columns are different questions, and the whole table above collapses into two identities.** A
@@ -108,6 +110,14 @@ locates the repository root itself:
 
 ```bash
 ./aws/egress.py
+```
+
+```bash
+./aws/vpn.py
+```
+
+```bash
+./aws/datalake.py
 ```
 
 **`cloudshell/` holds the two scripts with no laptop path — and they are shell on purpose.**
@@ -397,6 +407,48 @@ nothing else in this design asks, since D12 declined the budget alerts). Both ar
 readings**: the stage's behavioural proofs — `dnf` through the endpoint, `NXDOMAIN` from Staging, the probe
 reaching GitLab's port — belong to the stage's throwaway probe instances, and no describe call substitutes
 for them (Lesson 20's rule: configuration for configuration questions, probes for behaviour).
+
+## Finding an answer in `output/vpn.txt`
+
+| Question | Section |
+|---|---|
+| Is the WireGuard host there, what type, and is it running or stopped ([D])? | 2 — `stopped` between sessions is D11 working, not an outage |
+| **What is the Elastic IP** — the value step 8's deny and Stage 5's bucket policy name? | 3 — printed as `WG_EIP=`; also whether it is associated with the host |
+| Is anything world-open besides UDP/51820 — did port 22 sneak in? | 3, decided by `VP-3` |
+| Is the handshake log shipping, and does the health alarm exist (step 7)? | 4 |
+| **Which permission sets carry `DenyControlPlaneOffVpn`** — did the 8.2 rollout reach all six, and has the deliberate 8.3 diff been applied to `InfrastructureAccess`? | 5, decided by `VP-7` — a partial rollout FAILS (Lesson 14) |
+| Is GuardDuty enabled in every measured account, with S3/Malware Protection still off? | 6, decided by `VP-8`; the delegation registration is printed below the table |
+| Which accounts is nobody measuring? | 8 — GuardDuty's org configuration in Audit above all |
+
+## Finding an answer in `output/datalake.txt`
+
+| Question | Section |
+|---|---|
+| Do the lake buckets exist with versioning, SSE-KMS and Bucket Keys? | 2, decided by `DL-1` |
+| Does each bucket policy carry the three step 1.3 branches and the two guards? | 2 — the BRANCHES column; `DL-2` (presence, never sufficiency) |
+| **Did an apply reset `CROSS_ACCOUNT_VERSION`/`SET_CONTEXT`** — the silent INT-11 failure? | 6, decided by **`DL-5`** — read it after *every* apply in `data-governance/data/` |
+| Are the IAM-fallback defaults still granting `IAMAllowedPrincipals` (step 5.2)? | 6, decided by `DL-6` once databases exist |
+| Does the maintenance role exist under its exact contracted name, trusting only Glue? | 5, decided by `DL-4` |
+| Is a crawler scheduled, or pointed at an Iceberg table — both forbidden (D27)? | 4, decided by `DL-3` |
+| Did the shares arrive as resource links, with **no pending RAM invitation**? | 7 and 4, decided by `DL-7` — a PENDING row is INT-11's fallback tax |
+| Is the consumer workgroup actually enforcing its result location and scan limit (D19)? | 8, decided by `DL-8` |
+| Does the derived zone expire, and does EFS admit the WireGuard **SG** rather than the peer CIDR? | 9 and 10, decided by `DL-9`/`DL-10` |
+| Is Security Hub on everywhere, with FSBP? | 11, decided by `DL-11` |
+| Which accounts is nobody measuring? | 13 — Staging is absent by design (D20), Production joins at Stage 9 |
+
+## The two written for Stages 4 and 5, before either stage starts
+
+**Written 2026-08-16**: `vpn.py` and `datalake.py`, from the revised
+[Stage 4](../docs/plan/stages/stage-04-vpn.md) and
+[Stage 5](../docs/plan/stages/stage-05-data-foundation.md) roteiros — the same
+before-the-stage pattern as the Stage 3 pair. Until each stage runs, every absent resource reads as a
+`note` ("expected before Stage N step M"), so today's clean state passes and a *partial* build fails
+loudly. **Their first run already measured the thing `DL-5` exists to defend**: Data Governance answers
+`CROSS_ACCOUNT_VERSION=4, SET_CONTEXT=TRUE` with no admins declared — the exact INT-11 state Stage 5
+step 5.4 must carry through its first apply — and confirmed the `IAMAllowedPrincipals` create-defaults
+are still in place, which is what step 5.2 exists to remove. Each script names its contracts (the
+`awsds-*-vpn` Name tag, the `DenyControlPlaneOffVpn` Sid, the `awsds-data-catalog-maintenance` role
+name) so a rename fails in a check rather than in a stage.
 
 ## The four written for Stage 2, and the one thing they have in common
 

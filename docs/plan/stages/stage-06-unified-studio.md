@@ -248,7 +248,8 @@ endpoint**, intended to be controlled by `aws:SourceIp` against the WireGuard El
 Unified Studio neither opens nor closes that path. **"Intended to be" is doing real work in that sentence
 and it did not before:** the classic UI was reached by an IAM-authorized `CreatePresignedDomainUrl` call, so
 a permission-set condition demonstrably applied; the portal is reached by an Identity Center sign-in, and
-whether the same condition applies is INT-16, answered at Stage 4.
+whether the same condition applies is INT-16 — provisional from Stage 4, completed here at step 1, the
+first moment the portal exists.
 ---
 
 *Stage index: [stages/INDEX.md](INDEX.md) · Plan core: [GENERAL_PLAN.md](../../GENERAL_PLAN.md)*

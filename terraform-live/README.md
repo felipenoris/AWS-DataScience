@@ -50,15 +50,22 @@ by the stage that first writes a `.tf` file into it, and **§6 stays the one pla
 constraint belongs to each root module. The parity check above is what keeps the copies from drifting
 (Lesson 14).
 
-**Five checks stand over this tree — Stage 2 steps 9 and 3.5, 2026-08-15 — and there is no CI to run them in.**
+**Six checks stand over this tree — Stage 2 steps 9, 3.5 and 8.1 — and there is no CI to run them in.**
 Until Stage 8 puts them in a pipeline the surfaces are `pre-commit` and the repository's `Makefile`, both
 calling the same scripts:
 
 ```bash
 make check      # offline: region literals, indexed AZs, account-level BPA, wildcard ARNs,
-                #          bootstrap parity, the policy index
+                #          bootstrap parity, slice layers, the policy index
 make check-ou   # needs an SSO session as the infrastructure user on Identity
 ```
+
+**Every slice folder in this tree must declare its D11 layer** in
+[`scripts/tfhygiene/layers.py`](../scripts/tfhygiene/layers.py) — `[P]` persistent, `[D]` dormant, `[E]`
+ephemeral (Stage 2 step 8.1, 2026-08-16). **Today all seven rows say `[P]`**, so `make up ENV=…` and
+`make down ENV=…` are no-ops; the first `[E]` slice is Stage 3's `egress/`. A slice created without a row
+fails the sixth check, because `make down` skips what it has never heard of in silence — and for an
+ephemeral slice that is a bill nobody is told about. `make slices` prints the table.
 
 Two of them exist because nothing else can enforce their rule: **no `.tf` in this tree may declare
 `aws_s3_account_public_access_block`** (the SCP that denies the API carves out exactly the principal every

@@ -484,7 +484,8 @@ contradicts some part of it.
   VPC-only. The control there is `aws:SourceIp`, never `aws:SourceVpce` (`docs/plan/architecture.md` §3) — **and whether that control
   reaches the portal at all is INT-16, unverified**: the portal is entered by an Identity Center
   sign-in, not by an IAM-authorized call under a permission set, so the condition demonstrably covers the
-  API half and not yet the portal half. Answered at Stage 4.
+  API half and not yet the portal half. Answered across Stages 4 and 6 — the portal surface first exists
+  at Stage 6.
 - **D24:** the shared EFS lives in Sandbox only; Development gets neither its own nor a path to it, and
   the exchange between the two Interactive accounts is S3 and git. **D25:** the ingestion drop-box is
   picked up by Production's job role on the producer path — which also closed a hole where the `Data` OU

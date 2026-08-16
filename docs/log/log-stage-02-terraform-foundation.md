@@ -952,6 +952,70 @@ Twenty objects imported, none created, and the plan after the apply reads `No ch
   `aws_organizations_policy` and ten `aws_organizations_policy_attachment` and zero `aws_ssoadmin_*`;
   the only `aws_organizations_*` entry in `sso/`'s state is the data source.
 
+## Step 8 — the D11 lifecycle targets, and step 7 leaves the stage (2026-08-16)
+
+**No AWS call in this entry.** Everything below is local: the layer table, the three targets,
+their four refusals, and one re-scope.
+
+- **The inventory was wrong before the work started, and that is the finding.** This file,
+  `docs/log/INDEX.md` and `CLAUDE.md` all said Stage 2 had nothing left but its status
+  header. Measured against the disk: `terraform-modules/` held one `README.md` (step 7),
+  the `Makefile` said in its own header that `up`/`down`/`status` were not written yet
+  (step 8), and no `[E]` slice had ever existed, so the Validation had never run. **A stage
+  is closed against its own file, never against a summary of it.**
+
+- **Step 7 moved out of the stage and into Stage 3 (step 1.1a).** The 2026-08-15 reordering
+  moved it to the end of Stage 2 because nothing in the stage consumes a module; the same
+  argument does not expire at the end of the stage — at the end there is still no caller.
+  The first is Stage 3's `foundation/`, and Stage 3 already writes `vpc/`. It also un-blocks
+  an input Stage 2 cannot settle: a module is consumed **by git tag**, this is a monorepo,
+  and the host is GitHub today and GitLab from Stage 7. Recorded in `docs/plan/history.md`.
+
+- **Step 8.1 — the table is `scripts/tfhygiene/layers.py`, and the rank is not a field in
+  it.** Order is read from a `RANKS` map keyed by **slice name** (`bootstrap` 0, `sso` 10,
+  `org-policies` 11, `foundation` 20, `pki` 30, `egress` 50), because the dependency runs
+  along the slice axis and not the account one. A slice name absent from that map **raises**
+  rather than defaulting to the end of the order.
+
+- **The table is authored, the tree is discovered, and either direction of disagreement is a
+  failure** — `./scripts/slices.py check`, in `make check` and in `pre-commit` on any
+  `terraform-live/**/*.tf`. **Both directions demonstrated before being believed**: a slice
+  on disk with no row (the expensive one — `make down` skips in silence what it has never
+  heard of, and for an `[E]` slice that is a bill), and a row with no slice.
+
+- **All four refusals of 8.3, each demonstrated.** `make down` with no `ENV` exits 2 from the
+  `Makefile` guard *and* from `argparse` — two independent guards for the one refusal whose
+  failure mode is "destroyed the wrong account". `bootstrap/` is refused in both targets.
+  `identity/sso` and `identity/org-policies` are refused as `[P]`. **And refusal 3 was fired
+  against a fixture row that deliberately claimed `production/pki` was `[E]`** — the only way
+  to show that the D36 exclusion is independent of the layer field rather than shadowed by
+  it. The fixture was removed and `check` caught the stale row on the way out.
+
+- **8.4's `status` distinguishes "nothing is declared" from "everything is down".** With no
+  `[D]`/`[E]` slice it prints the empty set *and why it is empty*, not `USD 0.00/h` — which is
+  the answer a failed read would also produce (Lesson 13). The rate table is static, from
+  `docs/PRICING.md` section 3, and a slice it cannot read is `UNREADABLE`, which makes the
+  total a floor rather than a measurement.
+
+- **8.6's hook detects its own obsolescence instead of exiting 0 forever.**
+  `scripts/down-studio-apps.py` calls `sagemaker list-domains`: no domain means nothing to
+  delete; **a domain means exit 1** naming the stage that owes it a body; a *failed* call
+  means exit 1 saying explicitly that this is not evidence no app is running. It runs only
+  when the `down` has something to destroy, so a no-op `make down` does not fail on
+  credentials it never needed. The `[D]` hook has the same shape and the same stub.
+
+- **A fourth vocabulary landed in `scripts/tfhygiene/backend.py`: `PROFILES`**, account folder
+  to SSO profile. It goes in the file already keyed by account folder (Lesson 14), and the
+  profile is passed as `AWS_PROFILE` on each command, never exported (Lesson 25).
+
+- **Gates:** `ruff` lint and format, `make check` (now six checks), and the **sixteen-hook**
+  `pre-commit` chain all green. `make check-docs` stays red on the same pre-Stage-2 prose;
+  `CLAUDE.md` was re-trimmed to pass its 20 KB budget again.
+
+- **Open, and the next action: the Validation** — `terraform-live/sandbox/scratch-test/`, one
+  SSM parameter, as the infrastructure user on `Sandbox Account 1` (`awsds-infra-sandbox-1`).
+  The recipe is written out in the stage file's Validation section, step by step.
+
 ---
 
 *Log index: [docs/log/INDEX.md](INDEX.md) · Stage index: [docs/plan/stages/INDEX.md](../plan/stages/INDEX.md)*
