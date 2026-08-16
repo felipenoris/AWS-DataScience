@@ -561,3 +561,39 @@
 - **`pip-audit`** — PyPA's dependency auditor, the open tool carrying Stage 8's dependency gate after the
   tier finding above; consumes a requirements export (`uv export --format requirements-txt`) and queries
   the OSV/PyPI advisory databases (Stage 8 step 5.2): <https://pypi.org/project/pip-audit/>.
+
+- **ECR encryption at rest — who decrypts a pull.** The page that deleted half of Stage 9's old step 7:
+  ECR creates **two grants on the repository's KMS key for itself** at repository creation, makes the
+  `Decrypt` call on pulls on the caller's behalf, and the KMS permissions it documents
+  (`kms:CreateGrant`, `RetireGrant`, `DescribeKey`) belong to the principal *creating or deleting the
+  repository* — a pulling principal, cross-account included, needs the repository policy and no
+  `kms:Decrypt` (Stage 9 step 7.3 records the non-grant so nobody "fixes" the absence):
+  <https://docs.aws.amazon.com/AmazonECR/latest/userguide/encryption-at-rest.html>.
+
+- **Deploying a model version from a different account** — the reference shape for Stage 9 step 3 and
+  its vend amendment (4.6): cross-account deployment needs **three resource policies** — on the model
+  package group, on the ECR repository of the inference image, and on the S3 (and KMS) of the model
+  artifacts (INT-07's registry half; INT-04):
+  <https://docs.aws.amazon.com/sagemaker/latest/dg/model-registry-deploy-xaccount.html>.
+
+- **`PutModelPackageGroupPolicy`** — the resource policy on a model package group (≤ 20 480 bytes), the
+  API behind D28 item 6's "written here, not improvised in Stage 10"; Terraform exposes it as
+  `aws_sagemaker_model_package_group_policy` (Stage 9 step 3.2):
+  <https://docs.aws.amazon.com/sagemaker/latest/APIReference/API_PutModelPackageGroupPolicy.html> and
+  <https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/sagemaker_model_package_group_policy>.
+
+- **Athena workgroups — override client-side settings** — the documented behaviour Stage 9's workgroup
+  boundary stands on: with the override on, *"Athena uses the workgroup's settings for all queries that
+  run in the workgroup, including the settings for query results location, expected bucket owner,
+  encryption, and control of objects written"*, and a query that asks for its own location *runs, with
+  the workgroup's settings used*. One location per workgroup — which is why the "per-principal result
+  prefix" was rewritten into an enforced results zone (Stage 9 steps 1.2/5.4, verification (vi)):
+  <https://docs.aws.amazon.com/athena/latest/ug/workgroups-settings-override.html>.
+
+- **Lake Formation cross-account data sharing** — the mechanism of Stage 9's producer path, and the
+  reason the grant is two steps: grants go to external accounts, organizations or OUs (named resources
+  or LF-TBAC, version 3+ for org/OU grants); **a grantee in the same organization sees the share
+  immediately, with no invitation to accept**; integrated services (Athena) require **resource links**
+  on the consumer side; and the consumer's own admin regrants received permissions to local principals
+  (Stage 9 steps 2.1-2.3, `DT-6`'s pending-invitation check):
+  <https://docs.aws.amazon.com/lake-formation/latest/dg/cross-account-permissions.html>.

@@ -61,7 +61,7 @@ shape *on earth*.
 | Stage 6 | `DataScientistAccess` | Studio use against the blueprint-provisioned domain, and the `iam:PassRole` for job submission — scoped by `iam:PassedToService` **and** by role ARN |
 | Stage 7 | `DataScientistAccess`, `DataScientistProdAccess`, `DevEnvStewardAccess` | the ECR repository ARNs, so pull and metadata reads stop being account-wide |
 | Stage 8 | `DeploymentManagerAccess` | `s3:GetObject` on **enumerated** build-artifact and test-report prefixes — never a bucket wildcard, which is what produced D31 |
-| Stage 9 | `DataScientistProdAccess`, `DataScientistStagingAccess` | the Athena workgroups, whose `EnforceWorkGroupConfiguration` is what makes the output location not the user's choice |
+| Stage 9 | `DataScientistProdAccess` | the enforced `awsds-prod-athena` workgroup (`EnforceWorkGroupConfiguration` is what makes the output location not the user's choice), the named output prefixes, the results-zone read/write, and the `awsds-prod-debug` assumption (its step 6). `DataScientistStagingAccess` gains **nothing** — Stage 9 step 5.2 only reads it back (no Athena, `DenyEveryWrite` intact) |
 | Stage 3 | all six | **the permissions boundary** — see below |
 
 Nobody signs in before Stage 6 (1b step 3.9), so nothing is blocked by this.

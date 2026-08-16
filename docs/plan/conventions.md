@@ -263,8 +263,10 @@ terraform-live/
     │                     #     (INT-19). Outputs the CA cert and the issued leaves - NEVER the
     │                     #     root private key. Excluded from every make down path
     ├── data/             # [P] application-output buckets, Athena workgroup, LF resource
-    │                     #     links + the governed-write grant (D22). The lake itself lives
-    │                     #     in data-governance/. The registries are NOT here - see below
+    │                     #     links + the governed-write REGRANT to the job role (D22; the
+    │                     #     account-level grant is data-governance/data/'s - Stage 9
+    │                     #     step 2's two-step). The lake itself lives in
+    │                     #     data-governance/. The registries are NOT here - see below
     ├── registry/         # [P] ECR (+ pull-through cache) and CodeArtifact (D14), with their
     │                     #     OWN KMS key and consumer account ids from a map. Split out of
     │                     #     data/ on 2026-08-09 to preserve D14's revision option: if the

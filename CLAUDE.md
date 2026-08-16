@@ -190,9 +190,9 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   Reaching other stages: `egress_mode=A`, and the S3 allow-list — **a NAT does not bypass it** (Stage 4).
   CIDR/`zone_ids`/peers: `scripts/tfhygiene/backend.py`. **Left: the `down`/`up` cycle and the two
   probes** (verification (iii)'s `dnf`); (ii) is Stage 6's.
-- **Stages 4-8 revised, pre-instrumented (2026-08-16):** `aws/{vpn,datalake,studio,supplychain,cicd}.py`
-  — `DL-5` guards INT-11's `Parameters`. **Stage 8 pass 4 (promotion) waits on the `Staging` vend**,
-  passes 0-3/5 do not.
+- **Stages 4-9 revised, pre-instrumented (2026-08-16):**
+  `aws/{vpn,datalake,studio,supplychain,cicd,deploytargets}.py` — `DL-5`/`DT-5` guard the LF
+  `Parameters` (INT-11). **Stage 8 pass 4 and Stage 9 passes 4-5 wait on the `Staging` vend.**
 - **Standing rules that outlive their stages:** never add an `sts:` action to the RCP without reading
   `CT.STS.PV.1`'s exclusion note; 1d step 9 is the **only** sanctioned by-hand use of
   `AWSControlTowerExecution`; **resolve an account by name only with the exact vended name** — every one

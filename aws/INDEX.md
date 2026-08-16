@@ -39,6 +39,7 @@ snapshots.
 | [`studio.py`](studio.py) | [Infrastructure](../docs/ORGANIZATION.md#infrastructure-user); [`AWS Control Tower Admin`](../docs/ORGANIZATION.md#aws-control-tower-admin-d33) for `-` runs | same multi-profile shape, same reason: D26's whole claim — the domain is a registry, not a runtime — is only readable with Data Governance and the Interactive accounts side by side, and a SageMaker domain in the wrong column *is* the finding | `output/studio.txt` | **[Stage 6](../docs/plan/stages/stage-06-unified-studio.md)'s evidence, registry and runtimes side by side.** DataZone domains in **every** account (one expected, V2, in Data Governance — anywhere else is INT-12's fallback by accident), the registry's blueprints/profiles/projects (no Redshift), the blueprint-provisioned SageMaker AI domain per Interactive account (**VpcOnly**, idle shutdown), **the D13 permissions boundary on the project roles** (INT-15's presence half — survival is a diff of two runs), the step 3 deny Sids in the persona sets, registered images (INT-17's mechanical half), running apps (the burn), and EFS access points. Checks `US-1`–`US-10`; **exits 2 when a check fails** |
 | [`supplychain.py`](supplychain.py) | [Infrastructure](../docs/ORGANIZATION.md#infrastructure-user); [`AWS Control Tower Admin`](../docs/ORGANIZATION.md#aws-control-tower-admin-d33) for `-` runs | same multi-profile shape, same reason: D14 puts the registries in Production while every legitimate consumer is Interactive, so "does the consumer map reach everyone" (Lesson 14) is only readable from both sides — the policies from Production, a cross-account read from each consumer | `output/supplychain.txt` | **[Stage 7](../docs/plan/stages/stage-07-gitlab-runners-ecr.md)'s evidence, producer and consumers side by side.** The GitLab host (`[D]` — stopped between sessions is the design) and the runner (`[E]` — absent between sessions is the design), the `[P]` anchors a restore depends on (buckets, the `gitlab-secrets` container — **metadata only, never the value**), the TLS surface (imported ACM leaves with their **days of runway** — ACM does not renew imports — the one-source CA root parameter, the two zones' records), ECR repositories with **tag immutability** and the scanning configuration, the pull-through cache rules against their immutability trap, the CodeArtifact domain/repos/policy, and a **real cross-account read from each Interactive account** (INT-01/INT-02's mechanical half). Checks `SC-1`–`SC-10`; **exits 2 when a check fails** |
 | [`cicd.py`](cicd.py) | [Infrastructure](../docs/ORGANIZATION.md#infrastructure-user); [`AWS Control Tower Admin`](../docs/ORGANIZATION.md#aws-control-tower-admin-d33) for `-` runs | same multi-profile shape, same reason: the subject is trust *between* accounts — the deploy runner lives in Production while its roles live in Staging and the Interactive accounts (INT-08, INT-18), and D17's identical-runtime claim is only readable with the Interactive accounts side by side | `output/cicd.txt` | **[Stage 8](../docs/plan/stages/stage-08-cicd-pipelines.md)'s evidence, the credential layer from every side.** The deploy runner (`[E]` — absent between sessions is the design; IMDSv2, the instance profile), its role's **enumerated `AssumeRole` reach**, the four deploy roles with **permissions boundary and single-principal trust**, the `*deploy-misuse*` alarm rules, the app-repository grant plus a **real cross-account read from Staging** (INT-07's mechanical half), the registered dev-env versions **side by side** (D17's parity), and **who assumed a deploy role** — CloudTrail's 90-day lookup, the record INT-08 exists for. Checks `CI-1`–`CI-8`; **exits 2 when a check fails.** INT-17's reconciliation-survival half is a **diff of two runs**, never one |
+| [`deploytargets.py`](deploytargets.py) | [Infrastructure](../docs/ORGANIZATION.md#infrastructure-user); [`AWS Control Tower Admin`](../docs/ORGANIZATION.md#aws-control-tower-admin-d33) for `-` runs | same multi-profile shape, same reason: the subject is the producer path *between* accounts — the lake and the drop-box live in Data Governance while the only principal allowed to write them lives in Production (D22, D25), Staging's value is what it does **not** reach (D20), and the persona allows live in Identity | `output/deploytargets.txt` | **[Stage 9](../docs/plan/stages/stage-09-deployment-targets.md)'s evidence, producer and targets side by side.** The Production data platform (buckets, CMK, the **enforced** workgroup), the job role with **D13's absence** read from its own policies, the package groups with their resource policies (D28 item 6), **the LF settings in every account that has any** (`DT-5` — `DL-5`'s discipline extended), the write share with links and **pending invitations** (INT-03), the drop-box contract from **both sides** (INT-10's role-name contract), the Staging mirror plus the **absence that is a control** (no link to Data Governance, D20), the escape hatch (windowed trust, closed at rest, alarmed on every assumption), and the two persona sets' owed allows read through the delegated admin. Checks `DT-1`–`DT-10`; **exits 2 when a check fails** |
 | [`cloudshell/management-landing-zone-drift.sh`](cloudshell/management-landing-zone-drift.sh) | [`AWS Control Tower Admin`](../docs/ORGANIZATION.md#aws-control-tower-admin-d33) — **the only one**, no laptop path | **no profile — CloudShell on Management.** Takes a profile if one ever exists there | `output/cloudshell/management-landing-zone-drift.txt` | **Stage 2 verification (iii)** — whether the Organizations **resource policy** of step 5.1 shows up as landing-zone drift. The `driftStatus` flag, the **manifest** that says what the flag is even comparing, the **operation history** (an update that ran *after* the delegation and succeeded is the only positive evidence available without writing), and whether the document is still there and still narrowed to two statements. **Sections 2-4 are suppressed outside Management and the run exits 2** — measured: from a member account both landing-zone calls *succeed and return empty*, so an unguarded report would state "the landing zone has never run". Section 5 answers from Identity too, because the delegation grants it. |
 | [`cloudshell/management-quotas.sh`](cloudshell/management-quotas.sh) | [`AWS Control Tower Admin`](../docs/ORGANIZATION.md#aws-control-tower-admin-d33) — **the only one**, no laptop path | **no profile — CloudShell on Management.** Takes a profile if one ever exists there | `output/cloudshell/management-quotas.txt` | **Has the account-cap increase landed** — the one number the `Staging` vend is held on. The applied value (not the default), how much of it is spent, and any pending request. **Refuses to interpret the number outside Management**, where the same quota reads `0.0`. |
 
@@ -134,6 +135,10 @@ locates the repository root itself:
 
 ```bash
 ./aws/cicd.py
+```
+
+```bash
+./aws/deploytargets.py
 ```
 
 **`cloudshell/` holds the three scripts with no laptop path — and they are shell on purpose.**
@@ -509,6 +514,37 @@ for them (Lesson 20's rule: configuration for configuration questions, probes fo
 | Who assumed a deploy role, and was it ever not the runner (INT-08)? | 7, decided by `CI-8` — the after-the-fact twin of 4.6's alarm |
 | Did a registration survive a blueprint reconciliation (INT-17)? | a **diff of two runs** — one run cannot answer it |
 | Which accounts is nobody measuring? | 9 — Staging until the vend; every Sandbox beyond unit 1 until Stage 14 |
+
+## Finding an answer in `output/deploytargets.txt`
+
+| Question | Section |
+|---|---|
+| Do the two buckets carry the perimeter branches, and do results expire? | 2, decided by `DT-1` |
+| Is the workgroup actually enforcing its result location and scan limit (D19)? | 2, decided by `DT-2` |
+| Does every `awsds-prod-model-*` group carry its resource policy (D28 item 6)? | 3, decided by `DT-3` |
+| **Does the job role reach a lake bucket through plain S3** — D13's absence, read from its own policies? | 3, decided by `DT-4` |
+| **Did an apply reset the LF `Parameters` anywhere** — the silent INT-11 failure, no longer confined to the grantor? | 4, decided by **`DT-5`** — read it after *every* `DataLakeSettings` apply |
+| Did the write share arrive, with **no pending RAM invitation** (INT-03, INT-11's tax)? | 5, decided by `DT-6` |
+| Do the drop-box statement **and** its key name exactly `awsds-prod-job-exec` (the Stage 5 contract, INT-10)? | 6, decided by `DT-7` |
+| **Is Staging linked to Data Governance** — the absence that is the control (D20)? | 7, decided by `DT-8` |
+| Does the Staging mirror agree with the lake's catalog, table by table? | 7, decided by `DT-8` |
+| Is the escape hatch closed at rest, capped at 1 h, alarmed on **every** assumption? | 8, decided by `DT-9` |
+| Did the persona sets gain their owed allows — and the Staging set **nothing** (Lesson 22)? | 9, decided by `DT-10` |
+| Which accounts is nobody measuring? | 11 — Staging until the vend; Development appears only as a principal in the group policies |
+
+## The one written for Stage 9
+
+**Written 2026-08-16**: `deploytargets.py`, from the revised
+[Stage 9](../docs/plan/stages/stage-09-deployment-targets.md) roteiro — the same before-the-stage
+pattern. Until the stage runs, every absent resource reads as a `note`; a *partial* build fails loudly.
+Its contracts: the job role (**`awsds-prod-job-exec`** — the same name Stage 5's drop-box statement and
+key grant carry, which is the contract the script exists to watch), the workgroups (`awsds-prod-athena`,
+`awsds-staging-athena`), the buckets (`awsds-prod-outputs`, `awsds-prod-athena-results`), the
+package-group prefix (`awsds-prod-model-`), and the debug pair (`awsds-prod-debug`, rule
+`*debug-assume*`). **Two of its checks are deliberately halves, said out loud**: `DT-6` shows the write
+share was *granted* — whether an LF-aware cross-account Iceberg write *lands* is step 2.4's job run
+(INT-03's least-travelled variant) — and `DT-4` reads D13's absence from the role's policies, while the
+behavioural converse (the direct `PutObject` dying) is the same step's pair.
 
 ## The one written for Stage 8
 

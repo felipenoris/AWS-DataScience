@@ -141,8 +141,9 @@ Interactive-OU roles, dated prefix, no read, no list, no delete. **Three stateme
 1. the **writer** statement — Interactive-OU roles, `PutObject` only, dated prefixes;
 2. the **reader-deleter** statement — the **Production job execution role**: `GetObject`, `ListBucket` on
    the dated prefixes and `DeleteObject`, because a letterbox nobody empties fills up (D25, INT-10). The
-   role does not exist yet — write the statement against the name Stage 9 will create, and record that the
-   pickup half of INT-10 stays unexercised until then;
+   role does not exist yet — write the statement against **`awsds-prod-job-exec`**, the exact name
+   Stage 9 step 3 contracts (its `deploytargets.py` reads both sides), and record that the pickup half
+   of INT-10 stays unexercised until then;
 3. the **reader** statement — the maintenance role (D27): `GetObject`/`ListBucket` on the same prefixes,
    so the drop-box crawler can read what the writer wrote in order to infer its schema.
 
