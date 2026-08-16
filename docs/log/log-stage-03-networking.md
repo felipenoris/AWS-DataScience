@@ -9,9 +9,10 @@ Stage: [`docs/plan/stages/stage-03-networking.md`](../plan/stages/stage-03-netwo
 Claude, once and explicitly, to create this file and write the entry below** — a decision sitting held
 with the user in that same session, with no AWS call in it. **A second explicit authorisation, later the
 same day, covers the wording revision of the step 0 entry and its merged 0.4 subsection**, marked inline.
-**A third, later still, covers the pass-1 entry** — the user authorised the applies in chat and then asked
-for the progress to be written into this file directly, so that entry is Claude's account of commands the
-user authorised. Everything else is the user's, as usual, and the rule is unchanged.*
+**A third, later still, covers the pass-1 entry, and a fourth the pass-2 entry** — in both the user
+authorised the applies in chat and then asked for the progress to be written into this file directly, so
+those entries are Claude's account of commands the user authorised. Everything else is the user's, as
+usual, and the rule is unchanged.*
 
 ---
 
@@ -191,6 +192,70 @@ modules" is therefore a step *between* two commits, not after both.
 
 **Next: pass 2** — the four cross-account zone associations (4.4-4.5) and the two peerings into Production
 (6). Both sides now exist, which is what they were waiting for.
+
+## 2026-08-16 — Steps 4.4-4.5 and 6 (pass 2): the zone associations and the two peerings
+
+*Written by Claude under the user's explicit authorisation; the applies were authorised in chat the same
+sitting ("autorizo. pode aplicar na sequência proposta"), each plan read before the apply it belongs to.
+Signed in as the **infrastructure user** through **`InfrastructureAccess`**.*
+
+### The shape, and why it is three applies rather than five
+
+Pass 2's constraints are all ordering: an association needs its authorization to already exist, a route to
+a peering needs the peering **ACTIVE**, and acceptance is the peer account's own act. Spread across three
+accounts that would be a sequence of alternating small applies. Instead the requesters are kept minimal —
+`peering.tf` in Sandbox and in Development, one `aws_vpc_peering_connection` each (**+1**, **+1**) — and
+everything else lives in `production/foundation/peers.tf`, applied third as **one ordered apply** (**+32**):
+
+- the **4 authorizations** (`for_each` over zone × peer),
+- the **4 associations**, executed *as* the VPC owners through provider aliases — which is what 4.4 means
+  by "in the VPC owner, behind a provider alias", and what lets the ordering hold inside one apply,
+- the **2 accepters**,
+- **22 routes**: 12 return routes on Production's two private tables, 6 forward for Sandbox (its **public**
+  table included — the WireGuard instance SNATs the laptop there, and without that route the tunnel comes
+  up while GitLab stays unreachable) and 4 forward for Development.
+
+Every route references the **accepter's** id rather than the data source's: that is what orders the routes
+after acceptance, which AWS requires.
+
+### Two rules the file keeps
+
+- **The peers' facts are read, never pasted** (Lesson 3): VPCs by `Name` tag, subnets by `Tier`, route
+  tables by `Name`. An id copied into a tfvars would be a stale copy of another slice's state; a data
+  source cannot go stale. Everything referenced is `[P]` on both sides, so no `make down` can break it.
+- **The profiles are derived, not authored** (Lesson 14): a generated `peers` map, built in
+  `scripts/tfhygiene/backend.py` from the same `PROFILES` and `CIDRS` tables every command line already
+  uses. No new vocabulary, and a network slice in an account with no allocation still fails loudly (D22).
+
+Destinations are subnet-level, never a whole VPC (6.3); nothing anywhere routes `10.90.0.0/24` (6.5); and
+there is no peering to Staging (6.6, D20).
+
+### Verification
+
+- Production's apply reads **`32 added, 0 changed, 0 destroyed`** — **verification (iv) answered: the
+  second apply of `production/foundation/` is additive**. A re-plan of all three slices reads `No changes`.
+- `./aws/networking.py`: **0 checks FAILED**. `NT-6` reads the two peerings and confirms neither touches
+  the Staging range; `NT-8` is green on all five rows. From here **any red NT row is a finding**, which
+  `docs/AWS_STATE.md` §C now says.
+- **Verification (vii)'s residual, read-only:** `list-vpc-association-authorizations` on both zones shows
+  exactly the four rows Terraform holds — two VPCs per zone, nothing else.
+- **Verification (v) half-answered:** the AZ *name* mappings differ between accounts (that is why D9
+  anchors on `zone_id`), but every VPC pins the same pair, so a same-AZ path exists at both ends of both
+  peerings. Whether traffic *stays* same-AZ is a placement question that lands with GitLab's subnet
+  (Stage 7), where the client route can be narrowed further.
+
+### Repository
+
+`peering.tf` ×2, `peers.tf`, the `peers` variable in three `variables.tf` (and a copy-paste header naming
+the wrong slice, fixed in two of them); the stage's Status, its pass-2 `RAN` note and verifications (iv),
+(v), (vii); `docs/AWS_STATE.md` §C; `CLAUDE.md`. **And a runbook the project did not have:**
+[`docs/plan/runbooks/terraform-changes.md`](../plan/runbooks/terraform-changes.md) — how to make a
+Terraform change by hand while there is no CI, including the two-commit tag order that pass 1 learned the
+hard way, and a symptom table for a blocked commit.
+
+**Stage 3 now needs only pass 3** — `egress/` `[E]`: the NAT behind the D5 switch, the interface endpoints
+and their policies. It is the repository's first `[E]` slice, so it is also the first `make up` / `make
+down` that is not a no-op.
 
 
 ---

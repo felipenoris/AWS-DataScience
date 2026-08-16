@@ -158,6 +158,7 @@ its `Consumes` row lists.
 | Cross-account wiring | [`docs/plan/integrations.md`](docs/plan/integrations.md), the `INT-nn` rows |
 | An unfamiliar acronym, or the notation | [`docs/GLOSSARY.md`](docs/GLOSSARY.md) |
 | Running an `aws` command by hand, or signing in | [`aws/AWS-CLI.md`](aws/AWS-CLI.md) — the recipes, and which identity runs them |
+| **A Terraform change by hand** — the two-commit tag order, blocked commits | [`docs/plan/runbooks/terraform-changes.md`](docs/plan/runbooks/terraform-changes.md) |
 | "What would an institution do?" | [`docs/plan/institutional-delta.md`](docs/plan/institutional-delta.md) — so a lab compromise is not learned as a pattern |
 | Root is needed, or its alarm chain is being changed | [`docs/plan/runbooks/break-glass.md`](docs/plan/runbooks/break-glass.md) |
 | **A policy is about to be attached, or was amended** | [`docs/plan/runbooks/scp-battery.md`](docs/plan/runbooks/scp-battery.md) — the probes, and the two distinguishable outcomes of each. **Running them is `./aws/probes/scp-battery.py`** ([`aws/probes/README.md`](aws/probes/README.md)); amending the ceiling means editing `probes.py` |
@@ -170,8 +171,7 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
 ### Current position
 
 - **Landing zone closed — Stages 0-1d DONE (2026-08-15)**, except the `Staging` vend: held on the account
-  cap, **open AWS support ticket** (`aws/cloudshell/management-quotas.sh` re-asks). Ten documents, four
-  policy types — battery 93/93.
+  cap, **open AWS support ticket** (`aws/cloudshell/management-quotas.sh` re-asks). Battery 93/93.
 - **Stage 2 DONE (2026-08-16), all nine verifications answered.** Deployed: a state bucket per
   Terraform-managed account (`prod` carries D36's 2nd key); `identity/sso/` — 7 sets, 10 assignments;
   `identity/org-policies/` — ten policies + ten attachments **adopted, none created**, **content never
@@ -183,25 +183,25 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   `/datascience/<env>/…`.
 - **Gates, and there is no CI:** `make check` (offline), `make check-ou` (session),
   `make check-docs` — **red** on pre-Stage-2 prose, outside the commit gate.
-- **Stage 3 pass 1 DONE 2026-08-16.** Step 0: AF VPCs removed via their **StackSet on Management**,
-  nothing survived, creation off. Steps 1-5: modules tagged `*-v0.1.0` (tags pushed **before** the
-  callers' commit), `foundation/` applied in Sandbox/Development/Production (31/30/32, re-plan
-  `No changes`); `networking.py` green except **4×`NT-8`, pass 2's pending associations**.
-  Execute-time decisions live at their steps; two reach other stages:
-  `egress_mode=A`, and the S3 allow-list — **a NAT does not bypass it** (Stage 4). CIDR/`zone_ids`:
-  `scripts/tfhygiene/backend.py`. Next: **pass 2** (4.4-4.5, 6).
+- **Stage 3 passes 1+2 DONE 2026-08-16.** Step 0: AF VPCs removed via their **StackSet on
+  Management**, nothing survived, creation off. Steps 1-6: modules tagged `*-v0.1.0` (tags pushed
+  **before** the callers' commit), `foundation/` applied in Sandbox/Development/Production
+  (31/30/32, then pass 2 +1/+1/+32 — associations and peerings in **one ordered apply on the
+  accepting side**, additive). **`networking.py`: 0 FAILED.** Two decisions reach other stages:
+  `egress_mode=A`, and the S3 allow-list — **a NAT does not bypass it** (Stage 4).
+  CIDR/`zone_ids`/peers: `scripts/tfhygiene/backend.py`. Next: **pass 3** (`egress/` `[E]`).
 - **Stages 4-7 revised, pre-instrumented (2026-08-16):** `aws/vpn.py`, `aws/datalake.py`, `aws/studio.py`,
-  `aws/supplychain.py` — `DL-5` guards INT-11's `Parameters`. Corrections: each status row; INT-16's
-  portal half ends at Stage 6 step 1.7; Stage 7 pass 0 (`pki/`+`registry/`) lands before Stage 6.
+  `aws/supplychain.py` — `DL-5` guards INT-11's `Parameters`. INT-16's portal half ends at Stage 6
+  step 1.7; Stage 7 pass 0 (`pki/`+`registry/`) lands before Stage 6.
 - **Standing rules that outlive their stages:** never add an `sts:` action to the RCP without reading
   `CT.STS.PV.1`'s exclusion note; 1d step 9 is the **only** sanctioned by-hand use of
   `AWSControlTowerExecution`; **resolve an account by name only with the exact vended name** — every one
   carries an ` Account` suffix and a **SUSPENDED `Sandbox`** sits in the roster, so filter on `ACTIVE` and
   fail loudly (`<ACCOUNT_ID_DATA>` still derives from the `Data` OU); subnets anchor on AZ `zone_id` — run
   `./aws/AZs.py` after every vend; check the SSO token before each probe block and read the denial
-  *wording*, never the exit code; account-level BPA is hand-managed, guarded by Stage 2's repository grep;
-  a `# checkov:skip=` above a block is silently ignored. **Log Archive and Audit hold no CLI profile**
-  (`CHK-1`/`CHK-2` and `org-policies.py` §4 are the instruments there).
+  *wording*, never the exit code; account-level BPA is hand-managed (Stage 2's grep guards).
+  **Log Archive and Audit hold no CLI profile** (`CHK-1`/`CHK-2` and `org-policies.py` §4 are the
+  instruments there).
 - **Before reporting a gap, read the file that owns it:** unexercised denies and deliberate allowances →
   `POLICIES.md`; 1b residue and every "expected" reading → `docs/AWS_STATE.md`; the SMUS findings for Stages
   5/6/10 → open questions 12-15, atop Stage 6.
@@ -215,8 +215,7 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   `scripts/`, the `Makefile`, and the `pre-commit`/`tflint`/`checkov`/`ruff` gates.
   **Every script is Python 3 on `uv` since 2026-08-15** — shared code in `aws/awslib`,
   `scripts/repohygiene`, `scripts/tfhygiene`; CloudShell = plain `python3` with `aws/` present.
-  **Exception `aws/cloudshell/`: `management-quotas.sh` + `audit-iam-analyser.sh` stay shell, standalone,
-  for the no-profile accounts.**
+  **Exception: `aws/cloudshell/` stays shell, standalone, for the no-profile accounts.**
 
 **Budget: ~2 KB.** State, not reasoning — **a bullet here that explains *why*, or that a stage file should
 be carrying, is a stale copy of something that already lives elsewhere.** Re-trim whenever a stage closes.

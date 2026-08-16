@@ -1,7 +1,8 @@
-# Inputs. The first five arrive from the generated, untracked terraform.auto.tfvars
-# (./scripts/gen-tfvars.py sandbox foundation) - region and env for Stage 2's standing
+# Inputs. The first six arrive from the generated, untracked terraform.auto.tfvars
+# (./scripts/gen-tfvars.py production foundation) - region and env for Stage 2's standing
 # reasons, vpc_cidr and zone_ids because the address allocation lives in
-# scripts/tfhygiene/backend.py (Stage 3 decision 1) and may be a literal in no .tf file.
+# scripts/tfhygiene/backend.py (Stage 3 decision 1) and may be a literal in no .tf file,
+# and peers because the profile names live in the same module's PROFILES table (pass 2).
 
 variable "region" {
   description = "AWS region for this slice. No default: see the note above."
@@ -40,6 +41,12 @@ variable "vpc_cidr" {
 variable "zone_ids" {
   description = "The two AZ zone ids subnets anchor on (step 1.5, D9)."
   type        = list(string)
+  nullable    = false
+}
+
+variable "peers" {
+  description = "Profile + env token per VPC-bearing account (Stage 3 pass 2), derived in scripts/tfhygiene/backend.py from the same tables as everything else - never authored here. Consumed by the aliased providers of the cross-account handshake; the self-row is emitted and unused."
+  type        = map(object({ profile = string, env = string }))
   nullable    = false
 }
 

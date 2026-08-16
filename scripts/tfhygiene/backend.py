@@ -184,6 +184,17 @@ def tfvars_values(account: str, slice_name: str) -> dict:
             )
         values["vpc_cidr"] = CIDRS[account]
         values["zone_ids"] = ZONE_IDS[account]
+        # Stage 3 pass 2: the peers map - every VPC-bearing account that has a profile,
+        # DERIVED from the two tables above rather than authored a third time (Lesson 14).
+        # The slice's aliased providers read a peer's [P] facts (VPC, subnets, route
+        # tables) live instead of copying them here: an id in a tfvars would be a stale
+        # copy of another slice's state. Staging is absent because PROFILES has no row
+        # until the vend; the self-row is emitted too and simply unused.
+        values["peers"] = {
+            acct: {"profile": PROFILES[acct], "env": ENV_TOKENS[acct]}
+            for acct in sorted(CIDRS)
+            if acct in PROFILES
+        }
     return values
 
 
@@ -201,6 +212,11 @@ def render_tfvars(account: str, slice_name: str) -> str:
     if "vpc_cidr" in v:
         zone_list = ", ".join(f'"{z}"' for z in v["zone_ids"])
         out += f'vpc_cidr        = "{v["vpc_cidr"]}"\nzone_ids        = [{zone_list}]\n'
+        rows = "".join(
+            f'  {acct} = {{ profile = "{p["profile"]}", env = "{p["env"]}" }}\n'
+            for acct, p in v["peers"].items()
+        )
+        out += f"peers = {{\n{rows}}}\n"
     return out
 
 
