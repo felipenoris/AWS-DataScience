@@ -7,8 +7,9 @@ Stage: [`docs/plan/stages/stage-03-networking.md`](../plan/stages/stage-03-netwo
 
 *One exception, recorded so the provenance is not guessed later. **On 2026-08-16 the user authorised
 Claude, once and explicitly, to create this file and write the entry below** — a decision sitting held
-with the user in that same session, with no AWS call in it. Everything from here is the user's, as
-usual, and the rule is unchanged.*
+with the user in that same session, with no AWS call in it. **A second explicit authorisation, later the
+same day, covers the wording revision of the step 0 entry and its merged 0.4 subsection**, marked inline.
+Everything else is the user's, as usual, and the rule is unchanged.*
 
 ---
 
@@ -79,13 +80,19 @@ entry above records:
 Also answered by documentation: verification (vii) — a Route 53 association authorization persists
 until deleted, and deleting it does not affect the association.
 
-## Step 0 - 0.2
+## 2026-08-16 — Step 0: the Account Factory VPCs removed (0.2), creation turned off (0.3)
 
-This is step will delete CloudFormation AccountFactory VPCs default settings.
+This step deletes the Account Factory VPCs — by deleting their CloudFormation **stack instances** from
+the StackSet on Management, the removal path the Control Tower documentation names (0.2) — and turns VPC
+creation **off** in Account Factory's network configuration (0.3), so every future vend arrives without
+one.
 
-- Login at AWS Console using `AWS Control Tower Admin` -> Management Account -> AWSAdministratorAccess. CloudFormation → StackSets → AWSControlTowerBP-VPC-ACCOUNT-FACTORY-V1 → Actions → Delete stacks from StackSet.
+- Login at AWS Console using `AWS Control Tower Admin` -> Management Account -> `AWSAdministratorAccess`.
+  CloudFormation → StackSets → `AWSControlTowerBP-VPC-ACCOUNT-FACTORY-V1` → Actions → Delete stacks from
+  StackSet.
 
-  - "Accounts" section left the default setting `Deploy stacks in accounts`. I took the account numbers from `StackSet -> `Stack instances` tab.
+  - "Accounts" section: left the default setting `Deploy stacks in accounts`. I took the account numbers
+    from the StackSet's `Stack instances` tab:
 
     - Production Account
     - Development Account
@@ -94,21 +101,35 @@ This is step will delete CloudFormation AccountFactory VPCs default settings.
     - Identity Account
     - Sandbox Account 1
 
-  - section Specify Regions, which I set do us-west-2.
+  - Section "Specify regions": set to `us-west-2`.
 
-  - section `Deployment options`. `Retain stacks` is not marked, and the rest was left with default settings:
+  - Section "Deployment options": `Retain stacks` is **not** marked, and the rest was left with default
+    settings:
     - maximum concurrent accounts set to 1
     - failure tolerance set to 0
     - region concurrency set to sequential
     - concurrency mode set to "Strict failure tolerance"
 
-
- → all instances, region `us-west-2`, RetainStacks off. What's left: log groups, Policy Canary's instance.
-
-- Moving to AWS Control Tower -> Account Factory. Network configuration page section -> Edit.
+- Moving to AWS Control Tower -> Account Factory. Network configuration section -> Edit.
   - `Internet-accessible subnet` is not marked.
   - `Maximum number of private subnets` set to 0.
-  - Regions: unmarked `US West (Oregon)`. All the others are unmarked by default.
+  - Regions for VPC creation: unmarked `US West (Oregon)`; all the others were already unmarked by
+    default.
+
+### 0.4 — the loop closed *(merged by Claude, authorised by the user in this sitting)*
+
+- Preflight, before the console sitting (read-only): zero ENIs in every Account Factory VPC and one
+  `CREATE_COMPLETE` stack per account, so no dependency could block the delete — and the template read
+  showed the stack **owns** the flow-log log group and carries no `DeletionPolicy: Retain` anywhere.
+- Re-ran `./aws/networking.py` and `./aws/egress.py` (0.1's before-photo was taken earlier the same day):
+  **no VPC in any measured account**, no interface endpoint, burn zero — every `NT-1`/`EG-1` note is
+  gone, and the only notes left are the step 4 zones that do not exist yet.
+- **Verification (vi) answered: nothing survives the stack-instance deletion.** Every stack reads
+  `DELETE_COMPLETE` from its own account, `Policy Canary` included, and the flow-log **log groups are
+  gone too** — consistent with the template reading above.
+- `docs/AWS_STATE.md` §C rewritten in the same sitting. What remains open of step 0 is only the
+  configuration half's proof: **verified at the `Staging` vend**, the first account that arrives after
+  the change — run `./aws/networking.py` at that vend.
 
 
 ---

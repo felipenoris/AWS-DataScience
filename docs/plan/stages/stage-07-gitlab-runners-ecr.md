@@ -2,183 +2,460 @@
 
 | | |
 |---|---|
-| **Status** | not started |
-| **Prerequisites** | Stages 3 (which now builds the Production VPC), 4; decisions D8, D14, D15. |
-| **Consumes** | [D8](../decisions/D08-gitlab-hosting.md), [D12](../decisions/D12-budget-ceiling.md), [D14](../decisions/D14-supply-chain-account.md), [D15](../decisions/D15-tls-internal.md), [D20](../decisions/D20-staging-account.md), [D26](../decisions/D26-unified-studio.md), [D36](../decisions/D36-internal-pki.md) |
-| **Proves** | [INT-08](../integrations.md), [INT-09](../integrations.md), [INT-13](../integrations.md), [INT-19](../integrations.md) |
+| **Status** | not started — **revised 2026-08-16 into the pass/verification format, against the official GitLab and AWS documentation read the same day**; pre-instrumented by `./aws/supplychain.py`. Corrections folded in: the **Proves** row loses INT-08 (Stage 8's, per the integrations table); **ECR tag immutability is now written down** (Stage 8 cites "tags are immutable — Stage 7 step 5" against a step that never said it) and the **`base` repository is added** (Stage 8 builds `base` *and* `dev-env`; app images are `FROM base`); Kaniko is replaced by **BuildKit rootless** (archived 2025-06, its GitLab tutorial removed); runner registration is written against **authentication tokens** (registration tokens deprecated, removal at 20.0); **enhanced scanning is demoted to a decision** — basic scanning (free) carries the Stage 8 gate, Inspector measured (USD 0.09/0.01) and deferred to Stage 11 (principle 9); `gitlab-secrets.json` is **excluded from GitLab backups by design**, so the restore-or-generate flow through Secrets Manager is designed in and the value never crosses Terraform state; object storage uses the **consolidated form with `use_iam_profile`** (no keys — principle 2) and the built-in container registry is **disabled** (ECR is the registry); the GitLab `[P]` anchors move to `production/foundation/` (Stage 4's EIP pattern — the restore path must survive the destruction of the slice it restores); and the pull-through cache gained its three documented traps (credential secrets, immutability, the first pull) |
+| **Prerequisites** | Stages 3 (the Production VPC, `prod.internal`/`pages.internal` and their associations, the two peerings) and 4 (the tunnel; **GitLab's SG admits the WireGuard instance's SG, never the client CIDR** — Stage 4 step 1.2). **Pass 0 — `production/pki/` and `production/registry/` — runs before Stage 6** (D36 §3; Stage 6's prerequisites row), so when the rest of this stage starts, both slices exist and Stage 6 has already proven the cross-account image pull (INT-01) and package read (INT-02's consumer half). One deliverable (the INT-09 clone) needs Stage 6's `engineering` project |
+| **Consumes** | [D8](../decisions/D08-gitlab-hosting.md), [D11](../decisions/D11-lab-lifecycle.md), [D12](../decisions/D12-budget-ceiling.md), [D14](../decisions/D14-supply-chain-account.md), [D15](../decisions/D15-tls-internal.md), [D20](../decisions/D20-staging-account.md), [D26](../decisions/D26-unified-studio.md), [D35](../decisions/D35-sandbox-cardinality.md), [D36](../decisions/D36-internal-pki.md) |
+| **Proves** | [INT-09](../integrations.md) (the `git clone` from the `engineering` project — deferred here by Stage 6 with the surface that needs it), [INT-13](../integrations.md) (CodeConnections — answered here because this is when GitLab first exists; expected to fail, the manual `git remote add` is the accepted path), [INT-19](../integrations.md) (the CA root on all three client surfaces). **Supplies** [INT-02](../integrations.md)'s provider half at pass 0 — the CodeArtifact domain policy and KMS key policy Stage 6 consumes. INT-08 is **not** here: the deploy roles are Stage 8's |
 
 *Read with [`docs/plan/conventions.md`](../conventions.md) (naming, layout, `[P]`/`[D]`/`[E]`, IAM rules).*
 
+**Forward constraint from D35:** the registries' consumers are **N + 1 accounts** (every unit's Sandbox plus
+Development). The ECR and CodeArtifact resource policies and the registry KMS key policy all enumerate their
+consumers **from one authored map, keyed by account folder, in `scripts/tfhygiene/backend.py`** — the ids
+are resolved at tfvars generation through the sanctioned name-resolution path and reach the slice in the
+**untracked** `terraform.auto.tfvars`, so no account id ever lands in a tracked file (`CLAUDE.md`'s rule). A
+vend adds one map entry, and Lesson 14 never gets a chance. Nothing else in this stage multiplies: GitLab,
+the runners and the CA are singular.
+
+**Option preservation (D14):** the supply chain sits in Production for two cost reasons, and the revision
+trigger can fire, so the move to a Shared Services account must stay a **re-target, not a rewrite**. Folders
+are not boundaries (Lesson 5) — what makes the move cheap is the absence of same-account coupling: **(1)**
+the registries in their own slice (`registry/`, never `data/` — they move, the buckets stay); **(2)** every
+consumer enumerated in the account-id map above, even while the accounts share nothing but an id; **(3)**
+`tooling/`, `runners/` and `registry/` read `foundation/` only through `terraform_remote_state` outputs that
+would survive a move (VPC id, subnet ids), and `registry/` has **its own KMS key**, never `data/`'s; **(4)**
+the CIDR is reserved — when Stage 3's step 1.3 writes the allocation table, it carries a
+`10.60.0.0/16  shared (reserved, D14)` comment row. What stays sticky is GitLab's own state — repositories,
+EBS, the private name, the certificate — and that is a restore-and-repoint, which is why step 8 rehearses
+the restore for real.
+
 ---
 
-**Objective:** source control, docs hosting and a container registry, all private, **all in the Production
-account** (D14).
+**Objective:** source control, CI, docs hosting and the artifact registries — all private, all in
+**Production** (D14), with TLS from the internal CA (D15) and no local accounts.
 
-**Prerequisites:** Stages 3 (which now builds the Production VPC), 4; decisions D8, D14, D15.
+## What this stage builds, and in which accounts
 
-**Note on ordering — two slices are pulled forward and applied before Stage 6, for the same class of
-reason:** step 5 (ECR and CodeArtifact), because under egress design B it is how packages reach SageMaker;
-and **`production/pki/` from step 2 (D36)**, because the `dev-env` image exists from Stage 6 (INT-01) and
-has to be *built* with the CA root already in it — a CA created at its natural place here would mean the
-first image is built without it and rebuilt afterwards. The rest of this stage stays here.
+| Where | What | Layer |
+|---|---|---|
+| `production/pki/` (new, **pass 0**) | the CA root and its own KMS key (D36); later the two leaves | `[P]` |
+| `production/registry/` (new, **pass 0**) + `terraform-modules/ecr-repo/` | ECR repositories, the pull-through cache, CodeArtifact, their own KMS key, the consumer-map policies | `[P]` |
+| `production/foundation/` (amended) | GitLab's `[P]` anchors: the object-storage and backup buckets, the `gitlab-secrets.json` secret container | `[P]` |
+| `production/tooling/` (new) | the GitLab EC2 instance, EBS, snapshot policy, instance role, the rendered `gitlab.rb`, the `gitlab.prod.internal` and `*.pages.internal` records | `[D]` — stopped, never destroyed |
+| `production/runners/` (new) | the runner instance and its role — the deploy credential shape of principle 2 | `[E]` |
+| `production/egress/` (amended **only if** decision 1 picks the ALB) | the internal ALB and the ACM-imported leaves | `[E]` |
+| Identity Center console, by hand | the custom SAML 2.0 application (step 3) | — |
+| GitLab itself, by hand | the four groups, the repositories, the protected release tags | — |
+| `scripts/` | `layers.py` rows: `tooling` `[D]`, `runners` `[E]` | — |
 
-**Note on option preservation — build this so a Shared Services account stays cheap to add (D14).**
-D14 keeps the supply chain in Production for two reasons that are both about running cost, not about
-security: a second VPC floor (~50-65 USD/month) and the account quota. Its revision trigger can fire, so
-this stage is written to make the move a **re-target**, not a rewrite. **Be clear about what the folders do
-and do not buy**: separate slices reduce *migration* cost and nothing else — they are not a boundary, they
-share one account, one IAM space, one SCP ceiling and one blast radius (Lesson 5). What actually makes such
-a move expensive is not the folder but **implicit same-account coupling**, so the four measures below are
-about coupling:
+```mermaid
+flowchart LR
+    LAPTOP["Laptop · VPN"] -->|"git · browser · HTTPS<br/>trust: internal CA root"| GL
+    subgraph PRD["Production (D14)"]
+        GL["GitLab CE · t4g.large · [D]<br/>gitlab.prod.internal · Pages *.pages.internal"]
+        RUN["Runner · [E]<br/>instance profile · BuildKit rootless"]
+        REG["registry/ [P]: ECR (base · dev-env · app-*)<br/>+ pull-through cache · CodeArtifact (pypi · crates)"]
+        S3["foundation/ [P]: objects + backup buckets<br/>Secrets Manager: gitlab-secrets.json"]
+        PKI["pki/ [P]: CA root · leaves"]
+    end
+    DEVQ["Studio · engineering project<br/>(Development)"] -->|"clone/push over peering · INT-09"| GL
+    GL --- S3
+    RUN -->|"push"| REG
+    REG -->|"pulls + packages · INT-01/INT-02<br/>consumers from the D35 map"| CONS["Sandbox (per unit) + Development"]
+    PKI -.->|"root: laptop · dev-env image · runner<br/>INT-19"| LAPTOP
+```
 
-1. **The registries get their own slice, `production/registry/` `[P]`** — ECR, the pull-through cache and
-   CodeArtifact, *out of* `production/data/`, which keeps the application-output buckets and the Lake
-   Formation resource links. Those two sets move in opposite directions the day the trigger fires: the
-   registries leave, the buckets and links stay. `docs/plan/conventions.md` §6 carries this layout.
-2. **Cross-account by construction, even inside one account.** The pipeline reaches its targets by
-   `AssumeRole` with the account id coming from a variable, **including into Production** — never by
-   same-account implicitness. Likewise the ECR and CodeArtifact resource policies and their KMS key
-   policies enumerate consumers from a **map of account ids** (Lesson 14 — a principal pasted in by hand in
-   N places will be missing from one). If the registries move, the map gains a key; nothing else changes.
-3. **No implicit sharing with Production's own resources.** `tooling/`, `runners/` and `registry/` read
-   `production/foundation/` only through `terraform_remote_state` outputs that would still exist if
-   foundation lived in another account — VPC id, subnet ids, CIDRs — and they get **their own KMS key**,
-   not the key `production/data/` uses for application data. A shared key is the single hardest thing to
-   unpick later, because it is referenced from every consumer account's policy.
-4. **Reserve the CIDR now, in Stage 3's allocation table.** It costs nothing and avoids renumbering a
-   peered topology later.
+## Who executes each action
 
-What stays genuinely sticky, and is worth knowing rather than avoiding: **GitLab's state** — repositories,
-CI history, registry metadata on EBS/S3 — plus the private DNS name, the certificate and the runner
-registration. Moving those is a restore-and-repoint with a maintenance window, not a redesign, which is
-exactly why step 1's backup/restore cycle has to be tested for real.
+| Marker | Meaning |
+|---|---|
+| **[Claude]** | repository edits and read-only AWS calls — done without asking |
+| **[Claude⚡]** | `terraform apply` or any AWS write — only after the user authorizes that specific action in chat, with the SSO user/account/permission set stated first |
+| **[user]** | console acts (the SAML application in Identity Center), everything inside GitLab's own UI, browser flows, SSM sessions on the host, git tags, and every log entry |
 
-**To execute:**
+Every apply in this stage runs as the **infrastructure user** through **`awsds-infra-prod`** (Production,
+`InfrastructureAccess`), except step 3's SAML application — **`awsds-infra-identity`**'s console (Identity,
+the IdC delegated administrator, D10).
 
-1. GitLab CE Omnibus on EC2 in a **Production** private subnet; EBS with a snapshot schedule; an internal
-   ALB in front — **layer `[E]`, in `production/egress/`**, correcting the previous version, which put it
-   in the `[D]` tooling slice: an ALB cannot be stopped, it bills (~USD 0.023/h) for as long as it exists,
-   so it is destroyed with the session and rebuilt by `make up` (target group, listener and certificate
-   attachment are plain Terraform; the private DNS name hides the recreation). Route 53 record in the
-   private zone. Reached from the laptop over the VPN through the Stage 3 peering.
-   **Layer `[D]` (dormant), decided up front.** GitLab holds real state — repositories, CI history,
-   registry metadata — and rebuilding it from a backup on every session is exactly the kind of fragile
-   daily dependency `docs/plan/conventions.md` §5.1 rule 2 warns about. So the instance and its EBS volume are **stopped**, not
-   destroyed: ~USD 4/month idle, ~3-5 minutes to boot. Always-on would be ~USD 60/month, which the
-   USD 50 ceiling (D12) rules out.
-   Backups are still mandatory, but as disaster recovery rather than routine operation: scheduled
-   `gitlab-backup create` to a `[P]` S3 bucket, plus `gitlab-secrets.json` in Secrets Manager — without
-   that file a restored backup cannot decrypt its own data. Test the full backup → destroy → restore cycle
-   once, so the recovery path is known to work.
-   Instance type per D8: `t4g.large` (ARM, 8 GB). Point GitLab's object storage (artifacts, LFS, uploads,
-   registry) at S3 rather than at the EBS volume — it keeps the volume small and puts the bulky, valuable
-   data in a `[P]` bucket that is versioned and lifecycle-managed.
-2. **TLS per D15, as revised on 2026-08-09 — an internal CA, and no registered domain at this stage.**
-   ACM cannot issue for `prod.internal` (public certificates need public validation) and Private CA is over
-   budget, but the audience here is three clients we build ourselves, so the trust chain is ours:
-   - Generate the **internal root CA** once, in **`production/pki/` `[P]` — its own slice, its own state
-     file and its own KMS key (D36), applied early per the ordering note above.** Not in `foundation/`:
-     that slice is opened to change a CIDR or accept a peering, and every such edit would otherwise be made
-     by a principal holding the root. Record the CA certificate's fingerprint in
-     `docs/log/log-stage-07-gitlab-runners-ecr.md` when it is
-     created — without it, a substituted root is indistinguishable from the real one by inspection.
-   - Issue the leaves from it: `gitlab.prod.internal` and the **wildcard** Pages needs. The consuming slice
-     reads them through `terraform_remote_state`; **the root private key is never an output** (D36).
-     **Import them into ACM** and attach to the internal ALB. Imported certificates are free, but **ACM does
-     not renew them** — issue at or below 398 days and schedule the re-import (D15 phase 1 note 5).
-   - **Distribute the root to all three client surfaces (INT-19): the laptop, the `dev-env` image, and the
-     runners.** A surface that is missed fails with an opaque TLS error at the moment somebody is trying to
-     `git clone`, not with an access denial that names itself. Do this before step 3, because the SAML
-     round-trip in step 3 is a browser flow through `gitlab.prod.internal` and an untrusted certificate
-     turns it into an unexplained loop.
-   **Nothing is published, no domain is registered, and the internal names never enter a Certificate
-   Transparency log** — which a public ACM certificate would have made unavoidable. The public domain, the
-   public zone and public certificates arrive at Stage 13, for the tier that is actually public.
+## Step numbers are identifiers, not an order
 
-   **Worth evaluating here rather than assuming: with the certificate no longer coming from ACM, the ALB
-   loses its main job.** It was in the design to terminate a public ACM certificate; GitLab Omnibus's own
-   nginx can serve the internal CA's certificate — including the Pages wildcard — directly on the instance,
-   with the `prod.internal` record pointing at it. That removes an `[E]` resource, its ~USD 0.023/h and its
-   rebuild path from `make up`. Measure both and record the choice; the CA is the same either way.
-3. SAML integration between GitLab and IAM Identity Center, so GitLab has no local accounts. **A caveat
-   the previous version missed: SAML *login* works in GitLab CE, but SAML group sync is a paid-tier
-   (Premium) feature.** GitLab group membership is therefore maintained by hand — acceptable at three
-   users — with group names mirroring the Identity Center groups 1:1, so the Stage 8 approval gate is
-   driven by the same identity names and a future upgrade to group sync changes nothing visible.
-   **A second edition caveat, in the same family and with larger consequences: the Stage 8 approval gate
-   itself is probably not expressible in CE as designed.** Stage 8 step 3.5 wants a manual approval
-   *assigned to the `deployment-managers` group*; **protected environments** and **deployment approval
-   rules** — the features that express "this job may only be run by members of group X" — are Premium.
-   What CE does give is a `when: manual` job on a **protected branch or protected tag**, where the set of
-   people who may run it is the set allowed to deploy to that ref. Verify which of the two this instance
-   supports **before Stage 8 is written**, not during it, because the answer changes what "the approval
-   gate" means:
-   - if Premium is available, the gate is what D20 describes;
-   - if not, the fallback is protected-tag permissions plus a GitLab group whose membership is maintained by
-     hand — the same compromise already accepted for SAML group sync one paragraph up, applied to the
-     control D20 leans on rather than to a convenience. It is weaker in a specific way worth writing down:
-     the constraint is *who can push the protected tag*, not *who approves this particular release*, and
-     CloudTrail on the two deploy roles (INT-08) becomes the record of what actually happened rather
-     than a supplement to it.
+These numbers are **stable addresses cited from other files** — step 1 (nginx option, the secret) from D15,
+Stage 3 step 8.7 and `docs/plan/cost-model.md`; step 2 from Stage 6's prerequisites row and D36; step 3 (the
+edition check) from Stage 8 steps 1.5/3.5 and `docs/plan/institutional-delta.md`; step 4 from Stage 3 step 4.4 and
+D36; step 5 from Stage 3 step 8.4, Stage 6, Stage 8 and D36 §3; step 6 from `docs/GENERAL_PLAN.md` principle 2
+and Stage 8 step 4; step 7 from Stage 8 step 6 and INT-09's fallback. They do not change. The sequence to
+work in is **five passes**:
 
-   `docs/plan/institutional-delta.md` gains a row either way: an institution buys the tier and gets the approval as a first-class object.
-   **Note that the edition question now decides *two* gates, not one.** Since the `dev-env` image got its
-   own promotion chain and its own approver (Stage 8 step 1, `dev-env-stewards`), the same Premium feature
-   governs whether "only a dev env steward may release a runtime image" is expressible, or whether it
-   degrades to "only certain people may push the protected tag". Check it once, for both.
-   **GitLab groups to create here, one per persona, mirroring the Identity Center groups 1:1 in
-   *membership* and deliberately not in *name*:** `data-scientists`, `deployment-managers`,
-   `governance-managers` and `dev-env-stewards` — **without** the `sso-group-` prefix the directory
-   objects carry (`docs/plan/conventions.md`, the identity seam's first rule). The prefix marks an Identity
-   Center group, and these are GitLab objects in a different system, granting nothing in AWS; a bare name
-   in this repository means the GitLab group and a prefixed one means the directory. **The 1:1 that
-   matters is the person behind each**, which is what makes the Stage 8 gate consistent with the AWS
-   access model and what a future upgrade to SAML group sync would automate — and it is also the pairing
-   that has to be re-checked by hand until then, since nothing enforces that
-   `sso-group-deployment-managers` and GitLab's `deployment-managers` hold the same people. And the repositories: the
-   application repositories, plus **`dev-env/`** — the image build code, **writable by
-   `data-scientists`** and with its release tag protected so only `dev-env-stewards` can push it.
-4. GitLab Pages enabled for documentation, reachable only through the VPN. Pages requires a **domain
-   distinct from the GitLab host** — it serves user-supplied content, so sharing the origin would hand it
-   the GitLab session cookie — plus a **wildcard DNS record and a wildcard certificate**. Under the revised
-   D15 all three are internal and cost nothing: a **second private hosted zone**, `pages.internal`, separate
-   from `prod.internal` so the cookie boundary is a real domain boundary and not just a different host;
-   a wildcard record `*.pages.internal` in it; and a `*.pages.internal` leaf from the internal CA.
-   **The zone itself and its two cross-account associations are already built — Stage 3 step 4** creates
-   `pages.internal` beside `prod.internal` and associates both with the Sandbox and Development VPCs, since
-   Pages is read from the laptop and from Studio. What this step adds is the wildcard record and the leaf.
-5. **Registries, in `production/registry/`, layer `[P]` — applied early (before Stage 6):**
-   ECR repositories `dev-env` (SageMaker images) and `app/*` (application images), with lifecycle policies
-   to expire untagged images and **ECR enhanced scanning** enabled; an **ECR pull-through cache** rule for
-   the upstream public registries; and a **CodeArtifact** domain with repositories per ecosystem, each
-   configured with an upstream to the public registry. Both carry a resource policy granting the **Sandbox
-   and Development** accounts pull/read access, and the KMS key policy has to grant both as well — the
-   direction of sharing is the reverse of the previous plan, because the registries moved. **Both policies
-   enumerate their consumers from a map of account ids, and the key is this slice's own key, not
-   `production/data/`'s** (option-preservation note above, measures 2 and 3). `docs/plan/architecture.md` §4.3 records
-   which ecosystems CodeArtifact does not cover and what happens to them instead. Whether SageMaker Studio
-   actually accepts the `dev-env` image cross-account is verified in Stage 6; the fallback is an ECR
-   replication rule into a repository in each Interactive account.
-6. GitLab Runners in `production/runners/`, layer `[E]`: autoscaling on EC2 or Fargate, in the private
-   subnet, with an instance role that can push to ECR. Container builds with Kaniko or BuildKit (no
-   privileged Docker-in-Docker). Runners hold no state worth keeping, so they are rebuilt every session.
-   The runners need egress to fetch public dependencies while building the dev-env image — that is the one
-   place internet access is legitimate under both egress designs, and it belongs to the build account, not
-   to the notebook.
-7. Decide and document the mirroring policy between this GitHub repository and GitLab.
-8. Add GitLab start/stop to `make up` / `make down`, and measure the boot time — if it turns out to be
-   much worse than the ~3-5 minutes assumed in D8, revisit the layer choice (`docs/plan/conventions.md` §5.1 rule 7).
+| Pass | # | What | Slice · layer | When / applied as |
+|---|---|---|---|---|
+| **0** | 2.1-2.3, 5 | the CA root; the registries and their policies | `pki/`, `registry/` `[P]` | **before Stage 6** (D36 §3) — `awsds-infra-prod` |
+| **1** | 1, 2.4-2.5 | the `[P]` anchors, the `tooling/` slice, the leaves, the records; root onto the laptop | `foundation/` (amended), `tooling/` `[D]`, `pki/` (amended) | Stage 7 proper — `awsds-infra-prod` |
+| **2** | 3, 4 | SAML + the edition check + groups and repositories; Pages | IdC console, GitLab UI, `tooling/` | user + Claude drafts |
+| **3** | 6, 7 | the runner; the mirroring decision and the INT-13 reading | `runners/` `[E]` | `awsds-infra-prod`; INT-13: user, console |
+| **4** | 8 | the lifecycle, the backup→destroy→restore rehearsal, the deliverables | `make down`/`up`, readings | user + Claude |
 
-**Deliverables:** a repository pushed to GitLab over the VPN, a pipeline running on a private runner, an
-image in ECR pulled successfully **from both Interactive accounts**, and a docs site served by Pages over
-HTTPS with a certificate that validates **against the internal CA, on all three client surfaces** — laptop
-browser, `dev-env` notebook and runner (INT-19). "It works in my browser" only tests the one surface where
-somebody clicked through a warning. **Plus the one deferred from Stage 6:** a `git clone` from GitLab inside the
-`engineering` project, which proves the Development↔Production peering carries it (INT-09) — the
-*network* path, independent of the CodeConnections attachment in INT-13 that D26 accepts losing. INT-13
-itself is also answered here, since this is when GitLab first exists: check whether a CodeConnections host
-can be created at all from an account with no VPC, and record the manual `git remote add` as the accepted
-path when it cannot.
+Pass 1 needs pass 0 (the leaves are issued from the root; the instance role reads the backup bucket). Pass 2
+needs pass 1 — the SAML round-trip is a browser flow through `gitlab.prod.internal`, and an untrusted
+certificate turns it into an unexplained loop, so the root lands on the laptop first (2.5). Pass 3 needs
+pass 2 (a runner registers against a project). Pass 4 is the proof of everything before it.
+
+---
+
+## To execute
+
+### 1. GitLab CE on EC2 — `production/tooling/` `[D]`, its `[P]` anchors in `foundation/`
+
+**Action:** stand up GitLab CE Omnibus on a `t4g.large` in a Production private subnet, its bulky state in
+S3, its secrets in Secrets Manager, reached by name over the VPN. **Why:** required by the objectives —
+source control reachable only through the intranet — and D8/D14 fix the how and the where. **Explanation:**
+the instance is `[D]` (stopped between sessions, ~USD 4/month of EBS — rebuilding real state from backup
+every session is the fragile path, conventions §5.1 rule 2); everything that must survive a rebuild of the
+instance lives in `[P]` slices, which is Stage 4's EIP pattern applied to GitLab.
+
+- **1.1 — [Claude] Amend `production/foundation/` with the `[P]` anchors**, exported for `tooling/` to read:
+  the **object-storage bucket** `awsds-prod-gitlab-objects` (one bucket, virtual buckets by prefix —
+  documented single-bucket form; artifacts, LFS, uploads), the **backup bucket** `awsds-prod-gitlab-backup`
+  (versioned, lifecycle-expiring old backups), and the **secret container** `awsds-prod-gitlab-secrets`
+  (an `aws_secretsmanager_secret` with **no value resource** — the value is written only from the instance,
+  1.5, so it never enters Terraform state). They sit in `foundation/`, not `tooling/`, because the restore
+  rehearsal (8.2) destroys `tooling/` — the backup must survive the destruction of the slice it restores.
+- **1.2 — [Claude] Write `production/tooling/`**: a `t4g.large` on **Amazon Linux 2023 arm64** —
+  supported by Omnibus since 16.3.0 (read 2026-08-16), which keeps the project's AMI pattern (the SSM
+  public parameter, `docs/plan/architecture.md` §4.1), the preinstalled SSM agent and the
+  dnf-through-gateway-endpoint path; the GitLab package itself comes from `packages.gitlab.com`, which
+  needs the NAT (`egress/` up during install and upgrades). EBS gp3 50 GB, `delete_on_termination =
+  false` on the data volume, one **Data Lifecycle Manager** daily snapshot policy (DLM is free; snapshot
+  storage is billed). Instance Name tag: **`awsds-prod-gitlab`** — a contract with `./aws/supplychain.py`.
+  No port 22; SSM Session Manager only (the `amazon-ssm-*` families are in the 9.3 allow-list for exactly
+  this host). The SG admits HTTPS from the **WireGuard instance's SG** (cross-account SG reference over the
+  peering) and from **Development's private-subnet CIDR** (INT-09) — never `10.90.0.0/24`, which never
+  crosses the peering (Stage 4 step 1.2).
+- **1.3 — [Claude] Render `gitlab.rb` from a Terraform template** delivered by user data — configuration is
+  code, not console: `external_url "https://gitlab.prod.internal"`; the **consolidated object storage**
+  block pointed at 1.1's bucket with **`use_iam_profile = true`** (no keys anywhere — principle 2);
+  `backup_upload_connection` to the backup bucket (backups are excluded from the consolidated form by
+  GitLab's design); **container registry disabled** (`registry['enable'] = false` — ECR is the registry, by
+  objective) and the packages feature off (CodeArtifact is the package proxy); Pages per step 4; SAML per
+  step 3. The instance role gets S3 on the two buckets, `PutSecretValue`/`GetSecretValue` on 1.1's secret
+  ARN, and nothing else.
+- **1.4 — [Claude] Create the two DNS records in `tooling/`**: `gitlab.prod.internal` and
+  `*.pages.internal` → the instance's **primary private IPv4** (documented to survive stop/start —
+  verification (i); under decision 1's ALB alternative these become alias records in `egress/`).
+- **1.5 — [Claude] Write the restore-or-generate flow into user data**: on boot, if 1.1's secret has a
+  value, install it as `/etc/gitlab/gitlab-secrets.json` **before** `gitlab-ctl reconfigure`; if not (first
+  boot only), reconfigure and push the generated file with `put-secret-value`. GitLab excludes this file
+  from its own backups by design, and a backup restored without it cannot decrypt its database — this flow
+  is what makes 8.2's rehearsal honest. `gitlab.rb` needs no such treatment: it is a rendered template in
+  this repository.
+- **1.6 — [Claude] Add the machinery rows in the same sitting**: `("production", "tooling")` `[D]` and
+  `("production", "runners")` `[E]` in `scripts/tfhygiene/layers.py` — rank the `[E]` slices before
+  `tooling`, so `make down ENV=prod` destroys runners (and the ALB, if chosen) before stopping GitLab. A
+  slice with no row fails `make check`.
+- **1.7 — [Claude⚡] Apply `foundation/` (amended) and `tooling/`** as `awsds-infra-prod`;
+  `fmt`/`validate`/`plan` clean first. **[user]** First sign-in: read `/etc/gitlab/initial_root_password`
+  through an SSM session (it self-deletes after 24 h), set the root password, and record in the log that
+  **the local `root` account is kept** — it is GitLab's own break-glass when SAML breaks (step 3 creates no
+  other local account).
+
+### 2. TLS from the internal CA — `production/pki/` (D36, D15, INT-19)
+
+**Action:** generate the root once (pass 0), issue the two leaves, and put the root on every client
+surface. **Why:** ACM cannot issue for `.internal` names and Private CA is over budget (D15); the audience
+is three clients this project builds, so the trust chain is ours — and a missed surface fails as an opaque
+TLS error at `git clone` time, not as an access denial (INT-19). **Explanation:** pass 0 creates the root
+early because the `dev-env` image is built at Stage 6 step 5.0 and must carry it; the leaves wait for
+pass 1, when something exists to serve them.
+
+- **2.1 — [Claude] Write `production/pki/`** (pass 0): the root CA via the `tls` provider — **its own
+  slice, its own state file, its own KMS key, and the private key never an output** (D36; the state-file
+  custody trade is stated there). Outputs: the CA certificate and, from 2.4 on, the leaves.
+- **2.2 — [Claude⚡] Apply it** as `awsds-infra-prod` (pass 0, before Stage 6). **[user]** Record the CA
+  certificate's **fingerprint** in the stage log in the same sitting (D36 §5 — without it a substituted
+  root is indistinguishable from the real one).
+- **2.3 — [Claude] Publish the root from one source** (INT-19, Lesson 14): a `[P]` S3 object in an existing
+  Production bucket **and** the SSM parameter **`/datascience/prod/pki/ca-root-pem`** (the `/datascience/`
+  path because Parameter Store reserves `aws*` — conventions §6). Stage 6's image build and step 6's runner
+  user data both read these; nothing pastes the PEM.
+- **2.4 — [Claude] Issue the two leaves** (pass 1, amending `pki/`): `gitlab.prod.internal` and
+  `*.pages.internal`, **≤ 398 days** (D15 note 5 — trust stores are not assumed to exempt local roots).
+  `tooling/` reads them through `terraform_remote_state` and lands them on the instance for nginx
+  (decision 1); under the ALB alternative they are **imported into ACM** instead — imports are free, but
+  **ACM does not renew them**: the re-import date goes into the log either way, and
+  `./aws/supplychain.py` `SC-8` watches the expiry.
+- **2.5 — [user] Trust the root on the laptop** before step 3 (macOS keychain; `git`, `curl` and Python
+  each have their own CA-bundle opinion — Claude drafts the exact commands). The other two surfaces:
+  the `dev-env` image took the root at Stage 6 step 5.0; the runner takes it in step 6's user data. The
+  three-surface proof is this stage's INT-19 deliverable.
+
+### 3. SAML against Identity Center, the groups, and the edition check (D20, Lesson 12)
+
+**Action:** make Identity Center GitLab's only sign-in, mirror the personas as GitLab groups, and verify
+which approval-gate features this CE instance actually has. **Why:** no local accounts is the identity
+model (principle 2's human half), and **two Stage 8 gates hang on the edition answer** — the deployment
+approval (D20) and the dev-env release — so the check happens now, before Stage 8 is written, not during
+it. **Explanation:** SAML *login* is a Free-tier feature; **SAML Group Sync, protected environments and
+deployment approvals are Premium** (read 2026-08-16) — memberships are therefore maintained by hand, and
+the CE gate shape is `when: manual` on a protected tag/branch.
+
+- **3.1 — [user] Create the custom SAML 2.0 application in the Identity Center console** (Identity
+  account — the IdC delegated administrator, D10), with every field named (Lesson 16): display name
+  `GitLab`; **Application ACS URL** `https://gitlab.prod.internal/users/auth/saml/callback`; **Application
+  SAML audience** `https://gitlab.prod.internal`; attribute mappings **Subject →** `${user:email}`
+  (format `emailAddress`) and **`email` →** `${user:email}` (format `basic`); assign the four
+  `sso-group-*` groups to the application. Download the IdC metadata (SSO URL + certificate) for 3.2.
+  Note the IdC portal itself is reachable off-VPN (INT-16's recorded reading) — the *GitLab* half of the
+  round-trip is VPN-only, so sign-in works only with the tunnel up.
+- **3.2 — [Claude] Add the SAML block to the `gitlab.rb` template**: `idp_sso_target_url` and
+  `idp_cert_fingerprint` from 3.1's metadata (as variables, not literals), `issuer
+  "https://gitlab.prod.internal"`, `name_identifier_format
+  "urn:oasis:names:tc:SAML:1.1:nameid-format:emailAddress"`, `attribute_statements email: ['email']`,
+  `block_auto_created_users = false`, and `omniauth_auto_link_saml_user = true` so the root account can
+  also link. **[Claude⚡]** Apply + reconfigure. **[user]** Prove the round-trip: sign in as a
+  data-scientist user, record which NameID/attribute shape worked (verification (iii)).
+- **3.3 — [user] Read the edition answer off the running instance** (verification (iv)): in a test
+  project's settings, are **Protected environments** and **deployment approval rules** present at all?
+  Expected: absent in CE. Record it — the answer decides whether Stage 8's two gates are D20's approval
+  as designed (Premium) or the CE fallback: **protected tags plus hand-maintained group membership**,
+  where the control becomes *who can push the tag* and CloudTrail on the two deploy roles (INT-08,
+  Stage 8) becomes the record of what happened. `docs/plan/institutional-delta.md` already carries the row.
+- **3.4 — [user] Create the four GitLab groups**, mirroring the Identity Center groups 1:1 in
+  *membership* and deliberately not in name — `data-scientists`, `deployment-managers`,
+  `governance-managers`, `dev-env-stewards`, **without** the `sso-group-` prefix (the identity seam's
+  first rule, conventions §6: a bare name is a GitLab object granting nothing in AWS). Nothing enforces
+  the membership pairing until a Premium upgrade automates it — re-check it by hand when people change.
+- **3.5 — [user] Create the repositories**: the application repositories (`app-etl` first, conventions
+  §6's template) and **`dev-env/`** — writable by `data-scientists`, its **release tag protected** so only
+  `dev-env-stewards` can push it (the CE shape of Stage 8 step 1's gate).
+
+### 4. GitLab Pages — the second domain, the wildcard, the leaf (D36)
+
+**Action:** enable Pages on `*.pages.internal`, VPN-only. **Why:** the objectives require docs over the
+intranet, and Pages serves **user-supplied content** — it must live on a domain distinct from the GitLab
+host, or every published page could read the GitLab session cookie (the documented XSS rationale;
+`pages.internal` as a separate *domain*, not a separate host, is D36's naming note). **Explanation:** the
+zone and its cross-account associations already exist — Stage 3 step 4 built `pages.internal` and
+associated it with the Sandbox and Development VPCs. This step adds the record (1.4), the leaf (2.4) and
+the configuration.
+
+- **4.1 — [Claude] Add the Pages block to `gitlab.rb`**: `pages_external_url "https://pages.internal"`,
+  the wildcard leaf and key as `pages_nginx['ssl_certificate']`/`ssl_certificate_key`, and **access
+  control on** (a Free-tier feature: a page visit requires a GitLab session on top of the VPN — one click
+  per browser session, and the docs stop being readable by anything that merely reaches the network).
+- **4.2 — [user] Prove it end to end**: a docs build published by a pipeline (pass 3) serves at
+  `https://<project>.pages.internal` from the laptop — and later from a `dev-env` notebook, which is two
+  of INT-19's three surfaces exercised by one URL.
+
+### 5. The registries — `production/registry/` `[P]`, **pass 0, before Stage 6** (D14, D36 §3, INT-02)
+
+**Action:** create the ECR repositories, the pull-through cache and the CodeArtifact domain, with
+resource and key policies enumerating the Interactive consumers. **Why:** under egress design B this is
+how packages and images reach SageMaker at all, and the `dev-env` image build (Stage 6 step 5.0) pushes
+here — so the slice cannot wait for this stage's natural position. **Explanation:** everything `[P]` and
+free at rest except stored bytes; consumers come from the D35 map, the key is this slice's own
+(option-preservation measures 2-3).
+
+- **5.1 — [Claude] Write `terraform-modules/ecr-repo/` and the repositories** — the module's first caller
+  is this slice (the Stage 3 step 1.1a rule): **`awsds-prod-ecr-base`**, **`awsds-prod-ecr-dev-env`**
+  (the two images of Stage 8 step 1 — every app image is `FROM base`, so `base` gets a repository too),
+  and `awsds-prod-ecr-app-etl` (one per application). On each: **tag immutability on** (the property
+  Stage 8's "tags are immutable" and the whole approved-digest chain stand on), **basic scan-on-push**
+  (free; findings via `DescribeImageScanFindings` — decision 2 records why not enhanced), and a lifecycle
+  policy expiring untagged images.
+- **5.2 — [Claude] Create the pull-through cache rules** for the credential-free upstreams — Amazon ECR
+  Public, `registry.k8s.io`, Quay (decision 3; Docker Hub needs a `ecr-pullthroughcache/…` Secrets
+  Manager secret — its documented name prefix, an exception to the `awsds-` convention — and is added
+  only when a build actually needs it). Three documented traps, written here so nobody rediscovers them:
+  **immutability must not reach the cache repositories** (an immutable tag blocks the cache update — no
+  repository creation template forcing it; our own repositories set it per-repository, which does not
+  collide); **the first pull of any image needs a route to the internet** — prime the cache from
+  Production while its NAT is up, after which Interactive consumers under design B read the cached copy;
+  and cached repositories are created by ECR, so the consumer grant rides on the **registry-level**
+  permission policy, not per-repository ones.
+- **5.3 — [Claude] Create the CodeArtifact domain `awsds-prod-packages`** with two repositories:
+  `pypi` (external connection `public:pypi`) and `crates` (`public:crates-io` — Cargo is supported, GA
+  2024-06, confirming open question 5's note; Julia and R stay uncovered and arrive baked into the
+  dev-env image, `docs/plan/architecture.md` §4.3).
+- **5.4 — [Claude] Write the three consumer-facing policies from the D35 map** (the `backend.py` map of
+  the forward-constraint note — ids arrive in the generated tfvars, never committed): the ECR
+  registry/repository policies and the CodeArtifact domain policy grant **pull/read only** to the map's
+  accounts; the slice's **own KMS key** policy grants the same set `Decrypt`. A vend adds one map entry
+  and nothing else changes (Lesson 14; option preservation).
+- **5.5 — [Claude⚡] Apply `registry/`** as `awsds-infra-prod` (pass 0). The cross-account **proof** is
+  Stage 6's (INT-01, INT-02's consumer half); `./aws/supplychain.py` sections 5-7 keep the mechanical
+  half — the policies, and a real consumer-side read — readable afterwards.
+
+### 6. GitLab Runners — `production/runners/` `[E]` (principle 2, Stage 8 step 4)
+
+**Action:** stand up one runner on EC2 in the Production private subnet, authenticating to AWS through
+its **instance profile**. **Why:** a VPN-only GitLab cannot serve a JWKS that IAM can fetch, so OIDC
+federation is structurally unavailable — the instance profile *is* the machine credential (principle 2);
+the runner is `[E]` because it holds nothing worth keeping. **Explanation:** one `t4g.large` while up
+(builds of the dev-env image are memory-hungry; it exists only during sessions), docker executor; the
+autoscaling question is decision 5.
+
+- **6.1 — [Claude] Write `production/runners/`**: instance Name tag **`awsds-prod-runner`** (the script's
+  contract), user data that installs `gitlab-runner` (arm64), **trusts the CA root from 2.3's one
+  source**, and registers against GitLab with an **authentication token** (`glrt-…`) read from a
+  git-ignored tfvars — the runner is created first in GitLab's UI/API and hands back the token
+  (registration tokens are deprecated, removal at 20.0; verification (viii)). Instance role: push to the
+  two image repositories, read CodeArtifact — **no deploy permissions**; the deploy runner and its roles
+  are Stage 8's (INT-08), kept apart so this role never accumulates them.
+- **6.2 — [Claude] Configure container builds with BuildKit rootless** (or Buildah) — **not Kaniko**,
+  which was archived in 2025-06 and whose GitLab tutorial was removed, and **no privileged
+  Docker-in-Docker**. The build needs egress for public dependencies (the dev-env image build is where
+  Julia, R and Rust arrive): that is Production's NAT, up while `egress/` is up — the one legitimate
+  internet path under both egress designs, and it belongs to the build account, not the notebook.
+- **6.3 — [Claude⚡] Apply through `make up ENV=prod`**, and **[user]** run the first pipeline: a
+  `.gitlab-ci.yml` on `app-etl` that builds and pushes an image — the pipeline deliverable.
+
+### 7. The mirroring policy, and the INT-13 reading
+
+**Action:** decide what mirrors between this GitHub repository and GitLab, and record whether
+CodeConnections can reach a VPN-only GitLab at all. **Why:** Stage 8 step 6 needs the mirroring answer to
+place the infrastructure pipeline, and INT-13 is answered at the first moment GitLab exists.
+**Explanation:** both are recordings, not builds.
+
+- **7.1 — [user] Decide the mirror** (decision 4; recommended: none standing — GitLab hosts the
+  application repositories, this infrastructure repository stays on GitHub, and a per-repository **push
+  mirror** (a Free-tier feature; pull mirroring is Premium) is added only if INT-09's fallback ever
+  needs it). Record it in the log; Stage 8 step 6 consumes the answer.
+- **7.2 — [user] Read INT-13**: from Data Governance (the domain's account, which has **no VPC** by
+  D22/D26), attempt the CodeConnections **host** for `https://gitlab.prod.internal` in the console — a
+  host for a private instance requires VPC connectivity the account does not have, so the expected
+  answer is that it cannot reach it. Record the wording, delete anything half-created, and record the
+  **manual `git remote add` + push from inside the project** as the accepted path (INT-13's fallback is
+  the normal path, not a degradation — D26 already accepts it).
+
+### 8. The lifecycle, and the rehearsed restore (D11, conventions §5.1 rule 6)
+
+**Action:** prove `make down`/`make up` against the new slices, measure the boot, and walk the
+backup→destroy→restore path once. **Why:** a `[D]` choice is a cost judgement that rule 7 re-opens if the
+boot is slow, and a recovery path that has never been walked is a claim, not a path (Lesson 5; D36 §6
+applies the same discipline to the CA). **Explanation:** the rehearsal happens now, while the instance
+holds throwaway content.
+
+- **8.1 — [user] Run the cycle**: `make down ENV=prod` destroys the runner (and ALB, if chosen) and
+  **stops** GitLab; `make up` restores it. Measure the boot to first HTTPS answer (verification (vi)) —
+  D8 assumed 3-5 minutes; much worse re-opens the layer choice (§5.1 rule 7).
+- **8.2 — [user] Rehearse the restore, once**: `gitlab-backup create` (to the backup bucket), destroy
+  `tooling/`, re-apply, let 1.5's flow restore `gitlab-secrets.json`, `gitlab-backup restore`, and prove
+  a pre-backup repository clones cleanly. Record the measured time — this is the DR path D8 accepted in
+  exchange for `[D]`, and the backup schedule (a cron entry in user data, daily while the instance runs)
+  is set in the same sitting.
+- **8.3 — [Claude] Diff `./aws/supplychain.py` across the cycle** — only timestamps and instance state
+  may change; anything else is state that leaked into the wrong layer.
+
+---
+
+## Deliverables
+
+Each is written so its output differs between working and broken (Lesson 13). **The mechanical half is
+`./aws/supplychain.py`** ([`aws/INDEX.md`](../../../aws/INDEX.md)): the host and its `[D]` state, the
+anchors, the leaf expiry, the repositories with immutability and scan-on-push, the cache rules, the
+CodeArtifact domain, the consumer policies, the runner. The behavioural proofs are the stage's own
+(Lesson 20):
+
+- **The clone pair:** `git clone https://gitlab.prod.internal/...` succeeds from the laptop with the
+  tunnel up and fails with it down — and succeeds **from a notebook in the `engineering` project**, which
+  is INT-09's network path over the Development↔Production peering.
+- **The pipeline:** a commit to `app-etl` runs on the private runner and pushes an image to
+  `awsds-prod-ecr-app-etl`; a second push of the **same tag is rejected** (immutability doing its job).
+- **The TLS triple (INT-19):** the Pages site and GitLab answer over HTTPS with certificates that
+  validate against the internal CA on **all three surfaces** — laptop browser/git, a `dev-env` notebook,
+  and the runner's own job log. "It works in my browser" tests only the surface where somebody clicked
+  through a warning.
+- **The identity pair:** an Identity Center user signs in through SAML with no local account created by
+  hand; the kept `root` account still signs in locally (GitLab's own break-glass).
+- **The lifecycle and the restore:** 8.1's cycle with the boot time recorded; 8.2's restore proving a
+  repository survives the death of the instance.
+- **Two recordings:** the edition answer (3.3 — it decides Stage 8's two gates), and INT-13's reading
+  (7.2 — the manual `git remote add` recorded as the accepted path).
+
+## Validation
+
+1. Run `./aws/supplychain.py` — all `SC-*` pass; diff two runs across 8.1's cycle (8.3).
+2. Run `./aws/egress.py` §6 at the session's end — zero burn; a forgotten runner or ALB is this stage's
+   likeliest leak.
+3. Read every denial by its wording, never its exit code (standing rule since 1c).
+
+## Cost
+
+Measured (`docs/PRICING.md`), us-west-2:
+
+| Item | Cost | Layer |
+|---|---|---|
+| GitLab `t4g.large` while up | 0.0672/h | `[D]` |
+| GitLab EBS 50 GB gp3 | ~USD 4.00/month | `[D]` idle — the largest idle item |
+| EBS snapshots (DLM daily) | snapshot storage, measured at the first backup | `[P]` |
+| Object-storage + backup buckets | ~USD 0.023/GB-month — cents at lab scale | `[P]` |
+| `gitlab-secrets.json` secret | USD 0.40/month + 0.05/10k calls (measured 2026-08-16) | `[P]` |
+| ECR storage (~10 GB) | ~USD 1.00/month — already a floor row | `[P]` |
+| CodeArtifact | 0.05/GB-month + 0.05/10k requests | `[P]` |
+| Runner `t4g.large` while up | 0.0672/h | `[E]` |
+| Internal ALB (only if decision 1 picks it) | 0.0225/h + LCU | `[E]` |
+| Enhanced scanning (deferred, decision 2) | 0.09/image + 0.01/re-scan (measured 2026-08-16) | Stage 11's |
+
+## Decisions due while executing
+
+**Blocking questions for the user: none.** Each is decided during the stage and written into
+`docs/log/log-stage-07-gitlab-runners-ecr.md` (Lesson 16). Recommendations stated so the keyboard is not
+the decision-maker.
+
+1. **TLS termination: nginx on the instance, or the internal ALB** (steps 1-2) — recommended: **nginx on
+   the instance**. The ALB was in the design to terminate a public ACM certificate; with D15 revised
+   there is none, Omnibus's own nginx serves the internal leaves (Pages wildcard included), the primary
+   private IP survives stop/start so the records hold, and an `[E]` resource, its 0.0225/h and its
+   rebuild path all disappear. The ALB stays the documented alternative if instance-side TLS proves
+   awkward; the CA and the leaves are identical either way (D36 §6).
+2. **ECR scanning: basic or enhanced** (5.1) — recommended: **basic scan-on-push** (free) now; it feeds
+   `DescribeImageScanFindings`, which is what Stage 8's gate reads. Enhanced (Inspector — OS *and*
+   language packages, continuous) is measured at USD 0.09/image + 0.01/re-scan and is decided at
+   **Stage 11 step 4** with the rest of the paid detection, against a real bill (principle 9, Lesson 6).
+3. **The pull-through cache upstream set** (5.2) — recommended: the credential-free three (ECR Public,
+   `registry.k8s.io`, Quay). Docker Hub adds a credential secret (their account, their rate limits,
+   +USD 0.40/month) — added when a build actually pulls from it, not before.
+4. **The mirroring policy** (7.1) — recommended: no standing mirror; per-repository push mirroring
+   (Free) only if a need appears. Stage 8 step 6 places the infrastructure pipeline against this answer.
+5. **Runner shape** (6.1) — recommended: **one `[E]` instance, docker executor**, rebuilt per session.
+   The docker-autoscaler/fleeting path is adopted when a measured queue wait justifies it, not before.
+
+## Verifications to answer while executing
+
+Record every answer, including the ones that come out fine.
+
+| # | Question | Step |
+|---|---|---|
+| i | Does the primary private IPv4 survive stop/start, so the two records never need repointing? | 1.4 |
+| ii | Does the restore-or-generate flow round-trip `gitlab-secrets.json` through Secrets Manager on a fresh boot? | 1.5 |
+| iii | Does the SAML round-trip complete against the IdC custom application — and which NameID format + attribute mapping worked? | 3.2 |
+| iv | The edition check: are protected environments / deployment approval rules absent on this CE instance (decides Stage 8's two gates — Lesson 12)? | 3.3 |
+| v | Does backup → destroy → restore reproduce a working instance, and in how long? | 8.2 |
+| vi | Is the boot inside D8's assumed 3-5 minutes (§5.1 rule 7 re-opens the layer choice if not)? | 8.1 |
+| vii | Does a first pull populate the cache through Production's NAT, and does the cached copy then pull with no internet route (the design-B premise)? | 5.2 |
+| viii | Does the runner register through the authentication-token flow, and does BuildKit rootless build and push without privileged mode? | 6.1, 6.2 |
+| ix | Can a CodeConnections host be created toward `gitlab.prod.internal` from the no-VPC domain account at all (INT-13 — expected: no)? | 7.2 |
+| x | Does `https://<project>.pages.internal` validate against the CA on all three client surfaces (INT-19)? | 2.5, 4.2 |
+| xi | Does the `engineering` project clone and push over the peering (INT-09)? | deliverables |
+
+## Risks
+
+- **Losing `gitlab-secrets.json` loses every backup at once** — the file is excluded from backups by
+  GitLab's design, and a restore without it cannot decrypt the database. The control is 1.5's flow plus
+  the rehearsal (8.2), run before the instance holds anything real.
+- **The edition limit reaches a load-bearing control, not a convenience** (Lesson 12): in CE the gate is
+  *who can push a protected tag*, not *who approves this release*. It is read in 3.3 and recorded — not
+  discovered while writing Stage 8.
+- **A missed CA surface fails as an opaque TLS error** at the worst moment (INT-19); the one-source rule
+  (2.3) and the three-surface deliverable are the controls.
+- **The supply chain shares Production's blast radius** (D14, accepted): no boundary between the thing
+  that builds and the thing that runs. The compensations are Stage 8's (scoped deploy roles, CloudTrail
+  alarms); this stage's contribution is the runner role that deliberately holds no deploy permissions
+  (6.1).
+- **A forgotten runner (or ALB) burns unwatched** — D12 skipped the alerts; `./aws/egress.py` §6 at
+  session end is the instrument.
+- **SAML lockout**: a broken IdP mapping with local sign-ups disabled would lock everyone out — the kept
+  `root` account (1.7) is the way back in.
+
 ---
 
 *Stage index: [stages/INDEX.md](INDEX.md) · Plan core: [GENERAL_PLAN.md](../../GENERAL_PLAN.md)*

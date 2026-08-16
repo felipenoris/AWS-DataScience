@@ -37,6 +37,7 @@ snapshots.
 | [`vpn.py`](vpn.py) | [Infrastructure](../docs/ORGANIZATION.md#infrastructure-user); [`AWS Control Tower Admin`](../docs/ORGANIZATION.md#aws-control-tower-admin-d33) for `-` runs | **every** `awsds-*` profile, the ones named, or `-` — multi-profile for the standing reason: GuardDuty coverage is a fact *across* accounts, and the step 8 deny lives in Identity while the Elastic IP it names lives in the VPN home | `output/vpn.txt` | **[Stage 4](../docs/plan/stages/stage-04-vpn.md)'s evidence.** The WireGuard host (`[D]` — type, state, IMDSv2), the `[P]` Elastic IP (`WG_EIP=` printed — the value step 8 and Stage 5's bucket policy name), the **one world-open SG rule** (UDP/51820 and nothing else, never port 22), the handshake log and alarm, **which permission sets carry `DenyControlPlaneOffVpn`** (read back through the Identity Center delegated admin — the six persona sets move together, `InfrastructureAccess` reported as the separate 8.3 decision), and **GuardDuty per account** with the two Stage-11-deferred add-ons that must read `DISABLED`. Checks `VP-1`–`VP-8`; **exits 2 when a check fails** |
 | [`datalake.py`](datalake.py) | [Infrastructure](../docs/ORGANIZATION.md#infrastructure-user); [`AWS Control Tower Admin`](../docs/ORGANIZATION.md#aws-control-tower-admin-d33) for `-` runs | same multi-profile shape, same reason: the lake and its policy live in Data Governance while every legitimate reader is in a consumer account (D22), and a pending RAM invitation is visible only from the consumer | `output/datalake.txt` | **[Stage 5](../docs/plan/stages/stage-05-data-foundation.md)'s evidence, producer and consumers side by side.** The lake buckets with their policy **branches** (vpce/ip/via/sigage/prin — presence, never sufficiency), KMS aliases, the Glue catalog with **resource links** flagged, crawlers (never scheduled, never at an Iceberg target), the `awsds-data-catalog-maintenance` role and its trust, **the Lake Formation `Parameters` reading that defends INT-11** (`DL-5` — the check to read after *any* apply in `data-governance/data/`), RAM shares + **pending invitations**, consumer workgroup enforcement, the derived zone's expiry, EFS (including the mount-target SG shape Stage 4's NAT forces), and Security Hub per account. Checks `DL-1`–`DL-11`; **exits 2 when a check fails** |
 | [`studio.py`](studio.py) | [Infrastructure](../docs/ORGANIZATION.md#infrastructure-user); [`AWS Control Tower Admin`](../docs/ORGANIZATION.md#aws-control-tower-admin-d33) for `-` runs | same multi-profile shape, same reason: D26's whole claim — the domain is a registry, not a runtime — is only readable with Data Governance and the Interactive accounts side by side, and a SageMaker domain in the wrong column *is* the finding | `output/studio.txt` | **[Stage 6](../docs/plan/stages/stage-06-unified-studio.md)'s evidence, registry and runtimes side by side.** DataZone domains in **every** account (one expected, V2, in Data Governance — anywhere else is INT-12's fallback by accident), the registry's blueprints/profiles/projects (no Redshift), the blueprint-provisioned SageMaker AI domain per Interactive account (**VpcOnly**, idle shutdown), **the D13 permissions boundary on the project roles** (INT-15's presence half — survival is a diff of two runs), the step 3 deny Sids in the persona sets, registered images (INT-17's mechanical half), running apps (the burn), and EFS access points. Checks `US-1`–`US-10`; **exits 2 when a check fails** |
+| [`supplychain.py`](supplychain.py) | [Infrastructure](../docs/ORGANIZATION.md#infrastructure-user); [`AWS Control Tower Admin`](../docs/ORGANIZATION.md#aws-control-tower-admin-d33) for `-` runs | same multi-profile shape, same reason: D14 puts the registries in Production while every legitimate consumer is Interactive, so "does the consumer map reach everyone" (Lesson 14) is only readable from both sides — the policies from Production, a cross-account read from each consumer | `output/supplychain.txt` | **[Stage 7](../docs/plan/stages/stage-07-gitlab-runners-ecr.md)'s evidence, producer and consumers side by side.** The GitLab host (`[D]` — stopped between sessions is the design) and the runner (`[E]` — absent between sessions is the design), the `[P]` anchors a restore depends on (buckets, the `gitlab-secrets` container — **metadata only, never the value**), the TLS surface (imported ACM leaves with their **days of runway** — ACM does not renew imports — the one-source CA root parameter, the two zones' records), ECR repositories with **tag immutability** and the scanning configuration, the pull-through cache rules against their immutability trap, the CodeArtifact domain/repos/policy, and a **real cross-account read from each Interactive account** (INT-01/INT-02's mechanical half). Checks `SC-1`–`SC-10`; **exits 2 when a check fails** |
 | [`cloudshell/management-landing-zone-drift.sh`](cloudshell/management-landing-zone-drift.sh) | [`AWS Control Tower Admin`](../docs/ORGANIZATION.md#aws-control-tower-admin-d33) — **the only one**, no laptop path | **no profile — CloudShell on Management.** Takes a profile if one ever exists there | `output/cloudshell/management-landing-zone-drift.txt` | **Stage 2 verification (iii)** — whether the Organizations **resource policy** of step 5.1 shows up as landing-zone drift. The `driftStatus` flag, the **manifest** that says what the flag is even comparing, the **operation history** (an update that ran *after* the delegation and succeeded is the only positive evidence available without writing), and whether the document is still there and still narrowed to two statements. **Sections 2-4 are suppressed outside Management and the run exits 2** — measured: from a member account both landing-zone calls *succeed and return empty*, so an unguarded report would state "the landing zone has never run". Section 5 answers from Identity too, because the delegation grants it. |
 | [`cloudshell/management-quotas.sh`](cloudshell/management-quotas.sh) | [`AWS Control Tower Admin`](../docs/ORGANIZATION.md#aws-control-tower-admin-d33) — **the only one**, no laptop path | **no profile — CloudShell on Management.** Takes a profile if one ever exists there | `output/cloudshell/management-quotas.txt` | **Has the account-cap increase landed** — the one number the `Staging` vend is held on. The applied value (not the default), how much of it is spent, and any pending request. **Refuses to interpret the number outside Management**, where the same quota reads `0.0`. |
 
@@ -124,6 +125,10 @@ locates the repository root itself:
 
 ```bash
 ./aws/studio.py
+```
+
+```bash
+./aws/supplychain.py
 ```
 
 **`cloudshell/` holds the three scripts with no laptop path — and they are shell on purpose.**
@@ -466,6 +471,38 @@ for them (Lesson 20's rule: configuration for configuration questions, probes fo
 | **Is an app still running — did `make down` leave a burn?** | 5, `US-10` — the same reading `scripts/down-studio-apps.py` makes per env |
 | What image registrations exist (INT-17's mechanical half)? | 5 |
 | Which accounts is nobody measuring? | 10 — Staging until the vend; every Sandbox beyond unit 1 until Stage 14 |
+
+## Finding an answer in `output/supplychain.txt`
+
+| Question | Section |
+|---|---|
+| Is the GitLab host there, what type, and is it running or stopped ([D])? | 2 — `stopped` between sessions is D11 working, not an outage |
+| **Is a runner still up — did `make down` leave a burn?** | 2, `SC-10` — absent between sessions is the design |
+| Did port 22 or any world-open rule reach the host's SGs? | 2, decided by `SC-2` |
+| Do the `[P]` anchors exist — the versioned backup bucket, the `gitlab-secrets` container? | 3, decided by `SC-3` — **metadata only; this file never reads a secret value** |
+| **How many days of runway does an imported leaf have** (ACM does not renew imports)? | 4, decided by `SC-8` |
+| Is the CA root published at its one source (INT-19, Lesson 14)? | 4, decided by `SC-9` |
+| Do `gitlab.prod.internal` and `*.pages.internal` resolve to records at all? | 4 |
+| **Are the two required repositories tag-IMMUTABLE** — the Stage 8 premise? | 5, decided by `SC-4` |
+| Is a pull-through cache repository immutable (the documented trap)? | 5, decided by `SC-5` |
+| Is scanning BASIC (decision 2's free path) or ENHANCED (the Stage 11 upgrade)? | 5 — reported, not judged |
+| Does CodeArtifact hold the domain, `pypi` + `crates`, and a domain policy? | 6, decided by `SC-6` |
+| **Does the cross-account read answer from every consumer** — or did the D35 map miss one? | 7, decided by `SC-7` — a deny after the registry exists FAILS |
+| Which accounts is nobody measuring? | 9 — Staging is deliberately **not** in the consumer map (INT-07 is the pipeline's path) |
+
+## The one written for Stage 7
+
+**Written 2026-08-16**: `supplychain.py`, from the revised
+[Stage 7](../docs/plan/stages/stage-07-gitlab-runners-ecr.md) roteiro — the same before-the-stage pattern.
+Until the stage runs, every absent resource reads as a `note`; a *partial* build fails loudly. Its
+contracts: the two Name tags (`awsds-prod-gitlab`, `awsds-prod-runner*`), the two required repositories
+(`awsds-prod-ecr-base`, `awsds-prod-ecr-dev-env`), the CodeArtifact domain (`awsds-prod-packages`, repos
+`pypi`/`crates`), the secret container (`awsds-prod-gitlab-secrets`) and the CA root parameter
+(`/datascience/prod/pki/ca-root-pem`). **Its first run measured a clean pre-stage state**: nothing
+supply-chain-shaped exists in Production yet — every reading a `note`, zero failures — which is the
+baseline the pass-0 apply will be diffed against. One check is deliberately one-sided: `SC-7` exercises
+the consumer map with a **real cross-account read** from each Interactive profile, because a policy listing
+in Production cannot show a missing consumer (Lesson 13's shape, applied to resource policies).
 
 ## The two written for Stages 4 and 5, before either stage starts
 

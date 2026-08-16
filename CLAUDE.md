@@ -184,14 +184,13 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   parameters take `/datascience/<env>/…`.
 - **Gates, and there is no CI:** `make check` (offline, six checks), `make check-ou` (session),
   `make check-docs` — **red** on pre-Stage-2 prose, outside the commit gate.
-- **Stage 3 pre-instrumented (2026-08-15); its five execute-time decisions settled 2026-08-16:**
-  `aws/networking.py`, `aws/egress.py`. Step 0 — **delete every Account Factory VPC** (`docs/AWS_STATE.md`
-  §C), creation off in Account Factory, that half **before the `Staging` vend**; flow logs 30d;
-  `egress_mode=A`; CIDR/`zone_ids` in `scripts/tfhygiene/backend.py`; the S3 allow-list is five families and
-  **a NAT does not bypass it** — load-bearing from Stage 4.
-- **Stages 4-6 revised, pre-instrumented (2026-08-16):** `aws/vpn.py`, `aws/datalake.py`, `aws/studio.py`
-  — `DL-5` guards INT-11's `Parameters` (reads `4`/`TRUE`). Corrections: each status row; INT-16's
-  portal half ends at Stage 6 step 1.7.
+- **Stage 3 started — step 0 DONE 2026-08-16:** AF VPCs removed via their **StackSet on Management**,
+  nothing survived, creation off (`docs/AWS_STATE.md` §C). Decisions settled 2026-08-16: flow logs 30d;
+  `egress_mode=A`; CIDR/`zone_ids` in `scripts/tfhygiene/backend.py`; S3 allow-list of five families,
+  **a NAT does not bypass it** (Stage 4); **AL2023's mirror list is in the repo bucket** (doc fix).
+- **Stages 4-7 revised, pre-instrumented (2026-08-16):** `aws/vpn.py`, `aws/datalake.py`, `aws/studio.py`,
+  `aws/supplychain.py` — `DL-5` guards INT-11's `Parameters`. Corrections: each status row; INT-16's
+  portal half ends at Stage 6 step 1.7; Stage 7 pass 0 (`pki/`+`registry/`) lands before Stage 6.
 - **Standing rules that outlive their stages:** never add an `sts:` action to the RCP without reading
   `CT.STS.PV.1`'s exclusion note; 1d step 9 is the **only** sanctioned by-hand use of
   `AWSControlTowerExecution`; **resolve an account by name only with the exact vended name** — every one

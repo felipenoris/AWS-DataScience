@@ -248,9 +248,13 @@ terraform-live/
     ├── foundation/       # [P] VPC etc. + peering accepters for Sandbox AND Development.
     │                     #     Built in Stage 3, because Stage 7 (GitLab) depends on it (D14).
     │                     #     ALSO the prod.internal and pages.internal private zones and
-    │                     #     their cross-account associations (D15 as revised 2026-08-09).
-    │                     #     NO public zone, NO registered domain: those are Stage 13, and
-    │                     #     NOT the CA - see pki/ below
+    │                     #     their cross-account associations (D15 as revised 2026-08-09),
+    │                     #     and GitLab's [P] anchors - the object-storage and backup
+    │                     #     buckets and the gitlab-secrets container (Stage 7 step 1.1):
+    │                     #     the restore path must survive tooling/'s destruction, the
+    │                     #     same argument that put the WireGuard EIP in Sandbox's
+    │                     #     foundation. NO public zone, NO registered domain: those are
+    │                     #     Stage 13, and NOT the CA - see pki/ below
     ├── pki/              # [P] the internal root CA (D36). OWN state file and OWN KMS key,
     │                     #     deliberately not foundation/'s: foundation is opened to change
     │                     #     a CIDR or accept a peering, and every such edit would otherwise
@@ -269,8 +273,11 @@ terraform-live/
     │                     #     buys migration cost only (Stage 7, option-preservation note)
     ├── sagemaker/        # [P] Model Registry (model package groups) + the execution role
     │                     #     pipeline-submitted jobs assume. No domain, no user profiles (D17)
-    ├── egress/           # [E] NAT, endpoints, internal ALB for GitLab/Pages (ALBs cannot stop)
-    ├── tooling/          # [D] GitLab EC2 + EBS (D8, D14) - its ALB lives in egress/ [E]
+    ├── egress/           # [E] NAT, endpoints - and the internal ALB for GitLab/Pages ONLY
+    │                     #     if Stage 7 decision 1 picks it over nginx-on-instance (an
+    │                     #     ALB cannot stop, so if it exists it is [E])
+    ├── tooling/          # [D] GitLab EC2 + EBS (D8, D14) - TLS terminates on its own
+    │                     #     nginx, or on the egress/ ALB (Stage 7 decision 1)
     ├── runners/          # [E] GitLab Runners (D14)
     ├── orchestration/    # [E] D7 builds two, behind a switch like D5's egress designs:
     │                     #     (A) mwaa-serverless/ - awscc_mwaaserverless_workflow per
@@ -521,9 +528,9 @@ state in the rule-2 sense and on its own settles the layer question.
 
 **[D] Dormant — kept, but powered off between sessions.** Stateful services where a rebuild is riskier
 than the idle cost: the GitLab EC2 instance and its EBS volume, and the WireGuard instance. `make down`
-stops them, `make up` starts them. Idle cost is their EBS volumes (~USD 4.65/month) plus the Elastic IP
-that WireGuard re-attaches on start — the address itself is allocated in `[P]`, so it survives even if the
-instance is replaced. This is what makes the Stage 7 backup/restore cycle a disaster-recovery procedure
+stops them, `make up` starts them. Idle cost is their EBS volumes (~USD 4.65/month) plus the Elastic IP,
+which stays associated across a stop/start (and bills while stopped) — the address itself is allocated in
+`[P]`, so it survives even if the instance is replaced. This is what makes the Stage 7 backup/restore cycle a disaster-recovery procedure
 rather than a daily dependency.
 
 **[E] Ephemeral — destroyed at the end of a session.** Everything metered by the hour and rebuildable in
