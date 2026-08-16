@@ -334,6 +334,13 @@ def main(argv: list) -> int:
         pol = policies.get((p, ep), "")
         if not pol:
             continue
+        # ONE PATTERN PER FAMILY OF 9.3, and every family gets one - added 2026-08-16, on
+        # the first measurement of a real egress/: the table had no pattern for ECR layer
+        # storage, so the policy's `prod-<region>-starport-layer-bucket` entry was present
+        # in the document, invisible to this check, and would have stayed "pass" the day
+        # somebody deleted it (Lesson 13 - a check whose output is the same either way).
+        # That family is the one 9.3 calls the entry the step was missing, and it fails
+        # AFTER a successful ECR login, pointing at S3 rather than at ECR.
         hits = ""
         if "al2023-repos" in pol:
             hits += "al2023 "
@@ -343,6 +350,8 @@ def main(argv: list) -> int:
             hits += "ssm "
         if re.search("amazoncloudwatch-agent", pol, re.IGNORECASE):
             hits += "cloudwatch-agent "
+        if re.search("starport-layer-bucket", pol, re.IGNORECASE):
+            hits += "ecr-layers "
         if "al2023" in hits:
             checks.ok(
                 "EG-4",

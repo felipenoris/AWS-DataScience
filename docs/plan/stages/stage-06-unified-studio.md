@@ -304,6 +304,9 @@ reconciliation** (INT-15's question, one resource over), and whether the image p
 the Production ECR at all** — same-Region is documented as required and cross-account is documented only
 for RStudio, so expect INT-01's fallback (an ECR replication rule into each Interactive account, not a
 pipeline) to be the real path. Record the working mechanism — Stage 8 step 1 is written against it.
+Machinery, same sitting: `RANKS["dev-env"]` and the two `[P]` rows in `scripts/tfhygiene/layers.py` —
+a slice with no row fails `make check` (added 2026-08-16, by the Stage 8 revision: this step applies the
+slices first, so the rows are its to add).
 
 **5.2 — Flip the switch: `egress_mode=B` in the two Interactive accounts** — **user** applies: no NAT
 route at all; the CodeArtifact endpoints from Stage 3 step 8.4; packages from CodeArtifact (cross-account

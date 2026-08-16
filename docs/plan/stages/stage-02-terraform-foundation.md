@@ -1115,8 +1115,9 @@ instead of trusting a target list.
 Stage 8. Until then the enforcement surfaces are **`pre-commit`** and a **`make check`** target calling
 scripts in `scripts/` — the shape [`scripts/check-plan-refs.py`](../../../scripts/check-plan-refs.py) already
 establishes. **Stage 8 steps 5 and 6 move them into the pipeline** — step 5 is the `checkov` gate, step 6 is
-this repository's own `fmt`/`validate`/`plan` pipeline. Write them as scripts so that move is a
-`.gitlab-ci.yml` line and not a rewrite.
+this repository's own offline-gates pipeline (`fmt`/`validate` and these checks; `plan`/`apply` stay by
+hand — Stage 8 decision 3, revised 2026-08-16). Write them as scripts so that move is a
+pipeline line and not a rewrite.
 
 **Done 2026-08-15. Four scripts, one `Makefile`, three new `pre-commit` hooks — and both surfaces call the
 same scripts, so a gate and a target cannot disagree.**

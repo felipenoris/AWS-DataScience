@@ -523,3 +523,41 @@
   what makes `make check-ou` see `Sandboxes` at depth 2 under `Interactive` (D23), and it was confirmed
   against the pinned provider (aws 6.60.0) rather than taken from the page:
   <https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/organizations_organizational_unit_descendant_organizational_units>.
+
+- **GitLab deployment approvals are Premium** — the tier line behind both Stage 8 gates' CE fallback
+  (Lesson 12; Stage 7 verification (iv) reads the running instance, this page says what to expect):
+  approvals attach to *protected environments*, approver groups must be invited to the project, and an
+  approved job still has to be run manually (Stage 8 steps 1.5/3.5):
+  <https://docs.gitlab.com/ci/environments/deployment_approvals/>.
+
+- **GitLab manual jobs — who may run one, and when it blocks** — the two facts Stage 8's CE gate shape
+  stands on: *"to run a manual job, you must have permission to merge to the assigned branch"*, and
+  `when: manual` **outside** `rules:` defaults `allow_failure: true` (an optional job that gates nothing)
+  while **inside** `rules:` it defaults `false` and stops the pipeline (Stage 8 steps 1.5/3.5):
+  <https://docs.gitlab.com/ci/jobs/job_control/>.
+
+- **GitLab Dependency Scanning is Ultimate** — not available to this CE instance, so Stage 8's dependency
+  gate is `pip-audit` in an ordinary job rather than the built-in analyzer (Lesson 12 — a tier limit
+  reaching a control, found before the stage rather than during it; Stage 8 step 5.2):
+  <https://docs.gitlab.com/user/application_security/dependency_scanning/>.
+
+- **GitLab pipeline Secret Detection is Free** — the one built-in scanner the CE instance does get, as a
+  template include (`Jobs/Secret-Detection.gitlab-ci.yml`); the dashboards above it are Ultimate and are
+  not pretended (Stage 8 step 5.3):
+  <https://docs.gitlab.com/user/application_security/secret_detection/pipeline/>.
+
+- **GitLab protected runners are Free** — a runner marked *Protected* runs only jobs on protected
+  branches/tags, in every tier, and a project runner is scoped to the projects it is registered to. This
+  pair is what makes Stage 8's deploy runner enforceable on CE: an ordinary CI job cannot schedule onto
+  the deploy credential (Stage 8 step 4.3):
+  <https://docs.gitlab.com/ci/runners/configure_runners/>.
+
+- **ECR basic scanning** — free, OS packages only (the language-package half is Stage 8's `pip-audit`),
+  scan-on-push per repository filter, findings via `DescribeImageScanFindings` — and **one scan per image
+  per 24 hours**, which is why Stage 8's gate reads the push's own scan and never triggers another
+  (Stage 8 step 1.4; Stage 7 decision 2 priced the enhanced alternative):
+  <https://docs.aws.amazon.com/AmazonECR/latest/userguide/image-scanning-basic.html>.
+
+- **`pip-audit`** — PyPA's dependency auditor, the open tool carrying Stage 8's dependency gate after the
+  tier finding above; consumes a requirements export (`uv export --format requirements-txt`) and queries
+  the OSV/PyPI advisory databases (Stage 8 step 5.2): <https://pypi.org/project/pip-audit/>.

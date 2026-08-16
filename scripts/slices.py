@@ -226,6 +226,25 @@ def cmd_updown(args) -> int:
     return 0
 
 
+def managed_resources(module: dict) -> int:
+    """Deployed resources in a state tree, RECURSIVELY and managed-only.
+
+    Corrected 2026-08-16, on the first status reading of a real [E] slice. The previous
+    count added `len(child_modules)` - one per module rather than one per resource - and
+    counted data sources as deployed, so a sandbox/egress/ holding a NAT, an EIP, two
+    routes and twelve endpoints reported "2 resource(s)": one remote-state data source
+    plus the single module. The burn was right (it comes from the layers.py table, not
+    from this number) but the line that reports what is RUNNING understated it by an
+    order of magnitude, which is the half of the output a reader actually acts on.
+
+    Managed-only is the other half of the fix: a data source is something the slice READS,
+    never something it created, so a state holding nothing else is `down` - and `up` is
+    derived from this count.
+    """
+    n = sum(1 for r in module.get("resources", []) if r.get("mode") == "managed")
+    return n + sum(managed_resources(c) for c in module.get("child_modules", []))
+
+
 def cmd_status(args) -> int:
     """What is up, and the burn - rates from a STATIC table, never a live pricing call (8.4)."""
     envs = [args.env] if args.env else layers.environments()
@@ -263,7 +282,7 @@ def cmd_status(args) -> int:
             unreadable += 1
             continue
         state = json.loads(res.stdout or "{}").get("values", {}).get("root_module", {})
-        n = len(state.get("resources", [])) + len(state.get("child_modules", []))
+        n = managed_resources(state)
         up = n > 0
         total += sl.usd_per_hour if up else 0.0
         print(

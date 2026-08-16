@@ -190,9 +190,9 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   accepting side**, additive). **`networking.py`: 0 FAILED.** Two decisions reach other stages:
   `egress_mode=A`, and the S3 allow-list — **a NAT does not bypass it** (Stage 4).
   CIDR/`zone_ids`/peers: `scripts/tfhygiene/backend.py`. Next: **pass 3** (`egress/` `[E]`).
-- **Stages 4-7 revised, pre-instrumented (2026-08-16):** `aws/vpn.py`, `aws/datalake.py`, `aws/studio.py`,
-  `aws/supplychain.py` — `DL-5` guards INT-11's `Parameters`. INT-16's portal half ends at Stage 6
-  step 1.7; Stage 7 pass 0 (`pki/`+`registry/`) lands before Stage 6.
+- **Stages 4-8 revised, pre-instrumented (2026-08-16):** `aws/{vpn,datalake,studio,supplychain,cicd}.py`
+  — `DL-5` guards INT-11's `Parameters`. **Stage 8 pass 4 (promotion) waits on the `Staging` vend**,
+  passes 0-3/5 do not.
 - **Standing rules that outlive their stages:** never add an `sts:` action to the RCP without reading
   `CT.STS.PV.1`'s exclusion note; 1d step 9 is the **only** sanctioned by-hand use of
   `AWSControlTowerExecution`; **resolve an account by name only with the exact vended name** — every one
