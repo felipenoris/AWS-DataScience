@@ -800,6 +800,61 @@ first act after the import.
   `tflint` found two unused declarations — one became the profile precondition the slice was
   missing, the other an annotated ignore.
 
+## Step 5 — `identity/sso/` imported and applied (2026-08-16)
+
+**From the slice, as the infrastructure user on the Identity account through
+`InfrastructureAccess`** (`AWS_PROFILE` on every command, never an exported credential —
+Lesson 25). Seven objects imported, 22 created, and the next `plan` reads `No changes`.
+
+- **The import gate of 5.5 was met before anything was created: `0 to change`.** That is the
+  half the gate is for — the six written sets plan a *creation* by design. It landed clean
+  because the live set was read back first and the configuration written to match it: `PT4H`,
+  one managed policy, no inline policy, no boundary, and `CostCenter=stage-01b` set explicitly,
+  which is the tag `default_tags` would otherwise have rewritten as the first act after the
+  import.
+
+- **The `for_each` key was tested the way 5.5a(iii) demands, and the test earned its keep.**
+  One assignment imported, `plan`, then the other four: the imported one disappeared from the
+  creates with no orphan beside it. Before that, `./aws/import-ids.py` was corrected — it was
+  emitting `aws_ssoadmin_account_assignment.infrastructure["<group>:<account-id>"]` and a
+  singleton managed-policy attachment as a `for_each`, neither of which is what this
+  configuration computes. With the old addresses the five would have imported under wrong keys
+  and the plan would have proposed ten assignment creates beside five orphans, **with no error
+  anywhere**. The script now keys on the `terraform-live/` account folder, resolved through the
+  account name, and prints `<UNMAPPED:…>` for an account the slice does not assign — a line that
+  cannot be pasted rather than one that looks plausible.
+
+- **Read back from AWS rather than from state, because the state cannot be evidence for
+  itself.** Seven permission sets, all `PT4H`, all carrying the five mandatory tags; the six
+  persona sets with an inline policy and no managed policy, `InfrastructureAccess` the mirror
+  image. **Zero provisioning failures and zero in progress.** A `principal_id` taken from the
+  state resolves through `describe-group` back to `sso-group-governance-managers`, which is the
+  deliverable about resolving a group by display name.
+
+- **The provisioned-account counts match 1b step 3.1 exactly** — 2, 0, 1, 3, 1, 3 for the six
+  personas and 5 for the administrator set. **The check that matters is the absence**, asked of
+  every set in turn: only `GovernanceManagerAccess` reaches Data Governance. 1b step 3.7's two
+  rules — no data scientist and no deployment manager in the account that grants data access —
+  are measured on the organization rather than inferred from the plan.
+  `DataScientistStagingAccess` exists with **no** assignment, which is the Staging carve-out
+  showing up as a zero instead of as an omission.
+
+- **Identity Center stores a compacted inline policy** — 2414-3148 characters against the
+  3547-4563 Terraform renders, about a quarter smaller. The size precondition measures the
+  rendered document, which is what the API receives, so it errs on the conservative side of a
+  difference that would otherwise be found by a set that passed the check and failed the call.
+
+- **Two repository defects the step surfaced, neither of them about AWS.** `.gitignore` did not
+  cover `*.tfplan`: a saved plan is a zip carrying the configuration **and the prior state**, so
+  it holds strictly more than a state file — account ids, group GUIDs, whole policy documents —
+  in a file whose name suggests otherwise. The rule is now there as a net; the practice is to
+  write plans outside the repository. And `make check-docs` failed its **size budget**:
+  `CLAUDE.md` had grown past 20 KB with a "Current position" of 6.8 KB against its own stated
+  ~2 KB, so it was re-trimmed to state-only. One standing rule was rewritten rather than left
+  contradicted: "never resolve an account by name" is now "only with the exact vended name,
+  filtered on ACTIVE, failing loudly" — every account carries an ` Account` suffix and a
+  suspended `Sandbox` is still in the roster.
+
 ---
 
 *Log index: [docs/log/INDEX.md](INDEX.md) · Stage index: [docs/plan/stages/INDEX.md](../plan/stages/INDEX.md)*

@@ -169,56 +169,28 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
 
 ### Current position
 
-- **The landing zone is closed — Stages 0-1d DONE (2026-08-15)** — except the `Staging` vend, held on the
-  account cap: an **open AWS support ticket** (`aws/cloudshell/management-quotas.sh` re-asks). Ten policy documents, four types, attached — **six on the
-  root, four per-OU** — battery 93/93.
-- **Stage 2 IN PROGRESS. 5.0 and 5.1 CLOSED (2026-08-15); INT-20 did not bite.** The delegation is
-  **exercised, not merely present** (Lesson 26), so **`org-policies/` holds all ten documents**; the
-  delegation itself is hand-applied and **stays out of Terraform** (`POLICIES.md`/`INV-15`). AWS rejects
-  `NotAction`/`NotResource` in a delegation since 2026-06-30; the operator must be `StringLikeIfExists`.
-  Only `account/…/*` is unexercised — over-grant, not gap.
-- **Open question 11 closed (2026-08-15); its fix, step 5.1a, APPLIED 2026-08-16.** 5.1's principal is the
-  *account*, so CT Admin reached policy writes through `Identity`; the assignment **stays** and the
-  narrowing is an `ArnLike` on `aws:PrincipalArn` in both write statements — **the document accepts a
-  Condition** (it still rejects `NotAction`/`NotResource`). A/B: `AccessDeniedException` from
-  `awsds-ctadmin-orgfull-identity`, still `DuplicatePolicyAttachmentException` from `awsds-infra-identity`;
-  `DEL-10` green. **The condition is now a second place a principal is enumerated** — a Stage 8 pipeline
-  role must be added there. **1b 8.3's alarm is blind to this path**; CloudTrail is the only residual.
-- **Stage 2 steps 1, 6, 9 and 2 CLOSED (2026-08-15).** Five `bootstrap/` slices — no `staging/` — one
-  byte-identical `versions.tf` (`~> 1.15`, `aws ~> 6.60`), one lock file; **the §6 tree is
-  deliberately not on disk** — a slice folder arrives with its first `.tf`.
-  Step 9: `make check` (offline) / `make check-ou` (session), the same scripts behind three commit hooks,
-  each seen failing. Per-OU attachments are **authored, not discovered** — `org-policies/attachments.json`,
-  read by 9.3 *and* step 5's `for_each`.
-  `check-plan-refs.py` is **red** on pre-Stage-2 prose, in its own `make check-docs`.
-  **Step 2: `awsds-sandbox-tfstate` exists** — first apply of the project, migrated into itself, second plan
-  empty, lock proven with two concurrent plans (`use_lockfile`, no DynamoDB). **Two generated, gitignored
-  files per slice** — `backend.hcl` *and* `terraform.auto.tfvars` (`gen-backend-hcl.py`/`gen-tfvars.py`, one
-  table in `tfhygiene/backend.py`): a `.tf` may carry neither the region nor *the* sandbox. Three checkov
-  skips (access logging, replication, event notifications) — **and a skip above the block is silently
-  ignored**. **Step 3 CLOSED: five state buckets exist**, `prod` with D36's second key (`pki-key.tf`). The
-  five slices are **one slice copied**, so the backend moved into its own `backend.tf` and a **fifth check**
-  — `check-bootstrap-parity.py`, in `make check` and the gate — makes byte-identity the rule.
-  **Verification (i): the override is accepted (nothing in the bucket policy forces a key); whether a
-  Bucket Key applies to it is open and needs an object, not a reading.**
-- **Step 5: `identity/sso/` WRITTEN 2026-08-16, not applied.** Six persona sets + one shared deny fragment
-  (`source_policy_documents`), nine enumerated assignments, `InfrastructureAccess` staged for import
-  (PT4H, `AdministratorAccess`, no inline policy, `CostCenter=stage-01b` overriding `default_tags`).
-  **Decisions 4/5/6 settled:** inline-only boundary (Stage 3 adds the attachment; the two denies land now);
-  `replace(file(…))` with `render.py` untouched; `terraform import` on the CLI. **Allows scoped to objects
-  that do not exist yet are deliberately absent** — each owed to a named stage, in the slice README.
-  **Account names are exact and there is a SUSPENDED `Sandbox` in the roster**; six checkov `CKV_AWS_356`
-  skips (one document, N accounts — no ARN can name the account) and one `tflint-ignore` on `var.env`.
-  Next: `sso/` import + apply, then `org-policies/`.
+- **Landing zone closed — Stages 0-1d DONE (2026-08-15)**, except the `Staging` vend: held on the account
+  cap, **open AWS support ticket** (`aws/cloudshell/management-quotas.sh` re-asks). Ten policy documents,
+  four types, attached — six on the root, four per-OU — battery 93/93.
+- **Stage 2 IN PROGRESS — every step closed except `identity/org-policies/`.** 5.0, 5.1, 1, 6, 9, 2, 3
+  (2026-08-15); 5.1a and the `sso/` half of step 5 (2026-08-16). What is **deployed**: five state buckets
+  (`prod` carries D36's second key); `identity/sso/` — seven persona/admin sets, ten enumerated assignments,
+  29 objects, empty plan; the Organizations delegation narrowed to the `InfrastructureAccess` role
+  (`DEL-10` green). The delegation itself is hand-applied and **stays out of Terraform**
+  (`POLICIES.md`/`INV-15`). Decisions 4/5/6 settled. **Next: the ten documents and their attachments.**
+- **Gates, and there is no CI:** `make check` (offline, five checks), `make check-ou` (session),
+  `make check-docs` — **the last one is red** on pre-Stage-2 prose and stays out of the commit gate.
 - **Stage 3 pre-instrumented (2026-08-15):** `aws/networking.py`, `aws/egress.py`. First run found **an
   Account Factory VPC in every vended account** (`docs/AWS_STATE.md` §C) — the stage's new **step 0** decides
   it, and its network-configuration half must land **before the `Staging` vend**.
 - **Standing rules that outlive their stages:** never add an `sts:` action to the RCP without reading
-  `CT.STS.PV.1`'s exclusion note;
-  1d step 9 is the **only** sanctioned by-hand use of `AWSControlTowerExecution`; never resolve an
-  account by name; subnets anchor on AZ `zone_id` — run `./aws/AZs.py` after every vend; check the SSO
-  token before each probe block and read the denial *wording*, never the exit code; account-level BPA is
-  hand-managed, guarded by Stage 2's repository grep. **Log Archive and Audit hold no CLI profile**
+  `CT.STS.PV.1`'s exclusion note; 1d step 9 is the **only** sanctioned by-hand use of
+  `AWSControlTowerExecution`; **resolve an account by name only with the exact vended name** — every one
+  carries an ` Account` suffix and a **SUSPENDED `Sandbox`** sits in the roster, so filter on `ACTIVE` and
+  fail loudly (`<ACCOUNT_ID_DATA>` still derives from the `Data` OU); subnets anchor on AZ `zone_id` — run
+  `./aws/AZs.py` after every vend; check the SSO token before each probe block and read the denial
+  *wording*, never the exit code; account-level BPA is hand-managed, guarded by Stage 2's repository grep;
+  a `# checkov:skip=` above a block is silently ignored. **Log Archive and Audit hold no CLI profile**
   (`CHK-1`/`CHK-2` and `org-policies.py` §4 are the instruments there).
 - **Before reporting a gap, read the file that owns it:** unexercised denies and deliberate allowances →
   `POLICIES.md`; 1b residue and every "expected" reading → `docs/AWS_STATE.md`; the SMUS findings for Stages
@@ -230,12 +202,11 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   name**, blocking Stage 13. **Settle earliest:** INT-11's remaining half — Stage 5 defending
   `CROSS_ACCOUNT_VERSION` **4** + `SET_CONTEXT: TRUE`, values nobody set — and INT-13.
 - **The repository is not documentation-only:** the read-only `aws/` scripts, `terraform-live/` +
-  `terraform-modules/` (**first `.tf` 2026-08-15**), `scripts/`, the `Makefile`, and the
-  `pre-commit`/`tflint`/`checkov`/`ruff` gates. **Every script is Python 3 on `uv` since 2026-08-15**
-  (same paths, uv shebang) — shared code in `aws/awslib`, `scripts/repohygiene`,
-  `scripts/tfhygiene`; CloudShell = plain `python3` with `aws/` present. **Exception
-  `aws/cloudshell/`: `management-quotas.sh` + `audit-iam-analyser.sh` stay shell, standalone, for the
-  no-profile accounts; output `aws/output/cloudshell/`.**
+  `terraform-modules/`, `scripts/`, the `Makefile`, and the `pre-commit`/`tflint`/`checkov`/`ruff` gates.
+  **Every script is Python 3 on `uv` since 2026-08-15** — shared code in `aws/awslib`,
+  `scripts/repohygiene`, `scripts/tfhygiene`; CloudShell = plain `python3` with `aws/` present.
+  **Exception `aws/cloudshell/`: `management-quotas.sh` + `audit-iam-analyser.sh` stay shell, standalone,
+  for the no-profile accounts; output `aws/output/cloudshell/`.**
 
 **Budget: ~2 KB.** State, not reasoning — **a bullet here that explains *why*, or that a stage file should
 be carrying, is a stale copy of something that already lives elsewhere.** Re-trim whenever a stage closes.

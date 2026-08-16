@@ -38,6 +38,27 @@ crash.*.log
 *.tfvars
 *.tfvars.json
 
-# Generated per slice by scripts/gen-backend-hcl.sh - the one file allowed to hold the region
+# Generated per slice by scripts/gen-backend-hcl.py - the one file allowed to hold the region
 # literal (step 2.5). Ignored unconditionally, whichever mechanism writes it.
 backend.hcl
+
+# SAVED PLAN FILES - added 2026-08-16, on the first `terraform plan -out`, and this rule was
+# missing rather than deliberately absent.
+#
+# A .tfplan is not "a diff". It is a zip carrying the configuration AND THE PRIOR STATE, so it
+# holds strictly more than the state files two rules above: account ids, Identity Center group
+# GUIDs, permission set ARNs and the full text of every policy the plan touches. Committing one
+# is the same disclosure as committing state, in a file whose name suggests otherwise - which
+# is exactly the shape a glob has to catch, because nobody reads a .tfplan before adding it.
+#
+# THE PRACTICE IS TO WRITE THE PLAN OUTSIDE THE REPOSITORY ALTOGETHER - settled 2026-08-16, on
+# the first `-out`: a saved plan is consumed once, minutes later, and a slice directory that
+# accumulates them is litter that outlives its own validity (Terraform refuses a plan whose
+# state serial has moved, so a stale one is not even usable). THIS RULE IS THE NET UNDER THAT
+# PRACTICE, not an invitation to change it: the day somebody runs `-out=plan.tfplan` inside a
+# slice, the file must not be committable. A rule that only holds while everyone remembers the
+# practice is the shape Lesson 14 keeps producing.
+*.tfplan
+*.tfplan.json
+tfplan
+tfplan.json

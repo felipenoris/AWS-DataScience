@@ -33,7 +33,7 @@ output "inline_policy_bytes" {
 }
 
 output "assignment_count" {
-  description = "How many group->account assignments this slice manages, written half and imported half apart. A count rather than a list: the list is account ids. Expected 2026-08-16: 9 persona rows and 5 infrastructure rows, both growing by one account at the Staging vend."
+  description = "How many group->account assignments this slice manages, written half and imported half apart. A count rather than a list: the list is account ids. Measured on the first plan, 2026-08-16: 10 persona rows and 5 infrastructure rows. Both grow at the Staging vend - the persona side by two (DataScientistStagingAccess and DeploymentManagerAccess), the infrastructure side by one."
   value = {
     persona        = length(aws_ssoadmin_account_assignment.persona)
     infrastructure = length(aws_ssoadmin_account_assignment.infrastructure)

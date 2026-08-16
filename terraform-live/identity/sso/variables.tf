@@ -83,6 +83,13 @@ variable "inline_policy_max_bytes" {
     account nobody is looking at - the same quiet shape decision 4 avoids for the boundary. So
     the plan fails here instead, and a set that genuinely needs more becomes a customer-managed
     policy, which lands back on decision 4.
+
+    IT IS MEASURED AGAINST THE RENDERED DOCUMENT, NOT AGAINST WHAT AWS STORES, and the first
+    apply showed those are not the same number: 3547-4563 characters rendered here against
+    2414-3148 read back with `get-inline-policy-for-permission-set` - Identity Center keeps a
+    compacted form, about a quarter smaller. The rendered figure is the one the API receives,
+    so measuring it is the conservative side of a difference that would otherwise be discovered
+    by a set that passed the check and failed the call.
   EOT
   type        = number
   default     = 10240
