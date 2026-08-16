@@ -183,13 +183,13 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
 - **Gates, and there is no CI:** `make check` (offline), `make check-ou` (session),
   `make check-docs` — **red** on pre-Stage-2 prose, outside the commit gate.
 - **Stage 3 all three passes APPLIED 2026-08-16.** Step 0: AF VPCs gone (**StackSet on Management**),
-  creation off. `foundation/` `[P]` in Sandbox/Development/Production
-  (31/30/32, +1/+1/+32 — associations and peerings in **one ordered apply on the accepting side**).
-  Pass 3: `vpc-egress-v0.1.0`, `egress/` `[E]` via **`make up`** (16/15/14; endpoints 12/11/10, NAT,
-  0.48 USD/h). **`networking.py` and `egress.py`: 0 FAILED; every `foundation/` re-plan `No changes`.**
-  Reaching other stages: `egress_mode=A`, and the S3 allow-list — **a NAT does not bypass it** (Stage 4).
-  CIDR/`zone_ids`/peers: `scripts/tfhygiene/backend.py`. **Left: the `down`/`up` cycle and the two
-  probes** (verification (iii)'s `dnf`); (ii) is Stage 6's.
+  creation off. `foundation/` `[P]` in Sandbox/Development/Production (31/30/32, +1/+1/+32);
+  `vpc-egress-v0.1.0`, `egress/` `[E]` via **`make up`** (16/15/14; endpoints 12/11/10, NAT, 0.48 USD/h).
+  **`networking.py` and `egress.py`: 0 FAILED. D11 cycle RUN: `foundation/` outputs byte-identical,
+  re-plan `No changes`, 39/39 `[E]` ids new, gateway endpoints survived** — INT-05 names those, not
+  `egress/`. `egress_mode=A`, and the S3 allow-list — **a NAT does not bypass it** (Stage 4).
+  CIDR/`zone_ids`/peers: `scripts/tfhygiene/backend.py`. **Left: the two probes** (verification (iii)'s
+  `dnf`, from the *isolated* tier); (ii) is Stage 6's.
 - **Stages 4-9 revised, pre-instrumented (2026-08-16):**
   `aws/{vpn,datalake,studio,supplychain,cicd,deploytargets}.py` — `DL-5`/`DT-5` guard the LF
   `Parameters` (INT-11). **Stage 8 pass 4 and Stage 9 passes 4-5 wait on the `Staging` vend.**

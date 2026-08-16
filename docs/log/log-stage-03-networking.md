@@ -341,6 +341,55 @@ new — and the two throwaway probes, one of which answers verification (iii). V
 by nature. **The lab is metered from this entry onward**: `make down` is what ends the session, and
 `./aws/egress.py` §6 is the only instrument that will ever mention it (D12).
 
+## 2026-08-16 — The D11 cycle: `make down` / `make up`, and what each layer did
+
+Validation items 1 and 2, run across all three accounts. `make down AUTO=1` destroyed 16 / 15 / 14
+in Sandbox / Development / Production; `make up AUTO=1` rebuilt exactly the same counts. Burn read
+0.0000 USD/h while down and 0.4800 USD/h after the rebuild.
+
+**The `[P]` layer did not move.** `terraform output -json` of each `foundation/` was captured to a
+file *before* the destroy and `diff`ed against the same command after the rebuild: IDENTICAL in all
+three, across every anchor the slice exposes — VPC, the three subnet tiers, both gateway endpoint
+IDs, all four route table IDs, the private hosted zone, and the security groups. Each `foundation/`
+re-plan returned `No changes` with `-detailed-exitcode 0`. Read live from AWS mid-cycle, with
+`egress/` gone: NAT 0, interface endpoints 0, EIPs 0 — and **gateway endpoints 2 in every account**.
+
+**The `[E]` layer moved entirely: 39 of 39 IDs are new, none survived.** 14 in Sandbox (12 interface
+endpoints, the NAT, its public address), 13 in Development, 12 in Production. This is the pair
+INT-05 rests on: the ID a policy may name is the gateway endpoint, which outlived the destroy, and
+nothing `egress/` creates may ever appear in a policy, a condition, or another slice.
+
+**The NAT's public address changed in all three accounts** — a consequence worth carrying forward:
+no partner allow-list, firewall rule, or external control may be written against the address this
+lab egresses from. It is released with the slice.
+
+**The private tier's default route came back onto the new NAT** in every account: both per-AZ
+private route tables point at it, the public table at the IGW, and the isolated table carries no
+default route at all — which is by design, and is the tier verification (iii)'s `dnf` probe belongs
+in.
+
+`./aws/networking.py` and `./aws/egress.py` both report 0 FAILED post-cycle. `EG-4` now matches
+`ecr-layers` alongside the other bucket classes, confirming the instrument fix of the previous entry
+against a freshly built endpoint.
+
+**Operational note — Production needed a `force-unlock`.** The first destroy attempt was killed by a
+ten-minute tool timeout after the apply lock was taken, leaving an orphaned `.tflock`. Before
+releasing it, three independent readings confirmed nothing was in flight: no terraform process
+running, the state object's timestamp unchanged since the original apply, and all 14 resources
+intact in AWS. `force-unlock` over a genuinely running apply corrupts state; that check is what
+separates the two cases, and it is not optional.
+
+**A defect in Validation item 1's own wording.** It asks for a `diff` of two `./aws/networking.py`
+runs, one either side of the cycle. That is not executable as written: `aws/output/` is regenerated
+in place, so the pre-cycle report is overwritten by the post-cycle run. The cycle only closed
+because the `terraform output -json` of each `foundation/` had been captured to a file first — a
+stricter reading anyway, being byte equality of the anchor set rather than a text diff whose
+timestamp line is expected to move. **A validation that prescribes a before/after diff of a
+report regenerated in place has to copy the "before" aside first.** Recorded on the stage file.
+
+Left in Stage 3: the two throwaway `t4g.nano` probes — verification (iii)'s `dnf` reading from the
+isolated tier, and peering reachability in the intended direction only. Verification (ii) is
+Stage 6's by nature.
 
 ---
 
