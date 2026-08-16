@@ -166,9 +166,11 @@ def backend_values(account: str, slice_name: str) -> dict:
 def tfvars_values(account: str, slice_name: str) -> dict:
     """region, env token, Environment tag - plus, for a network slice, the allocation.
 
-    The extra two (vpc_cidr, zone_ids) are emitted only where a consumer exists: a network
-    slice of an account that holds a row in CIDRS. Data Governance has no VPC (D22) and no
-    row, so a network slice there fails loudly here rather than applying with a hole.
+    The extras are emitted ONLY WHERE A CONSUMER EXISTS, per slice: an emitted value no
+    variable declares is a Terraform warning on every plan, and a declared variable nothing
+    consumes is a tflint failure - either way, noise that trains the reader to stop reading.
+    The D22 guard covers every network slice: Data Governance has no VPC and no CIDRS row,
+    so a network slice there fails loudly here rather than applying with a hole.
     """
     token = env_token(account)  # raises UnknownAccountFolder before anything else is read
     values = {
@@ -182,19 +184,27 @@ def tfvars_values(account: str, slice_name: str) -> dict:
                 f"{account}: network slice '{slice_name}' but no CIDR allocation - "
                 "D22 accounts hold no VPC; a new account is added to CIDRS deliberately"
             )
-        values["vpc_cidr"] = CIDRS[account]
         values["zone_ids"] = ZONE_IDS[account]
-        # Stage 3 pass 2: the peers map - every VPC-bearing account that has a profile,
-        # DERIVED from the two tables above rather than authored a third time (Lesson 14).
-        # The slice's aliased providers read a peer's [P] facts (VPC, subnets, route
-        # tables) live instead of copying them here: an id in a tfvars would be a stale
-        # copy of another slice's state. Staging is absent because PROFILES has no row
-        # until the vend; the self-row is emitted too and simply unused.
-        values["peers"] = {
-            acct: {"profile": PROFILES[acct], "env": ENV_TOKENS[acct]}
-            for acct in sorted(CIDRS)
-            if acct in PROFILES
-        }
+        if slice_name == "foundation":
+            values["vpc_cidr"] = CIDRS[account]
+            # Stage 3 pass 2: the peers map - every VPC-bearing account that has a profile,
+            # DERIVED from the two tables above rather than authored a third time (Lesson 14).
+            # The slice's aliased providers read a peer's [P] facts (VPC, subnets, route
+            # tables) live instead of copying them here: an id in a tfvars would be a stale
+            # copy of another slice's state. Staging is absent because PROFILES has no row
+            # until the vend; the self-row is emitted too and simply unused.
+            values["peers"] = {
+                acct: {"profile": PROFILES[acct], "env": ENV_TOKENS[acct]}
+                for acct in sorted(CIDRS)
+                if acct in PROFILES
+            }
+        else:
+            # egress/ (pass 3) - and Stage 4's vpn/ when it decides - read foundation/'s
+            # [P] facts through terraform_remote_state instead of carrying copies. The
+            # state KEY is keyed by the ACCOUNT FOLDER (backend_values above), which no
+            # .tf file may re-derive from the env token: the reverse map would be a
+            # second copy of ENV_TOKENS (Lesson 14). So the folder name rides along.
+            values["account_folder"] = account
     return values
 
 
@@ -210,8 +220,13 @@ def render_tfvars(account: str, slice_name: str) -> str:
         f'environment_tag = "{v["environment_tag"]}"\n'
     )
     if "vpc_cidr" in v:
+        out += f'vpc_cidr        = "{v["vpc_cidr"]}"\n'
+    if "zone_ids" in v:
         zone_list = ", ".join(f'"{z}"' for z in v["zone_ids"])
-        out += f'vpc_cidr        = "{v["vpc_cidr"]}"\nzone_ids        = [{zone_list}]\n'
+        out += f"zone_ids        = [{zone_list}]\n"
+    if "account_folder" in v:
+        out += f'account_folder  = "{v["account_folder"]}"\n'
+    if "peers" in v:
         rows = "".join(
             f'  {acct} = {{ profile = "{p["profile"]}", env = "{p["env"]}" }}\n'
             for acct, p in v["peers"].items()

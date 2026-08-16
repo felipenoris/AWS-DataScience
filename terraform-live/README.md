@@ -62,10 +62,11 @@ make check-ou   # needs an SSO session as the infrastructure user on Identity
 
 **Every slice folder in this tree must declare its D11 layer** in
 [`scripts/tfhygiene/layers.py`](../scripts/tfhygiene/layers.py) — `[P]` persistent, `[D]` dormant, `[E]`
-ephemeral (Stage 2 step 8.1, 2026-08-16). **Today every row says `[P]`**, so `make up ENV=…` and
-`make down ENV=…` are no-ops; the first `[E]` slice is Stage 3's `egress/`. A slice created without a row
-fails the sixth check, because `make down` skips what it has never heard of in silence — and for an
-ephemeral slice that is a bill nobody is told about. `make slices` prints the table.
+ephemeral (Stage 2 step 8.1, 2026-08-16). **Since Stage 3 pass 3 the `egress/` slices are `[E]` with an
+`usd_per_hour` copied from the measured `docs/PRICING.md` §3 rows**, so `make up ENV=…` / `make down ENV=…`
+act for real and `make status` reports a burn — the end-of-session reading is `./aws/egress.py` §6. A
+slice created without a row fails the sixth check, because `make down` skips what it has never heard of
+in silence — and for an ephemeral slice that is a bill nobody is told about. `make slices` prints the table.
 
 Two of them exist because nothing else can enforce their rule: **no `.tf` in this tree may declare
 `aws_s3_account_public_access_block`** (the SCP that denies the API carves out exactly the principal every
