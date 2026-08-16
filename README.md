@@ -58,9 +58,10 @@ Blueprint for using AWS as a Data Science infrastructure provider.
   `docs/plan/decisions/`.
 - `docs/REFERENCES.md` — external references used along the way.
 - `scripts/` — repository hygiene, not infrastructure: `check-plan-refs.py` validates the plan's internal
-  links and stable-ID references, and `gen-backend-hcl.py` writes each slice's untracked `backend.hcl`. A
-  `backend` block interpolates nothing, so the state bucket, the key and the **Region** have to be literals
-  somewhere; that one place is a generated file which is not a `.tf` file and is never committed.
+  links and stable-ID references, and `gen-backend-hcl.py` / `gen-tfvars.py` write each slice's untracked
+  `backend.hcl` and `terraform.auto.tfvars`. A `backend` block interpolates nothing and a `.tf` file may not
+  carry a **Region** literal, so those values have to live somewhere else; that somewhere is two generated
+  files, neither a `.tf` and neither ever committed, both written from one table so they cannot disagree.
   Three more are the **checks over the Terraform tree** — no Region literal or index-selected AZ in a `.tf`,
   no `aws_s3_account_public_access_block` in any slice, no wildcard-account ARN in an identity-plane policy,
   and no OU left out of the authored attachment map.

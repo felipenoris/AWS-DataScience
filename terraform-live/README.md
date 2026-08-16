@@ -13,11 +13,26 @@ is a broken caller.
 
 ## What is here today
 
-**Five `bootstrap/` folders, each holding a version pin and nothing else — Stage 2 step 1, 2026-08-15.**
-`sandbox/`, `development/`, `data-governance/`, `production/` and `identity/` have a `bootstrap/` slice with
-`versions.tf` and a committed `.terraform.lock.hcl`; the resources they will hold — one state bucket and the
-KMS key that encrypts it — arrive with steps 2 and 3. **No `staging/`**: the account is unvended (step 3.2),
-and a folder for an account that does not exist is a folder that fails at `init` with a message about S3.
+**Five `bootstrap/` folders — Stage 2 step 1, 2026-08-15 — and `sandbox/bootstrap/` now holds the
+resources.** All five (`sandbox/`, `development/`, `data-governance/`, `production/` and `identity/`) carry
+`versions.tf` and a committed `.terraform.lock.hcl`; **`sandbox/bootstrap/` also carries the state bucket and
+its KMS key (step 2)**, and the other four acquire theirs at step 3. **No `staging/`**: the account is
+unvended (step 3.2), and a folder for an account that does not exist is a folder that fails at `init` with a
+message about S3.
+
+**Two files per slice are GENERATED and untracked**, because a `.tf` file may hold neither of the values they
+carry — the backend cannot interpolate anything, and the region may not be a literal (step 9.1's check
+scans for it). Both are written from `scripts/tfhygiene/backend.py`, one table with two writers, so the
+region the backend records and the region the provider uses cannot disagree:
+
+```bash
+./scripts/gen-tfvars.py      sandbox bootstrap   # terraform.auto.tfvars: region, env, environment_tag
+./scripts/gen-backend-hcl.py sandbox bootstrap   # backend.hcl: bucket, key, region, kms alias
+```
+
+`bootstrap/` is the one slice whose `backend "s3" {}` block starts **commented out**: it creates the bucket
+that will hold its own state, so it applies once with local state and then migrates (step 2.2). Every other
+slice declares its backend from the first `init` and never holds local state at all.
 
 **The rest of `docs/plan/conventions.md` §6's tree is not on disk, and that is the deliberate reading of step 1.**
 Git does not track empty directories, so a skeleton of ~35 empty slices means ~35 `.gitkeep` files — a second
