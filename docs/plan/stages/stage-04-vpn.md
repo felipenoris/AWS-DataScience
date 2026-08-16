@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Status** | not started — **revised 2026-08-16 into the action-checklist format** (executor markers, action-first steps), with corrections against the documentation and the repository: the `vpn/` row ranks **between `foundation` and `egress`** in `scripts/tfhygiene/layers.py` — the earlier "after `egress`" inverted both consequences it claimed — and `scripts/slices.py`'s `dormant()` hook is a stub that **aborts** the moment a `[D]` row exists, so 1.3 owes it its body; step 7's handshake log is **generated on the host** — WireGuard writes no log file; verification (ii) is **answered by the EC2 documentation** (an Elastic IP stays associated across stop/start); 10.2's "existing members need the explicit add" was stale — auto-enable **`ALL` covers existing accounts and the delegated administrator itself**; 5.1's full tunnel gains **`::/0`**, closing an IPv6 bypass that would read as a lockout. `wireguard-tools`, `amazon-cloudwatch-agent` and `iptables-nft` were **measured present** in the AL2023 core repository for `us-west-2` (read from the repo bucket itself, 2026-08-16 — Lesson 23's residual, the no-NAT path itself, stays verification (i)) |
+| **Status** | **in progress** — 1.3's rank and `dormant()` body are merged (2026-08-16, PR #9); the `("sandbox", "vpn")` row waits for the slice, as 1.3 says. Earlier the same day, **revised into the action-checklist format** (executor markers, action-first steps), with corrections against the documentation and the repository: the `vpn/` row ranks **between `foundation` and `egress`** in `scripts/tfhygiene/layers.py` — the earlier "after `egress`" inverted both consequences it claimed — and `scripts/slices.py`'s `dormant()` hook is a stub that **aborts** the moment a `[D]` row exists, so 1.3 owes it its body; step 7's handshake log is **generated on the host** — WireGuard writes no log file; verification (ii) is **answered by the EC2 documentation** (an Elastic IP stays associated across stop/start); 10.2's "existing members need the explicit add" was stale — auto-enable **`ALL` covers existing accounts and the delegated administrator itself**; 5.1's full tunnel gains **`::/0`**, closing an IPv6 bypass that would read as a lockout. `wireguard-tools`, `amazon-cloudwatch-agent` and `iptables-nft` were **measured present** in the AL2023 core repository for `us-west-2` (read from the repo bucket itself, 2026-08-16 — Lesson 23's residual, the no-NAT path itself, stays verification (i)). **Reviewed once more after Stage 3 closed (2026-08-16, post-teardown) — five corrections from what execution taught, each folded into its step:** the host key pair moves out of the instance into the git-ignored `.tfvars` (decision 4 — the SSM-resolved AMI re-plans as a **replacement** whenever the parameter moves, and an instrument's user data must carry `user_data_replace_on_change = true`, so a key living only in the host is Lesson 4 in a `[D]` resource); the module gains **`zone_index`** (`t4g.nano` capacity was measured absent in one AZ); Validation 2 **copies its "before" aside** — `aws/output/` regenerates in place, the rule Stage 3's validation recorded; 8.1's remote-state **profile arrives from the generated tfvars, never a literal** (pass 2's rule); the tunnel-pair deliverable **reuses `production/probes/`** — on disk, registered at rank 60 — instead of building a new probe |
 | **Prerequisites** | Stage 3 — specifically `sandbox/foundation/` (the public subnet, the S3 gateway endpoint **and the 9.3 allow-list**, which this stage is the first to exercise) and the Sandbox↔Production peering (Stage 3 step 6). **Stage 3 is DONE (2026-08-16)** — all three passes applied and measured, so nothing below waits on it any longer. Two of its readings reach into this stage: the 9.3 allow-list is proven for the AL2023 **metadata** path (`dnf makecache` succeeded from a tier with no default route, and a bucket the policy does not name was denied 200/403), but **not for a package download and not for the CloudWatch agent's own bucket** — which is exactly what verification (i) below still asks. The Sandbox↔Production peering is exercised and reachable in the intended direction only. **The network is torn down** (`make down`, USD 0.0000/h) and step 1 does not need it back: everything the host consumes is `[P]` in `sandbox/foundation/` — the public subnet, the IGW and the S3 gateway endpoint — which is why `vpn/` ranks **before** `egress` rather than after, and why verification (iii) can ask whether Session Manager reaches the host with no interface endpoint in the account at all. D4 is decided: self-managed WireGuard |
 | **Consumes** | [D4](../decisions/D04-vpn-wireguard.md), [D6](../decisions/D06-dlp-approach.md), [D11](../decisions/D11-lab-lifecycle.md), [D16](../decisions/D16-break-glass.md), [D26](../decisions/D26-unified-studio.md), [D35](../decisions/D35-sandbox-cardinality.md) |
 | **Proves** | [INT-16](../integrations.md) — **provisionally**: the API/console half is answered here in full; the portal half is re-read at Stage 6 step 1, because the Unified Studio domain does not exist before that (see the deliverables) |
@@ -107,8 +107,13 @@ last only because the thing it detects (an exposed host) arrives in pass 1.
 **Action:** write the `wireguard` module and the repository's first `[D]` slice, wire the slice into the
 D11 machinery, and apply. **Why:** the tunnel endpoint is the only human path into the private network
 (D4), and the first `[D]` slice is where `make up`/`make down` stop being no-ops. **Explanation:** the
-instance is stopped between sessions, never destroyed (~USD 0.65/month of EBS), so the host key and peer
-configuration stay stable; everything that must survive an instance rebuild lives in `[P]` (step 2).
+machinery stops the instance between sessions and never destroys it (~USD 0.65/month of EBS) — but
+Terraform itself still **replaces** it: the SSM-resolved AMI moves with every AL2023 release and a changed
+`ami` forces replacement, and the user data is an instrument, so it carries
+`user_data_replace_on_change = true` (the Stage 3 probes' finding: user data runs at first boot only, and
+the provider default edits the attribute in place — an old reading dressed as a new one). So a rebuild is
+made **invisible rather than prevented**: everything that must survive one lives in `[P]` (step 2) or
+rides the git-ignored `.tfvars` (the host key pair — 4.3, decision 4).
 
 - **1.1 — [Claude] Write `terraform-modules/wireguard/`**: a `t4g.nano` (D4) on the AL2023 ARM AMI,
   resolved through the SSM public parameter `/aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-arm64`
@@ -116,9 +121,13 @@ configuration stay stable; everything that must survive an instance rebuild live
   `http_tokens = "required"` (IMDSv2 — `./aws/vpn.py` `VP-4` fails otherwise: a world-reachable NAT host
   holding a role credential is the textbook IMDSv1 target) and attach an instance profile carrying
   `AmazonSSMManagedInstanceCore` — Session Manager is the only shell path (step 3). Instance Name tag
-  **`awsds-<env>-vpn`** — a contract with `./aws/vpn.py`. Inputs, none pasted: the VPC, subnet, `[P]` EIP
-  allocation and SG from step 2 through `terraform_remote_state`; the peer list (step 4) from a
-  git-ignored `.tfvars`; the peer CIDR from the generated `terraform.auto.tfvars` (Stage 3 decision 1).
+  **`awsds-<env>-vpn`** — a contract with `./aws/vpn.py`. A **`zone_index`** input (default 0) picks the
+  public subnet: `t4g.nano` capacity was **measured absent in one `us-west-2` AZ** during Stage 3
+  (`InsufficientInstanceCapacity`, 25 minutes of provider retry), and every anchor the host consumes is
+  AZ-free, so moving it is a one-variable retry rather than a redesign. Inputs, none pasted: the VPC,
+  subnet, `[P]` EIP allocation and SG from step 2 through `terraform_remote_state`; the peer list **and
+  the host key pair** (4.1, 4.3) from a git-ignored `.tfvars`; the peer CIDR from the generated
+  `terraform.auto.tfvars` (Stage 3 decision 1).
 - **1.2 — [Claude] Configure NAT in the user data — not optional**: `dnf install wireguard-tools iptables-nft`
   (both measured in the AL2023 core repo, 2026-08-16), IP forwarding on, masquerade on the primary
   interface. VPC peering does no edge-to-edge routing and forwards only packets whose source and
@@ -151,8 +160,10 @@ configuration stay stable; everything that must survive an instance rebuild live
   its packages through the S3 **gateway endpoint** — no NAT is in the public subnet's path to in-region S3,
   the gateway's more-specific route wins regardless of the IGW — so a wrong 9.3 allow-list fails as **a
   host that boots and never finishes its user data: a hang, not an `AccessDenied`**. Read `cloud-init`
-  output through SSM before debugging WireGuard itself; record the answer in both stages' verification
-  tables. **[user]** Record the apply in the stage log.
+  output through SSM before debugging WireGuard itself — and if SSM is the thing that fails (verification
+  (iii)), `aws ec2 get-console-output` is the reading path that needs no endpoint, the Stage 3 probes'
+  own; record the answer in both stages' verification tables. **[user]** Record the apply in the stage
+  log.
 
 ### 2. The `[P]` anchors — an amendment to `sandbox/foundation/`
 
@@ -182,7 +193,9 @@ SSM agent reaches the SSM endpoints outbound with no interface endpoint anywhere
 and Session Manager is the shell.
 
 - **3.1 — [Claude] Write the rules in the step 2 SG**: inbound **UDP/51820 from `0.0.0.0/0`** and nothing
-  else; egress open — the instance is the NAT for every tunnel client.
+  else; egress open — the instance is the NAT for every tunnel client. Rule descriptions draw from a fixed
+  character set **with no apostrophe** — `AuthorizeSecurityGroupIngress` rejects the whole call with
+  `InvalidParameterValue` (measured, Stage 3).
 
 ### 4. The peers
 
@@ -198,6 +211,15 @@ device must be deleting one entry — D4 accepted "no Identity Center integratio
   through the generated `terraform.auto.tfvars`, like every other address literal. With NAT (1.2) nothing
   inside AWS ever sees the range; its one job is not colliding with a home or café LAN — that collision
   is a tunnel that comes up and routes nothing, diagnosed by nobody at 23:00.
+- **4.3 — [user] Generate the HOST's key pair the same way, once** — and write the **private** key into
+  the same git-ignored `.tfvars` yourself (it never needs to transit the chat); the user data writes it
+  into `wg0.conf`, and the **public** key goes into the client template (9.1). This is what 9.1's "a
+  rebuild changes nothing" actually rests on: every client config pins the server's public key as well as
+  its endpoint address, so a key generated on first boot would break all of them at the first AMI drift
+  or user-data edit — Lesson 4, in a `[D]` resource this time. The cost, named so it is a choice
+  (decision 4): the private key transits Terraform state — the D36 shape at lab stakes, because sandbox
+  state is KMS-encrypted, readable by `InfrastructureAccess` alone, and the prize is impersonating a lab
+  tunnel endpoint, not minting certificates.
 
 ### 5. The client configuration — full tunnel, not split
 
@@ -264,8 +286,10 @@ persona to an IP that must demonstrably exist and route first.
   source IP** (the documentation's own note on the deny-by-IP example), so an FAS flow like Athena→S3
   would survive the bare condition — the carve-out defends the on-behalf calls that are *not* FAS, and
   verification (iv) records which those turn out to be. Read the EIP from `sandbox/foundation/`'s
-  outputs, **never pasted**: a `terraform_remote_state` data source with
-  `config.profile = "awsds-infra-sandbox-1"` — the repository's first cross-account remote-state read,
+  outputs, **never pasted**: a `terraform_remote_state` data source whose `config.profile` **arrives from
+  the generated tfvars** — the `PROFILES` table in `scripts/tfhygiene/backend.py` grows an `identity/sso`
+  emission when this lands, because pass 2's rule is that a profile literal never sits in a `.tf` file
+  (Lesson 14, `peers.tf`'s own comment) — the repository's first cross-account remote-state read,
   workable because one SSO login covers both profiles.
 - **8.2 — [Claude] Land it as a second shared fragment** beside `shared_denies` in `policies-shared.tf` —
   separate, because the existing fragment is unconditional denies and this one is conditioned on an IP
@@ -297,9 +321,10 @@ one artifact of this stage that lives outside AWS and outside Terraform — undo
 reinvented wrong (Lesson 16's spirit). **Explanation:** `README.md`, written once the pairs have run.
 
 - **9.1 — [Claude] Write the client section in `README.md`**: key generation (4.1), the config template
-  (full tunnel with **both** families, the DNS line, `Endpoint` = the Elastic IP), how to verify the
-  tunnel (a private name resolving; `aws sts get-caller-identity` succeeding), and what a rebuild changes
-  — nothing, because of step 2: the endpoint address is `[P]`.
+  (full tunnel with **both** families, the DNS line, `Endpoint` = the Elastic IP, the server public key
+  from 4.3), how to verify the tunnel (a private name resolving; `aws sts get-caller-identity`
+  succeeding), and what a rebuild changes — nothing, because of step 2 **and 4.3 together**: the endpoint
+  address is `[P]` and the host key rides the `.tfvars`.
 
 ### 10. Enable GuardDuty org-wide — by hand, from Management and Audit
 
@@ -360,9 +385,14 @@ both are used entirely through AWS API endpoints, which the full tunnel already 
 (`docs/plan/architecture.md` §3). For Development that means the **Unified Studio portal** (D26) — a public
 endpoint, reached from the tunnel's IP; `VpcOnly` governs the *app containers*, not the browser.
 
-- **The tunnel pair:** a private resource in the VPN home VPC and one in Production (the Stage 3 probe
-  shape, **[Claude⚡]**, destroyed in the same sitting) are reachable with the tunnel up and unreachable
-  with it down.
+- **The tunnel pair:** nothing new is built — `make up ENV=production` (**[Claude⚡]**) brings back
+  `production/probes/`, which survived the Stage 3 teardown on disk, registered at rank 60, and
+  `make down` in the same sitting is the teardown the burn meter already tracks. Tunnel up, the laptop
+  resolves `probe.prod.internal` through 5.2's resolver and curls the listener; tunnel down, both fail.
+  The resolver answering at all **is** the VPN-home half of the pair — `10.20.0.2` is reachable from
+  inside the VPC and from nowhere else — and `probe-isolated.prod.internal` must **still refuse with the
+  tunnel up** (the public tier's peering routes reach only Production's private subnets): Stage 3's
+  negative control, travelling with the pair (Lesson 26).
 - **The control-plane pair — the proof step 8 exists for:** an AWS API call with the tunnel down is
   denied for a data-scientist session, **and the same call with the tunnel up succeeds**. Run it per
   persona set the fragment reaches, not once.
@@ -381,7 +411,9 @@ endpoint, reached from the tunnel's IP; `VpcOnly` governs the *app containers*, 
 1. Re-run `./aws/networking.py` — `NT-4` still passes, and §9 shows exactly one world-open SG rule,
    UDP/51820, in the whole measured estate.
 2. Run `./aws/vpn.py` — all `VP-*` checks pass; diff two runs either side of the `make down`/`make up`
-   cycle: only the timestamp and the instance state may change.
+   cycle: only the timestamp and the instance state may change. **Copy the first run's
+   `aws/output/vpn.txt` aside before the cycle** — the report regenerates in place, and Stage 3's
+   validation recorded this exact rule after overwriting its own "before".
 3. Read the denial wording of the control-plane pair, not the exit code: the deny must name the
    permission-set policy, and the tunnel-up half must return data (a standing rule since 1c).
 
@@ -410,6 +442,12 @@ whoever is at the keyboard (Lesson 16).
    handshake log kept for diagnosis rather than alarmed on.
 3. **Findings routing** (10.4) — recommended: EventBridge → SNS → e-mail, in Audit, console-built. Record
    the topic name and who subscribes.
+4. **Where the WireGuard host key lives** (1.1, 4.3) — recommended: generated once on the laptop, the
+   private key written by the user into the same git-ignored `.tfvars` as the peers, injected by the user
+   data. The alternative — generated on first boot — leaves the key living only inside the instance
+   (Lesson 4), where the SSM-resolved AMI and `user_data_replace_on_change` both destroy it on schedule
+   and every client config breaks silently; the recommendation's price is the key transiting Terraform
+   state (the D36 shape, at lab stakes — 4.3 names them).
 
 ## Verifications to answer while executing
 
