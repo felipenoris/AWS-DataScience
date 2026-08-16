@@ -1087,6 +1087,64 @@ Infrastructure user on `Sandbox Account 1` through `InfrastructureAccess`
   **Management** read, as **`AWS Control Tower Admin`** through **`AWSAdministratorAccess`** —
   the same path as step 5.1 — and no `awsds-infra-*` profile reaches it.
 
+## Verification (iii) — the landing zone, read from Management (2026-08-16)
+
+`AWS Control Tower Admin` → `Management` → `AWSAdministratorAccess` → CloudShell, running
+`aws/cloudshell/management-landing-zone-drift.sh`, the third script in that folder. Read-only:
+`controltower` list/get, `organizations describe-*`, `sts`. This closes Stage 2.
+
+- **No drift.** `status: ACTIVE`, deployed version `4.0` **equal to** `latestAvailableVersion`,
+  `driftStatus: IN_SYNC`, `remediationTypes: INHERITANCE_DRIFT`. The resource policy of step
+  5.1 reads `PRESENT`, with 5.1a's `PrincipalArn` condition on **exactly two** statements —
+  the two writes narrowed, the navigation statement untouched, which is `DEL-10` green seen
+  from the account that owns the document.
+
+- **Limit 1 — the manifest has no concept of a resource policy, so `IN_SYNC` is silence.**
+  Six keys: `accessManagement`, `backup` (disabled), `centralizedLogging` and `config` (365-day
+  retention each), `governedRegions: ["us-west-2"]`, `securityRoles`. Nothing about
+  organization policies. So the flag is not approving of the delegation; it is not looking at
+  it.
+
+- **Limit 2, and it is the one that matters: the landing zone has run exactly once.**
+  `list-landing-zone-operations` returns a single `CREATE` / `SUCCEEDED`. There has been no
+  `UPDATE` and no `RESET`, so **the positive evidence the report was built to capture does not
+  exist yet** — nothing has re-evaluated the landing zone since the delegation was applied on
+  2026-08-15. "Has not disagreed" is not "has agreed", and the difference is the whole of what
+  this verification can honestly claim today.
+
+- **A claim of mine the first real run falsified.** The script's own prose said the manifest
+  was the list of what drift detection compares. It is not: it carries **no policy of any
+  kind**, not even the `aws-guardrails-*` SCPs Control Tower demonstrably owns and 1c step 7.7
+  read one by one. It bounds the landing zone's *configuration*, not the comparison — the
+  narrower claim, and the one the report is entitled to make. Corrected in the script.
+
+- **Two defects found by exercising the script from the wrong account before the real run**,
+  as `awsds-infra-identity`:
+
+  - **From a member account both landing-zone calls succeed and return empty** —
+    `list-landing-zones` gives `None`, `list-landing-zone-operations` gives `[]`. Neither is an
+    error, so an exit code says nothing, and section 4 printed from there would have stated
+    *"the landing zone has never run"*: strong, wrong, and identical in the output to the true
+    answer. Sections 2-4 are now suppressed outside Management and the run **exits 2**.
+  - **A wrong-account run was overwriting the good report.** It now writes the file only from
+    Management, and says so — the same rule the auth-failure path already stated.
+
+  Section 5 is the deliberate exception: `describe-resource-policy` answers from **Identity**,
+  because the 5.1 delegation grants it there. `./aws/org-delegation.py` is the fuller
+  instrument on that side.
+
+- **The strong test stays refused.** Making the landing zone re-evaluate —
+  `update-landing-zone` or `reset-landing-zone` — is a write, slow and hard to undo, and not a
+  measurement anybody should take to answer a question (Lesson 22). The occasion arrives on its
+  own.
+
+- **Recorded as `INV-17`**, with its re-read triggers: any landing-zone update, any Control
+  Tower version bump (the two version fields are equal today), and the `Staging` vend. On a
+  second operation appearing, re-read section 5 and confirm the document is still `PRESENT`
+  with its condition on two statements — that is the evidence that is missing today.
+
+**Stage 2 is DONE: every step closed, all nine verifications answered.**
+
 ---
 
 *Log index: [docs/log/INDEX.md](INDEX.md) · Stage index: [docs/plan/stages/INDEX.md](../plan/stages/INDEX.md)*

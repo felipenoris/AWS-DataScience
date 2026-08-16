@@ -33,11 +33,17 @@
 #
 # SO THREE MORE READINGS, EACH OF WHICH MAKES THE FIRST ONE MEAN SOMETHING:
 #
-#   - THE MANIFEST (section 3). It is what the landing zone DECLARES it manages - governed
-#     Regions, the logging and security accounts, the KMS key, the access-management setting.
-#     Printed whole, on purpose: `organizations:ResourcePolicy` is expected to be absent from
-#     it, and that absence is what turns "IN_SYNC" from a clean bill into the narrower and
-#     true statement "this object class is not among the things being compared".
+#   - THE MANIFEST (section 3). It is what the landing zone is CONFIGURED with - governed
+#     Regions, the logging and security accounts, the retention days, the access-management
+#     setting. Printed whole, on purpose: nothing in it concerns organization resource
+#     policies, so IN_SYNC is SILENT about the 5.1 delegation rather than approving of it.
+#
+#     AND IT IS NOT THE INVENTORY OF WHAT DRIFT DETECTION COMPARES - measured 2026-08-16, on
+#     the first real run, against an earlier version of this comment that said it was. The
+#     manifest contains NO policy of any kind, not even the `aws-guardrails-*` SCPs Control
+#     Tower demonstrably owns and 1c step 7.7 read one by one. So it bounds the CONFIGURATION
+#     and not the comparison: it proves resource policies are not part of what the landing
+#     zone is set up to be, which is the narrower claim, and the one this report makes.
 #
 #   - THE OPERATION HISTORY (section 4), and this is the STRONGEST evidence available without
 #     writing anything. `driftStatus` is a flag; an OPERATION is the landing zone actually
@@ -269,7 +275,7 @@ printf '  1. Where this ran - read it FIRST; sections 2-4 answer only from Manag
 printf '  2. The landing zone: status, version, DRIFT\n'
 printf '  3. What the landing zone declares it manages - the manifest, whole\n'
 printf '  4. Operations, and whether any ran AFTER the delegation\n'
-printf '  5. The resource policy, read back from Management\n'
+printf '  5. The resource policy - and it answers from Identity too\n'
 printf '  6. How to read all of this - and what it does NOT say\n'
 printf '  7. Calls that failed\n'
 
@@ -344,12 +350,16 @@ if [ "$IS_MGMT" != "yes" ]; then
 printf 'SUPPRESSED - see section 1.\n'
 else
 
-printf 'THIS IS WHAT MAKES SECTION 2 READABLE. The manifest is the landing zone configuration\n'
-printf 'Control Tower compares reality against: governed Regions, the logging and security\n'
-printf 'accounts, the KMS key, the access-management setting. Read it for ONE thing - whether\n'
-printf 'anything in it concerns organization RESOURCE POLICIES. If nothing does, then IN_SYNC\n'
-printf 'above is silent about the 5.1 delegation rather than approving of it, and that is the\n'
-printf 'honest way to record the answer to verification (iii).\n\n'
+printf 'THIS IS WHAT MAKES SECTION 2 READABLE. The manifest is what the landing zone is\n'
+printf 'CONFIGURED with: governed Regions, the logging and security accounts, retention, the\n'
+printf 'access-management setting. Read it for ONE thing - whether anything in it concerns\n'
+printf 'organization RESOURCE POLICIES. If nothing does, then IN_SYNC above is silent about\n'
+printf 'the 5.1 delegation rather than approving of it.\n\n'
+printf 'IT IS NOT THE INVENTORY OF WHAT DRIFT DETECTION COMPARES, and an earlier version of\n'
+printf 'this section said it was. The manifest carries NO policy of any kind - not even the\n'
+printf 'aws-guardrails-* SCPs Control Tower owns and 1c step 7.7 read one by one. So it\n'
+printf 'bounds the CONFIGURATION, not the comparison. That is a narrower claim, and it is\n'
+printf 'the one this report is entitled to make.\n\n'
 
 if [ -s "$LZ_JSON" ]; then
   python3 -c 'import json,sys; print(json.dumps(json.load(open(sys.argv[1]))["landingZone"].get("manifest",{}), indent=2, sort_keys=True))' "$LZ_JSON" 2>/dev/null | mask \
@@ -397,7 +407,8 @@ if [ "$RP_STATE" = "PRESENT" ]; then
     printf 'PRESENT, with the condition on exactly TWO statements - which is 5.1a as applied:\n'
     printf 'the two WRITE statements narrowed to the InfrastructureAccess role, the navigation\n'
     printf 'statement deliberately untouched. `DEL-10` reports the same thing from Identity;\n'
-    printf 'this is the same reading from the account that owns the document.\n'
+    printf './aws/org-delegation.py reports the same thing from the Identity side, with\n'
+    printf 'all ten DEL-* checks rather than this one count.\n'
   else
     printf '!! PRESENT, but the PrincipalArn condition is on %s statement(s), not 2.\n' "$ARNLIKE_N"
     printf 'Either the document was changed since 5.1a, or something rewrote it. Compare\n'

@@ -301,7 +301,7 @@ onwards the file records how the environment changed, not just the plan.
   rather than a new sitting. It also un-blocks an input Stage 2 cannot settle: modules are consumed **by git
   tag** in a **monorepo**, and the host is GitHub today and GitLab from Stage 7 (D8) — choosing the tag
   scheme with no caller in hand is choosing it twice. **This entry exists because the re-scope came after
-  the stage had provisioned** (five state buckets, two identity slices), which is the class of change this
+  the stage had provisioned** (the state buckets, both identity slices), which is the class of change this
   file keeps.
 
   **The re-scope was found by measuring the disk against the stage file, and that is the transferable
