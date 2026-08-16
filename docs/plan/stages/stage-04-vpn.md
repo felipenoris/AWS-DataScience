@@ -129,6 +129,17 @@ So the deliverables are:
   This is INT-16 and it is answered here, at the first moment it can be. If the portal opens without
   the tunnel, "all user access through a VPN" is not yet true for the surface the data scientist actually
   uses, and the fallback in that row applies. Write down which of the two happened.
+  **Write the verdict against this framing, so a negative answer is recorded as what it is and not as a
+  failure of the stage.** The VPN plays three different roles, and INT-16 can only lose the third: it
+  protects the private network (GitLab, Pages, EFS) **by construction** — those services do not exist for
+  a laptop without the tunnel; it protects the AWS APIs and the console **by policy** — step 8's
+  `aws:SourceIp` anchored on the Elastic IP that step 5's full tunnel exists to provide; and for the
+  portal it is, at best, an unverified policy condition — at worst, traffic hygiene. What protects what
+  the portal fronts, whichever way INT-16 answers, is Identity Center authentication (with MFA), the
+  VpcOnly project compute inside the perimeter, and Lake Formation on every data access. A negative
+  INT-16 is therefore not an argument against the VPN — the first two roles stand untouched — it is an
+  instruction to restate the objective's sentence with precision ("through the VPN" holds for the private
+  network and the control plane, not for the portal), which is exactly fallback (ii) of that row.
 
 An earlier version of this deliverable said "Studio in Development opens with the tunnel up and refuses to
 open with it down", via `CreatePresignedDomainUrl`. D26 removed the classic domains that sentence described.

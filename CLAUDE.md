@@ -180,14 +180,19 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
 - **Open question 11 closed (2026-08-15):** 5.1's principal is the *account*, so **CT Admin reaches policy
   writes through `Identity`** — nothing it did not hold, so the assignment **stays**; the fix is **step
   5.1a**, unapplied. **1b 8.3's alarm is blind to this path**; CloudTrail is the only residual.
-- **Stage 2 steps 1, 6 and 9 CLOSED (2026-08-15).** Five `bootstrap/` slices — no `staging/` — one
-  byte-identical `versions.tf` (`~> 1.15`, `aws ~> 6.60`), one lock file; `scripts/gen-backend-hcl.py` is the single source of the backend literals; **the §6 tree is
+- **Stage 2 steps 1, 6, 9 and 2 CLOSED (2026-08-15).** Five `bootstrap/` slices — no `staging/` — one
+  byte-identical `versions.tf` (`~> 1.15`, `aws ~> 6.60`), one lock file; **the §6 tree is
   deliberately not on disk** — a slice folder arrives with its first `.tf`.
   Step 9: `make check` (offline) / `make check-ou` (session), the same scripts behind three commit hooks,
   each seen failing. Per-OU attachments are **authored, not discovered** — `org-policies/attachments.json`,
   read by 9.3 *and* step 5's `for_each`.
   `check-plan-refs.py` is **red** on pre-Stage-2 prose, in its own `make check-docs`.
-  **Next is step 2**: the project's first `terraform apply`.
+  **Step 2: `awsds-sandbox-tfstate` exists** — first apply of the project, migrated into itself, second plan
+  empty, lock proven with two concurrent plans (`use_lockfile`, no DynamoDB). **Two generated, gitignored
+  files per slice** — `backend.hcl` *and* `terraform.auto.tfvars` (`gen-backend-hcl.py`/`gen-tfvars.py`, one
+  table in `tfhygiene/backend.py`): a `.tf` may carry neither the region nor *the* sandbox. Three checkov
+  skips (access logging, replication, event notifications) — **and a skip above the block is silently
+  ignored**. **Next is step 3**, `production/` with its two keys (3.4).
 - **Stage 3 pre-instrumented (2026-08-15):** `aws/networking.py`, `aws/egress.py`. First run found **an
   Account Factory VPC in every vended account** (`docs/AWS_STATE.md` §C) — the stage's new **step 0** decides
   it, and its network-configuration half must land **before the `Staging` vend**.

@@ -580,6 +580,55 @@ needs an SSO session and is recorded as open at the end.
   means the map — written from today's snapshot — is wrong and must be corrected **before step 5 reads
   it**, not after.
 
+## Step 2 — `terraform-live/sandbox/bootstrap/`, the first apply — 2026-08-15
+
+Infrastructure user, `Sandbox Account 1`, `InfrastructureAccess` (`awsds-infra-sandbox-1`). No
+Management action, no borrowed role: `AWS_PROFILE` on every command (Lesson 25).
+
+- **Preflight before writing anything** — `./aws/tf-backends.py`: no bucket in any of the five
+  measured accounts and no `awsds-*` KMS alias, so the name the slice was about to claim was free.
+
+- **Phase 1, local state.** The slice holds one KMS key (rotation on, 30-day window, key policy
+  written out rather than left to the service default) and one bucket — versioning, SSE-KMS with
+  **S3 Bucket Keys**, BPA 4/4, a TLS-only bucket policy, `force_destroy = false` +
+  `prevent_destroy`, and two lifecycle rules.
+
+  ```
+  ./scripts/gen-tfvars.py sandbox bootstrap
+  AWS_PROFILE=awsds-infra-sandbox-1 terraform apply
+  ```
+
+- **Phase 2, migration.** `backend "s3" {}` uncommented, `./scripts/gen-backend-hcl.py sandbox
+  bootstrap`, `terraform init -backend-config=backend.hcl -migrate-state`, then the local
+  `terraform.tfstate`/`.backup` deleted. State now at `sandbox/bootstrap/terraform.tfstate`,
+  encrypted under the slice's own key with `BucketKeyEnabled: true`.
+
+- **Decision 3 — noncurrent state versions expire at 90 days**, plus a 7-day abort rule for
+  incomplete multipart uploads. A cost choice, not a compliance one; taken on day one because a
+  lifecycle rule added later does not reach what has already accumulated.
+
+- **The step needed a second generated file and did not name one (now 2.6).** `region`, the `<env>`
+  name token and the `Environment` tag value cannot be literals in a `.tf` (9.1 scans for the first;
+  3.3 forbids the second), so they arrive from a gitignored `terraform.auto.tfvars` written by
+  `scripts/gen-tfvars.py` — same table as `backend.hcl`, in `scripts/tfhygiene/backend.py`, so the
+  two files cannot disagree about the region.
+
+- **Three checkov suppressions, and one mechanical finding.** 30 passed / 3 failed on the first run:
+  `CKV_AWS_18` (access logging would be a second bucket holding the same secrets), `CKV_AWS_144`
+  (replication is Stage 12 and would copy state out of Region) and `CKV2_AWS_62` (no notification
+  consumer exists in the account). **A `# checkov:skip=` line above the resource block is read as an
+  ordinary comment and the check fails anyway** — it has to be inside the block, and nothing says the
+  suppression was ignored.
+
+- **Verified after the fact, beyond the snapshot's own checks:** a second `plan` reading from S3
+  reports `No changes`; **two concurrent `plan` runs — one succeeds, the other fails with `Lock
+  Info … OperationTypePlan`**, which is D3's native S3 locking proven with no DynamoDB table, and no
+  lock object is left behind; the five mandatory tags are on the bucket and on the key; key rotation
+  reads enabled, 365 days.
+
+- **`./aws/tf-backends.py awsds-infra-sandbox-1` after the apply: `BK-0` to `BK-5` all pass, 0
+  FAILED.** From here, "no state bucket" in this account is a regression rather than a note.
+
 ---
 
 *Log index: [docs/log/INDEX.md](INDEX.md) · Stage index: [docs/plan/stages/INDEX.md](../plan/stages/INDEX.md)*

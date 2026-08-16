@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Status** | **IN PROGRESS. Steps 5.0, 5.1, 1, 6 and 9 closed 2026-08-15** — the delegation applied and *exercised* (INT-20 answered: `identity/org-policies/` is scoped to all ten documents), the five `bootstrap/` slices created with the version pin and a committed multi-platform lock, the `pre-commit`/`tflint`/`checkov` chain passing end to end, and the four checks written, wired into **`make check`** and into the commit gate, each demonstrated failing on purpose. **Next is step 2** — the first bootstrap slice, and the first `terraform apply` of the project. **Roteiro revised 2026-08-15 against the closed landing zone**, see the table below |
+| **Status** | **IN PROGRESS. Steps 5.0, 5.1, 1, 6, 9 and 2 closed 2026-08-15** — the delegation applied and *exercised* (INT-20 answered: `identity/org-policies/` is scoped to all ten documents), the five `bootstrap/` slices created with the version pin and a committed multi-platform lock, the `pre-commit`/`tflint`/`checkov` chain passing end to end, the four checks written, wired into **`make check`** and into the commit gate, each demonstrated failing on purpose — **and the project's first `terraform apply`**: `sandbox/bootstrap/` applied local, migrated into its own bucket, second plan empty, locking proven by two concurrent plans. **Next is step 3** — the same slice in the four remaining accounts, `production/` with its two keys (3.4). **Roteiro revised 2026-08-15 against the closed landing zone**, see the table below |
 | **Prerequisites** | **Stage 1a and Stages 1b, 1c and 1d**, all complete (the landing zone closed 2026-08-15). `Staging` is still unvended, so **step 3 skips `terraform-live/staging/bootstrap/`** and step 5 skips its Staging assignments — the same carve-out 1b steps 3 and 5 already carry, picked up at the vend |
 | **Consumes** | [D3](../decisions/D03-terraform-state.md), [D10](../decisions/D10-identity-center-delegation.md), [D11](../decisions/D11-lab-lifecycle.md), [D16](../decisions/D16-break-glass.md), [D23](../decisions/D23-ou-structure.md), [D27](../decisions/D27-catalog-maintenance.md), [D30](../decisions/D30-scp-recovery.md) *(reverted; its surviving consequence is step 5's rationale)*, [D32](../decisions/D32-account-factory-sso-user.md), [D33](../decisions/D33-control-tower-admin-user.md), [D34](../decisions/D34-account-vending.md), [D35](../decisions/D35-sandbox-cardinality.md), [D36](../decisions/D36-internal-pki.md), [D37](../decisions/D37-nested-ou-inheritance.md) *(5.3/9.3 — `Sandboxes` deliberately carries nothing)* — **plus, for step 5's six permission sets, the design of record in [Stage 1b step 3](stage-01b-identity-and-controls.md) and the decisions it lists** (D14, D18-D22, D31). They are written here and specified there; neither file restates the other |
 | **Proves** | [INT-20](../integrations.md) — the Organizations **policy** delegation into the Identity account, which step 5 assumes and no earlier stage creates |
@@ -228,6 +228,17 @@ not let step 9's grep discover it:
 - **Locking is `use_lockfile = true`** (D3) — native S3 locking, no DynamoDB table. Terraform **1.15.8** is
   installed and supports it.
 - `key` is `<account>/<slice>/terraform.tfstate`, one state file per slice, one bucket per account (D3).
+
+**2.6 — The second generated file, which the step needed and did not name** *(added on execution,
+2026-08-15)*. `backend.hcl` is not the only value a slice cannot write down: the **provider's `region`** may
+not be a literal either (9.1 scans for it), and 3.3 forbids hardcoding `sandbox` when D35 vends one Sandbox
+per business unit. So `region`, the `<env>` **name token** and the `Environment` **tag value** arrive as
+variables with no defaults, from a generated, gitignored **`terraform.auto.tfvars`** —
+`./scripts/gen-tfvars.py <account> <slice>`, written from `scripts/tfhygiene/backend.py`, the same table
+`gen-backend-hcl.py` reads. **One vocabulary, two writers**: the region the backend records and the region
+the provider uses cannot disagree, which they could the moment the second one was typed (Lesson 14). It
+carries no `zone_ids` — those are per-environment and belong to a network slice's own tfvars, and a
+generator emitting an unused list sends the next reader looking for the resource that consumes it.
 
 ### 3. The remaining bootstrap slices
 
@@ -851,6 +862,14 @@ same account holding the same secrets, and replication is a Stage 12 item (`docs
 for it). **Record which suppressions were taken and why in the log at the first run** — the point of an
 inline skip with a reason is that the reason was thought about once, and a stage that lets them accumulate
 silently has a gate in name only (Lesson 5).
+
+**Measured 2026-08-15 against `sandbox/bootstrap/`: 30 passed, 3 failed, and the three are the two
+predicted plus one.** `CKV_AWS_18` (access logging) and `CKV_AWS_144` (replication) arrived as written, and
+**`CKV2_AWS_62`** — S3 event notifications — came with them: there is no queue, no topic and no function in
+the account to notify, and "who is told when state changes" is a Stage 12 question. All three are inline
+skips with a reason. **The mechanical detail that cost the first run:** checkov reads a
+`# checkov:skip=<ID>:<reason>` only **inside** the resource block; above it the line is an ordinary comment
+and the check fails anyway, with nothing saying the suppression was ignored.
 
 ### 7. The first reusable modules
 

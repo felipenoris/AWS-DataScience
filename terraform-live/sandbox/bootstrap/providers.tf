@@ -22,9 +22,9 @@
 # the reconciliation: the literals live in a per-slice backend.hcl, which is generated, is
 # not a .tf file and is gitignored.
 
-# terraform {
-#   backend "s3" {}
-# }
+terraform {
+  backend "s3" {}
+}
 
 provider "aws" {
   region = var.region
