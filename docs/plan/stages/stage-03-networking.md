@@ -2,11 +2,11 @@
 
 | | |
 |---|---|
-| **Status** | **ALL THREE PASSES APPLIED (2026-08-16)** — step 0: the stack instances deleted from Management, **nothing survived** (verification (vi)), Account Factory creates no VPC; steps 1-5: the four modules tagged `*-v0.1.0`, `foundation/` **applied in Sandbox (31), Development (30) and Production (32)**; steps 4.4-4.5 and 6: the four zone associations and the two peerings with their 22 subnet-level routes, **one ordered apply on the accepting side** (+1/+1/+32, verification (iv): additive, re-plan `No changes` everywhere); steps 7-10: `vpc-egress-v0.1.0` and the three `egress/` slices, **applied through `make up`** for 16/15/14 resources — **`./aws/egress.py` all checks passed, `./aws/networking.py` 0 FAILED, every `foundation/` re-plan `No changes`**. **The Validation's `make down`/`make up` cycle RAN 2026-08-16** and is answered: all three `foundation/` output sets **byte-identical** across the cycle, all three re-plans `No changes` (`-detailed-exitcode 0`), **39/39 `[E]` ids new**, the S3 and DynamoDB gateway endpoints unmoved, and the private tier's default route rebuilt onto the new NAT in every account. **What is left is not an apply**: the two probes the Deliverables ask for — verification (iii)'s `dnf` reading among them. **The five execute-time decisions were settled with the user on 2026-08-16**, before the stage, each recorded at the step that owns it ("Decisions due while executing" is the index). **Revised 2026-08-16 into the action-checklist format**, with three corrections taken from the official documentation: **step 0's supported removal path is deleting the stack instances from the Account Factory StackSet on Management** — not a per-account hand-deletion, which is what the log's first entry still records; **AL2023 serves its mirror list from the repository bucket itself**, so the design-B caveat 9.3 carried is withdrawn; and **verification (vii) is answered by the Route 53 documentation** (the authorization persists until deleted; deleting it does not affect the association) |
+| **Status** | **ALL THREE PASSES APPLIED (2026-08-16)** — step 0: the stack instances deleted from Management, **nothing survived** (verification (vi)), Account Factory creates no VPC; steps 1-5: the four modules tagged `*-v0.1.0`, `foundation/` **applied in Sandbox (31), Development (30) and Production (32)**; steps 4.4-4.5 and 6: the four zone associations and the two peerings with their 22 subnet-level routes, **one ordered apply on the accepting side** (+1/+1/+32, verification (iv): additive, re-plan `No changes` everywhere); steps 7-10: `vpc-egress-v0.1.0` and the three `egress/` slices, **applied through `make up`** for 16/15/14 resources — **`./aws/egress.py` all checks passed, `./aws/networking.py` 0 FAILED, every `foundation/` re-plan `No changes`**. **The Validation's `make down`/`make up` cycle RAN 2026-08-16** and is answered: all three `foundation/` output sets **byte-identical** across the cycle, all three re-plans `No changes` (`-detailed-exitcode 0`), **39/39 `[E]` ids new**, the S3 and DynamoDB gateway endpoints unmoved, and the private tier's default route rebuilt onto the new NAT in every account. **The probes RAN 2026-08-16** as three `[E]` slices — the blockquote on Deliverables carries every reading, **verification (iii) among them: `dnf makecache` succeeded from a tier with no default route, and the allow-list denied an equally public bucket it does not name (200 / 403)**. **INT-09 was exercised for the first time.** **What is left is one destroy** — `make down` on the three probe slices, deferred by the user — plus the `Staging` clause of the DNS Deliverable, which has no host to refuse until the vend, and verification (ii), which is Stage 6's by nature. **The five execute-time decisions were settled with the user on 2026-08-16**, before the stage, each recorded at the step that owns it ("Decisions due while executing" is the index). **Revised 2026-08-16 into the action-checklist format**, with three corrections taken from the official documentation: **step 0's supported removal path is deleting the stack instances from the Account Factory StackSet on Management** — not a per-account hand-deletion, which is what the log's first entry still records; **AL2023 serves its mirror list from the repository bucket itself**, so the design-B caveat 9.3 carried is withdrawn; and **verification (vii) is answered by the Route 53 documentation** (the authorization persists until deleted; deleting it does not affect the association) |
 | **Prerequisites** | Stage 2. The AZ name→ID question from 1b step 6 is settled — subnets anchor on `zone_ids` (1.5), the mapping is `./aws/AZs.py`. **`Staging` is unvended** — the quota-increase request sits in an open AWS support ticket (2026-08-15) — so its `foundation/` and `egress/` apply **at vend**, and the two proofs that name it (its VPC, its empty peering list) defer with it; nothing else in this stage waits on it |
 | **Consumes** | [D5](../decisions/D05-sagemaker-egress.md), [D9](../decisions/D09-az-count.md), [D14](../decisions/D14-supply-chain-account.md), [D15](../decisions/D15-tls-internal.md), [D18](../decisions/D18-data-scientist-access.md), [D20](../decisions/D20-staging-account.md), [D21](../decisions/D21-development-account.md), [D22](../decisions/D22-data-governance-account.md), [D35](../decisions/D35-sandbox-cardinality.md) — **plus, for step 8's endpoint lists only**, [D7](../decisions/D07-orchestration.md), [D13](../decisions/D13-lake-formation-enforcement.md), [D24](../decisions/D24-shared-filesystem.md) |
 | **Proves** | [INT-09](../integrations.md) (Development ↔ Production peering). **Supplies** what [INT-05](../integrations.md) later depends on: the `[P]` gateway endpoint IDs of step 3 |
-| **Log** | [`docs/log/log-stage-03-networking.md`](../../log/log-stage-03-networking.md) — created 2026-08-16, **seven entries**: the five decisions settled before the stage, two corrected against the documentation, step 0, one per applied pass, and the D11 `make down`/`make up` cycle. Its row is in [`docs/log/INDEX.md`](../../log/INDEX.md) |
+| **Log** | [`docs/log/log-stage-03-networking.md`](../../log/log-stage-03-networking.md) — created 2026-08-16, **eight entries**: the five decisions settled before the stage, two corrected against the documentation, step 0, one per applied pass, the D11 `make down`/`make up` cycle, and the probes. Its row is in [`docs/log/INDEX.md`](../../log/INDEX.md) |
 
 *Read with [`docs/plan/conventions.md`](../conventions.md) (naming, layout, `[P]`/`[D]`/`[E]`, IAM rules).*
 
@@ -648,6 +648,36 @@ comparison is the point of D5. **Explanation:** settled 2026-08-16 (decision 4):
 ---
 
 ## Deliverables
+
+> **RAN 2026-08-16 — every one answered except the `Staging` clause, which has no host to
+> refuse until the vend.** Built as three `[E]` slices rather than as a script, because the
+> expensive failure for a probe is an instance nobody turned off: `sandbox/probes` (perimeter +
+> peering), `production/probes` (the target), `development/probes` (INT-09). **No IAM principal
+> was created** — the two endpoint-policy statements under test carry no principal condition,
+> so anonymous requests are judged by exactly the statement being measured.
+>
+> **Perimeter:** premise measured first (no route to the internet, `curl` exit 28), then
+> `dnf makecache` **SUCCEEDED** from the isolated tier, then the pair — the allow-listed
+> repository bucket **200**, an equally public Amazon Linux 2 bucket that the policy does not
+> name **403 AccessDenied**. **Peering:** from Sandbox and again from Development, against one
+> target host — permitted address **HTTP 200**, the *same host's* second interface in an
+> unrouted tier **silent**, the permitted address on an unadmitted port **silent**. **Flow
+> logs:** ACCEPT for the connection made, REJECT for the one dropped at the ENI, and **zero**
+> records naming the unrouted address — an absence that means something only because the
+> REJECT proves the instrument records. **DNS:** `probe.prod.internal` resolved from a Sandbox
+> host **and** from a Development host. **INT-09 exercised for the first time** — the
+> Deliverables' peering is Sandbox↔Production, which says nothing about it.
+>
+> **Two instrument defects, both found by running it.** The perimeter pair first used buckets
+> that DO NOT EXIST and returned 404/404, which by its own criterion reads as "the perimeter is
+> open": S3 answers `NoSuchBucket` **before** it evaluates authorization, so a nonexistent
+> bucket cannot measure a policy — **Lesson 21, and the nonexistence chosen to keep the
+> bucket's own policy out of the comparison had removed the policy under test with it.** And
+> `user_data` changes do **not** replace an instance by default, so a corrected instrument
+> would have left the old reading running; `user_data_replace_on_change` is now set on all
+> three. Also measured, and not a finding about anything here:
+> `Server.InsufficientInstanceCapacity` for `t4g.nano` in one AZ, which is why the source
+> slices carry a `zone_index` and the target does not — a secondary ENI cannot cross an AZ.
 
 Each is written so its output differs between working and broken (Lesson 13). **The mechanical half of
 every reading below is `./aws/networking.py` and `./aws/egress.py`** ([`aws/INDEX.md`](../../../aws/INDEX.md));

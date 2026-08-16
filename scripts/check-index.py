@@ -1,9 +1,16 @@
 #!/usr/bin/env -S uv run --quiet
 # check-index.py - verify that POLICIES.md still describes the documents in policies/.
 #
-#   run:      ./terraform-live/identity/org-policies/check-index.py
-#   reads:    policies/*.json and POLICIES.md. Touches nothing, needs no AWS session.
+#   run:      ./scripts/check-index.py
+#   reads:    terraform-live/identity/org-policies/{policies/*.json,POLICIES.md}.
+#             Touches nothing, needs no AWS session.
 #   exit:     0 when every document's section lists exactly its Sids, in order; 1 otherwise.
+#
+# IT LIVES IN scripts/ AND NOT BESIDE WHAT IT READS (moved 2026-08-16). It is one of the six
+# gates `make check` and `pre-commit` run, and a suite whose members sit in two places is a
+# suite nobody can enumerate by looking: somebody reading scripts/ was seeing five of six.
+# The folder it checks keeps `render.py`, which is not a gate - it writes pasteable copies of
+# those same documents and belongs to the people editing them.
 #
 # WHY THIS EXISTS AS A SCRIPT AND NOT AS A HABIT. POLICIES.md is the only place the reasoning
 # behind each statement lives - the JSON carries no comments - so a statement added or
@@ -31,15 +38,20 @@ from pathlib import Path
 
 from tfhygiene.policydoc import UnknownPolicyShape, entries, load
 
+# The one consequence of moving out of that folder: the two paths become explicit instead of
+# implicit in a chdir. Every other script under scripts/ chdirs to the repository root and
+# names what it reads from there, so this one now reads the same way.
+FOLDER = Path("terraform-live/identity/org-policies")
+
 
 def main() -> int:
-    os.chdir(Path(__file__).resolve().parent)
+    os.chdir(Path(__file__).resolve().parents[1])
 
-    md = Path("POLICIES.md").read_text(encoding="utf-8")
+    md = (FOLDER / "POLICIES.md").read_text(encoding="utf-8")
     sections = re.split(r"\n## ", md)
     bad = 0
 
-    for path in sorted(Path("policies").glob("*.json"), key=str):
+    for path in sorted((FOLDER / "policies").glob("*.json"), key=str):
         name = path.name
         try:
             sids = entries(load(path), name)

@@ -531,7 +531,7 @@ needs an SSO session and is recorded as open at the end.
   | 9.1 | `scripts/check-tf-conventions.sh` | `make check` + `pre-commit` on any `*.tf` |
   | 9.2 | `scripts/check-iam-wildcards.sh` | `make check` + `pre-commit` on `terraform-live/identity/**` |
   | 9.3 | `scripts/check-ou-coverage.sh` | **`make check-ou` only** — needs a session |
-  | 9.4 | `terraform-live/identity/org-policies/check-index.sh` | `make check` + `pre-commit` on `policies/` or `POLICIES.md` |
+  | 9.4 | `scripts/check-index.sh` | `make check` + `pre-commit` on `policies/` or `POLICIES.md` |
 
 - **`Makefile` created** with `check`, `check-ou`, `check-docs`, `check-all`. It is the same file step 8
   will add `up`/`down`/`status` to.

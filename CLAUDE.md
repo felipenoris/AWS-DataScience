@@ -99,7 +99,7 @@ write anything into it. Claude can read the files in this folder to gather infor
 | [`docs/REFERENCES.md`](docs/REFERENCES.md) | Every internet link used as a reference, added on the interaction that used it |
 | [`README.md`](README.md) | How the AWS resources are structured, and the project layout, so people can understand the components |
 | [`terraform-live/README.md`](terraform-live/README.md) | How the deployed tree is organised. Updated when an account folder or a top-level rule changes — **never a copy of the slice tree**, which lives in `docs/plan/conventions.md` §6 |
-| [`terraform-live/identity/org-policies/POLICIES.md`](terraform-live/identity/org-policies/POLICIES.md) | One row per entry in **every** document in `policies/`, all four policy types: what it does, why, and what it does once attached. **Reviewed in the same sitting as any policy change**, attachments included. `./terraform-live/identity/org-policies/check-index.py` decides the mechanical half; whether a row is still *true* is the reading |
+| [`terraform-live/identity/org-policies/POLICIES.md`](terraform-live/identity/org-policies/POLICIES.md) | One row per entry in **every** document in `policies/`, all four policy types: what it does, why, and what it does once attached. **Reviewed in the same sitting as any policy change**, attachments included. `./scripts/check-index.py` decides the mechanical half; whether a row is still *true* is the reading |
 | [`docs/PRICING.md`](docs/PRICING.md) | A row for every new AWS service referenced |
 
 # Claude memory
@@ -178,21 +178,21 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   sent** (live bytes are still 1c's paste), `prevent_destroy` on both.
   Delegation narrowed to `InfrastructureAccess`, hand-applied, **out of Terraform** (`INV-15`). D11:
   `scripts/tfhygiene/layers.py` + `make up`/`down`/`status`/`slices`; a slice with no row fails
-  `make check`. (iii): `IN_SYNC` (`INV-17`). **`awsds` is reserved in SSM Parameter Store** — project parameters take
-  `/datascience/<env>/…`.
+  `make check`. (iii): `IN_SYNC` (`INV-17`). SSM parameter naming: conventions §6 (`awsds` is reserved).
 - **Gates, and there is no CI:** `make check` (offline), `make check-ou` (session),
   `make check-docs` — **red** on pre-Stage-2 prose, outside the commit gate.
-- **Stage 3 all three passes APPLIED 2026-08-16.** Step 0: AF VPCs gone (**StackSet on Management**),
-  creation off. `foundation/` `[P]` in Sandbox/Development/Production (31/30/32, +1/+1/+32);
-  `vpc-egress-v0.1.0`, `egress/` `[E]` via **`make up`** (16/15/14; endpoints 12/11/10, NAT, 0.48 USD/h).
-  **`networking.py` and `egress.py`: 0 FAILED. D11 cycle RUN: `foundation/` outputs byte-identical,
-  re-plan `No changes`, 39/39 `[E]` ids new, gateway endpoints survived** — INT-05 names those, not
-  `egress/`. `egress_mode=A`, and the S3 allow-list — **a NAT does not bypass it** (Stage 4).
-  CIDR/`zone_ids`/peers: `scripts/tfhygiene/backend.py`. **Left: the two probes** (verification (iii)'s
-  `dnf`, from the *isolated* tier); (ii) is Stage 6's.
-- **Stages 4-9 revised, pre-instrumented (2026-08-16):**
-  `aws/{vpn,datalake,studio,supplychain,cicd,deploytargets}.py` — `DL-5`/`DT-5` guard the LF
-  `Parameters` (INT-11). **Stage 8 pass 4 and Stage 9 passes 4-5 wait on the `Staging` vend.**
+- **Stage 3 APPLIED AND MEASURED 2026-08-16.** AF VPCs gone (**StackSet on Management**); `foundation/`
+  `[P]` 31/30/32; `vpc-egress-v0.1.0`, `egress/` `[E]` 16/15/14 (0.48 USD/h). **`networking.py` and
+  `egress.py`: 0 FAILED. D11 cycle: `foundation/` byte-identical, `No changes`, 39/39 `[E]` ids new,
+  gateway endpoints survived** — INT-05 names those, not `egress/`. **Probes RAN as three `[E]` slices,
+  no IAM: (iii) answered — `dnf` OK from the isolated tier, 200/403 on the allow-list pair; peering +
+  DNS from Sandbox *and* Dev, so INT-09 is exercised; flow logs ACCEPT+REJECT.** `egress_mode=A`; the
+  S3 allow-list — **a NAT does not bypass it** (Stage 4). CIDR/`zone_ids`/peers:
+  `scripts/tfhygiene/backend.py`. Left: `make down` on `*/probes`, `Staging`'s NXDOMAIN, (ii) is
+  Stage 6's.
+- **Stages 4-10 revised, pre-instrumented (2026-08-16):**
+  `aws/{vpn,datalake,studio,supplychain,cicd,deploytargets,orchestration}.py` — `DL-5`/`DT-5` guard the
+  LF `Parameters` (INT-11). **St.8 pass 4, St.9 passes 4-5, St.10's Staging leg wait on the vend.**
 - **Standing rules that outlive their stages:** never add an `sts:` action to the RCP without reading
   `CT.STS.PV.1`'s exclusion note; 1d step 9 is the **only** sanctioned by-hand use of
   `AWSControlTowerExecution`; **resolve an account by name only with the exact vended name** — every one

@@ -69,7 +69,10 @@ Blueprint for using AWS as a Data Science infrastructure provider.
   by a git tag that does not exist yet. `slices.py` is the sixth and it is also a *target*: it owns D11's
   layer table and the `up`/`down`/`status` machinery behind the `Makefile`, and as a check it fails when a
   slice on disk declares no layer — the direction that costs money, since `make down` skips in silence what
-  it has never heard of.
+  it has never heard of. `check-index.py` is the seventh, and the only one whose two sides are a policy
+  document and the index that explains it: it fails when a statement in `policies/` has no row in
+  `POLICIES.md`, or a row no statement. **It lived in `terraform-live/identity/org-policies/` until
+  2026-08-16** — a gate suite split across two folders is one nobody can enumerate by looking.
 - `Makefile` — how those checks are run: `make check` offline, `make check-ou` with an SSO session. The same
   scripts sit behind the `pre-commit` hooks, so the commit gate and the target cannot disagree.
   `make` itself is a convenience, not a dependency — every target is a direct call to scripts

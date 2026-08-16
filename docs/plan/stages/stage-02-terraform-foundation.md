@@ -1127,7 +1127,7 @@ same scripts, so a gate and a target cannot disagree.**
 | 9.1 | [`scripts/check-tf-conventions.py`](../../../scripts/check-tf-conventions.py) | `make check` + `pre-commit` on any `*.tf` |
 | 9.2 | [`scripts/check-iam-wildcards.py`](../../../scripts/check-iam-wildcards.py) | `make check` + `pre-commit` on `terraform-live/identity/**` |
 | 9.3 | [`scripts/check-ou-coverage.py`](../../../scripts/check-ou-coverage.py) | **`make check-ou` only** — it needs an SSO session |
-| 9.4 | `terraform-live/identity/org-policies/check-index.py` | `make check` + `pre-commit` on `policies/` or `POLICIES.md` |
+| 9.4 | [`scripts/check-index.py`](../../../scripts/check-index.py) | `make check` + `pre-commit` on `policies/` or `POLICIES.md` — **moved out of `terraform-live/identity/org-policies/` on 2026-08-16**, so the six gates sit in one folder |
 | 3.5 | [`scripts/check-bootstrap-parity.py`](../../../scripts/check-bootstrap-parity.py) | `make check` + `pre-commit` on `terraform-live/*/bootstrap/` — **a fifth, added by step 3** rather than by this step, because it guards a rule step 3 creates |
 | 8.1 | [`scripts/slices.py`](../../../scripts/slices.py)` check` | `make check` + `pre-commit` on any `terraform-live/**/*.tf` — **a sixth, added by step 8** (2026-08-16), same reason: it guards a rule step 8 creates. A slice with no layer row is skipped by `make down` in silence |
 

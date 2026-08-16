@@ -475,9 +475,20 @@ in São Paulo that discipline is worth exactly twice as much.
 | SageMaker notebook EBS (USD/GB-mo) | 0.266 | — | |
 | Fargate vCPU / memory | 0.0696 / 0.0076 | 0.04048 / 0.004445 | 1.72 |
 | Fargate ARM vCPU / memory | 0.0557 / 0.00612 | 0.03238 / 0.00356 | 1.72 |
+| SageMaker training / batch transform `ml.m5.xlarge` (USD/h while the job runs) | 0.367 | 0.23 | 1.60 |
+| SageMaker hosting (real-time endpoint) `ml.m5.xlarge` (USD/h while the endpoint exists) | 0.367 | 0.23 | 1.60 |
+| SageMaker Serverless Inference (USD/s **per GB of memory**, 1-6 GB tiers, linear) | 0.00002 | 0.00002 | **1.00** |
 
 `t4g` (Graviton) is ~20% cheaper than `t3` for the same memory in both regions, which is the sizing
 argument D8 makes for GitLab, and it holds in São Paulo unchanged.
+
+**The three SageMaker serving rows were measured 2026-08-16 for Stage 10 step 5, and the shape matters
+more than the rate:** batch transform bills only while the job runs and Serverless Inference scales to
+zero between requests — the two D11-compatible serving shapes — while a hosting **endpoint bills every
+hour it exists** (0.23 × 730 ≈ **USD 168/month** for one `ml.m5.xlarge`), the model-serving analogue of
+§1.1's environment fee and what rules a standing endpoint out under D12. Serverless Inference's
+documented limit, recorded with its price: it supports **no VPC configuration**, so it sits outside the
+network perimeter (Stage 10 decision 4 names batch transform for exactly this pair of reasons).
 
 ---
 

@@ -121,7 +121,22 @@ ZONE_IDS = {
 # The slices whose generated tfvars carry the allocation. bootstrap/ deliberately does not:
 # it has no subnet, and an unused zone list would send the next reader hunting for the
 # resource that consumes it (gen-tfvars.py's original argument, now scoped instead of total).
-NETWORK_SLICES = {"foundation", "egress", "vpn"}
+NETWORK_SLICES = {"foundation", "egress", "vpn", "probes"}
+
+# Stage 3's reachability probes: which accounts each side has to admit or reach. Every side's
+# security group names the OTHER side's VPC range, and the pairing is authored here rather
+# than in any slice, for the same reason CIDRS is - an address literal in a .tf file is a copy
+# of this table that nothing keeps in step (Lesson 14).
+#
+# THE TARGET ADMITS BOTH SOURCES, and that is not symmetry for its own sake: Sandbox to
+# Production is the peering the Deliverables measure, and Development to Production is INT-09,
+# the integration this stage's Proves row claims. One target host exercises both, so the
+# second source costs one instance rather than a second target.
+PROBE_PEERS = {
+    "sandbox": ["production"],
+    "development": ["production"],
+    "production": ["sandbox", "development"],
+}
 
 
 class UnknownAccountFolder(Exception):
@@ -205,6 +220,18 @@ def tfvars_values(account: str, slice_name: str) -> dict:
             # .tf file may re-derive from the env token: the reverse map would be a
             # second copy of ENV_TOKENS (Lesson 14). So the folder name rides along.
             values["account_folder"] = account
+            if slice_name == "probes":
+                # Each side's security group names the OTHER side's VPC range: Production
+                # admits the source, Sandbox egresses to the target. Keeping the peer range
+                # WHOLE is deliberate - the permitted address and the forbidden one are both
+                # inside it, so the security group is constant across the pair and the route
+                # is the single variable the reading turns on.
+                if account not in PROBE_PEERS:
+                    raise UnknownAccountFolder(
+                        f"{account}: 'probes' is the Sandbox-Production pair of Stage 3's "
+                        "Deliverables - another account joins PROBE_PEERS deliberately"
+                    )
+                values["peer_cidrs"] = [CIDRS[p] for p in PROBE_PEERS[account]]
     return values
 
 
@@ -226,6 +253,9 @@ def render_tfvars(account: str, slice_name: str) -> str:
         out += f"zone_ids        = [{zone_list}]\n"
     if "account_folder" in v:
         out += f'account_folder  = "{v["account_folder"]}"\n'
+    if "peer_cidrs" in v:
+        cidr_list = ", ".join(f'"{c}"' for c in v["peer_cidrs"])
+        out += f"peer_cidrs      = [{cidr_list}]\n"
     if "peers" in v:
         rows = "".join(
             f'  {acct} = {{ profile = "{p["profile"]}", env = "{p["env"]}" }}\n'

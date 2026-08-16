@@ -65,6 +65,7 @@ RANKS = {
     "foundation": 20,
     "pki": 30,
     "egress": 50,
+    "probes": 60,
 }
 
 
@@ -127,6 +128,23 @@ SLICES = [
     Slice("sandbox", "egress", EPHEMERAL, "NAT + 12 interface endpoints (8.3)", 0.170),
     Slice("development", "egress", EPHEMERAL, "NAT + 11 interface endpoints, no EFS (D24)", 0.160),
     Slice("production", "egress", EPHEMERAL, "NAT + 10 interface endpoints (8.3)", 0.150),
+    # Stage 3's Deliverables, as slices rather than as a script (2026-08-16). These are
+    # INSTRUMENTS: created, read from the serial console, destroyed in the same sitting -
+    # `make down` is the whole reason they are here and not in aws/probes/, whose declared
+    # safety class is that nothing is created. Three t4g.nano at 0.0042/h (docs/PRICING.md 3,
+    # the same row Stage 4's WireGuard host uses); no IAM principal is created by either row.
+    # THEY ARE ORDERED: production/probes is the target, so it applies BEFORE the two source
+    # rows, which find it by name in prod.internal. rank 60 puts all three after egress/,
+    # whose S3 gateway policy the perimeter probe measures.
+    Slice("production", "probes", EPHEMERAL, "peering target: 1 host, 2 ENIs, 2 A records", 0.0042),
+    Slice("sandbox", "probes", EPHEMERAL, "perimeter probe (isolated) + peering probe", 0.0084),
+    Slice(
+        "development",
+        "probes",
+        EPHEMERAL,
+        "INT-09 reachability + the DNS half Sandbox cannot answer",
+        0.0042,
+    ),
 ]
 
 
