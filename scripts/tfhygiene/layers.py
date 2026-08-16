@@ -110,6 +110,12 @@ SLICES = [
     Slice("identity", "bootstrap", PERSISTENT, "state bucket + its KMS key (step 3)"),
     Slice("identity", "sso", PERSISTENT, "7 permission sets, their policies, 10 assignments"),
     Slice("identity", "org-policies", PERSISTENT, "the 10 SCP/RCP/tag/declarative docs + 10 att."),
+    # Stage 3 pass 1 (2026-08-16). Free at rest, [P]: VPC, subnets, IGW, route tables, SGs,
+    # gateway endpoints + their policies, flow log - plus zones where the account owns one.
+    # data-governance has NO row here by decision (D22: no VPC at all); staging joins at vend.
+    Slice("sandbox", "foundation", PERSISTENT, "VPC 3x2, gateway endpoints, sandbox.internal"),
+    Slice("development", "foundation", PERSISTENT, "VPC 3x2, gateway endpoints, no zone (4.2)"),
+    Slice("production", "foundation", PERSISTENT, "VPC 3x2, gw endpoints, prod+pages.internal"),
 ]
 
 
