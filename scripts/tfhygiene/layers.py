@@ -64,6 +64,15 @@ RANKS = {
     "org-policies": 11,
     "foundation": 20,
     "pki": 30,
+    # BELOW egress ON PURPOSE (Stage 4 step 1.3): `up` ascends rank and `down` descends it,
+    # so a rank under egress starts the tunnel BEFORE the [E] slices exist and stops it AFTER
+    # they are gone. That is the order 8.3 makes load-bearing - from then on every API call
+    # must exit through the VPN EIP, so the tunnel is the first thing up and the last down.
+    # The row itself lands with the slice, in one commit (step 1.3): this check fails on a
+    # declared slice that is not on disk, and it is right to - a row with nothing behind it
+    # makes the table stop being evidence. The rank is here early because the ORDER is the
+    # part that was got wrong once and is worth fixing before anything consumes it.
+    "vpn": 40,
     "egress": 50,
     "probes": 60,
 }

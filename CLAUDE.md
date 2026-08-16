@@ -181,15 +181,14 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   `make check`. (iii): `IN_SYNC` (`INV-17`). SSM parameter naming: conventions §6 (`awsds` is reserved).
 - **Gates, and there is no CI:** `make check` (offline), `make check-ou` (session),
   `make check-docs` — **red** on pre-Stage-2 prose, outside the commit gate.
-- **Stage 3 APPLIED AND MEASURED 2026-08-16.** AF VPCs gone (**StackSet on Management**); `foundation/`
-  `[P]` 31/30/32; `vpc-egress-v0.1.0`, `egress/` `[E]` 16/15/14 (0.48 USD/h). **`networking.py` and
-  `egress.py`: 0 FAILED. D11 cycle: `foundation/` byte-identical, `No changes`, 39/39 `[E]` ids new,
-  gateway endpoints survived** — INT-05 names those, not `egress/`. **Probes RAN as three `[E]` slices,
-  no IAM: (iii) answered — `dnf` OK from the isolated tier, 200/403 on the allow-list pair; peering +
-  DNS from Sandbox *and* Dev, so INT-09 is exercised; flow logs ACCEPT+REJECT.** `egress_mode=A`; the
-  S3 allow-list — **a NAT does not bypass it** (Stage 4). CIDR/`zone_ids`/peers:
-  `scripts/tfhygiene/backend.py`. Left: `make down` on `*/probes`, `Staging`'s NXDOMAIN, (ii) is
-  Stage 6's.
+- **Stage 3 DONE 2026-08-16 — applied, measured, torn down; now 0.0000 USD/h.** AF VPCs gone
+  (**StackSet on Management**). **`networking.py`/`egress.py` 0 FAILED. D11 proven twice: `foundation/`
+  byte-identical, `No changes`, every `[E]` id new, gateway endpoints survived** — INT-05 names those,
+  not `egress/`. **Probes were three `[E]` slices with no IAM: (iii) as a 200/403 pair; peering + DNS
+  from Sandbox *and* Dev, so INT-09 is exercised; flow logs ACCEPT+REJECT.** `egress_mode=A`; the S3
+  allow-list — **a NAT does not bypass it**. CIDR/`zone_ids`/peers: `scripts/tfhygiene/backend.py`.
+  **Stage 4's (i) is NOT pre-answered** — `makecache` is metadata, not a package, and the CW agent is a
+  different allow-list entry. Left elsewhere: `Staging`'s NXDOMAIN; (ii) is Stage 6's.
 - **Stages 4-10 revised, pre-instrumented (2026-08-16):**
   `aws/{vpn,datalake,studio,supplychain,cicd,deploytargets,orchestration}.py` — `DL-5`/`DT-5` guard the
   LF `Parameters` (INT-11). **St.8 pass 4, St.9 passes 4-5, St.10's Staging leg wait on the vend.**
