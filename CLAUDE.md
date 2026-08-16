@@ -172,18 +172,15 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
 - **Landing zone closed — Stages 0-1d DONE (2026-08-15)**, except the `Staging` vend: held on the account
   cap, **open AWS support ticket** (`aws/cloudshell/management-quotas.sh` re-asks). Ten documents, four
   policy types — battery 93/93.
-- **Stage 2 DONE (2026-08-16) — one verification carried out: (iii)**, a landing-zone drift read in
-  **Management** as `AWS Control Tower Admin`, unreachable from any `awsds-infra-*` profile.
-  **Deployed**: five state buckets (`prod` carries D36's second key);
-  `identity/sso/` — seven sets, ten assignments, 29 objects, empty plan; `identity/org-policies/` — ten
-  policies + ten attachments **adopted, none created**, second plan `No changes`, `prevent_destroy` on both
-  (detaching = two commits), **content never sent** (live bytes are still 1c's paste);
-  `type`/`description` only in `locals.tf`. Decisions 4/5/6 settled. Delegation narrowed to
-  `InfrastructureAccess` (`DEL-10` green), hand-applied, **stays out of Terraform**
-  (`POLICIES.md`/`INV-15`). Step 8: layer table (`scripts/tfhygiene/layers.py`) +
-  `make up`/`down`/`status`/`slices`, four refusals demonstrated; all seven slices `[P]`, so both targets
-  are no-ops until Stage 3's `egress/`. **Step 7 moved to Stage 3 step 1.1a** — no caller exists yet.
-  **`awsds` is a reserved prefix in SSM Parameter Store**: project parameters take `/datascience/<env>/…`.
+- **Stage 2 DONE (2026-08-16).** Deployed: five state buckets (`prod` carries D36's second key);
+  `identity/sso/` — seven sets, ten assignments, empty plan; `identity/org-policies/` — ten policies + ten
+  attachments **adopted, none created**, **content never sent** (live bytes are still 1c's paste),
+  `prevent_destroy` on both, so detaching costs two commits. Delegation narrowed to `InfrastructureAccess`,
+  hand-applied, **stays out of Terraform** (`INV-15`). D11 lifecycle: `scripts/tfhygiene/layers.py` +
+  `make up`/`down`/`status`/`slices` — **all seven slices `[P]`, so both targets are no-ops** until Stage
+  3's `egress/`, and a slice with no layer row fails `make check`. **Open: verification (iii)**, a
+  landing-zone drift read in **Management** as CT Admin. **Step 7 moved to Stage 3 step 1.1a.**
+  **`awsds` is reserved in SSM Parameter Store** — project parameters take `/datascience/<env>/…`.
 - **Gates, and there is no CI:** `make check` (offline, six checks), `make check-ou` (session),
   `make check-docs` — **red** on pre-Stage-2 prose, outside the commit gate.
 - **Stage 3 pre-instrumented (2026-08-15); its five execute-time decisions settled 2026-08-16:**

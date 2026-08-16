@@ -1016,6 +1016,77 @@ their four refusals, and one re-scope.
   SSM parameter, as the infrastructure user on `Sandbox Account 1` (`awsds-infra-sandbox-1`).
   The recipe is written out in the stage file's Validation section, step by step.
 
+  ## The Validation, and the stage's close-out (2026-08-16)
+
+Infrastructure user on `Sandbox Account 1` through `InfrastructureAccess`
+(`awsds-infra-sandbox-1`), plus two reads as `awsds-infra-identity`. The stage's only
+`terraform apply` outside `bootstrap/`, and everything it created is gone again.
+
+- **`sandbox/scratch-test/` — one SSM parameter, applied, destroyed, rebuilt, deleted.**
+  `make check` went red the moment the folder existed and before its rows were written,
+  which is the layer table doing its job rather than an obstacle; red the other way when a
+  row outlived its slice.
+
+- **The finding that outlives the slice: `awsds` is a reserved prefix in SSM Parameter
+  Store.** The first apply used `/awsds/sandbox/scratch-test/validation` — the repository's
+  own naming convention — and AWS refused at `PutParameter`:
+
+  ```
+  AccessDeniedException: No access to reserved parameter name:
+  awsds/sandbox/scratch-test/validation
+  ```
+
+  Parameter Store reserves every name beginning with `aws` or `ssm`, and `awsds` begins with
+  `aws`. **The collision is specific to Parameter Store names** — five state buckets, ten
+  policy documents and seven permission sets never met it — and the refusal reads like a
+  policy problem while being a naming one. `docs/plan/conventions.md` now carries the rule,
+  with `/datascience/<env>/…` as the answer, and `docs/REFERENCES.md` the AWS page.
+
+- **The value is read back from AWS, not exported from state.** The provider marks
+  `aws_ssm_parameter.value` sensitive, so an output needs `sensitive = true`; that is
+  available and is the wrong answer, because the claim being tested is *rebuilt from code*
+  and a value read out of the state file is the state agreeing with itself.
+
+- **The rebuild is proven by the `Version`, not by the ARN.** After `down` then `up` the
+  parameter reads back with the same name and value at **`Version 1`, not 2** — SSM's
+  counter restarts, so the object is demonstrably new. The ARN is derived from the name and
+  would have matched either way.
+
+- **Isolation, read from the plan rather than from the target list.** `make down ENV=sandbox`
+  planned `0 to add, 0 to change, 1 to destroy` and named only the parameter;
+  `terraform-live/sandbox/bootstrap` appeared in the refused list, and its bucket and key
+  answered unchanged afterwards. `make status` took **both** branches for the first time —
+  `UP 1 resource(s)`, then `down 0 resource(s)`, then the empty set once the rows were gone.
+  Step 8.6's hook ran for real: *no SageMaker domain in sandbox — nothing to delete*.
+
+- **The orphan the Validation leaves, deleted deliberately.**
+  `sandbox/scratch-test/terraform.tfstate` (540 bytes, empty resource list) survives a
+  destroy, because a destroy empties a state rather than removing it. Left behind it is a
+  state key for a slice that no longer exists. Deleted; versioning being on, that is a
+  delete marker under 2.1's 90-day rule.
+
+- **Verification (iv) — the descendant-OU data source does recurse**, read with
+  `terraform console` against the applied `org-policies/` slice as `awsds-infra-identity`:
+  seven OUs, `Sandboxes` among them at depth 2 under `Interactive`. **The slice's own
+  postconditions could not have shown this** — every name `attachments.json` requires sits
+  at depth 1, so they pass identically against a non-recursing source.
+
+- **Three more verifications answered by the step 5 applies and recorded only now.** (ii)
+  the pinned provider accepts `DECLARATIVE_POLICY_EC2`; (viii) the
+  `jsonencode(jsondecode(replace(file(…))))` round trip reproduces all four policy types,
+  with the single `["ecr:*"]` → `"ecr:*"` fix as its cost; (v) answered by reading — the
+  `for_each` keys come from authored **names** in `attachments.json`, so a new OU moves no
+  key and surfaces in `make check-ou` instead.
+
+- **Gates:** the sixteen-hook `pre-commit` chain, `make check` and `make check-ou` all green
+  (root 6, four OUs 1 each, three empty as authored). `make check-docs` stays red on the same
+  pre-Stage-2 prose; `CLAUDE.md` re-trimmed under its 20 KB budget.
+
+- **Stage 2 is closed, with one verification carried out of it: (iii)**, whether the
+  Organizations resource policy coexists with the landing zone without raising drift. It is a
+  **Management** read, as **`AWS Control Tower Admin`** through **`AWSAdministratorAccess`** —
+  the same path as step 5.1 — and no `awsds-infra-*` profile reaches it.
+
 ---
 
 *Log index: [docs/log/INDEX.md](INDEX.md) · Stage index: [docs/plan/stages/INDEX.md](../plan/stages/INDEX.md)*
