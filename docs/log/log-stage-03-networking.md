@@ -58,6 +58,59 @@ has an ordering against the `Staging` vend, and step 9.3's list is a prerequisit
   (`awsds-infra-*`), and 0.4 closes the loop: re-run `./aws/networking.py` and update `docs/AWS_STATE.md`
   §C in the same sitting.
 
+## 2026-08-16 — two statements of the previous entry corrected against the documentation
+
+**No AWS write in this sitting** — a plan revision plus read-only snapshots. The Stage 3 roteiro was
+revised into the action-checklist format, and the official documentation corrected two statements the
+entry above records:
+
+- **The Account Factory VPCs are not removed by a per-account hand-deletion.** The Control Tower
+  walkthrough names the supported cleanup: **delete each account's stack instance from the
+  `AWSControlTowerBP-VPC-ACCOUNT-FACTORY-V1` StackSet on Management** — so both halves of step 0 are one
+  Management sitting as `AWS Control Tower Admin`, and verification (vi) now asks what the removal
+  leaves behind. The decision itself — remove all of them, creation off before the `Staging` vend — is
+  unchanged.
+- **AL2023 does not fetch its mirror list from a generic public endpoint.** The default `mirrorlist=`
+  URL points into the regional repository bucket itself (`al2023-repos-<region>-de612dc2`), and AWS's
+  no-internet guidance is exactly the 9.3 gateway-endpoint policy — the package path works under both
+  egress designs, and the "design-B input due at Stage 6" above is withdrawn. Verification (iii) still
+  confirms the behaviour, plus that the AMI's repo files use the mirrorlist, not `cdn.amazonlinux.com`.
+
+Also answered by documentation: verification (vii) — a Route 53 association authorization persists
+until deleted, and deleting it does not affect the association.
+
+## Step 0 - 0.2
+
+This is step will delete CloudFormation AccountFactory VPCs default settings.
+
+- Login at AWS Console using `AWS Control Tower Admin` -> Management Account -> AWSAdministratorAccess. CloudFormation → StackSets → AWSControlTowerBP-VPC-ACCOUNT-FACTORY-V1 → Actions → Delete stacks from StackSet.
+
+  - "Accounts" section left the default setting `Deploy stacks in accounts`. I took the account numbers from `StackSet -> `Stack instances` tab.
+
+    - Production Account
+    - Development Account
+    - Data Governance Account
+    - Policy Canary Account
+    - Identity Account
+    - Sandbox Account 1
+
+  - section Specify Regions, which I set do us-west-2.
+
+  - section `Deployment options`. `Retain stacks` is not marked, and the rest was left with default settings:
+    - maximum concurrent accounts set to 1
+    - failure tolerance set to 0
+    - region concurrency set to sequential
+    - concurrency mode set to "Strict failure tolerance"
+
+
+ → all instances, region `us-west-2`, RetainStacks off. What's left: log groups, Policy Canary's instance.
+
+- Moving to AWS Control Tower -> Account Factory. Network configuration page section -> Edit.
+  - `Internet-accessible subnet` is not marked.
+  - `Maximum number of private subnets` set to 0.
+  - Regions: unmarked `US West (Oregon)`. All the others are unmarked by default.
+
+
 ---
 
 *Log index: [docs/log/INDEX.md](INDEX.md) · Stage index: [docs/plan/stages/INDEX.md](../plan/stages/INDEX.md)*

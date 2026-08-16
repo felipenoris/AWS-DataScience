@@ -32,11 +32,11 @@
 #
 # WHAT IT IS FOR, IN TWO PHASES.
 #
-#   BEFORE Stage 3: "what networking already exists". Nothing in the plan has measured
-#   whether the vended accounts carry a DEFAULT VPC (172.31.0.0/16, public subnets, an IGW
-#   already attached) - and the stage never says what happens to one. Principle 4 says
-#   private by default; D22 says Data Governance gets no VPC at all. Whether either
-#   sentence is TRUE TODAY is what section 2 answers.
+#   BEFORE Stage 3: "what networking already exists". The first run (2026-08-15) measured
+#   what no plan file had: every vended account carries an ACCOUNT FACTORY VPC
+#   (172.31.0.0/16, private-only - docs/AWS_STATE.md C), which step 0 now removes.
+#   Principle 4 says private by default; D22 says Data Governance gets no VPC at all.
+#   Whether either sentence is TRUE TODAY is what section 2 answers.
 #
 #   AFTER each Stage 3 pass: the readings that would otherwise be one console tab per
 #   account - validation 2 (no route into 10.40.0.0/16), step 6.5 (10.90.0.0/24 in no
@@ -338,9 +338,9 @@ def main(argv: list) -> int:
                 "NT-1",
                 f"default VPC in {p}",
                 f"{vpc} ({vpc_cidr}) - public subnets and an attached IGW nobody "
-                "chose (principle 4: private by default). Stage 3 never says what "
-                "happens to it; decide delete-or-keep during the stage and record "
-                f"it in the log.{extra}",
+                "chose (principle 4: private by default). Not a Stage 3 step 0 "
+                "artifact; decide its fate deliberately and record it in the "
+                f"log.{extra}",
             )
         elif cidr.overlap(vpc_cidr, AF_CIDR):
             checks.note(
@@ -348,10 +348,11 @@ def main(argv: list) -> int:
                 f"Account Factory VPC in {p}",
                 f"{vpc} ({vpc_cidr}) - the vend artifact Control Tower leaves in "
                 "every account (Lesson 17: a service that sets itself up creates "
-                "resources nobody chose). Stage 3 never mentions it: decide "
-                "delete-or-keep during the stage, and note that the Account "
-                "Factory NETWORK CONFIGURATION decides whether the next vend "
-                f"(Staging, every Stage 14 Sandbox) arrives with one.{extra}",
+                "resources nobody chose). Stage 3 step 0 (settled 2026-08-16) "
+                "removes it: delete its stack instance from the Account Factory "
+                "StackSet on Management (0.2), and turn creation off in Account "
+                "Factory (0.3) BEFORE the Staging vend, so the next account "
+                f"arrives without one.{extra}",
             )
         elif p == DATA_PROFILE:
             checks.fail(
@@ -575,9 +576,9 @@ SECTIONS
   12. Calls that failed
 
 HOW TO READ THIS FILE
-  - "NO VPC" IS THE EXPECTED ANSWER UNTIL STAGE 3 PASS 1 HAS RUN - except that a
-    DEFAULT VPC may be sitting there already, which is exactly what section 2 and
-    check NT-1 exist to expose. Nothing in the plan has decided its fate.
+  - "NO VPC" IS THE EXPECTED ANSWER UNTIL STAGE 3 PASS 1 HAS RUN - except the
+    ACCOUNT FACTORY vend artifact, which section 2 and check NT-1 expose and
+    which step 0 (settled 2026-08-16) removes via its StackSet on Management.
   - A MISSING ACCOUNT IS NOT A PASSING ACCOUNT. Section 11 names the ones nothing
     reached - Staging above all, which is UNVENDED and therefore silent.
   - THIS IS A CONTROL-PLANE READING. The behavioural proofs of the stage (dnf
@@ -755,9 +756,11 @@ resolved against section 2 where possible:
             )
 
         rep.text("""
-Pending association authorizations, per zone (the 4.5 ordering trap: re-creating
-an association after a VPC rebuild needs a fresh authorization; a pending row here
-is a handshake whose second half has not run):
+Association authorizations, per zone. 4.5 keeps them in state, so a row that ALSO
+appears in the association table above is a completed handshake, not a pending one;
+a row with NO matching association is the handshake whose second half has not run.
+(Documented: an authorization persists until deleted, and a re-created association
+after a VPC rebuild needs a fresh one.)
 
 """)
         if zones:
@@ -818,8 +821,28 @@ is a handshake whose second half has not run):
                 rep.line(f"log group {lg}: retention {r.text or '?'}")
                 rep.line()
 
-        rep.text("""Retention is the term that accumulates (step 5.1 says 7 days, explicit and short);
-"None" means NEVER EXPIRE, which is the one value that cannot be intended here.""")
+        rep.text("""Retention is the term that accumulates (step 5.1, settled 2026-08-16: CloudWatch
+Logs, 30 days); "None" means NEVER EXPIRE, the one value that cannot be intended here.""")
+
+        rep.text("""
+Log groups left behind by the Account Factory stack (the verification (vi)
+residual: a group listed here after step 0 ran is what the stack-instance
+removal did NOT delete):
+
+""")
+        for p in live:
+            rep.h2(p)
+            rep.show(
+                cli_for(p),
+                "logs",
+                "describe-log-groups",
+                "--log-group-name-prefix",
+                "StackSet-AWSControlTowerBP",
+                "--query",
+                "logGroups[].[logGroupName,retentionInDays,storedBytes]",
+                "--output",
+                "table",
+            )
 
         # ==============================================================================
         rep.h1("9. NACLs and security groups")

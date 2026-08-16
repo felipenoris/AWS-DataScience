@@ -189,9 +189,9 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   §C), creation off in Account Factory, that half **before the `Staging` vend**; flow logs 30d;
   `egress_mode=A`; CIDR/`zone_ids` in `scripts/tfhygiene/backend.py`; the S3 allow-list is five families and
   **a NAT does not bypass it** — load-bearing from Stage 4.
-- **Stages 4 + 5 revised, pre-instrumented (2026-08-16):** `aws/vpn.py`, `aws/datalake.py` — `DL-5`
-  guards INT-11's `Parameters` (reads `4`/`TRUE`). The corrections folded in are each stage's status
-  row; INT-16's portal half ends at Stage 6.
+- **Stages 4-6 revised, pre-instrumented (2026-08-16):** `aws/vpn.py`, `aws/datalake.py`, `aws/studio.py`
+  — `DL-5` guards INT-11's `Parameters` (reads `4`/`TRUE`). Corrections: each status row; INT-16's
+  portal half ends at Stage 6 step 1.7.
 - **Standing rules that outlive their stages:** never add an `sts:` action to the RCP without reading
   `CT.STS.PV.1`'s exclusion note; 1d step 9 is the **only** sanctioned by-hand use of
   `AWSControlTowerExecution`; **resolve an account by name only with the exact vended name** — every one

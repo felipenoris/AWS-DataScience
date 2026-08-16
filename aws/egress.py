@@ -265,8 +265,8 @@ def main(argv: list) -> int:
                 f"org condition on {ep} ({short_svc(svc)}, {p})",
                 f"policy is {orgkeys}-org - but this endpoint sits in the Account "
                 f"Factory VPC ({vpc}), a vend artifact that predates Stage 3 "
-                "(networking.py NT-1). Its fate is that VPC's delete-or-keep "
-                "decision, not a step 9 failure.",
+                "(networking.py NT-1). It goes with that VPC in step 0's "
+                "stack-instance removal, and is not a step 9 failure.",
             )
             continue
         sup = pol_supported(svc)

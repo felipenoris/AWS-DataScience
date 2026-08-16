@@ -36,6 +36,7 @@ snapshots.
 | [`egress.py`](egress.py) | [Infrastructure](../docs/ORGANIZATION.md#infrastructure-user); [`AWS Control Tower Admin`](../docs/ORGANIZATION.md#aws-control-tower-admin-d33) for `-` runs | same multi-profile shape, same reason: step 8's endpoint list is deliberately **per account role**, so "is the set right" is only readable with the columns side by side | `output/egress.txt` | **The `[E]` networking half, plus the burn meter.** Interface endpoints (subnet count per D9, private DNS per 8.5), NAT gateways, elastic addresses, every endpoint **policy** read against step 9 — the org condition (9.1) and the AWS-owned-bucket allow (9.3), **presence, never completeness** (the no-NAT `dnf` probe is the stage's) — the service×account **matrix** read against step 8's lists (deliberately not encoded here — Lesson 14), the **hourly burn right now** (the manual instrument the forgotten-egress risk gets, D12 having skipped the alerts; zero everywhere is D11 working), and the region's **endpoint service-name catalog**, which answers stage verification (i) and the `VpcEndpointPolicySupported` flag read-only, before anything is paid for. Checks `EG-1`–`EG-4`; **exits 2 when a check fails** |
 | [`vpn.py`](vpn.py) | [Infrastructure](../docs/ORGANIZATION.md#infrastructure-user); [`AWS Control Tower Admin`](../docs/ORGANIZATION.md#aws-control-tower-admin-d33) for `-` runs | **every** `awsds-*` profile, the ones named, or `-` — multi-profile for the standing reason: GuardDuty coverage is a fact *across* accounts, and the step 8 deny lives in Identity while the Elastic IP it names lives in the VPN home | `output/vpn.txt` | **[Stage 4](../docs/plan/stages/stage-04-vpn.md)'s evidence.** The WireGuard host (`[D]` — type, state, IMDSv2), the `[P]` Elastic IP (`WG_EIP=` printed — the value step 8 and Stage 5's bucket policy name), the **one world-open SG rule** (UDP/51820 and nothing else, never port 22), the handshake log and alarm, **which permission sets carry `DenyControlPlaneOffVpn`** (read back through the Identity Center delegated admin — the six persona sets move together, `InfrastructureAccess` reported as the separate 8.3 decision), and **GuardDuty per account** with the two Stage-11-deferred add-ons that must read `DISABLED`. Checks `VP-1`–`VP-8`; **exits 2 when a check fails** |
 | [`datalake.py`](datalake.py) | [Infrastructure](../docs/ORGANIZATION.md#infrastructure-user); [`AWS Control Tower Admin`](../docs/ORGANIZATION.md#aws-control-tower-admin-d33) for `-` runs | same multi-profile shape, same reason: the lake and its policy live in Data Governance while every legitimate reader is in a consumer account (D22), and a pending RAM invitation is visible only from the consumer | `output/datalake.txt` | **[Stage 5](../docs/plan/stages/stage-05-data-foundation.md)'s evidence, producer and consumers side by side.** The lake buckets with their policy **branches** (vpce/ip/via/sigage/prin — presence, never sufficiency), KMS aliases, the Glue catalog with **resource links** flagged, crawlers (never scheduled, never at an Iceberg target), the `awsds-data-catalog-maintenance` role and its trust, **the Lake Formation `Parameters` reading that defends INT-11** (`DL-5` — the check to read after *any* apply in `data-governance/data/`), RAM shares + **pending invitations**, consumer workgroup enforcement, the derived zone's expiry, EFS (including the mount-target SG shape Stage 4's NAT forces), and Security Hub per account. Checks `DL-1`–`DL-11`; **exits 2 when a check fails** |
+| [`studio.py`](studio.py) | [Infrastructure](../docs/ORGANIZATION.md#infrastructure-user); [`AWS Control Tower Admin`](../docs/ORGANIZATION.md#aws-control-tower-admin-d33) for `-` runs | same multi-profile shape, same reason: D26's whole claim — the domain is a registry, not a runtime — is only readable with Data Governance and the Interactive accounts side by side, and a SageMaker domain in the wrong column *is* the finding | `output/studio.txt` | **[Stage 6](../docs/plan/stages/stage-06-unified-studio.md)'s evidence, registry and runtimes side by side.** DataZone domains in **every** account (one expected, V2, in Data Governance — anywhere else is INT-12's fallback by accident), the registry's blueprints/profiles/projects (no Redshift), the blueprint-provisioned SageMaker AI domain per Interactive account (**VpcOnly**, idle shutdown), **the D13 permissions boundary on the project roles** (INT-15's presence half — survival is a diff of two runs), the step 3 deny Sids in the persona sets, registered images (INT-17's mechanical half), running apps (the burn), and EFS access points. Checks `US-1`–`US-10`; **exits 2 when a check fails** |
 | [`cloudshell/management-landing-zone-drift.sh`](cloudshell/management-landing-zone-drift.sh) | [`AWS Control Tower Admin`](../docs/ORGANIZATION.md#aws-control-tower-admin-d33) — **the only one**, no laptop path | **no profile — CloudShell on Management.** Takes a profile if one ever exists there | `output/cloudshell/management-landing-zone-drift.txt` | **Stage 2 verification (iii)** — whether the Organizations **resource policy** of step 5.1 shows up as landing-zone drift. The `driftStatus` flag, the **manifest** that says what the flag is even comparing, the **operation history** (an update that ran *after* the delegation and succeeded is the only positive evidence available without writing), and whether the document is still there and still narrowed to two statements. **Sections 2-4 are suppressed outside Management and the run exits 2** — measured: from a member account both landing-zone calls *succeed and return empty*, so an unguarded report would state "the landing zone has never run". Section 5 answers from Identity too, because the delegation grants it. |
 | [`cloudshell/management-quotas.sh`](cloudshell/management-quotas.sh) | [`AWS Control Tower Admin`](../docs/ORGANIZATION.md#aws-control-tower-admin-d33) — **the only one**, no laptop path | **no profile — CloudShell on Management.** Takes a profile if one ever exists there | `output/cloudshell/management-quotas.txt` | **Has the account-cap increase landed** — the one number the `Staging` vend is held on. The applied value (not the default), how much of it is spent, and any pending request. **Refuses to interpret the number outside Management**, where the same quota reads `0.0`. |
 
@@ -119,6 +120,10 @@ locates the repository root itself:
 
 ```bash
 ./aws/datalake.py
+```
+
+```bash
+./aws/studio.py
 ```
 
 **`cloudshell/` holds the three scripts with no laptop path — and they are shell on purpose.**
@@ -445,6 +450,23 @@ for them (Lesson 20's rule: configuration for configuration questions, probes fo
 | Is Security Hub on everywhere, with FSBP? | 11, decided by `DL-11` |
 | Which accounts is nobody measuring? | 13 — Staging is absent by design (D20), Production joins at Stage 9 |
 
+## Finding an answer in `output/studio.txt`
+
+| Question | Section |
+|---|---|
+| Does the unified domain exist — exactly one, V2, **in Data Governance**? | 2, decided by `US-1` |
+| Did a domain appear in any *other* account — INT-12's fallback by accident, or the 1c root deny not holding? | 2, decided by `US-2` |
+| **Is anything SageMaker-shaped running in Data Governance** — the registry/runtime split (step 0's second preflight)? | 4, decided by `US-2` |
+| Which blueprints are configured, and is Redshift among them (forbidden, D12/D26)? | 3, decided by `US-3` |
+| Do the `experimentation` and `engineering` project profiles exist? | 3, decided by `US-4` |
+| Is every Interactive SageMaker AI domain **VpcOnly**, with idle shutdown ENABLED? | 4, decided by `US-5`/`US-7` |
+| Does any deployment target carry a domain (D28)? | 4, decided by `US-6` |
+| **Do the blueprint-provisioned project roles carry the D13 boundary** (INT-15's presence half)? | 6, decided by `US-8` — survival is a `diff` of two runs either side of a reconciliation |
+| Do all six persona sets carry the step 3 deny Sids together? | 8, decided by `US-9` |
+| **Is an app still running — did `make down` leave a burn?** | 5, `US-10` — the same reading `scripts/down-studio-apps.py` makes per env |
+| What image registrations exist (INT-17's mechanical half)? | 5 |
+| Which accounts is nobody measuring? | 10 — Staging until the vend; every Sandbox beyond unit 1 until Stage 14 |
+
 ## The two written for Stages 4 and 5, before either stage starts
 
 **Written 2026-08-16**: `vpn.py` and `datalake.py`, from the revised
@@ -458,6 +480,20 @@ step 5.4 must carry through its first apply — and confirmed the `IAMAllowedPri
 are still in place, which is what step 5.2 exists to remove. Each script names its contracts (the
 `awsds-*-vpn` Name tag, the `DenyControlPlaneOffVpn` Sid, the `awsds-data-catalog-maintenance` role
 name) so a rename fails in a check rather than in a stage.
+
+## The one written for Stage 6
+
+**Written 2026-08-16**: `studio.py`, from the revised
+[Stage 6](../docs/plan/stages/stage-06-unified-studio.md) roteiro — the same before-the-stage pattern.
+Until the stage runs, every absent resource reads as a `note`; a *partial* build fails loudly. Its
+contracts: the two project-profile names (`experimentation`, `engineering`), the two step 3 Sids
+(`DenySageMakerJobsOffVpc`, `DenySageMakerInstanceCeiling`) and the `project-boundary` name fragment.
+**Two of its checks are halves, said out loud**: `US-8` reads the boundary's *presence*, never whether it
+survives a blueprint reconciliation (INT-15's behavioural half is a diff of two runs), and `US-2`'s
+registry reading cannot exercise the SCP carve-out (step 0's probe is a write, and it is the user's).
+**Its first run already measured two things**: Data Governance holds nothing SageMaker-shaped (`US-2`
+pass — step 0.4's premise, true today), and `datazone:ListDomains` from Production is denied naming the
+Workloads document — D28's headless ceiling holding, which the script reads as a pass, not a failed call.
 
 ## The four written for Stage 2, and the one thing they have in common
 

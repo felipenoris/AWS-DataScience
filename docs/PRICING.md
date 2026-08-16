@@ -24,7 +24,10 @@ was found.
 
 Read on **2026-08-08**. The individual offer files carry their own publication dates (MWAA 2026-04-20,
 VPC 2026-07-24, S3 2026-08-07), so a rate can be a few months old without being stale — AWS republishes an
-offer file only when something in it changes.
+offer file only when something in it changes. **The EMR Serverless and DNS Firewall rows were read on
+2026-08-16** (offer files `ElasticMapReduce` 2026-07-17, `AmazonRoute53`), when the Stage 6 revision made
+both services load-bearing: EMR Serverless is the VPC-capable replacement for the Athena Spark default the
+stage disables, and DNS Firewall is egress design A's allowlist mechanism.
 
 **What these prices are:** on-demand, list, pre-tax, in USD. They exclude the AWS Free Tier, any private
 pricing, and Brazilian taxes, which are added on the invoice for accounts billed through AWS Brazil and
@@ -310,6 +313,9 @@ São Paulo as in Oregon.
 | Glue Data Catalog requests (USD per 1M) | 1.00 | 1.00 | **1.00** |
 | **Athena** SQL (USD per TB scanned) | 9.00 | 5.00 | 1.80 |
 | Athena Spark (USD/DPU-h) | 0.35 | 0.35 | **1.00** |
+| **EMR Serverless** x86 (USD/vCPU-h · USD/GB-h) | 0.09048 · 0.00988 | 0.052624 · 0.0057785 | 1.72 |
+| EMR Serverless ARM (USD/vCPU-h · USD/GB-h) | 0.07241 · 0.007956 | 0.042094 · 0.004628 | 1.72 |
+| EMR Serverless storage beyond 20 GB (USD/GB-h) | 0.000211 | 0.000111 | 1.90 |
 | **Lake Formation** filtering (USD per TB scanned) | 2.75 | 2.25 | 1.22 |
 | Lake Formation storage optimizer (USD per TB) | 2.75 | 2.25 | 1.22 |
 | Lake Formation metadata objects (USD per 100k-mo) | 1.00 | 1.00 | **1.00** |
@@ -345,7 +351,8 @@ than discoveries:
 - The **Lakehouse blueprint is enabled in its Glue/Athena form only** (D26). Its Redshift Serverless
   variant provisions a workgroup whose per-query RPU minimum would put a second, larger query bill on top
   of Athena's — excluded by decision, not omission.
-- The **ML blueprint's** per-project SageMaker AI apps bill exactly like the Studio apps in §8
+- The per-project SageMaker AI apps (provisioned by the **Tooling** blueprint — read 2026-08-16; D26
+  wrote "ML experience", a name the blueprint list does not carry) bill exactly like the Studio apps in §8
   (`ml.t3.medium` at 0.081/0.050 USD/h) — the domain adds nothing to the hourly rate.
 
 ---
@@ -426,6 +433,8 @@ worth more than twice as much.
 | Site-to-Site VPN connection (USD/h) | 0.05 | — | |
 | Network Firewall endpoint (USD/h) | 0.395 | 0.395 | **1.00** |
 | Network Firewall traffic (USD/GB) | 0.065 | 0.065 | **1.00** |
+| Route 53 Resolver **DNS Firewall** — domain stored (USD/name-mo) | 0.0005 | 0.0005 | **1.00** |
+| DNS Firewall queries inspected (USD per 1M, first 1B) | 0.60 | 0.60 | **1.00** |
 | Internet data transfer out, first 10 TB (USD/GB) | 0.150 | 0.090 | 1.67 |
 | — next 40 TB / next 100 TB / above 150 TB | 0.138 / 0.126 / 0.114 | 0.085 / 0.070 / 0.050 | |
 | Transfer São Paulo → Oregon (USD/GB) | 0.16 | — | |

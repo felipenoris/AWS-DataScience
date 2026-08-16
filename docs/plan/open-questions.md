@@ -45,8 +45,12 @@ what is genuinely still unanswered:
    supported formats, so the Rust question is down to confirming it in practice at Stage 6. Julia and R remain genuinely uncovered and keep their `docs/plan/architecture.md` §4.3 fallbacks — they
    are what decides whether egress design B is livable.
 6. **Whether SageMaker Studio can block file download** (Stage 6 — the question carries over unchanged to
-   the ML-blueprint apps under D26). If not, Stage 11's threat model has to
-   record an accepted risk rather than a control.
+   the blueprint-provisioned apps under D26). If not, Stage 11's threat model has to
+   record an accepted risk rather than a control. **Narrowed 2026-08-16 by the documentation pass:** there
+   is no product feature, but AWS publishes an official mitigation — a lifecycle configuration disabling
+   the JupyterLab download extensions (`aws-samples/sample-disable-sagemaker-jupyterlab-download`). It is a
+   UI control a user with a terminal can revert, so the honest classification is unchanged: no supported
+   control; an official, bypassable mitigation; everything else is detection.
 7. **The cross-account integrations in `docs/plan/integrations.md`.** Each has a stated fallback, so none of them blocks
    a stage, but none of them is known to work either. They are listed there rather than repeated here.
    **INT-15 and 16, added 2026-08-08 by the pre-Stage-1 review, are not integration risks but
@@ -154,7 +158,11 @@ started. **The first one is load-bearing against principle 4.**
     (`docs/plan/architecture.md` §4.2) is built from — so "private by default" would be true of the account and
     false of the thing the data scientist actually runs. **Answer at Stage 6**, by disabling Athena Spark
     and choosing the runtime deliberately; record which, and what it costs, because EMR Serverless and Glue
-    are metered differently from a free default. This may deserve a decision file rather than a question.
+    are metered differently from a free default (EMR Serverless is measured in `docs/PRICING.md` §5 since
+    2026-08-16). **Sharpened by the 2026-08-16 documentation pass:** the documented "disable" is three
+    controls, and only the SCP on `athena:StartSession`/`UpdateSession` removes Spark *without* removing
+    Athena SQL — the Tooling blueprint's Athena flag removes both, and SQL is the D13 path (Stage 6
+    step 1.6 owns the choice).
 13. **Notebooks do not support trusted identity propagation, and that reaches a `CLAUDE.md` objective.**
     In an IAM Identity Center domain, notebooks fall back to **compatibility permission mode**, so data
     access resolves through the project/compute role rather than through the signed-in human. The DLP
@@ -164,13 +172,25 @@ started. **The first one is load-bearing against principle 4.**
     different surface (the SQL/query path, which is not the notebook path), or the design's real grain is
     the project and `CLAUDE.md`'s objective is met at that grain with the difference written down.
     **Answer at Stage 5 while granting, and at Stage 6 while running.**
+    **The mechanism now has a name (2026-08-16):** "compatibility permission mode" is not the
+    documentation's vocabulary — the real lever is trusted identity propagation, supported since 2025-09
+    for Athena, Redshift, Glue and EMR and enabled per project profile through the Tooling parameter
+    `enableTrustedIdentityPropagationPermissions`; JupyterLab and Visual ETL still resolve through the
+    project role either way. **Its documented cost: remote access does not work with TIP enabled** — so the
+    grain decision and the remote-VS-Code objective pull against each other, and Stage 6 decision 2 records
+    which yields.
 14. **The remote-IDE path is a file-transfer channel to a laptop.** `sagemaker:StartSession` plus the AWS
     Toolkit lets a local VS Code attach to a running space — a `CLAUDE.md` objective, so it is not
     something to deny. It also bypasses whatever a browser IDE could be made to restrict, which makes it
     the concrete version of **item 6** ("whether Studio can block file download") rather than a separate
     question: if the answer to 6 is "yes, in the browser", the remote session is the hole. AWS documents
-    tag-based scoping of `StartSession` to a user's own private apps, which is the lever. **Answer at
-    Stage 6, and record the residual in Stage 11's threat model either way.** 1c denies the action in
+    tag-based scoping of `StartSession` to a user's own private apps, which is the lever — **the exact SMUS
+    policy is documented (read 2026-08-16): `StartSession` on `space/*` conditioned on the
+    `AmazonDataZoneProject` and `AmazonDataZoneUser` tags, with `sagemaker:RemoteAccess` on
+    `CreateSpace`/`UpdateSpace` as the kill-switch, and one residual worth writing down now: remote
+    sessions authenticate with IAM credentials even in IdC domains and persist up to 12 h after portal
+    logout.** **Answer at Stage 6 (step 3.2), and record the residual in Stage 11's threat model either
+    way.** 1c denies the action in
     `Workloads`, `Data` and `Identity` — where nobody should be running a space at all — and deliberately
     not in `Interactive`.
 15. **"As many instances as they like" is a cost statement before it is an access statement.** Each
