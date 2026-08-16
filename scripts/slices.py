@@ -92,17 +92,101 @@ def prepare(sl: layers.Slice, dry: bool) -> bool:
 
 
 def dormant(env: str, action: str, dry: bool) -> None:
+    """[D] is stop/start and NEVER destroy (D11). Stage 4 step 1.3 gave this hook its body.
+
+    THE INSTANCES ARE FOUND BY NAME TAG, NOT BY STATE FILE, and the tag is derived from the
+    row rather than written a second time: `awsds-<env token>-<slice name>` is what a [D]
+    slice's module already tags with, so `sandbox`+`vpn` is `awsds-sandbox-vpn` and Stage 7's
+    GitLab row will be `awsds-prod-gitlab` without touching this function. Two consequences
+    are worth naming. It keeps working when the slice's state is empty - it finds nothing and
+    says which of the two nothings it found. And IT CANNOT DESTROY: the only mutating calls
+    below are start-instances and stop-instances, so the refusal that matters most for a [D]
+    slice is structural rather than a check that could be forgotten.
+
+    EVERY OUTCOME IS PRINTED, including the ones that did nothing (Lesson 13). "No instance
+    tagged X" and "already stopped" are different findings - the first means the slice was
+    never applied or its host is gone, the second means the hook had nothing left to do - and
+    a hook that reported both as silence would be indistinguishable from one that ran.
+    """
     declared = [s for s in layers.for_env(env) if s.layer == layers.DORMANT]
     if not declared:
         print(f"  [D] none declared in {env} - nothing to {'start' if action == 'up' else 'stop'}")
         print("      (the first is Stage 4's WireGuard vpn/; Stage 7 adds GitLab's instance)")
         return
-    # The body belongs to the stage that creates the first [D] slice: it stops or starts the
-    # instances the slice declares, by tag, and never destroys one.
-    raise SystemExit(
-        f"a [D] slice is declared in {env} and this hook is still a stub. "
-        "The stage that added the row owes it a body - see Stage 2 step 8.2."
+
+    token = backend.env_token(env)
+    profile = backend.profile(env)
+    verb, wanted, ready = (
+        ("start", "running", "stopped") if action == "up" else ("stop", "stopped", "running")
     )
+
+    for sl in declared:
+        name = f"awsds-{token}-{sl.name}"
+        res = run(
+            [
+                "aws",
+                "ec2",
+                "describe-instances",
+                "--region",
+                backend.REGION,
+                "--filters",
+                f"Name=tag:Name,Values={name}",
+                "Name=instance-state-name,Values=pending,running,stopping,stopped",
+                "--query",
+                "Reservations[].Instances[].[InstanceId,State.Name]",
+                "--output",
+                "text",
+            ],
+            env_extra={"AWS_PROFILE": profile},
+            dry=dry,
+            capture=True,
+        )
+        if res is None:  # --dry-run: the command above was printed and not run
+            print(f"    would {verb} whatever is tagged {name} and currently {ready}")
+            continue
+        if res.returncode != 0:
+            print(f"    FAILED to read instances tagged {name}", file=sys.stderr)
+            print(res.stderr.strip(), file=sys.stderr)
+            raise SystemExit(1)
+
+        found = [ln.split("\t") for ln in res.stdout.split("\n") if ln.strip()]
+        if not found:
+            print(f"    no instance tagged {name} - {sl.path} is not applied, or its host is gone")
+            continue
+
+        todo = [i for i, st in found if st == ready]
+        for i, st in found:
+            if st == wanted:
+                print(f"    {i} already {wanted}")
+            elif st != ready:
+                # pending or stopping: acting now races the transition, so it is reported.
+                print(f"    {i} is {st} - transitional, left alone; re-run when it settles")
+        if not todo:
+            continue
+
+        res = run(
+            [
+                "aws",
+                "ec2",
+                f"{verb}-instances",
+                "--region",
+                backend.REGION,
+                "--instance-ids",
+                *todo,
+            ],
+            env_extra={"AWS_PROFILE": profile},
+            dry=dry,
+            capture=True,
+        )
+        if res is not None and res.returncode != 0:
+            print(f"    FAILED to {verb} {', '.join(todo)}", file=sys.stderr)
+            print(res.stderr.strip(), file=sys.stderr)
+            raise SystemExit(1)
+        print(
+            f"    {verb}ped {', '.join(todo)}  ({name})"
+            if verb == "stop"
+            else f"    started {', '.join(todo)}  ({name})"
+        )
 
 
 def studio_apps(env: str, dry: bool) -> int:

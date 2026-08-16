@@ -5,18 +5,22 @@ Stage: [`docs/plan/stages/stage-03-networking.md`](../plan/stages/stage-03-netwo
 
 ---
 
-*Seven exceptions, recorded so the provenance is not guessed later. **On 2026-08-16 the user authorised
-Claude, once and explicitly, to create this file and write the entry below** — a decision sitting held
-with the user in that same session, with no AWS call in it. **A second explicit authorisation, later the
-same day, covers the wording revision of the step 0 entry and its merged 0.4 subsection**, marked inline.
-**A third, later still, covers the pass-1 entry, a fourth the pass-2 entry, and a fifth the pass-3 entry**
-— in all three the user authorised the applies in chat and then asked for the progress to be written into
-this file directly, so those entries are Claude's account of commands the user authorised. **The pass-3
-one differs in one way worth naming: the user ran every command personally**, so it is Claude's account of
-commands it drafted and read the output of, not of commands it ran. **The sixth entry, on the D11 cycle,
-was drafted by Claude and pasted by the user** — the standing rule applied as written. **The seventh, on
-the probes, is a seventh authorisation**: the user authorised the probe applies in chat and asked for the
-entry to go in directly. Everything else is the user's, as usual, and the rule is unchanged.*
+*Seven exceptions, named by SUBJECT rather than by ordinal — the ordinals were wrong twice, because one
+sentence was counting entries and exceptions at once, and the two do not advance together. Recorded so the
+provenance is not guessed later.*
+
+*The exceptions are: **the decisions entry** (2026-08-16 — the user authorised Claude, once and explicitly,
+to create this file and write it; a decision sitting with no AWS call in it); **the wording revision of the
+step 0 entry** and its merged 0.4 subsection, marked inline; and then **pass 1**, **pass 2**, **pass 3**,
+**the probes** and **the teardown** — in each of those five the user authorised the AWS action in chat and
+then asked for the progress to be written into this file directly, so they are Claude's account of actions
+the user authorised. **The pass-3 one differs in a way worth naming: the user ran every command
+personally**, so it is Claude's account of commands it drafted and read the output of, not of commands it
+ran.*
+
+***The D11-cycle entry is NOT among them***: Claude drafted it in chat and the user pasted it — the
+standing rule applied exactly as written. Everything else is the user's, as usual, and the rule is
+unchanged.*
 
 ---
 
@@ -478,6 +482,45 @@ rule; the retry succeeded and the re-plan reads `No changes`.
 Burn with everything up: **USD 0.4968/h**. The three probe slices are 0.0168 of it and are
 destroyed by `make down` on `sandbox`, `development` and `production` — deferred to a later
 sitting by decision, not by omission.
+
+## 2026-08-16 — Everything down, and the third reading of the same claim
+
+The deferred teardown, run after the probes were merged. `make down` on all three accounts:
+**59 resources destroyed** — 4 + 16 in Sandbox, 2 + 15 in Development, 8 + 14 in Production —
+and `make status` reads **USD 0.0000/h**.
+
+**The order is the part worth recording.** In every account the probe slice went first and
+`egress/` second: `probes` ranks 60 and `egress` 50, and `down` walks the table in reverse. It
+has to. The probes reach their target by a name in a private zone and their traffic crosses
+interface endpoints and a NAT; tearing the network out from under them would have left
+Terraform destroying instances whose dependencies had already gone. Nothing here was arranged
+by hand — the rank was declared once, in `scripts/tfhygiene/layers.py`, and the machinery did
+the rest. `bootstrap/` and `foundation/` were refused by name in each account, with the reason
+printed rather than implied (refusal 4 and refusal 1).
+
+**The `[P]`/`[E]` claim measured a third time**, and this cycle is the one that matters most,
+because it is the first where `[E]` included instances, interfaces and DNS records rather than
+only endpoints: every `foundation/` output set **byte-identical** across the teardown, all
+three re-plans `No changes` at `-detailed-exitcode 0`. Read live from AWS afterwards: **zero**
+instances, NATs, Elastic IPs and interface endpoints in all three accounts — and the **two
+gateway endpoints still standing in each**, which is the whole distinction restated.
+
+**One earlier caveat resolved rather than left standing.** `sandbox/probes` had been applied
+with a non-default `zone_index`, and `make down` passes no variables — so the destroy plan was
+read before the teardown rather than trusted. It came back `0 to add, 0 to change, 4 to
+destroy`: a destroy operates on what is in **state**, not on what the configuration would
+compute, so the variable never entered it. The caveat was real and the reading closed it.
+
+**What the probes did NOT answer, stated precisely so a later stage does not inherit a
+half-claim.** Stage 3's verification (iii) is closed. **Stage 4's verification (i) is not**,
+and the difference is not pedantry: it asks whether a host **finishes its user data** through
+the gateway endpoint alone, and `dnf makecache` fetches metadata without downloading a single
+package. The CloudWatch agent, moreover, comes from `amazoncloudwatch-agent-<region>` — a
+**different** allow-list entry that `makecache` never touches. So the metadata path is
+measured, the package path is not, and the agent's bucket is not. Stage 4's first boot is
+where that closes, which is what its steps 1.4 and 7 already say — and the reason its own plan
+warns to read the user-data output *before* debugging WireGuard is exactly this: an incomplete
+allow-list would present as a VPN that will not come up.
 
 ---
 
