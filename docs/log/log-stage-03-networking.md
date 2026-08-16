@@ -5,13 +5,15 @@ Stage: [`docs/plan/stages/stage-03-networking.md`](../plan/stages/stage-03-netwo
 
 ---
 
-*Three exceptions, recorded so the provenance is not guessed later. **On 2026-08-16 the user authorised
+*Five exceptions, recorded so the provenance is not guessed later. **On 2026-08-16 the user authorised
 Claude, once and explicitly, to create this file and write the entry below** — a decision sitting held
 with the user in that same session, with no AWS call in it. **A second explicit authorisation, later the
 same day, covers the wording revision of the step 0 entry and its merged 0.4 subsection**, marked inline.
-**A third, later still, covers the pass-1 entry, and a fourth the pass-2 entry** — in both the user
-authorised the applies in chat and then asked for the progress to be written into this file directly, so
-those entries are Claude's account of commands the user authorised. Everything else is the user's, as
+**A third, later still, covers the pass-1 entry, a fourth the pass-2 entry, and a fifth the pass-3 entry**
+— in all three the user authorised the applies in chat and then asked for the progress to be written into
+this file directly, so those entries are Claude's account of commands the user authorised. **The pass-3
+one differs in one way worth naming: the user ran every command personally**, so it is Claude's account of
+commands it drafted and read the output of, not of commands it ran. Everything else is the user's, as
 usual, and the rule is unchanged.*
 
 ---
@@ -256,6 +258,88 @@ hard way, and a symptom table for a blocked commit.
 **Stage 3 now needs only pass 3** — `egress/` `[E]`: the NAT behind the D5 switch, the interface endpoints
 and their policies. It is the repository's first `[E]` slice, so it is also the first `make up` / `make
 down` that is not a no-op.
+
+
+## 2026-08-16 — Steps 7-10 (pass 3): `egress/`, and the first `make up` that is not a no-op
+
+*Written by Claude under the user's explicit authorisation. **The user ran every command in this entry
+personally** — Claude drafted them, read the plans and the instrument output, and this is its account of
+that. Signed in as the **infrastructure user** through **`InfrastructureAccess`**.*
+
+### What was built
+
+One module, `terraform-modules/vpc-egress`, tagged `vpc-egress-v0.1.0` and called once per VPC-bearing
+account. Applied through **`make up ENV=<account>`** — the D11 machinery Stage 2 wrote before there was
+anything for it to act on, exercised for the first time:
+
+| Account | Resources | Interface endpoints | USD/h |
+|---|---|---|---|
+| Sandbox | 16 | 12 — core 8 + three SageMaker + `elasticfilesystem` | 0.170 |
+| Development | 15 | 11 — no `elasticfilesystem` (D24) | 0.160 |
+| Production | 14 | 10 — no `sagemaker.studio`, no domain there | 0.150 |
+
+Each also carries a NAT (design A, decision 4), its Elastic IP, and the private tier's `0.0.0.0/0` in both
+AZs. Endpoints are single-AZ (`usw2-az1`, D9) with private DNS on, and every one carries step 9's document:
+`aws:PrincipalOrgID` plus the `aws:PrincipalIsAWSService` carve-out, without which a service principal —
+which carries no org id — is denied by the first statement alone.
+
+### Two placements that are the point of the pass
+
+- **The private tier's default route lives in `egress/`, not in `foundation/`.** It names the NAT's `[E]`
+  id, so a route left in the `[P]` slice would blackhole the private subnets the moment `make down`
+  removed what it points at. This is Lesson 4's shape — state in a `[P]` slice referencing an `[E]`
+  resource — and it is why every `foundation/` re-plan still reads **`No changes`** after the applies:
+  routes into a `[P]` route table are owned by the ephemeral side, so the two lifecycles do not touch.
+- **`aws:ResourceOrgID` is deliberately absent from the interface-endpoint document.** Through these
+  endpoints pass calls whose *resource* is AWS-owned and org-less — ECR base layers, JumpStart artifacts.
+  The resource axis is controlled where it is load-bearing instead: the S3 gateway policy's enumerated
+  allow-list (9.3), which lives in `foundation/` precisely so it survives a `make down`.
+
+### Verification
+
+- `./aws/egress.py`: **all checks passed** — EG-1 on 39 endpoints (33 interface, plus both gateway
+  endpoints in each account), EG-2 and EG-3 on all 33, EG-4 on the three S3 gateway policies.
+- `./aws/networking.py`: **0 FAILED**. The six new `0.0.0.0/0` routes are the first exercise of the
+  `nat-` half of pass 1's `internet_exit_default()` exclusion; without it NT-3 and NT-4 would have gone
+  red on a route the design requires.
+- `make status`: `UP 16 / 15 / 14`, **USD 0.4800/h** — the sum of the `layers.py` rows, which are copied
+  from the measured `docs/PRICING.md` §3 rates.
+- **Verification (i) re-confirmed in the applied resource**, not only in the region catalog:
+  `aws.sagemaker.us-west-2.studio` exists and is `available` in Sandbox and Development.
+
+### Two instruments were wrong, and the applies are what exposed them
+
+Both had the shape Lesson 13 names — a check whose output is the same whether the thing holds or not.
+
+- **`EG-4` had no pattern for the ECR layer-storage family.** The live policy carries
+  `prod-<region>-starport-layer-bucket`; the check could not see it, so it reported `pass` without reading
+  it and would have kept reporting `pass` the day somebody deleted the entry. That is the family 9.3 calls
+  the entry the step was missing, and it fails *after* a successful ECR login, pointing at S3 rather than
+  at ECR. A pattern was added; the class now appears in the check's output.
+- **`make status` counted a child module as one resource**, and counted data sources as deployed —
+  reporting `2 resource(s)` for a slice holding 16. The burn was right, because it comes from the
+  `layers.py` table rather than from that count, but the line that says what is *running* understated it
+  by an order of magnitude. The count is now recursive and managed-only.
+
+### Repository, and one note on provenance
+
+`terraform-modules/vpc-egress/` (tagged `vpc-egress-v0.1.0`), three `terraform-live/*/egress/` slices, the
+first three `[E]` rows in `scripts/tfhygiene/layers.py` with the first `usd_per_hour`, and `backend.py`
+scoped so `vpc_cidr`/`peers` reach `foundation/` alone while `egress/` gets `zone_ids` + `account_folder`.
+Plus a `.gitignore` rule of its own: **a module carries no lock file of its own**, which four modules had
+acquired in pass 1 as a side effect of being validated by hand — one `h1:` hash each, the platform of
+whoever ran `init` last, against the three the slices carry deliberately.
+
+**The two instrument corrections above were committed by a parallel session** working in the same tree
+(`ed3f65c`, "stage 8 review"), which staged them along with its own work. Nothing was lost and everything
+is pushed, but `git log` on `aws/egress.py` and `scripts/slices.py` attributes those fixes to a Stage 8
+review. Recorded here because the history cannot be corrected without rewriting a published commit.
+
+**What is left of Stage 3 is not an apply**: the Validation's `make down` / `make up` cycle — the pair that
+shows which id INT-05 may name, the `foundation/` ones byte-identical and the interface-endpoint ones all
+new — and the two throwaway probes, one of which answers verification (iii). Verification (ii) is Stage 6's
+by nature. **The lab is metered from this entry onward**: `make down` is what ends the session, and
+`./aws/egress.py` §6 is the only instrument that will ever mention it (D12).
 
 
 ---

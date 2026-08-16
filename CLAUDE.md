@@ -177,19 +177,19 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   `identity/org-policies/` — ten policies + ten attachments **adopted, none created**, **content never
   sent** (live bytes are still 1c's paste), `prevent_destroy` on both.
   Delegation narrowed to `InfrastructureAccess`, hand-applied, **out of Terraform** (`INV-15`). D11:
-  `scripts/tfhygiene/layers.py` + `make up`/`down`/`status`/`slices` — **every slice `[P]`, both
-  targets no-ops** until Stage 3's `egress/`; a slice with no row fails `make check`. (iii): `IN_SYNC`
-  (`INV-17`). **`awsds` is reserved in SSM Parameter Store** — project parameters take
+  `scripts/tfhygiene/layers.py` + `make up`/`down`/`status`/`slices`; a slice with no row fails
+  `make check`. (iii): `IN_SYNC` (`INV-17`). **`awsds` is reserved in SSM Parameter Store** — project parameters take
   `/datascience/<env>/…`.
 - **Gates, and there is no CI:** `make check` (offline), `make check-ou` (session),
   `make check-docs` — **red** on pre-Stage-2 prose, outside the commit gate.
-- **Stage 3 passes 1+2 DONE 2026-08-16.** Step 0: AF VPCs removed via their **StackSet on
-  Management**, nothing survived, creation off. Steps 1-6: modules tagged `*-v0.1.0` (tags pushed
-  **before** the callers' commit), `foundation/` applied in Sandbox/Development/Production
-  (31/30/32, then pass 2 +1/+1/+32 — associations and peerings in **one ordered apply on the
-  accepting side**, additive). **`networking.py`: 0 FAILED.** Two decisions reach other stages:
-  `egress_mode=A`, and the S3 allow-list — **a NAT does not bypass it** (Stage 4).
-  CIDR/`zone_ids`/peers: `scripts/tfhygiene/backend.py`. Next: **pass 3** (`egress/` `[E]`).
+- **Stage 3 all three passes APPLIED 2026-08-16.** Step 0: AF VPCs gone (**StackSet on Management**),
+  creation off. `foundation/` `[P]` in Sandbox/Development/Production
+  (31/30/32, +1/+1/+32 — associations and peerings in **one ordered apply on the accepting side**).
+  Pass 3: `vpc-egress-v0.1.0`, `egress/` `[E]` via **`make up`** (16/15/14; endpoints 12/11/10, NAT,
+  0.48 USD/h). **`networking.py` and `egress.py`: 0 FAILED; every `foundation/` re-plan `No changes`.**
+  Reaching other stages: `egress_mode=A`, and the S3 allow-list — **a NAT does not bypass it** (Stage 4).
+  CIDR/`zone_ids`/peers: `scripts/tfhygiene/backend.py`. **Left: the `down`/`up` cycle and the two
+  probes** (verification (iii)'s `dnf`); (ii) is Stage 6's.
 - **Stages 4-8 revised, pre-instrumented (2026-08-16):** `aws/{vpn,datalake,studio,supplychain,cicd}.py`
   — `DL-5` guards INT-11's `Parameters`. **Stage 8 pass 4 (promotion) waits on the `Staging` vend**,
   passes 0-3/5 do not.

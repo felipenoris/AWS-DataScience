@@ -2,11 +2,11 @@
 
 | | |
 |---|---|
-| **Status** | **passes 1 and 2 DONE (2026-08-16)** — step 0: the stack instances deleted from Management, **nothing survived** (verification (vi)), Account Factory creates no VPC; steps 1-5: the four modules tagged `*-v0.1.0`, `foundation/` **applied in Sandbox (31), Development (30) and Production (32)**; steps 4.4-4.5 and 6: the four zone associations and the two peerings with their 22 subnet-level routes, **one ordered apply on the accepting side** (+1/+1/+32, verification (iv): additive, re-plan `No changes` everywhere). **`./aws/networking.py` reads 0 FAILED — every NT check green.** Next: **pass 3** — `egress/` `[E]`, the first `make up`. **Its five execute-time decisions were settled with the user on 2026-08-16**, before the stage, each recorded at the step that owns it ("Decisions due while executing" is the index). **Revised 2026-08-16 into the action-checklist format**, with three corrections taken from the official documentation: **step 0's supported removal path is deleting the stack instances from the Account Factory StackSet on Management** — not a per-account hand-deletion, which is what the log's first entry still records; **AL2023 serves its mirror list from the repository bucket itself**, so the design-B caveat 9.3 carried is withdrawn; and **verification (vii) is answered by the Route 53 documentation** (the authorization persists until deleted; deleting it does not affect the association) |
+| **Status** | **ALL THREE PASSES APPLIED (2026-08-16)** — step 0: the stack instances deleted from Management, **nothing survived** (verification (vi)), Account Factory creates no VPC; steps 1-5: the four modules tagged `*-v0.1.0`, `foundation/` **applied in Sandbox (31), Development (30) and Production (32)**; steps 4.4-4.5 and 6: the four zone associations and the two peerings with their 22 subnet-level routes, **one ordered apply on the accepting side** (+1/+1/+32, verification (iv): additive, re-plan `No changes` everywhere); steps 7-10: `vpc-egress-v0.1.0` and the three `egress/` slices, **applied through `make up`** for 16/15/14 resources — **`./aws/egress.py` all checks passed, `./aws/networking.py` 0 FAILED, every `foundation/` re-plan `No changes`**. **What is left is not an apply**: the `make down`/`make up` cycle of the Validation, and the two probes the Deliverables ask for — verification (iii)'s `dnf` reading among them. **The five execute-time decisions were settled with the user on 2026-08-16**, before the stage, each recorded at the step that owns it ("Decisions due while executing" is the index). **Revised 2026-08-16 into the action-checklist format**, with three corrections taken from the official documentation: **step 0's supported removal path is deleting the stack instances from the Account Factory StackSet on Management** — not a per-account hand-deletion, which is what the log's first entry still records; **AL2023 serves its mirror list from the repository bucket itself**, so the design-B caveat 9.3 carried is withdrawn; and **verification (vii) is answered by the Route 53 documentation** (the authorization persists until deleted; deleting it does not affect the association) |
 | **Prerequisites** | Stage 2. The AZ name→ID question from 1b step 6 is settled — subnets anchor on `zone_ids` (1.5), the mapping is `./aws/AZs.py`. **`Staging` is unvended** — the quota-increase request sits in an open AWS support ticket (2026-08-15) — so its `foundation/` and `egress/` apply **at vend**, and the two proofs that name it (its VPC, its empty peering list) defer with it; nothing else in this stage waits on it |
 | **Consumes** | [D5](../decisions/D05-sagemaker-egress.md), [D9](../decisions/D09-az-count.md), [D14](../decisions/D14-supply-chain-account.md), [D15](../decisions/D15-tls-internal.md), [D18](../decisions/D18-data-scientist-access.md), [D20](../decisions/D20-staging-account.md), [D21](../decisions/D21-development-account.md), [D22](../decisions/D22-data-governance-account.md), [D35](../decisions/D35-sandbox-cardinality.md) — **plus, for step 8's endpoint lists only**, [D7](../decisions/D07-orchestration.md), [D13](../decisions/D13-lake-formation-enforcement.md), [D24](../decisions/D24-shared-filesystem.md) |
 | **Proves** | [INT-09](../integrations.md) (Development ↔ Production peering). **Supplies** what [INT-05](../integrations.md) later depends on: the `[P]` gateway endpoint IDs of step 3 |
-| **Log** | [`docs/log/log-stage-03-networking.md`](../../log/log-stage-03-networking.md) — created 2026-08-16, one entry: the five decisions settled before the stage. Its row is in [`docs/log/INDEX.md`](../../log/INDEX.md) |
+| **Log** | [`docs/log/log-stage-03-networking.md`](../../log/log-stage-03-networking.md) — created 2026-08-16, **six entries**: the five decisions settled before the stage, two corrected against the documentation, step 0, and one per applied pass. Its row is in [`docs/log/INDEX.md`](../../log/INDEX.md) |
 
 *Read with [`docs/plan/conventions.md`](../conventions.md) (naming, layout, `[P]`/`[D]`/`[E]`, IAM rules).*
 
@@ -499,6 +499,32 @@ account, accepter in `production/foundation/` behind a provider alias, as a `for
 row (Lesson 6) — in the same commit that creates the slice. These are the repository's first `[E]` rows:
 from here `make up` / `make down` stop being no-ops, and `make status` starts reporting a real burn.
 
+> **RAN 2026-08-16 — pass 3, steps 7-10 in Sandbox, Development and Production.** One module,
+> `terraform-modules/vpc-egress` at `vpc-egress-v0.1.0`, called once per account; the slices read
+> `foundation/`'s `[P]` facts through `terraform_remote_state`. Applied through **`make up ENV=<account>`**
+> — the first exercise of the D11 machinery that is not a no-op — for **16 / 15 / 14** resources
+> (endpoints 12 / 11 / 10, plus a NAT, its EIP and the two private-tier default routes).
+>
+> **What the applies proved.** `./aws/egress.py`: **all checks passed** — EG-1 on 39 endpoints (the 33
+> interface ones and both gateway endpoints per account), EG-2 single-AZ and EG-3 private-DNS on all 33,
+> EG-4 on all three S3 gateway policies. `./aws/networking.py`: **0 FAILED**, which is where the six new
+> `0.0.0.0/0` routes first exercised the `nat-` half of pass 1's `internet_exit_default()` exclusion —
+> without it NT-3 and NT-4 would have gone red on a route the design requires. Every `foundation/`
+> re-plan reads **`No changes`**: routes into a `[P]` route table are owned by the `[E]` slice, so the
+> two lifecycles do not touch. `make status`: `UP  16/15/14  →  USD 0.4800/h`.
+>
+> **Two instruments were wrong and were corrected in the same sitting** — the applies are what exposed
+> them, and both had the shape Lesson 13 names. `EG-4` had no pattern for the **ECR layer-storage**
+> family, so `prod-<region>-starport-layer-bucket` was in the live policy, unread by the check, and would
+> have kept reporting `pass` the day somebody deleted it — the one family 9.3 calls the entry the step
+> was missing. And `make status` counted a child module as **one** resource and counted data sources,
+> reporting `2 resource(s)` for a slice holding 16; the burn was right, because it comes from the
+> `layers.py` table rather than from that count, but the line that says what is *running* was off by an
+> order of magnitude.
+>
+> **Not answered here, and neither needs the slice up:** (ii) is Stage 6's by nature, and (iii) needs the
+> `dnf` probe of the Deliverables.
+
 #### 7. NAT Gateway — design A only
 
 **Action:** create a single NAT gateway behind the D5 switch. **Why:** design A's egress path — and the
@@ -717,7 +743,7 @@ Record every answer, including the ones that come out fine.
 
 | # | Question | Step |
 |---|---|---|
-| i | Does the `sagemaker.studio` endpoint use the non-standard `aws.sagemaker.<region>.studio` service name rather than the `com.amazonaws.*` form? **Answered 2026-08-15, read-only** (`./aws/egress.py` §7, the service catalog): **yes** — listed in exactly that form, and 8.4's two CodeArtifact services both exist in `us-west-2` | 8.3 |
+| i | Does the `sagemaker.studio` endpoint use the non-standard `aws.sagemaker.<region>.studio` service name rather than the `com.amazonaws.*` form? **Answered 2026-08-15, read-only** (`./aws/egress.py` §7, the service catalog): **yes** — listed in exactly that form, and 8.4's two CodeArtifact services both exist in `us-west-2`. **Confirmed again 2026-08-16 in the applied resource**, not only in the catalog: the Sandbox and Development endpoints exist and are `available` under that service name | 8.3 |
 | ii | Is `lakeformation` actually called from the VPC in the flows this project uses, or only service-side? If only service-side, it leaves the core list at Stage 6 | 8.2 |
 | iii | Does the `dnf` path work through the gateway endpoint with **no NAT route at all** — is the 9.3 allow-list complete, and do the AMI's repo files use the default S3 mirrorlist (9.3's correction) rather than `cdn.amazonlinux.com`? | 9.3 |
 | iv | Does a second `apply` of `production/foundation/` add the accepters and authorizations without touching what pass 1 created? **Answered 2026-08-16: yes** — the pass-2 apply reads `32 added, 0 changed, 0 destroyed`, and a re-plan of all three slices afterwards reads `No changes` | pass 2 |
