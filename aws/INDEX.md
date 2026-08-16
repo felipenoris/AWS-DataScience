@@ -38,6 +38,7 @@ snapshots.
 | [`datalake.py`](datalake.py) | [Infrastructure](../docs/ORGANIZATION.md#infrastructure-user); [`AWS Control Tower Admin`](../docs/ORGANIZATION.md#aws-control-tower-admin-d33) for `-` runs | same multi-profile shape, same reason: the lake and its policy live in Data Governance while every legitimate reader is in a consumer account (D22), and a pending RAM invitation is visible only from the consumer | `output/datalake.txt` | **[Stage 5](../docs/plan/stages/stage-05-data-foundation.md)'s evidence, producer and consumers side by side.** The lake buckets with their policy **branches** (vpce/ip/via/sigage/prin — presence, never sufficiency), KMS aliases, the Glue catalog with **resource links** flagged, crawlers (never scheduled, never at an Iceberg target), the `awsds-data-catalog-maintenance` role and its trust, **the Lake Formation `Parameters` reading that defends INT-11** (`DL-5` — the check to read after *any* apply in `data-governance/data/`), RAM shares + **pending invitations**, consumer workgroup enforcement, the derived zone's expiry, EFS (including the mount-target SG shape Stage 4's NAT forces), and Security Hub per account. Checks `DL-1`–`DL-11`; **exits 2 when a check fails** |
 | [`studio.py`](studio.py) | [Infrastructure](../docs/ORGANIZATION.md#infrastructure-user); [`AWS Control Tower Admin`](../docs/ORGANIZATION.md#aws-control-tower-admin-d33) for `-` runs | same multi-profile shape, same reason: D26's whole claim — the domain is a registry, not a runtime — is only readable with Data Governance and the Interactive accounts side by side, and a SageMaker domain in the wrong column *is* the finding | `output/studio.txt` | **[Stage 6](../docs/plan/stages/stage-06-unified-studio.md)'s evidence, registry and runtimes side by side.** DataZone domains in **every** account (one expected, V2, in Data Governance — anywhere else is INT-12's fallback by accident), the registry's blueprints/profiles/projects (no Redshift), the blueprint-provisioned SageMaker AI domain per Interactive account (**VpcOnly**, idle shutdown), **the D13 permissions boundary on the project roles** (INT-15's presence half — survival is a diff of two runs), the step 3 deny Sids in the persona sets, registered images (INT-17's mechanical half), running apps (the burn), and EFS access points. Checks `US-1`–`US-10`; **exits 2 when a check fails** |
 | [`supplychain.py`](supplychain.py) | [Infrastructure](../docs/ORGANIZATION.md#infrastructure-user); [`AWS Control Tower Admin`](../docs/ORGANIZATION.md#aws-control-tower-admin-d33) for `-` runs | same multi-profile shape, same reason: D14 puts the registries in Production while every legitimate consumer is Interactive, so "does the consumer map reach everyone" (Lesson 14) is only readable from both sides — the policies from Production, a cross-account read from each consumer | `output/supplychain.txt` | **[Stage 7](../docs/plan/stages/stage-07-gitlab-runners-ecr.md)'s evidence, producer and consumers side by side.** The GitLab host (`[D]` — stopped between sessions is the design) and the runner (`[E]` — absent between sessions is the design), the `[P]` anchors a restore depends on (buckets, the `gitlab-secrets` container — **metadata only, never the value**), the TLS surface (imported ACM leaves with their **days of runway** — ACM does not renew imports — the one-source CA root parameter, the two zones' records), ECR repositories with **tag immutability** and the scanning configuration, the pull-through cache rules against their immutability trap, the CodeArtifact domain/repos/policy, and a **real cross-account read from each Interactive account** (INT-01/INT-02's mechanical half). Checks `SC-1`–`SC-10`; **exits 2 when a check fails** |
+| [`cicd.py`](cicd.py) | [Infrastructure](../docs/ORGANIZATION.md#infrastructure-user); [`AWS Control Tower Admin`](../docs/ORGANIZATION.md#aws-control-tower-admin-d33) for `-` runs | same multi-profile shape, same reason: the subject is trust *between* accounts — the deploy runner lives in Production while its roles live in Staging and the Interactive accounts (INT-08, INT-18), and D17's identical-runtime claim is only readable with the Interactive accounts side by side | `output/cicd.txt` | **[Stage 8](../docs/plan/stages/stage-08-cicd-pipelines.md)'s evidence, the credential layer from every side.** The deploy runner (`[E]` — absent between sessions is the design; IMDSv2, the instance profile), its role's **enumerated `AssumeRole` reach**, the four deploy roles with **permissions boundary and single-principal trust**, the `*deploy-misuse*` alarm rules, the app-repository grant plus a **real cross-account read from Staging** (INT-07's mechanical half), the registered dev-env versions **side by side** (D17's parity), and **who assumed a deploy role** — CloudTrail's 90-day lookup, the record INT-08 exists for. Checks `CI-1`–`CI-8`; **exits 2 when a check fails.** INT-17's reconciliation-survival half is a **diff of two runs**, never one |
 | [`cloudshell/management-landing-zone-drift.sh`](cloudshell/management-landing-zone-drift.sh) | [`AWS Control Tower Admin`](../docs/ORGANIZATION.md#aws-control-tower-admin-d33) — **the only one**, no laptop path | **no profile — CloudShell on Management.** Takes a profile if one ever exists there | `output/cloudshell/management-landing-zone-drift.txt` | **Stage 2 verification (iii)** — whether the Organizations **resource policy** of step 5.1 shows up as landing-zone drift. The `driftStatus` flag, the **manifest** that says what the flag is even comparing, the **operation history** (an update that ran *after* the delegation and succeeded is the only positive evidence available without writing), and whether the document is still there and still narrowed to two statements. **Sections 2-4 are suppressed outside Management and the run exits 2** — measured: from a member account both landing-zone calls *succeed and return empty*, so an unguarded report would state "the landing zone has never run". Section 5 answers from Identity too, because the delegation grants it. |
 | [`cloudshell/management-quotas.sh`](cloudshell/management-quotas.sh) | [`AWS Control Tower Admin`](../docs/ORGANIZATION.md#aws-control-tower-admin-d33) — **the only one**, no laptop path | **no profile — CloudShell on Management.** Takes a profile if one ever exists there | `output/cloudshell/management-quotas.txt` | **Has the account-cap increase landed** — the one number the `Staging` vend is held on. The applied value (not the default), how much of it is spent, and any pending request. **Refuses to interpret the number outside Management**, where the same quota reads `0.0`. |
 
@@ -129,6 +130,10 @@ locates the repository root itself:
 
 ```bash
 ./aws/supplychain.py
+```
+
+```bash
+./aws/cicd.py
 ```
 
 **`cloudshell/` holds the three scripts with no laptop path — and they are shell on purpose.**
@@ -489,6 +494,35 @@ for them (Lesson 20's rule: configuration for configuration questions, probes fo
 | Does CodeArtifact hold the domain, `pypi` + `crates`, and a domain policy? | 6, decided by `SC-6` |
 | **Does the cross-account read answer from every consumer** — or did the D35 map miss one? | 7, decided by `SC-7` — a deny after the registry exists FAILS |
 | Which accounts is nobody measuring? | 9 — Staging is deliberately **not** in the consumer map (INT-07 is the pipeline's path) |
+
+## Finding an answer in `output/cicd.txt`
+
+| Question | Section |
+|---|---|
+| **Is a deploy runner up — did `make down` leave a burn?** | 2 — absent between sessions is the design; IMDSv2 and the instance profile are checked by `CI-1` |
+| May the runner's role assume anything beyond the enumerated `awsds-deploy-*` list? | 2, decided by `CI-4` — a `*`, a wildcard account or a foreign ARN FAILS |
+| Do the four deploy roles exist, each with a **permissions boundary**? | 3, decided by `CI-2` — Staging's row appears only after the vend |
+| Does every trust policy admit **only the deploy runner**, only `sts:AssumeRole`? | 3, decided by `CI-3` (INT-08/INT-18's contract) |
+| Are the `*deploy-misuse*` alarm rules present and ENABLED (step 4.6)? | 4, decided by `CI-7` |
+| Can Staging pull the application image — is the 3.0 grant in place (INT-07)? | 5, decided by `CI-5` — policy from Production, a real read from Staging |
+| **Is the same dev-env base image registered in every Interactive account** (D17)? | 6, decided by `CI-6` — one lagging row is a 1.6 registration that failed quietly |
+| Who assumed a deploy role, and was it ever not the runner (INT-08)? | 7, decided by `CI-8` — the after-the-fact twin of 4.6's alarm |
+| Did a registration survive a blueprint reconciliation (INT-17)? | a **diff of two runs** — one run cannot answer it |
+| Which accounts is nobody measuring? | 9 — Staging until the vend; every Sandbox beyond unit 1 until Stage 14 |
+
+## The one written for Stage 8
+
+**Written 2026-08-16**: `cicd.py`, from the revised
+[Stage 8](../docs/plan/stages/stage-08-cicd-pipelines.md) roteiro — the same before-the-stage pattern.
+Until the stage runs, every absent resource reads as a `note`; a *partial* build fails loudly. Its
+contracts: the deploy runner name (`awsds-prod-runner-deploy`, instance and role), the four deploy-role
+names (`awsds-deploy-staging`, `awsds-deploy-prod`, `awsds-deploy-devenv-sandbox`,
+`awsds-deploy-devenv-dev`), the alarm-rule fragment (`deploy-misuse`), the application repository
+(`awsds-prod-ecr-app-etl`). **Its first run measured a clean pre-stage state** — nothing
+deploy-credential-shaped exists anywhere, every reading a `note`, zero failures — the baseline the pass-1
+apply will be diffed against. Two of its checks are deliberately halves, said out loud: `CI-5`'s
+behavioural proof is a real promotion's pull (3.2), and `CI-6` reads parity, not whether the registration
+*survives reconciliation* — that half is a diff of two runs (INT-17).
 
 ## The one written for Stage 7
 

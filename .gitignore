@@ -30,6 +30,24 @@ crash.*.log
 # swallow it: the lock file is the reproducibility of the build, not a local artefact.
 !.terraform.lock.hcl
 
+# ...EXCEPT IN terraform-modules/, WHERE THE SAME FILE IS THE OPPOSITE THING (2026-08-16,
+# Stage 3 pass 3). A lock file governs the ROOT module of a configuration; a module consumed
+# as a child is locked by ITS CALLER, which is what every module's versions.tf already says
+# in words - "a module carries no lock file of its own". So one here is inert by definition.
+#
+# It is not merely redundant, it is MISLEADING, and the hash count is the tell: the slices'
+# files carry THREE h1: hashes, from the deliberate `terraform providers lock` of step 6.3
+# that covers darwin_arm64, linux_amd64 and linux_arm64 so the Stage 7-8 runners do not fail
+# init with a checksum error that reads like an attack. The module ones carried ONE - the
+# platform of whoever last validated the module by hand. A reproducibility artefact that
+# records one person's laptop is worse than none: nothing regenerates it and no gate reads it.
+#
+# The rule is scoped rather than global for exactly that reason - the slices' copies are
+# load-bearing and stay. Written as a rule and not as a habit because the file arrives as a
+# SIDE EFFECT of `terraform init`, which is the command you run to validate a module before
+# committing it: nobody types this file, so nobody remembers to leave it out (Lesson 14).
+terraform-modules/*/.terraform.lock.hcl
+
 # Ignored WHOLESALE rather than by content, because the rule "the ones that carry account IDs"
 # cannot be enforced by a glob and the failure is one-way: a variables file that should have
 # been committed is noticed the next time somebody clones, while one that should not have been

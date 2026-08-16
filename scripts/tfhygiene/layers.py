@@ -97,11 +97,17 @@ class Slice:
 
 # ---------------------------------------------------------------------------- the table
 #
-# EVERY SLICE ON DISK TODAY, AND THEY ARE ALL [P]. Nothing here is metered by the hour: five
-# state buckets and their keys (KMS is priced per key-MONTH, docs/PRICING.md 2, so it is a
-# floor line and not an hourly one), and two Identity Center / Organizations slices whose
-# objects cost nothing at all. `usd_per_hour` is therefore absent from every row and the
-# default stands - the first row that sets it is Stage 3's egress/.
+# EVERY SLICE ON DISK TODAY. The [P] rows are free or nearly free at rest: five state
+# buckets and their keys (KMS is priced per key-MONTH, docs/PRICING.md 2, so it is a floor
+# line and not an hourly one), two Identity Center / Organizations slices whose objects cost
+# nothing at all, and the foundation networks. The egress/ rows are the repository's first
+# [E] ones (Stage 3 pass 3) and the first with `usd_per_hour` - from here `make up` and
+# `make down` stop being no-ops and `make status` reports a real burn.
+#
+# usd_per_hour IS COPIED FROM docs/PRICING.md 3, MEASURED us-west-2 RATES (Lesson 6), and
+# is the AT-REST-WHILE-UP figure - per-GB processing is traffic, not time, and stays in the
+# stage's Cost section: interface endpoint 0.010/h each, NAT gateway 0.045/h + public IPv4
+# 0.005/h. Per account: endpoints x 0.010 + 0.050 where a NAT exists (egress_mode A).
 SLICES = [
     Slice("sandbox", "bootstrap", PERSISTENT, "state bucket + its KMS key (step 2)"),
     Slice("development", "bootstrap", PERSISTENT, "state bucket + its KMS key (step 3)"),
@@ -116,6 +122,11 @@ SLICES = [
     Slice("sandbox", "foundation", PERSISTENT, "VPC 3x2, gateway endpoints, sandbox.internal"),
     Slice("development", "foundation", PERSISTENT, "VPC 3x2, gateway endpoints, no zone (4.2)"),
     Slice("production", "foundation", PERSISTENT, "VPC 3x2, gw endpoints, prod+pages.internal"),
+    # Stage 3 pass 3 (2026-08-16). The endpoint counts are step 8.3's per-role lists:
+    # core 8 + the account's extras; every row includes a mode-A NAT (0.050 = 0.045 + IPv4).
+    Slice("sandbox", "egress", EPHEMERAL, "NAT + 12 interface endpoints (8.3)", 0.170),
+    Slice("development", "egress", EPHEMERAL, "NAT + 11 interface endpoints, no EFS (D24)", 0.160),
+    Slice("production", "egress", EPHEMERAL, "NAT + 10 interface endpoints (8.3)", 0.150),
 ]
 
 
