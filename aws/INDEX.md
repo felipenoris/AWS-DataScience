@@ -40,6 +40,7 @@ snapshots.
 | [`supplychain.py`](supplychain.py) | [Infrastructure](../docs/ORGANIZATION.md#infrastructure-user); [`AWS Control Tower Admin`](../docs/ORGANIZATION.md#aws-control-tower-admin-d33) for `-` runs | same multi-profile shape, same reason: D14 puts the registries in Production while every legitimate consumer is Interactive, so "does the consumer map reach everyone" (Lesson 14) is only readable from both sides — the policies from Production, a cross-account read from each consumer | `output/supplychain.txt` | **[Stage 7](../docs/plan/stages/stage-07-gitlab-runners-ecr.md)'s evidence, producer and consumers side by side.** The GitLab host (`[D]` — stopped between sessions is the design) and the runner (`[E]` — absent between sessions is the design), the `[P]` anchors a restore depends on (buckets, the `gitlab-secrets` container — **metadata only, never the value**), the TLS surface (imported ACM leaves with their **days of runway** — ACM does not renew imports — the one-source CA root parameter, the two zones' records), ECR repositories with **tag immutability** and the scanning configuration, the pull-through cache rules against their immutability trap, the CodeArtifact domain/repos/policy, and a **real cross-account read from each Interactive account** (INT-01/INT-02's mechanical half). Checks `SC-1`–`SC-10`; **exits 2 when a check fails** |
 | [`cicd.py`](cicd.py) | [Infrastructure](../docs/ORGANIZATION.md#infrastructure-user); [`AWS Control Tower Admin`](../docs/ORGANIZATION.md#aws-control-tower-admin-d33) for `-` runs | same multi-profile shape, same reason: the subject is trust *between* accounts — the deploy runner lives in Production while its roles live in Staging and the Interactive accounts (INT-08, INT-18), and D17's identical-runtime claim is only readable with the Interactive accounts side by side | `output/cicd.txt` | **[Stage 8](../docs/plan/stages/stage-08-cicd-pipelines.md)'s evidence, the credential layer from every side.** The deploy runner (`[E]` — absent between sessions is the design; IMDSv2, the instance profile), its role's **enumerated `AssumeRole` reach**, the four deploy roles with **permissions boundary and single-principal trust**, the `*deploy-misuse*` alarm rules, the app-repository grant plus a **real cross-account read from Staging** (INT-07's mechanical half), the registered dev-env versions **side by side** (D17's parity), and **who assumed a deploy role** — CloudTrail's 90-day lookup, the record INT-08 exists for. Checks `CI-1`–`CI-8`; **exits 2 when a check fails.** INT-17's reconciliation-survival half is a **diff of two runs**, never one |
 | [`deploytargets.py`](deploytargets.py) | [Infrastructure](../docs/ORGANIZATION.md#infrastructure-user); [`AWS Control Tower Admin`](../docs/ORGANIZATION.md#aws-control-tower-admin-d33) for `-` runs | same multi-profile shape, same reason: the subject is the producer path *between* accounts — the lake and the drop-box live in Data Governance while the only principal allowed to write them lives in Production (D22, D25), Staging's value is what it does **not** reach (D20), and the persona allows live in Identity | `output/deploytargets.txt` | **[Stage 9](../docs/plan/stages/stage-09-deployment-targets.md)'s evidence, producer and targets side by side.** The Production data platform (buckets, CMK, the **enforced** workgroup), the job role with **D13's absence** read from its own policies, the package groups with their resource policies (D28 item 6), **the LF settings in every account that has any** (`DT-5` — `DL-5`'s discipline extended), the write share with links and **pending invitations** (INT-03), the drop-box contract from **both sides** (INT-10's role-name contract), the Staging mirror plus the **absence that is a control** (no link to Data Governance, D20), the escape hatch (windowed trust, closed at rest, alarmed on every assumption), and the two persona sets' owed allows read through the delegated admin. Checks `DT-1`–`DT-10`; **exits 2 when a check fails** |
+| [`orchestration.py`](orchestration.py) | [Infrastructure](../docs/ORGANIZATION.md#infrastructure-user); [`AWS Control Tower Admin`](../docs/ORGANIZATION.md#aws-control-tower-admin-d33) for `-` runs | same multi-profile shape, same reason: the workflow is authored in Development (D21) and runs in Production (D17), and the provisioned-MWAA burn reading is only meaningful measured in **every** account — the OnDemand Workflows blueprint would create a fee-bearing environment in a *member* account, not in Production | `output/orchestration.txt` | **[Stage 10](../docs/plan/stages/stage-10-orchestration-promotion.md)'s evidence, both orchestrators side by side.** The MWAA Serverless workflows (status, `TriggerMode`, the **cron that lives in the YAML**, the version count against the 50-version quota) and the Scheduler→Step Functions pair (**`STANDARD`** or it fails), the per-workflow roles (**boundary, service trust, no lake reach — D13 one level up — and `NetworkConfiguration` present**, the non-VPC bypass reading), the named log groups with retention (D28 item 5 — an auto-created `/aws/mwaa-serverless/` group fails), the failure rules + `awsds-prod-model-approval`, recent runs (the `SCHEDULED` evidence), **no provisioned MWAA environment anywhere** (the burn), the definitions home, and the registry's register/approve callers (INT-04 read back as behaviour). Checks `OR-1`–`OR-8`; **exits 2 when a check fails** |
 | [`cloudshell/management-landing-zone-drift.sh`](cloudshell/management-landing-zone-drift.sh) | [`AWS Control Tower Admin`](../docs/ORGANIZATION.md#aws-control-tower-admin-d33) — **the only one**, no laptop path | **no profile — CloudShell on Management.** Takes a profile if one ever exists there | `output/cloudshell/management-landing-zone-drift.txt` | **Stage 2 verification (iii)** — whether the Organizations **resource policy** of step 5.1 shows up as landing-zone drift. The `driftStatus` flag, the **manifest** that says what the flag is even comparing, the **operation history** (an update that ran *after* the delegation and succeeded is the only positive evidence available without writing), and whether the document is still there and still narrowed to two statements. **Sections 2-4 are suppressed outside Management and the run exits 2** — measured: from a member account both landing-zone calls *succeed and return empty*, so an unguarded report would state "the landing zone has never run". Section 5 answers from Identity too, because the delegation grants it. |
 | [`cloudshell/management-quotas.sh`](cloudshell/management-quotas.sh) | [`AWS Control Tower Admin`](../docs/ORGANIZATION.md#aws-control-tower-admin-d33) — **the only one**, no laptop path | **no profile — CloudShell on Management.** Takes a profile if one ever exists there | `output/cloudshell/management-quotas.txt` | **Has the account-cap increase landed** — the one number the `Staging` vend is held on. The applied value (not the default), how much of it is spent, and any pending request. **Refuses to interpret the number outside Management**, where the same quota reads `0.0`. |
 
@@ -139,6 +140,10 @@ locates the repository root itself:
 
 ```bash
 ./aws/deploytargets.py
+```
+
+```bash
+./aws/orchestration.py
 ```
 
 **`cloudshell/` holds the three scripts with no laptop path — and they are shell on purpose.**
@@ -531,6 +536,38 @@ for them (Lesson 20's rule: configuration for configuration questions, probes fo
 | Is the escape hatch closed at rest, capped at 1 h, alarmed on **every** assumption? | 8, decided by `DT-9` |
 | Did the persona sets gain their owed allows — and the Staging set **nothing** (Lesson 22)? | 9, decided by `DT-10` |
 | Which accounts is nobody measuring? | 11 — Staging until the vend; Development appears only as a principal in the group policies |
+
+## Finding an answer in `output/orchestration.txt`
+
+| Question | Section |
+|---|---|
+| Are both implementations whole — A `READY`, B a `STANDARD` machine **with** its schedule? | 2-3, decided by `OR-1` — a machine without a schedule (or the reverse) FAILS |
+| What is each workflow's schedule and pause state — the cron from the YAML, `TriggerMode`, B's `state`? | 2-3 — the pause lever verification (v) toggles |
+| Does every workflow/machine log to a **named** group with retention — and did an auto-created `/aws/mwaa-serverless/` group appear? | 5, decided by `OR-2` (D28 item 5) |
+| Do the per-workflow roles carry a boundary, service-only trust, **no lake reach** — and is A's `NetworkConfiguration` set (the non-VPC bypass)? | 4, decided by `OR-3` |
+| Are the `*-failed` rules and `awsds-prod-model-approval` present and ENABLED? | 6, decided by `OR-4` |
+| Did a `SCHEDULED` run fire — the unattended evidence of verification (v)? | 7 — reported; the proof is the stage's own |
+| **Is a provisioned MWAA environment burning anywhere** (0.29 USD/h each)? | 8, decided by `OR-6` — step 4's fallback is same-sitting `[E]` |
+| Did the service-linked role appear at the first `CreateWorkflow` (Lesson 17, steps 0.3/1.5)? | 9 — reported both ways, absent is the pre-stage baseline |
+| Are the definitions under `s3://awsds-prod-outputs/workflows/` (decision 1)? | 9, decided by `OR-5` |
+| How many workflow versions exist against the 50-version quota (risk 4)? | 2, decided by `OR-7` |
+| Was every registry write `awsds-deploy-prod` (INT-04, Stage 9 3.2 read as behaviour)? | 10, decided by `OR-8` |
+| Which accounts is nobody measuring? | 13 — Staging until the vend; the Studio surface is console-recorded |
+
+## The one written for Stage 10
+
+**Written 2026-08-16**: `orchestration.py`, from the revised
+[Stage 10](../docs/plan/stages/stage-10-orchestration-promotion.md) roteiro — the same before-the-stage
+pattern. Until the stage runs, every absent resource reads as a `note`; a *partial* build fails loudly.
+Its contracts: the `awsds-prod-wf-` name fragment (workflows, machines, schedules, roles, failure
+rules), the two log prefixes (`/awsds/prod/wf/` for A, `/aws/vendedlogs/states/awsds-prod-wf-` for B —
+the second is the documented vended-logs prefix, load-bearing against the ten-resource-policy quota),
+the definitions home (`awsds-prod-outputs/workflows/`) and the approval rule
+(`awsds-prod-model-approval`). **Three of its checks are deliberately halves, said out loud**: `OR-1`
+shows the resources exist — whether the `awscc` apply *lands under the deploy role's boundary* (INT-14)
+is pass 2's pipeline run; section 7 shows run rows — the *unattended* `SCHEDULED` proof is the stage's
+own; and `OR-8` reads the registry record after the fact — the preventive half is Stage 9 3.2's policy,
+which `deploytargets.py` `DT-3` owns.
 
 ## The one written for Stage 9
 

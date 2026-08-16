@@ -107,7 +107,7 @@ repos:
       # in POLICIES.md is a control nobody can explain a year later.
       - id: check-policies-index
         name: POLICIES.md still describes policies/ (9.4)
-        entry: ./terraform-live/identity/org-policies/check-index.py
+        entry: ./scripts/check-index.py
         language: system
         pass_filenames: false
         files: ^terraform-live/identity/org-policies/(policies/.*\.json|POLICIES\.md)$

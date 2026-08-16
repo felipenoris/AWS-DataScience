@@ -14,7 +14,7 @@ The documents themselves carry no comments — JSON has none — so this file is
 > already believes the file is right. It needs no AWS session and changes nothing:
 >
 > ```bash
-> ./terraform-live/identity/org-policies/check-index.py
+> ./scripts/check-index.py
 > ```
 >
 > It names both directions of the failure, and the second is the one that is easy to miss: a statement in

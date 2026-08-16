@@ -17,11 +17,13 @@ what is genuinely still unanswered:
    starts; it is no longer worth doing early.
 2. **D7/D28 - two verifications, not decisions.** The orchestration decision is closed (both built,
    Stage 10; alternative A is MWAA Serverless via `awscc_mwaaserverless_workflow`, verified to exist
-   2026-08-08). What is open: (i) whether the awscc resource *applies* cleanly under the CI deploy role
-   (INT-14 — fallback chain recorded there); (ii) whether logs-only observability — Serverless has
-   no Airflow UI — is livable for a data scientist debugging a failed run, which only the Stage 10
-   comparison can answer. Keep application entry points as plain containers so both implementations, and
-   the two options that were not built, remain viable.
+   2026-08-08, re-verified 2026-08-16). What is open: (i) whether the awscc resource *applies* cleanly
+   under the CI deploy role (INT-14 — fallback chain recorded there); (ii) whether **no-UI**
+   observability is livable for a data scientist debugging a failed run — the 2026-08-16 documentation
+   pass corrected "logs only": Serverless has run/task APIs, a console page, per-task log streams and
+   (since 2026-06) EventBridge events, but still no Airflow web interface — which only the Stage 10
+   comparison (its step 3.3 diagnosis session) can answer. Keep application entry points as plain
+   containers so both implementations, and the two options that were not built, remain viable.
 3. ~~**AZ name-to-ID mapping across accounts**~~ — **measured 2026-08-12 in Stage 1b step 6, and the answer
    did not decide the question the way the question expected.** Every account that has a profile returns
    an identical mapping (`us-west-2a` → `usw2-az2`, `b` → `az1`, `c` → `az3`, `d` → `az4`; the names are

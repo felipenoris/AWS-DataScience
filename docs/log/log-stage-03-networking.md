@@ -5,7 +5,7 @@ Stage: [`docs/plan/stages/stage-03-networking.md`](../plan/stages/stage-03-netwo
 
 ---
 
-*Five exceptions, recorded so the provenance is not guessed later. **On 2026-08-16 the user authorised
+*Seven exceptions, recorded so the provenance is not guessed later. **On 2026-08-16 the user authorised
 Claude, once and explicitly, to create this file and write the entry below** — a decision sitting held
 with the user in that same session, with no AWS call in it. **A second explicit authorisation, later the
 same day, covers the wording revision of the step 0 entry and its merged 0.4 subsection**, marked inline.
@@ -13,8 +13,10 @@ same day, covers the wording revision of the step 0 entry and its merged 0.4 sub
 — in all three the user authorised the applies in chat and then asked for the progress to be written into
 this file directly, so those entries are Claude's account of commands the user authorised. **The pass-3
 one differs in one way worth naming: the user ran every command personally**, so it is Claude's account of
-commands it drafted and read the output of, not of commands it ran. Everything else is the user's, as
-usual, and the rule is unchanged.*
+commands it drafted and read the output of, not of commands it ran. **The sixth entry, on the D11 cycle,
+was drafted by Claude and pasted by the user** — the standing rule applied as written. **The seventh, on
+the probes, is a seventh authorisation**: the user authorised the probe applies in chat and asked for the
+entry to go in directly. Everything else is the user's, as usual, and the rule is unchanged.*
 
 ---
 
@@ -390,6 +392,92 @@ report regenerated in place has to copy the "before" aside first.** Recorded on 
 Left in Stage 3: the two throwaway `t4g.nano` probes — verification (iii)'s `dnf` reading from the
 isolated tier, and peering reachability in the intended direction only. Verification (ii) is
 Stage 6's by nature.
+
+## 2026-08-16 — The probes: the perimeter, the two peerings, and an instrument that measured nothing
+
+Stage 3's Deliverables, as three `[E]` slices rather than as a script. The choice was
+deliberate: `aws/probes/` is the one folder under `aws/` allowed to write, but its declared
+safety class is that nothing is created — and these create instances. The expensive failure
+for a probe is not a wrong reading, it is an instance nobody turned off, so they belong under
+`make down` and inside `make status`'s burn meter. `production/probes` is the target;
+`sandbox/probes` carries the perimeter and peering readings; `development/probes` carries
+INT-09. **No IAM principal is created by any of them**, and that is load-bearing rather than
+tidy: the two endpoint-policy statements under test carry no principal condition, so an
+anonymous request is judged by exactly the statement being measured.
+
+**The target is one host with two interfaces**, and that is the whole design. A single
+process bound to `0.0.0.0`, one security group attached to both interfaces, one address in a
+tier the sources route to and one in a tier they do not. Two separate hosts would have left
+"nothing answered" indistinguishable from "nothing was listening there". The sources reach it
+BY NAME, through records in the peer account's private zone, so no address crosses an account
+boundary and nothing is pasted.
+
+**The perimeter, from the isolated tier — four readings, because the first three are
+worthless alone.** The premise was measured rather than assumed: `curl` to the internet timed
+out, so this host has no default route. The repo configuration was printed, and it settles a
+claim the stage's second entry made — the AL2023 mirror list is served from the repository
+bucket itself, not from `cdn.amazonlinux.com`, which was unreachable in the same run. Then
+`dnf makecache` **SUCCEEDED** through the gateway endpoint. Then the pair: an anonymous GET of
+a real public object in the allow-listed repository bucket returned **200**, and the same call
+against an equally public Amazon Linux 2 repository bucket — same region, same anonymity, not
+named by the policy — returned **403 AccessDenied**. Verification (iii) answered.
+
+**The peering, twice, against the same target host.** From Sandbox and again from Development:
+the permitted address on the admitted port returned **HTTP 200**; the same host's second
+interface, in a tier the source holds no route to, was **silent**; the permitted address on a
+port the security group does not admit was **silent** too. One variable at a time — the route
+between the first two, the security group between the first and the third.
+
+**INT-09 was exercised for the first time.** The Deliverables measure Sandbox to Production;
+the stage's Proves row is Development to Production. Those are different peering connections
+with different routes on both sides, and exercising one says nothing about the other — so the
+Development host was built rather than the claim inferred. It also answers the half of the DNS
+Deliverable a Sandbox host cannot: `probe.prod.internal` resolved from both. The third clause,
+NXDOMAIN from Staging, has no host to refuse until the vend and is recorded as an absent
+negative control rather than substituted.
+
+**The flow logs close the Deliverable in both directions**, and the absence is the interesting
+half: ACCEPT for the connection that was made, REJECT for the one dropped at the ENI, and
+**zero** records naming the unrouted address — from either source. That silence means
+something only because the REJECT in the same window proves the instrument records at all.
+
+**TWO INSTRUMENT DEFECTS, BOTH FOUND BY RUNNING IT.**
+
+The first is the reason this entry is worth reading. The perimeter pair originally used
+buckets that **do not exist**, on the reasoning that nonexistence removes the bucket's own
+policy from the comparison. It returned **404/404** — which by the reading's own stated
+criterion means "the perimeter is open". It does not: **S3 answers `NoSuchBucket` before it
+evaluates authorization**, so a nonexistent bucket cannot measure a policy at all. This is
+Lesson 21 exactly — validates-before-authorizing is a property of the action, not of the
+service — and the trap here was subtler than the lesson's usual form: the nonexistence chosen
+to keep one policy out of the comparison had silently removed the policy under test along with
+it. Real public objects in real buckets are what put the endpoint back in the decision, and
+the corrected pair is two Amazon Linux repository buckets differing in nothing but whether the
+allow-list names them.
+
+The second would have hidden the first. **A `user_data` change does not replace an instance
+by default** — the provider updates the attribute in place, and user-data runs at first boot
+only. The corrected instrument would have been applied to a host still running the old one,
+and the re-measurement would have agreed with itself for the wrong reason.
+`user_data_replace_on_change = true` is now set on all three.
+
+**Also measured, and not a finding about anything here:** `RunInstances` answered
+`Server.InsufficientInstanceCapacity` for `t4g.nano` in one Availability Zone and Terraform
+retried it for twenty-five minutes. The source slices now carry a `zone_index` and the target
+deliberately does not — a secondary ENI cannot cross an AZ, so that instance is pinned. Before
+using it, both private route tables and the shared isolated one were read to confirm the
+source readings are AZ-agnostic; they are. The stuck apply was ended with SIGINT rather than
+killed, so Terraform released its own state lock instead of orphaning one.
+
+Two smaller things the run corrected: a security group rule **description cannot contain an
+apostrophe** — `AuthorizeSecurityGroupIngress` accepts a fixed character set and returns
+`InvalidParameterValue` — and converting the target's single ingress rule to a `for_each`
+briefly raced its own replacement, since the destroyed rule and the created one are the same
+rule; the retry succeeded and the re-plan reads `No changes`.
+
+Burn with everything up: **USD 0.4968/h**. The three probe slices are 0.0168 of it and are
+destroyed by `make down` on `sandbox`, `development` and `production` — deferred to a later
+sitting by decision, not by omission.
 
 ---
 

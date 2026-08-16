@@ -20,8 +20,15 @@ exactly what Stage 1c attached.
 | [`attachments.json`](attachments.json) | **Which of these documents is attached where** — the root's six, the four OU pairs, and the three OUs that carry none *with the reason each is empty*. Names, never ids. Written at Stage 2 step 9 and read by **two** consumers on purpose: step 9.3's check and, from step 5, this slice's `for_each`. Attachments cannot be discovered — a `for_each` over the OUs the API returns would attach a document to `Sandboxes` and silently reverse [D37](../../../docs/plan/decisions/D37-nested-ou-inheritance.md) |
 | `canary/` | **Throwaway** documents, attached to `Policy Test` during the step 7.3 battery and detached in the same sitting. Never attached to anything real |
 | `render.py` | Substitutes this organization's identifiers into the templates and writes the pasteable copies to `aws/output/rendered-policies/` |
-| `check-index.py` | Verifies that `POLICIES.md` still lists exactly what each document in `policies/` contains, in order, and names both directions of a mismatch. **Type-aware since 7.8**: `Sid`s for an SCP or RCP, tag keys for a tag policy, `ec2_attributes` names for a declarative policy — and an unrecognised document stops the run rather than being skipped. No AWS session, no side effects, exits non-zero when it drifts |
 | [`POLICIES.md`](POLICIES.md) | **The statement-level index for every document in `policies/`, of all four policy types**: what each entry does and why it exists. JSON carries no comments, so that file is where the reasoning lives — **and it is updated in the same sitting as any policy change**. *(Called `SCPs.md` until 2026-08-15; renamed because it stopped being SCP-only at step 7.8.)* |
+
+**The check that guards `POLICIES.md` is [`scripts/check-index.py`](../../../scripts/check-index.py), and it
+moved out of this folder on 2026-08-16** — it is one of the six gates `make check` and `pre-commit` run, and
+a suite split across two directories is one nobody can enumerate by looking. It verifies that `POLICIES.md`
+still lists exactly what each document in `policies/` contains, in order, and names both directions of a
+mismatch. **Type-aware since 7.8**: `Sid`s for an SCP or RCP, tag keys for a tag policy, `ec2_attributes`
+names for a declarative policy — and an unrecognised document stops the run rather than being skipped. No
+AWS session, no side effects, exits non-zero when it drifts. `render.py` stayed: it is not a gate.
 
 ## The templates carry placeholders. Paste the *rendered* files
 

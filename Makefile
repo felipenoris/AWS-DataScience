@@ -72,7 +72,7 @@ check:
 	         "./scripts/check-iam-wildcards.py" \
 	         "./scripts/check-bootstrap-parity.py" \
 	         "./scripts/slices.py check" \
-	         "./terraform-live/identity/org-policies/check-index.py"; do \
+	         "./scripts/check-index.py"; do \
 	  printf '\n\033[1m--- %s\033[0m\n' "$$c"; \
 	  $$c || fail=1; \
 	done; \
