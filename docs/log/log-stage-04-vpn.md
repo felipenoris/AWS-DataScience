@@ -6,12 +6,13 @@ Stage: [`docs/plan/stages/stage-04-vpn.md`](../plan/stages/stage-04-vpn.md).*
 *Exceptions, named by SUBJECT so the provenance is not guessed later — the same convention
 [Stage 3's log](log-stage-03-networking.md) adopted.*
 
-*All three entries below are exceptions: on **2026-08-16** the user authorised Claude, explicitly, to
-create this file and write the first two directly, and on **2026-08-17** to write the third the same way.
-None records an AWS call — one is a repository change merged with the Stage 3 teardown, one is pass 1
-authored and gated but **not applied**, and the third is a design review propagated through the
-repository — so what they are an account of is repository work and readings, not of actions taken in
-AWS. The standing rule is unchanged: the next entry is the user's.*
+*The four entries below are exceptions: on **2026-08-16** the user authorised Claude, explicitly, to
+create this file and write the first two directly, and on **2026-08-17** to write the third and the
+fourth the same way. The first three record no AWS call — one is a repository change merged with the
+Stage 3 teardown, one is pass 1 authored and gated but **not applied**, and the third is a design
+review propagated through the repository. **The fourth is different in kind: it is the stage's first
+AWS write**, applied by Claude on the user's explicit authorisation of that specific step, and written
+here by the same authorisation. The standing rule is unchanged: the next entry is the user's.*
 
 ---
 
@@ -196,6 +197,57 @@ CloudTrail does not record by default, and containment would have meant extendin
 slices · `checkov` **0 failed** (335 / 670 passed) · `ruff` check and format · `terraform validate` on the
 module and on `sandbox/foundation/` · the user data **rendered for real** through `templatefile()` and
 `bash -n` on the decoded script.
+
+## 2026-08-17 — Step 2.3 applied: the VPN's `[P]` anchors exist
+
+**The stage's first AWS write.** Profile `awsds-infra-sandbox-1` (`InfrastructureAccess` in
+`Sandbox Account 1`), [Recipe A](../plan/runbooks/terraform-changes.md) followed end to end: generated
+files, `init -reconfigure` (the working copy had been left by a `-backend=false` validate), plan written
+to a file **outside the repository**, read in chat, and the apply run against that same file.
+
+`4 to add, 0 to change, 0 to destroy` — purely additive, none of Stage 3's 31 resources touched.
+Re-plan **`No changes`** at `-detailed-exitcode 0`.
+
+| What | Reading |
+|---|---|
+| Elastic IP | allocated, **unassociated** — step 1.4 is what consumes it |
+| `awsds-sandbox-vpn` SG | the estate's only world-open rule, UDP/51820 (`VP-3` pass) |
+| `awsds-sandbox-vpn-host-key` | container only, **no value** — its deny policy attached and rotation off (`VP-9` pass, the check's first real reading) |
+
+`./aws/vpn.py` and `./aws/networking.py` both **0 FAILED**; `NT-4` still clean on the client range;
+`make check` OK. The estate leaves USD 0.0000/h for a **monthly** floor of ~USD 4.05 (EIP 3.65 +
+secret 0.40). `make status` still reads 0.0000/h and is right to — these are `[P]`, billed monthly,
+which that target's own footer says.
+
+### The entry's finding: `VP-2` said nothing about the state this step creates
+
+Between an allocated Elastic IP and the host that consumes it, `VP-2` fell through both of its branches
+and emitted **no line at all** — so an allocation nobody ever attaches, which is the one thing that
+check exists to price, would have billed in silence for as long as it lasted. Same shape as the two
+instrument defects Stage 3 caught, and found the same way: by running it (Lesson 13). It now emits a
+note naming the address and the window in which that reading is legitimate — *expected between 2.3 and
+1.4; standing longer than that stretch, it is an orphan allocation rather than a stage in progress*.
+`docs/AWS_STATE.md` section C carries the new state with that note as its disposition.
+
+### The plan's second finding, fixed in the same sitting: `CostCenter` said `stage-03`
+
+Read off the plan before the apply: all four resources inherited `CostCenter = stage-03` from the
+slice's provider `default_tags`, while being Stage 4's. The convention is **the stage that created the
+resource**, and a slice-level default cannot tell two stages apart inside one slice — `foundation/` now
+holds resources from both. Fixed with a per-resource override (`local.vpn_anchor_tags`, merged into the
+three taggable resources; the secret policy carries no tags), deliberately as the **whole** of the
+difference: the other four mandatory tags still arrive from `default_tags`, unrepeated (Lesson 14).
+
+Applied as `0 to add, 3 to change, 0 to destroy` — **in-place, nothing replaced**, which is what made
+this cheap to fix after the fact rather than a reason to have blocked the first apply. Read back **from
+AWS rather than from Terraform** — `ec2 describe-tags` and `secretsmanager describe-secret` — all three
+`stage-04`; re-plan `No changes`.
+
+### Not done, and why
+
+- **Step 4.3 has not run**: the secret is an empty container until the key pair is generated and
+  enrolled with `put-secret-value`. It must precede step 1.4, or the first boot's fetch simply waits.
+- **Nothing consumes the anchors yet** — `sandbox/vpn/` is authored and gated but not applied.
 
 ---
 

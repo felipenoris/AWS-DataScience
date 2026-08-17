@@ -411,6 +411,13 @@ def main(argv: list) -> int:
 
     # VP-2: the [P] Elastic IP exists and is associated with the host (step 2.1). The EIP
     # bills whether or not it is associated, so an orphan allocation is pure cost.
+    #
+    # THE ALLOCATED-BUT-HOSTLESS CASE IS A READING AND NOT A SILENCE (found by running this
+    # after step 2.3, 2026-08-17): between the [P] apply and step 1.4 there is legitimately an
+    # address and no instance, and the earlier code fell through both branches and said
+    # NOTHING - so the one state this check exists to price, an allocation nobody ever
+    # attaches, would have gone unmentioned for as long as it lasted (Lesson 13). It is a
+    # note rather than a FAIL because the stage's own order produces it.
     if home_live:
         if not addresses:
             checks.note(
@@ -418,7 +425,15 @@ def main(argv: list) -> int:
                 "Elastic IP in the VPN home",
                 "none allocated - expected before Stage 4 step 2.",
             )
-        elif instances:
+        elif not instances:
+            checks.note(
+                "VP-2",
+                f"Elastic IP allocated, no host yet ({addresses[0][1]})",
+                "expected between step 2.3 and step 1.4 - and it bills unassociated "
+                "(~USD 3.65/month), so this reading standing for longer than that stretch "
+                "is an orphan allocation, not a stage in progress.",
+            )
+        else:
             iid = instances[0][0]
             assoc = [a for a in addresses if a[2] == iid]
             if assoc:

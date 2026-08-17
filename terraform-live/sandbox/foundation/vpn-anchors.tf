@@ -16,18 +16,32 @@
 # permission-set fragment were edited together. [P] is what makes that impossible rather than
 # unlikely.
 
+# WHY EVERYTHING IN THIS FILE CARRIES A CostCenter OF ITS OWN (2026-08-17, read off the step
+# 2.3 plan): the slice's provider default_tags say `stage-03`, which is true of everything
+# Stage 3 built in foundation/ and false of these - the convention is CostCenter = the stage
+# that CREATED the resource (docs/plan/conventions.md), and a slice-level default cannot tell
+# two stages apart inside one slice. So the override is per resource and it is the WHOLE of
+# the difference: the other four mandatory tags still arrive from default_tags, unrepeated
+# (Lesson 14). Written as one local rather than four literals for the same reason.
+locals {
+  vpn_anchor_tags = {
+    CostCenter = "stage-04"
+  }
+}
+
 # ------------------------------------------------------------------------ the address
 #
 # ~USD 3.65/month, measured (docs/PRICING.md 3) - billed whether or not it is associated and
 # whether or not the host is running, which is why an orphan allocation is pure cost and
-# ./aws/vpn.py VP-2 fails on one.
+# ./aws/vpn.py VP-2 reports one (as a note until step 1.4, which is the only stretch in which
+# an unassociated allocation is the expected reading).
 resource "aws_eip" "wireguard" {
   # checkov:skip=CKV2_AWS_19:the association is DELIBERATELY in another slice - this address is [P] so that a [D] instance rebuild cannot change it (step 2.1), and aws_eip_association lives in sandbox/vpn/ where the instance does. The check cannot see across two state files
   domain = "vpc"
 
-  tags = {
+  tags = merge(local.vpn_anchor_tags, {
     Name = "awsds-${var.env}-vpn"
-  }
+  })
 }
 
 # ------------------------------------------------------------------ the security group
@@ -74,9 +88,9 @@ resource "aws_security_group" "wireguard" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 
-  tags = {
+  tags = merge(local.vpn_anchor_tags, {
     Name = "awsds-${var.env}-vpn"
-  }
+  })
 }
 
 # ------------------------------------------------------------------------ the host key
@@ -104,9 +118,9 @@ resource "aws_secretsmanager_secret" "wireguard_host_key" {
   # never routine: the name is unavailable until the window closes.
   recovery_window_in_days = 30
 
-  tags = {
+  tags = merge(local.vpn_anchor_tags, {
     Name = "awsds-${var.env}-vpn-host-key"
-  }
+  })
 }
 
 # THE CONTAINMENT RIDES ON THE OBJECT, not in six permission sets (Lesson 14's good
