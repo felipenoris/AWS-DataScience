@@ -96,11 +96,12 @@ none of them is a new key:
 ## 3. Procedure C — rotate the host pair (the key, or a session that could read it, is compromised)
 
 1. Generate the new pair on the laptop, as at enrollment — **outside the repository**, `umask 077`
-   for a `600` file at creation, and `tr -d '\n'` so the stored value is exactly 44 characters
-   rather than 45 (measured 2026-08-17; the filename is scratch — any name serves):
+   for a `600` private half at creation, `tr -d '\n'` so the stored value is exactly 44 bytes rather
+   than 45, and **no output on screen**: both halves go to disk, so nothing lands in scrollback
+   (measured 2026-08-17). Read the new public half from the file at step 5 (`cat host-public.key`):
 
    ```bash
-   (umask 077 && wg genkey | tr -d '\n' > host-private.key) && wg pubkey < host-private.key | tee host-public.key
+   (umask 077 && wg genkey | tr -d '\n' > host-private.key) && wg pubkey < host-private.key > host-public.key
    ```
 
 2. Enrol the new value — `file://`, never a pasted literal (§4):
@@ -128,8 +129,9 @@ none of them is a new key:
    `DenyControlPlaneOffVpn` fragment in `identity/sso/` needs **no edit** — it pins the address,
    never the key.
 5. Update the `PublicKey =` line in **every** device's client config with the new public half —
-   all of them at once, because old configs stop handshaking the moment the new host is up.
-   `Endpoint` and `Address` stay as they are. Delete the scratch `host-private.key`.
+   read it from `host-public.key` (step 1 put it there and printed nothing) — all of them at once,
+   because old configs stop handshaking the moment the new host is up. `Endpoint` and `Address` stay
+   as they are. Delete the scratch `host-private.key`; `host-public.key` may stay (§0).
 6. Verify per device: a handshake with the tunnel up; then, if 8.3 has landed, the control-plane
    pair — the same API call denied off-VPN and succeeding on-VPN. The new boot's
    `GetSecretValue` is one more CloudTrail line.

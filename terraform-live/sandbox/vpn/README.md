@@ -40,7 +40,7 @@ on the laptop, **outside this repository** (step 4.3), and enrolled into
 user and never by Terraform:
 
 ```bash
-(umask 077 && wg genkey | tr -d '\n' > host-private.key) && wg pubkey < host-private.key | tee host-public.key
+(umask 077 && wg genkey | tr -d '\n' > host-private.key) && wg pubkey < host-private.key > host-public.key
 ```
 
 ```bash
@@ -48,16 +48,19 @@ aws secretsmanager put-secret-value --profile awsds-infra-sandbox-1 --region us-
   --secret-id awsds-sandbox-vpn-host-key --secret-string file://host-private.key
 ```
 
-Every detail of the first command was measured rather than assumed (2026-08-17). `umask 077`
-inside the subshell makes `host-private.key` **`600` at creation** rather than after it, while
+**The first command prints nothing** — both halves go to disk and neither reaches the terminal,
+so the enrollment leaves no key material in scrollback. Read the public half from the file when
+a client config needs it (`cat host-public.key`, step 9.1).
+
+Every other detail of it was measured rather than assumed (2026-08-17). `umask 077` inside the
+subshell makes `host-private.key` **`600` at creation** rather than after it, while
 `host-public.key` — written outside those parentheses, on purpose — lands `644`: the two halves
 get the permissions their names promise. **`tr -d '\n'` is what makes the stored value exactly
 44 bytes**; the obvious `wg genkey | tee host-private.key` writes 45, the key plus a newline,
 which `file://` stores verbatim (the boot's `$(…)` strips it, so this is unambiguity for later
 readers rather than a bug avoided). `host-public.key` **keeps** its newline — 45 bytes, `wg
 pubkey`'s own output — which is what lets the verification below be a `diff` rather than a
-comparison by eye. And `tee` means the public half is on screen and on disk in one step: it
-goes into every client config (step 9.1).
+comparison by eye.
 
 `file://`, never a pasted literal — the key must not enter the shell history. `host-private.key`
 is scratch — **keep it until the tunnel proves, then delete it**; the secret is the designed

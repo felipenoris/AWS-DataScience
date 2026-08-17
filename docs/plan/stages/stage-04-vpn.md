@@ -241,7 +241,7 @@ device must be deleting one entry — D4 accepted "no Identity Center integratio
   touches a tfvars either):
 
   ```bash
-  (umask 077 && wg genkey | tr -d '\n' > host-private.key) && wg pubkey < host-private.key | tee host-public.key
+  (umask 077 && wg genkey | tr -d '\n' > host-private.key) && wg pubkey < host-private.key > host-public.key
   ```
 
   ```bash
@@ -251,8 +251,10 @@ device must be deleting one entry — D4 accepted "no Identity Center integratio
 
   Run it **outside this repository** — the practice, with `*.key` in `.gitignore` as the net under
   it (2026-08-17), because `detect-private-key` reads PEM armor and a WireGuard key is bare base64
-  that no scanner can tell from the public ones this repo commits on purpose. Every detail of the
-  first command is measured: `umask 077` inside the subshell makes `host-private.key` **`600` at
+  that no scanner can tell from the public ones this repo commits on purpose. **The first command
+  prints nothing**: both halves go to disk, neither reaches the terminal, so no key material lands
+  in scrollback — read the public one from the file when 9.1 needs it (`cat host-public.key`). Every
+  other detail is measured: `umask 077` inside the subshell makes `host-private.key` **`600` at
   creation** while `host-public.key`, written outside those parentheses, lands `644` — each half
   with the permissions its name promises; **`tr -d '\n'` stores exactly 44 bytes**, where the obvious
   `wg genkey | tee …` writes 45, the key plus a newline, which `file://` stores verbatim (the boot's
@@ -262,7 +264,7 @@ device must be deleting one entry — D4 accepted "no Identity Center integratio
   (runbook §4). The public half goes into the client template (9.1); `host-private.key` is scratch —
   **delete it once pass 2 proves the tunnel** (the secret is the designed home), while
   `host-public.key` is not secret and may stay. Enrol **before 1.4**, so the first boot's fetch
-  returns at once instead of waiting politely. Then verify **mechanically**, the private half never
+  returns at once instead of waiting politely. Then verify **mechanically**, no key of either half
   reaching a terminal — `diff` is silent and exits 0 on a match:
   `… get-secret-value … --query SecretString --output text | wg pubkey | diff - host-public.key`. This is what 9.1's
   "a rebuild changes nothing" actually rests on: every client config pins the server's public key as
