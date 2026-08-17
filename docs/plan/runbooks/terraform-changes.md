@@ -4,7 +4,7 @@
 |---|---|
 | **Scope** | Every by-hand change under `terraform-live/` and `terraform-modules/`, until Stage 8 hands this job to a pipeline |
 | **Operator** | The **infrastructure user**, through `InfrastructureAccess` — one `awsds-infra-*` profile per account (§1) |
-| **The one rule** | Modules are consumed **by git tag, from GitHub**. A module change and its callers are therefore **two commits, with the tags pushed in between** (§3) — in the wrong order, the commit hook blocks you with `invalid ref` |
+| **The one rule** | Modules are consumed **by git tag, from GitHub**. A module change and its callers are therefore **two commits, with the tags pushed — and confirmed on origin — in between** (§3) — in the wrong order, the commit hook blocks you with `invalid ref` |
 | **First applied** | Stage 3 passes 1-2 (2026-08-16) — the [stage log](../../log/log-stage-03-networking.md) is the worked example |
 
 ## 0. The mental model, in five lines
@@ -113,9 +113,29 @@ tags. The ref must already exist on GitHub when the callers' commit runs.
    git push -u origin <branch> --tags
    ```
 
-5. **Commit 2: bump `?ref=` in every caller** (plus whatever caller edits the new version needs).
+5. **Ask origin for the tag — do not trust the push output.** This is the check that turns the §6
+   `invalid ref` block from a surprise into a step you already passed. Name the tag you just pushed:
+
+   ```bash
+   git ls-remote --tags origin vpc-egress-v0.1.0
+   ```
+
+   **Read the output, not the exit code**: `git ls-remote` exits `0` whether or not the tag is there,
+   and prints **nothing** when it is not. The success shape is one line — the commit hash, a tab, and
+   `refs/tags/<name>-vX.Y.Z`. Empty output means the tag never left your machine (`--tags` skipped, a
+   push to the wrong remote, a typo in the tag), and committing the callers next would fail on the
+   hook's fetch. Push again, and re-ask, before step 6.
+
+   Two answers that are *not* success, and each means something different:
+
+   | Output | What it means |
+   |---|---|
+   | nothing at all | The tag is not on origin — go back to step 4 |
+   | a hash that is **not** the commit you tagged (`git rev-parse <tag>`) | Origin carries a **different** tag of the same name. Never `git push --force` over it (§7, *Retag*) — bump to the next version and start from step 3 |
+
+6. **Commit 2: bump `?ref=` in every caller** (plus whatever caller edits the new version needs).
    The hook now resolves the new tag from origin and passes.
-6. **Plan and apply each affected account** — Recipe A steps 4-9, re-running init (step 4) so the new
+7. **Plan and apply each affected account** — Recipe A steps 4-9, re-running init (step 4) so the new
    module version is fetched.
 
 ## 4. Recipe C — a new slice
@@ -140,7 +160,7 @@ peers' facts through aliased providers instead of pasting ids.
 
 | Symptom | Cause | Fix |
 |---|---|---|
-| `invalid ref: "<name>-vX.Y.Z"` | The tag is not on origin | Push the tags. If this is a module+caller change, you skipped §3's order: unstage the callers, commit the module, tag, push, then commit the callers |
+| `invalid ref: "<name>-vX.Y.Z"` | The tag is not on origin | Confirm it first — `git ls-remote --tags origin <name>-vX.Y.Z`, empty means absent (§3 step 5) — then push the tags. If this is a module+caller change, you skipped §3's order: unstage the callers, commit the module, tag, push, confirm, then commit the callers |
 | Module fetch asks for SSH keys / hangs | Init fetches over **your** git credentials | Fix your SSH agent — this is git auth, not Terraform and not AWS |
 | Stale module or provider errors after a tag bump | Old `.terraform/` cache | `rm -rf terraform-live/<account>/<slice>/.terraform`, re-run init |
 | `checkov` FAILED | A real finding, or a deliberate exception | Fix it — or suppress with `# checkov:skip=CKV_xxx:reason` written **inside** the resource block, first lines. Above the block it is **silently ignored** |

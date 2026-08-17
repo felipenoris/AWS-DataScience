@@ -273,8 +273,9 @@ device must be deleting one entry — D4 accepted "no Identity Center integratio
   them at the first AMI drift — Lesson 4, in a `[D]` resource this time. What the design still
   costs, named so it is a choice (decision 4, third review): the fetched key lands in `wg0.conf` on
   the host's EBS (`[D]` keeps it across stop/start) and the container bills USD 0.40/month — while
-  the user data carries only the ARN, `DescribeInstanceAttribute` yields a pointer, state keeps the
-  provider's SHA-1 of a script with no key in it, and every read of the value is a CloudTrail
+  the user data carries only the ARN, `DescribeInstanceAttribute` yields a pointer, state keeps that
+  script **in full and in plaintext — with no key in it** (measured at 1.4; the SHA-1 this line
+  predicted is pre-5.0 provider behaviour), and every read of the value is a CloudTrail
   management event. The prize is impersonating a lab tunnel endpoint, not minting certificates.
 
 ### 5. The client configuration — full tunnel, not split
@@ -527,8 +528,9 @@ whoever is at the keyboard (Lesson 16).
    **rotation is `put-secret-value` plus a deliberate `-replace` plus every client config** (runbook
    §3); and **automatic rotation stays off forever** — a rotation Lambda would replace the key
    without touching a single client config, the runbook's one rule violated by machine (`VP-9` fails
-   if `RotationEnabled` ever reads true). State keeps the SHA-1 of a rendered script that now
-   contains no key at all.
+   if `RotationEnabled` ever reads true). State keeps the rendered script **in full** — plaintext,
+   not a hash (1.4) — and what makes that harmless is the design rather than the storage: the
+   script contains no key at all.
 
 ## Verifications to answer while executing
 
@@ -536,14 +538,14 @@ Record every answer, including the ones that come out fine.
 
 | # | Question | Step |
 |---|---|---|
-| i | Does the host finish its user data through the S3 gateway endpoint alone — is Stage 3's 9.3 allow-list complete for AL2023 and the CloudWatch agent? (Also answers Stage 3 verification (iii)) | 1.4, 7 |
+| i | ~~Does the host finish its user data through the S3 gateway endpoint alone?~~ **Answered YES at 1.4 (2026-08-17), and the number is the answer: 35 seconds.** `dnf -y install wireguard-tools iptables-nft amazon-cloudwatch-agent` ran between the `(1)` say-lines at `04:41:47Z` and `04:42:22Z`, and the boot reached `END` at `04:42:27Z` — no NAT in the path, the gateway endpoint's prefix-list route winning over the internet gateway. Stage 3's 9.3 allow-list is **complete for AL2023 core and the CloudWatch agent**; Stage 3 verification (iii) is answered with it. The failure mode this was budgeted against — a hang, not an error — never appeared. Residual: step 7 exercises the agent's *shipping* path, which is a different allow-list entry | 1.4, 7 |
 | ii | ~~Does the EIP association survive a stop/start?~~ **Answered by the EC2 documentation (2026-08-16):** the Elastic IP belongs to the network interface, which **persists across stop/start** — the address stays associated (and bills while stopped), so "re-associate on start" is unnecessary code. Residual: the `make down`/`make up` diff of `./aws/vpn.py` (`VP-2`) confirms it on this instance | 2.1 |
-| iii | Does SSM Session Manager reach the host with no `ssm*` interface endpoints anywhere in the account (public subnet, public IP)? | 3 |
+| iii | ~~Does SSM reach the host with no `ssm*` interface endpoints anywhere in the account?~~ **The endpoint half is answered YES at 1.4 (2026-08-17)**: the agent registered `Online` (v3.3.4624.0) and an `AWS-RunShellScript` invocation returned `Success` — the same `ssmmessages` channel `start-session` uses, over the public path, with no interface endpoint in the account. **What is not yet answered is the laptop half**: `start-session` needs the `session-manager-plugin`, which is not in this project's toolset — that is step 3's, and it is a local install rather than a network question | 3, answered at 1.4 |
 | iv | Does every service-on-behalf flow survive the deny with the tunnel up? FAS flows are documented to carry the caller's IP, so the interesting rows are the **non-FAS** ones — the console's own backend calls above all; record any that break | 8 |
 | v | Does auto-enable `ALL` reach **Management itself**, and does a later vend arrive covered? (Existing members are documented as covered — that half is no longer in question) | 10.2 |
 | vi | With the tunnel down, does an IdC sign-in complete at all (the access portal is not a permission-set operation — expected: yes; record it as INT-16 context) | 8, deliverables |
 | vii | Do all six composed inline policies stay under the **10,240 non-whitespace-byte** permission-set quota? The overflow fails at provisioning, not in `plan` | 8.2 |
-| viii | Does the first boot's key fetch behave as designed — a few named retries until the EIP association lands, then success — and does that `GetSecretValue` appear in CloudTrail as a management event, with the instance role as the principal? The audit half of decision 4, exercised rather than assumed (Lesson 20). Also confirm with one `terraform state pull` that `user_data` reads as 40 hex characters — the SHA-1 of a script with no key in it | 1.4, 4.3 |
+| viii | ~~Does the first boot's key fetch behave as designed, and is the read auditable?~~ **Answered at 1.4 (2026-08-17), with one prediction confirmed, one overtaken and one wrong.** The fetch took **two seconds and zero retries** — `(3) fetching` at `04:42:24Z`, `(3) key in hand (base64 length 44)` at `04:42:24Z`: the "few named retries" were never needed, because `aws_eip_association` completed one second after the instance did and cloud-init only reached section (3) 35 seconds later. The retry loop is therefore **untested by this boot** — it is insurance whose exercise is still owed, and `length 44` is the `tr -d '\n'` of 4.3 confirmed end to end. The audit half is **confirmed as designed**: CloudTrail shows `GetSecretValue` at `04:42:24Z`, `managementEvent: true`, principal `arn:aws:sts::…:assumed-role/awsds-sandbox-vpn/i-…`, no error — the instance role, named. **The state half came back different from the prediction**: `user_data` is the rendered script **in full and in plaintext**, not 40 hex characters — the SHA-1 was pre-5.0 provider behaviour. The claim that mattered holds and is now the whole of it: **no key in that script**, only the ARN and `PrivateKey = $HOST_KEY`, a shell variable expanded on the host | 1.4, 4.3 |
 
 ## Risks
 

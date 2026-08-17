@@ -82,7 +82,9 @@ until the same apply's EIP association gives it a route and until the value is e
 rotation that is `put-secret-value` **plus a deliberate `terraform apply -replace`** (the value
 sits outside the user data, so a new key alone is invisible to Terraform). It buys: a user
 data that carries only the ARN, so `ec2:DescribeInstanceAttribute` yields a pointer; a state
-that keeps the provider's SHA-1 of a script with no key in it; a CloudTrail management event
+that keeps that same script **in full and in plaintext** — measured at the first apply, where
+an earlier line here predicted a SHA-1 — **holding no key, only the ARN and the shell variable
+that receives the fetched value**; a CloudTrail management event
 for **every** read of the value; and exactly two at-rest copies — the secret (the designed
 home) and `wg0.conf` on the host's EBS. The alternative, generating the key on first boot,
 still fails the old way: it leaves the key living only inside an instance that the

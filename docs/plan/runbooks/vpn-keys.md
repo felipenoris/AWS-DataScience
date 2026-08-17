@@ -11,16 +11,24 @@
 
 | Half | Designed home | Other copies |
 |---|---|---|
-| Host **private** | **The `[P]` Secrets Manager secret `awsds-sandbox-vpn-host-key`** (Stage 4 step 2.2a) — value written by the user at enrollment (`put-secret-value`, step 4.3), read by the instance role at first boot; its resource policy denies `GetSecretValue` to everything else in the account except `InfrastructureAccess`, and **every read is a CloudTrail management event** | `/etc/wireguard/wg0.conf` on the host's EBS volume, which `[D]` keeps across stop/start. **Not the user data** — it carries the secret's ARN, so `ec2:DescribeInstanceAttribute` yields a pointer; **not the state** — the provider stores a SHA-1 of a script that contains no key; **not the laptop** — the enrollment file is scratch, deleted once the tunnel proves (4.3) |
+| Host **private** | **The `[P]` Secrets Manager secret `awsds-sandbox-vpn-host-key`** (Stage 4 step 2.2a) — value written by the user at enrollment (`put-secret-value`, step 4.3), read by the instance role at first boot; its resource policy denies `GetSecretValue` to everything else in the account except `InfrastructureAccess`, and **every read is a CloudTrail management event** | `/etc/wireguard/wg0.conf` on the host's EBS volume, which `[D]` keeps across stop/start. **Not the user data** — it carries the secret's ARN, so `ec2:DescribeInstanceAttribute` yields a pointer; **not the state** — the state stores the rendered script **in full**, and the script has no key in it: the ARN, and a shell variable that receives the fetched value (measured at the first apply, 2026-08-17 — see §0's note); **not the laptop** — the enrollment file is scratch, deleted once the tunnel proves (4.3) |
 | Host **public** | `host-public.key` on the laptop, written beside the private half at enrollment (step 4.3) — `644`, not secret, and kept after `host-private.key` is deleted | pinned in every client config's `PublicKey =` line — and recoverable **without touching the secret**: any client config, or `wg show wg0 public-key` over SSM |
 | Device **private** | that device, only — it never leaves it (Stage 4 step 4.1) | none, by design |
 | Device **public** | `peers.auto.tfvars` — the **tracked** roster, so git history holds every version of it | EC2's stored user data, the host (`wg show`, `/etc/wireguard/peer-names`), and re-derivable on the device from its private half |
 
-Two shapes worth one confirmation each at the first apply: `terraform state pull` shows the
-instance's `user_data` as 40 hex characters — the provider's SHA-1 of a script that carries the
-ARN and no key — and CloudTrail's event history in the VPN home shows the boot's
-`GetSecretValue` as a management event: the audit half of decision 4, exercised rather than
-assumed (Lesson 20; Stage 4 verification (viii)).
+Both halves were confirmed at the first apply (2026-08-17, step 1.4) — and **one of them came
+back different from what this runbook predicted.** CloudTrail's event history in the VPN home
+does show the boot's `GetSecretValue` as a **management** event, principal
+`assumed-role/awsds-sandbox-vpn/i-…`, no error: the audit half of decision 4, exercised rather
+than assumed (Lesson 20; Stage 4 verification (viii)). But `terraform state pull` shows
+`user_data` as **the rendered script in full**, not the 40 hex characters this file used to
+promise — provider 6.60.0 stores the plaintext, and the SHA-1 was the pre-5.0 behaviour written
+from memory. **The claim that mattered survives the correction and is now the whole of it:
+there is no key in that script.** What the state holds is the secret's ARN and the line
+`PrivateKey = $HOST_KEY` — a shell variable, expanded on the host at boot, three minutes after
+the state was written. Read the mechanism as *the key never crosses Terraform*, never as *the
+state is a hash*: the second sentence would also make anything else in a user data look
+protected, and nothing is.
 
 ## 1. Procedure A — recovery: a copy is lost, no compromise suspected
 
