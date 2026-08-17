@@ -71,7 +71,7 @@ variable "peer_cidr" {
 # ------------------------------------------------- the one hand-written file, one variable
 
 variable "peers" {
-  description = "One entry per PERSON PER DEVICE, keyed by a name that reads in `wg show` output. `public_key` is the device's public half (step 4.1: `wg genkey | tee private.key | wg pubkey` - the private half never leaves the laptop and never enters this repository). `host` is the device's address inside peer_cidr, authored so that revoking a device cannot renumber anybody else. The SERVER's key has no variable here at all: see the header."
+  description = "One entry per PERSON PER DEVICE, keyed by a name that reads in `wg show` output. `public_key` is the device's public half, generated ON the device (step 4.1: on a laptop the silent `(umask 077 && wg genkey | tr -d '\n' > d-private.key) && wg pubkey < d-private.key > d-public.key`, run outside this repository; on a phone, by the WireGuard app itself - either way the private half never leaves the device and never enters this repository). `host` is the device's address inside peer_cidr, authored so that revoking a device cannot renumber anybody else. The SERVER's key has no variable here at all: see the header."
   type = map(object({
     public_key = string
     host       = number

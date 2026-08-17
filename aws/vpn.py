@@ -12,6 +12,7 @@
 #
 #   run:      ./aws/vpn.py                        # every awsds-* profile
 #             ./aws/vpn.py awsds-infra-sandbox-1  # only the ones named
+#             ./aws/vpn.py --on-host              # ALSO read inside the host (see below)
 #             python3 aws/vpn.py -                # CloudShell, ambient credentials
 #   writes:   aws/output/vpn.txt   (untracked - see .gitignore)
 #   reads:    ec2:DescribeInstances, DescribeAddresses, DescribeSecurityGroups,
@@ -21,7 +22,14 @@
 #             sso-admin:ListInstances, ListPermissionSets, DescribePermissionSet,
 #             GetInlinePolicyForPermissionSet,
 #             organizations:ListDelegatedAdministrators, sts:GetCallerIdentity.
-#             It never creates, updates or deletes anything.
+#             It never creates, updates or deletes anything - see the next line for the
+#             single, typed exception.
+#   sends:    NOTHING IN AWS, unless --on-host is typed. That flag adds ssm:SendCommand +
+#             GetCommandInvocation, and SendCommand is a WRITE API - it creates a Command,
+#             is a mutating CloudTrail event, and runs code on an instance - even though
+#             every command it carries is a read. It is a flag and not a default precisely
+#             so that `./aws/vpn.py` stays safe to fire at anything. Section 2a says what it
+#             buys: WHICH PEERS THE RUNNING wg0 ACTUALLY HOLDS, which no describe answers.
 #   exits:    0 all checks passed | 1 a call failed | 2 a check FAILED
 #
 # WHY THIS IS MULTI-PROFILE, which aws/INDEX.md admits only for a reason. Two of the
@@ -51,6 +59,7 @@ from __future__ import annotations
 
 import json
 import sys
+import time
 
 from awslib import context, profiles
 from awslib.awscli import AwsCli, ErrorLog, head2
@@ -85,11 +94,127 @@ INFRA_SET = "InfrastructureAccess"
 # must read DISABLED (Stage 4 step 10.3).
 DEFERRED_FEATURES = ("S3_DATA_EVENTS", "EBS_MALWARE_PROTECTION")
 
+# --------------------------------------------------------------- the inside of the host (2a)
+#
+# THIS IS THE ONE PART OF THIS FILE THAT IS NOT READ-ONLY, WHICH IS WHY IT IS OPT-IN.
+# Everything the commands below do ON the host is a read - grep, cat, wg show, systemctl
+# is-active, tail - but `ssm:SendCommand` is a WRITE API: it creates a Command, appears in
+# CloudTrail as a mutating call, and executes code on an instance. The whole point of
+# `aws/*` being read-only is that anyone may run these scripts to gather information without
+# thinking about it, so the escalation has to be typed: WITHOUT --on-host nothing here runs.
+#
+# WHY IT EXISTS AT ALL, since a read-only path was tried first: ec2:GetConsoleOutput is a
+# pure read and returns the boot's say-lines - but it returned ZERO BYTES on both Stage 4
+# hosts for the first several minutes (measured 2026-08-17), and it cannot answer the
+# questions that matter after the boot: which peers the interface actually holds, whether
+# the name map matches the roster, whether the sampler timer is alive. Those are the live
+# state of the tunnel, and SSM is the only path to them.
+#
+# `wg show wg0` AND NEVER `wg show all dump`: the dump form prints the INTERFACE'S PRIVATE
+# KEY on its first line, and this output is written verbatim into aws/output/vpn.txt. The
+# host's own sampler avoids the same form for the same reason (Stage 4 step 7); the check
+# below is the gate under that rule rather than a memory of it (Lesson 5).
+HOST_PROBE_COMMANDS = (
+    "grep -a AWSDS-VPN /var/log/cloud-init-output.log",
+    "echo ---STATUS---",
+    "cloud-init status",
+    "echo ---WG---",
+    "wg show wg0",
+    "echo ---NAMES---",
+    "cat /etc/wireguard/peer-names",
+    "echo ---SAMPLER---",
+    "systemctl is-active awsds-wg-handshakes.timer",
+    "tail -4 /var/log/wireguard-handshakes.log",
+)
+HOST_PROBE_BANNED = ("dump", ">", "rm ", "systemctl start", "systemctl stop", "wg set")
+HOST_PROBE_POLLS = 20
+HOST_PROBE_INTERVAL_S = 5
+
+
+def _assert_probe_commands_are_reads() -> None:
+    """Refuse to send a command list that stopped being a read, before it is sent.
+
+    A banned fragment here is not a style rule: `dump` would ship the interface's private
+    key into an output file, and the three write forms would make this script something
+    nobody can run to gather information any more.
+    """
+    for cmd in HOST_PROBE_COMMANDS:
+        for banned in HOST_PROBE_BANNED:
+            if banned in cmd:
+                note(f"REFUSING --on-host: {banned!r} appears in {cmd!r}")
+                sys.exit(1)
+
+
+def read_host(cli: AwsCli, instance_id: str, logerr) -> tuple:
+    """Run HOST_PROBE_COMMANDS on one instance through SSM; return (status, output).
+
+    Returns ``(status, text)`` where status is SSM's own - ``Success``, ``Failed``,
+    ``TimedOut`` - or one of this function's two: ``(send failed)`` when SendCommand itself
+    was refused, and ``(still running)`` when the invocation had not settled inside
+    HOST_PROBE_POLLS * HOST_PROBE_INTERVAL_S seconds. The three are distinguishable on
+    purpose: a refused send is usually the instance not being SSM-managed yet, while a
+    never-settling one is a host that is up and not answering.
+    """
+    params = json.dumps({"commands": list(HOST_PROBE_COMMANDS)})
+    res = cli.run(
+        "ssm",
+        "send-command",
+        "--instance-ids",
+        instance_id,
+        "--document-name",
+        "AWS-RunShellScript",
+        "--parameters",
+        params,
+        "--query",
+        "Command.CommandId",
+        "--output",
+        "text",
+        log=False,
+    )
+    if not res.ok:
+        logerr(VPN_HOME_PROFILE, f"ssm send-command {instance_id}", res.stderr)
+        return "(send failed)", ""
+    command_id = res.stdout.strip()
+
+    status, out, err = "(still running)", "", ""
+    for _ in range(HOST_PROBE_POLLS):
+        inv = cli.run(
+            "ssm",
+            "get-command-invocation",
+            "--command-id",
+            command_id,
+            "--instance-id",
+            instance_id,
+            "--output",
+            "json",
+            log=False,
+        )
+        if inv.ok:
+            doc = json.loads(inv.stdout or "{}")
+            status = doc.get("Status", "?")
+            out = doc.get("StandardOutputContent", "") or ""
+            err = doc.get("StandardErrorContent", "") or ""
+            if status not in ("Pending", "InProgress", "Delayed"):
+                break
+        time.sleep(HOST_PROBE_INTERVAL_S)
+
+    text = out
+    if err.strip():
+        text += "\n--- stderr ---\n" + err
+    return status, text
+
 
 def main(argv: list) -> int:
     ctx = context.locate(__file__)
     out_path = ctx.out_file(OUT_NAME)
     out_label = ctx.out_label(OUT_NAME)
+
+    # The one flag this file has, and it is stripped BEFORE profiles.select() - which reads
+    # every remaining argument as a profile name (see awslib/profiles.py).
+    on_host = "--on-host" in argv
+    argv = [a for a in argv if a != "--on-host"]
+    if on_host:
+        _assert_probe_commands_are_reads()
 
     selected, source = profiles.select(argv)
 
@@ -147,6 +272,7 @@ def main(argv: list) -> int:
     log_groups: list = []  # (name, retention)
     alarms: list = []  # (name, state)
     host_key_secrets: list = []  # (name, rotation enabled, value-read deny: yes/no/(call failed))
+    host_reads: list = []  # (instance id, ssm status, output) - only with --on-host
     if home_live:
         cli = cli_for(VPN_HOME_PROFILE)
         res = cli.run(
@@ -176,6 +302,16 @@ def main(argv: list) -> int:
                             [g.get("GroupId") for g in inst.get("SecurityGroups", [])],
                         )
                     )
+
+        # Only a RUNNING host can answer; a stopped one is D11 working, not a failure, so it
+        # is skipped rather than attempted and reported as an error.
+        if on_host:
+            for inst in instances:
+                if inst[2] != "running":
+                    continue
+                note(f"reading inside {inst[0]} through SSM (--on-host) ...")
+                status, text = read_host(cli, inst[0], logerr)
+                host_reads.append((inst[0], status, text))
 
         res = cli.run(
             "ec2",
@@ -632,6 +768,7 @@ produced  : aws/vpn.py   (index: aws/INDEX.md)
 SECTIONS
   1. Which accounts were measured, and as whom
   2. The WireGuard host ([D])
+  2a. Inside the host - OPT-IN, --on-host
   3. The Elastic IP, the world-open rules and the host-key secret ([P] anchors)
   4. Handshake log and health alarm
   5. The control-plane deny (step 8), per permission set
@@ -678,6 +815,39 @@ never a compliant one.
             rep.text("""
 State `stopped` between sessions is D11 working, not an outage. `running` while
 nobody is working is the [D] idle burn (~USD 0.004/h + the EBS).""")
+
+        # ==============================================================================
+        rep.h1("2a. Inside the host - OPT-IN, --on-host")
+        if not on_host:
+            rep.text("""Not run. Everything else in this file is read-only; this section is the one
+part that is not, so it has to be typed:
+
+    ./aws/vpn.py --on-host
+
+It runs ten READ commands on the host through SSM Run Command - the boot's
+say-lines, `cloud-init status`, `wg show wg0`, the name map, the sampler timer
+and the tail of its log. The commands read; `ssm:SendCommand` writes, which is
+the whole reason for the flag. A stopped host is skipped, not attempted.
+
+What it answers that no describe call can: WHICH PEERS THE INTERFACE ACTUALLY
+HOLDS. Section 3's checks prove the host, the address and the secret exist -
+they cannot prove that the running wg0 matches peers.auto.tfvars, and the gap
+between those two is exactly what the keys runbook section 4 calls
+`peer=unknown`.""")
+        elif not host_reads:
+            rep.line("--on-host was given, but no RUNNING host was found to read.")
+        else:
+            for iid, status, text in host_reads:
+                rep.line(f"{iid}   ssm status: {status}")
+                rep.line()
+                rep.raw(text.rstrip() if text.strip() else "(no output)")
+                rep.line()
+                rep.line()
+            rep.text("""Read `wg show wg0`'s peer list against `peers.auto.tfvars`, and the name map
+against both. A peer the interface holds and the roster does not is a peer
+somebody added by hand (`wg set` - the keys runbook section 4 stopgap): it will
+disappear at the next `make down` / `make up` without telling anybody, and until
+then the handshake log calls it `peer=unknown`.""")
 
         # ==============================================================================
         rep.h1("3. The Elastic IP, the world-open rules and the host-key secret ([P] anchors)")

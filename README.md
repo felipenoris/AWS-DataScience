@@ -16,13 +16,14 @@ Blueprint for using AWS as a Data Science infrastructure provider.
   - `docs/plan/stages/` — one file per stage, each declaring the decisions it **consumes**.
   - `docs/plan/decisions/` — one file per decision `D1`…`D37`, plus a one-line-per-decision `INDEX.md`. All
     are settled; `D30` was settled as a *revert* and keeps its file, so the record shows what was tried.
-  - `docs/plan/runbooks/` — a procedure followed in full and in order, rather than remembered. Four today:
+  - `docs/plan/runbooks/` — a procedure followed in full and in order, rather than remembered. Five today:
     `break-glass.md`, which says when the Management account root may be used, what to do with it, and what
     watches its use; `scp-battery.md`, the probe battery run whenever a policy is attached or amended —
     the two distinguishable outcomes of each probe, so a deny is *measured* rather than assumed;
     `terraform-changes.md`, the two-commit tag order for a Terraform change made by hand, and which commits
-    are blocked; and `vpn-keys.md`, every VPN key event — loss is recovery from the `[P]` secret, never
-    rotation.
+    are blocked; `vpn-keys.md`, every VPN key event — loss is recovery from the `[P]` secret, never
+    rotation; and `vpn-client.md`, the other side of the same tunnel — writing a device's config,
+    connecting, and the failure modes WireGuard is silent about by design.
   - `docs/plan/architecture.md`, `docs/plan/conventions.md`, `docs/plan/integrations.md` (the `INT-nn` rows),
     `docs/plan/cost-model.md`, `docs/plan/open-questions.md`, `docs/plan/lessons.md`,
     `docs/plan/institutional-delta.md`, `docs/plan/history.md`.

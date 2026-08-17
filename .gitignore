@@ -93,3 +93,11 @@ tfplan.json
 # file named *.key is the one case a glob CAN catch, so it catches it.
 *.key
 host-private.key
+
+# AND THE OTHER FILE THAT CARRIES ONE - added 2026-08-17 with docs/plan/runbooks/vpn-client.md.
+# A WireGuard CLIENT CONFIG holds the device's private key in its `PrivateKey =` line, in a file
+# whose extension suggests configuration rather than key material. The blind spot above is the
+# same one: detect-private-key reads PEM armor and sees nothing here either. The practice is to
+# write these in ~, never in the working tree; this is the net under it. Nothing in this
+# repository is tracked with this extension today, and nothing should be.
+*.conf

@@ -17,6 +17,17 @@ anywhere but `Policy Canary`. **The difference that matters for this index: the 
 run to gather information; the battery is run deliberately.** Its reports land in `output/` alongside these
 snapshots.
 
+**The second exception is one flag, on one script, and it is off by default: `./aws/vpn.py --on-host`**
+(added 2026-08-17). It reads *inside* the WireGuard host through SSM Run Command — the boot log,
+`wg show wg0`, the peer-name map, the sampler timer — because that is the only way to learn **which peers
+the running interface actually holds**, and no `describe` call answers it. Every command it carries is a
+read; `ssm:SendCommand` is nonetheless a **write** API — a Command resource, a mutating CloudTrail event,
+code executed on an instance — which is exactly why it is typed rather than assumed. The tried-first
+read-only path is named in the script: `ec2:GetConsoleOutput` returned **zero bytes** on both Stage 4 hosts
+for minutes, and could never answer the peer question anyway. **Without the flag, `vpn.py` is what this
+page says every script is**, and the same sentence applies: a default run is safe to fire at anything,
+`--on-host` is run deliberately.
+
 ## The scripts
 
 | Script | SSO user signed in | Profile it runs as | Writes | Captures |

@@ -6,15 +6,15 @@ Stage: [`docs/plan/stages/stage-04-vpn.md`](../plan/stages/stage-04-vpn.md).*
 *Exceptions, named by SUBJECT so the provenance is not guessed later — the same convention
 [Stage 3's log](log-stage-03-networking.md) adopted.*
 
-*The five entries below are exceptions: on **2026-08-16** the user authorised Claude, explicitly, to
+*The six entries below are exceptions: on **2026-08-16** the user authorised Claude, explicitly, to
 create this file and write the first two directly, and on **2026-08-17** to write the third, the
-fourth and the fifth the same way. The first three record no AWS call — one is a repository change
-merged with the Stage 3 teardown, one is pass 1 authored and gated but **not applied**, and the third
-is a design review propagated through the repository. **The fourth and the fifth are different in
-kind: they are the stage's first AWS writes**, applied by Claude on the user's explicit authorisation
-of those specific steps, and written here by the same authorisation. **The fifth also records one
-step Claude did not perform** — step 4.3, run by the user on the laptop — and says so where it does.
-The standing rule is unchanged: the next entry is the user's.*
+fourth, the fifth and the sixth the same way. The first three record no AWS call — one is a repository
+change merged with the Stage 3 teardown, one is pass 1 authored and gated but **not applied**, and the
+third is a design review propagated through the repository. **The last three are different in kind:
+they are the stage's AWS writes**, applied by Claude on the user's explicit authorisation of those
+specific steps, and written here by the same authorisation. **Two of them also record steps Claude did
+not perform** — step 4.3 and the key generation of 4.1, both run by the user on the devices — and each
+says so where it does. The standing rule is unchanged: the next entry is the user's.*
 
 ---
 
@@ -353,6 +353,181 @@ state is a hash" would make any other user data look protected too.
 - **The module fix is not yet in effect on the deployed host**: it lands with `wireguard-v0.1.1` and
   the caller's `?ref=` bump. Until that apply, a deliberate `terraform apply` in this slice would
   rebuild the endpoint — `make up`/`make down` do not, they only start and stop.
+
+---
+
+## 2026-08-17 — Steps 4.1 and 4.2: two devices enrolled, and the rebuild that proved decision 4
+
+### The key generation, by the user, on each device
+
+Two pairs, generated where their private halves stay: `mbp` and `raspi`. Only the public halves were
+handed over, and **the only check possible on them was structural** — 44 characters, decoding to 32
+bytes, the shape of a Curve25519 key. Nothing can tell a WireGuard private key from a public one by
+format, which is the whole reason the generation never leaves the device and
+`./scripts/check-tfvars-shape.py` checks structure rather than content.
+
+**The command was made silent first, at the user's request** — the same form step 4.3 already used,
+propagated to the four tracked files that still taught the printing `wg genkey | tee private.key |
+wg pubkey`:
+
+```bash
+(umask 077 && wg genkey | tr -d '\n' > laptop-private.key) && wg pubkey < laptop-private.key > laptop-public.key
+```
+
+Measured with a throwaway pair before it was written anywhere: nothing on stdout, `600`/44 bytes and
+`644`/45 bytes. On a phone the honest answer is *no command at all* — the WireGuard app generates the
+pair inside the handset, which is stronger than any command can be, and the stage now says so.
+
+### The roster
+
+```hcl
+"mbp"   = { public_key = "…", host = 2 }   # 10.90.0.2
+"raspi" = { public_key = "…", host = 3 }   # 10.90.0.3
+```
+
+`host` authored, never derived from map order — deleting one entry must not renumber the other. The
+names are the ones the user chose rather than the README's `person-device` example: they are what
+`wg show` prints and what the handshake log carries, so recognisability beat consistency with a sample.
+
+**Two devices rather than one, deliberately** (keys runbook §6): after step 8.3, a single-device estate
+whose one device must be revoked leaves break-glass as the only way back. It is also one instance
+replacement instead of two.
+
+### The apply
+
+`2 to add, 1 to change, 2 to destroy` — the instance (the peer list rides its user data) and its
+`aws_eip_association`, plus the alarm's dimension updated in place. Re-plan `No changes.`, exit 0
+**read from Terraform rather than through a pipe** — the correction the previous entry earned. This
+time the replacement took about a minute: **no capacity refusals at all**, against 13 on the first
+build. The same AZ, four hours apart — worth remembering before treating either number as the AZ's
+character.
+
+New host `i-0ecb30e645c1aebce`, private `10.20.160.238`.
+
+### What the rebuild proved, and it is the point of the whole design
+
+The new host's interface key is **byte for byte the previous host's**, and the address is still
+`52.89.212.1` — read from `describe-addresses`, naming the new instance, rather than from Terraform.
+So an instance was destroyed and recreated and **both values every client config pins — `Endpoint` and
+the server's `PublicKey` — did not move**. That is exactly what decision 4 bought when it put the key
+in a `[P]` secret and the address in a `[P]` allocation, and it is the **first time it was exercised
+rather than argued**. Step 9.1's promise that a rebuild costs clients nothing now rests on a
+measurement.
+
+### The rest of the verification
+
+The boot repeated the first one — packages in 35 s through the gateway endpoint, key in 2 s with zero
+retries — and then said `(4) writing /etc/wireguard/wg0.conf for 2 peer(s)`. `wg show wg0` lists both
+peers at `10.90.0.2/32` and `10.90.0.3/32`: **`/32` each, so a peer cannot reach another peer**.
+
+**One thing was verified that the plan could only promise**: the handshake log is already in CloudWatch,
+and it carries names —
+
+```
+2026-08-17T05:26:30Z iface=wg0 peer=mbp   handshake=never
+2026-08-17T05:26:30Z iface=wg0 peer=raspi handshake=never
+```
+
+`handshake=never` is the correct reading with no client configured yet. This closes the residual
+verification (i) left for step 7 — the CloudWatch agent's **shipping** path is a different allow-list
+entry from its installation — and it confirms from the other side the drift alarm the keys runbook §4
+now documents: a line reading `peer=unknown` is a peer the roster does not know about.
+
+`./aws/vpn.py`: **0 FAILED**, VP-1..VP-6 and VP-9 passing, the instance-scoped checks already naming
+the new host.
+
+### Also in this sitting: the keys runbook gained procedure D
+
+At the user's request, `docs/plan/runbooks/vpn-keys.md` §4 — a client rotating **its own** key, which
+is also how a public half reaches the server at all, and therefore how a device is added. It names the
+two facts that decide the procedure (the host key does not move, so no other device is touched; the
+roster rides the user data, so publishing is an instance replacement) and carries the commands
+end to end.
+
+It also names **the stopgap, as a stopgap**: `wg set wg0 peer <pub> allowed-ips 10.90.0.N/32` over SSM
+admits someone in seconds, changes **only the running kernel state**, and is lost to a reboot or to the
+next `make down`/`make up` — with `peer=unknown` in the log while it lasts. Hand-editing `wg0.conf`
+became a "Never" beside it: that one survives a reboot and dies at the replacement, which is worse,
+because in between it is a running configuration no file describes. "Never" and "Timing" renumbered to
+§5/§6, every internal reference re-checked against the headings one by one.
+
+### And `./aws/vpn.py` gained the one thing a describe call cannot answer
+
+Also at the user's request: **`--on-host`**, which reads *inside* the running host through SSM Run
+Command — the boot's say-lines, `cloud-init status`, `wg show wg0`, the peer-name map, the sampler
+timer and the tail of its log. It exists because section 3's checks can prove the host, the address
+and the secret exist and **cannot prove that the running `wg0` matches `peers.auto.tfvars`**; that gap
+is what the keys runbook §4 calls `peer=unknown`.
+
+**It is a typed flag rather than a default, and that is the whole design decision.** Every command it
+carries is a read, but `ssm:SendCommand` is a **write** API — a `Command` resource, a mutating
+CloudTrail event, code executed on an instance — and the reason `aws/*` is read-only is that these
+scripts must stay safe to fire at anything without thinking. So a bare `./aws/vpn.py` sends nothing and
+prints, in the report, what the flag would do and why. `CLAUDE.md` and `aws/INDEX.md` now name this as
+the **second** exception to the read-only rule, fenced the same way `aws/probes/` is. Numbered `2a.` —
+an appendix to section 2, in the idiom the stage steps already use — rather than renumbering 3 through 9.
+
+**The read-only path was tried first and is recorded as insufficient**: `ec2:GetConsoleOutput` is a pure
+read, but it returned **zero bytes** on both Stage 4 hosts for several minutes, and it could never
+answer the peer question at all.
+
+**One rule became a gate instead of a comment.** `wg show wg0` is safe; `wg show all dump` prints the
+interface's **private key** on its first line, and this output is written verbatim into
+`aws/output/vpn.txt`. A comment saying "never use dump" is an intention, not a control (Lesson 5), so
+the command list is checked against `dump`, `>`, `rm `, `wg set` and `systemctl start/stop` **before
+anything is sent**. And the guard was proven to fire rather than assumed: injecting `wg show all dump`
+produced `REFUSING --on-host: 'dump' appears in 'wg show all dump'`, exit 1 (Lesson 13).
+
+Run both ways on the live host: without the flag, exit 0 and the opt-in text; with it, `ssm status:
+Success` and the full reading — both peers at `/32`, the name map matching the roster, the timer
+`active`, and consecutive minute samples confirming the sampler loop. Three outcomes are kept
+distinguishable on purpose — SSM's own `Success`/`Failed`, `(send failed)` (usually an instance not yet
+SSM-managed) and `(still running)` (a host that is up and not answering) — because they have different
+causes and would read alike if collapsed.
+
+### The first handshake — the tunnel carried traffic
+
+`mbp`'s client configuration was written in the shape step 5 requires: `Address = 10.90.0.2/32` (the
+roster's `host = 2` through `cidrhost`), `DNS = 10.20.0.2` (the VPC resolver, `.2` of `10.20.0.0/16`),
+`AllowedIPs = 0.0.0.0/0, ::/0` — **full tunnel, both families**, the `::/0` closing the IPv6 bypass that
+would otherwise read as a lockout with the tunnel up — `Endpoint = 52.89.212.1:51820` and
+`PersistentKeepalive = 25`. It was assembled by a heredoc reading the private key **from its file**, so
+that half never crossed the chat, the screen or the shell history; the file lands `600` from a subshell
+`umask`, leaving the interactive shell's umask alone.
+
+**The tunnel came up on the first attempt.** The handshake landed at about **12:15:17Z**, and the log
+line that had read `handshake=never` since the boot became:
+
+```
+2026-08-17T12:19:20Z iface=wg0 peer=mbp   handshake_age_s=243
+2026-08-17T12:19:20Z iface=wg0 peer=raspi handshake=never
+```
+
+**What that one line closes is the whole observability chain, link by link, and none of it had been
+exercised before**: the kernel's peer table → `wg show all latest-handshakes` (never `dump`, which would
+print the interface's private key) → the sampler on its one-minute timer →
+`/var/log/wireguard-handshakes.log` → the CloudWatch agent → the log group `/awsds/sandbox/vpn` — **with
+the device's name rather than base64**, because `/etc/wireguard/peer-names` is rendered from the same
+roster. This is the residual verification (i) left for step 7: the agent's *shipping* path is a
+different allow-list entry from its installation, and it works.
+
+**One reading was checked against the design before being accepted.** Across the six samples after the
+first, `handshake_age_s` grew 243 → 312 → 373 → 443 → 513 → 583 — exactly wall-clock, never resetting.
+With `PersistentKeepalive = 25` the keepalives count as data, so a *live* tunnel renegotiates its session
+roughly every two minutes and the age would return to zero on its own; an age that only grows means the
+client stopped sending. **The user confirmed the tunnel was brought down after the test**, which is that
+reading and not a fault. Recorded because the two cases look identical in this log and have completely
+different causes: an ageing counter with the tunnel *up* is a client whose packets stopped arriving —
+laptop asleep, network changed, or a NAT expiring the UDP mapping.
+
+### Not done
+
+- **`raspi` has no client configuration** — it is enrolled in the roster and reads `handshake=never`,
+  which is the correct reading for a device that has never connected.
+- **Step 5's other two proofs are not recorded here**: that the laptop's public address becomes
+  `52.89.212.1` with the tunnel up, and that a name only the VPC resolver knows resolves through
+  `DNS = 10.20.0.2`. The handshake proves the tunnel; **step 8 rests on the first of those two**, since
+  its `aws:SourceIp` can only match traffic that actually exits through the Elastic IP.
 
 ---
 

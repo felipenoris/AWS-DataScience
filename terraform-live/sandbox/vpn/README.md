@@ -23,8 +23,10 @@ a public one by format, so the gate checks **structure** — this file may assig
 `public_key` and `host` per entry, and nothing else.
 
 ```hcl
-#   public_key  the DEVICE's public half: `wg genkey | tee private.key | wg pubkey`,
-#               run on the device (step 4.1). The private half never leaves it.
+#   public_key  the DEVICE's public half, generated ON the device (step 4.1). On a laptop:
+#               (umask 077 && wg genkey | tr -d '\n' > d-private.key) && wg pubkey < d-private.key > d-public.key
+#               - silent, both halves to disk, outside this repository. On a phone, the
+#               WireGuard app generates the pair itself. The private half never leaves it.
 #   host        the device's address inside peer_cidr: 10.90.0.<host>. The server holds .1.
 #               AUTHORED, never derived from position - deleting a revoked device must not
 #               renumber anybody else's tunnel address.

@@ -226,11 +226,29 @@ and Session Manager is the shell.
 device must be deleting one entry — D4 accepted "no Identity Center integration" at exactly this price.
 **Explanation:** keys are generated on the client; the private key never leaves the laptop.
 
-- **4.1 — [user] Generate a key pair per device** (`wg genkey | tee private.key | wg pubkey`) and hand
-  over the **public** keys only. **[Claude]** Write them into the **tracked** roster `peers.auto.tfvars`,
-  one named entry per person and device — public halves only, the shape `./scripts/check-tfvars-shape.py`
-  enforces (second design review: a WireGuard private key is indistinguishable from a public one by
-  format, so the gate checks structure, never content).
+- **4.1 — [user] Generate a key pair per device, on that device**, and hand over the **public** halves
+  only. **On a laptop, the same silent form as 4.3** — run it **outside this repository**, both halves
+  to disk, nothing in scrollback (measured 2026-08-17; read the public one with `cat` when you hand it
+  over, and again at 9.1):
+
+  ```bash
+  (umask 077 && wg genkey | tr -d '\n' > <device>-private.key) && wg pubkey < <device>-private.key > <device>-public.key
+  ```
+
+  `<device>-private.key` lands `600` at creation and 44 bytes; `<device>-public.key` lands `644` and
+  keeps `wg pubkey`'s newline. Both are caught by `.gitignore`'s `*.key`, which is the net under the
+  practice rather than the practice. **On a phone or tablet, run nothing**: the WireGuard app generates
+  the pair inside the device and shows the *public key* on screen — the private half then has no
+  existence outside the handset at all, which is stronger than any command here can be.
+  **[Claude]** Write the public halves into the **tracked** roster `peers.auto.tfvars`, one named entry
+  per person and device — the shape `./scripts/check-tfvars-shape.py` enforces (second design review: a
+  WireGuard private key is indistinguishable from a public one by format, so the gate checks structure,
+  never content).
+  **Enrol at least two devices.** The reason is in the keys runbook §5 and it is not tidiness: after
+  step 8.3, a single-device estate whose one device must be revoked leaves **break-glass as the only
+  way back**, because you are off-VPN by definition and the console-from-the-EIP path needs the device
+  you no longer have. A second device keeps that corner theoretical. It is also one instance
+  replacement instead of two — the roster rides the user data (4.2).
 - **4.2 — Consume the peer CIDR, `10.90.0.0/24` — it is not chosen here** (Stage 3 decision 1,
   2026-08-16): it sits in the allocation table in `scripts/tfhygiene/backend.py` and reaches the slice
   through the generated `terraform.auto.tfvars`, like every other address literal. With NAT (1.2) nothing
