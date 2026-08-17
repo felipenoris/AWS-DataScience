@@ -6,13 +6,15 @@ Stage: [`docs/plan/stages/stage-04-vpn.md`](../plan/stages/stage-04-vpn.md).*
 *Exceptions, named by SUBJECT so the provenance is not guessed later — the same convention
 [Stage 3's log](log-stage-03-networking.md) adopted.*
 
-*The four entries below are exceptions: on **2026-08-16** the user authorised Claude, explicitly, to
-create this file and write the first two directly, and on **2026-08-17** to write the third and the
-fourth the same way. The first three record no AWS call — one is a repository change merged with the
-Stage 3 teardown, one is pass 1 authored and gated but **not applied**, and the third is a design
-review propagated through the repository. **The fourth is different in kind: it is the stage's first
-AWS write**, applied by Claude on the user's explicit authorisation of that specific step, and written
-here by the same authorisation. The standing rule is unchanged: the next entry is the user's.*
+*The five entries below are exceptions: on **2026-08-16** the user authorised Claude, explicitly, to
+create this file and write the first two directly, and on **2026-08-17** to write the third, the
+fourth and the fifth the same way. The first three record no AWS call — one is a repository change
+merged with the Stage 3 teardown, one is pass 1 authored and gated but **not applied**, and the third
+is a design review propagated through the repository. **The fourth and the fifth are different in
+kind: they are the stage's first AWS writes**, applied by Claude on the user's explicit authorisation
+of those specific steps, and written here by the same authorisation. **The fifth also records one
+step Claude did not perform** — step 4.3, run by the user on the laptop — and says so where it does.
+The standing rule is unchanged: the next entry is the user's.*
 
 ---
 
@@ -248,6 +250,109 @@ AWS rather than from Terraform** — `ec2 describe-tags` and `secretsmanager des
 - **Step 4.3 has not run**: the secret is an empty container until the key pair is generated and
   enrolled with `put-secret-value`. It must precede step 1.4, or the first boot's fetch simply waits.
 - **Nothing consumes the anchors yet** — `sandbox/vpn/` is authored and gated but not applied.
+
+---
+
+## 2026-08-17 — Steps 4.3 and 1.4: the tunnel endpoint boots, and the plan that followed it wanted to rebuild it
+
+### Step 4.3, by the user, on the laptop — the one step in this entry Claude did not perform
+
+The host key pair was generated outside the repository and the private half enrolled with
+`put-secret-value … --secret-string file://host-private.key`; the user reported the round-trip
+verification printing **MATCH** — the `get-secret-value | wg pubkey | diff - host-public.key` form,
+which keeps both halves off the terminal. What Claude confirmed independently, and only this: the
+secret's **metadata** now carries one `AWSCURRENT` version (last changed 04:25Z) with
+`RotationEnabled` unset, and CloudTrail carries the user's two verification reads at 04:25:36Z and
+04:27:00Z under `AWSReservedSSO_InfrastructureAccess_…`. **The value itself was never read here, and
+the generation was never observed** — that is the design, not a gap in the record.
+
+### Step 1.4 — the apply
+
+`terraform apply` on `sandbox/vpn/`, the repository's first `[D]` slice, added **9 resources**. The
+instance alone took **11m13s**, and CloudTrail says why: **13 `RunInstances` refused with
+`Server.InsufficientInstanceCapacity`** in `usw2-az1`, between 04:30:37Z and 04:37:13Z with growing
+backoff, before the 14th succeeded at 04:41:35Z. This is the shortage Stage 3 measured and the reason
+the module carries `zone_index` — **which was not needed**: the provider's own retry outlasted it. The
+refusal text named `us-west-2a/c/d` as having capacity, so if a future build ever exhausts the retry,
+`zone_index = 1` is the one-variable answer rather than a redesign.
+
+Host `i-0bbeb49f0676a2257`, `t4g.nano`, private `10.20.160.63`, the `[P]` address associated one
+second after the instance finished creating.
+
+### The boot answered three verifications, and took 40 seconds end to end
+
+- **(i) — YES, and the number is the answer: 35 seconds.** `dnf -y install wireguard-tools
+  iptables-nft amazon-cloudwatch-agent` ran between the `(1)` say-lines at 04:41:47Z and 04:42:22Z,
+  entirely through `foundation/`'s S3 **gateway** endpoint — no NAT in the path, the prefix-list route
+  winning over the internet gateway. **Stage 3's 9.3 allow-list is complete for AL2023 core and the
+  CloudWatch agent**, and Stage 3 verification (iii) is answered with it. The failure mode this was
+  budgeted against — a hang rather than an error — never appeared.
+- **(viii) — the audit half confirmed, the state half wrong, and the retry half still untested.** The
+  key fetch took **two seconds and zero retries**: the EIP association completed one second after the
+  instance did, and cloud-init only reached section (3) 35 seconds later. So the loud retry loop is
+  insurance whose exercise is still owed — it is honest to say it exists, not that it works.
+  `(3) key in hand (base64 length 44)` confirms step 4.3's `tr -d '\n'` end to end. CloudTrail shows
+  `GetSecretValue` at 04:42:24Z, `managementEvent: true`, principal
+  `assumed-role/awsds-sandbox-vpn/i-…`, no error — decision 4's audit claim, exercised rather than
+  assumed (Lesson 20).
+- **(iii) — the endpoint half.** The SSM agent registered `Online` (v3.3.4624.0) and an
+  `AWS-RunShellScript` invocation returned `Success`, over the same `ssmmessages` channel
+  `start-session` uses, with no interface endpoint anywhere in the account. What remains is the laptop
+  half — the `session-manager-plugin` — which is step 3's, and is an install rather than a network
+  question.
+
+`wg0` is up on `10.90.0.1/24` with **zero peers** (4.1 has not run), `wg0.conf` is `0600 root`,
+`./aws/vpn.py` reads **0 FAILED** with VP-1..VP-6 and VP-9 passing, and `make status` reads **UP,
+1 instance, USD 0.0042/h** — the D11 machinery working on its first real `[D]` row.
+
+### Then the confirmation plan wanted to destroy the host
+
+`terraform plan -detailed-exitcode` came back **2**, with `2 to add, 1 to change, 2 to destroy`:
+
+```
+~ associate_public_ip_address = true -> false # forces replacement
+```
+
+Nothing had changed. The refresh reads that attribute from the instance's *current* public address,
+and the `aws_eip_association` is what gave it one — so the two resources **disagree by construction,
+for as long as both exist, and the disagreement is `ForceNew`**. Left alone this is a permanent
+replacement loop: every apply rebuilds the tunnel endpoint, and `plan` stops being able to say
+"nothing drifted" about anything else in the slice.
+
+Fixed in the module with `lifecycle { ignore_changes = [associate_public_ip_address] }`, **keeping**
+the `false` — it is load-bearing at launch, which is the only moment it means anything: no second,
+auto-assigned public IPv4 to reason about or to pay for. What is ignored is the read-back alone.
+**Measured before it was written**: the fix was applied to the cached copy under
+`.terraform/modules/`, the plan re-run (`No changes.`, exit 0), and the cache then restored and proven
+byte-identical to `wireguard-v0.1.0`.
+
+### A near-miss worth its own line — Lesson 13, from the other side
+
+The first confirmation plan was run as `terraform plan … | tail -5`, and `$?` reported **the exit code
+of `tail`**: a clean `0` over a plan that wanted to replace two resources. A check that returns success
+on both outcomes is not a check. Re-run without the pipe, it was exit 2 — and the whole finding above
+is what the pipe had swallowed.
+
+### And one documented fact was measured false
+
+This stage, the keys runbook and the slice README all predicted `terraform state pull` would show
+`user_data` as **40 hex characters**, the provider's SHA-1. It does not: provider 6.60.0 stores **the
+rendered script in full, in plaintext** — the SHA-1 is pre-5.0 behaviour, written from memory. **The
+claim that mattered survives the correction and is now the whole of it: there is no key in that
+script** — the ARN, and the line `PrivateKey = $HOST_KEY`, a shell variable expanded on the host three
+minutes after the state was written. Corrected in `docs/plan/runbooks/vpn-keys.md`,
+`docs/plan/stages/stage-04-vpn.md` (two places) and `terraform-live/sandbox/vpn/README.md`, each now
+stating the **mechanism** — *the key never crosses Terraform* — rather than the storage, because "the
+state is a hash" would make any other user data look protected too.
+
+### Not done, and why
+
+- **Step 4.1 has not run**: the roster is `peers = {}`, so the host has no peers and nothing can
+  connect yet. Adding the first one **replaces the instance** by design (the peer list rides the user
+  data), which is the runbook §2 path exercised for the first time.
+- **The module fix is not yet in effect on the deployed host**: it lands with `wireguard-v0.1.1` and
+  the caller's `?ref=` bump. Until that apply, a deliberate `terraform apply` in this slice would
+  rebuild the endpoint — `make up`/`make down` do not, they only start and stop.
 
 ---
 
