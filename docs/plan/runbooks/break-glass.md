@@ -125,9 +125,11 @@ If any of these is the reason you are reaching for root, stop — the answer is 
 
 1. **Confirm the alarm arrived**, on both channels (e-mail and SMS). A missing channel is a finding — fix it
    the same day, while the reason is still fresh.
-2. **Record it in the current stage's `docs/log/log-stage-NN-*.md`** (the user's file, never written by Claude):
-   date, the one-sentence reason, what
-   was changed, and whether both alarm channels fired.
+2. **Record it in the current stage's `docs/log/log-stage-NN-*.md`** — **and this one the user writes, not
+   Claude**, whatever the cooperative rule allows elsewhere ([`docs/log/INDEX.md`](../../log/INDEX.md)): a
+   break-glass entry is the account of why the strongest credential in the organization was used, and its
+   author must be the person who used it. Date, the one-sentence reason, what was changed, and whether both
+   alarm channels fired.
 3. **Ask what made root necessary, and close that gap.** A bad SCP means the `Policy Canary` battery (D29)
    missed a case — add the case. A repeated cause is a design defect, not an operational one.
 4. **Rotate the password** if there is any chance it was observed (screen share, shoulder, a machine you do

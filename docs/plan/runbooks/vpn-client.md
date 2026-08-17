@@ -7,11 +7,13 @@
 | **The one rule** | **Full tunnel, never split.** `AllowedIPs = 0.0.0.0/0, ::/0` — both families. Step 8's `aws:SourceIp` can only match traffic that actually exits through the Elastic IP, so a split tunnel would leave every API call on the laptop's own connection and step 8 would deny the user everything, tunnel up or not. The two stand or fall together |
 | **Written** | 2026-08-17, from the first handshake (`mbp`, Stage 4 step 5) — [Stage 4](../stages/stage-04-vpn.md) step 5 is the requirement, step 9.1 the deliverable |
 
-## 0. The five values, and where each comes from
+## 0. The values, and where each comes from — five from the design, one from the path
 
 Nothing here is invented, and three of the five are **stable by design** — which is the property
 decision 4 bought and step 4.2 proved by rebuilding the host without moving either the address or the
-key.
+key. **`MTU` is the exception and belongs in a different category**: it is the only line whose correct
+value is a property of the network the device happens to be sitting on, so it is derived from nothing in
+AWS and is the one line worth re-examining when a working config stops working somewhere new (§4).
 
 | Line | Value today | Where it comes from |
 |---|---|---|
@@ -20,9 +22,10 @@ key.
 | `DNS` | `10.20.0.2` | `.2` of the VPN home's VPC CIDR (`10.20.0.0/16`) — the VPC resolver, so private hosted zones and interface-endpoint names resolve on the device |
 | `PublicKey` | the host's | **`[P]`, in a Secrets Manager secret** — it survives every instance rebuild. Recover it without touching the secret: `host-public.key` on the laptop, this line in any existing config, or `wg show wg0 public-key` on the host |
 | `Endpoint` | `52.89.212.1:51820` | The **`[P]` Elastic IP**, allocated in `sandbox/foundation/` a slice away from the host, plus the one port open to the world |
+| `MTU` | `1280` | **The path, not the design.** Absent this line `wg-quick` derives it — the MTU of the interface reaching the endpoint, minus 80 — and that derivation is wrong on any path narrower than the local link, phone tethering above all (§4, measured 2026-08-17) |
 
-**If either of the last two ever changes without [vpn-keys.md](vpn-keys.md) §3 having been run, that is a
-finding, not a reconnection problem.**
+**If either of the two key/endpoint lines ever changes without [vpn-keys.md](vpn-keys.md) §3 having been
+run, that is a finding, not a reconnection problem.**
 
 ## 1. Write the config
 
@@ -38,6 +41,7 @@ cd ~ && (umask 077 && cat > mbp.conf <<EOF
 PrivateKey = $(cat mbp-private.key)
 Address = 10.90.0.2/32
 DNS = 10.20.0.2
+MTU = 1280
 
 [Peer]
 PublicKey = LCD1d6xjsxRAmOZA/FTo72TToGUkLYqlOryEJwfup28=
@@ -52,9 +56,16 @@ EOF
 shell history. The `umask 077` sits **inside the subshell** on purpose: the config lands `600` at
 creation, and the interactive shell's umask is left alone.
 
+**`MTU = 1280` is in the template rather than in a troubleshooting note, and that is deliberate.** The
+alternative — "add this line if the tunnel misbehaves" — is an intention, and the failure it prevents is
+one nobody diagnoses at 23:00 in an airport (§4). 1280 is the IPv6 minimum and passes every path
+encountered so far; it costs a little throughput on a wired network, where the value can be raised once
+a real path MTU has been measured rather than guessed.
+
 For another device, the only line that changes is `Address` — its own `host` number from the roster.
 On a phone or tablet there is no file at all: the WireGuard app holds the private key it generated and
-the other four values are typed into its form.
+the other values are typed into its form — **including MTU**, which the apps expose in the same
+interface section.
 
 ## 2. Up, and the three things that prove three different claims
 
@@ -96,6 +107,25 @@ The config file stays; nothing is revoked, nothing on the server changes. Reconn
 
 ## 4. When it does not work
 
+- **The handshake works, `wg show` counts traffic both ways, DNS answers — and no site loads.** This is
+  **MTU**, and it is the failure this runbook exists to stop you from misdiagnosing (measured 2026-08-17,
+  on phone tethering, Stage 4 pass 2). **The symptom is graded by packet size**, which is what makes it
+  look like something else entirely: the handshake is 148 bytes and succeeds, a DNS query is one small
+  UDP exchange and succeeds, and TLS needs a full-MSS certificate chain and times out. WireGuard sets DF
+  on its outer packets, so an oversized one is dropped **with no error at either end** — and the natural
+  suspicion, a broken NAT on the host, is the expensive wrong turn. **Two answered `dig`s rule the host
+  out on their own**: the VPC resolver replies only if the packet was forwarded *and* source-NATed to an
+  address inside the VPC, so DNS working means the whole server side is working.
+  **The fix is `MTU = 1280` under `[Interface]`** (already in §1's template — if a config predates it,
+  this is what to add). Take the tunnel down and up: editing the file while the interface is up does not
+  change its MTU. To confirm it was MTU rather than assume it, before and after:
+
+  ```bash
+  ping -D -s 1372 -c 3 1.1.1.1 ; ping -D -s 1200 -c 3 1.1.1.1
+  ```
+
+  `-D` sets don't-fragment; 1372 of payload is 1400 bytes on the wire. **1200 passing while 1372 fails is
+  the proof**; both failing means the problem is elsewhere and the next bullet is where to look.
 - **No handshake ever appears, and there is no error.** The network is dropping **outbound UDP/51820** —
   common on corporate and café Wi-Fi. WireGuard is silent about it by design: it is a UDP protocol that
   never answers unauthenticated packets, so there is nothing to time out visibly. Test from another

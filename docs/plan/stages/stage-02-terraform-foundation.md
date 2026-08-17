@@ -193,7 +193,8 @@ one for either is the kind of thing that looks like tidiness and is not.
    what `use_lockfile` needs (2.5); the provider version is chosen here.
 4. **`docs/log/log-stage-02-terraform-foundation.md` already exists** (header-only, created 2026-08-15) and its row
    in [`docs/log/INDEX.md`](../../log/INDEX.md) links it. Every decision this stage names as "record which way
-   it went" lands there. *(The user writes it; Claude never edits `docs/log/`.)*
+   it went" lands there. *(Written cooperatively since 2026-08-17 — Claude only on request; see
+   [`docs/log/INDEX.md`](../../log/INDEX.md).)*
 
 ### 2. The first bootstrap slice: `terraform-live/sandbox/bootstrap/`
 

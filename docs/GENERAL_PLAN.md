@@ -165,8 +165,10 @@ than nice to have).
 
 ## 4. Cross-cutting work (continuous, not a stage)
 
-- [`docs/log/`](log/INDEX.md): the user records every manual step, in that stage's `docs/log/log-stage-NN-*.md`
-  (never edited by Claude) — the stage file's own name, prefixed `log-`, so the two never collide.
+- [`docs/log/`](log/INDEX.md): every manual step is recorded in that stage's `docs/log/log-stage-NN-*.md`
+  — the stage file's own name, prefixed `log-`, so the two never collide. **Written cooperatively by the
+  user and Claude, and by Claude only when asked** (revised 2026-08-17; the rule and its provenance
+  requirement are in [`docs/log/INDEX.md`](log/INDEX.md)).
   A new stage gets a new file; its row in [`docs/log/INDEX.md`](log/INDEX.md) is
   Claude's to write and to keep current — that index is the one file under `docs/log/` Claude maintains.
 - `CLAUDE.md` → `Claude LOG`: updated at the end of each stage, referencing the stage number from this plan.

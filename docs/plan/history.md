@@ -2,8 +2,8 @@
 
 How the plan and the environment got here. Two records, deliberately separate:
 
-- **[`docs/log/`](../log/INDEX.md)** — manual actions the user performed in AWS, one file per stage. Written by
-  the user, **never** by Claude.
+- **[`docs/log/`](../log/INDEX.md)** — manual actions performed in AWS, one file per stage. Written
+  cooperatively by the user and Claude, **and by Claude only when asked** ([`docs/log/INDEX.md`](../log/INDEX.md)).
 - **this file** — how the plan changed, and what each project step did.
 
 Nothing here changes a future decision; do not read it to execute a stage.

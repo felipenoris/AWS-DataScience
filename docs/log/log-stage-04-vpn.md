@@ -1,20 +1,33 @@
 # Log — Stage 4 — VPN access
 
-*Manual actions performed by the user. Written by the user, **never** by Claude.
+*Manual actions performed in AWS, by hand. Written cooperatively by the user and Claude — **Claude
+only when the user asks, never on its own initiative** ([`INDEX.md`](INDEX.md), which also carries the
+provenance rule). **An entry carrying no provenance note of its own is the user's.**
 Stage: [`docs/plan/stages/stage-04-vpn.md`](../plan/stages/stage-04-vpn.md).*
 
-*Exceptions, named by SUBJECT so the provenance is not guessed later — the same convention
-[Stage 3's log](log-stage-03-networking.md) adopted.*
+*Provenance, named by SUBJECT so it is not guessed later — the same convention
+[Stage 3's log](log-stage-03-networking.md) adopted. **Read "exception" below as historical**: every
+request recorded here was an exception to the rule in force at the time, which barred Claude from these
+files outright. Since **2026-08-17** the rule is cooperative and the same requests are ordinary
+([`INDEX.md`](INDEX.md)). What does not change either way is the record of whose hand wrote what — the
+point of this note, and why it is kept as written rather than restated.*
 
-*The six entries below are exceptions: on **2026-08-16** the user authorised Claude, explicitly, to
-create this file and write the first two directly, and on **2026-08-17** to write the third, the
-fourth, the fifth and the sixth the same way. The first three record no AWS call — one is a repository
-change merged with the Stage 3 teardown, one is pass 1 authored and gated but **not applied**, and the
-third is a design review propagated through the repository. **The last three are different in kind:
-they are the stage's AWS writes**, applied by Claude on the user's explicit authorisation of those
-specific steps, and written here by the same authorisation. **Two of them also record steps Claude did
-not perform** — step 4.3 and the key generation of 4.1, both run by the user on the devices — and each
-says so where it does. The standing rule is unchanged: the next entry is the user's.*
+*The eight entries below: on **2026-08-16** the user authorised Claude, explicitly, to
+create this file and write the first two directly, and on **2026-08-17** to write the third through the
+eighth the same way. The first three record no AWS call — one is
+a repository change merged with the Stage 3 teardown, one is pass 1 authored and gated but **not
+applied**, and the third is a design review propagated through the repository. **The fourth, fifth and
+sixth are different in kind: they are the stage's AWS writes**, applied by Claude on the user's
+explicit authorisation of those specific steps, and written here by the same authorisation. **Two of
+them also record steps Claude did not perform** — step 4.3 and the key generation of 4.1, both run by
+the user on the devices — and each says so where it does. **The seventh inverts that split and is
+labelled accordingly**: its readings are Claude's, but its one AWS write was **executed by the user**,
+because the harness refused the apply after the authorisation had been given — the plan Claude read is
+the plan the user applied, from a saved file, which is the only reason the two halves can be recorded
+as one act. **The eighth is the standing rule finally arriving**: its readings, its commands and its fix
+are the user's own, written by the user; Claude was asked, in the text, to explain step 4, and added
+that explanation, the flow-log measurement behind it and the entry's finding. The header of that entry
+says so, so no line in it is attributed to the wrong hand.*
 
 ---
 
@@ -528,6 +541,301 @@ laptop asleep, network changed, or a NAT expiring the UDP mapping.
   `52.89.212.1` with the tunnel up, and that a name only the VPC resolver knows resolves through
   `DNS = 10.20.0.2`. The handshake proves the tunnel; **step 8 rests on the first of those two**, since
   its `aws:SourceIp` can only match traffic that actually exits through the Elastic IP.
+
+## 2026-08-17 — Pass 2 opened: step 6.1 answered, and the reachability target back up without its egress
+
+Pass 2 is the sitting that turns the tunnel from *built* into *proven*. This entry covers everything
+that precedes the laptop: the audit, which is a reading and not a build, and the target the
+Deliverables' pair needs on the other side of the peering. **The readings themselves are not in this
+entry** — see "Not done".
+
+### Step 6.1 — the audit, and it is the whole step
+
+`./aws/networking.py`, **0 checks FAILED**. Two rows are the step:
+
+```
+pass  NT-4  no route overlaps 10.90.0.0/24    same read as NT-3 (64 routes, 3 accounts)
+```
+
+and §9, which must show **exactly one** world-open ingress rule in the entire measured estate. It does:
+`awsds-sandbox-vpn` in the Sandbox VPC, UDP/51820. The other five measured accounts — `data`, `dev`,
+`identity`, `prod`, `policy-canary` — return empty. This is the shape `VP-3` enforces and the first
+sitting in which the estate has anything at all to show.
+
+**Two readings from the same run are not step 6.1 but are preconditions of the pair, and were checked
+before anything was applied rather than discovered by a failed curl:**
+
+- `NT-8` confirms `prod.internal` is associated with the **Sandbox** VPC. Without that association
+  `probe.prod.internal` is NXDOMAIN over the tunnel and the whole pair is unrunnable.
+- The Sandbox **public** tier's route table — the one carrying the internet gateway, where the
+  WireGuard host sits — routes `10.30.0.0/18` and `10.30.64.0/18` across the peering: Production's two
+  **private** tiers, and **nothing** for the isolated ones (`10.30.128.0/20`, `10.30.144.0/20`). That
+  asymmetry is what makes the forbidden address a control rather than a coincidence, and it is in the
+  route table, not in a security group.
+
+### The target: `production/probes` re-applied — deliberately without `production/egress`
+
+The stage names `make up ENV=production` for this. It was **read before it was run**, and the reading
+changed the act: `make up` has no per-slice filter, so it applies every `[E]` slice in the account, and
+the plan for `production/egress` is **14 resources** — a NAT gateway, its EIP, two default routes and
+**ten interface endpoints** (athena, glue, kms, lakeformation, logs, sts, ecr×2, sagemaker×2).
+
+**None of them is in this reading's path.** `production/probes` reads exactly one remote state,
+`production/foundation`, which is `[P]`; its user data runs `mkdir`, `echo` and
+`nohup python3 -m http.server`, with no `dnf` anywhere and python3 already in the AMI. So the slice was
+applied alone: **8 resources**, the instance, the second interface and its attachment, the two A
+records and the security group with its two ingress rules.
+
+**What the deviation does not cost is the machinery's safety property**, which is why it was acceptable:
+`make status` discovers slices from the tree and reads each one's state, and `make down ENV=production`
+destroys every `[E]` slice in the account regardless of how it went up. Nothing is orphaned by applying
+one slice directly — the guarantee is "nothing is left running", and it still holds.
+
+**Provenance, because this entry's split is unusual.** Recipe A was followed as written — the plan
+generated, saved **outside the repository** and read before anything ran — but the two halves had
+different operators. The first four commands are Claude's:
+
+```bash
+./scripts/gen-tfvars.py production probes
+./scripts/gen-backend-hcl.py production probes
+AWS_PROFILE=awsds-infra-prod terraform -chdir=terraform-live/production/probes init -backend-config=backend.hcl -input=false
+AWS_PROFILE=awsds-infra-prod terraform -chdir=terraform-live/production/probes plan -out=<outside the repository>/prod-probes.tfplan -input=false
+```
+
+and **the apply was executed by the user**, after the authorisation had already been given, because the
+harness refused the command twice:
+
+```bash
+AWS_PROFILE=awsds-infra-prod terraform -chdir=terraform-live/production/probes apply -input=false <outside the repository>/prod-probes.tfplan
+```
+
+**Applying the saved file rather than re-planning is what keeps this one act rather than two**: what was
+read is what ran, which is the property Recipe A exists for and the only reason a split operator is
+recordable at all. The same four commands are what `make up` would have issued for this slice — the
+deviation is the slice list, not the procedure.
+
+### What the boot settled, and it was the point of leaving `egress` out
+
+Read the way the slice's own outputs prescribe — no `ssm*` interface endpoint exists in Production, so
+Session Manager is not available and the console is the reading path:
+
+```bash
+aws ec2 get-console-output --profile awsds-infra-prod --region us-west-2 --instance-id <target> --latest --output text --query Output
+```
+
+```
+ip-10-30-34-118 login: === AWSDS-PROBE-TARGET-BEGIN ===
+addr ens5 10.30.34.118/18
+listening:
+LISTEN 0      5            0.0.0.0:443       0.0.0.0:*
+=== AWSDS-PROBE-TARGET-END ===
+...
+Cloud-init v. 22.2.2 finished at Mon, 17 Aug 2026 13:08:02 +0000. Up 14.87 seconds
+```
+
+**Fourteen point eight seconds, in a private tier with no default route at all** — the NAT gateway this
+host booted without is one it never wanted. The listener is bound to `0.0.0.0`, which is the design: one
+process answering on **both** addresses, so the pair cannot be explained by "nothing was listening
+there".
+
+`SSM Agent unable to acquire credentials` follows, and it is expected twice over: this slice creates **no
+IAM principal by design** — the perimeter statements under test carry no principal condition, so an
+anonymous request is judged by exactly the statement being measured — and no `ssm*` interface endpoint
+exists in Production. `get-console-output` is the reading path, as the slice's own outputs say.
+
+### The negative control was checked for being a control
+
+A forbidden address that is silent because nothing is attached to it proves nothing (Lesson 26). Both
+interfaces read `in-use` / `attached`, at device index 0 and 1, **carrying the same security group**:
+
+| Address | Subnet | Route from the Sandbox public tier |
+|---|---|---|
+| `10.30.34.118` | `prod-private-usw2-az1` (10.30.0.0/18) | yes, across the peering |
+| `10.30.133.185` | `prod-isolated-usw2-az1` (10.30.128.0/20) | **none exists** |
+
+Same host, same process, same group. The route is the only variable, and the two A records in
+`prod.internal` resolve to exactly these two addresses.
+
+### Not done
+
+- **Every behavioural reading of pass 2.** The tunnel-down half, the three step-5 proofs
+  (`checkip` → `52.89.212.1`, the `sandbox.internal` SOA, `probe.prod.internal` resolving), the pair
+  itself and its second control — the admitted address on a port the group does not admit, which fails
+  in a different place from the forbidden address and is why both are read.
+- **`raspi` still has no client configuration.** It is enrolled and reads `handshake=never`. The
+  argument for closing this *before* 8.3 rather than after is 4.1's own: a one-device estate whose
+  device must be revoked leaves break-glass as the only way back, and a device that has never completed
+  a handshake is an enrolment, not a proven second way in (Lesson 5).
+- **`production/probes` is up and billing** ~USD 0.0042/h until `make down ENV=production` closes the
+  sitting.
+- **The `make down`/`make up` lifecycle pair** is deliberately not in this sitting: `make up` has no
+  `[D]`-only filter either, so exercising the WireGuard host's stop/start drags `sandbox/egress` up with
+  it. That is a separate short sitting with its own purpose, and the `aws/output/vpn.txt` "before" copy
+  belongs to it (Validation 2's rule, learned by overwriting one in Stage 3).
+
+## 2026-08-17 — Pass 2's readings: the tunnel routes, and the MTU that made it look like it did not
+
+**The readings and the commands below are the user's**, run from the laptop over phone tethering; the
+step-4 explanation, the flow-log measurement and the finding were added by Claude at the user's request,
+on the same explicit authorisation as the entries above.
+
+### 1. Tunnel DOWN — the negative half, measured first
+
+Run before the tunnel exists, because a silence measured afterwards cannot be told from a silence that
+was always there.
+
+```
+curl -sS https://checkip.amazonaws.com ; dig +short probe.prod.internal ; curl -sS --max-time 5 http://probe.prod.internal:443/ ; echo "curl rc=$?"
+177.26.70.44
+curl: (6) Could not resolve host: probe.prod.internal
+```
+
+The provider's own address, and **`prod.internal` does not resolve at all**. That is the right failure,
+and which failure it is matters: the name dies at **DNS** rather than at the connection, because the zone
+is private and reachable only through the VPC resolver. Nothing on this laptop knew it existed.
+
+### 2. Tunnel up
+
+`mbp` brought up on WireGuard. Handshake completed, traffic in both directions.
+
+### 3. The three step-5 proofs — and the first attempt failed in a way worth the entry
+
+```
+curl -sS https://checkip.amazonaws.com ; dig +short SOA sandbox.internal ; dig +short probe.prod.internal
+curl: (28) SSL connection timeout
+ns-1536.awsdns-00.co.uk. awsdns-hostmaster.amazon.com. 1 7200 900 1209600 86400
+10.30.34.118
+```
+
+**Both DNS answers came back and every HTTPS request timed out.** The fix was one line in `mbp.conf`,
+under `[Interface]`:
+
+```
+MTU = 1280
+```
+
+after which the same command read as designed:
+
+```
+curl -sS https://checkip.amazonaws.com ; dig +short SOA sandbox.internal ; dig +short probe.prod.internal
+52.89.212.1
+ns-1536.awsdns-00.co.uk. awsdns-hostmaster.amazon.com. 1 7200 900 1209600 86400
+10.30.34.118
+```
+
+Three claims, one line each:
+
+| Reading | What it proves |
+|---|---|
+| `52.89.212.1` | **The full tunnel is real** — every packet leaves through the `[P]` Elastic IP. **This is the one step 8 rests on**: its `aws:SourceIp` matches this address or nothing |
+| the `sandbox.internal` SOA | `DNS = 10.20.0.2` is in use — a zone that is NXDOMAIN everywhere else answered |
+| `10.30.34.118` | the cross-account association of `prod.internal` resolving over the tunnel, which step 4 then depends on |
+
+### The entry's finding: a full tunnel with no MTU works until the path stops being Ethernet
+
+**Nothing in this design set an MTU** — not the module's generated `wg0.conf`, not the client template in
+`docs/plan/runbooks/vpn-client.md`. Absent one, `wg-quick` derives it: the MTU of the interface used to
+reach the endpoint, minus 80. Phone tethering presents **1500** to the laptop while the cellular path
+carries less, so the tunnel came up at **1420** — too large — and WireGuard sets DF on its outer packets,
+so the oversized ones are dropped with no error anywhere.
+
+**The failure is graded by packet size, which is why it reads as "the VPN is broken":**
+
+| Traffic | Size | Result |
+|---|---|---|
+| the handshake | 148 bytes | **succeeded** — `wg show` showed traffic both ways |
+| DNS to `10.20.0.2` | one small UDP exchange | **succeeded twice**, the SOA and the A record |
+| TLS | a full-MSS certificate chain | **timed out** |
+
+The block above *is* that split, captured before the fix. **The NAT was never involved**, and that is
+recorded because the natural first suspicion — a masquerade rule bound to the wrong uplink — would have
+sent the next hour into the host over SSM. The two `dig` answers had already ruled it out: the VPC
+resolver answers only if the packet was forwarded **and** source-NATed to an address inside the VPC,
+which is the whole of 1.2 working.
+
+`MTU = 1280` is the IPv6 minimum and passes any cellular path. It belongs **on the client**, because it
+is the client's path that varies — the same laptop needs no such line on a wired network, and the value
+can be raised once a real path is measured. It costs a little throughput on a good link; it removes a
+failure mode that presents as total.
+
+### 4. The pair, and the two silences that are not the same silence
+
+**What the step is.** The Deliverables' reachability pair, run from the laptop instead of from the
+Sandbox probe host Stage 3 used — three requests against **one** target, changing exactly one variable at
+a time. The target's design is what makes that possible: one process bound to `0.0.0.0`, **one security
+group on both interfaces**, one address in a tier the source routes to and one in a tier it does not. Two
+hosts would have left "nothing answered" indistinguishable from "nothing was listening there".
+
+```
+curl -sS --max-time 10 http://probe.prod.internal:443/ ; echo "permitido rc=$?" ; curl -sS --max-time 10 http://probe-isolated.prod.internal:443/ ; echo "proibido rc=$?" ; curl -sS --max-time 10 http://probe.prod.internal:8080/ ; echo "porta-bloqueada rc=$?"
+awsds-stage03-probe-target
+permitido rc=0
+curl: (28) Connection timed out after 10003 milliseconds
+proibido rc=28
+curl: (28) Connection timed out after 10004 milliseconds
+porta-bloqueada rc=28
+```
+
+**Why each result is the expected one, and all three are:**
+
+1. **Permitted address, admitted port — expect the body.** `awsds-stage03-probe-target` at `rc=0` is
+   seven things at once: the tunnel carries traffic, the WireGuard host forwards and SNATs it, the
+   Sandbox public tier's peering route reaches Production's private tier, Production routes the answer
+   back, the security group admits the port, the listener is up, and the private zone resolved the name.
+   This is the deliverable.
+2. **Change ONLY the address — expect silence.** `probe-isolated.prod.internal` is the *same host*, the
+   *same process* and the *same security group*; the single difference is that its tier
+   (`10.30.128.0/20`) has no route in the Sandbox public tier's table. The packet falls through to
+   `0.0.0.0/0 → igw` and dies as an unroutable RFC1918 destination **without ever leaving the Sandbox
+   account**.
+3. **Change ONLY the port — expect silence.** 8080 against the permitted address *does* cross the
+   peering and *does* reach the ENI, and is dropped by the security group, which admits 443 alone.
+
+**The honest part, and why this step was measured rather than asserted.** Both silences arrive at the
+laptop as `rc=28`. **The exit code cannot tell them apart, and neither can anything else on the client** —
+the claim that they die in different places is not observable from where it was made. It was read from
+Production's own VPC flow log instead:
+
+| Window | Source | Destination | Port | Action |
+|---|---|---|---|---|
+| 15:33:04Z | `10.20.160.238` | `10.30.34.118` | 443 | **ACCEPT** |
+| 15:32:13Z, 15:32:15Z | `10.20.160.238` | `10.30.34.118` | 8080 | **REJECT** (7 packets — SYN retransmissions) |
+| — | — | `10.30.133.185` | — | **no record at all** |
+
+**The REJECT is what makes the absence mean anything.** An instrument that records nothing proves nothing
+unless it demonstrably records *something* in the same window — Stage 3's argument, reproduced here from
+the laptop rather than from a probe host.
+
+**And the source column proves something nobody asked it to.** Every record reads `10.20.160.238`, the
+WireGuard host's own address; **`10.90.0.2` appears nowhere in Production.** That is 1.2's NAT seen from
+the far side — VPC peering forwards only packets whose source and destination both sit inside the two
+VPCs' ranges — and it is why step 6.1's `NT-4`, no route anywhere for `10.90.0.0/24`, is a property of
+the design rather than a gap in it. An earlier ICMP row in the same log (14:54:07Z, 5 packets, REJECT)
+says the same thing from a third angle: the group admits one TCP port and nothing else.
+
+### What this closes
+
+- **Step 5 is complete.** All three of its proofs are recorded above, `52.89.212.1` included — so **pass 3
+  is unblocked**, which is the only gate step 8 had.
+- **The Deliverables' tunnel pair is complete**: NXDOMAIN with the tunnel down (step 1), HTTP 200 with it
+  up (step 4), and the negative control travelling with the pair rather than assumed.
+
+### Not done
+
+- **`raspi` still has no client configuration**, and the argument for closing it before 8.3 is unchanged
+  (4.1): an enrolled device that has never handshaked is an enrolment, not a proven second way in.
+- **The MTU finding reached the runbook in this sitting, and the module deliberately not.**
+  `vpn-client.md` gained the line in §1's template — **in the template rather than in a troubleshooting
+  note**, because "add this if it misbehaves" is an intention (Lesson 5) — a sixth row in §0 marking it
+  as the one value derived from *the path* instead of from the design, and a §4 entry leading with the
+  symptom that misleads ("handshake fine, DNS fine, nothing loads"), the reason the two `dig`s exonerate
+  the host, and the `ping -D` pair that turns "it was MTU" into a measurement. **Whether the server
+  should pin its own `wg0` MTU is a separate question and is left open**: the server's value governs the
+  size of what it injects into the tunnel, so it trades against every client's path rather than one, and
+  nothing measured here decides it.
+- **`production/probes` is still up**, billing ~USD 0.0042/h until `make down ENV=production`.
+- **`./aws/vpn.py` has not been re-run** since the readings, and the `aws/output/vpn.txt` "before" copy
+  belongs to the deferred lifecycle sitting (Validation 2's rule).
 
 ---
 

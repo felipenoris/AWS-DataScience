@@ -1,6 +1,8 @@
 # Log — Stage 1d — Audit trail, Config scope, org-wide enablement
 
-*Manual actions performed by the user. Written by the user, **never** by Claude.
+*Manual actions performed in AWS, by hand. Written cooperatively by the user and Claude — **Claude
+only when the user asks, never on its own initiative** ([`INDEX.md`](INDEX.md), which also carries the
+provenance rule). **An entry carrying no provenance note of its own is the user's.**
 Stage: [`docs/plan/stages/stage-01d-org-wide-enablement.md`](../plan/stages/stage-01d-org-wide-enablement.md).*
 
 *One exception, recorded so the provenance is not guessed later: **the entries of 2026-08-14 below were

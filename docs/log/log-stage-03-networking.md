@@ -1,13 +1,18 @@
 # Log — Stage 3 — Networking
 
-*Manual actions performed by the user. Written by the user, **never** by Claude.
+*Manual actions performed in AWS, by hand. Written cooperatively by the user and Claude — **Claude
+only when the user asks, never on its own initiative** ([`INDEX.md`](INDEX.md), which also carries the
+provenance rule). **An entry carrying no provenance note of its own is the user's.**
 Stage: [`docs/plan/stages/stage-03-networking.md`](../plan/stages/stage-03-networking.md).*
 
 ---
 
 *Seven exceptions, named by SUBJECT rather than by ordinal — the ordinals were wrong twice, because one
 sentence was counting entries and exceptions at once, and the two do not advance together. Recorded so the
-provenance is not guessed later.*
+provenance is not guessed later. **"Exception" is historical**: it names the rule in force while this stage
+ran, which barred Claude from these files outright. Since **2026-08-17** the rule is cooperative and such
+requests are ordinary ([`INDEX.md`](INDEX.md)); the record of whose hand wrote what stands unchanged, which
+is what this note is for.*
 
 *The exceptions are: **the decisions entry** (2026-08-16 — the user authorised Claude, once and explicitly,
 to create this file and write it; a decision sitting with no AWS call in it); **the wording revision of the
