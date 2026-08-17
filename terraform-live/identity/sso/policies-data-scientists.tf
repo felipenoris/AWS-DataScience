@@ -83,7 +83,10 @@
 
 data "aws_iam_policy_document" "data_scientist" {
   # checkov:skip=CKV_AWS_356:one document, N accounts - no ARN can name the account; see the CKV_AWS_356 note in policies-data-scientists.tf
-  source_policy_documents = [data.aws_iam_policy_document.shared_denies.json]
+  source_policy_documents = [
+    data.aws_iam_policy_document.shared_denies.json,
+    data.aws_iam_policy_document.control_plane_vpn.json,
+  ]
 
   # Reading the catalog is not reading the data. Lake Formation is the entitlement mechanism
   # (D13) and it is enforced at the moment of data access, so metadata read here is
@@ -240,7 +243,10 @@ data "aws_iam_policy_document" "data_scientist" {
 
 data "aws_iam_policy_document" "data_scientist_staging" {
   # checkov:skip=CKV_AWS_356:one document, N accounts - no ARN can name the account; see the CKV_AWS_356 note in policies-data-scientists.tf
-  source_policy_documents = [data.aws_iam_policy_document.shared_denies.json]
+  source_policy_documents = [
+    data.aws_iam_policy_document.shared_denies.json,
+    data.aws_iam_policy_document.control_plane_vpn.json,
+  ]
 
   statement {
     sid    = "ReadGlueCatalogMetadata"
@@ -355,7 +361,10 @@ data "aws_iam_policy_document" "data_scientist_staging" {
 
 data "aws_iam_policy_document" "data_scientist_prod" {
   # checkov:skip=CKV_AWS_356:one document, N accounts - no ARN can name the account; see the CKV_AWS_356 note in policies-data-scientists.tf
-  source_policy_documents = [data.aws_iam_policy_document.shared_denies.json]
+  source_policy_documents = [
+    data.aws_iam_policy_document.shared_denies.json,
+    data.aws_iam_policy_document.control_plane_vpn.json,
+  ]
 
   statement {
     sid    = "ReadGlueCatalogMetadata"

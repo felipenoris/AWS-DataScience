@@ -47,6 +47,39 @@ variable "environment_tag" {
   }
 }
 
+# The VPN homes whose Elastic IP the control plane is pinned to - Stage 4 step 8.1.
+#
+# A MAP, NOT A STRING, AND THAT IS THE DESIGN RATHER THAN GENEROSITY. D35 vends one Sandbox per
+# business unit and the tunnel lives on exactly that multiplied side (Stage 4's forward
+# constraint), so the deny names a LIST of addresses from day one: adding unit 2 appends a row
+# to VPN_HOMES in scripts/tfhygiene/backend.py and changes no policy document. INT-05 gives the
+# same reason from the other end.
+#
+# WHY THE PROFILE RIDES IN THE VALUE. Each row becomes a terraform_remote_state read of that
+# account's foundation/ slice - the repository's first read that CROSSES an account boundary,
+# so the data source needs a profile the way a same-account read does not. Pass 2's rule is
+# that a profile literal never sits in a .tf file, so it arrives here instead; `env` is the
+# name token the state bucket is built from, which is a third vocabulary this slice may not
+# derive (backend.py's own table).
+#
+# WHAT AN EMPTY MAP WOULD MEAN, and why data.tf refuses it rather than tolerating it: no homes
+# means no addresses means a `NotIpAddress` over an empty list, which IAM reads as "matches
+# nothing" - the deny would fire on EVERY call from EVERY network and lock all six personas out
+# of everything. An empty allow-list is the one input shape whose failure is total.
+variable "vpn_homes" {
+  description = "Account folder -> { profile, env } for every account terminating a WireGuard tunnel. Generated (backend.py VPN_HOMES); read for its foundation/ Elastic IP."
+  type = map(object({
+    profile = string
+    env     = string
+  }))
+  nullable = false
+
+  validation {
+    condition     = length(var.vpn_homes) > 0
+    error_message = "vpn_homes is empty. An empty allow-list makes DenyControlPlaneOffVpn match every call from every network - see the note above. Regenerate with ./scripts/gen-tfvars.py identity sso."
+  }
+}
+
 variable "project" {
   description = "Project tag. Fixed by docs/plan/conventions.md and by 1c's tag policy, which requires the key."
   type        = string

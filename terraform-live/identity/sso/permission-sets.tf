@@ -89,5 +89,26 @@ resource "aws_ssoadmin_permission_set_inline_policy" "persona" {
       condition     = length(local.inline_policies[each.key]) <= var.inline_policy_max_bytes
       error_message = "Inline policy for ${local.persona_sets[each.key].name} is ${length(local.inline_policies[each.key])} characters, over the ${var.inline_policy_max_bytes} the plan allows. See step 5.2: the way out is a customer-managed policy, not a larger threshold."
     }
+
+    # THE ADDRESSES ARE CHECKED FOR BEING ADDRESSES - Stage 4 step 8.1, and this is the one
+    # precondition in this repository that guards against a LOCKOUT rather than against a
+    # failed apply.
+    #
+    # `DenyControlPlaneOffVpn` denies `*` on `*` unless aws:SourceIp matches this list. IAM
+    # does not validate the list: a value that is not a CIDR simply matches nothing, so a
+    # foundation/ output that came back null, empty or renamed renders as `/32` and the
+    # statement becomes an unconditional deny of everything for all six personas - applied
+    # successfully, reported as a clean apply, discovered by a person who cannot sign in.
+    # variables.tf refuses an EMPTY vpn_homes map for the same reason; this is the other half,
+    # where the map has rows and the state behind one of them did not answer.
+    #
+    # A plan-time failure naming the home is the cheap version of that discovery.
+    precondition {
+      condition = alltrue([
+        for cidr in local.vpn_egress_cidrs :
+        can(cidrnetmask(cidr)) && endswith(cidr, "/32")
+      ])
+      error_message = "A VPN home's Elastic IP did not read back as an address: ${jsonencode(local.vpn_egress_cidrs)}. DenyControlPlaneOffVpn would apply cleanly and deny every call from every network for all six personas. Check that each vpn_homes account's foundation/ slice is applied and still exports wireguard_eip_public_ip (Stage 4 step 2.1)."
+    }
   }
 }

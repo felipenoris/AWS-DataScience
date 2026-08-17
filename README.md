@@ -116,6 +116,48 @@ Blueprint for using AWS as a Data Science infrastructure provider.
 
 ---
 
+## Connecting — the tunnel is the way in, and after Stage 4 step 8.3 it is the only one
+
+A WireGuard tunnel into the VPN home account (D4, Stage 4). It is worth being precise about what it
+buys, because it is three different guarantees held by three different mechanisms, and only the first
+two are proven:
+
+1. **The private network, by construction.** GitLab, Pages, EFS and the private hosted zones have no
+   public address at all. A laptop without the tunnel does not fail to reach them — for that laptop they
+   do not exist.
+2. **The AWS APIs and the console, by policy.** The six persona permission sets carry a `Deny` on
+   everything unless the call arrives from the tunnel's Elastic IP (`DenyControlPlaneOffVpn`, step 8).
+   This is the half that needs a policy, because nothing about a tunnel stops a valid SSO session from
+   working over café Wi-Fi. It is also the half that can lock a person out, which is why
+   `InfrastructureAccess` is deliberately outside it.
+3. **The Unified Studio portal — unverified** (INT-16). The portal is entered by an Identity Center
+   sign-in, not by an IAM call, and whether a permission-set condition gates that sign-in at all is an
+   open row settled at Stage 6. Read "all access through the VPN" as items 1 and 2 until it closes.
+
+**The procedure is [`docs/plan/runbooks/vpn-client.md`](docs/plan/runbooks/vpn-client.md) and it is not
+repeated here** — the five values a config needs, where each comes from, the three checks that prove
+three *different* claims, and the failure modes WireGuard is silent about by design. Two things about it
+belong here rather than there, because they are properties of the architecture rather than steps:
+
+**Enrolment is a reviewable diff, and revocation is a one-line deletion.** D4 declined Identity Center
+integration and accepted exactly this price: a device enters by having its **public** half written into
+[`terraform-live/sandbox/vpn/peers.auto.tfvars`](terraform-live/sandbox/vpn/peers.auto.tfvars), the one
+*tracked* tfvars in the repository. The private half is generated on the device and never leaves it. A
+WireGuard private key is bare base64 that no secret scanner can distinguish from a public one, so the
+file is held to **structure** by `./scripts/check-tfvars-shape.py` rather than to content.
+
+**An instance rebuild changes nothing in any client config, and that is designed rather than lucky.**
+Every config pins two things about the server: its **endpoint address** and its **public key**. The
+SSM-resolved AMI moves with each Amazon Linux release and the user data carries
+`user_data_replace_on_change`, so the host is replaced on a schedule nobody sets — and both pinned
+values survive it, because neither lives in the instance: the address is a `[P]` Elastic IP allocated in
+`sandbox/foundation/`, and the key is a `[P]` Secrets Manager secret the host fetches at first boot. A
+key generated on the host instead would have broken every client config at the first AMI drift, silently
+(Lesson 4). The same property is what makes `make down` safe: it *stops* the host, it does not destroy
+it, and it cannot reach `[P]` at all.
+
+---
+
 ## Account segregation
 
 The environment is split across AWS accounts under a single AWS Organization. The cheaper alternative —

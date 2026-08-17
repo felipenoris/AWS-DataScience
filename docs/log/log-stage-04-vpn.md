@@ -12,7 +12,7 @@ files outright. Since **2026-08-17** the rule is cooperative and the same reques
 ([`INDEX.md`](INDEX.md)). What does not change either way is the record of whose hand wrote what — the
 point of this note, and why it is kept as written rather than restated.*
 
-*The eight entries below: on **2026-08-16** the user authorised Claude, explicitly, to
+*The nine entries below: on **2026-08-16** the user authorised Claude, explicitly, to
 create this file and write the first two directly, and on **2026-08-17** to write the third through the
 eighth the same way. The first three record no AWS call — one is
 a repository change merged with the Stage 3 teardown, one is pass 1 authored and gated but **not
@@ -27,7 +27,11 @@ the plan the user applied, from a saved file, which is the only reason the two h
 as one act. **The eighth is the standing rule finally arriving**: its readings, its commands and its fix
 are the user's own, written by the user; Claude was asked, in the text, to explain step 4, and added
 that explanation, the flow-log measurement behind it and the entry's finding. The header of that entry
-says so, so no line in it is attributed to the wrong hand.*
+says so, so no line in it is attributed to the wrong hand. **The ninth is the first written under the
+cooperative rule rather than as an exception to the old one**, and it inverts the seventh's split
+again: it is Claude's repository work and Claude's readings, with **two acts that are the user's** —
+`make down ENV=production` and the second device's configuration and connection — recorded because the
+user reported them, and marked as reported rather than as observed.*
 
 ---
 
@@ -836,6 +840,192 @@ says the same thing from a third angle: the group admits one TCP port and nothin
 - **`production/probes` is still up**, billing ~USD 0.0042/h until `make down ENV=production`.
 - **`./aws/vpn.py` has not been re-run** since the readings, and the `aws/output/vpn.txt` "before" copy
   belongs to the deferred lifecycle sitting (Validation 2's rule).
+
+---
+
+## 2026-08-17 — Pass 2 closed and pass 3 authored: the second device, and the deny that is not yet attached
+
+*Written by Claude at the user's request, in the same sitting. **Two acts in it are the user's and are
+not Claude's to claim**: `make down ENV=production`, and the `raspi` client configuration and its
+connection — both performed on the user's own machines and reported by the user in chat. Everything
+else below is Claude's: the repository work of steps 8.1, 8.2 and 9.1, the plan that was read but **not
+applied**, and the three readings. No AWS write was made by Claude in this sitting.*
+
+### What the user closed, and what it settles
+
+**`make down ENV=production`.** The reachability target is gone; the pair it existed for is recorded in
+the previous entry, negative control included.
+
+**The `raspi` connected, and it is the item the plan named as a precondition rather than as tidiness.**
+Step 4.1's argument was never about redundancy for its own sake: after 8.3, a single-device estate whose
+one device must be revoked leaves **break-glass as the only way back**, because you are off-VPN by
+definition and the console-from-the-EIP path needs the device you no longer have. A second device that
+has actually handshaked turns that corner from real into theoretical. The enrolment existed since 4.1 —
+the public half has been in the roster all day — and what changed today is that it is now a **proven**
+second way in rather than a row in a file.
+
+It also carried the previous entry's finding into its first use: the `raspi`'s config was written from
+the runbook template, which has held `MTU = 1280` since that sitting. The value went in **before** the
+first connection rather than after a failure, which is what putting it in the template instead of in a
+troubleshooting note was for (Lesson 5).
+
+### Steps 8.1 and 8.2 — written, planned, read, and deliberately not applied
+
+The statement, as it renders — extracted from the saved plan rather than from the source, because what
+is reviewed has to be what the API receives:
+
+```json
+{
+  "Sid": "DenyControlPlaneOffVpn",
+  "Effect": "Deny",
+  "Action": "*",
+  "Resource": "*",
+  "Condition": {
+    "NotIpAddress": { "aws:SourceIp": "52.89.212.1/32" },
+    "BoolIfExists": { "aws:ViaAWSService": "false" }
+  }
+}
+```
+
+**`52.89.212.1` is not written anywhere in the repository.** It arrives through the stage's own rule —
+a `terraform_remote_state` read of `sandbox/foundation/`'s outputs — and this is the repository's
+**first remote-state read that crosses an account boundary**: the apply runs as `awsds-infra-identity`
+and the state bucket is in Sandbox. That is the one thing a same-account read does not need and this
+one does: a `profile` in the data source's config. Since pass 2's rule is that a profile literal never
+sits in a `.tf` file, it arrives from the generated tfvars, through a new `VPN_HOMES` table in
+`scripts/tfhygiene/backend.py` and a `vpn_homes` variable — a **map from day one**, because D35 makes
+the VPN home a role an account plays and INT-05 already says the EIP is a list. What makes the whole
+arrangement workable rather than a second sign-in is that both profiles sit on the `awsds`
+`sso-session`, so one login covers the pair.
+
+**The plan: `0 to add, 6 to change, 0 to destroy`** — the six persona inline policies, and nothing else
+in the slice. Confirmed by address rather than by count, and confirmed in the negative too: a grep for
+the Sid across the whole planned state returns those six and no seventh.
+
+### The entry's finding: 8.3's "separate, deliberate diff" is a **create**, not an update
+
+The stage file says `InfrastructureAccess` gains the statement in a later diff of its own. Reading the
+plan for the negative control turned up why that sentence needs a correction: **`InfrastructureAccess`
+has no inline policy at all.** It carries `AWSAdministratorAccess` as a
+`aws_ssoadmin_managed_policy_attachment` and nothing else — `./aws/vpn.py` §5 has been printing
+`(no inline policy)` for it since the script was written, which is the reading that was there to be had
+and was not read as an answer to this question.
+
+So the later diff is not "add a statement to a document"; it is **create the seventh set's first inline
+policy, containing exactly one deny**. Same effect, different failure modes, and one of them is worth
+naming now: an inline policy that does not exist cannot be *partially* applied, so the act is atomic in
+a way an edit would not be — but it is also the first time that set's authorization stops being a
+single managed-policy attachment, and every future reader of it has one more place to look.
+
+### Two guards the plan did not ask for, and the reason both are here
+
+`DenyControlPlaneOffVpn` denies `*` on `*` unless `aws:SourceIp` matches a list. **IAM does not validate
+that list.** A value that is not a CIDR simply matches nothing — which means the statement's failure
+mode, if the address ever reads back wrong, is not an error at plan time and not an error at apply time:
+it is a clean apply, a green report, and six personas who cannot make a single AWS call from any network
+on earth. Discovered by a person who cannot sign in.
+
+Both guards exist to turn that into a plan-time failure that names the cause:
+
+| Guard | Where | The shape it refuses |
+|---|---|---|
+| `length(var.vpn_homes) > 0` | `variables.tf` validation | no homes at all → `NotIpAddress` over an empty list → matches every call |
+| every address is a `/32` that parses | `permission-sets.tf` precondition | a home whose `foundation/` output came back null or renamed → renders as `/32` |
+
+The second is the one that matters, because it is the shape a *future* change produces: the map has rows
+and the state behind one of them did not answer. This is Lesson 13 applied to a control instead of to a
+check — a verification that passes identically whether the address is right or absent is not a
+verification.
+
+### Verification (vii) is answered, and with room
+
+The 10,240 non-whitespace-byte permission-set quota, which **fails at provisioning rather than in
+`plan`** — the reason the slice has carried a size precondition since Stage 2. Measured from the plan's
+own output diff:
+
+| Set | Before | After | Δ |
+|---|---|---|---|
+| `DataScientistStagingAccess` | 3547 | 3851 | +304 |
+| `DevEnvStewardAccess` | 3657 | 3961 | +304 |
+| `DataScientistProdAccess` | 4065 | 4369 | +304 |
+| `GovernanceManagerAccess` | 4233 | 4537 | +304 |
+| `DataScientistAccess` | 4349 | 4653 | +304 |
+| `DeploymentManagerAccess` | 4563 | **4867** | +304 |
+
+The worst case is 4867 against 10240 — under half. And the conservative half of that comparison is
+already built in: the figure is the **rendered** document, which the first apply measured as about a
+quarter larger than what Identity Center stores.
+
+### The two readings, and one of them is a shape rather than a check
+
+**`./aws/vpn.py` — 0 FAILED.** `VP-1` through `VP-6` and `VP-9` pass: one `t4g.nano` running,
+`52.89.212.1` associated with it, IMDSv2 required, the log group at 30 days, the health alarm `OK`, the
+host-key secret carrying its value-read deny with rotation off. `VP-7` and `VP-8` report `note` — the
+deny absent from all six sets, no GuardDuty detector anywhere — which is what they are supposed to say
+before steps 8 and 10. **The run was copied aside to `aws/output/vpn-before-cycle.txt`** as Validation 2
+requires, because the report regenerates in place and Stage 3's validation already overwrote its own
+"before" once.
+
+Two calls FAILED, and neither is a finding: `awsds-ctadmin-orgfull-dev` and
+`awsds-ctadmin-orgfull-identity` have no SSO token. Those profiles sit on the **`awsds-ctadmin`
+session**, which is a different sign-in and is only needed for pass 4.
+
+**`./aws/networking.py` — 0 FAILED**, re-run after the Production teardown. `NT-4` still finds no route
+anywhere touching `10.90.0.0/24` (64 routes across three accounts), and §9 still shows **exactly one**
+world-open ingress rule in the whole measured estate:
+
+```
+sg-0bbb8436fe786b996  awsds-sandbox-vpn  vpc-00dca74a35159b11c   UDP/51820
+```
+
+Both are Validation 1, and re-running them here is not ceremony: the previous entry's readings were
+taken with `production/probes` up, and a teardown is exactly the kind of change that could have left a
+route or a group behind.
+
+### Step 9.1 — delivered as a pointer, and the departure is deliberate
+
+9.1 asks for the client instructions in `README.md`: key generation, the config template, how to verify,
+what a rebuild changes. **All of that already exists in full**, in
+[`vpn-client.md`](../plan/runbooks/vpn-client.md), which gained its last piece in the previous sitting.
+Copying it into `README.md` would be Lesson 14 with two copies of a procedure — and the copy that goes
+stale is always the one further from the person following it.
+
+What 9.1 is actually *for* is that the next person looks in `README.md` and finds nothing. So the README
+gained a section that carries the two things that are genuinely its own — the **three roles** the tunnel
+plays and which of them is unverified (INT-16), and **why an instance rebuild changes no client config**,
+which is a claim about the `[P]`/`[D]` split rather than a step — and points at the runbook for the
+procedure. The requirement is met; the duplication is not created.
+
+### Gates
+
+`make check: OK`. `pre-commit` on the six changed files: every hook passed, `checkov` and `tflint`
+included. `terraform fmt`, `validate` and `plan` clean in `identity/sso`.
+
+### Not done
+
+- **8.3 is not applied.** It needs the user's authorisation for that specific act — SSO user the
+  infrastructure user, account **Identity**, permission set `InfrastructureAccess`, profile
+  `awsds-infra-identity` — and it owes the **control-plane pair** immediately after: the same API call
+  denied with the tunnel down and succeeding with it up, run **per persona set**, reading the *denial
+  wording* rather than the exit code (Validation 3). Verifications (iv) and (vi) are answered from that
+  same sitting.
+- **The seventh set's diff is not written.** Deliberately: it is a create rather than an edit, as above,
+  and it lands only after the pair is recorded.
+- **The lifecycle cycle is still owed** (Validation 2, and the Deliverables' "the lifecycle holds"). The
+  "before" copy is now taken, so what remains is the cycle itself — and it has a trap the plan does not
+  state: `make down` descends rank and stops `vpn` **last**, so with a full tunnel up, the moment the
+  host stops, every remaining AWS call *of that same command* routes into a dead tunnel. Run it with the
+  tunnel down. `make up ENV=sandbox` has no `[D]`-only filter and drags `sandbox/egress` along —
+  measured at 0.17 USD/h, so a 15-minute cycle is about USD 0.04, which is a fact rather than an
+  obstacle.
+- **Step 3's laptop half** — the `session-manager-plugin` install, verification (iii)'s residual. It is
+  a local install, not a network question.
+- **Pass 4 (GuardDuty) is untouched** and independent of all of the above.
+- **Whether the server should pin its own `wg0` MTU stays open**, and the `raspi` did not settle it: it
+  used the template's 1280 like the laptop, which says nothing about what the *server* injects. What
+  would settle it is reading `wg0` and the primary interface **on the host** — `./aws/vpn.py --on-host`,
+  which carries `ssm:SendCommand` and is therefore a write API, off by default and run only on explicit
+  authorisation.
 
 ---
 

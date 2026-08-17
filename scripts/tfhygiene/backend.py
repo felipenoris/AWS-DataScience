@@ -107,6 +107,25 @@ CIDRS = {
 # live; emitted as `peer_cidr` to the vpn/ slice since Stage 4 pass 1, and to nothing else.
 WIREGUARD_PEER_CIDR = "10.90.0.0/24"
 
+# THE ACCOUNTS THAT PLAY THE VPN-HOME ROLE (Stage 4 step 8.1, 2026-08-17) - the sixth
+# vocabulary, and the one that is a ROLE rather than a property. Stage 4's forward constraint
+# from D35 says it in those words: the VPN home is a role an account plays, not "the Sandbox
+# account", so the thing identity/sso/ pins the control plane to is a LIST from day one -
+# one Elastic IP per home as D35 multiplies business units, and adding unit 2 is appending a
+# row here rather than editing a policy document.
+#
+# A LIST, AUTHORED, NEVER DERIVED FROM CIDRS OR PROFILES. Every account in PROFILES has a
+# state bucket and most will have a VPC; almost none of them terminates a tunnel. Deriving
+# this would silently pin the control plane to whatever foundation/ happened to export an
+# `wireguard_eip_public_ip` from - and an account that stops being a VPN home would keep its
+# address in the allow-list until somebody noticed. The row is the decision.
+#
+# WHAT CONSUMES IT: exactly one emission, `vpn_homes` to identity/sso (below), which turns
+# each row into a terraform_remote_state read of that account's foundation/ slice. Entries
+# must therefore be accounts whose foundation/ EXPORTS the EIP - today only sandbox does
+# (Stage 4 step 2.1).
+VPN_HOMES = ["sandbox"]
+
 # Subnets anchor on ZONE IDS, never on AZ names and never on list position (Stage 3 step 1.5,
 # settled by 1b step 6; ./aws/AZs.py is the measurement). Authored per account because a
 # vended account is assigned its own name->id mapping and may legitimately differ (INV-08);
@@ -238,6 +257,21 @@ def tfvars_values(account: str, slice_name: str) -> dict:
                         "Deliverables - another account joins PROBE_PEERS deliberately"
                     )
                 values["peer_cidrs"] = [CIDRS[p] for p in PROBE_PEERS[account]]
+
+    # THE ONE NON-NETWORK EMISSION, and the repository's first CROSS-ACCOUNT remote-state read
+    # (Stage 4 step 8.1). identity/sso/ pins the six persona sets to the WireGuard Elastic IP,
+    # and the address may not be pasted: it is read from each VPN home's foundation/ state.
+    # That read crosses an account boundary, so - unlike every same-account read in this tree -
+    # it needs a PROFILE in the data source's config, and pass 2's rule is that a profile
+    # literal never sits in a .tf file (Lesson 14; peers.tf's own comment). So it arrives the
+    # same way `peers` does for foundation/: keyed by ACCOUNT FOLDER, carrying the profile and
+    # the env token the bucket name is built from. One SSO login covers both profiles - they
+    # share the `awsds` sso-session - which is what makes a cross-account read workable at all.
+    if account == "identity" and slice_name == "sso":
+        values["vpn_homes"] = {
+            acct: {"profile": PROFILES[acct], "env": ENV_TOKENS[acct]} for acct in VPN_HOMES
+        }
+
     return values
 
 
@@ -270,6 +304,12 @@ def render_tfvars(account: str, slice_name: str) -> str:
             for acct, p in v["peers"].items()
         )
         out += f"peers = {{\n{rows}}}\n"
+    if "vpn_homes" in v:
+        rows = "".join(
+            f'  {acct} = {{ profile = "{p["profile"]}", env = "{p["env"]}" }}\n'
+            for acct, p in v["vpn_homes"].items()
+        )
+        out += f"vpn_homes = {{\n{rows}}}\n"
     return out
 
 

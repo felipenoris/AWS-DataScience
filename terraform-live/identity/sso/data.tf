@@ -98,3 +98,45 @@ data "aws_identitystore_group" "dev_env_stewards" {
 # Read for ONE value per account: the id behind a name written down in locals.tf. Everything
 # else this returns is incidental and nothing below consumes it.
 data "aws_organizations_organization" "this" {}
+
+# ---------------------------------------------------------------- the VPN homes' Elastic IPs
+#
+# THE FOURTH LOOKUP, ADDED AT STAGE 4 STEP 8.1, AND IT IS THE FIRST IN THIS REPOSITORY THAT
+# CROSSES AN ACCOUNT BOUNDARY. Everything above is read from the account this slice is applied
+# into; this reads the Sandbox account's foundation/ state from the Identity account.
+#
+# WHY REMOTE STATE AND NOT AN aws_eip DATA SOURCE. Both would work and the difference is what
+# happens when the answer is wrong. A tag-filtered aws_eip lookup returns whatever carries the
+# tag, in whatever account the provider happens to point at, and an address that matched
+# nothing is an empty result rather than an error - the shape that turns into the empty
+# allow-list variables.tf refuses. Remote state names the SLICE THAT OWNS the address (step
+# 2.1: allocated in foundation/, never in vpn/, precisely so it survives every `make down`),
+# so a home whose foundation/ has not been applied fails by NAME here instead of resolving to
+# nothing three resources later.
+#
+# WHY THE PROFILE IS IN THE CONFIG AT ALL. A same-account read inherits AWS_PROFILE from the
+# command line (sandbox/vpn/main.tf reads foundation/ that way and passes no profile). This one
+# cannot: the apply runs as awsds-infra-identity and the bucket lives in Sandbox. What makes it
+# workable rather than a second login is that both profiles sit on the `awsds` sso-session, so
+# one sign-in covers the pair - aws/AWS-CLI.md, "Signing in".
+#
+# WHAT THE READ NEEDS BEYOND S3: kms:Decrypt on the home's own alias/awsds-<env>-tfstate key,
+# because the state object is SSE-KMS. The profile is that account's InfrastructureAccess, which
+# holds it - so the failure mode of a mis-generated tfvars is an AccessDenied naming KMS, not a
+# silently stale address.
+data "terraform_remote_state" "vpn_home" {
+  for_each = var.vpn_homes
+
+  backend = "s3"
+
+  config = {
+    # The KEY is built from the ACCOUNT FOLDER, which is the map key - the same rule
+    # scripts/tfhygiene/backend.py's backend_values() applies, and the reason the folder rides
+    # in the tfvars rather than being re-derived from the env token (that reverse map would be
+    # a second copy of ENV_TOKENS - Lesson 14).
+    bucket  = "awsds-${each.value.env}-tfstate"
+    key     = "${each.key}/foundation/terraform.tfstate"
+    region  = var.region
+    profile = each.value.profile
+  }
+}

@@ -1,9 +1,18 @@
-# The deny fragment every persona set carries - Stage 2 step 5.2.
+# The deny fragments every persona set carries - Stage 2 step 5.2 and Stage 4 step 8.2.
 #
 # WRITTEN ONCE AND REFERENCED SIX TIMES, which is the whole point (Lesson 14: a condition that
-# must appear in N places by hand will be missing from one of them). Each set composes it
+# must appear in N places by hand will be missing from one of them). Each set composes them
 # through `source_policy_documents`, so a statement added here reaches all six in one diff and
 # `terraform plan` shows six changes rather than five.
+#
+# TWO FRAGMENTS, NOT ONE, AND THE SPLIT IS NOT COSMETIC (Stage 4 decision 1, 8.2). The first is
+# UNCONDITIONAL denies of acts nobody should perform - true forever, reviewable on their own
+# terms, and nothing outside this file can change what they mean. The second is conditioned on
+# an ADDRESS that is read from another account's state and that moves the day a VPN home is
+# added or rebuilt. Merging them would put a statement whose truth depends on live
+# infrastructure inside a document reviewed as if it were static, and the first plan that
+# showed a diff in `shared_denies` would be read as "somebody changed the denies" when it was
+# an Elastic IP. Separate documents, separate diffs, separate arguments.
 #
 # WHY A DENY AND NOT A BOUNDARY. Step 5.2 asks for two of these denies to live in a permissions
 # BOUNDARY, and decision 4 (settled 2026-08-16) defers the boundary OBJECT to Stage 3: a
@@ -173,5 +182,73 @@ data "aws_iam_policy_document" "shared_denies" {
     ]
 
     resources = ["*"]
+  }
+}
+
+# ============================================================ THE SECOND FRAGMENT - Stage 4 8.1
+#
+# THE OTHER HALF OF THE OBJECTIVE. docs/plan/objectives.md says all user access goes through the
+# VPN. The tunnel alone delivers the DATA plane - a private network a laptop cannot reach
+# without it - and delivers nothing at all about the CONTROL plane, which stays reachable from
+# any network on earth with a valid SSO session until this statement lands. Stage 4's own
+# framing: role 1 is held by construction, role 2 is held by THIS, and only this.
+#
+# WHY IT IS `*` ON `*` AND NOT A LIST OF SENSITIVE ACTIONS. A list would be an enumeration of
+# what somebody thought of on the day they wrote it, and every service added afterwards arrives
+# outside it. The requirement is not "these calls come from the VPN", it is "this person works
+# from the VPN"; the honest statement is the total one, and the exceptions are then argued
+# ONE BY ONE below rather than implied by an omission.
+#
+# THE TWO CONDITIONS ARE ANDed, and each one is doing different work:
+#
+#   NotIpAddress aws:SourceIp   the deny fires when the call did NOT come from a VPN home's
+#                               Elastic IP. This only means anything because step 5 routes
+#                               `0.0.0.0/0, ::/0` - a SPLIT tunnel would leave every API call
+#                               on the laptop's own connection and this statement would then
+#                               deny the user everything, tunnel up or not. Step 5 and step 8
+#                               stand or fall together, which is why pass 3 runs after pass 2.
+#
+#   BoolIfExists aws:ViaAWSService = false      the carve-out, and NOT the one people expect.
+#                               FORWARD ACCESS SESSIONS PRESERVE THE CALLER'S SOURCE IP - the
+#                               deny-by-IP example in AWS's own data-perimeter guidance says so
+#                               in a note - so an Athena-to-S3 flow would survive the bare
+#                               condition on its own. What this defends is the on-behalf calls
+#                               that are NOT FAS, where the service calls with its own network
+#                               identity and the caller's IP is simply absent. `IfExists` is
+#                               deliberate: a request context missing the key must not be read
+#                               as `false` by accident.
+#
+# WHAT THIS FRAGMENT IS NOT COMPOSED INTO, and it is the difference between a bad session and a
+# bad month: InfrastructureAccess. Step 8.3 applies it to the six personas ONLY. Getting this
+# wrong on a persona costs a data-scientist session; getting it wrong on the credential every
+# Terraform apply in the organization runs as costs break-glass (D16). The seventh set gains
+# the statement in a separate, deliberate diff, after the recorded control-plane pair - and
+# note what the statement pins: a single Elastic IP, which is exactly why that address is [P],
+# allocated in foundation/ where `make down` cannot reach it (step 2.1).
+#
+# WHAT IT DOES NOT PROTECT, said here rather than discovered later (8.4, INT-16): the Unified
+# Studio portal is entered by an IdC SIGN-IN, not by an IAM call, and whether a permission-set
+# condition gates that sign-in at all is unverified. This delivers VPN-only APIs and console.
+# Do not write it up as more.
+data "aws_iam_policy_document" "control_plane_vpn" {
+
+  statement {
+    sid    = "DenyControlPlaneOffVpn"
+    effect = "Deny"
+
+    actions   = ["*"]
+    resources = ["*"]
+
+    condition {
+      test     = "NotIpAddress"
+      variable = "aws:SourceIp"
+      values   = local.vpn_egress_cidrs
+    }
+
+    condition {
+      test     = "BoolIfExists"
+      variable = "aws:ViaAWSService"
+      values   = ["false"]
+    }
   }
 }

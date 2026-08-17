@@ -377,7 +377,13 @@ persona to an IP that must demonstrably exist and route first.
   `plan` (verification (vii)).
 - **8.3 — [Claude⚡] Apply `identity/sso/`** — profile `awsds-infra-identity` — **six sets only.
   `InfrastructureAccess` gains the statement in a separate, deliberate diff, only after the deliverable
-  pair below is recorded.** Getting this wrong on the six costs a data-scientist session; on
+  pair below is recorded** — and **that diff is a CREATE, not an edit** (measured 2026-08-17 while
+  reading 8.2's plan for its negative control): the seventh set has **no inline policy at all**, carrying
+  `AWSAdministratorAccess` as an `aws_ssoadmin_managed_policy_attachment` and nothing else, which
+  `./aws/vpn.py` §5 prints as `(no inline policy)`. Same effect, different failure modes — a policy that
+  does not exist cannot be *partially* applied, so the act is atomic in a way an edit would not be, but
+  it is also the first time that set's authorization stops being a single attachment. Getting this wrong
+  on the six costs a data-scientist session; on
   `InfrastructureAccess` it costs every Terraform apply in the organization, with break-glass (D16) as
   the only way back — and note what the statement pins: a single Elastic IP, which is exactly why that IP
   is `[P]` (step 2). **[user]** Record both applies, and what the pair showed, in the stage log.
@@ -562,7 +568,7 @@ Record every answer, including the ones that come out fine.
 | iv | Does every service-on-behalf flow survive the deny with the tunnel up? FAS flows are documented to carry the caller's IP, so the interesting rows are the **non-FAS** ones — the console's own backend calls above all; record any that break | 8 |
 | v | Does auto-enable `ALL` reach **Management itself**, and does a later vend arrive covered? (Existing members are documented as covered — that half is no longer in question) | 10.2 |
 | vi | With the tunnel down, does an IdC sign-in complete at all (the access portal is not a permission-set operation — expected: yes; record it as INT-16 context) | 8, deliverables |
-| vii | Do all six composed inline policies stay under the **10,240 non-whitespace-byte** permission-set quota? The overflow fails at provisioning, not in `plan` | 8.2 |
+| vii | ~~Do all six composed inline policies stay under the **10,240 non-whitespace-byte** permission-set quota?~~ **Answered YES at 8.2 (2026-08-17), from the plan's own output diff, with room to spare.** The fragment costs **+304 bytes** in every set, and the worst case is `DeploymentManagerAccess` at **4867** — under half the threshold. The others: `DataScientistStagingAccess` 3851, `DevEnvStewardAccess` 3961, `DataScientistProdAccess` 4369, `GovernanceManagerAccess` 4537, `DataScientistAccess` 4653. The conservative side of the comparison is already built in: this is the **rendered** document, which the first apply measured as about a quarter larger than the compacted form Identity Center stores | 8.2 |
 | viii | ~~Does the first boot's key fetch behave as designed, and is the read auditable?~~ **Answered at 1.4 (2026-08-17), with one prediction confirmed, one overtaken and one wrong.** The fetch took **two seconds and zero retries** — `(3) fetching` at `04:42:24Z`, `(3) key in hand (base64 length 44)` at `04:42:24Z`: the "few named retries" were never needed, because `aws_eip_association` completed one second after the instance did and cloud-init only reached section (3) 35 seconds later. The retry loop is therefore **untested by this boot** — it is insurance whose exercise is still owed, and `length 44` is the `tr -d '\n'` of 4.3 confirmed end to end. The audit half is **confirmed as designed**: CloudTrail shows `GetSecretValue` at `04:42:24Z`, `managementEvent: true`, principal `arn:aws:sts::…:assumed-role/awsds-sandbox-vpn/i-…`, no error — the instance role, named. **The state half came back different from the prediction**: `user_data` is the rendered script **in full and in plaintext**, not 40 hex characters — the SHA-1 was pre-5.0 provider behaviour. The claim that mattered holds and is now the whole of it: **no key in that script**, only the ARN and `PrivateKey = $HOST_KEY`, a shell variable expanded on the host | 1.4, 4.3 |
 
 ## Risks

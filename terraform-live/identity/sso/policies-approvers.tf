@@ -37,7 +37,10 @@
 
 data "aws_iam_policy_document" "deployment_manager" {
   # checkov:skip=CKV_AWS_356:one document, N accounts - no ARN can name the account; see the CKV_AWS_356 note in policies-data-scientists.tf
-  source_policy_documents = [data.aws_iam_policy_document.shared_denies.json]
+  source_policy_documents = [
+    data.aws_iam_policy_document.shared_denies.json,
+    data.aws_iam_policy_document.control_plane_vpn.json,
+  ]
 
   # Logs Insights included - StartQuery/GetQueryResults on LOGS, which is a different service
   # from the athena:GetQueryResults denied below. Diagnosing a failed promotion without Insights
@@ -208,7 +211,10 @@ data "aws_iam_policy_document" "deployment_manager" {
 
 data "aws_iam_policy_document" "governance_manager" {
   # checkov:skip=CKV_AWS_356:one document, N accounts - no ARN can name the account; see the CKV_AWS_356 note in policies-data-scientists.tf
-  source_policy_documents = [data.aws_iam_policy_document.shared_denies.json]
+  source_policy_documents = [
+    data.aws_iam_policy_document.shared_denies.json,
+    data.aws_iam_policy_document.control_plane_vpn.json,
+  ]
 
   statement {
     sid    = "ReadGlueCatalogMetadata"
@@ -356,7 +362,10 @@ data "aws_iam_policy_document" "governance_manager" {
 
 data "aws_iam_policy_document" "dev_env_steward" {
   # checkov:skip=CKV_AWS_356:one document, N accounts - no ARN can name the account; see the CKV_AWS_356 note in policies-data-scientists.tf
-  source_policy_documents = [data.aws_iam_policy_document.shared_denies.json]
+  source_policy_documents = [
+    data.aws_iam_policy_document.shared_denies.json,
+    data.aws_iam_policy_document.control_plane_vpn.json,
+  ]
 
   statement {
     sid    = "ReadEcrImageMetadataAndScanFindings"

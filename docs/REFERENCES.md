@@ -255,6 +255,16 @@
 
 - Lake Formation hybrid access mode (the documented exception in D13): <https://docs.aws.amazon.com/lake-formation/latest/dg/hybrid-access-mode.html>.
 
+- Lake Formation tag-based access control — best practices and considerations (LF-Tag creators and delegation, expression grants, cross-account LF-TBAC prerequisites, the limits; read 2026-08-17 for the Stage 5 governance review): <https://docs.aws.amazon.com/lake-formation/latest/dg/lf-tag-considerations.html>.
+
+- AWS data governance framing — the curate/understand/protect triad (read 2026-08-17; the "curate" third is the one this plan has no owner for): <https://aws.amazon.com/what-is/data-governance/>.
+
+- AWS Well-Architected **Data Analytics Lens** (design principles: least privilege for analytics users, classify data, govern data changes): <https://docs.aws.amazon.com/wellarchitected/latest/analytics-lens/analytics-lens.html>. **Machine Learning Lens**, data-protection section (non-production environments get restricted or anonymized datasets — the row the Sandbox share deviates from): <https://docs.aws.amazon.com/wellarchitected/latest/machine-learning-lens/data-protection.html>.
+
+- Implementing data governance on AWS — automation, tagging and lifecycle (AWS Security Blog, part 2; classification-driven controls and tag-driven lifecycle, read 2026-08-17): <https://aws.amazon.com/blogs/security/implementing-data-governance-on-aws-automation-tagging-and-lifecycle-strategy-part-2/>.
+
+- Data classification whitepaper (using AWS Cloud to support data classification): <https://docs.aws.amazon.com/whitepapers/latest/data-classification/using-aws-cloud-to-support-data-classification.html>.
+
 - **Lake Formation data filtering and cell-level security** — data cells filters (a per-table object:
   column include/exclude list + a PartiQL row expression), granted with `SELECT` and applying to reads
   only; the mechanism behind Stage 11 step 2:

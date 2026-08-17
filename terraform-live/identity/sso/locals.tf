@@ -155,6 +155,26 @@ locals {
     dev_env_stewards    = data.aws_identitystore_group.dev_env_stewards.group_id
   }
 
+  # ------------------------------------------------------- the addresses the control plane is
+  #                                                          pinned to - Stage 4 step 8.1
+  #
+  # ONE /32 PER VPN HOME, READ FROM THAT HOME'S foundation/ STATE, NEVER PASTED. The address is
+  # a [P] allocation precisely so a client config is written once and an instance rebuild
+  # changes nothing (step 2.1); pasting it here would make this file the second place it lives,
+  # and the copy would be the one nobody updates.
+  #
+  # `/32` IS NOT DECORATION. An IAM `IpAddress`/`NotIpAddress` condition takes CIDR notation;
+  # the output is a bare address, so the mask is added here rather than in the policy document,
+  # where a reader would have to check whether it was already there.
+  #
+  # `sort()` FOR A STABLE DIFF. A map iterates in key order already, but the list feeds a policy
+  # JSON whose textual value is what `terraform plan` compares - and once N > 1 the day a home
+  # is added is a day nobody should also be reading a reordering.
+  vpn_egress_cidrs = sort([
+    for home, remote in data.terraform_remote_state.vpn_home :
+    "${remote.outputs.wireguard_eip_public_ip}/32"
+  ])
+
   # The rendered inline policy of each written set, in one map, so the size precondition and
   # the reporting output read the same values (Lesson 14, at the smallest scale it occurs).
   inline_policies = {
