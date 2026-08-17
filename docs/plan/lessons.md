@@ -300,6 +300,25 @@ lesson can be *recognised* without opening this file; the reasoning that makes e
    neighbour: there the harness could not survive the control it measured; here the operator could not
    *see* the identity they were using, and the wrong identity was one they had legitimately created.
 
+   **The same blindness has a second entrance, and it is not duration but GRANULARITY** (2026-08-17,
+   caught by the user in review before it cost anything, while preparing Stage 4 step 8.3's
+   control-plane pair). Above, a credential *outlives* the command that needed it. Here the operator
+   performs the switch and the switch does not happen: **the AWS CLI caches an SSO token under the
+   `sso-session` NAME**, so profiles sharing a session share one identity, however many different
+   people those profiles were written for. Switching `AWS_PROFILE` changes the account and the role
+   being *requested* and changes nothing about *who is asking*. It does not vend the wrong credential
+   — `sso:GetRoleCredentials` is refused, because the token's user holds no such assignment — but it is
+   refused **by the portal at vending time**, which is a third failure mode dressed as the two the
+   reading was built to tell apart (Lesson 13's shape, arriving through the harness rather than through
+   the check). The rule that prevents it is one `sso-session` per **person**, which
+   [`aws/AWS-CLI.md`](../../aws/AWS-CLI.md) already stated and which this drafted config had quietly
+   broken by giving four different persona users one shared session. **The general form, and it is the
+   reason this sits under 25 rather than beside it:** ambient identity is invisible in exactly the
+   places that look authoritative — here the profile name, there the shell prompt — so the discriminator
+   is the same in both, `get-caller-identity` and the assumed-role ARN it prints, read *before* the
+   call that matters and not after it fails. **The corollary for anything shared by name:** ask what the
+   cache is keyed on, not what the flag you typed is named.
+
 26. **An "already exists" error is the cheapest authorization probe there is — and it proves nothing until
    an unprivileged principal has been shown to get a different one.** Stage 2 step 5.0 had to establish that
    the organization delegation reached its `Resource` list's **target** entries, and could not: the write it

@@ -166,7 +166,10 @@ promotion — the chain starts at the tag (D21) and its first target is Staging.
   gates; on the default branch — docs built and published to **Pages** (Stage 7 step 4); on the protected
   tag — the image built with BuildKit **`FROM base:<pinned tag>`** (never `FROM dev-env` — the runtime has
   no business carrying Jupyter; a build that floats the base tag defeats step 1) and pushed to
-  `awsds-prod-ecr-app-etl` under the immutable tag, then 1.4's scan gate.
+  `awsds-prod-ecr-app-etl` under the immutable tag, then 1.4's scan gate. **The data-quality job class
+  hangs here when it arrives** (Stage 5 step 3.8's hook, 2026-08-17): quality rules run beside the ETL in
+  the pipeline, because the governed account cannot run them (`DenyUserCompute`) — a named placeholder,
+  not a job this stage builds.
 - **2.3 — [user] Run it**: a branch push runs tests only; the tag lands the image and the docs serve at
   `https://app-etl.pages.internal` — two pipeline deliverables in one push.
 - **2.4 — [Claude] Write `development/app/app-etl/` and the machinery rows**, then **[Claude⚡] apply as

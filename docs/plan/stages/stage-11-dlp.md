@@ -122,9 +122,10 @@ discount, not a measurement window).
 
 ### 2. Lake Formation column, row and cell filters — entitlement tightened to the classification
 
-**Action:** turn the classification into enforced grants — column restrictions through the LF-Tag grants,
-row/cell restrictions through data cells filters — replacing full-table SELECT where the scheme demands
-less. **Why:** fine-grained access is D6's second problem, and D13 is what makes any of it real: every
+**Action:** narrow the entitlement to the classification's grain — column restrictions through the LF-Tag
+grants, row/cell restrictions through data cells filters — **within the classification-scoped grants
+Stage 5 already enforces** (its 6.1, 2026-08-17: `restricted`/`personal` travel only on explicit grants),
+replacing those explicit grants where the scheme demands finer than a whole column set. **Why:** fine-grained access is D6's second problem, and D13 is what makes any of it real: every
 tabular read already goes through an LF-aware engine, so a filter granted here is enforced, not decorative.
 **Explanation:** a data cells filter is a named, per-table object (column include/exclude list + a PartiQL
 row expression), granted with `SELECT`; filters apply to reads only. Cross-account it follows Stage 9's
@@ -137,8 +138,8 @@ people is Lesson 5 with a `WHERE` clause.
   on the tables whose classification requires one (start with the sample `curated` table: one
   column-restriction filter, one row filter), named `awsds-flt-<table>-<what>` — a contract with
   `./aws/dlp.py` (`DP-3`).
-- **2.1b — [Claude] Write the filtered grants**, replacing the corresponding full-table grants in the
-  Stage 5 share map: `aws_lakeformation_permissions` with the `data_cells_filter` block, to the consumer
+- **2.1b — [Claude] Write the filtered grants**, replacing the corresponding explicit `restricted` grants
+  in the Stage 5 share map: `aws_lakeformation_permissions` with the `data_cells_filter` block, to the consumer
   accounts with grant option; the consumer-side regrant lands in the same slice pattern Stage 9 2.3 used.
   Column-only restrictions that the LF-Tag ontology already expresses stay on tag-scoped grants — one
   mechanism per dimension, stated in the module comments.

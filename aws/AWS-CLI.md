@@ -7,18 +7,22 @@ already capture the Organization tree, the accounts, and the whole Identity Cent
 `aws/output/`, from a named local profile rather than from CloudShell. What stays here are the one-off
 recipes and anything the scripts do not cover.
 
-## Signing in — one login per `sso-session`, and there are two
+## Signing in — one login per `sso-session`, and there is one session per PERSON
 
 *Moved out of `CLAUDE.md` on 2026-08-15, which keeps the rule and not the mechanics.*
 
 **The SSO token is keyed by the `sso-session` name, not by profile or account**, so one login covers every
-profile that names that session — and this configuration has two sessions, because they are two different
-people:
+profile that names that session — and this configuration has **one session per human being**, which is the
+rule rather than a description of how many there happen to be:
 
 | `sso-session` | Who signs in | Profiles it covers |
 |---|---|---|
 | `awsds` | the **infrastructure user** | every `awsds-infra-*`, plus `awsds-policy-canary` |
 | `awsds-ctadmin` | **`AWS Control Tower Admin`** (added 2026-08-15) | `awsds-ctadmin-orgfull-*` — `AWSOrganizationsFullAccess` in a member account, which is the only CLI this user has |
+| `awsds-scientist` | **Data Scientist User** (added 2026-08-17, Stage 4 step 8.3's pair) | `awsds-scientist-sandbox` (`DataScientistAccess`) and `awsds-scientist-prod` (`DataScientistProdAccess`) — **two permission sets, one person, so one session** |
+| `awsds-deploy` | **Deployment Manager User** (idem) | `awsds-deploy-*` — `DeploymentManagerAccess` |
+| `awsds-governance` | **Governance Manager User** (idem) | `awsds-governance-*` — `GovernanceManagerAccess` |
+| `awsds-devenv` | **Dev Env Steward User** (idem) | `awsds-devenv-*` — `DevEnvStewardAccess` |
 
 ```bash
 aws sso login --sso-session awsds
@@ -29,6 +33,27 @@ browser**, plus where the work is about to land. A profile whose session is not 
 that reads like a permission problem and is not; `aws sts get-caller-identity` before the first real call
 is what tells the two apart, and the assumed-role ARN it prints is the evidence of *which* permission set
 answered (`docs/GLOSSARY.md`, "Permission set").
+
+**The naming, so a seventh row does not have to invent one:** the session names the **person**; the profile
+is `awsds-<person>-<account>`, with the segment between naming the **role** wherever one person holds
+several (`-infra-`, `-ctadmin-orgfull-`). The persona rows drop that segment because the person and the
+role coincide — with one exception worth knowing rather than fixing: `awsds-scientist-sandbox` and
+`awsds-scientist-prod` carry **different** permission sets, told apart by the account and not by the name.
+
+### Why one session per person is a rule and not tidiness
+
+Because the cache is keyed by the session **name**: a shared session is a single token, and the profile you
+switch to is not the identity you switch to. Point two profiles of two different users at one session, log
+in as the first, then use the second, and the CLI calls `sso:GetRoleCredentials` with the **first** user's
+token asking for the **second** user's role. It does not hand over the wrong credential — the portal
+refuses, because that user has no such assignment — but it refuses **from the portal, at credential vending
+time**, which is neither of the two failures anybody is usually looking at. In a reading that turns on
+telling an IAM `AccessDenied` apart from a missing grant (Stage 4 step 8.3's control-plane pair), that is a
+third refusal wearing the same clothes. Lesson 25 is the general form.
+
+**And `aws sso logout` clears the cache for every session, not the one you name** — so switching persona by
+persona costs the infrastructure user's token too. That is a re-login, never a lockout:
+`InfrastructureAccess` is deliberately outside `DenyControlPlaneOffVpn`, so it signs in from any network.
 
 ## Lists accounts with IDs
 

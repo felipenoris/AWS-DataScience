@@ -375,7 +375,10 @@ persona to an IP that must demonstrably exist and route first.
   uncovered by omission — Lesson 14 in permission sets. Watch the quota: a permission set's inline policy
   holds at most **10,240 non-whitespace bytes**, and the overflow fails at **provisioning**, not in
   `plan` (verification (vii)).
-- **8.3 — [Claude⚡] Apply `identity/sso/`** — profile `awsds-infra-identity` — **six sets only.
+- **8.3 — [Claude⚡] Apply `identity/sso/`** — **DONE 2026-08-17**: `0 to add, 6 to change, 0 to destroy`,
+  applied from the saved plan file, `VP-7` read back from the API as `pass` on all six, re-plan
+  `No changes` at `-detailed-exitcode 0`. **The pair below is not yet run, and until it is, `VP-7` is
+  presence rather than sufficiency.** — profile `awsds-infra-identity` — **six sets only.
   `InfrastructureAccess` gains the statement in a separate, deliberate diff, only after the deliverable
   pair below is recorded** — and **that diff is a CREATE, not an edit** (measured 2026-08-17 while
   reading 8.2's plan for its negative control): the seventh set has **no inline policy at all**, carrying

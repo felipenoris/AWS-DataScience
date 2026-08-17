@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Status** | not started — **revised 2026-08-16 into the pass/verification format**, with five corrections against earlier stages folded in: the `CROSS_ACCOUNT_VERSION` defence moved to the step whose apply actually touches `DataLakeSettings` (5.4, not 7), the EFS mount rule rewritten against the WireGuard instance's SG (Stage 4's NAT means the peer CIDR never reaches AWS), step 3's role-protection re-read as already delivered by Stage 2's shared deny fragment, step 9 split into what can land now versus what waits for the blueprint-provisioned roles (INT-15), and step 13's delegation mechanics written for the two accounts that hold no CLI profile |
+| **Status** | not started — **revised 2026-08-16 into the pass/verification format**, with five corrections against earlier stages folded in: the `CROSS_ACCOUNT_VERSION` defence moved to the step whose apply actually touches `DataLakeSettings` (5.4, not 7), the EFS mount rule rewritten against the WireGuard instance's SG (Stage 4's NAT means the peer CIDR never reaches AWS), step 3's role-protection re-read as already delivered by Stage 2's shared deny fragment, step 9 split into what can land now versus what waits for the blueprint-provisioned roles (INT-15), and step 13's delegation mechanics written for the two accounts that hold no CLI profile. **Revised again 2026-08-17 after the data-governance review** (AWS guidance read against the plan; links in `docs/REFERENCES.md`): the LF-Tag ontology carries a **`zone` dimension** from day one and the consumer grants are **LF-TBAC expressions scoped by classification** (`restricted`/`personal` by explicit grant only — Stage 11 then narrows *within* restricted instead of beginning enforcement); the sample table gains a restricted column so the share deliverable proves the scoping; the grant *method* joined decision 5 and the LF-TBAC cross-account prerequisite joined 7.1; the results-zone ceiling on decision 6's grain is stated at step 8; **the raw share to Sandbox is kept deliberately** (data engineers develop the raw→curated ETL there — `docs/plan/institutional-delta.md` row added); and the missing quality gate is declared (3.8) |
 | **Prerequisites** | Stage 3 — the `[P]` gateway-endpoint IDs its `foundation/` slices export (INT-05) and the `data-perimeter` shapes of its step 9. **Stage 4, for two named inputs**: the WireGuard Elastic IP (a branch of step 1's bucket-policy condition) and the WireGuard instance SG (step 11's mount rule); every laptop-side proof below also rides the tunnel. Stage 1d step 11 (org-wide RAM sharing; the LF cross-account version read `4`) |
 | **Consumes** | [D6](../decisions/D06-dlp-approach.md), [D13](../decisions/D13-lake-formation-enforcement.md), [D18](../decisions/D18-data-scientist-access.md), [D19](../decisions/D19-derived-zone.md), [D22](../decisions/D22-data-governance-account.md), [D24](../decisions/D24-shared-filesystem.md), [D25](../decisions/D25-drop-box-consumer.md), [D26](../decisions/D26-unified-studio.md), [D27](../decisions/D27-catalog-maintenance.md), [D31](../decisions/D31-approver-read.md), [D35](../decisions/D35-sandbox-cardinality.md) |
 | **Proves** | [INT-03](../integrations.md) (the two read shares; the write share waits for Stage 9), [INT-05](../integrations.md), [INT-11](../integrations.md) (its whole remaining half: the version defence and the first grant against the RCP), [INT-10](../integrations.md) **in part** — the writer and maintenance statements are exercised here; the Production pickup half is Stage 9's |
@@ -167,6 +167,20 @@ whatever the first table happened to contain, and Stage 11's Macie findings then
 This is the smallest piece of real data governance in the plan and it costs nothing but thought — which is
 why it is pass 0, on paper, before any apply. The owner is the **governance manager** (step 7.4).
 
+**The ontology carries two dimensions from day one — `classification` and `zone` (`raw`/`curated`; added
+2026-08-17)** — orthogonal by design: `zone` says where in the pipeline a table sits, `classification` says
+what its content demands, and every grant below is an *expression* over both (step 6.1). Sandbox and
+Development read **both zones** — a deliberate deviation from the raw-zone guidance, decided 2026-08-17 and
+recorded in `docs/plan/institutional-delta.md` ("Raw-zone access"): Sandbox is also where data engineers
+first develop the raw→curated ETL routines, so raw access there is the job. What keeps the deviation
+governed is the other dimension, which is classification-scoped regardless of zone. Two further rulings
+that live here: **per-business-unit segregation at N>1 is the `domain` dimension's job** (decision 2 —
+added to the ontology as a third tag key when a second domain exists; no separate `unit` dimension, settled
+2026-08-17); and **the default the `raw` database carries is part of decision 1** — a new table inherits
+its database's tags, so raw's default classification decides what an *unclassified* arrival is: fail-open
+(`internal`, readable until someone says otherwise) or fail-closed (`restricted`, invisible until
+classified). Choose it on paper, not at the first crawl.
+
 #### 3. The catalog, the maintenance role, the crawlers
 
 **3.1 — Glue Data Catalog databases** `raw` and `curated`.
@@ -221,10 +235,20 @@ it runs from an environment account and writes across the boundary — the same 
 the drop-box pickup. Reading this as "the SCP is in the way" is the error to avoid: the SCP is the
 statement that nothing runs here, and a blueprint is compute.
 
+**3.8 — The ingestion path has no data-quality gate, and that is declared rather than implied
+(2026-08-17):** nothing between the drop-box and `curated` checks schema drift, nulls, duplicates or
+freshness — the crawler infers schema, and that is the whole check. Structural, not an oversight to fix
+here: Glue Data Quality runs as Glue jobs, which `DenyUserCompute` denies in this account by design (3.7's
+own logic), so a quality gate belongs to the pipeline side — Stage 8's `app-etl` pipeline (its 2.2)
+carries the hook. The institutional answer is in `docs/plan/institutional-delta.md` ("Data quality").
+
 #### 4. Iceberg tables, and their maintenance owner
 
 **4.1 — Iceberg tables on S3, in the catalog.** A sample table in `curated` is the stage's working piece —
-the deliverables query it from both consumers.
+the deliverables query it from both consumers. Give it **at least one column tagged
+`classification=restricted`** beside ordinary ones (2026-08-17): the share deliverable must prove
+entitlement *scoped by the scheme* — the restricted column absent from a default consumer read — not merely
+that the share works.
 
 **4.2 — Table maintenance gets an owner on day one**: scheduled `OPTIMIZE` (compaction) and `VACUUM`
 (snapshot expiry) through Athena, or Glue's automatic compaction (the table-optimizer path, whose runs the
@@ -245,7 +269,8 @@ maintenance path is chosen rather than left wider by default.
 
 #### 5. Lake Formation — the permission model, made real
 
-**5.1 — Register the S3 locations** (the raw and curated prefixes) and apply the LF-Tags from step 2.
+**5.1 — Register the S3 locations** (the raw and curated prefixes) and apply the LF-Tags from step 2 —
+both dimensions: `zone` on the two databases, `classification` per table and column.
 
 **5.2 — Kill the IAM-fallback defaults, or every grant below is decoration.** A fresh account answers
 every catalog request through the `IAMAllowedPrincipals` virtual group and creates new databases with
@@ -286,6 +311,14 @@ interactive sessions or EMR runtime roles, which ask Lake Formation across the a
 the step that decides whether the fine-grained access control objective in `CLAUDE.md` is a control or a
 decoration.
 
+**And the grants themselves are LF-TBAC expressions over the step 2 dimensions, not named-resource lists
+(2026-08-17; the method is decision 5's second half):** the consumer grant is
+`zone ∈ {raw, curated} AND classification ∈ {public, internal}` — `restricted` and `personal` travel
+**only on explicit grants** to enumerated principals, recorded in the log. This is what makes the scheme a
+control during Stages 6-10 rather than paper until Stage 11 (Lesson 5): the cell/row filters Stage 11 adds
+then narrow *within* the restricted grants instead of beginning enforcement. Named-resource grants stay
+available for the exceptions hybrid mode covers (6.3).
+
 **6.2 — Verify the permission-set half by reading, not by trusting the intention:** the six persona sets
 in `identity/sso/` were written narrow in Stage 2 — confirm none carries an S3 grant that reaches this
 account's buckets. (The execution-role half cannot be verified yet: those roles are blueprint-provisioned
@@ -310,10 +343,15 @@ silently applies to a role shared by four people is Lesson 5 with a `WHERE` clau
 sharing (measured, `INV-09`) and the cross-account version reads 4 — but 5.4 is what keeps the second one
 true through this stage's applies. Without them the grant appears to succeed on this side and the resource
 never appears on the consumer side — the least diagnosable failure in the whole plan, because nothing
-errors.
+errors. **A third prerequisite arrives with the grant method (2026-08-17): cross-account LF-TBAC requires
+additions to the Data Catalog resource policy** — the documented cross-account prerequisites page
+(`docs/REFERENCES.md`), and a miss fails exactly like the other two: the TBAC share appears to succeed
+where a named-resource share would have worked. Read the policy before the first grant; the addition is
+written in this slice, beside the grants it enables.
 
-**7.2 — Grant the catalog read share to the Sandbox and Development accounts** through Lake Formation/RAM;
-the resource links land on the consumer side in step 8. **The Production share, including the governed
+**7.2 — Grant the read share to the Sandbox and Development accounts** through Lake Formation/RAM, **as
+the classification-scoped LF-TBAC expressions of 6.1** — both zones, `public`/`internal`; the explicit
+`restricted` grants are separate, enumerated acts. The resource links land on the consumer side in step 8. **The Production share, including the governed
 write, waits for Stage 9** — no consumer exists for it yet. Grant to **accounts** or to the **OU** — the
 version supports OU grants, and which to use is part of decision 5; per-account is the INT-11 fallback
 either way.
@@ -358,6 +396,12 @@ and the scratch buckets. Point the enforced result location **into the derived-z
 query output lands under the lifecycle, the CMK and the Macie scope designed for it rather than in a
 second, undesigned copy zone.
 
+**An enforced workgroup has one result location, and that is a ceiling on the whole design (2026-08-17;
+Stage 9's status row measured the same limit for Production):** every holder of the persona set can read
+the results zone, so a materialised result is visible within the persona whatever the SQL path filtered.
+**The system's real grain is `min(SQL grain, derived-zone grain)`** — decision 6 consumes this sentence,
+and a per-user answer there requires 9.2's per-user read scoping to mean anything.
+
 **Prove each share here with the pandas pair, before Stage 6 builds anything on top:** the table reads
 through Athena over the link, and pointing pandas at the same table's S3 path fails. Run it in both
 accounts.
@@ -379,7 +423,11 @@ So the local prefixes get designed rather than left over.
   cannot express "who may read derived data" without breaking everything else that uses it. The key policy
   grants `kms:Decrypt` to `DataScientistAccess` and to nobody else today; the `DeploymentManagerAccess`
   set of D31 is deliberately absent, as is any future broad read persona;
-- `s3:PutObject` scoped to exactly these prefixes on the **permission sets**, never `*`;
+- `s3:PutObject` scoped to exactly these prefixes on the **permission sets**, never `*` — and, **if
+  decision 6 lands on the per-user grain, `s3:GetObject` scoped by the same `${aws:userid}` prefix**
+  (2026-08-17): without it a colleague reads the materialised result and the per-user LF filter is undone
+  one hop later — Lesson 5 with an S3 prefix. The CMK below stays persona-level either way (one key cannot
+  express per-user), a residual written here rather than discovered;
 - the prefixes recorded as **in scope for Macie and CloudTrail data events** in Stage 11, because this is
   where sensitive data will actually accumulate — *outside* the account Macie primarily watches, which is
   exactly why the scope has to be written down.
@@ -482,6 +530,10 @@ own:
   Athena from Sandbox **and** Development over the LF share — and **pointing pandas at its S3 path fails
   from either account**, which is the only convincing evidence that D13 holds, now with the account
   boundary underneath it.
+- **The classification pair (2026-08-17):** a default consumer session reads the sample table and the
+  `restricted` column is **absent from the result and from the column list**; after the explicit
+  restricted grant, present. Read the column list, never an error code — the negative half must differ
+  from a broken share (Lesson 13).
 - **The carve-out pair:** Athena works *with* the bucket policy attached (the `aws:ViaAWSService` half),
   and the same read from a caller that satisfies no branch is denied.
 - **The workgroup boundary:** a query whose client asks for a result location outside the derived prefix
@@ -522,23 +574,34 @@ own:
 `docs/log/log-stage-05-data-foundation.md` (Lesson 16). Recommendations are stated so the keyboard is not
 the decision-maker.
 
-1. **The classification scheme** (step 2) — levels, owner, what each permits. Recommended start:
-   `public / internal / restricted / personal`, owned by the governance manager.
+1. **The classification scheme** (step 2) — levels, owner, what each permits, **and the default the
+   `raw` database carries** (fail-open `internal` versus fail-closed `restricted` — what an *unclassified*
+   new arrival is; added 2026-08-17). Recommended start: `public / internal / restricted / personal`,
+   owned by the governance manager; the `zone` dimension is fixed by step 2 and is not this decision's to
+   reopen.
 2. **How many data domains, therefore how many CMKs** (1.1). Recommended at lab scale: one domain
    (`raw`+`curated` under one key), `artifacts`+`logs` under a second — the per-domain split is a variable,
-   not a rebuild, because Bucket Keys make re-keying a bucket-level change.
+   not a rebuild, because Bucket Keys make re-keying a bucket-level change. **And the `domain` dimension
+   is what expresses per-business-unit segregation at N>1** (settled 2026-08-17): when a second domain or
+   unit exists, `domain` joins the LF-Tag ontology as the third key — no separate `unit` dimension.
 3. **The drop-box container** (1.4) — own bucket + own CMK, or a prefix of `raw`. Recommended: **own
    bucket** (`awsds-data-dropbox`), because INT-10's "grant on the drop-box key" must not reach the raw
    domain, and a prefix shares the key.
 4. **The Iceberg maintenance path** (4.2) — Athena scheduled `OPTIMIZE`/`VACUUM` versus Glue automatic
    compaction. Recommended: **Glue automatic compaction** under the maintenance role (no scheduler needed
    in a no-compute account) — and then close 4.3's Athena hole via battery phase 4b in the same sitting.
-5. **The data lake administrators, and account-vs-OU grants** (5.3, 7.2). Recommended: admins =
-   `InfrastructureAccess` only; grants to the two named accounts (the OU grant buys nothing at N=1 and is
-   revisited at Stage 14).
+5. **The data lake administrators, account-vs-OU grants, and the grant method** (5.3, 6.1, 7.2 — the
+   method added 2026-08-17). Recommended: admins = `InfrastructureAccess` only; grants to the two named
+   accounts (the OU grant buys nothing at N=1 and is revisited at Stage 14); **LF-TBAC expressions as the
+   default method** — 6.1's classification-scoped shapes, with 7.1's resource-policy prerequisite read
+   first — the explicit `restricted` grants as enumerated TBAC expressions to named principals, and
+   named-resource reserved for hybrid-mode exceptions (6.3).
 6. **The grain** (6.4, open question 13) — per-user on the SQL path, or per-project everywhere. Not
    recommendable in advance: it is answered by what the grants can actually express, and the deliverable
-   is the *written answer*, either way.
+   is the *written answer*, either way. **It also consumes step 8's ceiling (2026-08-17):** the enforced
+   results zone is per-persona, so the system's grain is `min(SQL grain, derived-zone grain)` — a per-user
+   answer requires 9.2's `${aws:userid}`-scoped `GetObject` in the same breath, or it is not a per-user
+   answer.
 
 ## Verifications to answer while executing
 
@@ -555,6 +618,7 @@ Record every answer, including the ones that come out fine.
 | vii | Does the laptop mount EFS through the tunnel with the SG admitting only the WireGuard instance's SG? | 11 |
 | viii | Can a per-user LF filter be expressed and observed on the SQL path at all (the grain's raw material)? | 6.4 |
 | ix | Does Security Hub's auto-enable cover existing members and later vends, and which FSBP controls were disabled as not-applicable in the first triage? | 13 |
+| x | Does the default consumer grant exclude the `restricted` column (the classification-scoped TBAC holding), and does the explicit grant admit it? | 6.1, 7.2 |
 
 ## Risks
 

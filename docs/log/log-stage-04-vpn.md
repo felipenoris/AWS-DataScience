@@ -843,13 +843,16 @@ says the same thing from a third angle: the group admits one TCP port and nothin
 
 ---
 
-## 2026-08-17 — Pass 2 closed and pass 3 authored: the second device, and the deny that is not yet attached
+## 2026-08-17 — Pass 3 applied: the second device, and the control plane pinned to the tunnel
 
-*Written by Claude at the user's request, in the same sitting. **Two acts in it are the user's and are
-not Claude's to claim**: `make down ENV=production`, and the `raspi` client configuration and its
-connection — both performed on the user's own machines and reported by the user in chat. Everything
-else below is Claude's: the repository work of steps 8.1, 8.2 and 9.1, the plan that was read but **not
-applied**, and the three readings. No AWS write was made by Claude in this sitting.*
+*Written by Claude at the user's request, in the same sitting, and **amended later in that sitting when
+step 8.3 was authorised and applied** — the entry was written while the apply was still pending, and
+leaving it saying so would have made it false. **Two acts in it are the user's and are not Claude's to
+claim**: `make down ENV=production`, and the `raspi` client configuration and its connection — both
+performed on the user's own machines and reported by the user in chat, recorded as **reported rather
+than observed**. Everything else is Claude's: the repository work of steps 8.1, 8.2 and 9.1, the
+readings, and the one AWS write — `identity/sso`, applied by Claude on the user's explicit
+authorisation of that specific act.*
 
 ### What the user closed, and what it settles
 
@@ -869,7 +872,7 @@ the runbook template, which has held `MTU = 1280` since that sitting. The value 
 first connection rather than after a failure, which is what putting it in the template instead of in a
 troubleshooting note was for (Lesson 5).
 
-### Steps 8.1 and 8.2 — written, planned, read, and deliberately not applied
+### Steps 8.1, 8.2 and 8.3 — written, planned, read, then applied
 
 The statement, as it renders — extracted from the saved plan rather than from the source, because what
 is reviewed has to be what the API receives:
@@ -901,6 +904,28 @@ arrangement workable rather than a second sign-in is that both profiles sit on t
 **The plan: `0 to add, 6 to change, 0 to destroy`** — the six persona inline policies, and nothing else
 in the slice. Confirmed by address rather than by count, and confirmed in the negative too: a grep for
 the Sid across the whole planned state returns those six and no seventh.
+
+**Applied 2026-08-17** — profile `awsds-infra-identity`, the saved plan file rather than a re-plan, so
+what was read is what was applied. `Apply complete! Resources: 0 added, 6 changed, 0 destroyed`, the
+slowest set taking 13 s. The slice's own precondition had already compared the caller against the
+account this configuration names, so "am I in Identity" was answered by the plan rather than by a
+person reading an id.
+
+**Read back from AWS rather than from Terraform**, which is this stage's standing idiom: `./aws/vpn.py`
+§5 greps each set's inline policy through the API, and `VP-7` **flipped from `note` to `pass` — all six
+carry it**. The seventh row still reads `(no inline policy)`, and the check now says so as its own
+note — the expected state until the pair is recorded, rather than an absence nobody is tracking.
+
+**The confirmation re-plan is `No changes` at `-detailed-exitcode 0`** — and the exit code was read
+**directly rather than through a pipe**, which is not pedantry here: the fifth entry recorded a
+confirmation plan run as `… | tail`, where `$?` was `tail`'s and reported a clean 0 over a plan holding
+two destroys.
+
+**What is now true of the estate, stated plainly because it is a change in kind rather than in degree:**
+every one of the six persona permission sets denies every AWS API call and every console action that
+does not arrive from `52.89.212.1`. That is live in every account each set is provisioned into, for
+every member of the four persona groups, from this apply onwards. `InfrastructureAccess` is outside it
+by design and is the recovery path.
 
 ### The entry's finding: 8.3's "separate, deliberate diff" is a **create**, not an update
 
@@ -1003,12 +1028,17 @@ included. `terraform fmt`, `validate` and `plan` clean in `identity/sso`.
 
 ### Not done
 
-- **8.3 is not applied.** It needs the user's authorisation for that specific act — SSO user the
-  infrastructure user, account **Identity**, permission set `InfrastructureAccess`, profile
-  `awsds-infra-identity` — and it owes the **control-plane pair** immediately after: the same API call
-  denied with the tunnel down and succeeding with it up, run **per persona set**, reading the *denial
-  wording* rather than the exit code (Validation 3). Verifications (iv) and (vi) are answered from that
-  same sitting.
+- **THE CONTROL-PLANE PAIR IS OWED, AND IT IS OWED NOW RATHER THAN EVENTUALLY.** The deny is live; what
+  is not yet measured is that it denies the right thing and permits the right thing — the same API call
+  refused with the tunnel down and **succeeding with it up**, run **per persona set** rather than once,
+  reading the **denial wording** and not the exit code (Validation 3, a standing rule since 1c). Until
+  that reading exists, `VP-7`'s `pass` is presence and not sufficiency, which is what the script's own
+  §5 header says of itself. Verifications (iv) — the non-FAS on-behalf flows — and (vi) — whether an
+  IdC sign-in completes at all with the tunnel down — are answered from the same sitting.
+- **A practical precondition the plan does not state, found while preparing this**: the pair needs a
+  **persona** session, and the four persona users exist in the directory but **none has a CLI profile**
+  configured. So the pair runs from the console, or from profiles created for those users first — a
+  decision to take before the sitting, not during it.
 - **The seventh set's diff is not written.** Deliberately: it is a create rather than an edit, as above,
   and it lands only after the pair is recorded.
 - **The lifecycle cycle is still owed** (Validation 2, and the Deliverables' "the lifecycle holds"). The
@@ -1026,6 +1056,66 @@ included. `terraform fmt`, `validate` and `plan` clean in `identity/sso`.
   would settle it is reading `wg0` and the primary interface **on the host** — `./aws/vpn.py --on-host`,
   which carries `ssm:SendCommand` and is therefore a write API, off by default and run only on explicit
   authorisation.
+
+### <claude, please put a title here>
+
+- Configured `~/.aws/config` with other SSO users. Password and MFA configuration was done previously for each SSO user.
+
+```
+[sso-session awsds-ds]
+sso_start_url  = <copie do seu bloco [sso-session awsds]>
+sso_region     = <copie do mesmo bloco>
+sso_registration_scopes = sso:account:access
+
+[sso-session awsds-dm]
+sso_start_url  = <idem>
+sso_region     = <idem>
+sso_registration_scopes = sso:account:access
+
+[sso-session awsds-gm]
+sso_start_url  = <idem>
+sso_region     = <idem>
+sso_registration_scopes = sso:account:access
+
+[sso-session awsds-des]
+sso_start_url  = <idem>
+sso_region     = <idem>
+sso_registration_scopes = sso:account:access
+
+# Data Scientist User - um login, dois conjuntos
+[profile awsds-ds-sandbox]
+sso_session    = awsds-ds
+sso_account_id = <Sandbox Account 1>
+sso_role_name  = DataScientistAccess
+region         = us-west-2
+
+[profile awsds-ds-prod]
+sso_session    = awsds-ds
+sso_account_id = <Production Account>
+sso_role_name  = DataScientistProdAccess
+region         = us-west-2
+
+# Deployment Manager User
+[profile awsds-dm-sandbox]
+sso_session    = awsds-dm
+sso_account_id = <Sandbox Account 1>
+sso_role_name  = DeploymentManagerAccess
+region         = us-west-2
+
+# Governance Manager User
+[profile awsds-gm-data]
+sso_session    = awsds-gm
+sso_account_id = <Data Governance Account>
+sso_role_name  = GovernanceManagerAccess
+region         = us-west-2
+
+# Dev Env Steward User
+[profile awsds-des-prod]
+sso_session    = awsds-des
+sso_account_id = <Production Account>
+sso_role_name  = DevEnvStewardAccess
+region         = us-west-2
+```
 
 ---
 
