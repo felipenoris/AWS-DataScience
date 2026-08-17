@@ -54,7 +54,7 @@ SHELL := /bin/bash
 
 help:
 	@printf 'targets:\n'
-	@printf '  check       step 9 offline - conventions, wildcard ARNs, bootstrap parity, slice layers, the policy index\n'
+	@printf '  check       step 9 offline - conventions, wildcard ARNs, bootstrap parity, slice layers, tfvars shapes, the policy index\n'
 	@printf '  check-ou    step 9.3 - OU coverage, needs an SSO session (Identity)\n'
 	@printf '  check-docs  the plan reference check (known red, see the note in this file)\n'
 	@printf '  check-all   all of the above\n'
@@ -72,6 +72,7 @@ check:
 	         "./scripts/check-iam-wildcards.py" \
 	         "./scripts/check-bootstrap-parity.py" \
 	         "./scripts/slices.py check" \
+	         "./scripts/check-tfvars-shape.py" \
 	         "./scripts/check-index.py"; do \
 	  printf '\n\033[1m--- %s\033[0m\n' "$$c"; \
 	  $$c || fail=1; \

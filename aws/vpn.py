@@ -1,7 +1,8 @@
 #!/usr/bin/env -S uv run --quiet
 # vpn.py - Stage 4's evidence, per account, side by side: the WireGuard host ([D]) and its
-# IMDS setting, the Elastic IP and the one world-open security-group rule ([P] anchors), the
-# handshake log and health alarm, WHICH permission sets carry the control-plane deny of
+# IMDS setting, the Elastic IP, the one world-open security-group rule and the host-key
+# secret ([P] anchors - the secret must carry its value-read deny and keep rotation OFF),
+# the handshake log and health alarm, WHICH permission sets carry the control-plane deny of
 # step 8 (read back from Identity Center, never assumed), and the GuardDuty state - detector
 # per account, delegated administrator, and the two paid add-ons that must still be OFF.
 #
@@ -15,6 +16,7 @@
 #   writes:   aws/output/vpn.txt   (untracked - see .gitignore)
 #   reads:    ec2:DescribeInstances, DescribeAddresses, DescribeSecurityGroups,
 #             logs:DescribeLogGroups, cloudwatch:DescribeAlarms,
+#             secretsmanager:ListSecrets, GetResourcePolicy,
 #             guardduty:ListDetectors, GetDetector,
 #             sso-admin:ListInstances, ListPermissionSets, DescribePermissionSet,
 #             GetInlinePolicyForPermissionSet,
@@ -30,9 +32,11 @@
 # halves of one control sit in two accounts by design. Section 1 pays the rule back with
 # the caller ARN of every profile.
 #
-# TWO CONTRACTS THIS FILE READS, both named in the stage file so a rename fails loudly:
+# FOUR CONTRACTS THIS FILE READS, each named in the stage file so a rename fails loudly:
 #   - the instance Name tag matches awsds-*-vpn (Stage 4 step 1.1)
 #   - the deny statement's Sid is DenyControlPlaneOffVpn (Stage 4 step 8.1)
+#   - the host-key secret's name ends in -vpn-host-key (Stage 4 step 2.2a)
+#   - its resource policy's Sid is DenyValueReadExceptHostAndInfrastructure (2.2a)
 #
 # WHAT IT CANNOT SEE, stated because an empty listing and a missing account look alike:
 #   - The behavioural proofs - the tunnel pair, the control-plane deny pair, the
@@ -59,9 +63,11 @@ OUT_NAME = "vpn.txt"
 VPN_HOME_PROFILE = "awsds-infra-sandbox-1"
 IDENTITY_PROFILE = "awsds-infra-identity"
 
-# The two contracts (see header).
+# The contracts (see header).
 NAME_TAG_PATTERN = "awsds-*-vpn"
 DENY_SID = "DenyControlPlaneOffVpn"
+HOST_KEY_SECRET_SUFFIX = "-vpn-host-key"
+HOST_KEY_DENY_SID = "DenyValueReadExceptHostAndInfrastructure"
 
 # The six persona sets the step 8 fragment reaches, and the one it deliberately does not
 # (8.2/8.3). Control Tower's own sets are ignored entirely.
@@ -140,6 +146,7 @@ def main(argv: list) -> int:
     world_open: list = []  # (sg id, sg name, proto, from, to)
     log_groups: list = []  # (name, retention)
     alarms: list = []  # (name, state)
+    host_key_secrets: list = []  # (name, rotation enabled, value-read deny: yes/no/(call failed))
     if home_live:
         cli = cli_for(VPN_HOME_PROFILE)
         res = cli.run(
@@ -244,6 +251,42 @@ def main(argv: list) -> int:
                 f = line.split("\t")
                 if len(f) >= 2 and f[0] and "vpn" in f[0]:
                     alarms.append((f[0], f[1]))
+
+        # The [P] host-key secret (step 2.2a; decision 4, third review). ListSecrets carries
+        # the rotation flag; the resource policy is a second read per match. Matched by NAME,
+        # like the instance's Name tag above: the name is the documented contract.
+        res = cli.run(
+            "secretsmanager",
+            "list-secrets",
+            "--query",
+            "SecretList[].[Name,ARN,RotationEnabled]",
+            "--output",
+            "json",
+            log=False,
+        )
+        if not res.ok:
+            logerr(VPN_HOME_PROFILE, "secretsmanager list-secrets", res.stderr)
+        else:
+            for name, arn, rot in json.loads(res.stdout or "[]"):
+                if not (name.startswith("awsds-") and name.endswith(HOST_KEY_SECRET_SUFFIX)):
+                    continue
+                r = cli.run(
+                    "secretsmanager",
+                    "get-resource-policy",
+                    "--secret-id",
+                    arn,
+                    "--query",
+                    "ResourcePolicy",
+                    "--output",
+                    "text",
+                    log=False,
+                )
+                if not r.ok:
+                    logerr(VPN_HOME_PROFILE, f"get-resource-policy ({name})", r.stderr)
+                    deny = "(call failed)"
+                else:
+                    deny = "yes" if HOST_KEY_DENY_SID in r.stdout else "no"
+                host_key_secrets.append((name, bool(rot), deny))
 
     # ------------------------------------------- the step 8 deny, read back from Identity Center
     identity_live = IDENTITY_PROFILE in live
@@ -528,6 +571,39 @@ def main(argv: list) -> int:
                 else:
                     checks.ok("VP-8", f"GuardDuty in {p}", "ENABLED, deferred add-ons off")
 
+    # VP-9: the [P] host-key secret (step 2.2a; decision 4, third review): present once the
+    # stage runs, the value-read deny attached, and rotation OFF - the keys runbook's one
+    # rule, mechanised into a failure if it ever flips.
+    if home_live:
+        if not host_key_secrets:
+            checks.note(
+                "VP-9",
+                "host-key secret",
+                f"no awsds-*{HOST_KEY_SECRET_SUFFIX} secret - expected before Stage 4 step 2.",
+            )
+        else:
+            for name, rot, deny in host_key_secrets:
+                if rot:
+                    checks.fail(
+                        "VP-9",
+                        f"rotation on {name}",
+                        "RotationEnabled - an automatic rotation replaces the key without "
+                        "touching a single client config (the runbook's one rule, violated "
+                        "by machine); turn it off and rotate by procedure C instead.",
+                    )
+                if deny == "no":
+                    checks.fail(
+                        "VP-9",
+                        f"resource policy on {name}",
+                        f"no statement with Sid {HOST_KEY_DENY_SID} - the value is one IAM "
+                        "allow away from every principal in the account (step 2.2a): the "
+                        "containment is attached, or it is an intention (Lesson 5).",
+                    )
+                elif deny == "yes" and not rot:
+                    checks.ok(
+                        "VP-9", f"host-key secret {name}", "value-read deny attached, rotation off"
+                    )
+
     # --------------------------------------------------------------------------- the report
     with open(out_path, "w", encoding="utf-8") as stream:
         rep = Report(stream)
@@ -541,7 +617,7 @@ produced  : aws/vpn.py   (index: aws/INDEX.md)
 SECTIONS
   1. Which accounts were measured, and as whom
   2. The WireGuard host ([D])
-  3. The Elastic IP and the world-open rules ([P] anchors)
+  3. The Elastic IP, the world-open rules and the host-key secret ([P] anchors)
   4. Handshake log and health alarm
   5. The control-plane deny (step 8), per permission set
   6. GuardDuty, org-wide
@@ -589,7 +665,7 @@ State `stopped` between sessions is D11 working, not an outage. `running` while
 nobody is working is the [D] idle burn (~USD 0.004/h + the EBS).""")
 
         # ==============================================================================
-        rep.h1("3. The Elastic IP and the world-open rules ([P] anchors)")
+        rep.h1("3. The Elastic IP, the world-open rules and the host-key secret ([P] anchors)")
         if home_live:
             if addresses:
                 rep.tabulate(
@@ -613,6 +689,18 @@ nobody is working is the [D] idle burn (~USD 0.004/h + the EBS).""")
                 )
             else:
                 rep.line("No world-open ingress rule in the VPN home.")
+            rep.line()
+            if host_key_secrets:
+                rep.tabulate(
+                    ["SECRET\tROTATION\tVALUE-READ DENY"]
+                    + [f"{n}\t{'ENABLED' if r else 'off'}\t{d}" for n, r, d in host_key_secrets]
+                )
+                rep.line("  - the deny is presence, never sufficiency: who can actually read the")
+                rep.line("    value is proven by a persona's denied GetSecretValue, not here.")
+            else:
+                rep.line(
+                    f"No awsds-*{HOST_KEY_SECRET_SUFFIX} secret. Expected before Stage 4 step 2."
+                )
         else:
             rep.line(f"{VPN_HOME_PROFILE} was not measured - nothing to show.")
 
@@ -678,7 +766,9 @@ What the checks are, and where each comes from:
   VP-6  the health alarm exists (step 7)
   VP-7  the persona sets carry the step 8 deny together, or not at all (8.2);
         InfrastructureAccess is reported as the separate 8.3 decision
-  VP-8  GuardDuty enabled in every measured account, deferred add-ons off (step 10)""")
+  VP-8  GuardDuty enabled in every measured account, deferred add-ons off (step 10)
+  VP-9  the [P] host-key secret carries its value-read deny and rotation is OFF
+        (step 2.2a; decision 4, third review - the keys runbook's one rule)""")
 
         # ==============================================================================
         rep.h1("8. The accounts nothing here is measuring")

@@ -68,6 +68,16 @@ act for real and `make status` reports a burn — the end-of-session reading is 
 slice created without a row fails the sixth check, because `make down` skips what it has never heard of
 in silence — and for an ephemeral slice that is a bill nobody is told about. `make slices` prints the table.
 
+**Since Stage 4 pass 1 there is a `[D]` row too — [`sandbox/vpn/`](sandbox/vpn/README.md) — and `[D]` is
+not a slower `[E]`.** `make down` **stops** that host and destroys nothing; `make up` starts it; creating
+or changing it is always a deliberate `terraform apply`, because an SSM-resolved AMI re-plans as a
+*replacement* and a routine `make up` is no place to rebuild the only way into the network. All three are
+one refusal in `layers.py` (the fifth), and the rank decides which side of the `[E]` loop the stop/start
+lands on: `vpn` at 40 sits below `egress` at 50, so **the tunnel is the first thing up and the last thing
+down** — the order that becomes load-bearing once Stage 4 step 8.3 makes every AWS API call exit through
+its Elastic IP. `make status` reads a `[D]` row's **power state from EC2**, not its state file, or a
+stopped host would report a burn forever.
+
 Two of them exist because nothing else can enforce their rule: **no `.tf` in this tree may declare
 `aws_s3_account_public_access_block`** (the SCP that denies the API carves out exactly the principal every
 slice applies as, so the apply would *succeed*), and **no policy document in `identity/` may carry a

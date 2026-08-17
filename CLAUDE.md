@@ -161,6 +161,7 @@ its `Consumes` row lists.
 | **A Terraform change by hand** — the two-commit tag order, blocked commits | [`docs/plan/runbooks/terraform-changes.md`](docs/plan/runbooks/terraform-changes.md) |
 | "What would an institution do?" | [`docs/plan/institutional-delta.md`](docs/plan/institutional-delta.md) — so a lab compromise is not learned as a pattern |
 | Root is needed, or its alarm chain is being changed | [`docs/plan/runbooks/break-glass.md`](docs/plan/runbooks/break-glass.md) |
+| **A VPN key event** — a copy is lost, the secret is touched, a device is revoked, the host pair rotates | [`docs/plan/runbooks/vpn-keys.md`](docs/plan/runbooks/vpn-keys.md) — loss is recovery from the `[P]` secret, never rotation |
 | **A policy is about to be attached, or was amended** | [`docs/plan/runbooks/scp-battery.md`](docs/plan/runbooks/scp-battery.md) — the probes, and the two distinguishable outcomes of each. **Running them is `./aws/probes/scp-battery.py`** ([`aws/probes/README.md`](aws/probes/README.md)); amending the ceiling means editing `probes.py` |
 | Explaining the design to someone | [`README.md`](README.md) — the argument for the account split and the three distinctions |
 | How the plan got here | [`docs/plan/history.md`](docs/plan/history.md) — almost never |

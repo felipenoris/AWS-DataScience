@@ -6,11 +6,12 @@ Stage: [`docs/plan/stages/stage-04-vpn.md`](../plan/stages/stage-04-vpn.md).*
 *Exceptions, named by SUBJECT so the provenance is not guessed later — the same convention
 [Stage 3's log](log-stage-03-networking.md) adopted.*
 
-*Both entries below are exceptions: on **2026-08-16** the user authorised Claude, explicitly, to create
-this file and write them directly. Neither records an AWS call — one is a repository change merged with
-the Stage 3 teardown, the other is pass 1 authored and gated but **not applied** — so what they are an
-account of is repository work and readings, not of actions taken in AWS. The standing rule is unchanged:
-the next entry is the user's.*
+*All three entries below are exceptions: on **2026-08-16** the user authorised Claude, explicitly, to
+create this file and write the first two directly, and on **2026-08-17** to write the third the same way.
+None records an AWS call — one is a repository change merged with the Stage 3 teardown, one is pass 1
+authored and gated but **not applied**, and the third is a design review propagated through the
+repository — so what they are an account of is repository work and readings, not of actions taken in
+AWS. The standing rule is unchanged: the next entry is the user's.*
 
 ---
 
@@ -116,6 +117,85 @@ and only then stops the host; `up` is the mirror.
 WireGuard 1.0.16 installed on the laptop and recorded in `CLAUDE.md`'s tool list. That line took the file
 past the 20 KB budget `make check-docs` enforces, so the `Claude LOG` re-trim owed since Stage 3 closed is
 now what stands between that target and a green run.
+
+## 2026-08-16 — Third design review: decision 4 revised, the host key moves to Secrets Manager
+
+**No AWS call in this entry.** A chat review on 2026-08-16, propagated through the repository the same
+night and committed on 2026-08-17. Nothing is applied; the estate is still the Stage 3 teardown at
+USD 0.0000/h.
+
+### What changed, and what did not
+
+The host's private key leaves the tfvars/user-data path for the `[P]` secret
+`awsds-<env>-vpn-host-key`. What did **not** change is the reasoning the second review settled: the pair
+is still generated on a laptop, never by Terraform and never on the host, because a key generated on
+first boot lives only inside an instance that the SSM-resolved AMI and `user_data_replace_on_change`
+destroy on schedule (Lesson 4). What changed is **custody**.
+
+| Where | What it holds now |
+|---|---|
+| `sandbox/foundation/vpn-anchors.tf` | The secret container — **no `aws_secretsmanager_secret_version` anywhere** (Stage 7's `gitlab-secrets.json` idiom, one stage early: the container is Terraform's, the value never is) — plus its resource policy, Sid `DenyValueReadExceptHostAndInfrastructure`: `Deny` on `secretsmanager:GetSecretValue` to every principal except the instance role and `AWSReservedSSO_InfrastructureAccess_*`. A fourth output, the ARN |
+| `terraform-modules/wireguard/` | `host_private_key` → `host_key_secret_arn`; `iam.tf` grants `GetSecretValue` on exactly that ARN; the user data gained section (3), a fetch loop |
+| `terraform-live/sandbox/vpn/` | The key variable is **gone**; the ARN arrives through `terraform_remote_state`. `host-key.auto.tfvars` no longer exists in the design — the tracked roster and its shape gate stay |
+| `./aws/vpn.py` | `VP-9`: the secret exists, carries its deny Sid, and `RotationEnabled` is false |
+
+The consequence, stated as measurables for the first boot to confirm (verification (viii)): the user data
+carries a pointer, so `ec2:DescribeInstanceAttribute` yields an ARN; state keeps the provider's SHA-1 of a
+script with no key in it; every read of the value is a **CloudTrail management event**; and the at-rest
+copies are two — the secret and `wg0.conf` on the `[D]` EBS volume.
+
+### Why the containment is on the object and not in the permission sets
+
+One resource policy reaches every principal this account will ever hold — today's personas and **Stage 6's
+notebook execution roles alike** — with no per-set fragment to forget (Lesson 14's good direction). It is
+scoped to `GetSecretValue` alone, deliberately: denying `secretsmanager:*` would put the container's own
+management behind a deny only its author could lift, an availability trap with no confidentiality gain,
+since `GetSecretValue` **is** the secret. Lesson 18 stands and is not dodged — this policy cannot
+constrain `InfrastructureAccess`, which authors it, and does not try to: Infrastructure is the enrollment
+writer and the recovery reader, carved out by name. The instance-role ARN is a **name contract** with the
+module (`awsds-<env>-vpn`), because `foundation/` cannot read a `[D]` slice's outputs.
+
+### The prices, accepted knowingly
+
+- **USD 0.40/month + 0.05/10k reads**, measured (`docs/PRICING.md`).
+- **The first boot gains a dependency**: the fetch retries until this same apply's EIP association gives
+  the host a route and until the value is enrolled. It is a loop that *names its cause* on every retry —
+  a hang with a name, never a timeout into a keyless tunnel — and it is exercised only at instance
+  replacement, when an operator is already mid-apply.
+- **Rotation costs a step**: the new value is invisible to Terraform, so it is `put-secret-value` **plus**
+  a deliberate `apply -replace` plus every client config in the same minute (runbook §3).
+- **Automatic rotation is forbidden forever** — a rotation Lambda would replace the key without touching a
+  single client config: the keys runbook's one rule, violated by machine, on schedule. `VP-9` fails if
+  `RotationEnabled` ever reads true, and `CKV2_AWS_57` is skipped with that reason rather than satisfied.
+
+### What this closes from the previous entry
+
+The 2026-08-16 pass-1 entry recorded that **decision 4's cost was wider than the decision named** — the key
+in the user data, in the account that will host Stage 6's execution roles — and named a SecureString under
+`/datascience/<env>/…` as the alternative on the record. That reading is what this review answers, and the
+SecureString lost on a specific point: a parameter has no resource policy to carry the deny above. An S3
+sibling bucket beside the state bucket was weighed too — it reads through the gateway endpoint *before*
+the EIP associates, which is its one advantage — and lost on two: its reads are **data events**, which
+CloudTrail does not record by default, and containment would have meant extending the state deny's
+`awsds-*-tfstate` name pattern, since a differently-named bucket matches nothing.
+
+### Two corrections made while writing it
+
+- **The runbook's premise inverted.** It was built on reconstruction *from the user data*; with the key no
+  longer there, §§0-1 are rebuilt around the `[P]` secret, and loss now has five cases rather than one —
+  including `restore-secret` inside the 30-day recovery window. The one loss that still forces rotation is
+  a secret deleted **past** that window, which is why deleting it is never routine housekeeping.
+- **A gate of my own that proved nothing.** The user data was checked with `bash -n` against the
+  `terraform console` output while it was still JSON-escaped, so the check passed on text that was not the
+  script. Decoded and re-run: syntax clean, `PrivateKey = $HOST_KEY` and the fetch loop intact (Lesson 13
+  — a check that passes either way is not a check).
+
+### Gates
+
+`terraform fmt` · `make check` **OK** (the tfvars-shape gate among them) · `tflint` on the module and both
+slices · `checkov` **0 failed** (335 / 670 passed) · `ruff` check and format · `terraform validate` on the
+module and on `sandbox/foundation/` · the user data **rendered for real** through `templatefile()` and
+`bash -n` on the decoded script.
 
 ---
 
