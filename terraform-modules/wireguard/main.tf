@@ -126,6 +126,23 @@ resource "aws_instance" "this" {
   tags = {
     Name = "awsds-${var.env}-vpn"
   }
+
+  # THE ONE ATTRIBUTE THIS RESOURCE MUST NOT READ BACK, and it was measured rather than
+  # foreseen (first apply, 2026-08-17): with the host built and the [P] address associated
+  # below, the very next `terraform plan` wanted to DESTROY AND RECREATE the instance, on
+  # `associate_public_ip_address = true -> false # forces replacement`. Nothing had changed.
+  # The refresh reports the attribute from the instance's CURRENT public address, and the
+  # aws_eip_association below is what gave it one - so the two resources disagree by
+  # construction, for as long as they both exist, and the disagreement is ForceNew. Left
+  # alone this is a permanent replacement loop: every apply rebuilds the tunnel endpoint,
+  # and `plan` stops being able to say "nothing drifted" about anything else in the slice.
+  #
+  # The argument STAYS as false rather than being deleted - it is load-bearing at LAUNCH,
+  # which is the only moment it means anything: no second, auto-assigned public IPv4 to
+  # reason about or to pay for. What is ignored is only the read-back.
+  lifecycle {
+    ignore_changes = [associate_public_ip_address]
+  }
 }
 
 # The address is allocated in the caller's [P] slice and ASSOCIATED here, with the instance
