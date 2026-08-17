@@ -12,7 +12,7 @@
 | Half | Designed home | Other copies |
 |---|---|---|
 | Host **private** | **The `[P]` Secrets Manager secret `awsds-sandbox-vpn-host-key`** (Stage 4 step 2.2a) — value written by the user at enrollment (`put-secret-value`, step 4.3), read by the instance role at first boot; its resource policy denies `GetSecretValue` to everything else in the account except `InfrastructureAccess`, and **every read is a CloudTrail management event** | `/etc/wireguard/wg0.conf` on the host's EBS volume, which `[D]` keeps across stop/start. **Not the user data** — it carries the secret's ARN, so `ec2:DescribeInstanceAttribute` yields a pointer; **not the state** — the provider stores a SHA-1 of a script that contains no key; **not the laptop** — the enrollment file is scratch, deleted once the tunnel proves (4.3) |
-| Host **public** | derived at enrollment: `wg pubkey < host-private.key` (step 4.3) | pinned in every client config's `PublicKey =` line — and recoverable **without touching the secret**: any client config, or `wg show wg0 public-key` over SSM |
+| Host **public** | `host-public.key` on the laptop, written beside the private half at enrollment (step 4.3) — `644`, not secret, and kept after `host-private.key` is deleted | pinned in every client config's `PublicKey =` line — and recoverable **without touching the secret**: any client config, or `wg show wg0 public-key` over SSM |
 | Device **private** | that device, only — it never leaves it (Stage 4 step 4.1) | none, by design |
 | Device **public** | `peers.auto.tfvars` — the **tracked** roster, so git history holds every version of it | EC2's stored user data, the host (`wg show`, `/etc/wireguard/peer-names`), and re-derivable on the device from its private half |
 
@@ -32,8 +32,8 @@ none of them is a new key:
    4.3 deletes it once the tunnel proves. Nothing to do.
 
 2. **A new client config needs the host's PUBLIC key.** Take it without touching the secret:
-   the `PublicKey =` line of any existing client config, or — tunnel or no tunnel —
-   `wg show wg0 public-key` in an SSM session
+   `host-public.key` on the laptop (§0), the `PublicKey =` line of any existing client config,
+   or — tunnel or no tunnel — `wg show wg0 public-key` in an SSM session
    (`aws ssm start-session --target <instance-id> --profile awsds-infra-sandbox-1 --region us-west-2`;
    the laptop side needs the `session-manager-plugin`, which is not in the standard toolset).
 
@@ -100,7 +100,7 @@ none of them is a new key:
    rather than 45 (measured 2026-08-17; the filename is scratch — any name serves):
 
    ```bash
-   (umask 077 && wg genkey | tr -d '\n' > host-private.key) && wg pubkey < host-private.key
+   (umask 077 && wg genkey | tr -d '\n' > host-private.key) && wg pubkey < host-private.key | tee host-public.key
    ```
 
 2. Enrol the new value — `file://`, never a pasted literal (§4):

@@ -40,7 +40,7 @@ on the laptop, **outside this repository** (step 4.3), and enrolled into
 user and never by Terraform:
 
 ```bash
-(umask 077 && wg genkey | tr -d '\n' > host-private.key) && wg pubkey < host-private.key
+(umask 077 && wg genkey | tr -d '\n' > host-private.key) && wg pubkey < host-private.key | tee host-public.key
 ```
 
 ```bash
@@ -48,24 +48,29 @@ aws secretsmanager put-secret-value --profile awsds-infra-sandbox-1 --region us-
   --secret-id awsds-sandbox-vpn-host-key --secret-string file://host-private.key
 ```
 
-Three details in the first command, each measured rather than assumed (2026-08-17): `umask
-077` makes the file `600` at creation rather than after it; **`tr -d '\n'` is what makes the
-stored value exactly 44 characters** — the obvious `wg genkey | tee host-private.key` writes
-45, the key plus a newline, which `file://` would store verbatim (the boot's `$(…)` strips it,
-so this is unambiguity for future readers rather than a bug avoided); and what the command
-**prints** is the PUBLIC half, which goes into every client config (step 9.1).
+Every detail of the first command was measured rather than assumed (2026-08-17). `umask 077`
+inside the subshell makes `host-private.key` **`600` at creation** rather than after it, while
+`host-public.key` — written outside those parentheses, on purpose — lands `644`: the two halves
+get the permissions their names promise. **`tr -d '\n'` is what makes the stored value exactly
+44 bytes**; the obvious `wg genkey | tee host-private.key` writes 45, the key plus a newline,
+which `file://` stores verbatim (the boot's `$(…)` strips it, so this is unambiguity for later
+readers rather than a bug avoided). `host-public.key` **keeps** its newline — 45 bytes, `wg
+pubkey`'s own output — which is what lets the verification below be a `diff` rather than a
+comparison by eye. And `tee` means the public half is on screen and on disk in one step: it
+goes into every client config (step 9.1).
 
-`file://`, never a pasted literal — the key must not enter the shell history. The local
-`host-private.key` is scratch — **keep it until the tunnel proves, then delete it**; the
-secret is the designed home. The instance fetches the value at first boot with its own role;
-the secret's resource policy denies the read to every other principal in the account except
-`InfrastructureAccess`.
+`file://`, never a pasted literal — the key must not enter the shell history. `host-private.key`
+is scratch — **keep it until the tunnel proves, then delete it**; the secret is the designed
+home. `host-public.key` is not secret and may stay. Both are git-ignored by `*.key`, the net
+under the practice of generating them outside the repository at all. The instance fetches the
+value at first boot with its own role; the secret's resource policy denies the read to every
+other principal in the account except `InfrastructureAccess`.
 
-Verify the round trip without ever printing the private half — this must echo the public key
-from the first command:
+Verify the round trip **mechanically**, without the private half ever reaching a terminal —
+`diff` is silent and exits 0 on a match, so the `echo` firing is the whole result:
 
 ```bash
-aws secretsmanager get-secret-value --profile awsds-infra-sandbox-1 --region us-west-2 --secret-id awsds-sandbox-vpn-host-key --query SecretString --output text | wg pubkey
+aws secretsmanager get-secret-value --profile awsds-infra-sandbox-1 --region us-west-2 --secret-id awsds-sandbox-vpn-host-key --query SecretString --output text | wg pubkey | diff - host-public.key && echo "MATCH - the enrolled value is the key that was generated"
 ```
 
 **What it costs and buys, named rather than assumed (decision 4, third review).** It costs
