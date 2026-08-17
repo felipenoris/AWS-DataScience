@@ -64,3 +64,31 @@ output "sandbox_internal_zone_id" {
   description = "The sandbox.internal hosted zone id."
   value       = aws_route53_zone.sandbox_internal.zone_id
 }
+
+# ------------------------------------------------------- Stage 4 step 2, the VPN anchors
+#
+# Four outputs, four different readers, none of them in this slice: sandbox/vpn/ associates
+# the address, attaches the group and hands the secret's ARN to the host's boot fetch,
+# identity/sso/ names the public IP in step 8's deny (the repository's first cross-account
+# remote-state read), and Stages 5 and 7 admit the group id from another account entirely.
+# Everything here survives make down by construction.
+
+output "wireguard_eip_allocation_id" {
+  description = "The [P] Elastic IP allocation - sandbox/vpn/ associates it with the [D] host."
+  value       = aws_eip.wireguard.allocation_id
+}
+
+output "wireguard_eip_public_ip" {
+  description = "THE ADDRESS STEP 8 PINS THE WHOLE CONTROL PLANE TO, and a branch of Stage 5 step 1.3's bucket policy (INT-05). Read by identity/sso/ through terraform_remote_state, never pasted: pasted, it would be a copy that nothing keeps in step with a reallocation, and the failure mode is every persona denied every API call."
+  value       = aws_eip.wireguard.public_ip
+}
+
+output "wireguard_security_group_id" {
+  description = "The [P] WireGuard security group. Admitted BY ID from Production (Stage 7's GitLab) and by Stage 5's EFS mount rule - never the client CIDR, which the instance SNATs away (step 1.2)."
+  value       = aws_security_group.wireguard.id
+}
+
+output "wireguard_host_key_secret_arn" {
+  description = "The [P] host-key secret container (step 2.2a; decision 4, third review). sandbox/vpn/ passes it into the module, which grants its instance role GetSecretValue on exactly this ARN and hands it to the boot fetch. The VALUE never crosses Terraform: written by the user at enrollment (step 4.3), read by the host at first boot."
+  value       = aws_secretsmanager_secret.wireguard_host_key.arn
+}

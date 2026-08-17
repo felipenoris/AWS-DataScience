@@ -1,0 +1,209 @@
+#!/bin/bash
+# WireGuard host - Stage 4 steps 1.2, 4 and 7. Rendered by templatefile() from
+# terraform-modules/wireguard/main.tf; nothing here is typed on the host.
+#
+# THIS SCRIPT RUNS ONCE, AT FIRST BOOT. The instance carries
+# `user_data_replace_on_change = true` for exactly that reason (Stage 3's finding: the
+# provider's default edits the attribute in place, leaving the old script running and looking
+# like a re-measurement that agreed with itself).
+#
+# NO SECRET RIDES THIS SCRIPT (decision 4, third design review): it arrives holding the
+# host-key secret's ARN and nothing else, so ec2:DescribeInstanceAttribute on this instance
+# yields a pointer. The value is fetched in section (3), with this host's own role.
+#
+# EVERY STAGE ANNOUNCES ITSELF BEFORE IT STARTS, because the failure modes this boot is most
+# likely to hit ARE HANGS RATHER THAN ERRORS (Stage 4 step 1.4): the packages below come
+# from the AL2023 repository in S3, through foundation/'s GATEWAY endpoint - the public
+# subnet's internet gateway does not enter into it, since the gateway endpoint's prefix-list
+# route is more specific - so an incomplete 9.3 allow-list shows up as dnf retrying forever;
+# and the key fetch retries, saying why, until the route and the value both exist. Read this
+# log before debugging WireGuard itself.
+set -euo pipefail
+exec > >(tee -a /dev/console) 2>&1
+
+say () { echo "=== AWSDS-VPN $(date -u +%H:%M:%SZ) $* ==="; }
+
+say "BEGIN - $(uname -srm)"
+
+# ------------------------------------------------------------------------- (1) packages
+#
+# THE THREE NAMES WERE MEASURED PRESENT in the AL2023 core repository for this region on
+# 2026-08-16, read from the repository bucket itself. iptables-nft is what provides
+# /usr/sbin/iptables on AL2023 - the masquerade rule below has no command without it.
+say "(1) installing wireguard-tools iptables-nft amazon-cloudwatch-agent"
+dnf -y install wireguard-tools iptables-nft amazon-cloudwatch-agent
+say "(1) done"
+
+# --------------------------------------------------------------------- (2) IP forwarding
+#
+# The host is the NAT for every tunnel client, and that is not a convenience: VPC peering does
+# no edge-to-edge routing and forwards only packets whose source AND destination sit inside
+# the two VPCs' ranges, so a packet still carrying a ${peer_cidr} source can never reach
+# Production. Every forwarded packet has to leave here wearing this instance's own address.
+say "(2) enabling IPv4 forwarding"
+echo 'net.ipv4.ip_forward = 1' > /etc/sysctl.d/99-awsds-vpn.conf
+sysctl -p /etc/sysctl.d/99-awsds-vpn.conf
+
+# The uplink is DERIVED, not assumed: AL2023 on ENA names it ens5 or enX0 depending on the
+# instance generation, and a wrong literal here is a tunnel that comes up and routes nothing.
+UPLINK=$(ip -o route show default | awk '{print $5; exit}')
+say "(2) uplink interface: $UPLINK"
+
+# ------------------------------------------------------- (3) the host's private key
+#
+# FETCHED, NEVER CARRIED (decision 4, third review): the value is read here with this host's
+# own role - the only principal beside InfrastructureAccess that the secret's resource policy
+# leaves able to - and lands in wg0.conf below (0600, root) and nowhere else: not echoed, not
+# exported, not left in a scratch file. The command substitution keeps it off this console
+# log; only the say lines print.
+#
+# THE LOOP IS DELIBERATE AND LOUD, and two different waits share it, each retry naming its
+# cause: the ROUTE (this host boots with no public address - the same apply associates the
+# [P] Elastic IP moments later, and until then the Secrets Manager endpoint is unreachable),
+# and the VALUE (enrollment - step 4.3 - may not have run yet on a first build). A wrong
+# resource policy or a missing IAM allow surfaces here too, as AccessDenied text in the say
+# line - read it before debugging anything else (step 1.4). The region is cut from the ARN
+# rather than asked of IMDS: one fewer thing to wait on.
+say "(3) fetching the host key from Secrets Manager"
+SECRET_ARN="${host_key_secret_arn}"
+SECRET_REGION=$(echo "$SECRET_ARN" | cut -d: -f4)
+HOST_KEY=""
+until HOST_KEY=$(aws secretsmanager get-secret-value \
+      --secret-id "$SECRET_ARN" --region "$SECRET_REGION" \
+      --cli-connect-timeout 5 \
+      --query SecretString --output text 2>/run/awsds-key-fetch.err) && [ -n "$HOST_KEY" ]; do
+  say "(3) waiting - $(tr '\n' ' ' < /run/awsds-key-fetch.err | tail -c 160) - retry in 10s"
+  sleep 10
+done
+rm -f /run/awsds-key-fetch.err
+say "(3) key in hand (base64 length $${#HOST_KEY})"
+
+# ----------------------------------------------------------------------- (4) wg0.conf
+#
+# umask FIRST: this file holds the server's private key - the one at-rest copy this design
+# leaves on the host, kept across stop/start by the [D] EBS volume - and wg-quick refuses to
+# start on a world-readable configuration.
+say "(4) writing /etc/wireguard/wg0.conf for ${peer_count} peer(s)"
+umask 077
+mkdir -p /etc/wireguard
+cat > /etc/wireguard/wg0.conf <<WGEOF
+[Interface]
+Address = ${server_address}
+ListenPort = ${listen_port}
+PrivateKey = $HOST_KEY
+PostUp = iptables -t nat -A POSTROUTING -s ${peer_cidr} -o $UPLINK -j MASQUERADE; iptables -A FORWARD -i %i -j ACCEPT; iptables -A FORWARD -o %i -j ACCEPT
+PostDown = iptables -t nat -D POSTROUTING -s ${peer_cidr} -o $UPLINK -j MASQUERADE; iptables -D FORWARD -i %i -j ACCEPT; iptables -D FORWARD -o %i -j ACCEPT
+%{ for name, peer in peers ~}
+
+# ${name}
+[Peer]
+PublicKey = ${peer.public_key}
+AllowedIPs = ${peer.address}/32
+%{ endfor ~}
+WGEOF
+unset HOST_KEY
+
+# The name map, so the handshake log below reads as devices rather than as base64. wg(8)
+# knows nothing about names - it prints public keys.
+cat > /etc/wireguard/peer-names <<NAMEEOF
+%{ for name, peer in peers ~}
+${peer.public_key} ${name}
+%{ endfor ~}
+NAMEEOF
+umask 022
+
+say "(4) starting wg-quick@wg0"
+systemctl enable --now wg-quick@wg0
+wg show wg0 || true
+
+# --------------------------------------------------------------- (5) the handshake log
+#
+# WIREGUARD WRITES NO LOG FILE - its kernel module logs nothing to disk - so the diagnostic
+# for "tunnel up, nothing routes" has to be created here: a timer that samples the peer table
+# once a minute into a file the CloudWatch agent tails.
+#
+# `wg show all latest-handshakes` AND NEVER `wg show all dump`: the dump form prints the
+# INTERFACE'S PRIVATE KEY on its first line, so shipping it would put the server key into a
+# CloudWatch log group. latest-handshakes prints public keys and timestamps only.
+say "(5) installing the handshake sampler"
+cat > /usr/local/bin/awsds-wg-handshakes <<'SAMPLEREOF'
+#!/bin/bash
+now=$(date -u +%s)
+stamp=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+wg show all latest-handshakes | while read -r iface key ts ; do
+  name=$(awk -v k="$key" '$1 == k {print $2}' /etc/wireguard/peer-names)
+  if [ "$ts" = "0" ] ; then
+    echo "$stamp iface=$iface peer=$${name:-unknown} handshake=never"
+  else
+    echo "$stamp iface=$iface peer=$${name:-unknown} handshake_age_s=$((now - ts))"
+  fi
+done
+SAMPLEREOF
+chmod 0755 /usr/local/bin/awsds-wg-handshakes
+
+cat > /etc/systemd/system/awsds-wg-handshakes.service <<'SVCEOF'
+[Unit]
+Description=Sample the WireGuard peer table into a log the CloudWatch agent tails
+
+[Service]
+Type=oneshot
+ExecStart=/bin/bash -c '/usr/local/bin/awsds-wg-handshakes >> /var/log/wireguard-handshakes.log'
+SVCEOF
+
+cat > /etc/systemd/system/awsds-wg-handshakes.timer <<'TIMEREOF'
+[Unit]
+Description=Sample the WireGuard peer table once a minute
+
+[Timer]
+OnBootSec=60
+OnUnitActiveSec=60
+AccuracySec=10
+
+[Install]
+WantedBy=timers.target
+TIMEREOF
+
+touch /var/log/wireguard-handshakes.log
+systemctl daemon-reload
+systemctl enable --now awsds-wg-handshakes.timer
+
+# ------------------------------------------------------------ (6) the CloudWatch agent
+#
+# LOGS ONLY, no metrics: the alarm is on EC2's own status checks (decision 2), which are
+# published by the platform and need no agent, so a metrics section here would buy a custom
+# metric at USD 0.30/metric-month and nothing else (docs/PRICING.md 4).
+#
+# The log group is created by TERRAFORM, because Terraform owns its retention - the role
+# deliberately cannot create one (iam.tf). {instance_id} is resolved by the agent from IMDS,
+# and every field of the JSON below was read off the agent's own configuration reference
+# (docs/REFERENCES.md, 2026-08-16): agent.run_as_user, logs.logs_collected.files.collect_list
+# with file_path / log_group_name / log_stream_name / timezone.
+#
+# THIS STEP IS DELIBERATELY NOT FATAL, and the two reasons are different in kind.
+#
+# The engineering one: a log shipper must never be able to break the only path into the
+# network. Everything above is the tunnel; this is observability beside it, so it reports its
+# own failure and the script still reaches END.
+#
+# The honest one: the FLAGS below are not verified the way the JSON is. The agent's
+# command-line page did not render on three fetch attempts, so `-a fetch-config -m ec2 -s -c
+# file:...` is written from memory rather than quoted. That is exactly the kind of claim this
+# project does not launder - so the invocation prints its own exit and then asks the agent
+# what it thinks its status is. A wrong flag is then a named failure in this log, minutes
+# after boot, instead of ./aws/vpn.py VP-5 reporting a missing log group days later with
+# three possible causes. Confirm it on the first boot and quote the page in the log entry.
+say "(6) configuring the CloudWatch agent -> ${log_group}"
+cat > /opt/aws/amazon-cloudwatch-agent/etc/awsds-vpn.json <<'CWEOF'
+${agent_config}
+CWEOF
+if /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl \
+     -a fetch-config -m ec2 -s -c file:/opt/aws/amazon-cloudwatch-agent/etc/awsds-vpn.json ; then
+  say "(6) agent-ctl accepted the configuration"
+else
+  say "(6) FAILED - the CloudWatch agent did not start. THE TUNNEL IS UNAFFECTED; what is"
+  say "(6) missing is the handshake log (VP-5). Check the flags above and /opt/aws/"
+  say "(6) amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.d/ for a file_ copy."
+fi
+/opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -a status || true
+
+say "END - the tunnel endpoint is up"

@@ -102,6 +102,19 @@ repos:
         pass_filenames: false
         files: ^(terraform-live/[^/]+/[^/]+/.*\.tf|scripts/tfhygiene/layers\.py)$
 
+      # Stage 4's second design review (2026-08-16) - the WireGuard peers roster is a TRACKED
+      # tfvars (public halves only), the one deliberate exception to "tfvars are never
+      # committed". An exception without a shape check is how the host's private key ends up
+      # on GitHub: WireGuard public and private keys are INDISTINGUISHABLE by format (44-char
+      # base64), so the gate validates STRUCTURE - which keys a tracked tfvars may assign -
+      # never content.
+      - id: check-tfvars-shape
+        name: tracked tfvars match their allowlisted shape (Stage 4)
+        entry: ./scripts/check-tfvars-shape.py
+        language: system
+        pass_filenames: false
+        files: (\.tfvars(\.json)?|scripts/check-tfvars-shape\.py)$
+
       # 9.4 - it already existed and was run by hand, which is exactly the state step 9 ends.
       # Once org-policies/ manages these documents, a statement added in Terraform with no row
       # in POLICIES.md is a control nobody can explain a year later.
