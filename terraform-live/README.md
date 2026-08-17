@@ -13,6 +13,10 @@ is a broken caller.
 
 ## What is here today
 
+**Seventeen slices across five account folders: ten `[P]`, one `[D]`, six `[E]`.** That is a summary, not
+an authority — `make slices` prints the live table, and a slice that reaches disk without a row in it fails
+`make check`.
+
 **Five `bootstrap/` slices, and they are one slice copied five times — Stage 2 steps 1, 2 and 3, 2026-08-15.**
 `sandbox/`, `development/`, `data-governance/`, `production/` and `identity/` each carry the same
 `main.tf`, `variables.tf`, `outputs.tf`, `providers.tf`, `versions.tf` and `.terraform.lock.hcl` — **the state
@@ -50,13 +54,25 @@ by the stage that first writes a `.tf` file into it, and **§6 stays the one pla
 constraint belongs to each root module. The parity check above is what keeps the copies from drifting
 (Lesson 14).
 
-**Six checks stand over this tree — Stage 2 steps 9, 3.5 and 8.1 — and there is no CI to run them in.**
-Until Stage 8 puts them in a pipeline the surfaces are `pre-commit` and the repository's `Makefile`, both
-calling the same scripts:
+**Stage 3 put a network on disk in the three accounts that have one — `sandbox/`, `development/` and
+`production/`, split three ways (2026-08-16, applied and measured).** `foundation/` is `[P]`: the VPC, its
+six subnets across three AZs, the gateway endpoints and the private hosted zones, plus the peerings and
+zone associations pass 2 adds on a second apply of the same slice. `egress/` is `[E]` — the NAT gateway
+and the interface endpoints, which are this tree's entire hourly bill. `probes/` is `[E]` as well and is
+an **instrument rather than infrastructure**: the hosts the perimeter, both peerings and the flow logs
+were measured from, kept on disk because a probe that has to be rewritten is a probe nobody re-runs.
+**`data-governance/` has no `foundation/` and never will** (D22 — a registry needs no VPC), which is why
+`layers.py` carries an explicit comment where its row would be. What stands right now is the `[P]` half
+alone: the `[E]` slices are destroyed and the tree bills **USD 0.0000/h** between sessions, while
+`foundation/` re-plans `No changes` — that pair is D11's proof, not an accident of timing.
+
+**Seven checks stand over this tree — Stage 2 steps 9, 3.5 and 8.1, plus Stage 4's — and there is no CI to
+run them in.** Until Stage 8 puts them in a pipeline the surfaces are `pre-commit` and the repository's
+`Makefile`, both calling the same scripts:
 
 ```bash
 make check      # offline: region literals, indexed AZs, account-level BPA, wildcard ARNs,
-                #          bootstrap parity, slice layers, the policy index
+                #          bootstrap parity, slice layers, tracked tfvars shape, the policy index
 make check-ou   # needs an SSO session as the infrastructure user on Identity
 ```
 
@@ -78,10 +94,29 @@ down** — the order that becomes load-bearing once Stage 4 step 8.3 makes every
 its Elastic IP. `make status` reads a `[D]` row's **power state from EC2**, not its state file, or a
 stopped host would report a burn forever.
 
-Two of them exist because nothing else can enforce their rule: **no `.tf` in this tree may declare
+**That slice is also this tree's clearest instance of the layer deciding the folder, not the topic.** The
+VPN's three durable things — the Elastic IP, the host security group and the **host private key's Secrets
+Manager container** — are `[P]` and live in [`sandbox/foundation/vpn-anchors.tf`](sandbox/foundation/),
+one slice away from the `[D]` instance that consumes them. Each is named from outside Stage 4 (the
+permission sets pin the address, Stage 5's bucket and EFS rules and Stage 7's GitLab rule name the group,
+and every instance the `[D]` slice ever boots reads the key), and **a reference is only worth writing if
+what it names outlives the thing using it**: after step 8.3 an address that changed would deny every
+persona every API call until each client config and the permission-set fragment were edited together.
+The **value** in that secret is never Terraform's — it is put there by the user at enrollment and read by
+the host at first boot ([`docs/plan/runbooks/vpn-keys.md`](../docs/plan/runbooks/vpn-keys.md) owns every
+event that touches it).
+
+Three of them exist because nothing else can enforce their rule: **no `.tf` in this tree may declare
 `aws_s3_account_public_access_block`** (the SCP that denies the API carves out exactly the principal every
-slice applies as, so the apply would *succeed*), and **no policy document in `identity/` may carry a
-wildcard-account ARN** except the one statement whitelisted by `Sid`.
+slice applies as, so the apply would *succeed*); **no policy document in `identity/` may carry a
+wildcard-account ARN** except the one statement whitelisted by `Sid`; and — since Stage 4 —
+**no tracked `*.tfvars` may carry a private key**, which `./scripts/check-tfvars-shape.py` enforces by
+**structure** because content is unenforceable here: the WireGuard peers roster is the one deliberately
+tracked tfvars, and a WireGuard private key is 44 characters of bare base64 that no scanner can tell from
+the public halves that roster commits on purpose (`pre-commit`'s `detect-private-key` reads PEM armor).
+So the gate allowlists which tfvars may be tracked and which top-level keys each may assign, and fails a
+`host-key.auto.tfvars` by name — a filename that should no longer exist at all, the key having moved to a
+`[P]` Secrets Manager secret.
 
 **Set `TF_PLUGIN_CACHE_DIR` before working in this tree**, or every slice downloads its own ~250 MB copy of
 the AWS provider — `terraform validate` in the pre-commit hook runs `init` per slice:
@@ -120,7 +155,10 @@ reads.
 2. **Which slice?** → the sub-folder. A slice is one Terraform state and one `apply`. The seam between two
    slices is a *reason*, not a size: `identity/` is split into `sso/` and `org-policies/` because the two
    reach their objects through **different delegations**; `production/pki/` is split from `foundation/`
-   because foundation is opened to change a CIDR and that edit would otherwise decrypt the root CA.
+   because foundation is opened to change a CIDR and that edit would otherwise decrypt the root CA; and
+   the VPN's anchors sit in `sandbox/foundation/` rather than in `sandbox/vpn/` because they are `[P]` and
+   the host is `[D]` — **question 3 answered differently for two halves of one topic is a slice boundary**,
+   which is the general form of all three.
 3. **Which layer?** → `[P]` persistent, `[D]` dormant (stopped, not destroyed), `[E]` ephemeral (destroyed
    between sessions). This is principle 7 — *pay nothing while idle* (D11) — and it is a property of the
    slice, so `make down` can act on whole slices rather than on hand-picked resources.
@@ -146,7 +184,9 @@ created there, the account has stopped being what it is for.
 
 ## What deliberately does not live in this tree
 
-- **`terraform-modules/`** — the reusable code. `terraform-live/` composes; it does not define.
+- **`terraform-modules/`** — the reusable code. `terraform-live/` composes; it does not define. Six exist
+  since Stages 3-4 (`vpc`, `vpc-egress`, `s3-bucket`, `kms-key`, `iam-role`, `wireguard`), and every caller
+  in this tree pins one **by git tag** — the two-commit order that requires is the runbook's.
 - **People.** Identity Center **users, groups and memberships** stay in the directory; only **entitlements**
   — permission sets, boundaries, group→account assignments — are Terraform, in `identity/sso/`. The seam and
   its reasoning are in `docs/plan/conventions.md`, "The identity seam".
