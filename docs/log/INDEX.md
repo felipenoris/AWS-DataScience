@@ -68,12 +68,29 @@ chat as **one single fenced block** so it is pasted untouched:
   **In the drafting mode, one single fenced code block** and never ordinary chat prose, so the user copies
   it in untouched and nothing is reformatted on the way: a ` ```markdown ` fence, or a longer outer fence
   (` ````markdown `) when the draft itself has to contain one, so the nesting survives.
-- **No identifiers.** Replace real account IDs by `<Account Name>`, and the management account's by
-  `<Management Account>`.
+- **No identifiers — and the redaction has a shape, because it is applied to *evidence*.** An account id
+  becomes the account's AWS `Account.Name` in angle brackets — `<Audit Account>`, `<Sandbox Account 1>`,
+  `<Management Account>`; the names are in [`docs/ORGANIZATION.md`](../ORGANIZATION.md), and which id is
+  which account is **resolved from the entry's own surrounding text or from `aws/output/`, never guessed**.
+  An **e-mail address inside an ARN** becomes that user's role — `<control tower admin user>`. **Nothing
+  else in a pasted output is touched**: the `AWSReservedSSO_*` suffixes, the policy, organization and root
+  ids, the error wording and the encoded authorization failure blobs stay verbatim, because a log that has
+  been tidied stops being evidence. And the entry **declares the substitution once**, in its provenance
+  note, instead of at each line — the tenth entry of [`log-stage-04-vpn.md`](log-stage-04-vpn.md) is the
+  wording to copy.
 - **Concise by default:** the command, the outcome, and any finding that does **not** survive elsewhere.
   Leave out what `aws/output/` already holds (it is regenerated on demand), what a `docs/plan/` file explains,
   and the reasoning behind a choice — a log entry restating either is a copy that will go stale. Prose
   belongs in `docs/plan/`; the log carries *what happened, in order*.
+
+**The identifier rule has a gate, and it did not always** (2026-08-17). `./scripts/check-identifiers.py`
+runs in `make check` and in `pre-commit`, over **every tracked file** rather than over `docs/` alone, and
+fails on a standalone twelve-digit number or an e-mail address. It exists because the rule above was held
+by attention alone and attention had already missed **three** log files — twenty-four ids and two
+addresses, each with a correctly-elided neighbour a few lines away, which is Lesson 14 exactly. Two things
+it does not do: it cannot reach what is already in **git history**, and it cannot decide *which* account an
+id belongs to. And a hit inside an existing entry is still an edit to a stage log, so it waits for the
+user's request like any other — the gate names the line, it does not authorise the fix.
 
 **Adding a stage log:** the user creates `docs/log/log-<same-filename-as-the-stage-file>` and copies the
 two-line header from an existing one; Claude replaces that stage's `—` above with the link plus a one-line

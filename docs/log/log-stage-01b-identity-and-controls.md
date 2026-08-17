@@ -5,6 +5,12 @@ only when the user asks, never on its own initiative** ([`INDEX.md`](INDEX.md), 
 provenance rule). **An entry carrying no provenance note of its own is the user's.**
 Stage: [`docs/plan/stages/stage-01b-identity-and-controls.md`](../plan/stages/stage-01b-identity-and-controls.md).*
 
+*One mechanical substitution was made on **2026-08-17**, by Claude at the user's request, and is named
+here rather than at each line: **account ids → the account's name**, in the outputs pasted below — this
+repository keeps no account id in a tracked file ([`aws/INDEX.md`](../../aws/INDEX.md) rule 1) and an ARN
+carries one. Nothing else was edited: the `AWSReservedSSO_*` suffixes, the permission-set and landing-zone
+ids and the wording arrived as they read.*
+
 ---
 
 - Started step 8.3
@@ -257,7 +263,7 @@ aws cloudwatch describe-alarm-history --alarm-name "Identity Center membership a
 
 ```
 LZ=$(aws controltower list-landing-zones --query 'landingZones[0].arn' --output text) && echo "$LZ" && aws controltower get-landing-zone --landing-zone-identifier "$LZ" --query 'landingZone.[version,status,driftStatus,latestAvailableVersion]'
-arn:aws:controltower:us-west-2:885931358757:landingzone/4I3ACTXON4Q7CJ8H
+arn:aws:controltower:us-west-2:<Management Account>:landingzone/4I3ACTXON4Q7CJ8H
 [
     "4.0",
     "ACTIVE",
@@ -486,12 +492,12 @@ for P in awsds-infra-sandbox-1 awsds-infra-dev awsds-infra-prod awsds-infra-data
 yields:
 
 ```
-awsds-infra-sandbox-1: arn:aws:sts::892278726726:assumed-role/AWSReservedSSO_InfrastructureAccess_59e5b26af457128d
-awsds-infra-dev: arn:aws:sts::680160265342:assumed-role/AWSReservedSSO_InfrastructureAccess_7edd72025c361e9b
-awsds-infra-prod: arn:aws:sts::477537078499:assumed-role/AWSReservedSSO_InfrastructureAccess_c2bcabf74c885115
-awsds-infra-data: arn:aws:sts::782981553460:assumed-role/AWSReservedSSO_InfrastructureAccess_ba1899ccb658ab35
-awsds-infra-identity: arn:aws:sts::863181492659:assumed-role/AWSReservedSSO_InfrastructureAccess_a6d31eda0e5de20c
-awsds-policy-canary: arn:aws:sts::817139099669:assumed-role/AWSReservedSSO_AWSAdministratorAccess_59a09ed7d34a9cd1
+awsds-infra-sandbox-1: arn:aws:sts::<Sandbox Account 1>:assumed-role/AWSReservedSSO_InfrastructureAccess_59e5b26af457128d
+awsds-infra-dev: arn:aws:sts::<Development Account>:assumed-role/AWSReservedSSO_InfrastructureAccess_7edd72025c361e9b
+awsds-infra-prod: arn:aws:sts::<Production Account>:assumed-role/AWSReservedSSO_InfrastructureAccess_c2bcabf74c885115
+awsds-infra-data: arn:aws:sts::<Data Governance Account>:assumed-role/AWSReservedSSO_InfrastructureAccess_ba1899ccb658ab35
+awsds-infra-identity: arn:aws:sts::<Identity Account>:assumed-role/AWSReservedSSO_InfrastructureAccess_a6d31eda0e5de20c
+awsds-policy-canary: arn:aws:sts::<Policy Canary Account>:assumed-role/AWSReservedSSO_AWSAdministratorAccess_59a09ed7d34a9cd1
 ```
 
 - Checking:
@@ -718,7 +724,7 @@ $ aws organizations list-delegated-administrators --service-principal access-ana
 aws accessanalyzer create-analyzer --region us-west-2 --analyzer-name awsds-org-external-access --type ORGANIZATION --tags Project=AWS-DataScience,Environment=org,ManagedBy=console,Owner=sso-group-infrastructure,CostCenter=stage-01b
 
 {
-    "arn": "arn:aws:access-analyzer:us-west-2:660820513855:analyzer/awsds-org-external-access"
+    "arn": "arn:aws:access-analyzer:us-west-2:<Audit Account>:analyzer/awsds-org-external-access"
 }
 ```
 

@@ -48,13 +48,20 @@
 # that goes stale. Folding a known-red check into the commit gate trains people to ignore the
 # gate, which costs more than the drift it would catch. Keep it named, keep it runnable, and
 # fix it as its own piece of work.
+#
+# AND IT GREW A SECOND ENTRY ON 2026-08-17: check-identifiers.py. It belongs in the commit gate
+# for the same three reasons check-bootstrap-parity.py does - offline, fast, and it fails on
+# exactly one mistake - but the mistake is a different KIND: not drift between two files, a
+# real AWS account id or a personal e-mail address reaching git, which is undone by a rewrite
+# of history rather than by an edit. Unlike check-plan-refs.py it is GREEN on the tree it was
+# written against, and it was written the same day the redaction it enforces was made.
 
 SHELL := /bin/bash
 .PHONY: help check check-ou check-docs check-all clean up down status slices guard-env
 
 help:
 	@printf 'targets:\n'
-	@printf '  check       step 9 offline - conventions, wildcard ARNs, bootstrap parity, slice layers, tfvars shapes, the policy index\n'
+	@printf '  check       step 9 offline - conventions, wildcard ARNs, bootstrap parity, slice layers, tfvars shapes, the policy index, account ids and e-mails\n'
 	@printf '  check-ou    step 9.3 - OU coverage, needs an SSO session (Identity)\n'
 	@printf '  check-docs  the plan reference check (known red, see the note in this file)\n'
 	@printf '  check-all   all of the above\n'
@@ -73,7 +80,8 @@ check:
 	         "./scripts/check-bootstrap-parity.py" \
 	         "./scripts/slices.py check" \
 	         "./scripts/check-tfvars-shape.py" \
-	         "./scripts/check-index.py"; do \
+	         "./scripts/check-index.py" \
+	         "./scripts/check-identifiers.py"; do \
 	  printf '\n\033[1m--- %s\033[0m\n' "$$c"; \
 	  $$c || fail=1; \
 	done; \
