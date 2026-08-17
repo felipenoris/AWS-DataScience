@@ -12,7 +12,7 @@ files outright. Since **2026-08-17** the rule is cooperative and the same reques
 ([`INDEX.md`](INDEX.md)). What does not change either way is the record of whose hand wrote what — the
 point of this note, and why it is kept as written rather than restated.*
 
-*The nine entries below: on **2026-08-16** the user authorised Claude, explicitly, to
+*The ten entries below: on **2026-08-16** the user authorised Claude, explicitly, to
 create this file and write the first two directly, and on **2026-08-17** to write the third through the
 eighth the same way. The first three record no AWS call — one is
 a repository change merged with the Stage 3 teardown, one is pass 1 authored and gated but **not
@@ -31,7 +31,11 @@ says so, so no line in it is attributed to the wrong hand. **The ninth is the fi
 cooperative rule rather than as an exception to the old one**, and it inverts the seventh's split
 again: it is Claude's repository work and Claude's readings, with **two acts that are the user's** —
 `make down ENV=production` and the second device's configuration and connection — recorded because the
-user reported them, and marked as reported rather than as observed.*
+user reported them, and marked as reported rather than as observed. **Its closing section and the tenth
+entry invert the split once more**: there every command and every output is the user's, run on the
+laptop and pasted, and Claude wrote only the analysis around them — with one correction made to the
+user's own text and declared where it was made, because what had been pasted was a draft configuration
+that was never applied.*
 
 ---
 
@@ -1035,10 +1039,12 @@ included. `terraform fmt`, `validate` and `plan` clean in `identity/sso`.
   that reading exists, `VP-7`'s `pass` is presence and not sufficiency, which is what the script's own
   §5 header says of itself. Verifications (iv) — the non-FAS on-behalf flows — and (vi) — whether an
   IdC sign-in completes at all with the tunnel down — are answered from the same sitting.
+  **→ Three sets of five were measured later the same day; the next entry is that reading.**
 - **A practical precondition the plan does not state, found while preparing this**: the pair needs a
   **persona** session, and the four persona users exist in the directory but **none has a CLI profile**
   configured. So the pair runs from the console, or from profiles created for those users first — a
-  decision to take before the sitting, not during it.
+  decision to take before the sitting, not during it. **→ Closed in the section below**, and getting the
+  session layout right turned out to be the next entry's first finding.
 - **The seventh set's diff is not written.** Deliberately: it is a create rather than an edit, as above,
   and it lands only after the pair is recorded.
 - **The lifecycle cycle is still owed** (Validation 2, and the Deliverables' "the lifecycle holds"). The
@@ -1057,65 +1063,403 @@ included. `terraform fmt`, `validate` and `plan` clean in `identity/sso`.
   which carries `ssm:SendCommand` and is therefore a write API, off by default and run only on explicit
   authorisation.
 
-### <claude, please put a title here>
+### Also in this sitting, by the user: the CLI identities the pair cannot run without
 
-- Configured `~/.aws/config` with other SSO users. Password and MFA configuration was done previously for each SSO user.
+Written by the user; **the configuration block below was corrected by Claude against the file as it
+actually exists** — what the user pasted was Claude's earlier *draft*, whose session names
+(`awsds-ds`, `awsds-dm`, …) were never applied. What is here was read from `~/.aws/config`, with the
+start URL and the account ids elided, because this repository keeps neither in a tracked file. Recording
+a configuration that does not exist would be worse than recording none: the point of a log is that it
+can be trusted against the machine.
+
+- Configured `~/.aws/config` with the other SSO users. Password and MFA configuration was done
+  previously for each SSO user.
+
+**One `sso-session` per PERSON, four of them — and that is the rule rather than the count.** The token
+cache is keyed by session *name*, so profiles sharing a session share an identity however many people
+they were written for; `awsds-scientist` is deliberately shared by two profiles because
+`DataScientistAccess` and `DataScientistProdAccess` are held by the same human. The full reasoning, and
+what it costs to get wrong, is the next entry's opening finding.
 
 ```
-[sso-session awsds-ds]
-sso_start_url  = <copie do seu bloco [sso-session awsds]>
-sso_region     = <copie do mesmo bloco>
+[sso-session awsds-scientist]
+sso_start_url  = <the same start URL as [sso-session awsds]>
+sso_region     = us-west-2
 sso_registration_scopes = sso:account:access
 
-[sso-session awsds-dm]
+[sso-session awsds-deploy]
 sso_start_url  = <idem>
-sso_region     = <idem>
+sso_region     = us-west-2
 sso_registration_scopes = sso:account:access
 
-[sso-session awsds-gm]
+[sso-session awsds-governance]
 sso_start_url  = <idem>
-sso_region     = <idem>
+sso_region     = us-west-2
 sso_registration_scopes = sso:account:access
 
-[sso-session awsds-des]
+[sso-session awsds-devenv]
 sso_start_url  = <idem>
-sso_region     = <idem>
+sso_region     = us-west-2
 sso_registration_scopes = sso:account:access
 
-# Data Scientist User - um login, dois conjuntos
-[profile awsds-ds-sandbox]
-sso_session    = awsds-ds
+# Data Scientist User - one login, two permission sets
+[profile awsds-scientist-sandbox]
+sso_session    = awsds-scientist
 sso_account_id = <Sandbox Account 1>
 sso_role_name  = DataScientistAccess
 region         = us-west-2
 
-[profile awsds-ds-prod]
-sso_session    = awsds-ds
+[profile awsds-scientist-prod]
+sso_session    = awsds-scientist
 sso_account_id = <Production Account>
 sso_role_name  = DataScientistProdAccess
 region         = us-west-2
 
 # Deployment Manager User
-[profile awsds-dm-sandbox]
-sso_session    = awsds-dm
+[profile awsds-deploy-sandbox]
+sso_session    = awsds-deploy
 sso_account_id = <Sandbox Account 1>
 sso_role_name  = DeploymentManagerAccess
 region         = us-west-2
 
 # Governance Manager User
-[profile awsds-gm-data]
-sso_session    = awsds-gm
+[profile awsds-governance-data]
+sso_session    = awsds-governance
 sso_account_id = <Data Governance Account>
 sso_role_name  = GovernanceManagerAccess
 region         = us-west-2
 
 # Dev Env Steward User
-[profile awsds-des-prod]
-sso_session    = awsds-des
+[profile awsds-devenv-prod]
+sso_session    = awsds-devenv
 sso_account_id = <Production Account>
 sso_role_name  = DevEnvStewardAccess
 region         = us-west-2
 ```
+
+**The naming generalises what was already there rather than competing with it**, and it is now written
+down in [`aws/AWS-CLI.md`](../../aws/AWS-CLI.md) so a seventh row does not have to invent one: the
+session names the **person**, the profile is `awsds-<person>-<account>`, and the segment between names
+the **role** wherever one person holds several (`-infra-`, `-ctadmin-orgfull-`). The persona rows drop
+that segment because person and role coincide — with one exception worth knowing rather than fixing:
+`awsds-scientist-sandbox` and `awsds-scientist-prod` carry **different** permission sets, told apart by
+the account and not by the name.
+
+## 2026-08-17 — The control-plane pair, all five exercisable sets: the deny measured, and two findings that are not about the VPN
+
+*Provenance. **Every command and every output below was run and pasted by the user**, from the laptop,
+and is reproduced verbatim except for two mechanical substitutions, named here and made nowhere else:
+**account ids → the account's name**, and **the persona's e-mail inside an ARN → that user's role name**
+— this repository keeps neither in a tracked file, and an ARN carries both. Nothing else is edited: the
+`AWSReservedSSO_*` suffixes, the resource ARNs and the error wording arrived as they read.
+**Claude wrote the analysis around them and nothing else.** One thing in the setup is also the user's
+and is not Claude's to claim: the `sso-session` layout is a **correction the user made to a
+configuration Claude had drafted wrong** — the entry's first finding.*
+
+### The finding that arrived before any reading did, and it is the user's
+
+The pair needs a **persona** session, and the four persona users held no CLI profile. Claude drafted one
+`sso-session` shared by all five persona profiles; **the user rejected it in review, asking whether that
+did not mean one persona's token would be handed to another.** It does not hand a credential over — the
+portal refuses, because the token's user holds no such assignment — but it refuses **from the portal, at
+credential-vending time**, which is a *third* refusal in a reading whose entire purpose is telling two
+apart. The CLI caches an SSO token under the **session name**, so profiles sharing a session share an
+identity however many people they were written for: switching `AWS_PROFILE` changes what is *requested*
+and not *who asks*.
+
+`aws/AWS-CLI.md` already carried the rule — "two sessions, **because they are two different people**" —
+and the draft had broken it. Recorded as an addendum to **Lesson 25**, whose first half already names
+ambient identity invisible in the place that looks authoritative: there the shell prompt, here the
+profile name, and `get-caller-identity` the only instrument in both. The lesson was not opened as a
+27th, deliberately: the rule already existed in this repository, and what was new is the second entrance
+to it — not duration, but a cache keyed coarser than the switch being operated.
+
+**A second thing the setup taught, and it is why the readings below are sequential:** four
+`aws sso login` calls in a row all authorise the **same** person, because the browser stays signed into
+the access portal. No CLI flag fixes it — signing out of the portal between personas is part of the
+procedure, and each ARN below is the evidence that it worked.
+
+### Reading 1 — Data Scientist User, two permission sets
+
+**Tunnel UP.** The identity first, since it is what says which set answered:
+
+```
+$ aws sso login --sso-session awsds-scientist
+
+arn:aws:sts::<Sandbox Account 1>:assumed-role/AWSReservedSSO_DataScientistAccess_37932702010107f8/<data scientist user>
+
+$ AWS_PROFILE=awsds-scientist-sandbox aws logs describe-log-groups --query 'logGroups[].logGroupName' --output text
+
+/aws/lambda/aws-controltower-NotificationForwarder      /awsds/sandbox/vpn      awsds-sandbox-vpc-flow-logs
+
+$ AWS_PROFILE=awsds-scientist-prod aws logs describe-log-groups --query 'logGroups[].logGroupName' --output text
+
+/aws/lambda/aws-controltower-NotificationForwarder      awsds-prod-vpc-flow-logs
+```
+
+**Tunnel DOWN, the same two commands:**
+
+```
+$ AWS_PROFILE=awsds-scientist-sandbox aws logs describe-log-groups --query 'logGroups[].logGroupName' --output text
+
+aws: [ERROR]: An error occurred (AccessDeniedException) when calling the DescribeLogGroups operation: User: arn:aws:sts::<Sandbox Account 1>:assumed-role/AWSReservedSSO_DataScientistAccess_37932702010107f8/<data scientist user> is not authorized to perform: logs:DescribeLogGroups on resource: arn:aws:logs:us-west-2:<Sandbox Account 1>:log-group::log-stream: with an explicit deny in an identity-based policy
+
+$ AWS_PROFILE=awsds-scientist-prod aws logs describe-log-groups --query 'logGroups[].logGroupName' --output text
+
+aws: [ERROR]: An error occurred (AccessDeniedException) when calling the DescribeLogGroups operation: User: arn:aws:sts::<Production Account>:assumed-role/AWSReservedSSO_DataScientistProdAccess_0a59097411421dd8/<data scientist user> is not authorized to perform: logs:DescribeLogGroups on resource: arn:aws:logs:us-west-2:<Production Account>:log-group::log-stream: with an explicit deny in an identity-based policy
+```
+
+### Reading 2 — Deployment Manager User
+
+**Tunnel UP:**
+
+```
+$ AWS_PROFILE=awsds-deploy-sandbox aws logs describe-log-groups --query 'logGroups[].logGroupName' --output text
+
+/aws/lambda/aws-controltower-NotificationForwarder      /awsds/sandbox/vpn      awsds-sandbox-vpc-flow-logs
+```
+
+**Tunnel DOWN:**
+
+```
+$ AWS_PROFILE=awsds-deploy-sandbox aws logs describe-log-groups --query 'logGroups[].logGroupName' --output text
+
+aws: [ERROR]: An error occurred (AccessDeniedException) when calling the DescribeLogGroups operation: User: arn:aws:sts::<Sandbox Account 1>:assumed-role/AWSReservedSSO_DeploymentManagerAccess_848d85a905e0d299/<deployment manager user> is not authorized to perform: logs:DescribeLogGroups on resource: arn:aws:logs:us-west-2:<Sandbox Account 1>:log-group::log-stream: with an explicit deny in an identity-based policy
+```
+
+### Reading 3 — Governance Manager User, and the probe had to change
+
+This set holds **no `logs:` action at all**, so the uniform probe does not reach it. The first attempt,
+`glue get-databases`, returned **nothing** — a success, since Data Governance has no Glue database yet
+(that is Stage 5) — and an empty result is exactly what Validation 3 refuses as the positive half: it is
+indistinguishable from a wrong query expression, a wrong profile or a cut pipe (Lesson 13, in the
+instrument this time rather than in the check). `lakeformation:GetDataLakeSettings` is in the set's
+`AdministerLakeFormation` and returns structure whether or not a lake exists, so it replaced it.
+
+**Tunnel UP:**
+
+```
+$ AWS_PROFILE=awsds-governance-data aws lakeformation get-data-lake-settings --query 'DataLakeSettings.Parameters' --output json
+
+{
+    "CROSS_ACCOUNT_VERSION": "4",
+    "SET_CONTEXT": "TRUE"
+}
+```
+
+**Tunnel DOWN:**
+
+```
+$ AWS_PROFILE=awsds-governance-data aws lakeformation get-data-lake-settings --query 'DataLakeSettings.Parameters' --output json
+
+aws: [ERROR]: An error occurred (AccessDeniedException) when calling the GetDataLakeSettings operation: User: arn:aws:sts::<Data Governance Account>:assumed-role/AWSReservedSSO_GovernanceManagerAccess_ac956c0c7348f956/<governance manager user> is not authorized to perform: lakeformation:GetDataLakeSettings on resource: arn:aws:lakeformation:us-west-2:<Data Governance Account>:catalog:<Data Governance Account> with an explicit deny in an identity-based policy
+```
+
+**This is the reading that proves the `Action: "*"` rather than quoting it.** The three before it all used
+`logs:DescribeLogGroups`; a deny that was somehow service-specific would have looked identical. Here a
+second service refuses under the same Sid, in a third account.
+
+### Reading 4 — Dev Env Steward User
+
+**Tunnel UP:**
+
+```
+$ AWS_PROFILE=awsds-devenv-prod aws logs describe-log-groups --query 'logGroups[].logGroupName' --output text
+
+/aws/lambda/aws-controltower-NotificationForwarder      awsds-prod-vpc-flow-logs
+```
+
+**Tunnel DOWN:**
+
+```
+$ AWS_PROFILE=awsds-devenv-prod aws logs describe-log-groups --query 'logGroups[].logGroupName' --output text
+
+aws: [ERROR]: An error occurred (AccessDeniedException) when calling the DescribeLogGroups operation: User: arn:aws:sts::<Production Account>:assumed-role/AWSReservedSSO_DevEnvStewardAccess_6f35a9e0c160dfc2/<dev env steward user> is not authorized to perform: logs:DescribeLogGroups on resource: arn:aws:logs:us-west-2:<Production Account>:log-group::log-stream: with an explicit deny in an identity-based policy
+```
+
+### Reading 5 — the negative control, and it is what makes the other four mean anything
+
+Same account as reading 2, same action, same laptop, **tunnel still down**. The only variable changed is
+the permission set — and it is the one deliberately left outside the fragment. The `aws sso login` is
+part of the reading rather than setup: it, too, ran off-VPN.
+
+```
+$ aws sso login --sso-session awsds
+
+$ AWS_PROFILE=awsds-infra-sandbox-1 aws logs describe-log-groups --query 'logGroups[].logGroupName' --output text
+
+/aws/lambda/aws-controltower-NotificationForwarder      /awsds/sandbox/vpn      awsds-sandbox-vpc-flow-logs
+```
+
+### The probe was chosen so that a refusal would mean something
+
+`logs:DescribeLogGroups` is **granted** to all three sets, so what was measured is an explicit deny
+overriding an explicit allow. Had the action not been granted, both halves would have failed and the
+reading would have proven nothing — the exact failure Validation 3 exists to catch, and the reason the
+*wording* is read rather than the exit code:
+
+| The message ends in | Who refused |
+|---|---|
+| `with an explicit deny in an identity-based policy` | **`DenyControlPlaneOffVpn`** — what all three returned |
+| `because no identity-based policy allows the … action` | nobody: the persona never held the action |
+| `with an explicit deny in a service control policy` | an SCP — a different control (Lesson 20) |
+| `with an explicit deny in a resource control policy` | the RCP |
+
+`aws sts get-caller-identity` is **not** usable as the probe and was used only to name the answering
+role: AWS documents that the call succeeds even when a policy explicitly denies it, because the same
+information is returned either way — it would have read identically in both halves (Lesson 13).
+
+### Verification (vi) — the sign-in itself, off-VPN
+
+```
+$ aws sso logout
+$ aws sso login --sso-session awsds-scientist
+
+Successfully logged into Start URL: <the organization's access portal>
+```
+
+**Answered: yes.** The deny governs the *role*; entering Identity Center is an OIDC flow against the
+authorization endpoint, not an IAM call the permission set's inline policy evaluates. Expected, and now
+read rather than reasoned. **What matters is the chain, and all three links were measured today:**
+
+| Off-VPN | Result |
+|---|---|
+| sign in to the portal | **works** — this reading |
+| `sso:GetRoleCredentials` | **works** — every tunnel-down half printed the ARN |
+| use the credential | **denied** — readings 1-4 |
+
+So signing in from anywhere is not an entitlement. What the portal yields off-VPN is
+**reconnaissance** — which accounts exist, which roles are held — and nothing actionable. Recorded that
+way deliberately, because "you can still log in from any network" reads as a hole until it is paired
+with what the login buys.
+
+It is **context for INT-16 and not INT-16**: that row asks whether a permission-set condition gates the
+**Unified Studio portal**, which does not exist until Stage 6. What today's reading says about it is
+that the general mechanism is not gated — the direction 8.4 already predicted for the third role.
+
+### Verification (iv) — the console with the tunnel up, and three errors that are not the deny
+
+Exercised as the Data Scientist User, tunnel up, over the surfaces this set is actually granted:
+CloudWatch **log groups**, **Logs Insights** (a query was run and returned), the **Glue** catalog, and
+**Athena** workgroups — the last listing `primary` with no error at all.
+
+**Nothing broke because of `DenyControlPlaneOffVpn`.** Three things broke for three other reasons, and
+the entry's point is that all three were attributed **from the wording alone**, without opening a policy:
+
+**(a) The console opened in `us-east-2`:**
+
+```
+User: … is not authorized to perform: logs:DescribeLogGroups on resource: arn:aws:logs:us-east-2:… with an explicit deny in a service control policy: arn:aws:organizations::<Management Account>:policy/<org>/service_control_policy/p-umksvu5a
+```
+
+The Region ceiling, and **`p-umksvu5a` is a policy this project has already measured**: it is
+`Interactive`'s Region document, and [D37](../plan/decisions/D37-nested-ou-inheritance.md) records that a
+deny firing inside Sandbox Account 1 names *it* rather than the nested `Sandboxes` OU's own — inheritance
+winning, and AWS naming one of two policies (Lesson 20). That finding came from a `CreateKeyPair` probe on
+2026-08-13; this is the same measurement arriving through a completely different path five days later.
+The operational residue is one line for the client instructions: **the console has to be on `us-west-2`**,
+and someone who does not read the wording will file this as a VPN fault.
+
+**(b) `cloudwatch:GetMetricData` — `because no identity-based policy allows`.** Not a deny: the grant
+was never there. **Measured across the slice: not one of the six sets holds any `cloudwatch:` action.**
+They all hold `logs:` — CloudWatch *Logs* — and nothing in the *metrics* namespace, which the console
+presents as one screen and IAM treats as two services. **Deliberately not fixed here**: today it is a
+metrics panel failing on a page whose logs render, and no persona has a workload emitting a metric.
+Granting against a console symptom rather than against a requirement is the wrong order; Stage 6 revisits
+these sets with a real training job in front of them, and that is where "the scientist reads their own
+job's metrics" gets written and scoped.
+
+**(c) `logs:GetLogGroupFields` in Logs Insights — the one that is a real defect**, and it is recorded
+under its own heading below because it is not a VPN finding at all.
+
+### The finding this verification turned up, and it is a defect in a grant rather than in a control
+
+```
+Error: Failed to load discovered fields: Outdated permission. User with accountId: <Sandbox Account 1> is not authorized to perform GetLogGroupFields on resources /aws/lambda/aws-controltower-NotificationForwarder.
+```
+
+**Four sets are granted Logs Insights and none of them can use all of it.** `logs:StartQuery` appears in
+`DataScientistAccess`, `DataScientistStagingAccess`, `DataScientistProdAccess` and
+`DeploymentManagerAccess`; `logs:GetLogGroupFields` appears in **none**. The sharpest form of it is that
+the deployment manager's Sid is literally named **`ReadCloudWatchLogsIncludingInsights`** — the name
+states the intent and the action list falls short of it. This is Lesson 14 at the smallest scale: an
+enumeration written by hand, missing a member.
+
+**Checked against the documentation rather than against the error**, which is the whole method here: AWS
+lists the console's required permissions, and comparing that list to the four statements shows **three**
+read actions absent, not one — `logs:GetLogGroupFields` (field discovery, the observed failure),
+`logs:GetLogRecord` (expanding one event in a result set) and `logs:DescribeQueryDefinitions` (listing
+saved queries). Patching only the action that happened to error would have left two behind and brought
+everyone back to this same screen. The write counterparts — `PutQueryDefinition`, `DeleteQueryDefinition`
+— stay out: this set reads Insights, it does not curate it.
+
+**And the error's FORM is a finding of its own, retroactive and worth more than the fix.** Read it again:
+`Outdated permission. User with accountId: … is not authorized to perform GetLogGroupFields` — that is
+**not** the canonical IAM message. It carries neither `with an explicit deny in an identity-based policy`
+nor `because no identity-based policy allows`. Logs Insights writes its own text. **Had
+`GetLogGroupFields` been chosen as the pair's probe, both halves would have been indistinguishable and
+the whole reading unreadable.** So a verification that turns on wording must select an action *for
+producing the canonical wording*, not merely for being granted — a criterion nobody had written down, and
+one that `logs:DescribeLogGroups` satisfied by luck as much as by judgement.
+
+### What the five readings establish, and it is more than the deliverable asked for
+
+**1 · Five independent readings, not one repeated.** Five permission sets across three accounts and two
+services, each with its own `AWSReservedSSO_*` suffix — a set becomes an IAM role *per account*, and five
+different roles answered. **The account-wide explanation is excluded twice, in two different accounts**:
+in Sandbox, `DataScientistAccess` and `DeploymentManagerAccess` are denied while `InfrastructureAccess`
+succeeds, same action, same network state; in Production, `DataScientistProdAccess` and
+`DevEnvStewardAccess` are both denied. No SCP, RCP or routing artefact separates two permission sets
+inside one account.
+
+**2 · The negative control fired, in the same conditions rather than in a different window** (Lesson 26).
+An instrument that records nothing proves nothing unless it demonstrably records something alongside it;
+here the something is a *permitted* answer, from a principal outside the control, off-VPN, in the
+account where the denial had just been measured.
+
+**3 · A credential minted inside the tunnel does not survive leaving it — measured, not assumed.**
+Notice that the tunnel-down halves **printed the ARN**: the SSO token stayed valid off-VPN and
+`sso:GetRoleCredentials` succeeded, so the CLI held a role credential throughout. The refusal came from
+CloudWatch Logs evaluating IAM, because `aws:SourceIp` is evaluated **at the service call and not at
+vending time**. That answers a question nobody had put in writing — *can a session be minted on the VPN
+and used off it?* — and answers it **no**. It is the mirror of Lesson 24's second trap, where a
+four-hour cached credential let probes pass against a policy that had already changed: the same cache
+exists here and hides nothing, for a structural reason rather than a lucky one.
+
+**4 · `InfrastructureAccess` outside the deny stopped being an intention.** The stage's Risks section
+says step 8 turns "the VPN host is down" into "no persona can call any AWS API", and names the seventh
+set staying outside the fragment as what keeps that recoverable without break-glass (D16). Reading 3 is
+that claim exercised: the `aws sso login` **completed off-VPN** and the call **succeeded off-VPN**, so
+the recovery path is rehearsed before it is needed — Lesson 5, from the side where an intention became a
+control. It is also the behavioural half of a negative that had only been checked statically, by
+grepping the planned state for a seventh carrier of the Sid.
+
+**5 · The pair is complete for every set that can carry it, and `VP-7`'s `pass` has stopped being
+presence alone.** Five of the six are exercised; what remains is not a scheduling gap.
+
+### An unrelated reading that fell out of reading 3, recorded because it was in front of us
+
+The full `get-data-lake-settings` output — taken only to check the response shape — shows Data Governance
+with `DataLakeAdmins: []` and both `CreateDatabaseDefaultPermissions` and
+`CreateTableDefaultPermissions` granting `ALL` to `IAM_ALLOWED_PRINCIPALS`. Neither
+[`AWS_STATE.md`](../AWS_STATE.md) nor INT-11 nor Stage 5 mentioned either. It touches nothing in this
+stage and everything in the next, so it is written up where it belongs — INT-11 and `AWS_STATE.md`, in
+this same sitting — rather than argued here.
+
+### Not done
+
+- **`DataScientistStagingAccess` cannot be measured at all, and that is a gap rather than a pass.** It
+  carries the deny — `VP-7` confirmed all six — but has **no assignment**, because `Staging` is unvended,
+  so there is no account to enter through it. Five sets of six are exercisable; the sixth is an absent
+  negative control (Lesson 26's shape) and becomes measurable at the vend, not before.
+- **The three missing Logs Insights actions are recorded but not applied.** Their diff is small, is
+  confined to four existing statements, and must land **separately from the seventh set's create** — the
+  whole reason 8.3 staged the two apart is that one of them can lock the organization out and the other
+  cannot, and merging them would put a persona convenience in the same apply as that.
+- **The seventh set's diff stays unwritten** — and it is a *create* rather than an edit, since
+  `InfrastructureAccess` carries no inline policy at all.
+- **`cloudwatch:GetMetricData` is left ungranted by decision**, deferred to Stage 6 with a workload in
+  front of it. Recorded so the next person meets a decision rather than a surprise.
 
 ---
 

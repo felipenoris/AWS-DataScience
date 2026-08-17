@@ -49,12 +49,27 @@ data "aws_iam_policy_document" "deployment_manager" {
     sid    = "ReadCloudWatchLogsIncludingInsights"
     effect = "Allow"
 
+    # THE SID NAMED INSIGHTS AND THE LIST DID NOT DELIVER IT (Stage 4, verification (iv),
+    # 2026-08-17). This is the sharpest instance of the defect fixed in the same sitting across
+    # all four sets that hold StartQuery: the statement's own NAME states the intent, and the
+    # enumeration under it was three read actions short - so a reader auditing by Sid would have
+    # concluded the grant was complete. Lesson 14, and it is worse here than in the persona
+    # documents precisely because the name reassures.
+    #
+    # The three, derived from the DOCUMENTED console permission list rather than from the console
+    # error that surfaced one of them: GetLogGroupFields (field discovery - the observed
+    # failure), GetLogRecord (expanding one event in a result set), DescribeQueryDefinitions
+    # (listing saved queries). PutQueryDefinition and DeleteQueryDefinition stay out: this set
+    # reads Insights, it does not curate it.
     actions = [
       "logs:DescribeLogGroups",
       "logs:DescribeLogStreams",
       "logs:DescribeQueries",
+      "logs:DescribeQueryDefinitions",
       "logs:FilterLogEvents",
       "logs:GetLogEvents",
+      "logs:GetLogGroupFields",
+      "logs:GetLogRecord",
       "logs:GetQueryResults",
       "logs:StartQuery",
       "logs:StopQuery",
