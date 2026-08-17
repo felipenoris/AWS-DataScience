@@ -80,3 +80,16 @@ backend.hcl
 *.tfplan.json
 tfplan
 tfplan.json
+
+# BARE KEY MATERIAL - added 2026-08-17, before Stage 4 step 4.3 generated the first one, and
+# the rule above is the precedent: the practice is to generate the WireGuard host key OUTSIDE
+# this repository and enrol it into Secrets Manager, and this is THE NET UNDER THAT PRACTICE.
+#
+# It is needed here more than the .tfplan rule is needed there, because the second net does
+# not exist: pre-commit's `detect-private-key` recognises PEM ARMOR - the `-----BEGIN` header -
+# and a WireGuard private key is 44 characters of bare base64, indistinguishable by format
+# from the PUBLIC keys this repository commits on purpose (peers.auto.tfvars). No scanner can
+# tell them apart, which is why ./scripts/check-tfvars-shape.py checks structure instead. A
+# file named *.key is the one case a glob CAN catch, so it catches it.
+*.key
+host-private.key

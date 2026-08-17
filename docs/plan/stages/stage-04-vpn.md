@@ -241,7 +241,7 @@ device must be deleting one entry — D4 accepted "no Identity Center integratio
   touches a tfvars either):
 
   ```bash
-  wg genkey | tee host-private.key | wg pubkey
+  (umask 077 && wg genkey | tr -d '\n' > host-private.key) && wg pubkey < host-private.key
   ```
 
   ```bash
@@ -249,10 +249,19 @@ device must be deleting one entry — D4 accepted "no Identity Center integratio
     --secret-id awsds-sandbox-vpn-host-key --secret-string file://host-private.key
   ```
 
-  `file://`, never a pasted literal — the key must not enter the shell history (runbook §4). The
-  **public** half goes into the client template (9.1); the local `host-private.key` is scratch —
-  **delete it once pass 2 proves the tunnel** (the secret is the designed home). Enrol **before
-  1.4**, so the first boot's fetch returns at once instead of waiting politely. This is what 9.1's
+  Run it **outside this repository** — the practice, with `*.key` in `.gitignore` as the net under
+  it (2026-08-17), because `detect-private-key` reads PEM armor and a WireGuard key is bare base64
+  that no scanner can tell from the public ones this repo commits on purpose. Three measured details
+  in the first command: `umask 077` makes the file `600` at creation; **`tr -d '\n'` stores exactly
+  44 characters** — the obvious `wg genkey | tee …` writes 45, the key plus a newline, which
+  `file://` stores verbatim (the boot's `$(…)` strips it, so this is unambiguity for later readers
+  rather than a bug avoided); and what it **prints** is the public half. `file://`, never a pasted
+  literal — the key must not enter the shell history (runbook §4). The public half goes into the
+  client template (9.1); the local `host-private.key` is scratch — **delete it once pass 2 proves the
+  tunnel** (the secret is the designed home). Enrol **before 1.4**, so the first boot's fetch returns
+  at once instead of waiting politely. Verify the round trip without printing the private half:
+  `… get-secret-value … --query SecretString --output text | wg pubkey` must echo the public key
+  above. This is what 9.1's
   "a rebuild changes nothing" actually rests on: every client config pins the server's public key as
   well as its endpoint address, and both now outlive the instance — the address as a `[P]`
   allocation, the key in a `[P]` secret; a key generated on first boot instead would break all of

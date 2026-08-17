@@ -2,127 +2,459 @@
 
 | | |
 |---|---|
-| **Status** | not started |
-| **Prerequisites** | Stages 5, 6, 9; decision D6. |
-| **Consumes** | [D5](../decisions/D05-sagemaker-egress.md), [D6](../decisions/D06-dlp-approach.md), [D13](../decisions/D13-lake-formation-enforcement.md), [D19](../decisions/D19-derived-zone.md), [D22](../decisions/D22-data-governance-account.md) |
+| **Status** | not started — **revised 2026-08-17 into the action-checklist format** (executor markers, action-first steps), against the official documentation and the Price List API, and pre-instrumented by `./aws/dlp.py`. Corrections folded in: **internal-access analysis was measured at USD 9.00 per resource-month, charged at setup and then on the first of each month** — so step 2.1's analyzer became an enumerated-ARN, read-then-delete instrument rather than a standing monitor, and its KMS claim was narrowed (**KMS keys are not an internal-access resource type**: the derived CMK is verified by reading its key policy, not by the analyzer); **Macie's auto-enable covers *new* accounts only** — existing accounts are added one by one by the administrator, the inverse of GuardDuty's `ALL` that Stage 4 recorded; the Macie job's **discovery-results repository prompt** is answered as a decision, not at the keyboard (Lesson 16); GuardDuty's two deferred features are named by their **API feature names** (`S3_DATA_EVENTS`, `EBS_MALWARE_PROTECTION`), both prices are measured (USD 0.80/1M events, 0.03/GB), and step 4 is written against the collision `POLICIES.md` documents — with `./aws/vpn.py`'s `VP-8` expectation flipped in the same sitting; **the step 5 trails are data-event-only** (the org trail already carries the management copy) with advanced selectors on a monitored-bucket *map*, and the alarms ride **EventBridge rules + the `MatchedEvents` metric** — data events are matched by ordinary `ENABLED` rules once a trail logs them (read 2026-08-17) — never CloudWatch Logs ingestion; **the first member-account trail fires the revision trigger `POLICIES.md` names**, so the CloudTrail-tampering statement is decided here; the presigned-URL correction stands (*use* is detectable as `AuthenticationMethod=QueryString`; *creation* is not detectable); the Athena-inversion alarm became **conditional on Stage 5 decision 4's outcome**; archive **rules** stay forbidden (INV-10) — an accepted external finding is archived individually; and the stale addresses were repointed (open question 6's narrowed answer, Stage 6 step 3.2's recorded residual, Stage 6 step 6's D5 verdict) |
+| **Prerequisites** | Stages 5, 6, 9 — by named input: Stage 5's classification scheme (its step 2), the LF-Tags, the derived zones (its 9.2) and **decision 4's Athena outcome**; Stage 6's **D5 verdict** (its step 6), the grain (Stage 5 decision 6 / TIP), and the **remote-access residual its step 3.2 records**; Stage 9's producer path, outputs and results zones. Stage 4 step 10 (GuardDuty base on org-wide; **read its log for 10.5's named administration role** — it is this stage's step 4 unblock if it exists). Decision D6 is the strategy this stage executes |
+| **Consumes** | [D5](../decisions/D05-sagemaker-egress.md), [D6](../decisions/D06-dlp-approach.md), [D13](../decisions/D13-lake-formation-enforcement.md), [D19](../decisions/D19-derived-zone.md), [D22](../decisions/D22-data-governance-account.md), [D24](../decisions/D24-shared-filesystem.md), [D27](../decisions/D27-catalog-maintenance.md), [D31](../decisions/D31-approver-read.md) |
 | **Proves** | — |
 
 *Read with [`docs/plan/conventions.md`](../conventions.md) (naming, layout, `[P]`/`[D]`/`[E]`, IAM rules).*
 
+**Forward constraint from D35:** the Sandbox side multiplies. The monitored-bucket list, the trail in
+`sandbox/data/`, its rules and alarms and the Macie member set are all **per business unit** — write every
+list as a map keyed by consumer (Stage 5's rule), so unit 2 is a row, not a rewrite.
+
 ---
 
-**Objective:** the protection layer, built on top of a working environment rather than before it.
+**Objective:** the data-specific detection layer, built on top of a working environment rather than before
+it — and the honest ledger of what has no control at all.
 
-**Prerequisites:** Stages 5, 6, 9; decision D6.
+**What is no longer in this stage:** the data perimeter (`docs/plan/architecture.md` §4.2) moved to Stage 1;
+the detective services moved to the stage that first gave each one something to observe (principle 9):
+Access Analyzer's free external half to 1b step 8.2, **GuardDuty to Stage 4 step 10**, **Security Hub to
+Stage 5 step 13**. What remains is genuinely data-specific — plus step 2.1, where the analyzer switched on
+in 1b is finally *collected on*: a service that emits findings nobody reads is Lesson 5 wearing a dashboard.
 
-**To execute:**
+## What this stage builds, and in which accounts
 
-**What is no longer in this stage:** the data perimeter (`docs/plan/architecture.md` §4.2) moved to Stage 1, and
-the detective services moved to the stage that first gives each one something to observe (principle 9, as
-amended): IAM Access Analyzer to Stage 1b step 8 because it is free, **GuardDuty to Stage 4 step 10** with
-the first internet-facing resource, **Security Hub to Stage 5 step 13** with the first governed data. What
-remains here is genuinely data-specific.
+| Where | What | Layer |
+|---|---|---|
+| `data-governance/data/` (amended) | LF data cells filters + the filtered grants; the data-events trail; the `awsds-data-logs` delivery statements; EventBridge rules, SNS topic, alarms | `[P]` |
+| `sandbox/data/`, `development/data/` (amended, one module) | each account's data-events trail on its derived bucket; the mass-read rule + alarm + SNS | `[P]` |
+| Management + Audit, by hand | Macie delegation, members and the discovery job; the internal-access analyzer; GuardDuty's two paid features org-wide | — (no slice, no profile) |
+| `identity/org-policies/` (amended — decision 6) | the CloudTrail-tampering statement, through battery phases 1-3 | `[P]` |
+| `aws/`, `docs/` | `./aws/dlp.py` (pre-written); the `VP-8` flip in `./aws/vpn.py`; the `audit-iam-analyser.sh` second-analyzer expectation; the threat model `docs/plan/threat-model.md` | — |
 
-**Access Analyzer is the one that moved only halfway, and the distinction matters (2026-08-12).** What went
-to 1b step 8.2 is the *organization-level external-access analyzer* — switched on early because it is free
-and because it catches what Stages 2-3 create. **Its DLP role is not discharged by having been switched
-on**: a service that emits findings nobody reads is Lesson 5 wearing a dashboard. D6 gives Access Analyzer
-its place in the strategy; **step 2.1 below is where this stage collects on it**, and it also covers the
-half 1b could not: an org-scoped external analyzer is silent by construction about access *inside* the
-organization, which is exactly the movement this stage exists to control.
+**How steps 4 and 5 divide one problem, so they are not read as duplicates:** GuardDuty S3 Protection is
+*managed anomaly* detection — it reads the S3 data-event stream itself, needs no trail, and decides what
+"unusual" means; step 5 is *deterministic* detection plus the **forensic record** — named thresholds, named
+principals, and log files that survive to be read. Enabling one does not discharge the other.
 
-1. Amazon Macie for sensitive-data discovery — primary scope the **Data Governance** buckets (D22),
-   plus the **derived zones in Sandbox and Development** (D19), which is where governed data re-surfaces
-   outside the lake account and is the part a Data-Management-only scope would miss; findings to Security
-   Hub; results mapped
-   onto the classification scheme defined in Stage 5 step 2. **Scope it to a sampled prefix** — Macie bills
-   per GB inspected and can dwarf every other line item in `docs/plan/cost-model.md`.
-2. Lake Formation column-level and row-level filters driven by the LF-Tags from Stage 5, enforceable
-   because of D13.
+## Who executes each action
 
-   **Step 2.1 — collect on IAM Access Analyzer: the external findings as a stage input, the internal ones as
-   a decision.** Numbered 2.1 rather than 3 so the steps after it keep their meaning — `docs/plan/cost-model.md`
-   refers to "Stage 11 step 4" by name.
+| Marker | Meaning |
+|---|---|
+| **[Claude]** | repository edits and read-only AWS calls — done without asking |
+| **[Claude⚡]** | `terraform apply` or any AWS write — only after the user authorizes that specific action in chat, with the SSO user/account/permission set stated first |
+| **[user]** | console/CloudShell acts in Management and Audit (no profile there, by design), the behavioural proofs run from persona sessions and the laptop, and every log entry |
 
-   - **Read the external-access findings before writing the threat model, not after.** The analyzer has been
-     running org-wide since 1b step 8.2 and by now has watched Stages 2-9 create every bucket, role, key,
-     snapshot and file system in this environment. Every open finding is a row in the deliverable: answered,
-     or explicitly accepted. **If a finding is intended, archive it with a rule and record why** — by design
-     there should be none, since every cross-account share this project makes is *inside* the organization and
-     invisible to an org-scoped analyzer, so a finding here is a genuine surprise and a list nobody triaged is
-     indistinguishable from a list with nothing in it.
-   - **The findings are load-bearing, not informational, for five resource types** — Lambda, SNS, EBS volume
-     snapshots, RDS DB and DB-cluster snapshots, and EFS — because **no RCP covers them**
-     (`docs/plan/architecture.md` §4.2). The snapshots and D24's EFS are data-bearing, so for those the finding is
-     not a check on the perimeter, it *is* the perimeter, and the threat model must say so rather than
-     inheriting D19's "the perimeter contains it".
-   - **Then decide on internal-access findings, which is the half that is actually about this stage.** They
-     answer "which principals inside the organization can reach this resource" for **S3 buckets, RDS DB and
-     DB-cluster snapshots, DynamoDB tables and streams** — which makes them the machine check of **D13**:
-     that execution roles hold no direct S3 path to Lake Formation-registered prefixes, and therefore that the
-     column and row filters in step 2 are not decoration. D13 is a claim about policies this project wrote,
-     and until now nothing tested it (Lesson 18 — a policy never constrains the principal that authors it).
-     Same for the **D19** derived zone: the CMK is asserted to be the read control, and this is what shows
-     who can actually decrypt through it.
-     - **It is paid, per resource monitored per analyzer-month**, so scope it the way Macie is scoped in step
-       1 — the Data Governance registered buckets (D22) and the derived-zone buckets (D19), not every bucket
-       in the organization. **Measure the price from the Price List API before enabling** (Lesson 6):
-       `docs/PRICING.md`'s Access Analyzer row currently prices only the per-check dimension, so it does not
-       answer this question and must not be read as if it did.
-     - **It does not cover EFS, and it does not see the Glue/Lake Formation catalog layer.** So it verifies
-       the S3 path *underneath* the catalog — precisely the bypass D13 exists to close — and says nothing
-       about entitlements expressed as LF-Tags. Two different questions; do not let a clean internal-access
-       report be read as an answer about the catalog.
-   - **Unused-access findings stay in Stage 12** and are not re-litigated here.
-3. Egress hardening review of Stage 6, once D5 has been closed by the comparison in `docs/plan/architecture.md` §4.3.
-   **Correction:** the previous version of this plan listed "block SageMaker Studio file download /
-   notebook export" as a control. Verify it exists before relying on it (Stage 6 flags the same doubt) —
-   as far as this plan knows, Studio has no supported setting for that. If it does not, say so plainly in
-   the threat model rather than leaving a control listed that nobody implemented.
-   **And the browser is no longer the only surface to ask the question about (2026-08-13).** `CLAUDE.md`
-   asks for the **remote IDE**: `sagemaker:StartSession` attaches a local VS Code to a running space, which
-   is a file channel onto a laptop that no browser-side setting reaches. So a "yes, downloads are blocked"
-   answer about the browser is not an answer about the environment. What exists is tag-scoping
-   `StartSession` to a user's own private apps — a *scoping* control, not a *transfer* control. Whatever is
-   left after it is an accepted risk, and this is the item most likely to end up in the deliverable's
-   "accepted rather than controlled" column (`docs/plan/open-questions.md` items 6 and 14).
-4. Turn on GuardDuty's **S3 Protection and Malware Protection** — the base service has been running since
-   Stage 4 step 10, and these two are billed separately and were deferred specifically so the decision
-   could be made against a real bill (`docs/plan/cost-model.md`).
-   **This step is blocked by an SCP of this project's, on purpose, and the block is known in advance.**
-   `DenyGuardDutyTampering` in `awsds-org-scp-baseline` denies `guardduty:UpdateDetector` unconditionally
-   on the organization root, so it reaches Audit — the administrator account — as hard as any member.
-   Enabling a feature **org-wide** is unaffected (`UpdateOrganizationConfiguration` and
-   `UpdateMemberDetectors` are not denied); enabling it on **Audit's own detector** is the call that fails.
-   Either detach the baseline document, make the change, re-attach and re-run phases 1-3 of
-   [`docs/plan/runbooks/scp-battery.md`](../runbooks/scp-battery.md) — the re-attach is not done until the probes
-   have run — or, if this recurs, carve out the named administration role in Stage 4, exactly the way D27's
-   carve-out names one role. **The mistake to avoid is reading the `AccessDenied` as a broken policy and
-   deleting the statement**: it is the statement that stops a compromised account from turning off its own
-   detection.
-5. CloudTrail data events on the sensitive buckets; CloudWatch alarms for exfiltration patterns: mass
-   `GetObject`, unusual egress volume, `PutObject` to an unexpected destination.
-   **Correction:** the previous version listed an alarm on "presigned URL creation". That is not
-   detectable — signing a presigned URL is a local SigV4 operation against credentials already held, it
-   makes no API call and appears nowhere in CloudTrail. What *is* detectable is the **use** of one, which
-   shows up as a request whose authentication method differs from a normal SigV4 call. Alarm on that.
-   **One read path is in scope specifically because no SCP covers it: Athena inside Data Governance.**
-   The `Data` OU document denies user compute and deliberately leaves `athena:StartQueryExecution` alone,
-   because Stage 5's Iceberg `OPTIMIZE`/`VACUUM` runs through it — so a principal in the lake account can
-   query any table the catalog exposes and land the result in S3, with the perimeter SCP only stopping
-   that write when the destination is outside the organization. **Preventively, that hole is deliberate
-   and documented** ([`POLICIES.md`](../../../terraform-live/identity/org-policies/POLICIES.md), `awsds-org-scp-ou-data`);
-   detecting it is this step's. The signal is a query in the Data Governance account whose principal is
-   not the catalog-maintenance role and whose statement is not a table-maintenance one — an inversion of
-   the usual alarm, since in every *other* account Athena is the normal way to read.
-6. Only then evaluate whether a third-party DLP agent adds anything the above does not cover.
+Hand applies run as the **infrastructure user**: `awsds-infra-data`, `awsds-infra-sandbox-1`,
+`awsds-infra-dev` (the trail slices), `awsds-infra-identity` (the org-policies amendment). Every Macie,
+analyzer and GuardDuty act is `AWS Control Tower Admin`, console or CloudShell, in **`us-west-2`** — the
+Region ceiling does not exempt any of the three (open question 16's closure).
 
-**Deliverables:** a documented threat model with the control that addresses each item — and, for the items
-where no control exists, an explicit statement that the risk is accepted rather than a control that was
-never built; alarms that fire on a simulated exfiltration attempt. **The threat model carries a reachability
-row per governed resource** — who outside the organization can reach it, and who inside can — answered by
-Access Analyzer for the resource types it supports, and by **nothing at all for EFS** (D24), which is a
-sentence to write down rather than a column to leave blank.
+## Step numbers are identifiers, not an order
+
+Four numbers are **stable addresses cited from other files** — `step 1` (the Macie scope) from
+`docs/plan/cost-model.md`, D19 and D22; `step 2.1` from `docs/plan/cost-model.md`'s Access Analyzer row;
+`step 4` from `docs/plan/cost-model.md`, `POLICIES.md` (the documented collision) and Stage 4 step 10.3;
+`step 5` from Stage 5 steps 1.3, 4.3 and 9.2. They do not change. The sequence to work in is **five
+passes**:
+
+| Pass | # | What | Slice · layer | Applied as / by |
+|---|---|---|---|---|
+| **0** | 2.1 (first half), 3 | the readings: external findings triaged, the Stage 5/6 outcomes collected, the threat-model skeleton | snapshots + paper | Claude reads; **user** runs the Audit snapshot |
+| **1** | 2 | the filters: LF column/row/cell restrictions and the filtered grants | `data-governance/data/` `[P]` | `awsds-infra-data` |
+| **2** | 5 | the record and the alarms: trails, rules, SNS, thresholds — and decision 6's SCP amendment | the three `data/` slices `[P]`; `identity/org-policies/` | the three infra profiles; `awsds-infra-identity` |
+| **3** | 1, 2.1 (second half) | Macie delegated, members added, the job run and mapped; the internal analyzer created, read and retired | by hand in Management + Audit | **user**, `AWS Control Tower Admin` |
+| **4** | 4, 6, 3 (close) | GuardDuty's two features against the real bill; the third-party question; the threat model finished | by hand in Audit; `docs/` | **user**; Claude writes |
+
+Pass 2 before pass 3, deliberately: the trail is the forensic record, and Macie's first job plus the
+simulated-exfiltration proofs should happen **on the record**. Pass 4 sits last because step 4 is decided
+against a real GuardDuty bill (Stage 4 step 10.3) and step 3's ledger wants every other answer in hand.
+
+---
+
+## To execute
+
+### 1. Amazon Macie — discovery, scoped to where governed data actually sits
+
+**Action:** delegate Macie to Audit, enable it in exactly the accounts that hold governed or derived data,
+and run one scoped sensitive-data discovery job whose findings are mapped onto Stage 5's classification
+scheme. **Why:** discovery/classification is the first of D6's four problems — knowing *which* sensitive
+data exists and where — and D19 says the interesting place is not only the lake: governed data re-surfaces
+in the derived zones, which a Data-Governance-only scope would miss. **Explanation:** Macie bills S3 bucket
+inventory per bucket-day (USD 0.0033, measured) in every member account, and discovery per GB inspected
+(USD 1.00/GB, measured — the line that can dwarf the whole cost model), so membership and job scope are
+both enumerated, never "the organization". The first 30 days per account are a free trial (Lesson 6: a
+discount, not a measurement window).
+
+- **1.1 — [user] Delegate from Management** — `AWS Control Tower Admin` → CloudShell, **`us-west-2`**:
+  `aws macie2 enable-organization-admin-account --admin-account-id <Audit>`. **Delegating IS enabling** —
+  the designation turns Macie on in Audit itself (documented), the same coupling as GuardDuty and Security
+  Hub.
+- **1.2 — [user] Add the members, one by one — auto-enable does not reach them.** In Audit (console →
+  Macie → Accounts): **Add member** for **Data Governance, Sandbox Account 1 and Development** — the
+  documented behaviour is that auto-enable covers **new** accounts only, and existing ones are added
+  explicitly (the inverse of GuardDuty's `ALL`; verification (i)). Use the console flow, which lists the
+  organization's accounts — the CLI (`create-member`) requires each account's **e-mail address**, which
+  must never be copied out of `secrets/`. Set auto-enable for new accounts **on** (a Stage 14 vend arrives
+  covered), **automated sensitive data discovery off** (decision 1). Management, Log Archive, Audit's
+  siblings, Staging and Production stay out — nothing governed sits in them (Production joins when
+  decision 3 adds `awsds-prod-outputs` to the scope).
+- **1.3 — [user] Run one one-time discovery job from Audit**, every wizard field decided in advance
+  (Lesson 16): scope = the lake buckets (`awsds-data-raw`, `awsds-data-curated`, the drop-box) **plus the
+  derived buckets** in Sandbox and Development (D19 practice iv — the map of decision 3); **sampling
+  depth** per decision 1 (the cost lever: GB inspected × USD 1.00); **managed data identifiers** = the
+  recommended default set, no custom identifiers; job type **one-time** — re-run deliberately, never
+  scheduled. **The wizard's discovery-results repository prompt is decision 2** — answer it from the log,
+  not at the keyboard.
+- **1.4 — [user] Route the findings**: in Macie's settings, turn on publication of **sensitive-data
+  findings to Security Hub** (policy findings publish automatically once both services are on), and extend
+  Audit's Stage 4 step 10.4 EventBridge→SNS rule to Macie findings — console-built, like the rule it
+  extends.
+- **1.5 — [Claude] Map the findings onto the classification scheme** (Stage 5 step 2): every finding
+  lands on a level, or the scheme gains one — a finding that fits nowhere is a scheme defect, not a Macie
+  defect. The mapping is a threat-model input (step 3).
+- **1.6 — [Claude] Close the paperwork in the same sitting**: restate `INV-09` in `docs/AWS_STATE.md`
+  (nine trusted-access principals — `macie` delegated to Audit; §C predicts it), re-run
+  `./aws/org-trusted-access-services.py`, and run `./aws/dlp.py` (`DP-1`). **[user]** Record 1.1-1.4 in
+  the stage log.
+
+### 2. Lake Formation column, row and cell filters — entitlement tightened to the classification
+
+**Action:** turn the classification into enforced grants — column restrictions through the LF-Tag grants,
+row/cell restrictions through data cells filters — replacing full-table SELECT where the scheme demands
+less. **Why:** fine-grained access is D6's second problem, and D13 is what makes any of it real: every
+tabular read already goes through an LF-aware engine, so a filter granted here is enforced, not decorative.
+**Explanation:** a data cells filter is a named, per-table object (column include/exclude list + a PartiQL
+row expression), granted with `SELECT`; filters apply to reads only. Cross-account it follows Stage 9's
+two-step: grant the filtered `SELECT` to the consumer **account** (with grant option), local regrant to the
+reading principal. **The grain is Stage 5 decision 6's, not this stage's**: if the grain is the project,
+the filter lands on project roles and says so; a row filter that silently applies to a role shared by four
+people is Lesson 5 with a `WHERE` clause.
+
+- **2.1a — [Claude] Write the filters in `data-governance/data/`** — `aws_lakeformation_data_cells_filter`
+  on the tables whose classification requires one (start with the sample `curated` table: one
+  column-restriction filter, one row filter), named `awsds-flt-<table>-<what>` — a contract with
+  `./aws/dlp.py` (`DP-3`).
+- **2.1b — [Claude] Write the filtered grants**, replacing the corresponding full-table grants in the
+  Stage 5 share map: `aws_lakeformation_permissions` with the `data_cells_filter` block, to the consumer
+  accounts with grant option; the consumer-side regrant lands in the same slice pattern Stage 9 2.3 used.
+  Column-only restrictions that the LF-Tag ontology already expresses stay on tag-scoped grants — one
+  mechanism per dimension, stated in the module comments.
+- **2.2 — [Claude⚡] Apply as `awsds-infra-data`, inside `DL-5`'s bracket** (read
+  `DataLakeSettings.Parameters` before and after — every `data-governance/data/` apply can silently reset
+  INT-11's values).
+- **2.3 — [user] Prove the filter pair from a consumer session**: the filtered principal's Athena query
+  returns the restricted columns/rows and nothing else; the same table read with pandas against S3 still
+  fails (Stage 5's negative, re-run — the filter tightened the entitlement, not the perimeter). Record
+  both.
+
+### 2.1. Collect on IAM Access Analyzer — the external findings as input, the internal ones as an instrument
+
+*Numbered 2.1, not 3: `docs/plan/cost-model.md` cites "Stage 11 step 2.1" and "step 4" by name.*
+
+**Action:** triage every external-access finding, then answer "who *inside* the organization can reach the
+governed buckets" with a deliberately short-lived internal-access analyzer. **Why:** the org external
+analyzer has watched Stages 2-9 create every bucket, role, key, snapshot and file system — an unread
+findings list is indistinguishable from an empty one; and an org-scoped external analyzer is **silent by
+construction about access inside the organization**, which is exactly the movement this stage exists to
+control (D6). The internal findings are the machine check of **D13** — that no execution role holds an S3
+path under the catalog — because until now nothing tested a claim about policies this project itself wrote
+(Lesson 18). **Explanation:** external stays free and org-wide; internal is **USD 9.00 per monitored
+resource per analyzer-month (measured, `docs/PRICING.md`), charged at setup and then on the first of each
+month, not prorated** — six resources would exceed the entire D12 ceiling — so the analyzer is an
+enumerated-ARN instrument: created, read, recorded, deleted inside one month.
+
+- **2.1.1 — [user] Regenerate the Audit snapshot** — `aws/cloudshell/audit-iam-analyser.sh` in Audit
+  CloudShell. **[Claude]** Triage every `ACTIVE` finding: the INV-16 shape (`AWSReservedSSO_*` roles
+  trusting the directory's SAML provider) is the expected whole set; anything else is a row in the threat
+  model — answered, or explicitly accepted. **An accepted finding is archived individually and recorded;
+  an archive *rule* stays forbidden** (INV-10 — a rule suppresses future findings silently).
+- **2.1.2 — [Claude] Read the five no-RCP resource types as perimeter, not as commentary** — Lambda, SNS,
+  EBS volume snapshots, RDS DB and DB-cluster snapshots, EFS (`docs/plan/architecture.md` §4.2): for the
+  data-bearing ones (the snapshots — closed preventively by 1c 7.5's unconditional denies — and D24's
+  EFS, closed by nothing), the external finding is not a check on the perimeter, it **is** the perimeter.
+  The threat model says so per row rather than inheriting D19's "the perimeter contains it".
+- **2.1.3 — [user] Create the internal-access analyzer in Audit** — console, **`us-west-2`**, zone of
+  trust **Entire organization** (Audit is already the Access Analyzer delegated administrator; **only one
+  org-level internal analyzer can exist per organization**). Resources by **exact bucket ARN** (account id
+  + ARN pairs; prefixes are not supported): the map of decision 3 — recommended minimum: the two
+  registered lake buckets and the two derived buckets, USD 36 for the month. No new principals arrive:
+  `AWSServiceRoleForAccessAnalyzer` exists org-wide since 1b (Lesson 17, checked not assumed).
+- **2.1.4 — [Claude] Amend the instruments in the same sitting**: `audit-iam-analyser.sh` expects the
+  second analyzer (type `ORGANIZATION_INTERNAL_ACCESS`) while it lives; restate **INV-10** in
+  `docs/AWS_STATE.md` — and restore both when 2.1.6 deletes it.
+- **2.1.5 — [Claude] Read the findings against the two decisions they exist to test**: **D13** — no
+  finding may show an execution role, persona set or blueprint-provisioned role reaching a registered
+  bucket outside the designed branches; **D19** — the derived buckets' reader list matches the design.
+  **Two boundaries, stated so a clean report is not over-read**: the analyzer sees the S3 layer *under*
+  the catalog — precisely the bypass D13 closes — and says nothing about LF-Tag entitlements; and **KMS
+  keys are not an internal-access resource type**, so D31's "who can decrypt the derived CMK" is verified
+  by reading the key policy's enumerated `Decrypt` list (Lesson 22's shape), not by the analyzer. EFS is
+  not covered either — 2.1.2's row carries it.
+- **2.1.6 — [user] Delete the analyzer once the findings are recorded** (decision 3; the reading is
+  repeatable — recreate it at any later audit for another month's USD 9/resource). **[user]** Record
+  create, read and delete in the stage log.
+- **2.1.7 — Unused-access findings stay in Stage 12** and are not re-litigated here.
+
+### 3. The egress and endpoint hardening review — the ledger of controls that do not exist
+
+**Action:** re-read the egress surface against the D5 verdict and write the "accepted rather than
+controlled" column of the threat model. **Why:** egress control is D6's third problem, and its honest
+state is a mix: one strong design, one bypassable design, and two product surfaces with no supported
+control at all. A threat model that lists a control nobody implemented is worse than one that says "none".
+**Explanation:** readings and writing, no build; the output is `docs/plan/threat-model.md`.
+
+- **3.1 — [Claude] Re-read the surviving egress design** (Stage 6 step 6 closed D5): under **A**, the DNS
+  Firewall allowlist is a strong control against accident and a weak one against intent — **raw-IP bypass
+  is stated as accepted**, with the blocked-query log as its detection; under **B**, there is no egress
+  path to misuse and the row closes.
+- **3.2 — [Claude] Record the file-download answer as narrowed by open question 6**: no supported product
+  control exists; AWS's official mitigation — a lifecycle configuration disabling the JupyterLab download
+  extensions (`aws-samples/sample-disable-sagemaker-jupyterlab-download`) — is a UI control a user with a
+  terminal can revert. Classification: **no control; an official, bypassable mitigation; everything else
+  is detection** (steps 4-5). Adopting the lifecycle configuration is optional and does not change the
+  classification.
+- **3.3 — [Claude] Carry the remote-IDE residual Stage 6 step 3.2 recorded** (open question 14):
+  `StartSession` is tag-scoped to the user's own spaces — a *scoping* control, not a *transfer* control —
+  and remote sessions authenticate with **IAM credentials even in IdC domains, persisting up to 12 h after
+  portal logout**. Accepted, with the kill-switch named: the `sagemaker:RemoteAccess` condition key on
+  `CreateSpace`/`UpdateSpace`.
+
+### 4. GuardDuty's two paid features — decided against a real bill, unblocked deliberately
+
+**Action:** enable **S3 Protection** (`S3_DATA_EVENTS`) and **Malware Protection for EC2**
+(`EBS_MALWARE_PROTECTION`) org-wide, working around this project's own SCP where it blocks Audit's
+detector — and answer the ECR enhanced-scanning question Stage 7 decision 2 deferred to this step by name
+(4.6). **Why:** the base service has run since Stage 4 step 10; these two were deferred *by name*
+(10.3) so the decision could be made against a measured bill (`docs/plan/cost-model.md`) — S3 Protection is
+the anomaly half of exfiltration detection (D6's fourth problem). **Explanation:** measured us-west-2
+prices — **USD 0.80 per 1M S3 data events analyzed** (first tier) and **USD 0.03/GB of EBS scanned**; each
+feature carries its own 30-day free trial on first enablement. **The block is known in advance and is this
+project's own control working** (`POLICIES.md`): `DenyGuardDutyTampering` denies `guardduty:UpdateDetector`
+on the root, so org-wide administration (`UpdateOrganizationConfiguration`, `UpdateMemberDetectors` —
+neither denied) succeeds while **Audit's own detector** is the one call that fails. The mistake to avoid is
+reading that `AccessDenied` as a broken policy and deleting the statement.
+
+- **4.1 — [user] Read the real bill first**: Cost Explorer, the GuardDuty line since Stage 4 — the number
+  the decision is made against (Lesson 6). Record it.
+- **4.2 — [user] Enable org-wide from Audit** — `AWS Control Tower Admin`, GuardDuty console →
+  protection plans: auto-enable **`ALL`** for both features (new and existing members, up to 24 h to
+  propagate).
+- **4.3 — [user] Unblock Audit's own detector by the recorded path** (decision 4): **if Stage 4's log
+  records the named GuardDuty administration role** (its 10.5), amend the statement with that exact-ARN
+  carve-out — D27's shape — through **battery phases 1-3**; **otherwise** detach `awsds-org-scp-baseline`
+  from the root, make the change, re-attach, and re-run phases 1-3
+  ([`docs/plan/runbooks/scp-battery.md`](../runbooks/scp-battery.md)) — **the re-attach is not done until
+  the probes have run**, and the sitting is not closed before the re-attach.
+- **4.4 — [Claude] Flip the instruments in the same sitting**: `./aws/vpn.py` `VP-8` currently fails if
+  either feature reads `ENABLED` — its `DEFERRED_FEATURES` expectation inverts now (they must read
+  `ENABLED` everywhere), and `./aws/dlp.py` `DP-6` takes over the standing read. Re-run both;
+  **[user]** record 4.1-4.3 and the battery outcome in the stage log.
+- **4.5 — Malware Protection for *S3* is a different product and a separate decision** (decision 5):
+  bucket-level, **USD 0.09/GB + 0.000215 per object above the free tier (measured)**, relevant only to the
+  drop-box — the one bucket that ingests files from humans. Recommended off at lab scale; priced here so
+  the "no" is a choice.
+- **4.6 — Decide ECR enhanced scanning in the same sitting** — Stage 7 decision 2 deferred it *to this
+  step by name*: basic scan-on-push (free) carries Stage 8's gate; enhanced is **Inspector** — OS *and*
+  language packages, continuous — measured at USD 0.09/image + 0.01 per re-scan, and continuous means a
+  re-scan on **every new CVE**, which is the churn to price. If adopted: **[user]** standalone-enable
+  Inspector for resource type ECR **in Production only** (the account that owns the registry) — no org
+  delegation, no new trusted-access principal. Decision 9 records either answer.
+
+### 5. CloudTrail data events and the exfiltration alarms — the deterministic half, on the record
+
+**Action:** create a data-event-only trail per account that holds monitored buckets, deliver all three to
+`awsds-data-logs`, and alarm on the named exfiltration patterns through EventBridge rules. **Why:** D6's
+fourth problem needs a *record* (who read what, when — the forensic half no anomaly service provides) and
+*deterministic* alarms for the patterns this design can name: mass reads, presigned-URL use, writes by an
+unexpected principal, and the Athena path in Data Governance that `POLICIES.md` records as deliberately
+uncovered. **Explanation:** the org trail is Control Tower's and is not touched; these are the project's
+**first member-account trails**, management events excluded (the org trail already carries that copy — a
+second one would bill USD 0.00002/event for nothing). Data events are **USD 0.10 per 100k (measured)**;
+reads are logged deliberately — reads *are* the exfiltration signal — and the cost-model's Spark-job
+warning is the price of that choice, cents at lab scale. Alarms ride **EventBridge rules on the default
+bus** (data events are matched by ordinary `ENABLED` rules once the trail logs them; AWS-service events
+are free) with the rule's `MatchedEvents` metric — no CloudWatch Logs ingestion anywhere.
+
+- **5.1 — [Claude] Write the trail module and the three slice amendments** — `awsds-<env>-data-events` in
+  `data-governance/data/`, `sandbox/data/`, `development/data/`: **advanced event selectors only** —
+  `resources.type = AWS::S3::Object`, `resources.ARN` starts-with the account's monitored buckets (the
+  decision 3 map: lake + drop-box in Data Governance; the derived bucket in each Interactive account) —
+  **no management-event selector**, reads and writes both, log file validation on. Delivery: all three
+  cross-account into **`awsds-data-logs`** under `AWSLogs/<account>/` (decision 7), with the bucket-policy
+  statements for `cloudtrail.amazonaws.com` conditioned on `aws:SourceAccount` ∈ the three account ids —
+  written in `data-governance/data/` beside the bucket they amend.
+- **5.2 — [Claude] Write the rules, the topic and the alarms per account** (`awsds-<env>-security` SNS,
+  the Stage 1b pattern; **[user]** subscribes the e-mail):
+  - **`awsds-<env>-massread`** — `GetObject` on the monitored buckets; alarm on the rule's
+    `MatchedEvents` **Sum** over 5 minutes ≥ decision 8's threshold. The rule needs no target to emit the
+    metric.
+  - **`awsds-<env>-presigned-use`** — `additionalEventData.AuthenticationMethod = QueryString`: the
+    detectable half of the presigned question (signing is a local SigV4 operation and appears nowhere;
+    **use** arrives with a distinct authentication method). Target: the SNS topic directly. Pairs with the
+    preventive `s3:signatureAge` cap Stage 5 step 1.3 wrote.
+  - **`awsds-data-unexpected-writer`** (Data Governance only) — `PutObject` on lake + drop-box where
+    `userIdentity`'s role is **anything-but** the three designed writers (the Interactive-OU writer roles,
+    `awsds-data-catalog-maintenance`, `awsds-prod-job-exec` — D25's asymmetry, alarmed).
+  - **`awsds-data-athena`** (Data Governance only) — on `StartQueryExecution` (a management event: the
+    org trail already logs it, so this rule needs no member trail). **Conditional on Stage 5 decision 4's
+    outcome:** if the Athena hole was closed by SCP amendment, *any* occurrence — allowed or denied — is
+    the signal (read `POLICIES.md` to confirm which); if it stayed open for Athena-based maintenance, the
+    rule excludes the maintenance role and alarms on everyone else. The inversion is deliberate: in every
+    *other* account Athena is the normal way to read.
+- **5.3 — [Claude⚡] Apply the three slices** — `awsds-infra-data`, `awsds-infra-sandbox-1`,
+  `awsds-infra-dev`; `DL-5` brackets the Data Governance apply as always. **[user]** Record in the log.
+- **5.4 — [Claude] Write the tampering statement the trigger demands** (decision 6): `POLICIES.md` records
+  "no CloudTrail statement" with the revision trigger *"the first trail this project creates in a member
+  account"* — which is this step. Recommended `Sid` **`DenyCloudTrailKill`** in `awsds-org-scp-baseline`:
+  deny `cloudtrail:StopLogging` and `cloudtrail:DeleteTrail`, unconditional (it binds the builder, which
+  is what makes it a control — the amendment procedure is the same detach/re-attach as step 4). What it
+  deliberately does not cover, recorded as residual in the threat model: `UpdateTrail`/`PutEventSelectors`
+  can redirect or narrow a trail and stay allowed — Terraform manages the trail through them, and a policy
+  never constrains its author (Lesson 18); the mutation itself is a management event on the org trail.
+  **[Claude⚡]** Land it through **battery phases 1-3**, `POLICIES.md` reviewed in the same sitting.
+- **5.5 — [user] Fire the alarms once, deliberately — an alarm that has never fired is Lesson 13**: from
+  a data-scientist session, a `GetObject` loop over the mass-read threshold; one presigned `GET`
+  (generate locally, use it); one drop-box `PutObject` from a persona session (the *writer* statement
+  admits it — the rule must stay quiet; then one from an unexpected role if one is obtainable, else record
+  Lesson 22). Each alarm fires, the e-mail arrives, and a normal working session stays quiet. Record all
+  outcomes, including the quiet ones.
+
+### 6. The third-party question, answered last
+
+**Action:** evaluate whether an agent-based DLP product adds anything, now that the native stack is built
+and its gaps are written down. **Why:** D6 deferred this question to exactly this moment — after the
+perimeter, the four native controls and the accepted-risk ledger exist, so the evaluation is against named
+residuals, not against fear. **Explanation:** a reading, recorded in the threat model.
+
+- **6.1 — [Claude] Walk the threat model's residual column** — EFS reachability (D24), the remote-IDE
+  channel, design A's raw-IP bypass (if A survived), `UpdateTrail`, the within-persona result visibility
+  (Stage 9's stated limit) — and ask which, if any, an agent would actually close, at what cost, with what
+  new principals (Lesson 17). Recommended answer at lab scale: none — record it and the reasoning in
+  `docs/plan/threat-model.md` and `docs/plan/institutional-delta.md` (an institution buys the catalog with
+  lineage first, D19 practice v).
+
+---
+
+## Deliverables
+
+Each is written so its output differs between working and broken (Lesson 13). **The mechanical half is
+`./aws/dlp.py`** ([`aws/INDEX.md`](../../../aws/INDEX.md)): Macie's per-account state and delegation, the
+filters and filtered grants, the trails' shape (data-event-only, the monitored map, validation on,
+delivering to the logs bucket), the rules and alarms, the GuardDuty features now expected `ENABLED`, and
+the tampering `Sid`. The behavioural proofs are the stage's own (Lesson 20):
+
+- **The threat model, `docs/plan/threat-model.md`** — one control (or one named acceptance) per item, and
+  a **reachability row per governed resource**: who outside the organization can reach it (the external
+  analyzer's answer), who inside can (the internal analyzer's, for the types it covers; a reading, for the
+  CMKs and the catalog layer), and **nothing at all for EFS** (D24) — a sentence written down, not a
+  column left blank.
+- **The alarm pair (5.5):** the simulated exfiltration fires every alarm it should, the e-mail arrives,
+  and a normal session stays quiet.
+- **The filter pair (2.3):** the filtered principal sees exactly the filtered result; pandas against the
+  same table's S3 path still fails.
+- **The Macie mapping (1.5):** every finding mapped onto a classification level, or the scheme amended.
+- **The collection (2.1):** every external finding answered or individually archived with its reason; the
+  internal findings recorded against D13/D19 and the analyzer retired.
+
+## Validation
+
+1. Run `./aws/dlp.py` — all `DP-*` pass; diff two runs across the stage (only timestamps and job/finding
+   counts may change).
+2. Run `./aws/datalake.py` after every `data-governance/data/` apply — `DL-5` green (the INT-11
+   parameters, as always).
+3. Re-run `./aws/org-policies.py` and the battery phases after the step 4 and 5.4 amendments — never a
+   direct edit; `POLICIES.md` reviewed in the same sittings.
+4. Run `./aws/egress.py` §6 at session end — this stage adds nothing metered by the hour, and the reading
+   proves it.
+5. Read every denial by its wording, never its exit code (standing rule since 1c).
+
+## Cost
+
+Measured (`docs/PRICING.md` §6), us-west-2; everything here is `[P]`-shaped monthly cost, nothing hourly:
+
+| Item | Cost | Note |
+|---|---|---|
+| Macie bucket inventory | USD 0.0033/bucket-day (~0.10/bucket-month) | ~10-15 buckets across the three members — ~USD 1-1.50/month; 30-day free trial per account |
+| Macie discovery job | USD 1.00/GB inspected | the sampling depth (decision 1) is the lever; lab-scale lake ≈ cents per run |
+| Internal-access analyzer | **USD 9.00/resource-month, charged at setup** | 4 resources = USD 36 for the one month it lives (2.1.6 retires it) |
+| GuardDuty S3 Protection | USD 0.80/1M S3 data events | 30-day free trial; the real driver is job read volume |
+| GuardDuty Malware Protection for EC2 | USD 0.03/GB EBS scanned | scans on findings — near zero in quiet months |
+| CloudTrail data events | USD 0.10/100k events | reads logged on purpose; a heavy Spark job ≈ tens of thousands of events ≈ cents |
+| Alarms (≈6) + SNS e-mail | ~USD 0.60/month | EventBridge rules and AWS-event matching are free |
+| Trail S3 storage in `awsds-data-logs` | cents | inside the existing S3 floor row |
+
+## Decisions due while executing
+
+**Blocking questions for the user: none.** Each is decided during the stage and written into
+`docs/log/log-stage-11-dlp.md` (Lesson 16). Recommendations stated so the keyboard is not the
+decision-maker.
+
+1. **Macie mechanism and sampling depth** (1.2, 1.3) — one-time scoped jobs versus automated discovery.
+   Recommended: **one-time jobs on the decision 3 map, automated discovery off** — a standing sampler is a
+   standing spend, revisited at Stage 12 against the bill.
+2. **The Macie discovery-results repository** (1.3) — the wizard demands an S3 bucket + KMS key for
+   long-term results, or results expire in 90 days. Recommended: **skip it at lab scale** — findings
+   (the durable part) live in Security Hub and the threat model; record the 90-day acceptance.
+3. **The monitored-resource map** (1.3, 2.1.3, 5.1) — which buckets Macie scans, the analyzer monitors
+   and the trails select. Recommended: lake (`raw`, `curated`, drop-box) + the two derived buckets;
+   **`awsds-prod-outputs` joins when Stage 9's producer path first carries real data**. One map, one
+   variable, consumed by all three (Lesson 14).
+4. **The step 4 unblock path** (4.3) — the 10.5 carve-out role if Stage 4 created it, else
+   detach/re-attach. Recommended: **whichever the Stage 4 log answers** — a carve-out written against a
+   role that already exists is the one shape this plan trusts (D27).
+5. **Malware Protection for S3 on the drop-box** (4.5) — recommended: **off**, priced (USD 0.09/GB +
+   0.000215/object); revisit if the drop-box ever ingests files from outside the tunnel.
+6. **The CloudTrail-tampering statement** (5.4) — recommended: **`DenyCloudTrailKill`**
+   (`StopLogging` + `DeleteTrail`, unconditional) via battery phases 1-3, with the `UpdateTrail` residual
+   recorded rather than chased.
+7. **Trail delivery** (5.1) — centralized into `awsds-data-logs` versus per-account buckets. Recommended:
+   **centralized** — the record lands in the governed account, one lifecycle, no new buckets.
+8. **The mass-read threshold** (5.2) — recommended: measure one normal working session's `MatchedEvents`
+   first, set the alarm at ~10× that, and revisit at Stage 12; a threshold set blind is either noise or
+   silence.
+9. **ECR enhanced scanning** (4.6, Stage 7 decision 2's deferral) — recommended: **stay on basic** until a
+   Stage 8 gate reading misses a language-package CVE that mattered; if adopted, standalone Inspector in
+   Production only, and re-read the re-scan churn against the bill at Stage 12.
+
+## Verifications to answer while executing
+
+Record every answer, including the ones that come out fine.
+
+| # | Question | Step |
+|---|---|---|
+| i | Does Macie's auto-enable really leave existing accounts unenabled (the documented inverse of GuardDuty's `ALL`), and does the delegation alone enable Audit? | 1.1, 1.2 |
+| ii | Does every Macie finding map onto a Stage 5 step 2 classification level — or which level did the scheme gain? | 1.5 |
+| iii | Does the filtered grant hold on the SQL path at the Stage 5 decision 6 grain — filtered rows/columns returned, pandas still denied? | 2.3 |
+| iv | Do the internal-access findings confirm D13 (no execution-role path under the catalog) and D19's reader list — and does the reading of the derived CMK's key policy match D31's enumerated list? | 2.1.5 |
+| v | Is the step 4 block observed as written — org-wide enablement succeeding, Audit's own `UpdateDetector` denied naming `DenyGuardDutyTampering`? | 4.2, 4.3 |
+| vi | After 4.3: do both features read `ENABLED` in every account, and do `VP-8` (flipped) and `DP-6` agree? | 4.4 |
+| vii | Does the mass-read alarm fire on the simulated loop and stay quiet through a normal session — and what did the normal session's `MatchedEvents` baseline measure? | 5.5, decision 8 |
+| viii | Does presigned **use** arrive as `AuthenticationMethod=QueryString` and drive its rule — while creation, as predicted, appears nowhere? | 5.5 |
+| ix | Do the trails read back data-event-only (`get-event-selectors`: no management events) with validation on, delivering cross-account into `awsds-data-logs`? | 5.3 |
+| x | Does the Athena rule match Stage 5 decision 4's outcome — closed hole alarming on any occurrence, open hole alarming on non-maintenance principals only? | 5.2 |
+
+## Risks
+
+- **Two line items can silently dominate the floor**: Macie's per-GB discovery (the sampling depth is the
+  only lever — and `sa-east-1` prices it at 2.25×) and the **USD 9.00/resource-month** internal analyzer —
+  which is why 2.1.6's delete is a step, not housekeeping.
+- **Step 4 and 5.4 both open the root SCP set** — the detach window and the amendment are covered by
+  battery phases 1-3, and the sitting is not closed until the re-attach probes have run (the same rule
+  `POLICIES.md` states for `Data`'s bucket deny).
+- **An EventBridge rule without its trail is an alarm that can never fire** (Lesson 13's shape): the rules
+  match only events a trail logs, which is why 5.5 fires every alarm once before the stage closes.
+- **Alarm thresholds are a judgement about normal** — set blind they produce noise (ignored within a
+  week) or silence (Lesson 5); decision 8 measures first.
+- **The deterministic alarms only see the patterns this design named** — the unnamed ones belong to
+  GuardDuty's anomaly half (step 4), and the threat model's residual column is the honest boundary between
+  the two.
+- **`./aws/dlp.py` cannot see Audit** (no profile, by design): Macie's job history, the analyzer and the
+  org configuration are verified in the Audit console/CloudShell — section 8 of the report names what it
+  is not measuring, so a green run is not over-read.
+
 ---
 
 *Stage index: [stages/INDEX.md](INDEX.md) · Plan core: [GENERAL_PLAN.md](../../GENERAL_PLAN.md)*

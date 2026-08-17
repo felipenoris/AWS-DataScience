@@ -172,27 +172,25 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
 ### Current position
 
 - **Landing zone closed — Stages 0-1d DONE (2026-08-15)**, except the `Staging` vend: held on the account
-  cap, **open AWS support ticket** (`aws/cloudshell/management-quotas.sh` re-asks). Battery 93/93.
-- **Stage 2 DONE (2026-08-16), all nine verifications answered.** Deployed: a state bucket per
-  Terraform-managed account (`prod` carries D36's 2nd key); `identity/sso/` — 7 sets, 10 assignments;
-  `identity/org-policies/` — ten policies + ten attachments **adopted, none created**, **content never
-  sent** (live bytes are still 1c's paste), `prevent_destroy` on both.
-  Delegation narrowed to `InfrastructureAccess`, hand-applied, **out of Terraform** (`INV-15`). D11:
-  `scripts/tfhygiene/layers.py` + `make up`/`down`/`status`/`slices`; a slice with no row fails
-  `make check`. (iii): `IN_SYNC` (`INV-17`). SSM parameter naming: conventions §6 (`awsds` is reserved).
-- **Gates, and there is no CI:** `make check` (offline), `make check-ou` (session),
-  `make check-docs` — **red** on pre-Stage-2 prose, outside the commit gate.
-- **Stage 3 DONE 2026-08-16 — applied, measured, torn down; now 0.0000 USD/h.** AF VPCs gone
-  (**StackSet on Management**). **`networking.py`/`egress.py` 0 FAILED. D11 proven twice: `foundation/`
-  byte-identical, `No changes`, every `[E]` id new, gateway endpoints survived** — INT-05 names those,
-  not `egress/`. **Probes were three `[E]` slices with no IAM: (iii) as a 200/403 pair; peering + DNS
-  from Sandbox *and* Dev, so INT-09 is exercised; flow logs ACCEPT+REJECT.** `egress_mode=A`; the S3
-  allow-list — **a NAT does not bypass it**. CIDR/`zone_ids`/peers: `scripts/tfhygiene/backend.py`.
-  **Stage 4's (i) is NOT pre-answered** — `makecache` is metadata, not a package, and the CW agent is a
-  different allow-list entry. Left elsewhere: `Staging`'s NXDOMAIN; (ii) is Stage 6's.
-- **Stages 4-10 revised, pre-instrumented (2026-08-16):**
-  `aws/{vpn,datalake,studio,supplychain,cicd,deploytargets,orchestration}.py` — `DL-5`/`DT-5` guard the
+  cap, **open support ticket** (`aws/cloudshell/management-quotas.sh` re-asks). Battery 93/93.
+- **Stage 2 DONE (2026-08-16), all nine verifications answered.** A state bucket
+  per Terraform-managed account (`prod` carries D36's 2nd key); `identity/sso/` — 7 sets, 10 assignments;
+  `identity/org-policies/` — ten documents + attachments **adopted, none created**. Delegation narrowed
+  to `InfrastructureAccess`, hand-applied, **out of Terraform** (`INV-15`). D11:
+  `scripts/tfhygiene/layers.py` + `make up`/`down`/`status`/`slices`. SSM parameter naming: conventions
+  §6 (`awsds` is reserved).
+- **Gates, no CI:** `make check` (offline), `make check-ou` (session), `make check-docs` — **red** on
+  pre-Stage-2 prose, outside the commit gate.
+- **Stage 3 DONE 2026-08-16 — applied, measured, torn down; now 0.0000 USD/h** (detail: its Status row).
+  `egress_mode=A`; the S3 allow-list — **a NAT does not bypass it**; INT-05 names the gateway endpoints,
+  never `egress/` ids. CIDR/`zone_ids`/peers: `scripts/tfhygiene/backend.py`. **Stage 4's (i) is NOT
+  pre-answered** — `makecache` is metadata, not a package; the CW agent is a different allow-list entry.
+  Left elsewhere: `Staging`'s NXDOMAIN; (ii) is Stage 6's.
+- **Stages 4-11 revised, pre-instrumented (2026-08-16/17):**
+  `aws/{vpn,datalake,studio,supplychain,cicd,deploytargets,orchestration,dlp}.py` — `DL-5`/`DT-5` guard the
   LF `Parameters` (INT-11). **St.8 pass 4, St.9 passes 4-5, St.10's Staging leg wait on the vend.**
+  St.11: internal access **USD 9/resource-month** → analyzer is create-read-delete; Macie adds existing
+  members one by one; the first member trail owes `DenyCloudTrailKill`; `VP-8` flips at its step 4.
 - **Standing rules that outlive their stages:** never add an `sts:` action to the RCP without reading
   `CT.STS.PV.1`'s exclusion note; 1d step 9 is the **only** sanctioned by-hand use of
   `AWSControlTowerExecution`; **resolve an account by name only with the exact vended name** — every one
@@ -200,11 +198,10 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   fail loudly (`<ACCOUNT_ID_DATA>` still derives from the `Data` OU); subnets anchor on AZ `zone_id` — run
   `./aws/AZs.py` after every vend; check the SSO token before each probe block and read the denial
   *wording*, never the exit code; account-level BPA is hand-managed (Stage 2's grep guards).
-  **Log Archive and Audit hold no CLI profile** (`CHK-1`/`CHK-2` and `org-policies.py` §4 are the
-  instruments there).
+  **Log Archive and Audit hold no CLI profile** (`CHK-1`/`CHK-2` and `org-policies.py` §4 measure them).
 - **Before reporting a gap, read the file that owns it:** unexercised denies and deliberate allowances →
-  `POLICIES.md`; 1b residue and every "expected" reading → `docs/AWS_STATE.md`; the SMUS findings for Stages
-  5/6/10 → open questions 12-15, atop Stage 6.
+  `POLICIES.md`; 1b residue and every "expected" reading → `docs/AWS_STATE.md`; the SMUS findings →
+  open questions 12-15, atop Stage 6.
 - **Deferred by decision — do not offer to close:** the USD 50 budget notifies nobody (D12); open question
   10's per-unit tokens wait for N=2; Config recorder left alone and Management unrecorded (Stage 12 hooks).
   **Every governed account sits under `us-west-2`.**
@@ -215,7 +212,7 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   `scripts/`, the `Makefile`, and the `pre-commit`/`tflint`/`checkov`/`ruff` gates.
   **Every script is Python 3 on `uv` since 2026-08-15** — shared code in `aws/awslib`,
   `scripts/repohygiene`, `scripts/tfhygiene`; CloudShell = plain `python3` with `aws/` present.
-  **Exception: `aws/cloudshell/` stays shell, standalone, for the no-profile accounts.**
+  **Exception: `aws/cloudshell/` is shell, standalone, for the no-profile accounts.**
 
 **Budget: ~4 KB.** State, not reasoning — **a bullet here that explains *why*, or that a stage file should
 be carrying, is a stale copy of something that already lives elsewhere.** Re-trim whenever a stage closes.

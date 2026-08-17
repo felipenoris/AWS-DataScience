@@ -95,11 +95,12 @@ none of them is a new key:
 
 ## 3. Procedure C — rotate the host pair (the key, or a session that could read it, is compromised)
 
-1. Generate the new pair on the laptop, as at enrollment (the filename is scratch — any name
-   serves):
+1. Generate the new pair on the laptop, as at enrollment — **outside the repository**, `umask 077`
+   for a `600` file at creation, and `tr -d '\n'` so the stored value is exactly 44 characters
+   rather than 45 (measured 2026-08-17; the filename is scratch — any name serves):
 
    ```bash
-   wg genkey | tee host-private.key | wg pubkey
+   (umask 077 && wg genkey | tr -d '\n' > host-private.key) && wg pubkey < host-private.key
    ```
 
 2. Enrol the new value — `file://`, never a pasted literal (§4):
@@ -142,6 +143,10 @@ none of them is a new key:
   schedule. `./aws/vpn.py` `VP-9` fails the moment `RotationEnabled` reads true.
 - **Never pass the key as a `--secret-string` literal** — `file://` keeps it out of the shell
   history; the enrollment file is deleted once the tunnel proves (step 4.3).
+- **Never generate the key inside the repository working tree.** `*.key` is git-ignored (the net,
+  2026-08-17), but the net is not the practice: pre-commit's `detect-private-key` reads PEM armor
+  and a WireGuard key is bare base64, indistinguishable from the public halves this repository
+  commits on purpose — so a differently-named file would be caught by nothing.
 - **Never rebuild the peer map from memory** — read it out of the user data or the host.
   A remembered `host` number that is wrong renumbers someone's tunnel address silently.
 - **Never let `wg show all dump` near a log or the chat** — its first line is the interface's

@@ -369,12 +369,18 @@ than discoveries:
 | CloudTrail Insights events (each) | 0.0000035 | — | |
 | **GuardDuty** CloudTrail events analyzed (each) | 0.000007 | 0.000004 | 1.75 |
 | GuardDuty VPC flow + DNS logs, first 500 GB (USD/GB) | 1.75 | 1.00 | 1.75 |
+| GuardDuty **S3 Protection** — S3 data events analyzed, first 500M/mo (each; Stage 11 step 4) | 0.00000176 | 0.0000008 | 2.20 |
+| GuardDuty **Malware Protection for EC2** — EBS data scanned (USD/GB; Stage 11 step 4) | 0.06 | 0.03 | 2.00 |
 | GuardDuty S3 Malware Protection data scanned (USD/GB) | 0.123 | 0.09 | 1.37 |
+| GuardDuty Malware Protection for S3 — object scan requests above 1k/mo (each) | 0.000293 | 0.000215 | 1.36 |
 | **Macie** S3 bucket inventory (USD per bucket-day) | 0.0033 | 0.0033 | **1.00** |
 | Macie sensitive-data discovery, first tier (USD/GB) | 2.25 | 1.00 | **2.25** |
 | Macie automated object monitoring (USD per 100k object-days) | 0.0225 | 0.01 | 2.25 |
 | **Security Hub** checks, first 100k (each) | 0.001 | 0.001 | **1.00** |
 | Security Hub finding ingestion above 10k (each) | 0.00003 | 0.00003 | **1.00** |
+| **IAM Access Analyzer** internal access (USD per monitored resource per analyzer-month — charged at setup, then on the 1st; Stage 11 step 2.1) | 9.00 | 9.00 | **1.00** |
+| Access Analyzer unused access (USD per IAM role/user per month; Stage 12) | 0.20 | 0.20 | **1.00** |
+| Access Analyzer custom policy checks (per API request) | 0.002 | 0.002 | **1.00** |
 | **Amazon Inspector** ECR enhanced scanning, initial scan (USD/image) | 0.11 | 0.09 | 1.22 |
 | Inspector ECR re-scan (each — continuous scanning re-scans on every new CVE) | 0.01 | 0.01 | **1.00** |
 | **Secrets Manager** secret (USD/secret-mo; `gitlab-secrets.json`, Stage 7 step 1.1) | 0.40 | 0.40 | **1.00** |
@@ -416,6 +422,12 @@ step and not a cost.
 **Macie is the one to watch in São Paulo: 2.25x, the largest premium in this file.** The plan already says
 to scope Macie to a sampled prefix rather than the whole lake (`docs/plan/cost-model.md`); in `sa-east-1` that instruction is
 worth more than twice as much.
+
+**The Access Analyzer internal-access rate is the measurement that redesigned a step (2026-08-17,
+Lesson 6):** at USD 9.00 per monitored resource per month — identical in both Regions, and charged at
+setup rather than prorated — six resources would exceed the entire D12 ceiling, which is why Stage 11
+step 2.1 runs the analyzer as an enumerated-ARN, create-read-delete instrument instead of a standing
+monitor.
 
 ---
 

@@ -35,11 +35,12 @@ peers = {
 ```
 
 **The host's private key — a `[P]` Secrets Manager secret, not a file here.** Generated once
-on the laptop (step 4.3) and enrolled into `awsds-sandbox-vpn-host-key` — the container
-`../foundation/` owns, its value written by the user and never by Terraform:
+on the laptop, **outside this repository** (step 4.3), and enrolled into
+`awsds-sandbox-vpn-host-key` — the container `../foundation/` owns, its value written by the
+user and never by Terraform:
 
 ```bash
-wg genkey | tee host-private.key | wg pubkey
+(umask 077 && wg genkey | tr -d '\n' > host-private.key) && wg pubkey < host-private.key
 ```
 
 ```bash
@@ -47,11 +48,25 @@ aws secretsmanager put-secret-value --profile awsds-infra-sandbox-1 --region us-
   --secret-id awsds-sandbox-vpn-host-key --secret-string file://host-private.key
 ```
 
-`file://`, never a pasted literal — the key must not enter the shell history. The **public**
-half (the second line of the first command) goes into every client config (step 9.1); the
-local `host-private.key` is scratch — delete it once the tunnel proves. The instance fetches
-the value at first boot with its own role; the secret's resource policy denies the read to
-every other principal in the account except `InfrastructureAccess`.
+Three details in the first command, each measured rather than assumed (2026-08-17): `umask
+077` makes the file `600` at creation rather than after it; **`tr -d '\n'` is what makes the
+stored value exactly 44 characters** — the obvious `wg genkey | tee host-private.key` writes
+45, the key plus a newline, which `file://` would store verbatim (the boot's `$(…)` strips it,
+so this is unambiguity for future readers rather than a bug avoided); and what the command
+**prints** is the PUBLIC half, which goes into every client config (step 9.1).
+
+`file://`, never a pasted literal — the key must not enter the shell history. The local
+`host-private.key` is scratch — **keep it until the tunnel proves, then delete it**; the
+secret is the designed home. The instance fetches the value at first boot with its own role;
+the secret's resource policy denies the read to every other principal in the account except
+`InfrastructureAccess`.
+
+Verify the round trip without ever printing the private half — this must echo the public key
+from the first command:
+
+```bash
+aws secretsmanager get-secret-value --profile awsds-infra-sandbox-1 --region us-west-2 --secret-id awsds-sandbox-vpn-host-key --query SecretString --output text | wg pubkey
+```
 
 **What it costs and buys, named rather than assumed (decision 4, third review).** It costs
 USD 0.40/month for the container, a first boot that retries — loudly, with named `say`-lines —

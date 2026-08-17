@@ -140,7 +140,10 @@ wrong account as easily as none.
 - **Two things live here that live nowhere else**, and both are consequences of the account being where
   people actually are: the **WireGuard instance** — the single human entry point, whose tunnel is *full*,
   so the Sandbox VPC is one of only two the laptop reaches at the VPC level
-  ([D4](plan/decisions/D04-vpn-wireguard.md), Stage 4) — and the **shared EFS filesystem**, one per
+  ([D4](plan/decisions/D04-vpn-wireguard.md), Stage 4), and whose host private key is a `[P]` Secrets
+  Manager secret in this account, fetched by the instance at first boot — never a file in the repository
+  or a value in the user data (Stage 4 decision 4, third review; every key event follows
+  [`docs/plan/runbooks/vpn-keys.md`](plan/runbooks/vpn-keys.md)) — and the **shared EFS filesystem**, one per
   business unit ([D24](plan/decisions/D24-shared-filesystem.md)). Development gets neither its own EFS nor
   a path to this one; the exchange between the two Interactive accounts is S3 and git.
 
@@ -298,7 +301,9 @@ not in concept. `Policy Test` and `Policy Canary` keep the word `Staging` naming
   GuardDuty at Stage 4 with the first internet-facing resource, Security Hub at Stage 5 with the first
   governed data, and Macie at Stage 11. Guiding principle 9 carries the rule — detection is metered, and
   turning it on over empty accounts buys nothing while spending the one free window in which its real cost
-  could have been measured.
+  could have been measured. Stage 11's revision (2026-08-17) added one deliberately short-lived reading
+  here: the organization **internal-access** analyzer — USD 9.00 per monitored resource per month — is
+  created, read against D13/D19 and deleted inside the same month, never left standing.
 
 - **Separate from `Identity` on purpose**, so that access management and security monitoring do not share
   a blast radius, and **no persona holds an assignment here** for the same reason as Log Archive.

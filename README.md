@@ -16,10 +16,13 @@ Blueprint for using AWS as a Data Science infrastructure provider.
   - `docs/plan/stages/` — one file per stage, each declaring the decisions it **consumes**.
   - `docs/plan/decisions/` — one file per decision `D1`…`D37`, plus a one-line-per-decision `INDEX.md`. All
     are settled; `D30` was settled as a *revert* and keeps its file, so the record shows what was tried.
-  - `docs/plan/runbooks/` — a procedure followed in full and in order, rather than remembered. Two today:
+  - `docs/plan/runbooks/` — a procedure followed in full and in order, rather than remembered. Four today:
     `break-glass.md`, which says when the Management account root may be used, what to do with it, and what
-    watches its use; and `scp-battery.md`, the probe battery run whenever a policy is attached or amended —
-    the two distinguishable outcomes of each probe, so a deny is *measured* rather than assumed.
+    watches its use; `scp-battery.md`, the probe battery run whenever a policy is attached or amended —
+    the two distinguishable outcomes of each probe, so a deny is *measured* rather than assumed;
+    `terraform-changes.md`, the two-commit tag order for a Terraform change made by hand, and which commits
+    are blocked; and `vpn-keys.md`, every VPN key event — loss is recovery from the `[P]` secret, never
+    rotation.
   - `docs/plan/architecture.md`, `docs/plan/conventions.md`, `docs/plan/integrations.md` (the `INT-nn` rows),
     `docs/plan/cost-model.md`, `docs/plan/open-questions.md`, `docs/plan/lessons.md`,
     `docs/plan/institutional-delta.md`, `docs/plan/history.md`.
@@ -37,11 +40,14 @@ Blueprint for using AWS as a Data Science infrastructure provider.
 - `terraform-live/` — the deployed tree: **one folder per controlled account, sliced into independently
   applied units**, each slice carrying a `[P]`/`[D]`/`[E]` layer. `terraform-live/README.md` explains how it
   is organised and what is in it today; the authoritative slice-by-slice layout is `docs/plan/conventions.md` §6,
-  so the two cannot drift. Two things already live here: the five `bootstrap/` slices of Stage 2, and
-  `identity/org-policies/`, which holds the ten organization policy documents (SCP, RCP, tag, declarative
-  EC2) with `POLICIES.md` indexing every statement and its reason.
+  so the two cannot drift. What lives here today: the five `bootstrap/` slices and the two `identity/`
+  slices of Stage 2 — `sso/`, the seven permission sets and their assignments, and `org-policies/`, the ten
+  organization policy documents (SCP, RCP, tag, declarative EC2) with `POLICIES.md` indexing every statement
+  and its reason — Stage 3's network in the three VPC accounts (`foundation/` `[P]`; `egress/` and `probes/`
+  `[E]`, destroyed between sessions), and Stage 4's `sandbox/vpn/`, the tree's first `[D]` slice.
 - `terraform-modules/` — the reusable modules, consumed **by git tag, never by branch**. `terraform-live/`
-  composes; it does not define.
+  composes; it does not define. The first six arrived with Stages 3-4: `vpc`, `vpc-egress`, `s3-bucket`,
+  `kms-key`, `iam-role`, `wireguard`.
 - `.pre-commit-config.yaml` and `.tflint.hcl` — the repository's Terraform gates (Stage 2 step 6):
   `terraform fmt`, `terraform validate`, `tflint` and `checkov` as a *required* check, since a policy gate
   that can be skipped is a policy suggestion.
@@ -73,6 +79,10 @@ Blueprint for using AWS as a Data Science infrastructure provider.
   document and the index that explains it: it fails when a statement in `policies/` has no row in
   `POLICIES.md`, or a row no statement. **It lived in `terraform-live/identity/org-policies/` until
   2026-08-16** — a gate suite split across two folders is one nobody can enumerate by looking.
+  `check-tfvars-shape.py` is the eighth (Stage 4): the WireGuard peers roster is the one *tracked* tfvars,
+  and a WireGuard private key is bare base64 that no scanner can tell from the public halves the roster
+  commits on purpose — so the gate checks **structure** instead of content: only allowlisted tfvars may be
+  tracked, the roster assigns nothing but public halves, and a `host-key.auto.tfvars` fails by name.
 - `Makefile` — how those checks are run: `make check` offline, `make check-ou` with an SSO session. The same
   scripts sit behind the `pre-commit` hooks, so the commit gate and the target cannot disagree.
   `make` itself is a convenience, not a dependency — every target is a direct call to scripts
@@ -81,10 +91,11 @@ Blueprint for using AWS as a Data Science infrastructure provider.
   no CI yet** — GitLab is Stage 7 — and Stage 8 adds a third caller rather than a rewrite.
   It also carries **D11's lifecycle** since Stage 2 step 8: `make slices` prints which slice is `[P]`,
   `[D]` or `[E]`; `make up ENV=<account-folder>` applies the ephemeral ones and starts the dormant ones;
-  `make down ENV=…` reverses it; `make status` says what is up and what it burns per hour. **All four are
-  honest no-ops today** — every slice on disk is `[P]` — and they were written before the first `[E]` slice
-  (Stage 3's `egress/`) rather than after it, so the first teardown that matters meets a `make down` that
-  already refuses what it must: a `[P]` slice, a missing `ENV`, `production/pki/` (D36) and `bootstrap/`,
+  `make down ENV=…` reverses it; `make status` says what is up and what it burns per hour. **No longer
+  no-ops: Stage 3 exercised the machinery twice** — the three `egress/` `[E]` slices built, measured and
+  torn down to USD 0.0000/h, with `foundation/` re-planning byte-identical and every `[E]` id new on the
+  second `up` — and Stage 4's `sandbox/vpn/` is the first `[D]` row, stopped by `make down` rather than
+  destroyed. The refusals stand: a `[P]` slice, a missing `ENV`, `production/pki/` (D36) and `bootstrap/`,
   which holds its own state.
 - `pyproject.toml`, `.python-version`, `uv.lock` — **every script in this repository but two is Python 3,
   run through uv** (2026-08-15; they began as shell). The scripts keep their paths and carry the shebang
@@ -98,9 +109,6 @@ Blueprint for using AWS as a Data Science infrastructure provider.
   accounts no profile reaches — stay shell on purpose: standalone single files, needing no
   environment, writing `aws/output/cloudshell/`. `ruff` (dev-only) lints and formats the tree
   through `pre-commit`. A fresh clone needs no setup step: the first script invocation
-  bootstraps everything - `uv run` fetches the pinned interpreter if it is absent, creates
-  `.venv/` and installs the packages - so `uv sync` exists only as a way to do the same
-  thing ahead of time. A fresh clone needs no setup step: the first script invocation
   bootstraps everything - `uv run` fetches the pinned interpreter if it is absent, creates
   `.venv/` and installs the packages - so `uv sync` exists only as a way to do the same
   thing ahead of time.

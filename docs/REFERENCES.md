@@ -107,8 +107,12 @@
   external-access analyzer analyzes **only its own Region** while unused access does not:
   <https://docs.aws.amazon.com/IAM/latest/UserGuide/what-is-access-analyzer.html>. The billing dimensions are
   named on the same page — per principal-month for unused access, **per resource-month for internal access**,
-  per request for custom policy checks — but the numbers are not; measure them (Lesson 6). Creating the
-  internal analyzer:
+  per request for custom policy checks — **and the numbers are measured since 2026-08-17**
+  (`docs/PRICING.md` §6: internal USD 9.00/resource-month, unused 0.20, checks 0.002; the pricing page,
+  <https://aws.amazon.com/iam/access-analyzer/pricing/>, adds that internal/unused analyzers are charged
+  **once during setup and then monthly on the first**, not prorated). Creating the internal analyzer — org
+  zone of trust from the delegated administrator, **only one org-level internal analyzer per
+  organization**, resources by exact ARN (S3 bucket ARNs only, no prefixes):
   <https://docs.aws.amazon.com/IAM/latest/UserGuide/access-analyzer-create-internal.html>.
 
 - IAM root user (including centralized root access management for member accounts): <https://docs.aws.amazon.com/IAM/latest/UserGuide/id_root-user.html>.
@@ -250,6 +254,11 @@
 - Lake Formation cross-account data sharing best practices and considerations: <https://docs.aws.amazon.com/lake-formation/latest/dg/cross-account-notes.html>.
 
 - Lake Formation hybrid access mode (the documented exception in D13): <https://docs.aws.amazon.com/lake-formation/latest/dg/hybrid-access-mode.html>.
+
+- **Lake Formation data filtering and cell-level security** — data cells filters (a per-table object:
+  column include/exclude list + a PartiQL row expression), granted with `SELECT` and applying to reads
+  only; the mechanism behind Stage 11 step 2:
+  <https://docs.aws.amazon.com/lake-formation/latest/dg/data-filtering.html>.
 
 - Amazon S3 Bucket Keys (KMS cost reduction): <https://docs.aws.amazon.com/AmazonS3/latest/userguide/bucket-key.html>.
 
@@ -393,7 +402,19 @@
 
 - Amazon Macie endpoints by Region (used to check `sa-east-1` availability): <https://docs.aws.amazon.com/general/latest/gr/macie.html>.
 
+- **Managing Macie accounts with AWS Organizations, and the integration steps** — the two facts Stage 11
+  step 1 is written against: designating the delegated administrator *enables Macie in that account*, and
+  auto-enable covers **new** accounts only — "Turning on this setting doesn't affect existing accounts in
+  your organization", which must be added one by one (`create-member` takes the account's e-mail; the
+  console flow does not): <https://docs.aws.amazon.com/macie/latest/user/macie-organizations.html> and
+  <https://docs.aws.amazon.com/macie/latest/user/accounts-mgmt-ao-integrate.html>.
+
 - Amazon GuardDuty: <https://docs.aws.amazon.com/guardduty/latest/ug/what-is-guardduty.html>.
+
+- **GuardDuty S3 Protection** — monitors CloudTrail data events for S3 through GuardDuty's own stream
+  ("you don't need to explicitly enable or configure S3 data event logging in AWS CloudTrail"), with its
+  own 30-day free trial on first enablement — the fact that keeps Stage 11 steps 4 and 5 complementary
+  rather than redundant: <https://docs.aws.amazon.com/guardduty/latest/ug/s3-protection.html>.
 
 - AWS Security Hub: <https://docs.aws.amazon.com/securityhub/latest/userguide/what-is-securityhub.html>.
 
@@ -408,6 +429,17 @@
 - AWS Well-Architected Machine Learning Lens (the AWS best-practice checklist for ML environments): <https://docs.aws.amazon.com/wellarchitected/latest/machine-learning-lens/machine-learning-lens.html>.
 
 - CloudTrail log file validation (tamper-evident audit trail): <https://docs.aws.amazon.com/awscloudtrail/latest/userguide/cloudtrail-log-file-validation-intro.html>.
+
+- **Logging CloudTrail data events** — the advanced event selectors Stage 11 step 5 scopes its trails
+  with (`resources.type = AWS::S3::Object`, `resources.ARN` starts-with, `readOnly`), and the statement
+  that a trail logging *only* data events carries no management copy:
+  <https://docs.aws.amazon.com/awscloudtrail/latest/userguide/logging-data-events-with-cloudtrail.html>.
+
+- **AWS service events delivered via CloudTrail to EventBridge** — the rule-state table Stage 11's alarm
+  design rests on: **data events are matched by rules in the default `ENABLED` state** once a trail logs
+  them (the read-only restriction applies to *management* events, which need
+  `ENABLED_WITH_ALL_CLOUDTRAIL_MANAGEMENT_EVENTS`):
+  <https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-service-event-cloudtrail.html>.
 
 - S3 Object Lock — **governance vs. compliance mode**, the distinction that decides whether an administrator of the Log Archive account can bypass it (`s3:BypassGovernanceRetention`): <https://docs.aws.amazon.com/AmazonS3/latest/userguide/object-lock.html>.
 
