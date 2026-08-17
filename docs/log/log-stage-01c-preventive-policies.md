@@ -9,6 +9,12 @@ Stage: [`docs/plan/stages/stage-01c-preventive-policies.md`](../plan/stages/stag
 Claude on 2026-08-13 at the user's explicit request**, from the two snapshots the same session produced.
 Everything after them is the user's, as usual.*
 
+*One mechanical substitution was made on **2026-08-17**, by Claude at the user's request, and is named
+here rather than at each line: **account ids → the account's name**, in the policy ARNs recorded below and
+in the one `aws:PrincipalArn` condition that names a role — this repository keeps no account id in a
+tracked file ([`aws/INDEX.md`](../../aws/INDEX.md) rule 1) and an ARN carries one. Nothing else was
+edited: the policy ids, the organization and root ids and every policy document arrived as they read.*
+
 ---
 
 - Started sitting A with step 7.0, the preflight. Nothing has been attached and nothing has been
@@ -289,7 +295,7 @@ aws s3control put-public-access-block --account-id "$(aws sts get-caller-identit
 }
 ```
 
-- I can see a new policy listed with name `awsds-canary-scp-perimeter-inverted`, with ARN `arn:aws:organizations::885931358757:policy/o-4z1leiit0c/service_control_policy/p-539eaz19`.
+- I can see a new policy listed with name `awsds-canary-scp-perimeter-inverted`, with ARN `arn:aws:organizations::<Management Account>:policy/o-4z1leiit0c/service_control_policy/p-539eaz19`.
 
 - On the policy, clicked attach, selected org Policy Test (ou-zhj6-ebwso7wp). The console new lists that policy attached to Policy Test OU.
 
@@ -393,7 +399,7 @@ ecr:InitiateLayerUpload  AccessDeniedException ... explicit deny in a service co
 }
 ```
 
-- Policy `awsds-org-scp-baseline` created with ARN `arn:aws:organizations::885931358757:policy/o-4z1leiit0c/service_control_policy/p-1fp032g8`. Attached to root account `r-zhj6`.
+- Policy `awsds-org-scp-baseline` created with ARN `arn:aws:organizations::<Management Account>:policy/o-4z1leiit0c/service_control_policy/p-1fp032g8`. Attached to root account `r-zhj6`.
 
 - **7.3 phase 2 — `awsds-org-scp-baseline` (`p-1fp032g8`) attached to the root `r-zhj6`.** Probes as
   `awsds-policy-canary`. Five denied, each naming `p-1fp032g8`: `iam:CreateUser`,
@@ -475,7 +481,7 @@ ecr:InitiateLayerUpload  AccessDeniedException ... explicit deny in a service co
 }
 ```
 
-- Policy awsds-org-scp-perimeter created with ARN `arn:aws:organizations::885931358757:policy/o-4z1leiit0c/service_control_policy/p-4vs49ztw`. Policy was attached to root account `r-zhj6`.
+- Policy awsds-org-scp-perimeter created with ARN `arn:aws:organizations::<Management Account>:policy/o-4z1leiit0c/service_control_policy/p-4vs49ztw`. Policy was attached to root account `r-zhj6`.
 
 - - **7.3 phase 3 / 7.5 complete — `awsds-org-scp-perimeter` (`p-4vs49ztw`) attached to the root.** The
   root now carries `FullAWSAccess`, `p-1fp032g8` and `p-4vs49ztw`. The direction phase 1 could not test:
@@ -568,7 +574,7 @@ awsds-org-scp-ou-identity.json
 }
 ```
 
-- policy `awsds-org-scp-ou-workloads` created with ARN `arn:aws:organizations::885931358757:policy/o-4z1leiit0c/service_control_policy/p-83t232f4`. Policy attached to `Policy Test` OU.
+- policy `awsds-org-scp-ou-workloads` created with ARN `arn:aws:organizations::<Management Account>:policy/o-4z1leiit0c/service_control_policy/p-83t232f4`. Policy attached to `Policy Test` OU.
 
 - Create policy:
   - policy name: `awsds-org-scp-ou-interactive`
@@ -592,7 +598,7 @@ awsds-org-scp-ou-identity.json
 }
 ```
 
-- Policy `awsds-org-scp-ou-interactive` created with ARN `arn:aws:organizations::885931358757:policy/o-4z1leiit0c/service_control_policy/p-tgda7n58`. Policy attached to `Policy Test` OU.
+- Policy `awsds-org-scp-ou-interactive` created with ARN `arn:aws:organizations::<Management Account>:policy/o-4z1leiit0c/service_control_policy/p-tgda7n58`. Policy attached to `Policy Test` OU.
 
 
 - Create policy:
@@ -629,7 +635,7 @@ awsds-org-scp-ou-identity.json
 }
 ```
 
-- Policy `awsds-org-scp-ou-identity` created with ARN `arn:aws:organizations::885931358757:policy/o-4z1leiit0c/service_control_policy/p-mmfc17ac`. Policy attached to `Policy Test` OU.
+- Policy `awsds-org-scp-ou-identity` created with ARN `arn:aws:organizations::<Management Account>:policy/o-4z1leiit0c/service_control_policy/p-mmfc17ac`. Policy attached to `Policy Test` OU.
 
 - Create policy:
   - policy name: `awsds-org-scp-ou-data`
@@ -673,7 +679,7 @@ awsds-org-scp-ou-identity.json
       "Resource": "*",
       "Condition": {
         "ArnNotEquals": {
-          "aws:PrincipalArn": "arn:aws:iam::782981553460:role/awsds-data-catalog-maintenance"
+          "aws:PrincipalArn": "arn:aws:iam::<Data Governance Account>:role/awsds-data-catalog-maintenance"
         }
       }
     },
@@ -690,7 +696,7 @@ awsds-org-scp-ou-identity.json
 }
 ```
 
-- policy `awsds-org-scp-ou-data` created with ARN `arn:aws:organizations::885931358757:policy/o-4z1leiit0c/service_control_policy/p-gl01bcdm`. Attached to `Policy Test` OU.
+- policy `awsds-org-scp-ou-data` created with ARN `arn:aws:organizations::<Management Account>:policy/o-4z1leiit0c/service_control_policy/p-gl01bcdm`. Attached to `Policy Test` OU.
 
 - **7.6 — the four policies created (CT Admin @ Management, console) and all four attached to
   `Policy Test` at once**, deliberately, for the battery's phase 4. None has moved to its target OU yet:
@@ -852,7 +858,7 @@ aws ec2 run-instances --dry-run --image-id <AMI> --instance-type t3.micro --subn
 - Nothing was created anywhere: spot requests, fleets, store-image tasks and both flavours of export task
   all read zero afterwards.
 
-- Login as CT Admin -> Management Account. AWS Control Tower -> Controls -> Control Catalog. Searched for `CT.MULTISERVICE.PV.1` (Deny access to AWS based on the requested AWS Region for an organizational unit). Selected -> Enable -> Policy Test  -> Regions to allow access = `us-west-2`. Generated a policy named `aws-guardrails-njKkvb` with ARN `arn:aws:organizations::885931358757:policy/o-4z1leiit0c/service_control_policy/p-q3y11w1n` attached to `Policy Test` OU.
+- Login as CT Admin -> Management Account. AWS Control Tower -> Controls -> Control Catalog. Searched for `CT.MULTISERVICE.PV.1` (Deny access to AWS based on the requested AWS Region for an organizational unit). Selected -> Enable -> Policy Test  -> Regions to allow access = `us-west-2`. Generated a policy named `aws-guardrails-njKkvb` with ARN `arn:aws:organizations::<Management Account>:policy/o-4z1leiit0c/service_control_policy/p-q3y11w1n` attached to `Policy Test` OU.
 
 - **Probes after enabling `CT.MULTISERVICE.PV.1` on `Policy Test`** (`./aws/probes/scp-battery.sh --phase region`):
   `us-east-1` denied naming `p-q3y11w1n`, `us-west-2` still `DryRunOperation`, and the four global floors
@@ -1039,7 +1045,7 @@ Nothing attached yet. This entry is preparation and the measurement of the prior
   `organizations describe-effective-policy --policy-type DECLARATIVE_POLICY_EC2` answers **`{}`** with the
   policy type enabled and nothing attached, rather than raising `EffectivePolicyNotFoundException`.
 
-- Login at AWS Console with CT Admin -> Management Account -> AWSAdministratorAccess. AWS Organizations -> Resource control policies -> Create new. Policy name = awsds-org-rcp-perimeter, Description = "Stage 1c - Step 7.8 - deny access to S3, STS, KMS, SQS, Secrets Manager, DynamoDB and ECR from principals outside the organization", attached to Policy Test. `awsds-org-rcp-perimeter` created with ARN `arn:aws:organizations::885931358757:policy/o-4z1leiit0c/resource_control_policy/p-023nwzshh9`. Used the JSON:
+- Login at AWS Console with CT Admin -> Management Account -> AWSAdministratorAccess. AWS Organizations -> Resource control policies -> Create new. Policy name = awsds-org-rcp-perimeter, Description = "Stage 1c - Step 7.8 - deny access to S3, STS, KMS, SQS, Secrets Manager, DynamoDB and ECR from principals outside the organization", attached to Policy Test. `awsds-org-rcp-perimeter` created with ARN `arn:aws:organizations::<Management Account>:policy/o-4z1leiit0c/resource_control_policy/p-023nwzshh9`. Used the JSON:
 
 ```JSON
 {
@@ -1128,7 +1134,7 @@ Nothing attached yet. This entry is preparation and the measurement of the prior
 
 - Detached `awsds-org-rcp-perimeter` policy from `Policy Test`. Attached to `Root OU`, ID `r-zhj6`.
 
-- AWS Organizations -> Policies -> EC2 Policies. Created `awsds-org-declarative-ec2`, with ARN `arn:aws:organizations::885931358757:policy/o-4z1leiit0c/declarative_policy_ec2/p-71m92mzcap`. Attached to `Root OU`. Used JSON:
+- AWS Organizations -> Policies -> EC2 Policies. Created `awsds-org-declarative-ec2`, with ARN `arn:aws:organizations::<Management Account>:policy/o-4z1leiit0c/declarative_policy_ec2/p-71m92mzcap`. Attached to `Root OU`. Used JSON:
 
 ```JSON
 {
@@ -1169,7 +1175,7 @@ Nothing attached yet. This entry is preparation and the measurement of the prior
 }
 ```
 
-- AWS Organizations -> Policies. Create new service control policy. Policy name = `awsds-org-scp-tag-enforcement` with ARN `arn:aws:organizations::885931358757:policy/o-4z1leiit0c/service_control_policy/p-srfe5l5r`. Attached to `Root OU`.  Used JSON:
+- AWS Organizations -> Policies. Create new service control policy. Policy name = `awsds-org-scp-tag-enforcement` with ARN `arn:aws:organizations::<Management Account>:policy/o-4z1leiit0c/service_control_policy/p-srfe5l5r`. Attached to `Root OU`.  Used JSON:
 
 ```JSON
 {
@@ -1208,7 +1214,7 @@ Nothing attached yet. This entry is preparation and the measurement of the prior
 
 ```
 
-- AWS Organizations -> Policies -> Tag policies -> Create policy. Created policy `awsds-org-tag-policy` with ARN `arn:aws:organizations::885931358757:policy/o-4z1leiit0c/tag_policy/p-95lyaycq7l`. Attached to `Root OU`. Used JSON:
+- AWS Organizations -> Policies -> Tag policies -> Create policy. Created policy `awsds-org-tag-policy` with ARN `arn:aws:organizations::<Management Account>:policy/o-4z1leiit0c/tag_policy/p-95lyaycq7l`. Attached to `Root OU`. Used JSON:
 
 ```JSON
 {

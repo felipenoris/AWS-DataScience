@@ -187,7 +187,9 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   `scripts/tfhygiene/layers.py` + `make up`/`down`/`status`/`slices`. SSM parameter naming: conventions
   §6 (`awsds` is reserved).
 - **Gates, no CI:** `make check` (offline), `make check-ou` (session), `make check-docs` — **red** on
-  pre-Stage-2 prose, outside the commit gate.
+  pre-Stage-2 prose, outside the commit gate. **`check-identifiers.py` joined both 2026-08-17** — no
+  account id or e-mail in a tracked file; redact to `<The Account Name>`/`<that user's role>`, declared
+  once per entry. It does not undo *history*.
 - **Stage 3 DONE 2026-08-16 — applied, measured, torn down; now 0.0000 USD/h** (detail: its Status row).
   `egress_mode=A`; the S3 allow-list — **a NAT does not bypass it**; INT-05 names the gateway endpoints,
   never `egress/` ids. CIDR/`zone_ids`/peers: `scripts/tfhygiene/backend.py`. **Stage 4's (i) is NOT

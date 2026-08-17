@@ -125,6 +125,17 @@ repos:
         pass_filenames: false
         files: ^terraform-live/identity/org-policies/(policies/.*\.json|POLICIES\.md)$
 
+      # 2026-08-17 - no account id and no e-mail address in a tracked file (CLAUDE.md's upkeep
+      # table, aws/INDEX.md rule 1). It carries NO `files` filter on purpose: the rule is about
+      # what reaches git, and restricting it to the paths that leaked last time is how the next
+      # leak arrives through a path nobody listed. Same argument as detect-private-key above -
+      # both guard a mistake that a later commit cannot undo, only a rewritten history can.
+      - id: check-identifiers
+        name: no account id or e-mail address in a tracked file
+        entry: ./scripts/check-identifiers.py
+        language: system
+        pass_filenames: false
+
       - id: checkov
         name: checkov (terraform)
         entry: checkov
