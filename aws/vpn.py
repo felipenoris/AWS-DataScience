@@ -4,7 +4,8 @@
 # secret ([P] anchors - the secret must carry its value-read deny and keep rotation OFF),
 # the handshake log and health alarm, WHICH permission sets carry the control-plane deny of
 # step 8 (read back from Identity Center, never assumed), and the GuardDuty state - detector
-# per account, delegated administrator, and the two paid add-ons that must still be OFF.
+# per account, delegated administrator, and every optional protection plan, which must all
+# read OFF (they arrive ON - Stage 4 step 10.0).
 #
 #   needs:    a live SSO session - the ONLY prerequisite:
 #
@@ -90,9 +91,22 @@ PERSONA_SETS = (
 )
 INFRA_SET = "InfrastructureAccess"
 
-# The two GuardDuty features Stage 11 step 4 decides against a real bill; until then they
-# must read DISABLED (Stage 4 step 10.3).
-DEFERRED_FEATURES = ("S3_DATA_EVENTS", "EBS_MALWARE_PROTECTION")
+# The optional protection plans. Enabling GuardDuty turns on EVERY ONE OF THEM except
+# Runtime Monitoring (documented 2026-08-18, Stage 4 step 10.0), so step 10.3 is a
+# SWITCH-OFF and not an omission, and this check is written against the whole set rather
+# than the two the plan first named. THE CHECK IS NOT DRIVEN BY THIS TUPLE: the report prints
+# every feature the API returns and the check fails on any that reads ENABLED, so a
+# protection plan AWS adds next year is measured on the day it appears instead of staying
+# invisible until somebody remembers to extend a constant (Lesson 23). The names below only
+# fix the report's column order; anything unknown is appended in the API's own order.
+KNOWN_FEATURES = (
+    "S3_DATA_EVENTS",
+    "EKS_AUDIT_LOGS",
+    "EBS_MALWARE_PROTECTION",
+    "RDS_LOGIN_EVENTS",
+    "LAMBDA_NETWORK_LOGS",
+    "RUNTIME_MONITORING",
+)
 
 # --------------------------------------------------------------- the inside of the host (2a)
 #
@@ -230,7 +244,7 @@ def main(argv: list) -> int:
         errors.entries.append(f"[{profile}] aws {what}\n    {head2(err)}")
 
     # ------------------------------------------------------------------- GuardDuty, per account
-    gd_rows: list = []  # (profile, detector id or '-', status, deferred-feature summary)
+    gd_rows: list = []  # (profile, detector id or '-', status, protection-plan summary)
     for p in live:
         cli = cli_for(p)
         note(f"measuring {p} ...")
@@ -261,8 +275,11 @@ def main(argv: list) -> int:
         doc = json.loads(r.stdout or "{}")
         status = doc.get("Status", "?")
         feat = {f.get("Name"): f.get("Status") for f in doc.get("Features", [])}
-        deferred = " ".join(f"{n}={feat.get(n, 'absent')}" for n in DEFERRED_FEATURES)
-        gd_rows.append((p, det, status, deferred))
+        ordered = [n for n in KNOWN_FEATURES if n in feat] + [
+            n for n in feat if n not in KNOWN_FEATURES
+        ]
+        plans = " ".join(f"{n}={feat[n]}" for n in ordered) or "(no features reported)"
+        gd_rows.append((p, det, status, plans))
 
     # ------------------------------------------------------- the VPN home: host, EIP, SG, alarm
     home_live = VPN_HOME_PROFILE in live
@@ -696,7 +713,7 @@ def main(argv: list) -> int:
                 "by decision (open question 17): the recovery path stays off-VPN",
             )
 
-    # VP-8: GuardDuty coverage, and the two deferred features still off (step 10).
+    # VP-8: GuardDuty coverage, and every optional protection plan still off (step 10.3).
     detectors = [r for r in gd_rows if r[1] != "-" and r[2] not in ("(call failed)",)]
     if not detectors:
         checks.note(
@@ -705,7 +722,7 @@ def main(argv: list) -> int:
             "none in any measured account - expected before Stage 4 step 10.",
         )
     else:
-        for p, det, status, deferred in gd_rows:
+        for p, det, status, plans in gd_rows:
             if det == "-" and status == "no detector":
                 checks.fail(
                     "VP-8",
@@ -717,16 +734,22 @@ def main(argv: list) -> int:
             elif det != "-" and status != "ENABLED":
                 checks.fail("VP-8", f"GuardDuty in {p}", f"detector {det} status {status}")
             elif det != "-":
-                bad_feat = [n for n in DEFERRED_FEATURES if f"{n}=ENABLED" in deferred]
+                bad_feat = [
+                    tok.split("=", 1)[0] for tok in plans.split() if tok.endswith("=ENABLED")
+                ]
                 if bad_feat:
                     checks.fail(
                         "VP-8",
-                        f"GuardDuty features in {p}",
-                        f"{' '.join(bad_feat)} ENABLED - S3/Malware Protection are decided "
-                        "in Stage 11 step 4 against a real bill, not before (step 10.3).",
+                        f"GuardDuty plans in {p}",
+                        f"{' '.join(bad_feat)} ENABLED - every optional plan arrives ON and "
+                        "step 10.3 switches it off; the paid ones are decided in Stage 11 "
+                        "step 4 against a real bill, not before. In a MEMBER account the fix "
+                        "is UpdateMemberDetectors from Audit; in AUDIT'S OWN detector "
+                        "UpdateDetector is denied by DenyGuardDutyTampering - that is "
+                        "decision 5, not a console click.",
                     )
                 else:
-                    checks.ok("VP-8", f"GuardDuty in {p}", "ENABLED, deferred add-ons off")
+                    checks.ok("VP-8", f"GuardDuty in {p}", "ENABLED, foundational detection only")
 
     # VP-9: the [P] host-key secret (step 2.2a; decision 4, third review): present once the
     # stage runs, the value-read deny attached, and rotation OFF - the keys runbook's one
@@ -929,7 +952,7 @@ proven by the stage's deny pair, not by this file.
         # ==============================================================================
         rep.h1("6. GuardDuty, org-wide")
         rep.tabulate(
-            ["PROFILE\tDETECTOR\tSTATUS\tDEFERRED ADD-ONS (must be DISABLED)"]
+            ["PROFILE\tDETECTOR\tSTATUS\tPROTECTION PLANS (all must be DISABLED)"]
             + [f"{p}\t{d}\t{s}\t{f}" for p, d, s, f in gd_rows]
         )
         rep.line()
@@ -957,7 +980,11 @@ What the checks are, and where each comes from:
   VP-6  the health alarm exists (step 7)
   VP-7  the persona sets carry the step 8 deny together, or not at all (8.2);
         InfrastructureAccess must NOT carry it (open question 17, option a)
-  VP-8  GuardDuty enabled in every measured account, deferred add-ons off (step 10)
+  VP-8  GuardDuty enabled in every measured account, EVERY optional protection
+        plan off (steps 10.0/10.3). They arrive ENABLED, so this check reads red
+        until 10.3 finishes - and if the trial-window option is ever taken
+        instead (decision 5b), FLIP THIS CHECK rather than living with the red:
+        a decision left only in prose is measured by nobody (the VP-7 precedent)
   VP-9  the [P] host-key secret carries its value-read deny and rotation is OFF
         (step 2.2a; decision 4, third review - the keys runbook's one rule)""")
 

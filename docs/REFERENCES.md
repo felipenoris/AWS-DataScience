@@ -515,6 +515,39 @@
 
 - **Setting GuardDuty organization auto-enable preferences** — `ALL` covers "all the accounts in an organization", including "those accounts that may have been suspended or removed" and "the delegated GuardDuty administrator account", with up to 24 h to propagate. The reading that corrected Stage 4 step 10.2's "existing members need the explicit add"; what remains for verification (v) is Management's own coverage: <https://docs.aws.amazon.com/guardduty/latest/ug/set-guardduty-auto-enable-preferences.html>.
 
+- **Designating a delegated GuardDuty administrator account** — the one-line CLI form
+  (`enable-organization-admin-account --admin-account-id … --region us-west-2`), and the two properties
+  that shape Stage 4 step 10.1: the designation is **per-Region**, and the *same* account must be the
+  administrator in every Region where GuardDuty is enabled:
+  <https://docs.aws.amazon.com/guardduty/latest/ug/delegated-admin-designate.html>.
+
+- **Permissions required to designate a delegated GuardDuty administrator account** — the management
+  account needs `guardduty:EnableOrganizationAdminAccount` plus the Organizations reads, and the only
+  principal the service creates is the **service-linked role `AWSServiceRoleForAmazonGuardDuty`**. Read
+  for Stage 4 step 10.5: it settles that `POLICIES.md`'s "carve out a named administration role"
+  alternative has no candidate among GuardDuty's own creations:
+  <https://docs.aws.amazon.com/guardduty/latest/ug/organizations_permissions.html>.
+
+- **Adding members to the GuardDuty organization** — "There is an exception to the organization
+  management account. Before the management account gets added as a GuardDuty member, it must have
+  GuardDuty enabled." **This answers the first half of Stage 4 verification (v) by documentation**:
+  auto-enable `ALL` does not reach Management on its own, so coverage there is a deliberate act (step
+  10.2a): <https://docs.aws.amazon.com/guardduty/latest/ug/add-member-accounts-guardduty-organization.html>.
+
+- **Monitoring GuardDuty usage and estimating costs** — the 30-day free trial is per account and covers
+  every protection plan, and usage is published **hourly to CloudWatch** under `AWS/GuardDuty`
+  (`AnalyzedCount`/`AnalyzedBytes` per data source). Read for Stage 4 step 10's Cost note: the trial
+  *could* price S3 Protection without paying for it, and would do so on an estate that is empty until
+  Stage 5 — which is Lesson 7 rather than a measurement:
+  <https://docs.aws.amazon.com/guardduty/latest/ug/monitoring_costs.html>.
+
+- **Amazon GuardDuty FAQs** — "GuardDuty Runtime Monitoring is the only protection plan that is not
+  enabled by default when you turn on GuardDuty for the first time", with the same "turned on by
+  default" answer given for S3 Protection, EKS Protection and Malware Protection. **The reading that
+  inverted Stage 4 step 10.3**: the paid add-ons are not left off, they arrive on and must be switched
+  off — and the switch is denied to Audit by `DenyGuardDutyTampering` (step 10.0, decision 5):
+  <https://aws.amazon.com/guardduty/faqs/>.
+
 - **How EC2 instance stop and start works** — Elastic IP addresses belong to the network interface, which is listed under "resources that persist" across a stop/start (and the address bills while the instance is stopped). Answers Stage 4 verification (ii) by documentation: "re-associate on start" is unnecessary code: <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/how-ec2-instance-stop-start-works.html>.
 
 - **AWS: Denies access to AWS based on the source IP** — the deny-by-IP example, with the note that "the policy does not deny requests made by AWS services using forward access sessions, as the original requester's IP address is preserved". That re-scopes Stage 4 step 8.1's `aws:ViaAWSService` carve-out: FAS flows survive the bare `NotIpAddress`, and the carve-out defends the on-behalf calls that are *not* FAS: <https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_policies_examples_aws_deny-ip.html>.
