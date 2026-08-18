@@ -929,7 +929,11 @@ are what close it** — until then the deployed content is the 2026-08-13 origin
   the destination is outside the organization. EMR, EMR Serverless and Batch are uncovered because nothing
   in this design uses them. Both are now stated in [`POLICIES.md`](../../../terraform-live/identity/org-policies/POLICIES.md),
   and the Athena path is written into [Stage 11](stage-11-dlp.md) as a detection target. **A hole that is
-  documented is a decision; the same hole undocumented is the finding of a later audit.**
+  documented is a decision; the same hole undocumented is the finding of a later audit.** *(The Athena
+  half was overtaken on 2026-08-18: Stage 5 decision 4 chose Glue automatic compaction over Athena
+  `OPTIMIZE`/`VACUUM`, so the allowance lost its reason — the amendment closing it is owed at Stage 5
+  step 4.3, through phase 4b. This bullet stays as written because it records why the absence was
+  deliberate at attachment; `POLICIES.md` carries the current reading.)*
 
 **UPLOADED AND EXERCISED 2026-08-13, in each OU's own account** (phase 4b — the canary cannot reach these
 OUs). `DenyUserCompute` now carries **18 actions** in both documents, and the read-back from Organizations

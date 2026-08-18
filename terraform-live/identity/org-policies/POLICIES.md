@@ -123,11 +123,15 @@ supposed to *run* there. This is the one OU where a `Create*` wildcard is the co
 
 **What `DenyUserCompute` does not cover here, both by decision:**
 
-- **Athena.** `athena:StartQueryExecution` is allowed, because Stage 5's Iceberg maintenance — `OPTIMIZE`
-  (compaction) and `VACUUM` (snapshot expiry) — runs through it. So a full-lake read path exists inside the
-  account that "runs nothing", with results written to S3, and the perimeter document only stops that write
-  when the destination is outside the organization. **That path is [Stage 11](../../../docs/plan/stages/stage-11-dlp.md)'s
-  to detect, and it is named here so it is not rediscovered as a surprise.**
+- **Athena.** `athena:StartQueryExecution` is allowed **in the attached document today — but its
+  justification was withdrawn on 2026-08-18**: it was allowed because Stage 5's Iceberg maintenance was
+  expected to run `OPTIMIZE`/`VACUUM` through Athena, and Stage 5 decision 4 chose **Glue automatic
+  compaction** instead, which needs no Athena at all. The amendment adding the action to
+  `DenyUserCompute` is owed during Stage 5 (its step 4.3 carries the sequencing — the sample-table load
+  may need Athena first), through battery phase 4b, and this row is rewritten when it lands. Until then
+  the full-lake read path stands: results written to S3, stopped by the perimeter document only when the
+  destination is outside the organization — **[Stage 11](../../../docs/plan/stages/stage-11-dlp.md)'s to
+  detect, and its `awsds-data-athena` rule is already written conditional on which way this row reads.**
 - **EMR, EMR Serverless and AWS Batch.** Not denied, because nothing in this design uses them anywhere; an
   action nobody can explain is one nobody re-reads. **Revision trigger:** the first appearance of any of
   them in any account.

@@ -123,6 +123,83 @@ estimated burn `USD 0.0042/h`.
 - `CLAUDE.md` → Claude LOG: the Stage 5 opening bullet.
 - `make check`: OK.
 
+## 2026-08-18 — Decision 4 taken: Iceberg maintenance is Glue automatic compaction, and the Athena closure it unlocks is now owed
+
+*Provenance: **the decision is the user's**, taken in chat before pass 1; the entry and the propagation
+are Claude's, written on the user's request in the same sitting. **No AWS call** — the SCP amendment this
+decision unlocks is NOT applied here; it is owed to battery phase 4b during this stage.*
+
+- **The path**: Glue automatic compaction — the table-optimizer runs the D27 carve-out already names —
+  under `awsds-data-catalog-maintenance`. Athena scheduled `OPTIMIZE`/`VACUUM` declined: it would keep a
+  scheduler and a standing query path alive in the one account whose policy set says nothing runs there.
+  Cost row added to the stage table: USD 0.44/DPU-h, measured (`docs/PRICING.md` §5); config free at rest.
+- **The consequence, accepted with the choice (4.3)**: `athena:StartQueryExecution` loses its reason to
+  stay out of `DenyUserCompute`, so the amendment is owed — through battery phase 4b, never straight to
+  the OU — **sequenced late in the stage**: the amendment binds every principal in the account,
+  `InfrastructureAccess` included, so if the 4.1 sample table is created or loaded through Athena in this
+  account, that comes first. Until it lands, the full-lake read path stays open and stays declared.
+- **Propagated, four files**: the stage file (decision row 4, steps 4.2/4.3 marked decided, the cost
+  row); `POLICIES.md`'s "not covered" Athena bullet (the allowance stands in the attached document today,
+  its justification withdrawn — rewritten again when the amendment lands); Stage 1c's twin bullet
+  (annotated, not rewritten — it records why the absence was deliberate at attachment);
+  `institutional-delta.md`'s Iceberg-operations row (the lab column now names the chosen path).
+  **[Stage 11](../plan/stages/stage-11-dlp.md) needed nothing**: its `awsds-data-athena` rule was already
+  written conditional on this decision's outcome, reading `POLICIES.md` for which way it went.
+
+## 2026-08-18 — Decisions 1-3 taken: the ontology renamed and extended, and `docs/GOVERNANCE.md` created as its one copy
+
+*Provenance: **the decisions and the governance model are the user's**, given in chat as rules plus a
+drafted `GOVERNANCE.md`; Claude authored the file from that draft on request — translated to English per
+the repository language rule — filled its gaps from the plan, and propagated. **No AWS call.***
+
+- **Decision 1 — the classification scheme**: values `public / internal / restricted / personal`; owner
+  the governance manager; the default grant is read-only over `classification ∈ {public, internal}`,
+  everything else by explicit enumerated grant. **The `raw` database default is `internal` — fail-open,
+  the user's call against the fail-closed recommendation**, so ETL development is not gated per dataset;
+  the consequence is named in `GOVERNANCE.md` (an unclassified arrival is readable until reclassified;
+  Macie is the Stage 11 backstop). `curated` carries no database default — an untagged table there
+  matches no TBAC expression: fail-closed by absence.
+- **Decision 2 — reframed by the user**: CMK granularity belongs to a new **`security-zone`** dimension,
+  decoupled from business segregation. One zone, `zn-lab`, the default everywhere **including the
+  drop-box** → one lake CMK, `alias/awsds-data-zn-lab`. The renames arrived with it: `zone` →
+  **`layer`** (gaining a `dropbox` value), `domain` → **`businessunit`** (reserved at N=1).
+- **Decision 3 — the drop-box container**: own bucket `awsds-data-dropbox`, **sharing the `zn-lab`
+  CMK** — the deviation from the own-CMK recommendation follows from the one-zone model. Its cost is
+  named in `GOVERNANCE.md` §`security-zone`: INT-10's key grants land on the zone key, so the KMS layer
+  separates zones, not buckets — the drop-box's isolation rests on the S3 statements and LF alone.
+  Revision trigger: the first dataset whose blast radius argues for its own zone.
+- **Repository, in the same sitting**: `docs/GOVERNANCE.md` created — the persistence table's two gaps
+  answered from the plan (`awsds-data-logs` receives Stage 11's data-event trails; `awsds-data-artifacts`
+  has **no writer wired yet** — its first writer is named by Stage 8/9, and Stage 9's *model* artifacts
+  live in Production, not there). `docs/AWS_STATE.md` gained the **Lake Formation grant register**,
+  empty, one row per applied triple, written in the same sitting as the grant. Stage file decision rows
+  1-3 marked DECIDED with pointers; step 2 and 6.1 point at the ontology's one copy; the KMS cost row
+  settled at 3 CMKs (~USD 3/month). `CLAUDE.md` gained the routing row. `make check` OK.
+
+*Amended in the same sitting, by the user: **hyphens replace underscores in every LF-Tag key and
+value** — `security-zone`, `zn-lab` — so tag values and key aliases share one pattern
+(`alias/awsds-data-zn-lab` now carries the value verbatim). Applied across the five files this entry
+touched; the names above already read in the amended form.*
+
+## 2026-08-18 — Decision 5 taken: the recommendation adopted whole — admins, account grants, TBAC
+
+*Provenance: **the decision is the user's** — the recommendation accepted as stated, in chat; the entry
+is Claude's on request. **No AWS call.***
+
+- **Admins (5.3): `InfrastructureAccess` only.** The governance manager is never an admin — an approver
+  who can already grant everything exercises no control (Lesson 9, D31's argument) — and receives
+  **specific grants** instead (LF-Tag association, per `GOVERNANCE.md`), each row in the grant register.
+  Named revision trigger: Stage 6, when the DataZone fulfilment principal joins the permission plane
+  (D26).
+- **Consumers (7.2): the two named accounts** — `Sandbox Account 1` and `Development`. The OU grant buys
+  nothing at N=1 and is revisited at Stage 14; per-account is INT-11's fallback shape anyway, and the
+  enumerated form is what the register records.
+- **Method (6.1): LF-TBAC as the default**, exactly as `GOVERNANCE.md` writes it — the
+  `classification ∈ {public, internal}` read-only default expression; `restricted`/`personal` only as
+  enumerated TBAC grants — with **7.1's prerequisite read before the first grant** (the Data Catalog
+  resource-policy additions, whose absence fails exactly like a working share that never arrives), and
+  named-resource reserved for recorded hybrid-mode exceptions (6.3).
+
 ---
 
 *Log index: [docs/log/INDEX.md](INDEX.md) · Stage index: [docs/plan/stages/INDEX.md](../plan/stages/INDEX.md)*

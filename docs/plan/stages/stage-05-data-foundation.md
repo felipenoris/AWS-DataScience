@@ -164,7 +164,10 @@ whatever the first table happened to contain, and Stage 11's Macie findings then
 This is the smallest piece of real data governance in the plan and it costs nothing but thought — which is
 why it is pass 0, on paper, before any apply. The owner is the **governance manager** (step 7.4).
 
-**The ontology carries two dimensions from day one — `classification` and `zone` (`raw`/`curated`; added
+**The ontology's one copy lives in [`docs/GOVERNANCE.md`](../../GOVERNANCE.md) since 2026-08-18
+(decisions 1-3): keys `classification`, `layer` (formerly `zone`, gaining a `dropbox` value),
+`security-zone` (new — the CMK carrier) and `businessunit` (formerly `domain`, reserved). Text below
+predating the rename reads `zone` accordingly.** **The ontology carries two dimensions from day one — `classification` and `zone` (`raw`/`curated`; added
 2026-08-17)** — orthogonal by design: `zone` says where in the pipeline a table sits, `classification` says
 what its content demands, and every grant below is an *expression* over both (step 6.1). Sandbox and
 Development read **both zones** — a deliberate deviation from the raw-zone guidance, decided 2026-08-17 and
@@ -250,7 +253,8 @@ that the share works.
 **4.2 — Table maintenance gets an owner on day one**: scheduled `OPTIMIZE` (compaction) and `VACUUM`
 (snapshot expiry) through Athena, or Glue's automatic compaction (the table-optimizer path, whose runs the
 D27 carve-out already names) — an Iceberg table nobody compacts degrades quietly and pays storage for
-every dead snapshot. Which path is decision 4 below. **Amazon S3 Tables** — managed Iceberg with automatic
+every dead snapshot. Which path was decision 4 below — **decided 2026-08-18: Glue's automatic
+compaction**. **Amazon S3 Tables** — managed Iceberg with automatic
 maintenance — is the AWS-native alternative, deliberately not used here: D13's registered/unregistered
 prefix split leans on general-purpose buckets. Recorded in `docs/plan/institutional-delta.md`.
 
@@ -259,10 +263,13 @@ absence has a cost worth naming here rather than in an audit:** a principal in t
 table the catalog exposes and write the result to S3, and the perimeter only stops that write when the
 destination is outside the organization. The `Data` OU SCP therefore makes "nothing *runs* here" true and
 leaves "nothing *reads everything* here" to detection ([Stage 11](stage-11-dlp.md)); it is recorded in
-[`POLICIES.md`](../../../terraform-live/identity/org-policies/POLICIES.md) as a stated non-coverage. **If
-maintenance ends up on Glue's automatic compaction, close the hole** by adding `athena:StartQueryExecution`
-to the statement — an SCP amendment, run through phase 4b of the battery, decided here while the
-maintenance path is chosen rather than left wider by default.
+[`POLICIES.md`](../../../terraform-live/identity/org-policies/POLICIES.md) as a stated non-coverage.
+**Maintenance IS Glue's automatic compaction (decision 4, taken 2026-08-18), so the hole closes**: add
+`athena:StartQueryExecution` to the statement — an SCP amendment, run through phase 4b of the battery,
+never straight to the OU. **Sequence it late in the stage, and mind one dependency:** the amendment binds
+every principal in this account, `InfrastructureAccess` included, so if 4.1's sample table is created or
+loaded *through Athena in this account*, that must happen first — after the amendment, writes into the
+lake arrive only through the designed producer paths (the drop-box, and Stage 9's governed write).
 
 #### 5. Lake Formation — the permission model, made real
 
@@ -311,7 +318,9 @@ decoration.
 **And the grants themselves are LF-TBAC expressions over the step 2 dimensions, not named-resource lists
 (2026-08-17; the method is decision 5's second half):** the consumer grant is
 `zone ∈ {raw, curated} AND classification ∈ {public, internal}` — `restricted` and `personal` travel
-**only on explicit grants** to enumerated principals, recorded in the log. This is what makes the scheme a
+**only on explicit grants** to enumerated principals, recorded in the log **and in the grant register**
+(`docs/AWS_STATE.md`). *(Decided form, 2026-08-18 — `GOVERNANCE.md`: the default expression is
+`classification ∈ {public, internal}` alone, read-only; `layer` does not gate the default read.)* This is what makes the scheme a
 control during Stages 6-10 rather than paper until Stage 11 (Lesson 5): the cell/row filters Stage 11 adds
 then narrow *within* the restricted grants instead of beginning enforcement. Named-resource grants stay
 available for the exceptions hybrid mode covers (6.3).
@@ -533,9 +542,10 @@ own:
 
 | Item | Cost | Note |
 |---|---|---|
-| KMS CMKs (domains + drop-box + 2 derived) | ~USD 1/key-month | already a floor row (`docs/plan/cost-model.md`); the count is decision 2/3 |
+| KMS CMKs (1 `zn-lab` + 2 derived) | ~USD 1/key-month, ~USD 3/month total | floor row (`docs/plan/cost-model.md`); count settled 2026-08-18 by decisions 2/3 — the drop-box shares `zn-lab` |
 | Lake + derived + scratch storage | ~USD 1/month at lab scale | S3 row of the floor |
 | Crawler runs | USD 0.44/DPU-h, 10-min minimum (`docs/PRICING.md` §5) | event-driven/on-demand only — 3.6 |
+| Iceberg auto-compaction runs | USD 0.44/DPU-h (`docs/PRICING.md` §5, measured) | decision 4 — the optimizer runs D27's carve-out names; config free at rest |
 | Athena | USD 5/TB scanned | the workgroup scan limit is the guard |
 | Security Hub | ~USD 1-2/month + Config-rule evaluations | floor row; enabled at 13 |
 | Glue catalog storage/requests | negligible at lab scale | `docs/PRICING.md` §5 |
@@ -546,28 +556,44 @@ own:
 `docs/log/log-stage-05-data-foundation.md` (Lesson 16). Recommendations are stated so the keyboard is not
 the decision-maker.
 
-1. **The classification scheme** (step 2) — levels, owner, what each permits, **and the default the
-   `raw` database carries** (fail-open `internal` versus fail-closed `restricted` — what an *unclassified*
-   new arrival is; added 2026-08-17). Recommended start: `public / internal / restricted / personal`,
-   owned by the governance manager; the `zone` dimension is fixed by step 2 and is not this decision's to
-   reopen.
-2. **How many data domains, therefore how many CMKs** (1.1). Recommended at lab scale: one domain
-   (`raw`+`curated` under one key), `artifacts`+`logs` under a second — the per-domain split is a variable,
-   not a rebuild, because Bucket Keys make re-keying a bucket-level change. **And the `domain` dimension
-   is what expresses per-business-unit segregation at N>1** (settled 2026-08-17): when a second domain or
-   unit exists, `domain` joins the LF-Tag ontology as the third key — no separate `unit` dimension.
-3. **The drop-box container** (1.4) — own bucket + own CMK, or a prefix of `raw`. Recommended: **own
-   bucket** (`awsds-data-dropbox`), because INT-10's "grant on the drop-box key" must not reach the raw
-   domain, and a prefix shares the key.
-4. **The Iceberg maintenance path** (4.2) — Athena scheduled `OPTIMIZE`/`VACUUM` versus Glue automatic
-   compaction. Recommended: **Glue automatic compaction** under the maintenance role (no scheduler needed
-   in a no-compute account) — and then close 4.3's Athena hole via battery phase 4b in the same sitting.
+1. **The classification scheme** (step 2) — **DECIDED 2026-08-18, by the user; the one copy is
+   [`docs/GOVERNANCE.md`](../../GOVERNANCE.md)**: values `public / internal / restricted / personal`,
+   owner the governance manager; the default consumer grant reaches `public`+`internal` read-only, all
+   else by explicit enumerated grant. **The `raw` database default is `internal` — fail-open, chosen
+   against the fail-closed recommendation** so ETL development is not gated per dataset; the consequence
+   is named in `GOVERNANCE.md` (an unclassified arrival is readable until reclassified; Macie is the
+   Stage 11 backstop). `curated` carries no database default — an untagged table there matches no TBAC
+   expression, fail-closed by absence. **The ontology was renamed with the decision**: `zone` →
+   **`layer`** (gaining a `dropbox` value), `domain` → **`businessunit`**, plus the new
+   **`security-zone`** key (decision 2's carrier).
+2. **How many data domains, therefore how many CMKs** (1.1) — **DECIDED 2026-08-18, by the user,
+   reframed: CMK granularity is the `security-zone` dimension's job**
+   ([`docs/GOVERNANCE.md`](../../GOVERNANCE.md)), decoupled from business segregation. One zone today —
+   `zn-lab`, the default for every lake bucket **including the drop-box** — so **one lake CMK**,
+   `alias/awsds-data-zn-lab`; a second zone is a new value plus a new key, and Bucket Keys keep re-keying
+   a bucket-level change. Business segregation stays the renamed **`businessunit`** dimension's job at
+   N>1 (settled 2026-08-17: no separate `unit` key).
+3. **The drop-box container** (1.4) — **DECIDED 2026-08-18, by the user: own bucket
+   (`awsds-data-dropbox`), sharing the `zn-lab` CMK** — a deviation from the own-CMK recommendation that
+   follows from decision 2's one-zone model. The cost, named: INT-10's key grants (the Production job
+   role, the maintenance role) land on the **zone** key, reaching every bucket in the zone at the KMS
+   layer — the drop-box's isolation rests on the S3 statements and LF alone (`GOVERNANCE.md`
+   §`security-zone`). Revision trigger: the first dataset whose blast radius argues for its own zone.
+4. **The Iceberg maintenance path** (4.2) — **DECIDED 2026-08-18, by the user, before pass 1: Glue
+   automatic compaction** under the maintenance role (no scheduler needed in a no-compute account) — the
+   table-optimizer runs the D27 carve-out already names. Athena scheduled `OPTIMIZE`/`VACUUM` declined
+   with it. **The consequence is accepted with the choice:** 4.3's `athena:StartQueryExecution` amendment
+   to `DenyUserCompute` is owed in this stage, through battery phase 4b, sequenced per 4.3. Recorded in
+   the stage log; propagated to `POLICIES.md`, Stage 1c and `institutional-delta.md` the same day.
 5. **The data lake administrators, account-vs-OU grants, and the grant method** (5.3, 6.1, 7.2 — the
-   method added 2026-08-17). Recommended: admins = `InfrastructureAccess` only; grants to the two named
-   accounts (the OU grant buys nothing at N=1 and is revisited at Stage 14); **LF-TBAC expressions as the
-   default method** — 6.1's classification-scoped shapes, with 7.1's resource-policy prerequisite read
-   first — the explicit `restricted` grants as enumerated TBAC expressions to named principals, and
-   named-resource reserved for hybrid-mode exceptions (6.3).
+   method added 2026-08-17) — **DECIDED 2026-08-18, by the user, the recommendation adopted whole**:
+   admins = **`InfrastructureAccess` only** — the governance manager is never an admin (an approver who
+   can already grant everything exercises no control, Lesson 9/D31) and receives **specific grants**
+   instead, each in the register; grants to **the two named accounts** (the OU grant buys nothing at N=1,
+   revisited at Stage 14; per-account is INT-11's fallback shape anyway); **LF-TBAC as the default
+   method** — `GOVERNANCE.md`'s expressions, with **7.1's resource-policy prerequisite read before the
+   first grant**, named-resource reserved for recorded hybrid-mode exceptions (6.3). Named revision
+   trigger: Stage 6, when the DataZone fulfilment principal joins the permission plane (D26).
 6. **The grain** (6.4, open question 13) — per-user on the SQL path, or per-project everywhere. Not
    recommendable in advance: it is answered by what the grants can actually express, and the deliverable
    is the *written answer*, either way. **It also consumes step 8's ceiling (2026-08-17):** the enforced

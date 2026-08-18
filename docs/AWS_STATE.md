@@ -101,6 +101,18 @@ Listed so that a future session does not "fix" something that a later stage is g
 | **Lake Formation in Data Governance is not governing anything, and the settings say so in three places** — read 2026-08-17 as a side effect of Stage 4's control-plane pair, from `GetDataLakeSettings` in that account. **`DataLakeAdmins: []`** and `ReadOnlyAdmins: []` — nobody can change these settings today. **Both `CreateDatabaseDefaultPermissions` and `CreateTableDefaultPermissions` grant `ALL` to `IAM_ALLOWED_PRINCIPALS`**, which is the untouched AWS default and means Lake Formation *defers to IAM*: every database and table created inherits full access for anyone holding the Glue IAM permission, and an LF grant decorates rather than governs. And `Parameters` reads **`CROSS_ACCOUNT_VERSION: 4`, `SET_CONTEXT: TRUE`** — INT-11's measurement, now confirmed a second time from a different principal. `TrustedResourceOwners` and `ExternalDataFilteringAllowList` are empty; `AllowExternalDataFiltering: false` | **Stage 5, and the ORDER is the whole of it.** The two default-permission entries act **at creation time**, so clearing them after a database exists does not retroactively govern that database — they must go **before** Stage 5 creates anything, not after. The same first apply also has to name `admins` (nothing can be changed until somebody is one) **while preserving `Parameters`** — INT-11's standing warning is that `aws_lakeformation_data_lake_settings` resets the whole map if it names `admins` without them, and the values it would silently drop are now written down above. Until all three land together, "governed lake" is an intention and not a control (Lesson 5). **Nobody set the version to 4 and nobody is defending it**: a reading of `1` at any point means something reset it |
 | The trusted-access list of INV-09 has eight principals and three delegations | **`ram` landed 2026-08-14** (Stage 1d step 11.1) and INV-09 is restated. It still grows by one at each of **Stage 15** (GuardDuty — Stage 4 until the 2026-08-18 split), **Stage 5** (Security Hub) and **Stage 11** (Macie). For those three, delegating *is* enabling, which is why they are not there yet — restate INV-09 as each one lands |
 
+## Lake Formation grant register
+
+**One row per applied grant triple `[principal, tag expression / resource, permissions]` — written in
+the same sitting as the grant**, the discipline `POLICIES.md` keeps for policy statements.
+[`docs/GOVERNANCE.md`](GOVERNANCE.md) defines the model and references this table; the stage log carries
+each grant's story. A grant found in AWS with no row here is drift, in either direction.
+
+*Empty — no Lake Formation grant has been applied yet (Stage 5 pass 2 writes the first rows).*
+
+| Date | Principal | Expression / resource | Permissions | Why (log entry) |
+|---|---|---|---|---|
+
 ## D. Keeping this file true
 
 - **When a stage closes**, move whatever it changed out of section C — an entry there that has already

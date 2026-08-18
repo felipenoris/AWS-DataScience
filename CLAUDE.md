@@ -153,6 +153,7 @@ its `Consumes` row lists.
 | Execute a stage | [`docs/plan/stages/`](docs/plan/stages/INDEX.md)`stage-NN-*.md`, the decisions in its **Consumes** row, and [`docs/plan/conventions.md`](docs/plan/conventions.md) |
 | Design, or reason about where something belongs | [`docs/plan/architecture.md`](docs/plan/architecture.md) — target architecture, region portability, the data perimeter, the two egress designs |
 | A naming, layout, Terraform or IAM rule | [`docs/plan/conventions.md`](docs/plan/conventions.md) — also the `[P]`/`[D]`/`[E]` layers, the identity seam and the `app-etl` template |
+| **The data-governance model** — the LF-Tag ontology (`layer`, `businessunit`, `security-zone`, `classification`), the grant rules and default expressions, the drop-box and derived-zone contracts | [`docs/GOVERNANCE.md`](docs/GOVERNANCE.md) — Stage 5 decisions 1-3, the one copy; applied grants live in `docs/AWS_STATE.md`'s grant register |
 | **How the deployed tree is organised, and what is in it today** | [`terraform-live/README.md`](terraform-live/README.md) — **the slice-by-slice layout itself stays in `docs/plan/conventions.md` §6**, the authority when the two disagree |
 | **What a given policy statement denies, and why that statement exists** | [`terraform-live/identity/org-policies/POLICIES.md`](terraform-live/identity/org-policies/POLICIES.md) — one row per `Sid`, per document, all four types. Policy ids and attachment dates are **not** there: those are in the stage log |
 | What was actually done by hand in a stage | [`docs/log/`](docs/log/INDEX.md)`log-stage-NN-*.md` — **the stage file's slug, prefixed `log-`**; [`docs/log/INDEX.md`](docs/log/INDEX.md) first, so only one log is opened |
@@ -202,9 +203,15 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   the institutional-delta row argues it. `aws/guardduty.py` (`GD-1`–`GD-3`); `VP-8` retired; `vpn.py`
   default narrowed to two profiles.
 - **Stage 5 OPENED 2026-08-18:** `docs/log/log-stage-05-data-foundation.md` initialized (no entries);
-  baseline `./aws/datalake.py` green — `DL-5` reads `4/TRUE`, `DL-1/4/8/11` pre-stage notes. Next: pass 0
-  (decisions 1-6 on paper), then pass 1 authors `data-governance/data/` (`awsds-infra-data`; the account
-  holds only `bootstrap/` today). Stage 4 residuals, non-blocking: host left `running`; the user's
+  baseline `./aws/datalake.py` green — `DL-5` reads `4/TRUE`, `DL-1/4/8/11` pre-stage notes. Pass 0
+  underway: **decision 4 taken 2026-08-18 (Glue auto-compaction; the 4.3 `athena:StartQueryExecution`
+  amendment owed via battery phase 4b, after any Athena-borne sample-table load)**; **decisions 1-3 taken
+  2026-08-18 — `docs/GOVERNANCE.md` is the one copy** (ontology renamed: `layer`/`businessunit`/
+  `security-zone`/`classification`; `raw` default `internal`, fail-open by the user's call; one `zn-lab`
+  lake CMK, drop-box sharing it; grant register seeded empty in `AWS_STATE.md`); **decision 5 taken 2026-08-18** (recommendation
+  as-is: admins = `InfrastructureAccess` only, shares to the two named accounts, TBAC default + the 7.1
+  catalog-policy prerequisite); decision 6 open — the grain, decided with evidence at pass 2. Then pass 1 authors `data-governance/data/` (`awsds-infra-data`; the account holds only
+  `bootstrap/` today). Sandbox not needed until pass 4's persona proofs (`make down ENV=sandbox` safe). Stage 4 residuals, non-blocking: host left `running`; the user's
   close-out log entry still owed.
 - **Stages 5-11 revised, pre-instrumented (2026-08-16/17):**
   `aws/{vpn,datalake,studio,supplychain,cicd,deploytargets,orchestration,dlp}.py` — `DL-5`/`DT-5` guard
