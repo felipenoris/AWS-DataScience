@@ -1592,6 +1592,231 @@ only part of that which is not somebody's judgement.*
 - **`cloudwatch:GetMetricData` is left ungranted by decision**, deferred to Stage 6 with a workload in
   front of it. Recorded so the next person meets a decision rather than a surprise.
 
+### Verification (iii) closed from the laptop — and the shell answered what no API call can
+
+*By the user, off-VPN: the install, the session, and the two commands inside the host. The entry's
+substitutions apply here too — account id → the account's name, the e-mail inside an ARN → that user's
+role — **and one more, added for this section**: each peer's `endpoint` is that device's residential
+address, elided to `<device endpoint>`. The port is elided with it: it is ephemeral and identifies
+nothing. **Claude wrote the two findings below the readings and touched nothing above them.***
+
+
+- Installed `session-manager-plugin` utility:
+
+```
+brew install --cask session-manager-plugin
+```
+
+- VPN is down. login as infrastructure sso user.
+
+- executed on laptop:
+
+```
+$ session-manager-plugin --version && AWS_PROFILE=awsds-infra-sandbox-1 aws sts get-caller-identity --query Arn --output text
+
+1.2.835.0
+
+arn:aws:sts::<Sandbox Account 1>:assumed-role/AWSReservedSSO_InfrastructureAccess_59e5b26af457128d/<the infrastructure user>
+
+$ AWS_PROFILE=awsds-infra-sandbox-1 aws ssm start-session --target i-0ecb30e645c1aebce --region us-west-2
+```
+
+- Started remote session.
+
+- Executed on EC2 remote instance:
+
+```
+$ ip -d link show wg0 && sudo wg show
+3: wg0: <POINTOPOINT,NOARP,UP,LOWER_UP> mtu 8921 qdisc noqueue state UNKNOWN mode DEFAULT group default qlen 1000
+    link/none  promiscuity 0 allmulti 0 minmtu 0 maxmtu 2147483552
+    wireguard addrgenmode none numtxqueues 1 numrxqueues 1 gso_max_size 65536 gso_max_segs 65535 tso_max_size 65536 tso_max_segs 65535 gro_max_size 65536
+interface: wg0
+  public key: LCD1d6xjsxRAmOZA/FTo72TToGUkLYqlOryEJwfup28=
+  private key: (hidden)
+  listening port: 51820
+
+peer: P2UV4d1fj5D5PTidGxhGfnLnM69kAhTSRTMwGbRJmGg=
+  endpoint: <mbp endpoint>
+  allowed ips: 10.90.0.2/32
+  latest handshake: 1 hour, 28 minutes ago
+  transfer: 331.60 MiB received, 257.37 MiB sent
+
+peer: phfyVANT55vq80AYHcmA8vgyp4xAxKs78JxDRoOKtEE=
+  endpoint: <raspi endpoint>
+  allowed ips: 10.90.0.3/32
+  latest handshake: 8 hours, 25 minutes, 58 seconds ago
+  transfer: 96.17 MiB received, 40.08 MiB sent
+```
+
+**Finding 1 — the running interface holds exactly the roster, and this is the read that motivated
+`--on-host` in the first place.** `wg show` was compared line by line against the tracked
+`peers.auto.tfvars`, and the two agree on both fields for both devices, with **no third peer**:
+
+| roster entry | its `public_key` | `host` | what `wg0` holds |
+|---|---|---|---|
+| `mbp` | `P2UV4d1f…mGg=` | 2 | same key, `allowed ips: 10.90.0.2/32` |
+| `raspi` | `phfyVANT…tEE=` | 3 | same key, `allowed ips: 10.90.0.3/32` |
+
+**No EC2 or SSM describe call can produce that table.** The API describes the *instance* — its type, its
+address, its role — and says nothing about what the WireGuard interface inside it actually admits, which
+is the authorization roster of the whole network. That gap is why `./aws/vpn.py --on-host` exists as a
+fenced exception carrying `ssm:SendCommand`. **Here the same answer arrived without it**: an interactive
+Session Manager shell is a read the flag was reserved for, and cheaper than the flag. What it rules out
+is a hand-edit on the host and an apply that never landed — the roster is not merely *declared*, it is
+what the kernel is enforcing.
+
+**Finding 2 — the server's MTU is 8921, nobody chose it, and the mitigation is one-sided.** The number
+is exactly `9001 − 80`: the VPC's jumbo-frame Ethernet MTU, minus WireGuard's IPv4/UDP overhead. So
+`wg0` derived its MTU from a 9001-byte device and **inherited** it. (`eth0` itself was not read in this
+session — the arithmetic is the evidence, not a second measurement.)
+
+That matters because **pass 2 pinned the client and never pinned the server** — but the exposure is
+narrower than that sentence suggests, and the narrowing is the useful part. **For TCP the client's pin
+already bounds both directions**: `MTU = 1280` on the client makes its stack advertise `MSS 1240` on
+every handshake through the tunnel, and MSS is an announcement of what a peer will *receive*, so remote
+servers cap what they send toward the client too. Those segments reach the host far under 8921 and leave
+the tunnel at roughly 1360 — fitting any path. **What 8921 leaves uncovered is traffic with no MSS to
+announce**: UDP. In practice the dominant UDP protocol here does its own conservative path discovery
+(QUIC settles around 1200–1350), which is why 331.60 MiB received and 257.37 MiB sent for `mbp` produced
+no complaint at all.
+
+So the server's value is **wrong in principle and bounded in practice**, and it is bounded by two
+mechanisms that belong to somebody else — the client's pin and QUIC's own caution — rather than by
+anything this design chose.
+
+**Owed: a decision, not a fix.** The module was read in the same sitting and carries **neither** an `MTU`
+line in the generated `[Interface]` **nor** an MSS clamp in `PostUp` — which is only masquerade and two
+`FORWARD` accepts. So both halves of the usual answer are absent, and the question is whether to add
+them. **The cost is a rebuild**: the value lives in `user-data.sh.tftpl` and the module carries
+`user_data_replace_on_change = true`, so the host is replaced rather than edited — proven safe at pass 2,
+and still eleven minutes and a tunnel interruption. **This question has now been deferred three times**
+(pass 2 left it open, the `raspi` did not settle it, this reading raises it again), which is the signal
+to close it in one direction rather than defer it a fourth. It blocks nothing in Stage 4.
+
+**One reading is of a quiescent interface, deliberately**: the tunnel was down, both handshakes are
+hours old, so the transfer counters are cumulative since the last boot rather than live. They are
+evidence that traffic *has* flowed, not that it is flowing.
+
+**With this, verification (iii) is closed on both halves** — the endpoint half at 1.4 (the agent
+`Online` with no interface endpoint in the account), the laptop half here. And the half closed here is
+the one that matters for the deadlock of open question 17: **Session Manager needs no tunnel**, so the
+way into the host survives the tunnel being what broke. A shell that required the VPN would have made
+the recovery path circular again.
+
+
+
+
+## 2026-08-17 — The lifecycle cycle: both validations answered, and the audit trail was a better "before" than the file
+
+*Provenance, and it is split. **The cycle itself was run by the user** — `make down`, `make up`, the
+tunnel raised on the unchanged client config, `./aws/networking.py`, and the final `make down`.
+**Every verification below is Claude's**, run afterwards and read-only: the battery, `describe-instances`,
+`describe-addresses` and four CloudTrail lookups. Nothing here was written from what either of us
+remembered; where a claim rests on the session transcript rather than on a file, it says so.
+Times are the laptop's (UTC−3); the snapshots stamp themselves in UTC, so their headers read
+`2026-08-18`.*
+
+### The three copies were not made, and that is the finding the step was carrying all along
+
+`vpn-cycle-0-before.txt`, `-1-stopped.txt` and `-2-after.txt` do not exist. `./aws/vpn.py` ran and
+regenerated `aws/output/vpn.txt` **in place** — which is exactly the rule Stage 3's validation recorded
+after overwriting its own "before", and which Validation 2 restates in its own text. The step was
+designed around a `cp` that a person has to type, and the person did not type it.
+
+**What saved the measurement was not the plan.** It was that the cycle ends with the estate down: the
+host is *stopped* right now, and stopped-with-the-address-still-attached is precisely the state the
+missing middle reading was supposed to capture. So it was read directly from the API instead of from a
+file that no longer existed.
+
+### The timeline, reconstructed from CloudTrail rather than from anybody's account of it
+
+| Time | Event | What it was |
+|---|---|---|
+| 22:38:26 | `StopInstances` | the first `make down` |
+| 22:40:32 | `StartInstances` | the `make up` — **same instance id**, so started, not replaced |
+| 22:45:41 | `./aws/vpn.py` | host `running`, EIP associated, `0 FAILED` |
+| 22:55:06 | `./aws/networking.py` | `0 FAILED`, `NT-4` clean over **66** routes |
+| 23:01:37 | `DisassociateAddress` | **not the host's** — see below |
+| 23:02:42 | `StopInstances` | the final `make down` |
+
+`LaunchTime` reads `01:40:32Z`, corroborating the start from the instance's own record rather than from
+the trail alone.
+
+### The reading that looked like a failure, and the two fields that settled it
+
+A `DisassociateAddress` sitting inside the window of a validation about *an address surviving* is the
+worst-looking event this cycle could have produced. It is benign, and it took two fields to say so:
+
+- the event names association `eipassoc-0f402…be1`; the host's is `eipassoc-0be86…3cf` — **a different
+  association**;
+- the `userAgent` is `terraform-provider-aws/6.60.0`, not a console and not a person.
+
+It is the **NAT gateway's** Elastic IP, released as `sandbox/egress` was destroyed. And it does something
+useful on the way past: the release lands **65 seconds before** the host is stopped, so **the rank order
+is visible in the audit trail** — `egress` first, `vpn` last, exactly as `layers.py` claims in a comment.
+That ordering had never been observed from outside the tool that implements it.
+
+### Validation 2 — answered, and with a file diff after all
+
+`aws/output/vpn.txt` was copied aside as `vpn-cycle-2-after.txt`, the battery re-run against the now
+stopped host as `vpn-cycle-3-stopped.txt`, and the checks section diffed:
+
+```
+6c6
+< pass    VP-1  one WireGuard host (i-0ecb30e645c1aebce)  t4g.nano, state running
+---
+> pass    VP-1  one WireGuard host (i-0ecb30e645c1aebce)  t4g.nano, state stopped
+```
+
+**One line, and it is the instance state** — which is the whole of what Validation 2 permits to change.
+
+### Verification (ii)'s residual is closed by direct observation, not by inference
+
+`describe-addresses` now: `52.89.212.1`, allocation tagged `awsds-sandbox-vpn`, **associated** with
+`i-0ecb30e645c1aebce` — an instance that is **stopped**. That is the claim itself, in the present tense,
+rather than the documentation's promise or an argument about what the dormant hook cannot do. `VP-2`
+reads `pass` in that state, and CloudTrail holds **no `AssociateAddress` at all** in the window, so
+nothing re-created what the stop is supposed not to have destroyed.
+
+### Validation 1 — answered in its stronger form, because `egress` happened to be up
+
+`networking.txt` was generated at 22:55, six minutes before the teardown, and it shows
+`nat-008b903649a1e94f9` **active** with two `0.0.0.0/0` routes. That is where the route count moved:
+**66 against the 64** of the previous entry. So the reading was taken with the full `[E]` stack mounted,
+and §9 still shows **exactly one** security group open to the world in the entire measured estate —
+`sg-0bbb8436fe786b996`, `awsds-sandbox-vpn`, UDP/51820. `0 FAILED`.
+
+A world-open count taken with the ephemeral tier *absent* proves much less than one taken with it
+present, and this one was the second kind by accident of timing.
+
+### What was actually lost, and the shape of the lesson
+
+Only the **"before" file**. Its content is in the session transcript — the battery was run at 21:38,
+before the cycle — and it is identical to the after, field for field: same instance id, same address,
+same security group, the same nine checks, `0 FAILED`. Recorded as **transcript rather than file**,
+which is a weaker grade of evidence and is named rather than smoothed over.
+
+**And the finding worth carrying: a validation whose evidence is a local copy depends on somebody typing
+`cp`, while the estate's own audit trail cannot be overwritten in place.** CloudTrail answered every
+question the three missing files were meant to answer, and answered two of them better — it timestamped
+the transitions, and it identified the disassociation by caller. The next validation that wants a
+before/after should say what to read *from the estate*, and treat the local copy as a convenience.
+
+### Cost
+
+`egress` and `probes` were up from 22:40 to 23:01, about 21 minutes at the rate table's
+`0.1826 USD/h` — roughly **USD 0.06**, derived from the static rates in `docs/PRICING.md` and a measured
+duration rather than measured on the bill. The estate is back at **0.0000 USD/h**.
+
+### Not done
+- **The MTU decision is taken in this sitting and the change is not applied**: the server's `wg0` gets
+  `MTU = 1280`, matching the client template. The reasoning is under finding 2 of the previous entry;
+  the module is prepared separately and the apply owes the two-commit tag order, a host replacement,
+  and the negative control that makes it a control — a client config **without** the `MTU` line, whose
+  download should work afterwards and whose upload may still stall.
+- **`eth0`'s MTU on the host is still unread**, so `8921 = 9001 − 80` remains arithmetic. One line in the
+  next Session Manager shell.
+
 ---
 
 *Log index: [docs/log/INDEX.md](INDEX.md) · Stage index: [docs/plan/stages/INDEX.md](../plan/stages/INDEX.md)*
