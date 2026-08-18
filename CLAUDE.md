@@ -201,6 +201,11 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   `DenyGuardDutyTampering` (its decision 1), `ALL` never reaches Management. Principle 9 overruled once;
   the institutional-delta row argues it. `aws/guardduty.py` (`GD-1`–`GD-3`); `VP-8` retired; `vpn.py`
   default narrowed to two profiles.
+- **Stage 5 OPENED 2026-08-18:** `docs/log/log-stage-05-data-foundation.md` initialized (no entries);
+  baseline `./aws/datalake.py` green — `DL-5` reads `4/TRUE`, `DL-1/4/8/11` pre-stage notes. Next: pass 0
+  (decisions 1-6 on paper), then pass 1 authors `data-governance/data/` (`awsds-infra-data`; the account
+  holds only `bootstrap/` today). Stage 4 residuals, non-blocking: host left `running`; the user's
+  close-out log entry still owed.
 - **Stages 5-11 revised, pre-instrumented (2026-08-16/17):**
   `aws/{vpn,datalake,studio,supplychain,cicd,deploytargets,orchestration,dlp}.py` — `DL-5`/`DT-5` guard
   the LF `Parameters` (INT-11). **St.8 pass 4, St.9 passes 4-5, St.10's Staging leg wait on the vend.**
