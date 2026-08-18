@@ -61,6 +61,7 @@ locals {
     peer_cidr           = var.peer_cidr
     server_address      = local.server_address
     listen_port         = var.listen_port
+    mtu                 = var.mtu
     host_key_secret_arn = var.host_key_secret_arn
     peers               = local.peers
     peer_count          = length(local.peers)
