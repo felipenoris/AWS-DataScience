@@ -1446,18 +1446,149 @@ with `DataLakeAdmins: []` and both `CreateDatabaseDefaultPermissions` and
 stage and everything in the next, so it is written up where it belongs — INT-11 and `AWS_STATE.md`, in
 this same sitting — rather than argued here.
 
-### Not done
+### The fix, applied twice, because the first one was right and still wrong
 
+**First apply (2026-08-17): three actions added to four statements.** `0 to add, 4 to change`,
+`logs:GetLogGroupFields` + `logs:GetLogRecord` + `logs:DescribeQueryDefinitions`, identical in each,
+nothing removed, `DenyControlPlaneOffVpn` verified intact in all four before and after. The console's
+field-discovery error went away.
+
+**And the next call failed:**
+
+```
+Error: User: … is not authorized to perform: logs:DescribeFieldIndexes on resource: arn:aws:logs:us-west-2:<Sandbox Account 1>:log-group:/aws/lambda/aws-controltower-NotificationForwarder because no identity-based policy allows the logs:DescribeFieldIndexes action
+```
+
+**`logs:DescribeFieldIndexes` is not in the AWS page the fix was derived from.** It is a newer API
+(field indexes) that the console already calls and the documented console-permission list does not
+mention. **So the method was sound and the source was stale**, and the conclusion is bigger than the
+missing action: *enumerating the calls of a console surface is a race that cannot be won.* A console
+acquires calls faster than any list documents them, and every miss is a user-visible error and a round
+trip. Two enumerations failed in one sitting — the second one derived from the vendor's own
+documentation.
+
+**Second apply, by the user's decision: the AWS managed policy `CloudWatchLogsReadOnlyAccess`.**
+`4 to add, 4 to change, 0 to destroy` — four attachments created, and each of the four inline policies
+losing **exactly one Sid** (`ReadCloudWatchLogs`, or `ReadCloudWatchLogsIncludingInsights` for the
+deployment manager) and nothing else. Every deny kept, `DenyControlPlaneOffVpn` still carrying
+`52.89.212.1/32` in all four, and the inline documents *shrinking* — 4757→4285, 4473→4001, 3955→3483,
+4971→4482 — which is the direction a removed statement should move them. Re-plan `No changes` at
+`-detailed-exitcode 0`; `./aws/vpn.py` 0 FAILED with `VP-7` still `pass` on all six.
+
+**Read live before attaching, not from the documentation page**: the policy is on **version 12**, and
+v12 added the `observabilityadmin:` namespace — a vocabulary nobody in this project had ever written
+down. That version number is itself the argument, from both sides: AWS does maintain it, and AWS does
+change it.
+
+**Three things are being accepted, and they are written into `permission-sets.tf` beside the resource
+so they are a choice rather than a side effect:**
+
+1. **AWS authors this policy.** A future version reaches these personas with **no diff in this
+   repository** — the exact shape [Lesson 11](../plan/lessons.md) warns about, taken deliberately
+   because the alternative is a grant that is provably wrong every few months. What bounds it: the
+   policy can only ever add *reads*, and it composes **under** every deny already on these sets — the
+   shared fragment and `DenyControlPlaneOffVpn` both still apply, a deny always winning.
+2. **`logs:StartLiveTail` / `StopLiveTail` arrive with it, and Live Tail is billed per minute.**
+   Nothing measures it (D12 declined budget alerts), so this is a cost surface opened without a
+   measurement — Lesson 6 acknowledged rather than satisfied.
+3. **`cloudwatch:GenerateQuery` and `GenerateQueryResultsSummary` arrive too**, partly undoing the
+   decision to defer the `cloudwatch:` namespace. It does **not** include `cloudwatch:GetMetricData`,
+   so the console's metrics panel still fails — that one stays deferred to Stage 6 by decision.
+
+`DevEnvStewardAccess` is deliberately outside this: its `ReadBuildPipelineLogs` is narrow on purpose —
+the build's own logs, not a console surface — and it never failed. `GovernanceManagerAccess` holds no
+`logs:` action at all. **And the reason an AWS-managed policy works where a customer-managed one did
+not** (Stage 2 decision 4): the latter must exist as an object in *every* account a set is provisioned
+into, which is why the permissions boundary was deferred; an AWS-managed policy exists in all of them
+by definition.
+
+### The console confirmed it, and the tunnel-down half of that confirmation is the better finding
+
+Reported by the user, as the Data Scientist User: **with the tunnel up, Logs Insights stopped showing
+any error** — `DescribeFieldIndexes` gone with the rest, so the managed policy closed what two
+enumerations could not. That is the confirmation a clean plan could not give (presence, not
+sufficiency).
+
+**With the tunnel down the errors return, the interface refuses to run a query — and the AWS console
+still navigates.** That distinction is worth stating precisely, because it is the one somebody will
+later misread as "the deny does not cover the console". It does cover the console's *actions*; it was
+never going to prevent the console from *rendering*. `aws:SourceIp` is evaluated on an API call, and
+loading a page is not one.
+
+**With it, the layering is now measured end to end, and every layer was read rather than assumed:**
+
+| Off-VPN | Result |
+|---|---|
+| sign in to the access portal | **works** |
+| `sso:GetRoleCredentials` | **works** |
+| load and navigate the console | **works** |
+| any API call behind those screens | **denied** |
+
+So the answer to "what does a stolen session get you off-VPN" is the same at all three upper layers and
+it is the same word: **reconnaissance**. Which accounts exist, which roles are held, which screens
+exist — and not one call that returns data or changes anything. Recorded as a property rather than a
+gap, and it is exactly the shape 8.4 predicted for the third role.
+
+**Verification (iv) is closed with that.** Exercised as the Data Scientist User, tunnel up: CloudWatch
+log groups, Logs Insights (a query ran and returned), the Glue catalog, Athena workgroups (`primary`,
+clean). **Nothing broke because of `DenyControlPlaneOffVpn`.** The three things that did break broke for
+three other reasons — a Region SCP, a namespace never granted, and an incomplete enumeration — and all
+three were attributed **from the wording alone**, which is the whole of what Validation 3 asks for.
+
+### Gates
+
+*Recorded because this entry contains two applies and a change to an instrument, and gate output is the
+only part of that which is not somebody's judgement.*
+
+- **`ruff check` and `ruff format --check` on `aws/vpn.py`** — clean. It is the only script this sitting
+  changed.
+- **`make check`** — `OK`. Seven offline scripts (`check-tf-conventions`, `check-iam-wildcards`,
+  `check-bootstrap-parity`, `slices.py check`, `check-tfvars-shape`, `check-index`,
+  `check-identifiers`). Worth being explicit about what that does **not** cover: `make check` never
+  calls AWS, so it says nothing about either apply — the evidence for those is the re-plan at
+  `-detailed-exitcode 0` in the sections above — and `check-identifiers` only guarantees that the
+  readings pasted into this file carry no account id or e-mail after the two declared substitutions.
+- **`terraform fmt -check -recursive`** on `identity/sso/` — clean.
+- **`./aws/vpn.py` re-run after the `VP-7` change** — `0 check(s) FAILED`, `VP-8` still `note`
+  (GuardDuty, pass 4). **The line that matters is the new second `VP-7`:**
+
+  ```
+  pass  VP-7  DenyControlPlaneOffVpn in the persona sets               all six carry it
+  pass  VP-7  DenyControlPlaneOffVpn absent from InfrastructureAccess  by decision (open question 17): the recovery path stays off-VPN
+  ```
+
+  Before this sitting that second line read *absent — expected until 8.3*, which is to say the
+  instrument was still expecting the opposite of what was decided. **A decision left only in prose is
+  measured by nobody**; flipping the check is what makes the seventh set's emptiness an invariant
+  rather than a memory.
+- **The battery's own banner says `some calls FAILED`, and that is not the verdict** — the checks are
+  `0 FAILED`. The failures are seven **profiles with no token**: the two `awsds-ctadmin-*`, which need a
+  different sign-in and are only wanted at pass 4, and the five persona profiles — which is exactly the
+  set the pair above logged out of, so the banner is a footprint of this entry's own method. Read the
+  check table, never the banner.
+- **Not run, and deliberately**: `make check-ou` (a session gate about OU coverage, untouched by this
+  work) and `make check-docs`, which is red on pre-Stage-2 prose and sits outside the commit gate by
+  design — named here so its absence is not read as an oversight.
+
+### Not done
 - **`DataScientistStagingAccess` cannot be measured at all, and that is a gap rather than a pass.** It
   carries the deny — `VP-7` confirmed all six — but has **no assignment**, because `Staging` is unvended,
   so there is no account to enter through it. Five sets of six are exercisable; the sixth is an absent
   negative control (Lesson 26's shape) and becomes measurable at the vend, not before.
-- **The three missing Logs Insights actions are recorded but not applied.** Their diff is small, is
-  confined to four existing statements, and must land **separately from the seventh set's create** — the
-  whole reason 8.3 staged the two apart is that one of them can lock the organization out and the other
-  cannot, and merging them would put a persona convenience in the same apply as that.
-- **The seventh set's diff stays unwritten** — and it is a *create* rather than an edit, since
-  `InfrastructureAccess` carries no inline policy at all.
+- ~~The seventh set's diff~~ — **DECLINED, and it is a decision rather than a deferral (option a,
+  open question 17, 2026-08-17).** Writing it surfaced the deadlock the stage's Risks row had predicted
+  in one line: the VPN host is *stopped* between sessions — the normal `[D]` state — and starting it
+  needs `ec2:StartInstances` as the infrastructure user, which the deny would only permit from the
+  address of the stopped host itself. The only way back in would be break-glass, for a routine event.
+  Three exits were weighed (apply-and-rehearse, a narrow `NotAction` start-the-host hatch, and leaving
+  the set off-VPN); **the user chose the third**: every persona is pinned to the tunnel, and the
+  administrative credential is deliberately outside it, valued as the recovery path that keeps working
+  when the VPN itself is what broke. `./aws/vpn.py` `VP-7` now judges the seventh set in the
+  **opposite direction** — a `yes` there is a FAIL naming the deadlock — and what would reopen the
+  question (a second operator, GuardDuty's watcher, Stage 14's multiplication of homes) is written in
+  the open question, which no current stage waits on. The institutional shape — an admin credential
+  that is also the fire escape, two jobs an institution separates — is a new
+  `institutional-delta.md` row.
 - **`cloudwatch:GetMetricData` is left ungranted by decision**, deferred to Stage 6 with a workload in
   front of it. Recorded so the next person meets a decision rather than a surprise.
 

@@ -180,42 +180,9 @@ data "aws_iam_policy_document" "data_scientist" {
     resources = ["*"]
   }
 
-  # Working out why a job failed is the job. These are the account's own logs; the lake is not
-  # in them.
-  statement {
-    sid    = "ReadCloudWatchLogs"
-    effect = "Allow"
-
-    # THE THREE ADDED 2026-08-17 ARE NOT A SCOPE CHANGE - they are the rest of a grant that was
-    # already decided and enumerated one member short (Stage 4, verification (iv); Lesson 14 at
-    # the smallest scale it occurs). Logs Insights was granted here from the start -
-    # StartQuery/StopQuery/GetQueryResults/DescribeQueries - and the console then failed on
-    # GetLogGroupFields, which is how Insights discovers a log group's fields at all.
-    #
-    # DERIVED FROM THE DOCUMENTED CONSOLE PERMISSION LIST, NOT FROM THE ERROR, and that is the
-    # point: comparing that list against this one found THREE absent reads, not the one that
-    # happened to surface. Patching only the observed failure would have brought the next person
-    # back to the same screen for GetLogRecord (expanding one event in a result set) and
-    # DescribeQueryDefinitions (listing saved queries).
-    #
-    # THE WRITE COUNTERPARTS STAY OUT, deliberately: PutQueryDefinition and DeleteQueryDefinition
-    # curate the saved-query library, and these sets READ Insights.
-    actions = [
-      "logs:DescribeLogGroups",
-      "logs:DescribeLogStreams",
-      "logs:DescribeQueries",
-      "logs:DescribeQueryDefinitions",
-      "logs:FilterLogEvents",
-      "logs:GetLogEvents",
-      "logs:GetLogGroupFields",
-      "logs:GetLogRecord",
-      "logs:GetQueryResults",
-      "logs:StartQuery",
-      "logs:StopQuery",
-    ]
-
-    resources = ["*"]
-  }
+  # THE CLOUDWATCH LOGS GRANT IS NOT HERE ANY MORE (2026-08-17). It is the AWS managed policy
+  # CloudWatchLogsReadOnlyAccess, attached in permission-sets.tf, where the whole argument for
+  # that choice is written once instead of four times.
 
   # THE GRANTOR IS SOMEBODY ELSE, AND THAT SEPARATION IS THE POINT (1b step 3.7). A principal
   # that can grant itself a Lake Formation permission has an entitlement mechanism that
@@ -296,40 +263,9 @@ data "aws_iam_policy_document" "data_scientist_staging" {
     resources = ["*"]
   }
 
-  statement {
-    sid    = "ReadCloudWatchLogs"
-    effect = "Allow"
-
-    # THE THREE ADDED 2026-08-17 ARE NOT A SCOPE CHANGE - they are the rest of a grant that was
-    # already decided and enumerated one member short (Stage 4, verification (iv); Lesson 14 at
-    # the smallest scale it occurs). Logs Insights was granted here from the start -
-    # StartQuery/StopQuery/GetQueryResults/DescribeQueries - and the console then failed on
-    # GetLogGroupFields, which is how Insights discovers a log group's fields at all.
-    #
-    # DERIVED FROM THE DOCUMENTED CONSOLE PERMISSION LIST, NOT FROM THE ERROR, and that is the
-    # point: comparing that list against this one found THREE absent reads, not the one that
-    # happened to surface. Patching only the observed failure would have brought the next person
-    # back to the same screen for GetLogRecord (expanding one event in a result set) and
-    # DescribeQueryDefinitions (listing saved queries).
-    #
-    # THE WRITE COUNTERPARTS STAY OUT, deliberately: PutQueryDefinition and DeleteQueryDefinition
-    # curate the saved-query library, and these sets READ Insights.
-    actions = [
-      "logs:DescribeLogGroups",
-      "logs:DescribeLogStreams",
-      "logs:DescribeQueries",
-      "logs:DescribeQueryDefinitions",
-      "logs:FilterLogEvents",
-      "logs:GetLogEvents",
-      "logs:GetLogGroupFields",
-      "logs:GetLogRecord",
-      "logs:GetQueryResults",
-      "logs:StartQuery",
-      "logs:StopQuery",
-    ]
-
-    resources = ["*"]
-  }
+  # THE CLOUDWATCH LOGS GRANT IS NOT HERE ANY MORE (2026-08-17). It is the AWS managed policy
+  # CloudWatchLogsReadOnlyAccess, attached in permission-sets.tf, where the whole argument for
+  # that choice is written once instead of four times.
 
   # NO ATHENA AT ALL, AND IT IS A WRITE QUESTION RATHER THAN A READ ONE. A query writes its
   # result to S3; there is no read-only Athena. So this set does not even discover workgroups,
@@ -433,40 +369,9 @@ data "aws_iam_policy_document" "data_scientist_prod" {
     resources = ["*"]
   }
 
-  statement {
-    sid    = "ReadCloudWatchLogs"
-    effect = "Allow"
-
-    # THE THREE ADDED 2026-08-17 ARE NOT A SCOPE CHANGE - they are the rest of a grant that was
-    # already decided and enumerated one member short (Stage 4, verification (iv); Lesson 14 at
-    # the smallest scale it occurs). Logs Insights was granted here from the start -
-    # StartQuery/StopQuery/GetQueryResults/DescribeQueries - and the console then failed on
-    # GetLogGroupFields, which is how Insights discovers a log group's fields at all.
-    #
-    # DERIVED FROM THE DOCUMENTED CONSOLE PERMISSION LIST, NOT FROM THE ERROR, and that is the
-    # point: comparing that list against this one found THREE absent reads, not the one that
-    # happened to surface. Patching only the observed failure would have brought the next person
-    # back to the same screen for GetLogRecord (expanding one event in a result set) and
-    # DescribeQueryDefinitions (listing saved queries).
-    #
-    # THE WRITE COUNTERPARTS STAY OUT, deliberately: PutQueryDefinition and DeleteQueryDefinition
-    # curate the saved-query library, and these sets READ Insights.
-    actions = [
-      "logs:DescribeLogGroups",
-      "logs:DescribeLogStreams",
-      "logs:DescribeQueries",
-      "logs:DescribeQueryDefinitions",
-      "logs:FilterLogEvents",
-      "logs:GetLogEvents",
-      "logs:GetLogGroupFields",
-      "logs:GetLogRecord",
-      "logs:GetQueryResults",
-      "logs:StartQuery",
-      "logs:StopQuery",
-    ]
-
-    resources = ["*"]
-  }
+  # THE CLOUDWATCH LOGS GRANT IS NOT HERE ANY MORE (2026-08-17). It is the AWS managed policy
+  # CloudWatchLogsReadOnlyAccess, attached in permission-sets.tf, where the whole argument for
+  # that choice is written once instead of four times.
 
   # D14's ECR half: which image is deployed, and what its scan says. The pull itself is
   # repository-scoped and arrives at Stage 7.

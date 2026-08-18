@@ -377,8 +377,15 @@ persona to an IP that must demonstrably exist and route first.
   `plan` (verification (vii)).
 - **8.3 — [Claude⚡] Apply `identity/sso/`** — **DONE 2026-08-17**: `0 to add, 6 to change, 0 to destroy`,
   applied from the saved plan file, `VP-7` read back from the API as `pass` on all six, re-plan
-  `No changes` at `-detailed-exitcode 0`. **The pair below is not yet run, and until it is, `VP-7` is
-  presence rather than sufficiency.** — profile `awsds-infra-identity` — **six sets only.
+  `No changes` at `-detailed-exitcode 0`. **The control-plane pair ran the same day, all five
+  exercisable sets, wording read** (log entry ten). **The `InfrastructureAccess` half was then DECLINED —
+  open question 17 (option a, 2026-08-17), and the reason is a deadlock this step's own Risks row
+  predicted**: the VPN host is a `[D]` instance, stopped between sessions by design, and starting it
+  needs `ec2:StartInstances` as the infrastructure user — which the deny would only permit from the
+  address of the host that is stopped. Break-glass as the routine way back in un-makes break-glass, so
+  the recovery path stays off-VPN, `VP-7` now **fails** if the seventh set ever carries the Sid, and the
+  institutional shape of the trade is in `institutional-delta.md`. — profile `awsds-infra-identity` —
+  **six sets only.
   `InfrastructureAccess` gains the statement in a separate, deliberate diff, only after the deliverable
   pair below is recorded** — and **that diff is a CREATE, not an edit** (measured 2026-08-17 while
   reading 8.2's plan for its negative control): the seventh set has **no inline policy at all**, carrying
