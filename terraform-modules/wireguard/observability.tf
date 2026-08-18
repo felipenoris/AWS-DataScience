@@ -25,7 +25,7 @@ resource "aws_cloudwatch_log_group" "handshakes" {
 #
 # IT NOTIFIES NOBODY, AND THAT IS STATED RATHER THAN IMPLIED (Lesson 5, an intention is not a
 # control). D12 left the budget with no subscriber and this environment's first automatic
-# notification is Stage 4 step 10.4's GuardDuty topic, in Audit. Until an SNS topic exists in
+# notification is Stage 15 step 4's GuardDuty topic, in Audit. Until an SNS topic exists in
 # this account, the alarm is read by ./aws/vpn.py VP-6 and by Stage 12's dashboard - so what
 # it buys today is a state a script can measure, not a page anybody receives.
 resource "aws_cloudwatch_metric_alarm" "health" {

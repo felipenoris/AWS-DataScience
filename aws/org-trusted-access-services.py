@@ -28,7 +28,8 @@
 #
 # The list is not static, and every stage that adds to it says so: `access-analyzer` in
 # Stage 1b step 8.2, `ram` in Stage 1d step 11 (without which a Lake Formation grant
-# silently becomes a pending RAM invitation), then GuardDuty at Stage 4, Security Hub at
+# silently becomes a pending RAM invitation), then GuardDuty at Stage 15 (the 2026-08-18
+# split moved it out of Stage 4), Security Hub at
 # Stage 5 and Macie at Stage 11 - each of those delegations *enables* its service, which is
 # why they are not here yet (Stage 1b step 8.1).
 #
@@ -218,7 +219,7 @@ result means the registration is absent, not that it is pending.""")
             rep.line()
             rep.text("""Section 2 is one row of this table, kept separate because it is the one Stage 1b
 step 8.2 creates and verifies. Everything else here is the landing zone, until a
-later stage delegates GuardDuty (Stage 4), Security Hub (Stage 5), RAM (Stage 1d
+later stage delegates GuardDuty (Stage 15), Security Hub (Stage 5), RAM (Stage 1d
 step 11) or Macie (Stage 11).""")
 
         # ------------------------------------------------------------------------------

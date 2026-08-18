@@ -453,7 +453,7 @@ Logs Insights — the wrong trade for a debugging log), 30 days because it answe
   slice — ingestion (~USD 0.50/GB) bills only while traffic flows, so this is free at rest. The delivery
   role is 1.1a's `iam-role` module's first caller; the log group stays on **default encryption** — a CMK
   would put ~USD 1/key-month per account on the floor for a debugging log (declined at build, 2026-08-16).
-- **5.2 — Detection needs nothing here**: GuardDuty (Stage 4 step 10) reads flow logs on its own without
+- **5.2 — Detection needs nothing here**: GuardDuty (Stage 15 — Stage 4 step 10 until the 2026-08-18 split) reads flow logs on its own without
   anything being enabled.
 
 #### 6. The two VPC peerings

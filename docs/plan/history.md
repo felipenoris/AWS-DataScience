@@ -320,6 +320,24 @@ onwards the file records how the environment changed, not just the plan.
   Stage 3 record and the tree now disagree by one endpoint, deliberately and with both sides dated.
   Everything else the withdrawal touched was still prose.
 
+- **2026-08-18 — GuardDuty leaves Stage 4 for a new Stage 15, and Stage 4 closes with the split.** The
+  user's direction, hours after pass 4 had been prepared against the current documentation — so the move
+  carried a *prepared* step, findings and all: the protection plans arrive ON (all but Runtime
+  Monitoring), the switch-off on Audit's own detector collides with `DenyGuardDutyTampering` (now
+  Stage 15's decision 1), auto-enable `ALL` never reaches Management, and the `Security` OU's measured
+  SNS statements forbid reusing Control Tower's topics. **This entry exists because the re-scope came
+  after the stage had provisioned** (the host, the anchors, the six-set deny — passes 1-3 measured and
+  done), which is the class of change this file keeps — and because it is the plan's first deliberate
+  overrule of one of its own principles: principle 9 had coupled GuardDuty to the first internet-facing
+  resource, and the split breaks that coupling with the trade argued in a new `institutional-delta.md`
+  row (an exposed host unwatched through the build-out, against a free-trial window that opens over a
+  populated estate). The mechanics of the move: step 10 and its sub-steps became Stage 15 steps 0-6 one
+  for one; decisions 3 and 5 and verifications (v) and (ix) travelled with their numbers retired into
+  tombstones; `VP-8` left `./aws/vpn.py` for a new `./aws/guardduty.py` (`GD-1`–`GD-3`) with the id
+  retired rather than renumbered, and `vpn.py`'s default narrowed to the two profiles its remaining
+  subject needs; Stage 11 step 4 now gates on Stage 15 plus a month of billing, and Stage 5 step 13.2's
+  Security Hub ingestion is recorded as empty until Stage 15 runs.
+
 ---
 
 *Plan core: [GENERAL_PLAN.md](../GENERAL_PLAN.md) · Decisions: [docs/plan/decisions/INDEX.md](decisions/INDEX.md) · Stages: [docs/plan/stages/INDEX.md](stages/INDEX.md)*

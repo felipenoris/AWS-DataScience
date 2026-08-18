@@ -105,8 +105,11 @@ These come from `CLAUDE.md` and constrain every stage:
    policies, the data perimeter of `docs/plan/architecture.md` §4.2): it is free, it is structural, and a
    guardrail written after the thing it guards has already been used is a guardrail that arrives late.
    **The detective half is enabled when there is something to detect**, service by service, each naming
-   the stage that turns it on — GuardDuty at Stage 4, with the first internet-facing resource; Security Hub
-   at Stage 5, with the first governed data; Macie at Stage 11. Detection is metered, it observes rather
+   the stage that turns it on — Security Hub at Stage 5, with the first governed data; Macie at Stage 11;
+   and GuardDuty at **Stage 15**, which is this principle overruled once, with its eyes open: the coupling
+   to the first internet-facing resource (Stage 4) was broken by the 2026-08-18 split, deliberately, and
+   the trade — an exposed host unwatched through the build-out, against a free-trial window that opens
+   over a populated estate — is argued in `docs/plan/institutional-delta.md`, not silently absorbed. Detection is metered, it observes rather
    than prevents, and turning it on over empty accounts buys nothing while spending the one free window in
    which its real cost could have been measured. **The exception is anything detective that is free**, which
    follows the preventive rule instead: IAM Access Analyzer's external-access findings, CloudTrail log file
@@ -133,7 +136,7 @@ its **Consumes** row names; that is the whole reading list.
 | [1d — Audit trail and org-wide enablement](plan/stages/stage-01d-org-wide-enablement.md) | Object Lock, the AWS Config decision, org-wide RAM + the Lake Formation cross-account version, **and the Region ceiling on `Security`** (steps 9-12, independent of each other) | **DONE 2026-08-15 — this closes the landing zone.** Object Lock is on at `COMPLIANCE`/90 days, written past `CTS3PV8` as `AWSControlTowerExecution`; the Config recorder is left alone (measured ~USD 0.5/month) and Management is deliberately unrecorded; RAM org-wide sharing is on; the Region ceiling is on `Security` |
 | [2 — Terraform foundation](plan/stages/stage-02-terraform-foundation.md) | State buckets, the six persona permission sets written from scratch, the policy import, the hygiene checks, D11's `up`/`down`/`status` | **DONE** (2026-08-16) — all nine verifications answered, (iii) from Management (`INV-17`) |
 | [3 — Networking](plan/stages/stage-03-networking.md) | One VPC per account that has one, split `foundation/` + `egress/` — **plus the first reusable modules**, moved here from Stage 2 step 7 | **DONE** (2026-08-16) — applied, measured and torn down to USD 0.0000/h; D11 proven twice (`foundation/` byte-identical on the second `up`, every `[E]` id new); the perimeter, both peerings and the flow logs probed |
-| [4 — VPN](plan/stages/stage-04-vpn.md) | WireGuard over the Stage 3 network, the only entry point; GuardDuty on, with the first exposed resource | **in progress** (since 2026-08-16) — revised into the action-checklist format; decision 4 (third review) moved the host private key into a `[P]` Secrets Manager secret, with [`docs/plan/runbooks/vpn-keys.md`](plan/runbooks/vpn-keys.md) owning every key event; `sandbox/vpn/` is the tree's first `[D]` slice. **Passes 1-3 done; pass 4 (GuardDuty org-wide) is the only step left and is prepared (2026-08-18) — the protection plans arrive ON, so 10.3 switches them off, and Audit's own detector is behind `DenyGuardDutyTampering` (decision 5)** |
+| [4 — VPN](plan/stages/stage-04-vpn.md) | WireGuard over the Stage 3 network, the only entry point | **DONE 2026-08-18 — closed by the GuardDuty split**: passes 1-3 executed and measured; pass 4 left the stage whole for Stage 15, prepared. Decision 4 (third review) moved the host private key into a `[P]` Secrets Manager secret, with [`docs/plan/runbooks/vpn-keys.md`](plan/runbooks/vpn-keys.md) owning every key event; `sandbox/vpn/` is the tree's first `[D]` slice; the close-out log entry is the user's |
 | [5 — Data foundation](plan/stages/stage-05-data-foundation.md) | Lake, Glue, Iceberg, Lake Formation + the three cross-account shares; Security Hub on | not started — **revised 2026-08-17 after the data-governance review** (the `zone` tag dimension; classification-scoped LF-TBAC grants, `restricted` by explicit grant only); **the NFS requirement withdrawn later the same day — no `nfs/` slice (D24 withdrawn)** |
 | [6 — Unified Studio](plan/stages/stage-06-unified-studio.md) | The DataZone V2 domain, project profiles, and the two egress designs compared | not started |
 | [7 — GitLab, Runners, ECR](plan/stages/stage-07-gitlab-runners-ecr.md) | GitLab CE on EC2, runners, registries, internal names and TLS from the internal CA | not started |
@@ -144,6 +147,7 @@ its **Consumes** row names; that is the whole reading list.
 | [12 — Observability and FinOps](plan/stages/stage-12-observability-finops.md) | Dashboards, alarms, cost attribution against the real bill | not started |
 | [13 — Public web tier](plan/stages/stage-13-public-web-tier.md) | The public-facing experiment in front of a private backend — **and the only stage with public DNS** (D15 phase 2) | not started |
 | [14 — Sandbox vending](plan/stages/stage-14-sandbox-vending.md) | A business unit's `Sandbox` account from one name (D35) | not started |
+| [15 — GuardDuty org-wide](plan/stages/stage-15-guardduty.md) | Threat detection over the whole organization — delegation to Audit, auto-enable `ALL`, every optional plan switched off (they arrive ON), findings routed to a human for the first time | not started — created 2026-08-18 by splitting Stage 4's pass 4 out whole; nothing blocks it, and it gates Stage 11 step 4 (a month of billing) and Stage 5 step 13.2's ingestion |
 
 ---
 

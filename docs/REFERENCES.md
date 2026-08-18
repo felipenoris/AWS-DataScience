@@ -511,41 +511,43 @@
 
 - **Configuring S3 Object Lock** — enabling it on an *existing* bucket from the console or `put-object-lock-configuration`, the permanence ("you can't disable Object Lock or suspend versioning for that bucket"), and the constraint that decides which Control Tower bucket this applies to: **a bucket with Object Lock cannot be a destination for S3 server access logs** (Stage 1d step 9): <https://docs.aws.amazon.com/AmazonS3/latest/userguide/object-lock-configure.html>.
 
-- **Managing GuardDuty accounts with AWS Organizations** — "For this administrator account, GuardDuty gets enabled automatically only in the current AWS Region", which is why the delegation moves to Stage 4 with the enablement rather than happening in Stage 1b step 8: <https://docs.aws.amazon.com/guardduty/latest/ug/guardduty_organizations.html>.
+- **Managing GuardDuty accounts with AWS Organizations** — "For this administrator account, GuardDuty gets enabled automatically only in the current AWS Region", which is why the delegation moved out of Stage 1b step 8 to travel with the enablement — Stage 4 then, Stage 15 since the 2026-08-18 split: <https://docs.aws.amazon.com/guardduty/latest/ug/guardduty_organizations.html>.
 
-- **Setting GuardDuty organization auto-enable preferences** — `ALL` covers "all the accounts in an organization", including "those accounts that may have been suspended or removed" and "the delegated GuardDuty administrator account", with up to 24 h to propagate. The reading that corrected Stage 4 step 10.2's "existing members need the explicit add"; what remains for verification (v) is Management's own coverage: <https://docs.aws.amazon.com/guardduty/latest/ug/set-guardduty-auto-enable-preferences.html>.
+- **Setting GuardDuty organization auto-enable preferences** — `ALL` covers "all the accounts in an organization", including "those accounts that may have been suspended or removed" and "the delegated GuardDuty administrator account", with up to 24 h to propagate. The reading that corrected the org-configuration step's "existing members need the explicit add" (now Stage 15 step 2); Management's own coverage was later answered NO by the members page (Stage 15 verification (i)): <https://docs.aws.amazon.com/guardduty/latest/ug/set-guardduty-auto-enable-preferences.html>.
 
 - **Designating a delegated GuardDuty administrator account** — the one-line CLI form
   (`enable-organization-admin-account --admin-account-id … --region us-west-2`), and the two properties
-  that shape Stage 4 step 10.1: the designation is **per-Region**, and the *same* account must be the
+  that shape Stage 15 step 1: the designation is **per-Region**, and the *same* account must be the
   administrator in every Region where GuardDuty is enabled:
   <https://docs.aws.amazon.com/guardduty/latest/ug/delegated-admin-designate.html>.
 
 - **Permissions required to designate a delegated GuardDuty administrator account** — the management
   account needs `guardduty:EnableOrganizationAdminAccount` plus the Organizations reads, and the only
   principal the service creates is the **service-linked role `AWSServiceRoleForAmazonGuardDuty`**. Read
-  for Stage 4 step 10.5: it settles that `POLICIES.md`'s "carve out a named administration role"
+  for Stage 15 step 5: it settles that `POLICIES.md`'s "carve out a named administration role"
   alternative has no candidate among GuardDuty's own creations:
   <https://docs.aws.amazon.com/guardduty/latest/ug/organizations_permissions.html>.
 
 - **Adding members to the GuardDuty organization** — "There is an exception to the organization
   management account. Before the management account gets added as a GuardDuty member, it must have
-  GuardDuty enabled." **This answers the first half of Stage 4 verification (v) by documentation**:
-  auto-enable `ALL` does not reach Management on its own, so coverage there is a deliberate act (step
-  10.2a): <https://docs.aws.amazon.com/guardduty/latest/ug/add-member-accounts-guardduty-organization.html>.
+  GuardDuty enabled." **This answers the first half of Stage 15 verification (i) by documentation**:
+  auto-enable `ALL` does not reach Management on its own, so coverage there is a deliberate act (its
+  step 2a, decision 3): <https://docs.aws.amazon.com/guardduty/latest/ug/add-member-accounts-guardduty-organization.html>.
 
 - **Monitoring GuardDuty usage and estimating costs** — the 30-day free trial is per account and covers
   every protection plan, and usage is published **hourly to CloudWatch** under `AWS/GuardDuty`
-  (`AnalyzedCount`/`AnalyzedBytes` per data source). Read for Stage 4 step 10's Cost note: the trial
-  *could* price S3 Protection without paying for it, and would do so on an estate that is empty until
-  Stage 5 — which is Lesson 7 rather than a measurement:
+  (`AnalyzedCount`/`AnalyzedBytes` per data source). Read for Stage 15's Cost section: the trial
+  *could* price S3 Protection without paying for it — and pricing it over an empty estate is Lesson 7
+  rather than a measurement, which is half of the argument for the 2026-08-18 deferral itself: at
+  Stage 15 the estate is populated and the window finally measures something:
   <https://docs.aws.amazon.com/guardduty/latest/ug/monitoring_costs.html>.
 
 - **Amazon GuardDuty FAQs** — "GuardDuty Runtime Monitoring is the only protection plan that is not
   enabled by default when you turn on GuardDuty for the first time", with the same "turned on by
   default" answer given for S3 Protection, EKS Protection and Malware Protection. **The reading that
-  inverted Stage 4 step 10.3**: the paid add-ons are not left off, they arrive on and must be switched
-  off — and the switch is denied to Audit by `DenyGuardDutyTampering` (step 10.0, decision 5):
+  inverted the switch-off step (now Stage 15 step 3)**: the paid add-ons are not left off, they arrive on
+  and must be switched off — and the switch is denied to Audit by `DenyGuardDutyTampering` (Stage 15
+  step 0, decision 1):
   <https://aws.amazon.com/guardduty/faqs/>.
 
 - **How EC2 instance stop and start works** — Elastic IP addresses belong to the network interface, which is listed under "resources that persist" across a stop/start (and the address bills while the instance is stopped). Answers Stage 4 verification (ii) by documentation: "re-associate on start" is unnecessary code: <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/how-ec2-instance-stop-start-works.html>.

@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Status** | **in progress** — 1.3's rank and `dormant()` body are merged (2026-08-16, PR #9); the `("sandbox", "vpn")` row waits for the slice, as 1.3 says. Earlier the same day, **revised into the action-checklist format** (executor markers, action-first steps), with corrections against the documentation and the repository: the `vpn/` row ranks **between `foundation` and `egress`** in `scripts/tfhygiene/layers.py` — the earlier "after `egress`" inverted both consequences it claimed — and `scripts/slices.py`'s `dormant()` hook is a stub that **aborts** the moment a `[D]` row exists, so 1.3 owes it its body; step 7's handshake log is **generated on the host** — WireGuard writes no log file; verification (ii) is **answered by the EC2 documentation** (an Elastic IP stays associated across stop/start); 10.2's "existing members need the explicit add" was stale — auto-enable **`ALL` covers existing accounts and the delegated administrator itself**; 5.1's full tunnel gains **`::/0`**, closing an IPv6 bypass that would read as a lockout. `wireguard-tools`, `amazon-cloudwatch-agent` and `iptables-nft` were **measured present** in the AL2023 core repository for `us-west-2` (read from the repo bucket itself, 2026-08-16 — Lesson 23's residual, the no-NAT path itself, stays verification (i)). **Reviewed once more after Stage 3 closed (2026-08-16, post-teardown) — five corrections from what execution taught, each folded into its step:** the host key pair moves out of the instance into the git-ignored `.tfvars` (decision 4 — the SSM-resolved AMI re-plans as a **replacement** whenever the parameter moves, and an instrument's user data must carry `user_data_replace_on_change = true`, so a key living only in the host is Lesson 4 in a `[D]` resource); the module gains **`zone_index`** (`t4g.nano` capacity was measured absent in one AZ); Validation 2 **copies its "before" aside** — `aws/output/` regenerates in place, the rule Stage 3's validation recorded; 8.1's remote-state **profile arrives from the generated tfvars, never a literal** (pass 2's rule); the tunnel-pair deliverable **reuses `production/probes/`** — on disk, registered at rank 60 — instead of building a new probe. **Second design review (2026-08-16, in chat): the peers/key split** — the roster `peers.auto.tfvars` is **tracked**, public halves only, held to shape by `./scripts/check-tfvars-shape.py`; the private key rides `host-key.auto.tfvars` alone. **Decision 4's cost corrected**: the key lands in the **user data**, while state stores the provider's SHA-1 of `user_data` — neither leak nor backup (confirm at first apply). The key procedures gained a runbook, `docs/plan/runbooks/vpn-keys.md`. **Third design review (2026-08-16, in chat): decision 4 revised — the host private key leaves the tfvars/user-data path for a `[P]` Secrets Manager secret**, `awsds-<env>-vpn-host-key` (step 2.2a: container in `foundation/` with a resource-policy deny, value put by the user, fetched by the instance at first boot with its own role — Stage 7's container-not-value idiom arriving early). The user data now carries a pointer, `DescribeInstanceAttribute` stops revealing the key, every read of the value is a CloudTrail management event, and `host-key.auto.tfvars` is gone from the design — the tracked roster and its shape gate stay. Prices named in decision 4: USD 0.40/month, a retry-until-route fetch at first boot, rotation via a deliberate `-replace` (runbook §3), automatic rotation forbidden forever. `./aws/vpn.py` gained `VP-9` (the secret, its deny Sid, rotation off); verification (viii) added **Passes 1-3 are DONE (2026-08-16/18): host, anchors, peers, tunnel, the control-plane deny on the six persona sets, both validations, and the server-side MTU. Only PASS 4 (step 10, GuardDuty) remains, and it was PREPARED on 2026-08-18 against the current documentation — the preparation changed the step's shape rather than confirming it. New **10.0**: enabling GuardDuty turns on EVERY protection plan except Runtime Monitoring, so 10.3 is a switch-off and not an omission — and the switch for Audit's own detector is `guardduty:UpdateDetector`, which `DenyGuardDutyTampering` denies. `POLICIES.md`'s documented Stage 11 collision therefore arrives HERE, in the opposite direction, and is **decision 5**, due before 10.1. New **10.2a**: verification (v)'s first half is answered NO by documentation — `ALL` never reaches Management, which must enable GuardDuty itself first. 10.4 gained a measured reason not to reuse Control Tower's SNS topics (the `Security` OU's own SCP, read 2026-08-18: `GRSNSSUBSCRIPTIONPOLICY` and `GRSNSTOPICPOLICY` refuse both halves of the reuse); 10.5 can now answer its own conditional — the only principal GuardDuty creates is the SLR `AWSServiceRoleForAmazonGuardDuty`, which is not a carve-out candidate. `./aws/vpn.py` `VP-8` was widened to every optional plan and now fails on any that reads ENABLED — it will be red between 10.1 and 10.3 by design.** |
+| **Status** | **DONE 2026-08-18 — closed by the GuardDuty split; every remaining item below the fold is history, kept because the revision trail is the file's own record.** 1.3's rank and `dormant()` body are merged (2026-08-16, PR #9). Earlier the same day, **revised into the action-checklist format** (executor markers, action-first steps), with corrections against the documentation and the repository: the `vpn/` row ranks **between `foundation` and `egress`** in `scripts/tfhygiene/layers.py` — the earlier "after `egress`" inverted both consequences it claimed — and `scripts/slices.py`'s `dormant()` hook is a stub that **aborts** the moment a `[D]` row exists, so 1.3 owes it its body; step 7's handshake log is **generated on the host** — WireGuard writes no log file; verification (ii) is **answered by the EC2 documentation** (an Elastic IP stays associated across stop/start); 10.2's "existing members need the explicit add" was stale — auto-enable **`ALL` covers existing accounts and the delegated administrator itself**; 5.1's full tunnel gains **`::/0`**, closing an IPv6 bypass that would read as a lockout. `wireguard-tools`, `amazon-cloudwatch-agent` and `iptables-nft` were **measured present** in the AL2023 core repository for `us-west-2` (read from the repo bucket itself, 2026-08-16 — Lesson 23's residual, the no-NAT path itself, stays verification (i)). **Reviewed once more after Stage 3 closed (2026-08-16, post-teardown) — five corrections from what execution taught, each folded into its step:** the host key pair moves out of the instance into the git-ignored `.tfvars` (decision 4 — the SSM-resolved AMI re-plans as a **replacement** whenever the parameter moves, and an instrument's user data must carry `user_data_replace_on_change = true`, so a key living only in the host is Lesson 4 in a `[D]` resource); the module gains **`zone_index`** (`t4g.nano` capacity was measured absent in one AZ); Validation 2 **copies its "before" aside** — `aws/output/` regenerates in place, the rule Stage 3's validation recorded; 8.1's remote-state **profile arrives from the generated tfvars, never a literal** (pass 2's rule); the tunnel-pair deliverable **reuses `production/probes/`** — on disk, registered at rank 60 — instead of building a new probe. **Second design review (2026-08-16, in chat): the peers/key split** — the roster `peers.auto.tfvars` is **tracked**, public halves only, held to shape by `./scripts/check-tfvars-shape.py`; the private key rides `host-key.auto.tfvars` alone. **Decision 4's cost corrected**: the key lands in the **user data**, while state stores the provider's SHA-1 of `user_data` — neither leak nor backup (confirm at first apply). The key procedures gained a runbook, `docs/plan/runbooks/vpn-keys.md`. **Third design review (2026-08-16, in chat): decision 4 revised — the host private key leaves the tfvars/user-data path for a `[P]` Secrets Manager secret**, `awsds-<env>-vpn-host-key` (step 2.2a: container in `foundation/` with a resource-policy deny, value put by the user, fetched by the instance at first boot with its own role — Stage 7's container-not-value idiom arriving early). The user data now carries a pointer, `DescribeInstanceAttribute` stops revealing the key, every read of the value is a CloudTrail management event, and `host-key.auto.tfvars` is gone from the design — the tracked roster and its shape gate stay. Prices named in decision 4: USD 0.40/month, a retry-until-route fetch at first boot, rotation via a deliberate `-replace` (runbook §3), automatic rotation forbidden forever. `./aws/vpn.py` gained `VP-9` (the secret, its deny Sid, rotation off); verification (viii) added **Passes 1-3 are DONE (2026-08-16/18): host, anchors, peers, tunnel, the control-plane deny on the six persona sets, both validations, the behavioural deliverables, and the server-side MTU. Pass 4 (GuardDuty) was prepared 2026-08-18 against the current documentation — and then LEFT THE STAGE the same day, whole, for [Stage 15](stage-15-guardduty.md), on the user's direction: step 10 and its sub-steps, decisions 3 and 5, verifications (v) and (ix), the GuardDuty cost and risk rows, and the `VP-8` instrument (now `./aws/guardduty.py`, `GD-1`–`GD-3`; the `VP-8` id is retired, not renumbered). The split breaks principle 9's coupling — detection with the first exposed resource — deliberately; the trade is argued in the institutional-delta row it added, and the exposed host running unwatched until Stage 15 is this stage's remaining named risk, not a pending item. WITH THE SPLIT, NOTHING OF THIS STAGE'S SCOPE REMAINS OPEN: verifications i-viii are all answered or moved (iv and vi struck 2026-08-18 from the 2026-08-17 readings), the residuals all have owners elsewhere (the `Staging` assignment at the vend, INT-16's portal half at Stage 6 step 1, the key-fetch retry loop found effectively unexercisable). The stage closes with the split; the close-out log entry is the user's.** |
 | **Prerequisites** | Stage 3 — specifically `sandbox/foundation/` (the public subnet, the S3 gateway endpoint **and the 9.3 allow-list**, which this stage is the first to exercise) and the Sandbox↔Production peering (Stage 3 step 6). **Stage 3 is DONE (2026-08-16)** — all three passes applied and measured, so nothing below waits on it any longer. Two of its readings reach into this stage: the 9.3 allow-list is proven for the AL2023 **metadata** path (`dnf makecache` succeeded from a tier with no default route, and a bucket the policy does not name was denied 200/403), but **not for a package download and not for the CloudWatch agent's own bucket** — which is exactly what verification (i) below still asks. The Sandbox↔Production peering is exercised and reachable in the intended direction only. **The network is torn down** (`make down`, USD 0.0000/h) and step 1 does not need it back: everything the host consumes is `[P]` in `sandbox/foundation/` — the public subnet, the IGW and the S3 gateway endpoint — which is why `vpn/` ranks **before** `egress` rather than after, and why verification (iii) can ask whether Session Manager reaches the host with no interface endpoint in the account at all. D4 is decided: self-managed WireGuard |
 | **Consumes** | [D4](../decisions/D04-vpn-wireguard.md), [D6](../decisions/D06-dlp-approach.md), [D11](../decisions/D11-lab-lifecycle.md), [D16](../decisions/D16-break-glass.md), [D26](../decisions/D26-unified-studio.md), [D35](../decisions/D35-sandbox-cardinality.md) |
 | **Proves** | [INT-16](../integrations.md) — **provisionally**: the API/console half is answered here in full; the portal half is re-read at Stage 6 step 1, because the Unified Studio domain does not exist before that (see the deliverables) |
@@ -25,14 +25,18 @@ AWS control plane.
 
 ## What this stage builds, and in which accounts
 
-Three slices in two accounts, plus one org-wide enablement done by hand:
+Three slices in two accounts:
 
 | Where | What | Layer |
 |---|---|---|
 | `sandbox/foundation/` (amended) | the Elastic IP, the WireGuard security group and the host-key secret container, all exported | `[P]` |
 | `sandbox/vpn/` (new) + `terraform-modules/wireguard/` (new) | the `t4g.nano` instance, user data, peer config, handshake log, alarm | `[D]` — stopped between sessions, never destroyed |
 | `identity/sso/` (amended) | the `aws:SourceIp` deny on the persona permission sets (step 8) | `[P]` |
-| Management + Audit, by hand | GuardDuty delegated administration and org-wide enablement (step 10) | — (no slice, no profile) |
+
+*A fourth row — GuardDuty delegated administration and org-wide enablement, by hand in Management and
+Audit — **left this stage whole for [Stage 15](stage-15-guardduty.md) on 2026-08-18**, together with its
+step number (10), its decisions and its verifications. The tombstones below keep the retired numbers
+addressable.*
 
 **This is the repository's first `[D]` slice**, so the Stage 2 machinery meets its first real customer —
 and it arrives owing two debts, both paid in 1.3: the row in `scripts/tfhygiene/layers.py`, and the body
@@ -82,9 +86,10 @@ Every action below opens with one of three markers:
 Several numbers are **stable addresses cited from other files** — `step 1` (the NAT correction) from
 Stage 3 step 6.5; `step 3` (no port 22) and `step 7` (the CloudWatch agent) from Stage 3's 9.3 table;
 `step 4` from Stage 3's address plan; `step 5` (full tunnel) from `docs/plan/architecture.md` §3 and Stage 3
-view 3; `step 8` from `docs/GLOSSARY.md`, `docs/plan/architecture.md` and INT-16; `step 10` from
-`docs/plan/cost-model.md`, Stage 1b step 8 and Stage 11 — and `./aws/vpn.py` reads its contracts against
-1.1, 2.1, 3, 7, 8.1-8.3 and 10.3 by number. They do not change. The sequence to work in is **four passes**:
+view 3; `step 8` from `docs/GLOSSARY.md`, `docs/plan/architecture.md` and INT-16 — and `./aws/vpn.py` reads its
+contracts against 1.1, 2.1, 3, 7 and 8.1-8.3 by number. They do not change (`step 10`, cited from
+`docs/plan/cost-model.md`, Stage 1b step 8 and Stage 11, is retired to Stage 15 — the number stays
+reserved). The sequence worked in was **three passes**, and the fourth left the stage:
 
 | Pass | # | What | Slice · layer | Applied as |
 |---|---|---|---|---|
@@ -92,11 +97,13 @@ view 3; `step 8` from `docs/GLOSSARY.md`, `docs/plan/architecture.md` and INT-16
 | **1** | 1, 3, 4, 7 | the `wireguard` module and the `vpn/` slice: instance, NAT, SG contents, peers, handshake log, alarm | `terraform-modules/wireguard/` + `sandbox/vpn/` `[D]` | idem |
 | **2** | 5, 6 | the client config on the laptop; the route/SG audit | laptop, by hand; readings | — |
 | **3** | 8, 9 | the control-plane deny; the client instructions | `identity/sso/` `[P]`; `README.md` | `awsds-infra-identity` |
-| **4** | 10 | GuardDuty org-wide | by hand: Management, then Audit | `AWS Control Tower Admin`, console/CloudShell |
+| ~~**4**~~ | ~~10~~ | ~~GuardDuty org-wide~~ **moved whole to [Stage 15](stage-15-guardduty.md) (2026-08-18)** | — | — |
 
 Pass 3 runs only after pass 2 has proven the tunnel: the deny pins every persona to an IP that must
-demonstrably exist and route first. Pass 4 is independent and can run any time after pass 1 — it sits
-last only because the thing it detects (an exposed host) arrives in pass 1.
+demonstrably exist and route first. The retired pass 4 was independent of the other three — which is
+part of why it could leave: nothing in passes 1-3 consumes it, and Stage 15's Prerequisites row records
+that the coupling it did have (detection arriving with the first exposed host, principle 9) was broken
+deliberately, not overlooked.
 
 ---
 
@@ -417,141 +424,21 @@ reinvented wrong (Lesson 16's spirit). **Explanation:** `README.md`, written onc
   succeeding), and what a rebuild changes — nothing, because of step 2 **and 4.3 together**: the endpoint
   address and the host key are both `[P]` — the allocation and the secret.
 
-### 10. Enable GuardDuty org-wide — by hand, from Management and Audit
+### 10. ~~Enable GuardDuty org-wide~~ — moved whole to Stage 15 (2026-08-18)
 
-**Action:** delegate GuardDuty administration to Audit, auto-enable it for the whole organization, and
-put the paid protection plans back where this plan wants them. **Why:** this stage builds the project's
-first internet-facing resource — an instance with a public EIP and an open UDP port — and this host's
-failure modes (role credentials used from outside AWS, outbound to known-bad destinations, mining
-patterns) are exactly what GuardDuty detects. Until now there was nothing exposed and nothing to detect
-(`docs/GENERAL_PLAN.md` principle 9). **Explanation:** two acts in the two accounts that hold no CLI
-profile, both as `AWS Control Tower Admin`, console or CloudShell; **delegating IS enabling** —
-designating the administrator turns the service on in Audit, which is why 1b step 8 deferred the
-delegation to this stage. No per-account configuration follows for the **foundational** sources:
-GuardDuty reads CloudTrail management events, flow logs and DNS logs on its own. The optional plans are
-a different matter, and 10.0 is why.
-
-- **10.0 — [Claude] Read the defaults before opening a console: they invert 10.3** (documentation,
-  2026-08-18). Enabling GuardDuty in an account for the first time turns on **every protection plan
-  except Runtime Monitoring** — S3 Protection, EKS Protection, Malware Protection for EC2, RDS
-  Protection, Lambda Protection, AI Protection — each inside its own 30-day free trial. The S3
-  Protection page says it outright ("GuardDuty will also enable S3 Protection, which is included in the
-  free trial"), and the FAQ states the exception in one line: Runtime Monitoring "is the only protection
-  plan that is not enabled by default". **So the add-ons are not *left* off — they arrive on and have to
-  be switched off**, and the switch is a different API in each of the three places they land, one of
-  which this organization denies:
-
-  | Where a plan is on | The call that turns it off | Under `awsds-org-scp-baseline` |
-  |---|---|---|
-  | a **member** account | `guardduty:UpdateMemberDetectors` | allowed |
-  | **future** accounts (the org preference) | `guardduty:UpdateOrganizationConfiguration` | allowed |
-  | **Audit's own** detector | `guardduty:UpdateDetector` | **denied — `DenyGuardDutyTampering`** |
-
-  That third row is
-  [`POLICIES.md`](../../../terraform-live/identity/org-policies/POLICIES.md)'s documented collision
-  arriving **one stage early and in the opposite direction**: it was written expecting Stage 11 to need
-  `UpdateDetector` to turn a feature **on**, and what this step needs is the same call to turn six
-  **off**. **No ordering avoids it** — Audit's detector is created *by* 10.1, with the add-ons already
-  enabled, before any configuration is possible — so it is **decision 5** below, taken before 10.1 and
-  not at the console. It is also the exact situation `POLICIES.md` says must never be discovered at the
-  console in the evening, so meeting it here, on an empty estate, is the cheap version.
-
-- **10.1 — [user] Delegate from Management** — `AWS Control Tower Admin` → `AWSAdministratorAccess`, in
-  **`us-west-2`** (the Region ceiling does not exempt GuardDuty — open question 16's closure), CloudShell
-  or console:
-
-  ```
-  aws guardduty enable-organization-admin-account --admin-account-id <Audit> --region us-west-2
-  ```
-
-  Three properties of this one call, all documented and all consequential. **It is per-Region**, and the
-  same account must be the administrator in *every* Region where GuardDuty is ever enabled — a second
-  Region later is a repeat of this command, never a different account. **It enables GuardDuty in Audit**
-  and registers `guardduty.amazonaws.com` for trusted access in one act (that is what 10.6's INV-09
-  restatement records). **It does not enable GuardDuty in Management** — the console path can, because
-  its "Get started" button is on the same page, so prefer the CLI form here and let 10.2a decide
-  Management deliberately.
-
-- **10.2 — [user] Set the org configuration in Audit** — same identity, GuardDuty console → **Accounts**
-  → auto-enable **`ALL`**, or `update-organization-configuration --auto-enable-organization-members ALL`
-  against **Audit's own detector id**. `ALL` covers existing accounts, suspended or removed ones, **and
-  the delegated administrator itself**; allow up to 24 h to propagate. **Set every optional plan's auto-enable to
-  `NONE` in the SAME act, not afterwards** — one `update-organization-configuration` carrying both
-  `--auto-enable-organization-members ALL` and a `--features` list of
-  `{"Name":"…","AutoEnable":"NONE"}`, or one **Save** on the console's Protection Plans page, which has a
-  row per plan. The order inside the step is the whole point: `ALL` is what brings the members up, so
-  `ALL` first and `NONE` second means every member comes up with every plan **on**, and 10.3 then owes a
-  clean-up pass (`UpdateMemberDetectors`) that a single call would have made unnecessary. This is
-  `UpdateOrganizationConfiguration` either way, which the SCP allows.
-  **Type the feature names from `get-detector`'s own `Features` list, not from memory** — Audit's
-  detector exists by now and enumerates them, AI Protection included, which a typed list would miss
-  (Lesson 23's shape: bind to what the API returns).
-
-- **10.2a — [user, decision] Management's own coverage — and verification (v)'s first half is already
-  answered, by documentation rather than by the run.** `ALL` does **not** reach the management account
-  on its own: "before the management account gets added as a GuardDuty member, it must have GuardDuty
-  enabled". So Management is covered only if somebody enables it there, deliberately, as the management
-  account. **Recommended: enable it.** It is the SCP-exempt account, it holds break-glass root (D16), and
-  it is the one place where a compromise is constrained by nothing this project wrote — which makes
-  "GuardDuty everywhere except there" the wrong shape. It costs one more account's foundational
-  detection after the trial, and `UpdateDetector` **works** there (Management is exempt from SCPs), so
-  its add-ons can be switched off without decision 5's procedure. Record the answer either way: what
-  remains of verification (v) is then only whether a later vend arrives covered.
-
-- **10.3 — [user] Leave the estate on foundational detection only** — S3 Protection and Malware
-  Protection for EC2 were always the named two (billed separately, decided in Stage 11 step 4 against a
-  real bill); 10.0 widens the list to every optional plan. **Where each is switched off:** members
-  through `UpdateMemberDetectors` (allowed, one call for all of them); future accounts through 10.2's
-  `NONE`; **Audit's own detector through decision 5, and nothing else works**. `./aws/vpn.py` `VP-8`
-  reads every feature of every detector it can reach and fails on any that is `ENABLED`, so drift and
-  an unfinished 10.3 look the same in the report — which is the intent.
-
-- **10.4 — [user] Route findings** — in Audit, console-built (`ManagedBy` n/a — no Terraform reaches
-  that account by design): an EventBridge rule on GuardDuty findings → SNS → e-mail. Decision 3 below;
-  record the topic name and who subscribes — D12 skipped budget alerts, so this is the project's first
-  automatic notification of anything. **Create a new `awsds-*` topic; do not reuse Control Tower's** —
-  and this is measured, not assumed: the `Security` OU's Control Tower SCP was read from the Identity
-  profile on 2026-08-18 and carries three SNS statements, all excluding only `AWSControlTowerExecution`.
-  `GRSNSSUBSCRIPTIONPOLICY` denies `sns:Subscribe`/`Unsubscribe` on `aws-controltower-SecurityNotifications`;
-  `GRSNSTOPICPOLICY` denies `AddPermission`, `CreateTopic`, `DeleteTopic`, `RemovePermission` and
-  `SetTopicAttributes` on all three `aws-controltower-*` notification topics; `CTSNSPV1` is a
-  deny-all-but-a-short-list over `aws-controltower-CentralizedLoggingNotifications*`. **Both halves of
-  the reuse fail** — the subscription *and* the topic-policy edit an EventBridge target needs — so reuse
-  is not a shortcut that half works, it is refused twice. A topic this project names has no statement
-  over it at all.
-
-- **10.5 — Read the SCP interaction, settled here because it is free here and costly later**:
-  `awsds-org-scp-baseline` denies `guardduty:UpdateDetector` on the organization root, Audit included —
-  org-wide administration through `UpdateOrganizationConfiguration`/`UpdateMemberDetectors` is not
-  denied, and enabling the base service needs neither, so **10.1 and 10.2 are not blocked**; 10.3's
-  Audit half is, and Stage 11 step 4 will be. **What this step can now answer, which is why
-  `POLICIES.md` deferred the question to it: the only principal GuardDuty creates is the
-  service-linked role `AWSServiceRoleForAmazonGuardDuty`** (one per account where the service is
-  enabled) — it is the *service's* identity, not an administration role, and it never calls
-  `UpdateDetector` on a human's behalf. **So `POLICIES.md`'s "carve out a named administration role"
-  alternative has no candidate in GuardDuty's own creations**: the only nameable principal that could
-  hold the carve-out is the Identity Center administrator role in Audit
-  (`AWSReservedSSO_AWSAdministratorAccess_*`), which is decision 5's option (c). Record the SLR's exact
-  ARN once it exists, in the stage log, so Stage 11 inherits a reading rather than a search.
-
-- **10.6 — [Claude] Close the paperwork in the same sitting**: restate `INV-09` in `docs/AWS_STATE.md`
-  (nine trusted-access principals, `guardduty` delegated to Audit — §C already predicts it) and re-run
-  `./aws/org-trusted-access-services.py`. **[user]** Record 10.1-10.4 in the stage log — including the
-  feature list `get-detector` actually returned, which is this stage's only measurement of what "the
-  defaults" mean on the day it ran.
-
-**Cost:** free for the first 30 days per account, then ~USD 3-5/month for foundational detection
-(`docs/PRICING.md`, measured). **The trial covers every plan, not only the foundational sources**, and
-the window starts now, in every account at once — a discount on this stage and the next, not a
-measurement instrument to be spent deliberately (Lesson 6). **10.0 sharpens that last clause rather than
-softening it:** the plans that arrive on *do* come with usage metrics — CloudWatch publishes
-`AnalyzedCount`/`AnalyzedBytes` per data source under the `AWS/GuardDuty` namespace, hourly, so the trial
-could in principle price S3 Protection without paying for it. It would price it **on an estate that is
-empty today** — no lake until Stage 5, no EKS, no RDS, no Lambda of this project's own — so the number
-would come out near zero and would flatter exactly the option it was meant to test (Lesson 7). That is
-the argument for 10.3 as written: switch them off, and let Stage 11 step 4 measure them when there is
-something to measure. Of the default-on set, only **S3 Protection** has a cost surface here that will
-grow, and **Malware Protection for EC2** bills only when a finding triggers a scan.
+**The entire step — 10.0 through 10.6, 10.2a included, its decisions 3 and 5, its verifications (v)
+and (ix), its cost and its risk rows — is now [Stage 15](stage-15-guardduty.md), steps 0-6**
+(10.2a became that stage's step 2a plus decision 3), split out on the user's
+direction the same day the step had been prepared against the current documentation. Nothing was dropped
+in the move: the prepared findings (the protection plans arrive ON and must be switched off; the
+`DenyGuardDutyTampering` collision on Audit's own detector; auto-enable `ALL` never reaching Management;
+the measured `Security`-OU SNS statements) travelled with it, already folded into that stage's steps.
+**The number 10 stays reserved here** — `docs/plan/cost-model.md`, Stage 1b step 8 and Stage 11 all cite
+"Stage 4 step 10" in prose that predates the split, and a reader following one of those lands on this
+tombstone rather than on a renumbered stranger. **What the split cost this stage:** principle 9's
+coupling — detection arriving with the first exposed resource — is deliberately broken, and the
+[`institutional-delta.md`](../institutional-delta.md) row the split added is where that trade is argued,
+not here.
 
 ---
 
@@ -559,8 +446,9 @@ grow, and **Malware Protection for EC2** bills only when a finding triggers a sc
 
 Each is written so its output differs between working and broken (Lesson 13). **The mechanical half is
 `./aws/vpn.py`** ([`aws/INDEX.md`](../../../aws/INDEX.md)): the instance, the EIP, the one world-open
-rule, the log and alarm, the host-key secret with its deny and rotation off (`VP-9`), which sets carry
-`DenyControlPlaneOffVpn`, the GuardDuty state per account. The
+rule, the log and alarm, the host-key secret with its deny and rotation off (`VP-9`), and which sets
+carry `DenyControlPlaneOffVpn` (the GuardDuty reading it used to carry as `VP-8` moved to
+`./aws/guardduty.py` with the rest of step 10 — the id is retired, not renumbered). The
 behavioural proofs below are the stage's own — no describe call substitutes (Lesson 20), and they are
 **[user]** acts from the laptop, tunnel up and down.
 
@@ -614,7 +502,7 @@ Measured rows in `docs/PRICING.md` (Lesson 6):
 | `t4g.nano` while up | ~USD 0.0042/h | `[D]` |
 | Full-tunnel data transfer out | ~USD 0.09/GB | usage — connect for lab sessions |
 | Handshake log + alarm | ~USD 0.10-0.30/month | `[P]` |
-| GuardDuty | 0 for 30 days, then ~USD 3-5/month | the floor's low→high band (`docs/plan/cost-model.md`) |
+| ~~GuardDuty~~ | — | moved to [Stage 15](stage-15-guardduty.md) with step 10; the floor's low→high band moves with it |
 
 ## Decisions due while executing
 
@@ -626,8 +514,8 @@ whoever is at the keyboard (Lesson 16).
    per-set statements — is Lesson 14 with six copies.
 2. **What "unhealthy" means for the alarm** (7.3) — recommended: the EC2 status-check alarm, with the
    handshake log kept for diagnosis rather than alarmed on.
-3. **Findings routing** (10.4) — recommended: EventBridge → SNS → e-mail, in Audit, console-built. Record
-   the topic name and who subscribes.
+3. ~~**Findings routing** (10.4)~~ — moved to [Stage 15](stage-15-guardduty.md) with step 10; it is that
+   stage's decision 2.
 4. **Where the WireGuard host key lives** (2.2a, 4.3) — **revised at the third design review
    (2026-08-16): a `[P]` Secrets Manager secret, read by the instance at first boot.** The pair is
    still generated on the laptop, never by Terraform and never on the host — the second review's
@@ -659,37 +547,9 @@ whoever is at the keyboard (Lesson 16).
    not a hash (1.4) — and what makes that harmless is the design rather than the storage: the
    script contains no key at all.
 
-5. **How Audit's own detector loses the add-ons it was born with** (10.0, 10.3) — **due before 10.1**,
-   because the detector is created by that call with every optional plan already enabled and
-   `guardduty:UpdateDetector` is denied to Audit by `awsds-org-scp-baseline`. Three exits, and the
-   recommendation is (a):
-   **(a) the detach/re-attach procedure `POLICIES.md` already writes down** — detach
-   `awsds-org-scp-baseline` from the root, switch the plans off in Audit, re-attach, and re-run phases
-   1-3 of [`scp-battery.md`](../runbooks/scp-battery.md) before the sitting is called done. It is the
-   same shape as the `s3:DeleteBucket` procedure in `Data`, it is minutes long, and it leaves the ceiling
-   exactly as it was. Its cost is a window in which nothing denies GuardDuty tampering anywhere — nor
-   anything else in that document: `DenyLeaveOrganization`, `DenyIamUserCreation`, the two exfiltration
-   statements and `DenyEcrPublicEntirely` all lift with it — which is why it is a *procedure*, done in
-   one sitting, never left half-finished. **Three mechanics to have in hand before starting it**, none of
-   them obvious at the keyboard: the detach and the re-attach run as **the infrastructure user on
-   Identity** (`awsds-infra-identity`), which holds `AttachPolicy`/`DetachPolicy` through the delegation
-   — *not* as the Control Tower admin doing the GuardDuty half in Audit, so this is two identities in one
-   sitting; the attachment is **Terraform-managed with `prevent_destroy`**, so the by-hand detach is
-   drift and the end-state test is `terraform plan` on `identity/org-policies/` reading **`No changes`**
-   after the re-attach, which is what proves the pair completed rather than a memory of having typed it;
-   and the GuardDuty change in the middle is `update-detector` against **Audit's own detector id**, from
-   CloudShell in Audit, with `get-detector` read back before re-attaching — because re-attaching first
-   and then discovering the change did not land means running the whole procedure twice.
-   **(b) leave Audit's add-ons on for the free trial** and revisit at Stage 11 step 4. Cheap, honest
-   about the trial, and wrong for the reason the Cost note gives: the estate is empty, so what the trial
-   would measure is not what Stage 11 will pay. It also leaves `VP-8` failing for a month, which trains
-   the reader to ignore a red check.
-   **(c) carve a named principal out of `DenyGuardDutyTampering`** — the only candidate is Audit's
-   Identity Center administrator role (`AWSReservedSSO_AWSAdministratorAccess_*`), since GuardDuty
-   itself creates only the service-linked role (10.5). It converts a procedure into a standing
-   exemption held by the one role a compromise of Audit would already have, and the statement exists to
-   stop exactly that principal from turning detection off (Lesson 18's neighbourhood). Reject unless a
-   second sitting proves (a) unworkable.
+5. ~~**How Audit's own detector loses the add-ons it was born with** (10.0, 10.3)~~ — moved to
+   [Stage 15](stage-15-guardduty.md) with step 10; it is that stage's decision 1, options and
+   recommendation intact.
 
 ## Verifications to answer while executing
 
@@ -701,11 +561,11 @@ Record every answer, including the ones that come out fine.
 | ii | ~~Does the EIP association survive a stop/start?~~ **Answered by the EC2 documentation (2026-08-16):** the Elastic IP belongs to the network interface, which **persists across stop/start** — the address stays associated (and bills while stopped), so "re-associate on start" is unnecessary code. Residual: the `make down`/`make up` diff of `./aws/vpn.py` (`VP-2`) confirms it on this instance | 2.1 |
 | iii | ~~Does SSM reach the host with no `ssm*` interface endpoints anywhere in the account?~~ **The endpoint half is answered YES at 1.4 (2026-08-17)**: the agent registered `Online` (v3.3.4624.0) and an `AWS-RunShellScript` invocation returned `Success` — the same `ssmmessages` channel `start-session` uses, over the public path, with no interface endpoint in the account. **What is not yet answered is the laptop half**: `start-session` needs the `session-manager-plugin`, which is not in this project's toolset — that is step 3's, and it is a local install rather than a network question | 3, answered at 1.4 |
 | iv | ~~Does every service-on-behalf flow survive the deny with the tunnel up?~~ **Answered YES at the control-plane pair (2026-08-17): nothing broke because of `DenyControlPlaneOffVpn`.** Exercised as the Data Scientist User, tunnel up, over the surfaces that set actually holds — CloudWatch log groups, Logs Insights (a query ran and returned), the Glue catalog, Athena workgroups (`primary`, clean). **Three things did break, and all three were attributed from the wording alone** — Validation 3's whole ask — **with none of them this control**: the console had opened in `us-east-2` and met the Region ceiling, the denial naming `Interactive`'s document rather than the nested OU's own, which is [D37](../decisions/D37-nested-ou-inheritance.md)'s inheritance finding arriving five days later through a completely different path — and it leaves one line for the client instructions, **the console has to be on `us-west-2`** or a reader files this as a VPN fault; `cloudwatch:GetMetricData` failed `because no identity-based policy allows`, and the measurement behind it is that **no persona set holds any `cloudwatch:` action at all** — left ungranted by decision until Stage 6 puts a real job in front of it, because granting against a console symptom rather than against a requirement is the wrong order; and `logs:GetLogGroupFields` in Logs Insights, **a defect in a grant rather than in a control**, fixed in the same sitting and **twice** — three actions derived from AWS's own console-permission list first, then `CloudWatchLogsReadOnlyAccess` after `logs:DescribeFieldIndexes` failed too and showed that enumerating a console surface's calls is a race that cannot be won. **Residual, and it is about the instrument:** Logs Insights writes its own error text — neither canonical IAM wording — so an action chosen for a wording-based pair must be chosen *for producing the canonical wording*, a criterion nobody had written down and which `logs:DescribeLogGroups` satisfied by luck as much as by judgement | 8 |
-| v | ~~Does auto-enable `ALL` reach **Management itself**?~~ **Answered NO by the documentation (2026-08-18)** — "before the management account gets added as a GuardDuty member, it must have GuardDuty enabled", so `ALL` never reaches it on its own and coverage there is a deliberate act (10.2a). What remains of this row: **does a later vend arrive covered**, which only the `Staging` vend or Stage 14 can answer (existing members were already documented as covered) | 10.2, 10.2a |
+| v | ~~Does auto-enable `ALL` reach Management; does a later vend arrive covered?~~ — **moved to [Stage 15](stage-15-guardduty.md) with step 10 (2026-08-18); it is that stage's verification (i)**, carrying its answered first half (NO, by documentation) and its open residual (the vend) unchanged | — |
 | vi | ~~With the tunnel down, does an IdC sign-in complete at all?~~ **Answered YES (2026-08-17), read rather than reasoned** — `aws sso login --sso-session awsds-scientist` completed off-VPN. The deny governs the *role*; entering Identity Center is an OIDC flow against the authorization endpoint, not an IAM call the permission set's inline policy evaluates. **What makes it recordable is the chain, and all three links were measured the same day:** the portal sign-in works off-VPN, `sso:GetRoleCredentials` works off-VPN, and **using the credential is denied**. So signing in from anywhere is not an entitlement: what the portal yields off-VPN is **reconnaissance** — which accounts exist, which roles are held — and nothing actionable. Recorded in that shape deliberately, because "you can still log in from any network" reads as a hole until it is paired with what the login buys. **It is context for INT-16 and not INT-16**: that row asks whether a permission-set condition gates the **Unified Studio portal**, which does not exist until Stage 6 — what this reading says about it is that the general mechanism is not gated, the direction 8.4 already predicted | 8, deliverables |
 | vii | ~~Do all six composed inline policies stay under the **10,240 non-whitespace-byte** permission-set quota?~~ **Answered YES at 8.2 (2026-08-17), from the plan's own output diff, with room to spare.** The fragment costs **+304 bytes** in every set, and the worst case is `DeploymentManagerAccess` at **4867** — under half the threshold. The others: `DataScientistStagingAccess` 3851, `DevEnvStewardAccess` 3961, `DataScientistProdAccess` 4369, `GovernanceManagerAccess` 4537, `DataScientistAccess` 4653. The conservative side of the comparison is already built in: this is the **rendered** document, which the first apply measured as about a quarter larger than the compacted form Identity Center stores | 8.2 |
 | viii | ~~Does the first boot's key fetch behave as designed, and is the read auditable?~~ **Answered at 1.4 (2026-08-17), with one prediction confirmed, one overtaken and one wrong.** The fetch took **two seconds and zero retries** — `(3) fetching` at `04:42:24Z`, `(3) key in hand (base64 length 44)` at `04:42:24Z`: the "few named retries" were never needed, because `aws_eip_association` completed one second after the instance did and cloud-init only reached section (3) 35 seconds later. The retry loop is therefore **untested by this boot** — it is insurance whose exercise is still owed, and `length 44` is the `tr -d '\n'` of 4.3 confirmed end to end. The audit half is **confirmed as designed**: CloudTrail shows `GetSecretValue` at `04:42:24Z`, `managementEvent: true`, principal `arn:aws:sts::…:assumed-role/awsds-sandbox-vpn/i-…`, no error — the instance role, named. **The state half came back different from the prediction**: `user_data` is the rendered script **in full and in plaintext**, not 40 hex characters — the SHA-1 was pre-5.0 provider behaviour. The claim that mattered holds and is now the whole of it: **no key in that script**, only the ARN and `PrivateKey = $HOST_KEY`, a shell variable expanded on the host | 1.4, 4.3 |
-| ix | What does `get-detector` actually return in a freshly enabled account — which features, with which statuses? The documentation says "all but Runtime Monitoring"; this is the reading that turns that into a measurement, and it is also where AI Protection's feature name comes from | 10.0, 10.2 |
+| ix | ~~What does `get-detector` actually return in a freshly enabled account?~~ — **moved to [Stage 15](stage-15-guardduty.md) with step 10 (2026-08-18); it is that stage's verification (ii)** | — |
 
 ## Risks
 
@@ -724,8 +584,9 @@ Record every answer, including the ones that come out fine.
   anything else. The dependency is exercised only at instance replacement, when an operator is
   already mid-apply; after 8.3 that operator is inside the runbook's §5 seam, whose sequencing
   already covers a replacement that drops the tunnel.
-- **The GuardDuty free window starts now, in every account at once** — the measured bill appears in month
-  two; do not read month one as the steady state (Lesson 6).
+- ~~The GuardDuty free window~~ — moved to [Stage 15](stage-15-guardduty.md)'s Risks with step 10. What
+  replaces it here is its inverse: **the exposed host this stage builds runs undetected until Stage 15
+  runs** — the deferral's named cost, argued in the institutional-delta row.
 
 ---
 

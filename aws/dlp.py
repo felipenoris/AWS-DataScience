@@ -28,7 +28,7 @@
 # Governance while the derived zones - where governed data actually re-surfaces (D19) -
 # live in the Interactive accounts, so "is the monitored map covered" is only readable
 # with the columns side by side; and the GuardDuty features are org-wide state, where one
-# account silently uncovered is exactly the finding (the same argument as ./aws/vpn.py).
+# account silently uncovered is exactly the finding (the same argument as ./aws/guardduty.py).
 #
 # CONTRACTS THIS FILE READS, each named in the stage file so a rename fails loudly:
 #   - trail name         awsds-<env>-data-events           (Stage 11 step 5.1)
@@ -82,7 +82,8 @@ FILTER_PREFIX = "awsds-flt-"
 TAMPER_SID = "DenyCloudTrailKill"
 BASELINE_POLICY = "awsds-org-scp-baseline"
 
-# The two detector features step 4 enables (Stage 4 step 10.3 deferred them by name).
+# The two detector features step 4 enables (Stage 15 step 3 switches them off by name;
+# they arrive ON - that stage's step 0).
 GD_FEATURES = ("S3_DATA_EVENTS", "EBS_MALWARE_PROTECTION")
 
 
@@ -532,7 +533,7 @@ def main(argv: list) -> int:
         checks.note(
             "DP-6",
             "GuardDuty paid features",
-            "no detector in any measured account - expected before Stage 4 step 10; "
+            "no detector in any measured account - expected before Stage 15; "
             "this check has nothing to read until the base service exists.",
         )
     if detectors:
@@ -546,7 +547,7 @@ def main(argv: list) -> int:
                 "DP-6",
                 "GuardDuty paid features",
                 "both DISABLED everywhere - expected before Stage 11 step 4 "
-                "(./aws/vpn.py VP-8 owns this reading until then).",
+                "(./aws/guardduty.py GD-3 owns this reading until then).",
             )
         elif mixed or (enabled and disabled):
             checks.fail(
@@ -691,8 +692,8 @@ design one - the ARNS column must never read 0.""")
         rep.h1("6. The two GuardDuty paid features, org-wide")
         rep.tabulate(["PROFILE\tDETECTOR\tFEATURES"] + [f"{p}\t{d}\t{f}" for p, d, f in gd_rows])
         rep.text("""
-Before Stage 11 step 4 both features read DISABLED everywhere (./aws/vpn.py VP-8
-enforces that); after it they read ENABLED everywhere. The partial state is the
+Before Stage 11 step 4 both features read DISABLED everywhere (./aws/guardduty.py
+GD-3 enforces that); after it they read ENABLED everywhere. The partial state is the
 finding in both directions.""")
 
         # ==============================================================================

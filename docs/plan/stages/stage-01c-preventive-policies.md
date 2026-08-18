@@ -609,8 +609,8 @@ become.
     carve-out wrong.
   - **GuardDuty — not covered by anything**, exactly as predicted, so `guardduty:DeleteDetector`,
     `guardduty:DisassociateFromMasterAccount`, `guardduty:UpdateDetector` and `guardduty:DeleteMembers`
-    belong in `awsds-org-scp-baseline`. They are inert until Stage 4 turns GuardDuty on, and that is the
-    correct order under principle 9 rather than an oversight.
+    belong in `awsds-org-scp-baseline`. They are inert until GuardDuty is turned on — Stage 4 when this was
+    written, Stage 15 since the 2026-08-18 split — and dormancy is deliberate rather than an oversight.
   - **CloudTrail — denied nowhere, and deliberately left that way** (user, 2026-08-13). This file used to
     assert that Control Tower's mandatory controls covered it; **no `cloudtrail:` action appears in any of
     the six guardrail documents.** The deny was still not written, and the reason is the one that makes it
@@ -851,8 +851,8 @@ machine-readable action list is the source in each case. `awsds-org-scp-perimete
   with it — `DisassociateMembers` and `StopMonitoringMembers` (the current member-detach pair, of which
   only `DeleteMembers` was covered) and `DeletePublishingDestination`/`UpdatePublishingDestination`, which
   kill or redirect the export of findings without touching a detector. **The statement is inert until
-  Stage 4 turns GuardDuty on, which is why fixing it now costs nothing and fixing it later costs a
-  detection gap nobody would see.**
+  GuardDuty is turned on (Stage 4 when this was written; Stage 15 since the 2026-08-18 split), which is
+  why fixing it now costs nothing and fixing it later costs a detection gap nobody would see.**
 - **`DenySnapshotAndImageSharing` claimed to close "the one exfiltration route that bypasses every other
   control" and closed half of it.** Sharing an attribute is one way an image leaves the organization;
   **writing it into a bucket is another**, and `ec2:CreateStoreImageTask`, `ec2:ExportImage`,
@@ -893,10 +893,12 @@ recording *untested* too early understates the ceiling and costs the next reader
 **One collision was found and deliberately not fixed here.** `guardduty:UpdateDetector` is denied
 unconditionally on the root, so it reaches **Audit**, the GuardDuty administrator: org-wide administration
 is unaffected (`UpdateOrganizationConfiguration`, `UpdateMemberDetectors`), but enabling a feature on
-*Audit's own detector* is denied — which is [Stage 11 step 4](stage-11-dlp.md) exactly. It stays
-unconditional because the alternative is a carve-out naming a role that does not exist yet, and a carve-out
-written before its principal is Lesson 14 waiting to happen. **Recorded in three places so it cannot be met
-cold**: [Stage 4 step 10](stage-04-vpn.md), Stage 11 step 4, and the note under the baseline table in
+*Audit's own detector* is denied — which since the 2026-08-18 split is met twice: first by
+[Stage 15](stage-15-guardduty.md)'s switch-OFF (its decision 1), then by [Stage 11 step 4](stage-11-dlp.md)'s
+switch-on. It stays unconditional because the alternative is a carve-out naming a role that does not exist
+yet, and a carve-out written before its principal is Lesson 14 waiting to happen — and Stage 15's step 5
+later confirmed no such role ever appears. **Recorded in three places so it cannot be met cold**:
+[Stage 15](stage-15-guardduty.md) step 0, Stage 11 step 4, and the note under the baseline table in
 [`POLICIES.md`](../../../terraform-live/identity/org-policies/POLICIES.md).
 
 ##### 7.6a — the amendment the post-attachment review produced (2026-08-13)

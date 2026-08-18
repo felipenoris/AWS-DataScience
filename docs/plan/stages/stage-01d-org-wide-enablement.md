@@ -537,7 +537,7 @@ any Region** — the two accounts holding the immutable copy of the trail and th
   control into a *different* document on `Identity` and `Data` than on the other three OUs.
 - **What is in those accounts today is small and known**: the organization trail's bucket and the access-log
   bucket in Log Archive, the Config aggregator and `awsds-org-external-access` in Audit — all `us-west-2`.
-  What arrives later is Stage 4's GuardDuty, Stage 5's Security Hub and Stage 11's Macie, each delegated to
+  What arrives later is GuardDuty (Stage 15 since the 2026-08-18 split; Stage 4 when this was written), Stage 5's Security Hub and Stage 11's Macie, each delegated to
   Audit and each `us-west-2` in this design. **The ceiling is therefore free today and is a constraint on
   those three stages**, which is the honest way to state it.
 

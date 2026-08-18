@@ -464,14 +464,16 @@ AWS Foundational Security Best Practices — and before this stage there were ba
 Turning it on here means its first report is about a lake, a catalog and a set of buckets that will still
 exist next month, rather than about scaffolding (principle 9, as amended).
 
-**13.1 — The same two-account, no-profile mechanics as GuardDuty** (Stage 4 step 10.1): designate **Audit**
+**13.1 — The same two-account, no-profile mechanics as GuardDuty** (Stage 15 step 1): designate **Audit**
 from **Management** (delegating *is* enabling — 1b step 8's finding), then from Audit set the org
 configuration: auto-enable for existing and future accounts, the **AWS Foundational Security Best
 Practices** standard and no others. Both acts in **`us-west-2`** — the Region control does not exempt
 Security Hub — both as `AWS Control Tower Admin`, console or CloudShell, recorded in the log.
 
-**13.2 — Ingest what already flows:** the GuardDuty findings from Stage 4 step 10 appear without further
-wiring once both services are on.
+**13.2 — Ingest what already flows — which, since the 2026-08-18 split, is nothing yet:** GuardDuty is
+Stage 15 now, so at this stage's runtime there are no GuardDuty findings to ingest; the integration needs
+no wiring and simply starts producing when Stage 15 turns the producer on. Record the absence at this
+step so a later empty-findings reading is met as expected rather than diagnosed.
 
 **13.3 — Triage the first report deliberately:** a benchmark run against a freshly built environment
 produces its largest finding count ever, and the useful act is deciding which controls to disable as

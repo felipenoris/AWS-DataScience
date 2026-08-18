@@ -212,9 +212,9 @@ started. **The first one is load-bearing against principle 4.**
     unknown; Control Tower packed the enablements in a **third** shape, a new document for the Region
     control and the pre-existing AWS guardrail for the root ones (11 → 13 statements, Lesson 23 again); and
     the by-hand probe answered in **both** accounts — `us-east-1` denied naming `p-idgyiios`, `us-west-2`
-    `DryRunOperation`. What the closure *commits*, and it is the only lasting cost: GuardDuty (Stage 4),
-    Security Hub (Stage 5) and Macie (Stage 11) are **not** exempt in the control, so each is `us-west-2`
-    or it is denied. The original question, kept because the reasoning is what a future reader needs:
+    `DryRunOperation`. What the closure *commits*, and it is the only lasting cost: GuardDuty (Stage 15 since the
+    2026-08-18 split; Stage 4 when this was written), Security Hub (Stage 5) and Macie (Stage 11) are
+    **not** exempt in the control, so each is `us-west-2` or it is denied. The original question, kept because the reasoning is what a future reader needs:
 
     7.7 enabled `CT.MULTISERVICE.PV.1` on the five OUs its own order named — `Policy Test`, `Workloads`,
     `Data`, `Interactive`, `Identity` — and **`Security` was never on that list**. It is not a regression
@@ -267,8 +267,10 @@ length, under item numbers 10-12 that collided with the live items above; the du
     delivered for every persona, and the administrative credential is deliberately outside it, valued
     as the recovery path that keeps working when the VPN itself is what broke.** What would reopen
     this, and none of it is a current stage's prerequisite: a second operator (one person's recovery
-    path is another's standing bypass); GuardDuty (pass 4) giving the off-VPN use of that credential a
-    watcher, which weakens the "nothing would notice" half of the risk; or Stage 14's multiplication
+    path is another's standing bypass); GuardDuty giving the off-VPN use of that credential a
+    watcher, which weakens the "nothing would notice" half of the risk — **Stage 15 since the 2026-08-18
+    split (it was Stage 4's pass 4), which defers this reopener with it; Stage 15 step 6 re-reads this
+    question the day it closes**; or Stage 14's multiplication
     of VPN homes making option (c)'s hatch list a maintained table rather than two actions. The
     institutional shape of this trade is in
     [`institutional-delta.md`](institutional-delta.md) — the lab's admin credential is

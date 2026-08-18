@@ -1,17 +1,19 @@
 #!/usr/bin/env -S uv run --quiet
-# vpn.py - Stage 4's evidence, per account, side by side: the WireGuard host ([D]) and its
-# IMDS setting, the Elastic IP, the one world-open security-group rule and the host-key
-# secret ([P] anchors - the secret must carry its value-read deny and keep rotation OFF),
-# the handshake log and health alarm, WHICH permission sets carry the control-plane deny of
-# step 8 (read back from Identity Center, never assumed), and the GuardDuty state - detector
-# per account, delegated administrator, and every optional protection plan, which must all
-# read OFF (they arrive ON - Stage 4 step 10.0).
+# vpn.py - Stage 4's evidence, side by side: the WireGuard host ([D]) and its IMDS
+# setting, the Elastic IP, the one world-open security-group rule and the host-key secret
+# ([P] anchors - the secret must carry its value-read deny and keep rotation OFF), the
+# handshake log and health alarm, and WHICH permission sets carry the control-plane deny
+# of step 8 (read back from Identity Center, never assumed).
+#
+# THE GUARDDUTY READING LEFT THIS FILE ON 2026-08-18, the day GuardDuty left Stage 4 for
+# Stage 15: it is ./aws/guardduty.py now (GD-1..GD-3). VP-8 is RETIRED here, not
+# renumbered - the Stage 4 log cites it by that name.
 #
 #   needs:    a live SSO session - the ONLY prerequisite:
 #
 #                 aws sso login --sso-session awsds
 #
-#   run:      ./aws/vpn.py                        # every awsds-* profile
+#   run:      ./aws/vpn.py                        # the two profiles it needs (see below)
 #             ./aws/vpn.py awsds-infra-sandbox-1  # only the ones named
 #             ./aws/vpn.py --on-host              # ALSO read inside the host (see below)
 #             python3 aws/vpn.py -                # CloudShell, ambient credentials
@@ -19,10 +21,8 @@
 #   reads:    ec2:DescribeInstances, DescribeAddresses, DescribeSecurityGroups,
 #             logs:DescribeLogGroups, cloudwatch:DescribeAlarms,
 #             secretsmanager:ListSecrets, GetResourcePolicy,
-#             guardduty:ListDetectors, GetDetector,
 #             sso-admin:ListInstances, ListPermissionSets, DescribePermissionSet,
-#             GetInlinePolicyForPermissionSet,
-#             organizations:ListDelegatedAdministrators, sts:GetCallerIdentity.
+#             GetInlinePolicyForPermissionSet, sts:GetCallerIdentity.
 #             It never creates, updates or deletes anything - see the next line for the
 #             single, typed exception.
 #   sends:    NOTHING IN AWS, unless --on-host is typed. That flag adds ssm:SendCommand +
@@ -33,13 +33,12 @@
 #             buys: WHICH PEERS THE RUNNING wg0 ACTUALLY HOLDS, which no describe answers.
 #   exits:    0 all checks passed | 1 a call failed | 2 a check FAILED
 #
-# WHY THIS IS MULTI-PROFILE, which aws/INDEX.md admits only for a reason. Two of the
-# subjects are facts ACROSS accounts: GuardDuty's whole point is org-wide coverage, so "the
-# detector is enabled" is only meaningful read in every account side by side - one account
-# silently uncovered is exactly the finding; and the step 8 deny lives in the IDENTITY
-# account's permission sets while the Elastic IP it names lives in the VPN home, so the two
-# halves of one control sit in two accounts by design. Section 1 pays the rule back with
-# the caller ARN of every profile.
+# WHY THIS IS TWO-PROFILE, which aws/INDEX.md admits only for a reason: the step 8 deny
+# lives in the IDENTITY account's permission sets while the Elastic IP it names lives in
+# the VPN home, so the two halves of one control sit in two accounts by design. With the
+# GuardDuty reading gone (2026-08-18) those two are the whole subject, and the default run
+# selects exactly them; naming profiles on the command line still measures any set.
+# Section 1 pays the rule back with the caller ARN of every profile.
 #
 # FOUR CONTRACTS THIS FILE READS, each named in the stage file so a rename fails loudly:
 #   - the instance Name tag matches awsds-*-vpn (Stage 4 step 1.1)
@@ -53,8 +52,7 @@
 #     and down. A describe call proves none of them (Lesson 20).
 #   - Whether the deny actually gates the Unified Studio portal is INT-16 and is answered
 #     by opening the portal, not by reading a policy.
-#   - Management, Log Archive and Audit hold no CLI profile; GuardDuty's org configuration
-#     in Audit is read only as far as the delegation registration visible from Identity.
+#   - Management, Log Archive and Audit hold no CLI profile; nothing here reads them.
 
 from __future__ import annotations
 
@@ -90,23 +88,6 @@ PERSONA_SETS = (
     "DevEnvStewardAccess",
 )
 INFRA_SET = "InfrastructureAccess"
-
-# The optional protection plans. Enabling GuardDuty turns on EVERY ONE OF THEM except
-# Runtime Monitoring (documented 2026-08-18, Stage 4 step 10.0), so step 10.3 is a
-# SWITCH-OFF and not an omission, and this check is written against the whole set rather
-# than the two the plan first named. THE CHECK IS NOT DRIVEN BY THIS TUPLE: the report prints
-# every feature the API returns and the check fails on any that reads ENABLED, so a
-# protection plan AWS adds next year is measured on the day it appears instead of staying
-# invisible until somebody remembers to extend a constant (Lesson 23). The names below only
-# fix the report's column order; anything unknown is appended in the API's own order.
-KNOWN_FEATURES = (
-    "S3_DATA_EVENTS",
-    "EKS_AUDIT_LOGS",
-    "EBS_MALWARE_PROTECTION",
-    "RDS_LOGIN_EVENTS",
-    "LAMBDA_NETWORK_LOGS",
-    "RUNTIME_MONITORING",
-)
 
 # --------------------------------------------------------------- the inside of the host (2a)
 #
@@ -230,7 +211,11 @@ def main(argv: list) -> int:
     if on_host:
         _assert_probe_commands_are_reads()
 
-    selected, source = profiles.select(argv)
+    if argv:
+        selected, source = profiles.select(argv)
+    else:
+        selected = [VPN_HOME_PROFILE, IDENTITY_PROFILE]
+        source = "the two profiles this file needs (the VPN home and Identity)"
 
     errors = ErrorLog()
     callers = profiles.preflight(selected, errors, out_label=out_label)
@@ -242,44 +227,6 @@ def main(argv: list) -> int:
 
     def logerr(profile: str, what: str, err: str) -> None:
         errors.entries.append(f"[{profile}] aws {what}\n    {head2(err)}")
-
-    # ------------------------------------------------------------------- GuardDuty, per account
-    gd_rows: list = []  # (profile, detector id or '-', status, protection-plan summary)
-    for p in live:
-        cli = cli_for(p)
-        note(f"measuring {p} ...")
-        res = cli.run(
-            "guardduty",
-            "list-detectors",
-            "--query",
-            "DetectorIds[0]",
-            "--output",
-            "text",
-            log=False,
-        )
-        if not res.ok:
-            logerr(p, "guardduty list-detectors", res.stderr)
-            gd_rows.append((p, "-", "(call failed)", "-"))
-            continue
-        det = res.stdout.strip()
-        if not det or det == "None":
-            gd_rows.append((p, "-", "no detector", "-"))
-            continue
-        r = cli.run(
-            "guardduty", "get-detector", "--detector-id", det, "--output", "json", log=False
-        )
-        if not r.ok:
-            logerr(p, f"guardduty get-detector {det}", r.stderr)
-            gd_rows.append((p, det, "(call failed)", "-"))
-            continue
-        doc = json.loads(r.stdout or "{}")
-        status = doc.get("Status", "?")
-        feat = {f.get("Name"): f.get("Status") for f in doc.get("Features", [])}
-        ordered = [n for n in KNOWN_FEATURES if n in feat] + [
-            n for n in feat if n not in KNOWN_FEATURES
-        ]
-        plans = " ".join(f"{n}={feat[n]}" for n in ordered) or "(no features reported)"
-        gd_rows.append((p, det, status, plans))
 
     # ------------------------------------------------------- the VPN home: host, EIP, SG, alarm
     home_live = VPN_HOME_PROFILE in live
@@ -513,27 +460,6 @@ def main(argv: list) -> int:
                 else:
                     set_rows.append((name, "yes" if DENY_SID in r.stdout else "no"))
 
-    # -------------------------------------------------------- the GuardDuty delegation, one read
-    delegation = "(not read)"
-    if identity_live:
-        cli = cli_for(IDENTITY_PROFILE)
-        res = cli.run(
-            "organizations",
-            "list-delegated-administrators",
-            "--service-principal",
-            "guardduty.amazonaws.com",
-            "--query",
-            "DelegatedAdministrators[].[Id,Name,Status]",
-            "--output",
-            "text",
-            log=False,
-            tolerate="AccessDenied",
-        )
-        if res.tolerated:
-            delegation = "(read denied from Identity - check from Management)"
-        elif res.ok:
-            delegation = res.stdout.strip() or "(none registered)"
-
     # -------------------------------------------------------------------------------- the checks
     # VP-1: exactly one WireGuard host in the VPN home, t4g.nano (D4). Absent = not built
     # yet; two = a rebuild that leaked.
@@ -713,44 +639,6 @@ def main(argv: list) -> int:
                 "by decision (open question 17): the recovery path stays off-VPN",
             )
 
-    # VP-8: GuardDuty coverage, and every optional protection plan still off (step 10.3).
-    detectors = [r for r in gd_rows if r[1] != "-" and r[2] not in ("(call failed)",)]
-    if not detectors:
-        checks.note(
-            "VP-8",
-            "GuardDuty detectors",
-            "none in any measured account - expected before Stage 4 step 10.",
-        )
-    else:
-        for p, det, status, plans in gd_rows:
-            if det == "-" and status == "no detector":
-                checks.fail(
-                    "VP-8",
-                    f"GuardDuty in {p}",
-                    "no detector while other accounts have one - auto-enable did not reach "
-                    "this account (verification (v)); a member outside coverage is exactly "
-                    "the gap org-wide enablement exists to close.",
-                )
-            elif det != "-" and status != "ENABLED":
-                checks.fail("VP-8", f"GuardDuty in {p}", f"detector {det} status {status}")
-            elif det != "-":
-                bad_feat = [
-                    tok.split("=", 1)[0] for tok in plans.split() if tok.endswith("=ENABLED")
-                ]
-                if bad_feat:
-                    checks.fail(
-                        "VP-8",
-                        f"GuardDuty plans in {p}",
-                        f"{' '.join(bad_feat)} ENABLED - every optional plan arrives ON and "
-                        "step 10.3 switches it off; the paid ones are decided in Stage 11 "
-                        "step 4 against a real bill, not before. In a MEMBER account the fix "
-                        "is UpdateMemberDetectors from Audit; in AUDIT'S OWN detector "
-                        "UpdateDetector is denied by DenyGuardDutyTampering - that is "
-                        "decision 5, not a console click.",
-                    )
-                else:
-                    checks.ok("VP-8", f"GuardDuty in {p}", "ENABLED, foundational detection only")
-
     # VP-9: the [P] host-key secret (step 2.2a; decision 4, third review): present once the
     # stage runs, the value-read deny attached, and rotation OFF - the keys runbook's one
     # rule, mechanised into a failure if it ever flips.
@@ -788,7 +676,7 @@ def main(argv: list) -> int:
     with open(out_path, "w", encoding="utf-8") as stream:
         rep = Report(stream)
 
-        rep.banner("VPN - the Stage 4 evidence: host, anchors, the step 8 deny, GuardDuty")
+        rep.banner("VPN - the Stage 4 evidence: host, anchors, the step 8 deny")
         rep.text(f"""generated : {context.utc_stamp()}
 profiles  : {source}
 region    : {context.REGION}
@@ -801,19 +689,17 @@ SECTIONS
   3. The Elastic IP, the world-open rules and the host-key secret ([P] anchors)
   4. Handshake log and health alarm
   5. The control-plane deny (step 8), per permission set
-  6. GuardDuty, org-wide
-  7. CHECKS
-  8. The accounts nothing here is measuring
-  9. Calls that failed
+  6. CHECKS
+  7. Calls that failed
 
 HOW TO READ THIS FILE
   - "NOT BUILT YET" IS THE EXPECTED ANSWER UNTIL STAGE 4 RUNS - each such reading
     is a note, not a failure; it becomes a regression the moment the stage closes.
-  - A MISSING ACCOUNT IS NOT A PASSING ACCOUNT - section 8 names what nothing here
-    reached, GuardDuty's org configuration in Audit above all.
   - THIS IS A CONTROL-PLANE READING. The tunnel pair, the deny pair and the
     on-behalf carve-out are behavioural proofs run from the laptop (Lesson 20);
     INT-16's portal reading is a browser, not an API.
+  - THE GUARDDUTY READING IS ./aws/guardduty.py SINCE 2026-08-18 (Stage 15); its
+    former id here, VP-8, is retired.
 
 THIS FILE IS NOT VERSIONED (aws/output/ is in .gitignore) AND CONTAINS ACCOUNT IDS.
 Do not copy one into a tracked file.""")
@@ -943,29 +829,14 @@ proven by the stage's deny pair, not by this file.
         if not identity_live:
             rep.line(f"{IDENTITY_PROFILE} was not measured - the sets were not read.")
         elif not set_rows:
-            rep.line("No project permission set was found - see section 9.")
+            rep.line("No project permission set was found - see section 7.")
         else:
             rep.tabulate(
                 [f"PERMISSION SET\tCARRIES {DENY_SID}"] + [f"{n}\t{v}" for n, v in sorted(set_rows)]
             )
 
         # ==============================================================================
-        rep.h1("6. GuardDuty, org-wide")
-        rep.tabulate(
-            ["PROFILE\tDETECTOR\tSTATUS\tPROTECTION PLANS (all must be DISABLED)"]
-            + [f"{p}\t{d}\t{s}\t{f}" for p, d, s, f in gd_rows]
-        )
-        rep.line()
-        rep.line(f"delegated administrator (guardduty.amazonaws.com): {delegation}")
-        rep.text("""
-Delegating IS enabling (Stage 4 step 10.1): the registration is made from
-Management, the org configuration from Audit - neither holds a profile, so this
-file can only read the registration and each member's detector. Restate INV-09
-in docs/AWS_STATE.md when the delegation lands, and re-run
-./aws/org-trusted-access-services.py.""")
-
-        # ==============================================================================
-        rep.h1("7. CHECKS")
+        rep.h1("6. CHECKS")
         rep.checks_table(checks)
         n_fail = checks.n_fail()
         rep.line()
@@ -980,29 +851,14 @@ What the checks are, and where each comes from:
   VP-6  the health alarm exists (step 7)
   VP-7  the persona sets carry the step 8 deny together, or not at all (8.2);
         InfrastructureAccess must NOT carry it (open question 17, option a)
-  VP-8  GuardDuty enabled in every measured account, EVERY optional protection
-        plan off (steps 10.0/10.3). They arrive ENABLED, so this check reads red
-        until 10.3 finishes - and if the trial-window option is ever taken
-        instead (decision 5b), FLIP THIS CHECK rather than living with the red:
-        a decision left only in prose is measured by nobody (the VP-7 precedent)
+  VP-8  RETIRED 2026-08-18 - the GuardDuty reading moved to ./aws/guardduty.py
+        (GD-1..GD-3) when GuardDuty left Stage 4 for Stage 15; the id is kept
+        out of use so the Stage 4 log's VP-8 readings stay unambiguous
   VP-9  the [P] host-key secret carries its value-read deny and rotation is OFF
         (step 2.2a; decision 4, third review - the keys runbook's one rule)""")
 
         # ==============================================================================
-        rep.h1("8. The accounts nothing here is measuring")
-        rep.text("""Read this BEFORE reading section 7 as a pass.
-
-  - GuardDuty's ORG CONFIGURATION lives in Audit, which holds no CLI profile
-    (D33/D34): auto-enable-for-future-accounts is verified in the Audit console
-    or CloudShell, not here. Section 6 reads only the members' detectors.
-  - Management's own detector is outside every profile here; read it from
-    CloudShell if the coverage question ever includes it.
-  - `Staging` is unvended; every Sandbox beyond unit 1 has no profile until
-    Stage 14. A vend must ARRIVE covered by auto-enable - re-run this script
-    after each one (verification (v)).""")
-
-        # ==============================================================================
-        rep.h1("9. Calls that failed")
+        rep.h1("7. Calls that failed")
         failed_calls_epilogue(rep, errors)
         rep.line()
         rep.line("Regenerate with:  ./aws/vpn.py")
@@ -1011,10 +867,10 @@ What the checks are, and where each comes from:
     n_fail = checks.n_fail()
     note("")
     if errors:
-        note(f"wrote {out_label} (some calls FAILED - see section 9)")
+        note(f"wrote {out_label} (some calls FAILED - see section 7)")
         return 1
     if n_fail > 0:
-        note(f"wrote {out_label} ({n_fail} CHECK(S) FAILED - see section 7)")
+        note(f"wrote {out_label} ({n_fail} CHECK(S) FAILED - see section 6)")
         return 2
     note(f"wrote {out_label} (all checks passed)")
     return 0

@@ -178,54 +178,52 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
 
 ### Current position
 
-- **Landing zone closed — Stages 0-1d DONE (2026-08-15)**, except the `Staging` vend: held on the account
-  cap, **open support ticket** (`aws/cloudshell/management-quotas.sh` re-asks). Battery 93/93.
-- **Stage 2 DONE (2026-08-16), all nine verifications answered.** A state bucket
-  per Terraform-managed account (`prod` carries D36's 2nd key); `identity/sso/` — 7 sets, 10 assignments;
-  `identity/org-policies/` — ten documents + attachments **adopted, none created**. Delegation narrowed
-  to `InfrastructureAccess`, hand-applied, **out of Terraform** (`INV-15`). D11:
-  `scripts/tfhygiene/layers.py` + `make up`/`down`/`status`/`slices`. SSM parameter naming: conventions
-  §6 (`awsds` is reserved).
-- **Gates, no CI:** `make check` (offline), `make check-ou` (session), `make check-docs` — **red** on
-  pre-Stage-2 prose, outside the commit gate. **`check-identifiers.py` joined both 2026-08-17** — no
-  account id or e-mail in a tracked file; redact to `<The Account Name>`/`<that user's role>`, declared
-  once per entry. It does not undo *history*.
-- **Stage 3 DONE 2026-08-16 — applied, measured, torn down; now 0.0000 USD/h** (detail: its Status row).
-  `egress_mode=A`; the S3 allow-list — **a NAT does not bypass it**; INT-05 names the gateway endpoints,
-  never `egress/` ids. CIDR/`zone_ids`/peers: `scripts/tfhygiene/backend.py`. **Stage 4's (i) is NOT
-  pre-answered** — `makecache` is metadata, not a package; the CW agent is a different allow-list entry.
-  Left elsewhere: `Staging`'s NXDOMAIN; (ii) is Stage 6's.
-- **NFS/EFS requirement withdrawn (2026-08-17; user edit to `objectives.md`, D24 withdrawn like
-  D30):** no `nfs/` slice anywhere, `elasticfilesystem` out of Sandbox's endpoint list (11 under A,
-  13 under B), Stage 5 pass 5 (steps 10-12) and Stage 6 step 7 removed, `DL-10` now measures EFS
-  *absence* (a Studio domain's own tagged home exempt, 2026-08-18), and the no-RCP EFS residual left
-  D19 / Stage 11 / architecture §4.2.
-- **Stages 4-11 revised, pre-instrumented (2026-08-16/17):**
-  `aws/{vpn,datalake,studio,supplychain,cicd,deploytargets,orchestration,dlp}.py` — `DL-5`/`DT-5` guard the
-  LF `Parameters` (INT-11). **St.8 pass 4, St.9 passes 4-5, St.10's Staging leg wait on the vend.**
+- **Landing zone closed — Stages 0-1d DONE (2026-08-15)**, except the `Staging` vend: held on the
+  account cap, open ticket (`aws/cloudshell/management-quotas.sh` re-asks). Battery 93/93.
+- **Stage 2 DONE (2026-08-16), all nine verifications answered.** A state bucket per Terraform-managed
+  account (`prod` carries D36's 2nd key); `identity/sso/` and `identity/org-policies/` (**adopted, none
+  created**). Delegation narrowed to `InfrastructureAccess`, hand-applied, **out of Terraform**
+  (`INV-15`). D11: `scripts/tfhygiene/layers.py` + `make up`/`down`/`status`/`slices`. SSM naming:
+  conventions §6 (`awsds` is reserved).
+- **Gates, no CI:** `make check` (offline), `make check-ou` (session), `make check-docs` — red on
+  pre-Stage-2 prose, outside the commit gate. `check-identifiers.py` in both: no account id or e-mail in
+  a tracked file; redact to `<The Account Name>`/`<that user's role>`, declared once per entry.
+- **Stage 3 DONE 2026-08-16 — applied, measured, torn down; 0.0000 USD/h** (detail: its Status row).
+  `egress_mode=A`; **a NAT does not bypass the S3 allow-list**; INT-05 names the gateway endpoints, never
+  `egress/` ids. CIDR/`zone_ids`/peers: `scripts/tfhygiene/backend.py`. Left elsewhere: `Staging`'s
+  NXDOMAIN; verification (ii) is Stage 6's.
+- **NFS/EFS requirement withdrawn (2026-08-17; user edit to `objectives.md`, D24 withdrawn):** no
+  `nfs/` slice anywhere, `elasticfilesystem` out of Sandbox's endpoints, `DL-10` measures EFS *absence*
+  (a Studio domain's own tagged home exempt). Detail: `docs/plan/history.md`.
+- **Stage 4 DONE 2026-08-18 — closed by the GuardDuty split** (close-out log entry is the user's; the
+  host was left `running` — tunnel down first, then `make down`). **Stage 15 created the same day**: the
+  whole GuardDuty scope, prepared — plans arrive ON, Audit's own switch-off meets
+  `DenyGuardDutyTampering` (its decision 1), `ALL` never reaches Management. Principle 9 overruled once;
+  the institutional-delta row argues it. `aws/guardduty.py` (`GD-1`–`GD-3`); `VP-8` retired; `vpn.py`
+  default narrowed to two profiles.
+- **Stages 5-11 revised, pre-instrumented (2026-08-16/17):**
+  `aws/{vpn,datalake,studio,supplychain,cicd,deploytargets,orchestration,dlp}.py` — `DL-5`/`DT-5` guard
+  the LF `Parameters` (INT-11). **St.8 pass 4, St.9 passes 4-5, St.10's Staging leg wait on the vend.**
   St.11: internal access **USD 9/resource-month** → analyzer is create-read-delete; Macie adds existing
-  members one by one; the first member trail owes `DenyCloudTrailKill`; `VP-8` flips at its step 4.
+  members one by one; the first member trail owes `DenyCloudTrailKill`; **its step 4 gates on St.15 + a
+  month of billing** and flips `GD-3`/`DP-6`.
 - **Standing rules that outlive their stages:** never add an `sts:` action to the RCP without reading
   `CT.STS.PV.1`'s exclusion note; 1d step 9 is the **only** sanctioned by-hand use of
   `AWSControlTowerExecution`; **resolve an account by name only with the exact vended name** — every one
-  carries an ` Account` suffix and a **SUSPENDED `Sandbox`** sits in the roster, so filter on `ACTIVE` and
-  fail loudly (`<ACCOUNT_ID_DATA>` still derives from the `Data` OU); subnets anchor on AZ `zone_id` — run
-  `./aws/AZs.py` after every vend; check the SSO token before each probe block and read the denial
-  *wording*, never the exit code; account-level BPA is hand-managed (Stage 2's grep guards).
-  **Log Archive and Audit hold no CLI profile** (`CHK-1`/`CHK-2` and `org-policies.py` §4 measure them).
-- **Before reporting a gap, read the file that owns it:** unexercised denies and deliberate allowances →
-  `POLICIES.md`; 1b residue and every "expected" reading → `docs/AWS_STATE.md`; the SMUS findings →
-  open questions 12-15, atop Stage 6.
-- **Deferred by decision — do not offer to close:** the USD 50 budget notifies nobody (D12); open question
-  10's per-unit tokens wait for N=2; Config recorder left alone and Management unrecorded (Stage 12 hooks).
+  carries an ` Account` suffix and a **SUSPENDED `Sandbox`** sits in the roster: filter on `ACTIVE`,
+  fail loudly; subnets anchor on AZ `zone_id` (`./aws/AZs.py` after every vend); check the SSO token
+  before each probe block and read the denial *wording*, never the exit code; account-level BPA is
+  hand-managed. **Log Archive and Audit hold no CLI profile.**
+- **Before reporting a gap, read the file that owns it:** unexercised denies → `POLICIES.md`;
+  "expected" readings → `docs/AWS_STATE.md`; SMUS findings → open questions 12-15.
+- **Deferred by decision — do not offer to close:** the USD 50 budget notifies nobody (D12); open
+  question 10 waits for N=2; Config recorder left alone, Management unrecorded (Stage 12 hooks).
   **Every governed account sits under `us-west-2`.**
-- **All 37 decisions are closed** (D30 as a revert). **Still needed from the user: the domain
-  name**, blocking Stage 13. **Settle earliest:** INT-11's remaining half (Stage 5 step 5.4, `DL-5`)
-  and INT-13.
+- **All 37 decisions closed** (D30 as a revert). **Still needed from the user: the domain name**
+  (blocks Stage 13). **Settle earliest:** INT-11's remaining half (Stage 5 step 5.4, `DL-5`), INT-13.
 - **The repository is not documentation-only:** the read-only `aws/` scripts, both Terraform trees,
-  `scripts/`, the `Makefile`, and the `pre-commit`/`tflint`/`checkov`/`ruff` gates.
-  **Every script is Python 3 on `uv` since 2026-08-15** — shared code in `aws/awslib`,
-  `scripts/repohygiene`, `scripts/tfhygiene`; CloudShell = plain `python3` with `aws/` present.
+  `scripts/`, the `Makefile`, the `pre-commit`/`tflint`/`checkov`/`ruff` gates. **Every script is
+  Python 3 on `uv`** — shared code in `aws/awslib`, `scripts/repohygiene`, `scripts/tfhygiene`.
   **Exception: `aws/cloudshell/` is shell, standalone, for the no-profile accounts.**
 
 **Budget: ~4 KB.** State, not reasoning — **a bullet here that explains *why*, or that a stage file should

@@ -299,8 +299,9 @@ not in concept. `Policy Test` and `Policy Canary` keep the word `Staging` naming
 
 - **The services arrive stage by stage, not all at once**, and each names the stage that turns it on:
   Access Analyzer's external-access findings in the landing zone (Stage 1b) because they are free, then
-  GuardDuty at Stage 4 with the first internet-facing resource, Security Hub at Stage 5 with the first
-  governed data, and Macie at Stage 11. Guiding principle 9 carries the rule — detection is metered, and
+  Security Hub at Stage 5 with the first governed data, Macie at Stage 11 — and GuardDuty at **Stage 15**:
+  it was Stage 4, coupled to the first internet-facing resource, until the 2026-08-18 split deferred it
+  deliberately (the trade is an `institutional-delta.md` row). Guiding principle 9 carries the rule — detection is metered, and
   turning it on over empty accounts buys nothing while spending the one free window in which its real cost
   could have been measured. Stage 11's revision (2026-08-17) added one deliberately short-lived reading
   here: the organization **internal-access** analyzer — USD 9.00 per monitored resource per month — is

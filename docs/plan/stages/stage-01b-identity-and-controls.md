@@ -580,7 +580,7 @@ premise holds for one of the four:**
 | Service | Does delegation enable it? | Where the delegation now happens |
 |---|---|---|
 | **IAM Access Analyzer** | No — registering the delegated administrator creates no analyzer | **Here**, 8.2 |
-| **GuardDuty** | **Yes** — "GuardDuty gets enabled automatically … in the current AWS Region" for the administrator account | **Stage 4 step 10**, with the enablement |
+| **GuardDuty** | **Yes** — "GuardDuty gets enabled automatically … in the current AWS Region" for the administrator account | **Stage 15** (step 1, with the enablement — it was Stage 4 step 10 until the 2026-08-18 split) |
 | **Security Hub** | **Yes** — designating the administrator "enables Security Hub CSPM in the current AWS Region for the delegated administrator account" | **Stage 5 step 13**, with the enablement |
 | **Macie** | Expect the same; **verify — at Stage 11, not here, since nothing in 1b touches Macie** | **Stage 11**, with the enablement |
 
@@ -689,6 +689,8 @@ table. It depends on nothing else in the stage: the groups it watches are Contro
 
 - **GuardDuty → Stage 4 step 10**, with the WireGuard instance: the first internet-facing resource in the
   project, and the one whose compromise GuardDuty actually detects. Its **delegation goes with it** (8.1).
+  *(Since 2026-08-18: **Stage 15** — the coupling to the first exposed resource was later broken
+  deliberately, and the trade is argued in `institutional-delta.md`, not here.)*
 - **Security Hub → Stage 5 step 13**, with the first governed data — its standards checks report on
   resources, and before Stage 5 there are almost none to report on. Note the compounding this avoids:
   Security Hub's checks are implemented as **AWS Config rules**, so enabling it adds rule evaluations on

@@ -73,7 +73,7 @@ locals {
 resource "aws_instance" "this" {
   # checkov:skip=CKV_AWS_126:detailed monitoring is 5x the metric volume for a one-host tunnel whose alarm is on the free basic status checks (step 7.3) - CloudWatch spend is Stage 12's subject
   # checkov:skip=CKV_AWS_135:t4g.nano is not EBS-optimized-capable; the instance type is D4's, chosen by measured price (docs/PRICING.md 3)
-  # checkov:skip=CKV_AWS_88:A PUBLIC ADDRESS IS THE WHOLE POINT - this is the tunnel endpoint, the one internet-facing resource in the design, and it is what GuardDuty is enabled for in step 10. What bounds it is the security group (one UDP port, step 3.1) and the absence of port 22
+  # checkov:skip=CKV_AWS_88:A PUBLIC ADDRESS IS THE WHOLE POINT - this is the tunnel endpoint, the one internet-facing resource in the design, and it is what GuardDuty is enabled for at Stage 15. What bounds it is the security group (one UDP port, step 3.1) and the absence of port 22
   ami           = data.aws_ssm_parameter.al2023.value
   instance_type = var.instance_type
 
