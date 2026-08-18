@@ -1817,6 +1817,154 @@ duration rather than measured on the bill. The estate is back at **0.0000 USD/h*
 - **`eth0`'s MTU on the host is still unread**, so `8921 = 9001 − 80` remains arithmetic. One line in the
   next Session Manager shell.
 
+## 2026-08-18 — The server's MTU pinned: a question deferred three times, closed by measurement rather than by argument
+
+*Provenance. **The apply, the Session Manager shells and every `ping` below are the user's**, pasted
+verbatim. **Claude wrote the module change, read the plan, and took the AWS-side readings** — the two
+AMI ids, the boot console, the instance record and the battery. The one prediction Claude made about
+this boot was wrong, and it is written where it was made rather than quietly dropped.*
+
+### What was applied, and it was not only the MTU
+
+`sandbox/vpn` moved to `wireguard-v0.2.0` through the two-commit tag order. The plan read
+`2 to add, 1 to change, 2 to destroy` — and it named **two** causes of replacement, only one of them
+ours:
+
+```
+~ user_data = <<-EOT # forces replacement     <- the MTU line
+~ ami       = (sensitive value) # forces replacement     <- not ours
+```
+
+The AMI was read out from behind `(sensitive value)` before applying, because a plan that hides half its
+own reason is not a plan anybody read: the instance was on `ami-098176c88d53db397` and the SSM parameter
+had moved to **`ami-0c9da9b2b7758f931` the previous evening**. That is decision 4's known consequence
+arriving inside somebody else's change — the AMI is resolved from `/aws/service/ami-amazon-latest/…`, so
+it re-plans as a replacement whenever the parameter moves. **Recorded because a boot failure would have
+had two candidate causes**, and the two ids are the only way a later reader separates them.
+
+### The boot: 42 seconds, and the prediction that failed
+
+Read from the console rather than reported: `BEGIN 03:20:54Z` → `END 03:21:36Z`, kernel
+`6.18.41-94.142.amzn2023.aarch64`, `uplink interface: ens5`, the CloudWatch agent accepting its
+configuration, the tunnel up. New instance `i-0eed9bac55077691c`, `us-west-2b`, private `10.20.160.254`.
+
+**The plan showed `associate_public_ip_address = true -> false`, and Claude predicted the key-fetch
+retry loop would finally be exercised** — verification (viii)'s standing residual, unexercised since 1.4.
+It was not:
+
+```
+=== AWSDS-VPN 03:21:30Z (3) fetching the host key from Secrets Manager ===
+=== AWSDS-VPN 03:21:32Z (3) key in hand (base64 length 44) ===
+```
+
+Two seconds, zero retries, on a host created with no public address at all. **And the reason is
+structural, which makes it worth more than the prediction was:** step (3) sits behind step (1)'s
+`dnf install`, which took **36 seconds**. The Elastic IP association therefore always wins the race the
+loop exists to survive. So verification (viii)'s residual is not *"not yet observed"* — it is
+**effectively unexercisable on the normal path**, and that is a finding about the verification rather
+than about the code. Exercising it deliberately would mean reordering the script to fetch before it
+installs, which would be changing the subject to suit the instrument.
+
+### The control, measured in both directions
+
+The point of the change is a property of the host — that it will not inject more than 1280 into the
+tunnel — and a property is measured locally, without the internet's cooperation. From inside the host:
+
+```
+sh-5.2$ ping -M do -s 1253 -c 1 10.90.0.2
+PING 10.90.0.2 (10.90.0.2) 1253(1281) bytes of data.
+ping: local error: message too long, mtu=1280
+
+sh-5.2$ ping -M do -s 1252 -c 1 10.90.0.2
+PING 10.90.0.2 (10.90.0.2) 1252(1280) bytes of data.
+```
+
+**One byte apart, and the kernel prints the total itself** — `1252(1280)`. It is a local refusal: no
+peer answered either ping and none needed to. Before this apply the same command would have gone through,
+`wg0` having been at 8921. And from the laptop with the tunnel up, `ping -D -s 1472` returns
+`sendto: Message too long` — the mirror image, the client's own 1280 refusing 1500. **Neither end can now
+put more than 1280 into the tunnel**, and both halves are readings rather than intentions.
+
+`ip link show wg0` on the host reads `mtu 1280`; `ens5` reads `mtu 9001`, which closes the arithmetic
+that had been standing as an inference: **8921 was `9001 − 80`**, measured at last.
+
+*(A smaller correction: the command handed over was `ip link show eth0`, and the interface is `ens5`.
+The module derives `UPLINK` for exactly that reason — AL2023 on ENA names it `ens5` or `enX0` — so the
+suggestion assumed a name this design deliberately refuses to assume. It cost one round trip.)*
+
+### The negative control was inconclusive, and the reason is now measured rather than guessed
+
+The test was a client config **without** its `MTU` line, and both configs behaved identically — including
+on tethering. The user flagged it as possibly non-conclusive before any analysis, and was right.
+
+What made it inconclusive was **not** what Claude first supposed. The guess was that today's path is a
+full 1500, leaving an unpinned client nothing to fail against. The measurement says otherwise:
+
+```
+~ ping -D -s 1472 -c 3 1.1.1.1
+556 bytes from 192.168.1.1: frag needed and DF set (MTU 1492)
+```
+
+**1492 is PPPoE** — 1500 less its 8-byte header — so the local link is *narrower* than 1500, and the
+arithmetic that matters is this:
+
+| | |
+|---|---|
+| what a client **without** the line derives | 1500 − 80 = 1420 inner → **1500 outer** |
+| what this link carries | **1492** |
+| what the pinned client sends | 1280 inner → **1360 outer** |
+
+**An unpinned client is eight bytes over budget on this ordinary home line.** It does not break only
+because the router *says so* — the `frag needed` is right there in the output, three times. So the null
+result is explained: not a wide path, but **a path whose PMTUD works**.
+
+**And that sharpens what the change buys, well past "insurance against a narrow path": it buys not
+depending on ICMP coming back.** A filtered ICMP is the single most common cause of this failure, and it
+is almost certainly what pass 2 hit — the same eight-byte gap, with nobody reporting it, on a connection
+the user describes as badly degraded at the time.
+
+**So the honest status is: the control is applied and binding, measured at both ends; the end-to-end
+benefit is unproven by symptom and will stay that way**, because proving it would mean suppressing ICMP
+on purpose. A class of failure removed, not a failure fixed — and "inconclusive with the reason measured"
+is a different thing from inconclusive.
+
+### The rebuild changed nothing it was not supposed to change
+
+`./aws/vpn.py`, run after the apply, `0 FAILED`:
+
+```
+pass    VP-1  one WireGuard host (i-0eed9bac55077691c)  t4g.nano, state running
+pass    VP-2  Elastic IP associated with the host       52.89.212.1 -> i-0eed9bac55077691c
+pass    VP-6  health alarm                              awsds-sandbox-vpn-health (OK)
+```
+
+**`VP-2` is the one that mattered.** The address is what step 8.3 pins the entire control plane to, for
+all six persona sets; had the replacement moved it, every persona would have been denied everything by a
+policy that still looked correct. It did not move — the allocation is `[P]`, a slice away in
+`foundation/`, and the plan's `public_ip -> (known after apply)` was Terraform's ignorance rather than a
+change. `VP-6` confirms the alarm's in-place dimension swap landed on the new instance and is in `OK`.
+
+### Also in this sitting
+
+- **`vpn-client.md` updated in three places**, and only now — before the apply the same text would have
+  been false. §0's `MTU` row says the server pins the same value and that this does **not** make the
+  client's line optional, the two governing opposite directions; §1 gains what the server's half covers
+  and the ICMP argument with the 1492 measurement in it; §4's diagnosis gains the consequence that
+  matters at 23:00 in an airport — **the symptom should now be one-sided**, a config missing the line
+  receiving fine and stalling on what it *sends*, so a device stalling in **both** directions is a
+  finding about the host rather than about the client.
+- **`terraform-changes.md` §6 gained a row**, met while committing the caller bump: `-backend=false`
+  skips *configuring* a backend, not *reading the one already recorded*, so on an initialised slice it
+  still looks for credentials and dies in the EC2 metadata service of a laptop. The fix is the slice's
+  real init with its profile, and the row is filed under the credential error because that is the string
+  a person searches for.
+
+### Not done
+- **The estate is up**: the rebuild left the host `running`, so `sandbox` bills `0.0042 USD/h` with
+  `egress` and `probes` down. Tunnel down first, then `make down ENV=sandbox`.
+- **The upload direction of an *unpinned* client stays unprotected**, which is the MSS clamp declined in
+  the module commit — deliberate, and unchanged by anything measured here.
+
 ---
 
 *Log index: [docs/log/INDEX.md](INDEX.md) · Stage index: [docs/plan/stages/INDEX.md](../plan/stages/INDEX.md)*

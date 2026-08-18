@@ -580,7 +580,9 @@ evidence - and the Sandbox row multiplies per business unit (D35).""")
 """)
 
         if catalog:
-            rep.line("The rows the stage names (steps 8.2-8.4, 8.7), plus s3/dynamodb:")
+            rep.line("The rows the stage names (steps 8.2-8.4, 8.7), plus s3/dynamodb - plus")
+            rep.line("elasticfilesystem, on no step-8 list since 2026-08-17 (D24 withdrawn)")
+            rep.line("but kept in view, so its absence from the lists reads as a choice:")
             rep.line()
             stage_rx = re.compile(
                 "(sagemaker|codeartifact|datazone|athena|glue|lakeformation|"

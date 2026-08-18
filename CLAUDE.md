@@ -198,7 +198,8 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
 - **NFS/EFS requirement withdrawn (2026-08-17; user edit to `objectives.md`, D24 withdrawn like
   D30):** no `nfs/` slice anywhere, `elasticfilesystem` out of Sandbox's endpoint list (11 under A,
   13 under B), Stage 5 pass 5 (steps 10-12) and Stage 6 step 7 removed, `DL-10` now measures EFS
-  *absence*, and the no-RCP EFS residual left D19 / Stage 11 / architecture §4.2.
+  *absence* (a Studio domain's own tagged home exempt, 2026-08-18), and the no-RCP EFS residual left
+  D19 / Stage 11 / architecture §4.2.
 - **Stages 4-11 revised, pre-instrumented (2026-08-16/17):**
   `aws/{vpn,datalake,studio,supplychain,cicd,deploytargets,orchestration,dlp}.py` — `DL-5`/`DT-5` guard the
   LF `Parameters` (INT-11). **St.8 pass 4, St.9 passes 4-5, St.10's Staging leg wait on the vend.**

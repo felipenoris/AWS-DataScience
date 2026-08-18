@@ -22,7 +22,7 @@ AWS and is the one line worth re-examining when a working config stops working s
 | `DNS` | `10.20.0.2` | `.2` of the VPN home's VPC CIDR (`10.20.0.0/16`) — the VPC resolver, so private hosted zones and interface-endpoint names resolve on the device |
 | `PublicKey` | the host's | **`[P]`, in a Secrets Manager secret** — it survives every instance rebuild. Recover it without touching the secret: `host-public.key` on the laptop, this line in any existing config, or `wg show wg0 public-key` on the host |
 | `Endpoint` | `52.89.212.1:51820` | The **`[P]` Elastic IP**, allocated in `sandbox/foundation/` a slice away from the host, plus the one port open to the world |
-| `MTU` | `1280` | **The path, not the design.** Absent this line `wg-quick` derives it — the MTU of the interface reaching the endpoint, minus 80 — and that derivation is wrong on any path narrower than the local link, phone tethering above all (§4, measured 2026-08-17) |
+| `MTU` | `1280` | **The path, not the design.** Absent this line `wg-quick` derives it — the MTU of the interface reaching the endpoint, minus 80 — and that derivation is wrong on any path narrower than the local link, phone tethering above all (§4, measured 2026-08-17). **The server pins the same 1280 since 2026-08-18**, which does *not* make this line optional: the two govern opposite directions, and this one is the only thing bounding what **this device sends** |
 
 **If either of the two key/endpoint lines ever changes without [vpn-keys.md](vpn-keys.md) §3 having been
 run, that is a finding, not a reconnection problem.**
@@ -61,6 +61,17 @@ alternative — "add this line if the tunnel misbehaves" — is an intention, an
 one nobody diagnoses at 23:00 in an airport (§4). 1280 is the IPv6 minimum and passes every path
 encountered so far; it costs a little throughput on a wired network, where the value can be raised once
 a real path MTU has been measured rather than guessed.
+
+**Since 2026-08-18 the server pins `MTU = 1280` on its own `wg0` too, and it covers the other
+direction — downloads.** The host used to inherit its uplink's MTU, 9001 on an AWS ENA, so it would
+inject up to 8921 bytes into a tunnel whose every peer is reached across the internet; it now refuses
+anything over 1280, measured from inside the host (`ping -M do -s 1253` returns a local
+`message too long, mtu=1280`, and `-s 1252` does not). **What that buys is not speed and not a fixed
+bug: it is not depending on ICMP.** An unpinned client on a 1492-byte PPPoE line — measured, and it is
+an ordinary home link — emits 1500-byte outer packets and survives only because a router bothers to send
+back `frag needed`. Where that ICMP is filtered, which is common, nothing comes back at all. The line
+above removes the dependency for what the device sends; the server's removes it for what the device
+receives.
 
 For another device, the only line that changes is `Address` — its own `host` number from the roster.
 On a phone or tablet there is no file at all: the WireGuard app holds the private key it generated and
@@ -118,7 +129,13 @@ The config file stays; nothing is revoked, nothing on the server changes. Reconn
   address inside the VPC, so DNS working means the whole server side is working.
   **The fix is `MTU = 1280` under `[Interface]`** (already in §1's template — if a config predates it,
   this is what to add). Take the tunnel down and up: editing the file while the interface is up does not
-  change its MTU. To confirm it was MTU rather than assume it, before and after:
+  change its MTU.
+  **Since 2026-08-18 this symptom should have become one-sided** rather than disappearing: the server
+  pins 1280 as well, so a config missing the line still receives fine and stalls on what it *sends* —
+  large uploads, a `git push`, a form with an attachment. **If a device with no `MTU` line stalls in
+  BOTH directions, the server's pin is not doing its job and that is a finding**, not a client problem:
+  read `ip link show wg0` on the host (§2a of `./aws/vpn.py --on-host`, or a Session Manager shell) and
+  expect `mtu 1280`. To confirm it was MTU rather than assume it, before and after:
 
   ```bash
   ping -D -s 1372 -c 3 1.1.1.1 ; ping -D -s 1200 -c 3 1.1.1.1

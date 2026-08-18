@@ -3,8 +3,9 @@
 # perimeter policies, the KMS aliases, the Glue catalog (databases, resource links,
 # crawlers), the catalog-maintenance role and its trust, the Lake Formation settings WITH
 # THE PARAMETERS READING THAT DEFENDS INT-11, the RAM shares and any pending invitation,
-# the consumer Athena workgroups, the derived zone, the EFS absence reading (the NFS
-# requirement was withdrawn 2026-08-17), and the Security Hub state. The preflight for Stage 5, and the standing regression after it.
+# the consumer Athena workgroups, the derived zone, the EFS reading (absence expected,
+# save the home filesystem a Studio domain creates for itself - the NFS requirement was
+# withdrawn 2026-08-17), and the Security Hub state. The preflight for Stage 5, and the standing regression after it.
 #
 #   needs:    a live SSO session - the ONLY prerequisite:
 #
@@ -67,6 +68,9 @@ CONSUMER_PROFILES = ("awsds-infra-sandbox-1", "awsds-infra-dev")
 # Contracts named in the stage file, so a rename fails loudly rather than silently.
 MAINT_ROLE = "awsds-data-catalog-maintenance"  # Stage 5 step 3.2, the SCP contract
 LAKE_PREFIX = "awsds-data-"  # conventions: awsds-data-raw, -curated, -artifacts, -logs
+# The tag a SageMaker AI domain stamps on the home EFS it creates for itself and retains
+# past deletion (conventions 5.1 rule 2) - DL-10's one exemption from "none is the design".
+SM_DOMAIN_TAG = "ManagedByAmazonSageMakerResource"
 FSBP = "aws-foundational-security-best-practices"
 
 
@@ -380,13 +384,24 @@ def main(argv: list) -> int:
 
     # ------------------------------------------------------------------- EFS, the VPN home
     # The NFS requirement was withdrawn 2026-08-17 (D24 with it): no stage creates a
-    # filesystem, so this reading is an absence check.
-    efs_rows: list = []  # file system ids
+    # filesystem, so this reading is an absence check - with one exemption (2026-08-18).
+    # A SageMaker AI domain creates a home EFS for itself and RETAINS it past deletion
+    # (conventions 5.1 rule 2; Lesson 17 - a service that "sets itself up"), tagged with
+    # the domain's ARN. From Stage 6 on that filesystem is the domain working as
+    # documented; only an untagged one is drift.
+    efs_rows: list = []  # (file system id, owning domain from SM_DOMAIN_TAG, or None)
     sbx_profile = CONSUMER_PROFILES[0]
     if sbx_profile in live:
         cli = cli_for(sbx_profile)
         doc = run_json(cli, sbx_profile, "efs", "describe-file-systems")
-        efs_rows = [fs.get("FileSystemId", "?") for fs in (doc or {}).get("FileSystems", [])]
+        for fs in (doc or {}).get("FileSystems", []):
+            tags = {t.get("Key"): t.get("Value", "") for t in fs.get("Tags", [])}
+            sm_arn = tags.get(SM_DOMAIN_TAG)
+            # keep only the ARN's tail ("domain/d-..."): it names the owner and carries
+            # no account id
+            efs_rows.append(
+                (fs.get("FileSystemId", "?"), sm_arn.split(":")[-1] if sm_arn else None)
+            )
 
     # ------------------------------------------------------------- Security Hub, per account
     sh_rows: list = []  # (profile, hub, fsbp)
@@ -640,19 +655,29 @@ def main(argv: list) -> int:
             )
 
     # DL-10: no filesystem is the design - the NFS requirement was withdrawn 2026-08-17,
-    # D24 with it. Any EFS in the VPN home is drift, not progress.
+    # D24 with it. The one exemption: a Studio domain's own tagged home, reported by name
+    # rather than failed. Anything untagged is drift, not progress.
     if sbx_profile in live:
         if not efs_rows:
             checks.ok(
                 "DL-10", "EFS in the VPN home", "none - and none is the design (D24 withdrawn)."
             )
-        for fsid in efs_rows:
-            checks.fail(
-                "DL-10",
-                f"EFS {fsid}",
-                "an EFS filesystem exists - the plan creates none since the NFS "
-                "requirement was withdrawn (2026-08-17, D24 withdrawn); drift, not progress.",
-            )
+        for fsid, sm_owner in efs_rows:
+            if sm_owner:
+                checks.note(
+                    "DL-10",
+                    f"EFS {fsid}",
+                    f"the home filesystem of SageMaker domain {sm_owner} - service-created "
+                    "and retained by design (conventions 5.1 rule 2); expected from Stage 6.",
+                )
+            else:
+                checks.fail(
+                    "DL-10",
+                    f"EFS {fsid}",
+                    f"an EFS filesystem with no {SM_DOMAIN_TAG} tag - the plan creates "
+                    "none since the NFS requirement was withdrawn (2026-08-17, D24 "
+                    "withdrawn); drift, not progress.",
+                )
 
     # DL-11: Security Hub coverage (step 13).
     enabled = [r for r in sh_rows if r[1] == "enabled"]
@@ -701,7 +726,7 @@ SECTIONS
   7. RAM - shares out, invitations pending
   8. Athena workgroups, consumer side
   9. The derived zone
-  10. EFS (expected: none)
+  10. EFS (expected: none, or a Studio domain's own home)
   11. Security Hub
   12. CHECKS
   13. The accounts nothing here is measuring
@@ -833,11 +858,16 @@ it. Admins present with Parameters absent is the reset having happened.""")
             rep.line("No *-derived bucket on any consumer.")
 
         # ==============================================================================
-        rep.h1("10. EFS (expected: none)")
+        rep.h1("10. EFS (expected: none, or a Studio domain's own home)")
         if efs_rows:
-            rep.tabulate(["FILESYSTEM"] + list(efs_rows))
+            rep.tabulate(
+                ["FILESYSTEM\tSAGEMAKER DOMAIN"]
+                + [f"{f}\t{o or '- (untagged)'}" for f, o in efs_rows]
+            )
             rep.line()
-            rep.line("Unexpected - see DL-10 in section 12.")
+            rep.line("A row naming a domain is that domain's own home filesystem - service-")
+            rep.line("created and retained by design (conventions 5.1 rule 2), expected from")
+            rep.line("Stage 6 on. An untagged row is drift - see DL-10 in section 12.")
         else:
             rep.line("No EFS filesystem in the VPN home - none is the design (D24 withdrawn).")
 
@@ -870,7 +900,8 @@ What the checks are, and where each comes from:
   DL-7   shares out, resource links resolved, NO pending invitation (steps 7, 8)
   DL-8   workgroups enforce their configuration, with a scan limit (step 8, D19)
   DL-9   derived buckets carry a lifecycle expiry (step 9.2, D19)
-  DL-10  no EFS filesystem in the VPN home - the plan creates none (the NFS
+  DL-10  no EFS in the VPN home beyond a Studio domain's own tagged home
+         (conventions 5.1 rule 2) - the plan itself creates none (the NFS
          requirement was withdrawn 2026-08-17, D24 with it)
   DL-11  Security Hub + FSBP in every measured account, or in none (step 13)""")
 

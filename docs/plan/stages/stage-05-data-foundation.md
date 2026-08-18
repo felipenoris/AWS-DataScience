@@ -451,7 +451,9 @@ tunnel, persistence as the design. The NFS requirement was withdrawn from `docs/
 on 2026-08-17 and [D24](../decisions/D24-shared-filesystem.md) with it — no filesystem is built, in
 any account. File exchange between users, SageMaker and S3 is what the graduation path already is:
 S3 and git. The step numbers stay retired so earlier references cannot collide; `./aws/datalake.py`
-`DL-10` now measures the* ***absence*** *of any EFS in the VPN home.*
+`DL-10` now measures the* ***absence*** *of any EFS in the VPN home — except the home filesystem a
+Studio domain creates for itself and retains (conventions §5.1 rule 2; exemption added 2026-08-18,
+keyed on the `ManagedByAmazonSageMakerResource` tag), which the check names rather than fails.*
 
 ### Not part of the data foundation, but this is the stage it belongs to
 
@@ -492,7 +494,7 @@ Each is written so its output differs between working and broken (Lesson 13). **
 `./aws/datalake.py`** ([`aws/INDEX.md`](../../../aws/INDEX.md)), written for this stage: buckets and their
 policies, the maintenance role and its trust, crawlers (no schedule, no Iceberg target), the LF settings
 **with the parameters read `DL-5` mechanises**, shares and pending invitations, resource links, workgroup
-enforcement, the derived zone, the absence of any EFS, and the Security Hub state. The behavioural proofs are the stage's
+enforcement, the derived zone, the absence of any EFS beyond a Studio domain's own home, and the Security Hub state. The behavioural proofs are the stage's
 own:
 
 - **The share pair, in both consumers:** a sample Iceberg table written in Data Governance queries through

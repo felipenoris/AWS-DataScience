@@ -310,6 +310,16 @@ onwards the file records how the environment changed, not just the plan.
   were not written yet (step 8), and no `[E]` slice had ever existed, so the Validation had never run. **A
   stage is closed against its own file, never against a summary of it.**
 
+- **2026-08-17 — the NFS requirement is withdrawn from `objectives.md`, and D24 with it.** A user edit to
+  the requirements brief, followed through the plan in the same sitting: Stage 5 pass 5 (steps 10-12) and
+  Stage 6 step 7 tombstoned with their numbers retired, `DL-10` inverted into an absence reading, and the
+  no-RCP EFS residual — the accepted risk D19 named and Stage 11's threat model was to carry — retired with
+  the filesystem itself. **This entry exists because one provisioned thing changed shape:** the Sandbox
+  `egress/` slice, applied and torn down at Stage 3, drops `elasticfilesystem` — the slice as built carried
+  12 interface endpoints, the next `make up` builds 11 (0.160/h in `scripts/tfhygiene/layers.py`), so the
+  Stage 3 record and the tree now disagree by one endpoint, deliberately and with both sides dated.
+  Everything else the withdrawal touched was still prose.
+
 ---
 
 *Plan core: [GENERAL_PLAN.md](../GENERAL_PLAN.md) · Decisions: [docs/plan/decisions/INDEX.md](decisions/INDEX.md) · Stages: [docs/plan/stages/INDEX.md](stages/INDEX.md)*
