@@ -83,6 +83,14 @@ say "(3) key in hand (base64 length $${#HOST_KEY})"
 # umask FIRST: this file holds the server's private key - the one at-rest copy this design
 # leaves on the host, kept across stop/start by the [D] EBS volume - and wg-quick refuses to
 # start on a world-readable configuration.
+#
+# MTU IS AN EXPLICIT LINE AND NOT A DERIVATION (2026-08-17). Without it wg-quick takes the
+# uplink's MTU minus 80, and on an AWS ENA that is 9001 - so wg0 came up at 8921, a jumbo
+# frame on an interface whose every peer is reached across the internet. Nothing can use it
+# and it is one direction of the failure vpn-client.md section 4 exists to stop people from
+# misdiagnosing. The value is the client template's own, for the reason in variables.tf: the
+# floor trades against no path. What this does NOT cover is the client-to-host direction,
+# which remains the client's line to carry.
 say "(4) writing /etc/wireguard/wg0.conf for ${peer_count} peer(s)"
 umask 077
 mkdir -p /etc/wireguard
@@ -90,6 +98,7 @@ cat > /etc/wireguard/wg0.conf <<WGEOF
 [Interface]
 Address = ${server_address}
 ListenPort = ${listen_port}
+MTU = ${mtu}
 PrivateKey = $HOST_KEY
 PostUp = iptables -t nat -A POSTROUTING -s ${peer_cidr} -o $UPLINK -j MASQUERADE; iptables -A FORWARD -i %i -j ACCEPT; iptables -A FORWARD -o %i -j ACCEPT
 PostDown = iptables -t nat -D POSTROUTING -s ${peer_cidr} -o $UPLINK -j MASQUERADE; iptables -D FORWARD -i %i -j ACCEPT; iptables -D FORWARD -o %i -j ACCEPT

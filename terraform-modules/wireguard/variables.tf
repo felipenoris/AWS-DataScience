@@ -112,6 +112,21 @@ variable "instance_type" {
   default     = "t4g.nano"
 }
 
+variable "mtu" {
+  description = "The tunnel's MTU on the SERVER side, and it governs one direction only: the size of what this host injects into the tunnel, which is the DOWNLOAD direction for every client. Absent this line wg-quick derives it from the uplink - 9001 on an AWS ENA, so wg0 came up at 8921 (measured 2026-08-17), a value nobody chose and which no internet path carries. WHY 1280 AND NOT A LARGER 'CORRECT' VALUE: it is the IPv6 minimum and the same number the client template pins, so the two sides of the design say one thing. The reason this was left open at pass 2 - that a server value trades against every client's path at once, rather than one - only bites when the value chosen sits BETWEEN paths; the floor trades against nobody. WHAT IT DOES NOT FIX: the upload direction is still governed by the client's own MTU line, typed by hand per device, and closing that needs an MSS clamp in PostUp - deliberately not here, because a clamp is two rules whose directions are easy to get wrong by reading and which nothing in this repository would exercise (Lesson 20)."
+  type        = number
+  default     = 1280
+
+  validation {
+    # 1280 is the IPv6 minimum link MTU and the floor a WireGuard interface may carry; 8921 is
+    # what the uplink offered. A value outside that band is a typo rather than a decision, and
+    # the failure it would otherwise produce is the silent one: a tunnel that handshakes, passes
+    # DNS, and stalls on anything large (vpn-client.md section 4).
+    condition     = var.mtu >= 1280 && var.mtu <= 8921
+    error_message = "mtu must be between 1280 (the IPv6 minimum, and this design's choice) and 8921 (what an AWS ENA's 9001 leaves after WireGuard's 80 bytes)."
+  }
+}
+
 variable "listen_port" {
   description = "The UDP port the tunnel listens on - and the ONLY world-open port in this estate (step 3.1). It must match the ingress rule of foundation/'s [P] security group, which is why it is a variable in both places and a literal in neither."
   type        = number
