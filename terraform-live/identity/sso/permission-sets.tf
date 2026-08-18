@@ -112,3 +112,62 @@ resource "aws_ssoadmin_permission_set_inline_policy" "persona" {
     }
   }
 }
+
+# ------------------------------------------------------- the one AWS-managed policy on a persona
+#
+# CloudWatchLogsReadOnlyAccess, on the FOUR sets that run Logs Insights - Stage 4, 2026-08-17.
+# The whole argument lives here rather than four times in the policy documents, which now carry
+# a pointer to this block.
+#
+# WHY A MANAGED POLICY AT ALL, when every other grant in this slice is authored. Because
+# enumerating the calls of a CONSOLE surface is a race that cannot be won, and it was lost twice
+# in one sitting. The set was granted Logs Insights from the start and the console failed on
+# logs:GetLogGroupFields; that was fixed by deriving the missing actions from AWS's own
+# documented console-permission list - three of them, not the one observed - and the console then
+# failed on logs:DescribeFieldIndexes, WHICH IS NOT IN THAT LIST. The method was sound and the
+# source was stale: a console acquires calls faster than any list documents them, so the next
+# enumeration would have failed too. AWS maintains this policy for exactly that reason - it is on
+# version 12, and v12 added a namespace (observabilityadmin) that nobody here would have guessed.
+#
+# WHY IT IS SAFE TO BE BROAD: read-only by construction. Its actions are logs:Describe*, Get*,
+# List*, StartQuery, StopQuery, TestMetricFilter, FilterLogEvents, StartLiveTail, StopLiveTail,
+# cloudwatch:GenerateQuery, GenerateQueryResultsSummary and three observabilityadmin reads. No
+# Put*, no Delete*, no Create*. And it composes UNDER every deny already on these sets: the
+# shared fragment and DenyControlPlaneOffVpn both still apply, a deny always winning, so the
+# blast radius of a future AWS change is bounded by them rather than open.
+#
+# WHAT IS BEING ACCEPTED, NAMED SO IT IS A CHOICE AND NOT A SIDE EFFECT (decided by the user,
+# 2026-08-17):
+#
+#   1. AWS AUTHORS THIS POLICY. A future version reaches these personas with no diff in this
+#      repository - the exact shape Lesson 11 warns about, taken deliberately here because the
+#      alternative is a grant that is provably wrong every few months. The mitigation is the
+#      paragraph above: it can only ever add reads, under the denies.
+#   2. logs:StartLiveTail / StopLiveTail arrive with it, and Live Tail is BILLED PER MINUTE.
+#      Nothing measures it (D12 declined budget alerts), so it is a cost surface opened without
+#      a measurement - Lesson 6 acknowledged rather than satisfied.
+#   3. cloudwatch:GenerateQuery and GenerateQueryResultsSummary arrive too, which partly
+#      undoes the decision to defer the cloudwatch: namespace to Stage 6. It does NOT include
+#      cloudwatch:GetMetricData, so the console's metrics panel still fails - that one stays
+#      deferred, with a workload in front of it.
+#
+# WHY NOT DevEnvStewardAccess. Its ReadBuildPipelineLogs is narrow on purpose - the build's own
+# logs, not a console surface - and it never failed. Different surface, different treatment.
+# GovernanceManagerAccess holds no logs action at all.
+#
+# WHY AN AWS-MANAGED POLICY WORKS WHERE A CUSTOMER-MANAGED ONE DID NOT (Stage 2 decision 4): a
+# customer-managed policy must exist as an aws_iam_policy of the same name in EVERY account the
+# set is provisioned into, which is why the boundary was deferred. An AWS-managed policy exists
+# in every account by definition.
+resource "aws_ssoadmin_managed_policy_attachment" "cloudwatch_logs_readonly" {
+  for_each = toset([
+    "data_scientist",
+    "data_scientist_staging",
+    "data_scientist_prod",
+    "deployment_manager",
+  ])
+
+  instance_arn       = local.instance_arn
+  managed_policy_arn = "arn:${data.aws_partition.current.partition}:iam::aws:policy/CloudWatchLogsReadOnlyAccess"
+  permission_set_arn = aws_ssoadmin_permission_set.persona[each.key].arn
+}

@@ -653,8 +653,11 @@ def main(argv: list) -> int:
         checks.note("VP-5", "handshake log + alarm", "no host yet - expected before Stage 4.")
 
     # VP-7: which permission sets carry the step 8 deny. The six persona sets move
-    # together (one shared fragment, 8.2); InfrastructureAccess is a separate decision
-    # (8.3) and is reported, not judged.
+    # together (one shared fragment, 8.2). InfrastructureAccess was DECIDED OFF-VPN
+    # (open question 17, 2026-08-17, option a): the VPN host is a [D] instance that
+    # credential must be able to start from anywhere, or the tunnel's own outage is
+    # unrecoverable without break-glass - so for the seventh set the deny is judged
+    # in the OPPOSITE direction.
     if identity_live and set_rows:
         persona = {n: v for n, v in set_rows if n in PERSONA_SETS}
         carrying = [n for n, v in persona.items() if v == "yes"]
@@ -677,17 +680,20 @@ def main(argv: list) -> int:
             checks.ok("VP-7", f"{DENY_SID} in the persona sets", "all six carry it")
         infra = dict(set_rows).get(INFRA_SET)
         if infra == "yes":
-            checks.note(
+            checks.fail(
                 "VP-7",
                 f"{DENY_SID} in {INFRA_SET}",
-                "present - the deliberate 8.3 diff has been applied; break-glass (D16) is "
-                "now the only path outside the VPN.",
+                "PRESENT - open question 17 decided this set stays off-VPN (option a, "
+                "2026-08-17): with the deny on it, a stopped VPN host cannot be started "
+                "except from the address of the host that is stopped, and break-glass "
+                "(D16) becomes the routine way back in. Somebody applied what the "
+                "decision declined.",
             )
         elif carrying:
-            checks.note(
+            checks.ok(
                 "VP-7",
-                f"{DENY_SID} in {INFRA_SET}",
-                "absent - the expected state until the deliverable pair is recorded (8.3).",
+                f"{DENY_SID} absent from {INFRA_SET}",
+                "by decision (open question 17): the recovery path stays off-VPN",
             )
 
     # VP-8: GuardDuty coverage, and the two deferred features still off (step 10).
@@ -950,7 +956,7 @@ What the checks are, and where each comes from:
   VP-5  the handshake log group exists, with retention (step 7)
   VP-6  the health alarm exists (step 7)
   VP-7  the persona sets carry the step 8 deny together, or not at all (8.2);
-        InfrastructureAccess is reported as the separate 8.3 decision
+        InfrastructureAccess must NOT carry it (open question 17, option a)
   VP-8  GuardDuty enabled in every measured account, deferred add-ons off (step 10)
   VP-9  the [P] host-key secret carries its value-read deny and rotation is OFF
         (step 2.2a; decision 4, third review - the keys runbook's one rule)""")

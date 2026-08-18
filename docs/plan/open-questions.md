@@ -248,6 +248,33 @@ policy set lives in code, which is Stage 2 step 5's mandate. *(This section used
 length, under item numbers 10-12 that collided with the live items above; the duplicates were retired
 2026-08-15 — "item 10" and "items 12-15" now name only the live items.)*
 
+### Raised by Stage 4 step 8.3, 2026-08-17
+
+17. **`InfrastructureAccess` stays reachable from any network — decided (option a), not deferred, and
+    this item exists so the decision stays visible rather than becoming furniture.** Stage 4's
+    `DenyControlPlaneOffVpn` pins the six persona sets to the WireGuard Elastic IP and was measured
+    doing so (the control-plane pair, log entry ten); the seventh set was to gain it in a separate
+    diff. **Writing that diff surfaced a deadlock the stage's Risks row had predicted in one line:**
+    the VPN host is *stopped* between sessions — the normal `[D]` state, not a failure — and starting
+    it requires `ec2:StartInstances` as `awsds-infra-sandbox-1`, which the deny would only permit from
+    the address of the host that is stopped. You cannot start the VPN host without the VPN host, and
+    the only way back in is break-glass — for a routine event, which un-makes break-glass. Three exits
+    were weighed: (a) leave the seventh set off-VPN; (b) apply and rehearse break-glass as the normal
+    recovery, rejected because the deadlock state is *normal*, not exceptional; (c) apply with a
+    narrow `NotAction` emergency hatch (`ec2:StartInstances` + `DescribeInstances`), which converts
+    the deadlock into an operation at the price of "a stolen infrastructure session can start
+    instances off-VPN". **The user chose (a): the objective's "all user access through the VPN" is
+    delivered for every persona, and the administrative credential is deliberately outside it, valued
+    as the recovery path that keeps working when the VPN itself is what broke.** What would reopen
+    this, and none of it is a current stage's prerequisite: a second operator (one person's recovery
+    path is another's standing bypass); GuardDuty (pass 4) giving the off-VPN use of that credential a
+    watcher, which weakens the "nothing would notice" half of the risk; or Stage 14's multiplication
+    of VPN homes making option (c)'s hatch list a maintained table rather than two actions. The
+    institutional shape of this trade is in
+    [`institutional-delta.md`](institutional-delta.md) — the lab's admin credential is
+    network-unrestricted because it is also the fire escape, and an institution separates those two
+    jobs instead of choosing between them.
+
 ---
 
 *Plan core: [GENERAL_PLAN.md](../GENERAL_PLAN.md) · Decisions: [docs/plan/decisions/INDEX.md](decisions/INDEX.md) · Stages: [docs/plan/stages/INDEX.md](stages/INDEX.md)*
