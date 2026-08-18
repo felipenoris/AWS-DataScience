@@ -37,7 +37,7 @@ variable "zone_index" {
 }
 
 variable "security_group_id" {
-  description = "foundation/'s [P] WireGuard security group (step 2.2) - created there, not here, because Stage 5's EFS rule and Stage 7's GitLab rule admit it BY ID across an account boundary and a group a rebuild can replace is not worth referencing."
+  description = "foundation/'s [P] WireGuard security group (step 2.2) - created there, not here, because Stage 7's GitLab rule admits it BY ID across an account boundary and a group a rebuild can replace is not worth referencing."
   type        = string
   nullable    = false
 }

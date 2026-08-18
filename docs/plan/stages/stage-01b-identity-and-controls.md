@@ -15,7 +15,7 @@ Detection are deliberately skipped** (user, 2026-08-09). They are not pending wo
 up in passing here, or in 1c or 1d. **The USD 50 budget therefore notifies nobody**: the ceiling is a number
 read from the console, so the cost control of D12 is now the operator's own habit of looking — which is an
 intention, not a control (Lesson 5). `docs/plan/cost-model.md` names the exposure this leaves standing (a
-forgotten `egress/` day at ~USD 4.08), and D12 carries the revision trigger.
+forgotten `egress/` day at ~USD 3.84), and D12 carries the revision trigger.
 
 ---
 

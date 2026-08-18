@@ -4,7 +4,7 @@
 |---|---|
 | **Status** | not started — the first stage that is about *scale* rather than about a new capability |
 | **Prerequisites** | Stages 2, 3, 4 and 6. Everything a business unit's Sandbox must arrive holding has to exist and have been applied by hand at least once |
-| **Consumes** | [D21](../decisions/D21-development-account.md), [D23](../decisions/D23-ou-structure.md), [D24](../decisions/D24-shared-filesystem.md), [D26](../decisions/D26-unified-studio.md), [D34](../decisions/D34-account-vending.md), [D35](../decisions/D35-sandbox-cardinality.md), [D37](../decisions/D37-nested-ou-inheritance.md) |
+| **Consumes** | [D21](../decisions/D21-development-account.md), [D23](../decisions/D23-ou-structure.md), [D26](../decisions/D26-unified-studio.md), [D34](../decisions/D34-account-vending.md), [D35](../decisions/D35-sandbox-cardinality.md), [D37](../decisions/D37-nested-ou-inheritance.md) |
 | **Proves** | that a business unit's `Sandbox` can be created, made usable and closed without a hand-written slice |
 
 *Read with [`docs/plan/conventions.md`](../conventions.md) (naming, layout, `[P]`/`[D]`/`[E]`, IAM rules).*
@@ -12,8 +12,8 @@
 ---
 
 **Objective:** adding a business unit is a merge request. One input — the unit's name — produces its
-`Sandbox` account, in the **`Sandboxes` OU** (nested under `Interactive`, D23), with networking, identity,
-domain association and a filesystem, and nothing about it is typed twice. The OU is what makes the account
+`Sandbox` account, in the **`Sandboxes` OU** (nested under `Interactive`, D23), with networking, identity
+and its domain association, and nothing about it is typed twice. The OU is what makes the account
 governed on arrival: the `Interactive` policy set inherits down into it, so `ManagedOrganizationalUnit` in
 step 2 points at `Sandboxes` and the account needs no policy attachment of its own.
 
@@ -36,7 +36,7 @@ stage can be built without reopening Stages 8 to 10.
 
 **Why this is a late stage and not an early one.** Automating a thing that has been built once by hand is
 engineering; automating a thing that has never been built is speculation. Every slice this stage
-parameterises — `foundation/`, `egress/`, `nfs/`, the identity assignment, the domain association — exists and
+parameterises — `foundation/`, `egress/`, the identity assignment, the domain association — exists and
 has been applied by Stages 3 to 6. **What this stage adds is not new infrastructure, it is the substitution
 of a name for a hardcoded account.**
 
@@ -63,7 +63,7 @@ than a rewrite.
 
 1. **`terraform-modules/sandbox-unit/`** — one module, one input (the unit name), composing what already
    exists: a `foundation/` VPC from the Stage 3 module with its CIDR taken from the allocation table, the
-   `egress/` slice, `nfs/` for the unit's filesystem (D24), and the Route 53 associations that let the unit
+   `egress/` slice, and the Route 53 associations that let the unit
    reach GitLab by name. **Two PKI items, not one, and the second is the easy one to miss (D36):** the zone
    associations *and* the **internal CA root reaching this unit's `dev-env` image** (INT-19). The first
    fails as `NXDOMAIN`, the second as a TLS handshake error inside a notebook — neither says "a business
@@ -127,7 +127,7 @@ than a rewrite.
    built by hand and is being adopted; the proof is a *second* one, created from nothing but a name, whose
    `terraform plan` on every shared slice comes back empty afterwards.
 
-**Deliverables:** a business unit's Sandbox account, its VPC, its filesystem, its identity assignment and its
+**Deliverables:** a business unit's Sandbox account, its VPC, its identity assignment and its
 domain association all produced from one name in a merge request; a second unit created without editing any
 module; the VPN topology decision recorded together with the number of units it was made for; and the quota
 headroom restated in units rather than in accounts — **one slot per business unit**.

@@ -2,9 +2,9 @@
 
 | | |
 |---|---|
-| **Status** | not started — **revised 2026-08-16 into the pass/verification format, against the official documentation and the `aws-ia` module re-read the same day.** Corrections folded in: the **Proves** row loses INT-09 and INT-13 (both need GitLab, which is Stage 7 — the old row contradicted the old body) and gains INT-02's consumer half; the two `sagemaker/` prerequisite slices, until now only *named* by `docs/plan/conventions.md` §6, get an owning step (2.1); steps 4-5 become amendments to Stage 3's parameterised `egress/` (its step 10) rather than fresh builds; the teardown debt is paid (the `layers.py` rows and the body Stage 2 step 8.6 left owing in `scripts/down-studio-apps.py`); and six doc facts replace beliefs — **`VpcOnly` is the default** (the control is a non-editable parameter, not a switch to find), the blueprint names (there is no "ML experience"; the per-project SageMaker AI domain comes from **Tooling**), disabling Athena **Spark** without killing Athena SQL is an SCP on `athena:StartSession`, idle shutdown is a Tooling-blueprint parameter with an admin-enforceable ceiling, the account association has **no public API**, and the required-endpoint list gained `datazone` |
+| **Status** | not started — **revised 2026-08-16 into the pass/verification format, against the official documentation and the `aws-ia` module re-read the same day.** Corrections folded in: the **Proves** row loses INT-09 and INT-13 (both need GitLab, which is Stage 7 — the old row contradicted the old body) and gains INT-02's consumer half; the two `sagemaker/` prerequisite slices, until now only *named* by `docs/plan/conventions.md` §6, get an owning step (2.1); steps 4-5 become amendments to Stage 3's parameterised `egress/` (its step 10) rather than fresh builds; the teardown debt is paid (the `layers.py` rows and the body Stage 2 step 8.6 left owing in `scripts/down-studio-apps.py`); and six doc facts replace beliefs — **`VpcOnly` is the default** (the control is a non-editable parameter, not a switch to find), the blueprint names (there is no "ML experience"; the per-project SageMaker AI domain comes from **Tooling**), disabling Athena **Spark** without killing Athena SQL is an SCP on `athena:StartSession`, idle shutdown is a Tooling-blueprint parameter with an admin-enforceable ceiling, the account association has **no public API**, and the required-endpoint list gained `datazone`. **Revised 2026-08-17: the user withdrew the NFS requirement from `objectives.md` (D24 withdrawn) — step 7 is removed, and pass 5 is steps 8-9** |
 | **Prerequisites** | Stage 3 (the per-role endpoint lists and the `egress_mode` switch of its step 10), Stage 4 (the tunnel; INT-16's portal half deliberately open), Stage 5 (the lake, the two shares proven by the pandas pair, **decision 6 — the grain — already taken**, and the 9.3 extension point in the derived-zone key policy). **Pulled forward and applied before this stage:** `production/registry/` (Stage 7 step 5 — under design B it is how packages arrive) and `production/pki/` (D36 — the `dev-env` image must be *built* with the CA root in it, INT-19) |
-| **Consumes** | [D5](../decisions/D05-sagemaker-egress.md), [D12](../decisions/D12-budget-ceiling.md), [D13](../decisions/D13-lake-formation-enforcement.md), [D14](../decisions/D14-supply-chain-account.md), [D21](../decisions/D21-development-account.md), [D24](../decisions/D24-shared-filesystem.md), [D26](../decisions/D26-unified-studio.md), [D28](../decisions/D28-workflow-contract.md), [D35](../decisions/D35-sandbox-cardinality.md), [D36](../decisions/D36-internal-pki.md) |
+| **Consumes** | [D5](../decisions/D05-sagemaker-egress.md), [D12](../decisions/D12-budget-ceiling.md), [D13](../decisions/D13-lake-formation-enforcement.md), [D14](../decisions/D14-supply-chain-account.md), [D21](../decisions/D21-development-account.md), [D26](../decisions/D26-unified-studio.md), [D28](../decisions/D28-workflow-contract.md), [D35](../decisions/D35-sandbox-cardinality.md), [D36](../decisions/D36-internal-pki.md) |
 | **Proves** | [INT-01](../integrations.md), [INT-02](../integrations.md) (the consumer half; the domain policy is Stage 7 step 5's, applied early), [INT-12](../integrations.md), [INT-15](../integrations.md), [INT-16](../integrations.md) (the portal half, provisional since Stage 4), [INT-17](../integrations.md). **Deferred to Stage 7 with the surface that needs it:** INT-09 (the `git clone` inside the `engineering` project) and INT-13 (CodeConnections) — GitLab does not exist before Stage 7 step 1 |
 
 *Read with [`docs/plan/conventions.md`](../conventions.md) (naming, layout, `[P]`/`[D]`/`[E]`, IAM rules).*
@@ -79,9 +79,9 @@ change. The sequence to work in is **six passes**:
 | **1** | 3 | the deny fragment: jobs off VPC, instance ceiling, `StartSession` scope | `identity/sso/` `[P]` | `awsds-infra-identity` |
 | **1** | 5.0 | the hand-built `base`/`dev-env` images into the Production ECR | laptop, by hand | **user** (docker + push) |
 | **2** | 1 | the domain, the associations, the blueprint configurations, the two profiles; the Athena Spark disable; INT-16's portal reading | `data-governance/governance/` `[P]` + console | `awsds-infra-data`; console halves: **user** |
-| **3** | 2.4-2.7 | one throwaway project per profile: INT-15 (boundary), INT-17 (image), the step 7 reading | portal + readings | provision: **user**; readings: `./aws/studio.py` |
+| **3** | 2.4-2.7 | one throwaway project per profile: INT-15 (boundary), INT-17 (image) | portal + readings | provision: **user**; readings: `./aws/studio.py` |
 | **4** | 4, 5, 6 | egress design A, egress design B, the comparison — closes D5 | `egress/` `[E]` | the two Interactive infra profiles |
-| **5** | 7, 8, 9 | the filesystem answer; idle shutdown + the teardown hook; observability | `nfs/`, profiles, `scripts/` | mixed |
+| **5** | 8, 9 | idle shutdown + the teardown hook; observability | profiles, `scripts/` | mixed |
 
 Pass 2 cannot precede pass 1: the blueprint configuration in a member account names the provisioning role
 and VPC parameters the `sagemaker/` slice creates. Pass 3 needs pass 2's profiles and pass 1's image (5.0).
@@ -216,7 +216,7 @@ a slice with no row fails `make check`, and a name with no rank raises at import
 **2.3 — Apply both slices** — **user**, as `awsds-infra-sandbox-1` and `awsds-infra-dev`.
 
 **2.4 — Provision one throwaway project per profile** — **user**, in the portal, after pass 2. This is the
-measurement instrument for INT-15, INT-17 and step 7 — three questions, one project, before anything is
+measurement instrument for INT-15 and INT-17 — two questions, one project, before anything is
 built on top.
 
 **2.5 — Read back what the blueprint attached, and whether the boundary holds** — Claude:
@@ -330,25 +330,13 @@ attempt achieves (DNS-name filtering is bypassable by raw IP under A; B has no p
 number provisional**: it is measured against a hand-built image here and re-measured against the Stage 8
 pipeline. The choice is made here; the number behind it is confirmed there.
 
-### 7. The shared-filesystem answer (D24) — a reading first, a build only if it survives
+### 7. Removed (2026-08-17) — the shared-filesystem answer
 
-*Why: D24 and the NFS objective were written against classic Studio's `DefaultUserSettings` EFS attach.
-**SMUS documents no custom-filesystem attach at all** (read 2026-08-16: project storage is S3 shared
-locations, git, and per-space EBS) — so this step is a verification with fallbacks, not a build with a
-parameter.*
-
-**7.1 — Verify against the deployed blueprint, not the docs alone** — Claude reads the throwaway project's
-domain and the Tooling parameter list for any custom-FS surface; **user** tries the documented SageMaker AI
-platform mechanism only if one appears. Editing the blueprint's domain out-of-band (`update-domain` with
-`CustomFileSystemConfigs`) is an undocumented mutation of a managed resource — treat it as fallback, not
-path.
-
-**7.2 — Fall back in order, recording which held:** (i) mount the Stage 5 EFS from inside the app with the
-mount helper, if the container has the SG path — the interface becomes a documented command; (ii) restrict
-the NFS objective to its stated use — exchanging files between *users*, SageMaker and S3 — noting the
-laptop mount over the tunnel (Stage 5 step 11) already delivers two of the three; (iii) accept S3 as the
-exchange path from project compute and record the reduction in `docs/plan/institutional-delta.md`, beside
-the existing Development row.
+*This step verified whether SMUS could attach D24's EFS at all — the documentation said no, and
+three fallbacks were queued. The question dissolved before it was asked: the NFS requirement was
+withdrawn from `docs/plan/objectives.md` and [D24](../decisions/D24-shared-filesystem.md) with it.
+File exchange is S3 and git — the paths SMUS project storage already documents. The step number
+stays retired.*
 
 ### 8. Idle shutdown and the teardown machinery (D11, open question 15)
 
@@ -369,7 +357,7 @@ the first `make down` after pass 3.
 `sagemaker/` prerequisites and the per-project SageMaker AI domains are **`[P]`** (metadata-priced or free
 at rest; destroying them would orphan home storage and churn every ID); **only running apps are `[E]`**,
 deleted by 8.2 through SageMaker, never through DataZone, which owns no compute. Project home directories
-are **scratch by policy** — notebooks live in git, data in S3, shared files on the Stage 5 EFS. State this
+are **scratch by policy** — notebooks live in git, data in S3. State this
 to users explicitly.
 
 **8.4 — Prove the lifecycle** — **user**: `make down ENV=sandbox` deletes the running apps and touches
@@ -391,12 +379,11 @@ Each is written so its output differs between working and broken (Lesson 13). **
 `./aws/studio.py`** ([`aws/INDEX.md`](../../../aws/INDEX.md)), written for this stage: the one V2 domain in
 the one right account, no domain anywhere else, the blueprint set with Redshift absent, the two profiles,
 VpcOnly + idle shutdown per runtime domain, the boundary on every project role, the deny Sids in all six
-persona sets, images, apps, EFS access points. The behavioural proofs are the stage's own (Lesson 20):
+persona sets, images, apps. The behavioural proofs are the stage's own (Lesson 20):
 
 - **The working session:** sign in through the VPN, open the portal, work in `experimentation` (compute in
-  Sandbox) and `engineering` (compute in Development), install a package, read the Stage 5 lake table
-  through Athena over the LF share — surfaced as a subscribed asset in SageMaker Catalog — and exchange a
-  file per step 7's outcome.
+  Sandbox) and `engineering` (compute in Development), install a package, and read the Stage 5 lake table
+  through Athena over the LF share — surfaced as a subscribed asset in SageMaker Catalog.
 - **The egress pair, under each design:** a non-allowlisted site is unreachable under A (and the block is
   logged); no site at all is reachable under B — while the package path and the lake read still work.
   Plus the written comparison, rebuild-loop marked provisional.

@@ -1385,8 +1385,8 @@ measure something else.
   is in 7.5, and it is recorded because an unnecessary carve-out is a hole, not a safety margin.
 
   **The other direction is already settled and is not a scope question:** EC2, RDS and EFS are outside RCP
-  reach entirely, which is why the snapshot route is denied by SCP in 7.5 and why EFS has no preventive
-  control at all.
+  reach entirely, which is why the snapshot route is denied by SCP in 7.5. (EFS's lack of any preventive
+  control stopped mattering on 2026-08-17: the NFS requirement was withdrawn, and no filesystem exists.)
   Three things that are not optional:
   - **The policy type must be enabled first** (7.2), and the organization must have all features on.
   - **The condition needs `"BoolIfExists": {"aws:PrincipalIsAWSService": "false"}` beside the

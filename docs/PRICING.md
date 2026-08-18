@@ -201,7 +201,7 @@ Paid every month even with the lab shut down. Same rows as `docs/plan/cost-model
 | Security Hub + IAM Access Analyzer | 0.001 USD/check (first 100k) | 0.001 USD/check | 1.00-2.00 | 1.00-2.00 |
 | GuardDuty (after the 30-day free window) | 1.75 USD/GB, 0.000007 USD/event | 1.00 USD/GB, 0.000004 USD/event | 0 → 5.00-9.00 | 0 → 3.00-5.00 |
 | WireGuard EBS (8 GB) + CloudWatch logs | 0.152 USD/GB-mo; logs 0.90 USD/GB | 0.08; logs 0.50 USD/GB | ~1.80 | ~1.00 |
-| EFS (shared filesystem + project storage, IA) | 0.044 USD/GB-mo | 0.025 USD/GB-mo | ~0.90 | ~0.50 |
+| ~~EFS (shared filesystem + project storage, IA)~~ | **removed — the NFS requirement was withdrawn 2026-08-17 (D24 with it)** | | **0** | **0** |
 | SageMaker unified domain — DataZone V2 metadata (D26) | 10.00/100k req + 0.40/GiB-mo (global) | idem | ~0.50 | ~0.50 |
 | ~~Staging, Development, Data Governance at rest~~ | **removed — double count** | | **0** | **0** |
 | **Floor** | | | **~USD 30-43** (central ~36) | **~USD 25-34** (central ~30) |
@@ -246,8 +246,8 @@ one Stage 12 step 5 measures against the real bill — this is arithmetic over l
 |---|---|---|---|
 | NAT Gateway (1) | 0.093 + 0.093/GB | 0.045 + 0.045/GB | 2.07 |
 | Interface VPC endpoint (each, per AZ) | 0.021 + 0.01/GB | 0.010 + 0.01/GB | 2.10 |
-| — Sandbox, 12 endpoints, single AZ (D9), design A | 0.252 | 0.120 | 2.10 |
-| — Sandbox, 14 endpoints, design B | 0.294 | 0.140 | (design B needs CodeArtifact — see §9) |
+| — Sandbox, 11 endpoints, single AZ (D9), design A (12 until 2026-08-17 — `elasticfilesystem` left with the NFS requirement) | 0.231 | 0.110 | 2.10 |
+| — Sandbox, 13 endpoints, design B | 0.273 | 0.130 | (design B needs CodeArtifact — see §9) |
 | — Development 11 / Staging 9 / Production 10-12 | 0.231 / 0.189 / 0.210-0.252 | 0.110 / 0.090 / 0.100-0.120 | 2.10 |
 | GitLab EC2 `t4g.large` | 0.1072 | 0.0672 | 1.60 |
 | — `t3.large`, the x86 equivalent | 0.1344 | 0.0832 | 1.62 |
@@ -530,7 +530,7 @@ favour: **technically yes except for CodeArtifact, but it no longer fits under t
 data-plane endpoints are counted.** Interface endpoints carry the sharpest premium in this file (2.10x) and
 the correction added three of them to every account, so São Paulo absorbed the change roughly twice over.
 The first overrun there would be a session that leaves a design-A Sandbox `egress/` up for a full day:
-24 h × 0.350 = **USD 8.40** in `sa-east-1` against 24 h × 0.170 = USD 4.08 in `us-west-2`.
+24 h × 0.324 = **USD 7.78** in `sa-east-1` against 24 h × 0.160 = USD 3.84 in `us-west-2`.
 
 ---
 
@@ -553,7 +553,7 @@ storage bill), and the first 30 days of GuardDuty per account.
 
 Anything whose volume is unknown until the environment runs: Config configuration items during a heavy
 `terraform apply`, CloudTrail data events under a Spark job, GuardDuty log volume, Macie GB inspected,
-Athena TB scanned, EFS throughput, inter-AZ traffic driven by the AZ-mapping question in
+Athena TB scanned, inter-AZ traffic driven by the AZ-mapping question in
 `docs/plan/open-questions.md` item 3, and the domain registration itself (registrar price, per TLD). Stage 12
 replaces the estimated rows in §2 and §3 with figures from the real bill; the per-unit rates in this file
 do not change at that point — only the quantities they are multiplied by.

@@ -26,7 +26,7 @@ output "public_subnet_ids" {
 }
 
 output "private_subnet_ids" {
-  description = "Private subnets by zone id - Studio apps (Stage 6), EFS mounts (Stage 5)."
+  description = "Private subnets by zone id - Studio apps (Stage 6)."
   value       = module.vpc.private_subnet_ids
 }
 
@@ -70,7 +70,7 @@ output "sandbox_internal_zone_id" {
 # Four outputs, four different readers, none of them in this slice: sandbox/vpn/ associates
 # the address, attaches the group and hands the secret's ARN to the host's boot fetch,
 # identity/sso/ names the public IP in step 8's deny (the repository's first cross-account
-# remote-state read), and Stages 5 and 7 admit the group id from another account entirely.
+# remote-state read), and Stage 7 admits the group id from another account entirely.
 # Everything here survives make down by construction.
 
 output "wireguard_eip_allocation_id" {
@@ -84,7 +84,7 @@ output "wireguard_eip_public_ip" {
 }
 
 output "wireguard_security_group_id" {
-  description = "The [P] WireGuard security group. Admitted BY ID from Production (Stage 7's GitLab) and by Stage 5's EFS mount rule - never the client CIDR, which the instance SNATs away (step 1.2)."
+  description = "The [P] WireGuard security group. Admitted BY ID from Production (Stage 7's GitLab) - never the client CIDR, which the instance SNATs away (step 1.2)."
   value       = aws_security_group.wireguard.id
 }
 

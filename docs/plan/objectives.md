@@ -49,8 +49,6 @@ The goal is to achieve the following:
 
 - Explore the possibility of deploying a workflow developed in SageMaker (Airflow/MWAA) to production.
 
-- Use an NFS solution to exchange files between users, the SageMaker environment and S3 buckets.
-
 - Data-science assets and databases should not face the public internet. Later in the project we'll experiment with setting up a web server facing the public internet, accessing a backend or database protected in the private subnet.
 
 - Let's avoid using IAM Users, in favor of assuming IAM Roles temporarily.

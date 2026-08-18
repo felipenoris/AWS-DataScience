@@ -15,8 +15,7 @@ WHAT THIS TABLE IS *FOR*, since every row in it today says [P] and `make down` t
 nothing. The machinery is written BEFORE the first [E] slice exists rather than after it, which
 is step 8.6's own reasoning applied to the whole target: a hook added later is a hook that was
 missing from the first teardown that needed it. Stage 3's `egress/` is the first [E] slice and
-Stage 4's WireGuard `vpn/` the first [D] one (Stage 5's EFS is [P] by decision - conventions
-5.1 rule 2, D24); both arrive to a `make down` that already refuses the four things it must
+Stage 4's WireGuard `vpn/` the first [D] one; both arrive to a `make down` that already refuses the four things it must
 refuse.
 
 THE TABLE IS AUTHORED, THE TREE IS DISCOVERED, AND THE DISAGREEMENT IS AN ERROR - the same
@@ -134,8 +133,8 @@ SLICES = [
     Slice("production", "foundation", PERSISTENT, "VPC 3x2, gw endpoints, prod+pages.internal"),
     # Stage 3 pass 3 (2026-08-16). The endpoint counts are step 8.3's per-role lists:
     # core 8 + the account's extras; every row includes a mode-A NAT (0.050 = 0.045 + IPv4).
-    Slice("sandbox", "egress", EPHEMERAL, "NAT + 12 interface endpoints (8.3)", 0.170),
-    Slice("development", "egress", EPHEMERAL, "NAT + 11 interface endpoints, no EFS (D24)", 0.160),
+    Slice("sandbox", "egress", EPHEMERAL, "NAT + 11 interface endpoints (8.3)", 0.160),
+    Slice("development", "egress", EPHEMERAL, "NAT + 11 interface endpoints (8.3)", 0.160),
     Slice("production", "egress", EPHEMERAL, "NAT + 10 interface endpoints (8.3)", 0.150),
     # Stage 3's Deliverables, as slices rather than as a script (2026-08-16). These are
     # INSTRUMENTS: created, read from the serial console, destroyed in the same sitting -

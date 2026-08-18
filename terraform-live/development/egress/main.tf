@@ -31,8 +31,7 @@ module "egress" {
   endpoint_subnet_id         = data.terraform_remote_state.foundation.outputs.private_subnet_ids[var.zone_ids[0]]
   endpoint_security_group_id = data.terraform_remote_state.foundation.outputs.endpoints_security_group_id
 
-  # Step 8.3, the Development row: the three SageMaker endpoints and NO elasticfilesystem -
-  # D24 gives Development neither its own EFS nor a path to Sandbox's, and an endpoint for
-  # a mount that must not exist is a control smell, not a convenience.
+  # Step 8.3, the Development row: the three SageMaker endpoints - the same list as Sandbox
+  # since 2026-08-17, when the NFS requirement was withdrawn (D24 with it).
   extra_services = ["sagemaker.api", "sagemaker.runtime", "sagemaker.studio"]
 }

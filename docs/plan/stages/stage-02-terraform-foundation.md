@@ -1085,8 +1085,8 @@ written, each of which it had left open:**
   `make down` must not fail on credentials it never needed.
 - **The `[D]` half is a stub that refuses to be reached silently.** Nothing on disk is `[D]` — **the first
   is Stage 4's WireGuard `vpn/`**, and `docs/plan/conventions.md` §5.1 names only two dormant things ever,
-  that instance and Stage 7's GitLab EC2 with its EBS volume. **`nfs/`'s EFS is not one of them: it is `[P]`
-  by rule 2** (D24), which is the distinction worth keeping, because "stateful" is what makes a slice `[D]`
+  that instance and Stage 7's GitLab EC2 with its EBS volume — **everything else stateful is `[P]` by
+  rule 2**, the distinction worth keeping, because "stateful" is what makes a slice `[D]`
   *or* `[P]` and the two readings diverge exactly there. So `up`/`down` print *"none declared"*, and a `[D]`
   row arriving before the hook has a body raises, naming 8.2 — the same shape as 8.6, for the same reason.
 

@@ -98,7 +98,7 @@ stopped host would report a burn forever.
 VPN's three durable things — the Elastic IP, the host security group and the **host private key's Secrets
 Manager container** — are `[P]` and live in [`sandbox/foundation/vpn-anchors.tf`](sandbox/foundation/),
 one slice away from the `[D]` instance that consumes them. Each is named from outside Stage 4 (the
-permission sets pin the address, Stage 5's bucket and EFS rules and Stage 7's GitLab rule name the group,
+permission sets and Stage 5's bucket policy pin the address, Stage 7's GitLab rule names the group,
 and every instance the `[D]` slice ever boots reads the key), and **a reference is only worth writing if
 what it names outlives the thing using it**: after step 8.3 an address that changed would deny every
 persona every API call until each client config and the permission-set fragment were edited together.

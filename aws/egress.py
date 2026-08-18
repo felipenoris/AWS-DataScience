@@ -35,7 +35,7 @@
 #   HANGS, which no error message will ever attribute to an endpoint policy.
 #
 #   AT make down - AND WHENEVER IN DOUBT: section 6 is the burn meter. A forgotten egress/
-#   costs ~USD 4.08/day and, by decision D12, NO BUDGET ALERT EXISTS to catch it; this
+#   costs ~USD 3.84/day and, by decision D12, NO BUDGET ALERT EXISTS to catch it; this
 #   section is the manual instrument that risk gets. Zero everywhere is the correct
 #   between-sessions answer (D11).
 #

@@ -20,7 +20,6 @@
 #             ListEnvironmentBlueprints, ListProjectProfiles, ListProjects,
 #             sagemaker:ListDomains, DescribeDomain, ListApps, ListSpaces, ListImages,
 #             ListAppImageConfigs, iam:ListRoles, GetRole,
-#             elasticfilesystem:DescribeAccessPoints,
 #             sso-admin:ListInstances, ListPermissionSets, DescribePermissionSet,
 #             GetInlinePolicyForPermissionSet, sts:GetCallerIdentity.
 #             It never creates, updates or deletes anything.
@@ -310,25 +309,6 @@ def main(argv: list) -> int:
         for name, barn in json.loads(res.stdout or "[]"):
             rows.append((name, (barn or "-").split("/")[-1]))
         role_rows[p] = rows
-
-    # ----------------------------- EFS access points in the VPN home (step 7, D24)
-    efs_aps: list = []  # (access point id, filesystem, path)
-    sbx = INTERACTIVE_PROFILES[0]
-    if sbx in live:
-        cli = cli_for(sbx)
-        res = cli.run(
-            "efs",
-            "describe-access-points",
-            "--query",
-            "AccessPoints[].[AccessPointId,FileSystemId,RootDirectory.Path]",
-            "--output",
-            "json",
-            log=False,
-        )
-        if not res.ok:
-            logerr(sbx, "efs describe-access-points", res.stderr)
-        else:
-            efs_aps = [tuple(str(x) for x in r) for r in json.loads(res.stdout or "[]")]
 
     # ------------------- the step 3 deny, read back from Identity Center (like vpn.py)
     identity_live = IDENTITY_PROFILE in live
@@ -620,16 +600,15 @@ SECTIONS
   4. SageMaker AI domains per account (the runtimes - and the negative reading)
   5. Running apps and registered images (the burn, and INT-17's mechanical half)
   6. The project roles and their permissions boundary (INT-15)
-  7. EFS access points in the VPN home (step 7, D24)
-  8. The step 3 deny, per permission set
-  9. CHECKS
- 10. The accounts nothing here is measuring
- 11. Calls that failed
+  7. The step 3 deny, per permission set
+  8. CHECKS
+  9. The accounts nothing here is measuring
+ 10. Calls that failed
 
 HOW TO READ THIS FILE
   - "NOT BUILT YET" IS THE EXPECTED ANSWER UNTIL STAGE 6 RUNS - each such reading
     is a note, not a failure; it becomes a regression the moment the stage closes.
-  - A MISSING ACCOUNT IS NOT A PASSING ACCOUNT - section 10 names what nothing here
+  - A MISSING ACCOUNT IS NOT A PASSING ACCOUNT - section 9 names what nothing here
     reached.
   - THIS IS A CONTROL-PLANE READING. The portal reading (INT-16), the lake reads,
     the egress pairs and the boundary's SURVIVAL of a blueprint reconciliation
@@ -757,14 +736,7 @@ reconciliation is INT-15's behavioural half - provision, wait, re-run this file
 and diff section 6.""")
 
         # ==============================================================================
-        rep.h1("7. EFS access points in the VPN home (step 7, D24)")
-        if efs_aps:
-            rep.tabulate(["ACCESS POINT\tFILESYSTEM\tPATH"] + ["\t".join(a) for a in efs_aps])
-        else:
-            rep.line("None. Expected before Stage 5 step 10 / Stage 6 step 7.")
-
-        # ==============================================================================
-        rep.h1("8. The step 3 deny, per permission set")
+        rep.h1("7. The step 3 deny, per permission set")
         rep.text(f"""The reading greps each set's inline policy for the Sids {", ".join(STEP3_SIDS)} -
 presence, never sufficiency: the conditions inside them are proven by the stage's
 own deny pair (a job submitted with no VPC config, an oversized instance type).
@@ -773,7 +745,7 @@ own deny pair (a job submitted with no VPC config, an oversized instance type).
         if not identity_live:
             rep.line(f"{IDENTITY_PROFILE} was not measured - the sets were not read.")
         elif not set_rows:
-            rep.line("No project permission set was found - see section 11.")
+            rep.line("No project permission set was found - see section 10.")
         else:
             rep.tabulate(
                 [f"PERMISSION SET\t{STEP3_SIDS[0]}\t{STEP3_SIDS[1]}"]
@@ -781,7 +753,7 @@ own deny pair (a job submitted with no VPC config, an oversized instance type).
             )
 
         # ==============================================================================
-        rep.h1("9. CHECKS")
+        rep.h1("8. CHECKS")
         rep.checks_table(checks)
         n_fail = checks.n_fail()
         rep.line()
@@ -803,8 +775,8 @@ What the checks are, and where each comes from:
   US-10  running apps reported as the burn they are (conventions 6)""")
 
         # ==============================================================================
-        rep.h1("10. The accounts nothing here is measuring")
-        rep.text("""Read this BEFORE reading section 9 as a pass.
+        rep.h1("9. The accounts nothing here is measuring")
+        rep.text("""Read this BEFORE reading section 8 as a pass.
 
   - `Staging` has no profile until the vend: US-6's Staging half is unmeasurable
     until then (its absence from section 1 is the design, not coverage).
@@ -813,7 +785,7 @@ What the checks are, and where each comes from:
   - The portal (INT-16) is a browser surface; no profile reads it.""")
 
         # ==============================================================================
-        rep.h1("11. Calls that failed")
+        rep.h1("10. Calls that failed")
         failed_calls_epilogue(rep, errors)
         rep.line()
         rep.line("Regenerate with:  ./aws/studio.py")
@@ -822,10 +794,10 @@ What the checks are, and where each comes from:
     n_fail = checks.n_fail()
     note("")
     if errors:
-        note(f"wrote {out_label} (some calls FAILED - see section 11)")
+        note(f"wrote {out_label} (some calls FAILED - see section 10)")
         return 1
     if n_fail > 0:
-        note(f"wrote {out_label} ({n_fail} CHECK(S) FAILED - see section 9)")
+        note(f"wrote {out_label} ({n_fail} CHECK(S) FAILED - see section 8)")
         return 2
     note(f"wrote {out_label} (all checks passed)")
     return 0

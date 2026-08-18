@@ -76,11 +76,11 @@ are now officially just the acronym.
 |---|---|---|
 | **S3** | Simple Storage Service | Object storage. The source of truth for all data in this project. |
 | **EBS** | Elastic Block Store | Network-attached block storage for EC2 instances. Billed even while the instance is stopped — the idle cost of the `[D]` layer. |
-| **EFS** | Elastic File System | Managed NFS. The shared filesystem between users and SageMaker. |
+| **EFS** | Elastic File System | Managed NFS. Left the design with the NFS requirement (withdrawn 2026-08-17, D24 with it); survives in prose as a no-RCP resource type (`docs/plan/architecture.md` §4.2) and as the home filesystem a Studio domain retains. |
 | **FSx** | (Amazon FSx) | A family of managed file systems. FSx for Lustre is named in `docs/plan/institutional-delta.md` as what an institution uses for training throughput. |
 | **NFS / NFSv4** | Network File System (version 4) | The protocol for mounting a remote filesystem as if it were local. |
-| **IA** | Infrequent Access | A cheaper storage class for data that is rarely read. EFS and S3 both have one; the lifecycle transition to IA is what makes persistent EFS cost cents. |
-| **POSIX** | Portable Operating System Interface | The Unix filesystem semantics EFS implements — including numeric **UID**/**GID** (user/group identifiers), which have no connection to SSO identities. That gap is why "who wrote this file" is unanswerable in this design. |
+| **IA** | Infrequent Access | A cheaper storage class for data that is rarely read. S3 and EFS both have one. |
+| **POSIX** | Portable Operating System Interface | The Unix filesystem semantics — including numeric **UID**/**GID** (user/group identifiers), which have no connection to SSO identities. The gap that made D24's shared filesystem unauditable, before the NFS requirement was withdrawn (2026-08-17). |
 | **CMK** | Customer Managed Key | A KMS key you create and control, as opposed to an AWS-managed one. ~USD 1/month each. |
 | **SSE** | Server-Side Encryption | Encryption applied by the storage service. `SSE-KMS` means encrypted with a KMS key. |
 | **KMS** | Key Management Service | AWS's key store. Charges per key **and per request** — which is why S3 Bucket Keys matter (`docs/plan/cost-model.md`). |

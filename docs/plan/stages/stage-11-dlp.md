@@ -2,9 +2,9 @@
 
 | | |
 |---|---|
-| **Status** | not started — **revised 2026-08-17 into the action-checklist format** (executor markers, action-first steps), against the official documentation and the Price List API, and pre-instrumented by `./aws/dlp.py`. Corrections folded in: **internal-access analysis was measured at USD 9.00 per resource-month, charged at setup and then on the first of each month** — so step 2.1's analyzer became an enumerated-ARN, read-then-delete instrument rather than a standing monitor, and its KMS claim was narrowed (**KMS keys are not an internal-access resource type**: the derived CMK is verified by reading its key policy, not by the analyzer); **Macie's auto-enable covers *new* accounts only** — existing accounts are added one by one by the administrator, the inverse of GuardDuty's `ALL` that Stage 4 recorded; the Macie job's **discovery-results repository prompt** is answered as a decision, not at the keyboard (Lesson 16); GuardDuty's two deferred features are named by their **API feature names** (`S3_DATA_EVENTS`, `EBS_MALWARE_PROTECTION`), both prices are measured (USD 0.80/1M events, 0.03/GB), and step 4 is written against the collision `POLICIES.md` documents — with `./aws/vpn.py`'s `VP-8` expectation flipped in the same sitting; **the step 5 trails are data-event-only** (the org trail already carries the management copy) with advanced selectors on a monitored-bucket *map*, and the alarms ride **EventBridge rules + the `MatchedEvents` metric** — data events are matched by ordinary `ENABLED` rules once a trail logs them (read 2026-08-17) — never CloudWatch Logs ingestion; **the first member-account trail fires the revision trigger `POLICIES.md` names**, so the CloudTrail-tampering statement is decided here; the presigned-URL correction stands (*use* is detectable as `AuthenticationMethod=QueryString`; *creation* is not detectable); the Athena-inversion alarm became **conditional on Stage 5 decision 4's outcome**; archive **rules** stay forbidden (INV-10) — an accepted external finding is archived individually; and the stale addresses were repointed (open question 6's narrowed answer, Stage 6 step 3.2's recorded residual, Stage 6 step 6's D5 verdict) |
+| **Status** | not started — **revised 2026-08-17 into the action-checklist format** (executor markers, action-first steps), against the official documentation and the Price List API, and pre-instrumented by `./aws/dlp.py`. Corrections folded in: **internal-access analysis was measured at USD 9.00 per resource-month, charged at setup and then on the first of each month** — so step 2.1's analyzer became an enumerated-ARN, read-then-delete instrument rather than a standing monitor, and its KMS claim was narrowed (**KMS keys are not an internal-access resource type**: the derived CMK is verified by reading its key policy, not by the analyzer); **Macie's auto-enable covers *new* accounts only** — existing accounts are added one by one by the administrator, the inverse of GuardDuty's `ALL` that Stage 4 recorded; the Macie job's **discovery-results repository prompt** is answered as a decision, not at the keyboard (Lesson 16); GuardDuty's two deferred features are named by their **API feature names** (`S3_DATA_EVENTS`, `EBS_MALWARE_PROTECTION`), both prices are measured (USD 0.80/1M events, 0.03/GB), and step 4 is written against the collision `POLICIES.md` documents — with `./aws/vpn.py`'s `VP-8` expectation flipped in the same sitting; **the step 5 trails are data-event-only** (the org trail already carries the management copy) with advanced selectors on a monitored-bucket *map*, and the alarms ride **EventBridge rules + the `MatchedEvents` metric** — data events are matched by ordinary `ENABLED` rules once a trail logs them (read 2026-08-17) — never CloudWatch Logs ingestion; **the first member-account trail fires the revision trigger `POLICIES.md` names**, so the CloudTrail-tampering statement is decided here; the presigned-URL correction stands (*use* is detectable as `AuthenticationMethod=QueryString`; *creation* is not detectable); the Athena-inversion alarm became **conditional on Stage 5 decision 4's outcome**; archive **rules** stay forbidden (INV-10) — an accepted external finding is archived individually; and the stale addresses were repointed (open question 6's narrowed answer, Stage 6 step 3.2's recorded residual, Stage 6 step 6's D5 verdict). **Revised again later the same day: the NFS requirement was withdrawn and D24 with it — the EFS residual leaves 2.1.2, 6.1 and the threat-model deliverable** |
 | **Prerequisites** | Stages 5, 6, 9 — by named input: Stage 5's classification scheme (its step 2), the LF-Tags, the derived zones (its 9.2) and **decision 4's Athena outcome**; Stage 6's **D5 verdict** (its step 6), the grain (Stage 5 decision 6 / TIP), and the **remote-access residual its step 3.2 records**; Stage 9's producer path, outputs and results zones. Stage 4 step 10 (GuardDuty base on org-wide; **read its log for 10.5's named administration role** — it is this stage's step 4 unblock if it exists). Decision D6 is the strategy this stage executes |
-| **Consumes** | [D5](../decisions/D05-sagemaker-egress.md), [D6](../decisions/D06-dlp-approach.md), [D13](../decisions/D13-lake-formation-enforcement.md), [D19](../decisions/D19-derived-zone.md), [D22](../decisions/D22-data-governance-account.md), [D24](../decisions/D24-shared-filesystem.md), [D27](../decisions/D27-catalog-maintenance.md), [D31](../decisions/D31-approver-read.md) |
+| **Consumes** | [D5](../decisions/D05-sagemaker-egress.md), [D6](../decisions/D06-dlp-approach.md), [D13](../decisions/D13-lake-formation-enforcement.md), [D19](../decisions/D19-derived-zone.md), [D22](../decisions/D22-data-governance-account.md), [D27](../decisions/D27-catalog-maintenance.md), [D31](../decisions/D31-approver-read.md) |
 | **Proves** | — |
 
 *Read with [`docs/plan/conventions.md`](../conventions.md) (naming, layout, `[P]`/`[D]`/`[E]`, IAM rules).*
@@ -174,9 +174,11 @@ enumerated-ARN instrument: created, read, recorded, deleted inside one month.
   an archive *rule* stays forbidden** (INV-10 — a rule suppresses future findings silently).
 - **2.1.2 — [Claude] Read the five no-RCP resource types as perimeter, not as commentary** — Lambda, SNS,
   EBS volume snapshots, RDS DB and DB-cluster snapshots, EFS (`docs/plan/architecture.md` §4.2): for the
-  data-bearing ones (the snapshots — closed preventively by 1c 7.5's unconditional denies — and D24's
-  EFS, closed by nothing), the external finding is not a check on the perimeter, it **is** the perimeter.
-  The threat model says so per row rather than inheriting D19's "the perimeter contains it".
+  data-bearing ones (the snapshots — closed preventively by 1c 7.5's unconditional denies), the external
+  finding is not a check on the perimeter, it **is** the perimeter. The threat model says so per row
+  rather than inheriting D19's "the perimeter contains it". (EFS used to be the third data-bearing
+  member, closed by nothing; the NFS requirement's withdrawal — 2026-08-17, D24 with it — removed the
+  filesystem, and the type is back to commentary.)
 - **2.1.3 — [user] Create the internal-access analyzer in Audit** — console, **`us-west-2`**, zone of
   trust **Entire organization** (Audit is already the Access Analyzer delegated administrator; **only one
   org-level internal analyzer can exist per organization**). Resources by **exact bucket ARN** (account id
@@ -192,8 +194,7 @@ enumerated-ARN instrument: created, read, recorded, deleted inside one month.
   **Two boundaries, stated so a clean report is not over-read**: the analyzer sees the S3 layer *under*
   the catalog — precisely the bypass D13 closes — and says nothing about LF-Tag entitlements; and **KMS
   keys are not an internal-access resource type**, so D31's "who can decrypt the derived CMK" is verified
-  by reading the key policy's enumerated `Decrypt` list (Lesson 22's shape), not by the analyzer. EFS is
-  not covered either — 2.1.2's row carries it.
+  by reading the key policy's enumerated `Decrypt` list (Lesson 22's shape), not by the analyzer.
 - **2.1.6 — [user] Delete the analyzer once the findings are recorded** (decision 3; the reading is
   repeatable — recreate it at any later audit for another month's USD 9/resource). **[user]** Record
   create, read and delete in the stage log.
@@ -330,7 +331,7 @@ and its gaps are written down. **Why:** D6 deferred this question to exactly thi
 perimeter, the four native controls and the accepted-risk ledger exist, so the evaluation is against named
 residuals, not against fear. **Explanation:** a reading, recorded in the threat model.
 
-- **6.1 — [Claude] Walk the threat model's residual column** — EFS reachability (D24), the remote-IDE
+- **6.1 — [Claude] Walk the threat model's residual column** — the remote-IDE
   channel, design A's raw-IP bypass (if A survived), `UpdateTrail`, the within-persona result visibility
   (Stage 9's stated limit) — and ask which, if any, an agent would actually close, at what cost, with what
   new principals (Lesson 17). Recommended answer at lab scale: none — record it and the reasoning in
@@ -350,8 +351,7 @@ the tampering `Sid`. The behavioural proofs are the stage's own (Lesson 20):
 - **The threat model, `docs/plan/threat-model.md`** — one control (or one named acceptance) per item, and
   a **reachability row per governed resource**: who outside the organization can reach it (the external
   analyzer's answer), who inside can (the internal analyzer's, for the types it covers; a reading, for the
-  CMKs and the catalog layer), and **nothing at all for EFS** (D24) — a sentence written down, not a
-  column left blank.
+  CMKs and the catalog layer).
 - **The alarm pair (5.5):** the simulated exfiltration fires every alarm it should, the e-mail arrives,
   and a normal session stays quiet.
 - **The filter pair (2.3):** the filtered principal sees exactly the filtered result; pandas against the
