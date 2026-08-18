@@ -167,7 +167,7 @@ its `Consumes` row lists.
 | **A Terraform change by hand** — the two-commit tag order, blocked commits | [`docs/plan/runbooks/terraform-changes.md`](docs/plan/runbooks/terraform-changes.md) |
 | "What would an institution do?" | [`docs/plan/institutional-delta.md`](docs/plan/institutional-delta.md) — so a lab compromise is not learned as a pattern |
 | Root is needed, or its alarm chain is being changed | [`docs/plan/runbooks/break-glass.md`](docs/plan/runbooks/break-glass.md) |
-| **A VPN key event** — a copy is lost, the secret is touched, a device is revoked, the host pair rotates | [`docs/plan/runbooks/vpn-keys.md`](docs/plan/runbooks/vpn-keys.md) — loss is recovery from the `[P]` secret, never rotation |
+| **A VPN key event** — a copy is lost, the secret is touched, a device is revoked, the host pair rotates — **or a shell on the VPN host** | [`docs/plan/runbooks/vpn-keys.md`](docs/plan/runbooks/vpn-keys.md) — loss is recovery from the `[P]` secret, never rotation. **§0a is the SSM session** and where `--target` comes from |
 | **Connecting a device to the VPN, or a tunnel that will not come up** | [`docs/plan/runbooks/vpn-client.md`](docs/plan/runbooks/vpn-client.md) — the client side only, no AWS call in it: the five config values and where each comes from, the three checks that prove three different claims, and the failure modes that are silent by design |
 | **A policy is about to be attached, or was amended** | [`docs/plan/runbooks/scp-battery.md`](docs/plan/runbooks/scp-battery.md) — the probes, and the two distinguishable outcomes of each. **Running them is `./aws/probes/scp-battery.py`** ([`aws/probes/README.md`](aws/probes/README.md)); amending the ceiling means editing `probes.py` |
 | Explaining the design to someone | [`README.md`](README.md) — the argument for the account split and the three distinctions |
@@ -195,6 +195,10 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   never `egress/` ids. CIDR/`zone_ids`/peers: `scripts/tfhygiene/backend.py`. **Stage 4's (i) is NOT
   pre-answered** — `makecache` is metadata, not a package; the CW agent is a different allow-list entry.
   Left elsewhere: `Staging`'s NXDOMAIN; (ii) is Stage 6's.
+- **NFS/EFS requirement withdrawn (2026-08-17; user edit to `objectives.md`, D24 withdrawn like
+  D30):** no `nfs/` slice anywhere, `elasticfilesystem` out of Sandbox's endpoint list (11 under A,
+  13 under B), Stage 5 pass 5 (steps 10-12) and Stage 6 step 7 removed, `DL-10` now measures EFS
+  *absence*, and the no-RCP EFS residual left D19 / Stage 11 / architecture §4.2.
 - **Stages 4-11 revised, pre-instrumented (2026-08-16/17):**
   `aws/{vpn,datalake,studio,supplychain,cicd,deploytargets,orchestration,dlp}.py` — `DL-5`/`DT-5` guard the
   LF `Parameters` (INT-11). **St.8 pass 4, St.9 passes 4-5, St.10's Staging leg wait on the vend.**

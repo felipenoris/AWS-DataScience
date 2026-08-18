@@ -139,7 +139,8 @@ Studio is a separate claim.
   they opened."* Only benefit 3 is carried by the account, and it survives without a Studio, because
   pipeline executions are still billed where they run.
 - **The plan already treats Development's interactive surface as second-class.** It has no shared filesystem
-  at all — D24 puts EFS in each unit's Sandbox — and its exchange with Sandbox is S3 and git.
+  at all — since 2026-08-17 no account does (the NFS requirement was withdrawn, D24 with it) — and its
+  exchange with Sandbox is S3 and git.
 
 ### The discriminating test — it is about data, not about tooling
 

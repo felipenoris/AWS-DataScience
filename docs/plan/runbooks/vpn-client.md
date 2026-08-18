@@ -93,7 +93,7 @@ dig +short SOA sandbox.internal
 
 Must answer — **`DNS = 10.20.0.2` is in use**. `sandbox.internal` is the private hosted zone associated
 with the VPN home's VPC, so it resolves through the VPC resolver and **NXDOMAIN everywhere else**;
-answering is therefore the proof, and this is what Stage 5 will need to mount EFS by name. (Do **not**
+answering is therefore the proof. (Do **not**
 pin an `ip-10-20-…compute.internal` name here instead: it encodes the instance's private IP and dies at
 every replacement — and a peer change replaces the host.)
 
@@ -141,6 +141,11 @@ The config file stays; nothing is revoked, nothing on the server changes. Reconn
   or a NAT expired the UDP mapping. The log cannot tell those apart; the device can.
 - **`peer=unknown` in that log** is not a client problem at all: it is a peer the roster does not know
   about ([vpn-keys.md](vpn-keys.md) §4).
+- **Nothing above settled it, and the suspicion has moved to the server.** That is where this runbook
+  stops by design — the three checks in §2 exist to rule the device in or out *before* anybody signs in
+  to AWS. A shell on the host is an SSM session, opened by the **infrastructure user** and not by the
+  device's owner: [vpn-keys.md](vpn-keys.md) §0a, which is also where the `--target` instance id comes
+  from. It works with this tunnel down, which is the whole point of it.
 
 ## 5. What it costs
 
@@ -150,6 +155,6 @@ The config file stays; nothing is revoked, nothing on the server changes. Reconn
 
 ---
 
-*Stage: [stage-04-vpn.md](../stages/stage-04-vpn.md) · The server side, and enrolling a device:
-[vpn-keys.md](vpn-keys.md) · Slice:
+*Stage: [stage-04-vpn.md](../stages/stage-04-vpn.md) · The server side, enrolling a device, and a
+shell on the host: [vpn-keys.md](vpn-keys.md) (§0a) · Slice:
 [`terraform-live/sandbox/vpn/`](../../../terraform-live/sandbox/vpn/README.md)*

@@ -40,7 +40,7 @@ both classes (Sandbox multiplies; Development, Staging and Production do not), w
 are entirely structural.
 
 **Where per-unit isolation stops, stated plainly because it is the thing most likely to be assumed
-wrongly.** A business unit's *experimentation* is private to it — its own account, its own filesystem, its
+wrongly.** A business unit's *experimentation* is private to it — its own account, its
 own people. Its *engineering* is not: everything that graduates lands in one shared Development account, and
 from there in one Staging and one Production. So the account boundary carries isolation only up to the
 graduation point. Past it, whatever isolation is required has to be carried by **Lake Formation grants,
@@ -57,7 +57,7 @@ assumptions is nearly free to loosen while it is prose:
   from a recorded table. Ranges stay non-overlapping even between accounts that never peer — D20's argument
   applies unchanged: an overlap cannot be revisited without rebuilding the VPC. The concrete allocation is
   settled when Stage 3 is written, which has not happened yet, which is exactly why this costs nothing today.
-- **Where the VPN terminates, and this is the one that actually breaks (Stage 4, D24).** The tunnel lands in
+- **Where the VPN terminates, and this is the one that actually breaks (Stage 4).** The tunnel lands in
   *the* Sandbox account, the client resolver points at the Sandbox VPC, and one Sandbox↔Production peering
   carries the path to GitLab. **The VPN lives on the multiplied side** — so all of it is per-unit: N landing
   accounts, N resolver targets, N peerings. Development's own peering is fixed and single, and is not part of
@@ -86,8 +86,8 @@ assumptions is nearly free to loosen while it is prose:
   (1c step 7), because with many sandboxes the pressure to let a unit "just create its own domain" is exactly
   what that deny exists to resist, and INT-12's one-domain-per-account fallback gets more expensive with
   every unit.
-- **Cost (`docs/plan/cost-model.md`).** A business unit costs **one** account, one Config recorder, one KMS key,
-  one EFS (D24) — and the term that dominates, **one set of interface VPC endpoints**. `docs/plan/institutional-delta.md`
+- **Cost (`docs/plan/cost-model.md`).** A business unit costs **one** account, one Config recorder, one KMS key —
+  and the term that dominates, **one set of interface VPC endpoints**. `docs/plan/institutional-delta.md`
   already names per-account endpoints as the largest hourly cost multiplied by account count; under this
   decision, centralized endpoints shared by RAM stop being the institutional answer and become the arithmetic
   one. Also **one account slot per unit** against the organization quota (D34's headroom item).
@@ -109,9 +109,7 @@ arrives with the **second** business unit and belongs to the governance manager,
 
 **What this does not change.** The Interactive OU's policy set (D23) — Sandboxes and Development still share
 one, which is what putting them in one OU asserts. The graduation-is-a-rewrite property (D21), now doing
-double duty as the cardinality boundary. The filesystem staying in Sandbox (D24 — now "in each unit's
-Sandbox", which strengthens its argument: the exchange between a unit's Sandbox and Development remains S3
-and git, and with N units a peering-for-convenience would be N peerings). And the promotion chain's single
+double duty as the cardinality boundary. And the promotion chain's single
 destination.
 
 **Revision trigger:** a business unit needing its own **Development** — which would move an account off the

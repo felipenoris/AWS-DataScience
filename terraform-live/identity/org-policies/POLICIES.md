@@ -158,8 +158,8 @@ Identity Center. The tier exists to make its blast radius smaller.
 that one stops *our* principals writing *outside*, this one stops *outside* principals reaching *our*
 resources. **Seven services, because seven is what RCPs support** — S3, STS, KMS, SQS, Secrets Manager,
 DynamoDB and ECR — widened from five by the user on 2026-08-12. EC2, RDS and EFS are outside RCP reach
-entirely, which is why the snapshot route is an SCP deny in `awsds-org-scp-baseline.json` and why EFS has no
-preventive control at all.
+entirely, which is why the snapshot route is an SCP deny in `awsds-org-scp-baseline.json`. (EFS mattered
+here until 2026-08-17, when the NFS requirement was withdrawn and D24's filesystem with it.)
 
 **Two grammar differences from every other document here, both of which make it fail closed if forgotten:**
 an RCP statement **requires a `Principal` element** (`"*"`), and the **budget is half** — 5 policies per node

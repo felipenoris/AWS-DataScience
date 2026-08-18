@@ -4,7 +4,7 @@
 # role, the handshake log and the alarm - everything a rebuild may legitimately replace. NOT
 # here: the Elastic IP and the security group, which are [P] in the caller's foundation/
 # because things OUTSIDE this stage name them (step 8's control-plane deny names the address;
-# Stage 5's EFS rule and Stage 7's GitLab rule name the group, across an account boundary).
+# Stage 7's GitLab rule names the group, across an account boundary).
 #
 # SO A REBUILD IS MADE INVISIBLE RATHER THAN PREVENTED, and it will happen: `ami` resolves
 # through an SSM public parameter that moves with every AL2023 release, and a changed `ami`

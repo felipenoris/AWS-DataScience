@@ -25,6 +25,6 @@ output "alarm_name" {
 }
 
 output "instance_role_arn" {
-  description = "The host's role - named here because a carve-out written against a role that already exists is the one shape this plan trusts (D27), and Stage 5's EFS and Stage 7's GitLab both reason about this principal."
+  description = "The host's role - named here because a carve-out written against a role that already exists is the one shape this plan trusts (D27), and Stage 7's GitLab reasons about this principal."
   value       = module.role.role_arn
 }

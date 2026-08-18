@@ -27,11 +27,10 @@ on have no RCP behind them at all (`docs/plan/architecture.md` §4.2). Two of th
   preventively instead**, by an unconditional deny in the organization-root SCP set — **Stage 1c step 7.5**.
   RCPs are limited to a service list and SCPs are not, which is the whole reason the fix lands on the
   identity side rather than beside the rest of the perimeter.
-- **EFS (D24), where nothing closes it and that is now written down rather than assumed.** No RCP covers
-  `elasticfilesystem`, and no SCP is proposed: opening a file system policy to an outside account still
-  requires NFS reachability into the VPC that the network design does not provide, so the exposure is a
-  resource policy nobody can reach rather than an open door. The residual is carried by Access Analyzer's
-  external-access findings and appears in the Stage 11 deliverable as an accepted risk (Lesson 5).
+- **EFS (D24) — retired 2026-08-17.** This bullet used to record the one route nothing closed: no RCP
+  covers `elasticfilesystem`, no SCP was worth writing, and the residual was carried by Access Analyzer's
+  external-access findings as an accepted risk (Lesson 5). The NFS requirement was then withdrawn from
+  `objectives.md` and D24 with it — no filesystem exists, and the accepted risk went with the resource.
 
 **The decision itself does not move.** Preventing the copy is still impossible, the destination is still
 managed, and the six practices above all stand. What is corrected is a claim about *who does the

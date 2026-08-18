@@ -77,7 +77,7 @@ that is actually public*, which is the Stage 13 web tier, and wrong as a prerequ
 
 **AWS-served surfaces need none of this** and are the second half of the answer: the Identity Center access
 portal (`https://<id>.awsapps.com/start`), the Unified Studio portal (an AWS-generated URL — record the
-exact host at Stage 6), ECR, CodeArtifact, EFS mount targets and every interface-endpoint name are named and
+exact host at Stage 6), ECR, CodeArtifact and every interface-endpoint name are named and
 certified by AWS. Where a name has to resolve *privately*, that comes from **private DNS on the interface
 endpoint**, not from anything we register.
 

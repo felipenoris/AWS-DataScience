@@ -36,7 +36,7 @@
    Analyzer unused-access findings** — which is a better instrument than review, because it reports
    permissions that were granted and never exercised.
 8. **Backup and recoverability**, which no earlier stage owns: an org-wide **AWS Backup** plan through an
-   Organizations backup policy, covering the EBS volumes of the `[D]` instances and the EFS filesystem;
+   Organizations backup policy, covering the EBS volumes of the `[D]` instances;
    **Vault Lock** on the backup vault so a compromised administrator cannot delete the backups; and
    cross-region copies for the state buckets and the GitLab backup. Then state the numbers the plan has so
    far avoided: what the recovery time objective actually is for GitLab, for the Terraform state, and for

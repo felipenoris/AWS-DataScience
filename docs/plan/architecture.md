@@ -61,8 +61,7 @@ AWS Organization (Management account - console only)                        [P]
 │   │       │     restricted egress). Slice is [P]; running apps are      [P/E]
 │   │       ├── scratch / derived-zone S3 buckets (per-principal, D19)      [P]
 │   │       ├── WireGuard EC2 <- the only human entry point (see below)     [D]
-│   │       ├── NAT Gateway + interface VPC endpoints                       [E]
-│   │       └── EFS (NFS shared filesystem, lifecycle to IA), per unit  D24 [P]
+│   │       └── NAT Gateway + interface VPC endpoints                       [E]
 │   │
 │   └── Development account  <- DEVELOPMENT: the unit of work is a pipeline
 │       │                       (repository with tests, workflows)          D21
@@ -152,7 +151,7 @@ single entry point true. Concretely there are two paths and they should not be c
 
 - **VPC-level reach**, which only Sandbox and Production have. The tunnel terminates in the Sandbox VPC,
   and the Sandbox↔Production peering extends it to the GitLab subnet. This is the path for private DNS
-  names, the EFS mount (D24) and anything addressed by a private IP.
+  names and anything addressed by a private IP.
 - **AWS API and portal reach**, which every account has, over public AWS endpoints exited through the
   WireGuard Elastic IP. This is how **the unified domain is used (D26)**: the Unified
   Studio portal — like the presigned Studio URL before it — is a public endpoint even when project
@@ -297,22 +296,22 @@ reason 8.2 comes before Stage 1c is repeated in code at Stage 2.
 | …an RCP can deny it — the analyzer is a *check* on the perimeter | S3 buckets and directory buckets, KMS keys, SQS queues, Secrets Manager secrets, DynamoDB tables and streams, ECR repositories, IAM role trust policies (via `sts`) |
 | **…no RCP reaches it — the analyzer is the *only* control** | **Lambda functions and layers, SNS topics, EBS volume snapshots, RDS DB and DB-cluster snapshots, EFS file systems** |
 
-Three entries in the second row are data-bearing *in this design*, which turns an informational finding into
+Two entries in the second row are data-bearing *in this design*, which turns an informational finding into
 an operational one. **An EBS or RDS snapshot shared with an account outside the organization is a whole-volume
 or whole-database copy, and no policy in the axis table can stop it** — the sharing is an EC2/RDS API call
-against a resource type the RCP list does not cover. **EFS is D24's shared filesystem**, the one place a POSIX
-copy of anything accumulates. For these, "the perimeter contains it" — the sentence D19 leans on — is simply
-not true, and D19 was narrowed on 2026-08-12 to say so.
+against a resource type the RCP list does not cover. For these, "the perimeter contains it" — the
+sentence D19 leans on — is simply not true, and D19 was narrowed on 2026-08-12 to say so. (EFS was the
+third data-bearing entry until 2026-08-17, when the NFS requirement was withdrawn and D24 with it.)
 
 **The two do not end in the same place, and the difference is the point.** The snapshot route is closed
 preventively after all — not by the axis table but **beside** it, with an unconditional SCP deny on
 `ec2:ModifySnapshotAttribute`, `ec2:ModifyImageAttribute` and the RDS pair, in **Stage 1c step 7.5**.
 The asymmetry worth carrying away: **RCPs are limited to a service list; SCPs are not.** So a resource type
 the trusted-identities axis cannot reach is often still reachable from the trusted-resources side, and "no
-RCP covers it" is a reason to look at the identity half, not a reason to fall back on detection. EFS is
-where that runs out: no RCP, no SCP worth writing (opening the file system policy still needs NFS
-reachability into the VPC, which the network design does not provide), and therefore the analyzer's finding
-really is the whole control — an accepted risk carried into Stage 11's deliverable rather than a covered one.
+RCP covers it" is a reason to look at the identity half, not a reason to fall back on detection. EFS
+used to be where that ran out — no RCP, no SCP worth writing, only the analyzer's finding for a control,
+an accepted risk destined for Stage 11's deliverable; the NFS requirement's withdrawal (2026-08-17)
+retired the risk along with the filesystem.
 
 Two structural exemptions belong beside them, because they are holes in the axis table that no amount of
 policy authoring closes: **RCPs do not apply to resources in the management account**, and **not to
@@ -486,8 +485,8 @@ contradicts some part of it.
   sign-in, not by an IAM-authorized call under a permission set, so the condition demonstrably covers the
   API half and not yet the portal half. Answered across Stages 4 and 6 — the portal surface first exists
   at Stage 6.
-- **D24:** the shared EFS lives in Sandbox only; Development gets neither its own nor a path to it, and
-  the exchange between the two Interactive accounts is S3 and git. **D25:** the ingestion drop-box is
+- **D24 (withdrawn 2026-08-17):** the NFS requirement left `objectives.md`, and the shared filesystem
+  with it; the exchange between the two Interactive accounts is S3 and git. **D25:** the ingestion drop-box is
   picked up by Production's job role on the producer path — which also closed a hole where the `Data` OU
   SCP never denied Glue jobs.
 

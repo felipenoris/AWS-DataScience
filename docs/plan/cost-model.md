@@ -29,7 +29,6 @@ nothing is running, and what does an hour of lab time add on top". Order-of-magn
 | Security Hub + IAM Access Analyzer | ~1-2 | **Access Analyzer external-access findings are free and are enabled in Stage 1b**; Security Hub charges per check and per finding and is enabled in **Stage 5 step 13**, with the first governed data (principle 9, as amended). Its checks run as Config rules, so it also nudges the Config row up. **Access Analyzer's other two finding types are not free and are not in this number**: *internal access* bills per resource monitored per month and is decided in **Stage 11 step 2.1** (scoped to the Data Governance and derived-zone buckets, not every bucket), *unused access* bills per principal per month in **Stage 12**. **Both measured 2026-08-17 (`docs/PRICING.md` §6): internal access USD 9.00 per resource-month, charged at setup** — the rate that made Stage 11's analyzer a create-read-delete instrument rather than a standing monitor — and unused access USD 0.20 per role/user-month |
 | GuardDuty | 0 → ~3-5 | Enabled in **Stage 4 step 10**, with the first internet-facing resource. Free for the first 30 days per account, then driven by CloudTrail/VPC flow/DNS log volume. S3 Protection and Malware Protection are extra, are decided in Stage 11 step 4, and are the ones to watch against the ceiling |
 | WireGuard EBS (8 GB) + CloudWatch logs | ~1.00 | |
-| EFS (shared filesystem + Studio homes, lifecycle to IA) | ~0.50 | `[P]` — cents at rest, and it buys the removal of the sync-to-S3-on-teardown machinery (`docs/plan/conventions.md` §5.1 rule 2) |
 | SageMaker unified domain — DataZone V2 metadata (D26) | ~0.50 | Requests USD 10 per 100k, metadata storage USD 0.40/GiB-month, global rates (`docs/PRICING.md`); cents at lab scale. The cost lever is which blueprints exist, not the domain itself |
 | Staging, Development and Data Governance accounts at rest (D20-D22) | **0 (already counted)** | **This row is now a pointer, not a cost.** It used to add ~USD 3 for "a Config recorder and a KMS key per account" — but the Config row above already covers every governed account and the KMS row already counts every key, so charging these accounts again was a double count of ~USD 3. What is worth keeping is the *shape*: VPCs, buckets and IAM roles are free at rest; Staging's metered slice exists only during a promotion, Development's only while someone is working, and Data Governance has no metered slice at all — its data plane is serverless (the lake storage is in the S3 row above) |
 | **Floor** | **~USD 25-34** | **The 2026-08-09 DNS revision is roughly neutral on this row and does not move the range:** −USD 1.00 for the domain and public zone, now deferred to Stage 13 (D15 phase 2), +USD 0.50 for the extra `pages.internal` zone, +USD 1.00 for the PKI key (D36). Net ≈ +USD 0.50. Up from the ~USD 15 first estimate: mostly the detective controls, plus the recorder for D29's disposable account. The low end is the first thirty days, while GuardDuty is still inside its free window; the high end is an ordinary month with GuardDuty billing and Config recording an active build-out. **This is the *steady-state* floor. During Stages 1b-3 it is lower — roughly ~USD 24-27 — because GuardDuty does not exist until Stage 4 and Security Hub until Stage 5** (principle 9, as amended: detection is enabled when there is something to detect). **Recomputed 2026-08-08 by summing the measured `us-west-2` column of `docs/PRICING.md` §2** — the "~USD 21-27" and "~USD 24-30" this row and its header used to carry both predated D29/D31 and both understated it. **What is still not in this row**, and is already decided elsewhere in the plan: the two Secrets Manager secrets — the VPN host key (Stage 4 decision 4, third review) and `gitlab-secrets.json` (Stage 7 step 1), the CloudWatch alarms the plan requires (root sign-in, the two deploy roles, the catalog-maintenance role, VPN, GitLab, budget — at USD 0.10 each this is ~USD 1-1.50), AWS Backup storage and Vault Lock (Stage 12 step 8), and the growth of the Object-Locked Log Archive bucket. Expect the measured floor at Stage 12 step 5 to land above this range, not below it. **The first row to be measured against a real bill moved down, not up** (Config, 2026-08-14: ~2.5-5 projected, ~0.5 billed), which takes ~USD 2-4.5 off the range as written — **not applied here on purpose**, because that row is churn-sensitive and this floor is a steady-state number for a lab that has not been built yet. Recompute the whole range at Stage 12 step 5, from the invoice, rather than adjusting it one row at a time |
@@ -39,10 +38,9 @@ nothing is running, and what does an hour of lab time add on top". Order-of-magn
 already exist here rather than new kinds of cost: **one account** (free at rest, but one slot against the
 organization quota), **one AWS Config recorder** — the row above already says it scales with the account
 count, and this is the thing that makes it scale — **two KMS CMKs** at ~USD 1.00 each (the account key plus
-the D31 derived-zone key, since a unit's Sandbox is an Interactive account), **one EFS** at ~USD 0.50 (D24 —
-each unit's filesystem lives in its own Sandbox), and, on the hourly side and dominating everything else,
-**one full set of interface VPC endpoints**: 12 under design A, 14 under B, at ~USD 0.010/h each, so
-~USD 0.12-0.14 per hour that unit is working. So a unit is roughly **+USD 3-5 on the floor** and **+~USD 0.17
+the D31 derived-zone key, since a unit's Sandbox is an Interactive account), and, on the hourly side and
+dominating everything else, **one full set of interface VPC endpoints**: 11 under design A, 13 under B, at
+~USD 0.010/h each, so ~USD 0.11-0.13 per hour that unit is working. So a unit is roughly **+USD 2.5-4.5 on the floor** and **+~USD 0.16
 per active hour** — against a USD 50 ceiling whose planning number already has about USD 7 of headroom, which
 means the **second** unit is affordable and the third is a budget decision, not a formality.
 
@@ -68,7 +66,7 @@ Two cost levers worth applying rather than discovering later:
 | Item | Approx. USD/h |
 |---|---|
 | NAT Gateway (1) + its public IPv4 | ~0.050 + 0.045/GB processed — **zero under egress design B** (`docs/plan/architecture.md` §4.3) |
-| **Interface VPC endpoints — per account, single AZ (D9)** | ~0.010 each. The list is per account role, not one list (Stage 3 step 8): **Sandbox** 12 (14 under design B), **Development** 11 (13), **Staging** 9, **Production** 10-12. Double if spread across 2 AZs. **The Sandbox line is per business unit (D35)** — this is the term that multiplies |
+| **Interface VPC endpoints — per account, single AZ (D9)** | ~0.010 each. The list is per account role, not one list (Stage 3 step 8): **Sandbox** 11 (13 under design B; 12/14 until 2026-08-17, when `elasticfilesystem` left with the NFS requirement), **Development** 11 (13), **Staging** 9, **Production** 10-12. Double if spread across 2 AZs. **The Sandbox line is per business unit (D35)** — this is the term that multiplies |
 | GitLab EC2 `t4g.large` | ~0.067 (`t3.large` would be ~0.083) |
 | Internal ALB in front of GitLab/Pages (only while GitLab is up) | ~0.023 + LCU usage |
 | **Production `egress/`** (only while runner builds or orchestration need it) | NAT ~0.050 + **endpoints ~0.100-0.120** — the endpoint half was missing from every earlier version of this table |
@@ -77,7 +75,7 @@ Two cost levers worth applying rather than discovering later:
 | Sandbox ↔ Production **and** Development ↔ Production VPC peering (two of them, D21) | free within an AZ; USD 0.01/GB each way across AZs — see `docs/plan/open-questions.md` item 3 |
 | **Staging `egress/` during a promotion run** (D20) | ~0.140/h, but measured in *minutes* per promotion, not hours — `make up ENV=staging` is a pipeline step, and the pipeline tears it down. Budget ~USD 0.03 per promotion, not a standing hourly cost |
 | **Development `egress/` + Studio apps** (D21) | ~0.160/h under design A, ~0.130 under B, plus ~0.05/h per running app — but only while pipeline-engineering work is happening. A session is either exploratory (Sandbox up) or engineering (Development up), so the *typical* hourly burn does not double even though the worst case does |
-| EFS, Athena, Glue | usage-based; negligible at lab scale |
+| Athena, Glue | usage-based; negligible at lab scale |
 
 **Two corrections to this table, applied 2026-08-08, and both moved the numbers up.**
 
@@ -85,7 +83,8 @@ Two cost levers worth applying rather than discovering later:
   account. Under design A the NAT hid it; under design B, with no NAT anywhere, it meant the design could
   not run a query at all — D13 routes every tabular read through an LF-aware engine. They are now in the
   **common core of both designs**, which is why both got more expensive: a Sandbox hour goes from ~0.14
-  to ~0.170 under A and from ~0.11 to ~0.140 under B.
+  to ~0.170 under A and from ~0.11 to ~0.140 under B — the lists as then counted; since 2026-08-17
+  (`elasticfilesystem` out, D24 withdrawn) those end-states read 0.160 and 0.130.
 - **The gap between the designs survived the correction, and now rests on the right thing.** B is cheaper
   by exactly ~USD 0.030/h — the NAT and its address (0.050) less the two CodeArtifact endpoints (0.020) —
   in every account, for every list. The older claim that B trades the NAT for two endpoints and comes out
@@ -93,7 +92,7 @@ Two cost levers worth applying rather than discovering later:
   Stage 6 comparison is still not settled by this**: three cents an hour is a rounding error next to the
   friction D5 exists to measure.
 
-**Projection:** ~USD 25-34 floor + 20 h/month × ~USD 0.19-0.46 (the lower end is a Sandbox hour under
+**Projection:** ~USD 25-34 floor + 20 h/month × ~USD 0.18-0.45 (the lower end is a Sandbox hour under
 design B; the upper a full-stack hour under design A: GitLab, its ALB, a runner build with Production's
 endpoints, and one Interactive environment all at once) + a handful of promotions at ~USD 0.03 each ≈
 **USD 29-43/month**, against the USD 50 ceiling (D12). **Read the top of that range as the planning
@@ -101,8 +100,8 @@ number, not the bottom** — it leaves roughly USD 7 of headroom, and the items 
 floor row eat into it. Staging and Data Governance cost almost nothing precisely because neither ever has
 standing compute; the number to watch is whether Sandbox and Development sessions actually stay disjoint,
 which is what keeps the hourly line from doubling.
-The single fastest way to breach the ceiling is a session that leaves `egress/` up: at ~USD 0.170/h that is
-USD 4.08 for a forgotten day, and two of them cancel the entire headroom. **This used to say that the budget
+The single fastest way to breach the ceiling is a session that leaves `egress/` up: at ~USD 0.160/h that is
+USD 3.84 for a forgotten day, and two of them cancel the entire headroom. **This used to say that the budget
 alerts and Cost Anomaly Detection of Stage 1a step 2 are the primary control here; both were skipped by
 decision on 2026-08-09, so there is no automatic control over it at all** — the exposure is carried by the
 teardown discipline of the `[E]` layer (D11) and by whoever remembers to open Cost Explorer. Two forgotten

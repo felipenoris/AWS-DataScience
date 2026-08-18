@@ -18,8 +18,7 @@
 # that was missing from the first teardown that needed it. Both customers have since arrived
 # and each corrected something: Stage 3's `egress/` was the first [E] slice (and showed that
 # `status` counted a child module as one resource), Stage 4's `vpn/` is the first [D] one (and
-# showed that nothing refused a [D] slice, refusal 5 below). Stage 5's EFS will NOT be a third:
-# it is [P] by rule 2 (conventions 5.1, D24).
+# showed that nothing refused a [D] slice, refusal 5 below).
 #
 # THE FIVE REFUSALS - 8.3's four, and the one Stage 4's first [D] row exposed:
 #
@@ -89,8 +88,8 @@ def prepare(sl: layers.Slice, dry: bool) -> bool:
 #
 # [D] IS "STOP, NEVER DESTROY" (D11). The first row is Stage 4's WireGuard `vpn/` and the
 # second will be Stage 7's GitLab EC2 with its EBS volume - conventions 5.1 names exactly
-# those two, and the EFS of `nfs/` is NOT among them: it is [P] by rule 2 (D24), which is the
-# distinction to keep, since "stateful" is what makes a slice [D] *or* [P].
+# those two; everything else stateful is [P] by rule 2, since "stateful" is what makes a
+# slice [D] *or* [P].
 # These two functions exist so that the stage which
 # creates the first [D] slice adds a body here instead of discovering that `make down` never
 # had a place to put one - and they print what they did NOT do, because a hook that is silent

@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Scope** | The two kinds of key pair of [`terraform-live/sandbox/vpn/`](../../../terraform-live/sandbox/vpn/README.md) — the host's, and one per enrolled device: where each half lives, and the four procedures: **recovery** (a copy is lost — the `[P]` secret answers), **revocation** (a device), **rotation of the host pair**, and **rotation of one device's own key** — §4, which is also how a public half reaches the server at all, and therefore how a device is *added* |
+| **Scope** | The two kinds of key pair of [`terraform-live/sandbox/vpn/`](../../../terraform-live/sandbox/vpn/README.md) — the host's, and one per enrolled device: where each half lives, and the four procedures: **recovery** (a copy is lost — the `[P]` secret answers), **revocation** (a device), **rotation of the host pair**, and **rotation of one device's own key** — §4, which is also how a public half reaches the server at all, and therefore how a device is *added*. **§0a is the shell every procedure below reaches for**: an SSM session on the host, and how its `--target` id is found |
 | **Operator** | The infrastructure user, profile `awsds-infra-sandbox-1` (`InfrastructureAccess` in `Sandbox`) — plus `awsds-infra-identity` for §6's fragment toggles |
 | **The one rule** | **Loss is answered by recovery, never by rotation.** A new host key forces an instance replacement and breaks every client config at once — each one pins the server's public key. Rotate for *compromise* (§3), recover for *loss* (§1). The mechanised violation of this rule is Secrets Manager's own rotation feature, which is why it stays off forever (§5, `VP-9`) |
 | **Written** | 2026-08-16, from the Stage 4 design review — [Stage 4](../stages/stage-04-vpn.md) decision 4 names where the keys live. **Rewritten the same day at the third design review**: the host key moved into the `[P]` secret `awsds-sandbox-vpn-host-key`, custody by design rather than by side effect — §§0-1 are built around it |
@@ -30,6 +30,144 @@ the state was written. Read the mechanism as *the key never crosses Terraform*, 
 state is a hash*: the second sentence would also make anything else in a user data look
 protected, and nothing is.
 
+## 0a. The shell on the host — an SSM session, and where `--target` comes from
+
+**There is no port 22 anywhere in this design** (Stage 4 step 3), and no bastion and no key pair
+either. The AL2023 AMI ships the SSM agent, the instance role carries
+`AmazonSSMManagedInstanceCore` and nothing else, and the agent registers itself over its **outbound**
+connection — so a shell is opened *through the agent*, never toward it
+([`terraform-modules/wireguard/iam.tf`](../../../terraform-modules/wireguard/iam.tf)). Every
+`start-session` in this file (§1's item 2, §4's stopgap) is this section; so is every "over SSM" in
+[vpn-client.md](vpn-client.md).
+
+### The three prerequisites, and the one that is not an AWS grant
+
+| | |
+|---|---|
+| **The plugin, on the laptop** | `session-manager-plugin` — a **local install**, which is why verification (iii) stayed half-open until Stage 4 step 3's laptop half: the network question was answered days earlier. `brew install --cask session-manager-plugin` (1.2.835.0). Without it the call fails on the laptop with `SessionManagerPlugin is not found`, having reached AWS perfectly well |
+| **The identity** | The infrastructure user, profile `awsds-infra-sandbox-1` (`InfrastructureAccess` in `Sandbox`), one `aws sso login --sso-session awsds` behind it. Confirm it *before*, not after a confusing denial: `aws sts get-caller-identity` |
+| **A `running` host** | `[D]` means stopped between sessions by design (D11), and a stopped instance is not a target: `TargetNotConnected`. `make up ENV=sandbox` starts it (and applies that account's `[E]` slices with it) — and note the loop that makes this section matter, [Stage 4](../stages/stage-04-vpn.md) step 8.3: the host that has to be started is the host the tunnel runs on |
+
+**The tunnel does not have to be up, and that is a decision rather than a convenience.**
+`InfrastructureAccess` is the one permission set deliberately left *outside* `DenyControlPlaneOffVpn`
+(step 8.3, open question 17): the deny would otherwise permit `ec2:StartInstances` only from the
+address of the instance that is stopped. This session is therefore the routine way back into a host
+whose tunnel is broken — the fire escape, and the institutional shape of that trade is in
+[institutional-delta.md](../institutional-delta.md).
+
+### Finding `--target` — three ways, and why the id is never written down
+
+The instance id is **`[D]` state**. It survives every `make down` / `make up` — those stop and start,
+never destroy — but **a peer roster change replaces the host** (§4), and the replacement carries a new
+id. So it is looked up at the moment it is used, and copied into no script, no config and no note; what
+*is* stable, and what the tooling pins instead, is the Name tag.
+
+**a. `./aws/vpn.py` — the read-only snapshot. Reach for this one.** No working tree, no Terraform state,
+nothing but a session:
+
+```bash
+aws sso login --sso-session awsds
+```
+
+```bash
+./aws/vpn.py awsds-infra-sandbox-1
+```
+
+The id is the `INSTANCE` column of section **2. The WireGuard host ([D])** in `aws/output/vpn.txt`, and
+the same row answers the third prerequisite in the same glance:
+
+```
+INSTANCE              TYPE       STATE     SUBNET        PUBLIC IP     IMDS
+i-0…                  t4g.nano   running   subnet-0…     <the EIP>     required
+```
+
+That file is untracked and carries account ids: read it, never copy out of it
+([`aws/INDEX.md`](../../../aws/INDEX.md) rule 1).
+
+**b. `terraform output` — when the working tree is already open.** The slice publishes the id for
+exactly this purpose:
+
+```bash
+terraform -chdir=terraform-live/sandbox/vpn output -raw instance_id
+```
+
+It reads the **state**, so it needs a slice initialised against its real backend — the
+`-backend=false` trap answers with an empty local state rather than with an error
+([terraform-changes.md](terraform-changes.md)).
+
+**c. `aws ec2 describe-instances` — the Name-tag contract, direct.** The host is tagged
+`awsds-<env>-vpn`, and that tag is a **documented contract** (Stage 4 step 1.1) — it is what
+`./aws/vpn.py` itself filters on, rather than any id:
+
+```bash
+AWS_PROFILE=awsds-infra-sandbox-1 aws ec2 describe-instances --region us-west-2 --filters 'Name=tag:Name,Values=awsds-*-vpn' 'Name=instance-state-name,Values=running' --query 'Reservations[].Instances[].[InstanceId,State.Name]' --output text
+```
+
+**Empty output is two different facts wearing one face**: the host is stopped, or there is no host.
+Drop the state filter to tell them apart — a `stopped` row is D11 working, no row at all is a finding.
+
+**Then ask whether the agent is actually connected**, because `running` is necessary and not
+sufficient — the agent registers a minute or so after boot, and this is also the one call that fails
+usefully when SSM is what is broken:
+
+```bash
+AWS_PROFILE=awsds-infra-sandbox-1 aws ssm describe-instance-information --region us-west-2 --query 'InstanceInformationList[].[InstanceId,PingStatus,AgentVersion]' --output text
+```
+
+`Online` is the answer. An empty list, or anything else, and `start-session` will return
+`TargetNotConnected` however right the id is — at which point the id was never the problem, and
+`aws ec2 get-console-output --instance-id <this> --latest` is the read that needs no agent at all.
+
+### The session
+
+```bash
+AWS_PROFILE=awsds-infra-sandbox-1 aws ssm start-session --target i-0… --region us-west-2
+```
+
+The shell lands as `ssm-user` with `sudo` available; `exit` or `Ctrl-D` closes it. **`StartSession` is a
+CloudTrail event and it names who opened the shell** — this path is audited, which is the other half of
+why it replaces port 22 rather than merely standing in for it.
+
+**`wg show wg0`, and never `wg show all dump`.** The dump form prints the interface's **private key** on
+its first line. The host's own sampler avoids that form for this reason (Stage 4 step 7), and so does
+`./aws/vpn.py --on-host`; in an interactive shell nothing enforces it but the person typing.
+
+The three reads worth knowing, in the order they answer things:
+
+```bash
+sudo wg show wg0
+```
+
+**Which peers the running interface actually holds** — the roster the kernel is enforcing, read
+line by line against the tracked `peers.auto.tfvars`. This is the answer no `describe` call can give
+(Stage 4 verification (iii), 2026-08-17), and a peer here that the roster does not have is §4's `wg set`
+stopgap or a hand edit — either way, drift that the handshake log has been calling `peer=unknown`.
+
+```bash
+ip -d link show wg0
+```
+
+**The server's own MTU** — 8921 on a jumbo-frame VPC when nothing pins it, which is what this read
+found; the module has pinned it since `wireguard-v0.2.0`, and the client half is
+[vpn-client.md](vpn-client.md) §4.
+
+```bash
+grep -a AWSDS-VPN /var/log/cloud-init-output.log ; cloud-init status
+```
+
+**What the boot did** — the first thing to read when the host is up and the tunnel never comes up.
+
+**Against `./aws/vpn.py --on-host`, which runs those same reads: neither is read-only in the API sense.**
+`SendCommand` and `StartSession` are both mutating calls and CloudTrail records both. The difference is
+what each leaves behind — the flag captures the output into `aws/output/vpn.txt` beside the rest of
+Stage 4's evidence, a session leaves the reading in a terminal. Take the session when a person is
+asking a question; take the flag when the answer has to be filed.
+
+**And what a session is not: a way to change anything.** Whatever is typed here that alters the host is
+state living only inside a `[D]` resource, and it disappears at the next replacement with nobody told
+(Lesson 4; Lesson 5 — an intention is not a control). §4's `wg set` is the one named exception, and it
+is named precisely so it stays one.
+
 ## 1. Procedure A — recovery: a copy is lost, no compromise suspected
 
 The roster is tracked (a lost working tree comes back with `git clone`) and the key's designed
@@ -41,9 +179,8 @@ none of them is a new key:
 
 2. **A new client config needs the host's PUBLIC key.** Take it without touching the secret:
    `host-public.key` on the laptop (§0), the `PublicKey =` line of any existing client config,
-   or — tunnel or no tunnel — `wg show wg0 public-key` in an SSM session
-   (`aws ssm start-session --target <instance-id> --profile awsds-infra-sandbox-1 --region us-west-2`;
-   the laptop side needs the `session-manager-plugin`, which is not in the standard toolset).
+   or — tunnel or no tunnel — `wg show wg0 public-key` in an SSM session (§0a: the plugin, the
+   identity, and where `--target` comes from).
 
 3. **The VALUE itself must be re-read** — rebuilding everything from nothing. Sign in and
    confirm the identity first, then pipe the read straight into `wg pubkey` when the public
@@ -218,8 +355,8 @@ why anything else pending goes in the same window.
 ### The stopgap, named as one: `wg set` on the host
 
 There *is* a way to admit a public key in seconds without replacing anything, and it is worth knowing
-precisely because it must not be mistaken for step 3. Over SSM (the plugin is a laptop install; the
-session is `aws ssm start-session --target <instance-id> --profile awsds-infra-sandbox-1 --region us-west-2`):
+precisely because it must not be mistaken for step 3. Over SSM (§0a — the session, and how the
+`--target` id is found rather than remembered):
 
 ```bash
 sudo wg set wg0 peer <NEW_PUBLIC_KEY> allowed-ips 10.90.0.<N>/32 && sudo wg show wg0

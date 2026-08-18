@@ -3,8 +3,8 @@
 # perimeter policies, the KMS aliases, the Glue catalog (databases, resource links,
 # crawlers), the catalog-maintenance role and its trust, the Lake Formation settings WITH
 # THE PARAMETERS READING THAT DEFENDS INT-11, the RAM shares and any pending invitation,
-# the consumer Athena workgroups, the derived zone, the EFS layer, and the Security Hub
-# state. The preflight for Stage 5, and the standing regression after it.
+# the consumer Athena workgroups, the derived zone, the EFS absence reading (the NFS
+# requirement was withdrawn 2026-08-17), and the Security Hub state. The preflight for Stage 5, and the standing regression after it.
 #
 #   needs:    a live SSO session - the ONLY prerequisite:
 #
@@ -20,9 +20,7 @@
 #             lakeformation:GetDataLakeSettings, ListResources, ListLFTags,
 #             ram:GetResourceShares, GetResourceShareInvitations,
 #             athena:ListWorkGroups, GetWorkGroup, efs:DescribeFileSystems,
-#             DescribeLifecycleConfiguration, DescribeMountTargets,
-#             DescribeMountTargetSecurityGroups, DescribeAccessPoints,
-#             ec2:DescribeSecurityGroups, securityhub:DescribeHub, GetEnabledStandards,
+#             securityhub:DescribeHub, GetEnabledStandards,
 #             organizations:ListDelegatedAdministrators, sts:GetCallerIdentity.
 #             It never creates, updates or deletes anything.
 #   exits:    0 all checks passed | 1 a call failed | 2 a check FAILED
@@ -69,7 +67,6 @@ CONSUMER_PROFILES = ("awsds-infra-sandbox-1", "awsds-infra-dev")
 # Contracts named in the stage file, so a rename fails loudly rather than silently.
 MAINT_ROLE = "awsds-data-catalog-maintenance"  # Stage 5 step 3.2, the SCP contract
 LAKE_PREFIX = "awsds-data-"  # conventions: awsds-data-raw, -curated, -artifacts, -logs
-WIREGUARD_CIDR = "10.90.0.0/24"  # must appear in NO security group (Stage 4's NAT, step 11)
 FSBP = "aws-foundational-security-best-practices"
 
 
@@ -382,63 +379,14 @@ def main(argv: list) -> int:
             derived.append((p, b, expiry))
 
     # ------------------------------------------------------------------- EFS, the VPN home
-    efs_rows: list = []  # (fs id, ia policy, mount targets, access points)
-    efs_sg_findings: list = []  # (sg id, offending source)
+    # The NFS requirement was withdrawn 2026-08-17 (D24 with it): no stage creates a
+    # filesystem, so this reading is an absence check.
+    efs_rows: list = []  # file system ids
     sbx_profile = CONSUMER_PROFILES[0]
     if sbx_profile in live:
         cli = cli_for(sbx_profile)
         doc = run_json(cli, sbx_profile, "efs", "describe-file-systems")
-        for fs in (doc or {}).get("FileSystems", []):
-            fsid = fs.get("FileSystemId", "?")
-            lc = run_json(
-                cli,
-                sbx_profile,
-                "efs",
-                "describe-lifecycle-configuration",
-                "--file-system-id",
-                fsid,
-            )
-            ia = "-"
-            for rule in (lc or {}).get("LifecyclePolicies", []):
-                if rule.get("TransitionToIA"):
-                    ia = rule["TransitionToIA"]
-            mts = run_json(
-                cli, sbx_profile, "efs", "describe-mount-targets", "--file-system-id", fsid
-            )
-            mt_ids = [m.get("MountTargetId", "?") for m in (mts or {}).get("MountTargets", [])]
-            aps = run_json(
-                cli, sbx_profile, "efs", "describe-access-points", "--file-system-id", fsid
-            )
-            n_ap = len((aps or {}).get("AccessPoints", []))
-            efs_rows.append((fsid, ia, str(len(mt_ids)), str(n_ap)))
-            # the mount-target SGs: TCP/2049 must admit an SG, never the peer CIDR or the world
-            sg_ids: set = set()
-            for mt in mt_ids:
-                r = cli.run(
-                    "efs",
-                    "describe-mount-target-security-groups",
-                    "--mount-target-id",
-                    mt,
-                    "--query",
-                    "SecurityGroups[]",
-                    "--output",
-                    "text",
-                    log=False,
-                )
-                if r.ok:
-                    sg_ids |= set(r.stdout.split())
-            for sgid in sorted(sg_ids):
-                sgdoc = run_json(
-                    cli, sbx_profile, "ec2", "describe-security-groups", "--group-ids", sgid
-                )
-                for sg in (sgdoc or {}).get("SecurityGroups", []):
-                    for perm in sg.get("IpPermissions", []):
-                        if perm.get("FromPort") not in (2049, None):
-                            continue
-                        for r4 in perm.get("IpRanges", []):
-                            cidr_ip = r4.get("CidrIp", "")
-                            if cidr_ip in (WIREGUARD_CIDR, "0.0.0.0/0"):
-                                efs_sg_findings.append((sgid, cidr_ip))
+        efs_rows = [fs.get("FileSystemId", "?") for fs in (doc or {}).get("FileSystems", [])]
 
     # ------------------------------------------------------------- Security Hub, per account
     sh_rows: list = []  # (profile, hub, fsbp)
@@ -691,31 +639,20 @@ def main(argv: list) -> int:
                 "no expiry rule - the shadow lake silently becomes permanent (D19, step 9.2).",
             )
 
-    # DL-10: the EFS layer, and the one SG mistake Stage 4 makes inevitable (step 11).
-    if sbx_profile in live and not efs_rows:
-        checks.note("DL-10", "EFS in the VPN home", "none - expected before Stage 5 step 10.")
-    for fsid, ia, mts, aps in efs_rows:
-        if ia == "-":
+    # DL-10: no filesystem is the design - the NFS requirement was withdrawn 2026-08-17,
+    # D24 with it. Any EFS in the VPN home is drift, not progress.
+    if sbx_profile in live:
+        if not efs_rows:
+            checks.ok(
+                "DL-10", "EFS in the VPN home", "none - and none is the design (D24 withdrawn)."
+            )
+        for fsid in efs_rows:
             checks.fail(
                 "DL-10",
-                f"EFS {fsid} lifecycle",
-                "no transition to IA - the cents-at-rest argument for [P] assumed it (step 10).",
-            )
-        else:
-            checks.ok(
-                "DL-10",
                 f"EFS {fsid}",
-                f"IA after {ia}, {mts} mount target(s), {aps} access point(s)",
+                "an EFS filesystem exists - the plan creates none since the NFS "
+                "requirement was withdrawn (2026-08-17, D24 withdrawn); drift, not progress.",
             )
-    for sgid, src in efs_sg_findings:
-        checks.fail(
-            "DL-10",
-            f"mount-target SG {sgid}",
-            f"TCP/2049 admits {src} - packets from the laptop arrive SNATed as the "
-            "WireGuard instance's IP (Stage 4 step 1.2), so a peer-CIDR rule never "
-            "matches and a world rule is an open filesystem; admit the instance's SG "
-            "(step 11).",
-        )
 
     # DL-11: Security Hub coverage (step 13).
     enabled = [r for r in sh_rows if r[1] == "enabled"]
@@ -764,7 +701,7 @@ SECTIONS
   7. RAM - shares out, invitations pending
   8. Athena workgroups, consumer side
   9. The derived zone
-  10. EFS
+  10. EFS (expected: none)
   11. Security Hub
   12. CHECKS
   13. The accounts nothing here is measuring
@@ -896,17 +833,13 @@ it. Admins present with Parameters absent is the reset having happened.""")
             rep.line("No *-derived bucket on any consumer.")
 
         # ==============================================================================
-        rep.h1("10. EFS")
+        rep.h1("10. EFS (expected: none)")
         if efs_rows:
-            rep.tabulate(
-                ["FILESYSTEM\tTO-IA\tMOUNT TARGETS\tACCESS POINTS"]
-                + [f"{f}\t{ia}\t{m}\t{a}" for f, ia, m, a in efs_rows]
-            )
-            if efs_sg_findings:
-                rep.line()
-                rep.line("Mount-target SG findings (DL-10): see section 12.")
+            rep.tabulate(["FILESYSTEM"] + list(efs_rows))
+            rep.line()
+            rep.line("Unexpected - see DL-10 in section 12.")
         else:
-            rep.line("No EFS filesystem in the VPN home.")
+            rep.line("No EFS filesystem in the VPN home - none is the design (D24 withdrawn).")
 
         # ==============================================================================
         rep.h1("11. Security Hub")
@@ -937,8 +870,8 @@ What the checks are, and where each comes from:
   DL-7   shares out, resource links resolved, NO pending invitation (steps 7, 8)
   DL-8   workgroups enforce their configuration, with a scan limit (step 8, D19)
   DL-9   derived buckets carry a lifecycle expiry (step 9.2, D19)
-  DL-10  EFS lifecycle to IA; TCP/2049 admits an SG, never the peer CIDR or the
-         world (steps 10-11, Stage 4's NAT correction)
+  DL-10  no EFS filesystem in the VPN home - the plan creates none (the NFS
+         requirement was withdrawn 2026-08-17, D24 with it)
   DL-11  Security Hub + FSBP in every measured account, or in none (step 13)""")
 
         # ==============================================================================

@@ -125,7 +125,7 @@ wrong account as easily as none.
   exactly one, forever. The chain reads **N Sandboxes → one Development → one Staging → one Production**, so
   the cardinality boundary is the same line as the D21 graduation boundary: experimentation is naturally
   per-unit, engineering is institutional. **N is 1 today.** Two consequences worth stating here rather than
-  discovering later: a unit's experimentation is private to it (its own account, its own filesystem, its own
+  discovering later: a unit's experimentation is private to it (its own account, its own
   people), and **that isolation stops at the graduation boundary** — past it, one shared Development, and
   whatever separation is required is carried by Lake Formation grants and per-pipeline execution roles, not
   by an account boundary that is deliberately not there. Vending a unit's account is
@@ -137,15 +137,16 @@ wrong account as easily as none.
   bucket, the execution roles — **into this account**. Arbitrary code runs here, against this account's
   data and behind this account's egress controls, exactly as it did before the domain existed.
 
-- **Two things live here that live nowhere else**, and both are consequences of the account being where
+- **One thing lives here that lives nowhere else**, a consequence of the account being where
   people actually are: the **WireGuard instance** — the single human entry point, whose tunnel is *full*,
   so the Sandbox VPC is one of only two the laptop reaches at the VPC level
   ([D4](plan/decisions/D04-vpn-wireguard.md), Stage 4), and whose host private key is a `[P]` Secrets
   Manager secret in this account, fetched by the instance at first boot — never a file in the repository
   or a value in the user data (Stage 4 decision 4, third review; every key event follows
-  [`docs/plan/runbooks/vpn-keys.md`](plan/runbooks/vpn-keys.md)) — and the **shared EFS filesystem**, one per
-  business unit ([D24](plan/decisions/D24-shared-filesystem.md)). Development gets neither its own EFS nor
-  a path to this one; the exchange between the two Interactive accounts is S3 and git.
+  [`docs/plan/runbooks/vpn-keys.md`](plan/runbooks/vpn-keys.md)). The shared EFS that used to live beside
+  it left with the NFS requirement (withdrawn 2026-08-17,
+  [D24](plan/decisions/D24-shared-filesystem.md)); the exchange between the two Interactive accounts
+  is S3 and git.
 
 - **This is the highest-risk account in the organization, not the lowest** — real data meets unreviewed
   code, interactively, with a browser session attached. The argument is in [§3 of `README.md`](../README.md),

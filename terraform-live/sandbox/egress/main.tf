@@ -2,7 +2,7 @@
 # the NAT under design A, the interface endpoints of step 8's Sandbox list, and step 9's
 # org policy on every one of them. THE REPOSITORY'S FIRST [E] SLICE: its lifecycle belongs
 # to `make up ENV=sandbox` / `make down ENV=sandbox` (D11), never to a by-hand apply
-# (runbook, "What you never do") - a forgotten session costs ~USD 4.08/day and no budget
+# (runbook, "What you never do") - a forgotten session costs ~USD 3.84/day and no budget
 # alert exists to say so (D12); `./aws/egress.py` 6 is the burn meter that risk gets.
 #
 # foundation/'s [P] facts arrive through terraform_remote_state - the read its outputs.tf
@@ -39,7 +39,7 @@ module "egress" {
   endpoint_security_group_id = data.terraform_remote_state.foundation.outputs.endpoints_security_group_id
 
   # Step 8.3, the Sandbox row: the three SageMaker endpoints (sagemaker.studio is what lets
-  # JupyterLab/Code Editor apps START in a VPC-only domain) and elasticfilesystem - the
-  # ONLY account with an EFS path (D24: Development gets neither its own nor a way here).
-  extra_services = ["sagemaker.api", "sagemaker.runtime", "sagemaker.studio", "elasticfilesystem"]
+  # JupyterLab/Code Editor apps START in a VPC-only domain). elasticfilesystem sat here
+  # until 2026-08-17, when the NFS requirement was withdrawn (D24 with it).
+  extra_services = ["sagemaker.api", "sagemaker.runtime", "sagemaker.studio"]
 }

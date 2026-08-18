@@ -19,6 +19,6 @@ output "log_group_name" {
 }
 
 output "instance_role_arn" {
-  description = "The host's role, named for the stages that reason about this principal (Stage 5's EFS, Stage 7's GitLab) - a carve-out written against a role that already exists is the shape D27 trusts."
+  description = "The host's role, named for the stage that reasons about this principal (Stage 7's GitLab) - a carve-out written against a role that already exists is the shape D27 trusts."
   value       = module.wireguard.instance_role_arn
 }

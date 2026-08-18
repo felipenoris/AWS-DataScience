@@ -48,7 +48,7 @@ flowchart LR
     WG["WireGuard EC2 in the VPN home<br/>SNAT · Elastic IP"]
 
     subgraph R1["1 · the private network — by CONSTRUCTION"]
-        PRIV["GitLab · Pages · EFS · private DNS<br/>do not exist for a laptop without the tunnel"]
+        PRIV["GitLab · Pages · private DNS<br/>do not exist for a laptop without the tunnel"]
     end
     subgraph R2["2 · AWS APIs + console — by POLICY"]
         API["aws:SourceIp = the Elastic IP<br/>+ aws:ViaAWSService=false · step 8"]
@@ -135,10 +135,10 @@ the address, the group, and since the third review the host key itself, in 2.2a'
   (both measured in the AL2023 core repo, 2026-08-16), IP forwarding on, masquerade on the primary
   interface. VPC peering does no edge-to-edge routing and forwards only packets whose source and
   destination sit inside the two VPCs' CIDRs, so the client range can never cross to Production: every
-  forwarded packet must carry the instance's own IP. The consequence reaches Stage 5 (EFS mount targets)
-  and Stage 7 (GitLab): **security groups admit the WireGuard instance's SG** (cross-account SG references
+  forwarded packet must carry the instance's own IP. The consequence reaches Stage 7 (GitLab):
+  **security groups admit the WireGuard instance's SG** (cross-account SG references
   work across a same-region peering), **never the client CIDR** — a rule against `10.90.0.0/24` never
-  matches, and the symptom is a mount that hangs.
+  matches, and the symptom is a clone that hangs.
 - **1.3 — [Claude] Register the slice in the D11 machinery, in the same commit that creates it** — three
   edits, the first two corrections to this step's earlier wording. **TWO OF THE THREE ARE ALREADY IN
   (2026-08-16): the `"vpn": 40` rank and the `dormant()` body.** The `("sandbox", "vpn")` ROW is
@@ -175,8 +175,8 @@ the address, the group, and since the third review the host key itself, in 2.2a'
 
 **Action:** allocate the Elastic IP, create the WireGuard security group and the host-key secret
 container in `foundation/`, all exported. **Why:** all three are named from outside this stage —
-step 8's deny and Stage 5's bucket policy name the EIP (INT-05), Stage 5's EFS rule and Stage 7's
-GitLab rule name the SG, and the secret is written at enrollment (4.3) and read by every instance the
+step 8's deny and Stage 5's bucket policy name the EIP (INT-05), Stage 7's
+GitLab rule names the SG, and the secret is written at enrollment (4.3) and read by every instance the
 `[D]` slice will ever boot — so all three must survive every `make down` and every instance rebuild
 (conventions §5.1 rule 5). **Explanation:** applied before step 1, which consumes them as inputs;
 this is what makes a rebuild invisible to every client config.
@@ -187,7 +187,7 @@ this is what makes a rebuild invisible to every client config.
   `make down` cannot reach. Export the **allocation ID and the public IP**; `identity/sso/` reads the
   second (8.1).
 - **2.2 — [Claude] Create the WireGuard security group in `foundation/`** — free, and referenced
-  cross-slice and cross-account from Stages 5 and 7 (1.2's rule): an SG that survives every lifecycle is
+  cross-slice and cross-account from Stage 7 (1.2's rule): an SG that survives every lifecycle is
   the only kind worth referencing. Export its ID. Its contents are step 3.
 - **2.2a — [Claude] Create the host-key secret container in `foundation/`, beside the address**
   (decision 4, third review) — `awsds-<env>-vpn-host-key`, an `aws_secretsmanager_secret` with **no
@@ -320,7 +320,7 @@ would then deny the user everything, tunnel up or not. The two steps stand or fa
 ever see the instance's private IP — a route for the client range is dead configuration, and across the
 peering it would be dropped anyway (edge-to-edge, again). **Explanation:** what the tunnel needs already
 exists from Stage 3: Production's route back to the **Sandbox VPC CIDR** (Stage 3, 6.3), and — from
-Stages 5 and 7 — SG rules admitting the instance's SG.
+Stage 7 — the GitLab SG rule admitting the instance's SG.
 
 - **6.1 — [Claude] Run `./aws/networking.py`** — `NT-4` fails on any route touching the client range, and
   §9 must show the step 3 rule as the only world-open one.

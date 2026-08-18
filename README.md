@@ -122,7 +122,7 @@ A WireGuard tunnel into the VPN home account (D4, Stage 4). It is worth being pr
 buys, because it is three different guarantees held by three different mechanisms, and only the first
 two are proven:
 
-1. **The private network, by construction.** GitLab, Pages, EFS and the private hosted zones have no
+1. **The private network, by construction.** GitLab, Pages and the private hosted zones have no
    public address at all. A laptop without the tunnel does not fail to reach them — for that laptop they
    do not exist.
 2. **The AWS APIs and the console, by policy.** The six persona permission sets carry a `Deny` on

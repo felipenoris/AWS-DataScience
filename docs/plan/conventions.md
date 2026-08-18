@@ -178,7 +178,6 @@ terraform-live/
 │   ├── egress/           # [E] NAT gateway, interface VPC endpoints - the metered network.
 │   │                     #     Two variants behind a switch: D5(A) with NAT, D5(B) without
 │   ├── vpn/              # [D] WireGuard EC2 (stopped, not destroyed)
-│   ├── nfs/              # [P] EFS filesystem, mount targets, access points (lifecycle to IA)
 │   ├── dev-env/          # [P] the approved dev-env image registered for this account:
 │   │                     #     aws_sagemaker_image + image_version + app_image_config.
 │   │                     #     Applied by the Stage 8 step 1 pipeline after the dev-env
@@ -215,7 +214,7 @@ terraform-live/
 │       └── app-etl/      # [E] the application running against Development's own data, applied
 │                         #     by hand while it is being engineered (Stage 8 step 2). It is NOT
 │                         #     part of the promotion chain - that starts at a git tag and its
-│                         #     first target is Staging. No nfs/ slice here, by decision (D24)
+│                         #     first target is Staging
 ├── data-governance/      # THE OWNERSHIP AXIS (D22, D26): state and governance,
 │   │                     # never compute. Renamed from data-management/ on 2026-08-08
 │   ├── bootstrap/        # [P] state bucket for the Data Governance account
@@ -523,8 +522,7 @@ the Organization, the accounts, Control Tower, Identity Center, SCPs, Terraform 
 Route 53 private zone, IAM roles, KMS keys, S3 data buckets, ECR repositories, budgets and alarms — and
 the **SageMaker unified domain and its projects** (D26 — a DataZone V2 domain at rest bills only metadata
 requests and storage; the per-project SageMaker AI domain that the ML blueprint provisions likewise bills
-nothing until an app runs) and the **EFS filesystem** (lifecycle to
-Infrequent Access; cents per month at lab scale). Rule 2 below records why those two moved out of `[E]`.
+nothing until an app runs). Rule 2 below records why it moved out of `[E]`.
 The domain is also where the *catalog* lives — glossary, data products, subscription decisions — which is
 state in the rule-2 sense and on its own settles the layer question.
 
@@ -547,10 +545,8 @@ persists; D7 records what Stage 10 must decide about it.
 
 1. Terraform slices are split along these lines. `terraform destroy` of an `[E]` slice must never be able
    to reach a `[P]` resource; persistent buckets get `prevent_destroy` lifecycle blocks.
-2. No state lives only inside an `[E]` resource — enforced by construction: the two stateful resources that
-   would otherwise be `[E]` are in `[P]` for exactly this reason. An `[E]` EFS would need a
-   sync-to-S3-before-teardown step; that sync was the single most likely way to lose real work in
-   this design, and at EFS-IA prices (~USD 0.016/GB-month) persistence costs cents. The Studio domain used
+2. No state lives only inside an `[E]` resource — enforced by construction: the stateful resource that
+   would otherwise be `[E]` is in `[P]` for exactly this reason. The Studio domain used
    to be `[E]` with an explicit home-filesystem delete in `make down`, because deleting a domain
    **retains** its home EFS by default (`RetentionPolicy` defaults to `Retain`) and every teardown would
    otherwise orphan a billing filesystem; a domain at rest is free, so keeping it removes both the hazard

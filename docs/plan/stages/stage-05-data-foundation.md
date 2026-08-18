@@ -2,9 +2,9 @@
 
 | | |
 |---|---|
-| **Status** | not started — **revised 2026-08-16 into the pass/verification format**, with five corrections against earlier stages folded in: the `CROSS_ACCOUNT_VERSION` defence moved to the step whose apply actually touches `DataLakeSettings` (5.4, not 7), the EFS mount rule rewritten against the WireGuard instance's SG (Stage 4's NAT means the peer CIDR never reaches AWS), step 3's role-protection re-read as already delivered by Stage 2's shared deny fragment, step 9 split into what can land now versus what waits for the blueprint-provisioned roles (INT-15), and step 13's delegation mechanics written for the two accounts that hold no CLI profile. **Revised again 2026-08-17 after the data-governance review** (AWS guidance read against the plan; links in `docs/REFERENCES.md`): the LF-Tag ontology carries a **`zone` dimension** from day one and the consumer grants are **LF-TBAC expressions scoped by classification** (`restricted`/`personal` by explicit grant only — Stage 11 then narrows *within* restricted instead of beginning enforcement); the sample table gains a restricted column so the share deliverable proves the scoping; the grant *method* joined decision 5 and the LF-TBAC cross-account prerequisite joined 7.1; the results-zone ceiling on decision 6's grain is stated at step 8; **the raw share to Sandbox is kept deliberately** (data engineers develop the raw→curated ETL there — `docs/plan/institutional-delta.md` row added); and the missing quality gate is declared (3.8) |
-| **Prerequisites** | Stage 3 — the `[P]` gateway-endpoint IDs its `foundation/` slices export (INT-05) and the `data-perimeter` shapes of its step 9. **Stage 4, for two named inputs**: the WireGuard Elastic IP (a branch of step 1's bucket-policy condition) and the WireGuard instance SG (step 11's mount rule); every laptop-side proof below also rides the tunnel. Stage 1d step 11 (org-wide RAM sharing; the LF cross-account version read `4`) |
-| **Consumes** | [D6](../decisions/D06-dlp-approach.md), [D13](../decisions/D13-lake-formation-enforcement.md), [D18](../decisions/D18-data-scientist-access.md), [D19](../decisions/D19-derived-zone.md), [D22](../decisions/D22-data-governance-account.md), [D24](../decisions/D24-shared-filesystem.md), [D25](../decisions/D25-drop-box-consumer.md), [D26](../decisions/D26-unified-studio.md), [D27](../decisions/D27-catalog-maintenance.md), [D31](../decisions/D31-approver-read.md), [D35](../decisions/D35-sandbox-cardinality.md) |
+| **Status** | not started — **revised 2026-08-16 into the pass/verification format**, with five corrections against earlier stages folded in: the `CROSS_ACCOUNT_VERSION` defence moved to the step whose apply actually touches `DataLakeSettings` (5.4, not 7), the EFS mount rule rewritten against the WireGuard instance's SG (Stage 4's NAT means the peer CIDR never reaches AWS), step 3's role-protection re-read as already delivered by Stage 2's shared deny fragment, step 9 split into what can land now versus what waits for the blueprint-provisioned roles (INT-15), and step 13's delegation mechanics written for the two accounts that hold no CLI profile. **Revised again 2026-08-17 after the data-governance review** (AWS guidance read against the plan; links in `docs/REFERENCES.md`): the LF-Tag ontology carries a **`zone` dimension** from day one and the consumer grants are **LF-TBAC expressions scoped by classification** (`restricted`/`personal` by explicit grant only — Stage 11 then narrows *within* restricted instead of beginning enforcement); the sample table gains a restricted column so the share deliverable proves the scoping; the grant *method* joined decision 5 and the LF-TBAC cross-account prerequisite joined 7.1; the results-zone ceiling on decision 6's grain is stated at step 8; **the raw share to Sandbox is kept deliberately** (data engineers develop the raw→curated ETL there — `docs/plan/institutional-delta.md` row added); and the missing quality gate is declared (3.8). **Revised once more later the same day (2026-08-17): the user withdrew the NFS requirement from `objectives.md`, and [D24](../decisions/D24-shared-filesystem.md) is withdrawn with it** — pass 5 (steps 10-12, the `sandbox/nfs/` slice), question vii and the EFS cost row removed; no other step consumed the filesystem |
+| **Prerequisites** | Stage 3 — the `[P]` gateway-endpoint IDs its `foundation/` slices export (INT-05) and the `data-perimeter` shapes of its step 9. **Stage 4, for one named input**: the WireGuard Elastic IP (a branch of step 1's bucket-policy condition); every laptop-side proof below also rides the tunnel. Stage 1d step 11 (org-wide RAM sharing; the LF cross-account version read `4`) |
+| **Consumes** | [D6](../decisions/D06-dlp-approach.md), [D13](../decisions/D13-lake-formation-enforcement.md), [D18](../decisions/D18-data-scientist-access.md), [D19](../decisions/D19-derived-zone.md), [D22](../decisions/D22-data-governance-account.md), [D25](../decisions/D25-drop-box-consumer.md), [D26](../decisions/D26-unified-studio.md), [D27](../decisions/D27-catalog-maintenance.md), [D31](../decisions/D31-approver-read.md), [D35](../decisions/D35-sandbox-cardinality.md) |
 | **Proves** | [INT-03](../integrations.md) (the two read shares; the write share waits for Stage 9), [INT-05](../integrations.md), [INT-11](../integrations.md) (its whole remaining half: the version defence and the first grant against the RCP), [INT-10](../integrations.md) **in part** — the writer and maintenance statements are exercised here; the Production pickup half is Stage 9's |
 
 *Read with [`docs/plan/conventions.md`](../conventions.md) (naming, layout, `[P]`/`[D]`/`[E]`, IAM rules).*
@@ -12,7 +12,7 @@
 **Forward constraint from D35 — the consumer side of this stage is per business unit.** `Sandbox`
 multiplies (N is 1 today), so "the Sandbox consumer slice", "the Sandbox share" and every
 `aws:SourceVpce` entry below are *allocations*: the share list is **N + 2** in general (INT-03), the
-bucket-policy endpoint list is a map keyed by consumer, and `sandbox/data/` and `sandbox/nfs/` are what
+bucket-policy endpoint list is a map keyed by consumer, and `sandbox/data/` is what
 [Stage 14](stage-14-sandbox-vending.md)'s `sandbox-unit` module composes. Write every list as a map from
 day one; a literal written for unit 1 is a rewrite at unit 2.
 
@@ -32,7 +32,6 @@ sharing shape gets proven before Stage 9 repeats it for Production.
 |---|---|---|
 | `data-governance/data/` (new) | KMS CMKs, the four lake buckets + drop-box, Glue catalog, crawlers + the maintenance role, Iceberg, Lake Formation (settings, registrations, LF-Tags), the cross-account shares | `[P]` |
 | `sandbox/data/`, `development/data/` (new, one module) | Athena workgroup, LF resource links, scratch + derived-zone buckets, the D31 CMK | `[P]` |
-| `sandbox/nfs/` (new) | EFS, mount targets, access points | `[P]` — conventions §5.1 rule 2: persistence removed the sync-to-S3 failure mode |
 | Management + Audit, by hand | Security Hub delegated administration and org-wide enablement (step 13) | — (no slice, no profile) |
 
 ```mermaid
@@ -46,7 +45,6 @@ flowchart LR
 
     subgraph SBX["Sandbox (per unit · D35)"]
         SD["data/: workgroup · links · derived + CMK"]
-        NFS["nfs/: EFS · D24"]
     end
     subgraph DEV["Development"]
         DD["data/: same module"]
@@ -81,11 +79,10 @@ change. The sequence to work in is **six passes**:
 | **2** | 6 | D13 made real — grants, the grain decision, the sso/ reading | idem, plus a reading of `identity/sso/` | idem |
 | **3** | 7 | the two cross-account shares, and the INT-11 after-reading | `data-governance/data/` + RAM | idem |
 | **4** | 8, 9 | the consumer side: workgroups, links, scratch, derived + CMK; the pandas proofs | `sandbox/data/`, `development/data/` `[P]` | `awsds-infra-sandbox-1`, `awsds-infra-dev` |
-| **5** | 10, 11, 12 | EFS | `sandbox/nfs/` `[P]` | `awsds-infra-sandbox-1` |
 | **6** | 13 | Security Hub org-wide | by hand: Management, then Audit | `AWS Control Tower Admin`, console/CloudShell |
 
-Pass 5 is independent of passes 1-4 and can run any time; pass 6 sits last so its first standards report
-covers a lake that exists. Pass 4 cannot precede pass 3 (a resource link to a share that does not exist
+Pass 6 sits last so its first standards report covers a lake that exists — and keeps its number:
+pass 5 was the EFS pass, removed 2026-08-17 with the NFS requirement. Pass 4 cannot precede pass 3 (a resource link to a share that does not exist
 resolves nothing), and pass 3 cannot precede pass 1's step 5 (there is nothing to share).
 
 ---
@@ -447,42 +444,14 @@ that ever matters:** S3 sets the KMS encryption context to the object ARN, so th
 can carry a `kms:EncryptionContext:aws:s3:arn` condition scoped to the derived prefix instead of a second
 key — subtler, more fragile, recorded here as the fallback rather than the default.
 
-### `sandbox/nfs/` — layer `[P]`
+### `sandbox/nfs/` — removed (2026-08-17)
 
-*Mount targets are free, and EFS storage with a lifecycle policy to Infrequent Access is ~USD 0.016/GB-month
-— cents at lab scale. **Sandbox only, and that is a decision rather than an accident (D24):** the
-file-exchange requirement in `CLAUDE.md` is about people, the VPN terminates in Sandbox, and Development
-deliberately gets neither its own EFS nor a path to this one — the exchange between the two Interactive
-accounts is S3 and git, the same path graduation itself takes. Build `development/nfs/` from this module
-only when a Development workload genuinely needs POSIX semantics.*
-
-#### 10. The filesystem
-
-EFS filesystem + mount targets in the private subnets, access points per group; this is the NFS layer
-shared between users and SageMaker. Lifecycle policy: transition to IA after 30 days. S3 ↔ EFS movement is
-an explicit copy in code when a dataset needs to cross — no standing synchronisation machinery (DataSync
-would cost per GB moved, and there is no teardown left to protect against).
-
-#### 11. Access from the user's own machine
-
-Which `CLAUDE.md` asks for ("exchange files between users, the SageMaker environment and S3"): NFSv4 over
-the WireGuard tunnel, using the EFS mount helper with TLS. **The mount-target security group admits
-TCP/2049 from the WireGuard instance's SG — never from the VPN peer CIDR.** This is Stage 4's NAT
-correction reaching here: the laptop's packets arrive SNATed as the instance's private IP, so a rule
-written against `10.90.0.0/24` can never match and the symptom is a mount that hangs with nothing denied
-anywhere. (`./aws/datalake.py` `DL-9` fails on a 2049 rule naming that CIDR.) Two caveats to state rather
-than discover: throughput over a VPN is poor enough that this is for exchanging files, not for working
-off; and **EFS has no mapping between POSIX UIDs and SSO identities**, so "who wrote this file" is not
-auditable. Access points pin a UID/GID per group, which bounds the problem to the group level — good
-enough for a lab, and named in `docs/plan/institutional-delta.md` as a real gap for an institution.
-
-#### 12. Persistence is the design
-
-**S3 is the source of truth for data; the filesystem itself persists.** An earlier version had the EFS
-`[E]` with a sync-to-S3 step inside `make down` — and correctly called that sync the single most likely
-way to lose real work in this design (conventions §5.1 rule 2). Persistence removes the failure mode
-outright, for cents; `make down` does not touch the filesystem at all. The proof is a deliverable: a
-`make down`/`make up` cycle that provably leaves EFS content untouched.
+*Steps 10-12 built the shared EFS here: filesystem + mount targets, the laptop mount over the
+tunnel, persistence as the design. The NFS requirement was withdrawn from `docs/plan/objectives.md`
+on 2026-08-17 and [D24](../decisions/D24-shared-filesystem.md) with it — no filesystem is built, in
+any account. File exchange between users, SageMaker and S3 is what the graduation path already is:
+S3 and git. The step numbers stay retired so earlier references cannot collide; `./aws/datalake.py`
+`DL-10` now measures the* ***absence*** *of any EFS in the VPN home.*
 
 ### Not part of the data foundation, but this is the stage it belongs to
 
@@ -523,7 +492,7 @@ Each is written so its output differs between working and broken (Lesson 13). **
 `./aws/datalake.py`** ([`aws/INDEX.md`](../../../aws/INDEX.md)), written for this stage: buckets and their
 policies, the maintenance role and its trust, crawlers (no schedule, no Iceberg target), the LF settings
 **with the parameters read `DL-5` mechanises**, shares and pending invitations, resource links, workgroup
-enforcement, the derived zone, EFS, and the Security Hub state. The behavioural proofs are the stage's
+enforcement, the derived zone, the absence of any EFS, and the Security Hub state. The behavioural proofs are the stage's
 own:
 
 - **The share pair, in both consumers:** a sample Iceberg table written in Data Governance queries through
@@ -545,7 +514,7 @@ own:
   half is Stage 9's.)
 - **The parameters bracket:** three readings of `DataLakeSettings.Parameters` — before pass 1, after 5.4's
   apply, after the first share — all reading `CROSS_ACCOUNT_VERSION=4, SET_CONTEXT=TRUE`.
-- **The lifecycle:** `make down`/`make up` leaves EFS content untouched and every `[P]` ID in the three
+- **The lifecycle:** `make down`/`make up` leaves every `[P]` ID in the three
   new slices byte-identical (`./aws/datalake.py` diffed across the cycle).
 
 ## Validation
@@ -564,7 +533,6 @@ own:
 | Lake + derived + scratch storage | ~USD 1/month at lab scale | S3 row of the floor |
 | Crawler runs | USD 0.44/DPU-h, 10-min minimum (`docs/PRICING.md` §5) | event-driven/on-demand only — 3.6 |
 | Athena | USD 5/TB scanned | the workgroup scan limit is the guard |
-| EFS (IA lifecycle) | ~USD 0.50/month | floor row |
 | Security Hub | ~USD 1-2/month + Config-rule evaluations | floor row; enabled at 13 |
 | Glue catalog storage/requests | negligible at lab scale | `docs/PRICING.md` §5 |
 
@@ -615,7 +583,7 @@ Record every answer, including the ones that come out fine.
 | iv | Which compute-free trigger shape starts the drop-box crawler on object creation — and does its run land on the service-guard side of the carve-out? | 3.6 |
 | v | Do the resource links appear with **no** pending RAM invitation anywhere — the org-sharing path working end to end? | 7.3, 8 |
 | vi | Does `DenyIamPrincipalMutation` in fact cover `iam:UpdateAssumeRolePolicy` for all six persona sets (a reading of `identity/sso/`, Lesson 22)? | 3.5 |
-| vii | Does the laptop mount EFS through the tunnel with the SG admitting only the WireGuard instance's SG? | 11 |
+| vii | *(removed 2026-08-17 — the NFS requirement was withdrawn; there is no EFS to mount)* | — |
 | viii | Can a per-user LF filter be expressed and observed on the SQL path at all (the grain's raw material)? | 6.4 |
 | ix | Does Security Hub's auto-enable cover existing members and later vends, and which FSBP controls were disabled as not-applicable in the first triage? | 13 |
 | x | Does the default consumer grant exclude the `restricted` column (the classification-scoped TBAC holding), and does the explicit grant admit it? | 6.1, 7.2 |

@@ -3,7 +3,7 @@
 #
 # All three are named FROM OUTSIDE this stage: step 8's control-plane deny pins every persona
 # permission set to the Elastic IP, Stage 5 step 1.3's bucket policy carries it as a branch
-# (INT-05), Stage 5's EFS mount rule and Stage 7's GitLab rule both admit this security
+# (INT-05), Stage 7's GitLab rule admits this security
 # group by id across the peering, and the host-key secret is written by the user at
 # enrollment (step 4.3) and read by every instance the [D] slice will ever boot. A reference
 # is only worth writing if what it names outlives the thing that uses it - so the address,
@@ -46,7 +46,7 @@ resource "aws_eip" "wireguard" {
 
 # ------------------------------------------------------------------ the security group
 #
-# Free, and referenced cross-slice AND cross-account (Stages 5 and 7): a security group that
+# Free, and referenced cross-slice AND cross-account (Stage 7): a security group that
 # survives every lifecycle is the only kind worth referencing by id. Its CONTENTS are step 3
 # and they are here rather than in vpn/ for the same reason the group is - a rule that lives
 # in the [D] slice would be a rule that a rebuild can lose.
@@ -54,7 +54,7 @@ resource "aws_eip" "wireguard" {
 # WHY THE PEERS ADMIT THIS GROUP AND NEVER THE CLIENT RANGE (step 1.2): the instance is the
 # NAT for every tunnel client, so a packet arriving in Production carries the instance's own
 # private address. A rule written against 10.90.0.0/24 matches nothing, and the symptom is a
-# mount or a clone that hangs rather than an error anybody can read.
+# clone that hangs rather than an error anybody can read.
 resource "aws_security_group" "wireguard" {
   # checkov:skip=CKV2_AWS_5:attached by sandbox/vpn/ - A DIFFERENT SLICE BY DESIGN, and that separation is step 2.2 itself: the group outlives every instance that wears it, which is what makes it worth referencing by id from two other accounts. The check cannot see across two state files (the same reading the vpc module's endpoint SG carries)
   # checkov:skip=CKV_AWS_382:egress is unrestricted BY DESIGN - this instance is the NAT for every tunnel client, and a full tunnel (step 5.1) carries all of their traffic, so an egress allow-list here would be an allow-list on the operator's own browsing rather than a data-perimeter control. The perimeter that applies to it is the endpoint policies of foundation/ and the SCP/RCP pair, neither of which this group can substitute for
