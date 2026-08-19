@@ -9,7 +9,7 @@ What lands here by pass:
 
 | Pass | Content |
 |---|---|
-| 1 | the `zn-lab` CMK; the five buckets with the perimeter and drop-box statements; the settings trio (admins + parameters + emptied defaults, **before any database**); registrations + the LF-Tag ontology; databases `raw`/`curated`/`dropbox`; the sample Iceberg table with its `restricted` column; the maintenance role, its LF grants, two on-demand crawlers, the compaction optimizer |
+| 1 | the account data CMK (`alias/awsds-data-data`; named `zn-lab` until the 2026-08-19 revision); the five buckets with the perimeter and drop-box statements; the settings trio (admins + parameters + emptied defaults, **before any database**); registrations + the LF-Tag ontology; databases `raw`/`curated`/`dropbox`; the sample Iceberg table with its `restricted` column; the maintenance role, its LF grants, two on-demand crawlers, the compaction optimizer |
 | 2 | step 6 — the governance manager's own grants (`governance.tf`); the consumer TBAC grants are pass 3's, with the shares they ride on |
 | 3 | step 7 — the two cross-account shares (`shares.tf`) + the INT-11 after-reading |
 
@@ -80,8 +80,8 @@ never read an empty catalog as "nothing exists".
 | `aws_lakeformation_resource.raw` / `.curated` | Registers the two prefixes: reads stop being "whoever holds `s3:GetObject`" and become "the engine asks Lake Formation". **`dropbox`, `artifacts` and `logs` stay unregistered by design** — D13's non-registered class, plain IAM/bucket-policy control. Deregistration is denied by the Data OU SCP |
 | `aws_lakeformation_lf_tag.classification` | `public` / `internal` / `restricted` / `personal` — the DLP dimension. The default grant reaches the first two read-only; the other two travel only on enumerated grants |
 | `aws_lakeformation_lf_tag.layer` | `dropbox` / `raw` / `curated` — pipeline position. **Does not gate the default read**: both registered layers are readable by consumers, the deviation argued in `institutional-delta.md` |
-| `aws_lakeformation_lf_tag.security_zone` | `zn-lab` only — the dimension that decides **which CMK**. One zone, therefore one key |
 | — (absent) `businessunit` | **Reserved, deliberately not created**: an LF-Tag requires at least one value and the dimension has none at N=1 (D35) |
+| — (removed) `security-zone` | Existed 2026-08-18/19 (`zn-lab` only) and was **withdrawn by the user's revision**: no TBAC expression ever used it, and no AWS mechanism ties an LF-Tag to a CMK — encryption is per account (`GOVERNANCE.md` §Encryption) |
 
 ## `catalog.tf` — the tag assignments, and the asymmetry that is the whole design
 
@@ -90,29 +90,29 @@ a database carries is what every future table there starts with.
 
 | Assignment | Applied tags | Why this shape |
 |---|---|---|
-| database `raw` | `layer=raw`, `classification=internal`, `security-zone=zn-lab` | **Fail-open, the user's decision** (decision 1, against the recommendation): ETL development is not gated per dataset. The named consequence — an unclassified arrival is readable by every user until reclassified; Macie is the Stage 11 backstop |
-| database `dropbox` | `layer=dropbox`, `classification=internal`, `security-zone=zn-lab` | Same rationale — user-supplied arrivals. Its own database so crawler-inferred tables do not wear `raw`'s value wrongly |
-| database `curated` | `layer=curated`, `security-zone=zn-lab` — **no `classification`** | **Fail-closed by absence**, and this is the designed asymmetry: an untagged curated table matches **no** TBAC expression and is therefore invisible to the default grants. Tables here are classified explicitly at creation |
+| database `raw` | `layer=raw`, `classification=internal` | **Fail-open, the user's decision** (decision 1, against the recommendation): ETL development is not gated per dataset. The named consequence — an unclassified arrival is readable by every user until reclassified; Macie is the Stage 11 backstop |
+| database `dropbox` | `layer=dropbox`, `classification=internal` | Same rationale — user-supplied arrivals. Its own database so crawler-inferred tables do not wear `raw`'s value wrongly |
+| database `curated` | `layer=curated` — **no `classification`** | **Fail-closed by absence**, and this is the designed asymmetry: an untagged curated table matches **no** TBAC expression and is therefore invisible to the default grants. Tables here are classified explicitly at creation |
 | table `curated.sample_trades` | `classification=internal` | Declares its own, since the database carries none |
 | column `sample_trades.counterparty` | `classification=restricted` | **Most-specific wins.** This is the column the classification pair proves against: absent from a default session's result *and* from its column list, present after the explicit grant |
 
-## `kms.tf` — the `zn-lab` key policy
+## `kms.tf` — the account data key policy
 
-One key for the whole lake, drop-box included (decision 2: `security-zone` carries encryption, one zone
-exists). The policy is **passed, not defaulted**, because two cross-account statements must ride on the
-key object itself.
+One key for the whole lake, drop-box included (decision 2 as revised 2026-08-19: one data CMK per
+account, and this account holds the five lake buckets). The policy is **passed, not defaulted**, because
+two cross-account statements must ride on the key object itself.
 
 | `Sid` | What it allows, and to whom |
 |---|---|
 | `EnableIamPolicyDelegationInThisAccount` | The account root — the standard delegation that lets IAM policies in this account govern the key. Without it the key is only governed by its own policy |
-| `AllowDropBoxWritersViaS3` | The Sandbox and Development roots, narrowed by `ArnLike aws:PrincipalArn` to the writer roles: `GenerateDataKey` **and** `Decrypt`. Both are needed — SSE-KMS `PutObject` needs the first, a **multipart upload** needs the second, and the error otherwise names S3 rather than KMS. Scoped `kms:ViaService = s3`, so the persona cannot use the key outside an S3 call. **This is the resource HALF of a cross-account permission** — the identity half (`UseLakeZoneKeyViaS3` in `DataScientistAccess`, the same two actions under the same `kms:ViaService = s3` condition) lives in `identity/sso/`, Stage 5 pass 4c; neither half works alone (Lesson 28, amended) |
+| `AllowDropBoxWritersViaS3` | The Sandbox and Development roots, narrowed by `ArnLike aws:PrincipalArn` to the writer roles: `GenerateDataKey` **and** `Decrypt`. Both are needed — SSE-KMS `PutObject` needs the first, a **multipart upload** needs the second, and the error otherwise names S3 rather than KMS. Scoped `kms:ViaService = s3`, so the persona cannot use the key outside an S3 call. **This is the resource HALF of a cross-account permission** — the identity half (`UseLakeDataKeyViaS3` in `DataScientistAccess`, the same two actions under the same `kms:ViaService = s3` condition) lives in `identity/sso/`, Stage 5 pass 4c; neither half works alone (Lesson 28, amended) |
 | `AllowCloudWatchLogsEncryptionForGlue` | The **service principal** `logs.<region>.amazonaws.com`, scoped by the log-group encryption context to `/aws-glue/*` in this account. CloudWatch Logs encrypts with the key *itself*, so the crawler role's own KMS grant does not cover it — this exists because a crawler samples object contents and its logs therefore take the lake key |
 | `AllowProductionPickupDecryptViaS3` | The Production root narrowed to `awsds-prod-job-exec`: `Decrypt`, for the drop-box pickup (INT-10, D25). **The role arrives at Stage 9** — until then the `ArnLike` matches nothing, which is the recorded "pickup half unexercised" state, not a defect |
 
-**What the single zone costs, and it is a choice rather than an oversight** (decision 3's deviation):
-these grants land on the **zone** key, so at the KMS layer the matched principals reach every bucket in
-the zone. The drop-box's isolation rests on the S3 statements and Lake Formation **alone**. Revision
-trigger: the first dataset whose blast radius argues for its own zone.
+**What the single key costs, and it is a choice rather than an oversight** (decision 3's deviation):
+these grants land on the **account** key, so at the KMS layer the matched principals reach every lake
+bucket. The drop-box's isolation rests on the S3 statements and Lake Formation **alone**. Revision
+trigger: the first dataset whose blast radius argues for a key of its own.
 
 ## `buckets.tf` — the S3 permission controls
 
@@ -161,13 +161,13 @@ condition. That is why the principals above read as roots.
 | `awsds-data-catalog-maintenance` | `GlueServiceOnly` (trust) | Trusts `glue.amazonaws.com` **alone** — the name is an SCP contract (D27's carve-out names it), so a typo fails closed, later |
 | | `CrawlRawAndDropBox` | `GetObject`/`ListBucket` on the two crawled prefixes |
 | | `CompactCuratedWarehouse` | Read **and write** on curated — compaction rewrites files (decision 4) |
-| | `UseZnLabKey` | The lake CMK: everything above is SSE-KMS |
+| | `UseDataKey` | The account data CMK: everything above is SSE-KMS |
 | | `CatalogReadWrite` | The Glue catalog calls a crawler and an optimizer make |
 | | `ReadOwnSecurityConfiguration` | **A role must be able to READ the security configuration it runs under.** `Resource = "*"` because Glue security configurations have no ARN to scope to. Nothing in the stage text said so — the first `CreateCrawler` failed on it |
 | | `VendedDataAccess` | `lakeformation:GetDataAccess` — the registered-location read path |
 | | `CrawlerLogs` | `/aws-glue/*` only, encrypted by the key-policy statement above |
 | `awsds-data-lf-registration` | `S3ReadRegisteredLocations` | How Lake Formation **vends** governed reads of `raw` and `curated`. Read-side only — the governed write arrives at Stage 9, amending this policy in this slice |
-| | `KmsDecryptZnLab` | The SSE-KMS half of the same path. The service-linked role cannot be granted the CMK cleanly, which is why this is a custom role |
+| | `KmsDecryptDataKey` | The SSE-KMS half of the same path. The service-linked role cannot be granted the CMK cleanly, which is why this is a custom role |
 
 ### The maintenance role's own Lake Formation grants (`maintenance.tf`)
 
@@ -194,7 +194,7 @@ permission set's own one-line description — *"The catalog, never the rows."*
 
 | Grant | Principal | Permission | What it buys |
 |---|---|---|---|
-| `gm_associate_*` (×3) | `AWSReservedSSO_GovernanceManagerAccess_*`, resolved **by pattern** | `ASSOCIATE` on each LF-Tag key | Assigning tags to datasets — the job `GOVERNANCE.md` gives the persona. Granting `ASSOCIATE` implicitly grants `DESCRIBE` on the tag. Values are read from the tag resources, so a value added to the ontology cannot be silently missing here |
+| `gm_associate_*` (×2 — a third, on `security-zone`, left with the tag in the 2026-08-19 revision) | `AWSReservedSSO_GovernanceManagerAccess_*`, resolved **by pattern** | `ASSOCIATE` on each LF-Tag key | Assigning tags to datasets — the job `GOVERNANCE.md` gives the persona. Granting `ASSOCIATE` implicitly grants `DESCRIBE` on the tag. Values are read from the tag resources, so a value added to the ontology cannot be silently missing here |
 | `gm_describe_database` (×3) | idem | `DESCRIBE` on `raw`/`curated`/`dropbox` | Without it the persona sees an **empty catalog** — the IAM half grants the call, Lake Formation decides what it returns |
 | `gm_describe_tables` (×3) | idem | `DESCRIBE`, `wildcard = true` | Tables it has to tag, **including ones that do not exist yet** — crawler-inferred tables arrive without anybody re-granting |
 

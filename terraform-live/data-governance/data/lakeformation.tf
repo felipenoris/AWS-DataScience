@@ -105,10 +105,10 @@ module "lf_registration_role" {
           ]
         },
         {
-          Sid      = "KmsDecryptZnLab"
+          Sid      = "KmsDecryptDataKey"
           Effect   = "Allow"
           Action   = "kms:Decrypt"
-          Resource = module.zn_lab_key.key_arn
+          Resource = module.data_key.key_arn
         },
       ]
     })
@@ -144,6 +144,11 @@ resource "aws_lakeformation_resource" "curated" {
 # here on purpose: an LF-Tag requires at least one value, and the dimension has none until
 # the second business unit exists (D35).
 #
+# A THIRD TAG EXISTED HERE FOR ONE DAY: security-zone (value zn-lab), created 2026-08-18 and
+# withdrawn 2026-08-19 (the user's revision). No TBAC expression ever used it, and no AWS
+# mechanism connects an LF-Tag to a CMK - the tag-to-key link was only a naming convention.
+# Encryption is per ACCOUNT now (docs/GOVERNANCE.md "Encryption"; kms.tf).
+#
 # Creating an LF-Tag requires an admin, so every tag depends on the settings trio.
 
 resource "aws_lakeformation_lf_tag" "classification" {
@@ -156,13 +161,6 @@ resource "aws_lakeformation_lf_tag" "classification" {
 resource "aws_lakeformation_lf_tag" "layer" {
   key    = "layer"
   values = ["dropbox", "raw", "curated"]
-
-  depends_on = [aws_lakeformation_data_lake_settings.this]
-}
-
-resource "aws_lakeformation_lf_tag" "security_zone" {
-  key    = "security-zone"
-  values = ["zn-lab"]
 
   depends_on = [aws_lakeformation_data_lake_settings.this]
 }

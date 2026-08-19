@@ -1,8 +1,8 @@
 # Outputs - what other slices read through terraform_remote_state (never pasted).
 
-output "zn_lab_key_arn" {
-  description = "The zn-lab security-zone CMK - every lake bucket encrypts under it (decision 2)."
-  value       = module.zn_lab_key.key_arn
+output "data_key_arn" {
+  description = "The account data CMK - every lake bucket encrypts under it (decision 2, revised 2026-08-19)."
+  value       = module.data_key.key_arn
 }
 
 output "bucket_names" {

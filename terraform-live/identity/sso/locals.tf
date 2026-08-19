@@ -195,8 +195,8 @@ locals {
   # the same diagnosis as instance_arn above: null on empty, loud on many.
   lake_dropbox_write_arn = "${one([for l, r in data.terraform_remote_state.lake_data : r.outputs.bucket_arns["dropbox"]])}/${one([for l, r in data.terraform_remote_state.lake_data : r.outputs.dropbox_prefix])}/*"
 
-  lake_zone_key_arn = one([
-    for l, r in data.terraform_remote_state.lake_data : r.outputs.zn_lab_key_arn
+  lake_data_key_arn = one([
+    for l, r in data.terraform_remote_state.lake_data : r.outputs.data_key_arn
   ])
 
   # The rendered inline policy of each written set, in one map, so the size precondition and

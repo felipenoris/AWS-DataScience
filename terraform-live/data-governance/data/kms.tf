@@ -1,7 +1,10 @@
-# The zn-lab CMK (steps 1.1, decision 2) - ONE key for the whole lake, drop-box included:
-# security-zone is the dimension that carries encryption (docs/GOVERNANCE.md), one zone
-# exists, so one key. A second zone is a new module call here plus Bucket Keys re-pointing -
-# a bucket-level change, not a migration.
+# The account data CMK (steps 1.1, decision 2 - revised 2026-08-19, the user: the
+# security-zone dimension withdrawn) - ONE key for the whole lake, drop-box included:
+# encryption granularity is per ACCOUNT (docs/GOVERNANCE.md "Encryption"), and this account
+# holds the five lake buckets. The binding is each bucket's default-encryption configuration
+# (buckets.tf) - no catalog attribute is involved. A dataset whose blast radius argues for a
+# key of its own is a new module call here plus Bucket Keys re-pointing - a bucket-level
+# change, not a migration.
 #
 # THE POLICY IS PASSED, NOT DEFAULTED, because two cross-account statements must ride on the
 # object (Lesson 14's good direction - one copy, on the key):
@@ -14,17 +17,24 @@
 #     The role exists at Stage 9; until then the ArnLike matches nothing, which is the
 #     recorded "pickup half unexercised" state.
 #
-# WHAT THE SINGLE ZONE COSTS, said where the key is made (decision 3's deviation,
-# docs/GOVERNANCE.md "security-zone"): these grants land on the ZONE key, so at the KMS
-# layer the matched principals reach every bucket in the zone - the drop-box's isolation
+# WHAT THE SINGLE KEY COSTS, said where the key is made (decision 3's deviation,
+# docs/GOVERNANCE.md "Encryption"): these grants land on the ACCOUNT key, so at the KMS
+# layer the matched principals reach every lake bucket - the drop-box's isolation
 # rests on the S3 statements and Lake Formation alone.
 
-module "zn_lab_key" {
+# The module address moved with the 2026-08-19 revision (zn_lab_key -> data_key); the block
+# keeps the applied key object in place and can be dropped once every caller has applied.
+moved {
+  from = module.zn_lab_key
+  to   = module.data_key
+}
+
+module "data_key" {
   # checkov:skip=CKV_TF_1:pinned by git TAG by convention (conventions §6, Stage 3 step 1.1a) - a repository-internal tag only the repo owner can move
   source = "git::git@github.com:felipenoris/AWS-DataScience.git//terraform-modules/kms-key?ref=kms-key-v0.1.0"
 
-  alias_name  = "awsds-${var.env}-zn-lab"
-  description = "zn-lab security zone - SSE-KMS for every lake bucket (raw, curated, artifacts, logs, dropbox)"
+  alias_name  = "awsds-${var.env}-data"
+  description = "Account data CMK - SSE-KMS for every lake bucket (raw, curated, artifacts, logs, dropbox)"
 
   policy = jsonencode({
     Version = "2012-10-17"

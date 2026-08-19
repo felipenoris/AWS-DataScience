@@ -48,10 +48,6 @@ resource "aws_lakeformation_resource_lf_tags" "raw_db" {
     key   = aws_lakeformation_lf_tag.classification.key
     value = "internal"
   }
-  lf_tag {
-    key   = aws_lakeformation_lf_tag.security_zone.key
-    value = "zn-lab"
-  }
 }
 
 resource "aws_lakeformation_resource_lf_tags" "curated_db" {
@@ -60,10 +56,6 @@ resource "aws_lakeformation_resource_lf_tags" "curated_db" {
   lf_tag {
     key   = aws_lakeformation_lf_tag.layer.key
     value = "curated"
-  }
-  lf_tag {
-    key   = aws_lakeformation_lf_tag.security_zone.key
-    value = "zn-lab"
   }
 }
 
@@ -77,10 +69,6 @@ resource "aws_lakeformation_resource_lf_tags" "dropbox_db" {
   lf_tag {
     key   = aws_lakeformation_lf_tag.classification.key
     value = "internal"
-  }
-  lf_tag {
-    key   = aws_lakeformation_lf_tag.security_zone.key
-    value = "zn-lab"
   }
 }
 

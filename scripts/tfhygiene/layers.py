@@ -184,7 +184,7 @@ SLICES = [
         "data-governance",
         "data",
         PERSISTENT,
-        "the lake: zn-lab CMK, 5 buckets, catalog, LF (Stage 5)",
+        "the lake: account data CMK, 5 buckets, catalog, LF (Stage 5)",
     ),
     # Stage 5 pass 4 (2026-08-19) - the consumer side, one module applied twice. [P] and free
     # or floor-priced at rest: one CMK per account (key-month, docs/PRICING.md 2), one bucket,
@@ -201,7 +201,7 @@ SLICES = [
         "sandbox",
         "data",
         PERSISTENT,
-        "consumer side: zn-lab CMK, derived zone, workgroup, links",
+        "consumer side: account data CMK, derived zone, workgroup, links",
     ),
     Slice(
         "development",

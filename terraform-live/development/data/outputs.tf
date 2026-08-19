@@ -11,9 +11,9 @@ output "derived_bucket_arn" {
   value       = module.consumer_data.derived_bucket_arn
 }
 
-output "zone_key_arn" {
-  description = "This account's zn-lab CMK - D31's read control, and Stage 6's extension point for the project execution roles."
-  value       = module.consumer_data.zone_key_arn
+output "data_key_arn" {
+  description = "This account's data CMK - D31's read control, and Stage 6's extension point for the project execution roles."
+  value       = module.consumer_data.data_key_arn
 }
 
 output "athena_workgroup_name" {

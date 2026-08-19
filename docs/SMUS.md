@@ -102,7 +102,7 @@ answer (Lesson 28):
 
 | Layer | The control |
 |---|---|
-| the **IAM permissions boundary** — the literal object | `awsds-<env>-project-boundary` (Stage 6 step 2.1; name contract `US-8`), imposed on the roles the blueprint authors: no `s3:*` on LF-registered prefixes (D13), the drop-box `PutObject` + zone-key KMS pair as the one sanctioned direct write. Whether it **survives blueprint reconciliation** is INT-15, measured at step 2.5 |
+| the **IAM permissions boundary** — the literal object | `awsds-<env>-project-boundary` (Stage 6 step 2.1; name contract `US-8`), imposed on the roles the blueprint authors: no `s3:*` on LF-registered prefixes (D13), the drop-box `PutObject` + lake-data-key KMS pair as the one sanctioned direct write. Whether it **survives blueprint reconciliation** is INT-15, measured at step 2.5 |
 | OU SCPs | reach every IAM principal in the member accounts, project roles included — why the Athena Spark disable is an SCP (step 1.6), never an edit to blueprint-authored policies (Lesson 11) |
 | Lake Formation | what a project *queries* is governed by LF grants, not IAM — broad IAM with no grant reads no table (Lesson 28's producer-README section) |
 | network | `VpcOnly` non-Editable, the endpoint policies, both egress designs (§`VpcOnly` below) |

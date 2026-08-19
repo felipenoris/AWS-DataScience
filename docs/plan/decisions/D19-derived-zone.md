@@ -56,6 +56,16 @@ copy. What keeps other personas out is practice (vi), the zone CMK (D31), which 
 added for. The per-user `s3:GetObject` variant was mapped (`docs/GOVERNANCE.md` §"The grain") and
 declined with the grain decision.
 
+**Revised once more 2026-08-19, later the same day — the `security-zone` dimension is withdrawn (the
+user's revision) and practice (vi)'s key is `alias/awsds-<env>-data`.** The zone framing two blocks up is
+kept as history: the (zone × account) form rested on the premise that the CMK was associated with an
+LF-Tag, and no AWS mechanism makes that association — the tag-to-key link was only a naming convention.
+The rule's carrier is now the account: **one data CMK per account**, assigned to buckets by Terraform
+(`GOVERNANCE.md` §Encryption). Nothing this decision leans on moves: the key is still dedicated (not the
+account's `tfstate` key), still deliberately not the lake's (the measured
+`AllowProductionPickupDecryptViaS3` reason stands verbatim), and its policy still delegates
+administration to root while withholding every cryptographic action.
+
 **The decision itself does not move.** Preventing the copy is still impossible, the destination is still
 managed, and the six practices above all stand. What is corrected is a claim about *who does the
 containing*: for the derived zone in S3 it is the perimeter, exactly as written; for the routes derived

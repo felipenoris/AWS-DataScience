@@ -164,7 +164,7 @@ data "terraform_remote_state" "consumer_data" {
   }
 }
 
-# The lake's own data/ slice: the drop-box bucket ARN + write prefix, and the zn-lab key ARN.
+# The lake's own data/ slice: the drop-box bucket ARN + write prefix, and the data-key ARN.
 # The drop-box write is the one CROSS-ACCOUNT S3 permission any persona holds, and
 # cross-account evaluation needs BOTH halves - the bucket policy in Data Governance (pass 1's
 # AllowInteractiveWriterPutOnly) AND an identity-side allow naming the bucket; the KMS pair

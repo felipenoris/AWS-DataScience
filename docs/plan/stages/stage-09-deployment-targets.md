@@ -121,7 +121,7 @@ structure, in every account that has one.
 - **1.1 — [Claude] Write the two buckets and the CMK**: `awsds-prod-outputs` (application outputs;
   model artifacts under `models/<app>/` — step 3 points the registry here) and
   `awsds-prod-athena-results` (the results zone: **lifecycle expiry 30 days**, D19's shape), both from the
-  `s3-bucket` module — versioning, `prevent_destroy`, BPA, SSE-KMS with **`alias/awsds-prod-zn-lab`**
+  `s3-bucket` module — versioning, `prevent_destroy`, BPA, SSE-KMS with **`alias/awsds-prod-data`**
   (decision 1; D31's argument: a key the Staging set and both approver sets cannot decrypt is what makes
   "read-only means read-only" expressible), **and its key policy written in the D31 shape pass 4 applied**
   — the account root keeps administration and holds no cryptographic action, so delegation to IAM is
@@ -471,7 +471,7 @@ Measured (`docs/PRICING.md`, `docs/plan/cost-model.md`), us-west-2:
 
 | Item | Cost | Layer |
 |---|---|---|
-| `alias/awsds-prod-zn-lab` + the Staging CMK | ~USD 1/key-month | `[P]` |
+| `alias/awsds-prod-data` + the Staging CMK | ~USD 1/key-month | `[P]` |
 | Package groups, workgroups, LF grants, links, resource policies | free at rest | `[P]` |
 | Outputs/results/mirror storage | cents at lab scale | `[P]` |
 | Producer/pickup Glue runs | 0.44 USD/DPU-h, 10-min minimum, on-demand | metered per run |
@@ -484,9 +484,9 @@ Measured (`docs/PRICING.md`, `docs/plan/cost-model.md`), us-west-2:
 `docs/log/log-stage-09-deployment-targets.md` (Lesson 16). Recommendations stated so the keyboard is not
 the decision-maker.
 
-1. **The Production data CMK** (1.1) — **the alias is not open**: `docs/GOVERNANCE.md` §`security-zone`
-   settles it (one CMK per zone × account, the zone inheriting into everything derived from its tables),
-   which gives `alias/awsds-prod-zn-lab`. What remains to decide here is only **dedicated versus reusing
+1. **The Production data CMK** (1.1) — **the alias is not open**: `docs/GOVERNANCE.md` §Encryption
+   settles it (one data CMK per account — revised 2026-08-19, the `security-zone` dimension withdrawn),
+   which gives `alias/awsds-prod-data`. What remains to decide here is only **dedicated versus reusing
    `foundation/`'s key**. Recommended: **dedicated** — D31's argument verbatim: the deny that matters
    ("Staging and the approvers cannot read outputs") is only expressible on a key nothing else uses.
 2. **The scan limit** (1.2) — recommended: **10 GB per query** to start, revised against real queries at

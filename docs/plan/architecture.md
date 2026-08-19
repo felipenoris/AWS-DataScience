@@ -61,7 +61,7 @@ AWS Organization (Management account - console only)                        [P]
 │   │       │     restricted egress). Slice is [P]; running apps are      [P/E]
 │   │       ├── derived zone: ONE bucket, prefixes results/ +              [P]
 │   │       │     derived/${aws:userid}/ + scratch/ (D19; `scratch` is a
-│   │       │     PREFIX per D13, not a bucket), own zn-lab CMK (D31)
+│   │       │     PREFIX per D13, not a bucket), own account data CMK (D31)
 │   │       ├── WireGuard EC2 <- the only human entry point (see below)     [D]
 │   │       └── NAT Gateway + interface VPC endpoints                       [E]
 │   │
