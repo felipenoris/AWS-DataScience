@@ -120,7 +120,7 @@ module "bucket" {
   for_each = local.bucket_names
 
   bucket_name = each.value
-  kms_key_arn = module.zn_lab_key.key_arn
+  kms_key_arn = module.data_key.key_arn
 
   # A for-expression, not a ternary: the two ternary arms (four statements vs none) are
   # tuples of different lengths and Terraform refuses the conditional before the module's

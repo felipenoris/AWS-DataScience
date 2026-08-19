@@ -69,10 +69,10 @@ module "catalog_maintenance_role" {
           ]
         },
         {
-          Sid      = "UseZnLabKey"
+          Sid      = "UseDataKey"
           Effect   = "Allow"
           Action   = ["kms:Decrypt", "kms:Encrypt", "kms:GenerateDataKey", "kms:DescribeKey"]
-          Resource = module.zn_lab_key.key_arn
+          Resource = module.data_key.key_arn
         },
         {
           Sid    = "CatalogReadWrite"
@@ -202,17 +202,17 @@ resource "aws_glue_security_configuration" "catalog_maintenance" {
   encryption_configuration {
     cloudwatch_encryption {
       cloudwatch_encryption_mode = "SSE-KMS"
-      kms_key_arn                = module.zn_lab_key.key_arn
+      kms_key_arn                = module.data_key.key_arn
     }
 
     s3_encryption {
       s3_encryption_mode = "SSE-KMS"
-      kms_key_arn        = module.zn_lab_key.key_arn
+      kms_key_arn        = module.data_key.key_arn
     }
 
     job_bookmarks_encryption {
       job_bookmarks_encryption_mode = "CSE-KMS"
-      kms_key_arn                   = module.zn_lab_key.key_arn
+      kms_key_arn                   = module.data_key.key_arn
     }
   }
 }

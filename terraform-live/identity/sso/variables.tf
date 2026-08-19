@@ -108,11 +108,11 @@ variable "data_consumers" {
 
 # The account that OWNS the lake - Stage 5 pass 4c, the same one-element table the consumer
 # slices take (backend.py DATA_LAKE). Read for the drop-box bucket ARN, its write prefix and
-# the zn-lab key ARN: the drop-box write is CROSS-ACCOUNT, so the bucket policy's grant is
+# the lake data-key ARN: the drop-box write is CROSS-ACCOUNT, so the bucket policy's grant is
 # only half of the permission and the identity half has to name real ARNs - the key ARN
 # carries the account id, which may live in state but never in a tracked file.
 variable "lake" {
-  description = "Account folder -> { profile, env } for the account owning the governed lake (backend.py DATA_LAKE). Read for data-governance/data/ outputs: the drop-box ARN + prefix and the zn-lab key ARN."
+  description = "Account folder -> { profile, env } for the account owning the governed lake (backend.py DATA_LAKE). Read for data-governance/data/ outputs: the drop-box ARN + prefix and the data-key ARN."
   type = map(object({
     profile = string
     env     = string

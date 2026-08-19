@@ -175,7 +175,7 @@ terraform-live/
 │   ├── data/             # [P] the derived zone (ONE bucket, three prefix families:
 │   │                     #     results/, derived/${aws:userid}/, scratch/ - D19, and
 │   │                     #     `scratch` is a PREFIX, per D13's own wording), its
-│   │                     #     alias/awsds-<env>-zn-lab CMK (D31), the enforced Athena
+│   │                     #     alias/awsds-<env>-data CMK (D31), the enforced Athena
 │   │                     #     workgroup, this account's own DataLakeSettings, and the LF
 │   │                     #     resource links + local re-grants to the Data Governance
 │   │                     #     share (D22). ONE MODULE, consumer-data, shared with

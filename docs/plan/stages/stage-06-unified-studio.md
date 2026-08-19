@@ -311,8 +311,8 @@ role** (CloudFormation trust, per the associated-accounts doc), the account's **
 resources, the exported **VPC/subnet/SG parameters** 1.4 consumes, and the **D13 boundary policy** —
 name contract `awsds-<env>-project-boundary` (`./aws/studio.py` `US-8`): no `s3:*` on Lake
 Formation-registered prefixes (D13), the step 3 conditions mirrored, and the drop-box `PutObject` on the
-dated prefix **plus `kms:GenerateDataKey`/`kms:Decrypt` on the lake zone key under `kms:ViaService=s3`**
-allowed (D18) — the identity half's full shape, mirroring `WriteIngestionDropBox` + `UseLakeZoneKeyViaS3`
+dated prefix **plus `kms:GenerateDataKey`/`kms:Decrypt` on the lake's data key under `kms:ViaService=s3`**
+allowed (D18) — the identity half's full shape, mirroring `WriteIngestionDropBox` + `UseLakeDataKeyViaS3`
 (Stage 5 pass 4c; the two-sided rule is `docs/GOVERNANCE.md` §Drop-box and INT-10). **And the resource side
 does not admit these roles yet**: `writer_role_patterns` in `data-governance/data/locals.tf` matches only
 `AWSReservedSSO_DataScientistAccess_*`, and its comment defers the project execution roles to this stage —
@@ -647,7 +647,7 @@ decision-maker.
    recorded here so the trade is on the table when the blueprint's real behaviour is). **What is
    already committed and is NOT this decision:** the projects land in the SAME `awsds-<env>-derived`
    bucket (Stage 5 step 9.3's extension point — the key policy `Decrypt` widened to a list under
-   Recipe B, 2.6's first half), and the CMK stays one per (zone × account) — a key can express neither
+   Recipe B, 2.6's first half), and the CMK stays one data key per account — a key can express neither
    per-user nor per-project, so separation between projects, where wanted, is the prefix plus the role
    policy, never the key. The two shapes:
    - **Project-first** (`<project>/results/`, `<project>/derived/`, `<project>/scratch/`) — a top-level

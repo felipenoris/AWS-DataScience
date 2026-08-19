@@ -136,9 +136,10 @@ than a rewrite.
      grant option like every cross-account grant and the `layer` gate like every TBAC expression here
      (Lesson 29). It is a `for_each` over the consumer map, not a copied resource — which is the whole
      reason Stage 5 was told to write every list as a map from day one;
-   - **and the unit's own consumer slice is already a module — `terraform-modules/consumer-data/` v0.1.0,
-     applied 2026-08-19** (Stage 5 pass 4). `sandbox-unit` composes a *call* to it with one changed input,
-     not a copy of it: the settings, the `alias/awsds-<env>-zn-lab` CMK, the derived zone, the workgroup,
+   - **and the unit's own consumer slice is already a module — `terraform-modules/consumer-data/`,
+     applied 2026-08-19** (Stage 5 pass 4; v0.2.0 since the same-day revision). `sandbox-unit` composes a
+     *call* to it with one changed input,
+     not a copy of it: the settings, the `alias/awsds-<env>-data` CMK, the derived zone, the workgroup,
      the resource links and the local re-grants all come with it. **The re-grant is a pair** — `DESCRIBE`
      on each resource link *and* the permission on the target — and a vend that lands only the second half
      produces a unit whose scientists see no database at all;

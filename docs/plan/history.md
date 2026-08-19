@@ -340,6 +340,23 @@ onwards the file records how the environment changed, not just the plan.
   subject needs; Stage 11 step 4 now gates on Stage 15 plus a month of billing, and Stage 5 step 13.2's
   Security Hub ingestion is recorded as empty until Stage 15 runs.
 
+- **2026-08-19 — the `security-zone` LF-Tag dimension is withdrawn, one day after it was created: one
+  data CMK per account.** The user's revision, taken after working through the mechanics in
+  conversation: the dimension had been decided on the premise that a CMK was associated with an LF-Tag,
+  and no AWS mechanism makes that association — a tag attaches to catalog objects and gates TBAC
+  expressions (none of which ever used `security-zone`); a key is assigned per bucket by Terraform; the
+  tag-to-key link was only the shared `zn-lab` spelling in the aliases. **This entry exists because
+  provisioned things changed**: the LF-Tag key and its `ASSOCIATE` grant destroyed, the three database
+  assignments narrowed, and the three data CMKs renamed in place (`alias/awsds-<env>-data` — the same
+  key objects under new aliases, no re-encryption, the count untouched). What replaced the dimension is
+  a simpler rule with the same controls behind it: every data bucket encrypts under its own account's
+  data key (`GOVERNANCE.md` §Encryption is the one copy); D31's dedicated-key read control and the
+  measured refusal to share the lake's key across the account line
+  (`AllowProductionPickupDecryptViaS3`, unscoped) both survive unchanged, because neither ever rested
+  on the tag. `consumer-data` went to v0.2.0 with the rename; `UseLakeZoneKeyViaS3` became
+  `UseLakeDataKeyViaS3` in `DataScientistAccess` and `DL-12` reads the new name; Stage 9's future
+  Production key is `alias/awsds-prod-data`.
+
 ---
 
 *Plan core: [GENERAL_PLAN.md](../GENERAL_PLAN.md) · Decisions: [docs/plan/decisions/INDEX.md](decisions/INDEX.md) · Stages: [docs/plan/stages/INDEX.md](stages/INDEX.md)*

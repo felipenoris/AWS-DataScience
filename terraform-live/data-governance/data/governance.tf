@@ -24,7 +24,7 @@
 # decided. Decision 5 named the persona's own grants, not a delegation plane. It stays absent
 # until a decision asks for it.
 
-# ------------------------------------------------------ ASSOCIATE on the three LF-Tag keys
+# -------------------------------------------------------- ASSOCIATE on the two LF-Tag keys
 #
 # ASSOCIATE is what lets a principal ASSIGN the tag to a Data Catalog resource, and granting
 # it implicitly grants DESCRIBE on the tag (AWS Lake Formation documentation, read
@@ -33,7 +33,9 @@
 # writing the list literally would be Lesson 14's shape (a set that must agree in N places).
 #
 # businessunit is absent for the same reason it is absent from the ontology: it has no values
-# at N=1 (D35), so there is no tag to associate.
+# at N=1 (D35), so there is no tag to associate. A third ASSOCIATE grant (security-zone)
+# existed 2026-08-18/19 and left with the tag itself (the user's revision - encryption is per
+# account now, and carries no catalog dimension).
 
 resource "aws_lakeformation_permissions" "gm_associate_classification" {
   principal   = local.governance_manager_role_arn
@@ -52,16 +54,6 @@ resource "aws_lakeformation_permissions" "gm_associate_layer" {
   lf_tag {
     key    = aws_lakeformation_lf_tag.layer.key
     values = aws_lakeformation_lf_tag.layer.values
-  }
-}
-
-resource "aws_lakeformation_permissions" "gm_associate_security_zone" {
-  principal   = local.governance_manager_role_arn
-  permissions = ["ASSOCIATE"]
-
-  lf_tag {
-    key    = aws_lakeformation_lf_tag.security_zone.key
-    values = aws_lakeformation_lf_tag.security_zone.values
   }
 }
 

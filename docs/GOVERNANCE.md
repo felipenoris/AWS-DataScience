@@ -8,6 +8,11 @@ the user's draft, in English per the repository language rule. Two renames arriv
 the dimension the plan called `zone` is **`layer`**, and `domain` is **`businessunit`** — stage text
 predating 2026-08-18 reads accordingly.
 
+**Revised 2026-08-19, by the user: the `security-zone` dimension is withdrawn.** The ontology has no
+encryption dimension — encryption is **per account** (one data CMK per account, §Encryption), assigned
+to buckets by Terraform, and no catalog attribute carries it. Text predating the revision reads
+`security-zone=zn-lab` where §Encryption now answers.
+
 *Read with [`docs/plan/stages/stage-05-data-foundation.md`](plan/stages/stage-05-data-foundation.md)
 (the build steps) and [`docs/plan/conventions.md`](plan/conventions.md) (naming). The applied grants are
 registered in [`docs/AWS_STATE.md`](AWS_STATE.md) §"Lake Formation grant register".*
@@ -16,13 +21,13 @@ registered in [`docs/AWS_STATE.md`](AWS_STATE.md) §"Lake Formation grant regist
 
 Two bucket families, split by the account line — and "who may read" is expressed by a different
 mechanism on each side: in the lake it is Lake Formation and the bucket policies; in the consumer
-accounts it is the zone CMK's key policy (D31). Both tables carry a delete column deliberately: in a
-governed store, who may *remove* data is as designed a fact as who may write it.
+accounts it is the account data CMK's key policy (D31). Both tables carry a delete column deliberately:
+in a governed store, who may *remove* data is as designed a fact as who may write it.
 
 ### The lake — Data Governance account
 
-All five live in the **Data Governance** account, encrypted SSE-KMS under the lake's `zn-lab` CMK (see
-`security-zone`), versioned, public access blocked — and **undeletable** while the `Data` OU SCP is
+All five live in the **Data Governance** account, encrypted SSE-KMS under that account's data CMK
+(§Encryption), versioned, public access blocked — and **undeletable** while the `Data` OU SCP is
 attached (`DenyLakeDeletionAndDeregistration`), so every name below is permanent. No object expires
 either — the lake holds data somebody expects to find again, so the only lifecycle rule is the
 module's 90-day expiry of noncurrent (superseded) versions. At the object grain, delete exists at
@@ -50,8 +55,8 @@ per-statement index); Production's equivalent arrives when Stage 9 makes it a co
 matches the lake — SSE-KMS, versioned, public access blocked, TLS-only, the same presigned-URL cap —
 and the four differences are the design:
 
-- the CMK is **the zone's key in that account**, `alias/awsds-<env>-zn-lab` (one CMK per zone × account,
-  §`security-zone`), and its key policy is where *who may read the copies* is expressed (D31):
+- the CMK is **that account's data key**, `alias/awsds-<env>-data` (one data CMK per account,
+  §Encryption), and its key policy is where *who may read the copies* is expressed (D31):
   `DataScientistAccess` today, the project execution roles from Stage 6;
 - current objects **expire at 30 days** (D19 practice iii) — the lake keeps data, this bucket sheds
   it;
@@ -68,8 +73,53 @@ exists once something is written under it):
 | Prefix family | What it holds | Who writes | Who reads | Who deletes |
 |---|---|---|---|---|
 | `results/` | the Athena workgroup's **enforced** output location (`EnforceWorkGroupConfiguration = true` — the client cannot choose another destination) | the persona — in practice Athena, which stages results with the caller's own credentials, so the write grant is the engine's contract rather than a convenience | the persona (`GetQueryResults` reads the result object from S3 with the caller's credentials) | nobody — the 30-day expiry is the only deleter |
-| `derived/${aws:userid}/` | materialised copies of query results | **per principal** — `PutObject` carries the policy variable, so a copy can only land under its author's prefix | **persona-wide** (`GetObject` on `derived/*`, decision 6's grain) — the prefix governs where a copy lands, not who may read it; other personas are kept out by the zone CMK | nobody — the 30-day expiry is the only deleter |
+| `derived/${aws:userid}/` | materialised copies of query results | **per principal** — `PutObject` carries the policy variable, so a copy can only land under its author's prefix | **persona-wide** (`GetObject` on `derived/*`, decision 6's grain) — the prefix governs where a copy lands, not who may read it; other personas are kept out by the account data CMK | nobody — the 30-day expiry is the only deleter |
 | `scratch/` | the notebook's working files — a downloaded CSV, an intermediate feature, a model checkpoint | the persona | the persona | the persona — the **only** prefix with `s3:DeleteObject`. `DeleteObjectVersion` is not granted, so versioning keeps the truth under every delete marker |
+
+## Encryption — one data CMK per account
+
+**Every data bucket encrypts SSE-KMS under the data CMK of the account it lives in** — decided
+2026-08-19, by the user, replacing the `security-zone` dimension (the withdrawal note closes this
+section). One uniform alias pattern, `alias/awsds-<env>-data`: the lake's five buckets under
+`alias/awsds-data-data` in Data Governance, each consumer's derived zone under
+`alias/awsds-sandbox-data` and `alias/awsds-dev-data`; Production's arrives with Stage 9
+(`alias/awsds-prod-data`). The `tfstate` keys (Stage 2) and the PKI key (D36) are separate objects on
+purpose — "the account's data CMK" is one key per account for *data*, not a merger of every key in the
+account (a key that also served state and logs could not express "who may read derived data", which is
+D31's whole argument).
+
+**The binding is mechanical and it is per bucket**: each bucket's default-encryption configuration
+points at the account key (the `s3-bucket` module's `kms_key_arn`), so a bucket belongs to exactly one
+key and the key boundary is a bucket boundary. No catalog attribute is involved anywhere in the chain.
+
+**What the single key costs, named so it is a choice** (Stage 5 decision 3's deviation): INT-10's key
+grants — the Production job role and the maintenance role need the drop-box's key — land on the
+**account** key, so at the KMS layer those principals reach every lake bucket. The drop-box's isolation
+therefore rests on the **S3 statements and Lake Formation alone**; the KMS layer separates *accounts*,
+not buckets. Revision trigger: the first dataset whose blast radius argues for a key of its own — S3
+Bucket Keys make re-keying a bucket-level change, not a migration.
+
+**The consumer key is deliberately not the lake's key.** Sharing the lake's key across the account line
+was considered and declined (2026-08-19), for a reason that is measured rather than aesthetic:
+`AllowProductionPickupDecryptViaS3` on the lake key grants `kms:Decrypt` to `awsds-prod-job-exec` with
+**no bucket scoping** — only `kms:ViaService=s3` and the role ARN — so a consumer's derived zone under
+that key would put Production's job role over that account's materialised `restricted` copies, with S3
+as the only remaining barrier. It would also put a cross-account KMS dependency under a local working
+bucket. Per-account keys close both.
+
+**D31 is unchanged and is what the per-account key delivers**: the key policy in each consumer account
+says who may read the copies — `DataScientistAccess` today, the project execution roles from Stage 6 —
+and it delegates *administration* to the account root while withholding every cryptographic action, so
+no IAM policy in the account can grant `Decrypt` behind it.
+
+**Where this rule came from, kept because the correction teaches** (withdrawn 2026-08-19, the user's
+revision): encryption entered the ontology on 2026-08-18 as the LF-Tag `security-zone` (one value,
+`zn-lab`), on the premise that the tag carried the key. It never did: an LF-Tag attaches to catalog
+objects and gates TBAC grants; a CMK is assigned to a bucket by Terraform; **no AWS mechanism connects
+the two** — the tag-to-key link was only a naming convention plus review — and no TBAC expression ever
+used the tag. So the tag, its `zn-lab` value and the `ASSOCIATE` grant on it were removed, and the keys
+were renamed from `awsds-<env>-zn-lab` to `awsds-<env>-data`. Same key objects — an alias rename, no
+re-encryption, no cost change.
 
 ## Catalog — AWS Glue Data Catalog
 
@@ -111,49 +161,14 @@ evaluation.
 
 | Tag key | Description |
 |---|---|
-| `security-zone` | Divides the data into zones for **encryption-key (CMK) assignment** |
 | `classification` | Information classification for **DLP** purposes |
 | `layer` | Where in the data pipeline the dataset sits — its maturity degree |
 | `businessunit` | The owning business unit — **reserved**, no values at N=1 |
 
+A third key, **`security-zone`**, existed 2026-08-18/19 and was withdrawn — encryption is per account
+and carries no catalog dimension (§Encryption holds the model and the withdrawal note).
+
 **Assigning LF-Tags to datasets is the Governance Manager's responsibility.**
-
-### `security-zone`
-
-- `zn-lab` — the laboratory zone.
-
-`security-zone=zn-lab` is the **default for every case, the drop-box included**. One zone means **one
-lake CMK** — `alias/awsds-data-zn-lab` (the alias carries the value verbatim — the hyphen standard exists exactly so tag values and key aliases share one pattern) —
-covering all five buckets. A second zone is a new value plus a new CMK; S3 Bucket Keys make re-keying a
-bucket-level change, not a migration.
-
-**What the single zone costs, named so it is a choice** (Stage 5 decision 3's deviation): INT-10's key
-grants — the Production job role and the maintenance role need the drop-box's key — now land on the
-**zone** key, so at the KMS layer those principals reach every bucket in the zone. The drop-box's
-isolation therefore rests on the **S3 statements and Lake Formation alone**; the KMS layer separates
-*zones*, not buckets. Revision trigger: the first dataset whose blast radius argues for its own zone.
-
-**Scope: the dimension governs the zone wherever the zone's data lands — amended 2026-08-19, by the
-user, at Stage 5 pass 4.** It used to stop at the Data Governance lake buckets, with the consumer
-accounts' derived-zone CMKs declared outside it. That exception is withdrawn: a query result over a
-`zn-lab` table is still `zn-lab` data (D19 practice v — classification inherits, and so does the zone),
-so encryption granularity is this dimension's job in every account rather than a per-bucket decision
-taken twice.
-
-**One CMK per (zone × account), and the second half of that pair is not negotiable.** The lake's key is
-`alias/awsds-data-zn-lab`; the same zone in Sandbox and Development is `alias/awsds-sandbox-zn-lab` and
-`alias/awsds-dev-zn-lab`. Sharing the *lake's* key across the account line was considered and declined in
-the same exchange, for a reason that is measured rather than aesthetic: `AllowProductionPickupDecryptViaS3`
-on the lake key grants `kms:Decrypt` to `awsds-prod-job-exec` with **no bucket scoping** — only
-`kms:ViaService=s3` and the role ARN — so a consumer's derived zone under that key would put Production's
-job role over that account's materialised `restricted` copies, with S3 as the only remaining barrier.
-Two further costs were named: a cross-account KMS dependency under a local working bucket, and an LF-Tag
-governing a bucket no LF-Tag can be assigned to (the derived zone has no catalog object).
-
-**D31 is unchanged and is what the per-account key still delivers**: the key policy in each consumer
-account says who may read the copies — `DataScientistAccess` today, the project execution roles from
-Stage 6 — and it delegates *administration* to the account root while withholding every cryptographic
-action, so no IAM policy in the account can grant `Decrypt` behind it.
 
 ### `classification`
 
@@ -204,7 +219,7 @@ drop-box crawler's inferred tables is fixed at Stage 5 pass 1.
 
 Reserved. No values while N=1; when the second business unit arrives (D35, Stage 14), its values join
 the ontology and carry per-unit segregation — settled 2026-08-17: no separate `unit` key, and (since
-2026-08-18) decoupled from encryption, which is `security-zone`'s job.
+2026-08-18) decoupled from encryption, which is per account (§Encryption).
 
 ## Access control — LF-TBAC
 
@@ -326,14 +341,14 @@ no list, no delete. The crawler (maintenance role, D27) reads it to infer schema
 
 Three principals, three statements, nobody holding two of the three — the asymmetry is what keeps the
 drop-box from becoming a general-purpose exchange bucket (D18/D25). Own bucket `awsds-data-dropbox`,
-under the `zn-lab` CMK (decision 3 — the KMS trade is §`security-zone`'s). Re-uploading a corrected
+under the account's data CMK (decision 3 — the KMS trade is §Encryption's). Re-uploading a corrected
 file is an ordinary overwrite (`PutObject` covers it; versioning keeps the prior copy internally); the
 writer's confirmation is the API response, since read-back does not exist.
 
 **The writer's permission is two-sided, because the write crosses the account line (2026-08-19,
 Stage 5 pass 4c).** The three statements above are the *resource* half; cross-account evaluation also
 requires an allow in the writer's own identity policy, so `DataScientistAccess` carries the mirror —
-`PutObject` on the dated prefix, plus `GenerateDataKey`/`Decrypt` on the zone key via S3 — in
+`PutObject` on the dated prefix, plus `GenerateDataKey`/`Decrypt` on the lake's data key via S3 — in
 `identity/sso/`. Each half is scoped by the other: the bucket policy names the persona roles, the
 permission set names the one prefix and the one key. The asymmetry is unchanged — the identity half
 grants no read-back, no list, no delete.
@@ -367,10 +382,10 @@ Stage 5 pass 4 — with five controls:
   `ReadDerivedZoneObjects` grants `s3:GetObject` on `derived/*`), because the persona is the
   entitlement grain (decision 6) — so a colleague reading a colleague's copy crosses no line the SQL
   path had drawn. The prefix governs where a copy *lands*, not who may read it; what keeps other
-  personas out is the zone CMK's key policy (D31);
+  personas out is the account data CMK's key policy (D31);
 - **lifecycle expiry** (30 days) — the shadow lake never silently becomes permanent;
 - a **dedicated CMK** per consumer account whose key policy says who may read the copies (D31) —
-  `alias/awsds-<env>-zn-lab`, the zone's key in that account (§`security-zone`);
+  `alias/awsds-<env>-data`, that account's data key (§Encryption);
 - the prefixes are pre-declared **Macie + CloudTrail data-event scope** for Stage 11.
 
 **Three prefix families in one bucket, and `scratch` is one of them rather than a bucket of its own**

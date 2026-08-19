@@ -164,7 +164,8 @@ data "aws_iam_policy_document" "data_scientist" {
   # somebody built, never a pattern a future workgroup could wander into. What the scoping
   # buys: a query in an unscoped workgroup chooses its own result location, and these two
   # carry EnforceWorkGroupConfiguration = true, so output lands in results/ of the derived
-  # bucket below - under the zone CMK, inside Stage 11's Macie scope (D19 practice i). The
+  # bucket below - under the account's data CMK, inside Stage 11's Macie scope (D19 practice
+  # i). The
   # `primary` workgroup is absent from this list, and that absence is what denies it.
   #
   # Two of the eight earn their line: GetQueryResults fetches through Athena but ALSO reads
@@ -196,9 +197,9 @@ data "aws_iam_policy_document" "data_scientist" {
   # decision 6 settled: WRITE to derived/ is per-principal (the policy variable), READ is
   # persona-wide - the persona is the entitlement grain, so a colleague reading a colleague's
   # materialised result crosses no line SQL had not already erased between them. What keeps
-  # OTHER personas out is not this document: it is the zone CMK, whose key policy names this
-  # role and nobody else (D31). Same-account, so the key policy alone decides - which is why
-  # no kms statement for the derived zone appears here.
+  # OTHER personas out is not this document: it is the account's data CMK, whose key policy
+  # names this role and nobody else (D31). Same-account, so the key policy alone decides -
+  # which is why no kms statement for the derived zone appears here.
   #
   # WHY results/ IS WRITABLE by a human who never chooses to write there: Athena stages query
   # results WITH THE CALLER'S CREDENTIALS into the workgroup's enforced location. No PutObject
@@ -269,7 +270,7 @@ data "aws_iam_policy_document" "data_scientist" {
   # ------------------------------------------------------------------------------------------
   # THE DROP-BOX WRITE - THE IDENTITY HALF OF A CROSS-ACCOUNT PERMISSION (D18, D25; Stage 5
   # pass 4c). The resource half has existed since pass 1: the drop-box bucket policy's
-  # AllowInteractiveWriterPutOnly and the zn-lab key policy's AllowDropBoxWritersViaS3, both
+  # AllowInteractiveWriterPutOnly and the lake data-key policy's AllowDropBoxWritersViaS3, both
   # reaching this role through the Interactive account roots. Cross-account evaluation
   # requires BOTH policies to allow - the fact stage 6.2's reading missed when it called this
   # statement's absence "correct rather than missing" (corrected 2026-08-19, in the stage
@@ -290,7 +291,7 @@ data "aws_iam_policy_document" "data_scientist" {
   # keeps this role away from the lake key outside an S3 call - the same condition the key
   # policy itself carries, each side scoping the other.
   statement {
-    sid    = "UseLakeZoneKeyViaS3"
+    sid    = "UseLakeDataKeyViaS3"
     effect = "Allow"
 
     actions = [
@@ -298,7 +299,7 @@ data "aws_iam_policy_document" "data_scientist" {
       "kms:GenerateDataKey",
     ]
 
-    resources = [local.lake_zone_key_arn]
+    resources = [local.lake_data_key_arn]
 
     condition {
       test     = "StringEquals"

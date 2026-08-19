@@ -205,25 +205,31 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   to two profiles.
 - **Stage 5 passes 0-3 DONE (2026-08-18/19) — the governed lake exists, granted and shared.** Six
   decisions taken (`docs/GOVERNANCE.md` is the one copy of the ontology + grant rules). Applied: five
-  `awsds-data-*` buckets under one CMK, `raw`+`curated` registered, 3 LF-Tag keys, 3 databases,
+  `awsds-data-*` buckets under one CMK, `raw`+`curated` registered, 2 LF-Tag keys (3 until the
+  2026-08-19 revision), 3 databases,
   `curated.sample_trades` (Iceberg, EMPTY, `restricted` column) + optimizer, the maintenance role + 2
   never-run crawlers + a Glue security configuration; the GM's own grants; the 2 TBAC shares (4 RAM
   shares `ACTIVE`, 0 invitations → **INT-11 closed**). The findings that outlived the passes are
   Lessons 27-30 below and the grant rules in `docs/GOVERNANCE.md`.
 - **Stage 5 pass 4a/4b/4c APPLIED 2026-08-19 — the consumer side exists and the persona can query.**
   `consumer-data` v0.1.0 (the tree's first *nested* module-by-tag) + `s3-bucket` v0.3.0, Recipe B as a
-  3-commit chain, Recipe D per account. Per consumer: `alias/awsds-<env>-zn-lab` CMK, `awsds-<env>-derived`
+  3-commit chain, Recipe D per account. Per consumer: `alias/awsds-<env>-data` CMK, `awsds-<env>-derived`
   (30-day expiry), enforced `awsds-<env>-athena` (10 GiB → `results/`), own `DataLakeSettings`, 2 links,
   4 re-grants. Then **4c**: 7 statements in `DataScientistAccess` (`1 changed`, re-plan `No changes`, both
   provisioned roles read back with `${aws:userid}` intact) — Athena run family on the 2 workgroup ARNs,
   derived-zone scoping (write per-user, read persona-grain, delete `scratch/` only), **and the drop-box
   identity half**; `identity/sso/` now reads 3 `data` states (`backend.py` emits `data_consumers`+`lake`),
-  and the lake key ARN lives in state, never tracked. Register **13 rows / 25 triples**. Findings:
+  and the lake key ARN lives in state, never tracked. Register **13 rows / 24 triples**. Findings:
   INT-11's reset hazard is **symmetric**, `DL-6` reported `pass` over two failing accounts
   (**Lesson 31**), a cross-account write needs **BOTH** policy halves (**Lesson 28 amended**), and
   `counterparty` is absent in BOTH consumers → verification (x)'s exclusion half closed early. Settled:
-  **`scratch` is a PREFIX** (D13's wording, not D19's), **CMK per (zone × account)** (user).
+  **`scratch` is a PREFIX** (D13's wording, not D19's).
   **Owed: 4d** (behavioural proofs, tunnel), **4e** (the SCP amendment, last), pass 6.
+- **`security-zone` WITHDRAWN 2026-08-19 (user revision, same day it was applied): one data CMK per
+  account** — LF-Tag + `ASSOCIATE` grant destroyed, 3 keys renamed in place to `alias/awsds-<env>-data`
+  (`data-data`/`sandbox-data`/`dev-data`; Stage 9's future: `prod-data`), `consumer-data` → **v0.2.0**,
+  Sid `UseLakeZoneKeyViaS3` → `UseLakeDataKeyViaS3` (`DL-12` follows). The one copy: `GOVERNANCE.md`
+  §Encryption. No re-encryption, count unchanged; D31 intact. Detail: `history.md`.
 - **Stage 6 NOT open; its decisions 3, 4 and 5 are CLOSED (2026-08-19, doc-only — no AWS call;
   [log](docs/log/log-stage-06-unified-studio.md) initialized early because the stage file homes such
   decisions there).** Athena Spark off by **SCP** `athena:StartSession`/`UpdateSession` at **1.6 — not

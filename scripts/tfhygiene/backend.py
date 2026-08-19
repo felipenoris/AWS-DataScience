@@ -152,7 +152,7 @@ DATA_PRODUCERS = ["production"]
 # expected to grow; what it buys is that the emissions below have the same shape as every
 # other cross-account read in this tree instead of a special case. Two of them: the `lake` map
 # goes to each consumer's data/ slice (pass 4) and to identity/sso (pass 4c, for the drop-box
-# prefix and the lake zone key the persona's write statements name).
+# prefix and the lake data key the persona's write statements name).
 DATA_LAKE = ["data-governance"]
 
 # Subnets anchor on ZONE IDS, never on AZ names and never on list position (Stage 3 step 1.5,

@@ -467,7 +467,7 @@ def main(argv: list) -> int:
                 if s.get("Effect") == "Allow"
             }
             persona_grants.append(
-                (p, role, "WriteIngestionDropBox" in sids, "UseLakeZoneKeyViaS3" in sids)
+                (p, role, "WriteIngestionDropBox" in sids, "UseLakeDataKeyViaS3" in sids)
             )
 
     # ------------------------------------------------------------------- EFS, the VPN home
@@ -825,7 +825,7 @@ def main(argv: list) -> int:
         if not has_put:
             missing.append("WriteIngestionDropBox (s3:PutObject on the dated prefix)")
         if not has_key:
-            missing.append("UseLakeZoneKeyViaS3 (GenerateDataKey/Decrypt via S3)")
+            missing.append("UseLakeDataKeyViaS3 (GenerateDataKey/Decrypt via S3)")
         if missing:
             checks.fail(
                 "DL-12",

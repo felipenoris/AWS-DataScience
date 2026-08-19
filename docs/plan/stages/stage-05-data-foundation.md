@@ -31,7 +31,7 @@ sharing shape gets proven before Stage 9 repeats it for Production.
 | Where | What | Layer |
 |---|---|---|
 | `data-governance/data/` (new) | KMS CMKs, the four lake buckets + drop-box, Glue catalog, crawlers + the maintenance role, Iceberg, Lake Formation (settings, registrations, LF-Tags), the cross-account shares | `[P]` |
-| `sandbox/data/`, `development/data/` (**applied 2026-08-19**, one module: `consumer-data` v0.1.0) | the account's own `DataLakeSettings`, Athena workgroup, LF resource links + the local re-grants, the derived-zone bucket with its three prefix families, the D31 CMK (`alias/awsds-<env>-zn-lab`) | `[P]` |
+| `sandbox/data/`, `development/data/` (**applied 2026-08-19**, one module: `consumer-data` v0.1.0 → v0.2.0 with the same-day revision) | the account's own `DataLakeSettings`, Athena workgroup, LF resource links + the local re-grants, the derived-zone bucket with its three prefix families, the D31 CMK (`alias/awsds-<env>-data` — `-zn-lab` until the revision that withdrew `security-zone`) | `[P]` |
 | `identity/sso/` (**existing slice, amended 2026-08-19, pass 4c**) | the persona's identity-side grants: the Athena run family on the two workgroup ARNs, the derived zone's three prefix families, and the drop-box write's identity half + its KMS pair | `[P]` |
 | Management + Audit, by hand | Security Hub delegated administration and org-wide enablement (step 13) | — (no slice, no profile) |
 
@@ -101,7 +101,7 @@ all 18 statements with the `$${aws:userid}` policy variable intact): the Athena 
 workgroup ARNs, the derived zone's bucket/read/write/delete scoping (write per-principal, read at
 decision 6's persona grain, delete in `scratch/` only — `results/` and `derived/` expire by lifecycle
 alone), and **the drop-box write's identity half** — `s3:PutObject` on the dated prefix plus
-`GenerateDataKey`/`Decrypt` on the zone key via S3 — the half whose absence 6.2's correction explains.
+`GenerateDataKey`/`Decrypt` on the lake's data key via S3 — the half whose absence 6.2's correction explains.
 One Stage 2 ledger line was **corrected rather than delivered**: "s3:GetObject on the governed lake
 through the share" would be D13's bypass — vended access needs no S3 grant at all. Every debt below
 that needs a session now waits only on the tunnel (4d).
@@ -179,11 +179,11 @@ Interactive-OU roles, dated prefix, no read, no list, no delete. **Three stateme
 3. the **reader** statement — the maintenance role (D27): `GetObject`/`ListBucket` on the same prefixes,
    so the drop-box crawler can read what the writer wrote in order to infer its schema.
 
-All three principals need KMS on the zone key, and the split is the account line: principals **1 and 2**
+All three principals need KMS on the lake's data key, and the split is the account line: principals **1 and 2**
 are cross-account and need statements ON the key policy — `AllowDropBoxWritersViaS3` for the writers
 (`GenerateDataKey` for the SSE-KMS `PutObject`, `Decrypt` for a multipart upload) and
 `AllowProductionPickupDecryptViaS3` for the pickup — each requiring a mirroring identity-side allow in the
-writer's own account (pass 4c's `UseLakeZoneKeyViaS3`; Stage 9 owes the pickup's). Principal **3** is
+writer's own account (pass 4c's `UseLakeDataKeyViaS3`; Stage 9 owes the pickup's). Principal **3** is
 same-account: the root delegation plus its inline policy cover it, which is why no key-policy row names
 it. This is the half that is forgotten until the `AccessDenied` arrives, and the error text will point at
 S3, not at KMS. **Which container the drop-box is — its own bucket with its own CMK, or a prefix of `raw`
@@ -206,9 +206,11 @@ This is the smallest piece of real data governance in the plan and it costs noth
 why it is pass 0, on paper, before any apply. The owner is the **governance manager** (step 7.4).
 
 **The ontology's one copy lives in [`docs/GOVERNANCE.md`](../../GOVERNANCE.md) since 2026-08-18
-(decisions 1-3): keys `classification`, `layer` (formerly `zone`, gaining a `dropbox` value),
-`security-zone` (new — the CMK carrier) and `businessunit` (formerly `domain`, reserved). Text below
-predating the rename reads `zone` accordingly.** **The ontology carries two dimensions from day one — `classification` and `zone` (`raw`/`curated`; added
+(decisions 1-3): keys `classification`, `layer` (formerly `zone`, gaining a `dropbox` value) and
+`businessunit` (formerly `domain`, reserved). A fourth key, `security-zone` ("the CMK carrier"), was
+created with the decision and **withdrawn 2026-08-19 by the user's revision** — no AWS mechanism ties an
+LF-Tag to a CMK, and encryption is per account (`GOVERNANCE.md` §Encryption). Text below predating the
+rename reads `zone` accordingly.** **The ontology carries two dimensions from day one — `classification` and `zone` (`raw`/`curated`; added
 2026-08-17)** — orthogonal by design: `zone` says where in the pipeline a table sits, `classification` says
 what its content demands, and every grant below is an *expression* over both (step 6.1). Sandbox and
 Development read **both zones** — a deliberate deviation from the raw-zone guidance, decided 2026-08-17 and
@@ -428,7 +430,8 @@ wrong.** The persona and the bucket sit in different accounts, and cross-account
 identity policy — the bucket-policy half alone was never a working write, and a 4d attempt would have
 returned `AccessDenied` with nothing misconfigured on the resource side. The reading itself stands —
 on 2026-08-19 the sets carried no S3 allow — but the absence was a debt, not a design. 4c pays it:
-`WriteIngestionDropBox` + `UseLakeZoneKeyViaS3` in `DataScientistAccess`, PutObject on the dated prefix
+`WriteIngestionDropBox` + `UseLakeDataKeyViaS3` (named `UseLakeZoneKeyViaS3` until the 2026-08-19
+revision) in `DataScientistAccess`, PutObject on the dated prefix
 and the two KMS actions via S3, mirroring the resource side exactly. The error's shape is Lesson 28's —
 reach is an intersection and the halves sit in different slices — applied to plain S3 across an account
 line, where same-account intuition says one half suffices.)*
@@ -629,7 +632,7 @@ So the local prefixes get designed rather than left over.
 - the derived bucket (`awsds-<env>-derived`), prefixes **per principal on write**
   (`…/derived/${aws:userid}/`), so a materialised result can only land under its author's prefix — **the
   read is persona-wide** (applied at 4c, decision 6's grain), which makes the derived zone containment
-  rather than entitlement, with the zone CMK (D31) as the control that keeps other personas out;
+  rather than entitlement, with the account's data CMK (D31) as the control that keeps other personas out;
 - a **lifecycle expiry** (30 days is a reasonable start), so the shadow lake does not silently become
   permanent;
 - **its own KMS CMK** — D31, and the only default-deny practice on the list: separate from the account's
@@ -637,9 +640,10 @@ So the local prefixes get designed rather than left over.
   derived data" without breaking everything else that uses it. The key policy grants `kms:Decrypt` to
   `DataScientistAccess` and to nobody else today; the `DeploymentManagerAccess` set of D31 is deliberately
   absent, as is any future broad read persona.
-  **The alias is `alias/awsds-<env>-zn-lab`, not `-derived` — amended 2026-08-19, by the user** (decision
-  2's row): encryption granularity is the `security-zone` dimension's job in every account, and a query
-  result over a `zn-lab` table is still `zn-lab` data. One CMK per (zone × account). **And the applied
+  **The alias is `alias/awsds-<env>-data`, not `-derived` — amended twice 2026-08-19, by the user**: first
+  to `-zn-lab` (the zone framing), then, when the revision withdrew the `security-zone` dimension, to the
+  account pattern — **one data CMK per account** (`GOVERNANCE.md` §Encryption), uniform with the lake's.
+  **And the applied
   policy delegates *administration* to the account root while withholding every cryptographic action** —
   the module's default `kms:*` root statement would have let any IAM policy in the account grant
   `Decrypt`, which is the state D31 was created by;
@@ -647,9 +651,9 @@ So the local prefixes get designed rather than left over.
   2026-08-19 as pass 4c, in `identity/sso/` rather than in this slice** (the ARNs are read from this
   slice's state, which is why 4c is sequenced after it). The per-user `s3:GetObject` variant weighed here
   on 2026-08-17 is **DECLINED**: decision 6 put the grain at the role, so read is persona-wide and a
-  colleague can read a materialised copy — accepted, with the zone CMK (D31) as the control that keeps
-  other personas out. The CMK stays persona-level either way (one key cannot express per-user), a residual
-  written here rather than discovered;
+  colleague can read a materialised copy — accepted, with the account's data CMK (D31) as the control that
+  keeps other personas out. The CMK stays persona-level either way (one key cannot express per-user), a
+  residual written here rather than discovered;
 - the prefixes recorded as **in scope for Macie and CloudTrail data events** in Stage 11, because this is
   where sensitive data will actually accumulate — *outside* the account Macie primarily watches, which is
   exactly why the scope has to be written down.
@@ -767,7 +771,7 @@ own:
 
 | Item | Cost | Note |
 |---|---|---|
-| KMS CMKs (1 `zn-lab` + 2 derived) | ~USD 1/key-month, ~USD 3/month total | floor row (`docs/plan/cost-model.md`); count settled 2026-08-18 by decisions 2/3 — the drop-box shares `zn-lab` |
+| KMS CMKs (1 lake + 2 derived — one data CMK per account) | ~USD 1/key-month, ~USD 3/month total | floor row (`docs/plan/cost-model.md`); count settled 2026-08-18 by decisions 2/3 — the drop-box shares the lake account's key |
 | Lake + derived + scratch storage | ~USD 1/month at lab scale | S3 row of the floor |
 | Crawler runs | USD 0.44/DPU-h, 10-min minimum (`docs/PRICING.md` §5) | event-driven/on-demand only — 3.6 |
 | Iceberg auto-compaction runs | USD 0.44/DPU-h (`docs/PRICING.md` §5, measured) | decision 4 — the optimizer runs D27's carve-out names; config free at rest |
@@ -789,27 +793,30 @@ the decision-maker.
    is named in `GOVERNANCE.md` (an unclassified arrival is readable until reclassified; Macie is the
    Stage 11 backstop). `curated` carries no database default — an untagged table there matches no TBAC
    expression, fail-closed by absence. **The ontology was renamed with the decision**: `zone` →
-   **`layer`** (gaining a `dropbox` value), `domain` → **`businessunit`**, plus the new
-   **`security-zone`** key (decision 2's carrier).
+   **`layer`** (gaining a `dropbox` value), `domain` → **`businessunit`**, plus a new
+   **`security-zone`** key (decision 2's carrier) — **withdrawn 2026-08-19 with decision 2's second
+   amendment below**.
 2. **How many data domains, therefore how many CMKs** (1.1) — **DECIDED 2026-08-18, by the user,
    reframed: CMK granularity is the `security-zone` dimension's job**
    ([`docs/GOVERNANCE.md`](../../GOVERNANCE.md)), decoupled from business segregation. One zone today —
-   `zn-lab`, the default for every lake bucket **including the drop-box** — so **one lake CMK**,
-   `alias/awsds-data-zn-lab`; a second zone is a new value plus a new key, and Bucket Keys keep re-keying
-   a bucket-level change. Business segregation stays the renamed **`businessunit`** dimension's job at
+   `zn-lab`, the default for every lake bucket **including the drop-box** — so **one lake CMK**;
+   Business segregation stays the renamed **`businessunit`** dimension's job at
    N>1 (settled 2026-08-17: no separate `unit` key). **AMENDED 2026-08-19, by the user, at pass 4: the
-   dimension does not stop at the lake's account line.** A query result over a `zn-lab` table is still
-   `zn-lab` data, so the consumer accounts' derived-zone CMKs are inside the zone rather than outside it,
-   and are named for it — `alias/awsds-sandbox-zn-lab`, `alias/awsds-dev-zn-lab`. **One CMK per (zone ×
-   account)**: sharing the *lake's* key across the boundary was declined because
-   `AllowProductionPickupDecryptViaS3` carries no bucket scoping. `GOVERNANCE.md` §`security-zone` holds
-   the amended scope; the KMS count is unchanged, only the naming.
+   dimension does not stop at the lake's account line** — the consumer accounts' derived-zone CMKs joined
+   it, one CMK per (zone × account); sharing the *lake's* key across the boundary was declined because
+   `AllowProductionPickupDecryptViaS3` carries no bucket scoping. **AMENDED AGAIN 2026-08-19, later the
+   same day, by the user: the `security-zone` dimension is WITHDRAWN.** It rested on the premise that the
+   CMK was associated with an LF-Tag, and no AWS mechanism makes that association — the key is assigned
+   per bucket by Terraform. The rule's final form: **one data CMK per account**, aliases
+   `alias/awsds-data-data`, `alias/awsds-sandbox-data`, `alias/awsds-dev-data` (`GOVERNANCE.md`
+   §Encryption holds the model). The declined lake-key sharing stays declined on the same measurement;
+   the KMS count never moved — both amendments renamed keys, neither created one.
 3. **The drop-box container** (1.4) — **DECIDED 2026-08-18, by the user: own bucket
-   (`awsds-data-dropbox`), sharing the `zn-lab` CMK** — a deviation from the own-CMK recommendation that
-   follows from decision 2's one-zone model. The cost, named: INT-10's key grants (the Production job
-   role, the maintenance role) land on the **zone** key, reaching every bucket in the zone at the KMS
+   (`awsds-data-dropbox`), sharing the lake account's CMK** — a deviation from the own-CMK recommendation
+   that follows from decision 2's one-key model. The cost, named: INT-10's key grants (the Production job
+   role, the maintenance role) land on the **account** key, reaching every lake bucket at the KMS
    layer — the drop-box's isolation rests on the S3 statements and LF alone (`GOVERNANCE.md`
-   §`security-zone`). Revision trigger: the first dataset whose blast radius argues for its own zone.
+   §Encryption). Revision trigger: the first dataset whose blast radius argues for a key of its own.
 4. **The Iceberg maintenance path** (4.2) — **DECIDED 2026-08-18, by the user, before pass 1: Glue
    automatic compaction** under the maintenance role (no scheduler needed in a no-compute account) — the
    table-optimizer runs the D27 carve-out already names. Athena scheduled `OPTIMIZE`/`VACUUM` declined

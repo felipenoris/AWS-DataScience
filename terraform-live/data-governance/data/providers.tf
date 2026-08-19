@@ -26,7 +26,7 @@ provider "aws" {
 # they create nothing, so they carry no default_tags, and the profiles arrive from the
 # generated tfvars (PROFILES in scripts/tfhygiene/backend.py), never as literals here.
 #
-# Why the reads exist at all: the drop-box statements and the zn-lab key policy name
+# Why the reads exist at all: the drop-box statements and the data-key policy name
 # cross-account principals, and aws/INDEX.md rule 1 keeps account ids out of tracked files -
 # so each id is resolved live from the profile that already names the account. An id pasted
 # here would be the exact copy Lesson 3 warns about.
