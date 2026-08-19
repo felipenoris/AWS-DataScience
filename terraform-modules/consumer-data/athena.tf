@@ -39,12 +39,12 @@ resource "aws_athena_workgroup" "this" {
       # designed for it, instead of in a second, undesigned copy zone.
       output_location = "s3://${local.derived_bucket_name}/results/"
 
-      # SSE-KMS under the zone's key in the account, stated rather than inherited from the bucket
+      # SSE-KMS under the account's data key, stated rather than inherited from the bucket
       # default: the workgroup writes the object, so the workgroup is where the encryption
       # choice is visible to whoever reads this file. Same key, so the two cannot disagree.
       encryption_configuration {
         encryption_option = "SSE_KMS"
-        kms_key_arn       = module.zone_key.key_arn
+        kms_key_arn       = module.data_key.key_arn
       }
     }
   }

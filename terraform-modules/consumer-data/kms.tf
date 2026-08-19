@@ -1,17 +1,15 @@
-# The zone CMK, in THIS account (Stage 5 pass 4, 2026-08-19 - the user's synthesis).
+# The account data CMK (Stage 5 pass 4, 2026-08-19; revised the same day - the security-zone
+# dimension withdrawn, encryption is per ACCOUNT).
 #
-# WHY THE NAME CARRIES THE ZONE AND NOT THE WORD "derived". Encryption granularity is the
-# `security-zone` dimension's job (Stage 5 decision 2, docs/GOVERNANCE.md) and that rule does
-# not stop at the lake's account line: the derived copy of a zn-lab table is still zn-lab data
-# - D19 practice (v) says the output of a query over `restricted` data IS `restricted`, and a
-# copy that inherits the classification inherits the zone with it. So the alias is
-# alias/awsds-<env>-zn-lab, matching alias/awsds-data-zn-lab in the lake, and a second zone is
-# a second key HERE TOO, by the same rule rather than by a new decision.
+# ONE DATA CMK PER ACCOUNT (docs/GOVERNANCE.md "Encryption"): this account's data buckets
+# encrypt under this account's key. The alias is alias/awsds-<env>-data, the same pattern as
+# the lake's alias/awsds-data-data - uniform because the rule is uniform, not because a
+# catalog attribute carries it: no AWS mechanism ties a tag to a CMK, and the binding is the
+# bucket's default-encryption configuration below.
 #
-# AND IT IS A DIFFERENT KEY FROM THE LAKE'S, DELIBERATELY - same zone, different account. The
-# alternative considered and declined (2026-08-19) was to encrypt these buckets with the lake's
-# own alias/awsds-data-zn-lab. Three things decided against it, and the second is the one that
-# matters:
+# AND IT IS A DIFFERENT KEY FROM THE LAKE'S, DELIBERATELY. The alternative considered and
+# declined (2026-08-19) was to encrypt these buckets with the lake's own key. Two things
+# decided against it, and the second is the one that matters:
 #
 #   - it puts a CROSS-ACCOUNT dependency under a local working bucket: every read of a query
 #     result here becomes a KMS call into the account nobody signs into;
@@ -19,21 +17,26 @@
 #     awsds-prod-job-exec with NO bucket scoping - only kms:ViaService=s3 and the role ARN. Put
 #     these buckets under that key and Production's job role holds Decrypt over this account's
 #     materialised `restricted` results, with the S3 layer as the only thing left standing.
-#     D31 exists precisely because "a prefix deny-list does not survive forgetting";
-#   - an LF-Tag attaches to a database, table or column, and the derived zone has none of the
-#     three - so `security-zone` would be governing a bucket no tag can ever be assigned to.
+#     D31 exists precisely because "a prefix deny-list does not survive forgetting".
 #
 # WHAT THE SPLIT COSTS, said here rather than discovered: the key policy below has to be kept
 # in step with the lake's when a new principal legitimately reads governed data in this
 # account. That is one file, in one module, applied to every consumer - which is the direction
 # Lesson 14 asks for.
 
-module "zone_key" {
+# The module address moved with the 2026-08-19 revision (zone_key -> data_key); the block
+# keeps the applied key object in place and can be dropped once every caller has applied.
+moved {
+  from = module.zone_key
+  to   = module.data_key
+}
+
+module "data_key" {
   # checkov:skip=CKV_TF_1:pinned by git TAG by convention (conventions §6, Stage 3 step 1.1a) - a repository-internal tag only the repo owner can move
   source = "git::git@github.com:felipenoris/AWS-DataScience.git//terraform-modules/kms-key?ref=kms-key-v0.1.0"
 
-  alias_name  = "awsds-${var.env}-zn-lab"
-  description = "zn-lab security zone in this account - SSE-KMS for the derived zone (query results, materialised copies, notebook scratch)"
+  alias_name  = "awsds-${var.env}-data"
+  description = "Account data CMK - SSE-KMS for the derived zone (query results, materialised copies, notebook scratch)"
 
   # THE POLICY IS PASSED, AND ITS SHAPE IS THE WHOLE OF D31. A permission set enumerates; a key
   # policy is default-deny, which is what makes it survive somebody forgetting to update a

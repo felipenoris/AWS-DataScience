@@ -11,14 +11,14 @@ output "derived_bucket_arn" {
   value       = module.derived.bucket_arn
 }
 
-output "zone_key_arn" {
-  description = "The account's zn-lab CMK. D31's read control: Stage 6 adds the project execution roles to its policy as a second Principal, which is the extension point step 9.3 asks for."
-  value       = module.zone_key.key_arn
+output "data_key_arn" {
+  description = "The account's data CMK. D31's read control: Stage 6 adds the project execution roles to its policy as a second Principal, which is the extension point step 9.3 asks for."
+  value       = module.data_key.key_arn
 }
 
-output "zone_key_alias" {
-  description = "alias/awsds-<env>-zn-lab - the security-zone value carried verbatim, same pattern as the lake's."
-  value       = module.zone_key.alias_name
+output "data_key_alias" {
+  description = "alias/awsds-<env>-data - one data CMK per account, same pattern as the lake's."
+  value       = module.data_key.alias_name
 }
 
 output "athena_workgroup_name" {
