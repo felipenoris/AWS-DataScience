@@ -94,7 +94,7 @@ SSM-resolved AMI and `user_data_replace_on_change` both destroy on schedule, bre
 client config silently (Lesson 4).
 
 **Losing a copy, revoking a device, rotating the host pair:**
-[the keys runbook](../../../docs/plan/runbooks/vpn-keys.md). Its one rule — loss is answered
+[the VPN runbook, Part K](../../../docs/plan/runbooks/vpn.md). Its one rule — loss is answered
 by **recovery** (the `[P]` secret holds the key), never by a new key.
 
 ## Applying it

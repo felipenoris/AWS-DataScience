@@ -129,7 +129,7 @@ and every instance the `[D]` slice ever boots reads the key), and **a reference 
 what it names outlives the thing using it**: after step 8.3 an address that changed would deny every
 persona every API call until each client config and the permission-set fragment were edited together.
 The **value** in that secret is never Terraform's — it is put there by the user at enrollment and read by
-the host at first boot ([`docs/plan/runbooks/vpn-keys.md`](../docs/plan/runbooks/vpn-keys.md) owns every
+the host at first boot ([`docs/plan/runbooks/vpn.md`](../docs/plan/runbooks/vpn.md) Part K owns every
 event that touches it).
 
 Three of them exist because nothing else can enforce their rule: **no `.tf` in this tree may declare

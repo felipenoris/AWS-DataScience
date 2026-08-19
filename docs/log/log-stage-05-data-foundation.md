@@ -1489,6 +1489,88 @@ on every commit, tflint/checkov/ruff included; `terraform validate` clean in all
   place deliberately this sitting: removing them is a separate diff with nothing else in it, which is how
   a state-address change should be reviewed.
 
+## 2026-08-19 — Pass 4d opened: the host's first start met a capacity wall, the topology was read, and the VPN runbooks were unified
+
+*Provenance: **this entry is Claude's**, written on the user's request in the same sitting. **The one
+AWS write is the user's hand** — two `ec2:StartInstances` attempts, as the infrastructure user in
+`Sandbox` (`InfrastructureAccess`); everything else below is a read-only call. The error message is
+the user's paste, verbatim. No apply, no policy change, no grant.*
+
+### The sitting's decision: start the host, not the account
+
+Pass 4d's proofs all ride the tunnel, and the session opened with the question *"tenho que rodar o
+make up para sandbox?"*. The answer, measured against `scripts/tfhygiene/layers.py` and both
+dry-runs: **no** — `make up ENV=sandbox` would also apply the two `[E]` slices (`egress/` at
+USD 0.160/h, `probes/` at 0.0084/h) against the tunnel's own 0.0042/h, and **no 4d proof runs inside
+a VPC**: everything leaves the laptop, transits the host's masquerade and exits through the Elastic
+IP or the `[P]` gateway endpoints. The NAT and the interface endpoints serve the *private* subnets
+(their route is installed only in the private route tables), which nothing occupies until Stage 6.
+So the sitting used the host-only start — now §S5 of the unified runbook — and the `[E]` slices
+stayed down.
+
+### The start, and the first `InsufficientInstanceCapacity` this project has met
+
+The user's first attempt returned, verbatim:
+
+```
+aws: [ERROR]: An error occurred (InsufficientInstanceCapacity) when calling the StartInstances operation (reached max retries: 2): Insufficient capacity.
+```
+
+The discriminating reads (Claude, read-only): the instance was left cleanly `stopped` — a failed
+start has no intermediate state to undo — and `describe-instance-type-offerings` shows **`t4g.nano`
+IS offered in the host's AZ**, so this was transient pool exhaustion, not a configuration defect. A
+stopped `[D]` instance holds no hardware; every start re-contests capacity like a fresh launch, and
+a one-AZ Graviton nano is where the pool runs dry first — the hidden price of D11's "pay nothing
+while idle", now measured rather than assumed. **The user's retry succeeded minutes later**:
+`running`, same type, same AZ, launch 23:04:41Z. `./aws/vpn.py` read **0 FAILED** with `VP-2`
+confirming the Elastic IP reassociated to the host — every client config untouched, which is what
+that `[P]` allocation exists to guarantee. The remediation ladder (retry; then `t4g.micro` by
+deliberate apply; never an AZ move) is written into §S5 rather than left here.
+
+### The topology, read rather than believed — and one 4d probe corrected by it
+
+Three readings taken while answering *"o egress não é necessário para a VPN?"*, all now §S2/§S3 of
+the runbook:
+
+- the host sits in the **public** subnet; its route table sends `0.0.0.0/0` to the **IGW** — no NAT
+  anywhere on the path;
+- the same route table carries the **two `[P]` gateway endpoints** (S3, DynamoDB), so tunnel traffic
+  **splits by destination**: S3 arrives at a bucket as `aws:SourceVpce`, every other API as
+  `aws:SourceIp` = the Elastic IP. The drop-box bucket policy, read back, mirrors the split exactly —
+  its `DenyOutsideTrustedNetworks` names that gateway endpoint id and that `/32`, INT-05 restated as
+  policy;
+- `source_dest_check` is **on**, deliberately, over a forwarding host — everything is masqueraded, so
+  the check stays as anti-spoofing and a broken masquerade fails visibly at the host.
+
+**The finding that changes a 4d probe:** the same bucket-policy condition carries an
+`aws:PrincipalAccount` branch admitting the lake account's own principals **from any network** — so
+the carve-out pair's negative half ("a caller satisfying no branch is denied") proves nothing if run
+as that account's `InfrastructureAccess`. It must run as a principal from a **different** account,
+off-tunnel; the on-tunnel persona pandas probe then fails by *implicit* deny (D13, no S3 grant
+anywhere), and the two denials carry different wording — the pair Lesson 13 asks for.
+
+### The repository work, at the user's request
+
+`vpn-keys.md` and `vpn-client.md` **unified into [`runbooks/vpn.md`](../plan/runbooks/vpn.md)** —
+their content kept whole as Parts K and C (procedures keep their letters, sections gained `K`/`C`
+prefixes), plus a new **Part S** written from this sitting's readings: the components table, the
+measured topology, the VPN-vs-`egress/` split, why persona work needs the tunnel, and **§S5 —
+start/stop** with the Name-tag lookup (the id is never written down: a roster change replaces the
+host), the guarded one-liner (Lesson 25's empty-id trap named), and the capacity note above.
+References updated in `CLAUDE.md` (two routing rows merged into one), `README.md`,
+`docs/GENERAL_PLAN.md`, `docs/ORGANIZATION.md`, `stage-04-vpn.md` (historical mention annotated, not
+rewritten), `scripts/check-tfvars-shape.py` (two error strings), and one link target in the Stage 4
+log (text kept, href only). One gap written down for the next sitting: **no `awsds-scientist-dev`
+profile exists** in the local CLI config — the Development-side persona proofs need it, a local
+config edit, no AWS change.
+
+### Not done, and owed by name
+
+Every 4d proof is still owed — the tunnel was not yet up when this entry was written; the host is
+`running` and waiting. Then 4e (the SCP amendment, last, through battery phase 4b) and pass 6
+(Security Hub). The stage's debt list is unchanged by this sitting except in one respect: the
+carve-out pair's negative half now has its correct principal written down.
+
 ---
 
 *Log index: [docs/log/INDEX.md](INDEX.md) · Stage index: [docs/plan/stages/INDEX.md](../plan/stages/INDEX.md)*

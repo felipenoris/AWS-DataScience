@@ -87,7 +87,7 @@ say "(3) key in hand (base64 length $${#HOST_KEY})"
 # MTU IS AN EXPLICIT LINE AND NOT A DERIVATION (2026-08-17). Without it wg-quick takes the
 # uplink's MTU minus 80, and on an AWS ENA that is 9001 - so wg0 came up at 8921, a jumbo
 # frame on an interface whose every peer is reached across the internet. Nothing can use it
-# and it is one direction of the failure vpn-client.md section 4 exists to stop people from
+# and it is one direction of the failure vpn.md section C4 exists to stop people from
 # misdiagnosing. The value is the client template's own, for the reason in variables.tf: the
 # floor trades against no path. What this does NOT cover is the client-to-host direction,
 # which remains the client's line to carry.

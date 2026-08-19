@@ -22,9 +22,9 @@ Blueprint for using AWS as a Data Science infrastructure provider.
     watches its use; `scp-battery.md`, the probe battery run whenever a policy is attached or amended —
     the two distinguishable outcomes of each probe, so a deny is *measured* rather than assumed;
     `terraform-changes.md`, the two-commit tag order for a Terraform change made by hand, and which commits
-    are blocked; `vpn-keys.md`, every VPN key event — loss is recovery from the `[P]` secret, never
-    rotation; and `vpn-client.md`, the other side of the same tunnel — writing a device's config,
-    connecting, and the failure modes WireGuard is silent about by design.
+    are blocked; and `vpn.md`, the whole VPN surface in three parts — the system (components, topology,
+    host start/stop), the client (a device's config, connecting, and the failure modes WireGuard is
+    silent about by design), and the keys — loss is recovery from the `[P]` secret, never rotation.
   - `docs/plan/architecture.md`, `docs/plan/conventions.md`, `docs/plan/integrations.md` (the `INT-nn` rows),
     `docs/plan/cost-model.md`, `docs/plan/open-questions.md`, `docs/plan/lessons.md`,
     `docs/plan/institutional-delta.md`, `docs/plan/history.md`.
@@ -142,7 +142,7 @@ two are proven:
    sign-in, not by an IAM call, and whether a permission-set condition gates that sign-in at all is an
    open row settled at Stage 6. Read "all access through the VPN" as items 1 and 2 until it closes.
 
-**The procedure is [`docs/plan/runbooks/vpn-client.md`](docs/plan/runbooks/vpn-client.md) and it is not
+**The procedure is [`docs/plan/runbooks/vpn.md`](docs/plan/runbooks/vpn.md) Part C and it is not
 repeated here** — the five values a config needs, where each comes from, the three checks that prove
 three *different* claims, and the failure modes WireGuard is silent about by design. Two things about it
 belong here rather than there, because they are properties of the architecture rather than steps:

@@ -121,7 +121,7 @@ variable "mtu" {
     # 1280 is the IPv6 minimum link MTU and the floor a WireGuard interface may carry; 8921 is
     # what the uplink offered. A value outside that band is a typo rather than a decision, and
     # the failure it would otherwise produce is the silent one: a tunnel that handshakes, passes
-    # DNS, and stalls on anything large (vpn-client.md section 4).
+    # DNS, and stalls on anything large (docs/plan/runbooks/vpn.md section C4).
     condition     = var.mtu >= 1280 && var.mtu <= 8921
     error_message = "mtu must be between 1280 (the IPv6 minimum, and this design's choice) and 8921 (what an AWS ENA's 9001 leaves after WireGuard's 80 bytes)."
   }

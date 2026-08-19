@@ -143,7 +143,7 @@ wrong account as easily as none.
   ([D4](plan/decisions/D04-vpn-wireguard.md), Stage 4), and whose host private key is a `[P]` Secrets
   Manager secret in this account, fetched by the instance at first boot — never a file in the repository
   or a value in the user data (Stage 4 decision 4, third review; every key event follows
-  [`docs/plan/runbooks/vpn-keys.md`](plan/runbooks/vpn-keys.md)). The shared EFS that used to live beside
+  [`docs/plan/runbooks/vpn.md`](plan/runbooks/vpn.md) Part K). The shared EFS that used to live beside
   it left with the NFS requirement (withdrawn 2026-08-17,
   [D24](plan/decisions/D24-shared-filesystem.md)); the exchange between the two Interactive accounts
   is S3 and git.

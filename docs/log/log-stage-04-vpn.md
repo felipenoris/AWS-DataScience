@@ -1015,7 +1015,7 @@ route or a group behind.
 
 9.1 asks for the client instructions in `README.md`: key generation, the config template, how to verify,
 what a rebuild changes. **All of that already exists in full**, in
-[`vpn-client.md`](../plan/runbooks/vpn-client.md), which gained its last piece in the previous sitting.
+[`vpn-client.md`](../plan/runbooks/vpn.md), which gained its last piece in the previous sitting.
 Copying it into `README.md` would be Lesson 14 with two copies of a procedure — and the copy that goes
 stale is always the one further from the person following it.
 

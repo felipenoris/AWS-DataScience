@@ -104,7 +104,7 @@ def main() -> int:
                 f"{name}: the host key file is TRACKED - and should not exist at all:"
                 " the key lives in the [P] secret awsds-<env>-vpn-host-key since the"
                 " third design review (Stage 4 decision 4). Untrack and delete the file,"
-                " and rotate the key (docs/plan/runbooks/vpn-keys.md, procedure C): a key"
+                " and rotate the key (docs/plan/runbooks/vpn.md, procedure C): a key"
                 " that was ever pushed is rotated, never merely deleted"
             )
             continue
@@ -137,7 +137,7 @@ def main() -> int:
                     " belongs in the [P] secret awsds-<env>-vpn-host-key, never in any"
                     " tfvars (Stage 4 step 4.3; decision 4, third review). If this file"
                     " ever reached a remote with it, rotate the key"
-                    " (docs/plan/runbooks/vpn-keys.md, procedure C)"
+                    " (docs/plan/runbooks/vpn.md, procedure C)"
                 )
             elif depth == 0 and key != "peers":
                 bad(
