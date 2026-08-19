@@ -412,7 +412,7 @@ is not the decision-maker.
    dedicated bucket buys nothing at N=1. Revisit only if verification (iv) shows the service's
    definition read failing the perimeter.
 2. **A's encryption configuration** (1A.1) — recommended: **`CUSTOMER_MANAGED_KEY` with the Stage 9 CMK**
-   (`alias/awsds-prod-data`) — D31's argument: what Staging and the approvers cannot decrypt stays
+   (`alias/awsds-prod-zn-lab`) — D31's argument: what Staging and the approvers cannot decrypt stays
    expressible; fall back to `AWS_MANAGED_KEY` only if the service's grant path fails, recorded.
 3. **B's log level** (1B.2) — recommended: **`ALL` with execution data during the comparison window,
    `ERROR` without it afterwards** — the comparison wants rich evidence, the steady state wants cheap

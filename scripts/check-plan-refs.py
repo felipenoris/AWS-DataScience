@@ -49,7 +49,14 @@ ACCOUNT_COUNT_RE = re.compile(
 )
 ACCOUNT_COUNT_EXCLUDE_RE = re.compile(r"quota|limit|Service Quotas", re.IGNORECASE)
 
-SIZE_BUDGET = 20000  # bytes; the whole point of the CLAUDE.md / GENERAL_PLAN.md split
+# Bytes, per core file. The budget is what forces the CLAUDE.md / GENERAL_PLAN.md split: a core
+# file that may grow without limit stops being a routing map and becomes the narrative it is
+# supposed to point at. RAISED 20000 -> 40000 on 2026-08-19, deliberately and by the user: at
+# Stage 5 the tree had outgrown the original ceiling, and the two ways to meet it were both worse
+# than the overrun - move the routing table or the lesson keys out of CLAUDE.md, which is the one
+# copy of each, or delete state nothing else records. The trigger to re-read this number is the
+# same as before: a core file whose growth is narrative rather than state.
+SIZE_BUDGET = 40000
 
 
 def main() -> int:
@@ -150,7 +157,7 @@ def main() -> int:
         b = Path(f).stat().st_size
         say(f"  {f}: {b} bytes")
         if b >= SIZE_BUDGET:
-            bad(f"{f} over 20 KB - move narrative into docs/plan/")
+            bad(f"{f} over {SIZE_BUDGET // 1000} KB - move narrative into docs/plan/")
 
     say("OK" if fail == 0 else "FAILED")
     return fail

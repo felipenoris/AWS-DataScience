@@ -36,7 +36,9 @@ onwards the file records how the environment changed, not just the plan.
     so the reading list for a stage is closed rather than exploratory.
   - **`scripts/check-plan-refs.py` is the guard.** It fails on a broken relative link, an unknown
     `D`/`INT` identifier, a stale `§`/`row` reference, a pointer into `docs/GENERAL_PLAN.md` for content that
-    now lives in `docs/plan/`, or either core file growing past 20 KB.
+    now lives in `docs/plan/`, or either core file growing past its size budget (20 KB then; **raised to
+    40 KB on 2026-08-19**, by the user, when meeting the original ceiling would have cost `CLAUDE.md`
+    either its routing table or its lesson keys — the one copy of each).
 
 - **2026-08-08 — final pre-Stage-1 review, corrections applied.** The last pass before provisioning
   anything. What it changed is in the plan; what is worth remembering is the *shape* of what it found,

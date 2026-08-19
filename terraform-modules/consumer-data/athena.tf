@@ -29,7 +29,8 @@ resource "aws_athena_workgroup" "this" {
     # Stage 12 owns dashboards and turns this on with a consumer in hand.
     publish_cloudwatch_metrics_enabled = false
 
-    # The cost guard. A query over this limit is cancelled rather than billed (var's note).
+    # The cost guard. A query over this limit is CANCELLED (var's note) - which bounds what a
+    # runaway can bill, rather than zeroing it: the bytes scanned up to the cancellation are billed.
     bytes_scanned_cutoff_per_query = var.scan_limit_bytes
 
     result_configuration {

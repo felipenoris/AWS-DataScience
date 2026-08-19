@@ -5,10 +5,11 @@
 # ------------------------------------------------------------------------- the role (3.2)
 #
 # THE NAME IS A CONTRACT, NOT A PREFERENCE: DenyCatalogMaintenanceRunsExceptMaintenanceRole
-# (1c step 7.6) denies glue:StartCrawler and the optimizer/statistics runs to every principal
-# whose ARN is not exactly awsds-data-catalog-maintenance in this account. Under any other
-# name the crawlers never run, failing closed with an error that names the OU policy, not
-# the typo. ./aws/datalake.py DL-4 reads both the name and the trust.
+# (1c step 7.6) denies glue:StartCrawler, its schedule sibling and the column-statistics runs
+# to every principal whose ARN is not exactly awsds-data-catalog-maintenance in this account
+# (the table-optimizer actions are NOT in that list - POLICIES.md's Data OU non-coverage
+# note). Under any other name the crawlers never run, failing closed with an error that
+# names the OU policy, not the typo. ./aws/datalake.py DL-4 reads both the name and the trust.
 #
 # Trust: glue.amazonaws.com AND NOTHING ELSE - the role is not assumable interactively
 # (D27); aws:SourceAccount pins the confused deputy. Its own protection is Stage 2's

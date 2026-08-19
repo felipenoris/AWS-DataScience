@@ -120,21 +120,27 @@ WIREGUARD_PEER_CIDR = "10.90.0.0/24"
 # `wireguard_eip_public_ip` from - and an account that stops being a VPN home would keep its
 # address in the allow-list until somebody noticed. The row is the decision.
 #
-# WHAT CONSUMES IT: exactly one emission, `vpn_homes` to identity/sso (below), which turns
-# each row into a terraform_remote_state read of that account's foundation/ slice. Entries
-# must therefore be accounts whose foundation/ EXPORTS the EIP - today only sandbox does
-# (Stage 4 step 2.1).
+# WHAT CONSUMES IT: two emissions, both named `vpn_homes` - to identity/sso (below), which
+# turns each row into a terraform_remote_state read of that account's foundation/ slice, and
+# to data-governance/data since Stage 5 pass 1, where the same addresses become a branch of
+# the lake's perimeter deny. Entries must therefore be accounts whose foundation/ EXPORTS the
+# EIP - today only sandbox does (Stage 4 step 2.1).
 VPN_HOMES = ["sandbox"]
 
 # THE LAKE'S CONSUMERS AND ITS PICKUP PRODUCER (Stage 5 pass 1, 2026-08-18) - the seventh
 # vocabulary, authored like VPN_HOMES and for the same reason: which accounts consume the
 # governed lake is a decision (INT-03's N+2; decision 5 granted to the two named accounts),
-# not something derivable from PROFILES. Consumed by exactly one emission - `consumers`,
-# `vpn_homes` and `producers` to data-governance/data - where each row becomes a
+# not something derivable from PROFILES. Consumed by THREE emissions - `consumers`,
+# `vpn_homes` and `producers` to data-governance/data, where each row becomes a
 # terraform_remote_state read (the [P] gateway-endpoint ids, the WireGuard EIPs) or an
 # aliased-provider identity read (the account ids the drop-box statements are built from,
-# which aws/INDEX.md rule 1 keeps out of tracked files). Production joins DATA_CONSUMERS at
-# Stage 9; a vended Sandbox unit joins at Stage 14.
+# which aws/INDEX.md rule 1 keeps out of tracked files); the `lake` map to each consumer's
+# OWN data/ slice (pass 4); and `data_consumers` to identity/sso (pass 4c, where each row
+# becomes the workgroup and derived-bucket ARNs the persona statements name). Adding a row
+# therefore re-plans three slices, identity/sso among them - so a consumer that is NOT an
+# Interactive persona account must not reach that third emission, which is why Stage 9 step 1.4
+# SPLITS this list before adding Production rather than appending to it. Production joins the
+# lake-consumer half at Stage 9; a vended Sandbox unit joins the whole list at Stage 14.
 DATA_CONSUMERS = ["sandbox", "development"]
 DATA_PRODUCERS = ["production"]
 
@@ -143,8 +149,10 @@ DATA_PRODUCERS = ["production"]
 # above are: the consumer slices resolve the lake's catalog id through an aliased provider and
 # read its state for the shared database names, and both need a PROFILE - which may be a
 # literal in no .tf file (Lesson 14). D22 makes this a singleton forever, so the list is not
-# expected to grow; what it buys is that the emission below has the same shape as every other
-# cross-account read in this tree instead of a special case.
+# expected to grow; what it buys is that the emissions below have the same shape as every
+# other cross-account read in this tree instead of a special case. Two of them: the `lake` map
+# goes to each consumer's data/ slice (pass 4) and to identity/sso (pass 4c, for the drop-box
+# prefix and the lake zone key the persona's write statements name).
 DATA_LAKE = ["data-governance"]
 
 # Subnets anchor on ZONE IDS, never on AZ names and never on list position (Stage 3 step 1.5,
@@ -279,8 +287,9 @@ def tfvars_values(account: str, slice_name: str) -> dict:
                     )
                 values["peer_cidrs"] = [CIDRS[p] for p in PROBE_PEERS[account]]
 
-    # THE ONE NON-NETWORK EMISSION, and the repository's first CROSS-ACCOUNT remote-state read
-    # (Stage 4 step 8.1). identity/sso/ pins the six persona sets to the WireGuard Elastic IP,
+    # THE FIRST NON-NETWORK EMISSION, and the repository's first CROSS-ACCOUNT remote-state
+    # read (Stage 4 step 8.1) - Stage 5's maps below follow the same shape.
+    # identity/sso/ pins the six persona sets to the WireGuard Elastic IP,
     # and the address may not be pasted: it is read from each VPN home's foundation/ state.
     # That read crosses an account boundary, so - unlike every same-account read in this tree -
     # it needs a PROFILE in the data source's config, and pass 2's rule is that a profile

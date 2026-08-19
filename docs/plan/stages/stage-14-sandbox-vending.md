@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | **Status** | not started — the first stage that is about *scale* rather than about a new capability |
-| **Prerequisites** | Stages 2, 3, 4 and 6. Everything a business unit's Sandbox must arrive holding has to exist and have been applied by hand at least once |
+| **Prerequisites** | Stages 2, 3, 4, **5** and 6 — Stage 5 for the consumer side the module composes (`terraform-modules/consumer-data/` v0.1.0, the per-account `DataLakeSettings` and the share map step 5 extends). Everything a business unit's Sandbox must arrive holding has to exist and have been applied by hand at least once |
 | **Consumes** | [D21](../decisions/D21-development-account.md), [D23](../decisions/D23-ou-structure.md), [D26](../decisions/D26-unified-studio.md), [D34](../decisions/D34-account-vending.md), [D35](../decisions/D35-sandbox-cardinality.md), [D37](../decisions/D37-nested-ou-inheritance.md) |
 | **Proves** | that a business unit's `Sandbox` can be created, made usable and closed without a hand-written slice |
 
@@ -122,7 +122,7 @@ than a rewrite.
    grants data access by default.
 
    **But the *plumbing* is the module's, and the distinction matters because the failure looks identical
-   from the outside (written down 2026-08-19, from Stage 5 pass 3).** Three mechanical facts the
+   from the outside (written down 2026-08-19, from Stage 5 pass 3).** Five mechanical facts the
    `sandbox-unit` module carries, none of which is an entitlement:
    - **the unit's account needs a `DataLakeSettings` of its own** — a data lake administrator, or a share
      granted to it stays invisible in its catalog no matter how correct the grant is. An account with no
@@ -141,7 +141,13 @@ than a rewrite.
      not a copy of it: the settings, the `alias/awsds-<env>-zn-lab` CMK, the derived zone, the workgroup,
      the resource links and the local re-grants all come with it. **The re-grant is a pair** — `DESCRIBE`
      on each resource link *and* the permission on the target — and a vend that lands only the second half
-     produces a unit whose scientists see no database at all.
+     produces a unit whose scientists see no database at all;
+   - **and two machinery edits, neither of them a policy edit.** The unit joins `DATA_CONSUMERS` in
+     `scripts/tfhygiene/backend.py` — which emits the `lake` map to its own `data/` slice *and* the
+     `data_consumers` map to `identity/sso/` — and then **`identity/sso/` is re-applied**, because
+     Stage 5 pass 4c scoped the persona's Athena workgroups and derived-bucket ARNs to an enumeration read
+     from each consumer's state (`locals.tf`, `athena_workgroup_arns`/`derived_bucket_arns`). Never widen
+     the permission set with a wildcard instead: the enumeration is the whole point of 4c's sequencing.
 6. **The teardown half, which is what makes a unit disposable.** `make down ENV=<bu>` must work against a
    generated Sandbox exactly as it does against the hand-built one, and closing a unit must be a documented
    procedure with the ~90-day slot and e-mail retention stated up front (D34's headroom item).

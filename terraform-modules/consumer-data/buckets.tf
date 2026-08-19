@@ -16,10 +16,14 @@
 #                             step 8; docs/GOVERNANCE.md, The grain). Written down as fact,
 #                             not carried as debt: the system's real grain is
 #                             min(SQL grain, derived-zone grain).
-#   derived/${aws:userid}/    materialised copies, PER PRINCIPAL (D19 practice ii). This is
-#                             the one genuinely per-user control in the design, and it governs
-#                             the COPY rather than the source - Lesson 1's shape, managed
-#                             rather than forbidden.
+#   derived/${aws:userid}/    materialised copies, PER PRINCIPAL ON WRITE (D19 practice ii) -
+#                             the s3:PutObject statement in identity/sso/ carries the policy
+#                             variable. THE READ IS PERSONA-WIDE (pass 4c, decision 6's grain):
+#                             ReadDerivedZoneObjects grants s3:GetObject across derived/*. So
+#                             the prefix governs where a copy LANDS, not who may read it; what
+#                             keeps other personas out is the zone CMK's key policy (D31). It
+#                             governs the COPY rather than the source - Lesson 1's shape,
+#                             managed rather than forbidden.
 #   scratch/                  the notebook's working files - a downloaded CSV, an intermediate
 #                             feature, a model checkpoint. Non-registered by definition, so
 #                             plain IAM, which is exactly what D13 says about this class.

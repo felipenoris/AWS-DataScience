@@ -21,9 +21,11 @@
 # `make down` with no ENV must FAIL rather than mean "everything", and that is the one whose
 # failure mode is expensive enough to guard twice.
 #
-# EVERY SLICE ON DISK IS [P] TODAY, so `make up` and `make down` are honest no-ops. They were
-# written before the first [E] slice (Stage 3's egress/) rather than after it, which is step
-# 8.6's own argument applied to the whole target.
+# EVERY SLICE ON DISK WAS [P] WHEN THESE TARGETS WERE WRITTEN, so `make up` and `make down`
+# were honest no-ops. They were written before the first [E] slice (Stage 3's egress/) rather
+# than after it, which is step 8.6's own argument applied to the whole target. SINCE STAGE 3
+# THEY ACT FOR REAL: six [E] slices are destroyed and rebuilt, and Stage 4's [D] WireGuard host
+# is stopped and started.
 #
 # THE CHECK LIST GREW ONE ENTRY AT STEP 3 (2026-08-15): check-bootstrap-parity.py. The five
 # bootstrap slices are one slice copied five times, by decision (step 2.3 - a module would need

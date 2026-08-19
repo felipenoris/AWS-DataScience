@@ -348,9 +348,11 @@ requests by hand, and the metadata for a lake this size is megabytes. **The cost
 the domain; it is what the blueprints provision.** Two consequences the plan records as decisions rather
 than discoveries:
 
-- The **Lakehouse blueprint is enabled in its Glue/Athena form only** (D26). Its Redshift Serverless
-  variant provisions a workgroup whose per-query RPU minimum would put a second, larger query bill on top
-  of Athena's — excluded by decision, not omission.
+- Of the two Lakehouse-named blueprints only the Glue/Athena one is enabled — `LakeHouseDatabase` (API
+  name `DataLake`), Stage 6 decision 4. `LakehouseCatalog` (Redshift Managed Storage) and the separate
+  `RedshiftServerless` blueprint provision a query path whose per-RPU minimum would put a second, larger
+  bill on top of Athena's — excluded by decision, not omission (`docs/SMUS.md` carries the category
+  table).
 - The per-project SageMaker AI apps (provisioned by the **Tooling** blueprint — read 2026-08-16; D26
   wrote "ML experience", a name the blueprint list does not carry) bill exactly like the Studio apps in §8
   (`ml.t3.medium` at 0.081/0.050 USD/h) — the domain adds nothing to the hourly rate.
@@ -543,7 +545,8 @@ for the service), IAM and IAM Identity Center — including **centralized root a
 capabilities, and the `sts:AssumeRoot` sessions it grants (Stage 1a step 6); the only cost those carry is
 indirect, one break-glass SMS per privileged session — AWS Budgets (first two budgets), IAM Access Analyzer
 external-access findings, AWS Cost Anomaly Detection, VPC / subnets / route tables / internet gateway /
-security groups / NACLs, S3 gateway VPC endpoints, ECR pull-through cache (you pay only for the stored
+security groups / NACLs, **AWS Resource Access Manager (the share itself is not metered; you pay for the
+shared resource)**, S3 gateway VPC endpoints, ECR pull-through cache (you pay only for the stored
 images), SageMaker Studio **domains** and user profiles at rest (only running apps and home-directory
 storage bill), and the first 30 days of GuardDuty per account.
 

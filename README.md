@@ -3,7 +3,8 @@
 Blueprint for using AWS as a Data Science infrastructure provider.
 
 - `CLAUDE.md` — the working rules, and where the current position is recorded. It is size-budgeted
-  (20 KB, enforced by `scripts/check-plan-refs.py`), so narrative that grows lives in `docs/plan/`.
+  (40 KB since 2026-08-19, enforced by `scripts/check-plan-refs.py`), so narrative that grows lives in
+  `docs/plan/`.
 - `docs/` — **the documentation tree**, and the only place documentation lives: the plan core, `docs/plan/`,
   `docs/log/`, and the reference files named below. Everything outside it is code, configuration, or the
   working rules themselves.
@@ -45,10 +46,14 @@ Blueprint for using AWS as a Data Science infrastructure provider.
   slices of Stage 2 — `sso/`, the seven permission sets and their assignments, and `org-policies/`, the ten
   organization policy documents (SCP, RCP, tag, declarative EC2) with `POLICIES.md` indexing every statement
   and its reason — Stage 3's network in the three VPC accounts (`foundation/` `[P]`; `egress/` and `probes/`
-  `[E]`, destroyed between sessions), and Stage 4's `sandbox/vpn/`, the tree's first `[D]` slice.
+  `[E]`, destroyed between sessions), Stage 4's `sandbox/vpn/`, the tree's first `[D]` slice, **plus Stage 5's
+  three `data/` slices — the governed lake in `data-governance/`, and its consumer half in `sandbox/` and
+  `development/`, which are one module (`consumer-data`) applied twice**.
 - `terraform-modules/` — the reusable modules, consumed **by git tag, never by branch**. `terraform-live/`
   composes; it does not define. The first six arrived with Stages 3-4: `vpc`, `vpc-egress`, `s3-bucket`,
-  `kms-key`, `iam-role`, `wireguard`.
+  `kms-key`, `iam-role`, `wireguard`; `consumer-data` is Stage 5's. Nesting started earlier than it looks —
+  `wireguard` has called `iam-role` by tag since Stage 4 — and `consumer-data` is the first module a
+  *slice pair* applies twice. The current roster is `terraform-modules/README.md`'s.
 - `.pre-commit-config.yaml` and `.tflint.hcl` — the repository's Terraform gates (Stage 2 step 6):
   `terraform fmt`, `terraform validate`, `tflint` and `checkov` as a *required* check, since a policy gate
   that can be skipped is a policy suggestion.
@@ -84,6 +89,9 @@ Blueprint for using AWS as a Data Science infrastructure provider.
   and a WireGuard private key is bare base64 that no scanner can tell from the public halves the roster
   commits on purpose — so the gate checks **structure** instead of content: only allowlisted tfvars may be
   tracked, the roster assigns nothing but public halves, and a `host-key.auto.tfvars` fails by name.
+  `check-identifiers.py` is the ninth (2026-08-17), and it fails on a different **kind** of mistake — a real
+  AWS account id or a personal e-mail address reaching git, which is undone by rewriting history rather than
+  by an edit.
 - `Makefile` — how those checks are run: `make check` offline, `make check-ou` with an SSO session. The same
   scripts sit behind the `pre-commit` hooks, so the commit gate and the target cannot disagree.
   `make` itself is a convenience, not a dependency — every target is a direct call to scripts

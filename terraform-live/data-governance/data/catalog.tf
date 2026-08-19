@@ -169,8 +169,11 @@ resource "aws_lakeformation_resource_lf_tags" "sample_trades_restricted_column" 
 
 # --------------------------------------------------- the maintenance owner (4.2, decision 4)
 #
-# Glue automatic compaction under the maintenance role - the table-optimizer runs the D27
-# carve-out and the Data OU SCP already name, no scheduler in a no-compute account. Config is
+# Glue automatic compaction under the maintenance role - the role IS the D27 carve-out
+# principal, but NO SCP ACTION NAMES A TABLE-OPTIMIZER RUN: the carve-out covers crawler and
+# column-statistics starts only, and DenyUserCompute names no optimizer action either. This runs because nothing
+# denies it, not because something exempts it - recorded as a third non-coverage in
+# POLICIES.md's Data OU section. No scheduler in a no-compute account. Config is
 # free at rest; runs are metered (USD 0.44/DPU-h, docs/PRICING.md 5). The consequence
 # accepted with the decision - athena:StartQueryExecution joining DenyUserCompute - is an
 # SCP act (battery phase 4b), not this slice's.

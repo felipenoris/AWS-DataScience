@@ -233,12 +233,13 @@ of the assumable role/project, stated here rather than discovered.
 |---|---|---|---|
 | **LF row/column filters** (data cells filters) | Nothing by itself. A filter attaches to a **principal**, and the principal Lake Formation sees is the role — so a filter on a role shared by four people applies to all four. It becomes per-user only when the surface below carries a user identity into the engine | — | **available, wrong grain alone**; Stage 11 narrows *within* the restricted grants using it |
 | **Trusted identity propagation (TIP)** | The real lever: carries the Identity Center user into Athena, Redshift, Glue and EMR (since 2025-09), so LF sees the human and a filter becomes per-user. Enabled per project profile — `enableTrustedIdentityPropagationPermissions` | **Remote access stops working** (documented). JupyterLab and Visual ETL resolve through the project role either way, so it buys the SQL path only — a **two-grain** design, not a uniform one | **not adopted.** Stage 6 decision 2 records which yields; remote access favoured by default (open question 13) |
-| **`${aws:userid}` prefix scoping** (derived zone, D19/9.2) | Real per-user separation, but of **copies**, not of source data: one person's materialised results are not a path around another's grants | An IAM condition per statement — cheap, and already the derived zone's shape | **adopted as design**, as containment rather than as entitlement |
+| **`${aws:userid}` prefix scoping** (derived zone, D19/9.2) | **Per-user on the WRITE side** — a copy can be materialised only under its author's prefix; the read was left at the persona grain (applied pass 4c, following decision 6), so a colleague can read a colleague's copy. Containment of *where a copy lands*, not separation of *who may read it* | An IAM condition per statement — cheap, and already the derived zone's shape | **adopted on the write half only**, as containment rather than as entitlement — the per-user `s3:GetObject` scoping 9.2 offered was declined with the grain decision |
 
 Read together they say why the grain is the role: the only surface that makes Lake Formation see a
 *person* is TIP, it reaches one of the two paths people actually use, and its price is an objective
-this project holds. The derived zone's per-principal prefixes are what remains genuinely per-user, and
-they govern the copy rather than the source — which is Lesson 1's shape, managed rather than forbidden.
+this project holds. The derived zone's per-principal **write** prefixes are what remains genuinely
+per-user, and they govern the copy rather than the source — which is Lesson 1's shape, managed rather
+than forbidden.
 
 **The default grants** — the standing expressions that implement the classification rule:
 
@@ -272,8 +273,8 @@ The value lists in the applied grants are written **literally**, not read from t
 **Every applied triple is registered in [`docs/AWS_STATE.md`](AWS_STATE.md) §"Lake Formation grant
 register"** — one row per grant, written in the same sitting as the grant, the same discipline
 `POLICIES.md` keeps for policy statements. It carries the catalog's own operational grants from Stage 5
-pass 1; the **governance manager's** grants arrive at pass 2 and the first **consumer** grants — the
-TBAC expressions above — at pass 3.
+pass 1; the **governance manager's** grants landed at pass 2, the first **cross-account** grants — the
+TBAC expressions above — at pass 3, and each consumer account's own **re-grants** at pass 4.
 
 ## Drop-box
 
@@ -320,8 +321,12 @@ Stage 5 pass 4 — with five controls:
 
 - the Athena workgroup **forces** results there (`EnforceWorkGroupConfiguration = true` — the client
   cannot choose another destination);
-- prefixes **per principal** (`…/derived/${aws:userid}/`) — one person's materialised result is not a
-  path around another's grants;
+- prefixes **per principal on WRITE** (`…/derived/${aws:userid}/`) — a copy can only land under its
+  author's prefix. **The read is persona-wide** (applied 2026-08-19 at Stage 5 pass 4c:
+  `ReadDerivedZoneObjects` grants `s3:GetObject` on `derived/*`), because the persona is the
+  entitlement grain (decision 6) — so a colleague reading a colleague's copy crosses no line the SQL
+  path had drawn. The prefix governs where a copy *lands*, not who may read it; what keeps other
+  personas out is the zone CMK's key policy (D31);
 - **lifecycle expiry** (30 days) — the shadow lake never silently becomes permanent;
 - a **dedicated CMK** per consumer account whose key policy says who may read the copies (D31) —
   `alias/awsds-<env>-zn-lab`, the zone's key in that account (§`security-zone`);

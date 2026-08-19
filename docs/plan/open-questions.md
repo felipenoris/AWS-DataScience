@@ -58,13 +58,14 @@ what is genuinely still unanswered:
    **INT-15 and 16, added 2026-08-08 by the pre-Stage-1 review, are not integration risks but
    control risks** — whether D13's constraint on execution roles survives blueprint-authored roles (INT-15),
    and whether the VPN restriction reaches the Unified Studio portal at all (INT-16). Each can invalidate an
-   objective stated in `CLAUDE.md`, so they are answered at Stages 6 and 4 respectively and their outcome is
+   objective stated in [`docs/plan/objectives.md`](objectives.md), so they are answered at Stages 6 and 4 respectively and their outcome is
    written down either way.
    INT-11's organization halves were **enabled in Stage 1d** (RAM org-wide sharing on 2026-08-14; the LF
-   cross-account version already read 4 with `SET_CONTEXT: TRUE`); what remains is Stage 5's — defending
-   both values, which nobody set, against the first `aws_lakeformation_data_lake_settings` apply — and
-   since D26 the row also carries the domain's account associations (INT-12); its failure mode is silence
-   rather than an error. INT-13 (CodeConnections from the unified domain to the self-hosted GitLab in a private subnet)
+   cross-account version already read 4 with `SET_CONTEXT: TRUE`); its Stage 5 half **closed 2026-08-19
+   (pass 3, confirmed per account at pass 4 — see the row)**. What is left is the credential-vending half
+   of `sts:SetContext` against the RCP, which pass 4d's first persona query exercises, and — since D26 —
+   the domain's account associations (INT-12) at Stage 6; its failure mode is silence rather than an
+   error. INT-13 (CodeConnections from the unified domain to the self-hosted GitLab in a private subnet)
    is the one with no convenience-preserving fallback: check it while building Stage 7, when GitLab first
    exists.
 8. **How much of the S3 console survives the `aws:SourceVpce` condition** (INT-06, Stage 9). This
@@ -179,14 +180,14 @@ started. **The first one is load-bearing against principle 4.**
     first: where a session is reached *from* is not where it *runs*.** The revision trigger is worded
     against exactly that (Stage 6 step 1.6): executors in our subnets, under our security group — never a
     headline saying VPC is supported.
-13. **Notebooks do not support trusted identity propagation, and that reaches a `CLAUDE.md` objective.**
+13. **Notebooks do not support trusted identity propagation, and that reaches an `objectives.md` objective.**
     In an IAM Identity Center domain, notebooks fall back to **compatibility permission mode**, so data
     access resolves through the project/compute role rather than through the signed-in human. The DLP
     requirement *"restrict who can read which database, table, column and row"* is a Lake Formation
     row/column-filter statement about a **user**, and without TIP the unit of grant is the **project**.
     Two honest outcomes and they are very different: either per-user filtering is achievable through a
     different surface (the SQL/query path, which is not the notebook path), or the design's real grain is
-    the project and `CLAUDE.md`'s objective is met at that grain with the difference written down.
+    the project and [`docs/plan/objectives.md`](objectives.md)'s objective is met at that grain with the difference written down.
     **Answer at Stage 5 while granting, and at Stage 6 while running.**
     **The mechanism now has a name (2026-08-16):** "compatibility permission mode" is not the
     documentation's vocabulary — the real lever is trusted identity propagation, supported since 2025-09
@@ -207,7 +208,7 @@ started. **The first one is load-bearing against principle 4.**
     connection** in `project.spark.fineGrained` mode — whether an IdC-domain notebook can actually use it
     is Stage 6 decision 1's second in-stage reading.
 14. **The remote-IDE path is a file-transfer channel to a laptop.** `sagemaker:StartSession` plus the AWS
-    Toolkit lets a local VS Code attach to a running space — a `CLAUDE.md` objective, so it is not
+    Toolkit lets a local VS Code attach to a running space — an [`objectives.md`](objectives.md) objective, so it is not
     something to deny. It also bypasses whatever a browser IDE could be made to restrict, which makes it
     the concrete version of **item 6** ("whether Studio can block file download") rather than a separate
     question: if the answer to 6 is "yes, in the browser", the remote session is the hole. AWS documents

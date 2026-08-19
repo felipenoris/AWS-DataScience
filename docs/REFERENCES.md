@@ -241,7 +241,7 @@
 
 - Amazon S3 Tables (managed Iceberg with automatic maintenance — the AWS-native alternative to hand-rolled Iceberg buckets): <https://aws.amazon.com/s3/features/tables/>.
 
-- Athena workgroup settings, including `EnforceWorkGroupConfiguration` — the console calls it "override client-side settings" (the control that makes D19's per-principal result prefixes a boundary rather than a suggestion): <https://docs.aws.amazon.com/athena/latest/ug/workgroups-settings.html>.
+- Athena workgroup settings, including `EnforceWorkGroupConfiguration` — the console calls it "override client-side settings" (the control that makes D19's enforced results zone a boundary rather than a suggestion — one location per workgroup, so `results/` is per-persona; first applied at Stage 5 pass 4b in both consumers): <https://docs.aws.amazon.com/athena/latest/ug/workgroups-settings.html>.
 
 - Specifying an Athena query result location using a workgroup (and the CTAS `external_location` conflict it causes): <https://docs.aws.amazon.com/athena/latest/ug/query-results-specify-location-workgroup.html>.
 

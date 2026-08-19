@@ -33,7 +33,7 @@ on have no RCP behind them at all (`docs/plan/architecture.md` §4.2). Two of th
   `objectives.md` and D24 with it — no filesystem exists, and the accepted risk went with the resource.
 
 **Revised 2026-08-19 (Stage 5 pass 4, the sitting that built it) — two corrections of shape, neither of
-which moves the decision.** Practice (iv)'s key is `alias/awsds-<env>-zn-lab`, **not** `-derived`: the
+which moves the decision.** Practice (vi)'s key is `alias/awsds-<env>-zn-lab`, **not** `-derived`: the
 user amended `security-zone`'s scope so that encryption granularity is that dimension's job in every
 account rather than only inside the lake — a query result over a `zn-lab` table is still `zn-lab` data,
 which is practice (v) applied to the key. **One CMK per (zone × account)**; sharing the *lake's* key
@@ -47,6 +47,14 @@ decision for a "scratch + derived-zone *buckets*" pairing it never contained; th
 *"non-registered prefixes (scratch, artifacts, model outputs)"*. The applied shape is one bucket with
 three prefix families — `results/` (the workgroup's enforced output, per-persona because an enforced
 workgroup has exactly one), `derived/${aws:userid}/` (practice ii), `scratch/`.
+
+**Also revised 2026-08-19 (pass 4c, following Stage 5 decision 6) — practice (ii) is per principal on
+WRITE only.** The applied persona statements grant `s3:PutObject` under `derived/${aws:userid}/` but
+`s3:GetObject` across `derived/*`, at decision 6's persona grain — so (ii) contains who may *create or
+overwrite* a copy, not who may read one: another holder of `DataScientistAccess` can read a materialised
+copy. What keeps other personas out is practice (vi), the zone CMK (D31), which is what that practice was
+added for. The per-user `s3:GetObject` variant was mapped (`docs/GOVERNANCE.md` §"The grain") and
+declined with the grain decision.
 
 **The decision itself does not move.** Preventing the copy is still impossible, the destination is still
 managed, and the six practices above all stand. What is corrected is a claim about *who does the

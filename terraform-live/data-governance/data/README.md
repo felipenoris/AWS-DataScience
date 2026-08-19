@@ -105,7 +105,7 @@ key object itself.
 | `Sid` | What it allows, and to whom |
 |---|---|
 | `EnableIamPolicyDelegationInThisAccount` | The account root — the standard delegation that lets IAM policies in this account govern the key. Without it the key is only governed by its own policy |
-| `AllowDropBoxWritersViaS3` | The Sandbox and Development roots, narrowed by `ArnLike aws:PrincipalArn` to the writer roles: `GenerateDataKey` **and** `Decrypt`. Both are needed — SSE-KMS `PutObject` needs the first, a **multipart upload** needs the second, and the error otherwise names S3 rather than KMS. Scoped `kms:ViaService = s3`, so the persona cannot use the key outside an S3 call |
+| `AllowDropBoxWritersViaS3` | The Sandbox and Development roots, narrowed by `ArnLike aws:PrincipalArn` to the writer roles: `GenerateDataKey` **and** `Decrypt`. Both are needed — SSE-KMS `PutObject` needs the first, a **multipart upload** needs the second, and the error otherwise names S3 rather than KMS. Scoped `kms:ViaService = s3`, so the persona cannot use the key outside an S3 call. **This is the resource HALF of a cross-account permission** — the identity half (`UseLakeZoneKeyViaS3` in `DataScientistAccess`, the same two actions under the same `kms:ViaService = s3` condition) lives in `identity/sso/`, Stage 5 pass 4c; neither half works alone (Lesson 28, amended) |
 | `AllowCloudWatchLogsEncryptionForGlue` | The **service principal** `logs.<region>.amazonaws.com`, scoped by the log-group encryption context to `/aws-glue/*` in this account. CloudWatch Logs encrypts with the key *itself*, so the crawler role's own KMS grant does not cover it — this exists because a crawler samples object contents and its logs therefore take the lake key |
 | `AllowProductionPickupDecryptViaS3` | The Production root narrowed to `awsds-prod-job-exec`: `Decrypt`, for the drop-box pickup (INT-10, D25). **The role arrives at Stage 9** — until then the `ArnLike` matches nothing, which is the recorded "pickup half unexercised" state, not a defect |
 
@@ -168,6 +168,23 @@ condition. That is why the principals above read as roots.
 | | `CrawlerLogs` | `/aws-glue/*` only, encrypted by the key-policy statement above |
 | `awsds-data-lf-registration` | `S3ReadRegisteredLocations` | How Lake Formation **vends** governed reads of `raw` and `curated`. Read-side only — the governed write arrives at Stage 9, amending this policy in this slice |
 | | `KmsDecryptZnLab` | The SSE-KMS half of the same path. The service-linked role cannot be granted the CMK cleanly, which is why this is a custom role |
+
+### The maintenance role's own Lake Formation grants (`maintenance.tf`)
+
+The IAM `Sid`s above are only one half (see §"A permission here is the intersection of two systems"):
+with the IAM-fallback defaults emptied, catalog writes are governed by Lake Formation, so the role needs
+grants of its own. All four are **operational**: same-account, **named-resource, deliberately not TBAC** —
+tag-based access is the *consumer* method, and this is machinery.
+
+| Grant | Resource | Permission | What it buys |
+|---|---|---|---|
+| `maintenance_create_raw` | database `raw` | `CREATE_TABLE`, `DESCRIBE` | The whole crawler need: a crawler-created table grants its creator `ALL` automatically, so nothing has to be granted per table |
+| `maintenance_create_dropbox` | database `dropbox` | `CREATE_TABLE`, `DESCRIBE` | Idem, for the drop-box crawler |
+| `maintenance_raw_location` | the registered `raw` prefix | `DATA_LOCATION_ACCESS` | Creating tables that point **into** a registered location. `dropbox` is unregistered by design, so no location grant exists to need |
+| `maintenance_compact_sample` | table `curated.sample_trades` | `SELECT`, `INSERT`, `ALTER`, `DESCRIBE` | The four verbs compaction rewrites files with (decision 4) |
+
+Applied triples with their dates stay in [`docs/AWS_STATE.md`](../../../docs/AWS_STATE.md)'s grant
+register, which already carries all four; these rows say what the **code** declares.
 
 ## `governance.tf` — the governance manager's grants (pass 2, step 6)
 

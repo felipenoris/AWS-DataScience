@@ -5,7 +5,7 @@
 | **Status** | **DONE — all four steps executed, 2026-08-14/15. This closes the landing zone.** Every decision (3, 4, 8, 9, 10) is taken and every verification answered, with (iv)'s and (xiv)'s second halves provisional by construction. **Step 9 went ahead**: decision 9 chose to borrow `AWSControlTowerExecution` from Management past `CTS3PV8`, decision 3 set **compliance mode, 90 days**, and the control is exercised rather than only configured — an object delivered *after* the write carries `COMPLIANCE` to +90 days while deliveries continue. **Decision 3's cost turned out to be zero**, because the bucket already expires current *and* noncurrent versions at 365 days; what it creates instead is a standing constraint on **Stage 12 step 5** — that lifecycle may never be shortened below the lock retention |
 | **Prerequisites** | **[Stage 1b](stage-01b-identity-and-controls.md) complete** — every step here runs inside a member account and needs step 5's profiles. **Stage 1c was not a prerequisite and is now done anyway** (2026-08-14): none of these steps depends on a policy being attached, but three of 1c's attached documents and one of Control Tower's own now sit across this stage's path, which is what the revision below is about |
 | **Consumes** | [D12](../decisions/D12-budget-ceiling.md), [D16](../decisions/D16-break-glass.md), [D22](../decisions/D22-data-governance-account.md), [D23](../decisions/D23-ou-structure.md) (step 12), [D29](../decisions/D29-policy-canary.md), [D33](../decisions/D33-control-tower-admin-user.md), [D34](../decisions/D34-account-vending.md), [D35](../decisions/D35-sandbox-cardinality.md) |
-| **Proves** | **The two organization-level halves of [INT-11](../integrations.md)** — org-wide RAM sharing and the Lake Formation cross-account version, **the second of which was already true before the stage started and is now a reading plus an instruction to Stage 5**. **Also closes [D16](../decisions/D16-break-glass.md)'s last unbuilt deliverable** (10.4) and **[open question 16](../open-questions.md)** (step 12). The third INT-11 item (`AWSLakeFormationCrossAccountManager` on the grantor) is Stage 5 step 7, because the role does not exist yet (11.4) |
+| **Proves** | **The two organization-level halves of [INT-11](../integrations.md)** — org-wide RAM sharing and the Lake Formation cross-account version, **the second of which was already true before the stage started and is now a reading plus an instruction to Stage 5**. **Also closes [D16](../decisions/D16-break-glass.md)'s last unbuilt deliverable** (10.4) and **[open question 16](../open-questions.md)** (step 12). The third INT-11 item (`AWSLakeFormationCrossAccountManager` on the grantor) is Stage 5 step 7, because the role does not exist yet (11.4) — **RESOLVED 2026-08-19 by neither item being needed**, the closing reading being Stage 5 step 7's and [INT-11](../integrations.md)'s |
 | **Log** | `docs/log/log-stage-01d-org-wide-enablement.md` |
 
 *Read with [`docs/plan/conventions.md`](../conventions.md) (naming, layout, `[P]`/`[D]`/`[E]`, IAM rules).*
@@ -491,7 +491,9 @@ The
 the fallback path if 11.1 or 11.2 is ever unavailable — and **neither role exists yet**: the data lake
 administrator is created in Stage 5, the consumer-side roles in Stage 5 and Stage 9. Attempting it here
 is attaching a policy to a principal that has not been written. It is recorded here because INT-11 is
-settled here; it is *executed* in Stage 5 step 7.
+settled here; it is *executed* in Stage 5 step 7. *(RESOLVED 2026-08-19 by neither item being needed —
+Stage 5 step 7 and [INT-11](../integrations.md) carry the closing reading. This sub-step stays as written
+because it records why the item was deferred rather than attempted here.)*
 
 #### 11.5 — Why this step is in the landing zone at all
 

@@ -13,10 +13,12 @@
 #   DENIED NOW  - everything the design denies. The denials are the durable half (1b step 3.5
 #                 says so out loud for the approvers) and none of them needs a resource to
 #                 exist: they are about actions.
-#   NOT GRANTED - every action scoped to an OBJECT that does not exist yet: the lake prefixes
-#                 and the derived zone (Stage 5), the Athena workgroups (Stages 5 and 9), the
-#                 Studio domains (Stage 6), the ECR repositories (Stage 7). Each is named
-#                 below against the stage that owes it.
+#   NOT GRANTED - every action scoped to an OBJECT that does not exist yet: the Studio domains
+#                 (Stage 6), the ECR repositories (Stage 7), Production's own workgroup and
+#                 output prefixes (Stage 9). Each is named below against the stage that owes
+#                 it. Two entries LEFT this list at Stage 5 pass 4c and the per-set ledgers
+#                 below say how - the derived zone and the two enforced workgroups as
+#                 deliveries, the lake prefixes as a CORRECTION (never owed).
 #
 # WHY NOT WRITE THEM ANYWAY, FROM THE NAMING CONVENTION. Because it would be a guess at an
 # interface, which this stage already refuses to make for a MODULE (step 7's reordering note:
@@ -376,8 +378,13 @@ data "aws_iam_policy_document" "data_scientist" {
 # locals.tf carries no Staging row. The SET is created anyway - it costs nothing, and having it
 # reviewed now rather than typed at the vend is the reason six sets are written in code at all.
 #
-# STILL OWED: Stage 5 s3:GetObject on Staging's own prefixes; Stage 9 read of the pipeline's
-# execution history. Both READS - there is no write in this set's future either.
+# NOTHING IS OWED TO THIS SET, AND THAT IS THE DESIGN RATHER THAN AN OMISSION. Stage 9 step 5.2
+# verifies it by READING - no Athena, DenyEveryWrite intact, nothing added. The only thing still
+# coming to this document is the Stage 3 permissions boundary, owed to all six sets rather than
+# to this one. README.md's owed table is the one copy. An earlier version of this comment owed
+# "Stage 5 s3:GetObject on Staging's own prefixes": Stage 5's consumers are Sandbox and
+# Development only (backend.py), and a staging environment a human can read through IAM rather
+# than through the pipeline's path is the first step back to one a human can write.
 
 data "aws_iam_policy_document" "data_scientist_staging" {
   # checkov:skip=CKV_AWS_356:one document, N accounts - no ARN can name the account; see the CKV_AWS_356 note in policies-data-scientists.tf
@@ -480,8 +487,10 @@ data "aws_iam_policy_document" "data_scientist_staging" {
 # grant. The ingestion drop-box is NOT here - it moved to Data Governance with the lake (D22)
 # and is granted by bucket policy to the Interactive-OU roles, not by a permission set.
 #
-# STILL OWED: Stage 5/9 s3:GetObject on the named application-output prefixes and
-# athena:StartQueryExecution on the dedicated Production workgroup; Stage 7 ecr pull.
+# STILL OWED: Stage 9 s3:GetObject on the named application-output prefixes and
+# athena:StartQueryExecution on the dedicated Production workgroup (its step 5.1) - Production
+# only joins DATA_CONSUMERS at Stage 9 (backend.py), so Stage 5 could not have written these
+# ARNs; Stage 7 ecr pull.
 
 data "aws_iam_policy_document" "data_scientist_prod" {
   # checkov:skip=CKV_AWS_356:one document, N accounts - no ARN can name the account; see the CKV_AWS_356 note in policies-data-scientists.tf

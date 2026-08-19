@@ -12,7 +12,7 @@
 
 ## Rationale and consequences
 
-Lake Formation only constrains engines that ask it. A role holding `s3:GetObject` on a registered bucket can read the raw Parquet from a notebook and every column and row filter becomes decoration. So the fine-grained access control objective in `CLAUDE.md` is only real if the SageMaker execution role's S3 permissions **exclude** the Lake Formation-registered prefixes, and tabular access goes exclusively through an LF-aware engine: Athena, Glue interactive sessions, or EMR with runtime roles. Non-registered prefixes (scratch, artifacts, model outputs) keep ordinary IAM access. Lake Formation's **hybrid access mode** is the documented migration path if a workload turns out to need both, and is a deliberate exception rather than the default. This is decided in Stage 5, before Stage 6 can bake the bypass into the execution role.
+Lake Formation only constrains engines that ask it. A role holding `s3:GetObject` on a registered bucket can read the raw Parquet from a notebook and every column and row filter becomes decoration. So the fine-grained access control objective in [`docs/plan/objectives.md`](../objectives.md) is only real if the SageMaker execution role's S3 permissions **exclude** the Lake Formation-registered prefixes, and tabular access goes exclusively through an LF-aware engine: Athena, Glue interactive sessions, or EMR with runtime roles. Non-registered prefixes (scratch, artifacts, model outputs) keep ordinary IAM access. Lake Formation's **hybrid access mode** is the documented migration path if a workload turns out to need both, and is a deliberate exception rather than the default. This is decided in Stage 5, before Stage 6 can bake the bypass into the execution role.
 
 ---
 
