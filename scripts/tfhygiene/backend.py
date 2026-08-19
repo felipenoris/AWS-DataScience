@@ -138,6 +138,15 @@ VPN_HOMES = ["sandbox"]
 DATA_CONSUMERS = ["sandbox", "development"]
 DATA_PRODUCERS = ["production"]
 
+# THE OTHER DIRECTION, added at pass 4 (2026-08-19): the account that OWNS the lake, read BY
+# the consumers. It is a one-element table and it is still a table, for the reason the three
+# above are: the consumer slices resolve the lake's catalog id through an aliased provider and
+# read its state for the shared database names, and both need a PROFILE - which may be a
+# literal in no .tf file (Lesson 14). D22 makes this a singleton forever, so the list is not
+# expected to grow; what it buys is that the emission below has the same shape as every other
+# cross-account read in this tree instead of a special case.
+DATA_LAKE = ["data-governance"]
+
 # Subnets anchor on ZONE IDS, never on AZ names and never on list position (Stage 3 step 1.5,
 # settled by 1b step 6; ./aws/AZs.py is the measurement). Authored per account because a
 # vended account is assigned its own name->id mapping and may legitimately differ (INV-08);
@@ -291,6 +300,16 @@ def tfvars_values(account: str, slice_name: str) -> dict:
             acct: {"profile": PROFILES[acct], "env": ENV_TOKENS[acct]} for acct in DATA_PRODUCERS
         }
 
+    # The consumer side of the lake (Stage 5 pass 4). Emitted for `data` in any account that
+    # CONSUMES the lake - never for data-governance itself, which owns it and whose own `data`
+    # slice takes the three maps above instead. The guard is DATA_CONSUMERS rather than "not
+    # data-governance", so a new consumer arrives by being written down (Stage 9 adds
+    # production, Stage 14 a vended unit) rather than by having a folder.
+    if slice_name == "data" and account in DATA_CONSUMERS:
+        values["lake"] = {
+            acct: {"profile": PROFILES[acct], "env": ENV_TOKENS[acct]} for acct in DATA_LAKE
+        }
+
     if account == "identity" and slice_name == "sso":
         values["vpn_homes"] = {
             acct: {"profile": PROFILES[acct], "env": ENV_TOKENS[acct]} for acct in VPN_HOMES
@@ -346,6 +365,12 @@ def render_tfvars(account: str, slice_name: str) -> str:
             for acct, p in v["producers"].items()
         )
         out += f"producers = {{\n{rows}}}\n"
+    if "lake" in v:
+        rows = "".join(
+            f'  {acct} = {{ profile = "{p["profile"]}", env = "{p["env"]}" }}\n'
+            for acct, p in v["lake"].items()
+        )
+        out += f"lake = {{\n{rows}}}\n"
     return out
 
 
