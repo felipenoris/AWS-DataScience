@@ -315,6 +315,7 @@ def main(argv: list) -> int:
     # NOT evidence of a failed share.
     received: list = []  # (profile, share name, status)
     lf_admin_counts: dict = {}  # profile -> number of data lake admins in that account
+    lf_consumer_settings: dict = {}  # profile -> {params, db_defaults, tbl_defaults}
     for p in CONSUMER_PROFILES:
         if p not in live:
             continue
@@ -333,7 +334,20 @@ def main(argv: list) -> int:
         # and step 8 owes that account a DataLakeSettings of its own.
         doc = run_json(cli, p, "lakeformation", "get-data-lake-settings")
         if doc:
-            lf_admin_counts[p] = len(doc.get("DataLakeSettings", {}).get("DataLakeAdmins", []))
+            cs = doc.get("DataLakeSettings", {})
+            lf_admin_counts[p] = len(cs.get("DataLakeAdmins", []))
+            # EXTENDED 2026-08-19 (Stage 5 pass 4). Until this pass only Data Governance had a
+            # DataLakeSettings, so DL-5 and DL-6 read one account and said nothing about the
+            # others. Both consumers were then measured carrying CROSS_ACCOUNT_VERSION=4 /
+            # SET_CONTEXT=TRUE - values nobody in this repository set - and
+            # IAM_ALLOWED_PRINCIPALS on BOTH create-defaults. So the two hazards are symmetric,
+            # and the check that was scoped to the producer was reporting `pass` while two
+            # accounts sat in exactly the state it exists to fail (Lesson 13's family).
+            lf_consumer_settings[p] = {
+                "params": cs.get("Parameters", {}) or {},
+                "db_defaults": json.dumps(cs.get("CreateDatabaseDefaultPermissions", [])),
+                "tbl_defaults": json.dumps(cs.get("CreateTableDefaultPermissions", [])),
+            }
 
     # ----------------------------------------------------- Athena workgroups, consumer side
     workgroups: list = []  # (profile, name, enforce, output location, scan limit)
@@ -591,6 +605,35 @@ def main(argv: list) -> int:
                 f"CROSS_ACCOUNT_VERSION={ver}, SET_CONTEXT={setctx} - the 5.4 bracket holds",
             )
 
+    # DL-5, THE CONSUMER HALF (added at pass 4). The reset is not the producer's peculiarity:
+    # each consumer account carries its own Parameters map, this stage writes an
+    # aws_lakeformation_data_lake_settings into both, and that resource replaces the whole
+    # structure. Same failure, same silence, one account further from where anybody looks.
+    for prof, cs in sorted(lf_consumer_settings.items()):
+        ver = cs["params"].get("CROSS_ACCOUNT_VERSION", "")
+        setctx = cs["params"].get("SET_CONTEXT", "")
+        problems = []
+        if not ver:
+            problems.append("CROSS_ACCOUNT_VERSION ABSENT")
+        elif ver not in ("3", "4"):
+            problems.append(f"CROSS_ACCOUNT_VERSION={ver} (<3)")
+        if setctx != "TRUE":
+            problems.append(f"SET_CONTEXT={setctx or 'ABSENT'}")
+        if problems:
+            checks.fail(
+                "DL-5",
+                f"DataLakeSettings.Parameters ({prof})",
+                "; ".join(problems) + " - measured 4/TRUE in BOTH consumers on 2026-08-19, "
+                "before pass 4 wrote a settings resource there; a regression means that "
+                "apply omitted `parameters` (INT-11, symmetric with 5.4).",
+            )
+        else:
+            checks.ok(
+                "DL-5",
+                f"DataLakeSettings.Parameters ({prof})",
+                f"CROSS_ACCOUNT_VERSION={ver}, SET_CONTEXT={setctx}",
+            )
+
     # DL-6: the IAM-fallback defaults, once the catalog exists (step 5.2).
     dg_dbs = [d for d in databases if d[0] == DATA_PROFILE and d[2] == "-"]
     if data_live and lf_read and dg_dbs:
@@ -607,6 +650,30 @@ def main(argv: list) -> int:
                 "DL-6",
                 "LF create-default permissions",
                 "no IAMAllowedPrincipals default - grants are the model (step 5.2)",
+            )
+
+    # DL-6, THE CONSUMER HALF (added at pass 4, and it is the more dangerous one). The defaults
+    # act at CREATION time and there is no second reading later: the first local catalog object
+    # in a consumer account is the RESOURCE LINK, so a link created while they still stand is
+    # born deferring to plain IAM and clearing them afterwards does not reach it. Reported per
+    # account with no `databases exist` guard, deliberately - here the reading has to be
+    # available BEFORE the first object, which is exactly when the guard would silence it.
+    for prof, cs in sorted(lf_consumer_settings.items()):
+        if "IAM_ALLOWED_PRINCIPALS" in (cs["db_defaults"] + cs["tbl_defaults"]):
+            checks.fail(
+                "DL-6",
+                f"LF create-default permissions ({prof})",
+                "new databases/tables in this account still default to IAMAllowedPrincipals. "
+                "The first local object is the resource link of step 8 - create it now and it "
+                "is born deferring to plain IAM, with nothing later able to repair it "
+                "(Lesson 27, Recipe D). Clear the defaults, re-read THIS check, and only then "
+                "apply the remainder of the slice.",
+            )
+        else:
+            checks.ok(
+                "DL-6",
+                f"LF create-default permissions ({prof})",
+                "no IAMAllowedPrincipals default - safe to create the resource links",
             )
 
     # DL-7: shares out, nothing pending on the consumer side, links resolved (step 7, 8).
@@ -883,8 +950,19 @@ it. Admins present with Parameters absent is the reset having happened.""")
         rep.line()
         if lf_admin_counts:
             rep.tabulate(
-                ["PROFILE\tDATA LAKE ADMINS"]
-                + [f"{p}\t{n}" for p, n in sorted(lf_admin_counts.items())]
+                ["PROFILE\tDATA LAKE ADMINS\tPARAMETERS\tDB DEFAULTS\tTABLE DEFAULTS"]
+                + [
+                    "\t".join(
+                        [
+                            p,
+                            str(n),
+                            json.dumps(lf_consumer_settings.get(p, {}).get("params", {})),
+                            lf_consumer_settings.get(p, {}).get("db_defaults", "-"),
+                            lf_consumer_settings.get(p, {}).get("tbl_defaults", "-"),
+                        ]
+                    )
+                    for p, n in sorted(lf_admin_counts.items())
+                ]
             )
         rep.text("""
 THE TWO TABLES ABOVE ARE READ TOGETHER, and they are what separates a share that
@@ -950,9 +1028,14 @@ What the checks are, and where each comes from:
   DL-3   crawlers: never scheduled, never at a catalog/Iceberg target (step 3.6)
   DL-4   awsds-data-catalog-maintenance exists, trusts glue.amazonaws.com only
          (steps 3.2, 3.5)
-  DL-5   DataLakeSettings.Parameters still read 4/TRUE - the INT-11 defence
+  DL-5   DataLakeSettings.Parameters still read 4/TRUE - the INT-11 defence,
+         IN EVERY ACCOUNT THAT HAS SETTINGS (producer since pass 1, both
+         consumers since pass 4 - the hazard is symmetric)
          (step 5.4); THE check to read after any apply in this slice
-  DL-6   no IAMAllowedPrincipals create-defaults once databases exist (step 5.2)
+  DL-6   no IAMAllowedPrincipals create-defaults, per account (step 5.2). In
+         Data Governance it is guarded on databases existing; in a consumer it
+         is NOT, because the reading has to be available BEFORE the first
+         resource link, which is the only moment it can still be acted on
   DL-7   shares out AND HELD by every consumer, resource links resolved, NO
          pending invitation (steps 7, 8)
   DL-8   workgroups enforce their configuration, with a scan limit (step 8, D19)

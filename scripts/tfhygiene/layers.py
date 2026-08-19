@@ -174,6 +174,29 @@ SLICES = [
         PERSISTENT,
         "the lake: zn-lab CMK, 5 buckets, catalog, LF (Stage 5)",
     ),
+    # Stage 5 pass 4 (2026-08-19) - the consumer side, one module applied twice. [P] and free
+    # or floor-priced at rest: one CMK per account (key-month, docs/PRICING.md 2), one bucket,
+    # an Athena workgroup, the LF settings, two resource links and three grants. Athena bills
+    # per TB SCANNED, which is a query and not an hour, so usd_per_hour stays 0.0 and the guard
+    # is the workgroup's own bytes_scanned_cutoff_per_query.
+    #
+    # THE RANK IS `data` (45), SHARED WITH THE LAKE, and that is right rather than a collision:
+    # every slice at that rank is [P], so no up/down order ever acts on it. What orders these
+    # two in practice is the SHARE - a resource link resolves nothing before the lake grants -
+    # and that is a dependency between accounts, which this table has never been the place for
+    # (the cross-account exception note above says the same about Stage 3 pass 2).
+    Slice(
+        "sandbox",
+        "data",
+        PERSISTENT,
+        "consumer side: zn-lab CMK, derived zone, workgroup, links",
+    ),
+    Slice(
+        "development",
+        "data",
+        PERSISTENT,
+        "consumer side: same module as sandbox/data (Stage 5)",
+    ),
 ]
 
 
