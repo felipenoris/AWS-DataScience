@@ -1046,8 +1046,46 @@ per account), `aws/INDEX.md`.
 **Gates:** `make check` **OK**. `pre-commit` green on all three commits; one commit rejected first by
 tflint for two unused data sources in the slices, which were removed rather than suppressed.
 
-**Branch `claude/stage-05-pass-4`, three commits, pushed with both tags** — not merged, and the PR is the
-user's to open.
+**Branch `claude/stage-05-pass-4`, four commits, pushed with both tags. [PR #20](https://github.com/felipenoris/AWS-DataScience/pull/20)
+opened on the user's authorization** — and its body says in the first line that the branch was **applied
+before it was merged**, which is this repository's normal order for a `[P]` slice but is not the order a
+reviewer assumes. The post-merge `plan` from the merge commit is owed, for the reason pass 1 recorded: a
+fast-forward proves the two branches are the same object only until somebody rebases one.
+
+### A second review pass, after the first propagation — seven things it had missed
+
+The first pass propagated the findings into the stage files. Re-reading against the question *which file
+OWNS each claim that changed* found that two of them had been updated everywhere except in the row that
+asserts them:
+
+| Where | What was still wrong |
+|---|---|
+| **INT-11** | the row describes the `Parameters` reset as a property of **Data Governance** throughout — it is the row that owns the claim, and the symmetry finding had gone into Stage 9 and the checks but not into it |
+| **INT-03** | still read *"both consumers read `DataLakeAdmins: []` today … Stage 5 step 8 fixes it"*, of a thing done hours earlier; and it never said the re-grant is a **pair** |
+| `aws/INDEX.md` | the `DL-6` row was corrected in the first pass and the **`DL-5`** row beside it still said *"read it after every apply in `data-governance/data/`"* — the exact scoping the session had just proven wrong |
+| **Recipe D** | its forward schedule still listed all four accounts as pending. It is a live procedure; two of them ran, and *how* they ran (the precondition re-measured, the reading failing correctly once, the second value the split protected) is the part worth keeping |
+| **`GLOSSARY.md`** | no entry for **resource link**, a term this session made load-bearing twice — it needs its own `DESCRIBE`, and it is the first local catalog object a consumer account creates |
+| **D19** | the decision file records its own revisions inline (2026-08-08, 2026-08-12) and had none for the key's renaming or for `scratch` |
+| **`terraform-modules/README.md`** | opened with **"Empty on purpose today"** while seven modules sat beside it — stale since Stage 3, and the natural home for the nesting rule this session created |
+
+**Two lessons came out of the re-reading rather than out of the apply**, and both are about the record
+rather than about AWS:
+
+- **[Lesson 31](../plan/lessons.md)** — a check inherits the scope of the account it was written in and
+  keeps reporting `pass` about that one. Deliberately *not* filed under Lesson 13: this check
+  discriminates perfectly and is pointed at the wrong set, which is worse, because Lesson 13's failure
+  looks empty and invites suspicion while this one looks like evidence. The cheap fix is printing the
+  scope in the line, and the trigger to re-read every instrument is a **topology** change, not a code one;
+- **[Lesson 32](../plan/lessons.md)** — two spellings of one object survive while nothing has to build it,
+  and the side that has to build it is right. The tie-break that worked is *follow the citation*: all
+  three "scratch bucket" lines credited D19, which never mentions it.
+
+**Second-pass records:** [`integrations.md`](../plan/integrations.md) (INT-03, INT-11),
+[`aws/INDEX.md`](../../aws/INDEX.md) (`DL-5`), [the terraform-changes runbook](../plan/runbooks/terraform-changes.md)
+(Recipe D's schedule, now *where it has run* and *where it runs next*), [`GLOSSARY.md`](../GLOSSARY.md),
+[D19](../plan/decisions/D19-derived-zone.md), [`terraform-modules/README.md`](../../terraform-modules/README.md),
+[`lessons.md`](../plan/lessons.md) (31, 32) with their recognition keys in `CLAUDE.md`, and this stage's
+**Deliverables** — the share pair's metadata half landed, the classification pair's absent half answered.
 
 ### Not done, and owed by name
 

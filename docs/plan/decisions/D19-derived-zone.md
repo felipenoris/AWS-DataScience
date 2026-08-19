@@ -32,6 +32,22 @@ on have no RCP behind them at all (`docs/plan/architecture.md` §4.2). Two of th
   external-access findings as an accepted risk (Lesson 5). The NFS requirement was then withdrawn from
   `objectives.md` and D24 with it — no filesystem exists, and the accepted risk went with the resource.
 
+**Revised 2026-08-19 (Stage 5 pass 4, the sitting that built it) — two corrections of shape, neither of
+which moves the decision.** Practice (iv)'s key is `alias/awsds-<env>-zn-lab`, **not** `-derived`: the
+user amended `security-zone`'s scope so that encryption granularity is that dimension's job in every
+account rather than only inside the lake — a query result over a `zn-lab` table is still `zn-lab` data,
+which is practice (v) applied to the key. **One CMK per (zone × account)**; sharing the *lake's* key
+across the account line was declined on a measurement, `AllowProductionPickupDecryptViaS3` carrying no
+bucket scoping. The applied key policy also delegates *administration* to the account root while
+withholding every cryptographic action, so no IAM policy in the account can grant `Decrypt` behind this
+decision — which is what "the key policy is the answer" has to mean to be true.
+
+And **`scratch` is a prefix in the same bucket, not a bucket of its own.** Three files credited this
+decision for a "scratch + derived-zone *buckets*" pairing it never contained; the origin is D13's
+*"non-registered prefixes (scratch, artifacts, model outputs)"*. The applied shape is one bucket with
+three prefix families — `results/` (the workgroup's enforced output, per-persona because an enforced
+workgroup has exactly one), `derived/${aws:userid}/` (practice ii), `scratch/`.
+
 **The decision itself does not move.** Preventing the copy is still impossible, the destination is still
 managed, and the six practices above all stand. What is corrected is a claim about *who does the
 containing*: for the derived zone in S3 it is the perimeter, exactly as written; for the routes derived
