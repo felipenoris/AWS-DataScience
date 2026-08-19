@@ -172,9 +172,14 @@ terraform-live/
 │   ├── foundation/       # [P] VPC, subnets, route tables, IGW, security groups, private
 │   │                     #     hosted zone, KMS keys, IAM roles, WireGuard Elastic IP,
 │   │                     #     peering requester + routes to Production (D14)
-│   ├── data/             # [P] scratch + derived-zone buckets (per-principal, D19), Athena
-│   │                     #     workgroup, LF resource links to the Data Governance share (D22).
-│   │                     #     The lake itself is NOT here - it lives in data-governance/
+│   ├── data/             # [P] the derived zone (ONE bucket, three prefix families:
+│   │                     #     results/, derived/${aws:userid}/, scratch/ - D19, and
+│   │                     #     `scratch` is a PREFIX, per D13's own wording), its
+│   │                     #     alias/awsds-<env>-zn-lab CMK (D31), the enforced Athena
+│   │                     #     workgroup, this account's own DataLakeSettings, and the LF
+│   │                     #     resource links + local re-grants to the Data Governance
+│   │                     #     share (D22). ONE MODULE, consumer-data, shared with
+│   │                     #     development/data/. The lake itself is NOT here
 │   ├── egress/           # [E] NAT gateway, interface VPC endpoints - the metered network.
 │   │                     #     Two variants behind a switch: D5(A) with NAT, D5(B) without
 │   ├── vpn/              # [D] WireGuard EC2 (stopped, not destroyed)
@@ -198,8 +203,8 @@ terraform-live/
 │   ├── bootstrap/        # [P] state bucket for the Development account
 │   ├── foundation/       # [P] VPC (own CIDR), KMS, IAM roles, peering requester to
 │   │                     #     Production - Studio here must reach GitLab (INT-09)
-│   ├── data/             # [P] scratch + derived zone + Athena workgroup + LF resource
-│   │                     #     links, same shape as sandbox/data/
+│   ├── data/             # [P] the same consumer-data module as sandbox/data/, byte for
+│   │                     #     byte: derived zone + its CMK + workgroup + settings + links
 │   ├── egress/           # [E] NAT + endpoints, same D5 switch as sandbox
 │   ├── dev-env/          # [P] same slice, same module, same pipeline, applied through
 │   │                     #     awsds-deploy-devenv-dev - the image is identical in both

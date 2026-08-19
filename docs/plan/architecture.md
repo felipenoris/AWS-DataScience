@@ -59,7 +59,9 @@ AWS Organization (Management account - console only)                        [P]
 │   │       │     environments are provisioned here by the domain in
 │   │       │     Data Governance (SageMaker AI apps VPC-only,
 │   │       │     restricted egress). Slice is [P]; running apps are      [P/E]
-│   │       ├── scratch / derived-zone S3 buckets (per-principal, D19)      [P]
+│   │       ├── derived zone: ONE bucket, prefixes results/ +              [P]
+│   │       │     derived/${aws:userid}/ + scratch/ (D19; `scratch` is a
+│   │       │     PREFIX per D13, not a bucket), own zn-lab CMK (D31)
 │   │       ├── WireGuard EC2 <- the only human entry point (see below)     [D]
 │   │       └── NAT Gateway + interface VPC endpoints                       [E]
 │   │
@@ -69,7 +71,7 @@ AWS Organization (Management account - console only)                        [P]
 │       ├── blueprint target (D26): the engineering project's
 │       │     environments are provisioned here by the domain in
 │       │     Data Governance. Slice is [P]; running apps are            [P/E]
-│       ├── scratch / derived-zone S3 buckets (per-principal, D19)          [P]
+│       ├── derived zone: same consumer-data module as Sandbox          [P]
 │       └── NAT + interface VPC endpoints                                   [E]
 │
 ├── OU Data                  <- one SCP set: no USER compute (two named

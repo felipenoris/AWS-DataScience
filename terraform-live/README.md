@@ -67,7 +67,13 @@ alone: the `[E]` slices are destroyed and the tree bills **USD 0.0000/h** betwee
 `foundation/` re-plans `No changes` — that pair is D11's proof, not an accident of timing.
 
 **Stage 5 put the lake on disk, in the one account that has no network — `data-governance/data/`
-(2026-08-18/19, applied in three passes).** All `[P]`, and nothing in it is ever torn down:
+(2026-08-18/19, applied in three passes) — and then its consumer side, `sandbox/data/` and
+`development/data/` (pass 4, 2026-08-19).** Those two are the tree's first slices that are **one module
+applied twice**: `terraform-modules/consumer-data/`, so the design lives once and each slice says only
+which account. Each holds the account's own `DataLakeSettings`, its `alias/awsds-<env>-zn-lab` CMK, the
+`awsds-<env>-derived` bucket under it, the enforced `awsds-<env>-athena` workgroup, the two resource links
+to the lake, and the local re-grants without which a held share cannot be used by anybody. All `[P]`.
+Back to the lake itself: All `[P]`, and nothing in it is ever torn down:
 one CMK for the `zn-lab` security zone, the five `awsds-data-*` buckets under it, the Glue databases and
 the Iceberg sample table, the `awsds-data-catalog-maintenance` role with its two unscheduled crawlers, the
 Lake Formation settings/registrations/LF-Tags, the governance manager's grants, and `shares.tf` — the

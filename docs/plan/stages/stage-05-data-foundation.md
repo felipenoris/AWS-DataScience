@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Status** | **PASSES 0-3 DONE (2026-08-18/19)** — the governed lake exists, its grants are made and it is shared: pass 1 `58 to add` applied in two steps, pass 2 `9 added` (the governance manager's own grants), pass 3 `4 added` (the two cross-account shares, four RAM shares `ACTIVE` and held, zero invitations, INT-11 closed). **Passes 4 and 6 remain** — the consumer side, which now opens with a data lake administrator per account (7.3), and Security Hub. Each pass row below carries its own result. **Originally revised 2026-08-16 into the pass/verification format**, with five corrections against earlier stages folded in: the `CROSS_ACCOUNT_VERSION` defence moved to the step whose apply actually touches `DataLakeSettings` (5.4, not 7), the EFS mount rule rewritten against the WireGuard instance's SG (Stage 4's NAT means the peer CIDR never reaches AWS), step 3's role-protection re-read as already delivered by Stage 2's shared deny fragment, step 9 split into what can land now versus what waits for the blueprint-provisioned roles (INT-15), and step 13's delegation mechanics written for the two accounts that hold no CLI profile. **Revised again 2026-08-17 after the data-governance review** (AWS guidance read against the plan; links in `docs/REFERENCES.md`): the LF-Tag ontology carries a **`zone` dimension** from day one and the consumer grants are **LF-TBAC expressions scoped by classification** (`restricted`/`personal` by explicit grant only — Stage 11 then narrows *within* restricted instead of beginning enforcement); the sample table gains a restricted column so the share deliverable proves the scoping; the grant *method* joined decision 5 and the LF-TBAC cross-account prerequisite joined 7.1; the results-zone ceiling on decision 6's grain is stated at step 8; **the raw share to Sandbox is kept deliberately** (data engineers develop the raw→curated ETL there — `docs/plan/institutional-delta.md` row added); and the missing quality gate is declared (3.8). **Revised once more later the same day (2026-08-17): the user withdrew the NFS requirement from `objectives.md`, and [D24](../decisions/D24-shared-filesystem.md) is withdrawn with it** — pass 5 (steps 10-12, the `sandbox/nfs/` slice), question vii and the EFS cost row removed; no other step consumed the filesystem |
+| **Status** | **PASSES 0-4 DONE except pass 4's behavioural half (2026-08-18/19)** — pass 4a/4b applied 2026-08-19: `terraform-modules/consumer-data/` v0.1.0 and the two consumer slices, `1 added` + `15 added` per account in Recipe D's two steps, both re-planning `No changes`, `./aws/datalake.py` **0 FAILED**. What remains of the stage is **4c** (the persona grants in `identity/sso/`), **4d** (every behavioural proof, all needing the tunnel), **4e** (4.3's SCP amendment, last) and **pass 6** (Security Hub). Earlier: **PASSES 0-3 DONE (2026-08-18/19)** — the governed lake exists, its grants are made and it is shared: pass 1 `58 to add` applied in two steps, pass 2 `9 added` (the governance manager's own grants), pass 3 `4 added` (the two cross-account shares, four RAM shares `ACTIVE` and held, zero invitations, INT-11 closed). **Passes 4 and 6 remain** — the consumer side, which now opens with a data lake administrator per account (7.3), and Security Hub. Each pass row below carries its own result. **Originally revised 2026-08-16 into the pass/verification format**, with five corrections against earlier stages folded in: the `CROSS_ACCOUNT_VERSION` defence moved to the step whose apply actually touches `DataLakeSettings` (5.4, not 7), the EFS mount rule rewritten against the WireGuard instance's SG (Stage 4's NAT means the peer CIDR never reaches AWS), step 3's role-protection re-read as already delivered by Stage 2's shared deny fragment, step 9 split into what can land now versus what waits for the blueprint-provisioned roles (INT-15), and step 13's delegation mechanics written for the two accounts that hold no CLI profile. **Revised again 2026-08-17 after the data-governance review** (AWS guidance read against the plan; links in `docs/REFERENCES.md`): the LF-Tag ontology carries a **`zone` dimension** from day one and the consumer grants are **LF-TBAC expressions scoped by classification** (`restricted`/`personal` by explicit grant only — Stage 11 then narrows *within* restricted instead of beginning enforcement); the sample table gains a restricted column so the share deliverable proves the scoping; the grant *method* joined decision 5 and the LF-TBAC cross-account prerequisite joined 7.1; the results-zone ceiling on decision 6's grain is stated at step 8; **the raw share to Sandbox is kept deliberately** (data engineers develop the raw→curated ETL there — `docs/plan/institutional-delta.md` row added); and the missing quality gate is declared (3.8). **Revised once more later the same day (2026-08-17): the user withdrew the NFS requirement from `objectives.md`, and [D24](../decisions/D24-shared-filesystem.md) is withdrawn with it** — pass 5 (steps 10-12, the `sandbox/nfs/` slice), question vii and the EFS cost row removed; no other step consumed the filesystem |
 | **Prerequisites** | Stage 3 — the `[P]` gateway-endpoint IDs its `foundation/` slices export (INT-05) and the `data-perimeter` shapes of its step 9. **Stage 4, for one named input**: the WireGuard Elastic IP (a branch of step 1's bucket-policy condition); every laptop-side proof below also rides the tunnel. Stage 1d step 11 (org-wide RAM sharing; the LF cross-account version read `4`) |
 | **Consumes** | [D6](../decisions/D06-dlp-approach.md), [D13](../decisions/D13-lake-formation-enforcement.md), [D18](../decisions/D18-data-scientist-access.md), [D19](../decisions/D19-derived-zone.md), [D22](../decisions/D22-data-governance-account.md), [D25](../decisions/D25-drop-box-consumer.md), [D26](../decisions/D26-unified-studio.md), [D27](../decisions/D27-catalog-maintenance.md), [D31](../decisions/D31-approver-read.md), [D35](../decisions/D35-sandbox-cardinality.md) |
 | **Proves** | [INT-03](../integrations.md) (the two read shares; the write share waits for Stage 9), [INT-05](../integrations.md), [INT-11](../integrations.md) (its whole remaining half: the version defence and the first grant against the RCP), [INT-10](../integrations.md) **in part** — the writer and maintenance statements are exercised here; the Production pickup half is Stage 9's |
@@ -31,7 +31,7 @@ sharing shape gets proven before Stage 9 repeats it for Production.
 | Where | What | Layer |
 |---|---|---|
 | `data-governance/data/` (new) | KMS CMKs, the four lake buckets + drop-box, Glue catalog, crawlers + the maintenance role, Iceberg, Lake Formation (settings, registrations, LF-Tags), the cross-account shares | `[P]` |
-| `sandbox/data/`, `development/data/` (new, one module) | Athena workgroup, LF resource links, scratch + derived-zone buckets, the D31 CMK | `[P]` |
+| `sandbox/data/`, `development/data/` (**applied 2026-08-19**, one module: `consumer-data` v0.1.0) | the account's own `DataLakeSettings`, Athena workgroup, LF resource links + the local re-grants, the derived-zone bucket with its three prefix families, the D31 CMK (`alias/awsds-<env>-zn-lab`) | `[P]` |
 | Management + Audit, by hand | Security Hub delegated administration and org-wide enablement (step 13) | — (no slice, no profile) |
 
 ```mermaid
@@ -78,7 +78,7 @@ change. The sequence to work in is **six passes**:
 | **1** | 1, 3, 4, 5 | the lake: keys, buckets, policies, drop-box; catalog, role, crawlers; Iceberg; Lake Formation — **authored 2026-08-18, `58 to add`; applied in TWO steps, 5.2's callout** | `data-governance/data/` `[P]` | `awsds-infra-data` |
 | **2** | 6 | D13 made real — grants, the grain decision, the sso/ reading — **DONE 2026-08-19: `9 added`, re-plan `No changes`; the sso/ reading, the grain map and the register rows all landed. The behavioural half (can the persona actually tag?) needs a GM session and the tunnel** - **scheduled 2026-08-19 as [Stage 6](stage-06-unified-studio.md)'s verification (xiii)**, beside (xii), because both need the same sign-in | idem, plus a reading of `identity/sso/` | idem |
 | **3** | 7 | the two cross-account shares, and the INT-11 after-reading — **DONE 2026-08-19: `4 added`, re-plan `No changes`; four `LakeFormation-V4-*` shares `ACTIVE` and held by both consumers, zero invitations, `DL-5` bracket holds. Two findings changed what was applied — the grant option is mandatory, and the default expression needed a `layer` gate to keep the drop-box out** | `data-governance/data/` (`shares.tf`) + RAM | idem |
-| **4** | 8, 9 | the consumer side: workgroups, links, scratch, derived + CMK; the pandas proofs — **opening with a `DataLakeSettings` per consumer account (7.3's finding)**. It also carries the behavioural debts pass 1 left, and the 4.3 amendment, listed below | `sandbox/data/`, `development/data/` `[P]` | `awsds-infra-sandbox-1`, `awsds-infra-dev` |
+| **4** | 8, 9 | the consumer side: workgroups, links, derived zone + CMK; the pandas proofs — **opening with a `DataLakeSettings` per consumer account (7.3's finding)**. It also carries the behavioural debts pass 1 left, and the 4.3 amendment, listed below. **4a/4b DONE 2026-08-19** — one module (`consumer-data` v0.1.0) applied twice, Recipe D per account, `DL-5`/`DL-6` extended per account in the same sitting (the debt pass 3 wrote down), four re-grants per account verified by `list-permissions`, and verification (v) closed. **`scratch` left this row: it is a PREFIX in the derived bucket, not a bucket** — D13's own wording, §8 below. **4c/4d/4e remain** | `sandbox/data/`, `development/data/` `[P]` | `awsds-infra-sandbox-1`, `awsds-infra-dev` |
 | **6** | 13 | Security Hub org-wide | by hand: Management, then Audit | `AWS Control Tower Admin`, console/CloudShell |
 
 Pass 6 sits last so its first standards report covers a lake that exists — and keeps its number:
@@ -88,6 +88,14 @@ resolves nothing), and pass 3 cannot precede pass 1's step 5 (there is nothing t
 **What pass 4 owes beyond its own two steps — written down 2026-08-19 because pass 1 applied resources
 whose *behaviour* it never exercised, and an act with no owning pass is an act that does not happen
 (Lesson 5's shape, applied to the plan itself).** Four debts, in this order:
+
+**4a and 4b are DONE (2026-08-19).** The four debts below are what "pass 4" still means, and they are
+now joined by **4c — the persona grants in `identity/sso/`**, which was deliberately sequenced *after*
+the slices rather than with them: the permission set is one document provisioned into many accounts, so
+before these slices existed the derived-bucket and workgroup ARNs could only have been wildcards; now
+they are read from the two slices' state and enumerated exactly. Until 4c lands the persona holds Lake
+Formation permission and neither `athena:StartQueryExecution` nor `s3:PutObject`, so **nothing can be
+queried yet** and every debt below that needs a session waits on it.
 
 1. **The crawler pair (3.3, verification (iii))** — the phase-4 positive half. `awsds-data-catalog-maintenance`
    and both crawlers exist since pass 1 and **neither has ever run**, so the D27 carve-out is still a
@@ -530,7 +538,7 @@ taxonomy owned by someone who does not answer for the grants is decoration.
 
 ### `sandbox/data/` and `development/data/` — the consumer side, layer `[P]`, one module for both
 
-#### 8. Workgroup, resource links, scratch
+#### 8. Workgroup, resource links, the derived zone's prefixes
 
 **First, and it is a prerequisite rather than a step (established 2026-08-19 at 7.3): each consumer
 account needs its own data lake administrator before anything below resolves.** AWS requires at least one
@@ -543,21 +551,38 @@ resource (INT-11 — read the account's current map first and carry it), and the
 database, which here is the first resource link. **The plan will not state either** — Lesson 27, and
 Recipe D in the terraform-changes runbook is the procedure.
 
-**And the instrument does not cover this yet, which is worth knowing before the apply rather than after
-it:** `DL-5` reads `Parameters` wherever it is pointed, but **`DL-6` is scoped to Data Governance alone**
-(`DATA_PROFILE`) — it was written when only one account had a `DataLakeSettings`. Extend it to each
-consumer account in the same sitting as the settings resource, or pass 4's most expensive failure is the
-one nothing reads. The reading is per account and per catalog object: the two defaults `[]`, and no
+**And the instrument did not cover this, which is why it was extended in the same sitting — DONE
+2026-08-19.** `DL-6` was scoped to Data Governance alone (`DATA_PROFILE`) and was therefore reporting
+`pass` while **both** consumers sat in exactly the state it exists to fail. Both checks are now per
+account. `DL-5` was extended with it, for a reason nobody had stated: the before-reading found **both
+consumer accounts already carrying `CROSS_ACCOUNT_VERSION=4` / `SET_CONTEXT=TRUE`**, so INT-11's reset is
+symmetric and was never a producer-only hazard. In a consumer `DL-6` deliberately carries no
+*databases exist* guard — the reading is only actionable before the first link. The reading is per account and per catalog object: the two defaults `[]`, and no
 database carrying an `IAMAllowedPrincipals` grant. **`DL-7` already reads the consumer side correctly**
 (rebuilt at pass 3): held shares and admin count, reported as separate branches.
 
+**APPLIED 2026-08-19 as `terraform-modules/consumer-data/` v0.1.0, one module called by two slices** —
+`sandbox/data/` and `development/data/`, both `[P]`, both at rank `data`. What follows describes what it
+builds.
+
 Then, per account: the **Athena workgroup** (`awsds-<env>-athena`) — result location local to the account,
-per-query scan limit, and **`EnforceWorkGroupConfiguration = true`** (the setting the console calls
+per-query scan limit (**10 GiB applied**, ≈ USD 0.05 at Athena's USD 5/TB), and
+**`EnforceWorkGroupConfiguration = true`** (the setting the console calls
 "override client-side settings"; without it the result location is whatever the client asks for, which
 makes step 9 a suggestion rather than a boundary, D19); the LF **resource links** to the shared databases;
-and the scratch buckets. Point the enforced result location **into the derived-zone bucket of step 9**, so
-query output lands under the lifecycle, the CMK and the Macie scope designed for it rather than in a
-second, undesigned copy zone.
+and the **prefix families** of step 9. Point the enforced result location **into the derived-zone bucket
+of step 9**, so query output lands under the lifecycle, the CMK and the Macie scope designed for it rather
+than in a second, undesigned copy zone.
+
+**`scratch` IS ONE OF THOSE PREFIXES AND NOT A BUCKET — settled 2026-08-19, at the authoring, by reading
+the origin.** This file, `architecture.md` and `conventions.md` §6 all said "scratch + derived-zone
+*buckets*" and all credited **D19**, which never mentions `scratch`. The origin is **D13**: *"non-registered
+prefixes (scratch, artifacts, model outputs) keep ordinary IAM access"* — `scratch` names the CLASS of
+everything Lake Formation does not govern, and every line on the IAM side of the plan says *prefixes*
+too. A second bucket would have needed either a third CMK the cost model does not carry or a key shared
+for no reason. Applied shape: one bucket, three families — `results/` (the workgroup's enforced output,
+per-persona because an enforced workgroup has exactly one), `derived/${aws:userid}/` (per principal),
+`scratch/`. What makes them real is the `s3:PutObject` scoping on the permission set, which is **4c**.
 
 **An enforced workgroup has one result location, and that is a ceiling on the whole design (2026-08-17;
 Stage 9's status row measured the same limit for Production):** every holder of the persona set can read
@@ -581,11 +606,17 @@ So the local prefixes get designed rather than left over.
   one person's materialised result is not a way around another person's grants;
 - a **lifecycle expiry** (30 days is a reasonable start), so the shadow lake does not silently become
   permanent;
-- **its own KMS CMK** (`alias/awsds-<env>-derived`) — D31, and the only default-deny practice on the
-  list: separate from the account's general-purpose key, because a key shared with scratch, state and logs
-  cannot express "who may read derived data" without breaking everything else that uses it. The key policy
-  grants `kms:Decrypt` to `DataScientistAccess` and to nobody else today; the `DeploymentManagerAccess`
-  set of D31 is deliberately absent, as is any future broad read persona;
+- **its own KMS CMK** — D31, and the only default-deny practice on the list: separate from the account's
+  general-purpose key, because a key that also had to serve state and logs cannot express "who may read
+  derived data" without breaking everything else that uses it. The key policy grants `kms:Decrypt` to
+  `DataScientistAccess` and to nobody else today; the `DeploymentManagerAccess` set of D31 is deliberately
+  absent, as is any future broad read persona.
+  **The alias is `alias/awsds-<env>-zn-lab`, not `-derived` — amended 2026-08-19, by the user** (decision
+  2's row): encryption granularity is the `security-zone` dimension's job in every account, and a query
+  result over a `zn-lab` table is still `zn-lab` data. One CMK per (zone × account). **And the applied
+  policy delegates *administration* to the account root while withholding every cryptographic action** —
+  the module's default `kms:*` root statement would have let any IAM policy in the account grant
+  `Decrypt`, which is the state D31 was created by;
 - `s3:PutObject` scoped to exactly these prefixes on the **permission sets**, never `*` — and, **if
   decision 6 lands on the per-user grain, `s3:GetObject` scoped by the same `${aws:userid}` prefix**
   (2026-08-17): without it a colleague reads the materialised result and the per-user LF filter is undone
@@ -730,7 +761,13 @@ the decision-maker.
    `zn-lab`, the default for every lake bucket **including the drop-box** — so **one lake CMK**,
    `alias/awsds-data-zn-lab`; a second zone is a new value plus a new key, and Bucket Keys keep re-keying
    a bucket-level change. Business segregation stays the renamed **`businessunit`** dimension's job at
-   N>1 (settled 2026-08-17: no separate `unit` key).
+   N>1 (settled 2026-08-17: no separate `unit` key). **AMENDED 2026-08-19, by the user, at pass 4: the
+   dimension does not stop at the lake's account line.** A query result over a `zn-lab` table is still
+   `zn-lab` data, so the consumer accounts' derived-zone CMKs are inside the zone rather than outside it,
+   and are named for it — `alias/awsds-sandbox-zn-lab`, `alias/awsds-dev-zn-lab`. **One CMK per (zone ×
+   account)**: sharing the *lake's* key across the boundary was declined because
+   `AllowProductionPickupDecryptViaS3` carries no bucket scoping. `GOVERNANCE.md` §`security-zone` holds
+   the amended scope; the KMS count is unchanged, only the naming.
 3. **The drop-box container** (1.4) — **DECIDED 2026-08-18, by the user: own bucket
    (`awsds-data-dropbox`), sharing the `zn-lab` CMK** — a deviation from the own-CMK recommendation that
    follows from decision 2's one-zone model. The cost, named: INT-10's key grants (the Production job
@@ -774,12 +811,12 @@ Record every answer, including the ones that come out fine.
 | ii | Does the first cross-account grant arrive on the consumer side with a **fresh** session — i.e. does the RCP's `sts:SetContext` statement leave version-4 vending untouched? — **HALF ANSWERED 2026-08-19: the METADATA half travelled** (four shares `ACTIVE`, held by both consumers, no invitation). **The vending half is untested** — version 4 vends *data* credentials through `sts:SetContext` and nothing has read a row yet, so this closes at pass 4's first query, not here | 7.3 |
 | iii | Does the maintenance role start the raw crawler (the phase-4 positive half), and is the same call denied for a persona session? — **still open, and now with an owner: pass 4's debt list.** The role and both crawlers exist since pass 1 and **neither crawler has ever run**, so the D27 carve-out remains unmeasured in the positive direction | 3.3 |
 | iv | Which compute-free trigger shape starts the drop-box crawler on object creation — and does its run land on the service-guard side of the carve-out? | 3.6 |
-| v | Do the resource links appear with **no** pending RAM invitation anywhere — the org-sharing path working end to end? — **the invitation half is ANSWERED 2026-08-19: zero invitations in either consumer, both holding their shares `ACTIVE`.** The links are pass 4's, and they need each consumer to have a data lake administrator first (7.3) | 7.3, 8 |
+| v | Do the resource links appear with **no** pending RAM invitation anywhere — the org-sharing path working end to end? — **ANSWERED IN FULL 2026-08-19 (pass 4b)**: `DL-7` reads *4 share(s) out, 4 resource link(s) on the consumer side, no pending invitation*. The links resolve — `glue:GetTables` through the `curated` link returns `sample_trades` from both accounts — and no invitation ever existed anywhere | 7.3, 8 |
 | vi | Does `DenyIamPrincipalMutation` in fact cover `iam:UpdateAssumeRolePolicy` for all six persona sets (a reading of `identity/sso/`, Lesson 22)? | 3.5 |
 | vii | *(removed 2026-08-17 — the NFS requirement was withdrawn; there is no EFS to mount)* | — |
 | viii | Can a per-user LF filter be expressed and observed on the SQL path at all (the grain's raw material)? — **ANSWERED 2026-08-19 by the written map** (`docs/GOVERNANCE.md` §"The grain"): *expressed* yes, but only through **TIP**, which reaches the SQL path and not JupyterLab and whose documented price is remote access — so it is reachable and **not adopted**. An LF filter on its own attaches to the role, never the person. `${aws:userid}` prefixes stay the genuinely per-user control, over **copies**. *Observed* is not claimed: nothing was run | 6.4 |
 | ix | Does Security Hub's auto-enable cover existing members and later vends, and which FSBP controls were disabled as not-applicable in the first triage? | 13 |
-| x | Does the default consumer grant exclude the `restricted` column (the classification-scoped TBAC holding), and does the explicit grant admit it? — **answered by the COLUMN LIST, not by rows**: `sample_trades` was applied empty (4.1), so a row count discriminates nothing and the column list discriminates all three states | 6.1, 7.2 |
+| x | Does the default consumer grant exclude the `restricted` column (the classification-scoped TBAC holding), and does the explicit grant admit it? — **answered by the COLUMN LIST, not by rows**: `sample_trades` was applied empty (4.1), so a row count discriminates nothing and the column list discriminates all three states. **THE EXCLUSION HALF IS ANSWERED 2026-08-19, and one layer earlier than this row assumed**: read as each account's own `InfrastructureAccess`, `sample_trades` carries six columns in Data Governance and **five** through the link in both consumers — `counterparty` never crossed the account line, because an account may pass on only what it received and `classification=restricted` was never in the received expression. The negative control is in the same reading. What is still owed is the **persona** session (4d) and the explicit-grant half | 6.1, 7.2 |
 
 ## Risks
 
