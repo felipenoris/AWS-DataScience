@@ -17,7 +17,7 @@ variable "noncurrent_version_expiration_days" {
 }
 
 variable "additional_policy_statements" {
-  description = "Extra bucket-policy statements appended after the TLS-only deny - S3 holds one policy per bucket, so they must arrive through the module."
-  type        = list(any)
+  description = "Extra bucket-policy statements appended after the TLS-only deny - S3 holds one policy per bucket, so they must arrive through the module. Type `any`, deliberately (v0.2.0): IAM statements are heterogeneous objects - a Deny with three condition operators and an Allow with one do not unify into the single element type list(any) demands - and the module only ever concat()s and jsonencode()s them, so the loose type costs nothing the JSON encoding does not already accept."
+  type        = any
   default     = []
 }
