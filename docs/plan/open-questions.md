@@ -180,7 +180,13 @@ started. **The first one is load-bearing against principle 4.**
     `enableTrustedIdentityPropagationPermissions`; JupyterLab and Visual ETL still resolve through the
     project role either way. **Its documented cost: remote access does not work with TIP enabled** — so the
     grain decision and the remote-VS-Code objective pull against each other, and Stage 6 decision 2 records
-    which yields.
+    which yields. **The Stage 5 half is answered (2026-08-18, Stage 5 decision 6, the user's): the grain
+    target is reframed** — entitlement follows the toolset's practice (grants to roles/projects, assumed
+    by people and services), and per-user attribution is an *exploration*, not a requirement; the
+    objective is met at the role/project grain, stated in `docs/GOVERNANCE.md` §"The grain". What
+    survives: Stage 5 pass 2 maps the per-user options and their costs (verification viii), and the
+    Stage 6 half — whether TIP is ever worth its remote-access cost — is now weighed against a *mapped
+    option*, not against an objective, with remote access favoured by default.
 14. **The remote-IDE path is a file-transfer channel to a laptop.** `sagemaker:StartSession` plus the AWS
     Toolkit lets a local VS Code attach to a running space — a `CLAUDE.md` objective, so it is not
     something to deny. It also bypasses whatever a browser IDE could be made to restrict, which makes it

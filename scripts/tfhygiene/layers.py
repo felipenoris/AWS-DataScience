@@ -72,6 +72,11 @@ RANKS = {
     # makes the table stop being evidence. The rank is here early because the ORDER is the
     # part that was got wrong once and is worth fixing before anything consumes it.
     "vpn": 40,
+    # The governed lake (Stage 5). After foundation because its perimeter policy READS the
+    # consumers' foundation/ states (the [P] gateway-endpoint ids, INT-05) - a cross-account
+    # read, so the rank is documentation of dependency, not an ordering up/down ever acts on:
+    # every slice at this rank is [P].
+    "data": 45,
     "egress": 50,
     "probes": 60,
 }
@@ -160,6 +165,15 @@ SLICES = [
     # on billing while the host is stopped, monthly rather than hourly, and they are floor lines
     # in docs/plan/cost-model.md rather than anything this column can carry.
     Slice("sandbox", "vpn", DORMANT, "WireGuard host - the only human path in (Stage 4)", 0.0042),
+    # Stage 5 pass 1 (2026-08-18). Free or floor-priced at rest: one CMK (key-month), five
+    # buckets, catalog objects, LF settings/tags/grants, two on-demand crawlers and the
+    # compaction optimizer (config free; runs metered per DPU-hour, docs/PRICING.md 5).
+    Slice(
+        "data-governance",
+        "data",
+        PERSISTENT,
+        "the lake: zn-lab CMK, 5 buckets, catalog, LF (Stage 5)",
+    ),
 ]
 
 

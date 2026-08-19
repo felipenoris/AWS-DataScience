@@ -210,7 +210,14 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   `security-zone`/`classification`; `raw` default `internal`, fail-open by the user's call; one `zn-lab`
   lake CMK, drop-box sharing it; grant register seeded empty in `AWS_STATE.md`); **decision 5 taken 2026-08-18** (recommendation
   as-is: admins = `InfrastructureAccess` only, shares to the two named accounts, TBAC default + the 7.1
-  catalog-policy prerequisite); decision 6 open — the grain, decided with evidence at pass 2. Then pass 1 authors `data-governance/data/` (`awsds-infra-data`; the account holds only
+  catalog-policy prerequisite); **decision 6 taken 2026-08-18 — the grain reframed: entitlement to
+  roles/projects per the toolset's practice, per-user as mapped exploration (verif. viii = the map;
+  OQ13's Stage 5 half answered). PASS 0 CLOSED — all six decisions taken. PASS 1 AUTHORED 2026-08-18,
+  NOTHING APPLIED**: `data-governance/data/` (11 files, `58 to add`), registered in D11 (18/18).
+  **Its finding: the 5.2 default-permission clearing cannot be stated in a plan** (Computed blocks,
+  `= []` refused) → **the apply is TWO steps** — settings alone under `-target`, `DL-5`/`DL-6` read,
+  then the rest. `s3-bucket` → **v0.2.0** (`any`, not `list(any)`): Recipe B, **tag must be pushed
+  before the caller commit**. Then pass 1 authors `data-governance/data/` (`awsds-infra-data`; the account holds only
   `bootstrap/` today). Sandbox not needed until pass 4's persona proofs (`make down ENV=sandbox` safe). Stage 4 residuals, non-blocking: host left `running`; the user's
   close-out log entry still owed.
 - **Stages 5-11 revised, pre-instrumented (2026-08-16/17):**
