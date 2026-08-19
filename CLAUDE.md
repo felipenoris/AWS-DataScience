@@ -216,8 +216,17 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   NOTHING APPLIED**: `data-governance/data/` (11 files, `58 to add`), registered in D11 (18/18).
   **Its finding: the 5.2 default-permission clearing cannot be stated in a plan** (Computed blocks,
   `= []` refused) → **the apply is TWO steps** — settings alone under `-target`, `DL-5`/`DL-6` read,
-  then the rest. `s3-bucket` → **v0.2.0** (`any`, not `list(any)`): Recipe B, **tag must be pushed
-  before the caller commit**. Then pass 1 authors `data-governance/data/` (`awsds-infra-data`; the account holds only
+  then the rest. `s3-bucket` → **v0.2.0** (`any`, not `list(any)`): Recipe B, tag pushed first.
+- **PASS 1 APPLIED 2026-08-18 — the lake exists.** Five `awsds-data-*` buckets under one CMK
+  (`alias/awsds-data-zn-lab`), `raw`+`curated` registered, 3 LF-Tag keys, 3 databases,
+  `curated.sample_trades` (Iceberg, `restricted` column) + its optimizer,
+  `awsds-data-catalog-maintenance` + 2 unscheduled crawlers. Re-plan `No changes`; `DL-1`–`DL-6`,
+  `DL-10` pass. **The measurement the split existed for: omission CLEARS** (`DbDefaults`/`TableDefaults`
+  read `[]` before any database) — **keep the read-back anyway**, it is provider behaviour the plan
+  still does not state. Verified per database: no `IAMAllowedPrincipals` anywhere. Added beyond the
+  stage text: a **Glue security configuration** (gate finding; a crawler samples contents, so its logs
+  take the lake key) — and the role needs `glue:GetSecurityConfiguration` to run under it. Nothing
+  behavioural proven; crawlers never run. Then pass 1 authors `data-governance/data/` (`awsds-infra-data`; the account holds only
   `bootstrap/` today). Sandbox not needed until pass 4's persona proofs (`make down ENV=sandbox` safe). Stage 4 residuals, non-blocking: host left `running`; the user's
   close-out log entry still owed.
 - **Stages 5-11 revised, pre-instrumented (2026-08-16/17):**
