@@ -254,7 +254,7 @@ assumed:
 | omitting both blocks | `after_unknown: true` for each — **Terraform states no intention about them** |
 | `create_database_default_permissions = []` | refused: *"An argument named … is not expected here. Did you mean to define a block?"* |
 | a `{}` block | would declare **one** entry with computed fields, which is not zero |
-| the provider schema | both are `nesting_mode: list` **blocks**, Computed+Optional, `max_items: 3` |
+| the provider schema | both are `nesting_mode: list` **blocks**, `max_items: 3` — *and that is all it says*. **Amended in the eighth entry**, where it was checked: the JSON schema marks `computed` on attributes and **never on `block_types`**, so "the provider decides this" is carried by the `after_unknown` reading above, not by the schema |
 
 So omission is the only expressible form, and whether it **clears** or merely **leaves alone** is a
 provider property the plan does not state. The consequence is the expensive, silent one: a database
@@ -400,6 +400,92 @@ expected pre-pass notes.
 - **The crawlers have never run.** `DL-3` reads their shape, not a run — verification (iii)'s positive
   half (the SCP carve-out actually matching) is still owed, and it is the first thing that will exercise
   the security configuration added here.
+
+## 2026-08-18 — Pass 1 merged and synchronised, and what the session was worth keeping
+
+*Provenance: **the merge is the user's** (PR #18). The synchronisation, the post-merge reading and the
+documentation work are Claude's, on the user's request in the same sitting. **No AWS write** — the one
+AWS call is a `plan`, which is read-only, run as the **infrastructure user**, account **Data
+Governance**, permission set **`InfrastructureAccess`** (`awsds-infra-data`). The plan file was written
+to the session scratchpad, never into the repository.*
+
+### The synchronisation, and the one reading that makes it more than bookkeeping
+
+`main` at `96639df`; the merged branch deleted locally and two stale remote branches pruned;
+`s3-bucket-v0.2.0` re-confirmed on origin at `9dd35db…`, the hash it was pushed with.
+
+Then the check that a fast-forward alone does not give: **`terraform plan` on
+`data-governance/data/` from the merged `main` returns `No changes`.** The merge preserved what was
+applied — worth one command, because the branch that was applied and the branch that was merged are
+only the same object until somebody rebases or squashes one of them.
+
+### A lesson: 27, the plan's silence
+
+**Added to [`docs/plan/lessons.md`](../plan/lessons.md)**, and it is pass 1's finding generalised rather
+than restated: *a declarative plan is silent about the values the provider owns — so the setting that
+has to be right before anything else exists is precisely the one Terraform will not promise.* What
+earns it a place is the shape rather than the incident: the plan **renders identically** whether the
+apply will clear the defaults or leave them standing, which is Lesson 13's failure moved out of the
+verification and into the artifact that *authorises* the apply. It carries the recognisable class —
+the account-level settings singletons, which create nothing and overwrite state AWS initialised
+(`aws_s3_account_public_access_block`, `aws_ebs_encryption_by_default`, anything `*_default_*`) — and
+the warning against relief: omission clearing is a fact about one provider version, so the read-back
+stays.
+
+**Writing it corrected the discriminator.** The natural instrument is the provider schema, and it does
+not work: `terraform providers schema -json` marks `computed` on **attributes and never on
+`block_types`**, checked here against the pinned provider — so for a block it reports `nesting_mode`
+and `max_items` and nothing about who decides the value. The instrument is the plan:
+`terraform show -json … | jq '… .change.after_unknown'`, and it is meaningful only on a create-or-update
+plan (a `no-op` returns `{}`, everything being known from state — also verified here, against the
+post-merge plan above). **This is the second time in this stage that the obvious place to look did not
+hold the answer**, and both times the plan JSON did.
+
+### The runbook gained the recipe this stage invented
+
+[`terraform-changes.md`](../plan/runbooks/terraform-changes.md), four changes:
+
+- **A new Recipe D — the staged apply**, `-target` as a *measurement* rather than a shortcut: the two
+  preconditions, the `after_unknown` check, and five steps of which step 1 is "write down what reading
+  would make you stop" and step 4 is acting on it. It states what the recipe is **not** — never a way
+  around a dependency the graph should express, since `depends_on` already orders the halves; what it
+  buys is **a pause the graph cannot give you**.
+- **§8's prohibition reworded rather than contradicted.** It read "never `-target`", which this stage
+  deliberately did; it now forbids `-target` *as a convenience* and names Recipe D as its only
+  sanctioned use, so the two pages stop disagreeing.
+- **Recipe B gained the step that plants the landmine**: how to plan a caller against a module version
+  whose tag does not exist yet (point `source` at the local path), and that the revert is **two halves**
+  — revert *and* re-init, because only the second touches `.terraform/modules`. The blocked-commit table
+  gained the matching row, distinct from the one already there: same message, different cause.
+- **The `checkov` row strengthened** from "fix it or suppress it" to what pass 1 actually cost: an
+  accepted finding can pull in whole resources the stage text never had, each with its own requirements
+  — `CKV_AWS_195` cost a security configuration, a key-policy statement **and** a
+  `glue:GetSecurityConfiguration` that surfaced only at apply. **An accepted gate finding re-enters the
+  recipe.**
+
+Section numbers 5-7 shifted to 6-8 by the insertion; internal references updated. Per `CLAUDE.md` the
+`§` numbers are historical anchors, so the stable references are the recipe letters.
+
+### Two findings deliberately NOT promoted, and the criterion
+
+The lessons file admits only what would otherwise be relearned the hard way, so applying it means saying
+no twice here:
+
+- **`glue:GetSecurityConfiguration`** — a role must read the security configuration it runs under. Real,
+  and it cost an apply failure, but the error **names the missing action**; it is self-announcing and
+  costs one retry. It lives in the runbook's checkov row, where somebody about to accept a gate finding
+  will meet it.
+- **A bucket policy validates its `Principal`**, so a statement for a role a later stage will create
+  names the account root and narrows with `ArnLike`. This was **anticipated in authoring, not learned by
+  failing** — it was written that way the first time. Recorded in pass 1's entry; not a lesson.
+
+### Not done
+
+- **The stage itself did not advance.** Passes 2, 3, 4 and 6 are untouched, 4.3's SCP amendment is still
+  owed via battery phase 4b, and **the crawlers still have never run** — nothing behavioural is proven
+  that was not proven before this entry.
+- Stage 4's two residuals are unchanged and are not this stage's: the host left `running`, and the
+  close-out log entry, which is the user's.
 
 ---
 

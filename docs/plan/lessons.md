@@ -339,6 +339,47 @@ lesson can be *recognised* without opening this file; the reasoning that makes e
    attached to an account — cannot be probed inertly at all, and stays a reading. That is the honest
    outcome, not a reason to create an object so the probe becomes available.
 
+27. **A declarative plan is silent about the values the provider owns — so the setting that has to be
+   right *before anything else exists* is precisely the one Terraform will not promise.** Stage 5 step
+   5.2 rests entirely on D13: the lake's databases must be **born** without the `IAM_ALLOWED_PRINCIPALS`
+   default grants, because those act at creation time and clearing them afterwards does not reach a
+   database that already exists. That obligation is an *emptying*, and
+   `aws_lakeformation_data_lake_settings` offers no way to write it. Three forms were tried against the
+   pinned provider and none of them states it: omitting both blocks plans as **`after_unknown: true`**,
+   which is Terraform declaring *no intention*; `create_database_default_permissions = []` is refused,
+   because they are blocks and not arguments; a `{}` block would declare **one** entry with computed
+   fields, which is not zero. So the security property the stage exists to establish could not be
+   expressed at all, and the plan rendered **identically** in the case where the apply would clear the
+   defaults and the case where it would leave them standing. **That is Lesson 13's shape moved into the
+   plan itself** — the artifact you read *before* acting cannot distinguish the two outcomes, which is
+   worse than a verification that cannot, because the plan is what authorises the apply.
+   **The discriminator is one command on a plan you already have**, and the obvious route does not work:
+   `terraform providers schema -json` marks `computed` on attributes and **never on `block_types`**, so
+   the schema cannot answer it for blocks. The plan can:
+
+   ```bash
+   terraform show -json <plan>.tfplan | jq '.resource_changes[] | select(.address=="<addr>") | .change.after_unknown'
+   ```
+
+   Anything coming back `true` is decided by the **provider**, not by your configuration. Ask it on a
+   create-or-update plan — on a `no-op` everything is known from state and the answer is `{}`. If the
+   cleared state of one of those is load-bearing, the apply must be **split so the result can be read
+   before anything depends on it**, which is why [Recipe D](runbooks/terraform-changes.md) now exists.
+   **The class is recognisable in advance, and that is the half worth carrying.** The exposed resources
+   are the **account-level settings singletons** — the ones that create nothing and overwrite
+   server-side state that AWS, not you, initialised: `aws_lakeformation_data_lake_settings` here, and by
+   the same shape `aws_s3_account_public_access_block`, `aws_ebs_encryption_by_default`, and most things
+   named `*_default_*`. They have no create, only a put, so whatever you omit either keeps what was
+   there before you existed or does not, and only the provider's implementation says which.
+   **And the good outcome is a measurement of one provider version, not a property of Terraform.**
+   Omission turned out to clear (`DbDefaults: []`, then verified per database: no `IAMAllowedPrincipals`
+   grant anywhere). That was obtained by looking, the plan still does not state it, and the next
+   provider version can change it in silence with nothing failing — so the read-back is kept rather than
+   the split being collapsed. **Against Lesson 5**, its nearest neighbour: there a property was written
+   down and no policy line enforced it; here the property could not be *written down at all*, and the
+   tell is different — not a stated intention missing its enforcing line, but a `plan` that renders the
+   same text whether the intention will hold or not.
+
 ---
 
 *Plan core: [GENERAL_PLAN.md](../GENERAL_PLAN.md) · Decisions: [docs/plan/decisions/INDEX.md](decisions/INDEX.md) · Stages: [docs/plan/stages/INDEX.md](stages/INDEX.md)*

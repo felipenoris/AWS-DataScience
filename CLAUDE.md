@@ -165,7 +165,7 @@ its `Consumes` row lists.
 | Cross-account wiring | [`docs/plan/integrations.md`](docs/plan/integrations.md), the `INT-nn` rows |
 | An unfamiliar acronym, or the notation | [`docs/GLOSSARY.md`](docs/GLOSSARY.md) |
 | Running an `aws` command by hand, or signing in | [`aws/AWS-CLI.md`](aws/AWS-CLI.md) — the recipes, and which identity runs them |
-| **A Terraform change by hand** — the two-commit tag order, blocked commits | [`docs/plan/runbooks/terraform-changes.md`](docs/plan/runbooks/terraform-changes.md) |
+| **A Terraform change by hand** — the two-commit tag order, blocked commits, **the staged apply (Recipe D — the only sanctioned `-target`)** | [`docs/plan/runbooks/terraform-changes.md`](docs/plan/runbooks/terraform-changes.md) |
 | "What would an institution do?" | [`docs/plan/institutional-delta.md`](docs/plan/institutional-delta.md) — so a lab compromise is not learned as a pattern |
 | Root is needed, or its alarm chain is being changed | [`docs/plan/runbooks/break-glass.md`](docs/plan/runbooks/break-glass.md) |
 | **A VPN key event** — a copy is lost, the secret is touched, a device is revoked, the host pair rotates — **or a shell on the VPN host** | [`docs/plan/runbooks/vpn-keys.md`](docs/plan/runbooks/vpn-keys.md) — loss is recovery from the `[P]` secret, never rotation. **§0a is the SSM session** and where `--target` comes from |
@@ -226,9 +226,11 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   still does not state. Verified per database: no `IAMAllowedPrincipals` anywhere. Added beyond the
   stage text: a **Glue security configuration** (gate finding; a crawler samples contents, so its logs
   take the lake key) — and the role needs `glue:GetSecurityConfiguration` to run under it. Nothing
-  behavioural proven; crawlers never run. Then pass 1 authors `data-governance/data/` (`awsds-infra-data`; the account holds only
-  `bootstrap/` today). Sandbox not needed until pass 4's persona proofs (`make down ENV=sandbox` safe). Stage 4 residuals, non-blocking: host left `running`; the user's
-  close-out log entry still owed.
+  behavioural proven; crawlers never run. **Merged (PR #18), synced, re-planned `No changes` from the
+  merge commit.** The finding generalised into **Lesson 27** + the runbook's **Recipe D** (`-target` as
+  a measurement; `after_unknown` is the instrument — `providers schema` never marks `computed` on
+  blocks). Sandbox not needed until pass 4's persona proofs (`make down ENV=sandbox` safe). Stage 4
+  residuals, non-blocking: host left `running`; the user's close-out log entry still owed.
 - **Stages 5-11 revised, pre-instrumented (2026-08-16/17):**
   `aws/{vpn,datalake,studio,supplychain,cicd,deploytargets,orchestration,dlp}.py` — `DL-5`/`DT-5` guard
   the LF `Parameters` (INT-11). **St.8 pass 4, St.9 passes 4-5, St.10's Staging leg wait on the vend.**
@@ -292,3 +294,5 @@ the reasoning that makes it *usable* is in the file. Recognising one is the sign
     account.**
 26. **An "already exists" error is a free authorization probe — and proves nothing without a negative
     control.**
+27. **A plan is silent about the values the provider owns — including the one that must be right before
+    anything else exists.**
