@@ -108,7 +108,7 @@ the same sitting as the grant**, the discipline `POLICIES.md` keeps for policy s
 [`docs/GOVERNANCE.md`](GOVERNANCE.md) defines the model and references this table; the stage log carries
 each grant's story. A grant found in AWS with no row here is drift, in either direction.
 
-*Nine rows covering **17 applied triples**, in three groups. Pass 1's four are **operational** —
+*Thirteen rows covering **25 applied triples**, in four groups. Pass 1's four are **operational** —
 same-account, named-resource by design, the machinery the catalog needs to maintain itself. Pass 2's
 three rows are the first grants to a **human persona** and cover nine triples (three resources each).
 **No `SELECT` and no grant option exists on any pass-1 or pass-2 row — verified by `list-permissions`
@@ -116,7 +116,10 @@ against the API, not inferred from the code.** Pass 3's two rows are the first *
 and the first anywhere to carry the **grant option** — which for a cross-account grant is mandatory, not
 discretionary: the share lands on the account and its own data lake administrator must pass it on
 (`GOVERNANCE.md` §Grants). They are also the only rows whose principal is an **account** rather than a
-role.*
+role. **Pass 4's four rows are the RE-GRANTS** — the same expressions passed on inside each consumer
+account to a local principal, which is the only way anything in a receiving account can use a share, plus
+`DESCRIBE` on each resource link (a local database object, and a permission distinct from any permission
+on the target). None of them carries the grant option: the reader is never the grantor (1b step 3.7).*
 
 | Date | Principal | Expression / resource | Permissions | Why (log entry) |
 |---|---|---|---|---|
@@ -129,8 +132,18 @@ role.*
 | 2026-08-19 | idem | `ALL_TABLES` wildcard in each of the three databases — **3 triples** | `DESCRIBE` | the tables it must tag, including ones the crawlers have not inferred yet (idem) |
 | 2026-08-19 | **account** `Sandbox Account 1`, **account** `Development` — **2 triples** | LF-Tag expression on **databases**: `layer ∈ {raw, curated}` | `DESCRIBE` **with grant option** | the container the consumer's resource links point at; no classification gate, because `curated`'s database carries no classification and an unmatched database cannot be linked (Stage 5 pass 3) |
 | 2026-08-19 | idem — **2 triples** | LF-Tag expression on **tables**: `layer ∈ {raw, curated}` **AND** `classification ∈ {public, internal}` | `SELECT`, `DESCRIBE` **with grant option** | the default consumer read of `GOVERNANCE.md` §Grants. The `layer` half keeps the drop-box out; `restricted` and `personal` are absent by enumeration (idem) |
+| 2026-08-19 | `DataScientistAccess` in `Sandbox Account 1` **and** in `Development` — **2 triples** | resource link `raw` (a local database) | `DESCRIBE` | a link is a local object and needs its own permission: without it the persona sees no database at all, whatever it holds on the target (Stage 5 pass 4) |
+| 2026-08-19 | idem — **2 triples** | resource link `curated` | `DESCRIBE` | idem |
+| 2026-08-19 | idem — **2 triples** | LF-Tag expression on **databases**, `catalog_id` = Data Governance: `layer ∈ {raw, curated}` | `DESCRIBE` | the re-grant of the account-level share to a local principal — an administrator may pass on only what it received with the grant option (idem) |
+| 2026-08-19 | idem — **2 triples** | LF-Tag expression on **tables**, `catalog_id` = Data Governance: `layer ∈ {raw, curated}` **AND** `classification ∈ {public, internal}` | `SELECT`, `DESCRIBE` | the read itself. Verified by `list-permissions` in each account: four rows for the persona and nothing else, **no grant option on any of them** (idem) |
 
-**Not a row, but visible in `list-permissions` and expected:** the `InfrastructureAccess` role holds
+**Not a row, but visible in `list-permissions` and expected — and true in three accounts since pass 4.**
+Each consumer account's `InfrastructureAccess` holds `ALL, DESCRIBE, DROP` **with grant option** on the
+two resource links it created: Lake Formation grants the creator of a catalog object, and no code here
+asked for it. The sentence below is the same fact in Data Governance, and it now reads one account
+further out.
+
+The `InfrastructureAccess` role holds
 `ALL` on everything it created — Lake Formation grants the creator, and that principal is the data lake
 administrator by decision 5. It is not an applied triple and nothing revokes it.
 

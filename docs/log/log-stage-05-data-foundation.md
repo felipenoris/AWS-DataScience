@@ -878,6 +878,190 @@ pre-Stage-2 prose, and `CLAUDE.md` over the 20 KB budget (it was already over be
 - The debts the previous entry left are unchanged: the crawlers have still never run, the persona-tagging
   proof still needs a governance-manager sign-in with the tunnel up, and 4.3's amendment is still owed.
 
+## 2026-08-19 — Pass 4a/4b APPLIED: the consumer side exists, and the check that was passing was reading the wrong account
+
+*Provenance: **this entry is Claude's**, written on the user's request in the same sitting, and unlike
+every entry since pass 3 it **does change AWS**: two `terraform apply` runs per consumer account, on the
+user's explicit authorization given mid-sitting. Every measurement below is a read-only call made after
+the write it reports on. Redactions per `scripts/check-identifiers.py`: accounts are named, never
+numbered.*
+
+### What the sitting was asked for, and what it turned into
+
+It opened as *prepare the next step*. The preparation itself produced the finding, before a line of
+Terraform was written — which is the whole argument for taking the before-reading first.
+
+### The before-reading, and the reason it stopped being a formality
+
+`get-data-lake-settings` in **both** consumer accounts, taken before authoring:
+
+| | Sandbox | Development |
+|---|---|---|
+| `DataLakeAdmins` | `[]` | `[]` |
+| `Parameters` | `CROSS_ACCOUNT_VERSION=4`, `SET_CONTEXT=TRUE` | idem |
+| `Create{Database,Table}DefaultPermissions` | `IAM_ALLOWED_PRINCIPALS: ALL` | idem |
+
+**Both hazards are symmetric, and nothing in the plan said so.** INT-11 was written about the producer:
+an apply that names admins and omits `parameters` resets `CROSS_ACCOUNT_VERSION` to 1 and every share
+fails silently afterwards. The consumer accounts turn out to carry the same two values — set by nobody in
+this repository, defended by nobody until this pass — so the same resource in the same stage would have
+reset them one account further from where anyone looks. And Lesson 27's create-defaults are live in both,
+with the first local catalog object being the **resource link** rather than a database somebody notices.
+
+### The instrument gap was worse than "not extended yet"
+
+`DL-6` was reporting **`pass`** while two accounts sat in exactly the state it exists to fail. It was
+scoped to `DATA_PROFILE` because Data Governance was the only account with a `DataLakeSettings` when it
+was written; pass 3 wrote the debt down precisely so it would be paid in the sitting that writes the
+consumer settings, and this is that sitting. Extended both checks per account. **In a consumer, `DL-6`
+deliberately carries no *databases exist* guard** — the producer-side version has one — because the
+defaults act at creation time and the reading is only actionable *before* the first link, which is
+exactly when a guard would silence it.
+
+`DL-5` was extended the same way, for the symmetry above. The report's admin table now carries
+`Parameters` and both default blocks per consumer, so the discriminator is visible and not only checked.
+
+### What was built
+
+`terraform-modules/consumer-data/` (**v0.1.0**, new) and two thin slices calling it —
+`terraform-live/sandbox/data/` and `terraform-live/development/data/`, both `[P]`, registered at rank
+`data`. `s3-bucket` went to **v0.3.0** for one reason: it could expire only *noncurrent* versions, which
+reaches nothing that was never overwritten, and `DL-9` fails a `*-derived` bucket with no `Expiration`
+rule. Recipe B ran as a **chain of three commits** — `s3-bucket` tagged and pushed before
+`consumer-data` could even `init`, then `consumer-data` tagged and pushed before the slices could.
+
+**The module nests another module by tag, which this repository had not done before.** It resolves
+exactly as the flat case does; the note is in the module rather than in a lesson, because the only new
+fact is that the tag order has one more link in it.
+
+### Three design points settled in the authoring, one of them by the user
+
+**1. `scratch` is a prefix, not a bucket** — and the plan says both. `D13` is the origin and it is
+unambiguous: *"non-registered prefixes (scratch, artifacts, model outputs) keep ordinary IAM access"* —
+`scratch` there is the CLASS of everything Lake Formation does not govern, listed beside `artifacts` and
+`model outputs`. Every line on the **IAM** side says *prefixes* (`identity/sso/`'s owed-grants note,
+1b step 3.4, the set's own description); the three lines calling it a **bucket** are all on the topology
+side (`architecture.md`, `conventions.md` §6, this stage's own table) and all credit **D19**, which does
+not mention `scratch` anywhere. Both spellings entered in the same commit, so it is original ambiguity
+rather than drift. The derived bucket carries three prefix families instead — `results/`,
+`derived/${aws:userid}/`, `scratch/` — which is what the IAM side always described.
+
+**2. The CMK is per (zone × account)** — **the user's call, and it changed the shape.** The question
+reached the user as *scratch needs a key and only one is budgeted*; the answer reframed it: encryption
+granularity is the `security-zone` dimension's job everywhere, not only inside the lake, so the consumer
+key is `alias/awsds-<env>-zn-lab` rather than `alias/awsds-<env>-derived`. Same zone, different account.
+
+The variant considered and declined in the same exchange was **the lake's own key**, and the reason it
+was declined is a measurement rather than a preference: `AllowProductionPickupDecryptViaS3` on
+`alias/awsds-data-zn-lab` grants `kms:Decrypt` to `awsds-prod-job-exec` with **no bucket scoping** — only
+`kms:ViaService=s3` and the role ARN. Encrypting a consumer's derived zone with that key would put
+Production's job role over this account's materialised `restricted` copies with the S3 layer as the only
+thing left standing, which is the state D31 exists to prevent. Two further consequences were named: a
+cross-account KMS dependency under a local working bucket, and a `security-zone` LF-Tag governing a bucket
+no LF-Tag can be assigned to.
+
+**3. The key policy delegates administration to root and no cryptographic action.** The module's default
+policy — and the lake key's first statement — grants the account root `kms:*`, which means *the account's
+IAM decides who may use this key*. Here that would undo D31 outright: any IAM policy in the account could
+then grant `kms:Decrypt`, which is how D31 was created in the first place. So root keeps every
+administrative action (the anti-lockout guarantee is intact, Terraform can re-policy and delete) and holds
+no `Encrypt`, `Decrypt`, `GenerateDataKey*` or `ReEncrypt*`. **What it does not close is stated in the
+file**: the administrator can call `kms:PutKeyPolicy` and rewrite the statement (Lesson 18). What the
+shape buys is that widening it is an edit with a diff, not a side effect of some other grant.
+
+### The apply, in Recipe D's two steps, per account
+
+**The precondition was re-measured rather than assumed**, on the create plan:
+`create_database_default_permissions` and `create_table_default_permissions` both come back
+`after_unknown: true` — the plan states no intention about either, exactly as at pass 1 and in the same
+pinned provider. Lesson 27 says a good reading does not retire the split, and it did not.
+
+| | Sandbox | Development |
+|---|---|---|
+| step 1, settings alone under `-target` | `1 added` | `1 added` |
+| the reading between | `DL-6` **pass** — omission clears | `DL-6` **pass** |
+| step 3, the remainder | `15 added` | `15 added` |
+| re-plan | `No changes` | `No changes` |
+
+**The reading between the halves did something a green check usually does not: it failed, correctly.**
+After Sandbox's step 1 and before Development's, the run reported `DL-6` **FAILED** for
+`awsds-infra-dev` — the pre-apply state, in the account whose turn had not come. That is the extended
+check working on its first outing, and it is the reading the old single-account version could not have
+produced.
+
+### What exists now, measured after the fact
+
+Per consumer account: the zone CMK, `awsds-<env>-derived` under it with a 30-day expiry, the Athena
+workgroup `awsds-<env>-athena` **enforcing** its configuration into `s3://awsds-<env>-derived/results/`
+with a 10 GiB per-query scan cap, a `DataLakeSettings` naming `InfrastructureAccess`, two resource links
+(`raw`, `curated`) and four grants to `DataScientistAccess`.
+
+`./aws/datalake.py`: **0 check(s) FAILED**, and `DL-7` moved off its between-passes note to
+*"4 share(s) out, 4 resource link(s) on the consumer side, no pending invitation"* — **verification (v)
+is now answered in both halves**.
+
+**The grants verified against the API rather than the code**, `list-permissions` in each account, four
+rows for the persona and nothing else:
+
+| Resource | Expression | Permissions | Grant option |
+|---|---|---|---|
+| `Database` (the `raw` link) | — | `DESCRIBE` | none |
+| `Database` (the `curated` link) | — | `DESCRIBE` | none |
+| `LFTagPolicy` DATABASE | `layer ∈ {raw, curated}` | `DESCRIBE` | none |
+| `LFTagPolicy` TABLE | `layer ∈ {raw, curated}` AND `classification ∈ {public, internal}` | `SELECT`, `DESCRIBE` | none |
+
+No grant option anywhere on the persona, which is 1b step 3.7 holding: the reader is never the grantor.
+
+**One applied triple nobody wrote**, and it belongs in the register for exactly that reason: the
+resource links carry `ALL, DESCRIBE, DROP` **with grant option** for `InfrastructureAccess` in each
+account. Lake Formation gives the creator of a catalog object full permission on it; the code granted
+none of it. Expected, undeclared, and now recorded.
+
+### Verification (x), answered earlier in the chain than the plan expected
+
+The plan frames the classification pair as a persona-session test. It is enforced one layer sooner, and
+the column list says so with a negative control in the same reading:
+
+| Read as `InfrastructureAccess` in | `sample_trades` columns |
+|---|---|
+| Data Governance (the owner) | `trade_id, trade_date, instrument, quantity, price, **counterparty**` |
+| Sandbox, through the link | `trade_id, trade_date, instrument, quantity, price` |
+| Development, through the link | `trade_id, trade_date, instrument, quantity, price` |
+
+**The `restricted` column never crossed the account line.** The consumer's own data lake administrator
+cannot see it either — an account may pass on only what it received, and `classification=restricted` was
+never in the received expression. The share is doing column-level work before any persona exists, which
+is a stronger result than the deliverable asked for and a different claim from the one still owed: what a
+**persona** session sees is 4d's, and it needs the tunnel.
+
+### Records
+
+**Code:** `terraform-modules/s3-bucket/` (v0.3.0), `terraform-modules/consumer-data/` (v0.1.0, new),
+`terraform-live/{sandbox,development}/data/` (new, 7 files each), `scripts/tfhygiene/backend.py`
+(the `DATA_LAKE` emission), `scripts/tfhygiene/layers.py` (two rows), `aws/datalake.py` (`DL-5`/`DL-6`
+per account), `aws/INDEX.md`.
+
+**AWS:** 32 resources created across two accounts. Nothing destroyed, nothing changed.
+
+**Gates:** `make check` **OK**. `pre-commit` green on all three commits; one commit rejected first by
+tflint for two unused data sources in the slices, which were removed rather than suppressed.
+
+**Branch `claude/stage-05-pass-4`, three commits, pushed with both tags** — not merged, and the PR is the
+user's to open.
+
+### Not done, and owed by name
+
+- **4c — the persona grants in `identity/sso/`.** Deliberately *after* this apply rather than with it:
+  the document is one object provisioned into many accounts, so the derived-bucket and workgroup ARNs
+  would have had to be wildcards; now they can be read from these two slices' state and enumerated
+  exactly. Without it the persona holds Lake Formation permission and no `athena:StartQueryExecution` and
+  no `s3:PutObject`, so nothing can be queried yet.
+- **4d — every behavioural proof**, which is all of them: the pandas pair, the persona half of the
+  classification pair, the workgroup boundary, the crawler pair, the drop-box asymmetry. All need a
+  persona sign-in with the tunnel up.
+- **4e — 4.3's `athena:StartQueryExecution` amendment**, still last and still through battery phase 4b.
+- Pass 6 (Security Hub) untouched; `DL-11` still notes it enabled nowhere.
+
 ---
 
 *Log index: [docs/log/INDEX.md](INDEX.md) · Stage index: [docs/plan/stages/INDEX.md](../plan/stages/INDEX.md)*

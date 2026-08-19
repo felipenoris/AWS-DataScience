@@ -256,6 +256,24 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   each consumer's *held* shares + admin count. **Pass 4's new opening prerequisite: each consumer account
   needs its OWN `DataLakeSettings`** (admins `[]` today → empty catalog by rule), with INT-11 and
   Lesson 27 both applying there. `sts:SetContext` only half-tested — vending waits for pass 4's query.
+- **PASS 4a/4b APPLIED 2026-08-19 — the consumer side exists.** `consumer-data` **v0.1.0** (one module,
+  two slices, the tree's first *nested* module-by-tag) + `s3-bucket` **v0.3.0** (current-version expiry);
+  Recipe B as a **3-commit chain**, Recipe D per account (`1 added`, read, `15 added`, `No changes`).
+  Per account: `alias/awsds-<env>-zn-lab` CMK, `awsds-<env>-derived` (30-day expiry), enforced
+  `awsds-<env>-athena` (10 GiB cap → `results/`), own `DataLakeSettings`, 2 links, 4 re-grants.
+  **The finding came from the before-reading: INT-11's reset hazard is SYMMETRIC** (both consumers already
+  carried 4/TRUE) — and **`DL-6` was reporting `pass` over two accounts in the failing state**; both checks
+  now report per account, consumer `DL-6` with no *databases exist* guard. `DL` **0 FAILED**; `DL-7` at
+  4 shares/4 links/0 invitations → **verification (v) closed**. **Verification (x)'s exclusion half answered
+  one layer early: `counterparty` is absent in BOTH consumers even to their own admin** (6 columns vs 5,
+  negative control in the same reading) — the `restricted` column never crosses the account line.
+  Register **13 rows / 25 triples**. Three settled in authoring: **`scratch` is a PREFIX** (D13's wording;
+  the "bucket" lines all credit D19, which never says it), **CMK per (zone × account)** (user's call —
+  the lake's key declined because `AllowProductionPickupDecryptViaS3` has no bucket scoping), **key policy
+  delegates administration to root and no crypto action**. **Owed: 4c** (persona grants in `identity/sso/`
+  — sequenced after so ARNs come from state, not wildcards), **4d** (all behavioural proofs, tunnel),
+  **4e** (the SCP amendment, last), pass 6. Branch `claude/stage-05-pass-4`, 3 commits + 2 tags pushed,
+  **not merged**.
 - **Pass 0-3 findings PROPAGATED 2026-08-19 (doc-only, no AWS call).** St.5: pass 4 gains a debt list —
   the crawlers **never ran** (verif. iii), the drop-box halves, and 4.3's amendment **last**;
   `sample_trades` was applied **EMPTY**, so verif. (x) reads a *column list* and row evidence waits for

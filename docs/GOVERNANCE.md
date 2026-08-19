@@ -92,9 +92,27 @@ grants — the Production job role and the maintenance role need the drop-box's 
 isolation therefore rests on the **S3 statements and Lake Formation alone**; the KMS layer separates
 *zones*, not buckets. Revision trigger: the first dataset whose blast radius argues for its own zone.
 
-Scope: this dimension governs the **Data Governance lake buckets**. The derived-zone CMKs in the
-consumer accounts stay outside it, one per account, because their key policy *is* the read control
-there (D31).
+**Scope: the dimension governs the zone wherever the zone's data lands — amended 2026-08-19, by the
+user, at Stage 5 pass 4.** It used to stop at the Data Governance lake buckets, with the consumer
+accounts' derived-zone CMKs declared outside it. That exception is withdrawn: a query result over a
+`zn-lab` table is still `zn-lab` data (D19 practice v — classification inherits, and so does the zone),
+so encryption granularity is this dimension's job in every account rather than a per-bucket decision
+taken twice.
+
+**One CMK per (zone × account), and the second half of that pair is not negotiable.** The lake's key is
+`alias/awsds-data-zn-lab`; the same zone in Sandbox and Development is `alias/awsds-sandbox-zn-lab` and
+`alias/awsds-dev-zn-lab`. Sharing the *lake's* key across the account line was considered and declined in
+the same exchange, for a reason that is measured rather than aesthetic: `AllowProductionPickupDecryptViaS3`
+on the lake key grants `kms:Decrypt` to `awsds-prod-job-exec` with **no bucket scoping** — only
+`kms:ViaService=s3` and the role ARN — so a consumer's derived zone under that key would put Production's
+job role over that account's materialised `restricted` copies, with S3 as the only remaining barrier.
+Two further costs were named: a cross-account KMS dependency under a local working bucket, and an LF-Tag
+governing a bucket no LF-Tag can be assigned to (the derived zone has no catalog object).
+
+**D31 is unchanged and is what the per-account key still delivers**: the key policy in each consumer
+account says who may read the copies — `DataScientistAccess` today, the project execution roles from
+Stage 6 — and it delegates *administration* to the account root while withholding every cryptographic
+action, so no IAM policy in the account can grant `Decrypt` behind it.
 
 ### `classification`
 
@@ -289,15 +307,28 @@ to leave the first wrong.
 ## Derived zone
 
 Query results are the copy the design *manages* rather than forbids — saving results is the job
-(Lesson 1). Each consumer account gets a designed destination with five controls:
+(Lesson 1). Each consumer account gets a designed destination — `awsds-<env>-derived`, applied at
+Stage 5 pass 4 — with five controls:
 
 - the Athena workgroup **forces** results there (`EnforceWorkGroupConfiguration = true` — the client
   cannot choose another destination);
 - prefixes **per principal** (`…/derived/${aws:userid}/`) — one person's materialised result is not a
   path around another's grants;
 - **lifecycle expiry** (30 days) — the shadow lake never silently becomes permanent;
-- a **dedicated CMK** per consumer account whose key policy says who may read the copies (D31);
+- a **dedicated CMK** per consumer account whose key policy says who may read the copies (D31) —
+  `alias/awsds-<env>-zn-lab`, the zone's key in that account (§`security-zone`);
 - the prefixes are pre-declared **Macie + CloudTrail data-event scope** for Stage 11.
+
+**Three prefix families in one bucket, and `scratch` is one of them rather than a bucket of its own**
+(settled 2026-08-19, at the authoring). `results/` is the Athena workgroup's enforced output location —
+per-persona, because an enforced workgroup has exactly one; `derived/${aws:userid}/` holds materialised
+copies per principal; `scratch/` holds the notebook's working files. **The plan said "scratch bucket" in
+three places and "scratch prefixes" in five, and the prefix reading is the origin**: D13's own sentence
+is *"non-registered prefixes (scratch, artifacts, model outputs) keep ordinary IAM access"* — `scratch`
+names the CLASS of everything Lake Formation does not govern, beside `artifacts` and `model outputs`,
+and D19 (which the bucket wording credits) never mentions it at all. What makes the families real is the
+`s3:PutObject` scoping on the permission set, not an S3 object, since a prefix exists only once
+something is written under it.
 
 **And one rule that is policy, not mechanism: the output of a query over `restricted` data is
 `restricted`.** "Declared as policy" means: a written norm for people to follow — treat that file as

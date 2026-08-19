@@ -140,6 +140,16 @@ people is Lesson 5 with a `WHERE` clause.
   on the tables whose classification requires one (start with the sample `curated` table: one
   column-restriction filter, one row filter), named `awsds-flt-<table>-<what>` — a contract with
   `./aws/dlp.py` (`DP-3`).
+> **What pass 4 measured, and it constrains everything in this step (2026-08-19).** The `restricted`
+> column does not cross the account line **at all** under the default share: read as its own
+> `InfrastructureAccess`, `curated.sample_trades` shows six columns in Data Governance and **five** in
+> both consumer accounts — `counterparty` is filtered by the share's `classification ∈ {public,
+> internal}` gate, before any persona is involved, because an account may pass on only what it received.
+> So a data cells filter written here reaches a consumer only if the `restricted` grant is made in **two
+> hops**: an explicit cross-account grant from Data Governance *with grant option*, then a local re-grant
+> in the consumer account — and the local half is itself the pair of 2.1b below plus `DESCRIBE` on the
+> resource link. A filter granted only on the producer side is invisible in the account that would use it.
+
 - **2.1b — [Claude] Write the filtered grants**, replacing the corresponding explicit `restricted` grants
   in the Stage 5 share map: `aws_lakeformation_permissions` with the `data_cells_filter` block, to the consumer
   accounts with grant option; the consumer-side regrant lands in the same slice pattern Stage 9 2.3 used.
