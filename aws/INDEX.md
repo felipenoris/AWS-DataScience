@@ -508,7 +508,7 @@ for them (Lesson 20's rule: configuration for configuration questions, probes fo
 | Does the unified domain exist — exactly one, V2, **in Data Governance**? | 2, decided by `US-1` |
 | Did a domain appear in any *other* account — INT-12's fallback by accident, or the 1c root deny not holding? | 2, decided by `US-2` |
 | **Is anything SageMaker-shaped running in Data Governance** — the registry/runtime split (step 0's second preflight)? | 4, decided by `US-2` |
-| Which blueprints are configured, and is Redshift among them (forbidden, D12/D26)? | 3, decided by `US-3` |
+| Which blueprints are configured — is any **Redshift-backed**, and is any **outside decision 5's category 1**? | 3, decided by `US-3`, which since 2026-08-19 answers **two** questions with two different messages: the Redshift family (`RedshiftServerless`, and `LakehouseCatalog` — RMS-backed, decision 4) reopens D26/D12, while anything else off the allow-list amends Stage 6 decision 5. The categories are [`docs/SMUS.md`](../docs/SMUS.md) |
 | Do the `experimentation` and `engineering` project profiles exist? | 3, decided by `US-4` |
 | Is every Interactive SageMaker AI domain **VpcOnly**, with idle shutdown ENABLED? | 4, decided by `US-5`/`US-7` |
 | Does any deployment target carry a domain (D28)? | 4, decided by `US-6` |

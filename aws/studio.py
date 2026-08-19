@@ -787,7 +787,8 @@ What the checks are, and where each comes from:
   US-1   exactly one DataZone V2 domain, in Data Governance (step 1; D26)
   US-2   no domain anywhere else; nothing SageMaker-shaped in Data Governance
          (step 0's second preflight; the registry/runtime split)
-  US-3   blueprint configurations exist and none is Redshift (step 1; D12/D26)
+  US-3   blueprint configurations exist, none is Redshift-backed, and none is
+         outside decision 5's category 1 (step 1.4; D12/D26, docs/SMUS.md)
   US-4   the experimentation and engineering project profiles exist (step 1)
   US-5   every Interactive SageMaker AI domain is VpcOnly (step 1)
   US-6   the deployment targets stay headless (D28): no SageMaker domain there,
