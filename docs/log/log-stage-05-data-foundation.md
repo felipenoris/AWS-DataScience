@@ -487,6 +487,117 @@ no twice here:
 - Stage 4's two residuals are unchanged and are not this stage's: the host left `running`, and the
   close-out log entry, which is the user's.
 
+## 2026-08-19 — Pass 2 authored: the governance manager's own grants, `9 to add` — and the reading that found a persona holding nothing
+
+*Provenance: **this entry is Claude's**, written on the user's request. **NOTHING IS APPLIED.** The AWS
+calls are all reads — `iam list-roles`, `terraform plan`, `providers schema` — as the **infrastructure
+user**, account **Data Governance**, permission set **`InfrastructureAccess`** (`awsds-infra-data`). Plan
+files were written to the session scratchpad, never into the repository. Redactions as this file's header
+states; the SSO role suffix is truncated wherever it appears.*
+
+### What was authored
+
+`governance.tf` — the first grants this project makes to a **human persona**, and the delivery of
+decision 5's second half ("the governance manager is never an admin … and receives specific grants
+instead"). `plan`: **9 to add, 0 to change, 0 to destroy** — nothing of pass 1 is touched.
+
+| Grant | Permission | Why |
+|---|---|---|
+| the three LF-Tag keys | `ASSOCIATE` | assigning tags to datasets — the job `GOVERNANCE.md` gives the persona. Values read **from the tag resources**, so an ontology value cannot go missing here (Lesson 14) |
+| the three databases | `DESCRIBE` | without it the persona sees an **empty catalog** |
+| their tables, `wildcard` | `DESCRIBE` | covers the tables the crawlers have not inferred yet |
+
+**No `SELECT` and no grant option anywhere in the file.** The set implements the permission set's own
+one-line description, written back in Stage 2 and unread since: *"The catalog, never the rows."* The
+principal is resolved **by pattern** like the admin before it, and the role was confirmed to exist first
+(`AWSReservedSSO_GovernanceManagerAccess_…` is provisioned in this account by `identity/sso/`'s
+`governance-manager@data-governance` assignment — the only account that assignment names).
+
+### 6.2's reading, and it comes back in the strongest form the question has
+
+The step asks whether any of the six persona sets carries an S3 grant reaching this account's buckets.
+**Every single `s3:` mention across the four policy files is inside a `Deny`** — there is no `s3:Get*`
+**Allow** anywhere in the six sets, not scoped, not wildcarded, not on another account's buckets. The
+four are `DenyTerraformStateAccess` (`s3:*` on `awsds-*-tfstate` — the wildcard read in the closing
+direction), `DenyMakingStorageOrImagesPublic`, the scientists' `DenyEveryWrite`, and the approvers'
+`DenyReadingTheRows` (`s3:Get*` whole).
+
+*Analysis:* **D13's premise therefore holds by absence rather than by exclusion.** 6.1's "no S3
+permission of any kind on Data Governance buckets" needed no carve-out written anywhere, because there
+was never a grant to carve out of — which is what D22's account split bought and what the old
+same-account layout would have made a per-prefix exclusion problem. The drop-box `PutObject` exception
+6.1 names is granted by **bucket policy** to the Interactive-OU roles, so its absence from the permission
+sets is correct rather than missing.
+
+### The finding, and it is a persona that held nothing while a file said otherwise
+
+Writing the grants surfaced what the reading above cannot show on its own: **the IAM half already existed
+and grants the persona nothing.** `policies-approvers.tf` carries `AdministerLakeFormation` —
+`AddLFTagsToResource`, `GrantPermissions`, `CreateLFTag` — which reads like the whole answer. Lake
+Formation authorizes **separately**: the IAM action permits the API *call*, an LF permission (`ASSOCIATE`)
+decides whether it *succeeds*. The two halves sit in different accounts, different slices and different
+stages, and the unit anyone opens is a slice.
+
+What makes it expensive is the failure shape: before this pass the persona could not tag a single
+dataset, and with Lake Formation enforcing, a missing grant makes `glue:GetDatabases` return an **empty
+list** rather than an error — so the wrong conclusion is drawn from a file that is accurate, and the
+symptom is an absence. The reverse direction has no symptom at all: revoke the LF grant and the IAM
+policy still describes the capability.
+
+**Promoted to [Lesson 28](../plan/lessons.md)**, with the mitigation shipped beside it rather than left
+to memory: a comment at **each** end pointing at the other — in `policies-approvers.tf` beside the
+statement, and in the slice README's §"A permission here is the intersection of two systems".
+
+### Verification (viii) answered as a map, per decision 6
+
+The grain question stops being an objective and becomes the written map decision 6 asked for, now in
+`docs/GOVERNANCE.md` §"The grain": **LF row/column filters** attach to a *role*, so per-user is not
+theirs to give; **TIP** is the only surface that makes Lake Formation see a person, reaches the SQL path
+and not JupyterLab, and costs remote access — reachable, **not adopted**; **`${aws:userid}` prefixes**
+are genuinely per-user but govern *copies*. Read together they are why the grain is the role.
+*Expressed* is answered; *observed* is not claimed — nothing was run.
+
+### What was NOT established, and is deliberately unasserted
+
+**What a non-administrator must hold in order to *grant* data permissions through an LF-Tag expression.**
+`ASSOCIATE`'s own semantics were confirmed (it permits assigning the tag to a catalog resource and
+implicitly grants `DESCRIBE`), but the complementary question was not: the Lake Formation pages are
+JavaScript-rendered and **returned no body to an automated fetch** — the first attempt answered from the
+model's own memory while admitting it had seen no content, and was discarded. What is recorded came from
+AWS's indexed text via search, and `docs/REFERENCES.md` carries that provenance explicitly so the row
+cannot be leaned on further than it earns.
+
+It is **Stage 6's to settle by measurement**, with a real governance-manager session, when the persona
+first has to grant rather than tag — decision 5's named revision trigger arriving on schedule. *Analysis,
+worth stating before it is met:* if granting does require holding the permission with the grant option,
+then the separation D31 asks for cannot live in Lake Formation and lives in the **IAM** deny
+(`DenyReadingTheRows`) instead — the approver would hold `SELECT` in the permission layer and still have
+no path to a row.
+
+### Repository, in the same sitting
+
+- **The slice README rewritten into an index of controls**, in `POLICIES.md`'s discipline and at the
+  user's direction: one row per `Sid`, per tag assignment, per grant — the LF settings and ontology, the
+  four key-policy statements, the perimeter's two `Sid`s with their three branches and two carve-outs, the
+  drop-box's four, both service roles, and pass 2's grants. It says what the **code** declares;
+  `docs/AWS_STATE.md` keeps what is **deployed**, and the file names that split so a second staler answer
+  cannot grow.
+- `docs/REFERENCES.md`: the LF-Tag permissions row, with the provenance caveat above.
+- The stage file: 6.2 answered inline, verification (viii) answered, the pass table annotated.
+- `GOVERNANCE.md`: §"The grain" gained the map; §Grants' "empty until pass 2" line corrected — pass 1's
+  operational rows had already landed.
+- `make check`: OK.
+
+### Not done
+
+- **Nothing is applied**, and the grant register in `docs/AWS_STATE.md` is therefore **unchanged** — its
+  rows are written in the same sitting as the grant, not in the sitting that authors it.
+- **No behavioural proof.** Whether the persona can in fact tag a dataset is a claim about the pair, and
+  measuring it needs a governance-manager session — which carries `DenyControlPlaneOffVpn`, so it needs
+  the tunnel up. It joins the stage's other owed proofs rather than forming a new class.
+- Pass 3, 4 and 6 untouched; 4.3's SCP amendment still owed via battery phase 4b; **the crawlers still
+  have never run**.
+
 ---
 
 *Log index: [docs/log/INDEX.md](INDEX.md) · Stage index: [docs/plan/stages/INDEX.md](../plan/stages/INDEX.md)*

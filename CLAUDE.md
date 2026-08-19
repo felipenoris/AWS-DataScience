@@ -106,6 +106,7 @@ write anything into it. Claude can read the files in this folder to gather infor
 | [`README.md`](README.md) | How the AWS resources are structured, and the project layout, so people can understand the components |
 | [`terraform-live/README.md`](terraform-live/README.md) | How the deployed tree is organised. Updated when an account folder or a top-level rule changes — **never a copy of the slice tree**, which lives in `docs/plan/conventions.md` §6 |
 | [`terraform-live/identity/org-policies/POLICIES.md`](terraform-live/identity/org-policies/POLICIES.md) | One row per entry in **every** document in `policies/`, all four policy types: what it does, why, and what it does once attached. **Reviewed in the same sitting as any policy change**, attachments included. `./scripts/check-index.py` decides the mechanical half; whether a row is still *true* is the reading |
+| [`terraform-live/data-governance/data/README.md`](terraform-live/data-governance/data/README.md) | The same discipline for the lake's own controls — one row per bucket/key-policy `Sid`, per LF-Tag assignment, per grant, per settings attribute. **Reviewed in the same sitting as a change to the slice's `.tf` files.** No mechanical check exists for it; the `.tf` comments carry the reasoning, this file carries the index |
 | [`docs/PRICING.md`](docs/PRICING.md) | A row for every new AWS service referenced |
 
 # Claude memory
@@ -156,6 +157,7 @@ its `Consumes` row lists.
 | **The data-governance model** — the LF-Tag ontology (`layer`, `businessunit`, `security-zone`, `classification`), the grant rules and default expressions, the drop-box and derived-zone contracts | [`docs/GOVERNANCE.md`](docs/GOVERNANCE.md) — Stage 5 decisions 1-3, the one copy; applied grants live in `docs/AWS_STATE.md`'s grant register |
 | **How the deployed tree is organised, and what is in it today** | [`terraform-live/README.md`](terraform-live/README.md) — **the slice-by-slice layout itself stays in `docs/plan/conventions.md` §6**, the authority when the two disagree |
 | **What a given policy statement denies, and why that statement exists** | [`terraform-live/identity/org-policies/POLICIES.md`](terraform-live/identity/org-policies/POLICIES.md) — one row per `Sid`, per document, all four types. Policy ids and attachment dates are **not** there: those are in the stage log |
+| **What governs the LAKE** — a bucket-policy branch, a key-policy statement, a tag assignment, an LF grant | [`terraform-live/data-governance/data/README.md`](terraform-live/data-governance/data/README.md) — `POLICIES.md`'s discipline applied to the slice: one row each, reviewed in the same sitting as the change. It says what the **code** declares; **applied** triples are `docs/AWS_STATE.md`'s grant register. Read its §"A permission here is the intersection of two systems" before claiming what any principal can do (Lesson 28) |
 | What was actually done by hand in a stage | [`docs/log/`](docs/log/INDEX.md)`log-stage-NN-*.md` — **the stage file's slug, prefixed `log-`**; [`docs/log/INDEX.md`](docs/log/INDEX.md) first, so only one log is opened |
 | **What is deployed right now** — accounts, OUs, SSO groups, users, permission sets, assignments | [`aws/INDEX.md`](aws/INDEX.md) — read-only scripts and their snapshots in `aws/output/` (untracked). **Regenerate rather than trust a stale file, and never copy an account id or email out of one** |
 | **Whether something a snapshot shows is expected** — before reporting it as a finding | [`docs/AWS_STATE.md`](docs/AWS_STATE.md) — the invariants (`INV-nn`), the known exceptions (`EXC-nn`), and what a later stage will change anyway. **Read it whenever a snapshot is read** |
@@ -231,6 +233,15 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   a measurement; `after_unknown` is the instrument — `providers schema` never marks `computed` on
   blocks). Sandbox not needed until pass 4's persona proofs (`make down ENV=sandbox` safe). Stage 4
   residuals, non-blocking: host left `running`; the user's close-out log entry still owed.
+- **PASS 2 AUTHORED 2026-08-19, `9 to add`, NOTHING APPLIED.** `governance.tf` — the GM's own grants
+  (`ASSOCIATE` on the 3 tag keys, `DESCRIBE` on the 3 databases + tables by wildcard; **no `SELECT`, no
+  grant option**). **6.2 read: every `s3:` in the six persona sets is a `Deny`** — D13 holds by
+  *absence*, not exclusion. **Lesson 28** from it: LF authorizes above IAM, the halves sit in different
+  slices, a missing LF grant reads as an **empty catalog**. Verification (viii) = decision 6's map in
+  `GOVERNANCE.md` §"The grain" (TIP is the only per-person surface; costs remote access; not adopted).
+  **Unasserted on purpose** — what a non-admin needs to *grant* via an LF-Tag expression (LF doc pages
+  return no body to fetch); Stage 6 settles it by measurement. Slice README is now an **index of
+  controls** (`POLICIES.md` discipline). Register unchanged until the apply.
 - **Stages 5-11 revised, pre-instrumented (2026-08-16/17):**
   `aws/{vpn,datalake,studio,supplychain,cicd,deploytargets,orchestration,dlp}.py` — `DL-5`/`DT-5` guard
   the LF `Parameters` (INT-11). **St.8 pass 4, St.9 passes 4-5, St.10's Staging leg wait on the vend.**
@@ -296,3 +307,5 @@ the reasoning that makes it *usable* is in the file. Recognising one is the sign
     control.**
 27. **A plan is silent about the values the provider owns — including the one that must be right before
     anything else exists.**
+28. **A service with its own permission layer makes reach an *intersection* — and the two halves sit in
+    different slices, so a slice never answers "what can this persona do".**

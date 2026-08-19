@@ -223,6 +223,22 @@ data "aws_iam_policy_document" "governance_manager" {
   # is NOT in the list: lakeformation:GetDataAccess, the call that vends credentials for the
   # underlying objects. It is denied below rather than merely omitted, because it is the one
   # action in this service that turns an administrator of access into a reader of data.
+  #
+  # THIS STATEMENT ON ITS OWN GRANTS THE PERSONA NOTHING, AND THAT IS NOT A FIGURE OF SPEECH
+  # (recorded 2026-08-19, Stage 5 pass 2). Lake Formation runs its OWN authorization layer on
+  # top of IAM: holding lakeformation:AddLFTagsToResource here permits the API CALL, while
+  # whether the call succeeds is decided by an LF permission - ASSOCIATE on the tag - granted
+  # in a different account, by a different slice, in a different stage
+  # (terraform-live/data-governance/data/governance.tf, step 6). The persona's real reach is
+  # the INTERSECTION of the two, and this file is only ever one of the halves.
+  #
+  # WHY THAT IS WORTH A COMMENT RATHER THAN ASSUMED KNOWLEDGE: the natural unit to read is a
+  # slice, and the slice is never the authorization unit. Before pass 2 landed, this list read
+  # exactly as it reads now and the persona could not tag a single dataset - the failure being
+  # an empty result or an access error at the moment of use, with nothing here to suggest why.
+  # The same trap runs in reverse: revoking the LF grant leaves this list untouched and still
+  # describing a capability that no longer exists. Verify the PAIR, never one side
+  # (docs/plan/lessons.md, the two-authorization-systems lesson).
   statement {
     sid    = "AdministerLakeFormation"
     effect = "Allow"

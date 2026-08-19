@@ -380,6 +380,34 @@ lesson can be *recognised* without opening this file; the reasoning that makes e
    tell is different — not a stated intention missing its enforcing line, but a `plan` that renders the
    same text whether the intention will hold or not.
 
+28. **When a service keeps its own permission layer above IAM, a principal's reach is the *intersection* —
+   and this repository's layout puts the two halves in different slices, so a slice is never the unit that
+   answers "what can this persona do".** Stage 5 pass 2 made the governance manager's first grants, and the
+   reading that preceded them is the lesson. `identity/sso/policies-approvers.tf` carries a statement called
+   `AdministerLakeFormation` — `AddLFTagsToResource`, `GrantPermissions`, `CreateLFTag` — which reads like
+   the complete answer to what the persona may do, and **on its own it grants nothing**. Lake Formation
+   authorizes separately: the IAM action permits the API **call**, an LF permission (`ASSOCIATE` on the tag)
+   decides whether the call **succeeds**. The two live in different accounts, different slices and different
+   stages, while the natural unit to open is a slice.
+   **What makes it expensive rather than merely true is the shape of the failure.** Before pass 2 landed
+   that file read exactly as it reads now, and the persona could not tag a single dataset — and with Lake
+   Formation enforcing, a missing grant makes `glue:GetDatabases` return an **empty list**, not an error. So
+   the wrong conclusion is drawn from a file that is *accurate*, and the symptom is an absence: Lesson 13's
+   shape arriving through a service's own result-filtering rather than through a check somebody wrote.
+   **The reverse direction is worse, because it has no symptom at all** — revoke the LF grant and the IAM
+   policy still describes the capability, leaving a confident statement that nothing in the repository
+   contradicts.
+   **The general form:** Lake Formation over IAM is one instance; a KMS key policy, an S3 bucket policy, a
+   Glue or RAM resource policy are the same shape. Any claim about what a principal can do **names both
+   halves or is not a claim**. The discriminator, to apply while writing rather than while debugging: for
+   each capability, can you point at the two grants? If you can point at one, the other exists somewhere
+   and you have not read it. **Against Lesson 20**, its nearest neighbour: there several policies deny the
+   same call and only one is proven — redundancy making a *result* ambiguous; here the two grants are each
+   **necessary**, and reading one makes an *absence* invisible. The mitigation shipped with the lesson: a
+   comment at each end pointing at the other ([`policies-approvers.tf`](../../terraform-live/identity/sso/policies-approvers.tf),
+   [`data/README.md`](../../terraform-live/data-governance/data/README.md) §"A permission here is the
+   intersection of two systems").
+
 ---
 
 *Plan core: [GENERAL_PLAN.md](../GENERAL_PLAN.md) · Decisions: [docs/plan/decisions/INDEX.md](decisions/INDEX.md) · Stages: [docs/plan/stages/INDEX.md](stages/INDEX.md)*
