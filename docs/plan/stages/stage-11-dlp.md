@@ -29,7 +29,7 @@ in 1b is finally *collected on*: a service that emits findings nobody reads is L
 | Where | What | Layer |
 |---|---|---|
 | `data-governance/data/` (amended) | LF data cells filters + the filtered grants; the data-events trail; the `awsds-data-logs` delivery statements; EventBridge rules, SNS topic, alarms | `[P]` |
-| `sandbox/data/`, `development/data/` (amended, one module) | each account's data-events trail on its derived bucket; the mass-read rule + alarm + SNS | `[P]` |
+| `sandbox/data/`, `development/data/`, `production/data/` (amended, one module — every `consumer-data` caller that exists by then) | each consumer account's data-events trail on its derived bucket; the mass-read rule + alarm + SNS | `[P]` |
 | Management + Audit, by hand | Macie delegation, members and the discovery job; the internal-access analyzer; GuardDuty's two paid features org-wide | — (no slice, no profile) |
 | `identity/org-policies/` (amended — decision 6) | the CloudTrail-tampering statement, through battery phases 1-3 | `[P]` |
 | `aws/`, `docs/` | `./aws/dlp.py` (pre-written); the `GD-3` flip in `./aws/guardduty.py` (`VP-8` until the 2026-08-18 split); the `audit-iam-analyser.sh` second-analyzer expectation; the threat model `docs/plan/threat-model.md` | — |
@@ -101,11 +101,13 @@ discount, not a measurement window).
   organization's accounts — the CLI (`create-member`) requires each account's **e-mail address**, which
   must never be copied out of `secrets/`. Set auto-enable for new accounts **on** (a Stage 14 vend arrives
   covered), **automated sensitive data discovery off** (decision 1). Management, Log Archive, Audit's
-  siblings, Staging and Production stay out — nothing governed sits in them (Production joins when
-  decision 3 adds `awsds-prod-outputs` to the scope).
+  siblings and Staging stay out — nothing governed sits in them. **Production is in the moment
+  `awsds-prod-derived` exists** (Stage 9's `consumer-data` call; the pre-declared scope of
+  `GOVERNANCE.md` §Derived zone), and `awsds-prod-outputs` joins when decision 3 adds it.
 - **1.3 — [user] Run one one-time discovery job from Audit**, every wizard field decided in advance
   (Lesson 16): scope = the lake buckets (`awsds-data-raw`, `awsds-data-curated`, the drop-box) **plus the
-  derived buckets** in Sandbox and Development (D19 practice iv — the map of decision 3); **sampling
+  derived buckets** — every `awsds-<env>-derived` that exists at run time (D19 practice iv — the map of
+  decision 3, from `GOVERNANCE.md` §Derived zone's pre-declared scope); **sampling
   depth** per decision 1 (the cost lever: GB inspected × USD 1.00); **managed data identifiers** = the
   recommended default set, no custom identifiers; job type **one-time** — re-run deliberately, never
   scheduled. **The wizard's discovery-results repository prompt is decision 2** — answer it from the log,
@@ -204,7 +206,8 @@ enumerated-ARN instrument: created, read, recorded, deleted inside one month.
   trust **Entire organization** (Audit is already the Access Analyzer delegated administrator; **only one
   org-level internal analyzer can exist per organization**). Resources by **exact bucket ARN** (account id
   + ARN pairs; prefixes are not supported): the map of decision 3 — recommended minimum: the two
-  registered lake buckets and the two derived buckets, USD 36 for the month. No new principals arrive:
+  registered lake buckets and every `awsds-<env>-derived` (three once Stage 9 has run — at USD 9 per
+  resource-month that is USD 45 for the month). No new principals arrive:
   `AWSServiceRoleForAccessAnalyzer` exists org-wide since 1b (Lesson 17, checked not assumed).
 - **2.1.4 — [Claude] Amend the instruments in the same sitting**: `audit-iam-analyser.sh` expects the
   second analyzer (type `ORGANIZATION_INTERNAL_ACCESS`) while it lives; restate **INV-10** in
@@ -306,10 +309,11 @@ warning is the price of that choice, cents at lab scale. Alarms ride **EventBrid
 bus** (data events are matched by ordinary `ENABLED` rules once the trail logs them; AWS-service events
 are free) with the rule's `MatchedEvents` metric — no CloudWatch Logs ingestion anywhere.
 
-- **5.1 — [Claude] Write the trail module and the three slice amendments** — `awsds-<env>-data-events` in
-  `data-governance/data/`, `sandbox/data/`, `development/data/`: **advanced event selectors only** —
+- **5.1 — [Claude] Write the trail module and the slice amendments** — `awsds-<env>-data-events` in
+  `data-governance/data/` and every `consumer-data` caller that exists by then (`sandbox/data/`,
+  `development/data/`, `production/data/` after Stage 9): **advanced event selectors only** —
   `resources.type = AWS::S3::Object`, `resources.ARN` starts-with the account's monitored buckets (the
-  decision 3 map: lake + drop-box in Data Governance; the derived bucket in each Interactive account) —
+  decision 3 map: lake + drop-box in Data Governance; the derived bucket in each consumer account) —
   **no management-event selector**, reads and writes both, log file validation on. Delivery: all three
   cross-account into **`awsds-data-logs`** under `AWSLogs/<account>/` (decision 7), with the bucket-policy
   statements for `cloudtrail.amazonaws.com` conditioned on `aws:SourceAccount` ∈ the three account ids —
@@ -426,9 +430,12 @@ decision-maker.
    long-term results, or results expire in 90 days. Recommended: **skip it at lab scale** — findings
    (the durable part) live in Security Hub and the threat model; record the 90-day acceptance.
 3. **The monitored-resource map** (1.3, 2.1.3, 5.1) — which buckets Macie scans, the analyzer monitors
-   and the trails select. Recommended: lake (`raw`, `curated`, drop-box) + the two derived buckets;
-   **`awsds-prod-outputs` joins when Stage 9's producer path first carries real data**. One map, one
-   variable, consumed by all three (Lesson 14).
+   and the trails select. Recommended: lake (`raw`, `curated`, drop-box) + **every `awsds-<env>-derived`
+   that exists at run time** — the derived-zone prefixes are pre-declared Macie + data-event scope
+   ([`GOVERNANCE.md`](../../GOVERNANCE.md) §Derived zone, one of the zone's five controls), consumed here
+   rather than re-decided, so Production's joins the map the day Stage 9 creates it;
+   **`awsds-prod-outputs` joins when Stage 9's producer path first carries real data** — the one
+   genuinely open addition. One map, one variable, consumed by all three (Lesson 14).
 4. **The step 4 unblock path** (4.3) — Stage 15 settled the carve-out question (no administration role
    exists; its decision 1 chose detach/re-attach and recommended against the carve-out), so the default
    here is the same procedure. Recommended: **whichever the Stage 15 log answers** — a carve-out written against a

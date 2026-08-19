@@ -120,6 +120,7 @@ trigger: the first dataset whose blast radius argues for a key of its own.
 
 | `Sid` | What it denies |
 |---|---|
+| `DenyInsecureTransport` | `s3:*` where `aws:SecureTransport = false` — the `s3-bucket` module's own statement, prepended to every bucket's single policy in both trees (the module README owns its reasoning; the consumer README carries the sibling row) |
 | `DenyOutsideTrustedNetworks` | `s3:*` to every principal **unless** one of three branches matches. It is a `Deny` with negated conditions, so a caller matching *no* branch is refused |
 | `DenyStalePresignedUrls` | `s3:*` where `s3:signatureAge > 900000` ms. A presigned link is a **bearer credential**; 15 minutes bounds how long a leaked one works. The preventive counterpart of Stage 11's presigned-URL detection |
 

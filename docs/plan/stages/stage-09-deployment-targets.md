@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Status** | not started — **revised 2026-08-16 into the pass/verification format, against the official AWS documentation read the same day**; pre-instrumented by `./aws/deploytargets.py`. Corrections folded in: the old step 7 dissolved into a pass-0 reading — **the deploy roles, the deploy runner, the misuse alarms and INT-07's image half are Stage 8's** (its pass 1 and step 3.0), not this stage's to rebuild; the "KMS grants so Staging can decrypt what it pulls from the Production ECR" were **deleted against the documentation** — ECR decrypts through the grants it holds on the repository key, the puller needs no `kms:Decrypt`, and what cross-account model *deployment* actually needs is three resource policies (model package group, ECR repository, artifact S3 + KMS), whose Staging principals join **at the vend**; the Athena "per-principal result prefix" was unbuildable as written — an enforced workgroup has **one** result location (the override is documented), so results land in a lifecycled, CMK-protected results zone and within-persona visibility is recorded as a limit rather than papered over; the LF grant is written as the documented **two steps** (account-level grant *with grant option* from the grantor, local regrant to the job role by Production's LF admin); `DataScientistStagingAccess` was read as already built — **it carries no Athena and denies every write** (Stage 2), so step 5's Staging half is a reading, not a build; and the job-execution role name became a **contract** with Stage 5's drop-box statements. **Revised again 2026-08-19, against what Stage 5 passes 1-3 actually measured** — three corrections, all in the sharing machinery this stage repeats for the third and fourth accounts: the `DataLakeSettings` apply is **two steps, not one** (the create-defaults cannot be expressed empty and act at creation time — Lesson 27/Recipe D, and it now binds `production/data/` *and* `staging/data/`), **2.2's consumer-side reading was expecting the wrong thing** (a receiving account with no data lake administrator shows an empty catalog while holding the share — Production has none until 1.3, a pass later), and the **grant option stopped being Production's special case** while the `layer` gate became mandatory on any TBAC expression written here (Lesson 29). **Revised once more 2026-08-19, against pass 4 having actually run this machinery in two accounts** — three things now inherited as measured rather than expected: the `Parameters` half of the settings hazard is **symmetric**, so Production's and Staging's own maps are to be READ before their settings resource is authored (both consumer accounts turned out to be carrying `CROSS_ACCOUNT_VERSION=4` already, set by nobody in this repository); the re-grant is **a pair, not a single grant** — `DESCRIBE` on the resource link *as a local database* alongside the permission on the target, and the first half is the one that gets missed, with *no database visible at all* as its symptom; and **`terraform-modules/consumer-data/` v0.1.0 already exists**, so the **LF half** of `production/data/` — the settings, the resource links, the re-grants, the enforced workgroup, the zone CMK and the derived zone — is a **call to `consumer-data`** at whatever version this stage's inputs require, rather than a third authoring. The outputs bucket and the `app_outputs` database are Production-specific resources written *beside* the call; and any input the module lacks (a second bucket, an extra database, more than one reader on the key) is a **module change plus a new tag under Recipe B, applied to all three consumers**, never a per-slice edit |
+| **Status** | not started — **revised 2026-08-16 into the pass/verification format, against the official AWS documentation read the same day**; pre-instrumented by `./aws/deploytargets.py`. Corrections folded in: the old step 7 dissolved into a pass-0 reading — **the deploy roles, the deploy runner, the misuse alarms and INT-07's image half are Stage 8's** (its pass 1 and step 3.0), not this stage's to rebuild; the "KMS grants so Staging can decrypt what it pulls from the Production ECR" were **deleted against the documentation** — ECR decrypts through the grants it holds on the repository key, the puller needs no `kms:Decrypt`, and what cross-account model *deployment* actually needs is three resource policies (model package group, ECR repository, artifact S3 + KMS), whose Staging principals join **at the vend**; the Athena "per-principal result prefix" was unbuildable as written — an enforced workgroup has **one** result location (the override is documented), so results land in a lifecycled, CMK-protected results zone and within-persona visibility is recorded as a limit rather than papered over; the LF grant is written as the documented **two steps** (account-level grant *with grant option* from the grantor, local regrant to the job role by Production's LF admin); `DataScientistStagingAccess` was read as already built — **it carries no Athena and denies every write** (Stage 2), so step 5's Staging half is a reading, not a build; and the job-execution role name became a **contract** with Stage 5's drop-box statements. **Revised again 2026-08-19, against what Stage 5 passes 1-3 actually measured** — three corrections, all in the sharing machinery this stage repeats for the third and fourth accounts: the `DataLakeSettings` apply is **two steps, not one** (the create-defaults cannot be expressed empty and act at creation time — Lesson 27/Recipe D, and it now binds `production/data/` *and* `staging/data/`), **2.2's consumer-side reading was expecting the wrong thing** (a receiving account with no data lake administrator shows an empty catalog while holding the share — Production has none until 1.3, a pass later), and the **grant option stopped being Production's special case** while the `layer` gate became mandatory on any TBAC expression written here (Lesson 29). **Revised once more 2026-08-19, against pass 4 having actually run this machinery in two accounts** — three things now inherited as measured rather than expected: the `Parameters` half of the settings hazard is **symmetric**, so Production's and Staging's own maps are to be READ before their settings resource is authored (both consumer accounts turned out to be carrying `CROSS_ACCOUNT_VERSION=4` already, set by nobody in this repository); the re-grant is **a pair, not a single grant** — `DESCRIBE` on the resource link *as a local database* alongside the permission on the target, and the first half is the one that gets missed, with *no database visible at all* as its symptom; and **`terraform-modules/consumer-data/` v0.2.0 already exists**, so the **LF half** of `production/data/` — the settings, the resource links, the re-grants, the enforced workgroup, the account data CMK (`alias/awsds-prod-data`, `GOVERNANCE.md` §Encryption) and the derived zone — is a **call to `consumer-data`** at whatever version this stage's inputs require, rather than a third authoring. The outputs bucket and the `app_outputs` database are Production-specific resources written *beside* the call; and any input the module lacks (a second bucket, an extra database, more than one reader on the key) is a **module change plus a new tag under Recipe B, applied to all three consumers**, never a per-slice edit |
 | **Prerequisites** | Stage 3 — `production/foundation/` (VPC, the `[P]` gateway endpoint, KMS). Stage 5 — the lake, the LF settings under `DL-5`'s guard, the drop-box statements written against this stage's role name. **Stage 8 pass 1** — step 3's resource policies name `awsds-deploy-prod` and `awsds-deploy-staging`, and a resource policy naming a principal that does not exist fails at put time; the full chain only for pass 5's promotion. **The `Staging` vend gates passes 4-5 alone** (quota ticket open): passes 0-3 run without it |
 | **Consumes** | [D13](../decisions/D13-lake-formation-enforcement.md), [D14](../decisions/D14-supply-chain-account.md), [D17](../decisions/D17-interactive-vs-runtime.md), [D18](../decisions/D18-data-scientist-access.md), [D20](../decisions/D20-staging-account.md), [D22](../decisions/D22-data-governance-account.md), [D25](../decisions/D25-drop-box-consumer.md), [D28](../decisions/D28-workflow-contract.md), [D31](../decisions/D31-approver-read.md) |
 | **Proves** | [INT-03](../integrations.md) **the write share** — the two read shares are Stage 5's; [INT-04](../integrations.md); [INT-05](../integrations.md) (the Production and laptop branches); [INT-06](../integrations.md); [INT-07](../integrations.md) **in part** — the model-registry read half, at the vend (the image half is Stage 8 step 3.2's); [INT-10](../integrations.md) **the pickup half** — the writer and maintenance halves are Stage 5's |
@@ -24,7 +24,7 @@ the data platform, the SageMaker runtime and the sharing model.
 |---|---|---|
 | `production/sagemaker/` (new) | Model Registry: package groups + **resource policies** (D28 item 6); `awsds-prod-job-exec`; the `awsds-prod-debug` escape hatch + its alarm | `[P]` |
 | `data-governance/data/` (amended) | the Production share: LF read **+ governed write**, granted *with grant option* to the Production account (INT-03's last third) | `[P]` |
-| `production/data/` (new) | output + results buckets under their own CMK (D31's shape), the `awsds-prod-athena` workgroup (enforced), LF resource links + local regrants, the account's LF settings | `[P]` |
+| `production/data/` (new) | the `consumer-data` call — derived zone + enforced `awsds-prod-athena` workgroup, LF resource links + local regrants, the account's LF settings, the account data CMK — plus the outputs bucket written beside it | `[P]` |
 | `staging/data/`, `staging/sagemaker/` (new, **at the vend**) | the catalog mirror with sampled/synthetic content; job execution roles and nothing else | `[P]` |
 | `identity/sso/` (amended) | `DataScientistProdAccess`'s owed allows: the workgroup, the named prefixes, the debug-role assumption | `[P]` |
 | `scripts/` | `backend.py`/`layers.py` rows for the four new slices (all `[P]` — `make up`/`down` never touch them) | — |
@@ -32,7 +32,7 @@ the data platform, the SageMaker runtime and the sharing model.
 **Contracts this stage fixes, each read by `./aws/deploytargets.py` so a rename fails in a check rather
 than in a later stage:** the job role **`awsds-prod-job-exec`** (the exact name Stage 5 step 1.4's
 reader-deleter statement and drop-box KMS grant carry), the workgroup **`awsds-prod-athena`**, the buckets
-**`awsds-prod-outputs`**/**`awsds-prod-athena-results`**, the package groups **`awsds-prod-model-<app>`**,
+**`awsds-prod-outputs`**/**`awsds-prod-derived`** (the module's derived zone — `results/` is a prefix family in it, never a bucket of its own), the package groups **`awsds-prod-model-<app>`**,
 the debug role **`awsds-prod-debug`** with rule **`awsds-prod-debug-assume`**, and Staging's
 **`awsds-staging-job-exec`**/**`awsds-staging-athena`**.
 
@@ -118,10 +118,10 @@ the sharing shape a pattern rather than an event. The LF settings in *this* acco
 same discipline `DL-5` imposes in Data Governance: a `DataLakeSettings` apply replaces the whole
 structure, in every account that has one.
 
-- **1.1 — [Claude] Write the two buckets and the CMK**: `awsds-prod-outputs` (application outputs;
-  model artifacts under `models/<app>/` — step 3 points the registry here) and
-  `awsds-prod-athena-results` (the results zone: **lifecycle expiry 30 days**, D19's shape), both from the
-  `s3-bucket` module — versioning, `prevent_destroy`, BPA, SSE-KMS with **`alias/awsds-prod-data`**
+- **1.1 — [Claude] Write the outputs bucket beside the `consumer-data` call**: `awsds-prod-outputs`
+  (application outputs; model artifacts under `models/<app>/` — step 3 points the registry here) from the
+  `s3-bucket` module — versioning, `prevent_destroy`, BPA, SSE-KMS with **`alias/awsds-prod-data`**, the
+  account data CMK the `consumer-data` call creates
   (decision 1; D31's argument: a key the Staging set and both approver sets cannot decrypt is what makes
   "read-only means read-only" expressible), **and its key policy written in the D31 shape pass 4 applied**
   — the account root keeps administration and holds no cryptographic action, so delegation to IAM is
@@ -131,16 +131,20 @@ structure, in every account that has one.
   Athena results as the caller (5.1), both needing `kms:GenerateDataKey` to write and `kms:Decrypt` to read
   back or to finish a multipart upload; only `awsds-prod-debug` is read-only.
   Without that statement the `kms:Decrypt` granted at 5.1 and 6.1 reaches nothing — Lesson 28's
-  intersection, and the failure Stage 5 pass 4c paid for on the drop-box. **If 1.1 becomes a
-  `consumer-data` call**, the module's single `data_scientist_role_arn` cannot express three readers:
-  that is a module change under Recipe B, applied to every consumer.
-  Bucket policy: the perimeter branches from Stage 5 step 1.3
+  intersection, and the failure Stage 5 pass 4c paid for on the drop-box. **The module's single
+  `data_scientist_role_arn` cannot express three readers**: the key statement above is a module change
+  under Recipe B, applied to every consumer.
+  **The results zone is deliberately not a bucket of its own**: it is the `results/` prefix family of
+  `awsds-prod-derived`, which arrives with the `consumer-data` call — the shape passes 4a/4b applied
+  twice, 30-day expiry included ([`docs/GOVERNANCE.md`](../../GOVERNANCE.md) §Derived zone owns it).
+  Bucket policy on `awsds-prod-outputs`: the perimeter branches from Stage 5 step 1.3
   (`aws:SourceVpce` = the `[P]` gateway endpoint from `production/foundation/` outputs, `aws:SourceIp` =
   the WireGuard EIP list, the `aws:ViaAWSService` carve-out — Athena writes results as the caller).
-- **1.2 — [Claude] Write the workgroup `awsds-prod-athena`**: `enforce_workgroup_configuration = true`
-  (the console's "override client-side settings" — documented to replace the client's result location,
-  encryption and expected-bucket-owner with the workgroup's), result location
-  `s3://awsds-prod-athena-results/`, SSE-KMS with the 1.1 CMK, `bytes_scanned_cutoff_per_query` set
+- **1.2 — [Claude] The workgroup `awsds-prod-athena` arrives with the `consumer-data` call**:
+  `enforce_workgroup_configuration = true` (the console's "override client-side settings" — documented
+  to replace the client's result location, encryption and expected-bucket-owner with the workgroup's),
+  result location `s3://awsds-prod-derived/results/`, SSE-KMS with the account data CMK,
+  `bytes_scanned_cutoff_per_query` set by the module
   (decision 2). **One enforced location, not one per principal** — within-persona visibility of query
   results is a stated limit (risk 6), not a defect to hide.
 - **1.3 — [Claude] Write the LF plumbing**: the account's `aws_lakeformation_data_lake_settings`
@@ -344,9 +348,10 @@ data source the slice already uses — never a literal id (`CLAUDE.md`), never a
 
 - **5.1 — [Claude] Amend `DataScientistProdAccess`**: `athena:StartQueryExecution`,
   `GetQueryExecution`, `GetQueryResults`, `StopQueryExecution` on the `awsds-prod-athena` workgroup ARN
-  alone; `s3:GetObject` on the **enumerated** application-output prefixes; the results-bucket
+  alone; `s3:GetObject` on the **enumerated** application-output prefixes; the derived-zone
   read/write Athena performs as the caller (`GetBucketLocation`, `ListBucket`, `PutObject`, `GetObject`
-  on `awsds-prod-athena-results`); `kms:Decrypt` on the 1.1 CMK; `sts:AssumeRole` on exactly the
+  on `awsds-prod-derived` — pass 4c's statement family, extended to the third consumer); `kms:Decrypt`
+  on the account data CMK (1.1); `sts:AssumeRole` on exactly the
   `awsds-prod-debug` ARN (step 6). The `DenyProductionControlPlane` families are untouched — they
   deliberately do not name `athena:StartQueryExecution`.
 - **5.2 — [Claude] Verify `DataScientistStagingAccess` by reading, not by trusting the intention**

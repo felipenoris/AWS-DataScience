@@ -357,6 +357,12 @@ onwards the file records how the environment changed, not just the plan.
   `UseLakeDataKeyViaS3` in `DataScientistAccess` and `DL-12` reads the new name; Stage 9's future
   Production key is `alias/awsds-prod-data`.
 
+- **2026-08-19 — D21's revision trigger fired and is recorded, not answered.** The trigger was "the
+  discriminating data test asked with real grants in place"; Stage 5 passes 3-4c put those grants in
+  place, identical for both consumers. The file now records that the test is askable, that today it
+  still names nothing, and that the answer deliberately waits for pass 4d's first behavioural persona
+  queries — nothing was changed about the account or the chain.
+
 ---
 
 *Plan core: [GENERAL_PLAN.md](../GENERAL_PLAN.md) · Decisions: [docs/plan/decisions/INDEX.md](decisions/INDEX.md) · Stages: [docs/plan/stages/INDEX.md](stages/INDEX.md)*

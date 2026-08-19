@@ -34,7 +34,9 @@
 #   - the job role is awsds-prod-job-exec (step 3.1 - the SAME name Stage 5 step 1.4's
 #     drop-box statement and key grant carry)
 #   - the workgroup is awsds-prod-athena; Staging's is awsds-staging-athena (steps 1.2, 4.2)
-#   - the buckets are awsds-prod-outputs and awsds-prod-athena-results (step 1.1)
+#   - the buckets are awsds-prod-outputs and awsds-prod-derived (step 1.1 - the derived
+#     zone arrives with the consumer-data call, so its policy is module-shaped: TLS-only
+#     plus the presigned cap, no perimeter branches - those are the lake's and outputs')
 #   - the package groups match awsds-prod-model-* (step 3.2)
 #   - the debug role is awsds-prod-debug, its rule awsds-prod-debug-assume (step 6)
 #   - Staging's job role is awsds-staging-job-exec (step 4.3)
@@ -71,7 +73,7 @@ PROD_WG = "awsds-prod-athena"
 STAGING_WG = "awsds-staging-athena"
 STAGING_JOB_ROLE = "awsds-staging-job-exec"
 OUT_BUCKET = "awsds-prod-outputs"
-RESULTS_BUCKET = "awsds-prod-athena-results"
+RESULTS_BUCKET = "awsds-prod-derived"  # results/ is a prefix family in it, never a bucket
 MPG_PREFIX = "awsds-prod-model-"
 PROD_CMK_ALIAS = "alias/awsds-prod-data"  # renamed 2026-08-19 (twice): one data CMK per account
 DROPBOX_SUBSTR = "dropbox"
@@ -758,9 +760,10 @@ def main(argv: list) -> int:
                 problems.append(f"versioning {versioning}")
             if "kms" not in sse.lower():
                 problems.append(f"SSE {sse}")
-            for tag, _key in POLICY_BRANCHES:
-                if tag not in branches:
-                    problems.append(f"policy branch '{tag}' missing")
+            if bucket == OUT_BUCKET:  # the derived bucket's policy is module-shaped (header)
+                for tag, _key in POLICY_BRANCHES:
+                    if tag not in branches:
+                        problems.append(f"policy branch '{tag}' missing")
             if bucket == RESULTS_BUCKET and expiry in ("(none)", "-"):
                 problems.append("no lifecycle expiry (D19's shape, step 1.1)")
             if problems:

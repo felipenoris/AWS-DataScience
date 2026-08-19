@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | **Status** | not started — the first stage that is about *scale* rather than about a new capability |
-| **Prerequisites** | Stages 2, 3, 4, **5** and 6 — Stage 5 for the consumer side the module composes (`terraform-modules/consumer-data/` v0.1.0, the per-account `DataLakeSettings` and the share map step 5 extends). Everything a business unit's Sandbox must arrive holding has to exist and have been applied by hand at least once |
+| **Prerequisites** | Stages 2, 3, 4, **5** and 6 — Stage 5 for the consumer side the module composes (`terraform-modules/consumer-data/` — v0.2.0 today, pinned at whatever tag is current at the vend — the per-account `DataLakeSettings` and the share map step 5 extends). Everything a business unit's Sandbox must arrive holding has to exist and have been applied by hand at least once |
 | **Consumes** | [D21](../decisions/D21-development-account.md), [D23](../decisions/D23-ou-structure.md), [D26](../decisions/D26-unified-studio.md), [D34](../decisions/D34-account-vending.md), [D35](../decisions/D35-sandbox-cardinality.md), [D37](../decisions/D37-nested-ou-inheritance.md) |
 | **Proves** | that a business unit's `Sandbox` can be created, made usable and closed without a hand-written slice |
 
