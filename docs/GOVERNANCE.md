@@ -50,7 +50,7 @@ per-statement index); Production's equivalent arrives when Stage 9 makes it a co
 matches the lake — SSE-KMS, versioned, public access blocked, TLS-only, the same presigned-URL cap —
 and the four differences are the design:
 
-- the CMK is **that account's zone key**, `alias/awsds-<env>-zn-lab` (one CMK per zone × account,
+- the CMK is **the zone's key in that account**, `alias/awsds-<env>-zn-lab` (one CMK per zone × account,
   §`security-zone`), and its key policy is where *who may read the copies* is expressed (D31):
   `DataScientistAccess` today, the project execution roles from Stage 6;
 - current objects **expire at 30 days** (D19 practice iii) — the lake keeps data, this bucket sheds
