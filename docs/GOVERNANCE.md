@@ -14,21 +14,62 @@ registered in [`docs/AWS_STATE.md`](AWS_STATE.md) §"Lake Formation grant regist
 
 ## Persistence — the buckets
 
-All five live in the **Data Governance** account, encrypted SSE-KMS under the `zn-lab` CMK (see
-`security-zone`), versioned, public access blocked — and **undeletable** while the `Data` OU SCP is
-attached (`DenyLakeDeletionAndDeregistration`), so every name below is permanent.
+Two bucket families, split by the account line — and "who may read" is expressed by a different
+mechanism on each side: in the lake it is Lake Formation and the bucket policies; in the consumer
+accounts it is the zone CMK's key policy (D31). Both tables carry a delete column deliberately: in a
+governed store, who may *remove* data is as designed a fact as who may write it.
 
-| Bucket | What it holds | Who writes | Who reads |
-|---|---|---|---|
-| `awsds-data-dropbox` | `raw`-layer files published by users for pipeline consumption | Interactive-OU personas, `PutObject` only (§Drop-box) | the crawler (schema); the Production job, Stage 9 (read + delete) |
-| `awsds-data-raw` | untreated bases — copies of legacy-system data | the governed producer path only (Stage 9's write share; nothing writes today) | consumers via LF (both layers are readable — data engineers develop the raw→curated ETL) |
-| `awsds-data-curated` | transformed bases, built by ETL routines from `dropbox`+`raw` | the governed producer path only (Stage 9) | consumers via LF — the primary read surface |
-| `awsds-data-artifacts` | non-tabular artifacts that must live under the lake's governance. **No writer is wired yet**: the bucket exists from Stage 5's four-bucket set; its first writer is named by the pipeline stage that needs it (8/9 — note Stage 9's *model* artifacts live in Production, not here) | — (none today) | — |
-| `awsds-data-logs` | the Stage 11 CloudTrail **data-event trails**, delivered cross-account under `AWSLogs/<account>/` | CloudTrail (from Stage 11 on) | Stage 11's detection tooling |
+### The lake — Data Governance account
+
+All five live in the **Data Governance** account, encrypted SSE-KMS under the lake's `zn-lab` CMK (see
+`security-zone`), versioned, public access blocked — and **undeletable** while the `Data` OU SCP is
+attached (`DenyLakeDeletionAndDeregistration`), so every name below is permanent. No object expires
+either — the lake holds data somebody expects to find again, so the only lifecycle rule is the
+module's 90-day expiry of noncurrent (superseded) versions. At the object grain, delete exists at
+exactly two points, both in the table and one of them still Stage 9's.
+
+| Bucket | What it holds | Who writes | Who reads | Who deletes |
+|---|---|---|---|---|
+| `awsds-data-dropbox` | `raw`-layer files published by users for pipeline consumption | Interactive-OU personas, `PutObject` only (§Drop-box) | the crawler (schema); the Production job, Stage 9 | the Production job, Stage 9 — the pickup that empties the letterbox. The writer holds no delete, no read-back, no list |
+| `awsds-data-raw` | untreated bases — copies of legacy-system data | the governed producer path only (Stage 9's write share; nothing writes today) | consumers via LF (both layers are readable — data engineers develop the raw→curated ETL) | nobody — no principal holds `s3:DeleteObject`; whether Stage 9's producer path needs one is that stage's to write |
+| `awsds-data-curated` | transformed bases, built by ETL routines from `dropbox`+`raw` | the governed producer path only (Stage 9) | consumers via LF — the primary read surface | the maintenance role, on `warehouse/*` only (`CompactCuratedWarehouse`): Iceberg compaction rewrites data files and removes the superseded ones (D27) |
+| `awsds-data-artifacts` | non-tabular artifacts that must live under the lake's governance. **No writer is wired yet**: the bucket exists from Stage 5's four-bucket set; its first writer is named by the pipeline stage that needs it (8/9 — note Stage 9's *model* artifacts live in Production, not here) | — (none today) | — | — |
+| `awsds-data-logs` | the Stage 11 CloudTrail **data-event trails**, delivered cross-account under `AWSLogs/<account>/` | CloudTrail (from Stage 11 on) | Stage 11's detection tooling | nobody today — a retention rule, if one ever arrives, is Stage 11's to write |
 
 `raw` and `curated` are **LF-registered** locations — access only through Lake Formation (D13).
 `dropbox`, `artifacts` and `logs` are **not registered**: plain IAM/bucket-policy control (D13's
 non-registered class).
+
+### The derived zone — one bucket per consumer account
+
+The lake's exit side, seen as persistence (§"Derived zone" owns the five controls and the reasoning;
+this is the who-does-what view). One designed destination per consumer account —
+`awsds-sandbox-derived` and `awsds-dev-derived` today, applied at Stage 5 pass 4 through the
+`consumer-data` module ([its README](../terraform-modules/consumer-data/README.md) is the
+per-statement index); Production's equivalent arrives when Stage 9 makes it a consumer. The baseline
+matches the lake — SSE-KMS, versioned, public access blocked, TLS-only, the same presigned-URL cap —
+and the four differences are the design:
+
+- the CMK is **that account's zone key**, `alias/awsds-<env>-zn-lab` (one CMK per zone × account,
+  §`security-zone`), and its key policy is where *who may read the copies* is expressed (D31):
+  `DataScientistAccess` today, the project execution roles from Stage 6;
+- current objects **expire at 30 days** (D19 practice iii) — the lake keeps data, this bucket sheds
+  it;
+- **nothing here is LF-registered**: the whole bucket is D13's non-registered class — plain IAM plus
+  the key policy, with no catalog object an LF-Tag could attach to;
+- permanence is Terraform's `prevent_destroy` alone — the lake's `s3:DeleteBucket` SCP is a
+  `Data`-OU document and does not reach these accounts. Tolerable exactly because the contents
+  expire by design.
+
+The grain that matters here is the **prefix family**, not the bucket — three families, three
+contracts, made real by the persona statements in `identity/sso/` (S3 has no directories; a prefix
+exists once something is written under it):
+
+| Prefix family | What it holds | Who writes | Who reads | Who deletes |
+|---|---|---|---|---|
+| `results/` | the Athena workgroup's **enforced** output location (`EnforceWorkGroupConfiguration = true` — the client cannot choose another destination) | the persona — in practice Athena, which stages results with the caller's own credentials, so the write grant is the engine's contract rather than a convenience | the persona (`GetQueryResults` reads the result object from S3 with the caller's credentials) | nobody — the 30-day expiry is the only deleter |
+| `derived/${aws:userid}/` | materialised copies of query results | **per principal** — `PutObject` carries the policy variable, so a copy can only land under its author's prefix | **persona-wide** (`GetObject` on `derived/*`, decision 6's grain) — the prefix governs where a copy lands, not who may read it; other personas are kept out by the zone CMK | nobody — the 30-day expiry is the only deleter |
+| `scratch/` | the notebook's working files — a downloaded CSV, an intermediate feature, a model checkpoint | the persona | the persona | the persona — the **only** prefix with `s3:DeleteObject`. `DeleteObjectVersion` is not granted, so versioning keeps the truth under every delete marker |
 
 ## Catalog — AWS Glue Data Catalog
 
@@ -341,7 +382,8 @@ is *"non-registered prefixes (scratch, artifacts, model outputs) keep ordinary I
 names the CLASS of everything Lake Formation does not govern, beside `artifacts` and `model outputs`,
 and D19 (which the bucket wording credits) never mentions it at all. What makes the families real is the
 `s3:PutObject` scoping on the permission set, not an S3 object, since a prefix exists only once
-something is written under it.
+something is written under it. The who-writes / who-reads / who-deletes view, per family, is the
+second table of §"Persistence — the buckets".
 
 **And one rule that is policy, not mechanism: the output of a query over `restricted` data is
 `restricted`.** "Declared as policy" means: a written norm for people to follow — treat that file as
