@@ -21,3 +21,9 @@ variable "additional_policy_statements" {
   type        = any
   default     = []
 }
+
+variable "expiration_days" {
+  description = "Days after which a CURRENT object version expires - null (the default) writes no such rule, which is every bucket that holds data somebody expects to find again. A NUMBER is a deliberate statement that this bucket's contents are disposable: the derived zone sets it so the shadow lake does not silently become permanent (D19 practice iii, Stage 5 step 9.2), and `./aws/datalake.py` DL-9 fails a *-derived bucket that carries no Expiration rule. Distinct from noncurrent_version_expiration_days above, which only reaches versions a write has already superseded."
+  type        = number
+  default     = null
+}
