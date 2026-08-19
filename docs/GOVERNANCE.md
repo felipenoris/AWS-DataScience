@@ -175,6 +175,14 @@ from Stage 6, the project execution roles; from Stage 9, `awsds-prod-job-exec` (
 write). LF-Tags never gate the read/write direction — the **verbs** in the permission list do; the tags
 say what the data *is*.
 
+**The grain.** Entitlement follows the toolset's own practice: grants go to **roles and projects**,
+assumed by people and services — the unit the whole chain (IAM, Lake Formation, SMUS projects) is built
+around. **Per-user attribution is not a target of this design** (Stage 5 decision 6, 2026-08-18): where
+a per-user option exists — TIP on the SQL engines, `${aws:userid}` prefix scoping in the derived zone —
+it is mapped and priced at Stage 5 pass 2 as exploration, adopted only if it earns its place (TIP's
+documented cost: remote access stops working). The objective's "who may read what" is met at the grain
+of the assumable role/project, stated here rather than discovered.
+
 **The default grants** — the standing expressions that implement the classification rule:
 
 - `[each consumer account, classification ∈ {public, internal}, SELECT + DESCRIBE]` — read-only, both

@@ -75,7 +75,7 @@ change. The sequence to work in is **six passes**:
 | Pass | # | What | Slice · layer | Applied as |
 |---|---|---|---|---|
 | **0** | 2, 5.4-pre | the classification scheme; the INT-11 before-reading | on paper; a CLI read | — |
-| **1** | 1, 3, 4, 5 | the lake: keys, buckets, policies, drop-box; catalog, role, crawlers; Iceberg; Lake Formation | `data-governance/data/` `[P]` | `awsds-infra-data` |
+| **1** | 1, 3, 4, 5 | the lake: keys, buckets, policies, drop-box; catalog, role, crawlers; Iceberg; Lake Formation — **authored 2026-08-18, `58 to add`; applied in TWO steps, 5.2's callout** | `data-governance/data/` `[P]` | `awsds-infra-data` |
 | **2** | 6 | D13 made real — grants, the grain decision, the sso/ reading | idem, plus a reading of `identity/sso/` | idem |
 | **3** | 7 | the two cross-account shares, and the INT-11 after-reading | `data-governance/data/` + RAM | idem |
 | **4** | 8, 9 | the consumer side: workgroups, links, scratch, derived + CMK; the pandas proofs | `sandbox/data/`, `development/data/` `[P]` | `awsds-infra-sandbox-1`, `awsds-infra-dev` |
@@ -285,6 +285,25 @@ Lesson 5 with a console page. Concretely: turn off the two default-IAM settings 
 every table. **INT-03 flags this as version-dependent behaviour** — do it before the first share, not
 after, so the share is granted into a model that is actually enforcing.
 
+> **THE PLAN CANNOT PROVE THIS HALF, SO THE APPLY IS TWO STEPS — measured 2026-08-18 while authoring
+> pass 1, in the pinned provider (`aws ~> 6.60`).** Both default-permission blocks are **Computed**, so
+> omitting them plans as `after_unknown: true` — Terraform states no intention about them; and an
+> explicitly empty list is **not expressible**: `create_database_default_permissions = []` is refused
+> ("did you mean to define a block?"), while a `{}` block declares *one* entry with computed fields,
+> which is not zero. Omission is the only available form, and whether it **clears** or merely **leaves
+> alone** is a provider property the plan does not state. The difference is invisible afterwards and
+> expensive — a database created while the defaults still stand is born deferring to IAM, and clearing
+> them later does not reach it. **So it is measured rather than assumed:**
+> 1. apply `aws_lakeformation_data_lake_settings` **alone** (`-target`), before any database exists;
+> 2. read the account — `./aws/datalake.py` (`DL-5` for the parameters, `DL-6` for the defaults);
+> 3. if `IAM_ALLOWED_PRINCIPALS` is still there, do 5.2's **other half — revoke — and re-read**, *before*
+>    the second apply;
+> 4. then apply the rest, which is where the first database is created.
+>
+> `-target` is the documented "the operator knows an order the graph does not" escape, and this is that
+> case: the graph orders the two correctly — every database `depends_on` the settings — but a graph
+> cannot pause to be read (Lesson 13: a step whose success and failure look alike is not a step).
+
 **5.3 — Declare the data lake administrators deliberately** — decision 5 below; the recommended answer is
 the `InfrastructureAccess` role alone, with the governance manager holding LF *grants* (step 7.4) rather
 than admin: an admin can grant everything, and an approver who can already grant everything is not
@@ -334,7 +353,9 @@ at Stage 6, which is INT-15's whole subject.)
 widening a role.
 
 **6.4 — What the objective's *grain* is has been open since 2026-08-13, and it is decided here rather than
-assumed** (decision 6; `docs/plan/open-questions.md` item 13). `CLAUDE.md` asks to "restrict who can read
+assumed** (decision 6; `docs/plan/open-questions.md` item 13). **Decision 6 landed 2026-08-18: the target
+reframed — entitlement to roles/projects per the toolset's practice, per-user as mapped exploration (the
+decision row carries it; the paragraph below stays as the reasoning that framed the question).** `CLAUDE.md` asks to "restrict who can read
 which database, table, column and row" — a statement about a **person** — while Unified Studio notebooks
 do not support trusted identity propagation: in an Identity Center domain they fall back to *compatibility
 permission mode*, so the principal Lake Formation actually sees is the project/compute role, not the
@@ -594,12 +615,17 @@ the decision-maker.
    method** — `GOVERNANCE.md`'s expressions, with **7.1's resource-policy prerequisite read before the
    first grant**, named-resource reserved for recorded hybrid-mode exceptions (6.3). Named revision
    trigger: Stage 6, when the DataZone fulfilment principal joins the permission plane (D26).
-6. **The grain** (6.4, open question 13) — per-user on the SQL path, or per-project everywhere. Not
-   recommendable in advance: it is answered by what the grants can actually express, and the deliverable
-   is the *written answer*, either way. **It also consumes step 8's ceiling (2026-08-17):** the enforced
-   results zone is per-persona, so the system's grain is `min(SQL grain, derived-zone grain)` — a per-user
-   answer requires 9.2's `${aws:userid}`-scoped `GetObject` in the same breath, or it is not a per-user
-   answer.
+6. **The grain** (6.4, open question 13) — **DECIDED 2026-08-18, by the user, by reframing the
+   target: entitlement follows the toolset's own practice — grants to roles/projects, assumed by people
+   and services — and per-user attribution is an exploration, not a requirement.** The objective's "who
+   can read which database, table, column and row" is met at the grain of the assumable role/project,
+   the difference written down (`docs/GOVERNANCE.md` §"The grain") — the outcome 6.4 pre-contemplated,
+   chosen rather than discovered. What survives into pass 2: verification (viii) runs as a **mapping** of
+   what the tools can express — per-user LF filters on the SQL path, TIP against its remote-access cost
+   (open question 13), 9.2's `${aws:userid}` `GetObject` scoping — and the written map is the
+   deliverable. Step 8's ceiling stands as recorded fact, no longer as debt: the results zone is
+   per-persona, `min(SQL grain, derived-zone grain)`, and the per-user `GetObject` scoping is an option
+   on the map, not an obligation.
 
 ## Verifications to answer while executing
 

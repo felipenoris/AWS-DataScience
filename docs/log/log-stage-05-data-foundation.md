@@ -200,6 +200,112 @@ is Claude's on request. **No AWS call.***
   resource-policy additions, whose absence fails exactly like a working share that never arrives), and
   named-resource reserved for recorded hybrid-mode exceptions (6.3).
 
+## 2026-08-18 — Decision 6 taken: the grain reframed to roles and projects — and pass 0 closes
+
+*Provenance: **the decision is the user's**, in chat; the entry is Claude's on request. **No AWS
+call.***
+
+- **The user's framing, kept close to verbatim:** traditionally access is granted to **roles**, assumed
+  by users and services, the way IAM works; this project holds **no strong restriction on per-user
+  attribution**; the aim is to **experiment with what the tools allow** (Lake Formation + SageMaker +
+  S3 + the rest) — understanding the AWS good practice matters more than hitting a per-user target.
+- **What it settles:** the objective's grain is the **assumable role/project** — the outcome 6.4
+  pre-contemplated, now chosen rather than discovered, which closes the stage risk row's failure mode
+  (an objective invalidated by discovery). Stated in `docs/GOVERNANCE.md` §"The grain".
+- **What survives into pass 2:** verification (viii) becomes a **mapping** — which per-user expressions
+  exist (SQL-path LF filters; TIP, priced against its documented remote-access cost, open question 13;
+  9.2's `${aws:userid}` `GetObject` scoping) and what each costs. The written map is the deliverable;
+  the per-user `GetObject` scoping moves from conditional obligation to mapped option; step 8's `min()`
+  ceiling stays as recorded fact.
+- **Pass 0 closes with this entry — all six decisions taken, all on 2026-08-18.** Propagated: decision
+  row 6 and step 6.4 marked; `GOVERNANCE.md` gained §"The grain"; open question 13's Stage 5 half
+  answered in place, its Stage 6 half (TIP versus remote access) now weighed against a mapped option
+  with remote access favoured by default.
+
+## 2026-08-18 — Pass 1 authored: `data-governance/data/`, `58 to add` — and the one obligation the plan cannot state
+
+*Provenance: **this entry is Claude's**, written on the user's request. **NOTHING IS APPLIED** — the
+work is repository authoring plus read-only Terraform (`init`, `validate`, `fmt`, `plan`, `console`,
+`providers schema`) against the Data Governance account as `awsds-infra-data`. The plan file was written
+to the session scratchpad, never into the repository (it carries account ids).*
+
+### What was authored
+
+`terraform-live/data-governance/data/` — eleven files, the slice registered in the D11 machinery in the
+same authoring (`./scripts/slices.py check`: **18 declared, 18 on disk**). `plan`: **58 to add, 0 to
+change, 0 to destroy** — one CMK + alias, five buckets with their six per-bucket resources, the LF
+settings, two registrations, three LF-Tags, three databases, five tag assignments, the sample Iceberg
+table, its optimizer, two IAM roles with their policies, four LF permissions, two crawlers.
+
+Two things the plan proves incidentally, both firsts: **the cross-account remote-state reads resolved** —
+each consumer's `foundation/` for its `[P]` S3 gateway-endpoint id (INT-05's anchor, never the `[E]`
+interface endpoints) and the VPN home's for the Elastic IP — and the **data lake administrator resolved
+by pattern**, `one()` over the `AWSReservedSSO_InfrastructureAccess_*` roles, so the per-account suffix
+is never written down.
+
+### The finding, and it changed how the stage is applied
+
+**The 5.2 obligation — empty both `IAM_ALLOWED_PRINCIPALS` default blocks before any database exists —
+cannot be stated in the plan at all**, measured in the pinned provider (`aws ~> 6.60`) rather than
+assumed:
+
+| What was tried | What came back |
+|---|---|
+| omitting both blocks | `after_unknown: true` for each — **Terraform states no intention about them** |
+| `create_database_default_permissions = []` | refused: *"An argument named … is not expected here. Did you mean to define a block?"* |
+| a `{}` block | would declare **one** entry with computed fields, which is not zero |
+| the provider schema | both are `nesting_mode: list` **blocks**, Computed+Optional, `max_items: 3` |
+
+So omission is the only expressible form, and whether it **clears** or merely **leaves alone** is a
+provider property the plan does not state. The consequence is the expensive, silent one: a database
+created while the defaults still stand is born deferring to IAM — D13 as decoration — and clearing them
+afterwards does not reach it.
+
+**The apply therefore became two steps** (written into the stage file's 5.2 as a callout, into the
+slice's `README.md`, and beside the resource in `lakeformation.tf`): apply
+`aws_lakeformation_data_lake_settings` **alone** with `-target`; read `./aws/datalake.py` (`DL-5`
+parameters, `DL-6` defaults); revoke and re-read if `IAM_ALLOWED_PRINCIPALS` is still named; only then
+apply the rest, which is where the first database is created. The graph orders the two correctly —
+every database `depends_on` the settings — but a graph cannot pause to be read (Lesson 13).
+
+### One module change, so the two-commit order applies
+
+`terraform-modules/s3-bucket`'s `additional_policy_statements` was `list(any)`, which **cannot hold this
+stage's statements**: `list(any)` unifies to a single element type, and a Deny carrying three condition
+operators does not unify with an Allow carrying one (`validate` refused the conditional that mixed
+them). Changed to `any` — the module only `concat()`s and `jsonencode()`s them — and the caller pins
+**`s3-bucket-v0.2.0`**. Per the terraform-changes runbook §3 this is Recipe B: **the module commit and
+its pushed tag must land before the caller's commit**, or the commit hook's `init` fails on `invalid
+ref`. The tag does not exist yet; the plan above was produced against a temporary local module path,
+which was reverted to the pinned ref before `make check` (OK).
+
+### Decisions rendered, so the code and `GOVERNANCE.md` can be read against each other
+
+The ontology is the file's rendering, value for value: `classification` (4 values), `layer`
+(`dropbox`/`raw`/`curated`), `security-zone` (`zn-lab`); `businessunit` is **absent on purpose** — an
+LF-Tag needs at least one value and the dimension has none at N=1. Decision 1's asymmetry is in the tag
+assignments: `raw` and `dropbox` databases carry `classification=internal` (fail-open, the user's call),
+`curated` carries **none** — an untagged table there matches no TBAC expression, fail-closed by absence.
+One thing `GOVERNANCE.md` left open was fixed here as pass 1 said it would be: the drop-box crawler
+writes into **its own `dropbox` database**, so inferred tables inherit `layer=dropbox` instead of
+wearing raw's value wrongly.
+
+Two shapes worth naming because they are not obvious: **a bucket policy validates its `Principal`**, so
+statements for roles that do not exist yet (`awsds-prod-job-exec` — Stage 9's contract — and the Stage 6
+project execution roles) name the **account root** as Principal and narrow with an `ArnLike` condition;
+and the perimeter deny's third branch is `aws:PrincipalAccount` = this account rather than the
+maintenance role alone — the stage's own "looser and easier to get right" option, taken deliberately,
+because a role-only branch would lock out both the crawler (no VPC, no tunnel) and the infrastructure
+user working off-VPN by decision (open question 17).
+
+### Not done
+
+- **Nothing is applied.** The two-step apply, both readings, and the SCP amendment of 4.3 are all still owed.
+- **`checkov` and `tflint` were not run** over the new slice — they run in the commit hooks, which cannot
+  pass until the module tag is pushed.
+- The plan could not render the bucket policies (`known after apply` — the module's TLS statement uses
+  the bucket's own computed ARN), so **the perimeter conditions were read structurally, not by value**.
+
 ---
 
 *Log index: [docs/log/INDEX.md](INDEX.md) · Stage index: [docs/plan/stages/INDEX.md](../plan/stages/INDEX.md)*

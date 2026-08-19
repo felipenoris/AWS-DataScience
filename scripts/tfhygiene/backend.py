@@ -126,6 +126,18 @@ WIREGUARD_PEER_CIDR = "10.90.0.0/24"
 # (Stage 4 step 2.1).
 VPN_HOMES = ["sandbox"]
 
+# THE LAKE'S CONSUMERS AND ITS PICKUP PRODUCER (Stage 5 pass 1, 2026-08-18) - the seventh
+# vocabulary, authored like VPN_HOMES and for the same reason: which accounts consume the
+# governed lake is a decision (INT-03's N+2; decision 5 granted to the two named accounts),
+# not something derivable from PROFILES. Consumed by exactly one emission - `consumers`,
+# `vpn_homes` and `producers` to data-governance/data - where each row becomes a
+# terraform_remote_state read (the [P] gateway-endpoint ids, the WireGuard EIPs) or an
+# aliased-provider identity read (the account ids the drop-box statements are built from,
+# which aws/INDEX.md rule 1 keeps out of tracked files). Production joins DATA_CONSUMERS at
+# Stage 9; a vended Sandbox unit joins at Stage 14.
+DATA_CONSUMERS = ["sandbox", "development"]
+DATA_PRODUCERS = ["production"]
+
 # Subnets anchor on ZONE IDS, never on AZ names and never on list position (Stage 3 step 1.5,
 # settled by 1b step 6; ./aws/AZs.py is the measurement). Authored per account because a
 # vended account is assigned its own name->id mapping and may legitimately differ (INV-08);
@@ -267,6 +279,18 @@ def tfvars_values(account: str, slice_name: str) -> dict:
     # same way `peers` does for foundation/: keyed by ACCOUNT FOLDER, carrying the profile and
     # the env token the bucket name is built from. One SSO login covers both profiles - they
     # share the `awsds` sso-session - which is what makes a cross-account read workable at all.
+    # Stage 5's cross-account reads - the identity/sso shape, three maps (see DATA_CONSUMERS).
+    if account == "data-governance" and slice_name == "data":
+        values["consumers"] = {
+            acct: {"profile": PROFILES[acct], "env": ENV_TOKENS[acct]} for acct in DATA_CONSUMERS
+        }
+        values["vpn_homes"] = {
+            acct: {"profile": PROFILES[acct], "env": ENV_TOKENS[acct]} for acct in VPN_HOMES
+        }
+        values["producers"] = {
+            acct: {"profile": PROFILES[acct], "env": ENV_TOKENS[acct]} for acct in DATA_PRODUCERS
+        }
+
     if account == "identity" and slice_name == "sso":
         values["vpn_homes"] = {
             acct: {"profile": PROFILES[acct], "env": ENV_TOKENS[acct]} for acct in VPN_HOMES
@@ -304,12 +328,24 @@ def render_tfvars(account: str, slice_name: str) -> str:
             for acct, p in v["peers"].items()
         )
         out += f"peers = {{\n{rows}}}\n"
+    if "consumers" in v:
+        rows = "".join(
+            f'  {acct} = {{ profile = "{p["profile"]}", env = "{p["env"]}" }}\n'
+            for acct, p in v["consumers"].items()
+        )
+        out += f"consumers = {{\n{rows}}}\n"
     if "vpn_homes" in v:
         rows = "".join(
             f'  {acct} = {{ profile = "{p["profile"]}", env = "{p["env"]}" }}\n'
             for acct, p in v["vpn_homes"].items()
         )
         out += f"vpn_homes = {{\n{rows}}}\n"
+    if "producers" in v:
+        rows = "".join(
+            f'  {acct} = {{ profile = "{p["profile"]}", env = "{p["env"]}" }}\n'
+            for acct, p in v["producers"].items()
+        )
+        out += f"producers = {{\n{rows}}}\n"
     return out
 
 
