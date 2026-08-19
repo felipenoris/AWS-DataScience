@@ -102,6 +102,17 @@ module "catalog_maintenance_role" {
           ]
         },
         {
+          # Measured at the first apply (2026-08-18): CreateCrawler with a security
+          # configuration attached fails `not authorized to perform
+          # glue:GetSecurityConfiguration` - the role must be able to READ the configuration
+          # it runs under. Resource "*" because Glue security configurations have no ARN to
+          # scope to; the account holds exactly one, created above.
+          Sid      = "ReadOwnSecurityConfiguration"
+          Effect   = "Allow"
+          Action   = ["glue:GetSecurityConfiguration", "glue:GetSecurityConfigurations"]
+          Resource = "*"
+        },
+        {
           Sid      = "VendedDataAccess"
           Effect   = "Allow"
           Action   = "lakeformation:GetDataAccess"

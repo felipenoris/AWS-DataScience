@@ -306,6 +306,101 @@ user working off-VPN by decision (open question 17).
 - The plan could not render the bucket policies (`known after apply` — the module's TLS statement uses
   the bucket's own computed ARN), so **the perimeter conditions were read structurally, not by value**.
 
+## 2026-08-18 — Pass 1 APPLIED: the lake exists, and the two-step apply earned its keep
+
+*Provenance: **Claude's**, on the user's explicit authorisation of the commit procedure and the apply.
+Applied as the **infrastructure user**, account **Data Governance**, permission set
+**`InfrastructureAccess`**, profile `awsds-infra-data`. Every plan was written to the session scratchpad
+and applied from the saved file (Recipe A step 6). Redactions as this file's header states.*
+
+### The commit procedure ran first, and the tag order is not ceremony
+
+Recipe B, in order: commit 1 the module alone (`s3-bucket` `list(any)` → `any`), tag **`s3-bucket-v0.2.0`**,
+push branch and tags, and **ask origin for the tag** — `9dd35db…  refs/tags/s3-bucket-v0.2.0`, the same
+hash as the local tag. Then commit 2, the callers. **The order proved itself twice**: commit 1 was
+blocked by `checkov` (below), and commit 2 was blocked by `terraform_validate` with **`Module source has
+changed`** — the working `.terraform/` still recorded the temporary local path used for the authoring
+plan. A re-init pulled the module from the pushed tag and the commit passed. That is the runbook's
+`invalid ref` hazard arriving in its other form: not a missing tag, but a stale local install.
+
+### Two gate findings, and one of them is a real control the stage text did not have
+
+- **`CKV_TF_1`** (module pinned by tag, not commit hash) — the repository's established answer: a
+  `checkov:skip` naming the convention, added to all four module calls.
+- **`CKV_AWS_195`: the crawlers had no Glue security configuration** — and this one is not a default
+  worth skipping. D27's own honest sentence is that a crawler **samples object contents** to infer
+  schema, so what it writes to CloudWatch is closer to data than to metadata, and everything else here
+  encrypts under the zone CMK. So `awsds-data-catalog-maintenance` (a security configuration of the
+  same name) was added and attached to both crawlers, with a fourth statement on the zn-lab key policy
+  for `logs.us-west-2.amazonaws.com`, scoped by the log-group encryption context. **A second gate
+  finding corrected the first fix**: the draft declared `s3_encryption` and `job_bookmarks_encryption`
+  `DISABLED` (a crawler writes neither), and `CKV_AWS_99` refused it — rightly, because a configuration
+  naming the key for one mode and "off" for two is a statement about what happens to exist rather than
+  about this lake. All three modes now name the key.
+
+### The apply, in the two steps the plan could not state
+
+| Step | What | Result |
+|---|---|---|
+| 1 | `aws_lakeformation_data_lake_settings` **alone**, `-target` | `1 added` |
+| — | **the reading** — `get-data-lake-settings` | see below |
+| 2 | the remainder | `56 added`, then failed on the crawlers |
+| 3 | the crawler fix | `2 added, 1 changed` |
+| — | re-plan | **`No changes`, `-detailed-exitcode 0`** |
+
+**And the reading between steps 1 and 2 is the whole reason the split existed — it came back the good
+way, which is a measurement and not a relief:**
+
+```
+Parameters    : {"CROSS_ACCOUNT_VERSION": "4", "SET_CONTEXT": "TRUE"}
+Admins        : [ ...AWSReservedSSO_InfrastructureAccess_... ]
+DbDefaults    : []
+TableDefaults : []
+```
+
+**Omission clears.** The provider sends the empty structure and `PutDataLakeSettings` replaces
+server-side — so the behaviour the plan refused to state is now measured for this provider version. Two
+things follow: the split can, in principle, collapse back to one apply at pass 2 and beyond — and it
+**should not**, because what was measured is a provider behaviour that the plan still does not state,
+so the next version could change it silently. The read-back stays (`DL-6`), which is the cheap half.
+
+**The claim that actually matters was then verified per database**, not inferred from the settings:
+`list-permissions` on `raw`, `curated` and `dropbox` returns **no `IAMAllowedPrincipals` grant at all** —
+only the maintenance role's operational grants and `InfrastructureAccess` as creator. The databases were
+born governed. Had the order been one apply, this reading would have been the discovery that D13 was
+decoration, days later and with the tables already created.
+
+### The one failure, and it was caused by the fix rather than by the design
+
+`CreateCrawler` returned `InvalidInputException: The role … is not authorized to perform
+glue:GetSecurityConfiguration` — **a role must be able to READ the security configuration it runs
+under**, which nothing in the stage text or the checkov guidance says. Added as its own statement
+(`Resource: "*"` — Glue security configurations have no ARN to scope to). Both crawlers created on the
+retry. Worth keeping in mind as a shape: adding an encryption control added an IAM requirement to a
+principal that was already written, and the error named the missing action rather than the control.
+
+### What exists now
+
+Five buckets under one CMK (`alias/awsds-data-zn-lab`), each versioned, SSE-KMS, Bucket Key on, carrying
+the three-branch perimeter deny plus the signature-age cap — `DL-1` and `DL-2` pass on all five. `raw`
+and `curated` registered through `awsds-data-lf-registration`; the three LF-Tag keys with
+`GOVERNANCE.md`'s values; three databases with decision 1's asymmetry applied (`raw` and `dropbox`
+tagged `classification=internal`, `curated` deliberately untagged at the database); the Iceberg table
+`curated.sample_trades` with its `restricted` column and its compaction optimizer;
+`awsds-data-catalog-maintenance` trusting `glue.amazonaws.com` alone, with two **unscheduled** crawlers.
+`./aws/datalake.py`: **`DL-1` through `DL-6` and `DL-10` all pass**; `DL-7`, `DL-8` and `DL-11` are the
+expected pre-pass notes.
+
+### Not done
+
+- **Passes 2, 3, 4 and 6 are untouched**, and so is 4.3's SCP amendment (battery phase 4b).
+- **Nothing behavioural was proven.** Every claim above is a describe call or a policy read; the pandas
+  pair, the classification pair, the drop-box asymmetry and the crawler pair are the stage's own probes
+  and need the tunnel and the consumer side.
+- **The crawlers have never run.** `DL-3` reads their shape, not a run — verification (iii)'s positive
+  half (the SCP carve-out actually matching) is still owed, and it is the first thing that will exercise
+  the security configuration added here.
+
 ---
 
 *Log index: [docs/log/INDEX.md](INDEX.md) · Stage index: [docs/plan/stages/INDEX.md](../plan/stages/INDEX.md)*
