@@ -76,7 +76,7 @@ change. The sequence to work in is **six passes**:
 |---|---|---|---|---|
 | **0** | 2, 5.4-pre | the classification scheme; the INT-11 before-reading | on paper; a CLI read | — |
 | **1** | 1, 3, 4, 5 | the lake: keys, buckets, policies, drop-box; catalog, role, crawlers; Iceberg; Lake Formation — **authored 2026-08-18, `58 to add`; applied in TWO steps, 5.2's callout** | `data-governance/data/` `[P]` | `awsds-infra-data` |
-| **2** | 6 | D13 made real — grants, the grain decision, the sso/ reading | idem, plus a reading of `identity/sso/` | idem |
+| **2** | 6 | D13 made real — grants, the grain decision, the sso/ reading — **authored 2026-08-19, `9 to add`; the sso/ reading and the grain map are done** | idem, plus a reading of `identity/sso/` | idem |
 | **3** | 7 | the two cross-account shares, and the INT-11 after-reading | `data-governance/data/` + RAM | idem |
 | **4** | 8, 9 | the consumer side: workgroups, links, scratch, derived + CMK; the pandas proofs | `sandbox/data/`, `development/data/` `[P]` | `awsds-infra-sandbox-1`, `awsds-infra-dev` |
 | **6** | 13 | Security Hub org-wide | by hand: Management, then Audit | `AWS Control Tower Admin`, console/CloudShell |
@@ -348,6 +348,18 @@ available for the exceptions hybrid mode covers (6.3).
 in `identity/sso/` were written narrow in Stage 2 — confirm none carries an S3 grant that reaches this
 account's buckets. (The execution-role half cannot be verified yet: those roles are blueprint-provisioned
 at Stage 6, which is INT-15's whole subject.)
+
+**READ 2026-08-19, and it comes back clean in the strongest form available: every single `s3:` mention
+across the four policy files is inside a `Deny`.** There is no `s3:Get*` **Allow** anywhere in the six
+sets — not scoped, not wildcarded, not on another account's buckets. The four are
+`DenyTerraformStateAccess` (`s3:*` on `awsds-*-tfstate`, the wildcard read in the closing direction),
+`DenyMakingStorageOrImagesPublic`, the data scientists' `DenyEveryWrite` (`s3:Delete*`/`Put*`/`Restore*`)
+and the two approvers' `DenyReadingTheRows`/its deployment-manager twin (`s3:Get*` whole). **So D13's
+premise holds by *absence* rather than by exclusion** — 6.1's "no S3 permission of any kind on Data
+Governance buckets" needed no carve-out written anywhere, because there was never a grant to carve out
+of, which is what D22's account split bought. The drop-box `PutObject` exception 6.1 names is granted by
+**bucket policy** to the Interactive-OU roles, not by a permission set — so it does not appear here, and
+that is correct rather than missing.
 
 **6.3 — Exceptions go through Lake Formation hybrid access mode**, recorded, rather than by quietly
 widening a role.
@@ -640,7 +652,7 @@ Record every answer, including the ones that come out fine.
 | v | Do the resource links appear with **no** pending RAM invitation anywhere — the org-sharing path working end to end? | 7.3, 8 |
 | vi | Does `DenyIamPrincipalMutation` in fact cover `iam:UpdateAssumeRolePolicy` for all six persona sets (a reading of `identity/sso/`, Lesson 22)? | 3.5 |
 | vii | *(removed 2026-08-17 — the NFS requirement was withdrawn; there is no EFS to mount)* | — |
-| viii | Can a per-user LF filter be expressed and observed on the SQL path at all (the grain's raw material)? | 6.4 |
+| viii | Can a per-user LF filter be expressed and observed on the SQL path at all (the grain's raw material)? — **ANSWERED 2026-08-19 by the written map** (`docs/GOVERNANCE.md` §"The grain"): *expressed* yes, but only through **TIP**, which reaches the SQL path and not JupyterLab and whose documented price is remote access — so it is reachable and **not adopted**. An LF filter on its own attaches to the role, never the person. `${aws:userid}` prefixes stay the genuinely per-user control, over **copies**. *Observed* is not claimed: nothing was run | 6.4 |
 | ix | Does Security Hub's auto-enable cover existing members and later vends, and which FSBP controls were disabled as not-applicable in the first triage? | 13 |
 | x | Does the default consumer grant exclude the `restricted` column (the classification-scoped TBAC holding), and does the explicit grant admit it? | 6.1, 7.2 |
 

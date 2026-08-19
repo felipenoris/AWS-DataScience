@@ -79,3 +79,14 @@ data "aws_iam_roles" "infrastructure_access" {
   name_regex  = "AWSReservedSSO_InfrastructureAccess_.*"
   path_prefix = "/aws-reserved/sso.amazonaws.com/"
 }
+
+# ------------------------------------------------------ the governance manager (step 6)
+#
+# The same pattern read for the persona that does the TAGGING (decision 5 - specific grants,
+# never admin). Provisioned here by identity/sso/'s `governance-manager@data-governance`
+# assignment, which is the ONLY account that assignment names.
+
+data "aws_iam_roles" "governance_manager" {
+  name_regex  = "AWSReservedSSO_GovernanceManagerAccess_.*"
+  path_prefix = "/aws-reserved/sso.amazonaws.com/"
+}

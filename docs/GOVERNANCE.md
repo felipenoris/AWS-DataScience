@@ -183,6 +183,19 @@ it is mapped and priced at Stage 5 pass 2 as exploration, adopted only if it ear
 documented cost: remote access stops working). The objective's "who may read what" is met at the grain
 of the assumable role/project, stated here rather than discovered.
 
+**The map** (verification viii, written at pass 2 — three surfaces, and none of them is free):
+
+| Surface | What it can express per *person* | What it costs | Status |
+|---|---|---|---|
+| **LF row/column filters** (data cells filters) | Nothing by itself. A filter attaches to a **principal**, and the principal Lake Formation sees is the role — so a filter on a role shared by four people applies to all four. It becomes per-user only when the surface below carries a user identity into the engine | — | **available, wrong grain alone**; Stage 11 narrows *within* the restricted grants using it |
+| **Trusted identity propagation (TIP)** | The real lever: carries the Identity Center user into Athena, Redshift, Glue and EMR (since 2025-09), so LF sees the human and a filter becomes per-user. Enabled per project profile — `enableTrustedIdentityPropagationPermissions` | **Remote access stops working** (documented). JupyterLab and Visual ETL resolve through the project role either way, so it buys the SQL path only — a **two-grain** design, not a uniform one | **not adopted.** Stage 6 decision 2 records which yields; remote access favoured by default (open question 13) |
+| **`${aws:userid}` prefix scoping** (derived zone, D19/9.2) | Real per-user separation, but of **copies**, not of source data: one person's materialised results are not a path around another's grants | An IAM condition per statement — cheap, and already the derived zone's shape | **adopted as design**, as containment rather than as entitlement |
+
+Read together they say why the grain is the role: the only surface that makes Lake Formation see a
+*person* is TIP, it reaches one of the two paths people actually use, and its price is an objective
+this project holds. The derived zone's per-principal prefixes are what remains genuinely per-user, and
+they govern the copy rather than the source — which is Lesson 1's shape, managed rather than forbidden.
+
 **The default grants** — the standing expressions that implement the classification rule:
 
 - `[each consumer account, classification ∈ {public, internal}, SELECT + DESCRIBE]` — read-only, both
@@ -192,7 +205,9 @@ of the assumable role/project, stated here rather than discovered.
 
 **Every applied triple is registered in [`docs/AWS_STATE.md`](AWS_STATE.md) §"Lake Formation grant
 register"** — one row per grant, written in the same sitting as the grant, the same discipline
-`POLICIES.md` keeps for policy statements. Empty until Stage 5 pass 2.
+`POLICIES.md` keeps for policy statements. It carries the catalog's own operational grants from Stage 5
+pass 1; the **governance manager's** grants arrive at pass 2 and the first **consumer** grants — the
+TBAC expressions above — at pass 3.
 
 ## Drop-box
 

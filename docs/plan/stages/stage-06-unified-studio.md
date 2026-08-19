@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Status** | not started — **revised 2026-08-16 into the pass/verification format, against the official documentation and the `aws-ia` module re-read the same day.** Corrections folded in: the **Proves** row loses INT-09 and INT-13 (both need GitLab, which is Stage 7 — the old row contradicted the old body) and gains INT-02's consumer half; the two `sagemaker/` prerequisite slices, until now only *named* by `docs/plan/conventions.md` §6, get an owning step (2.1); steps 4-5 become amendments to Stage 3's parameterised `egress/` (its step 10) rather than fresh builds; the teardown debt is paid (the `layers.py` rows and the body Stage 2 step 8.6 left owing in `scripts/down-studio-apps.py`); and six doc facts replace beliefs — **`VpcOnly` is the default** (the control is a non-editable parameter, not a switch to find), the blueprint names (there is no "ML experience"; the per-project SageMaker AI domain comes from **Tooling**), disabling Athena **Spark** without killing Athena SQL is an SCP on `athena:StartSession`, idle shutdown is a Tooling-blueprint parameter with an admin-enforceable ceiling, the account association has **no public API**, and the required-endpoint list gained `datazone`. **Revised 2026-08-17: the user withdrew the NFS requirement from `objectives.md` (D24 withdrawn) — step 7 is removed, and pass 5 is steps 8-9** |
+| **Status** | not started — **revised 2026-08-16 into the pass/verification format, against the official documentation and the `aws-ia` module re-read the same day.** Corrections folded in: the **Proves** row loses INT-09 and INT-13 (both need GitLab, which is Stage 7 — the old row contradicted the old body) and gains INT-02's consumer half; the two `sagemaker/` prerequisite slices, until now only *named* by `docs/plan/conventions.md` §6, get an owning step (2.1); steps 4-5 become amendments to Stage 3's parameterised `egress/` (its step 10) rather than fresh builds; the teardown debt is paid (the `layers.py` rows and the body Stage 2 step 8.6 left owing in `scripts/down-studio-apps.py`); and six doc facts replace beliefs — **`VpcOnly` is the default** (the control is a non-editable parameter, not a switch to find), the blueprint names (there is no "ML experience"; the per-project SageMaker AI domain comes from **Tooling**), disabling Athena **Spark** without killing Athena SQL is an SCP on `athena:StartSession`, idle shutdown is a Tooling-blueprint parameter with an admin-enforceable ceiling, the account association has **no public API**, and the required-endpoint list gained `datazone`. **Revised 2026-08-17: the user withdrew the NFS requirement from `objectives.md` (D24 withdrawn) — step 7 is removed, and pass 5 is steps 8-9.** **Revised again 2026-08-19, after re-reading the network-isolation page and the 2026-04 Athena Spark PrivateLink release ahead of decision 3** (sources in `docs/REFERENCES.md`): 1.6 rewritten — the three controls re-characterised (the Tooling flag is **non-retroactive** as well as blunt; the doc's third control is *grant*-shaped on blueprint-authored policies, so 2.1's boundary is a **deviation to record**), a fourth free network-layer lever named, and the announcement's scope written down so the question is not re-opened by its title; 1.7 gains the **third** condition the earlier reading missed (`aws:userid` `*:user-*` — the on-behalf carve-out is already in AWS's shape); 4.2 gains the **full** required-endpoint table and the `us-east-1`-only Q endpoint that design B cannot reach; **decision 1 reopened** on an endpoint-count cost the compute comparison never saw |
 | **Prerequisites** | Stage 3 (the per-role endpoint lists and the `egress_mode` switch of its step 10), Stage 4 (the tunnel; INT-16's portal half deliberately open), Stage 5 (the lake, the two shares proven by the pandas pair, **decision 6 — the grain — already taken**, and the 9.3 extension point in the derived-zone key policy). **Pulled forward and applied before this stage:** `production/registry/` (Stage 7 step 5 — under design B it is how packages arrive) and `production/pki/` (D36 — the `dev-env` image must be *built* with the CA root in it, INT-19) |
 | **Consumes** | [D5](../decisions/D05-sagemaker-egress.md), [D12](../decisions/D12-budget-ceiling.md), [D13](../decisions/D13-lake-formation-enforcement.md), [D14](../decisions/D14-supply-chain-account.md), [D21](../decisions/D21-development-account.md), [D26](../decisions/D26-unified-studio.md), [D28](../decisions/D28-workflow-contract.md), [D35](../decisions/D35-sandbox-cardinality.md), [D36](../decisions/D36-internal-pki.md) |
 | **Proves** | [INT-01](../integrations.md), [INT-02](../integrations.md) (the consumer half; the domain policy is Stage 7 step 5's, applied early), [INT-12](../integrations.md), [INT-15](../integrations.md), [INT-16](../integrations.md) (the portal half, provisional since Stage 4), [INT-17](../integrations.md). **Deferred to Stage 7 with the surface that needs it:** INT-09 (the `git clone` inside the `engineering` project) and INT-13 (CodeConnections) — GitLab does not exist before Stage 7 step 1 |
@@ -179,20 +179,58 @@ names are a contract with `./aws/studio.py` (`US-4`). In each profile's Tooling 
 decision, with a documented cost: **remote access does not work with TIP enabled**.
 
 **1.6 — Disable Athena Spark without disabling Athena SQL** — decision 3. The documented "disable" is
-three controls, and only one is preventive *and* precise: a deny on **`athena:StartSession` +
-`athena:UpdateSession`** (the Spark-session surface; SQL uses `StartQueryExecution`, which D13 depends on).
-The Tooling blueprint's Athena flag is the blunt one — it removes SQL too — so it stays on. Land the deny
-in `awsds-org-scp-ou-interactive` through **battery phase 4b** (an SCP amendment, never a direct edit;
-no carve-out needed — nobody legitimately runs Athena Spark), and mirror it in 2.1's boundary. Record in
-`POLICIES.md` in the same sitting.
+three controls (**re-read 2026-08-19**), and only one is preventive, **retroactive** *and* precise: a deny
+on **`athena:StartSession` + `athena:UpdateSession`** (the Spark-session surface; SQL uses
+`StartQueryExecution`, which D13 depends on). **AWS ships the statement itself** — `Sid`
+`DenyAthenaSparkStartSession`, `Resource` `arn:aws:athena:*:*:workgroup/*`, scopable by Region, account or
+workgroup. The other two are worse than the 2026-08-16 reading recorded:
+
+- **The Tooling blueprint's Athena flag** removes Athena SQL with it — the D13 path — **and applies to new
+  projects only**, so it is blunt *and* not retroactive. Two reasons to leave it on, where the plan had one.
+- **The doc's third control is "remove Amazon Athena Spark permissions from individual project IAM
+  policies"** — a *grant*-shaped edit on **blueprint-authored** policies, which is Lesson 11's trap and
+  INT-15's reconciliation risk in one sentence. **2.1's permissions boundary is not that control**: it is a
+  deny-shaped ceiling delivered by a slice this repository owns, i.e. a deliberate deviation that is
+  stronger than the documentation. Record it in `POLICIES.md` **as a deviation, with the reason** — a
+  future reader diffing plan against doc will otherwise read it as carelessness.
+
+Land the deny in `awsds-org-scp-ou-interactive` through **battery phase 4b** (an SCP amendment, never a
+direct edit; no carve-out needed — nobody legitimately runs Athena Spark), and record in `POLICIES.md` in
+the same sitting. **The negative probe is the one that matters**: `athena:StartQueryExecution` must still
+succeed in the same account, or the amendment took D13 with it.
+
+**A fourth lever exists at the network layer, and it costs less than nothing:** Athena Spark's three session
+endpoints (`athena.sessions`, `athena.dashboard`, `athena.persistent-dashboard`) sit in the **optional**
+endpoint table, so not creating them leaves Spark Connect no private path under design B — three endpoint
+fees not paid. **Weakened, not removed, by the 2026-04 PrivateLink release**: before it there was no private
+path at all, so Spark was dead by construction; now not having one is *our choice*, and a choice has to be
+written down to survive.
+
+**Why the 2026-04 announcement does not reopen this** (read 2026-08-19; sources in `docs/REFERENCES.md`):
+PrivateLink moved the **client → session** path — Spark Connect gRPC, Live UI, History Server — and not
+where the session runs. There is **no `NetworkConfiguration` anywhere in the Athena Spark API** (no subnets,
+no security group), and the SMUS network-isolation page, current after the release, still points at EMR or
+Glue for VPC connectivity. The executor stays outside our VPC, therefore outside the endpoint policies, the
+flow logs and every `aws:SourceVpce` condition the perimeter is built from — which is the whole reason this
+step exists. Two details from the release's own page argue *for* the deny: **VPC endpoint policies are not
+supported** on the three session endpoints (the documented workaround is to police
+`GetSessionEndpoint`/`GetResourceDashboard` on the Athena **API** endpoint instead — an indirection, in
+allow shape), and a **session URL minted inside the VPC is reachable from the public internet by design**
+(plans, schema and stage detail, persisted in the History Server). Keep this paragraph: an announcement
+titled *"now supports AWS PrivateLink"* is exactly what makes someone re-open a settled question.
 
 **1.7 — Read INT-16's portal half, at the first moment the surface exists** — **user**, browser: does the
 portal open with the tunnel down? Record the observed behaviour either way, against Stage 4's three-roles
 frame — a negative is fallback (ii) of INT-16 restated, not a stage failure. **Fallback (i) gained a
 documented candidate (2026-08-16):** AWS's network-isolation page ships a deny for the **domain execution
-role** conditioned on the caller's network (`aws:SourceVpc` + `aws:ViaAWSService=false` in the doc's shape)
-— re-keyed on `aws:SourceIp` = the WireGuard EIP list, it is the first mechanism that reaches the portal's
-own session. Evaluate it here; adopt it only with the on-behalf carve-out proven (Stage 4's pair).
+role** conditioned on the caller's network (`Sid` `DenyUserAccessFromUnauthorizedVPCs`) — re-keyed on
+`aws:SourceIp` = the WireGuard EIP list, it is the first mechanism that reaches the portal's own session.
+**Corrected 2026-08-19: the doc's shape carries *three* conditions, not two** — `StringNotEquals
+aws:SourceVpc`, `BoolIfExists aws:ViaAWSService=false`, and the one the earlier reading missed,
+`StringLike aws:userid = *:user-*`, which is what confines the deny to **portal users** and spares the
+catalog service running on the same role. **The on-behalf carve-out is therefore already in AWS's shape,
+and its mechanism is the `userid` form rather than `ViaAWSService` alone** — evaluate it here, and prove
+that pair (Stage 4's) before adopting.
 
 ### 2. The project roles — prerequisites, the D13 boundary, INT-15
 
@@ -276,10 +314,18 @@ server, crates.io, the distro mirrors, `gitlab.prod.internal` — default-deny w
 Priced and measured (`docs/PRICING.md` §7): USD 0.0005/name-month + USD 0.60/1M queries — cents.
 
 **4.2 — Add the `datazone` interface endpoint to both Interactive lists** (Stage 3 step 8.7's candidate,
-now **required** by the network-isolation doc), and measure — not copy — the rest of AWS's required list
-(`ec2`, `secretsmanager`, `ssm`/`ssmmessages`, `q`): add only what verification (viii)'s flow-log reading
-shows exercised. Every entry is +USD 0.010/h per account, and AWS's list covers features this design does
-not enable.
+now **required** by the network-isolation doc), and measure — not copy — the rest of AWS's required list:
+add only what verification (viii)'s flow-log reading shows exercised. Every entry is +USD 0.010/h per AZ per
+account, and AWS's list covers features this design does not enable. **The full required table, re-read
+2026-08-19** (the earlier four-name summary was a sample, not the list): `athena`, `datazone` +
+`datazone-fips`, `ec2` + `ec2messages`, `q`, `s3`, `sagemaker.api` + `sagemaker.runtime`, `glue`, `kms`,
+`secretsmanager`, `sts`, `ssm` + `ssmmessages`.
+
+**One required entry cannot be created from `us-west-2` at all:** the doc pairs `q` with
+`com.amazonaws.`**`us-east-1`**`.codewhisperer` and states that domains in other Regions use *that*
+endpoint — but an interface endpoint is regional, so under design B the Amazon Q surface has no private
+path from our VPC. It is a portal convenience rather than a data path (D1 keeps everything else in
+`us-west-2`); **record what actually breaks in 4.3 instead of assuming either way**.
 
 **4.3 — Run a working session and record what breaks** — **user**: the design A half of step 6's evidence.
 
@@ -423,13 +469,26 @@ decision-maker.
    interactive sessions, both VPC-capable. Recommended: **EMR Serverless** — per-vCPU/GB metering with an
    ARM option (measured, `docs/PRICING.md` §5) against Glue's 1-DPU minimum; Glue stays available through
    the core endpoints either way. Record what the replacement costs against the free default it displaces.
+   **Reopened 2026-08-19 by a cost the compute comparison never saw:** the optional endpoint table asks for
+   **four** endpoints for EMR Serverless (`emr-serverless`, `emr-serverless-services.livy`,
+   `emr-serverless-services.sessions`, `emr-serverless.dashboard`) against **one** for Glue interactive
+   sessions (`glue.sessions` — `glue` is already required). At ~USD 0.010/h per AZ per account, two AZs and
+   two Interactive accounts, that is an idle line of order **USD 0.12/h** which runs 24×7 — unlike the
+   compute, which bills only while a session is up, and which is the only thing the recommendation weighed.
+   Design A may not need all four (4.2's rule is measure, not copy). **Settle this decision with that
+   number in hand, not without it.**
 2. **`enableTrustedIdentityPropagationPermissions`** (1.5, the grain — Stage 5 decision 6's mechanism) —
    recommended: **follow the grain Stage 5 chose**. If per-user on the SQL path, enable it and accept the
    documented cost — **remote access does not work with TIP enabled** — recording which objective yielded;
    if project-grain, leave it off and keep remote access.
 3. **The Athena Spark disable set** (1.6) — recommended: the `athena:StartSession`/`UpdateSession` SCP via
    battery phase 4b **plus** the boundary mirror; leave the Tooling Athena flag on (it would remove Athena
-   SQL, the D13 path).
+   SQL, the D13 path). **Re-read 2026-08-19 against the AWS page and the 2026-04 Athena Spark PrivateLink
+   release — unchanged, and better supported than when it was written**: AWS ships the statement verbatim;
+   the Tooling flag turns out to be non-retroactive as well as blunt; the doc's third control is
+   grant-shaped on blueprint-authored policies, so the boundary mirror is a **deviation to record**, not a
+   copy; a fourth, free, network-layer lever exists under design B; and PrivateLink moved the client path
+   while the executor stays outside the VPC. All of it is in 1.6.
 4. **Which Lakehouse blueprint(s) the catalog/SQL surface needs** (1.4) — `LakehouseCatalog`,
    `LakeHouseDatabase` (`DataLake`), or both. Recommended: start with **LakehouseCatalog** alone and add
    the other only when a concrete surface asks for it — never `RedshiftServerless`.

@@ -3,6 +3,21 @@ locals {
   # zero and on two - both are findings, neither may become an empty admins list.
   infrastructure_access_role_arn = one(data.aws_iam_roles.infrastructure_access.arns)
 
+  # The governance manager (step 6, pass 2) - resolved the same way and for the same reason,
+  # and NOT an admin by decision 5: it holds the specific grants in governance.tf instead.
+  # one() failing here means the set is not provisioned in this account, which would make
+  # every grant below aim at nothing - a loud failure rather than a silent no-op.
+  governance_manager_role_arn = one(data.aws_iam_roles.governance_manager.arns)
+
+  # The three catalog databases, as the grant targets of step 6. Built from the resources so
+  # a fourth database cannot be added without deciding whether the governance manager sees
+  # it - the alternative, a literal list, is the same set written twice (Lesson 14).
+  governed_databases = {
+    raw     = aws_glue_catalog_database.raw.name
+    curated = aws_glue_catalog_database.curated.name
+    dropbox = aws_glue_catalog_database.dropbox.name
+  }
+
   # The five buckets. Names are FOREVER in this account - DenyLakeDeletionAndDeregistration
   # denies s3:DeleteBucket unconditionally (stage callout at 1.2) - so they are built from
   # the env token exactly as docs/GOVERNANCE.md prints them, and from nothing else.
