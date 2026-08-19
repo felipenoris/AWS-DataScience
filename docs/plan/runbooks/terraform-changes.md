@@ -149,6 +149,30 @@ tags. The ref must already exist on GitHub when the callers' commit runs.
 7. **Plan and apply each affected account** — Recipe A steps 4-9, re-running init (step 4) so the new
    module version is fetched.
 
+**After the merge, check the tag against `main` — and expect it to fail (found 2026-08-19, Stage 5 pass 4).**
+A **rebase merge rewrites every commit hash**, so the tags you pushed keep pointing at the pre-rebase
+commits and those commits stop being ancestors of `main`:
+
+```bash
+git merge-base --is-ancestor s3-bucket-v0.3.0 main && echo ancestor || echo orphaned
+```
+
+**`orphaned` is the normal outcome and the correct response is to do nothing.** What `terraform init`
+resolves is the tag's *content*, not its position in a history, and the commits survive because a tag ref
+pins them against garbage collection. **Re-tagging is forbidden** (§8, *Retag*) and cutting a `v0.3.1` at
+the merge commit would mean a version bump on every merge, for a diff of zero.
+
+**What to verify instead is the content, and it is one command per module** — this is the check, and it
+would catch a rebase that silently dropped or altered a hunk:
+
+```bash
+git rev-parse "s3-bucket-v0.3.0:terraform-modules/s3-bucket" "main:terraform-modules/s3-bucket"
+```
+
+Two identical tree hashes mean the tag serves exactly what `main` carries. **Two different ones are a real
+problem** — the deployed callers are pinned to code that is no longer the repository's — and the fix is a
+new version at the merge commit plus a caller bump, never a moved tag.
+
 ## 4. Recipe C — a new slice
 
 1. Create `terraform-live/<account>/<newslice>/` **and its row in `scripts/tfhygiene/layers.py` in the

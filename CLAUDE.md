@@ -272,8 +272,9 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   the lake's key declined because `AllowProductionPickupDecryptViaS3` has no bucket scoping), **key policy
   delegates administration to root and no crypto action**. **Owed: 4c** (persona grants in `identity/sso/`
   — sequenced after so ARNs come from state, not wildcards), **4d** (all behavioural proofs, tunnel),
-  **4e** (the SCP amendment, last), pass 6. **[PR #20](https://github.com/felipenoris/AWS-DataScience/pull/20)
-  open, not merged; post-merge re-plan owed.** A 2nd review pass fixed 7 misses, 2 in the rows that OWN
+  **4e** (the SCP amendment, last), pass 6. **PR #20 merged + synced; post-merge re-plan
+  `No changes` in all 3 slices, instrument all-pass. The merge was a REBASE — both tags now point OUTSIDE
+  `main`'s history; harmless (tree hashes identical, `init` resolves content) and Recipe B gained the check.** A 2nd review pass fixed 7 misses, 2 in the rows that OWN
   the claim (INT-11, INT-03); **Lessons 31-32** came from that re-reading, not from the apply.
 - **Pass 0-3 findings PROPAGATED 2026-08-19 (doc-only, no AWS call).** St.5: pass 4 gains a debt list —
   the crawlers **never ran** (verif. iii), the drop-box halves, and 4.3's amendment **last**;

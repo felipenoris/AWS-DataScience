@@ -1052,6 +1052,34 @@ before it was merged**, which is this repository's normal order for a `[P]` slic
 reviewer assumes. The post-merge `plan` from the merge commit is owed, for the reason pass 1 recorded: a
 fast-forward proves the two branches are the same object only until somebody rebases one.
 
+### The merge, and the thing the rebase did to the tags
+
+**Merged and synchronised (the merge is the user's).** The re-plan owed above was run from the merge
+commit and comes back **`No changes` in all three slices** — both consumer slices and
+`data-governance/data/`, the last included because a merge that touched the modules could have moved the
+lake too. `./aws/datalake.py`: **all checks passed**. Local branch deleted, remote pruned.
+
+**And the sentence that predicted this is the one that mattered: it was a REBASE merge, not a
+fast-forward.** Every commit hash was rewritten, so both tags — `s3-bucket-v0.3.0`,
+`consumer-data-v0.1.0` — still point at the pre-rebase commits, which are **no longer ancestors of
+`main`**:
+
+```
+git merge-base --is-ancestor s3-bucket-v0.3.0 main   ->  orphaned
+```
+
+**Nothing is broken, and doing nothing is the correct response** — but that is a conclusion, not an
+assumption, so it was measured: the *tree hash* of each module at its tag is **byte-identical** to the
+same path on `main` (`87a1b29…` for `s3-bucket`, `ef07de3…` for `consumer-data`). `terraform init`
+resolves a tag's **content**, not its position in a history, and the tagged commits survive garbage
+collection because a tag ref pins them. Re-tagging is forbidden by the runbook's own §8, and cutting a
+`v0.3.1` at the merge commit would mean a version bump on every merge for a diff of zero.
+
+**Recipe B gained the check**, because this recurs on every merge from now on and the reflex it needs is
+counter-intuitive: *expect `orphaned`, and verify the tree hash instead.* Two different tree hashes would
+be the real fault — deployed callers pinned to code the repository no longer has — and that one is fixed
+with a new version plus a caller bump, never with a moved tag.
+
 ### A second review pass, after the first propagation — seven things it had missed
 
 The first pass propagated the findings into the stage files. Re-reading against the question *which file
