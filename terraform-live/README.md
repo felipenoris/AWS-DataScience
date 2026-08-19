@@ -13,7 +13,7 @@ is a broken caller.
 
 ## What is here today
 
-**Seventeen slices across five account folders: ten `[P]`, one `[D]`, six `[E]`.** That is a summary, not
+**Twenty slices across five account folders: thirteen `[P]`, one `[D]`, six `[E]`.** That is a summary, not
 an authority — `make slices` prints the live table, and a slice that reaches disk without a row in it fails
 `make check`.
 
@@ -159,9 +159,13 @@ The **six persona permission sets**, their inline policies, and every **group→
 seventh set, `InfrastructureAccess`, is **imported**, because it is the credential the apply runs as. Users
 and groups are **not** here and never will be — that is the identity seam. Two rules shape every file in it:
 a group is resolved by **display name**, and the assignments are **enumerated** while the policy floor is
-discovered (D34). It reads one data source it does not own, `aws_organizations_organization`, for the single
+discovered (D34). It reads data sources it does not own: `aws_organizations_organization`, for the single
 purpose of turning an authored account **name** into the id an assignment requires — the same shape
-`attachments.json` uses from the other side.
+`attachments.json` uses from the other side — and **three cross-account `terraform_remote_state` data
+sources, four state reads at today's two consumers: the VPN home's `foundation/` (Stage 4 step 8.1) and,
+since Stage 5 pass 4c, the two consumers' `data/` slices and the lake's**, for the workgroup, derived-bucket, drop-box and CMK ARNs the persona statements name exactly
+instead of wildcarding. **So `identity/sso/` applies AFTER those slices, despite ranking above them** —
+`scripts/tfhygiene/layers.py`'s `RANKS` comment owns the inversion and says why the rank is not moved.
 
 The one older exception is [`identity/org-policies/`](identity/org-policies/README.md), which holds the organization's
 **preventive policy documents** — the JSON attached to the organization root and to the OUs in
@@ -209,9 +213,10 @@ created there, the account has stopped being what it is for.
 
 ## What deliberately does not live in this tree
 
-- **`terraform-modules/`** — the reusable code. `terraform-live/` composes; it does not define. Six exist
-  since Stages 3-4 (`vpc`, `vpc-egress`, `s3-bucket`, `kms-key`, `iam-role`, `wireguard`), and every caller
-  in this tree pins one **by git tag** — the two-commit order that requires is the runbook's.
+- **`terraform-modules/`** — the reusable code. `terraform-live/` composes; it does not define. The roster,
+  and what each module is for, are [`terraform-modules/README.md`](../terraform-modules/README.md)'s — re-typing
+  the count here is how the two drift. Every caller in this tree pins one **by git tag**, and the two-commit
+  order that requires is the runbook's.
 - **People.** Identity Center **users, groups and memberships** stay in the directory; only **entitlements**
   — permission sets, boundaries, group→account assignments — are Terraform, in `identity/sso/`. The seam and
   its reasoning are in `docs/plan/conventions.md`, "The identity seam".
@@ -236,7 +241,8 @@ created there, the account has stopped being what it is for.
 | Naming, tags, the IAM rules, the identity seam | [`docs/plan/conventions.md`](../docs/plan/conventions.md) |
 | What the policy documents are and what each may not become | [`identity/org-policies/README.md`](identity/org-policies/README.md) |
 | **What every policy statement does, and why it exists** — all four types | [`identity/org-policies/POLICIES.md`](identity/org-policies/POLICIES.md) |
-| **What governs the lake** — bucket-policy branches, the key policy, tag assignments, LF grants | [`data-governance/data/README.md`](data-governance/data/README.md) — the same one-row-each discipline, for the one slice whose controls are not organization policies |
+| **What governs the lake** — bucket-policy branches, the key policy, tag assignments, LF grants | [`data-governance/data/README.md`](data-governance/data/README.md) — the same one-row-each discipline, for the lake's own controls |
+| **What governs the lake's CONSUMER side** — the per-account CMK policy, the derived zone's statements, the account's `DataLakeSettings`, the enforced workgroup, the four re-grants | [`terraform-modules/consumer-data/README.md`](../terraform-modules/consumer-data/README.md) — one README for the module both `data/` slices call, because the design lives once and is applied twice; the persona's identity-side half is `identity/sso/`'s |
 | Which stage builds a given slice | [`docs/plan/stages/INDEX.md`](../docs/plan/stages/INDEX.md) |
 | What is deployed right now | [`aws/INDEX.md`](../aws/INDEX.md) and [`docs/AWS_STATE.md`](../docs/AWS_STATE.md) |
 

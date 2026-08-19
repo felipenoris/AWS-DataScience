@@ -600,7 +600,9 @@ unbounded, and the difference between those two states is the whole control.
     prefixes and Athena on a dedicated workgroup. No control plane, no ability to start compute.
   - **Data Governance**: no sign-in at all. The lake is read from Sandbox and Development through the
     Lake Formation cross-account share. The only write toward the lake is `s3:PutObject` into the
-    ingestion drop-box, granted by bucket policy rather than by a sign-in.
+    ingestion drop-box, granted by the drop-box **bucket policy in Data Governance together with the
+    mirror statement in `DataScientistAccess`** — a cross-account write needs both halves (Lesson 28) —
+    rather than by a sign-in to Data Governance, which this persona does not have.
   - **Identity, Audit, Log Archive**: no access.
 
 ## The approver users

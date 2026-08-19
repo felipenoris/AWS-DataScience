@@ -32,6 +32,7 @@ sharing shape gets proven before Stage 9 repeats it for Production.
 |---|---|---|
 | `data-governance/data/` (new) | KMS CMKs, the four lake buckets + drop-box, Glue catalog, crawlers + the maintenance role, Iceberg, Lake Formation (settings, registrations, LF-Tags), the cross-account shares | `[P]` |
 | `sandbox/data/`, `development/data/` (**applied 2026-08-19**, one module: `consumer-data` v0.1.0) | the account's own `DataLakeSettings`, Athena workgroup, LF resource links + the local re-grants, the derived-zone bucket with its three prefix families, the D31 CMK (`alias/awsds-<env>-zn-lab`) | `[P]` |
+| `identity/sso/` (**existing slice, amended 2026-08-19, pass 4c**) | the persona's identity-side grants: the Athena run family on the two workgroup ARNs, the derived zone's three prefix families, and the drop-box write's identity half + its KMS pair | `[P]` |
 | Management + Audit, by hand | Security Hub delegated administration and org-wide enablement (step 13) | — (no slice, no profile) |
 
 ```mermaid
@@ -78,7 +79,7 @@ change. The sequence to work in is **six passes**:
 | **1** | 1, 3, 4, 5 | the lake: keys, buckets, policies, drop-box; catalog, role, crawlers; Iceberg; Lake Formation — **authored 2026-08-18, `58 to add`; applied in TWO steps, 5.2's callout** | `data-governance/data/` `[P]` | `awsds-infra-data` |
 | **2** | 6 | D13 made real — grants, the grain decision, the sso/ reading — **DONE 2026-08-19: `9 added`, re-plan `No changes`; the sso/ reading, the grain map and the register rows all landed. The behavioural half (can the persona actually tag?) needs a GM session and the tunnel** - **scheduled 2026-08-19 as [Stage 6](stage-06-unified-studio.md)'s verification (xiii)**, beside (xii), because both need the same sign-in | idem, plus a reading of `identity/sso/` | idem |
 | **3** | 7 | the two cross-account shares, and the INT-11 after-reading — **DONE 2026-08-19: `4 added`, re-plan `No changes`; four `LakeFormation-V4-*` shares `ACTIVE` and held by both consumers, zero invitations, `DL-5` bracket holds. Two findings changed what was applied — the grant option is mandatory, and the default expression needed a `layer` gate to keep the drop-box out** | `data-governance/data/` (`shares.tf`) + RAM | idem |
-| **4** | 8, 9 | the consumer side: workgroups, links, derived zone + CMK; the pandas proofs — **opening with a `DataLakeSettings` per consumer account (7.3's finding)**. It also carries the behavioural debts pass 1 left, and the 4.3 amendment, listed below. **4a/4b DONE 2026-08-19** — one module (`consumer-data` v0.1.0) applied twice, Recipe D per account, `DL-5`/`DL-6` extended per account in the same sitting (the debt pass 3 wrote down), four re-grants per account verified by `list-permissions`, and verification (v) closed. **`scratch` left this row: it is a PREFIX in the derived bucket, not a bucket** — D13's own wording, §8 below. **4c DONE 2026-08-19** (the paragraph below); **4d/4e remain** | `sandbox/data/`, `development/data/` `[P]` + `identity/sso/` | `awsds-infra-sandbox-1`, `awsds-infra-dev` |
+| **4** | 8, 9 | the consumer side: workgroups, links, derived zone + CMK; the pandas proofs — **opening with a `DataLakeSettings` per consumer account (7.3's finding)**. It also carries the behavioural debts pass 1 left, and the 4.3 amendment, listed below. **4a/4b DONE 2026-08-19** — one module (`consumer-data` v0.1.0) applied twice, Recipe D per account, `DL-5`/`DL-6` extended per account in the same sitting (the debt pass 3 wrote down), four re-grants per account verified by `list-permissions`, and verification (v) closed. **`scratch` left this row: it is a PREFIX in the derived bucket, not a bucket** — D13's own wording, §8 below. **4c DONE 2026-08-19** (the paragraph below); **4d/4e remain** | `sandbox/data/`, `development/data/` `[P]` + `identity/sso/` | `awsds-infra-sandbox-1`, `awsds-infra-dev`, **`awsds-infra-identity` (4c)** — 4c additionally *reads* state in Sandbox, Development and Data Governance through each account's `InfrastructureAccess`, one sign-in covering all four on the `awsds` sso-session |
 | **6** | 13 | Security Hub org-wide | by hand: Management, then Audit | `AWS Control Tower Admin`, console/CloudShell |
 
 Pass 6 sits last so its first standards report covers a lake that exists — and keeps its number:
@@ -178,9 +179,15 @@ Interactive-OU roles, dated prefix, no read, no list, no delete. **Three stateme
 3. the **reader** statement — the maintenance role (D27): `GetObject`/`ListBucket` on the same prefixes,
    so the drop-box crawler can read what the writer wrote in order to infer its schema.
 
-Principals 2 and 3 also need a grant on the **drop-box KMS key** — the half that is forgotten until the
-`AccessDenied` arrives, and the error text will point at S3, not at KMS. **Which container the drop-box is
-— its own bucket with its own CMK, or a prefix of `raw` — is decision 3 below, and the key is the
+All three principals need KMS on the zone key, and the split is the account line: principals **1 and 2**
+are cross-account and need statements ON the key policy — `AllowDropBoxWritersViaS3` for the writers
+(`GenerateDataKey` for the SSE-KMS `PutObject`, `Decrypt` for a multipart upload) and
+`AllowProductionPickupDecryptViaS3` for the pickup — each requiring a mirroring identity-side allow in the
+writer's own account (pass 4c's `UseLakeZoneKeyViaS3`; Stage 9 owes the pickup's). Principal **3** is
+same-account: the root delegation plus its inline policy cover it, which is why no key-policy row names
+it. This is the half that is forgotten until the `AccessDenied` arrives, and the error text will point at
+S3, not at KMS. **Which container the drop-box is — its own bucket with its own CMK, or a prefix of `raw`
+— is decision 3 below, and the key is the
 argument**: a prefix shares `raw`'s CMK, so "a grant on the drop-box key" would reach the whole raw
 domain.
 
@@ -619,8 +626,10 @@ So the local prefixes get designed rather than left over.
 
 **9.2 — What lands now, in this slice:**
 
-- the derived bucket (`awsds-<env>-derived`), prefixes **per principal** (`…/derived/${aws:userid}/`), so
-  one person's materialised result is not a way around another person's grants;
+- the derived bucket (`awsds-<env>-derived`), prefixes **per principal on write**
+  (`…/derived/${aws:userid}/`), so a materialised result can only land under its author's prefix — **the
+  read is persona-wide** (applied at 4c, decision 6's grain), which makes the derived zone containment
+  rather than entitlement, with the zone CMK (D31) as the control that keeps other personas out;
 - a **lifecycle expiry** (30 days is a reasonable start), so the shadow lake does not silently become
   permanent;
 - **its own KMS CMK** — D31, and the only default-deny practice on the list: separate from the account's
@@ -634,11 +643,13 @@ So the local prefixes get designed rather than left over.
   policy delegates *administration* to the account root while withholding every cryptographic action** —
   the module's default `kms:*` root statement would have let any IAM policy in the account grant
   `Decrypt`, which is the state D31 was created by;
-- `s3:PutObject` scoped to exactly these prefixes on the **permission sets**, never `*` — and, **if
-  decision 6 lands on the per-user grain, `s3:GetObject` scoped by the same `${aws:userid}` prefix**
-  (2026-08-17): without it a colleague reads the materialised result and the per-user LF filter is undone
-  one hop later — Lesson 5 with an S3 prefix. The CMK below stays persona-level either way (one key cannot
-  express per-user), a residual written here rather than discovered;
+- `s3:PutObject` scoped to exactly these prefixes on the **permission sets**, never `*` — **applied
+  2026-08-19 as pass 4c, in `identity/sso/` rather than in this slice** (the ARNs are read from this
+  slice's state, which is why 4c is sequenced after it). The per-user `s3:GetObject` variant weighed here
+  on 2026-08-17 is **DECLINED**: decision 6 put the grain at the role, so read is persona-wide and a
+  colleague can read a materialised copy — accepted, with the zone CMK (D31) as the control that keeps
+  other personas out. The CMK stays persona-level either way (one key cannot express per-user), a residual
+  written here rather than discovered;
 - the prefixes recorded as **in scope for Macie and CloudTrail data events** in Stage 11, because this is
   where sensitive data will actually accumulate — *outside* the account Macie primarily watches, which is
   exactly why the scope has to be written down.
@@ -718,7 +729,8 @@ own:
   from either account**, which is the only convincing evidence that D13 holds, now with the account
   boundary underneath it. **The METADATA half landed 2026-08-19** (pass 4b): the resource links resolve and
   `glue:GetTables` through the `curated` link returns `sample_trades` from both accounts. **Both halves of
-  the pair above are still owed** — they need a persona session, hence 4c then 4d.
+  the pair above are still owed** — they need a persona session and nothing else: 4c landed the
+  entitlement on 2026-08-19, so the only remaining blocker is the tunnel (4d).
 - **The classification pair (2026-08-17):** a default consumer session reads the sample table and the
   `restricted` column is **absent from the column list**; after the explicit restricted grant, present.
   **The absent half is ANSWERED 2026-08-19, and one layer earlier than this bullet assumed**: read as each

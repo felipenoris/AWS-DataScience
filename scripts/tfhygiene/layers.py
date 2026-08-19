@@ -11,12 +11,14 @@ THE THREE LAYERS (D11, docs/plan/conventions.md 5.1):
   [D] dormant     kept, but powered off between sessions - stop/start, never destroy.
   [E] ephemeral   destroyed at the end of a session and rebuilt from code.
 
-WHAT THIS TABLE IS *FOR*, since every row in it today says [P] and `make down` therefore does
-nothing. The machinery is written BEFORE the first [E] slice exists rather than after it, which
+WHAT THIS TABLE WAS *FOR* WHEN EVERY ROW IN IT SAID [P] AND `make down` DID NOTHING. The
+machinery was written BEFORE the first [E] slice existed rather than after it, which
 is step 8.6's own reasoning applied to the whole target: a hook added later is a hook that was
 missing from the first teardown that needed it. Stage 3's `egress/` is the first [E] slice and
 Stage 4's WireGuard `vpn/` the first [D] one; both arrive to a `make down` that already refuses the four things it must
-refuse.
+refuse. **Since Stage 3 the table carries six [E] rows and Stage 4 added the [D] one, so both
+targets act for real** - `make down ENV=sandbox` destroys `egress/` and `probes/` and stops the
+WireGuard host.
 
 THE TABLE IS AUTHORED, THE TREE IS DISCOVERED, AND THE DISAGREEMENT IS AN ERROR - the same
 two-list shape `attachments.json` uses on the policy side, for the same reason. A slice on disk
@@ -59,6 +61,16 @@ LAYER_NAMES = {
 # different rank, and Stage 3 owns it.
 RANKS = {
     "bootstrap": 0,
+    # THE ONE ROW WHOSE RANK IS NOT ITS DEPENDENCY, and it is said out loud here rather than
+    # left to be re-derived: identity/sso/ READS slices that rank below it. Since Stage 4 step
+    # 8.1 it reads each VPN home's foundation/ (rank 20) for the Elastic IP, and since Stage 5
+    # pass 4c the three data/ states (rank 45) for the workgroup, derived-bucket and drop-box
+    # ARNs. The rank is NOT moved: every slice on both ends is [P], so `up`/`down` refuse them
+    # all and no ordering ever acts on the inversion; moving `sso` to 46 would change only the
+    # `make slices` display and would falsely suggest a teardown ordering exists. The real
+    # order is enforced by the apply failing BY NAME on an unapplied remote state. What the
+    # rank does say is that the entitlement plane precedes the accounts it entitles. Revisit
+    # the day either end stops being [P].
     "sso": 10,
     "org-policies": 11,
     "foundation": 20,

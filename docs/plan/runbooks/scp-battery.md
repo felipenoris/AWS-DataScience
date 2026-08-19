@@ -301,11 +301,12 @@ honest record is *untested*, not *passed*.
 | data | `aws s3api delete-bucket --bucket awsds-canary-does-not-exist-$(date +%s)` | `AccessDenied` | `NoSuchBucket` — **which is what it actually returns** (measured 2026-08-13): S3 checks existence before authorizing, so this probe measures nothing and `s3:DeleteBucket` is recorded **untested**. Its statement is not: `lakeformation:DeregisterResource` sits in the same `Sid` and *was* denied, so what is unverified is the spelling of one action string, which is a read. Testing it for real costs a bucket that cannot then be deleted until the policy moves — **name a bucket that cannot exist** rather than a real one |
 | interactive | `aws sagemaker create-notebook-instance --notebook-instance-name awsds-canary-probe --instance-type ml.t3.medium --role-arn arn:aws:iam::<ACCT>:role/nonexistent --region us-west-2` | `AccessDenied` | a role/validation error. **The nonexistent role is deliberate**: it is what keeps an "allowed" outcome from billing a notebook instance |
 
-**The positive half of the D27 carve-out cannot be run in this stage and is recorded as such.**
-`awsds-data-catalog-maintenance` does not exist until [Stage 5](../stages/stage-05-data-foundation.md), so
-"the maintenance role *can* start a crawler" is **untested until Stage 5**, where it is the first thing to
-check after the role is created — before anything is wired to trigger it. A carve-out that silently matches
-nothing is a job that will not run, and it does not announce itself.
+**The positive half of the D27 carve-out could not be run in this stage; it is now owed at Stage 5 pass
+4d.** The role and both crawlers have existed since 2026-08-18 (Stage 5 pass 1, unscheduled by design), so
+"the maintenance role *can* start a crawler" is untested because **no run has been attempted**, not because
+the principal is missing. *Written at Stage 1c, when `awsds-data-catalog-maintenance` did not yet exist:*
+it is the first thing to check after the role is created — before anything is wired to trigger it. A
+carve-out that silently matches nothing is a job that will not run, and it does not announce itself.
 
 **Then the *must still succeed* half, in the target account rather than in the canary.** After each real
 attachment, from that OU's own profile: `aws sts get-caller-identity`, `aws s3 ls`, and
@@ -522,7 +523,7 @@ verification is a document read, and the plan states the string that proves it.
 | Statement | Why no probe reaches it | What to read instead |
 |---|---|---|
 | `GRRESTRICTROOTUSER` (Control Tower, per OU) | conditioned on `ArnLike aws:PrincipalArn = arn:*:iam::*:root`; no SSO role ever matches | `organizations describe-policy` on the OU's guardrail — **`aws:AssumedRoot` must appear** in the condition (the `ExemptAssumeRoot` parameter). Missing it denies `sts:AssumeRoot` into every account beneath, which is 1a step 6's only member-account recovery |
-| positive half of D27's catalog-maintenance carve-out | the exempted role does not exist until Stage 5 | the `ArnNotEquals` value against the role Stage 5 creates |
+| positive half of D27's catalog-maintenance carve-out | the role trusts `glue.amazonaws.com` alone and is not assumable interactively, so no harness principal can start a crawler as it; **the role itself has existed since 2026-08-18** | the `ArnNotEquals` value read back against the role's real ARN — the run itself is Stage 5 pass 4d, not a battery probe |
 | positive half of the `aws:PrincipalIsAWSService` guard | needs a service principal, which cannot be assumed | the `BoolIfExists` clause is present and spelled `false` |
 | all four statements of `awsds-org-rcp-perimeter` | an RCP denies principals from **outside** the organization; there is no IAM user, no second organization and no external IdP here, so every principal the harness can produce carries the org id that makes the deny *not* fire | `readback.py` (four `Sid`s, correct action counts) and the org id in each `StringNotEqualsIfExists`. An anonymous request is denied for three other reasons and names no policy — it proves nothing (Lesson 20) |
 

@@ -105,8 +105,8 @@ write anything into it. Claude can read the files in this folder to gather infor
 | [`docs/REFERENCES.md`](docs/REFERENCES.md) | Every internet link used as a reference, added on the interaction that used it |
 | [`README.md`](README.md) | How the AWS resources are structured, and the project layout, so people can understand the components |
 | [`terraform-live/README.md`](terraform-live/README.md) | How the deployed tree is organised. Updated when an account folder or a top-level rule changes — **never a copy of the slice tree**, which lives in `docs/plan/conventions.md` §6 |
-| [`terraform-live/identity/org-policies/POLICIES.md`](terraform-live/identity/org-policies/POLICIES.md) | One row per entry in **every** document in `policies/`, all four policy types: what it does, why, and what it does once attached. **Reviewed in the same sitting as any policy change**, attachments included. `./scripts/check-index.py` decides the mechanical half; whether a row is still *true* is the reading |
-| [`terraform-live/data-governance/data/README.md`](terraform-live/data-governance/data/README.md) | The same discipline for the lake's own controls — one row per bucket/key-policy `Sid`, per LF-Tag assignment, per grant, per settings attribute. **Reviewed in the same sitting as a change to the slice's `.tf` files.** No mechanical check exists for it; the `.tf` comments carry the reasoning, this file carries the index |
+| [`terraform-live/identity/org-policies/POLICIES.md`](terraform-live/identity/org-policies/POLICIES.md) | One row per entry in **every** document in `policies/`, all four policy types. **Reviewed in the same sitting as any policy change**, attachments included. `./scripts/check-index.py` decides the mechanical half; whether a row is still *true* is the reading. What each row says: the routing table below |
+| [`terraform-live/data-governance/data/README.md`](terraform-live/data-governance/data/README.md) **and** [`terraform-modules/consumer-data/README.md`](terraform-modules/consumer-data/README.md) | The same discipline for the lake, producer side and consumer side — one row per bucket/key-policy `Sid`, per LF-Tag assignment, per grant, per settings attribute; the module README is what its two calling slices (`sandbox/data/`, `development/data/`) point at. **Reviewed in the same sitting as a change to the `.tf` files.** No mechanical check exists; the `.tf` comments carry the reasoning, these files carry the index |
 | [`docs/PRICING.md`](docs/PRICING.md) | A row for every new AWS service referenced |
 
 # Claude memory
@@ -158,7 +158,7 @@ its `Consumes` row lists.
 | **Anything touching the SMUS surface** — a blueprint (enable, or a new one appears), the network mode, a Stage 6 cost question | [`docs/SMUS.md`](docs/SMUS.md) — the blueprint list with the user's three categories (2026-08-19) and billing shapes, and `VpcOnly`. Review it whenever SageMaker changes |
 | **How the deployed tree is organised, and what is in it today** | [`terraform-live/README.md`](terraform-live/README.md) — **the slice-by-slice layout itself stays in `docs/plan/conventions.md` §6**, the authority when the two disagree |
 | **What a given policy statement denies, and why that statement exists** | [`terraform-live/identity/org-policies/POLICIES.md`](terraform-live/identity/org-policies/POLICIES.md) — one row per `Sid`, per document, all four types. Policy ids and attachment dates are **not** there: those are in the stage log |
-| **What governs the LAKE** — a bucket-policy branch, a key-policy statement, a tag assignment, an LF grant | [`terraform-live/data-governance/data/README.md`](terraform-live/data-governance/data/README.md) — `POLICIES.md`'s discipline applied to the slice: one row each, reviewed in the same sitting as the change. It says what the **code** declares; **applied** triples are `docs/AWS_STATE.md`'s grant register. Read its §"A permission here is the intersection of two systems" before claiming what any principal can do (Lesson 28) |
+| **What governs the LAKE** — a bucket-policy branch, a key-policy statement, a tag assignment, an LF grant | Two files, `POLICIES.md`'s discipline applied per slice: [`terraform-live/data-governance/data/README.md`](terraform-live/data-governance/data/README.md) for the **producer** side, [`terraform-modules/consumer-data/README.md`](terraform-modules/consumer-data/README.md) for the **consumer** half its two calling slices point at (derived bucket, zone CMK, `DataLakeSettings`, the re-grants). They say what the **code** declares; **applied** triples are `docs/AWS_STATE.md`'s grant register. Read the producer README's §"A permission here is the intersection of two systems" before claiming what any principal can do (Lesson 28) |
 | What was actually done by hand in a stage | [`docs/log/`](docs/log/INDEX.md)`log-stage-NN-*.md` — **the stage file's slug, prefixed `log-`**; [`docs/log/INDEX.md`](docs/log/INDEX.md) first, so only one log is opened |
 | **What is deployed right now** — accounts, OUs, SSO groups, users, permission sets, assignments | [`aws/INDEX.md`](aws/INDEX.md) — read-only scripts and their snapshots in `aws/output/` (untracked). **Regenerate rather than trust a stale file, and never copy an account id or email out of one** |
 | **Whether something a snapshot shows is expected** — before reporting it as a finding | [`docs/AWS_STATE.md`](docs/AWS_STATE.md) — the invariants (`INV-nn`), the known exceptions (`EXC-nn`), and what a later stage will change anyway. **Read it whenever a snapshot is read** |
@@ -196,25 +196,20 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   `egress_mode=A`; **a NAT does not bypass the S3 allow-list**; INT-05 names the gateway endpoints, never
   `egress/` ids. CIDR/`zone_ids`/peers: `scripts/tfhygiene/backend.py`. Left elsewhere: `Staging`'s
   NXDOMAIN; verification (ii) is Stage 6's.
-- **NFS/EFS requirement withdrawn (2026-08-17; user edit to `objectives.md`, D24 withdrawn):** no
-  `nfs/` slice anywhere, `elasticfilesystem` out of Sandbox's endpoints, `DL-10` measures EFS *absence*
-  (a Studio domain's own tagged home exempt). Detail: `docs/plan/history.md`.
+- **NFS/EFS requirement withdrawn (2026-08-17; user edit to `objectives.md`, D24 withdrawn):** no `nfs/`
+  slice anywhere, `DL-10` measures EFS *absence*. Detail: `docs/plan/history.md`.
 - **Stage 4 DONE 2026-08-18 — closed by the GuardDuty split** (close-out log entry is the user's; the
-  host was left `running` — tunnel down first, then `make down`). **Stage 15 created the same day**: the
-  whole GuardDuty scope, prepared — plans arrive ON, Audit's own switch-off meets
-  `DenyGuardDutyTampering` (its decision 1), `ALL` never reaches Management. Principle 9 overruled once;
-  the institutional-delta row argues it. `aws/guardduty.py` (`GD-1`–`GD-3`); `VP-8` retired; `vpn.py`
-  default narrowed to two profiles.
+  host was left `running` — tunnel down first, then `make down`). **Stage 15 created the same day** and
+  carries the whole GuardDuty scope, prepared; principle 9 is overruled there once, argued in the
+  institutional-delta row. `aws/guardduty.py` (`GD-1`–`GD-3`); `VP-8` retired; `vpn.py` default narrowed
+  to two profiles.
 - **Stage 5 passes 0-3 DONE (2026-08-18/19) — the governed lake exists, granted and shared.** Six
   decisions taken (`docs/GOVERNANCE.md` is the one copy of the ontology + grant rules). Applied: five
   `awsds-data-*` buckets under one CMK, `raw`+`curated` registered, 3 LF-Tag keys, 3 databases,
   `curated.sample_trades` (Iceberg, EMPTY, `restricted` column) + optimizer, the maintenance role + 2
   never-run crawlers + a Glue security configuration; the GM's own grants; the 2 TBAC shares (4 RAM
-  shares `ACTIVE`, 0 invitations → **INT-11 closed**). Findings that outlived the passes: the 5.2
-  settings apply is **two steps** (Lesson 27 + Recipe D — `after_unknown` is the instrument); the grant
-  option is **mandatory** on every cross-account grant; the expression needs a `layer` gate or it shares
-  the **drop-box** (Lesson 29); the GM **tags, does not grant**; Lesson 28 (reach is an intersection),
-  Lesson 30 (AWS's LF pages read fine in a *rendering* browser).
+  shares `ACTIVE`, 0 invitations → **INT-11 closed**). The findings that outlived the passes are
+  Lessons 27-30 below and the grant rules in `docs/GOVERNANCE.md`.
 - **Stage 5 pass 4a/4b/4c APPLIED 2026-08-19 — the consumer side exists and the persona can query.**
   `consumer-data` v0.1.0 (the tree's first *nested* module-by-tag) + `s3-bucket` v0.3.0, Recipe B as a
   3-commit chain, Recipe D per account. Per consumer: `alias/awsds-<env>-zn-lab` CMK, `awsds-<env>-derived`
@@ -222,53 +217,24 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   4 re-grants. Then **4c**: 7 statements in `DataScientistAccess` (`1 changed`, re-plan `No changes`, both
   provisioned roles read back with `${aws:userid}` intact) — Athena run family on the 2 workgroup ARNs,
   derived-zone scoping (write per-user, read persona-grain, delete `scratch/` only), **and the drop-box
-  identity half**. Register **13 rows / 25 triples**. Findings: INT-11's reset hazard is **symmetric** and
-  `DL-6` was reporting `pass` over two failing accounts (**Lesson 31**); `counterparty` absent in BOTH
-  consumers → verification (x)'s exclusion half closed early; **a cross-account write needs BOTH policy
-  halves** — 6.2's "correct rather than missing" was wrong (**Lesson 28 amended**: the account boundary is
-  a second trigger). Settled: **`scratch` is a PREFIX** (D13's wording, not D19's), **CMK per (zone ×
-  account)** (user), key policy delegates administration only. **Lesson 32** + Recipe B's post-merge tag
-  check came from the PR #20 rebase. **Owed: 4d** (behavioural proofs, tunnel), **4e** (the SCP amendment,
-  last), pass 6.
-- **Pass 0-3 findings PROPAGATED 2026-08-19 (doc-only).** St.5 pass 4 gained a debt list (crawlers never
-  ran; `sample_trades` EMPTY, so verif. (x) reads a *column list*). St.9: settings apply is two steps in
-  Production *and* Staging, new verif. xiv. St.6: pass 4 is a **hard predecessor**. St.11: the row-filter
-  proof depends on St.9's rows. cost-model KMS 9→10.
-- **Stage 6 NOT open, but its decision 3 is CLOSED (2026-08-19, doc-only sitting — no AWS call at all;
+  identity half**; `identity/sso/` now reads 3 `data` states (`backend.py` emits `data_consumers`+`lake`),
+  and the lake key ARN lives in state, never tracked. Register **13 rows / 25 triples**. Findings:
+  INT-11's reset hazard is **symmetric**, `DL-6` reported `pass` over two failing accounts
+  (**Lesson 31**), a cross-account write needs **BOTH** policy halves (**Lesson 28 amended**), and
+  `counterparty` is absent in BOTH consumers → verification (x)'s exclusion half closed early. Settled:
+  **`scratch` is a PREFIX** (D13's wording, not D19's), **CMK per (zone × account)** (user).
+  **Owed: 4d** (behavioural proofs, tunnel), **4e** (the SCP amendment, last), pass 6.
+- **Stage 6 NOT open; its decisions 3, 4 and 5 are CLOSED (2026-08-19, doc-only — no AWS call;
   [log](docs/log/log-stage-06-unified-studio.md) initialized early because the stage file homes such
-  decisions there).** Athena Spark off by **SCP** `athena:StartSession`/`UpdateSession` on `Interactive`,
-  at **1.6 — not pulled forward** into Stage 5's phase-4b sitting; **no Athena clause in 2.1's boundary**
-  (Lesson 20 — the 2nd denier is never the proven one); the 3 optional `athena.*` session endpoints
-  **declined in writing** in both Interactive `egress/main.tf` (Lesson 5). Re-read corrections: the Tooling
-  flag is **non-retroactive** too; the doc's 3rd control is *grant*-shaped on blueprint-authored policies,
-  so the boundary is a **deviation to record**; `DenyUserAccessFromUnauthorizedVPCs` has a **3rd**
-  condition (`aws:userid` `*:user-*` — INT-16's on-behalf carve-out already in AWS's shape). **The 2026-04
-  Athena Spark PrivateLink release moves the client path, NOT executor placement** — trigger worded against
-  the headline. **Decision 1 REOPENED**: EMR Serverless needs **4** endpoints vs Glue sessions' 1 —
-  corrected same day (single-AZ ≈ 0.06 USD/h, `[E]`-conditional) + an **FGAC counter-axis** (only an
-  EMR-S *compute connection* documents `fineGrained`; Spark Connect is full-table on every engine);
-  settled in-stage by **two readings** (4.2 flow logs; `fineGrained` from an IdC notebook).
-  **Decisions 4-5 CLOSED 2026-08-19 (user), as an allow-list in 3 categories — every blueprint owned**
-  (`docs/SMUS.md` = the reference table + routing row; `US-3` = the category-1 allow-list): cat 1
-  `Tooling`/`DataLake`/`EMRServerless` (follows decision 1)/`AmazonBedrockGenerativeAI` (**PRICING row
-  owed before 1.4**); cat 2 by named trigger (`Workflows` OnDemand = D28's last rung, then `[E]`;
-  `MLExperiments` priced first); cat 3 amend-first (`EMRonEC2`, `PartnerApps`, `Quicksight`,
-  `LakehouseCatalog`); `RedshiftServerless` never. **The finding: `LakehouseCatalog` is RMS-backed —
-  the Glue/Athena form is `DataLake`** (the doc's *Resources created* column; D26's wording inverted).
-- **PASS 4c APPLIED 2026-08-19 — the persona can query.** Seven statements in `DataScientistAccess`
-  (`1 changed`, re-plan `No changes`, both provisioned roles read back, `${aws:userid}` intact): Athena
-  run family on the 2 workgroup ARNs, derived-zone scoping (write per-user, read persona-grain, delete
-  `scratch/` only), and **the drop-box identity half — the sitting's finding: a cross-account write
-  needs BOTH policy halves, and 6.2's "correct rather than missing" was wrong** (corrected in stage,
-  `GOVERNANCE.md`, lake README; Lesson 28's shape on plain S3). The Stage 2 ledger's lake `s3:GetObject`
-  line corrected away — it would be D13's bypass. `identity/sso/` now reads 3 `data` states
-  (`backend.py` emits `data_consumers`+`lake`); the lake key ARN lives in state, never tracked.
+  decisions there).** Athena Spark off by **SCP** `athena:StartSession`/`UpdateSession` at **1.6 — not
+  pulled forward** into Stage 5's phase-4b sitting. **Decision 1 REOPENED** on an endpoint-count cost,
+  settled in-stage by **two readings** (4.2 flow logs; `fineGrained` from an IdC notebook). Blueprints are
+  an **allow-list in 3 categories — `docs/SMUS.md` is the one copy**, `US-3` the category-1 list;
+  `AmazonBedrockGenerativeAI` owes a `PRICING.md` row before 1.4.
 - **Stages 5-11 revised, pre-instrumented (2026-08-16/17):**
   `aws/{vpn,datalake,studio,supplychain,cicd,deploytargets,orchestration,dlp}.py` — `DL-5`/`DT-5` guard
-  the LF `Parameters` (INT-11). **St.8 pass 4, St.9 passes 4-5, St.10's Staging leg wait on the vend.**
-  St.11: internal access **USD 9/resource-month** → analyzer is create-read-delete; Macie adds existing
-  members one by one; the first member trail owes `DenyCloudTrailKill`; **its step 4 gates on St.15 + a
-  month of billing** and flips `GD-3`/`DP-6`.
+  the LF `Parameters` (INT-11). **St.8 pass 4, St.9 passes 4-5, St.10's Staging leg wait on the vend;
+  St.11's step 4 gates on St.15 + a month of billing** and flips `GD-3`/`DP-6`.
 - **Standing rules that outlive their stages:** never add an `sts:` action to the RCP without reading
   `CT.STS.PV.1`'s exclusion note; 1d step 9 is the **only** sanctioned by-hand use of
   `AWSControlTowerExecution`; **resolve an account by name only with the exact vended name** — every one
@@ -282,7 +248,8 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   question 10 waits for N=2; Config recorder left alone, Management unrecorded (Stage 12 hooks).
   **Every governed account sits under `us-west-2`.**
 - **All 37 decisions closed** (D30 as a revert). **Still needed from the user: the domain name**
-  (blocks Stage 13). **Settle earliest:** INT-11's remaining half (Stage 5 step 5.4, `DL-5`), INT-13.
+  (blocks Stage 13). **Settle earliest:** INT-11's credential-vending half of `sts:SetContext` (pass 4d's
+  first persona query), INT-13.
 - **The repository is not documentation-only:** the read-only `aws/` scripts, both Terraform trees,
   `scripts/`, the `Makefile`, the `pre-commit`/`tflint`/`checkov`/`ruff` gates. **Every script is
   Python 3 on `uv`** — shared code in `aws/awslib`, `scripts/repohygiene`, `scripts/tfhygiene`.

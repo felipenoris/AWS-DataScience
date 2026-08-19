@@ -8,8 +8,10 @@ against itself instead of against a re-typing.
 
 **Since 2026-08-16 this folder is also a Terraform slice.** The documents did not move and nothing about
 how they are written changed — what was added is the code that adopts them. The slice is written and its
-offline gates are green; **the import itself has not been run yet**, so what Organizations holds is still
-exactly what Stage 1c attached.
+offline gates are green, and **the import ran on 2026-08-16** (Stage 2 step 5.5): ten
+`aws_organizations_policy` and ten `aws_organizations_policy_attachment` resources adopted,
+`0 to add / 10 to change / 0 to destroy`, second plan `No changes` — so a document change is now an
+`apply` in this slice, never a console paste.
 
 ## Layout
 
@@ -23,7 +25,7 @@ exactly what Stage 1c attached.
 | [`POLICIES.md`](POLICIES.md) | **The statement-level index for every document in `policies/`, of all four policy types**: what each entry does and why it exists. JSON carries no comments, so that file is where the reasoning lives — **and it is updated in the same sitting as any policy change**. *(Called `SCPs.md` until 2026-08-15; renamed because it stopped being SCP-only at step 7.8.)* |
 
 **The check that guards `POLICIES.md` is [`scripts/check-index.py`](../../../scripts/check-index.py), and it
-moved out of this folder on 2026-08-16** — it is one of the six gates `make check` and `pre-commit` run, and
+moved out of this folder on 2026-08-16** — it is one of the gates `make check` and `pre-commit` run, and
 a suite split across two directories is one nobody can enumerate by looking. It verifies that `POLICIES.md`
 still lists exactly what each document in `policies/` contains, in order, and names both directions of a
 mismatch. **Type-aware since 7.8**: `Sid`s for an SCP or RCP, tag keys for a tag policy, `ec2_attributes`
@@ -192,10 +194,10 @@ on the create action would have to exempt exactly the principal it was written t
 rather than a control (Lesson 18). **The event D27 is about is the run**, because a crawler run is what
 samples object contents, so that is where the deny and its one named exception sit. The exempt ARN is
 `arn:aws:iam::<ACCOUNT_ID_DATA>:role/awsds-data-catalog-maintenance` — **a contract with
-[Stage 5](../../../docs/plan/stages/stage-05-data-foundation.md), not a description of something that exists.**
-The role is created there, and if it is created under any other name the crawlers simply never run: the
-failure is fail-closed and it surfaces at the first crawl, which is the tolerable direction, but it is the
-reason the name is written in two places on purpose.
+[Stage 5](../../../docs/plan/stages/stage-05-data-foundation.md) — honoured 2026-08-18: pass 1 created the
+role under exactly this name**, so the ARN now names something that exists. Had it been created under any
+other name the crawlers simply never run: the failure is fail-closed and it surfaces at the first crawl,
+which is the tolerable direction, and it is the reason the name is written in two places on purpose.
 
 **`Identity` gets the compute statement and none of `Data`'s others.** `s3:DeleteBucket` and
 `lakeformation:DeregisterResource` mean nothing in an account that holds neither, and an OU whose policy is

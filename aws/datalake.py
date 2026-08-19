@@ -17,7 +17,8 @@
 #   writes:   aws/output/datalake.txt   (untracked - see .gitignore)
 #   reads:    s3api:ListBuckets, GetBucketVersioning, GetBucketEncryption,
 #             GetPublicAccessBlock, GetBucketPolicy, GetBucketLifecycleConfiguration,
-#             kms:ListAliases, glue:GetDatabases, GetCrawlers, iam:GetRole,
+#             kms:ListAliases, glue:GetDatabases, GetCrawlers, iam:GetRole, ListRoles,
+#             GetRolePolicy,
 #             lakeformation:GetDataLakeSettings, ListResources, ListLFTags,
 #             ram:GetResourceShares, GetResourceShareInvitations,
 #             athena:ListWorkGroups, GetWorkGroup, efs:DescribeFileSystems,
