@@ -1293,6 +1293,202 @@ before the consumer slices existed.
 - Pass 6 (Security Hub) untouched; `DL-11` still notes it enabled nowhere.
 - **Not committed** — the working tree carries all nine files; the branch is the user's call.
 
+## 2026-08-19 — The `security-zone` dimension is WITHDRAWN and APPLIED away: one data CMK per account
+
+*Provenance: **this entry is Claude's**, written on the user's request in the same sitting. **The
+decision is the user's**, and so is the authorization to apply ("pode fazer apply do terraform qdo
+concluir"). It **changes AWS**: four `terraform apply` runs in four accounts, one of them destroying an
+LF-Tag and a grant. Every measurement below is a read-only call made after the write it reports on.
+Redactions per `scripts/check-identifiers.py`: accounts are named, never numbered.*
+
+### How the decision arrived, which is the part worth keeping
+
+**It came out of a conversation, not a review.** The user opened a discussion of the bucket layout, the
+CMK and the SMUS intersection, and worked through it as a series of verification questions — are LF-Tags
+attached to buckets, which CMK encrypts each bucket, how did you conclude `dropbox`/`artifacts`/`logs`
+sit under the `zn-lab` key when those buckets carry no `security-zone` assignment. That last question is
+the one that broke the model open, and the honest answer was that the conclusion came from
+`buckets.tf` — a single `kms_key_arn` on the `for_each` — and **not from any tag**.
+
+The user then named it themselves, in one sentence: *"eu decidi errado: achei que a chave CMK estava
+associada a uma LF tag."* The mechanism does not exist. An LF-Tag attaches to a database, table or column
+and is read by Lake Formation when it evaluates a TBAC expression; a CMK is bound to a bucket by that
+bucket's default-encryption configuration, written by Terraform. **Nothing in AWS connects the two.**
+What connected them here was the shared spelling `zn-lab` in a tag value and a key alias, plus a review
+habit — and the tag appeared in **no TBAC expression at all**, so the dimension was carrying nothing.
+
+So the dimension is withdrawn, one day after it was applied, and the rule that replaces it is simpler and
+is what the code already did: **one data CMK per account**, `alias/awsds-<env>-data`.
+[`docs/GOVERNANCE.md`](../GOVERNANCE.md) §Encryption is its one copy and carries the withdrawal note, so
+the correction is readable where the model is rather than only here.
+
+**What survived the wrong premise, checked rather than assumed.** The (zone × account) decision of pass
+4a/4b rested on *two* arguments, and only the first was the premise that fell:
+
+- the framing — *a derived copy of a `zn-lab` table is still `zn-lab` data* — **is gone with the
+  dimension**;
+- the refusal to share the **lake's** key across the account line is a **measurement**, not a framing:
+  `AllowProductionPickupDecryptViaS3` grants `kms:Decrypt` to `awsds-prod-job-exec` with no bucket
+  scoping, so a consumer's derived zone under that key would put Production's job role over that
+  account's materialised `restricted` copies. **That stands verbatim**, and it is why the outcome — a
+  dedicated key per consumer account — did not move even though the reason for its *name* did. D31 is
+  untouched for the same reason: its control is the key policy's contents, never the alias.
+
+### Identity, stated before the calls
+
+Four accounts, four profiles, all the infrastructure user through `InfrastructureAccess`, one sign-in
+(every profile sits on the `awsds` sso-session): **Data Governance** (`awsds-infra-data`), **Sandbox
+Account 1** (`awsds-infra-sandbox-1`), **Development** (`awsds-infra-dev`), **Identity**
+(`awsds-infra-identity`). `aws sts get-caller-identity` was checked before the first call — it came back
+`NoCredentials`, which is why the sitting opens with an `aws sso login` rather than with a plan.
+
+### The mechanic that made this cheap, and it was chosen rather than discovered
+
+**A CMK rename is an alias operation, and the alias is not the key.** The user chose *rename in place*
+over *new key*, so the three key objects never move and **no object is ever re-encrypted**: every S3
+object keeps pointing at the same key id, and the aliases that name it change. In Terraform that is a
+`moved {}` block per module address (`zn_lab_key` → `data_key`, `zone_key` → `data_key`) plus a new
+`alias_name`, and **the plan is the proof it worked**:
+
+```
+module.data_key.aws_kms_alias.this must be replaced
+module.data_key.aws_kms_key.this   will be updated in-place
+```
+
+The **key** is `updated in-place` — not replaced, not destroyed, not re-created under a new id. Had the
+`moved` blocks been absent, the same rename would have read `destroy` + `create` on the key itself, which
+is a 7-day deletion window and an unreadable lake. The blocks are annotated as removable once every
+caller has applied, which they now have.
+
+### The four applies, in dependency order
+
+| Slice | Account | Plan | Result | Re-plan |
+|---|---|---|---|---|
+| `data-governance/data/` | Data Governance | `4 to add, 3 to change, 6 to destroy` | applied | **`No changes`** |
+| `sandbox/data/` | Sandbox Account 1 | `1 to add, 1 to change, 1 to destroy` | applied | **`No changes`** |
+| `development/data/` | Development | `1 to add, 1 to change, 1 to destroy` | applied | **`No changes`** |
+| `identity/sso/` | Identity | `0 to add, 1 to change, 0 to destroy` | applied | **`No changes`** |
+
+**The producer's six destructions, named because one of them is a governance object and not a rename:**
+`aws_lakeformation_lf_tag.security_zone` (the dimension itself),
+`aws_lakeformation_permissions.gm_associate_security_zone` (the governance manager's `ASSOCIATE` on it),
+the three `aws_lakeformation_resource_lf_tags` assignments **replaced** to drop their `security-zone`
+block, and the alias. The three changes are in-place: the key's description, and the two service roles'
+inline policies where the Sids were renamed (`UseZnLabKey` → `UseDataKey`, `KmsDecryptZnLab` →
+`KmsDecryptDataKey`).
+
+**Recipe D was not used here and that is deliberate**: the two-step apply exists to read
+`Create*DefaultPermissions` before a database is created, and nothing in these plans touches
+`aws_lakeformation_data_lake_settings` or creates a catalog object. `DL-5`/`DL-6` still bracket the
+sitting, per the standing rule, and both read clean before and after in all three Lake Formation
+accounts.
+
+**Recipe B ran and its documented failure fired once.** `consumer-data-v0.2.0` was tagged and pushed
+before either slice could resolve it, and the second commit was **blocked** by `Module source has
+changed` — the stale local module install, exactly the trap pass 1 recorded and the recipe warns about.
+`terraform get -update` in both slices cleared it. Worth noting the shape: the block came from the
+**commit gate**, not from an apply, which is the gate doing its job a step earlier than the runbook
+describes it.
+
+### What the estate reads now
+
+- **LF-Tags: `classification` (4 values), `layer` (3).** `security-zone` is gone from
+  `list-lf-tags` — the ontology is two keys plus the reserved `businessunit`;
+- **aliases: `alias/awsds-data-data`, `alias/awsds-sandbox-data`, `alias/awsds-dev-data`** — one data CMK
+  per account, and each account's `awsds-<env>-tfstate` key sits beside it untouched, which is the
+  distinction §Encryption insists on (one key per account **for data**, not one key per account);
+- **`DL-5`: `CROSS_ACCOUNT_VERSION=4, SET_CONTEXT=TRUE`** in Data Governance, Sandbox and Development,
+  before and after;
+- **`DL-6`: no `IAMAllowedPrincipals` create-default** in all three;
+- **`DL-7`: 4 shares out, 4 resource links, no pending invitation** — the shares are indifferent to the
+  key rename, as they should be;
+- **`0 check(s) FAILED`** overall.
+
+### `DL-12` failed correctly in the before-reading, and that is a feature
+
+The pre-apply run reported **`DL-12` FAILED in both consumer accounts**, naming
+`UseLakeDataKeyViaS3 (GenerateDataKey/Decrypt via S3)` as missing. It was: the instrument had already
+been edited to look for the new Sid, and the provisioned roles still carried the old one. **The check was
+describing the estate accurately** — the identity half under its new name genuinely did not exist yet —
+and it went `pass` in both accounts after the fourth apply.
+
+This is the same shape as pass 4a/4b's `DL-6` reading FAILED for Development while its turn had not come,
+and it is worth writing down twice: **an instrument edited ahead of the apply it measures reports the
+truth about a state that is about to stop existing.** The failure mode to guard against is the opposite
+one — reading that red as a defect and "fixing" it — which is why the plan diff is the negative control
+in both cases.
+
+### The grant register loses a row's worth of triples — its first removal
+
+`docs/AWS_STATE.md`'s Lake Formation grant register goes **25 → 24 applied triples**. The governance
+manager's `ASSOCIATE` row covered three tags and now covers two. **The row was annotated rather than
+rewritten**: it names the revoked `security-zone` triple and its date, because a register whose past
+silently matches its present cannot show that something was withdrawn. That is the same discipline
+`POLICIES.md` keeps, applied to the first grant this project has ever taken away.
+
+### The second review pass, and it found the rows that own the claim — again
+
+After the propagation was written, a **four-lens adversarial review** ran over the diff (stale
+current-state claims; `GOVERNANCE.md` self-consistency; the two per-`Sid` READMEs against their `.tf`;
+forward-looking plan files), each finding then handed to a verifier prompted to **refute** it. Thirteen
+agents, nine confirmed findings, **six distinct fixes** — and the pattern is pass 4's, for the third
+time:
+
+| What was missed | Why it matters |
+|---|---|
+| **`CLAUDE.md`'s routing table** still enumerated `security-zone` in the ontology **and** called the consumer key "zone CMK" | The two rows whose whole job is to say where the model lives — contradicting a bullet I had written into the same file minutes earlier |
+| **`AWS_STATE.md`** said the account holds the GM's **"nine grants"** | Its own register two screens below already counted eight |
+| **INT-10** pointed the Stage 9 executor at Sid **`UseLakeZoneKeyViaS3`** | The row that exists to name where the two halves are, naming a Sid that no longer exists. **This one no grep of mine would have caught** — it contains neither `zn-lab` nor `security-zone` |
+| **`GOVERNANCE.md` §Encryption** argued against a key "that also served state and **logs**" | The lake's own `awsds-data-logs` sits under the data key, so the new section's rationale indicted the applied design. Narrowed to Terraform state, with `logs` named as data |
+| **Stage 6** called the consumer CMK "the derived-zone key" in three forward-looking spots | The object a Stage 6 executor must edit is `alias/awsds-<env>-data` |
+| The lf-registration role's trust Sid **`LakeFormationService`** had no README row | Pre-existing gap in the one-row-per-`Sid` discipline, found in passing |
+
+**The transferable half is the search method, not the findings.** A textual sweep finds the *word* that
+changed; it cannot find a claim that was made in the old model's vocabulary without using its terms — a
+count ("nine grants"), a renamed `Sid`, an argument whose example is now wrong. Those need a reader with
+the new model in hand, which is what the lenses were.
+
+### Records
+
+**Code:** `terraform-live/data-governance/data/` (`kms.tf`, `lakeformation.tf`, `catalog.tf`,
+`governance.tf`, `buckets.tf`, `maintenance.tf`, `outputs.tf`, `providers.tf`),
+`terraform-modules/consumer-data/` (`kms.tf`, `buckets.tf`, `athena.tf`, `outputs.tf`, README) at
+**v0.2.0**, `terraform-live/{sandbox,development}/data/` (`main.tf` pin, `outputs.tf`),
+`terraform-live/identity/sso/` (`data.tf`, `locals.tf`, `variables.tf`,
+`policies-data-scientists.tf`), `aws/datalake.py` (`DL-12`'s Sid), `aws/deploytargets.py`
+(`PROD_CMK_ALIAS` → `alias/awsds-prod-data`), `scripts/tfhygiene/{layers,backend}.py` (descriptions).
+
+**Docs:** [`docs/GOVERNANCE.md`](../GOVERNANCE.md) — **§`security-zone` deleted, §Encryption written** as
+the one copy, plus the LF-Tags table, §Drop-box, §Derived zone and §Persistence;
+[`docs/AWS_STATE.md`](../AWS_STATE.md) (the state row, the register preamble and its GM row);
+[`D19`](../plan/decisions/D19-derived-zone.md) (a second revision note — the zone framing kept as
+history); the stage file (build table, decisions 1/2/3, steps 1.4, 2, 6.2, 9.2, cost row); stage files
+**6, 9, 10, 14**; both lake READMEs; [`docs/plan/integrations.md`](../plan/integrations.md) (INT-10);
+`cost-model.md`, `architecture.md`, `conventions.md`, `SMUS.md`, `terraform-live/README.md`;
+[`docs/plan/history.md`](../plan/history.md) (the withdrawal, since provisioned objects changed);
+`CLAUDE.md` (routing table + a Current-position bullet).
+
+**AWS:** 6 added, 6 changed, 8 destroyed across four accounts — of which **exactly two destructions are
+governance objects** (the LF-Tag and its grant); everything else is an alias replacement or an in-place
+policy edit. **No key was created, none was deleted, no object was re-encrypted, and the monthly KMS cost
+is unchanged** at three data keys.
+
+**Gates:** `make check` **OK** (twice — before the applies and after the review pass); `pre-commit` green
+on every commit, tflint/checkov/ruff included; `terraform validate` clean in all four slices.
+
+### Not done, and owed by name
+
+- **4d — every behavioural proof**, unchanged and still the real debt: the pandas pair, the classification
+  pair's persona half, the workgroup boundary, the crawler pair, the drop-box asymmetry. All need a
+  persona sign-in with the tunnel up. **This sitting added nothing to that list and removed nothing from
+  it** — a rename is invisible to every one of those proofs, which is the point of renaming rather than
+  re-keying.
+- **4e — 4.3's `athena:StartQueryExecution` amendment**, still last, still through battery phase 4b.
+- Pass 6 (Security Hub) untouched; `DL-11` still notes it enabled nowhere.
+- **The two `moved {}` blocks are now removable** — every caller has applied — but they were left in
+  place deliberately this sitting: removing them is a separate diff with nothing else in it, which is how
+  a state-address change should be reviewed.
+
 ---
 
 *Log index: [docs/log/INDEX.md](INDEX.md) · Stage index: [docs/plan/stages/INDEX.md](../plan/stages/INDEX.md)*
