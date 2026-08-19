@@ -272,8 +272,9 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   the lake's key declined because `AllowProductionPickupDecryptViaS3` has no bucket scoping), **key policy
   delegates administration to root and no crypto action**. **Owed: 4c** (persona grants in `identity/sso/`
   — sequenced after so ARNs come from state, not wildcards), **4d** (all behavioural proofs, tunnel),
-  **4e** (the SCP amendment, last), pass 6. Branch `claude/stage-05-pass-4`, 3 commits + 2 tags pushed,
-  **not merged**.
+  **4e** (the SCP amendment, last), pass 6. **[PR #20](https://github.com/felipenoris/AWS-DataScience/pull/20)
+  open, not merged; post-merge re-plan owed.** A 2nd review pass fixed 7 misses, 2 in the rows that OWN
+  the claim (INT-11, INT-03); **Lessons 31-32** came from that re-reading, not from the apply.
 - **Pass 0-3 findings PROPAGATED 2026-08-19 (doc-only, no AWS call).** St.5: pass 4 gains a debt list —
   the crawlers **never ran** (verif. iii), the drop-box halves, and 4.3's amendment **last**;
   `sample_trades` was applied **EMPTY**, so verif. (x) reads a *column list* and row evidence waits for
@@ -373,3 +374,7 @@ the reasoning that makes it *usable* is in the file. Recognising one is the sign
 29. **An attribute assigned to *describe* becomes a *selector* the moment a rule is written over it —
     and inherits every resource wearing it for an unrelated reason.**
 30. **A tool's failure is not a property of the world, and gets written down as one.**
+31. **A check inherits the scope of the account it was written in, and keeps reporting `pass` about that
+    one while the design spreads past it.**
+32. **Two spellings of the same object survive while nothing has to build it — and the side that has to
+    build it is the one that was right.**

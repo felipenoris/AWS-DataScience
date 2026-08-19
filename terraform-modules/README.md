@@ -1,9 +1,12 @@
 # `terraform-modules/` — the reusable half
 
-**Empty on purpose today.** The tree exists from Stage 2 step 1; the first modules — `vpc`, and with it
-`s3-bucket`, `iam-role`, `kms-key` — arrive with **Stage 3 step 1.1/1.1a**.
+**Seven modules today** (2026-08-19): `vpc`, `vpc-egress`, `s3-bucket`, `kms-key`, `iam-role`,
+`wireguard`, `consumer-data`. The tree exists from Stage 2 step 1 and was empty until **Stage 3 step
+1.1/1.1a** wrote the first four; the section below is why the wait was deliberate, and it is kept because
+the argument outlives the emptiness — it is the same argument `conventions.md` still applies to the
+unwritten `sandbox-unit` module.
 
-## Why it is still empty at the end of Stage 2
+## Why it was still empty at the end of Stage 2
 
 Stage 2 step 7 used to sit between the bootstrap slices and the identity ones, on the argument that
 bootstrap consumes no module (step 2.3). That is true and does not reach far enough: **nothing in Stage 2
@@ -39,10 +42,35 @@ This is also why `bootstrap/` will never consume one (step 2.3): a tag has to ex
 referenced, and bootstrap is the slice that makes every other slice possible. Giving it a dependency on the
 tree it bootstraps is how a repository acquires a cycle nobody can unwind at 23:00.
 
+## A module may consume another module — the tag order just gets one more link
+
+**First done at Stage 5 pass 4 (2026-08-19), by `consumer-data`**, which calls `s3-bucket` and `kms-key`
+the same way a slice does: by git tag, from origin. Nothing about the rule above changes, and no new rule
+is needed — but the **order** does, and it fails loudly rather than subtly, which is the only reason this
+section exists:
+
+```
+commit 1  s3-bucket edited          ->  tag s3-bucket-v0.3.0      ->  push
+commit 2  consumer-data (calls it)  ->  tag consumer-data-v0.1.0  ->  push
+commit 3  the slices (call that)
+```
+
+Skip a rung and `terraform init` stops at `invalid ref: "<tag>"` — the same message
+[Recipe B](../docs/plan/runbooks/terraform-changes.md) step 5 is written to prevent, one level deeper.
+Recipe B is unchanged; it simply runs **once per rung**, bottom-up.
+
+**What this does NOT license: a module whose only job is to bundle other modules.** `consumer-data` earns
+its nesting because it holds a design — a key policy, an enforced workgroup, the settings-before-links
+ordering, the re-grant pair — that two accounts must not spell differently. A module that only forwards
+variables adds a tag to maintain and answers no question.
+
 ## What goes here, and what does not
 
 **Here:** anything more than one slice instantiates — `vpc`, `wireguard`, `iam-role`, `ecr-repo`,
-`s3-bucket`, `kms-key`, `step-function`, `mwaa-serverless-workflow`.
+`s3-bucket`, `kms-key`, `consumer-data`, `step-function`, `mwaa-serverless-workflow`. **`consumer-data`
+is the first that is a whole slice's design rather than one resource shape**: `sandbox/data/` and
+`development/data/` differ only in which account they name, and D35 makes that three callers at the second
+business unit.
 
 **Not here:** anything applied against a specific account. That is a *slice*, and it lives in
 [`terraform-live/`](../terraform-live/README.md). The distinction is the same one that file opens with: a

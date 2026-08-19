@@ -446,6 +446,39 @@ lesson can be *recognised* without opening this file; the reasoning that makes e
    fails on the wrong profile, a plan that "cannot express" something the API supports, and a check that
    returns empty — each says something about the reach of the instrument first, and the world second.
 
+31. **A check inherits the scope of the account it was written in, and keeps reporting `pass` about that
+   one while the design spreads past it.** `DL-6` decides whether Lake Formation's create-defaults still
+   grant `IAM_ALLOWED_PRINCIPALS` — the reading D13 rests on. It was written at Stage 5 pass 1, when Data
+   Governance was the only account with a `DataLakeSettings`, so it read `DATA_PROFILE`. By pass 4 two more
+   accounts had one, both in the failing state, and the check was **green**. Nothing was broken: it
+   answered its question correctly, about a population that had stopped being the whole population.
+   **This is not Lesson 13** — that one is a check whose output cannot tell success from failure. This one
+   discriminates perfectly and is pointed at the wrong set, which is worse in one specific way: Lesson 13's
+   failure looks empty and invites suspicion, while this one looks like evidence. **The discriminator, and
+   it is cheap: a check's scope is part of its claim, so write the scope into the line it prints** —
+   `DL-6 (awsds-infra-dev)` is a sentence you can falsify by counting accounts, `DL-6` is not.
+   **And the trigger to re-read every check is not a code change but a *topology* change**: the day a
+   second account gains a resource that only one had, every instrument that reads that resource is scoped
+   until proven otherwise. Pass 3 saw this coming and wrote the debt down; the debt still shipped one
+   session of a green check over two failing accounts, which is the argument for extending the instrument
+   **in the same sitting** as the resource rather than in the one that notices.
+
+32. **Two spellings of the same object survive indefinitely while nothing has to build it — and the side
+   that has to build it is the one that was right.** For weeks the plan said both "scratch + derived-zone
+   **buckets**" (`architecture.md`, `conventions.md` §6, the Stage 5 table) and "scratch and derived
+   **prefixes**" (D13, `identity/sso/`'s owed-grants note, Stage 1b, the permission set's own description).
+   Both entered in the same commit, so it was never drift — it was one object with two vocabularies, and
+   neither spelling failed anything, because no code had yet been written that would have to pick. The
+   disagreement surfaced only at the authoring, as a cost question: a second bucket needs either a third
+   CMK the cost model does not carry or a key shared for no reason. **The tie-break that worked: follow the
+   citation.** All three "bucket" lines credited **D19**, which never mentions `scratch`; the origin is
+   **D13** — *"non-registered prefixes (scratch, artifacts, model outputs) keep ordinary IAM access"* —
+   where `scratch` names a *class* of thing, beside `artifacts` and `model outputs`, and not a resource.
+   **The generalisation: when two files disagree about what something is, the one closer to the mechanism
+   wins** — the IAM side had to name a resource in a policy, the topology side only had to draw a box, and
+   a box costs nothing to draw wrong. **And the cheap check is the citation itself**: a claim that cites a
+   decision which does not contain it is the copy, not the original.
+
 ---
 
 *Plan core: [GENERAL_PLAN.md](../GENERAL_PLAN.md) · Decisions: [docs/plan/decisions/INDEX.md](decisions/INDEX.md) · Stages: [docs/plan/stages/INDEX.md](stages/INDEX.md)*

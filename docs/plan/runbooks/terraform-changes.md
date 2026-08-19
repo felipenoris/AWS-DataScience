@@ -214,13 +214,27 @@ what it would do. Split, applied, read: `DbDefaults: []`, and then the consequen
 database. **What the good reading did not do is retire the split** ([Lesson 27](../lessons.md)): that
 omission clears is a fact about one provider version, obtained by looking, so the read-back stays.
 
-**Where this recipe is already scheduled to run again** — it is a live procedure, not a war story. The
-same resource lands in **four more accounts**, each creating its own catalog objects in the same slice:
-Sandbox and Development at [Stage 5](../stages/stage-05-data-foundation.md) pass 4 (its step 8), then
-Production and Staging at [Stage 9](../stages/stage-09-deployment-targets.md) (its 1.3 and 4.1). The
-precondition table above is satisfied identically in all four, so the split is planned rather than
-rediscovered — and Staging is the one where a miss would hide longest, since a mirror database that
-defers to IAM still *looks* exactly like the lake's.
+**Where this recipe has run, and where it runs next** — it is a live procedure, not a war story. The same
+resource lands in four accounts beyond the lake, each creating its own catalog objects in the same slice.
+
+**Two of the four are done: Sandbox and Development, 2026-08-19** ([Stage 5](../stages/stage-05-data-foundation.md)
+pass 4, its step 8). Three things that run is worth keeping:
+
+- **the precondition was re-measured, not assumed.** `after_unknown` came back `true` on both default
+  blocks again, in the same pinned provider — which is the reading Lesson 27 says does not retire the
+  split, and it did not;
+- **the reading between the halves failed once, correctly.** With Sandbox applied and Development not yet,
+  the instrument reported `DL-6` FAILED for Development. A check that only ever says `pass` while you are
+  using it is a check you have no evidence about;
+- **and the split protected a second value nobody had listed.** Both consumer accounts turned out to carry
+  their own `CROSS_ACCOUNT_VERSION` / `SET_CONTEXT`, so the `parameters` written into each resource had to
+  come from *that account's* before-reading. The recipe's step 1 — *write down what reading would make you
+  stop* — is where that gets caught, because it forces the reading to exist before the plan does.
+
+**Two remain: Production and Staging** at [Stage 9](../stages/stage-09-deployment-targets.md) (its 1.3 and
+4.1). The precondition table above is satisfied identically in both, so the split is planned rather than
+rediscovered — and Staging is the one where a miss would hide longest, since a mirror database that defers
+to IAM still *looks* exactly like the lake's.
 
 ## 6. Cross-account changes
 

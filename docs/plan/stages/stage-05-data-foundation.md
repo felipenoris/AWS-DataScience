@@ -699,9 +699,16 @@ own:
 - **The share pair, in both consumers:** a sample Iceberg table written in Data Governance queries through
   Athena from Sandbox **and** Development over the LF share — and **pointing pandas at its S3 path fails
   from either account**, which is the only convincing evidence that D13 holds, now with the account
-  boundary underneath it.
+  boundary underneath it. **The METADATA half landed 2026-08-19** (pass 4b): the resource links resolve and
+  `glue:GetTables` through the `curated` link returns `sample_trades` from both accounts. **Both halves of
+  the pair above are still owed** — they need a persona session, hence 4c then 4d.
 - **The classification pair (2026-08-17):** a default consumer session reads the sample table and the
   `restricted` column is **absent from the column list**; after the explicit restricted grant, present.
+  **The absent half is ANSWERED 2026-08-19, and one layer earlier than this bullet assumed**: read as each
+  consumer's own `InfrastructureAccess`, the column list is five long against the lake's six — the share's
+  `classification` gate filters `counterparty` at the **account** boundary, before any persona exists, and
+  the consumer's own administrator cannot see it either. The negative control (six columns in Data
+  Governance) came from the same reading. The persona half and the explicit-grant half remain.
   Read the column list, never an error code — the negative half must differ from a broken share
   (Lesson 13). **"Absent from the result" left this line 2026-08-19**: the table was applied empty
   (4.1), so the result set is empty in every state and says nothing.
