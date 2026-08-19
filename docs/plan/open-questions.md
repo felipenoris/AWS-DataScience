@@ -200,7 +200,12 @@ started. **The first one is load-bearing against principle 4.**
     objective is met at the role/project grain, stated in `docs/GOVERNANCE.md` §"The grain". What
     survives: Stage 5 pass 2 maps the per-user options and their costs (verification viii), and the
     Stage 6 half — whether TIP is ever worth its remote-access cost — is now weighed against a *mapped
-    option*, not against an objective, with remote access favoured by default.
+    option*, not against an objective, with remote access favoured by default. **Sharpened 2026-08-19
+    (the decision 1 re-read):** the notebook's Spark Connect page lists TIP *and* FGAC as unsupported for
+    **all three engines** (Glue, EMR Serverless, EMR on EC2 — full-table access), so the TIP lever is
+    SQL/query-path only; the one documented notebook-side fine-grained route is an EMR-S **compute
+    connection** in `project.spark.fineGrained` mode — whether an IdC-domain notebook can actually use it
+    is Stage 6 decision 1's second in-stage reading.
 14. **The remote-IDE path is a file-transfer channel to a laptop.** `sagemaker:StartSession` plus the AWS
     Toolkit lets a local VS Code attach to a running space — a `CLAUDE.md` objective, so it is not
     something to deny. It also bypasses whatever a browser IDE could be made to restrict, which makes it

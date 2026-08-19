@@ -274,7 +274,10 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   so the boundary is a **deviation to record**; `DenyUserAccessFromUnauthorizedVPCs` has a **3rd**
   condition (`aws:userid` `*:user-*` — INT-16's on-behalf carve-out already in AWS's shape). **The 2026-04
   Athena Spark PrivateLink release moves the client path, NOT executor placement** — trigger worded against
-  the headline. **Decision 1 REOPENED**: EMR Serverless needs **4** endpoints vs Glue sessions' 1.
+  the headline. **Decision 1 REOPENED**: EMR Serverless needs **4** endpoints vs Glue sessions' 1 —
+  corrected same day (single-AZ ≈ 0.06 USD/h, `[E]`-conditional) + an **FGAC counter-axis** (only an
+  EMR-S *compute connection* documents `fineGrained`; Spark Connect is full-table on every engine);
+  settled in-stage by **two readings** (4.2 flow logs; `fineGrained` from an IdC notebook).
   **Decisions 4-5 CLOSED 2026-08-19 (user), as an allow-list in 3 categories — every blueprint owned**
   (`docs/SMUS.md` = the reference table + routing row; `US-3` = the category-1 allow-list): cat 1
   `Tooling`/`DataLake`/`EMRServerless` (follows decision 1)/`AmazonBedrockGenerativeAI` (**PRICING row

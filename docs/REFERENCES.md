@@ -604,9 +604,35 @@
   - *The associated-account half in Terraform* — `aws_datazone_environment_blueprint_configuration` (the same resource the module uses), Stage 6 step 1.4's mechanism: <https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/datazone_environment_blueprint_configuration>.
   - *SMUS multi-Region IdC* (2026-04) — a domain may sit outside IdC's Region **only with an external IdP**, and TIP does not cross Regions; with the native directory the same-Region rule stands (Stage 6 step 1.1): <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/adminguide/manage-users-idc-based-domains.html>.
   - *Disabling the JupyterLab download UI* — the official, bypassable lifecycle-configuration mitigation open question 6 now records: <https://github.com/aws-samples/sample-disable-sagemaker-jupyterlab-download>.
+  - *Account pools* — CLI-only, account-agnostic project profiles; noted for Stage 14, not adopted at N=1: <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/adminguide/account-pools-create.html>.
 
 - **Athena Spark and AWS PrivateLink (2026-04-21) — the announcement that looks like it retires Stage 6 decision 3, and does not.** Read 2026-08-19 because it *should* be checked before the deny is written. What it moves is the **client → session** path: three interface endpoints — Spark Connect (`com.amazonaws.<region>.athena.sessions`), Live UI (`athena.dashboard`) and the Spark History Server (`athena.persistent-dashboard`), on workgroups running **Apache Spark 3.5**, the version SMUS notebooks use. What it does **not** move is where the session runs: there is no `NetworkConfiguration`, no subnet and no security group anywhere in the Athena Spark API, and the SMUS network-isolation page — current after the release — still answers VPC connectivity with *"use Amazon EMR or AWS Glue instead"*. The executor therefore stays outside the customer VPC, which is the whole of open question 12. **Two details on the feature's own page argue for the deny rather than against it:** *"VPC endpoint policies are not supported on Athena Spark Connect, Live UI, or Persistent UI endpoints"* (the documented workaround is a policy on the Athena **API** endpoint governing `GetSessionEndpoint`/`GetResourceDashboard`), and a session URL generated inside a VPC *"can be accessed from that same VPC or from the public internet, but not from a different VPC"* — by design, for the open-the-dashboard-locally workflow. The **negative control** for the compute claim is the considerations-and-limitations page, which mentions no VPC, subnet or network configuration at any release version: <https://aws.amazon.com/about-aws/whats-new/2026/04/amazon-athena-spark-aws-privatelink/>, <https://docs.aws.amazon.com/athena/latest/ug/athena-spark-vpc-endpoint.html> and <https://docs.aws.amazon.com/athena/latest/ug/notebooks-spark-considerations-and-limitations.html>.
-  - *Account pools* — CLI-only, account-agnostic project profiles; noted for Stage 14, not adopted at N=1: <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/adminguide/account-pools-create.html>.
+
+- **The 2026-08-19 Spark-runtime block behind Stage 6 decision 1's correction** — the pages that corrected
+  the reopening's number and added the FGAC counter-axis (the decision row carries the consequences):
+  - *Spark Compute (Spark Connect)* — the notebook's per-engine limitations, identical for AWS Glue, EMR
+    Serverless and EMR on EC2: *"Fine-grained access control (FGAC) is not supported. Only full-table
+    access is available"*, and TIP idem; EMR Serverless on this path needs `emr-7.13.0`+ with Interactive
+    Sessions and **compatibility** mode, and the SMUS-provisioned pre-initialized capacity is 1 driver +
+    3 executors, released after 15 min idle:
+    <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/notebooks-spark-connect.html>.
+  - *The compute-connection permission modes* — `project.spark.fineGrained` (rows/columns via SageMaker
+    Catalog subscriptions) versus `project.spark.compatibility` (full-table): the EMR Serverless *Add
+    compute* dialog offers both, Glue's `fineGrained` is documented for **Visual ETL flows**, and the
+    notebook connects to an EMR-S compute of either mode through the PySpark connection type — the
+    asymmetry decision 1's second reading measures:
+    <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/adding-new-emr-serverless.html>,
+    <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/compute-permissions-mode-glue.html> and
+    <https://docs.aws.amazon.com/next-generation-sagemaker/latest/userguide/emr-serverless.html>.
+  - *EMR Serverless interactive workloads* — the idle tail decision 1's cost side needed: a started
+    interactive application maintains **one pre-initialized kernel worker (4 vCPU/16 GB)** even with no
+    pre-initialized capacity configured, `autoStopConfig` defaults to 30 min idle, the **kernel idle
+    timeout is 60 min and cannot be modified**, LF-enabled workloads want ≥ 28 vCPU of quota, and
+    `spark.emr-serverless.lakeformation.enabled` is the LF switch:
+    <https://docs.aws.amazon.com/emr/latest/EMR-Serverless-UserGuide/interactive-workloads.html>.
+  - *AWS Glue pricing* — the session default the corrected row quotes: *"An Interactive Session has 5 DPU
+    by default"* (× USD 0.44/DPU-h in `us-west-2` ≈ USD 2.20/h while open, billed per second):
+    <https://aws.amazon.com/glue/pricing/>.
 
 - **Remote access to SageMaker spaces from a local IDE** — the `sagemaker:StartSession` API behind "connect your local VS Code to a Unified Studio space", the three connection methods (deep link, AWS Toolkit, SSH), and AWS's own recommendation to scope `StartSession` by tag to a user's *own* private applications. It is the action that matches neither `sagemaker:Create*` nor `datazone:*`, which is why Stage 1c step 7.6 names it explicitly and why `docs/plan/open-questions.md` item 14 treats it as an egress channel: <https://docs.aws.amazon.com/sagemaker/latest/dg/remote-access.html> and <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/adminguide/local-ide-support.html>.
 

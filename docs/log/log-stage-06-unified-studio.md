@@ -10,8 +10,9 @@ Stage: [`docs/plan/stages/stage-06-unified-studio.md`](../plan/stages/stage-06-u
 redacted as `scripts/check-identifiers.py` requires, with the substitutions declared once per entry.*
 
 *File initialized 2026-08-19 on the user's request. **The stage has not opened**: it is initialized early
-because two of its five execute-time decisions were settled before it, and the stage file says those
-decisions are recorded here (Lesson 16).*
+because three of its five execute-time decisions were settled before it (3, 4 and 5), and the stage file
+says those decisions are recorded here (Lesson 16). **The three entries below are all doc-and-decision
+sittings, not build sittings** — the third is the only one that touched AWS at all, and only to read.*
 
 ---
 
@@ -229,3 +230,133 @@ Redshift-absence to the category-1 allow-list, `AmazonBedrock*` prefix rule for 
 sub-blueprints; `ruff` clean), [`docs/REFERENCES.md`](../REFERENCES.md) (the *Supported blueprints*
 entry annotated with the re-read), `CLAUDE.md` (the routing row and the position bullet), this file,
 and [`INDEX.md`](INDEX.md). `./scripts/check-identifiers.py` OK. Nothing committed by Claude.
+
+---
+
+## 2026-08-19 — Decision 1's reopening, re-read: the number corrected, and the axis neither weighing saw
+
+*Provenance: **this entry is Claude's**, written on the user's request in the same sitting. **Unlike the
+two entries above, this sitting did make AWS calls — two, and both are reads**: `sts get-caller-identity`
+(the check the rules require before any `aws` command) and `ec2 describe-vpc-endpoint-services` in
+`us-west-2`, as the **infrastructure user** on **Sandbox** through `InfrastructureAccess`. **Nothing was
+created, changed, attached or probed**, and no Terraform ran. Everything else is AWS documentation fetched
+from the public web — cited in [`docs/REFERENCES.md`](../REFERENCES.md) — plus repository edits. The
+ageing caveat of the two entries above still applies to the documentary half; the one paragraph below
+marked *measured against the account* does not carry it.*
+
+### Why the sitting happened
+
+The user had closed decisions 3, 4 and 5 in a parallel session and asked Claude to re-read the repository
+and say whether the framing it had given earlier still held. **It did not, in one place.** Decision 1's
+reopening is right that the compute comparison missed a cost — and **wrong about how much**, in a way that
+was inherited rather than invented: it priced the endpoints at AWS's recommendation instead of at this
+project's applied rule.
+
+### What was measured against the account — the only claim here that is not a document
+
+`aws ec2 describe-vpc-endpoint-services`, filtered on `emr`/`glue`/`datazone`, returns in `us-west-2`:
+`emr-serverless`, `emr-serverless-services.livy`, `emr-serverless-services.sessions`,
+`emr-serverless.dashboard` and `emr-dashboard`; `glue`, `glue.sessions`, `glue-fips`, `glue.dashboard`,
+`glue-studio-sparkui-service`; `datazone` and `datazone-fips`. **What this establishes is small and worth
+having**: the names in the admin guide's optional table are real service names in this Region, so neither
+side of decision 1 rests on a documentation artifact, and `glue.sessions` is genuinely a *second* endpoint
+beside the `glue` the required list already carries. **What it does not establish is which of them a
+session actually needs** — no API answers that, which is why step 4.2's rule is *measure from the flow
+logs, do not copy the table*, and why it is one of the two readings this decision now ends in.
+
+### The correction: two errors, pointing the same way
+
+1. **It priced two AZs.** Two is AWS's high-availability recommendation on the network-isolation page, and
+   it is exactly what **Stage 3 step 8.5 declined in writing** (D9 — *"two AZs doubles the largest hourly
+   line item, and a resource in the other AZ still resolves and reaches it"*); the 33 interface endpoints
+   of that stage were applied, measured and torn down **single-AZ**. Under the rule this project actually
+   applies, the delta is three endpoints × USD 0.010/h × two Interactive accounts ≈ **USD 0.06/h** — half
+   of the row's figure.
+2. **It called the line 24×7.** The interface endpoints live in `egress/`, which is **`[E]`**: under the
+   D11 discipline they exist only while the slices are up, and `make down` takes them to zero — Stage 3
+   measured exactly that (USD 0.0000/h after teardown). **The always-on reading is not a rate; it is a
+   teardown-discipline failure** — and it is kept as a named risk rather than deleted, because the failure
+   has a precedent in this project (Stage 4 left its host `running`) and D12's budget notifies nobody.
+
+### The symmetry that makes this a pattern rather than an erratum
+
+**The original recommendation weighed only per-use compute metering and missed a standing line. The
+reopening weighed only the standing endpoint line and missed that the compute side has a standing tail of
+its own.** Both halves of that second sentence are documented:
+
+- A **started** EMR Serverless interactive application maintains **one pre-initialized kernel worker of
+  4 vCPU/16 GB** — *"even if you don't specify any pre-initialized capacity for drivers"* — ≈ USD 0.30/h
+  at the x86 rate. It is bounded by `autoStopConfig` at 30 minutes of application idle, but the **kernel
+  idle timeout is 60 minutes and cannot be modified**. The SMUS Spark Connect path adds a pre-initialized
+  1 driver + 3 executors, released after 15 minutes idle.
+- Glue's floor is not the 1-DPU minimum the recommendation cited: *"An Interactive Session has 5 DPU by
+  default"* — ≈ **USD 2.20/h** while a session is open, at the measured 0.44/DPU-h.
+
+Each reading corrected its predecessor's blind spot and introduced one of its own. **The third does not get
+to claim it broke the pattern**, which is why decision 1 now ends in *readings* rather than in a number.
+
+### The axis neither weighing saw: fine-grained access control
+
+Preparing the context turned up something that outranks both cost readings and had not appeared in either:
+
+- On the notebook's **Spark Connect** path, the SMUS user guide states the same limitation for **all three
+  engines** — AWS Glue, EMR Serverless and EMR on EC2 alike: *"Fine-grained access control (FGAC) is not
+  supported. Only full-table access is available"*, with trusted identity propagation unsupported beside
+  it. EMR Serverless on that path is documented as **compatibility mode only**.
+- At the **compute-connection** level the two permission modes are `project.spark.compatibility` and
+  **`project.spark.fineGrained`**. The EMR Serverless *Add compute* dialog offers both, and the notebook
+  connects to that compute through the PySpark connection type; **Glue's `fineGrained` is documented for
+  Visual ETL flows**, not for the notebook.
+
+**So the only documented route by which a notebook Spark session inherits Lake Formation column and row
+filtering is an EMR Serverless compute connection in `fineGrained` mode** (EMR ≥ 7.2.0;
+`spark.emr-serverless.lakeformation.enabled`, and AWS suggests ≥ 28 vCPU of quota against 24 without it).
+That reaches D13 and the `restricted` column Stage 5 built precisely to prove classification scoping: **if
+decision 1 lands on Glue, column scoping lives on the Athena SQL path alone, and that is a scope statement
+to write down rather than a gap to discover.**
+
+**Why this became a reading and not the decision.** The two pages emphasise different paths and neither
+of us has seen the surface; a product claim assembled by reconciling two documentation pages is exactly the
+evidence class the first entry in this file flagged as ageing. **It is also, on its face, an argument
+*for* EMR Serverless — the opposite direction from the reopening** — which is one more reason to measure
+it rather than to adopt it: a finding that reverses the current lean is the one most worth testing.
+
+**One thing it settles rather than opens**, and it travels to decision 2: with TIP unsupported on every
+notebook Spark path, the TIP lever is a **SQL/query-path** lever only. Recorded in
+[`open-questions.md`](../plan/open-questions.md) item 13; decision 2 is unchanged in substance and better
+supported.
+
+### What decision 1 now needs, stated so the stage cannot skip it
+
+Not one number. **Two readings, both at the start of the stage:**
+
+1. **Which of the four EMR Serverless endpoints a working session actually exercises** — step 4.2's flow
+   logs, under design A first. The corrected USD 0.06/h is a ceiling, not a measurement.
+2. **Whether a `fineGrained` EMR Serverless compute connection is actually usable from an IdC-domain
+   notebook** — the FGAC axis above, which no document answers unambiguously.
+
+**And the propagation is already written**, so neither outcome leaves a stale cell: decision 5's category 1
+lists `EMRServerless` as *following decision 1*. Landing on Glue removes it from `US-3`'s allow-list,
+[`docs/SMUS.md`](../SMUS.md) and the step 1.4 map **in one commit** (Lesson 14) — and needs no blueprint at
+all, since Glue arrives as a project connection.
+
+### Files touched in this sitting
+
+[`stage-06-unified-studio.md`](../plan/stages/stage-06-unified-studio.md) (decision 1's row and the Status
+row), [`stages/INDEX.md`](../plan/stages/INDEX.md), [`docs/SMUS.md`](../SMUS.md) (the `EMRServerless` row —
+the corrected number, the FGAC note, and *"pre-initialized capacity not used"* rewritten: the service keeps
+a kernel worker regardless), [`open-questions.md`](../plan/open-questions.md) item 13,
+[`docs/REFERENCES.md`](../REFERENCES.md) (a new 2026-08-19 Spark-runtime block with its four pages),
+`CLAUDE.md`, this file and [`INDEX.md`](INDEX.md).
+
+**Two housekeeping notes rather than findings.** The *Account pools* sub-bullet in `REFERENCES.md` had been
+left hanging under the PrivateLink entry instead of the 2026-08-16 documentation-pass block it belongs to;
+re-homed. And `check-plan-refs.py` flagged a **new** hit that was a false positive of its own bluntness —
+`STALE_SECTION_RE` is `\brows? \d+`, so the phrase *"decision row 1"* reads as a stale row reference; the
+sentence was reworded rather than the rule loosened, which is the right way round for a check that exists
+to be blunt.
+
+**`make check` green. `make check-docs` red only where it already was** — the pre-Stage-2 prose in
+`stage-03-networking.md` and the `CLAUDE.md` size budget, which this sitting pushed further over (31.9 KB
+against 20); **the re-trim is owed at the stage's close**, as the file's own budget note says. Nothing
+committed by Claude.
