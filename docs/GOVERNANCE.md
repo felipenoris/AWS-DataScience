@@ -109,6 +109,12 @@ there (D31).
 default**. Every other classification is **denied by default** — access exists only through an explicit,
 enumerated grant (§Grants).
 
+**`classification` says how sensitive a thing is; it does not say whether the thing is a thing people
+read.** Those are different questions and this dimension only answers the first — which is why the
+default grant carries a `layer` gate as well (§`layer`, §Grants). The drop-box is the case that proved
+it: it carries `classification=internal` for the fail-open reason below, and a grant written on
+`classification` alone would have shared the letterbox (found 2026-08-19, at the apply).
+
 **Unclassified `raw` bases receive `classification=internal` by default** — mechanically, the `raw`
 *database* carries the tag and new tables inherit it. This is the **fail-open** choice, made
 deliberately (2026-08-18, against the fail-closed recommendation) so ETL development is not gated per
@@ -127,9 +133,12 @@ fail-closed by absence, the designed asymmetry between the two registered layers
 | `raw` | untreated bases — legacy-system copies |
 | `curated` | transformed bases, built by ETL from `dropbox`+`raw` |
 
-`layer` states pipeline position; it does **not** gate the default read — Sandbox and Development read
-every layer deliberately (the raw-zone deviation argued in
-[`docs/plan/institutional-delta.md`](plan/institutional-delta.md)). Which catalog database holds the
+`layer` states pipeline position. **It gates the default read at exactly one point, and the wording
+before 2026-08-19 got this wrong:** the sentence used to read "Sandbox and Development read every layer
+deliberately", which is true of `raw` and `curated` — the raw-zone deviation argued in
+[`docs/plan/institutional-delta.md`](plan/institutional-delta.md) — and was never true of `dropbox`.
+The drop-box is a letterbox, not a layer people read from (§Drop-box), so **the default consumer share
+is gated on `layer ∈ {raw, curated}`** and `dropbox` is outside it. Which catalog database holds the
 drop-box crawler's inferred tables is fixed at Stage 5 pass 1.
 
 ### `businessunit`
@@ -164,9 +173,16 @@ The permission vocabulary (what the third element can contain):
 | databases | `DESCRIBE`, `CREATE_TABLE`, `ALTER`, `DROP` |
 | registered locations | `DATA_LOCATION_ACCESS` (create tables pointing into them) |
 
-Any of them can carry the *grantable* option (permission to re-grant) — used only on the cross-account
-share to Production (Stage 9's documented two-step: account-level grant with grant option, local
-regrant to the job role).
+Any of them can carry the *grantable* option (permission to re-grant). **Corrected 2026-08-19, at the
+apply that needed it: every *cross-account* grant carries it, not just Production's.** A cross-account
+grant lands on the **account**; nothing inside that account can use the share until its own data lake
+administrator passes it on to a local principal, and an administrator can only pass on what it received
+with the option — AWS states it as an imperative (`docs/REFERENCES.md`). Without it the share applies
+cleanly, appears in RAM, shows up in the consumer's catalog, and can never be granted to anybody. **It
+is not a delegation of the share:** a resource shared *with* an account may be granted only to
+principals *in* that account, never onward to another account or to an organization. Stage 9's
+two-step (account-level grant, local regrant to the job role) is therefore the shape of **every** share
+here, and what remains particular to Production is the governed *write* in its permission list.
 
 **The principals** (who the first element can be): the consumer **accounts** — `Sandbox Account 1` and
 `Development` today, one more per business unit at N>1 (INT-03's N+2) — for the cross-account shares;
@@ -198,10 +214,32 @@ they govern the copy rather than the source — which is Lesson 1's shape, manag
 
 **The default grants** — the standing expressions that implement the classification rule:
 
-- `[each consumer account, classification ∈ {public, internal}, SELECT + DESCRIBE]` — read-only, both
-  layers, granted once per consumer;
+- `[each consumer account, layer ∈ {raw, curated}, DESCRIBE]` **on databases** — the container, metadata
+  only;
+- `[each consumer account, layer ∈ {raw, curated} AND classification ∈ {public, internal}, SELECT +
+  DESCRIBE]` **on tables** — the rows, read-only, granted once per consumer;
 - everything else (`restricted`, `personal`) travels **only** on explicit TBAC grants to enumerated
   principals, each recorded in the stage log **and** in the grant register.
+
+**Why two expressions rather than the one this section used to print** (`classification ∈ {public,
+internal}` alone, "both layers"), **corrected 2026-08-19 when it was first applied against a catalog
+that actually carried tags:**
+
+- **the `layer` gate keeps the drop-box out.** The drop-box database carries
+  `classification=internal` — decision 1's fail-open rule for user-supplied arrivals — so the
+  classification-only expression matched it, and the letterbox whose contract is *write, never read
+  back* would have been shared read-only to both consumers. The rows would still not have arrived
+  (the drop-box bucket is unregistered, so a query falls back to plain IAM and no consumer holds
+  `s3:Get` on it), but the metadata would have, and a second control catching a first one's miss is
+  not a reason to leave the first wrong. "Both layers" always meant `raw` and `curated`; the gate
+  writes down what the sentence meant;
+- **the database grant must *not* carry the classification gate.** `curated`'s database deliberately
+  has no `classification` at all (fail-closed by absence), so an expression naming `classification`
+  does not match it — and a database that does not match cannot be resource-linked, which is the whole
+  consumer side. The classification gate belongs where the rows are.
+
+The value lists in the applied grants are written **literally**, not read from the ontology: they are a
+*subset*, and a new `layer` or `classification` value must not join a consumer share by inheritance.
 
 **Every applied triple is registered in [`docs/AWS_STATE.md`](AWS_STATE.md) §"Lake Formation grant
 register"** — one row per grant, written in the same sitting as the grant, the same discipline
@@ -221,6 +259,22 @@ drop-box from becoming a general-purpose exchange bucket (D18/D25). Own bucket `
 under the `zn-lab` CMK (decision 3 — the KMS trade is §`security-zone`'s). Re-uploading a corrected
 file is an ordinary overwrite (`PutObject` covers it; versioning keeps the prior copy internally); the
 writer's confirmation is the API response, since read-back does not exist.
+
+**The catalog half of the asymmetry, written down 2026-08-19 because it was nearly lost.** The drop-box
+has a catalog database and a crawler, so it has *metadata* that a grant can reach even though its bucket
+holds nothing a consumer may read. Three things keep the letterbox shut on that side, and they are not
+interchangeable:
+
+| | What it does | What it does not do |
+|---|---|---|
+| **the `layer` gate** in the default share (§Grants) | keeps `layer=dropbox` out of every consumer grant — the control | — |
+| **the unregistered location** — `awsds-data-dropbox` is deliberately **not** registered with Lake Formation | a query falls back to plain IAM, and no consumer persona holds `s3:Get` on the bucket, so no row is ever vended | it does **not** hide the metadata: table names, schema and S3 paths travel with a catalog grant |
+| **`classification=internal`** on the database | states the sensitivity of user-supplied arrivals, fail-open (§`classification`) | it is **not** a statement that the drop-box may be read, and reading it as one is what produced the near-miss |
+
+The near-miss is worth keeping: the default share was written on `classification` alone, and applied
+literally it matched the drop-box database. Nothing would have leaked — the second row above holds —
+but the metadata would have travelled, and a second control catching a first one's miss is not a reason
+to leave the first wrong.
 
 ## Derived zone
 

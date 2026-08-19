@@ -190,21 +190,45 @@ workgroup. The other two are worse than the 2026-08-16 reading recorded:
 - **The doc's third control is "remove Amazon Athena Spark permissions from individual project IAM
   policies"** — a *grant*-shaped edit on **blueprint-authored** policies, which is Lesson 11's trap and
   INT-15's reconciliation risk in one sentence. **2.1's permissions boundary is not that control**: it is a
-  deny-shaped ceiling delivered by a slice this repository owns, i.e. a deliberate deviation that is
-  stronger than the documentation. Record it in `POLICIES.md` **as a deviation, with the reason** — a
-  future reader diffing plan against doc will otherwise read it as carelessness.
+  deny-shaped ceiling delivered by a slice this repository owns. **Decided 2026-08-19, by the user: the
+  boundary gets NO Athena Spark clause.** An OU SCP reaches every IAM principal in the member accounts,
+  project roles included — the sole exemption is service-linked roles, and no SLR opens a Spark session — so
+  the clause would deny nothing the SCP does not already deny, and **Lesson 20 turns that from redundancy
+  into cost**: where two policies deny one call, only one is ever proven, and the other reads as coverage
+  while being merely attached. The boundary stays for the job it exists for — D13's `s3:*` exclusion on the
+  registered prefixes. **Revision trigger: the first principal in these accounts that an OU SCP does not
+  reach.** Record the divergence from the documentation in `POLICIES.md` with that reasoning, or a future
+  reader diffing plan against doc reads it as carelessness.
 
 Land the deny in `awsds-org-scp-ou-interactive` through **battery phase 4b** (an SCP amendment, never a
 direct edit; no carve-out needed — nobody legitimately runs Athena Spark), and record in `POLICIES.md` in
 the same sitting. **The negative probe is the one that matters**: `athena:StartQueryExecution` must still
 succeed in the same account, or the amendment took D13 with it.
 
+**Not pulled forward — decided 2026-08-19, by the user.** Landing this in Stage 5's phase-4b sitting beside
+4.3's `athena:StartQueryExecution` amendment was considered and declined: it buys one sitting instead of
+two, at the price of inheriting 4.3's scheduling constraint, and there is no surface to protect until this
+stage builds one. **The amendment and its probes run here**, at 1.6, when the next stage opens.
+
 **A fourth lever exists at the network layer, and it costs less than nothing:** Athena Spark's three session
 endpoints (`athena.sessions`, `athena.dashboard`, `athena.persistent-dashboard`) sit in the **optional**
 endpoint table, so not creating them leaves Spark Connect no private path under design B — three endpoint
 fees not paid. **Weakened, not removed, by the 2026-04 PrivateLink release**: before it there was no private
 path at all, so Spark was dead by construction; now not having one is *our choice*, and a choice has to be
-written down to survive.
+written down to survive — **and it is, since 2026-08-19**: a commented exclusion beside `extra_services` in
+both Interactive `egress/` slices, plus 4.1's instruction to keep the Spark session domains off the DNS
+Firewall allow-list.
+
+**There is no intersection with Athena SQL, and it is worth stating because the names invite the opposite
+reading.** The SQL path rides `com.amazonaws.<region>.athena` — the **API** endpoint, which the
+network-isolation page lists as **required** and which this design creates. The three above are the Spark
+session surfaces and nothing else: Spark Connect (the gRPC submission channel), the Live UI (running-task
+monitoring) and the Persistent UI (the History Server). Declining them costs `StartQueryExecution` nothing,
+just as the SCP above costs it nothing. **One shared edge, and it is the only one:** `GetSessionEndpoint`
+and `GetResourceDashboard` — the calls that *mint* session URLs — travel over that same required `athena`
+API endpoint, which is also the only Athena endpoint that accepts a VPC endpoint policy. So if an endpoint
+policy is ever written there, it is the one place the two paths meet, and it must not catch the SQL
+actions.
 
 **Why the 2026-04 announcement does not reopen this** (read 2026-08-19; sources in `docs/REFERENCES.md`):
 PrivateLink moved the **client → session** path — Spark Connect gRPC, Live UI, History Server — and not
@@ -218,6 +242,13 @@ supported** on the three session endpoints (the documented workaround is to poli
 allow shape), and a **session URL minted inside the VPC is reachable from the public internet by design**
 (plans, schema and stage detail, persisted in the History Server). Keep this paragraph: an announcement
 titled *"now supports AWS PrivateLink"* is exactly what makes someone re-open a settled question.
+
+**The revision trigger, worded so that a press release cannot fire it** (adopted 2026-08-19, by the user):
+**Athena Spark gaining an equivalent of `NetworkConfiguration` — executors in our subnets, under our
+security group.** *Not* "Athena Spark supports VPC", which the 2026-04 headline already says and which is
+about the control path. Carry this wording into `POLICIES.md` with the statement: the distinction between
+where a session is *reached from* and where it *runs* is the whole finding, and it is the half a hurried
+re-reading drops first.
 
 **1.7 — Read INT-16's portal half, at the first moment the surface exists** — **user**, browser: does the
 portal open with the tunnel down? Record the observed behaviour either way, against Stage 4's three-roles
@@ -313,6 +344,12 @@ what this step adds is the control that makes it "limited internet" instead of i
 server, crates.io, the distro mirrors, `gitlab.prod.internal` — default-deny with the block action logged.
 Priced and measured (`docs/PRICING.md` §7): USD 0.0005/name-month + USD 0.60/1M queries — cents.
 
+**One name is to be kept OFF this list on purpose, and the note is the point** (decision 3, 2026-08-19):
+Athena Spark's session hosting domains. Default-deny already excludes them, so nothing is *added* here —
+what is added is the **instruction not to add them** when someone debugging a blocked lookup works down the
+list. Read the actual names at the time rather than trusting a name written here months earlier; the
+reasoning, and the SQL path that must not be caught with them, is in 1.6 and in both `egress/` slices.
+
 **4.2 — Add the `datazone` interface endpoint to both Interactive lists** (Stage 3 step 8.7's candidate,
 now **required** by the network-isolation doc), and measure — not copy — the rest of AWS's required list:
 add only what verification (viii)'s flow-log reading shows exercised. Every entry is +USD 0.010/h per AZ per
@@ -320,6 +357,11 @@ account, and AWS's list covers features this design does not enable. **The full 
 2026-08-19** (the earlier four-name summary was a sample, not the list): `athena`, `datazone` +
 `datazone-fips`, `ec2` + `ec2messages`, `q`, `s3`, `sagemaker.api` + `sagemaker.runtime`, `glue`, `kms`,
 `secretsmanager`, `sts`, `ssm` + `ssmmessages`.
+
+**The three Athena Spark session endpoints stay uncreated, and that is now written where someone would go
+to add one** — a commented exclusion beside `extra_services` in `sandbox/egress/main.tf` and
+`development/egress/main.tf` (decision 3, 2026-08-19). Comment-only, so it changes no plan; Lesson 5 is the
+reason it exists at all.
 
 **One required entry cannot be created from `us-west-2` at all:** the doc pairs `q` with
 `com.amazonaws.`**`us-east-1`**`.codewhisperer` and states that domains in other Regions use *that*
@@ -486,9 +528,27 @@ decision-maker.
    SQL, the D13 path). **Re-read 2026-08-19 against the AWS page and the 2026-04 Athena Spark PrivateLink
    release — unchanged, and better supported than when it was written**: AWS ships the statement verbatim;
    the Tooling flag turns out to be non-retroactive as well as blunt; the doc's third control is
-   grant-shaped on blueprint-authored policies, so the boundary mirror is a **deviation to record**, not a
-   copy; a fourth, free, network-layer lever exists under design B; and PrivateLink moved the client path
-   while the executor stays outside the VPC. All of it is in 1.6.
+   grant-shaped on blueprint-authored policies; a fourth, free, network-layer lever exists under design B;
+   and PrivateLink moved the client path while the executor stays outside the VPC. All of it is in 1.6.
+   **Three-quarters DECIDED 2026-08-19, by the user, once the re-read had closed the questions evidence
+   could close** (the Tooling flag stays on and the SCP is the mechanism were no longer choices; the
+   `Resource` stays at AWS's `arn:aws:athena:*:*:workgroup/*` wildcard, since narrowing to `us-west-2`
+   would *permit* Spark elsewhere):
+   - **Timing — not pulled forward.** The amendment and its probes run at 1.6, when this stage opens, not
+     in Stage 5's phase-4b sitting (1.6 carries the trade).
+   - **The boundary gets no Athena Spark clause** — Lesson 20 over defence in depth; the revision trigger
+     is the first principal an OU SCP does not reach (1.6).
+   - **The revision trigger for the deny itself** is executors in our subnets, never a PrivateLink
+     headline (1.6).
+   - **The endpoint abstention is WRITTEN, not tacit** — the recommendation adopted: a commented exclusion
+     beside `extra_services` in `sandbox/egress/main.tf` and `development/egress/main.tf`, and 4.1's
+     instruction to keep the Spark session domains off the DNS Firewall allow-list. Lesson 5, at the cost
+     of two comment blocks that change no plan.
+
+   **DECIDED IN FULL 2026-08-19.** What is left is execution at 1.6, and the clarification that settled the
+   last item is worth keeping: the three session endpoints are Spark-only surfaces (Spark Connect, Live UI,
+   History Server) while Athena **SQL** rides the required `athena` API endpoint — same name family, two
+   products, no intersection. The negative probe at 1.6 is what keeps that true.
 4. **Which Lakehouse blueprint(s) the catalog/SQL surface needs** (1.4) — `LakehouseCatalog`,
    `LakeHouseDatabase` (`DataLake`), or both. Recommended: start with **LakehouseCatalog** alone and add
    the other only when a concrete surface asks for it — never `RedshiftServerless`.

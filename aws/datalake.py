@@ -306,6 +306,15 @@ def main(argv: list) -> int:
             shares = [
                 (s.get("name", "?"), s.get("status", "?")) for s in doc.get("resourceShares", [])
             ]
+    # THE CONSUMER-SIDE RECEIPT, added 2026-08-19 (Stage 5 pass 3) because DL-7 could not tell
+    # its two failure branches apart. "Shares exist and no resource link" was reported as one
+    # verdict whether step 8 had simply not run yet or the share had silently never arrived -
+    # opposite causes, one message, which is Lesson 13's family. The discriminator is here: a
+    # share the consumer's own RAM ACTUALLY HOLDS. Measured at pass 3, both consumers held
+    # their two shares ACTIVE while their catalogs were still empty, so the empty catalog is
+    # NOT evidence of a failed share.
+    received: list = []  # (profile, share name, status)
+    lf_admin_counts: dict = {}  # profile -> number of data lake admins in that account
     for p in CONSUMER_PROFILES:
         if p not in live:
             continue
@@ -314,6 +323,17 @@ def main(argv: list) -> int:
         if doc:
             for inv in doc.get("resourceShareInvitations", []):
                 invitations.append((p, inv.get("resourceShareName", "?"), inv.get("status", "?")))
+        doc = run_json(cli, p, "ram", "get-resource-shares", "--resource-owner", "OTHER-ACCOUNTS")
+        if doc:
+            for s in doc.get("resourceShares", []):
+                received.append((p, s.get("name", "?"), s.get("status", "?")))
+        # WHY THE ADMIN COUNT RIDES ALONG: it is the CAUSE of the empty catalog above. AWS
+        # requires at least one data lake administrator in a consumer account before a shared
+        # resource is visible there at all, so zero admins explains the emptiness completely
+        # and step 8 owes that account a DataLakeSettings of its own.
+        doc = run_json(cli, p, "lakeformation", "get-data-lake-settings")
+        if doc:
+            lf_admin_counts[p] = len(doc.get("DataLakeSettings", {}).get("DataLakeAdmins", []))
 
     # ----------------------------------------------------- Athena workgroups, consumer side
     workgroups: list = []  # (profile, name, enforce, output location, scan limit)
@@ -601,6 +621,9 @@ def main(argv: list) -> int:
             "by hand (step 7.3).",
         )
     links = [d for d in databases if d[0] in CONSUMER_PROFILES and d[2] != "-"]
+    # THE TWO BRANCHES THAT USED TO SHARE ONE VERDICT (see the collection note above).
+    consumers_seen = [p for p in CONSUMER_PROFILES if p in live]
+    consumers_without = [p for p in consumers_seen if not any(r[0] == p for r in received)]
     if shares:
         if links and not pending:
             checks.ok(
@@ -609,13 +632,26 @@ def main(argv: list) -> int:
                 f"{len(shares)} share(s) out, {len(links)} resource link(s) on the "
                 "consumer side, no pending invitation",
             )
-        elif not links:
+        elif not links and consumers_without:
             checks.fail(
                 "DL-7",
-                "resource links on the consumer side",
-                f"{len(shares)} share(s) exist and no consumer database is a resource "
-                "link - either step 8 has not run, or the share never arrived (the "
-                "silent INT-11 failure; read DL-5 first).",
+                "shares that never arrived",
+                f"{len(shares)} share(s) exist here and "
+                f"{', '.join(consumers_without)} hold NONE - this is the silent INT-11 "
+                "failure, not a missing step 8: the grant succeeded and the resource did "
+                "not travel. Read DL-5 first (a reset CROSS_ACCOUNT_VERSION does exactly "
+                "this), then org sharing in RAM.",
+            )
+        elif not links:
+            admins = ", ".join(f"{p}:{n}" for p, n in sorted(lf_admin_counts.items()))
+            checks.note(
+                "DL-7",
+                "shares arrived, no resource link yet",
+                f"{len(shares)} share(s) out and every consumer HOLDS its share - the "
+                "share travelled. No resource link yet, which is step 8's, so this is the "
+                f"expected state between passes 3 and 4. Data lake admins per consumer: "
+                f"[{admins}] - at zero the consumer catalog is empty BY RULE, and step 8 "
+                "owes that account a DataLakeSettings of its own.",
             )
     elif data_live and lf_registered:
         checks.note("DL-7", "cross-account shares", "none yet - expected before Stage 5 step 7.")
@@ -723,7 +759,7 @@ SECTIONS
   4. Glue catalog - databases, resource links, crawlers
   5. The catalog-maintenance role (D27)
   6. Lake Formation - settings, PARAMETERS, registrations, LF-Tags
-  7. RAM - shares out, invitations pending
+  7. RAM - shares out, invitations pending, shares HELD by each consumer
   8. Athena workgroups, consumer side
   9. The derived zone
   10. EFS (expected: none, or a Studio domain's own home)
@@ -825,7 +861,7 @@ it. Admins present with Parameters absent is the reset having happened.""")
             rep.line("get-data-lake-settings was not read - see section 14.")
 
         # ==============================================================================
-        rep.h1("7. RAM - shares out, invitations pending")
+        rep.h1("7. RAM - shares out, invitations pending, shares HELD by each consumer")
         if shares:
             rep.tabulate(["SHARE\tSTATUS"] + [f"{n}\t{s}" for n, s in shares])
         else:
@@ -837,6 +873,26 @@ it. Admins present with Parameters absent is the reset having happened.""")
             rep.line("A PENDING row is the org-sharing path not working (INT-11, step 7.3).")
         else:
             rep.line("No invitation on any consumer - the expected state under org sharing.")
+        rep.line()
+        if received:
+            rep.tabulate(
+                ["PROFILE\tSHARE HELD\tSTATUS"] + [f"{p}\t{n}\t{s}" for p, n, s in received]
+            )
+        else:
+            rep.line("No consumer holds a share from Data Governance.")
+        rep.line()
+        if lf_admin_counts:
+            rep.tabulate(
+                ["PROFILE\tDATA LAKE ADMINS"]
+                + [f"{p}\t{n}" for p, n in sorted(lf_admin_counts.items())]
+            )
+        rep.text("""
+THE TWO TABLES ABOVE ARE READ TOGETHER, and they are what separates a share that
+never travelled from one that has simply not been linked yet (step 8). A share
+this side owns and no consumer HOLDS is the silent INT-11 failure. A share both
+sides show, with an empty consumer catalog, is normal: AWS requires at least one
+data lake administrator in the consumer account before a shared resource is
+visible there, so a zero in the admins table explains the emptiness by itself.""")
 
         # ==============================================================================
         rep.h1("8. Athena workgroups, consumer side")
@@ -897,7 +953,8 @@ What the checks are, and where each comes from:
   DL-5   DataLakeSettings.Parameters still read 4/TRUE - the INT-11 defence
          (step 5.4); THE check to read after any apply in this slice
   DL-6   no IAMAllowedPrincipals create-defaults once databases exist (step 5.2)
-  DL-7   shares out, resource links resolved, NO pending invitation (steps 7, 8)
+  DL-7   shares out AND HELD by every consumer, resource links resolved, NO
+         pending invitation (steps 7, 8)
   DL-8   workgroups enforce their configuration, with a scan limit (step 8, D19)
   DL-9   derived buckets carry a lifecycle expiry (step 9.2, D19)
   DL-10  no EFS in the VPN home beyond a Studio domain's own tagged home

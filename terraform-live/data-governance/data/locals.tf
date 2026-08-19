@@ -18,6 +18,15 @@ locals {
     dropbox = aws_glue_catalog_database.dropbox.name
   }
 
+  # The consumer accounts of step 7's shares. Production is absent BY DESIGN, not by omission:
+  # its share carries the governed write and arrives with Stage 9, which has a job role to
+  # receive it. The ids come from the aliased providers, so no account id enters a tracked
+  # file, and an account that cannot be read fails by name here.
+  consumer_accounts = {
+    sandbox     = data.aws_caller_identity.sandbox.account_id
+    development = data.aws_caller_identity.development.account_id
+  }
+
   # The five buckets. Names are FOREVER in this account - DenyLakeDeletionAndDeregistration
   # denies s3:DeleteBucket unconditionally (stage callout at 1.2) - so they are built from
   # the env token exactly as docs/GOVERNANCE.md prints them, and from nothing else.

@@ -42,4 +42,22 @@ module "egress" {
   # JupyterLab/Code Editor apps START in a VPC-only domain). elasticfilesystem sat here
   # until 2026-08-17, when the NFS requirement was withdrawn (D24 with it).
   extra_services = ["sagemaker.api", "sagemaker.runtime", "sagemaker.studio"]
+
+  # DELIBERATELY ABSENT, and this is the record that makes it a control rather than an
+  # oversight (Lesson 5; Stage 6 decision 3, 2026-08-19): Athena Spark's three session
+  # endpoints - athena.sessions (Spark Connect), athena.dashboard (Live UI) and
+  # athena.persistent-dashboard (History Server). Athena Spark runs its executors OUTSIDE
+  # this VPC - there is no NetworkConfiguration in its API - so a notebook on it sits
+  # outside these endpoints, the flow logs and every aws:SourceVpce condition. The
+  # preventive half is the SCP deny on athena:StartSession/UpdateSession (Stage 6 step 1.6);
+  # not creating these is the free network half, and it is a CHOICE since the 2026-04
+  # PrivateLink release, not a property of the service.
+  #
+  # THE SQL PATH IS UNAFFECTED and must stay that way: Athena SQL rides the `athena` API
+  # endpoint (the module's core list), which is what D13 depends on. Three names in the
+  # same family, two different products.
+  #
+  # Revision trigger: Athena Spark gaining executors in OUR subnets under OUR security
+  # group - never a headline saying it "supports VPC", which is about the control path.
+
 }

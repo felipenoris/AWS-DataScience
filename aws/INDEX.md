@@ -495,7 +495,7 @@ for them (Lesson 20's rule: configuration for configuration questions, probes fo
 | Are the IAM-fallback defaults still granting `IAMAllowedPrincipals` (step 5.2)? | 6, decided by `DL-6` once databases exist |
 | Does the maintenance role exist under its exact contracted name, trusting only Glue? | 5, decided by `DL-4` |
 | Is a crawler scheduled, or pointed at an Iceberg table — both forbidden (D27)? | 4, decided by `DL-3` |
-| Did the shares arrive as resource links, with **no pending RAM invitation**? | 7 and 4, decided by `DL-7` — a PENDING row is INT-11's fallback tax |
+| Did the shares arrive as resource links, with **no pending RAM invitation**? | 7 and 4, decided by `DL-7` — a PENDING row is INT-11's fallback tax. **Section 7 grew two tables on 2026-08-19 and they are read together**: a share this side owns that no consumer *holds* is the silent failure; a share both sides show with an empty consumer catalog is normal, because AWS needs a **data lake administrator in the consumer account** before a shared resource is visible there — the admin count is the third table, and a zero explains the emptiness by itself |
 | Is the consumer workgroup actually enforcing its result location and scan limit (D19)? | 8, decided by `DL-8` |
 | Does the derived zone expire, and is the VPN home still EFS-free beyond a Studio domain's own home (nothing else is the design since 2026-08-17)? | 9 and 10, decided by `DL-9`/`DL-10` |
 | Is Security Hub on everywhere, with FSBP? | 11, decided by `DL-11` |

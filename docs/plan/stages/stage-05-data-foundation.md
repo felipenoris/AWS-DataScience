@@ -77,7 +77,7 @@ change. The sequence to work in is **six passes**:
 | **0** | 2, 5.4-pre | the classification scheme; the INT-11 before-reading | on paper; a CLI read | — |
 | **1** | 1, 3, 4, 5 | the lake: keys, buckets, policies, drop-box; catalog, role, crawlers; Iceberg; Lake Formation — **authored 2026-08-18, `58 to add`; applied in TWO steps, 5.2's callout** | `data-governance/data/` `[P]` | `awsds-infra-data` |
 | **2** | 6 | D13 made real — grants, the grain decision, the sso/ reading — **DONE 2026-08-19: `9 added`, re-plan `No changes`; the sso/ reading, the grain map and the register rows all landed. The behavioural half (can the persona actually tag?) needs a GM session and the tunnel** | idem, plus a reading of `identity/sso/` | idem |
-| **3** | 7 | the two cross-account shares, and the INT-11 after-reading | `data-governance/data/` + RAM | idem |
+| **3** | 7 | the two cross-account shares, and the INT-11 after-reading — **DONE 2026-08-19: `4 added`, re-plan `No changes`; four `LakeFormation-V4-*` shares `ACTIVE` and held by both consumers, zero invitations, `DL-5` bracket holds. Two findings changed what was applied — the grant option is mandatory, and the default expression needed a `layer` gate to keep the drop-box out** | `data-governance/data/` (`shares.tf`) + RAM | idem |
 | **4** | 8, 9 | the consumer side: workgroups, links, scratch, derived + CMK; the pandas proofs | `sandbox/data/`, `development/data/` `[P]` | `awsds-infra-sandbox-1`, `awsds-infra-dev` |
 | **6** | 13 | Security Hub org-wide | by hand: Management, then Audit | `AWS Control Tower Admin`, console/CloudShell |
 
@@ -339,7 +339,10 @@ decoration.
 `zone ∈ {raw, curated} AND classification ∈ {public, internal}` — `restricted` and `personal` travel
 **only on explicit grants** to enumerated principals, recorded in the log **and in the grant register**
 (`docs/AWS_STATE.md`). *(Decided form, 2026-08-18 — `GOVERNANCE.md`: the default expression is
-`classification ∈ {public, internal}` alone, read-only; `layer` does not gate the default read.)* This is what makes the scheme a
+`classification ∈ {public, internal}` alone, read-only; `layer` does not gate the default read.
+**SUPERSEDED at the apply, 2026-08-19 — see 7.2: the `layer` gate came back, because without it the
+expression matched the drop-box.** The 2026-08-17 sentence two lines above, `zone ∈ {raw, curated} AND
+classification ∈ {public, internal}`, was right all along; the simplification is what lost it.)* This is what makes the scheme a
 control during Stages 6-10 rather than paper until Stage 11 (Lesson 5): the cell/row filters Stage 11 adds
 then narrow *within* the restricted grants instead of beginning enforcement. Named-resource grants stay
 available for the exceptions hybrid mode covers (6.3).
@@ -388,12 +391,50 @@ additions to the Data Catalog resource policy** — the documented cross-account
 where a named-resource share would have worked. Read the policy before the first grant; the addition is
 written in this slice, beside the grants it enables.
 
+**RESOLVED 2026-08-19, and the third prerequisite turned out to be CONDITIONAL — no policy was written.**
+Two AWS pages differ in emphasis: the LF-TBAC considerations page states the requirement flatly (which is
+what the paragraph above recorded), while the Prerequisites page scopes it — the `glue:ShareResource`
+statement is required of an account **already** sharing through an AWS Glue Data Catalog resource policy
+(the version 1/2 path), and "is not required if your account has made no cross-account grants using the
+AWS Glue Data Catalog resource policy". **Measured in Data Governance: `glue:GetResourcePolicy` →
+`EntityNotFoundException`.** The condition does not hold, so no `aws_glue_resource_policy` exists in this
+slice and nothing is set to `EnableHybrid` — a policy added "to be safe" would be a real permission
+surface and a hybrid-mode interaction adopted for a case that does not apply. **The reading was
+falsifiable and the falsifier did not fire**: had the flat statement been the operative one, the grant
+would have applied cleanly and no RAM share would have appeared. Four appeared, `ACTIVE`, held on both
+sides (7.3).
+
 **7.2 — Grant the read share to the Sandbox and Development accounts** through Lake Formation/RAM, **as
 the classification-scoped LF-TBAC expressions of 6.1** — both zones, `public`/`internal`; the explicit
 `restricted` grants are separate, enumerated acts. The resource links land on the consumer side in step 8. **The Production share, including the governed
 write, waits for Stage 9** — no consumer exists for it yet. Grant to **accounts** or to the **OU** — the
 version supports OU grants, and which to use is part of decision 5; per-account is the INT-11 fallback
 either way.
+
+**APPLIED 2026-08-19 as four grants — two consumer accounts × two resource types — and TWO THINGS ABOUT
+THE FORM ABOVE WERE WRONG, both found at the apply rather than argued into place:**
+
+- **every cross-account grant carries the grant option; it is not Production's special case.** A
+  cross-account grant lands on the **account**, and nothing inside it can use the share until that
+  account's own data lake administrator passes it on — an administrator can only pass on what it
+  received with the option, and AWS states it as an imperative. Omitting it fails mutely and *late*: the
+  apply succeeds, the RAM share appears, the resource shows in the consumer's catalog, and every later
+  grant to a person fails, one pass away, in another account. It is **not** a delegation of the share —
+  a resource shared *with* an account may be granted only to principals *in* that account. `GOVERNANCE.md`
+  §Grants is corrected;
+- **the expression needed a `layer` gate, or the share included the drop-box.** The decided form
+  (`classification ∈ {public, internal}` alone) matched the drop-box database, which carries
+  `classification=internal` for decision 1's fail-open reason — the letterbox whose entire contract is
+  *write, never read back*. No row would have travelled (the drop-box bucket is unregistered, so a query
+  falls back to plain IAM and no consumer holds `s3:Get` on it) but the metadata would have. **The
+  applied form is two grants, deliberately not the same expression**: `DESCRIBE` on databases matching
+  `layer ∈ {raw, curated}`, and `SELECT`+`DESCRIBE` on tables matching that **AND**
+  `classification ∈ {public, internal}`. The database grant may not carry the classification gate —
+  `curated`'s database has no classification by design, and a database that does not match cannot be
+  resource-linked, which is the whole of step 8.
+
+Verified against the API rather than the code: four rows, both accounts, grant option on every one, the
+`AND` present on the table rows.
 
 **7.3 — Three readings around the first grant, because two different things can silently fail:**
 
@@ -410,9 +451,36 @@ either way.
   not working** — the share "arrived" through the fallback tax INT-11 describes, and it will reappear at
   every rebuild.
 
+**READ 2026-08-19, all three, and the third turned up something the plan did not have:**
+
+- **the parameters bracket holds** — `CROSS_ACCOUNT_VERSION=4`, `SET_CONTEXT=TRUE` after the shares
+  exist, the third of the three readings verification (i) asks for;
+- **the shares travelled**: four `LakeFormation-V4-*` resource shares owned by Data Governance, all
+  `ACTIVE`, and each consumer's own RAM holds its two. **Zero invitations anywhere** — the org-sharing
+  path is doing the work and INT-11's fallback tax is not being paid;
+- **and the consumer catalogs are EMPTY, which is correct rather than the silent failure it resembles.**
+  `glue:GetDatabases` and `list-lf-tags` return nothing in either account because **neither has a data
+  lake administrator** (`DataLakeAdmins: []`), and AWS requires at least one before a shared resource is
+  visible there at all. This is the discriminator the instrument lacked: an empty consumer catalog means
+  *the share has not been received into Lake Formation yet*, while a share the consumer's RAM does not
+  hold is the real INT-11 failure. **`./aws/datalake.py` now reads the consumer side's held shares and
+  admin counts, and `DL-7` reports the two branches separately** — the same-verdict-for-opposite-causes
+  defect being Lesson 13's family.
+
+**So step 8 owes each consumer account a `DataLakeSettings` of its own**, before any resource link can
+resolve — and it owes it with both hazards this stage already met on the producer side: the `Parameters`
+map that a settings apply replaces wholesale (INT-11), and the `Create*DefaultPermissions` that must be
+cleared **before** the first local database exists (Lesson 27, and no plan will state it).
+
+**`sts:SetContext` is only half-tested by the above.** The metadata path travelled with the RCP in place,
+which is the good sign; but version 4 vends *data* credentials through that action, and no data has been
+read yet. Verification (ii) closes at pass 4's first query, not here.
+
 **1d 11.4's two items land here too:** the `AWSLakeFormationCrossAccountManager` managed policy on the
 grantor principal, and — only if the org path fails — `ram:AcceptResourceShareInvitation` on the
-consumer-side roles.
+consumer-side roles. **Neither was needed (2026-08-19):** the grantor is `InfrastructureAccess`, which is
+`AdministratorAccess`, so the managed policy is a subset of what it already holds — attaching it would be
+decoration; and the org path left no invitation to accept.
 
 **7.4 — The catalog gains a second storey in Stage 6 (D26):** SageMaker Catalog — the DataZone layer of
 the unified domain — sits on top of this Glue/LF substrate. Publishing an asset and approving a
@@ -427,7 +495,18 @@ taxonomy owned by someone who does not answer for the grants is decoration.
 
 #### 8. Workgroup, resource links, scratch
 
-Per account: the **Athena workgroup** (`awsds-<env>-athena`) — result location local to the account,
+**First, and it is a prerequisite rather than a step (established 2026-08-19 at 7.3): each consumer
+account needs its own data lake administrator before anything below resolves.** AWS requires at least one
+in the receiving account for a shared resource to be visible there at all, and both accounts currently
+read `DataLakeAdmins: []` — their RAM holds the shares while their catalogs are empty. So each
+`sandbox/data/` and `development/data/` opens with an `aws_lakeformation_data_lake_settings` of its own,
+carrying the **same two hazards** the producer side met: `Parameters` is replaced wholesale by that
+resource (INT-11 — read the account's current map first and carry it), and the two
+`Create*DefaultPermissions` act **at creation time**, so they must be cleared before the first local
+database, which here is the first resource link. **The plan will not state either** — Lesson 27, and
+Recipe D in the terraform-changes runbook is the procedure.
+
+Then, per account: the **Athena workgroup** (`awsds-<env>-athena`) — result location local to the account,
 per-query scan limit, and **`EnforceWorkGroupConfiguration = true`** (the setting the console calls
 "override client-side settings"; without it the result location is whatever the client asks for, which
 makes step 9 a suggestion rather than a boundary, D19); the LF **resource links** to the shared databases;
@@ -645,11 +724,11 @@ Record every answer, including the ones that come out fine.
 
 | # | Question | Step |
 |---|---|---|
-| i | Do the three parameter readings bracket the applies unchanged — before, after 5.4, after the first share? | 5.4, 7.3 |
-| ii | Does the first cross-account grant arrive on the consumer side with a **fresh** session — i.e. does the RCP's `sts:SetContext` statement leave version-4 vending untouched? | 7.3 |
+| i | Do the three parameter readings bracket the applies unchanged — before, after 5.4, after the first share? — **ANSWERED 2026-08-19, yes, all three: `CROSS_ACCOUNT_VERSION=4` / `SET_CONTEXT=TRUE` before pass 1, after the settings apply, and after the four shares exist** | 5.4, 7.3 |
+| ii | Does the first cross-account grant arrive on the consumer side with a **fresh** session — i.e. does the RCP's `sts:SetContext` statement leave version-4 vending untouched? — **HALF ANSWERED 2026-08-19: the METADATA half travelled** (four shares `ACTIVE`, held by both consumers, no invitation). **The vending half is untested** — version 4 vends *data* credentials through `sts:SetContext` and nothing has read a row yet, so this closes at pass 4's first query, not here | 7.3 |
 | iii | Does the maintenance role start the raw crawler (the phase-4 positive half), and is the same call denied for a persona session? | 3.3 |
 | iv | Which compute-free trigger shape starts the drop-box crawler on object creation — and does its run land on the service-guard side of the carve-out? | 3.6 |
-| v | Do the resource links appear with **no** pending RAM invitation anywhere — the org-sharing path working end to end? | 7.3, 8 |
+| v | Do the resource links appear with **no** pending RAM invitation anywhere — the org-sharing path working end to end? — **the invitation half is ANSWERED 2026-08-19: zero invitations in either consumer, both holding their shares `ACTIVE`.** The links are pass 4's, and they need each consumer to have a data lake administrator first (7.3) | 7.3, 8 |
 | vi | Does `DenyIamPrincipalMutation` in fact cover `iam:UpdateAssumeRolePolicy` for all six persona sets (a reading of `identity/sso/`, Lesson 22)? | 3.5 |
 | vii | *(removed 2026-08-17 — the NFS requirement was withdrawn; there is no EFS to mount)* | — |
 | viii | Can a per-user LF filter be expressed and observed on the SQL path at all (the grain's raw material)? — **ANSWERED 2026-08-19 by the written map** (`docs/GOVERNANCE.md` §"The grain"): *expressed* yes, but only through **TIP**, which reaches the SQL path and not JupyterLab and whose documented price is remote access — so it is reachable and **not adopted**. An LF filter on its own attaches to the role, never the person. `${aws:userid}` prefixes stay the genuinely per-user control, over **copies**. *Observed* is not claimed: nothing was run | 6.4 |

@@ -283,6 +283,26 @@ length, under item numbers 10-12 that collided with the live items above; the du
     network-unrestricted because it is also the fire escape, and an institution separates those two
     jobs instead of choosing between them.
 
+### Raised by Stage 5 pass 3, 2026-08-19
+
+18. **Does `lakeformation:CreateLFTag` in the governance manager's IAM half make it an "LF-Tag creator",
+    and therefore able to *grant data* it cannot read?** The larger question this came from is
+    **answered** and closed: AWS states that granting data permissions through an LF-Tag expression
+    requires the `Grant with LF-Tag expressions` permission, which *"the data lake administrator and the
+    LF-Tag creator implicitly receive"* — so a persona holding only `ASSOCIATE` on the tags and
+    `DESCRIBE` on the catalog **tags and does not grant**, which is what decision 5 intended and what
+    pass 2 built. **The residue is the parenthesis.** The persona's IAM statement
+    `AdministerLakeFormation` carries `CreateLFTag`, and no page says whether "LF-Tag creator" means
+    *a principal able to create tags* or *the creator of the tag in question* — the tags in this lake
+    were created by the infrastructure user, through Terraform. The two readings differ by a real
+    power: under the first, the persona can grant `SELECT` on data it is itself denied from reading
+    (`DenyReadingTheRows`), which is not obviously wrong for a governance manager but was never decided.
+    **Settled by measurement, not by more reading:** a governance-manager session attempting a
+    tag-expression grant — Stage 6, when the persona first has to grant rather than tag, and the same
+    session that owes pass 2's "can it actually tag" proof. **If the answer is yes**, the decision to
+    take is whether the delegation plane is wanted; **if no**, decision 5 needs no revision at all. Do
+    not close this from the documentation — the pages that would settle it are the ones already read.
+
 ---
 
 *Plan core: [GENERAL_PLAN.md](../GENERAL_PLAN.md) · Decisions: [docs/plan/decisions/INDEX.md](decisions/INDEX.md) · Stages: [docs/plan/stages/INDEX.md](stages/INDEX.md)*

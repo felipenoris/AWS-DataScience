@@ -658,6 +658,125 @@ arrive at **pass 3**, with the shares they ride on.
 - **Passes 3, 4 and 6 untouched**; 4.3's SCP amendment still owed via battery phase 4b; **the crawlers
   still have never run**.
 
+## 2026-08-19 — Pass 3 APPLIED: the lake is shared, and two things about the decided form were wrong
+
+*Provenance: **Claude's**, on the user's explicit authorisation to apply and to revise the project's
+artifacts against this session's findings. Applied as the **infrastructure user**, account **Data
+Governance**, permission set **`InfrastructureAccess`** (`awsds-infra-data`), from a plan read and then
+applied from the saved file (Recipe A steps 5-6). Redactions as this file's header states.*
+
+### The sitting opened by closing the previous one
+
+**PR #19 — pass 2's records — is the user's merge**, and the local repository was synchronised onto it:
+`main` fast-forwarded `6440c6a` → `7814c75`, the merged branch deleted. Unlike PR #18 (entry eight)
+this one carried **no `.tf` file**, only records, so no post-merge re-plan was owed and none was run —
+the deployed state and `main` had not been able to diverge.
+
+### The method changed first, and that is why the rest of the entry exists
+
+The previous entry recorded that AWS's Lake Formation pages "did not return a body to an automated
+fetch" and deferred a question because of it. **They read normally through a browser that renders
+JavaScript.** The limit was the fetcher's, not the pages'. Everything below comes from reading the
+rendered pages, and two things fell out immediately:
+
+- **the question pass 2 deliberately left unasserted is answered**, and in the design's favour: *"You
+  need to have `Grant with LF-Tag expressions` permission to grant data permissions… The data lake
+  administrator and the LF-Tag creator implicitly receive this permission."* The governance manager,
+  holding `ASSOCIATE` and `DESCRIBE` and no admin seat, **tags and does not grant** — decision 5's
+  intent, now established. **One ambiguity survives and stays Stage 6's:** the same sentence extends the
+  implicit permission to the *LF-Tag creator*, and the persona's IAM half carries `CreateLFTag`;
+- **the 7.1 prerequisite is conditional.** The considerations page states flatly that cross-account
+  LF-TBAC "requires additions to the Data Catalog resource policy"; the Prerequisites page scopes it to
+  an account **already** sharing through a Glue resource policy. Measured here: `glue:GetResourcePolicy`
+  → `EntityNotFoundException`. No policy written, nothing set to `EnableHybrid`.
+
+This became **Lesson 30** — a tool's failure recorded as a property of the world.
+
+### The two corrections to the decided form, both found before applying
+
+| What `GOVERNANCE.md` said | What it had to become | Why |
+|---|---|---|
+| the grant option is "used only on the cross-account share to Production" | **every** cross-account grant carries it | the share lands on the *account*; its own data lake administrator must pass it on, and can only pass on what it received with the option. AWS states it as an imperative. Omitting it fails **mutely and late** — the apply succeeds, RAM shows the share, and every later grant to a person fails in another account |
+| the default expression is `classification ∈ {public, internal}` alone, "both layers" | a `layer` gate on **both** grants | applied against the catalog *as tagged*, the classification-only form matched the **drop-box** database, which carries `classification=internal` for decision 1's fail-open reason. The letterbox whose contract is *write, never read back* would have been shared read-only to both consumers |
+
+No row would have travelled from that near-miss — the drop-box bucket is unregistered, so a query falls
+back to plain IAM and no consumer holds `s3:Get` on it — but the **metadata** would have, and a second
+control catching a first one's miss is not a reason to leave the first wrong. It became **Lesson 29**.
+
+The applied form is deliberately two different expressions: `DESCRIBE` on databases matching
+`layer ∈ {raw, curated}`, and `SELECT`+`DESCRIBE` on tables matching that **AND**
+`classification ∈ {public, internal}`. The database grant may not carry the classification gate, because
+`curated`'s database has none by design and a database that does not match cannot be resource-linked.
+
+### The apply
+
+| Step | Result |
+|---|---|
+| `plan` | **4 to add, 0 to change, 0 to destroy** — the settings resource a no-op, which is the INT-11 guard |
+| `apply` the saved plan | **4 added** |
+| re-plan | **`No changes`**, `-detailed-exitcode 0` |
+| `list-permissions` | four rows, both accounts, **grant option on every one**, the `AND` present on the table rows — verified against the API, not the code |
+| `./aws/datalake.py` | **`0 check(s) FAILED`** |
+
+### The three readings of 7.3, and the third one changed the instrument
+
+- **the parameters bracket holds**: `CROSS_ACCOUNT_VERSION=4`, `SET_CONTEXT=TRUE` after the shares exist
+  — the third of the three readings verification (i) asks for, so **(i) is answered**;
+- **the shares travelled**: four `LakeFormation-V4-*` shares owned here, all `ACTIVE`, each consumer's
+  own RAM holding its two, **zero invitations anywhere**. INT-11's fallback tax is not being paid, and
+  the row is closed. This is also the falsifier for the conditional reading above **not** firing;
+- **the consumer catalogs are empty, and that is correct.** `glue:GetDatabases` and `list-lf-tags` return
+  nothing in either account because **neither has a data lake administrator** (`DataLakeAdmins: []`), and
+  AWS requires one before a shared resource is visible there at all.
+
+**1d step 11.4's two owed items resolved without adding anything**, which is worth saying because both
+were on this step's list: the grantor needs `AWSLakeFormationCrossAccountManager`, and it is
+`InfrastructureAccess` — i.e. `AdministratorAccess` — so the managed policy is a strict subset of what
+the principal already holds and attaching it would be decoration; and `ram:AcceptResourceShareInvitation`
+on the consumer roles was the *only-if-the-org-path-fails* half, and there was no invitation to accept.
+
+That last reading exposed a defect in this stage's own instrument: **`DL-7` reported one verdict for two
+opposite causes** — "step 8 has not run" and "the share never arrived" — which is Lesson 13's family.
+The discriminator is now measured: `./aws/datalake.py` reads each consumer's **held** shares and its
+**data lake admin count**, and `DL-7` reports the branches separately. It currently reads a *note*: the
+share travelled, no link yet, admins `[dev:0, sandbox-1:0]` — the expected state between passes 3 and 4.
+
+### What that means for pass 4, written down before it is forgotten
+
+Step 8 now opens with a prerequisite it did not have: **each consumer account needs its own
+`DataLakeSettings`**, carrying both hazards the producer side already met — `Parameters` replaced
+wholesale (INT-11), and `Create*DefaultPermissions` cleared **before** the first local database, which
+there is the first resource link (Lesson 27, Recipe D).
+
+### Records
+
+**Code:** `shares.tf` (new — the four grants and the reasoning beside them) and `locals.tf`
+(`consumer_accounts`, resolved from the aliased providers so no account id enters a tracked file);
+`aws/datalake.py` (the consumer-side receipt read, and `DL-7` split into its two branches).
+
+**Records:** `GOVERNANCE.md` (§Grants' default expressions and the grant-option rule, §`classification`,
+§`layer`'s wrong sentence, §Drop-box's new three-control table), the stage file (7.1, 7.2, 7.3, step 8,
+verifications i / ii / v, and 6.1's decided form marked superseded), `AWS_STATE.md` (the register at
+**nine rows / 17 triples**, §C's Lake Formation row), `integrations.md` (INT-03 applied, INT-11 closed),
+`REFERENCES.md` (the rendered pages and the superseded provenance note), the slice `README.md` (a
+`shares.tf` section), `lessons.md` (**29** and **30**), `open-questions.md` (**item 18** — the LF-Tag
+creator ambiguity, with its settling mechanism), `CLAUDE.md` and this file's `INDEX.md`.
+
+**Not committed by Claude.** The working tree also carries the user's own uncommitted edits to
+[Stage 6's file](../plan/stages/stage-06-unified-studio.md) — the two 2026-08-19 decisions about the
+permissions boundary and about not pulling the Athena Spark amendment into Stage 5's phase-4b sitting —
+so **the commit is the user's**, and this line is what a later reader needs to know that the mixture was
+deliberate rather than accidental.
+
+### Not done
+
+- **`sts:SetContext` is half-tested.** The metadata path travelled with the RCP in place; version 4 vends
+  *data* credentials through that action and nothing has read a row yet, so verification (ii) closes at
+  pass 4's first query.
+- **Pass 2's behavioural half is still owed** (can the persona actually tag — needs the tunnel and a
+  governance-manager sign-in), **the crawlers have still never run**, and 4.3's SCP amendment is still
+  owed via battery phase 4b.
+
 ---
 
 *Log index: [docs/log/INDEX.md](INDEX.md) · Stage index: [docs/plan/stages/INDEX.md](../plan/stages/INDEX.md)*

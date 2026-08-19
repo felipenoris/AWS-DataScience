@@ -408,6 +408,44 @@ lesson can be *recognised* without opening this file; the reasoning that makes e
    [`data/README.md`](../../terraform-live/data-governance/data/README.md) §"A permission here is the
    intersection of two systems").
 
+29. **An attribute assigned to describe a thing becomes a selector the moment somebody writes a rule over
+   it — and the rule inherits every resource that wears the attribute for an unrelated reason.** Stage 5
+   pass 3 was one expression away from sharing the drop-box. The classification ontology gives
+   `classification=internal` to the drop-box database for a considered reason: arrivals are user-supplied,
+   the fail-open default says an unclassified arrival is ordinary working data rather than invisible. The
+   default consumer share was then written as `classification ∈ {public, internal}` — a *sensitivity*
+   predicate — and sensitivity is not the question a share asks. The question a share asks is **may people
+   read this**, and the drop-box's answer is no in the strongest terms the design has: it is the letterbox
+   whose whole contract is *write, never read back*. Two correct decisions, one accidental intersection.
+   **What makes this more than a slip is where it was caught**: not in review, but at the apply, by reading
+   the expression against the catalog **as actually tagged** rather than against the model. A tag ontology
+   read as prose looks like a taxonomy; read as a selector it is a set of `WHERE` clauses, and a value
+   chosen for meaning A silently qualifies for rule B. **The discriminator, before writing any grant, SCP
+   condition, ABAC rule or bucket-policy tag match:** enumerate what *currently* carries each value and ask
+   whether every one of them belongs in the result — the model will not tell you, only the inventory will.
+   **And the gate belongs on the axis that expresses the intent**: the fix was not to re-tag the drop-box
+   but to add the dimension the rule was really about (`layer`), leaving each attribute saying the one
+   thing it was chosen to say. **The near-miss also shows how not to reason about it**: the rows would not
+   in fact have leaked, because a second control (the unregistered location) blocks the read — and that is
+   exactly the argument to distrust. Lesson 5's neighbour, in reverse: an unintended *grant* is a defect
+   whether or not a later control happens to cover it, because nobody chose the coverage.
+
+30. **A tool's failure is not a property of the world — and if it gets written down as one, the record
+   carries the tool's limit forever.** Stage 5 pass 2 could not fetch AWS's Lake Formation pages: they are
+   JavaScript-rendered and the plain fetcher returned no body. The handling was right in every visible way
+   — the missing information was *not* asserted from memory, the gap was recorded, the question was
+   deferred to the stage that could measure it. But the caveat that went into `REFERENCES.md` said the
+   pages "did not return a body to an automated fetch", which reads as *these pages cannot be read*, and
+   the true statement was *this fetcher cannot read these pages*. One session later a rendering browser
+   opened all of them in a minute, and the question that had been deliberately left open — whether the
+   governance-manager persona can *grant* as well as tag — was answered by a sentence sitting in a page
+   nobody had failed to read, only failed to try. **The discriminator: before recording an unknown, name
+   the instrument that failed and ask what a different instrument would see.** An unread source is a gap in
+   *the record*, not a fact about the source, and the two get filed identically unless you separate them on
+   purpose. **The generalisation this project should keep**: the same shape sits behind an `aws` call that
+   fails on the wrong profile, a plan that "cannot express" something the API supports, and a check that
+   returns empty — each says something about the reach of the instrument first, and the world second.
+
 ---
 
 *Plan core: [GENERAL_PLAN.md](../GENERAL_PLAN.md) · Decisions: [docs/plan/decisions/INDEX.md](decisions/INDEX.md) · Stages: [docs/plan/stages/INDEX.md](stages/INDEX.md)*

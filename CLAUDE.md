@@ -233,18 +233,28 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   a measurement; `after_unknown` is the instrument — `providers schema` never marks `computed` on
   blocks). Sandbox not needed until pass 4's persona proofs (`make down ENV=sandbox` safe). Stage 4
   residuals, non-blocking: host left `running`; the user's close-out log entry still owed.
-- **PASS 2 APPLIED 2026-08-19 — `9 added`, re-plan `No changes`, `DL` all pass.** `governance.tf` — the
-  GM's own grants (`ASSOCIATE` on the 3 tag keys, `DESCRIBE` on the 3 databases + `ALL_TABLES`
-  wildcard). **Verified by `list-permissions`, not by the code: nine rows, `grant_option=NONE` on every
-  one, no `SELECT` anywhere** (by exhaustion). `DL-5` bracket re-read and holds. Register: 3 rows /
-  9 triples. **6.2 read: every `s3:` in the six persona sets is a `Deny`** — D13 holds by *absence*, not
-  exclusion. **Lesson 28** from it: LF authorizes above IAM, the halves sit in different slices, a
-  missing LF grant reads as an **empty catalog**. Verification (viii) = decision 6's map in
-  `GOVERNANCE.md` §"The grain" (TIP the only per-person surface; costs remote access; not adopted).
-  **Unasserted on purpose** — what a non-admin needs to *grant* via an LF-Tag expression (LF doc pages
-  return no body to fetch); Stage 6 settles it by measurement. Slice README is now an **index of
-  controls** (`POLICIES.md` discipline). **Owed: can the persona actually tag? — a claim about the pair,
-  needs a GM sign-in + the tunnel.**
+- **PASS 2 APPLIED 2026-08-19 — `9 added`, `DL` all pass.** `governance.tf` — the GM's own grants
+  (`ASSOCIATE` on the 3 tag keys, `DESCRIBE` on the 3 databases + `ALL_TABLES`). **Verified by
+  `list-permissions`, not the code: nine rows, `grant_option=NONE`, no `SELECT`** (by exhaustion).
+  Register 3 rows / 9 triples. **6.2: every `s3:` in the six persona sets is a `Deny`** — D13 holds by
+  *absence*. **Lesson 28.** Verification (viii) = decision 6's map in `GOVERNANCE.md` §"The grain" (TIP
+  the only per-person surface; costs remote access; not adopted). Slice README is an **index of
+  controls**. **Owed: can the persona actually tag? — needs a GM sign-in + the tunnel.**
+- **PASS 3 APPLIED 2026-08-19 — `4 added`, re-plan `No changes`, `DL` 0 FAILED.** `shares.tf`: the
+  Sandbox + Development TBAC shares. **4 `LakeFormation-V4-*` RAM shares `ACTIVE`, held by both
+  consumers, ZERO invitations → INT-11 closed**; `DL-5` bracket holds (3rd reading = verification (i)).
+  **Method change first: AWS's LF pages read fine in a *rendering* browser** — pass 2's "no body to
+  fetch" caveat retired (**Lesson 30**), and its deferred question answered: the GM **tags, does not
+  grant** (`Grant with LF-Tag expressions`; the *LF-Tag creator* clause stays Stage 6's). **Two
+  corrections to the decided form**: the grant option is **mandatory on every** cross-account grant (the
+  consumer's own DL-admin must re-grant), and the expression needed a `layer` gate or it shared the
+  **drop-box** (**Lesson 29**; the applied form is DB `layer∈{raw,curated}` → `DESCRIBE`, TABLE + `AND
+  classification∈{public,internal}` → `SELECT`). 7.1's catalog-policy prerequisite measured
+  **conditional, not applicable** (no Glue resource policy). Register 9 rows / 17 triples.
+  **`DL-7` rebuilt** — it reported one verdict for two opposite causes (Lesson 13's family); it now reads
+  each consumer's *held* shares + admin count. **Pass 4's new opening prerequisite: each consumer account
+  needs its OWN `DataLakeSettings`** (admins `[]` today → empty catalog by rule), with INT-11 and
+  Lesson 27 both applying there. `sts:SetContext` only half-tested — vending waits for pass 4's query.
 - **Stages 5-11 revised, pre-instrumented (2026-08-16/17):**
   `aws/{vpn,datalake,studio,supplychain,cicd,deploytargets,orchestration,dlp}.py` — `DL-5`/`DT-5` guard
   the LF `Parameters` (INT-11). **St.8 pass 4, St.9 passes 4-5, St.10's Staging leg wait on the vend.**
@@ -312,3 +322,6 @@ the reasoning that makes it *usable* is in the file. Recognising one is the sign
     anything else exists.**
 28. **A service with its own permission layer makes reach an *intersection* — and the two halves sit in
     different slices, so a slice never answers "what can this persona do".**
+29. **An attribute assigned to *describe* becomes a *selector* the moment a rule is written over it —
+    and inherits every resource wearing it for an unrelated reason.**
+30. **A tool's failure is not a property of the world, and gets written down as one.**

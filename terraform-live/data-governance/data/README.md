@@ -11,7 +11,7 @@ What lands here by pass:
 |---|---|
 | 1 | the `zn-lab` CMK; the five buckets with the perimeter and drop-box statements; the settings trio (admins + parameters + emptied defaults, **before any database**); registrations + the LF-Tag ontology; databases `raw`/`curated`/`dropbox`; the sample Iceberg table with its `restricted` column; the maintenance role, its LF grants, two on-demand crawlers, the compaction optimizer |
 | 2 | step 6 — the governance manager's own grants (`governance.tf`); the consumer TBAC grants are pass 3's, with the shares they ride on |
-| 3 | step 7 — the two cross-account shares + the INT-11 after-reading |
+| 3 | step 7 — the two cross-account shares (`shares.tf`) + the INT-11 after-reading |
 
 ## The first apply is two steps, and that is not a preference
 
@@ -188,11 +188,49 @@ against it; the three routes from the catalog to the rows stay closed by the per
 because re-granting is a **delegation plane** nobody has decided; decision 5 named the persona's own
 grants and no more.
 
-**Open, and deliberately not asserted anywhere in this repository:** what a non-administrator must hold
-in order to **grant data permissions** through an LF-Tag expression. The documentation pages did not
-render to an automated fetch and the question was not established (the provenance note is in
-[`docs/REFERENCES.md`](../../../docs/REFERENCES.md)). It is Stage 6's to settle **by measurement**, with
-a real governance-manager session, when the persona first has to grant rather than tag — and it is
-decision 5's named revision trigger arriving on schedule. If granting turns out to require holding the
-permission with the grant option, the separation D31 asks for lives in the **IAM** deny above, not in
-Lake Formation.
+**Answered 2026-08-19, one pass after it was posed** — the question of what a non-administrator must
+hold in order to **grant data permissions** through an LF-Tag expression. AWS: *"You need to have `Grant
+with LF-Tag expressions` permission to grant data permissions on Data Catalog resources by using the
+LF-TBAC method. The data lake administrator and the LF-Tag creator implicitly receive this permission."*
+So this persona, holding `ASSOCIATE` and `DESCRIBE` and no admin seat, **tags and does not grant** —
+which is what decision 5 intended, now established rather than assumed. **One ambiguity survives, and it
+is still Stage 6's to settle by measurement:** the same sentence extends the implicit permission to the
+*LF-Tag creator*, and this persona's IAM half carries `lakeformation:CreateLFTag` — whether that makes
+it a "creator" for tags it did **not** create is stated nowhere. Only a real governance-manager session
+answers it (the pages, and how they were read, are in
+[`docs/REFERENCES.md`](../../../docs/REFERENCES.md)).
+
+## `shares.tf` — the cross-account shares (pass 3, step 7)
+
+Four grants: two consumer accounts × two resource types. The principal is an **account**, resolved from
+the aliased providers so no account id enters a tracked file. Production is absent by design — its share
+carries the governed write and arrives with Stage 9.
+
+| Grant | Expression | Permission | Why that shape |
+|---|---|---|---|
+| `share_databases` (×2) | `layer ∈ {raw, curated}` | `DESCRIBE` **+ grant option** | The container, metadata only. It may **not** carry the classification gate: `curated`'s database deliberately has no `classification`, so an expression naming it would not match — and a database that does not match cannot be resource-linked, which is the whole consumer side |
+| `share_tables` (×2) | `layer ∈ {raw, curated}` **AND** `classification ∈ {public, internal}` | `SELECT`, `DESCRIBE` **+ grant option** | The rows. Two `expression` blocks in one grant is an **AND**; two separate grants would be an OR and would share the drop-box back |
+
+**The grant option is not a style choice.** A cross-account grant lands on the *account*; nothing inside
+it can use the share until that account's own data lake administrator passes it on, and an administrator
+can only pass on what it received with the option — AWS states it as an imperative. Omitting it fails
+mutely: the apply succeeds, the RAM share appears, the resource shows in the consumer catalog, and every
+grant to a person fails afterwards. It is **not** a delegation of the share: a resource shared *with* an
+account may be granted only to principals *in* that account, never onward.
+
+**Why `layer` is in both expressions** — the drop-box database carries `classification=internal`
+(fail-open, for arrivals), so a classification-only grant matched the letterbox. Nothing would have
+leaked, because the drop-box bucket is unregistered and no consumer holds `s3:Get` on it, but the
+metadata would have travelled. The full three-control account is in
+[`docs/GOVERNANCE.md`](../../../docs/GOVERNANCE.md) §Drop-box.
+
+**The value lists are written literally, and that is the opposite of `governance.tf` on purpose.** There
+the lists are read from the tag resources so an ontology value cannot go missing; here they are a
+**subset**, and a new `layer` or `classification` value joining every consumer share by inheritance is
+the widening nobody decided.
+
+**No Data Catalog resource policy is written by this slice.** The 7.1 prerequisite is conditional: the
+`glue:ShareResource` statement is required of an account already sharing through an AWS Glue Data Catalog
+resource policy (the version 1/2 path). Measured 2026-08-19 — `glue:GetResourcePolicy` →
+`EntityNotFoundException` — and the grants then produced four **ACTIVE** RAM shares, held by both
+consumers with no invitation, which is the falsifier not firing.
