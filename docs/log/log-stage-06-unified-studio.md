@@ -156,3 +156,76 @@ decisions 1 and 3, the Status row), [`open-questions.md`](../plan/open-questions
 [`integrations.md`](../plan/integrations.md) INT-16, both Interactive `egress/main.tf` files, `CLAUDE.md`,
 and this file. **`make check` green throughout; `make check-docs` red only on its pre-existing pre-Stage-2
 prose and the `CLAUDE.md` size budget — nothing new.** Nothing committed by Claude.
+
+---
+
+## 2026-08-19 — Decisions 4 and 5 closed before the stage: the blueprint allow-list, and the re-read that inverted a recommendation
+
+*Provenance: **this entry is Claude's**, written on the user's request in the same sitting. **The
+decisions are the user's**, taken in chat over context Claude assembled; **no AWS call of any kind was
+made — not a write, not a read.** The one piece of evidence is a fresh fetch of the *Supported
+blueprints* admin-guide page ([`docs/REFERENCES.md`](../REFERENCES.md) carries the annotated entry);
+everything else is repository edits. The same ageing caveat as the previous entry applies: measured here
+means measured against a document.*
+
+**Nothing was built, applied, attached or probed.**
+
+### Why the sitting happened
+
+Preparing decision 5's context, the *Supported blueprints* page was re-read — this time for its
+per-blueprint **Resources created** column, which the 2026-08-16 pass had used only for the names. Two
+facts came out of that column; the first is a correction.
+
+### The finding that decided decision 4
+
+The page says `LakehouseCatalog` *"provisions a new catalog in the Amazon SageMaker Lakehouse that is
+backed by Amazon Redshift Managed Storage"* — while the Glue/Athena project surface (Glue databases,
+Lake Formation permissions, an Athena workgroup, the shape that lands on Stage 5's substrate) is
+**`LakeHouseDatabase`, API name `DataLake`**. The plan had the two inverted: D26 wrote "Lakehouse
+Catalog in its Glue/Athena form" and decision 4's recommendation was to start with `LakehouseCatalog`
+alone. Lesson 16's shape — the name said one thing, the field list another; nobody had read the second
+column until a user question ("what is the difference between the two?") forced it.
+
+**Decision 4, the user's: `DataLake` alone. `LakehouseCatalog` is disabled** — filed in decision 5's
+category 3, beside its storage sibling `RedshiftServerless`, whose D12 argument (a second, larger query
+bill on top of Athena's) reaches it.
+
+The second fact, recorded in passing: the `Workflows` blueprint *provides the CloudFormation template*
+for the MWAA environment — the fee-bearing environment is born when a **project first uses** the
+blueprint, not when it is enabled. Three states, and the billing starts at the third.
+
+### Decision 5, the user's: three categories, every blueprint owned
+
+Taken as an **allow-list, not a deny-list** — the sitting's starting observation was that the
+recommendation named three exclusions and left `EMRonEC2`, `PartnerApps` and `Quicksight` owned by
+nobody. The user's distribution:
+
+- **Category 1 — enabled by default** (the step 1.4 map, and `US-3`'s allow-list): `Tooling`,
+  `DataLake`, `EMRServerless` — **following reopened decision 1's outcome** — and
+  `AmazonBedrockGenerativeAI`, all per-use. Bedrock's `PRICING.md` row is **owed before the 1.4 apply**
+  (Lesson 6), and its runtime endpoints join 4.2's measurement.
+- **Category 2 — on demand**: authorized, outside the map until a **named trigger** fires, then commit +
+  apply (price measured at that moment where the table lacks one). `Workflows` OnDemand — trigger:
+  **D28's last-rung fallback**, INT-14's chain falling through at Stage 10, and then `[E]`;
+  `MLExperiments` — trigger: experiment tracking concretely needed, the MLflow tracking server being a
+  standing resource with no idle shutdown.
+- **Category 3 — disabled**: enabling **amends decision 5**, price first. `EMRonEC2`, `PartnerApps`,
+  `Quicksight`, and `LakehouseCatalog` per decision 4. `RedshiftServerless` stays a **never** — enabling
+  it reopens D26/D12, not this decision.
+
+The mechanism, stated once in [`docs/SMUS.md`](../SMUS.md) (created this sitting as the descriptive
+reference, with a `CLAUDE.md` routing row so it is re-read whenever the SageMaker surface changes): the
+`US-3` allow-list holds category 1; a category-2 blueprint joins the constant **in the same commit**
+that adds it to the step 1.4 map (Lesson 14). No preventive form exists — no IAM condition key names
+*which* blueprint a call enables — so enforcement is authoring plus the reading (Lesson 22), on top of
+the 1c fence around who can call `datazone` at all.
+
+### Files touched in this sitting
+
+[`stage-06-unified-studio.md`](../plan/stages/stage-06-unified-studio.md) (step 1.4's enabled set
+rewritten against the categories; decision rows 4 and 5), [`docs/SMUS.md`](../SMUS.md) (created, then
+corrected for the inversion), [`aws/studio.py`](../../aws/studio.py) (`US-3` tightened from
+Redshift-absence to the category-1 allow-list, `AmazonBedrock*` prefix rule for the seven
+sub-blueprints; `ruff` clean), [`docs/REFERENCES.md`](../REFERENCES.md) (the *Supported blueprints*
+entry annotated with the re-read), `CLAUDE.md` (the routing row and the position bullet), this file,
+and [`INDEX.md`](INDEX.md). `./scripts/check-identifiers.py` OK. Nothing committed by Claude.

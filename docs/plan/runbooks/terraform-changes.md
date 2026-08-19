@@ -214,6 +214,14 @@ what it would do. Split, applied, read: `DbDefaults: []`, and then the consequen
 database. **What the good reading did not do is retire the split** ([Lesson 27](../lessons.md)): that
 omission clears is a fact about one provider version, obtained by looking, so the read-back stays.
 
+**Where this recipe is already scheduled to run again** — it is a live procedure, not a war story. The
+same resource lands in **four more accounts**, each creating its own catalog objects in the same slice:
+Sandbox and Development at [Stage 5](../stages/stage-05-data-foundation.md) pass 4 (its step 8), then
+Production and Staging at [Stage 9](../stages/stage-09-deployment-targets.md) (its 1.3 and 4.1). The
+precondition table above is satisfied identically in all four, so the split is planned rather than
+rediscovered — and Staging is the one where a miss would hide longest, since a mirror database that
+defers to IAM still *looks* exactly like the lake's.
+
 ## 6. Cross-account changes
 
 When one change spans accounts, the arrows decide the apply order: a **requester before its

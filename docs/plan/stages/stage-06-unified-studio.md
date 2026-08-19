@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | **Status** | not started — **revised 2026-08-16 into the pass/verification format, against the official documentation and the `aws-ia` module re-read the same day.** Corrections folded in: the **Proves** row loses INT-09 and INT-13 (both need GitLab, which is Stage 7 — the old row contradicted the old body) and gains INT-02's consumer half; the two `sagemaker/` prerequisite slices, until now only *named* by `docs/plan/conventions.md` §6, get an owning step (2.1); steps 4-5 become amendments to Stage 3's parameterised `egress/` (its step 10) rather than fresh builds; the teardown debt is paid (the `layers.py` rows and the body Stage 2 step 8.6 left owing in `scripts/down-studio-apps.py`); and six doc facts replace beliefs — **`VpcOnly` is the default** (the control is a non-editable parameter, not a switch to find), the blueprint names (there is no "ML experience"; the per-project SageMaker AI domain comes from **Tooling**), disabling Athena **Spark** without killing Athena SQL is an SCP on `athena:StartSession`, idle shutdown is a Tooling-blueprint parameter with an admin-enforceable ceiling, the account association has **no public API**, and the required-endpoint list gained `datazone`. **Revised 2026-08-17: the user withdrew the NFS requirement from `objectives.md` (D24 withdrawn) — step 7 is removed, and pass 5 is steps 8-9.** **Revised again 2026-08-19, after re-reading the network-isolation page and the 2026-04 Athena Spark PrivateLink release ahead of decision 3** (sources in `docs/REFERENCES.md`): 1.6 rewritten — the three controls re-characterised (the Tooling flag is **non-retroactive** as well as blunt; the doc's third control is *grant*-shaped on blueprint-authored policies, so 2.1's boundary is a **deviation to record**), a fourth free network-layer lever named, and the announcement's scope written down so the question is not re-opened by its title; 1.7 gains the **third** condition the earlier reading missed (`aws:userid` `*:user-*` — the on-behalf carve-out is already in AWS's shape); 4.2 gains the **full** required-endpoint table and the `us-east-1`-only Q endpoint that design B cannot reach; **decision 1 reopened** on an endpoint-count cost the compute comparison never saw |
-| **Prerequisites** | Stage 3 (the per-role endpoint lists and the `egress_mode` switch of its step 10), Stage 4 (the tunnel; INT-16's portal half deliberately open), Stage 5 (the lake, the two shares proven by the pandas pair, **decision 6 — the grain — already taken**, and the 9.3 extension point in the derived-zone key policy). **Pulled forward and applied before this stage:** `production/registry/` (Stage 7 step 5 — under design B it is how packages arrive) and `production/pki/` (D36 — the `dev-env` image must be *built* with the CA root in it, INT-19) |
+| **Prerequisites** | Stage 3 (the per-role endpoint lists and the `egress_mode` switch of its step 10), Stage 4 (the tunnel; INT-16's portal half deliberately open), Stage 5 (the lake, the two shares proven by the pandas pair, **decision 6 — the grain — already taken**, and the 9.3 extension point in the derived-zone key policy). **Stage 5 pass 4 is a hard predecessor and was not one until 2026-08-19**: each member account needs its own `DataLakeSettings` — a data lake administrator, or the share stays invisible there, and the create-defaults cleared *before* any blueprint creates a catalog object in that account (1.4's callout). **Pulled forward and applied before this stage:** `production/registry/` (Stage 7 step 5 — under design B it is how packages arrive) and `production/pki/` (D36 — the `dev-env` image must be *built* with the CA root in it, INT-19) |
 | **Consumes** | [D5](../decisions/D05-sagemaker-egress.md), [D12](../decisions/D12-budget-ceiling.md), [D13](../decisions/D13-lake-formation-enforcement.md), [D14](../decisions/D14-supply-chain-account.md), [D21](../decisions/D21-development-account.md), [D26](../decisions/D26-unified-studio.md), [D28](../decisions/D28-workflow-contract.md), [D35](../decisions/D35-sandbox-cardinality.md), [D36](../decisions/D36-internal-pki.md) |
 | **Proves** | [INT-01](../integrations.md), [INT-02](../integrations.md) (the consumer half; the domain policy is Stage 7 step 5's, applied early), [INT-12](../integrations.md), [INT-15](../integrations.md), [INT-16](../integrations.md) (the portal half, provisional since Stage 4), [INT-17](../integrations.md). **Deferred to Stage 7 with the surface that needs it:** INT-09 (the `git clone` inside the `engineering` project) and INT-13 (CodeConnections) — GitLab does not exist before Stage 7 step 1 |
 
@@ -161,13 +161,44 @@ shape). **Staging and Production are never associated** (D28). Record every fiel
 applies as that account's profile: `aws_datazone_environment_blueprint_configuration` (the same resource
 the module uses) per member account, naming the provisioning role, the manage-access role and the
 `regional_parameters` (`VpcId`, `Subnets`, `AZs`) **from the `sagemaker/` slice outputs of 2.1 — read
-through `terraform_remote_state`, never pasted**. Enabled set and no others: **Tooling** (mandatory — it is
-what provisions each project's SageMaker AI domain, roles and security groups), **LakehouseCatalog**
-(and/or `LakeHouseDatabase`, API name `DataLake` — decision 4), and **EMRServerless** (decision 1, the
-VPC-capable Spark runtime). **Never `RedshiftServerless`** (D26/D12). `AmazonBedrockGenerativeAI`,
-`Workflows` and `MLExperiments` stay off (decision 5 — Workflows is Stage 10's surface, D7/D28).
+through `terraform_remote_state`, never pasted**. Enabled set and no others — **decision 5's category 1
+(2026-08-19; [`docs/SMUS.md`](../../SMUS.md) carries the full table)**: **Tooling** (mandatory — it is
+what provisions each project's SageMaker AI domain, roles and security groups), **`LakeHouseDatabase`**
+(API name **`DataLake`** — decision 4: the Glue/Athena form; **not** `LakehouseCatalog`, which the
+2026-08-19 re-read found RMS-backed), **EMRServerless** (decision 1's current recommendation — that
+decision is reopened on the endpoint count, and this entry follows its outcome), and
+**AmazonBedrockGenerativeAI** (per-use, token-billed — **its `PRICING.md` row is owed before this
+apply**, and its runtime endpoints join 4.2's measurement). **Never `RedshiftServerless`, and now
+`LakehouseCatalog` beside it** (both provision on Redshift-managed storage — D26/D12). Category 2 —
+`Workflows` OnDemand, `MLExperiments` — enters only by its named trigger; category 3 — `EMRonEC2`,
+`PartnerApps`, `Quicksight` — only by amending decision 5.
 **The console recommends ≥ 3 subnets in 3 AZs; D9 built 2 — verification (iii)**, answered before anything
 is layered on the answer.
+
+> **`DataLake` LANDS ON A LAKE FORMATION SURFACE STAGE 5 ALREADY OWNS, AND THE TWO MEET IN ONE
+> RESOURCE — written down 2026-08-19, from what Stage 5 passes 1 and 3 measured.** Decision 4 is what
+> makes this precise rather than general: the enabled blueprint is the **Glue/Athena** form, whose whole
+> output is per-project Glue databases and Lake Formation permissions in the member account — so it does
+> not merely *touch* Stage 5's surface, it writes on it. (`LakehouseCatalog` is disabled and provisions
+> on Redshift-managed storage, so none of this reaches it.) Two collisions to settle before this step
+> runs, both in the *member* accounts:
+>
+> - **ordering.** The blueprint provisions catalog objects (databases, and the environment's own Glue
+>   resources) in the account it targets. Lake Formation's `Create*DefaultPermissions` act at
+>   **creation time**, so an object created while an account still carries the `ALL`-to-
+>   `IAM_ALLOWED_PRINCIPALS` default is born deferring to plain IAM, permanently and invisibly. Stage 5
+>   **pass 4** is what clears those defaults in Sandbox and Development — so pass 4 is a hard predecessor
+>   of this step, not merely of the lake read. Confirm by reading, not by ordering alone (`DL-6` applied
+>   to each member account);
+> - **`DataLakeAdmins` is a shared surface, and the resource that writes it replaces the whole
+>   structure.** `aws_lakeformation_data_lake_settings` overwrites `admins`, `parameters` and both
+>   default blocks together (INT-11's failure mode — the reason `DL-5` exists). Stage 5 pass 4 writes
+>   that resource in `sandbox/data/` and `development/data/`. **If this stage's manage-access role has to
+>   be a data lake administrator for subscription fulfilment to work, it must be added to *that* list, in
+>   *that* slice** — never through a second settings resource and never by hand, or the next apply of
+>   either one silently removes the other's principal. **Whether it must is verification (xiv)**: the
+>   blueprint configuration names a manage-access role, and what Lake Formation requires of that role is
+>   read at 1.4 rather than assumed here.
 
 **1.5 — Create the two project profiles, from the domain account** (only domain admins there can —
 documented): **`experimentation`** provisioning into Sandbox, **`engineering`** into Development. Their
@@ -550,11 +581,31 @@ decision-maker.
    History Server) while Athena **SQL** rides the required `athena` API endpoint — same name family, two
    products, no intersection. The negative probe at 1.6 is what keeps that true.
 4. **Which Lakehouse blueprint(s) the catalog/SQL surface needs** (1.4) — `LakehouseCatalog`,
-   `LakeHouseDatabase` (`DataLake`), or both. Recommended: start with **LakehouseCatalog** alone and add
-   the other only when a concrete surface asks for it — never `RedshiftServerless`.
-5. **The blueprints deliberately left off** (1.4) — recommended: `Workflows` waits for Stage 10 (D7/D28:
-   one surface), `AmazonBedrockGenerativeAI` and `MLExperiments` wait until the AI-models objective is
-   exercised, priced first (Lesson 6; token- and on-demand-billed).
+   `LakeHouseDatabase` (`DataLake`), or both. The original recommendation — start with `LakehouseCatalog`
+   alone — **had the two inverted, which the 2026-08-19 re-read of the *Supported blueprints* page
+   caught**: `LakehouseCatalog` *"provisions a new catalog in the SageMaker Lakehouse backed by Amazon
+   Redshift Managed Storage"*, while the Glue/Athena form — per-project Glue databases, Lake Formation
+   permissions, an Athena workgroup, the shape that lands on Stage 5's substrate — is
+   **`LakeHouseDatabase`/`DataLake`** (Lesson 16: the name said one thing, the field list another; D26's
+   "Lakehouse Catalog in its Glue/Athena form" carried the same misreading).
+   **DECIDED 2026-08-19, by the user: `DataLake` alone; `LakehouseCatalog` is disabled** (decision 5
+   category 3 — the Redshift family, beside `RedshiftServerless`, whose D12 argument reaches it).
+5. **The blueprints deliberately left off** (1.4) — **DECIDED 2026-08-19, by the user, as three
+   categories rather than a deny-list, every blueprint owned** ([`docs/SMUS.md`](../../SMUS.md) is the
+   reference table; the mechanism: `US-3`'s allow-list holds category 1, and a category-2 blueprint joins
+   it in the same commit that enables it, Lesson 14):
+   - **Category 1, enabled by default**: `Tooling`, `LakeHouseDatabase` (`DataLake`), `EMRServerless`
+     (following decision 1's outcome), `AmazonBedrockGenerativeAI` — all per-use; Bedrock's `PRICING.md`
+     row owed before the 1.4 apply (Lesson 6).
+   - **Category 2, on demand — authorized, named trigger, then commit + apply**: `Workflows` OnDemand
+     (trigger: **D28's last-rung fallback** — INT-14's chain falling through at Stage 10; then `[E]`,
+     torn down between uses. The *serverless* Workflows surface is separate — Stage 10 verification (i));
+     `MLExperiments` (trigger: experiment tracking concretely needed; the MLflow tracking-server price
+     measured first — it is a standing resource).
+   - **Category 3, disabled — enabling amends this decision, price measured first**: `EMRonEC2`,
+     `PartnerApps`, `Quicksight` (owned for the first time — until this decision they were off by
+     omission), and `LakehouseCatalog` (decision 4). `RedshiftServerless` stays a **never**: enabling it
+     reopens D26/D12, not this decision.
 
 ## Verifications to answer while executing
 
@@ -575,6 +626,9 @@ Record every answer, including the ones that come out fine.
 | xi | Does `down-studio-apps.py` delete every running app, and does the lifecycle diff hold? | 8.2, 8.4 |
 | xii | Does the governance manager's `lakeformation:CreateLFTag` make it an **"LF-Tag creator"** — and therefore able to **grant data** it is itself denied from reading (`DenyReadingTheRows`)? **Open question 18**, raised at Stage 5 pass 3: AWS gives `Grant with LF-Tag expressions` implicitly to "the data lake administrator and the LF-Tag creator", and never says whether a creator is *a principal able to create tags* or *the creator of the tag in question* — these tags were created by the infrastructure user, through Terraform. **Settled by attempting the grant in a real governance-manager session, never by more reading** — the pages that would answer it are the ones already read | 1, 2 |
 | xiii | **Can the persona in fact tag a dataset?** — Stage 5 pass 2's owed behavioural proof, listed here because it needs the same session as (xii): a governance-manager sign-in **with the tunnel up** (the set carries `DenyControlPlaneOffVpn`). It is a claim about the **pair** — the IAM statement and the Lake Formation `ASSOCIATE` grant — and neither slice answers it alone (Lesson 28) | 1, 2 |
+| xiv | **Does the blueprint's manage-access role have to be a Lake Formation data lake administrator in each member account** — and if it does, is it added to `sandbox/data/` and `development/data/`'s **own** `aws_lakeformation_data_lake_settings` rather than to a second one? That resource replaces `admins`, `parameters` and both default blocks wholesale (INT-11), so two writers of it in one account is a principal that disappears on the next apply of the other | 1.4 |
+| xv | **Does a database or table the blueprint creates in a member account come out with no `IAMAllowedPrincipals` grant** — i.e. did Stage 5 pass 4's default-clearing land *before* this stage created anything? The reading is per catalog object, at creation, and there is no second chance: the defaults act at creation time and clearing them later does not reach what already exists (Lesson 27) | 1.4, 3 |
+| xvi | **When the portal fulfils an approved subscription, what shape is the Lake Formation grant it writes** — named-resource or an LF-Tag expression? If DataZone ever writes expressions, Lesson 29 applies to a grantor this repository does not author: an expression on `classification` alone reaches `layer=dropbox`, and the near-miss Stage 5 caught by reading its own plan would arrive from a service instead | 1, 7.4 (Stage 5) |
 
 ## Risks
 

@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Status** | not started — **revised 2026-08-16 into the pass/verification format, against the official AWS documentation read the same day**; pre-instrumented by `./aws/deploytargets.py`. Corrections folded in: the old step 7 dissolved into a pass-0 reading — **the deploy roles, the deploy runner, the misuse alarms and INT-07's image half are Stage 8's** (its pass 1 and step 3.0), not this stage's to rebuild; the "KMS grants so Staging can decrypt what it pulls from the Production ECR" were **deleted against the documentation** — ECR decrypts through the grants it holds on the repository key, the puller needs no `kms:Decrypt`, and what cross-account model *deployment* actually needs is three resource policies (model package group, ECR repository, artifact S3 + KMS), whose Staging principals join **at the vend**; the Athena "per-principal result prefix" was unbuildable as written — an enforced workgroup has **one** result location (the override is documented), so results land in a lifecycled, CMK-protected results zone and within-persona visibility is recorded as a limit rather than papered over; the LF grant is written as the documented **two steps** (account-level grant *with grant option* from the grantor, local regrant to the job role by Production's LF admin); `DataScientistStagingAccess` was read as already built — **it carries no Athena and denies every write** (Stage 2), so step 5's Staging half is a reading, not a build; and the job-execution role name became a **contract** with Stage 5's drop-box statements |
+| **Status** | not started — **revised 2026-08-16 into the pass/verification format, against the official AWS documentation read the same day**; pre-instrumented by `./aws/deploytargets.py`. Corrections folded in: the old step 7 dissolved into a pass-0 reading — **the deploy roles, the deploy runner, the misuse alarms and INT-07's image half are Stage 8's** (its pass 1 and step 3.0), not this stage's to rebuild; the "KMS grants so Staging can decrypt what it pulls from the Production ECR" were **deleted against the documentation** — ECR decrypts through the grants it holds on the repository key, the puller needs no `kms:Decrypt`, and what cross-account model *deployment* actually needs is three resource policies (model package group, ECR repository, artifact S3 + KMS), whose Staging principals join **at the vend**; the Athena "per-principal result prefix" was unbuildable as written — an enforced workgroup has **one** result location (the override is documented), so results land in a lifecycled, CMK-protected results zone and within-persona visibility is recorded as a limit rather than papered over; the LF grant is written as the documented **two steps** (account-level grant *with grant option* from the grantor, local regrant to the job role by Production's LF admin); `DataScientistStagingAccess` was read as already built — **it carries no Athena and denies every write** (Stage 2), so step 5's Staging half is a reading, not a build; and the job-execution role name became a **contract** with Stage 5's drop-box statements. **Revised again 2026-08-19, against what Stage 5 passes 1-3 actually measured** — three corrections, all in the sharing machinery this stage repeats for the third and fourth accounts: the `DataLakeSettings` apply is **two steps, not one** (the create-defaults cannot be expressed empty and act at creation time — Lesson 27/Recipe D, and it now binds `production/data/` *and* `staging/data/`), **2.2's consumer-side reading was expecting the wrong thing** (a receiving account with no data lake administrator shows an empty catalog while holding the share — Production has none until 1.3, a pass later), and the **grant option stopped being Production's special case** while the `layer` gate became mandatory on any TBAC expression written here (Lesson 29) |
 | **Prerequisites** | Stage 3 — `production/foundation/` (VPC, the `[P]` gateway endpoint, KMS). Stage 5 — the lake, the LF settings under `DL-5`'s guard, the drop-box statements written against this stage's role name. **Stage 8 pass 1** — step 3's resource policies name `awsds-deploy-prod` and `awsds-deploy-staging`, and a resource policy naming a principal that does not exist fails at put time; the full chain only for pass 5's promotion. **The `Staging` vend gates passes 4-5 alone** (quota ticket open): passes 0-3 run without it |
 | **Consumes** | [D13](../decisions/D13-lake-formation-enforcement.md), [D14](../decisions/D14-supply-chain-account.md), [D17](../decisions/D17-interactive-vs-runtime.md), [D18](../decisions/D18-data-scientist-access.md), [D20](../decisions/D20-staging-account.md), [D22](../decisions/D22-data-governance-account.md), [D25](../decisions/D25-drop-box-consumer.md), [D28](../decisions/D28-workflow-contract.md), [D31](../decisions/D31-approver-read.md) |
 | **Proves** | [INT-03](../integrations.md) **the write share** — the two read shares are Stage 5's; [INT-04](../integrations.md); [INT-05](../integrations.md) (the Production and laptop branches); [INT-06](../integrations.md); [INT-07](../integrations.md) **in part** — the model-registry read half, at the vend (the image half is Stage 8 step 3.2's); [INT-10](../integrations.md) **the pickup half** — the writer and maintenance halves are Stage 5's |
@@ -96,6 +96,13 @@ Pass 1 precedes pass 2 because the grantor's regrant target and Stage 5's drop-b
 the job role; pass 3 cannot precede pass 2 (a resource link to a share that does not exist resolves
 nothing — Stage 5's rule, repeated for the third consumer). Pass 5 waits only for the vend.
 
+**One consequence of that order, made explicit 2026-08-19 rather than met at the keyboard:** Production
+becomes a Lake Formation account only at **pass 3** (1.3 names its first data lake administrator), so
+**pass 2's post-grant reading is a RAM reading and not a catalog one** — the share is *held* before it is
+*visible*, and the gap between the two is a pass wide. 2.2's callout carries the discriminator. Moving
+1.3's settings into pass 1 would close the gap and is deliberately not done: it would split one slice
+across two applies to buy nothing except an earlier confirmation.
+
 ---
 
 ## To execute
@@ -130,6 +137,20 @@ structure, in every account that has one.
   step 5.2's kill, repeated here — and **`parameters` carried explicitly from a read**, 1.5); **resource
   links** to the shared `raw` and `curated` databases; a local Glue database `app_outputs` for what
   applications write to 1.1. The **regrants** are 2.3's — they need the share first.
+
+  > **THIS SLICE APPLIES IN TWO STEPS, AND THE PLAN CANNOT TELL YOU WHY — measured in Data Governance
+  > on 2026-08-18 (Stage 5 pass 1) and inherited here unchanged.** Both `create_*_default_permissions`
+  > blocks are **Computed**: omitting them plans as `after_unknown` and an explicitly empty list is not
+  > expressible, so whether omission *clears* them or merely *leaves them alone* is a provider property
+  > no plan states — while the difference is permanent, because those defaults act **at creation time**.
+  > A resource link and `app_outputs` are both catalog objects created *in this apply*; if the defaults
+  > still stand when they are created, they are born deferring to IAM and clearing the settings
+  > afterwards does not reach them. **So: apply the settings alone under `-target`, read the account
+  > back (`DT-5`, and `DL-6`'s reading applied to this account), revoke `IAMAllowedPrincipals` if it is
+  > still there, and only then apply the rest.** Lesson 27; the procedure is **Recipe D** in
+  > [`docs/plan/runbooks/terraform-changes.md`](../runbooks/terraform-changes.md), which exists because
+  > of this exact case. **The same applies to `staging/data/` (4.1)** — to every account that gains this
+  > resource, never just the one in front of you.
 - **1.4 — [Claude] Write the machinery rows**: `backend.py`/`layers.py` gain `production/data/` and
   `production/sagemaker/` (both `[P]`, outside every `make up`/`down` path), and the slice reads the
   gateway-endpoint ID through `terraform_remote_state` from `production/foundation/` — never a pasted ID
@@ -158,13 +179,36 @@ without ever touching Data Governance again.
   optional** — an Iceberg commit rewrites table metadata, so a write without it fails at the commit, not
   at the first row), granted to the **Production account** with grant option, from the same authored
   share map Stage 5 built. Read side unchanged: `DESCRIBE`/`SELECT` on `raw` too, if the pickup curates
-  from it.
+  from it. **Two shapes this inherits from Stage 5 pass 3, both found at that apply:**
+  - **the grant option is not this stage's peculiarity.** Every cross-account grant carries it — the
+    receiving account's own administrator can only pass on what it received with the option — so 2.3's
+    regrant is the ordinary second half of *any* share here, and what stays particular to Production is
+    the governed **write** in the permission list, not the option (`docs/GOVERNANCE.md` §Grants);
+  - **if these are written as TBAC expressions rather than named resources, the `layer` gate is
+    mandatory** (Lesson 29). Stage 5's decided form was `classification ∈ {public, internal}` alone and
+    it matched the **drop-box**, whose entire contract is write-never-read-back. The write grant is more
+    dangerous in the same direction — a `layer`-less write expression would reach whatever else ever
+    carries a matching classification. **Recommended here: named-resource on `curated`**, which is what
+    the text above already describes and what decision 5 reserves for enumerated exceptions — a
+    single-database, single-account write is exactly that, and it is recorded in the register as one.
 - **2.2 — [Claude⚡] Apply as `awsds-infra-data`, inside `DL-5`'s bracket**: read
   `DataLakeSettings.Parameters` before and after (Stage 5 step 5.4's three-reading discipline — this is
   the first `data-governance/data/` apply since the lake was built, and the reset it can cause is
   silent). Then, from Production with a **fresh** session (Lesson 24 — the four-hour CLI cache serves
-  stale successes): the shared databases visible, **no pending RAM invitation** (`DL-7`'s shape; a
-  pending row is INT-11's fallback tax).
+  stale successes): **Production's RAM holds the new shares**, and **no pending invitation** (`DL-7`'s
+  shape; a pending row is INT-11's fallback tax).
+
+  > **WHAT THIS READING MUST *NOT* EXPECT, corrected 2026-08-19 against Stage 5 pass 3's measurement:
+  > the shared databases will NOT be visible here, and that is the correct state rather than a failed
+  > share.** A receiving account needs **at least one data lake administrator** before a shared resource
+  > appears in its catalog at all — and Production has none until **1.3**, which is pass 3, one pass
+  > *after* this one. Both Sandbox and Development read exactly this way on 2026-08-19: RAM holding two
+  > `ACTIVE` shares each, `glue:GetDatabases` and `list-lf-tags` returning nothing. **The discriminator
+  > is therefore the RAM side, not the catalog side** — a share the consumer's RAM does not hold is the
+  > real INT-11 failure, an empty catalog before 1.3 is not. `DL-7` was rebuilt on 2026-08-19 to report
+  > the two branches separately (it used to return one verdict for both — Lesson 13's family), and
+  > `DT-5`'s twin reading inherits the distinction. The catalog-side confirmation belongs at **2.3**,
+  > after 1.3 has made `awsds-infra-prod` an admin.
 - **2.3 — [Claude⚡] Regrant locally and finish `production/data/`**: as `awsds-infra-prod` (an LF admin
   since 1.3), `aws_lakeformation_permissions` granting the job role `DESCRIBE` on the resource links and
   `SELECT, INSERT, DELETE, ALTER, DESCRIBE` on the shared tables through them.
@@ -238,7 +282,10 @@ behind the approval gate.
   the mirror recreates the ontology) — **instantiated from the same versioned schema source as the
   lake's tables** (decision 3; two hand-typed copies drift, and the drift is the false test failure this
   account exists to prevent); content buckets `awsds-staging-data` under a Staging CMK; the LF settings
-  under 1.3's discipline (parameters carried, defaults killed). **No resource link to Data Governance
+  under 1.3's discipline (parameters carried, defaults killed) — **including its two-step apply**, and
+  this is the account where getting it wrong is least visible: the mirror's whole point is that its
+  databases look like the lake's, so a mirror database born deferring to IAM would pass every shape
+  comparison `DT-8` makes while enforcing nothing. **No resource link to Data Governance
   anywhere** — its absence is a control, and `DT-8` fails if one appears.
 - **4.2 — [Claude] Write the workgroup `awsds-staging-athena`**: enforced, results local, scan limit —
   **for the integration tests and the deployed application, not for people**:
@@ -426,7 +473,7 @@ Record every answer, including the ones that come out fine.
 | # | Question | Step |
 |---|---|---|
 | i | Do the parameter readings bracket every LF-settings apply unchanged — Data Governance (again), Production, Staging (`DT-5`, `DL-5`'s discipline)? | 1.5, 2.2, 4.5 |
-| ii | Does the write share arrive with a **fresh** session and no pending RAM invitation — INT-11's org path holding for the third consumer? | 2.2 |
+| ii | Does the write share arrive with a **fresh** session and no pending RAM invitation — INT-11's org path holding for the third consumer? **Answered on the RAM side at 2.2 and on the catalog side at 2.3**, because Production has no data lake administrator in between (2.2's callout) | 2.2, 2.3 |
 | iii | Does the write pair hold — the LF write succeeds **and** the direct `PutObject` is denied on the identity side (D13)? | 2.4 |
 | iv | Does the pickup read, curate and delete — and does the drop-box KMS grant reach the exact 3.1 role name (the Stage 5 contract)? | 2.5 |
 | v | Is the registry gate real — Development reads status only, approval lands only under `awsds-deploy-prod` (INT-04)? | 3.4 |
@@ -438,12 +485,24 @@ Record every answer, including the ones that come out fine.
 | xi | Is the escape hatch closed at rest, open only in the window, alarmed on every assumption — and does a `CreateSpace` under it die on the OU policy? | 6.3 |
 | xii | Does the Staging role read an approved model version (INT-07's registry half, at the vend)? | 4.6 |
 | xiii | Does the end-to-end promotion pass against the real catalogs — and does a schema drift planted in the mirror fail the integration tests, not the deploy? | 8.5 |
+| xiv | In **each** of the two accounts this stage gives a `DataLakeSettings` (Production, then Staging): do `CreateDatabaseDefaultPermissions` and `CreateTableDefaultPermissions` read `[]` **before** the slice's first catalog object exists, and does no database in that account carry an `IAMAllowedPrincipals` grant afterwards? — the reading the two-step exists to produce, and the only moment it can be taken | 1.3, 1.5, 4.1 |
 
 ## Risks
 
 - **The silent LF-settings reset now has three instances, not one** — every account with a
   `DataLakeSettings` resource can zero its own `Parameters` on any apply. `DT-5` extends `DL-5`'s
-  reading to all three; run it after every apply, not at stage end.
+  reading to all three; run it after every apply, not at stage end. **And that resource carries a
+  second, unrelated hazard on the same apply** (measured 2026-08-18, Stage 5 pass 1): the two
+  `Create*DefaultPermissions` act at **creation time** and cannot be expressed empty in a plan, so a
+  catalog object created in the same apply as the settings can be born deferring to IAM — permanently,
+  and invisibly afterwards. Two hazards, one resource, opposite failure modes: one is *overwritten
+  later*, the other is *not applied early enough*. Both are answered by the same two-step (1.3's
+  callout, Recipe D).
+- **"The share did not arrive" and "the account cannot see it yet" look identical from the consumer
+  side** — and this stage reads the consumer side twice (2.2, 2.3) across the pass where the difference
+  exists. A receiving account with no data lake administrator shows an empty catalog while its RAM holds
+  the share, which is exactly what both Stage 5 consumers showed on 2026-08-19. Read RAM first, catalog
+  second, and never treat an empty catalog before 1.3 as evidence about the grant.
 - **The write share is INT-03's least-travelled variant** — an LF-aware cross-account Iceberg write can
   fail in engine-specific ways the read shares never exercised. The fallback is INT-03's row; the proof
   is 2.4, before anything depends on it.

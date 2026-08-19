@@ -65,6 +65,12 @@ IDENTITY_PROFILE = "awsds-infra-identity"
 HEADLESS_PROFILES = ("awsds-infra-prod", "awsds-infra-staging")
 
 # The contracts (see header).
+# Decision 5's category 1 (2026-08-19; docs/SMUS.md is the reference table): the only
+# blueprints that may be enabled. A category-2 blueprint (Workflows OnDemand, MLExperiments)
+# joins this tuple in the same commit that enables it (Lesson 14). The AmazonBedrock prefix
+# covers the seven sub-blueprints the combined AmazonBedrockGenerativeAI blueprint carries.
+BLUEPRINT_ALLOWLIST = ("Tooling", "DataLake", "EMRServerless")
+BLUEPRINT_ALLOW_PREFIX = "AmazonBedrock"
 PROJECT_PROFILE_NAMES = ("experimentation", "engineering")
 STEP3_SIDS = ("DenySageMakerJobsOffVpc", "DenySageMakerInstanceCeiling")
 BOUNDARY_NAME_FRAGMENT = "project-boundary"
@@ -442,9 +448,10 @@ def main(argv: list) -> int:
                 "the registry/runtime split holding (D26)",
             )
 
-    # US-3: blueprint configurations exist for the enabled blueprints and no others
-    # (Tooling, Lakehouse in its Glue/Athena form, ML - step 1). Names are read, not
-    # assumed; the check is presence + the Redshift absence.
+    # US-3: blueprint configurations exist only for decision 5's category 1 - the
+    # allow-list above (step 1.4; docs/SMUS.md). Names are read, not assumed. The two
+    # Redshift-backed blueprints keep their own message: enabling either reopens D26/D12,
+    # not decision 5 (LakehouseCatalog is RMS-backed - the 2026-08-19 re-read, decision 4).
     if data_live and domain_id:
         if not bp_configs:
             checks.note(
@@ -453,19 +460,36 @@ def main(argv: list) -> int:
                 "none - expected before Stage 6 step 1.",
             )
         else:
-            bad = [n for n, _r, _p, _m in bp_configs if "redshift" in n.lower()]
-            if bad:
+            names = [n for n, _r, _p, _m in bp_configs]
+            redshift = [n for n in names if "redshift" in n.lower() or n == "LakehouseCatalog"]
+            extra = [
+                n
+                for n in names
+                if n not in BLUEPRINT_ALLOWLIST
+                and not n.startswith(BLUEPRINT_ALLOW_PREFIX)
+                and n not in redshift
+            ]
+            if redshift:
                 checks.fail(
                     "US-3",
-                    "Redshift blueprint enabled",
-                    f"{', '.join(bad)} - D26/D12 exclude the Redshift Serverless variant "
-                    "by decision.",
+                    "Redshift-backed blueprint enabled",
+                    f"{', '.join(redshift)} - D26/D12 exclude the Redshift-managed-storage "
+                    "family by decision (RedshiftServerless, and LakehouseCatalog since "
+                    "2026-08-19).",
                 )
-            else:
+            if extra:
+                checks.fail(
+                    "US-3",
+                    "blueprint outside decision 5's category 1",
+                    f"{', '.join(extra)} - the allow-list is "
+                    f"{', '.join(BLUEPRINT_ALLOWLIST)} + {BLUEPRINT_ALLOW_PREFIX}* "
+                    "(docs/SMUS.md); enabling more amends Stage 6 decision 5.",
+                )
+            if not redshift and not extra:
                 checks.ok(
                     "US-3",
                     f"{len(bp_configs)} blueprint configuration(s)",
-                    "none of them Redshift",
+                    "all inside decision 5's category 1",
                 )
 
     # US-4: the two project profiles, by their contracted names.

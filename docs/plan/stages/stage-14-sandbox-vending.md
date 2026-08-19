@@ -120,6 +120,22 @@ than a rewrite.
    share data or are isolated by LF-Tags is the governance manager's decision (D35), routed through the
    subscription workflow like any other access — a vending flow that also grants data access is a flow that
    grants data access by default.
+
+   **But the *plumbing* is the module's, and the distinction matters because the failure looks identical
+   from the outside (written down 2026-08-19, from Stage 5 pass 3).** Three mechanical facts the
+   `sandbox-unit` module carries, none of which is an entitlement:
+   - **the unit's account needs a `DataLakeSettings` of its own** — a data lake administrator, or a share
+     granted to it stays invisible in its catalog no matter how correct the grant is. An account with no
+     admin and an empty catalog is *indistinguishable* from a vend that failed, which is why `DL-7` reads
+     RAM and the admin count separately;
+   - **that resource replaces `admins`, `parameters` and both `Create*DefaultPermissions` blocks
+     wholesale** (INT-11), and the defaults act at **creation time** and cannot be expressed empty in a
+     plan — so the new account's settings apply **before** its first catalog object, in two steps
+     (Lesson 27, Recipe D). A vending flow is exactly where a two-step apply gets collapsed into one;
+   - **the share to the new unit is an `N+2` edit in `data-governance/data/`** (INT-03), carrying the
+     grant option like every cross-account grant and the `layer` gate like every TBAC expression here
+     (Lesson 29). It is a `for_each` over the consumer map, not a copied resource — which is the whole
+     reason Stage 5 was told to write every list as a map from day one.
 6. **The teardown half, which is what makes a unit disposable.** `make down ENV=<bu>` must work against a
    generated Sandbox exactly as it does against the hand-built one, and closing a unit must be a documented
    procedure with the ~90-day slot and e-mail retention stated up front (D34's headroom item).

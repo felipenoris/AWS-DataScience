@@ -78,12 +78,30 @@ change. The sequence to work in is **six passes**:
 | **1** | 1, 3, 4, 5 | the lake: keys, buckets, policies, drop-box; catalog, role, crawlers; Iceberg; Lake Formation — **authored 2026-08-18, `58 to add`; applied in TWO steps, 5.2's callout** | `data-governance/data/` `[P]` | `awsds-infra-data` |
 | **2** | 6 | D13 made real — grants, the grain decision, the sso/ reading — **DONE 2026-08-19: `9 added`, re-plan `No changes`; the sso/ reading, the grain map and the register rows all landed. The behavioural half (can the persona actually tag?) needs a GM session and the tunnel** - **scheduled 2026-08-19 as [Stage 6](stage-06-unified-studio.md)'s verification (xiii)**, beside (xii), because both need the same sign-in | idem, plus a reading of `identity/sso/` | idem |
 | **3** | 7 | the two cross-account shares, and the INT-11 after-reading — **DONE 2026-08-19: `4 added`, re-plan `No changes`; four `LakeFormation-V4-*` shares `ACTIVE` and held by both consumers, zero invitations, `DL-5` bracket holds. Two findings changed what was applied — the grant option is mandatory, and the default expression needed a `layer` gate to keep the drop-box out** | `data-governance/data/` (`shares.tf`) + RAM | idem |
-| **4** | 8, 9 | the consumer side: workgroups, links, scratch, derived + CMK; the pandas proofs | `sandbox/data/`, `development/data/` `[P]` | `awsds-infra-sandbox-1`, `awsds-infra-dev` |
+| **4** | 8, 9 | the consumer side: workgroups, links, scratch, derived + CMK; the pandas proofs — **opening with a `DataLakeSettings` per consumer account (7.3's finding)**. It also carries the behavioural debts pass 1 left, and the 4.3 amendment, listed below | `sandbox/data/`, `development/data/` `[P]` | `awsds-infra-sandbox-1`, `awsds-infra-dev` |
 | **6** | 13 | Security Hub org-wide | by hand: Management, then Audit | `AWS Control Tower Admin`, console/CloudShell |
 
 Pass 6 sits last so its first standards report covers a lake that exists — and keeps its number:
 pass 5 was the EFS pass, removed 2026-08-17 with the NFS requirement. Pass 4 cannot precede pass 3 (a resource link to a share that does not exist
 resolves nothing), and pass 3 cannot precede pass 1's step 5 (there is nothing to share).
+
+**What pass 4 owes beyond its own two steps — written down 2026-08-19 because pass 1 applied resources
+whose *behaviour* it never exercised, and an act with no owning pass is an act that does not happen
+(Lesson 5's shape, applied to the plan itself).** Four debts, in this order:
+
+1. **The crawler pair (3.3, verification (iii))** — the phase-4 positive half. `awsds-data-catalog-maintenance`
+   and both crawlers exist since pass 1 and **neither has ever run**, so the D27 carve-out is still a
+   carve-out that matches nothing as far as any measurement goes (Lesson 22's list). The negative half —
+   `StartCrawler` from a persona session — needs the tunnel, like every persona proof here;
+2. **the drop-box asymmetry halves that exist** (the writer's `PutObject`, its denied `GetObject`, the
+   crawler's read) — the Production pickup stays Stage 9's;
+3. **the sample-row decision, which 4.3 turns into a one-way door** — see 4.1's callout: `sample_trades`
+   was created **empty** by Terraform, and the only way to put rows in it from inside this account is
+   Athena, which is exactly what the next item closes;
+4. **4.3's `athena:StartQueryExecution` amendment to `DenyUserCompute`, LAST**, through battery phase 4b.
+   It binds every principal in Data Governance, `InfrastructureAccess` included. **It does not constrain
+   pass 4's consumer queries** — those run in Sandbox and Development, under the `Interactive` OU — so the
+   only thing it has to follow is any Athena-borne write *in this account*, i.e. item 3.
 
 ---
 
@@ -249,6 +267,25 @@ the deliverables query it from both consumers. Give it **at least one column tag
 `classification=restricted`** beside ordinary ones (2026-08-17): the share deliverable must prove
 entitlement *scoped by the scheme* — the restricted column absent from a default consumer read — not merely
 that the share works.
+
+**APPLIED 2026-08-18 as `curated.sample_trades` — six columns, `counterparty` the restricted one, created
+through the Glue API's Iceberg path so no Athena DDL was needed in this account. It therefore has NO
+ROWS, and that is a scheduling fact rather than a detail (written down 2026-08-19):**
+
+- **verification (x) still works** — it reads the *column list*, and the three states are distinguishable:
+  `counterparty` absent (the scoped grant holding), present (the scope leaking), or the table not
+  resolving at all (a broken share). Lesson 13 is satisfied without a single row;
+- **row-level evidence is not available and cannot be manufactured cheaply.** A `SELECT` over an empty
+  table returns nothing whether a filter removed the rows or there were none — which is exactly the
+  shape Stage 11's data-cells filters need to prove (its verification (iii)). So **pass 4 takes a
+  decision here**: load sample rows through Athena in this account *before* 4.3's amendment closes that
+  door, or accept that row-level evidence waits for **Stage 9's producer path** — the governed
+  cross-account write, which is the designed way data enters `curated` at all.
+  **Recommended: the second.** Loading rows by hand means using the one write path the design does not
+  have (D22 makes Production the lake's only producer), and it buys evidence nothing needs until
+  Stage 11, by which time Stage 9 has run. The cost of that choice is named rather than discovered:
+  **Stage 11's filter proof inherits a dependency on Stage 9 having written real rows**, and Stage 11's
+  prerequisites row says so.
 
 **4.2 — Table maintenance gets an owner on day one**: scheduled `OPTIMIZE` (compaction) and `VACUUM`
 (snapshot expiry) through Athena, or Glue's automatic compaction (the table-optimizer path, whose runs the
@@ -506,6 +543,14 @@ resource (INT-11 — read the account's current map first and carry it), and the
 database, which here is the first resource link. **The plan will not state either** — Lesson 27, and
 Recipe D in the terraform-changes runbook is the procedure.
 
+**And the instrument does not cover this yet, which is worth knowing before the apply rather than after
+it:** `DL-5` reads `Parameters` wherever it is pointed, but **`DL-6` is scoped to Data Governance alone**
+(`DATA_PROFILE`) — it was written when only one account had a `DataLakeSettings`. Extend it to each
+consumer account in the same sitting as the settings resource, or pass 4's most expensive failure is the
+one nothing reads. The reading is per account and per catalog object: the two defaults `[]`, and no
+database carrying an `IAMAllowedPrincipals` grant. **`DL-7` already reads the consumer side correctly**
+(rebuilt at pass 3): held shares and admin count, reported as separate branches.
+
 Then, per account: the **Athena workgroup** (`awsds-<env>-athena`) — result location local to the account,
 per-query scan limit, and **`EnforceWorkGroupConfiguration = true`** (the setting the console calls
 "override client-side settings"; without it the result location is whatever the client asks for, which
@@ -625,9 +670,10 @@ own:
   from either account**, which is the only convincing evidence that D13 holds, now with the account
   boundary underneath it.
 - **The classification pair (2026-08-17):** a default consumer session reads the sample table and the
-  `restricted` column is **absent from the result and from the column list**; after the explicit
-  restricted grant, present. Read the column list, never an error code — the negative half must differ
-  from a broken share (Lesson 13).
+  `restricted` column is **absent from the column list**; after the explicit restricted grant, present.
+  Read the column list, never an error code — the negative half must differ from a broken share
+  (Lesson 13). **"Absent from the result" left this line 2026-08-19**: the table was applied empty
+  (4.1), so the result set is empty in every state and says nothing.
 - **The carve-out pair:** Athena works *with* the bucket policy attached (the `aws:ViaAWSService` half),
   and the same read from a caller that satisfies no branch is denied.
 - **The workgroup boundary:** a query whose client asks for a result location outside the derived prefix
@@ -726,14 +772,14 @@ Record every answer, including the ones that come out fine.
 |---|---|---|
 | i | Do the three parameter readings bracket the applies unchanged — before, after 5.4, after the first share? — **ANSWERED 2026-08-19, yes, all three: `CROSS_ACCOUNT_VERSION=4` / `SET_CONTEXT=TRUE` before pass 1, after the settings apply, and after the four shares exist** | 5.4, 7.3 |
 | ii | Does the first cross-account grant arrive on the consumer side with a **fresh** session — i.e. does the RCP's `sts:SetContext` statement leave version-4 vending untouched? — **HALF ANSWERED 2026-08-19: the METADATA half travelled** (four shares `ACTIVE`, held by both consumers, no invitation). **The vending half is untested** — version 4 vends *data* credentials through `sts:SetContext` and nothing has read a row yet, so this closes at pass 4's first query, not here | 7.3 |
-| iii | Does the maintenance role start the raw crawler (the phase-4 positive half), and is the same call denied for a persona session? | 3.3 |
+| iii | Does the maintenance role start the raw crawler (the phase-4 positive half), and is the same call denied for a persona session? — **still open, and now with an owner: pass 4's debt list.** The role and both crawlers exist since pass 1 and **neither crawler has ever run**, so the D27 carve-out remains unmeasured in the positive direction | 3.3 |
 | iv | Which compute-free trigger shape starts the drop-box crawler on object creation — and does its run land on the service-guard side of the carve-out? | 3.6 |
 | v | Do the resource links appear with **no** pending RAM invitation anywhere — the org-sharing path working end to end? — **the invitation half is ANSWERED 2026-08-19: zero invitations in either consumer, both holding their shares `ACTIVE`.** The links are pass 4's, and they need each consumer to have a data lake administrator first (7.3) | 7.3, 8 |
 | vi | Does `DenyIamPrincipalMutation` in fact cover `iam:UpdateAssumeRolePolicy` for all six persona sets (a reading of `identity/sso/`, Lesson 22)? | 3.5 |
 | vii | *(removed 2026-08-17 — the NFS requirement was withdrawn; there is no EFS to mount)* | — |
 | viii | Can a per-user LF filter be expressed and observed on the SQL path at all (the grain's raw material)? — **ANSWERED 2026-08-19 by the written map** (`docs/GOVERNANCE.md` §"The grain"): *expressed* yes, but only through **TIP**, which reaches the SQL path and not JupyterLab and whose documented price is remote access — so it is reachable and **not adopted**. An LF filter on its own attaches to the role, never the person. `${aws:userid}` prefixes stay the genuinely per-user control, over **copies**. *Observed* is not claimed: nothing was run | 6.4 |
 | ix | Does Security Hub's auto-enable cover existing members and later vends, and which FSBP controls were disabled as not-applicable in the first triage? | 13 |
-| x | Does the default consumer grant exclude the `restricted` column (the classification-scoped TBAC holding), and does the explicit grant admit it? | 6.1, 7.2 |
+| x | Does the default consumer grant exclude the `restricted` column (the classification-scoped TBAC holding), and does the explicit grant admit it? — **answered by the COLUMN LIST, not by rows**: `sample_trades` was applied empty (4.1), so a row count discriminates nothing and the column list discriminates all three states | 6.1, 7.2 |
 
 ## Risks
 

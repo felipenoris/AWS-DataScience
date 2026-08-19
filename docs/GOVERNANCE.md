@@ -184,6 +184,16 @@ principals *in* that account, never onward to another account or to an organizat
 two-step (account-level grant, local regrant to the job role) is therefore the shape of **every** share
 here, and what remains particular to Production is the governed *write* in its permission list.
 
+**And the receiving account has a prerequisite of its own, which is not a grant and is easily mistaken
+for a broken one** (measured 2026-08-19, both consumers at once): **an account with no data lake
+administrator does not see a shared resource at all.** Its RAM holds the share, `ACTIVE`; its
+`glue:GetDatabases` and `list-lf-tags` return nothing. So an empty consumer catalog has **two** possible
+causes that look identical — the share never arrived, or the account is not yet a Lake Formation account
+— and only the RAM side separates them. Every consumer account therefore carries its own
+`aws_lakeformation_data_lake_settings`: an administrator, the `Parameters` map carried explicitly
+(INT-11 — the resource replaces the whole structure), and the two `Create*DefaultPermissions` cleared
+**before** its first local catalog object exists, because they act at creation time.
+
 **The principals** (who the first element can be): the consumer **accounts** — `Sandbox Account 1` and
 `Development` today, one more per business unit at N>1 (INT-03's N+2) — for the cross-account shares;
 inside accounts, the persona permission-set roles; `awsds-data-catalog-maintenance` for catalog work;

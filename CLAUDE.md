@@ -256,6 +256,14 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   each consumer's *held* shares + admin count. **Pass 4's new opening prerequisite: each consumer account
   needs its OWN `DataLakeSettings`** (admins `[]` today → empty catalog by rule), with INT-11 and
   Lesson 27 both applying there. `sts:SetContext` only half-tested — vending waits for pass 4's query.
+- **Pass 0-3 findings PROPAGATED 2026-08-19 (doc-only, no AWS call).** St.5: pass 4 gains a debt list —
+  the crawlers **never ran** (verif. iii), the drop-box halves, and 4.3's amendment **last**;
+  `sample_trades` was applied **EMPTY**, so verif. (x) reads a *column list* and row evidence waits for
+  St.9's write. St.9: the settings apply is **two steps** in Production *and* Staging, its 2.2 reading
+  corrected (RAM ≠ catalog — no admin until 1.3, a pass later), new verif. xiv. St.6: pass 4 is a **hard
+  predecessor** (blueprints create catalog objects), 1.4 callout + verif. xiv-xvi. St.11: the row-filter
+  proof now depends on St.9's rows. St.14: the plumbing/entitlement split. cost-model KMS **9→10**.
+  **Owed instrument: `DL-6` is Data-Governance-only** — extend per consumer in pass 4's sitting.
 - **Stage 6 NOT open, but its decision 3 is CLOSED (2026-08-19, doc-only sitting — no AWS call at all;
   [log](docs/log/log-stage-06-unified-studio.md) initialized early because the stage file homes such
   decisions there).** Athena Spark off by **SCP** `athena:StartSession`/`UpdateSession` on `Interactive`,
@@ -267,6 +275,13 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   condition (`aws:userid` `*:user-*` — INT-16's on-behalf carve-out already in AWS's shape). **The 2026-04
   Athena Spark PrivateLink release moves the client path, NOT executor placement** — trigger worded against
   the headline. **Decision 1 REOPENED**: EMR Serverless needs **4** endpoints vs Glue sessions' 1.
+  **Decisions 4-5 CLOSED 2026-08-19 (user), as an allow-list in 3 categories — every blueprint owned**
+  (`docs/SMUS.md` = the reference table + routing row; `US-3` = the category-1 allow-list): cat 1
+  `Tooling`/`DataLake`/`EMRServerless` (follows decision 1)/`AmazonBedrockGenerativeAI` (**PRICING row
+  owed before 1.4**); cat 2 by named trigger (`Workflows` OnDemand = D28's last rung, then `[E]`;
+  `MLExperiments` priced first); cat 3 amend-first (`EMRonEC2`, `PartnerApps`, `Quicksight`,
+  `LakehouseCatalog`); `RedshiftServerless` never. **The finding: `LakehouseCatalog` is RMS-backed —
+  the Glue/Athena form is `DataLake`** (the doc's *Resources created* column; D26's wording inverted).
 - **Stages 5-11 revised, pre-instrumented (2026-08-16/17):**
   `aws/{vpn,datalake,studio,supplychain,cicd,deploytargets,orchestration,dlp}.py` — `DL-5`/`DT-5` guard
   the LF `Parameters` (INT-11). **St.8 pass 4, St.9 passes 4-5, St.10's Staging leg wait on the vend.**

@@ -777,6 +777,107 @@ deliberate rather than accidental.
   governance-manager sign-in), **the crawlers have still never run**, and 4.3's SCP amendment is still
   owed via battery phase 4b.
 
+## 2026-08-19 — Passes 0-3 propagated: what the findings cost the stages that had not run yet
+
+*Provenance: **Claude's**, on the user's request to review the project's files and propagate the side
+effects of this stage's findings into the rest of the plan. **No AWS call was made in this sitting** —
+no profile was used, no `aws` command was run, and `./aws/datalake.py` was not re-run. Everything below
+is a reading of the repository plus the local offline gates. It is logged here, in the stage whose
+findings travelled, because there is no other file that records what a finding did after it was found.*
+
+### Why a sitting with no apply has an entry
+
+Passes 1-3 produced four findings, and each was written down where it was found. **That is not the same
+as the plan having absorbed them.** A finding recorded only in the stage that produced it is a finding
+the next stage meets again at the keyboard — which is the shape this project keeps calling Lesson 14.
+The sitting went looking for where each one lands, and two of the landings were defects rather than
+additions.
+
+### The two defects, both in stages that have not started
+
+| Where | What was wrong | What it would have cost |
+|---|---|---|
+| **[Stage 9](../plan/stages/stage-09-deployment-targets.md) step 2.2** | it instructed a post-grant reading of "the shared databases visible" from Production — but Production gets its first data lake administrator at **1.3**, which is a *later pass* | the reading would have come back empty and been diagnosed as INT-11 failing. The same empty catalog both Stage 5 consumers show today, met without the discriminator that explains it. 2.2 now reads the **RAM** side; the catalog confirmation moved to 2.3 |
+| **This stage's own pass table** | three owed acts had **no owning pass** — the crawler pair of 3.3 (verification (iii)), the drop-box asymmetry halves, and 4.3's `athena:StartQueryExecution` amendment | an act with no pass is an act that does not happen. Pass 4's row now carries a numbered debt list, with 4.3's amendment **last** — it binds every principal in this account, and nothing in pass 4 that runs *here* may follow it |
+
+### The finding that was in the applied state all along, unread
+
+`curated.sample_trades` was created through the Glue API's Iceberg path — deliberately, so no Athena DDL
+would exist in this account and 4.3's amendment could sequence freely. **The table therefore has no
+rows**, and nothing had said what that costs:
+
+- **verification (x) survives** — it reads the *column list*, which distinguishes all three states
+  (`counterparty` absent, present, or the table not resolving). The stage text said "absent from the
+  result and from the column list"; the result half was always going to be empty and said nothing;
+- **[Stage 11](../plan/stages/stage-11-dlp.md)'s row-filter proof does not survive.** A row filter over
+  an empty table returns nothing whether it works or is absent — Lesson 13 exactly. That proof now has a
+  written dependency on **Stage 9's producer path having written real rows**, which is the designed way
+  data enters `curated` at all (D22). The alternative — loading rows by hand through Athena here, before
+  the amendment closes that door — is recorded at 4.1 and **not recommended**: it would use the one write
+  path the design does not have.
+
+### The instrument gap, which is the most dangerous item on this list
+
+**`DL-6` is scoped to Data Governance alone** (`DATA_PROFILE`) — it was written when one account had a
+`DataLakeSettings`. It is the check that decides whether the create-defaults were cleared, and those
+defaults act at **creation time**, so there is no second reading later. Pass 4 gives Sandbox and
+Development that resource and **nothing would be reading it there**. Recorded at step 8 and in
+[`aws/INDEX.md`](../../aws/INDEX.md), to be extended in the same sitting that writes those settings.
+No code was changed here.
+
+### Where the four findings landed
+
+| Finding | Propagated to |
+|---|---|
+| the create-defaults are not expressible in a plan and act at creation time (**Lesson 27**) | Stage 9's 1.3 (a two-step callout) and 4.1; Stage 6 (blueprint-created catalog objects); Stage 14 (the vend); Recipe D gained the four accounts it is already scheduled to run in |
+| the grant option is mandatory on **every** cross-account grant | Stage 9's 2.1 — it stopped being that stage's peculiarity; `GLOSSARY.md` gained the *data lake administrator* entry that explains why |
+| a TBAC expression on `classification` alone reaches the drop-box (**Lesson 29**) | Stage 9's 2.1 (with a recommendation: named-resource for the write, which decision 5 reserves for enumerated exceptions); Stage 6's new verification (xvi), for grants **DataZone** writes rather than this repository |
+| a receiving account with no administrator shows an empty catalog while holding the share | Stage 9's 2.2 and its risks; Stage 6 (pass 4 became a **hard predecessor**); Stage 14 item 5, split into *plumbing* (the module's) and *entitlement* (the governance manager's); `GOVERNANCE.md` §Grants |
+
+### One correction made to my own text, after the fact
+
+The Stage 6 callout was written while the user was editing the same file with decisions 4 and 5. It said
+"the Lakehouse blueprints", plural, which decision 4 then made wrong: **only `LakeHouseDatabase`
+(`DataLake`) is enabled**, and it is precisely the Glue/Athena form whose output is per-project Glue
+databases and Lake Formation permissions. The callout now names it — which made the point stronger, not
+merely accurate: that blueprint does not touch this stage's surface, it writes on it. `LakehouseCatalog`,
+disabled, provisions on Redshift-managed storage and none of this reaches it.
+
+### Records
+
+**No code.** No `.tf` file, no script, no AWS resource.
+
+**Records:** [Stage 5](../plan/stages/stage-05-data-foundation.md) (the pass-4 debt list, 4.1's
+empty-table callout, step 8's instrument note, verifications iii / x, the classification-pair
+deliverable), [Stage 6](../plan/stages/stage-06-unified-studio.md) (1.4's callout, prerequisites,
+verifications xiv-xvi), [Stage 9](../plan/stages/stage-09-deployment-targets.md) (status, pass ordering,
+1.3, 2.1, 2.2, 4.1, risks, verifications ii / xiv), [Stage 11](../plan/stages/stage-11-dlp.md)
+(prerequisites, 2.3, verification iii), [Stage 14](../plan/stages/stage-14-sandbox-vending.md) (item 5),
+[stages/INDEX.md](../plan/stages/INDEX.md) (the Stage 5 row still read *not started*),
+[`GOVERNANCE.md`](../GOVERNANCE.md), [`GLOSSARY.md`](../GLOSSARY.md),
+[`cost-model.md`](../plan/cost-model.md) (the KMS row's open half settled by decision 2 — one lake CMK,
+so the count moved 9 → 10), [the terraform-changes runbook](../plan/runbooks/terraform-changes.md)
+(Recipe D's forward schedule), [`terraform-live/README.md`](../../terraform-live/README.md) (the lake
+slice, absent from a file whose rule is to carry account-folder changes), [`aws/INDEX.md`](../../aws/INDEX.md)
+and `CLAUDE.md`.
+
+**Gates:** `make check` **OK** — 19048 relative links resolve, no broken `D`/`INT` reference, no
+identifier. `make check-docs` stays red on its two pre-existing counts: hard-coded account numbers in
+pre-Stage-2 prose, and `CLAUDE.md` over the 20 KB budget (it was already over before this sitting).
+
+**Not committed by Claude**, and the tree is mixed on purpose: it also carries the user's own work on
+[`docs/SMUS.md`](../SMUS.md) and on Stage 6's decisions 4 and 5, written during this sitting.
+
+### Not done
+
+- **Nothing was measured.** Every claim here is a reading of the repository or of a prior entry; the
+  three questions this sitting *raised* — Stage 6's (xiv), (xv), (xvi) — are all settled by a session
+  nobody has run yet.
+- **`DL-6` was not extended**, only the debt written down. It belongs to the sitting that writes the
+  consumer settings, so that the check and the resource arrive together (Lesson 14's good direction).
+- The debts the previous entry left are unchanged: the crawlers have still never run, the persona-tagging
+  proof still needs a governance-manager sign-in with the tunnel up, and 4.3's amendment is still owed.
+
 ---
 
 *Log index: [docs/log/INDEX.md](INDEX.md) · Stage index: [docs/plan/stages/INDEX.md](../plan/stages/INDEX.md)*

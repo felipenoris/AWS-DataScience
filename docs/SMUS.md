@@ -4,8 +4,8 @@ A reference for what the SMUS/DataZone-V2 surface is made of, written 2026-08-19
 Stage 6's decisions. Prices quoted are the measured ones from [`PRICING.md`](PRICING.md) (Lesson 6 —
 a cell without a number means *not measured yet*, never *free*). Source pages are in
 [`REFERENCES.md`](REFERENCES.md), the 2026-08-16 documentation-pass block. **The blueprint
-categories below were decided by the user on 2026-08-19**; folding them into Stage 6's decision
-rows (4 and 5) and into `./aws/studio.py`'s `US-3` is owed when that stage's execution is prepared.
+categories below were decided by the user on 2026-08-19 — Stage 6 decisions 4 and 5, recorded in
+[the stage log](log/log-stage-06-unified-studio.md)**; `./aws/studio.py`'s `US-3` measures them.
 
 ## Blueprints
 
@@ -51,16 +51,17 @@ the code never disagree (Lesson 14).
 
 The full list, from the *Supported blueprints* admin-guide page (read 2026-08-16 — there is no
 "ML experience" blueprint; the per-project SageMaker AI domain comes from **Tooling**, correcting
-D26's wording). Billing **shape** is read from documentation; billing **numbers** only where
-`PRICING.md` measured them.
+D26's wording; **re-read 2026-08-19 for the per-blueprint resource lists — which caught
+`LakehouseCatalog` being Redshift-backed**, Stage 6 decision 4). Billing **shape** is read from
+documentation; billing **numbers** only where `PRICING.md` measured them.
 
 #### Category 1 — enabled by default
 
 | Blueprint (API name) | What it provisions when a project uses it | Billing shape and measured cost (`us-west-2`) |
 |---|---|---|
 | `Tooling` | The project's basic environment: the per-project **SageMaker AI domain**, project roles, security groups, the project S3 location — and the parameter surface Stage 6 step 1.5 locks (`sagemakerDomainNetworkType`, idle shutdown, `maxEbsVolumeSize`, TIP). Mandatory — nothing else provisions a working environment | Per **app-hour running** (`ml.t3.medium` JupyterLab/Code Editor at **USD 0.050/h**, `PRICING.md` §8) + EBS. An open app bills whether used or not — the step 8 idle shutdown is what converts "up" into "in use" |
-| `LakehouseCatalog` / `LakeHouseDatabase` (`DataLake`) | The catalog/SQL surface on the Glue + Lake Formation substrate Stage 5 built — the query path D13 depends on. **Which variant(s) is Stage 6 decision 4's call at execution** (recommendation: start with `LakehouseCatalog` alone) | **Per use**: Athena SQL **USD 5.00/TB scanned** (`PRICING.md` §5); Glue catalog negligible at lab scale. No standing resource |
-| `EMRServerless` | An EMR Serverless application per project — the VPC-capable Spark runtime replacing the Athena-Spark default (open question 12; Stage 6 decision 1) | **Per use**: **USD 0.0526/vCPU-h + 0.0058/GB-h** (x86; ARM cheaper), billed only while a session runs (`PRICING.md` §5). The *pre-initialized capacity* option would be standing — not used |
+| `LakeHouseDatabase` (API name **`DataLake`**) | Per project: **Glue databases, Lake Formation permissions, an Athena workgroup** — the catalog/SQL surface on the Glue + LF substrate Stage 5 built, the query path D13 depends on (Stage 6 decision 4: this variant alone; `LakehouseCatalog` is category 3) | **Per use**: Athena SQL **USD 5.00/TB scanned** (`PRICING.md` §5); Glue catalog negligible at lab scale. No standing resource |
+| `EMRServerless` | An EMR Serverless application per project — the VPC-capable Spark runtime replacing the Athena-Spark default (open question 12). **Contingent on Stage 6 decision 1, reopened 2026-08-19**: under `VpcOnly` it asks for **four** optional endpoints against Glue interactive sessions' one (~USD 0.12/h idle across two accounts) — if that decision lands on Glue sessions, this row leaves the map (Glue needs no blueprint) | **Per use**: **USD 0.0526/vCPU-h + 0.0058/GB-h** (x86; ARM cheaper), billed only while a session runs (`PRICING.md` §5). The *pre-initialized capacity* option would be standing — not used |
 | `AmazonBedrockGenerativeAI` | The Bedrock generative-AI app surface (chat/flow apps over Bedrock models) — the `objectives.md` AI-models feature (`bedrock:*` + SageMaker inference, Stage 1c's feature→API table) | **Per use** — token-billed (on-demand), no standing resource. **Not measured: a `PRICING.md` row is owed before the Stage 6 apply** (the upkeep rule — a row for every new service referenced), and under `VpcOnly` the Bedrock runtime endpoint(s) join the step 4.2 list at +USD 0.010/h each |
 
 #### Category 2 — on demand (authorized; named trigger, then commit + apply)
@@ -75,6 +76,7 @@ D26's wording). Billing **shape** is read from documentation; billing **numbers*
 | Blueprint (API name) | What it provisions | Billing shape | Note |
 |---|---|---|---|
 | `RedshiftServerless` | A Redshift Serverless workgroup + namespace | Per use with a **per-query RPU minimum** + storage — a second, larger query bill on top of Athena's (`PRICING.md` §5) | **Never** — excluded by **D26/D12**; enabling means reopening those decisions, not amending this one. `US-3` fails if it appears, with its own message |
+| `LakehouseCatalog` | A new catalog in the SageMaker Lakehouse **backed by Amazon Redshift Managed Storage** — *not* the Glue/Athena surface its name suggests (the 2026-08-19 re-read; Stage 6 decision 4) | RMS storage + the Redshift query path — the same cost family D12 excluded. Not measured | disabled by decision 4 (2026-08-19); the Glue/Athena form this project uses is `DataLake`, category 1 |
 | `EMRonEC2` | EMR clusters on EC2 instances | Standing in practice — instance-hours + EMR uplift while the cluster exists; a forgotten cluster bills on. Not measured | disabled by decision (was unowned until 2026-08-19) |
 | `PartnerApps` | Third-party partner ML applications | Standing/subscription — partner license + deployed infrastructure; varies by partner. Not measured | idem |
 | `Quicksight` | The QuickSight analytics/dashboard surface | Subscription — per author/month + per reader session. Not measured | idem |

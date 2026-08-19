@@ -66,6 +66,25 @@ were measured from, kept on disk because a probe that has to be rewritten is a p
 alone: the `[E]` slices are destroyed and the tree bills **USD 0.0000/h** between sessions, while
 `foundation/` re-plans `No changes` — that pair is D11's proof, not an accident of timing.
 
+**Stage 5 put the lake on disk, in the one account that has no network — `data-governance/data/`
+(2026-08-18/19, applied in three passes).** All `[P]`, and nothing in it is ever torn down:
+one CMK for the `zn-lab` security zone, the five `awsds-data-*` buckets under it, the Glue databases and
+the Iceberg sample table, the `awsds-data-catalog-maintenance` role with its two unscheduled crawlers, the
+Lake Formation settings/registrations/LF-Tags, the governance manager's grants, and `shares.tf` — the
+cross-account grants that are how Sandbox and Development reach the lake at all. **Two properties of this
+slice are unlike anything else in the tree, and both are permanent:**
+
+- **it cannot be destroyed.** The `Data` OU SCP denies `s3:DeleteBucket` with no principal carve-out, so a
+  `terraform destroy` here stops at the first bucket. Every name in it is permanent, and the amendment
+  procedure is the stage file's, not a `-target` away;
+- **it applies in two steps, and the plan does not say so.** `aws_lakeformation_data_lake_settings` owns
+  values Terraform cannot state an intention about — the two `Create*DefaultPermissions` blocks, which act
+  at *creation* time — so the settings land alone under `-target`, are read back, and only then does the
+  rest of the slice create a database. That is **Recipe D** in
+  [`docs/plan/runbooks/terraform-changes.md`](../docs/plan/runbooks/terraform-changes.md), and it is the
+  procedure for **every** account that gains this resource: Sandbox and Development at Stage 5 pass 4,
+  Production and Staging at Stage 9.
+
 **Seven checks stand over this tree — Stage 2 steps 9, 3.5 and 8.1, plus Stage 4's — and there is no CI to
 run them in.** Until Stage 8 puts them in a pipeline the surfaces are `pre-commit` and the repository's
 `Makefile`, both calling the same scripts:
