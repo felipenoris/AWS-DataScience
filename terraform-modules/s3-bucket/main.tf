@@ -109,5 +109,26 @@ resource "aws_s3_bucket_lifecycle_configuration" "this" {
     }
   }
 
+  # THE ONLY RULE THAT DELETES SOMETHING NOBODY REPLACED (v0.3.0, Stage 5 pass 4). The two
+  # rules above are hygiene - a superseded version, an upload that never finished - and they
+  # are unconditional because no caller wants either kept. This one removes a CURRENT object,
+  # so it is opt-in and its absence is the default: a bucket whose contents disappear on a
+  # timer is a decision about the DATA, and only the caller knows whether its bucket holds
+  # results (D19: disposable by design) or the only copy of something.
+  dynamic "rule" {
+    for_each = var.expiration_days == null ? [] : [var.expiration_days]
+
+    content {
+      id     = "expire-current-versions"
+      status = "Enabled"
+
+      filter {}
+
+      expiration {
+        days = rule.value
+      }
+    }
+  }
+
   depends_on = [aws_s3_bucket_versioning.this]
 }
