@@ -208,7 +208,10 @@ aws sso login --sso-session awsds
 
 **One login covers every script here, whatever profile each one declares.** The login authenticates against
 the *access portal* — the `awsds` sso-session — and the token it caches is keyed by the session name, not by
-profile or account: every `awsds-*` profile in `~/.aws/config` declares `sso_session = awsds` and shares it.
+profile or account: the profiles these scripts run as (`awsds-infra-*`, `awsds-policy-canary`) declare
+`sso_session = awsds` and share it. The persona and ctadmin profile families sit on sessions of their own
+(the roster is [`AWS-CLI.md`](AWS-CLI.md), "Signing in") and show up as preflight-failed rows in a
+multi-profile run until their session is logged in — expected, not a defect.
 The profile only matters one step later, when a call trades that token for temporary credentials of its
 account's role (`sso_account_id` + `sso_role_name`). `aws sso login --profile awsds-infra-identity` reaches
 the same session through the profile and is equivalent; naming the session says what is happening.

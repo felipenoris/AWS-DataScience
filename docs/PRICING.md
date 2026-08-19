@@ -189,7 +189,7 @@ Paid every month even with the lab shut down. Same rows as `docs/plan/cost-model
 | Organization, accounts, Identity Center, VPC, subnets, IGW, security groups, IAM roles | — | — | **0** | **0** |
 | GitLab EBS volume (50 GB gp3) | 0.152 USD/GB-mo | 0.08 USD/GB-mo | 7.60 | 4.00 |
 | Elastic IP for WireGuard (idle or in use) | 0.005 USD/h | 0.005 USD/h | 3.65 | 3.65 |
-| KMS customer-managed keys (one per Terraform-managed account, plus a derived-zone key per Interactive account (D31), plus the PKI key (D36)) | 1.00 USD/key-mo | 1.00 USD/key-mo | 9.00 | 9.00 |
+| KMS customer-managed keys (one tfstate key per Terraform-managed account, plus one data CMK per account that holds data — the lake's `alias/awsds-data-data` and each Interactive account's (D31) — plus the PKI key (D36); the encryption rule's one copy is `docs/GOVERNANCE.md` §Encryption) | 1.00 USD/key-mo | 1.00 USD/key-mo | 10.00 | 10.00 |
 | S3 data + state + backups (~25 GB Standard) | 0.0405 USD/GB-mo | 0.023 USD/GB-mo | ~1.50 | ~1.00 |
 | ECR images (~10 GB) | 0.10 USD/GB-mo | 0.10 USD/GB-mo | 1.00 | 1.00 |
 | AWS Config, every governed account (**Management is the one not recorded — confirmed 2026-08-14**, verification (xiii)) | 0.003 USD/item | 0.003 USD/item | 2.50-5.00 → **billed ~0.5** | 2.50-5.00 |

@@ -182,6 +182,9 @@ terraform-live/
 │   │                     #     development/data/. The lake itself is NOT here
 │   ├── egress/           # [E] NAT gateway, interface VPC endpoints - the metered network.
 │   │                     #     Two variants behind a switch: D5(A) with NAT, D5(B) without
+│   ├── probes/           # [E] Stage 3's measurement instruments (perimeter + peering),
+│   │                     #     created and destroyed by make up/make down, ranked after
+│   │                     #     egress/ so down tears them first
 │   ├── vpn/              # [D] WireGuard EC2 (stopped, not destroyed)
 │   ├── dev-env/          # [P] the approved dev-env image registered for this account:
 │   │                     #     aws_sagemaker_image + image_version + app_image_config.
@@ -206,6 +209,7 @@ terraform-live/
 │   ├── data/             # [P] the same consumer-data module as sandbox/data/, byte for
 │   │                     #     byte: derived zone + its CMK + workgroup + settings + links
 │   ├── egress/           # [E] NAT + endpoints, same D5 switch as sandbox
+│   ├── probes/           # [E] Stage 3's instruments here: INT-09 reachability + the DNS half
 │   ├── dev-env/          # [P] same slice, same module, same pipeline, applied through
 │   │                     #     awsds-deploy-devenv-dev - the image is identical in both
 │   │                     #     Interactive accounts by construction (D17, Stage 8 step 1)
@@ -282,6 +286,7 @@ terraform-live/
     ├── egress/           # [E] NAT, endpoints - and the internal ALB for GitLab/Pages ONLY
     │                     #     if Stage 7 decision 1 picks it over nginx-on-instance (an
     │                     #     ALB cannot stop, so if it exists it is [E])
+    ├── probes/           # [E] Stage 3's instrument here: the peering target
     ├── tooling/          # [D] GitLab EC2 + EBS (D8, D14) - TLS terminates on its own
     │                     #     nginx, or on the egress/ ALB (Stage 7 decision 1)
     ├── runners/          # [E] GitLab Runners (D14)
@@ -295,8 +300,7 @@ terraform-live/
     └── app/
         └── app-etl/      # [E]
 
-terraform-modules/        # reusable: vpc, wireguard, iam-role, ecr-repo, s3-bucket,
-                          # step-function, mwaa-serverless-workflow, ...
+terraform-modules/        # reusable modules (the roster and its tags: terraform-modules/README.md)
                           # consumed by git tag, never by branch - a module that moves under a
                           # caller is a broken caller
 ```

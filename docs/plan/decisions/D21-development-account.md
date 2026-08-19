@@ -119,7 +119,7 @@ Studio is a separate claim.
 
 | Where | What depends on it |
 |---|---|
-| [Stage 6](../stages/stage-06-unified-studio.md) | the `engineering` project profile, whose ML blueprint provisions a SageMaker AI domain **into** Development |
+| [Stage 6](../stages/stage-06-unified-studio.md) | the `engineering` project profile, whose **Tooling** blueprint provisions a SageMaker AI domain **into** Development (there is no "ML experience" blueprint — D26's 2026-08-19 revision; the enabled set's one copy is [`docs/SMUS.md`](../../SMUS.md)) |
 | [D18](D18-data-scientist-access.md) | "Sandbox and Development — read-write, interactive, the D19 derived zones; this is where the person works" |
 | [D19](D19-derived-zone.md) | a per-principal derived zone, with its own CMK, in **each** Interactive account |
 | [Stage 8](../stages/stage-08-cicd-pipelines.md) | `awsds-deploy-devenv-dev` — half of INT-18 exists to deliver the `dev-env` image to Development's Studio |
@@ -204,10 +204,20 @@ If experimentation shows the two accounts are barely distinguishable in practice
 - **Nothing is blocked by leaving it open.** The accounts are vended and the OU tree is built; what the
   answer changes is Stage 6's project profiles and which OU an empty account sits in.
 - **The cheap moment has not passed, but it is passing.** Stages 3, 5 and 6 have not run, so today the
-  change is prose. After Stage 6 it is a domain, a blueprint and an OU move.
+  change is prose. After Stage 6 it is a domain, a blueprint and an OU move. *(Written before Stages 3
+  and 5 ran; the note below is where the trigger's clock actually started.)*
 - **Revision trigger:** the test above being asked with **real grants in place** — that is, once Stage 5
   settles what Sandbox and Development may each read — or a first stretch of real work in Development that
   reports nothing Sandbox could not have done.
+
+**The trigger's first condition fired 2026-08-19 — recorded, not yet answered.** Stage 5 passes 3-4c
+applied the real grants, and they are **identical** for the two consumers: the same two TBAC expressions
+account-to-account, the same re-grants to `DataScientistAccess`, the same five-column view of
+`sample_trades` (the grant register in [`docs/AWS_STATE.md`](../../AWS_STATE.md)). So the test is now
+askable and today's answer is still "nothing" — **the answer deliberately waits for pass 4d's first
+behavioural persona queries** (the grants exist but no persona has read a row), and for the first real
+stretch of work. What was prose in the bullet above is now a domain-and-OU move away from being cheap:
+Stage 6 is the boundary.
 
 ---
 

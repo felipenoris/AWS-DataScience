@@ -130,7 +130,8 @@ schemas from it; the lake's tables are **Iceberg**, which is catalog-native (tab
 catalog + metadata files, so no crawler ever points at one).
 
 Its role in the plan: the single source of *what tabular data exists*, and the substrate every
-Lake Formation permission attaches to. Databases today: `raw` and `curated`. Crawlers (under
+Lake Formation permission attaches to. Databases today: `raw`, `curated` and `dropbox` — the
+letterbox's metadata home (§Drop-box); its bucket stays unregistered. Crawlers (under
 `awsds-data-catalog-maintenance`, D27) infer schema **only where it arrives from outside** — the
 drop-box and the raw zone. Stage 6 adds the *business* catalog (SageMaker Catalog/DataZone) as a storey
 on top; this catalog remains the foundation.

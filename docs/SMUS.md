@@ -324,15 +324,17 @@ inside the VPC — the gateway/interface **endpoint policies** (Stage 3's S3 all
 **`aws:SourceVpce`** conditions on bucket policies, the **flow logs**, and both D5 egress designs.
 An app in `PublicInternetOnly` reads the lake and talks to the internet without touching any of
 them: "private by default" would be true of the account and false of the thing the data scientist
-actually runs. The same logic disables Athena Spark (it does not support VPC — open question 12,
-Stage 6 step 1.6).
+actually runs. The same logic disables Athena Spark — its sessions and executors run outside the VPC
+(no `NetworkConfiguration` in the API; the 2026-04 PrivateLink release moved only where a session is
+reached *from*, not where it runs — open question 12, Stage 6 step 1.6).
 
 **The consequences of choosing it:**
 
 - Apps have **no internet**, so every AWS service they reach needs a **VPC interface endpoint** in
-  the account — the admin guide's required list is `athena`, `datazone`, `ec2`, `ec2messages`, `q`,
-  `s3`, `sagemaker.api`, `sagemaker.runtime`, `glue`, `kms`, `secretsmanager`, `sts`, `ssm`,
-  `ssmmessages` (read 2026-08-19; `REFERENCES.md`), plus per-blueprint optional ones. Each costs
+  the account — the admin guide's required list is `athena`, `datazone` + `datazone-fips`, `ec2`,
+  `ec2messages`, `q`, `s3`, `sagemaker.api`, `sagemaker.runtime`, `glue`, `kms`, `secretsmanager`,
+  `sts`, `ssm`, `ssmmessages` (re-read 2026-08-19; `REFERENCES.md` — Stage 6 step 4.2 points here
+  rather than carrying a second copy), plus per-blueprint optional ones. Each costs
   **USD 0.010/h** (~USD 7/month) per account, continuously — the hidden fixed cost a new blueprint
   can carry.
 - One required entry cannot be satisfied in-Region: the `q` row pairs with

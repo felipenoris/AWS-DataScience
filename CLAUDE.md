@@ -91,9 +91,9 @@ write anything into it. Claude can read the files in this folder to gather infor
 
   **"Role" and "permission set" are two views of one object** — what it provisions, and why its ARN is
   never hard-coded, are in [`docs/GLOSSARY.md`](docs/GLOSSARY.md), "Permission set". **One login covers every profile
-  on its `sso-session`, and there are two** (`awsds`, `awsds-ctadmin`), so the answer is never *which
-  profile do I log in with* — it is which identity to pick in the browser
-  ([`aws/AWS-CLI.md`](aws/AWS-CLI.md), "Signing in").
+  on its `sso-session`** — `awsds` and `awsds-ctadmin` for the identities in the table above; the persona
+  sessions are [`aws/AWS-CLI.md`](aws/AWS-CLI.md) "Signing in"'s, the roster's owner — so the answer is
+  never *which profile do I log in with*: it is which identity to pick in the browser.
 
 ## Upkeep — the files this project maintains
 

@@ -30,7 +30,7 @@ sharing shape gets proven before Stage 9 repeats it for Production.
 
 | Where | What | Layer |
 |---|---|---|
-| `data-governance/data/` (new) | KMS CMKs, the four lake buckets + drop-box, Glue catalog, crawlers + the maintenance role, Iceberg, Lake Formation (settings, registrations, LF-Tags), the cross-account shares | `[P]` |
+| `data-governance/data/` (new) | the account data CMK, the four lake buckets + drop-box, Glue catalog, crawlers + the maintenance role, Iceberg, Lake Formation (settings, registrations, LF-Tags), the cross-account shares | `[P]` |
 | `sandbox/data/`, `development/data/` (**applied 2026-08-19**, one module: `consumer-data` v0.1.0 → v0.2.0 with the same-day revision) | the account's own `DataLakeSettings`, Athena workgroup, LF resource links + the local re-grants, the derived-zone bucket with its three prefix families, the D31 CMK (`alias/awsds-<env>-data` — `-zn-lab` until the revision that withdrew `security-zone`) | `[P]` |
 | `identity/sso/` (**existing slice, amended 2026-08-19, pass 4c**) | the persona's identity-side grants: the Athena run family on the two workgroup ARNs, the derived zone's three prefix families, and the drop-box write's identity half + its KMS pair | `[P]` |
 | Management + Audit, by hand | Security Hub delegated administration and org-wide enablement (step 13) | — (no slice, no profile) |
@@ -38,7 +38,7 @@ sharing shape gets proven before Stage 9 repeats it for Production.
 ```mermaid
 flowchart LR
     subgraph DG["Data Governance · the ownership axis · D22<br/>no VPC · no user compute"]
-        LAKE["raw · curated · artifacts · logs<br/>Iceberg on S3 · CMKs per domain"]
+        LAKE["raw · curated · artifacts · logs<br/>Iceberg on S3 · one account data CMK"]
         CAT["Glue Data Catalog + Lake Formation<br/>LF-Tags · registrations · admins"]
         BOX["ingestion drop-box · D18/D25"]
         CRAWL["crawlers + optimizers<br/>awsds-data-catalog-maintenance · D27"]
@@ -131,7 +131,10 @@ that needs a session now waits only on the tunnel (4d).
 **1.1 — KMS CMKs per data domain** (aliases `alias/awsds-data-<domain>`), with **S3 Bucket Keys** on every
 bucket (`docs/plan/cost-model.md` — a data environment issues a KMS request per object operation without them).
 How many domains exist is decision 2 below; the KMS floor row in `docs/plan/cost-model.md` already says this is a
-floor, not a count.
+floor, not a count. **APPLIED 2026-08-18 as ONE key, and decision 2's final form (amended twice,
+2026-08-19) is one data CMK per account** — `alias/awsds-data-data` under every lake bucket; the
+per-domain alias pattern above was never applied ([`docs/GOVERNANCE.md`](../../GOVERNANCE.md) §Encryption
+owns the rule).
 
 **1.2 — The four buckets** — `awsds-data-raw`, `awsds-data-curated`, `awsds-data-artifacts`,
 `awsds-data-logs` — from the Stage 3 `s3-bucket` module: versioning, SSE-KMS with the domain CMK,
@@ -226,7 +229,9 @@ classified). Choose it on paper, not at the first crawl.
 
 #### 3. The catalog, the maintenance role, the crawlers
 
-**3.1 — Glue Data Catalog databases** `raw` and `curated`.
+**3.1 — Glue Data Catalog databases** `raw` and `curated`. **APPLIED 2026-08-18 as three — `raw`,
+`curated` and `dropbox`**: the drop-box crawler (3.6) needs a database to write inferred tables into,
+and which database that is matters to the share gate (`GOVERNANCE.md` §`layer`).
 
 **3.2 — The maintenance role's name is fixed, and it is a contract rather than a preference:
 `awsds-data-catalog-maintenance`.** The `Data` OU SCP attached in

@@ -86,7 +86,7 @@ assumptions is nearly free to loosen while it is prose:
   (1c step 7), because with many sandboxes the pressure to let a unit "just create its own domain" is exactly
   what that deny exists to resist, and INT-12's one-domain-per-account fallback gets more expensive with
   every unit.
-- **Cost (`docs/plan/cost-model.md`).** A business unit costs **one** account, one Config recorder, one KMS key —
+- **Cost (`docs/plan/cost-model.md`).** A business unit costs **one** account, one Config recorder, two KMS keys (the tfstate key and the account data CMK, `GOVERNANCE.md` §Encryption) —
   and the term that dominates, **one set of interface VPC endpoints**. `docs/plan/institutional-delta.md`
   already names per-account endpoints as the largest hourly cost multiplied by account count; under this
   decision, centralized endpoints shared by RAM stop being the institutional answer and become the arithmetic

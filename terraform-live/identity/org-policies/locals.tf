@@ -159,7 +159,7 @@ locals {
     "awsds-org-scp-ou-identity"     = "Stage 1c step 7.6 - Identity OU: deny user compute (EC2, SageMaker, Glue, Lambda, ECS) in an account that runs no workload, only Terraform managing Identity Center."
     "awsds-org-scp-ou-interactive"  = "Stage 1c step 7.6 - Interactive OU (Development + the nested Sandboxes): deny the classic SageMaker notebook instance and its presigned URL. SMUS notebooks are spaces and apps and are unaffected."
     "awsds-org-scp-ou-data"         = "Stage 1c step 7.6 - Data OU: deny user compute; crawler and column-statistics runs allowed only for awsds-data-catalog-maintenance (D27); deny bucket deletion and Lake Formation deregistration."
-    "awsds-org-rcp-perimeter"       = "Stage 1c step 7.8 - deny access to S3, DynamoDB, SQS, KMS, Secrets Manager, ECR and sts:AssumeRole from principals outside the organization."
+    "awsds-org-rcp-perimeter"       = "Stage 1c step 7.8 - deny access to S3, DynamoDB, SQS, KMS, Secrets Manager, ECR, and sts:AssumeRole/sts:SetContext from principals outside the organization."
     "awsds-org-tag-policy"          = "Stage 1c step 7.8 - canonical capitalisation and value enumerations for the five mandatory tags. Reports, does not enforce."
     "awsds-org-declarative-ec2"     = "Stage 1c step 7.8 - snapshot and AMI public-access blocks, IMDSv2 as the account default, serial console off."
   }

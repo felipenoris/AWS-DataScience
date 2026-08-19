@@ -88,7 +88,7 @@ variable "vpn_homes" {
 # DATA_CONSUMERS, never an edit to a policy document.
 #
 # AN EMPTY MAP FAILS CLOSED HERE, NOT OPEN - the opposite polarity from vpn_homes, so it gets
-# its own sentence: no consumers means empty resource lists in three ALLOW statements, which
+# its own sentence: no consumers means empty resource lists in five ALLOW statements, which
 # IAM rejects at provisioning (a statement must name a resource), in every account the set is
 # provisioned into. The validation turns that per-account provisioning failure into one
 # plan-time message.
@@ -102,7 +102,7 @@ variable "data_consumers" {
 
   validation {
     condition     = length(var.data_consumers) > 0
-    error_message = "data_consumers is empty: three DataScientistAccess allows would render with no resource and fail at provisioning, per account. Regenerate with ./scripts/gen-tfvars.py identity sso."
+    error_message = "data_consumers is empty: five DataScientistAccess allows would render with no resource and fail at provisioning, per account. Regenerate with ./scripts/gen-tfvars.py identity sso."
   }
 }
 

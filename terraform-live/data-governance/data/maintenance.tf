@@ -177,8 +177,8 @@ resource "aws_lakeformation_permissions" "maintenance_compact_sample" {
 # (checkov CKV_AWS_195, "Glue component has a security configuration"), and the finding is
 # real rather than a default worth skipping. D27's own honest sentence is that a crawler
 # SAMPLES OBJECT CONTENTS to infer schema, so what it writes to CloudWatch sits closer to
-# data than to metadata - and everything else touching this lake encrypts under the zone
-# CMK. Leaving the logs under the AWS-managed key would be the one place the posture
+# data than to metadata - and everything else touching this lake encrypts under the
+# account data CMK. Leaving the logs under the AWS-managed key would be the one place the posture
 # differs, for no reason anybody chose.
 #
 # WHAT IT COVERS, AND WHY ALL THREE MODES NAME THE KEY: for a CRAWLER only
