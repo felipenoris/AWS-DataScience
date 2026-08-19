@@ -4,7 +4,7 @@ The Stage 5 pass 4 module ([stage file](../../docs/plan/stages/stage-05-data-fou
 model's one copy is [`docs/GOVERNANCE.md`](../../docs/GOVERNANCE.md)). Called by
 [`terraform-live/sandbox/data/`](../../terraform-live/sandbox/data/) and
 [`terraform-live/development/data/`](../../terraform-live/development/data/) — both thin, both `[P]`, both
-pinning `consumer-data-v0.1.0` **by git tag** — and by every further business unit's Sandbox once D35's N
+pinning `consumer-data-v0.2.0` **by git tag** — and by every further business unit's Sandbox once D35's N
 passes 1. **The design lives here once; a slice says which account, never what.** That is also why this
 index is in the module and not in the slices: two copies of one design drift on the first divergence.
 
@@ -12,7 +12,7 @@ What lands in **each** consumer account when this module applies:
 
 | Object | Name |
 |---|---|
-| the account's zone CMK | `alias/awsds-<env>-zn-lab` |
+| the account's data CMK | `alias/awsds-<env>-data` |
 | the derived zone | `awsds-<env>-derived`, 30-day expiry, three prefix families |
 | the enforced query path | workgroup `awsds-<env>-athena`, 10 GiB scan cap, output into `results/` |
 | the account's own Lake Formation seat | `aws_lakeformation_data_lake_settings` — admins, `parameters`, the cleared create-defaults |
@@ -66,17 +66,18 @@ Since pass 4c the trap has a second edge, and the seven identity-side statements
 read. Five name **this** module's objects — `RunQueriesInTheEnforcedWorkgroups`, `UseDerivedZoneBuckets`,
 `ReadDerivedZoneObjects`, `WriteDerivedZonePrefixes`, `DeleteScratchObjects` — enumerated from this slice's
 outputs rather than wildcarded, so an object renamed here silently narrows a policy written in Identity. The
-other two, `WriteIngestionDropBox` and `UseLakeZoneKeyViaS3`, name the **lake's** drop-box prefix and
-`zn-lab` key, read from `data-governance/data/`'s state — which is why the trap spans three accounts rather
+other two, `WriteIngestionDropBox` and `UseLakeDataKeyViaS3`, name the **lake's** drop-box prefix and
+data key, read from `data-governance/data/`'s state — which is why the trap spans three accounts rather
 than two. [Lesson 28](../../docs/plan/lessons.md), as amended by 4c: **verify the pair, and remember the
 two halves are in different accounts.** `./aws/datalake.py` measures both sides — `DL-12` the identity half
 of the drop-box write, `DL-5`/`DL-6`/`DL-7` the Lake Formation half, `DL-8`/`DL-9` the workgroup and the
 derived zone.
 
-## `kms.tf` — the account's `zn-lab` key policy
+## `kms.tf` — the account's data-key policy
 
-One key per **(zone × account)**, and the alias carries the zone rather than the word *derived*: a derived
-copy of a `zn-lab` table is still `zn-lab` data (D19 practice v). It is deliberately **not** the lake's key —
+One data CMK per **account** (revised 2026-08-19 — the `security-zone` dimension withdrawn:
+`GOVERNANCE.md` §Encryption), and the alias carries the account pattern rather than the word *derived*:
+`alias/awsds-<env>-data`, uniform with the lake's. It is deliberately **not** the lake's key —
 the reasons are in the file, and the load-bearing one is that the lake key's
 `AllowProductionPickupDecryptViaS3` grants `Decrypt` with **no bucket scoping**, so these buckets under that
 key would put Production's job role over this account's materialised `restricted` results.
@@ -98,7 +99,7 @@ model does not carry or a key shared for no reason (settled 2026-08-19, with the
 | `DenyStalePresignedUrls` | `s3:*` where `s3:signatureAge > 900000` ms. The one branch of the lake's perimeter worth copying onto a bucket holding **copies**: a presigned link is a bearer credential and 15 minutes bounds how long a leaked one works. The preventive counterpart of Stage 11's presigned-URL detection |
 
 The bucket's other properties come from `s3-bucket` v0.3.0 and are not restated here: all four public-access
-blocks on, versioning, SSE-KMS under the zone key with Bucket Keys, abort-incomplete-multipart at 7 days,
+blocks on, versioning, SSE-KMS under the account data key with Bucket Keys, abort-incomplete-multipart at 7 days,
 noncurrent-version expiry — plus `expiration_days = 30`, which is **v0.3.0's reason for existing**: expiring
 noncurrent versions reaches nothing that was never overwritten, and D19 practice (iii) is about the current
 object. `DL-9` checks the rule exists, never the number.
@@ -126,7 +127,7 @@ sits **outside** the account Macie primarily watches.
 |---|---|
 | `enforce_workgroup_configuration = true` | **The control, and everything else on this resource is ordinary.** The console calls it "override client-side settings"; without it the result location is whatever the client asks for, which makes the derived zone a suggestion and D19 practice (i) a comment |
 | `result_configuration.output_location` | `s3://awsds-<env>-derived/results/` — **into the derived zone**, not into a results bucket of its own: query output lands under the lifecycle, the CMK and the Macie scope designed for it, instead of in a second, undesigned copy zone |
-| `result_configuration.encryption_configuration` | `SSE_KMS` under the zone's key in the account, **stated rather than inherited** from the bucket default: the workgroup writes the object, so the encryption choice is visible where somebody reads it. Same key, so the two cannot disagree |
+| `result_configuration.encryption_configuration` | `SSE_KMS` under the account's data key, **stated rather than inherited** from the bucket default: the workgroup writes the object, so the encryption choice is visible where somebody reads it. Same key, so the two cannot disagree |
 | `bytes_scanned_cutoff_per_query` | 10 GiB by default. Athena bills USD 5/TB ([`docs/PRICING.md`](../../docs/PRICING.md)), so this is the guard on a query nobody meant to run: over the limit the query is **cancelled**, which bounds what a runaway can bill rather than zeroing it — the bytes scanned up to the cancellation are billed — and raising it is a deliberate act with a number attached |
 | `publish_cloudwatch_metrics_enabled = false` | Workgroup metrics are CloudWatch **custom** metrics and billed as such; nothing reads them yet. Stage 12 turns this on with a consumer in hand |
 | `state = "ENABLED"`, no `force_destroy` | `[P]` by D11: a workgroup costs nothing at rest, and destroying it would orphan the query history that explains what was run |
@@ -178,7 +179,7 @@ passing on; a resource shared with an account may be granted only to principals 
 
 Everything that differs between the two callers is in `variables.tf` and nothing else is (Lesson 14) — the
 descriptions there are the one copy. What matters to a reader outside this module is the other direction:
-`outputs.tf` republishes the derived bucket's name and ARN, the zone key's ARN and alias, the workgroup's name
+`outputs.tf` republishes the derived bucket's name and ARN, the data key's ARN and alias, the workgroup's name
 and ARN, and the resource-link names — and **`terraform-live/identity/sso/` reads them through
 `terraform_remote_state` at pass 4c**, which is why the persona statements name resources exactly instead of
 wildcarding, and why `identity/sso/` applies *after* both `data/` slices.

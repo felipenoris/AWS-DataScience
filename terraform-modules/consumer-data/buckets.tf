@@ -21,7 +21,7 @@
 #                             variable. THE READ IS PERSONA-WIDE (pass 4c, decision 6's grain):
 #                             ReadDerivedZoneObjects grants s3:GetObject across derived/*. So
 #                             the prefix governs where a copy LANDS, not who may read it; what
-#                             keeps other personas out is the zone CMK's key policy (D31). It
+#                             keeps other personas out is the data CMK's key policy (D31). It
 #                             governs the COPY rather than the source - Lesson 1's shape,
 #                             managed rather than forbidden.
 #   scratch/                  the notebook's working files - a downloaded CSV, an intermediate
@@ -52,7 +52,7 @@ module "derived" {
   source = "git::git@github.com:felipenoris/AWS-DataScience.git//terraform-modules/s3-bucket?ref=s3-bucket-v0.3.0"
 
   bucket_name = local.derived_bucket_name
-  kms_key_arn = module.zone_key.key_arn
+  kms_key_arn = module.data_key.key_arn
 
   # v0.3.0's reason for existing: DL-9 fails a *-derived bucket with no Expiration rule, and
   # before this the module could only expire NONCURRENT versions - which reaches nothing that
