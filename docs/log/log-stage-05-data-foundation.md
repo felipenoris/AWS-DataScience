@@ -598,6 +598,66 @@ no path to a row.
 - Pass 3, 4 and 6 untouched; 4.3's SCP amendment still owed via battery phase 4b; **the crawlers still
   have never run**.
 
+## 2026-08-19 — Pass 2 APPLIED: the persona now holds something, and the register says what
+
+*Provenance: **Claude's**, on the user's explicit authorisation to proceed. **The commit is the
+user's** — `6440c6a "stage 5 review"`, made on `main` before this apply, so there was nothing for Claude
+to commit and the branch it had opened was deleted unused. Applied as the **infrastructure user**,
+account **Data Governance**, permission set **`InfrastructureAccess`** (`awsds-infra-data`), from a plan
+read and then applied from the saved file (Recipe A steps 5-6). Redactions as this file's header states.*
+
+### The apply
+
+| Step | Result |
+|---|---|
+| `apply` the read plan | **9 added, 0 changed, 0 destroyed** |
+| re-plan | **`No changes`**, `-detailed-exitcode 0` |
+| `./aws/datalake.py` | **`0 check(s) FAILED`** |
+
+A second `apply` of the same file was refused — *"Saved plan is stale"* — which is the runbook's own
+guard working rather than a problem: the first apply had moved the state serial, so the plan could not
+be replayed.
+
+**`DL-5` re-read after this apply and the bracket holds**: `CROSS_ACCOUNT_VERSION=4, SET_CONTEXT=TRUE`.
+That is not ceremony — this pass applied into the *same slice* that owns
+`aws_lakeformation_data_lake_settings`, and INT-11's failure mode is precisely a parameter reset that
+nothing reports. `DL-6` still reads no `IAMAllowedPrincipals` default.
+
+### The claim verified against the API, not against the code
+
+`list-permissions`, filtered on the governance-manager principal, returns **exactly nine rows and
+nothing else**:
+
+```
+DESCRIBE  | grant_option=NONE | Database  curated / raw / dropbox
+DESCRIBE  | grant_option=NONE | Table     ALL_TABLES (TableWildcard) in each of the three
+ASSOCIATE | grant_option=NONE | LFTag     classification(4) / layer(3) / security-zone(1)
+```
+
+Two things are established by that listing rather than asserted from the source: **`grant_option` is
+`NONE` on every one of the nine**, and the persona holds **no `SELECT` anywhere** — established by
+exhaustion, since the filter returns the principal's complete set. The permission set's own one-line
+description from Stage 2 — *"The catalog, never the rows"* — is now true of the Lake Formation half as
+well as the IAM half.
+
+### Records, in the same sitting
+
+The **grant register** in `docs/AWS_STATE.md` gained three rows covering **nine triples** (three
+resources each), with the no-`SELECT`/no-grant-option finding stated as *verified against the API*. The
+register's note was corrected while there: it said the first consumer grants arrive at pass 2, and they
+arrive at **pass 3**, with the shares they ride on.
+
+### Not done — and one of these is the point
+
+- **Nothing behavioural is proven, and it cannot be from here.** Whether the persona can in fact tag a
+  dataset is a claim about the *pair* (Lesson 28), and only a governance-manager session answers it. The
+  instrument run in this same sitting shows why the gap is structural rather than an oversight:
+  `awsds-governance-data` is one of the seven profiles reading `FAILED` for want of an SSO token, and the
+  set carries `DenyControlPlaneOffVpn` — so the proof needs the tunnel up **and** a sign-in as that
+  persona. It joins the stage's owed proofs.
+- **Passes 3, 4 and 6 untouched**; 4.3's SCP amendment still owed via battery phase 4b; **the crawlers
+  still have never run**.
+
 ---
 
 *Log index: [docs/log/INDEX.md](INDEX.md) · Stage index: [docs/plan/stages/INDEX.md](../plan/stages/INDEX.md)*

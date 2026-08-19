@@ -233,15 +233,18 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   a measurement; `after_unknown` is the instrument — `providers schema` never marks `computed` on
   blocks). Sandbox not needed until pass 4's persona proofs (`make down ENV=sandbox` safe). Stage 4
   residuals, non-blocking: host left `running`; the user's close-out log entry still owed.
-- **PASS 2 AUTHORED 2026-08-19, `9 to add`, NOTHING APPLIED.** `governance.tf` — the GM's own grants
-  (`ASSOCIATE` on the 3 tag keys, `DESCRIBE` on the 3 databases + tables by wildcard; **no `SELECT`, no
-  grant option**). **6.2 read: every `s3:` in the six persona sets is a `Deny`** — D13 holds by
-  *absence*, not exclusion. **Lesson 28** from it: LF authorizes above IAM, the halves sit in different
-  slices, a missing LF grant reads as an **empty catalog**. Verification (viii) = decision 6's map in
-  `GOVERNANCE.md` §"The grain" (TIP is the only per-person surface; costs remote access; not adopted).
+- **PASS 2 APPLIED 2026-08-19 — `9 added`, re-plan `No changes`, `DL` all pass.** `governance.tf` — the
+  GM's own grants (`ASSOCIATE` on the 3 tag keys, `DESCRIBE` on the 3 databases + `ALL_TABLES`
+  wildcard). **Verified by `list-permissions`, not by the code: nine rows, `grant_option=NONE` on every
+  one, no `SELECT` anywhere** (by exhaustion). `DL-5` bracket re-read and holds. Register: 3 rows /
+  9 triples. **6.2 read: every `s3:` in the six persona sets is a `Deny`** — D13 holds by *absence*, not
+  exclusion. **Lesson 28** from it: LF authorizes above IAM, the halves sit in different slices, a
+  missing LF grant reads as an **empty catalog**. Verification (viii) = decision 6's map in
+  `GOVERNANCE.md` §"The grain" (TIP the only per-person surface; costs remote access; not adopted).
   **Unasserted on purpose** — what a non-admin needs to *grant* via an LF-Tag expression (LF doc pages
   return no body to fetch); Stage 6 settles it by measurement. Slice README is now an **index of
-  controls** (`POLICIES.md` discipline). Register unchanged until the apply.
+  controls** (`POLICIES.md` discipline). **Owed: can the persona actually tag? — a claim about the pair,
+  needs a GM sign-in + the tunnel.**
 - **Stages 5-11 revised, pre-instrumented (2026-08-16/17):**
   `aws/{vpn,datalake,studio,supplychain,cicd,deploytargets,orchestration,dlp}.py` — `DL-5`/`DT-5` guard
   the LF `Parameters` (INT-11). **St.8 pass 4, St.9 passes 4-5, St.10's Staging leg wait on the vend.**

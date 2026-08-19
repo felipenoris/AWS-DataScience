@@ -108,9 +108,12 @@ the same sitting as the grant**, the discipline `POLICIES.md` keeps for policy s
 [`docs/GOVERNANCE.md`](GOVERNANCE.md) defines the model and references this table; the stage log carries
 each grant's story. A grant found in AWS with no row here is drift, in either direction.
 
-*Four rows — all **operational**, same-account, named-resource by design (TBAC is the consumer method;
-these are the machinery the catalog needs to maintain itself). The first **consumer** grants, which are
-the TBAC expressions of `GOVERNANCE.md`, arrive at pass 2.*
+*Seven rows covering **13 applied triples**, in two groups. Pass 1's four are **operational** —
+same-account, named-resource by design, the machinery the catalog needs to maintain itself. Pass 2's
+three rows are the first grants to a **human persona** and cover nine triples (three resources each).
+**No `SELECT` and no grant option exists on any pass-2 row — verified by `list-permissions` against the
+API, not inferred from the code.** The first **consumer** grants, which are the TBAC expressions of
+`GOVERNANCE.md`, arrive at pass 3 with the shares they ride on.*
 
 | Date | Principal | Expression / resource | Permissions | Why (log entry) |
 |---|---|---|---|---|
@@ -118,6 +121,9 @@ the TBAC expressions of `GOVERNANCE.md`, arrive at pass 2.*
 | 2026-08-18 | `awsds-data-catalog-maintenance` | database `dropbox` | `CREATE_TABLE`, `DESCRIBE` | the drop-box crawler writes inferred tables (idem) |
 | 2026-08-18 | `awsds-data-catalog-maintenance` | data location `awsds-data-raw` | `DATA_LOCATION_ACCESS` | a table pointing into the registered raw prefix (idem) |
 | 2026-08-18 | `awsds-data-catalog-maintenance` | table `curated.sample_trades` | `SELECT`, `INSERT`, `ALTER`, `DESCRIBE` | Glue automatic compaction, decision 4 (idem) |
+| 2026-08-19 | `GovernanceManagerAccess` (SSO role, resolved by pattern) | LF-Tag `classification` (4 values), `layer` (3), `security-zone` (1) — **3 triples** | `ASSOCIATE` (implies `DESCRIBE` on the tag) | assigning tags to datasets, the persona's job per `GOVERNANCE.md` — decision 5's "specific grants instead of admin" (Stage 5 pass 2) |
+| 2026-08-19 | idem | databases `raw`, `curated`, `dropbox` — **3 triples** | `DESCRIBE` | without it the persona sees an **empty catalog**: LF filters what `glue:GetDatabases` returns (idem) |
+| 2026-08-19 | idem | `ALL_TABLES` wildcard in each of the three databases — **3 triples** | `DESCRIBE` | the tables it must tag, including ones the crawlers have not inferred yet (idem) |
 
 **Not a row, but visible in `list-permissions` and expected:** the `InfrastructureAccess` role holds
 `ALL` on everything it created — Lake Formation grants the creator, and that principal is the data lake
