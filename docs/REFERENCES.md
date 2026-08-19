@@ -213,6 +213,16 @@
 
 - Create a SageMaker Unified Studio domain, manual setup — the page that names the two roles the domain asks for, `AmazonSageMakerDomainExecution` and `AmazonSageMakerDomainService`, and shows the domain being created through the **DataZone** console: <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/adminguide/create-domain-sagemaker-unified-studio-manual.html>. Read in Stage 1c step 7.6 to settle which namespace the domain evaluates under.
 
+- SageMaker Unified Studio terminology and concepts — the definitions `docs/SMUS.md`'s object-model section quotes (domain, domain unit, project and its three capabilities, project profile, the project S3 path and its `<bucket>/<domain_id>/<project_id>/<scope>/` structure, S3 Object Collection): <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/concepts.html>. Read 2026-08-19.
+
+- Project profiles in SageMaker Unified Studio — the template definition and the four template profiles: <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/adminguide/project-profiles.html>. Read 2026-08-19.
+
+- Custom project profile — the console fields a profile fixes (blueprint set, pinned account/Region or account pools, Tooling deployment settings, S3-or-Git files storage, authorization, readiness) and the "Projects do not provide strong security isolation" sentence `docs/SMUS.md` quotes: <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/adminguide/custom.html>. Read 2026-08-19.
+
+- S3-based shared project storage for SMUS projects (2025-09 announcement) — the `amazon-datazone-<account-id>-<region>-<domain-id>` bucket pattern, the `shared/` mount in JupyterLab/Code Editor, S3 as the post-CodeCommit default: <https://aws.amazon.com/blogs/big-data/amazon-sagemaker-introduces-amazon-s3-based-shared-storage-for-enhanced-project-collaboration/>. Read 2026-08-19.
+
+- Amazon S3 data in SageMaker Unified Studio — the S3 Object Collection asset type for existing buckets/prefixes: <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/data-s3.html>. Read 2026-08-19.
+
 - MLOps foundation roadmap for enterprises with Amazon SageMaker (the AWS account model behind D17: an experimentation account with Studio, a dev account, and a tooling account holding the Model Registry and ECR): <https://aws.amazon.com/blogs/machine-learning/mlops-foundation-roadmap-for-enterprises-with-amazon-sagemaker/>.
 
 - `aws-samples/amazon-sagemaker-secure-mlops` (the three-account reference used to check D17: only the development account runs Studio; staging and production are deployment targets, with read-only access for data scientists in staging): <https://github.com/aws-samples/amazon-sagemaker-secure-mlops>.
