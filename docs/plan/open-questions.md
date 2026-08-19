@@ -165,6 +165,20 @@ started. **The first one is load-bearing against principle 4.**
     controls, and only the SCP on `athena:StartSession`/`UpdateSession` removes Spark *without* removing
     Athena SQL — the Tooling blueprint's Athena flag removes both, and SQL is the D13 path (Stage 6
     step 1.6 owns the choice).
+    **Re-examined 2026-08-19 against [Athena Spark's PrivateLink release](../REFERENCES.md) (2026-04-21),
+    which looks like it retires this item and does not.** PrivateLink moved the **client → session** path —
+    Spark Connect, the Live UI, the History Server, three new interface endpoints — and **not where the
+    session runs**: there is no `NetworkConfiguration` anywhere in the Athena Spark API, and the SMUS
+    network-isolation page, current after the release, still answers VPC connectivity with *"use Amazon EMR
+    or AWS Glue instead"*. The executor stays outside the VPC, so this item stands unchanged.
+    **What the re-read did change is the shape of the answer, not the answer**: Stage 6 decision 3 is now
+    closed ahead of the stage (the SCP, the boundary carrying no Athena clause, the three optional session
+    endpoints deliberately uncreated), so what remains at Stage 6 is *execution and its probes*, plus the
+    runtime choice — decision 1, which the same reading **reopened** on an endpoint-count cost the compute
+    comparison never saw. **The distinction this item now turns on, and the one a hurried re-reading drops
+    first: where a session is reached *from* is not where it *runs*.** The revision trigger is worded
+    against exactly that (Stage 6 step 1.6): executors in our subnets, under our security group — never a
+    headline saying VPC is supported.
 13. **Notebooks do not support trusted identity propagation, and that reaches a `CLAUDE.md` objective.**
     In an IAM Identity Center domain, notebooks fall back to **compatibility permission mode**, so data
     access resolves through the project/compute role rather than through the signed-in human. The DLP
@@ -298,8 +312,8 @@ length, under item numbers 10-12 that collided with the live items above; the du
     power: under the first, the persona can grant `SELECT` on data it is itself denied from reading
     (`DenyReadingTheRows`), which is not obviously wrong for a governance manager but was never decided.
     **Settled by measurement, not by more reading:** a governance-manager session attempting a
-    tag-expression grant — Stage 6, when the persona first has to grant rather than tag, and the same
-    session that owes pass 2's "can it actually tag" proof. **If the answer is yes**, the decision to
+    tag-expression grant — **recorded as Stage 6's verification (xii)**, beside **(xiii)**, which is
+    pass 2's "can it actually tag" proof and needs the same sign-in. **If the answer is yes**, the decision to
     take is whether the delegation plane is wanted; **if no**, decision 5 needs no revision at all. Do
     not close this from the documentation — the pages that would settle it are the ones already read.
 

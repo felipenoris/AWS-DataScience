@@ -255,6 +255,17 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   each consumer's *held* shares + admin count. **Pass 4's new opening prerequisite: each consumer account
   needs its OWN `DataLakeSettings`** (admins `[]` today → empty catalog by rule), with INT-11 and
   Lesson 27 both applying there. `sts:SetContext` only half-tested — vending waits for pass 4's query.
+- **Stage 6 NOT open, but its decision 3 is CLOSED (2026-08-19, doc-only sitting — no AWS call at all;
+  [log](docs/log/log-stage-06-unified-studio.md) initialized early because the stage file homes such
+  decisions there).** Athena Spark off by **SCP** `athena:StartSession`/`UpdateSession` on `Interactive`,
+  at **1.6 — not pulled forward** into Stage 5's phase-4b sitting; **no Athena clause in 2.1's boundary**
+  (Lesson 20 — the 2nd denier is never the proven one); the 3 optional `athena.*` session endpoints
+  **declined in writing** in both Interactive `egress/main.tf` (Lesson 5). Re-read corrections: the Tooling
+  flag is **non-retroactive** too; the doc's 3rd control is *grant*-shaped on blueprint-authored policies,
+  so the boundary is a **deviation to record**; `DenyUserAccessFromUnauthorizedVPCs` has a **3rd**
+  condition (`aws:userid` `*:user-*` — INT-16's on-behalf carve-out already in AWS's shape). **The 2026-04
+  Athena Spark PrivateLink release moves the client path, NOT executor placement** — trigger worded against
+  the headline. **Decision 1 REOPENED**: EMR Serverless needs **4** endpoints vs Glue sessions' 1.
 - **Stages 5-11 revised, pre-instrumented (2026-08-16/17):**
   `aws/{vpn,datalake,studio,supplychain,cicd,deploytargets,orchestration,dlp}.py` — `DL-5`/`DT-5` guard
   the LF `Parameters` (INT-11). **St.8 pass 4, St.9 passes 4-5, St.10's Staging leg wait on the vend.**
