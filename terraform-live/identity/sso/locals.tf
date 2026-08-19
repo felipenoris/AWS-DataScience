@@ -175,6 +175,30 @@ locals {
     "${remote.outputs.wireguard_eip_public_ip}/32"
   ])
 
+  # ------------------------------------------------- the lake's consumer-side ARNs - pass 4c
+  #
+  # ENUMERATED FROM STATE, NEVER COMPOSED FROM A NAMING CONVENTION - the whole point of 4c's
+  # sequencing (policies-data-scientists.tf carries the argument). `sort()` for the same
+  # reason as above: these lists feed policy JSON whose textual value is what a plan compares,
+  # and the day a consumer is added must not also be a reordering.
+  athena_workgroup_arns = sort([
+    for consumer, remote in data.terraform_remote_state.consumer_data :
+    remote.outputs.athena_workgroup_arn
+  ])
+
+  derived_bucket_arns = sort([
+    for consumer, remote in data.terraform_remote_state.consumer_data :
+    remote.outputs.derived_bucket_arn
+  ])
+
+  # The lake singleton's three values (D22; the variable validates length == 1). `one()` with
+  # the same diagnosis as instance_arn above: null on empty, loud on many.
+  lake_dropbox_write_arn = "${one([for l, r in data.terraform_remote_state.lake_data : r.outputs.bucket_arns["dropbox"]])}/${one([for l, r in data.terraform_remote_state.lake_data : r.outputs.dropbox_prefix])}/*"
+
+  lake_zone_key_arn = one([
+    for l, r in data.terraform_remote_state.lake_data : r.outputs.zn_lab_key_arn
+  ])
+
   # The rendered inline policy of each written set, in one map, so the size precondition and
   # the reporting output read the same values (Lesson 14, at the smallest scale it occurs).
   inline_policies = {

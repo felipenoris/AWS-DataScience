@@ -69,17 +69,22 @@
 # that looks safe and is not - it grants s3:* on any bucket with "sagemaker" in the name, plus
 # a broad iam:PassRole, which is the privilege-escalation pair the IAM rules exist to prevent.
 #
+# DELIVERED AT STAGE 5 PASS 4c (2026-08-19), with one line of the old ledger CORRECTED rather
+# than delivered: the set now runs queries in the two enforced workgroups, reads and writes
+# the derived zone's three prefix families, and holds the identity half of the drop-box
+# write - every ARN read from the consumer and lake slices' state (data.tf), which is what
+# the "NOT GRANTED" rule above was waiting for. The old ledger also owed "s3:GetObject on the
+# governed lake through the Lake Formation share"; NO SUCH GRANT WILL EVER ARRIVE. D13 is
+# only real because tabular access goes through LF-aware engines vending credentials
+# (lakeformation:GetDataAccess, granted below), and a direct s3:GetObject on a registered
+# prefix is exactly the bypass D13 exists to exclude. That line was Stage 2 guessing at
+# Stage 5's interface - this file's own warning, caught by delivery.
+#
 # STILL OWED, and by whom:
-#   Stage 5  s3 read/write on this account's scratch and derived prefixes (D19: the derived
-#            prefix is per-principal, `.../derived/$${aws:userid}/`, and its CMK is the read
-#            control - D31); s3:GetObject on the governed lake through the Lake Formation share
 #   Stage 6  SageMaker Studio use against the blueprint-provisioned domain, including
 #            sagemaker:CreatePresignedDomainUrl scoped to that domain, and the iam:PassRole
 #            that goes with job submission - scoped by iam:PassedToService AND by role ARN
 #   Stage 7  ecr pull on the dev-env repository in Production (D14)
-#   Stage 9  athena:StartQueryExecution on the dedicated workgroup, whose
-#            EnforceWorkGroupConfiguration = true is what makes the output location not the
-#            user's choice (D19 practice i)
 
 data "aws_iam_policy_document" "data_scientist" {
   # checkov:skip=CKV_AWS_356:one document, N accounts - no ARN can name the account; see the CKV_AWS_356 note in policies-data-scientists.tf
@@ -130,10 +135,11 @@ data "aws_iam_policy_document" "data_scientist" {
     resources = ["*"]
   }
 
-  # DISCOVERY, NOT EXECUTION. athena:StartQueryExecution is deliberately absent until the
-  # workgroup exists (Stage 9): the workgroup is what pins the result location, so granting the
-  # query before the workgroup would put the output location back in the user's hands, which is
-  # the one thing D19 practice (i) refuses.
+  # DISCOVERY HERE, EXECUTION BELOW - and the split is D19's. Discovery is service-scoped and
+  # was granted from Stage 2; the run family waited until the workgroup existed, because the
+  # workgroup is what pins the result location - granting the query before it would have put
+  # the output location in the user's hands, the one thing D19 practice (i) refuses. The
+  # workgroups exist since Stage 5 pass 4b, so the run family follows, scoped to exactly them.
   statement {
     sid    = "DiscoverAthenaWorkgroupsAndTables"
     effect = "Allow"
@@ -149,6 +155,154 @@ data "aws_iam_policy_document" "data_scientist" {
     ]
 
     resources = ["*"]
+  }
+
+  # THE RUN FAMILY, SCOPED TO THE TWO ENFORCED WORKGROUPS AND NOTHING ELSE - Stage 5 pass 4c.
+  # The ARNs are read from the consumer slices' state (data.tf): an enumeration of workgroups
+  # somebody built, never a pattern a future workgroup could wander into. What the scoping
+  # buys: a query in an unscoped workgroup chooses its own result location, and these two
+  # carry EnforceWorkGroupConfiguration = true, so output lands in results/ of the derived
+  # bucket below - under the zone CMK, inside Stage 11's Macie scope (D19 practice i). The
+  # `primary` workgroup is absent from this list, and that absence is what denies it.
+  #
+  # Two of the eight earn their line: GetQueryResults fetches through Athena but ALSO reads
+  # the result object from S3 with the caller's own credentials - the read statement below is
+  # part of what makes a query return rows, not a convenience; GetQueryRuntimeStatistics is
+  # what the console's statistics pane calls, and denying it buys a mystery error, not a
+  # control.
+  statement {
+    sid    = "RunQueriesInTheEnforcedWorkgroups"
+    effect = "Allow"
+
+    actions = [
+      "athena:BatchGetQueryExecution",
+      "athena:GetQueryExecution",
+      "athena:GetQueryResults",
+      "athena:GetQueryResultsStream",
+      "athena:GetQueryRuntimeStatistics",
+      "athena:ListQueryExecutions",
+      "athena:StartQueryExecution",
+      "athena:StopQueryExecution",
+    ]
+
+    resources = local.athena_workgroup_arns
+  }
+
+  # ------------------------------------------------------------------------------------------
+  # THE DERIVED ZONE (D19, D31) - Stage 5 pass 4c, the s3 scoping step 9.2 says makes the
+  # prefix families real. One bucket per consumer account, three families, and the grain
+  # decision 6 settled: WRITE to derived/ is per-principal (the policy variable), READ is
+  # persona-wide - the persona is the entitlement grain, so a colleague reading a colleague's
+  # materialised result crosses no line SQL had not already erased between them. What keeps
+  # OTHER personas out is not this document: it is the zone CMK, whose key policy names this
+  # role and nobody else (D31). Same-account, so the key policy alone decides - which is why
+  # no kms statement for the derived zone appears here.
+  #
+  # WHY results/ IS WRITABLE by a human who never chooses to write there: Athena stages query
+  # results WITH THE CALLER'S CREDENTIALS into the workgroup's enforced location. No PutObject
+  # on results/ means no output means no queries - the grant is the engine's contract, not a
+  # user convenience. The multipart trio is the same contract for anything over the part-size
+  # threshold.
+  statement {
+    sid    = "UseDerivedZoneBuckets"
+    effect = "Allow"
+
+    actions = [
+      "s3:GetBucketLocation",
+      "s3:ListBucket",
+      "s3:ListBucketMultipartUploads",
+    ]
+
+    resources = local.derived_bucket_arns
+  }
+
+  statement {
+    sid    = "ReadDerivedZoneObjects"
+    effect = "Allow"
+
+    actions = ["s3:GetObject"]
+
+    resources = flatten([
+      for arn in local.derived_bucket_arns : [
+        "${arn}/results/*",
+        "${arn}/derived/*",
+        "${arn}/scratch/*",
+      ]
+    ])
+  }
+
+  statement {
+    sid    = "WriteDerivedZonePrefixes"
+    effect = "Allow"
+
+    actions = [
+      "s3:AbortMultipartUpload",
+      "s3:ListMultipartUploadParts",
+      "s3:PutObject",
+    ]
+
+    resources = flatten([
+      for arn in local.derived_bucket_arns : [
+        "${arn}/results/*",
+        "${arn}/derived/$${aws:userid}/*",
+        "${arn}/scratch/*",
+      ]
+    ])
+  }
+
+  # DELETE EXISTS IN scratch/ AND NOWHERE ELSE. D13's words for the non-registered class are
+  # "ordinary IAM access", and ordinary access includes removing your own mistake. results/
+  # is the query record and derived/ is Stage 11's Macie and data-event scope - in both, the
+  # 30-day lifecycle is the only deleter. Versioning is on and DeleteObjectVersion is NOT
+  # granted, so even here a delete is a marker the bucket keeps the truth under.
+  statement {
+    sid    = "DeleteScratchObjects"
+    effect = "Allow"
+
+    actions = ["s3:DeleteObject"]
+
+    resources = [for arn in local.derived_bucket_arns : "${arn}/scratch/*"]
+  }
+
+  # ------------------------------------------------------------------------------------------
+  # THE DROP-BOX WRITE - THE IDENTITY HALF OF A CROSS-ACCOUNT PERMISSION (D18, D25; Stage 5
+  # pass 4c). The resource half has existed since pass 1: the drop-box bucket policy's
+  # AllowInteractiveWriterPutOnly and the zn-lab key policy's AllowDropBoxWritersViaS3, both
+  # reaching this role through the Interactive account roots. Cross-account evaluation
+  # requires BOTH policies to allow - the fact stage 6.2's reading missed when it called this
+  # statement's absence "correct rather than missing" (corrected 2026-08-19, in the stage
+  # file). The statement mirrors the bucket policy's asymmetry exactly: PutObject only, the
+  # dated prefix only - no read-back, no list, no delete, and no multipart-abort because the
+  # resource side grants none.
+  statement {
+    sid    = "WriteIngestionDropBox"
+    effect = "Allow"
+
+    actions = ["s3:PutObject"]
+
+    resources = [local.lake_dropbox_write_arn]
+  }
+
+  # The KMS half of the same write, and only via S3: SSE-KMS PutObject needs GenerateDataKey,
+  # a multipart upload needs Decrypt (the lake slice's README row says why), and ViaService
+  # keeps this role away from the lake key outside an S3 call - the same condition the key
+  # policy itself carries, each side scoping the other.
+  statement {
+    sid    = "UseLakeZoneKeyViaS3"
+    effect = "Allow"
+
+    actions = [
+      "kms:Decrypt",
+      "kms:GenerateDataKey",
+    ]
+
+    resources = [local.lake_zone_key_arn]
+
+    condition {
+      test     = "StringEquals"
+      variable = "kms:ViaService"
+      values   = ["s3.${var.region}.amazonaws.com"]
+    }
   }
 
   # Status of the work, in the account the work runs in. Describe/List only - every verb that

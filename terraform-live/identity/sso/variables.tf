@@ -80,6 +80,51 @@ variable "vpn_homes" {
   }
 }
 
+# The lake's consumer accounts - Stage 5 pass 4c. Same shape and same argument as vpn_homes:
+# each row becomes a terraform_remote_state read of that account's data/ slice, so the
+# workgroup and derived-bucket ARNs the DataScientistAccess statements name are ENUMERATED
+# from state rather than wildcarded (the reason 4c was sequenced after the slices at all).
+# Adding a consumer (Stage 9's production leg, a Stage 14 vend) is a row in backend.py's
+# DATA_CONSUMERS, never an edit to a policy document.
+#
+# AN EMPTY MAP FAILS CLOSED HERE, NOT OPEN - the opposite polarity from vpn_homes, so it gets
+# its own sentence: no consumers means empty resource lists in three ALLOW statements, which
+# IAM rejects at provisioning (a statement must name a resource), in every account the set is
+# provisioned into. The validation turns that per-account provisioning failure into one
+# plan-time message.
+variable "data_consumers" {
+  description = "Account folder -> { profile, env } for every account consuming the lake (backend.py DATA_CONSUMERS). Read for each one's data/ slice outputs: the Athena workgroup and derived-bucket ARNs."
+  type = map(object({
+    profile = string
+    env     = string
+  }))
+  nullable = false
+
+  validation {
+    condition     = length(var.data_consumers) > 0
+    error_message = "data_consumers is empty: three DataScientistAccess allows would render with no resource and fail at provisioning, per account. Regenerate with ./scripts/gen-tfvars.py identity sso."
+  }
+}
+
+# The account that OWNS the lake - Stage 5 pass 4c, the same one-element table the consumer
+# slices take (backend.py DATA_LAKE). Read for the drop-box bucket ARN, its write prefix and
+# the zn-lab key ARN: the drop-box write is CROSS-ACCOUNT, so the bucket policy's grant is
+# only half of the permission and the identity half has to name real ARNs - the key ARN
+# carries the account id, which may live in state but never in a tracked file.
+variable "lake" {
+  description = "Account folder -> { profile, env } for the account owning the governed lake (backend.py DATA_LAKE). Read for data-governance/data/ outputs: the drop-box ARN + prefix and the zn-lab key ARN."
+  type = map(object({
+    profile = string
+    env     = string
+  }))
+  nullable = false
+
+  validation {
+    condition     = length(var.lake) == 1
+    error_message = "lake must name exactly one account - D22 makes the Data Governance account a structural singleton. Regenerate with ./scripts/gen-tfvars.py identity sso."
+  }
+}
+
 variable "project" {
   description = "Project tag. Fixed by docs/plan/conventions.md and by 1c's tag policy, which requires the key."
   type        = string

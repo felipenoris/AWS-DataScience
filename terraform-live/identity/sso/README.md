@@ -57,7 +57,7 @@ shape *on earth*.
 
 | Owed by | To which set | What |
 |---|---|---|
-| Stage 5 | `DataScientistAccess` | scratch and derived prefixes (D19: per-principal, its CMK is the read control — D31); lake read through the Lake Formation share |
+| ~~Stage 5~~ **DELIVERED 2026-08-19** | `DataScientistAccess` | the enforced Athena workgroups, the derived zone's three prefix families (write per-`${aws:userid}`, delete in `scratch/` only) and **the drop-box write's identity half** — every ARN read from the consumer and lake slices' state, which is why this row waited for them (Stage 5 pass 4c). **One line of it was corrected rather than delivered**: this row used to owe *"lake read through the Lake Formation share"*, and **no such grant will ever arrive** — vended access hands the engine credentials through `lakeformation:GetDataAccess`, already held, and a direct `s3:GetObject` on a registered prefix is the bypass D13 exists to exclude. The derived zone's CMK is still the read control (D31), and it grants through the **key policy**, which is why no KMS statement for it appears in this slice |
 | Stage 6 | `DataScientistAccess` | Studio use against the blueprint-provisioned domain, and the `iam:PassRole` for job submission — scoped by `iam:PassedToService` **and** by role ARN |
 | Stage 7 | `DataScientistAccess`, `DataScientistProdAccess`, `DevEnvStewardAccess` | the ECR repository ARNs, so pull and metadata reads stop being account-wide |
 | Stage 8 | `DeploymentManagerAccess` | `s3:GetObject` on **enumerated** build-artifact and test-report prefixes — never a bucket wildcard, which is what produced D31 |

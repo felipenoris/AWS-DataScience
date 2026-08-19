@@ -407,6 +407,27 @@ lesson can be *recognised* without opening this file; the reasoning that makes e
    comment at each end pointing at the other ([`policies-approvers.tf`](../../terraform-live/identity/sso/policies-approvers.tf),
    [`data/README.md`](../../terraform-live/data-governance/data/README.md) §"A permission here is the
    intersection of two systems").
+   **AMENDED 2026-08-19 (Stage 5 pass 4c), because the lesson was stated, listed "an S3 bucket policy"
+   in its general form — and still did not fire.** The intersection has a **second trigger, which is not
+   a service at all: the account boundary.** Cross-account access requires an allow in the resource
+   policy of the account that owns the object **and** an allow in the identity policy of the account that
+   owns the principal. No second permission layer is involved; it is one IAM, whose evaluation rule
+   changes from OR to AND at the boundary. That is why the first trigger did not recognise it: S3 has no
+   layer above IAM, so the case does not look like Lake Formation, and **same-account intuition is
+   actively wrong here** — within one account a bucket policy naming a role *is* sufficient, which is the
+   form everybody has read a hundred times.
+   **What it cost:** the drop-box `PutObject` had lived since pass 1 with only its resource half — three
+   correct statements naming the persona roles — and the stage file recorded in writing that the missing
+   identity half was *"correct rather than missing"*. The reading behind that sentence was accurate; the
+   inference was not. The failure would have surfaced at the first attempt as an `AccessDenied` **whose
+   error names the half that is right**, which is why this direction is expensive rather than merely
+   wrong.
+   **The discriminator, added to the one above:** before claiming any permission works, ask *whose
+   account owns the object, and whose owns the principal* — and if the answer is two accounts, the
+   question "can you point at both grants?" is not optional advice, it is the evaluation rule. The
+   converse is the useful half in review: a resource policy that names a **foreign** principal is by
+   itself always incomplete, in every service, with no exception — so it can be read as a marker that an
+   identity-side statement exists somewhere or the permission is dead.
 
 29. **An attribute assigned to describe a thing becomes a selector the moment somebody writes a rule over
    it — and the rule inherits every resource that wears the attribute for an unrelated reason.** Stage 5

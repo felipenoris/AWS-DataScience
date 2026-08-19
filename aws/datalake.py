@@ -416,6 +416,59 @@ def main(argv: list) -> int:
                     expiry = "yes"
             derived.append((p, b, expiry))
 
+    # ------------------------------- the persona's IDENTITY half of the cross-account grants
+    #
+    # ADDED 2026-08-19 (pass 4c), and it exists because a review, a plan and a commit gate all
+    # missed the thing it measures. The drop-box write crosses an account line, so it needs an
+    # allow in the drop-box BUCKET POLICY (Data Governance, measured above as DL-2) *and* one
+    # in the writer's own identity policy - and for a year of this plan only the first existed,
+    # while the stage file asserted in writing that the absence was correct. Lesson 28, amended.
+    #
+    # IT READS THE PROVISIONED ROLE, NOT THE PERMISSION SET, and that is the whole point: a set
+    # lives in the Identity account and becomes an IAM role in every account it reaches, so the
+    # only place the permission actually IS is the role - which is also the object an
+    # unprovisioned change would leave stale.
+    persona_grants: list = []  # (profile, role, has dropbox put, has lake key via s3)
+    for p in CONSUMER_PROFILES:
+        if p not in live:
+            continue
+        cli = cli_for(p)
+        res = cli.run(
+            "iam",
+            "list-roles",
+            "--path-prefix",
+            "/aws-reserved/sso.amazonaws.com/",
+            "--query",
+            "Roles[?contains(RoleName, `DataScientistAccess`)].RoleName",
+            "--output",
+            "text",
+            log=False,
+        )
+        if not res.ok:
+            logerr(p, "iam list-roles", res.stderr)
+            continue
+        for role in res.stdout.split():
+            doc = run_json(
+                cli,
+                p,
+                "iam",
+                "get-role-policy",
+                "--role-name",
+                role,
+                "--policy-name",
+                "AwsSSOInlinePolicy",
+            )
+            if not doc:
+                continue
+            sids = {
+                s.get("Sid", "")
+                for s in doc.get("PolicyDocument", {}).get("Statement", [])
+                if s.get("Effect") == "Allow"
+            }
+            persona_grants.append(
+                (p, role, "WriteIngestionDropBox" in sids, "UseLakeZoneKeyViaS3" in sids)
+            )
+
     # ------------------------------------------------------------------- EFS, the VPN home
     # The NFS requirement was withdrawn 2026-08-17 (D24 with it): no stage creates a
     # filesystem, so this reading is an absence check - with one exemption (2026-08-18).
@@ -757,6 +810,36 @@ def main(argv: list) -> int:
                 "no expiry rule - the shadow lake silently becomes permanent (D19, step 9.2).",
             )
 
+    # DL-12: the identity half of the drop-box write (pass 4c; Lesson 28 amended). A
+    # cross-account permission is the AND of two policies, and DL-2 only ever measured the
+    # resource one. This is the other half, read off the provisioned role.
+    if not persona_grants and any(p in live for p in CONSUMER_PROFILES):
+        checks.note(
+            "DL-12",
+            "persona drop-box grants",
+            "no DataScientistAccess role provisioned - expected before Stage 5 pass 4c.",
+        )
+    for p, role, has_put, has_key in persona_grants:
+        missing = []
+        if not has_put:
+            missing.append("WriteIngestionDropBox (s3:PutObject on the dated prefix)")
+        if not has_key:
+            missing.append("UseLakeZoneKeyViaS3 (GenerateDataKey/Decrypt via S3)")
+        if missing:
+            checks.fail(
+                "DL-12",
+                f"drop-box identity half ({p})",
+                "; ".join(missing)
+                + " - the bucket policy alone denies the write, and the AccessDenied "
+                "names the half that is right (Lesson 28, step 6.2's correction).",
+            )
+        else:
+            checks.ok(
+                "DL-12",
+                f"drop-box identity half ({p})",
+                "both statements present on the provisioned role",
+            )
+
     # DL-10: no filesystem is the design - the NFS requirement was withdrawn 2026-08-17,
     # D24 with it. The one exemption: a Studio domain's own tagged home, reported by name
     # rather than failed. Anything untagged is drift, not progress.
@@ -1043,7 +1126,11 @@ What the checks are, and where each comes from:
   DL-10  no EFS in the VPN home beyond a Studio domain's own tagged home
          (conventions 5.1 rule 2) - the plan itself creates none (the NFS
          requirement was withdrawn 2026-08-17, D24 with it)
-  DL-11  Security Hub + FSBP in every measured account, or in none (step 13)""")
+  DL-11  Security Hub + FSBP in every measured account, or in none (step 13)
+  DL-12  the persona's IDENTITY half of the drop-box write, read off the
+         PROVISIONED role in each consumer account (pass 4c). DL-2 measures the
+         resource half; a cross-account permission is the AND of the two, and
+         for three passes only one of them existed (Lesson 28, amended)""")
 
         # ==============================================================================
         rep.h1("13. The accounts nothing here is measuring")

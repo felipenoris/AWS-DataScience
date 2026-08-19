@@ -145,7 +145,7 @@ general-purpose exchange bucket D18 refuses to build.
 
 | `Sid` | Principal | Grants | The asymmetry |
 |---|---|---|---|
-| `AllowInteractiveWriterPutOnly` | Sandbox + Development roots, `ArnLike` to the writer roles | `s3:PutObject` on the dated prefix | **No read-back, no list, no delete.** Confirmation is the `PutObject` response; re-uploading a corrected file is an ordinary overwrite and versioning keeps the prior copy internally |
+| `AllowInteractiveWriterPutOnly` | Sandbox + Development roots, `ArnLike` to the writer roles | `s3:PutObject` on the dated prefix | **No read-back, no list, no delete.** Confirmation is the `PutObject` response; re-uploading a corrected file is an ordinary overwrite and versioning keeps the prior copy internally. **This is the resource HALF of a cross-account permission** — the identity half (`WriteIngestionDropBox` + the KMS pair, mirrored scoping) lives in `identity/sso/`, Stage 5 pass 4c |
 | `AllowProductionPickupReadDelete` | Production root, `ArnLike` to `awsds-prod-job-exec` | `GetObject` + `DeleteObject` | Reads **and** empties — a letterbox nobody empties fills up. Stage 9's half |
 | `AllowProductionPickupList` | idem | `ListBucket`, `s3:prefix` scoped | Listing is separate because it is a **bucket** action, not an object one |
 | `AllowMaintenanceSchemaRead` | the maintenance role | `GetObject` + `ListBucket` | Reads to infer schema, **cannot delete**. Same-account IAM would suffice (its inline policy carries the read) — the statement is here so the whole asymmetry is readable in **one place** |

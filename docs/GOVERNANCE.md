@@ -288,6 +288,14 @@ under the `zn-lab` CMK (decision 3 — the KMS trade is §`security-zone`'s). Re
 file is an ordinary overwrite (`PutObject` covers it; versioning keeps the prior copy internally); the
 writer's confirmation is the API response, since read-back does not exist.
 
+**The writer's permission is two-sided, because the write crosses the account line (2026-08-19,
+Stage 5 pass 4c).** The three statements above are the *resource* half; cross-account evaluation also
+requires an allow in the writer's own identity policy, so `DataScientistAccess` carries the mirror —
+`PutObject` on the dated prefix, plus `GenerateDataKey`/`Decrypt` on the zone key via S3 — in
+`identity/sso/`. Each half is scoped by the other: the bucket policy names the persona roles, the
+permission set names the one prefix and the one key. The asymmetry is unchanged — the identity half
+grants no read-back, no list, no delete.
+
 **The catalog half of the asymmetry, written down 2026-08-19 because it was nearly lost.** The drop-box
 has a catalog database and a crawler, so it has *metadata* that a grant can reach even though its bucket
 holds nothing a consumer may read. Three things keep the letterbox shut on that side, and they are not

@@ -1130,4 +1130,169 @@ rather than about AWS:
 
 ---
 
+## 2026-08-19 — Pass 4c APPLIED: the persona can query, and the drop-box write turned out to have only half a permission
+
+*Provenance: **this entry is Claude's**, written on the user's request in the same sitting. It **does
+change AWS**: one `terraform apply` in the Identity account, on the user's explicit authorization
+("pode rodar o plan e o apply"). Every measurement below is a read-only call made after the write it
+reports on. Redactions per `scripts/check-identifiers.py`: accounts are named, never numbered.*
+
+### Identity, stated before the calls
+
+Applied as the **infrastructure user** on the **Identity** account through **`InfrastructureAccess`**
+(profile `awsds-infra-identity`). The plan additionally *reads* state in **Sandbox Account 1**,
+**Development** and **Data Governance**, each through that account's `InfrastructureAccess` — one
+sign-in covers all four, since every profile sits on the `awsds` sso-session. `aws sts
+get-caller-identity` was checked before the first call, as the rule requires.
+
+### The finding, which arrived while authoring rather than while applying
+
+4c was scoped as *Athena + the derived zone*. Reading the drop-box's applied form to write the S3
+statements produced a third one, and it is a defect rather than an addition:
+
+**The drop-box write is cross-account, so the bucket policy alone was never a working permission.** The
+persona's role lives in Sandbox or Development; `awsds-data-dropbox` lives in Data Governance. Access
+across an account line requires an allow in **both** the resource policy and the identity policy — and
+the persona sets carried no S3 allow at all. A 4d attempt would have returned `AccessDenied` with
+`AllowInteractiveWriterPutOnly` and `AllowDropBoxWritersViaS3` both correct, which is the expensive
+shape: the error points at the half that is right.
+
+**And the plan asserted the opposite in writing.** Step 6.2's reading, made on 2026-08-19 during pass 2,
+ends: *"The drop-box `PutObject` exception 6.1 names is granted by **bucket policy** … so it does not
+appear here, and that is correct rather than missing."* The reading itself was accurate — the sets held
+no S3 allow — but the conclusion drawn from it was wrong. What made it plausible is same-account
+intuition: within one account a bucket policy naming a role *is* sufficient, and the sentence was
+written by someone (me) reading a bucket policy that names roles.
+
+It is **Lesson 28's shape** — reach is an intersection and the two halves sit in different slices — on
+plain S3 rather than on Lake Formation. Lesson 28 was written about a service *with its own permission
+layer*, which is why it did not fire here; the lesson has been generalised rather than duplicated (below).
+
+### What was applied
+
+Seven statements added to **`DataScientistAccess`** — one document, provisioned into Sandbox and
+Development:
+
+| Sid | What it grants | The scoping that is the point |
+|---|---|---|
+| `RunQueriesInTheEnforcedWorkgroups` | the Athena run family (8 actions) | **the two workgroup ARNs, enumerated from the consumer slices' state** — `primary` is absent, and that absence is what denies it |
+| `UseDerivedZoneBuckets` | `ListBucket`, `GetBucketLocation`, multipart list | the two derived buckets |
+| `ReadDerivedZoneObjects` | `GetObject` | `results/`, `derived/`, `scratch/` — read at decision 6's **persona** grain |
+| `WriteDerivedZonePrefixes` | `PutObject` + the multipart pair | `results/`, **`derived/${aws:userid}/`** (per principal), `scratch/` |
+| `DeleteScratchObjects` | `DeleteObject` | **`scratch/` only** — `results/` and `derived/` are deleted by the 30-day lifecycle and by nothing else; `DeleteObjectVersion` is not granted anywhere |
+| `WriteIngestionDropBox` | `s3:PutObject` | `awsds-data-dropbox/incoming/*` — the identity half above, mirroring the bucket policy's asymmetry exactly: no read-back, no list, no delete |
+| `UseLakeZoneKeyViaS3` | `GenerateDataKey`, `Decrypt` | the lake's `zn-lab` CMK, `kms:ViaService = s3` — the same condition the key policy carries, each side scoping the other |
+
+**Why `results/` is writable by a human who never chooses to write there:** Athena stages query results
+**with the caller's credentials** into the workgroup's enforced location. No `PutObject` on `results/`
+means no output means no query — the grant is the engine's contract, not a convenience.
+
+**No KMS statement for the derived zone**, and its absence is deliberate: those keys are same-account, so
+the key policy — which names this role and nobody else — decides alone. That is D31 working as designed.
+
+### One ledger line corrected rather than delivered
+
+`policies-data-scientists.tf` has carried a `STILL OWED` ledger since Stage 2. One of its Stage 5 lines
+was *"s3:GetObject on the governed lake through the Lake Formation share"*. **No such grant will ever
+arrive.** Vended access hands the engine credentials through `lakeformation:GetDataAccess`, which the set
+already holds; a direct `s3:GetObject` on a registered prefix is precisely the bypass D13 exists to
+exclude. That line was Stage 2 guessing at Stage 5's interface — the exact failure the file's own opening
+comment warns against, caught by delivery rather than by review.
+
+### The plumbing, in one paragraph
+
+`backend.py` emits two new maps to `identity/sso` — `data_consumers` and `lake` — so the slice gained its
+**fifth and sixth** cross-account lookups, both `terraform_remote_state` reads with a profile, exactly
+like `vpn_home`. The workgroup and bucket ARNs come from the consumer slices' outputs; the drop-box ARN,
+its prefix and the key ARN from the lake's. **The key ARN carries the lake's account id**, which is why
+it is read from state and never written down — the same rule `aws/INDEX.md` rule 1 states for every
+identifier. `data_consumers` validates non-empty with the *opposite* polarity from `vpn_homes`, noted in
+the variable: an empty map there denies everything, here it renders three allows with no resource and
+fails at provisioning, per account.
+
+### The apply, and the reading that proves it landed
+
+```
+Plan: 0 to add, 1 to change, 0 to destroy.
+inline_policy_bytes: data_scientist 4285 -> 7036
+```
+
+Applied; **re-plan `No changes`**. The 7036 is against the plan-time ceiling of 10240 — the precondition
+Stage 2 built for exactly this moment, and the first time it has had a real increase to measure.
+
+**Then the reading that matters, because a permission set is not where the permission lives.** A set
+becomes an IAM role in every account it is provisioned into, so `1 changed` in Identity proves nothing
+about Sandbox and Development. `get-role-policy` on `AWSReservedSSO_DataScientistAccess_*` in **both**
+accounts returns **all 18 statements**, the seven new ones included — so the reprovisioning happened
+rather than being assumed. And in the same reading, `WriteDerivedZonePrefixes` comes back carrying
+`.../derived/${aws:userid}/*` **as a literal policy variable**, not expanded and not mangled by the
+round trip through Terraform's `$${...}` escape.
+
+### The instrument gained the check that would have caught it — `DL-12`
+
+The defect got past a review, a plan, a commit gate and three passes. What none of them had is a
+question that can be *asked mechanically*, so one was added: **`DL-12` reads the drop-box's identity
+half off the PROVISIONED role in each consumer account** — `WriteIngestionDropBox` and
+`UseLakeZoneKeyViaS3` present, or a `fail` naming what is missing. `DL-2` has always measured the
+resource half; the pair is now what "the drop-box write works" means to the instrument, which is the
+AND the evaluation rule actually is.
+
+**It reads the role and not the permission set, deliberately.** A set lives in Identity and *becomes* a
+role in every account it reaches; the role is where the permission is, and it is also the object a
+half-finished reprovisioning would leave stale. `./aws/datalake.py`: **`DL-12` pass in both consumer
+accounts, 0 FAILED overall.** Its negative control is not hypothetical — the plan diff for this apply
+showed both statements as additions, so the check would have failed against the state that existed this
+morning.
+
+### Records
+
+**Code:** `terraform-live/identity/sso/` (`variables.tf`, `data.tf`, `locals.tf`,
+`policies-data-scientists.tf`), `scripts/tfhygiene/backend.py`, `aws/datalake.py` (`DL-12`, new).
+
+**Docs:** the stage file (status row, pass table, the 4c paragraph, **6.2's correction**),
+`docs/GOVERNANCE.md` (§Drop-box: the writer's permission is two-sided),
+`terraform-live/data-governance/data/README.md` (the `AllowInteractiveWriterPutOnly` row says which half
+it is), **`docs/plan/integrations.md` (INT-10 amended — it described only the resource half)**,
+`docs/plan/lessons.md` (**Lesson 28 amended**, not duplicated), `CLAUDE.md` (the Stage 5 bullets
+consolidated in the same sitting — the section's own budget rule, and my additions had been growing it).
+
+**The propagation sweep, and it came back closed.** Every resource policy in the applied estate that
+names a **foreign** principal was enumerated: four statements, all in the lake — the two writer ones
+(Sandbox + Development, on the bucket and on the key) and the two Production pickup ones. The writer's
+identity half is what this sitting applied; **the pickup's was already correctly specified**, in Stage 9
+step 3.1, which says in those words *"the identity half of Stage 5's statements"*. So the plan was right
+where the role is authored beside its grant and wrong only where the two halves sat five stages and two
+slices apart — the defect correlates with **distance**, not with the concept, and that is the useful
+half of the finding.
+
+**Two files were missed on the first pass and found by the user asking whether everything had been
+edited — both of them owners of the changed claim, which is Lessons 31-32 again.**
+`identity/sso/README.md` carries an **owed table**, one row per stage, and its Stage 5 row still
+promised the work this sitting delivered *and* repeated the corrected line (*"lake read through the
+Lake Formation share"*). `aws/INDEX.md`'s question table had a row for every `DL-` check except the new
+one. Neither is prose: the first is what a reader opens to learn what a persona is still missing, the
+second is how a check is found by the question it answers. The pattern to carry: **a delivery has to
+sweep the files that say the thing is still owed**, and an index of checks is one of them.
+
+**AWS:** 1 resource changed, in the Identity account. Nothing created, nothing destroyed. The two
+provisioned roles were re-written by Identity Center as a consequence, which is the change that matters
+and is not what Terraform counted.
+
+**Gates:** `make check` **OK**; `pre-commit` green on the five changed files, including tflint, checkov
+and the 9.2 wildcard-account check — the last one is the one that would have fired had 4c been written
+before the consumer slices existed.
+
+### Not done, and owed by name
+
+- **4d — every behavioural proof**, unchanged in scope but no longer blocked by entitlement: the pandas
+  pair, the persona half of the classification pair, the workgroup boundary, the crawler pair, the
+  drop-box asymmetry. All need a persona sign-in with the tunnel up. **The drop-box half is now worth
+  more than it was**: it is the first exercise of a permission that was measured wrong on paper.
+- **4e — 4.3's `athena:StartQueryExecution` amendment**, still last and still through battery phase 4b.
+  Note it binds Data Governance only; nothing applied today runs there.
+- Pass 6 (Security Hub) untouched; `DL-11` still notes it enabled nowhere.
+- **Not committed** — the working tree carries all nine files; the branch is the user's call.
+
+---
+
 *Log index: [docs/log/INDEX.md](INDEX.md) · Stage index: [docs/plan/stages/INDEX.md](../plan/stages/INDEX.md)*

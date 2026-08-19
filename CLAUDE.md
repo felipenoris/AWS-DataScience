@@ -205,85 +205,35 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   `DenyGuardDutyTampering` (its decision 1), `ALL` never reaches Management. Principle 9 overruled once;
   the institutional-delta row argues it. `aws/guardduty.py` (`GD-1`–`GD-3`); `VP-8` retired; `vpn.py`
   default narrowed to two profiles.
-- **Stage 5 OPENED 2026-08-18:** `docs/log/log-stage-05-data-foundation.md` initialized (no entries);
-  baseline `./aws/datalake.py` green — `DL-5` reads `4/TRUE`, `DL-1/4/8/11` pre-stage notes. Pass 0
-  underway: **decision 4 taken 2026-08-18 (Glue auto-compaction; the 4.3 `athena:StartQueryExecution`
-  amendment owed via battery phase 4b, after any Athena-borne sample-table load)**; **decisions 1-3 taken
-  2026-08-18 — `docs/GOVERNANCE.md` is the one copy** (ontology renamed: `layer`/`businessunit`/
-  `security-zone`/`classification`; `raw` default `internal`, fail-open by the user's call; one `zn-lab`
-  lake CMK, drop-box sharing it; grant register seeded empty in `AWS_STATE.md`); **decision 5 taken 2026-08-18** (recommendation
-  as-is: admins = `InfrastructureAccess` only, shares to the two named accounts, TBAC default + the 7.1
-  catalog-policy prerequisite); **decision 6 taken 2026-08-18 — the grain reframed: entitlement to
-  roles/projects per the toolset's practice, per-user as mapped exploration (verif. viii = the map;
-  OQ13's Stage 5 half answered). PASS 0 CLOSED — all six decisions taken. PASS 1 AUTHORED 2026-08-18,
-  NOTHING APPLIED**: `data-governance/data/` (11 files, `58 to add`), registered in D11 (18/18).
-  **Its finding: the 5.2 default-permission clearing cannot be stated in a plan** (Computed blocks,
-  `= []` refused) → **the apply is TWO steps** — settings alone under `-target`, `DL-5`/`DL-6` read,
-  then the rest. `s3-bucket` → **v0.2.0** (`any`, not `list(any)`): Recipe B, tag pushed first.
-- **PASS 1 APPLIED 2026-08-18 — the lake exists.** Five `awsds-data-*` buckets under one CMK
-  (`alias/awsds-data-zn-lab`), `raw`+`curated` registered, 3 LF-Tag keys, 3 databases,
-  `curated.sample_trades` (Iceberg, `restricted` column) + its optimizer,
-  `awsds-data-catalog-maintenance` + 2 unscheduled crawlers. Re-plan `No changes`; `DL-1`–`DL-6`,
-  `DL-10` pass. **The measurement the split existed for: omission CLEARS** (`DbDefaults`/`TableDefaults`
-  read `[]` before any database) — **keep the read-back anyway**, it is provider behaviour the plan
-  still does not state. Verified per database: no `IAMAllowedPrincipals` anywhere. Added beyond the
-  stage text: a **Glue security configuration** (gate finding; a crawler samples contents, so its logs
-  take the lake key) — and the role needs `glue:GetSecurityConfiguration` to run under it. Nothing
-  behavioural proven; crawlers never run. **Merged (PR #18), synced, re-planned `No changes` from the
-  merge commit.** The finding generalised into **Lesson 27** + the runbook's **Recipe D** (`-target` as
-  a measurement; `after_unknown` is the instrument — `providers schema` never marks `computed` on
-  blocks). Sandbox not needed until pass 4's persona proofs (`make down ENV=sandbox` safe). Stage 4
-  residuals, non-blocking: host left `running`; the user's close-out log entry still owed.
-- **PASS 2 APPLIED 2026-08-19 — `9 added`, `DL` all pass.** `governance.tf` — the GM's own grants
-  (`ASSOCIATE` on the 3 tag keys, `DESCRIBE` on the 3 databases + `ALL_TABLES`). **Verified by
-  `list-permissions`, not the code: nine rows, `grant_option=NONE`, no `SELECT`** (by exhaustion).
-  Register 3 rows / 9 triples. **6.2: every `s3:` in the six persona sets is a `Deny`** — D13 holds by
-  *absence*. **Lesson 28.** Verification (viii) = decision 6's map in `GOVERNANCE.md` §"The grain" (TIP
-  the only per-person surface; costs remote access; not adopted). Slice README is an **index of
-  controls**. **Owed: can the persona actually tag? — needs a GM sign-in + the tunnel.**
-- **PASS 3 APPLIED 2026-08-19 — `4 added`, re-plan `No changes`, `DL` 0 FAILED.** `shares.tf`: the
-  Sandbox + Development TBAC shares. **4 `LakeFormation-V4-*` RAM shares `ACTIVE`, held by both
-  consumers, ZERO invitations → INT-11 closed**; `DL-5` bracket holds (3rd reading = verification (i)).
-  **Method change first: AWS's LF pages read fine in a *rendering* browser** — pass 2's "no body to
-  fetch" caveat retired (**Lesson 30**), and its deferred question answered: the GM **tags, does not
-  grant** (`Grant with LF-Tag expressions`; the *LF-Tag creator* clause stays Stage 6's). **Two
-  corrections to the decided form**: the grant option is **mandatory on every** cross-account grant (the
-  consumer's own DL-admin must re-grant), and the expression needed a `layer` gate or it shared the
-  **drop-box** (**Lesson 29**; the applied form is DB `layer∈{raw,curated}` → `DESCRIBE`, TABLE + `AND
-  classification∈{public,internal}` → `SELECT`). 7.1's catalog-policy prerequisite measured
-  **conditional, not applicable** (no Glue resource policy). Register 9 rows / 17 triples.
-  **`DL-7` rebuilt** — it reported one verdict for two opposite causes (Lesson 13's family); it now reads
-  each consumer's *held* shares + admin count. **Pass 4's new opening prerequisite: each consumer account
-  needs its OWN `DataLakeSettings`** (admins `[]` today → empty catalog by rule), with INT-11 and
-  Lesson 27 both applying there. `sts:SetContext` only half-tested — vending waits for pass 4's query.
-- **PASS 4a/4b APPLIED 2026-08-19 — the consumer side exists.** `consumer-data` **v0.1.0** (one module,
-  two slices, the tree's first *nested* module-by-tag) + `s3-bucket` **v0.3.0** (current-version expiry);
-  Recipe B as a **3-commit chain**, Recipe D per account (`1 added`, read, `15 added`, `No changes`).
-  Per account: `alias/awsds-<env>-zn-lab` CMK, `awsds-<env>-derived` (30-day expiry), enforced
-  `awsds-<env>-athena` (10 GiB cap → `results/`), own `DataLakeSettings`, 2 links, 4 re-grants.
-  **The finding came from the before-reading: INT-11's reset hazard is SYMMETRIC** (both consumers already
-  carried 4/TRUE) — and **`DL-6` was reporting `pass` over two accounts in the failing state**; both checks
-  now report per account, consumer `DL-6` with no *databases exist* guard. `DL` **0 FAILED**; `DL-7` at
-  4 shares/4 links/0 invitations → **verification (v) closed**. **Verification (x)'s exclusion half answered
-  one layer early: `counterparty` is absent in BOTH consumers even to their own admin** (6 columns vs 5,
-  negative control in the same reading) — the `restricted` column never crosses the account line.
-  Register **13 rows / 25 triples**. Three settled in authoring: **`scratch` is a PREFIX** (D13's wording;
-  the "bucket" lines all credit D19, which never says it), **CMK per (zone × account)** (user's call —
-  the lake's key declined because `AllowProductionPickupDecryptViaS3` has no bucket scoping), **key policy
-  delegates administration to root and no crypto action**. **Owed: 4c** (persona grants in `identity/sso/`
-  — sequenced after so ARNs come from state, not wildcards), **4d** (all behavioural proofs, tunnel),
-  **4e** (the SCP amendment, last), pass 6. **PR #20 merged + synced; post-merge re-plan
-  `No changes` in all 3 slices, instrument all-pass. The merge was a REBASE — both tags now point OUTSIDE
-  `main`'s history; harmless (tree hashes identical, `init` resolves content) and Recipe B gained the check.** A 2nd review pass fixed 7 misses, 2 in the rows that OWN
-  the claim (INT-11, INT-03); **Lessons 31-32** came from that re-reading, not from the apply.
-- **Pass 0-3 findings PROPAGATED 2026-08-19 (doc-only, no AWS call).** St.5: pass 4 gains a debt list —
-  the crawlers **never ran** (verif. iii), the drop-box halves, and 4.3's amendment **last**;
-  `sample_trades` was applied **EMPTY**, so verif. (x) reads a *column list* and row evidence waits for
-  St.9's write. St.9: the settings apply is **two steps** in Production *and* Staging, its 2.2 reading
-  corrected (RAM ≠ catalog — no admin until 1.3, a pass later), new verif. xiv. St.6: pass 4 is a **hard
-  predecessor** (blueprints create catalog objects), 1.4 callout + verif. xiv-xvi. St.11: the row-filter
-  proof now depends on St.9's rows. St.14: the plumbing/entitlement split. cost-model KMS **9→10**.
-  **Owed instrument: `DL-6` is Data-Governance-only** — extend per consumer in pass 4's sitting.
+- **Stage 5 passes 0-3 DONE (2026-08-18/19) — the governed lake exists, granted and shared.** Six
+  decisions taken (`docs/GOVERNANCE.md` is the one copy of the ontology + grant rules). Applied: five
+  `awsds-data-*` buckets under one CMK, `raw`+`curated` registered, 3 LF-Tag keys, 3 databases,
+  `curated.sample_trades` (Iceberg, EMPTY, `restricted` column) + optimizer, the maintenance role + 2
+  never-run crawlers + a Glue security configuration; the GM's own grants; the 2 TBAC shares (4 RAM
+  shares `ACTIVE`, 0 invitations → **INT-11 closed**). Findings that outlived the passes: the 5.2
+  settings apply is **two steps** (Lesson 27 + Recipe D — `after_unknown` is the instrument); the grant
+  option is **mandatory** on every cross-account grant; the expression needs a `layer` gate or it shares
+  the **drop-box** (Lesson 29); the GM **tags, does not grant**; Lesson 28 (reach is an intersection),
+  Lesson 30 (AWS's LF pages read fine in a *rendering* browser).
+- **Stage 5 pass 4a/4b/4c APPLIED 2026-08-19 — the consumer side exists and the persona can query.**
+  `consumer-data` v0.1.0 (the tree's first *nested* module-by-tag) + `s3-bucket` v0.3.0, Recipe B as a
+  3-commit chain, Recipe D per account. Per consumer: `alias/awsds-<env>-zn-lab` CMK, `awsds-<env>-derived`
+  (30-day expiry), enforced `awsds-<env>-athena` (10 GiB → `results/`), own `DataLakeSettings`, 2 links,
+  4 re-grants. Then **4c**: 7 statements in `DataScientistAccess` (`1 changed`, re-plan `No changes`, both
+  provisioned roles read back with `${aws:userid}` intact) — Athena run family on the 2 workgroup ARNs,
+  derived-zone scoping (write per-user, read persona-grain, delete `scratch/` only), **and the drop-box
+  identity half**. Register **13 rows / 25 triples**. Findings: INT-11's reset hazard is **symmetric** and
+  `DL-6` was reporting `pass` over two failing accounts (**Lesson 31**); `counterparty` absent in BOTH
+  consumers → verification (x)'s exclusion half closed early; **a cross-account write needs BOTH policy
+  halves** — 6.2's "correct rather than missing" was wrong (**Lesson 28 amended**: the account boundary is
+  a second trigger). Settled: **`scratch` is a PREFIX** (D13's wording, not D19's), **CMK per (zone ×
+  account)** (user), key policy delegates administration only. **Lesson 32** + Recipe B's post-merge tag
+  check came from the PR #20 rebase. **Owed: 4d** (behavioural proofs, tunnel), **4e** (the SCP amendment,
+  last), pass 6.
+- **Pass 0-3 findings PROPAGATED 2026-08-19 (doc-only).** St.5 pass 4 gained a debt list (crawlers never
+  ran; `sample_trades` EMPTY, so verif. (x) reads a *column list*). St.9: settings apply is two steps in
+  Production *and* Staging, new verif. xiv. St.6: pass 4 is a **hard predecessor**. St.11: the row-filter
+  proof depends on St.9's rows. cost-model KMS 9→10.
 - **Stage 6 NOT open, but its decision 3 is CLOSED (2026-08-19, doc-only sitting — no AWS call at all;
   [log](docs/log/log-stage-06-unified-studio.md) initialized early because the stage file homes such
   decisions there).** Athena Spark off by **SCP** `athena:StartSession`/`UpdateSession` on `Interactive`,
@@ -305,6 +255,14 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   `MLExperiments` priced first); cat 3 amend-first (`EMRonEC2`, `PartnerApps`, `Quicksight`,
   `LakehouseCatalog`); `RedshiftServerless` never. **The finding: `LakehouseCatalog` is RMS-backed —
   the Glue/Athena form is `DataLake`** (the doc's *Resources created* column; D26's wording inverted).
+- **PASS 4c APPLIED 2026-08-19 — the persona can query.** Seven statements in `DataScientistAccess`
+  (`1 changed`, re-plan `No changes`, both provisioned roles read back, `${aws:userid}` intact): Athena
+  run family on the 2 workgroup ARNs, derived-zone scoping (write per-user, read persona-grain, delete
+  `scratch/` only), and **the drop-box identity half — the sitting's finding: a cross-account write
+  needs BOTH policy halves, and 6.2's "correct rather than missing" was wrong** (corrected in stage,
+  `GOVERNANCE.md`, lake README; Lesson 28's shape on plain S3). The Stage 2 ledger's lake `s3:GetObject`
+  line corrected away — it would be D13's bypass. `identity/sso/` now reads 3 `data` states
+  (`backend.py` emits `data_consumers`+`lake`); the lake key ARN lives in state, never tracked.
 - **Stages 5-11 revised, pre-instrumented (2026-08-16/17):**
   `aws/{vpn,datalake,studio,supplychain,cicd,deploytargets,orchestration,dlp}.py` — `DL-5`/`DT-5` guard
   the LF `Parameters` (INT-11). **St.8 pass 4, St.9 passes 4-5, St.10's Staging leg wait on the vend.**
@@ -370,8 +328,9 @@ the reasoning that makes it *usable* is in the file. Recognising one is the sign
     control.**
 27. **A plan is silent about the values the provider owns — including the one that must be right before
     anything else exists.**
-28. **A service with its own permission layer makes reach an *intersection* — and the two halves sit in
-    different slices, so a slice never answers "what can this persona do".**
+28. **Reach is an *intersection* — a service with its own permission layer, or an account boundary,
+    makes two grants necessary; the halves sit in different slices, so a slice never answers "what can
+    this persona do".**
 29. **An attribute assigned to *describe* becomes a *selector* the moment a rule is written over it —
     and inherits every resource wearing it for an unrelated reason.**
 30. **A tool's failure is not a property of the world, and gets written down as one.**

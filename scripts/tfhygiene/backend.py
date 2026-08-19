@@ -314,6 +314,17 @@ def tfvars_values(account: str, slice_name: str) -> dict:
         values["vpn_homes"] = {
             acct: {"profile": PROFILES[acct], "env": ENV_TOKENS[acct]} for acct in VPN_HOMES
         }
+        # Stage 5 pass 4c: the persona grants are scoped to ARNs read from the consumer
+        # slices' state (the workgroup, the derived bucket) and from the lake's (the drop-box
+        # and its key) - the enumerated form the 4c sequencing bought. Same three-way rule as
+        # everywhere else: the CONSUMERS list is the decision, the profile may not sit in a
+        # .tf file, and the env token builds the state-bucket name no slice may re-derive.
+        values["data_consumers"] = {
+            acct: {"profile": PROFILES[acct], "env": ENV_TOKENS[acct]} for acct in DATA_CONSUMERS
+        }
+        values["lake"] = {
+            acct: {"profile": PROFILES[acct], "env": ENV_TOKENS[acct]} for acct in DATA_LAKE
+        }
 
     return values
 
@@ -359,6 +370,12 @@ def render_tfvars(account: str, slice_name: str) -> str:
             for acct, p in v["vpn_homes"].items()
         )
         out += f"vpn_homes = {{\n{rows}}}\n"
+    if "data_consumers" in v:
+        rows = "".join(
+            f'  {acct} = {{ profile = "{p["profile"]}", env = "{p["env"]}" }}\n'
+            for acct, p in v["data_consumers"].items()
+        )
+        out += f"data_consumers = {{\n{rows}}}\n"
     if "producers" in v:
         rows = "".join(
             f'  {acct} = {{ profile = "{p["profile"]}", env = "{p["env"]}" }}\n'
