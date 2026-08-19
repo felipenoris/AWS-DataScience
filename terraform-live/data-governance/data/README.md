@@ -166,7 +166,8 @@ condition. That is why the principals above read as roots.
 | | `ReadOwnSecurityConfiguration` | **A role must be able to READ the security configuration it runs under.** `Resource = "*"` because Glue security configurations have no ARN to scope to. Nothing in the stage text said so — the first `CreateCrawler` failed on it |
 | | `VendedDataAccess` | `lakeformation:GetDataAccess` — the registered-location read path |
 | | `CrawlerLogs` | `/aws-glue/*` only, encrypted by the key-policy statement above |
-| `awsds-data-lf-registration` | `S3ReadRegisteredLocations` | How Lake Formation **vends** governed reads of `raw` and `curated`. Read-side only — the governed write arrives at Stage 9, amending this policy in this slice |
+| `awsds-data-lf-registration` | `LakeFormationService` (trust) | Trusts `lakeformation.amazonaws.com` alone, `aws:SourceAccount`-pinned to this account (row added 2026-08-19 — the discipline's own gap, found by review, not a change to the code) |
+| | `S3ReadRegisteredLocations` | How Lake Formation **vends** governed reads of `raw` and `curated`. Read-side only — the governed write arrives at Stage 9, amending this policy in this slice |
 | | `KmsDecryptDataKey` | The SSE-KMS half of the same path. The service-linked role cannot be granted the CMK cleanly, which is why this is a custom role |
 
 ### The maintenance role's own Lake Formation grants (`maintenance.tf`)

@@ -85,8 +85,9 @@ section). One uniform alias pattern, `alias/awsds-<env>-data`: the lake's five b
 `alias/awsds-sandbox-data` and `alias/awsds-dev-data`; Production's arrives with Stage 9
 (`alias/awsds-prod-data`). The `tfstate` keys (Stage 2) and the PKI key (D36) are separate objects on
 purpose — "the account's data CMK" is one key per account for *data*, not a merger of every key in the
-account (a key that also served state and logs could not express "who may read derived data", which is
-D31's whole argument).
+account (a key that also had to serve Terraform state and every other job in the account could not
+express "who may read derived data", which is D31's whole argument; the lake's own `logs` bucket *is*
+data and sits under the data key).
 
 **The binding is mechanical and it is per bucket**: each bucket's default-encryption configuration
 points at the account key (the `s3-bucket` module's `kms_key_arn`), so a bucket belongs to exactly one
