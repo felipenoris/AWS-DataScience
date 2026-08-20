@@ -92,5 +92,7 @@
 # the stop/start, and how to confirm the filesystem actually grew rather than assuming it did:
 # docs/plan/runbooks/vpn.md section S6.
 
+
+#instance_type    = "t4g.nano"
 instance_type    = "t4g.medium"
 root_volume_size = 64
