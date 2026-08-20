@@ -1571,6 +1571,110 @@ Every 4d proof is still owed — the tunnel was not yet up when this entry was w
 (Security Hub). The stage's debt list is unchanged by this sitting except in one respect: the
 carve-out pair's negative half now has its correct principal written down.
 
+## 2026-08-19 — Pass 4d's first proof: the perimeter fires off the tunnel and stands down on it, in two different wordings
+
+*Provenance. **The `~/.aws/config` edit and every command below are the user's**, run from the laptop
+and pasted verbatim, with **one mechanical substitution, named here and made nowhere else: account ids
+→ the account's name**. Nothing else in the outputs is touched — the `AWSReservedSSO_*` suffix, the
+resource ARNs, the shell prompts and the error wording arrived as they read. **Claude wrote the
+analysis around them and nothing else**, and made no AWS call in this sitting.*
+
+### The prerequisite the previous entry left owed
+
+`awsds-scientist-dev`, added to `~/.aws/config` — a local file, no AWS change. It reaches
+`<Development Account>` through the **same `awsds-scientist` sso-session** as the Sandbox persona
+profile and the **same `DataScientistAccess` permission set**: person and role coincide, so the name
+carries no role segment (`aws/AWS-CLI.md`'s rule), and one sign-in covers both accounts.
+
+```
+[profile awsds-scientist-dev]
+sso_session = awsds-scientist
+sso_account_id = <Development Account>
+sso_role_name = DataScientistAccess
+region = us-west-2
+```
+
+### The pair — one command, two networks, two wordings
+
+**Tunnel DOWN**, as the infrastructure user in `<Sandbox Account 1>` — a principal from an account
+**other** than the lake's, which is the correction the previous entry wrote down. `/dev/null` is the
+`OUTFILE` positional `get-object` requires; a denial is what the command is for, so nothing is written:
+
+```
+~ aws s3api get-object --bucket awsds-data-curated --key qualquer-coisa /dev/null --profile awsds-infra-sandbox-1
+
+aws: [ERROR]: An error occurred (AccessDenied) when calling the GetObject operation: User: arn:aws:sts::<Sandbox Account 1>:assumed-role/AWSReservedSSO_InfrastructureAccess_59e5b26af457128d/<the infrastructure user> is not authorized to perform: s3:ListBucket on resource: "arn:aws:s3:::awsds-data-curated" with an explicit deny in a resource-based policy
+```
+
+**Tunnel UP**, credential cache cleared first so that no session minted off the tunnel could be
+replayed and turn a network reading into an identity one (Lesson 25), then the identical command:
+
+```
+~ rm -f ~/.aws/cli/cache/*.json
+➜  ~ aws s3api get-object --bucket awsds-data-curated --key qualquer-coisa /dev/null --profile awsds-infra-sandbox-1
+
+aws: [ERROR]: An error occurred (AccessDenied) when calling the GetObject operation: User: arn:aws:sts::<Sandbox Account 1>:assumed-role/AWSReservedSSO_InfrastructureAccess_59e5b26af457128d/<the infrastructure user> is not authorized to perform: s3:ListBucket on resource: "arn:aws:s3:::awsds-data-curated" because no resource-based policy allows the s3:ListBucket action
+```
+
+### What the two wordings prove
+
+**The statement that fired is `DenyOutsideTrustedNetworks`** (`data-governance/data/buckets.tf`), read
+from the code rather than inferred from the message — IAM names neither the policy nor the `Sid` in a
+resource-policy denial. Its condition block is five tests ANDed, and off the tunnel every one of them
+held: no `aws:SourceVpce` key at all (a request over the public internet has none, and a *negated*
+operator on an absent key evaluates **true** — the mechanism the whole branch rests on), an
+`aws:PrincipalAccount` that is Sandbox rather than the lake, a source address outside both Elastic-IP
+`/32`s, and neither `aws:ViaAWSService` nor `aws:PrincipalIsAWSService` set.
+
+**`s3:ListBucket` in place of `s3:GetObject` is not a mismatch.** The key does not exist, and S3 decides
+between `404 NoSuchKey` and `403 AccessDenied` by evaluating `s3:ListBucket` on the *bucket*; that
+evaluation hit the deny first. The statement covers `[arn, arn/*]`, so it is the same statement either
+way — and a `NoSuchKey` here would have been the bad reading, since it would mean the call was
+authorized.
+
+**On the tunnel the wording changes to the implicit-deny form**, which is the half that makes this a
+verification rather than a single denial (Lesson 13): *"because no resource-based policy allows"* is
+what IAM says when **no explicit deny matched**. So the perimeter stood down — the request satisfied a
+trusted branch — and what refuses the call is now the absence of a grant. That absence is Lesson 28's
+shape from the far side: a cross-account read needs an allow in **both** the caller's identity policy
+and the bucket's resource policy, and the lake's policy grants this account nothing on `curated`.
+
+**One thing the pair does not settle, and it is worth not over-claiming.** The on-tunnel reading proves
+*a* trusted branch matched; it cannot say **which**, because `aws:SourceVpce` (the consumer gateway
+endpoint) and `aws:SourceIp` (the Elastic IP) are both trusted and the message names neither. What
+discriminates them is the route-table reading in the previous entry — the public subnet carries the two
+`[P]` gateway endpoints, and a prefix-list route is more specific than `0.0.0.0/0` — not this message.
+A future claim that "the `aws:SourceVpce` branch is proven end to end" needs the flow log or an S3 data
+event carrying `vpcEndpointId`, and neither was read here.
+
+### The tunnel, in two readings
+
+```
+~ curl -s https://checkip.amazonaws.com
+52.89.212.1
+
+~ dig +short SOA sandbox.internal
+ns-1536.awsdns-00.co.uk. awsdns-hostmaster.amazon.com. 1 7200 900 1209600 86400
+```
+
+The address is the `[P]` Elastic IP of `sandbox/foundation/`, unchanged across every host stop, start
+and replacement since 2026-08-17 — so the **full** tunnel is real and the laptop's non-S3 traffic
+leaves through the host's masquerade. The SOA answer is the second, different claim: `sandbox.internal`
+is a **private** hosted zone associated with the Sandbox VPC alone, so it NXDOMAINs from any public
+resolver — an answer means the VPC resolver was reached, i.e. DNS is inside the tunnel too. §C2's third
+check, the handshake, is not in this record; the two above carry the claim on their own, since neither
+can succeed without a live tunnel.
+
+### Not done, and owed by name
+
+Every **persona** proof of 4d is still owed, and none of them has run: the Athena query through the
+resource link, the five-column read with `counterparty` absent, the pandas/S3 implicit-deny pair, the
+workgroup boundary, the drop-box asymmetry (`PutObject` yes, `GetObject` no) and the crawler pair — in
+**both** Sandbox and Development, which is what the new profile exists for. Then the explicit
+`restricted` grant and its revert, then **4e** (the `athena:StartQueryExecution` amendment, last,
+through battery phase 4b) and pass 6 (Security Hub). What this sitting closed is the carve-out pair
+alone — the one 4d proof that needed no persona.
+
 ---
 
 *Log index: [docs/log/INDEX.md](INDEX.md) · Stage index: [docs/plan/stages/INDEX.md](../plan/stages/INDEX.md)*
