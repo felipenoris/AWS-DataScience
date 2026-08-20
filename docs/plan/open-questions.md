@@ -323,6 +323,39 @@ length, under item numbers 10-12 that collided with the live items above; the du
     take is whether the delegation plane is wanted; **if no**, decision 5 needs no revision at all. Do
     not close this from the documentation — the pages that would settle it are the ones already read.
 
+### Raised by Stage 5 pass 4d, 2026-08-19
+
+19. **When do the catalog crawlers run?** Nothing has ever said. `awsds-data-raw` and
+    `awsds-data-dropbox` were created at pass 1 deliberately **never-run**, and pass 4d found that the
+    omission is not cosmetic: **no principal in this estate can start them.**
+    `DenyCatalogMaintenanceRunsExceptMaintenanceRole` admits only `awsds-data-catalog-maintenance` *or a
+    service principal*, and that role's trust policy carries one statement,
+    `Principal.Service = glue.amazonaws.com` — it is an execution role Glue assumes to *perform* a crawl,
+    never an identity a person or another service becomes. **So the only invocation path the design
+    permits is Glue's own scheduler, and `Schedule` is `null` on both.**
+    **Neither document is at fault, and the question is not "how do we unblock it".** The SCP and the
+    trust policy together express something defensible and arguably stronger than intended: catalog
+    refreshes happen on a cadence somebody chose, and no human can force one. What is missing is the
+    cadence. **Do not settle this by loosening either document** — that trades a real control for the
+    convenience of a manual run.
+    **The two crawlers are not the same question, and that is the substance.** `awsds-data-dropbox`
+    sits on an **ingestion** path (D18/D25): a person uploads a file and waits for it to appear, so the
+    cadence is a latency promise to a user. `awsds-data-raw` catalogues a zone whose producer is
+    **Stage 9's governed cross-account write**, so its cadence is about an ETL that does not exist yet
+    and may not need a crawler at all once the writer registers its own tables. A single schedule
+    applied to both is the answer nobody should reach for first.
+    **Three inputs this needs before it can be decided.** (a) **Cost, measured rather than reasoned**
+    (Lesson 6) — a crawler is billed per DPU-hour with a minimum billed duration, so a frequent schedule
+    over a near-empty bucket is a real recurring line; it needs a [`docs/PRICING.md`](../PRICING.md) row.
+    (b) **Whether Glue's S3 event-driven crawl mode satisfies the SCP** — the crawler subscribes to a
+    queue and Glue initiates the run, which *may* present as `aws:PrincipalIsAWSService` and would suit
+    the drop-box far better than a fixed interval. **This is unverified and must be measured, not
+    assumed**; if it does not qualify, event-driven ingestion is blocked by the SCP as written and that
+    becomes a decision in its own right. (c) Whether Stage 9's writer makes `awsds-data-raw` redundant.
+    **The consequence of leaving it open, said plainly**: D25's drop-box stays inert **even after
+    `DenyControlPlaneOffVpn` is amended**. The write and the catalogue are independent failures, and
+    fixing the first alone produces a bucket that accepts files nothing ever reads.
+
 ---
 
 *Plan core: [GENERAL_PLAN.md](../GENERAL_PLAN.md) · Decisions: [docs/plan/decisions/INDEX.md](decisions/INDEX.md) · Stages: [docs/plan/stages/INDEX.md](stages/INDEX.md)*

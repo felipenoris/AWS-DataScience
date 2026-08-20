@@ -753,7 +753,15 @@ own:
   consumer's own `InfrastructureAccess`, the column list is five long against the lake's six — the share's
   `classification` gate filters `counterparty` at the **account** boundary, before any persona exists, and
   the consumer's own administrator cannot see it either. The negative control (six columns in Data
-  Governance) came from the same reading. The persona half and the explicit-grant half remain.
+  Governance) came from the same reading. **The persona half is ANSWERED in groups A and B (2026-08-19):
+  five columns from the provisioned role in both consumers. The EXPLICIT-GRANT half is ANSWERED the same
+  day, at the same account/administrator grain, so the pair is symmetric** — a `classification=restricted
+  AND layer IN (curated, raw)` TABLE grant to the **Sandbox account only** took its column list to six
+  with `counterparty` present, while **Development, read in the same minute, stayed at five**; the grant
+  was then revoked and both returned to five. Granting in one account rather than two is what excludes
+  time, catalog caching and a stale session — the two writes the stage budgeted and did not need were the
+  ones that would have destroyed that control. **Not measured: the persona grain** — that needs a second,
+  consumer-side re-grant on top of the boundary gate, and `consumer-data`'s re-grants were not touched.
   Read the column list, never an error code — the negative half must differ from a broken share
   (Lesson 13). **"Absent from the result" left this line 2026-08-19**: the table was applied empty
   (4.1), so the result set is empty in every state and says nothing.
@@ -777,6 +785,21 @@ own:
   the only thing that can measure it. Recorded in passing: `glue:StartCrawler` **authorizes before it
   validates** — the denial arrived for a crawler that does not exist in that account (Lesson 21's fork,
   resolved in the good direction for this action).
+  **CLOSED 2026-08-19 (4d's authorized act), and the positive half is UNREACHABLE rather than owed.**
+  The negative half now *is* exercised from a principal that reaches it: `StartCrawler` as
+  `InfrastructureAccess` in Data Governance — an account in the **`Data`** OU — is refused *with an
+  explicit deny in a **service control policy***, so `DenyCatalogMaintenanceRunsExceptMaintenanceRole`
+  fired for the first time since 1c attached it. **The positive half cannot be produced by any principal
+  that exists**, and three readings close it: the SCP admits only the maintenance role **or a service
+  principal**; that role's trust policy carries one statement, `GlueServiceOnly`
+  (`Principal.Service = glue.amazonaws.com`), so **no human and no other service's role can assume it**;
+  and both crawlers read `Schedule: null` with zero triggers and zero workflows. The role is an
+  *execution* role, never an identity anyone becomes. **Verified by reading (Lesson 22), not by running.**
+  **The consequence reaches past this bullet:** D18/D25's ingestion is `PutObject → crawler catalogues`,
+  and **both halves are broken for unrelated causes** — amending `DenyControlPlaneOffVpn` does not make a
+  crawler run. **And it surfaces an untaken decision: the crawlers' `Schedule`** — whether it exists, at
+  what frequency, and whether the drop-box's cadence differs from `raw`'s. Neither document is at fault;
+  the schedule was simply never chosen.
 - **The drop-box asymmetry, the halves that exist:** an Interactive-OU session `PutObject`s into the dated
   prefix and is denied the matching `GetObject`; the crawler reads it. (The Production read-and-delete
   half is Stage 9's.) **BLOCKED IN BOTH CONSUMERS 2026-08-19 (4d groups A and B) AND THE BLOCKER IS OURS**: all three verbs were

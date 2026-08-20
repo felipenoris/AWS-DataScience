@@ -2236,4 +2236,130 @@ with its revert — then **4e**, last, through battery phase 4b.
 
 ---
 
+## 2026-08-19 — 4d's two authorized acts: the maintenance pair's positive half has no principal at all, and the restricted grant closes its half with a control beside it
+
+*Provenance. **This entry is Claude's, and so are the commands.** The readings ran under the standing
+rule; **the three write calls — one `StartCrawler` that was denied, one `grant-permissions` and its
+`revoke-permissions` — ran because the user authorized "the two authorized acts of 4d" by name in this
+sitting**, and the stage file names both. Identifiers were masked at capture. Everything else is
+verbatim.*
+
+### The reconnaissance came first, and it is what turned act 1 into a finding
+
+Neither act was attempted before its baseline was read, and in act 1's case the baseline is the whole
+result. Four readings, all before any write: the maintenance role's **trust policy**, the two
+crawlers' configuration, the SCP statement the stage names, and the blast radius of a crawl that might
+succeed (`s3://awsds-data-raw` empty, `raw` holding zero tables — so a run would have catalogued
+nothing).
+
+### Act 1, the negative half — and D27's carve-out is exercised for the first time
+
+`glue:StartCrawler` on `awsds-data-raw`, as **`InfrastructureAccess` in `Data Governance`**, an account
+in the **`Data`** OU:
+
+```
+An error occurred (AccessDeniedException) when calling the StartCrawler operation:
+User: arn:aws:sts::<Data Governance Account>:assumed-role/AWSReservedSSO_InfrastructureAccess_ba1899ccb658ab35/<the infrastructure user>
+is not authorized to perform: glue:StartCrawler on resource:
+arn:aws:glue:us-west-2:<Data Governance Account>:crawler/awsds-data-raw
+with an explicit deny in a service control policy: <the awsds-org-scp-ou-data policy ARN>
+```
+
+`get-crawler` in the same session returned `READY`, so the session was alive and Glue reachable — the
+control that separates a deny from a broken session.
+
+**This is the first time `DenyCatalogMaintenanceRunsExceptMaintenanceRole` has ever fired.** Stage 1c
+recorded it among the statements *attached but unexercised*; group A then found that the **persona**
+half could not exercise it either, because the personas sit in `Interactive` and are refused earlier by
+the absence of any `glue:Start*` allow. `InfrastructureAccess` in the `Data` OU is the principal that
+reaches the statement, and the wording — *service control policy*, not identity-based — is what proves
+which layer answered.
+
+### Act 1's real result: the positive half cannot be produced by any principal that exists
+
+The stage asks for "the raw crawler runs as `awsds-data-catalog-maintenance`". **It cannot, and the
+reason is three readings that close on each other:**
+
+| reading | what it says |
+|---|---|
+| the SCP's condition | `ArnNotEquals aws:PrincipalArn` = the maintenance role, `BoolIfExists aws:PrincipalIsAWSService false` — so **only** that role, or a service principal, may call `StartCrawler` |
+| the role's trust policy | one statement, `GlueServiceOnly`: `Principal.Service = glue.amazonaws.com`, conditioned on `aws:SourceAccount`. **No human, and no other service's role, can assume it** |
+| the crawlers | `Schedule: null` on both; `list-triggers` and `list-workflows` both return `[]` |
+
+So the role is an **execution** role, never an identity anyone becomes: Glue assumes it to *perform* a
+crawl, after `StartCrawler` has already been authorized against somebody else. And the only caller the
+SCP would accept is Glue's own scheduler, reaching the API as a service principal — which needs a
+`Schedule`, and neither crawler has one.
+
+**Nothing in this estate can start these crawlers.** That is **Lesson 22** in its exact shape — a
+control whose principal the harness cannot produce is verified by reading rather than by attempting —
+and the positive half is therefore closed by the table above, not by a run.
+
+### What that costs, and it is not confined to a deliverable
+
+**D18/D25's ingestion path is `persona PutObject → crawler catalogues → data appears`, and both halves
+are now broken, for unrelated reasons.** The write is refused by `DenyControlPlaneOffVpn` (the entries
+above); the catalogue step has no invocation path at all. **The two are independent: amending the VPN
+statement does not make a crawler run**, and adding a schedule does not make the drop-box writable.
+Anyone reading only one of these entries would fix half of a path and believe it whole.
+
+### It is not a defect in the SCP or in the trust policy — it is a decision nobody took
+
+Both documents are coherent with a design in which crawlers run **on a schedule** and no person ever
+triggers one; that is a reasonable reading of D27, and it is arguably the stronger control. What is
+missing is the schedule itself. Pass 1 created the two crawlers deliberately **never-run**, and nothing
+since has said when they should run — so **`Schedule` is an open design decision surfaced by this
+attempt**: whether it exists at all, at what frequency, and whether the drop-box's cadence differs from
+`raw`'s, given that the drop-box is an ingestion path and `raw` is a zone. Recorded here rather than
+answered, because it is the stage's call and not this sitting's.
+
+### Act 2 — the explicit `restricted` grant, with a live control beside it
+
+Granted in Data Governance, mirroring the shape of the four grants already there — `LFTagPolicy`,
+`ResourceType: TABLE`, expression `classification=restricted AND layer IN (curated, raw)`,
+`DESCRIBE, SELECT` with the grant option — **to the Sandbox account only**:
+
+| reading of `curated.sample_trades` | Sandbox | Development | Data Governance |
+|---|---|---|---|
+| before | 5 columns | 5 columns | **6** |
+| **after the grant** | **6 — `counterparty` present** | **5** | 6 |
+| after the revoke | 5 | 5 | 6 |
+
+**Granting in one account rather than two is what makes this a measurement instead of an
+observation.** Development was read in the same minute, through the same tunnel, as the same kind of
+principal, and did not move. Time, catalog caching, a stale session and a coincidental propagation are
+all excluded by that column — none of which a two-account grant could have excluded. The stage
+budgeted four writes here; two were enough, and the two that were dropped were the ones that would have
+destroyed the control.
+
+**This closes the classification pair's second half and verification (x)'s explicit-grant half.** The
+absent half was measured at the **account/administrator** grain (the share's `classification` gate
+filtering `counterparty` at the boundary), and this is measured at the same grain, so the pair is
+symmetric.
+
+**The limit, stated rather than left implicit:** this is not measured at the **persona** grain. A
+persona seeing `counterparty` would need a second grant, inside the consumer account, from that
+account's own administrator to the persona — `consumer-data`'s re-grants scope the persona to
+`classification IN (public, internal)` and were not touched. What is proven is that the boundary gate
+opens and closes on the explicit grant; what is not proven is the consumer-side re-grant on top of it.
+
+### The state left behind: none
+
+The revoke was verified three ways rather than assumed: the two column lists back at five, the
+`LFTagPolicy` grant count back at **4** (2 `DATABASE`, 2 `TABLE`), and **zero** permissions anywhere
+carrying `restricted` in an expression. `./aws/datalake.py` then read **0 check(s) FAILED**. The
+`FAILED` lines against persona profiles in its header are absent SSO sessions, not lake findings —
+Lesson 25's neighbourhood, and worth naming so a later reader does not chase them.
+
+**The grant register in `docs/AWS_STATE.md` is unchanged and correctly so**: 13 rows / 24 triples
+describe the applied state, and the applied state is what it was before this entry.
+
+### What 4d still owes
+
+**4e** — `athena:StartQueryExecution` added to `DenyUserCompute` in `awsds-org-scp-ou-data`, last,
+through battery phase 4b. Everything else in 4d is now either measured or recorded as unmeasurable
+with its reason.
+
+---
+
 *Log index: [docs/log/INDEX.md](INDEX.md) · Stage index: [docs/plan/stages/INDEX.md](../plan/stages/INDEX.md)*

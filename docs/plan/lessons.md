@@ -500,6 +500,41 @@ lesson can be *recognised* without opening this file; the reasoning that makes e
    a box costs nothing to draw wrong. **And the cheap check is the citation itself**: a claim that cites a
    decision which does not contain it is the copy, not the original.
 
+33. **One intent enforced in two places diverges — and sharing the *values* while duplicating the
+   *structure* is what makes it look like it cannot.** "Reachable only over the VPN" is written twice in
+   this estate: `DenyOutsideTrustedNetworks` in the lake's bucket policy, and `DenyControlPlaneOffVpn` in
+   the six persona permission sets. The resource half carries **three** branches — `aws:SourceVpce`,
+   `aws:SourceIp`, `aws:PrincipalAccount` — because traffic can arrive by more than one path. The identity
+   half carries **one**, `aws:SourceIp`. Stage 5 pass 4d measured the difference: tunnel traffic to S3
+   leaves through the `[P]` gateway endpoint and arrives carrying the WireGuard host's *private* address
+   (`10.20.160.254`) and an endpoint id, while Glue and Athena leave by the internet gateway wearing the
+   Elastic IP — so the identity half denies **every direct S3 call a persona makes from inside the
+   perimeter**, including fetching the person's own query result. The resource half was written against the
+   measured topology; the identity half against the intended one.
+   **The trap is not duplication — it is *partial* de-duplication.** Both halves read the Elastic IP from
+   the same `[P]` state and neither pastes it, so the design *looks* like it has one source of truth. It
+   has one source for the **values** and two hand-written copies of the **branch structure**, and the
+   structure is where the two disagree. Nothing compares them: `terraform plan` sees two unrelated
+   documents, and each half is individually plausible on reading. **The discriminator: when one sentence is
+   enforced at two layers, ask whether the *shape* is derived or retyped — a shared variable inside two
+   hand-written conditions is the most convincing possible disguise for a divergence.**
+   **And the reason it survived is worth as much as the finding.** A deny is only debugged by the traffic
+   it *wrongly* blocks. The bucket policy sits on the hot path, so an over-broad branch there breaks a
+   legitimate read on day one and gets fixed; the identity deny fires only when someone is off-VPN, which
+   is a case nobody exercises deliberately — so it accumulated a defect that no apply, no review and no
+   plan could surface, and only a behavioural proof from a real session found it. **A control that is
+   correct in the common case and wrong in the rare one reports as healthy for exactly as long as nobody
+   tries the rare one.**
+   **Two smaller shapes fell out of the same finding, both worth recognising.** First, a guard can foresee
+   the right *symptom* for the wrong *cause* and give false comfort: `permission-sets.tf` already carried a
+   `precondition` whose error message predicts "deny every call from every network for all six personas",
+   written against the address list arriving **malformed** — nothing in it considers a well-formed list
+   whose key is simply irrelevant on the path the traffic takes. Second, the *proposed fix* was itself
+   aimed at the wrong list — the consumers' endpoints rather than the **VPN home's** — because
+   `consumer_vpce_ids` is built along "who consumes the lake" and was being asked "what is on the network
+   path"; today the two intersect by coincidence, since the single VPN home also happens to be a consumer
+   (Lesson 10's axis question and Lesson 29's *describe-becomes-select*, arriving together).
+
 ---
 
 *Plan core: [GENERAL_PLAN.md](../GENERAL_PLAN.md) · Decisions: [docs/plan/decisions/INDEX.md](decisions/INDEX.md) · Stages: [docs/plan/stages/INDEX.md](stages/INDEX.md)*

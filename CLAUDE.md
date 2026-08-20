@@ -223,7 +223,18 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   (**Lesson 31**), a cross-account write needs **BOTH** policy halves (**Lesson 28 amended**), and
   `counterparty` is absent in BOTH consumers → verification (x)'s exclusion half closed early. Settled:
   **`scratch` is a PREFIX** (D13's wording, not D19's).
-  **Owed: 4d** (behavioural proofs, tunnel), **4e** (the SCP amendment, last), pass 6.
+- **Stage 5 pass 4d DONE 2026-08-19 as far as it can go** — perimeter pair, groups A+B (2 accounts,
+  2 provisioned roles), the 2 controls as `InfrastructureAccess`, and 4d's 2 authorized acts.
+  **Verifications (ii) and (x) closed on the consumer side.** **Two structural defects, both unapplied:**
+  (a) **`DenyControlPlaneOffVpn` denies every direct S3 call a persona makes from the tunnel** — S3 leaves
+  by the `[P]` gateway endpoint carrying a *private* address (`10.20.160.254` + a vpce id, measured in
+  CloudTrail against Glue's Elastic IP on the same session). **Lesson 33.** Fix =
+  `StringNotEqualsIfExists aws:SourceVpce` over the **VPN homes'** endpoints — *not* the consumers',
+  which are never on the path. (b) **No principal can start the crawlers**: the SCP admits only the
+  maintenance role *or* a service principal, that role's trust admits only `glue.amazonaws.com`, and
+  `Schedule` is `null` (**Lesson 22**; the schedule is an open question). **So D18/D25 ingestion is broken
+  at BOTH ends, independently — fixing one fixes half a path.** Masked by (a) and still owed: the drop-box
+  asymmetry and **D13's own mechanism**. **Owed: 4e** (the SCP amendment, last), pass 6.
 - **`security-zone` WITHDRAWN 2026-08-19 (user revision, same day it was applied): one data CMK per
   account** — LF-Tag + `ASSOCIATE` grant destroyed, 3 keys renamed in place to `alias/awsds-<env>-data`
   (`data-data`/`sandbox-data`/`dev-data`; Stage 9's future: `prod-data`), `consumer-data` → **v0.2.0**,
@@ -260,7 +271,7 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   Python 3 on `uv`** — shared code in `aws/awslib`, `scripts/repohygiene`, `scripts/tfhygiene`.
   **Exception: `aws/cloudshell/` is shell, standalone, for the no-profile accounts.**
 
-**Budget: ~4 KB.** State, not reasoning — **a bullet here that explains *why*, or that a stage file should
+**Budget: ~8 KB** (raised from 4 KB by the user, 2026-08-19). State, not reasoning — **a bullet here that explains *why*, or that a stage file should
 be carrying, is a stale copy of something that already lives elsewhere.** Re-trim whenever a stage closes.
 
 ### Lessons carried forward
@@ -310,3 +321,5 @@ the reasoning that makes it *usable* is in the file. Recognising one is the sign
     one while the design spreads past it.**
 32. **Two spellings of the same object survive while nothing has to build it — and the side that has to
     build it is the one that was right.**
+33. **One intent enforced in two places diverges — and sharing the *values* while duplicating the
+    *structure* is what makes it look like it cannot.**
