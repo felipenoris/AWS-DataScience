@@ -128,7 +128,14 @@ supposed to *run* there. This is the one OU where a `Create*` wildcard is the co
   expected to run `OPTIMIZE`/`VACUUM` through Athena, and Stage 5 decision 4 chose **Glue automatic
   compaction** instead, which needs no Athena at all. The amendment adding the action to
   `DenyUserCompute` is owed during Stage 5 (its step 4.3 carries the sequencing — the sample-table load
-  may need Athena first), through battery phase 4b, and this row is rewritten when it lands. Until then
+  may need Athena first), through battery phase 4b, and this row is rewritten when it lands. **The
+  sequencing blocker cleared on 2026-08-20**: the sample rows are loaded (12, by in-account Athena
+  `INSERT`), so nothing in this account still needs the action and the amendment is Stage 5's next act.
+  **Two things to carry into that sitting**, both worked out in the stage file's debt item 4: it lands in
+  **both** documents or the identity-in-this-statement invariant breaks under a gate that only compares
+  `Sid`s; and closing it removes the *only* in-account way to query the lake — the `count(*)` that proved
+  those 12 rows stops being reproducible here, and the equivalent afterwards runs from a consumer account
+  over the share. That is D13 working as designed, and it is still a diagnostic being given up. Until
   the full-lake read path stands: results written to S3, stopped by the perimeter document only when the
   destination is outside the organization — **[Stage 11](../../../docs/plan/stages/stage-11-dlp.md)'s to
   detect, and its `awsds-data-athena` rule is already written conditional on which way this row reads.**

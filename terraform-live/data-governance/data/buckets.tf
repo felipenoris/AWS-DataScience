@@ -72,6 +72,16 @@ locals {
   # nobody holding two of the three. The WRITER cannot read back or list - confirmation is
   # the PutObject response; versioning keeps overwritten versions internally. The date in
   # the key is a convention (incoming/<yyyy>/<mm>/<dd>/...); the policy scopes the prefix.
+  #
+  # MEASURED 2026-08-20 (Stage 5 pass 4d), and in three verbs rather than the two this comment
+  # names: the persona's PutObject succeeds; GetObject, ListObjectsV2 AND DeleteObject are each
+  # denied implicitly. The delete is the one worth stating - a writer that can retract is a
+  # writer that can launder, so put-only is a claim about retraction, not only about reading.
+  # AllowInteractiveWriterPutOnly is therefore EXERCISED, not merely attached (Lesson 20).
+  # One residue by design: the writer cannot clean up after itself and the collector is Stage
+  # 9's awsds-prod-job-exec, which does not exist yet, so the proof object is uncollectable
+  # until then - AWS_STATE.md EXC-02 declares it so a later snapshot does not read it as
+  # someone writing to the drop-box outside a recorded proof.
   dropbox_statements = [
     {
       Sid       = "AllowInteractiveWriterPutOnly"

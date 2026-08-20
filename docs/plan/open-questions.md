@@ -311,6 +311,19 @@ length, under item numbers 10-12 that collided with the live items above; the du
     [`institutional-delta.md`](institutional-delta.md) — the lab's admin credential is
     network-unrestricted because it is also the fire escape, and an institution separates those two
     jobs instead of choosing between them.
+    **A third use of the exemption showed up on 2026-08-19/20, unplanned and worth recording, because it
+    is an argument nobody made when (a) was chosen.** The exemption is also the **negative control** for
+    that deny. When every persona's direct S3 call started failing, the reading that isolated the cause
+    was `InfrastructureAccess` succeeding on the same bucket over the same tunnel — exonerating the
+    bucket policy, the CMK, the gateway endpoint and the network in one call, and leaving the identity
+    statement as the only remaining explanation. A deny applied to *every* set would have had no such
+    control inside the estate. That is a genuine benefit of (a), and it is also a warning: it exists
+    only because the exempt set is otherwise identical in reach, so **narrowing `InfrastructureAccess`
+    later removes a diagnostic instrument as well as a bypass** — say so at the time rather than
+    discovering it during the next incident. Separately, the amendment applied that day means this
+    statement now pins **two** kinds of thing, an address and a list of endpoint ids: a malformed entry
+    in the second list is not a lockout but a **silent regression** to the 4d defect, which is why
+    `permission-sets.tf` carries a second `precondition` beside the CIDR one.
 
 ### Raised by Stage 5 pass 3, 2026-08-19
 
@@ -370,6 +383,14 @@ length, under item numbers 10-12 that collided with the live items above; the du
     **The consequence of leaving it open, said plainly**: D25's drop-box stays inert **even after
     `DenyControlPlaneOffVpn` is amended**. The write and the catalogue are independent failures, and
     fixing the first alone produces a bucket that accepts files nothing ever reads.
+    **That sentence stopped being a prediction on 2026-08-20**: the amendment applied and the write was
+    measured working (`PutObject` succeeds, the three read/list/delete verbs implicit-deny). So the
+    drop-box now **accepts files and nothing catalogues them** — this question is the only thing between
+    a delivered file and a usable table, and its cost is no longer hypothetical. A second, smaller
+    consequence of the same measurement, which belongs to whoever answers this: the writer holds no
+    delete and the collector is Stage 9's, so **anything written to the letterbox stays there** until
+    that stage lands (`AWS_STATE.md` `EXC-02` declares the one object that already has). An answer that
+    starts the crawler does not empty the box; only the pickup does.
 
 ### Raised while reading the persona sets, 2026-08-19
 

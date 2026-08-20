@@ -70,6 +70,16 @@ The second, quieter half of the same fact: with Lake Formation enforcing, `glue:
 like an empty list rather than an access denial — [Lesson 13](../../../docs/plan/lessons.md)'s shape, so
 never read an empty catalog as "nothing exists".
 
+**"Two" is the floor, not the count — and on this slice's write paths it is three.** Measured
+2026-08-20, when the drop-box `PutObject` first ran: the write needed the writer's identity policy, the
+drop-box bucket policy **and** the lake CMK's key policy, three documents in two accounts, all on one
+call. Every bucket here carries SSE-KMS default encryption, and S3 calls `kms:GenerateDataKey` with the
+**caller's** credentials — so a KMS half exists on every write to this slice, whoever the writer is.
+**Where to read it** is the part worth memorising: the KMS half is invisible on failure (it surfaces as
+a *KMS* error naming an action nobody wrote in the policy being debugged — how the first governed
+`INSERT` failed the day before) and legible only in a **successful** `PutObject`'s `SSEKMSKeyId`. Read
+that field, not the exit code.
+
 ## `lakeformation.tf` — the settings, the registrations, the ontology
 
 | Resource / attribute | What it does once applied |
@@ -105,7 +115,7 @@ two cross-account statements must ride on the key object itself.
 | `Sid` | What it allows, and to whom |
 |---|---|
 | `EnableIamPolicyDelegationInThisAccount` | The account root — the standard delegation that lets IAM policies in this account govern the key. Without it the key is only governed by its own policy |
-| `AllowDropBoxWritersViaS3` | The Sandbox and Development roots, narrowed by `ArnLike aws:PrincipalArn` to the writer roles: `GenerateDataKey` **and** `Decrypt`. Both are needed — SSE-KMS `PutObject` needs the first, a **multipart upload** needs the second, and the error otherwise names S3 rather than KMS. Scoped `kms:ViaService = s3`, so the persona cannot use the key outside an S3 call. **This is the resource HALF of a cross-account permission** — the identity half (`UseLakeDataKeyViaS3` in `DataScientistAccess`, the same two actions under the same `kms:ViaService = s3` condition) lives in `identity/sso/`, Stage 5 pass 4c; neither half works alone (Lesson 28, amended) |
+| `AllowDropBoxWritersViaS3` | The Sandbox and Development roots, narrowed by `ArnLike aws:PrincipalArn` to the writer roles: `GenerateDataKey` **and** `Decrypt`. Both are needed — SSE-KMS `PutObject` needs the first, a **multipart upload** needs the second, and the error otherwise names S3 rather than KMS. Scoped `kms:ViaService = s3`, so the persona cannot use the key outside an S3 call. **This is the resource HALF of a cross-account permission** — the identity half (`UseLakeDataKeyViaS3` in `DataScientistAccess`, the same two actions under the same `kms:ViaService = s3` condition) lives in `identity/sso/`, Stage 5 pass 4c; neither half works alone (Lesson 28, amended). **EXERCISED 2026-08-20** by the first drop-box `PutObject`, whose response echoed this key's ARN as `SSEKMSKeyId` — which is the **only** place this statement is observable, since its absence would have surfaced as a KMS error against the S3 call rather than as anything naming the drop-box |
 | `AllowCloudWatchLogsEncryptionForGlue` | The **service principal** `logs.<region>.amazonaws.com`, scoped by the log-group encryption context to `/aws-glue/*` in this account. CloudWatch Logs encrypts with the key *itself*, so the crawler role's own KMS grant does not cover it — this exists because a crawler samples object contents and its logs therefore take the lake key |
 | `AllowProductionPickupDecryptViaS3` | The Production root narrowed to `awsds-prod-job-exec`: `Decrypt`, for the drop-box pickup (INT-10, D25). **The role arrives at Stage 9** — until then the `ArnLike` matches nothing, which is the recorded "pickup half unexercised" state, not a defect |
 
@@ -146,7 +156,7 @@ general-purpose exchange bucket D18 refuses to build.
 
 | `Sid` | Principal | Grants | The asymmetry |
 |---|---|---|---|
-| `AllowInteractiveWriterPutOnly` | Sandbox + Development roots, `ArnLike` to the writer roles | `s3:PutObject` on the dated prefix | **No read-back, no list, no delete.** Confirmation is the `PutObject` response; re-uploading a corrected file is an ordinary overwrite and versioning keeps the prior copy internally. **This is the resource HALF of a cross-account permission** — the identity half (`WriteIngestionDropBox` + the KMS pair, mirrored scoping) lives in `identity/sso/`, Stage 5 pass 4c |
+| `AllowInteractiveWriterPutOnly` | Sandbox + Development roots, `ArnLike` to the writer roles | `s3:PutObject` on the dated prefix | **No read-back, no list, no delete.** Confirmation is the `PutObject` response; re-uploading a corrected file is an ordinary overwrite and versioning keeps the prior copy internally. **This is the resource HALF of a cross-account permission** — the identity half (`WriteIngestionDropBox` + the KMS pair, mirrored scoping) lives in `identity/sso/`, Stage 5 pass 4c. **EXERCISED 2026-08-20** (Stage 5 pass 4d), and the asymmetry holds in **three** verbs: `PutObject` succeeds while `GetObject`, `ListObjectsV2` and `DeleteObject` are each denied *implicitly*. The delete matters as much as the read — a writer that can retract is a writer that can launder. The proof object is uncollectable until Stage 9's pickup exists (`AWS_STATE.md` `EXC-02`); a second uncollected object no log entry names is a finding |
 | `AllowProductionPickupReadDelete` | Production root, `ArnLike` to `awsds-prod-job-exec` | `GetObject` + `DeleteObject` | Reads **and** empties — a letterbox nobody empties fills up. Stage 9's half |
 | `AllowProductionPickupList` | idem | `ListBucket`, `s3:prefix` scoped | Listing is separate because it is a **bucket** action, not an object one |
 | `AllowMaintenanceSchemaRead` | the maintenance role | `GetObject` + `ListBucket` | Reads to infer schema, **cannot delete**. Same-account IAM would suffice (its inline policy carries the read) — the statement is here so the whole asymmetry is readable in **one place** |

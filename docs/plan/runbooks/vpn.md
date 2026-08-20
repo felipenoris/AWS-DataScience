@@ -88,6 +88,16 @@ Two independent controls, either alone sufficient:
    persona can make no control-plane call at all. `InfrastructureAccess` is deliberately *outside*
    the deny (open question 17): it is the recovery path, and the identity that starts the very host
    the tunnel runs on (§S5's loop).
+   **Since 2026-08-20 the statement tests three conditions, not two**, and the third is the one to
+   understand before touching it: tunnel traffic **splits by destination**. S3 and DynamoDB leave
+   through the home's `[P]` gateway endpoints — their prefix-list routes beat the IGW default — and
+   arrive wearing the host's *private* address plus `aws:SourceVpce`; everything else exits by the
+   internet gateway wearing the Elastic IP. An address-only test therefore denied every direct S3
+   call a persona made from **inside** the perimeter, which is the Stage 5 pass 4d defect. The fix is
+   `StringNotEqualsIfExists aws:SourceVpce` over the **home's** endpoints, and `IfExists` is what keeps
+   the off-VPN case denied. Consequence for this runbook's readers: **a persona whose S3 calls fail
+   while Glue and Athena work is this statement, not the network** — and the diagnostic that separates
+   them is `InfrastructureAccess` making the same call over the same tunnel.
 2. **The lake's bucket policies admit only §S2's two branches** — the Elastic IP and the consumers'
    gateway endpoints (D18, INT-05). Off the tunnel, even a call that IAM would allow dies at the
    resource.
@@ -607,7 +617,11 @@ none of them is a new key:
    [terraform-changes.md](terraform-changes.md) Recipe A). The same two-resource replacement as
    §K2 follows — the instance and its association. The Elastic IP does not change, so the
    `DenyControlPlaneOffVpn` fragment in `identity/sso/` needs **no edit** — it pins the address,
-   never the key.
+   never the key. **Since 2026-08-20 it also pins the home's two gateway-endpoint ids**, and that
+   changes nothing here for the same reason: the endpoints are `[P]`, in `foundation/`, and a host
+   replacement does not touch them. What *would* reach the fragment is a `foundation/` change that
+   re-creates a gateway endpoint — a new id there is INT-05's finding first, and this statement's
+   second.
 5. Update the `PublicKey =` line in **every** device's client config with the new public half —
    read it from `host-public.key` (step 1 put it there and printed nothing) — all of them at once,
    because old configs stop handshaking the moment the new host is up. `Endpoint` and `Address` stay

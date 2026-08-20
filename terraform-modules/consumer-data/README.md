@@ -73,6 +73,18 @@ two halves are in different accounts.** `./aws/datalake.py` measures both sides 
 of the drop-box write, `DL-5`/`DL-6`/`DL-7` the Lake Formation half, `DL-8`/`DL-9` the workgroup and the
 derived zone.
 
+**Measured 2026-08-20, and the table above is now confirmed *and* undercounted.** The drop-box
+`PutObject` ran for the first time and needed all three rows at once — the identity statement here, the
+lake's bucket policy, and the lake CMK's key policy — three documents in **two** accounts on a single
+call. What the reading adds: the **resource** row splits into a bucket half and a *key* half whenever the
+target is encrypted, and only the key half is invisible on failure. A missing key grant returns a **KMS**
+error naming an action that appears in neither the bucket policy nor the statement being debugged; a
+successful write is where it becomes readable, in `SSEKMSKeyId`. **So the review habit for anything in
+this module that writes: read the success response's key ARN, not the exit code.** The same pass measured
+the drop-box's asymmetry from the persona — `PutObject` allowed, `GetObject` / `ListObjectsV2` /
+`DeleteObject` each denied *implicitly* — so `WriteIngestionDropBox` is exercised rather than merely
+declared.
+
 ## `kms.tf` — the account's data-key policy
 
 One data CMK per **account** (revised 2026-08-19 — the `security-zone` dimension withdrawn:

@@ -277,6 +277,20 @@ data "aws_iam_policy_document" "data_scientist" {
   # file). The statement mirrors the bucket policy's asymmetry exactly: PutObject only, the
   # dated prefix only - no read-back, no list, no delete, and no multipart-abort because the
   # resource side grants none.
+  #
+  # EXERCISED 2026-08-20 (Stage 5 pass 4d), and the write is asymmetric in three verbs, not
+  # one: the persona's PutObject into the dated prefix succeeds, while GetObject on the object
+  # it just wrote, ListObjectsV2 on the prefix and DeleteObject on its own object are each
+  # denied IMPLICITLY - absence of grant, no deny statement involved. The delete probe is what
+  # completes the claim: a writer that can retract is a writer that can launder, which is the
+  # exchange bucket D18 refuses. Two consequences for anyone editing this statement:
+  #   - the missing multipart-abort is LOAD-BEARING on the caller's side too. A stdin stream of
+  #     unknown length goes multipart, and this statement does not cover it, so a probe written
+  #     that way fails for a reason that is not the one under test. Write a fixed-size file.
+  #   - the write needs THREE allows, not two - this statement, the bucket policy, and the lake
+  #     CMK's key policy meeting the UseLakeDataKeyViaS3 block below. The third is invisible on
+  #     failure (it surfaces as a KMS error about an action nobody wrote here) and legible only
+  #     in a SUCCESSFUL PutObject's SSEKMSKeyId. Lesson 28, amended by this proof.
   statement {
     sid    = "WriteIngestionDropBox"
     effect = "Allow"

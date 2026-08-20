@@ -221,20 +221,24 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   and the lake key ARN lives in state, never tracked. Register **13 rows / 24 triples**. Findings recorded
   in their owners (Lessons 28-amended/31; INT-11's hazard symmetric; **`scratch` is a PREFIX**, D13's
   wording; verification (x)'s exclusion half closed early).
-- **Stage 5 pass 4d DONE 2026-08-19 as far as it can go** — perimeter pair, groups A+B (2 accounts,
-  2 provisioned roles), the 2 controls as `InfrastructureAccess`, and 4d's 2 authorized acts.
-  **Verifications (ii) and (x) closed on the consumer side.** **Two structural defects, both unapplied:**
-  (a) **`DenyControlPlaneOffVpn` denies every direct persona S3 call from the tunnel** (S3 exits by the
-  `[P]` gateway endpoint wearing a *private* address, measured in CloudTrail — **Lesson 33**). Fix =
-  `StringNotEqualsIfExists aws:SourceVpce` over the **VPN homes'** endpoints, *not* the consumers' —
-  **AUTHORED 2026-08-20, NOT applied** (`identity/sso` plans `0/6/0`; lake's `trusted_vpce_ids` renders
-  identical; apply → re-run the 2 masked proofs → then 4e). (b) **no principal can start the crawlers** —
-  trust admits only `glue.amazonaws.com`, `Schedule` null (**Lesson 22**; OQ 19 — no-cron WAS decided on
-  cost, the DEMANDER was not). **So D18/D25 ingestion is broken at BOTH ends, independently.** Masked by (a) and still
-  owed: the drop-box asymmetry and **D13's own mechanism**. **Third defect FIXED 2026-08-20 via the
-  sample-row load (user decision):** the registration role was read-only, its write half promised to a
-  Stage 9 step that never existed (**Lesson 34**); `registered-locations-write` applied — the vending
-  ceiling Stage 9's 2.4 rides — 12 rows loaded, Stage 11's row-proof dependency LIFTED.
+- **Stage 5 pass 4d DONE IN FULL 2026-08-20** — perimeter pair, groups A+B (2 accounts, 2 provisioned
+  roles), the 2 controls as `InfrastructureAccess`, 4d's 2 authorized acts, **verifications (ii) and (x)
+  closed**, and the 2 structural defects it found. **(a) FIXED AND PROVEN 2026-08-20**:
+  `DenyControlPlaneOffVpn` denied every direct persona S3 call from the tunnel (S3 exits by the `[P]`
+  gateway endpoint wearing a *private* address — **Lesson 33, now closed**); the 3rd condition
+  (`StringNotEqualsIfExists aws:SourceVpce` over the **VPN homes'** endpoints, *not* the consumers')
+  applied `0/6/0`, read back on **both provisioned roles**, `VP-7` both halves. Then the 2 masked proofs:
+  **drop-box asymmetry in 3 verbs** (`PutObject` ok; get/list/**delete** implicit) and **D13's mechanism**
+  as the implicit deny it argues from. **Lesson 28 amended — 3 terms on an encrypted write** (+key
+  policy), invisible on failure, legible only in a success's `SSEKMSKeyId`; INT-05 proven behaviourally
+  by that same `PutObject`; `EXC-02` = the uncollectable probe object. **(b) STILL OPEN — no principal can
+  start the crawlers** (trust admits only `glue.amazonaws.com`, `Schedule` null; **Lesson 22**; OQ 19 —
+  no-cron WAS decided on cost, the DEMANDER was not). **So D18/D25 ingestion is now broken at ONE end**:
+  files land and nothing catalogues them. Third defect fixed 2026-08-20 via the sample-row load (user
+  decision): the registration role was read-only, its write half promised to a Stage 9 step that never
+  existed (**Lesson 34**); `registered-locations-write` applied — the vending ceiling Stage 9's 2.4 rides
+  — 12 rows loaded, Stage 11's row-proof dependency LIFTED. **`VP-7` now also greps the vpce condition**
+  (it reported `pass` over the defect for 3 days — Lesson 31); **the amended branch is unexercised**.
   **Owed: 4e** (the SCP amendment, last — the in-account Athena door now truly exists to close), pass 6.
 - **`security-zone` WITHDRAWN 2026-08-19 (user revision, same day it was applied): one data CMK per
   account** — LF-Tag + `ASSOCIATE` grant destroyed, 3 keys renamed in place to `alias/awsds-<env>-data`

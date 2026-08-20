@@ -2747,6 +2747,100 @@ Closed: the Lesson 33 fix, **proven** rather than authored; `VP-7` both halves; 
 amendment, last, through battery phase 4b — the in-account Athena door now genuinely exists to close),
 **pass 6** (Security Hub), and open question **19**, the crawler demander, which is the user's decision.
 
+## 2026-08-20 — The propagation sitting: four findings the writing itself produced, an instrument that had been reporting `pass` over the defect, and 4e prepared
+
+*Provenance. **This entry is Claude's, at the user's request.** **No AWS write ran, and no AWS read
+completed**: the only call attempted was `./aws/vpn.py`, which found the infrastructure profiles'
+tokens expired — the session is signed in as the persona from the entry above. Everything here is
+authoring plus the offline gates.*
+
+### What was propagated, and where
+
+| File | What changed |
+|---|---|
+| `lessons.md` | **Lesson 28 amended a second time** (three terms on an encrypted write) and **Lesson 33 CLOSED** — the closure carries the *proof shape*, not just the outcome |
+| `AWS_STATE.md` | §C's defect row rewritten as fixed-and-proven; the crawler row narrowed from "both halves broken" to one; **`EXC-02`** added for the uncollectable probe object |
+| stage 5 | Status, the pass-4 row, debt items 2 and 4, the D13 bullet, the drop-box bullet, verification (x) |
+| stage 4 | verification (iv)'s YES completed, with the methodological residue kept |
+| `integrations.md` | **INT-05 proven behaviourally**, plus the axis warning for Stage 14 |
+| `open-questions.md` | **17** (a third use of the exemption) and **19** (its prediction became a fact) |
+| `GOVERNANCE.md` | §Drop-box: measured in three verbs, and the two consequences that outlive the proof |
+| `SMUS.md` | the `s3` interface-endpoint row turned from provision-on-faith into a measurement Stage 6 owes |
+| `POLICIES.md` | the Athena non-coverage bullet: the sequencing blocker is cleared, and what the closing costs |
+| Terraform | `policies-shared.tf`, `policies-data-scientists.tf`, `buckets.tf`, and both lake READMEs |
+| `aws/vpn.py` | `VP-7` strengthened — below |
+
+### Four findings the propagation produced, none of them from a machine
+
+**1. `VP-7` had been reporting `pass` over the defect for three days.** The check greps each persona
+set's inline policy for the Sid `DenyControlPlaneOffVpn` — presence, and the report even says
+"presence, never sufficiency". But the 4d defect was *presence with the wrong conditions*, which is
+precisely the case a Sid grep cannot see, so the instrument said "all six carry it" throughout the
+period when all six carried something that denied every direct S3 call from inside the perimeter.
+**Lesson 31's shape** — a check inheriting the scope it was written in. Amended: the grep now also reads
+`aws:SourceVpce` and reports a third state, **`yes, IP only`**, whose failure text carries the whole
+diagnosis (traffic splits by destination; the fix is the *home's* endpoints, not the consumers'). It is
+still not sufficiency — the values in the list are not checked — and saying so in the report is part of
+the change. **Not exercised against AWS**: `ruff` clean and the new branch is unrun, because the
+infrastructure session had expired by then. It is owed a run.
+
+**2. Debt item 4 said "amend `DenyUserCompute`" and meant *two* documents.** `POLICIES.md`'s Identity
+section states it plainly — the statement is one idea in two files, `Data` and `Identity` — and it also
+states the trap: **`check-index.py` compares `Sid`s, not action lists**, so a one-document amendment
+passes every gate in the repository and leaves the two silently divergent. **Lesson 14 in the shape the
+file itself predicted.** Corrected in the stage's debt item, which is where 4e will actually be read
+from.
+
+**3. INT-05's behavioural proof arrived from a call nobody nominated as its proof.** That row had said
+"nothing here is proven behaviourally until pass 4d" and expected the proof from a lake *read*. What
+proved it was the drop-box **write**: every lake bucket carries `DenyOutsideTrustedNetworks`, so the
+persona's `PutObject` had to satisfy the `aws:SourceVpce` branch — and did, arriving through Sandbox's
+own `[P]` gateway endpoint. The row now also carries the finding the same measurement forced: the
+identity side needs endpoint ids too, and **the two lists are on different axes** (who consumes the
+lake / what is on the network path). They coincide only because the single VPN home happens to be a
+consumer; Stage 14's second home is where they part.
+
+**4. A stale verification row, found by reading rather than by a gate.** Verification (x) still said
+"the explicit-grant half remains" although 4d's second authorized act had answered it on 2026-08-19 —
+the grant to Sandbox alone, Development held as the live negative control, both back to five columns
+after the revert. The bullet in the body had been updated; the row had not. Nothing mechanical compares
+the two, and this is the second time in three sittings that a summary drifted from the body it
+summarises.
+
+### One thing recorded because it argues against itself
+
+Open question 17 chose to leave `InfrastructureAccess` outside the VPN deny, weighing recovery against
+bypass. **The 4d episode revealed a third property nobody argued at the time: the exemption is also the
+negative control for that deny.** When every persona's S3 call started failing, what isolated the cause
+was `InfrastructureAccess` succeeding on the same bucket over the same tunnel — exonerating the bucket
+policy, the CMK, the endpoint and the network in one reading. A deny applied to *every* set would have
+had no such control inside the estate. Written into the question as a benefit **and** a warning:
+narrowing that set later removes a diagnostic instrument as well as a bypass, and that should be said at
+the time rather than discovered during an incident.
+
+### 4e, prepared
+
+The stage's debt item 4 now carries the sequence rather than the intention: both documents in one
+sitting; `update-policy` in place and read back; phase-4b re-probe from **`awsds-infra-data` and
+`awsds-infra-identity`** plus the *must still succeed* trio; the probe fired at a **workgroup that does
+not exist** so that a not-denied call fails harmlessly, with Lesson 21's fork spelled out (`AccessDenied`
+= landed, workgroup-not-found = **untested**, and the only escalation costs a failed execution record —
+to be accepted deliberately, never slipped in); then `POLICIES.md`'s two rewrites, `./aws/org-policies.py`,
+and the two new `probes.py` entries in the same sitting.
+
+**And the cost of closing it, written before it is closed**: `DenyUserCompute` carries no condition, so
+after the amendment nothing in Data Governance can run an Athena query — `InfrastructureAccess`
+included. The `count(*) = 12` that proved the sample rows stops being reproducible from that account;
+the equivalent runs from a consumer over the share. That is D13 working, and it is still a diagnostic
+being given up.
+
+### Gates
+
+`make check: **OK**` — `check-index.py` clean over all ten documents, `check-identifiers.py` 385 files
+with none. `terraform fmt -check -recursive` clean on both trees; `ruff check` and `ruff format --check`
+clean on `aws/vpn.py`. **`make check-ou` was not run** — it needs the infrastructure session, which had
+expired.
+
 ---
 
 *Log index: [docs/log/INDEX.md](INDEX.md) · Stage index: [docs/plan/stages/INDEX.md](../plan/stages/INDEX.md)*

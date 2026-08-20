@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Status** | **PASSES 0-4 DONE except pass 4's behavioural half (2026-08-18/19)** — pass 4a/4b applied 2026-08-19: `terraform-modules/consumer-data/` v0.1.0 and the two consumer slices, `1 added` + `15 added` per account in Recipe D's two steps, both re-planning `No changes`, `./aws/datalake.py` **0 FAILED**. What remains of the stage is **the `DenyControlPlaneOffVpn` amendment apply plus the two proofs it unblocks** (the drop-box asymmetry and D13's pandas negative — the amendment is authored 2026-08-20, `identity/sso` planning `0 to add, 6 to change`, NOT applied; **4d is otherwise DONE 2026-08-19/20**, its findings in the log's entries of those dates), **4e** (4.3's SCP amendment, last) and **pass 6** (Security Hub); **4c DONE 2026-08-19** — the seven persona statements applied and read back from both provisioned roles, carrying a finding: the drop-box write is cross-account, so pass 1's bucket policy was only ever half of it (6.2 corrected). Earlier: **PASSES 0-3 DONE (2026-08-18/19)** — the governed lake exists, its grants are made and it is shared: pass 1 `58 to add` applied in two steps, pass 2 `9 added` (the governance manager's own grants), pass 3 `4 added` (the two cross-account shares, four RAM shares `ACTIVE` and held, zero invitations, INT-11 closed). **Passes 4 and 6 remain** — the consumer side, which now opens with a data lake administrator per account (7.3), and Security Hub. Each pass row below carries its own result. **Originally revised 2026-08-16 into the pass/verification format**, with five corrections against earlier stages folded in: the `CROSS_ACCOUNT_VERSION` defence moved to the step whose apply actually touches `DataLakeSettings` (5.4, not 7), the EFS mount rule rewritten against the WireGuard instance's SG (Stage 4's NAT means the peer CIDR never reaches AWS), step 3's role-protection re-read as already delivered by Stage 2's shared deny fragment, step 9 split into what can land now versus what waits for the blueprint-provisioned roles (INT-15), and step 13's delegation mechanics written for the two accounts that hold no CLI profile. **Revised again 2026-08-17 after the data-governance review** (AWS guidance read against the plan; links in `docs/REFERENCES.md`): the LF-Tag ontology carries a **`zone` dimension** from day one and the consumer grants are **LF-TBAC expressions scoped by classification** (`restricted`/`personal` by explicit grant only — Stage 11 then narrows *within* restricted instead of beginning enforcement); the sample table gains a restricted column so the share deliverable proves the scoping; the grant *method* joined decision 5 and the LF-TBAC cross-account prerequisite joined 7.1; the results-zone ceiling on decision 6's grain is stated at step 8; **the raw share to Sandbox is kept deliberately** (data engineers develop the raw→curated ETL there — `docs/plan/institutional-delta.md` row added); and the missing quality gate is declared (3.8). **Revised once more later the same day (2026-08-17): the user withdrew the NFS requirement from `objectives.md`, and [D24](../decisions/D24-shared-filesystem.md) is withdrawn with it** — pass 5 (steps 10-12, the `sandbox/nfs/` slice), question vii and the EFS cost row removed; no other step consumed the filesystem |
+| **Status** | **PASSES 0-4d DONE (2026-08-18/20)** — pass 4a/4b applied 2026-08-19: `terraform-modules/consumer-data/` v0.1.0 and the two consumer slices, `1 added` + `15 added` per account in Recipe D's two steps, both re-planning `No changes`, `./aws/datalake.py` **0 FAILED**. **4d closed 2026-08-20 by the `DenyControlPlaneOffVpn` amendment and the proofs it unblocked**: applied `0 to add, 6 to change` → re-plan `No changes` → read back on **both provisioned roles** → `VP-7` both halves → then, as the persona, the drop-box asymmetry in three verbs and **D13's own mechanism** as the implicit deny it argues from (Lesson 33 closed; Lesson 28 amended to three terms by the `PutObject`'s `SSEKMSKeyId`). What remains of the stage is **4e** (4.3's SCP amendment, last, through battery phase 4b) and **pass 6** (Security Hub); one input stays owed to the user — **open question 19, the crawler demander**, which no proof can settle; **4c DONE 2026-08-19** — the seven persona statements applied and read back from both provisioned roles, carrying a finding: the drop-box write is cross-account, so pass 1's bucket policy was only ever half of it (6.2 corrected). Earlier: **PASSES 0-3 DONE (2026-08-18/19)** — the governed lake exists, its grants are made and it is shared: pass 1 `58 to add` applied in two steps, pass 2 `9 added` (the governance manager's own grants), pass 3 `4 added` (the two cross-account shares, four RAM shares `ACTIVE` and held, zero invitations, INT-11 closed). **Passes 4 and 6 remain** — the consumer side, which now opens with a data lake administrator per account (7.3), and Security Hub. Each pass row below carries its own result. **Originally revised 2026-08-16 into the pass/verification format**, with five corrections against earlier stages folded in: the `CROSS_ACCOUNT_VERSION` defence moved to the step whose apply actually touches `DataLakeSettings` (5.4, not 7), the EFS mount rule rewritten against the WireGuard instance's SG (Stage 4's NAT means the peer CIDR never reaches AWS), step 3's role-protection re-read as already delivered by Stage 2's shared deny fragment, step 9 split into what can land now versus what waits for the blueprint-provisioned roles (INT-15), and step 13's delegation mechanics written for the two accounts that hold no CLI profile. **Revised again 2026-08-17 after the data-governance review** (AWS guidance read against the plan; links in `docs/REFERENCES.md`): the LF-Tag ontology carries a **`zone` dimension** from day one and the consumer grants are **LF-TBAC expressions scoped by classification** (`restricted`/`personal` by explicit grant only — Stage 11 then narrows *within* restricted instead of beginning enforcement); the sample table gains a restricted column so the share deliverable proves the scoping; the grant *method* joined decision 5 and the LF-TBAC cross-account prerequisite joined 7.1; the results-zone ceiling on decision 6's grain is stated at step 8; **the raw share to Sandbox is kept deliberately** (data engineers develop the raw→curated ETL there — `docs/plan/institutional-delta.md` row added); and the missing quality gate is declared (3.8). **Revised once more later the same day (2026-08-17): the user withdrew the NFS requirement from `objectives.md`, and [D24](../decisions/D24-shared-filesystem.md) is withdrawn with it** — pass 5 (steps 10-12, the `sandbox/nfs/` slice), question vii and the EFS cost row removed; no other step consumed the filesystem |
 | **Prerequisites** | Stage 3 — the `[P]` gateway-endpoint IDs its `foundation/` slices export (INT-05) and the `data-perimeter` shapes of its step 9. **Stage 4, for one named input**: the WireGuard Elastic IP (a branch of step 1's bucket-policy condition); every laptop-side proof below also rides the tunnel. Stage 1d step 11 (org-wide RAM sharing; the LF cross-account version read `4`) |
 | **Consumes** | [D6](../decisions/D06-dlp-approach.md), [D13](../decisions/D13-lake-formation-enforcement.md), [D18](../decisions/D18-data-scientist-access.md), [D19](../decisions/D19-derived-zone.md), [D22](../decisions/D22-data-governance-account.md), [D25](../decisions/D25-drop-box-consumer.md), [D26](../decisions/D26-unified-studio.md), [D27](../decisions/D27-catalog-maintenance.md), [D31](../decisions/D31-approver-read.md), [D35](../decisions/D35-sandbox-cardinality.md) |
 | **Proves** | [INT-03](../integrations.md) (the two read shares; the write share waits for Stage 9), [INT-05](../integrations.md), [INT-11](../integrations.md) (its whole remaining half: the version defence and the first grant against the RCP), [INT-10](../integrations.md) **in part** — the writer and maintenance statements are exercised here; the Production pickup half is Stage 9's |
@@ -79,7 +79,7 @@ change. The sequence to work in is **six passes**:
 | **1** | 1, 3, 4, 5 | the lake: keys, buckets, policies, drop-box; catalog, role, crawlers; Iceberg; Lake Formation — **authored 2026-08-18, `58 to add`; applied in TWO steps, 5.2's callout** | `data-governance/data/` `[P]` | `awsds-infra-data` |
 | **2** | 6 | D13 made real — grants, the grain decision, the sso/ reading — **DONE 2026-08-19: `9 added`, re-plan `No changes`; the sso/ reading, the grain map and the register rows all landed. The behavioural half (can the persona actually tag?) needs a GM session and the tunnel** - **scheduled 2026-08-19 as [Stage 6](stage-06-unified-studio.md)'s verification (xiii)**, beside (xii), because both need the same sign-in | idem, plus a reading of `identity/sso/` | idem |
 | **3** | 7 | the two cross-account shares, and the INT-11 after-reading — **DONE 2026-08-19: `4 added`, re-plan `No changes`; four `LakeFormation-V4-*` shares `ACTIVE` and held by both consumers, zero invitations, `DL-5` bracket holds. Two findings changed what was applied — the grant option is mandatory, and the default expression needed a `layer` gate to keep the drop-box out** | `data-governance/data/` (`shares.tf`) + RAM | idem |
-| **4** | 8, 9 | the consumer side: workgroups, links, derived zone + CMK; the pandas proofs — **opening with a `DataLakeSettings` per consumer account (7.3's finding)**. It also carries the behavioural debts pass 1 left, and the 4.3 amendment, listed below. **4a/4b DONE 2026-08-19** — one module (`consumer-data` v0.1.0) applied twice, Recipe D per account, `DL-5`/`DL-6` extended per account in the same sitting (the debt pass 3 wrote down), four re-grants per account verified by `list-permissions`, and verification (v) closed. **`scratch` left this row: it is a PREFIX in the derived bucket, not a bucket** — D13's own wording, §8 below. **4c DONE 2026-08-19** (the paragraph below); **4d DONE 2026-08-19/20 to the unamended statement's edge** — masked and owed: the drop-box asymmetry and D13's pandas negative, unblocked when the authored `aws:SourceVpce` amendment applies; **4e remains, last** | `sandbox/data/`, `development/data/` `[P]` + `identity/sso/` | `awsds-infra-sandbox-1`, `awsds-infra-dev`, **`awsds-infra-identity` (4c)** — 4c additionally *reads* state in Sandbox, Development and Data Governance through each account's `InfrastructureAccess`, one sign-in covering all four on the `awsds` sso-session |
+| **4** | 8, 9 | the consumer side: workgroups, links, derived zone + CMK; the pandas proofs — **opening with a `DataLakeSettings` per consumer account (7.3's finding)**. It also carries the behavioural debts pass 1 left, and the 4.3 amendment, listed below. **4a/4b DONE 2026-08-19** — one module (`consumer-data` v0.1.0) applied twice, Recipe D per account, `DL-5`/`DL-6` extended per account in the same sitting (the debt pass 3 wrote down), four re-grants per account verified by `list-permissions`, and verification (v) closed. **`scratch` left this row: it is a PREFIX in the derived bucket, not a bucket** — D13's own wording, §8 below. **4c DONE 2026-08-19** (the paragraph below); **4d DONE 2026-08-20 in full** — the `aws:SourceVpce` amendment applied (`0/6/0`, re-plan `No changes`, read back on both provisioned roles, `VP-7` both halves), and the two proofs it had been masking taken from the persona: the drop-box asymmetry in three verbs and D13's pandas negative as an **implicit** deny. **4e remains, last** | `sandbox/data/`, `development/data/` `[P]` + `identity/sso/` | `awsds-infra-sandbox-1`, `awsds-infra-dev`, **`awsds-infra-identity` (4c)** — 4c additionally *reads* state in Sandbox, Development and Data Governance through each account's `InfrastructureAccess`, one sign-in covering all four on the `awsds` sso-session |
 | **6** | 13 | Security Hub org-wide | by hand: Management, then Audit | `AWS Control Tower Admin`, console/CloudShell |
 
 Pass 6 sits last so its first standards report covers a lake that exists — and keeps its number:
@@ -116,11 +116,19 @@ that needs a session now waits only on the tunnel (4d).
    `glue.amazonaws.com` alone, `Schedule` null; Lesson 22, closed by reading). The missing DEMANDER is
    open question 19; the maintenance-pair deliverable bullet carries the full correction;
 2. **the drop-box asymmetry halves that exist** (the writer's `PutObject`, its denied `GetObject`, the
-   crawler's read) — the Production pickup stays Stage 9's. **BLOCKED in both consumers (4d groups A/B):
-   all three verbs die on `DenyControlPlaneOffVpn`, one unrelated deny. The amendment that unblocks them
-   is AUTHORED 2026-08-20** (`identity/sso` plans `0 to add, 6 to change`; the lake's endpoint list
-   rebuilt on the home axis renders identical) **and NOT applied — these proofs re-run right after that
-   apply, before 4e**;
+   crawler's read) — the Production pickup stays Stage 9's. **CLOSED 2026-08-20.** It was BLOCKED in both
+   consumers (4d groups A/B) — all three verbs dying on `DenyControlPlaneOffVpn`, one unrelated deny —
+   and the amendment applied that day unblocked it. Measured from the persona in `Sandbox 1`, tunnel up:
+   **`PutObject` succeeds**, and `GetObject` on the object it just wrote, `ListObjectsV2` on `incoming/`
+   and `DeleteObject` on its own object are each denied **implicitly** — absence of grant, not an
+   intervening rule. `AllowInteractiveWriterPutOnly` moves from attached to **exercised** (Lesson 20
+   discharged for it), and D18's refusal of an exchange bucket becomes a construction rather than a
+   convention. Two things the proof produced beyond its own claim: the success response's `SSEKMSKeyId`
+   showed a **third** grant on the call — the lake CMK's key policy — which amends Lesson 28's arity; and
+   the object it left is uncollectable until Stage 9's pickup exists (`AWS_STATE.md` `EXC-02`). The
+   `Development` leg was deliberately not run: the resource half is an `ArnLike` covering both accounts
+   and both provisioned roles were read back, so a second uncollectable object buys weaker evidence.
+   **The crawler's read stays with item 1** — it has no demander;
 3. **the sample-row decision, which 4.3 turns into a one-way door** — see 4.1's callout: `sample_trades`
    was created **empty** by Terraform, and the only way to put rows in it from inside this account is
    Athena, which is exactly what the next item closes. **DECIDED AND DONE 2026-08-19/20 — the user chose
@@ -133,7 +141,40 @@ that needs a session now waits only on the tunnel (4d).
 4. **4.3's `athena:StartQueryExecution` amendment to `DenyUserCompute`, LAST**, through battery phase 4b.
    It binds every principal in Data Governance, `InfrastructureAccess` included. **It does not constrain
    pass 4's consumer queries** — those run in Sandbox and Development, under the `Interactive` OU — so the
-   only thing it has to follow is any Athena-borne write *in this account*, i.e. item 3.
+   only thing it has to follow is any Athena-borne write *in this account*, i.e. item 3. **Item 3 is done
+   (2026-08-20, 12 rows in), so the last blocker is cleared and this is the stage's next act.** The
+   sequence below was worked out on 2026-08-20 from `POLICIES.md`, the battery runbook and `probes.py`;
+   the two findings marked ⚠ are corrections to what this item used to say.
+
+   1. **⚠ TWO DOCUMENTS, ONE SITTING — not one.** `POLICIES.md`'s `Identity` section states it and this
+      item did not: `DenyUserCompute` exists identically in `awsds-org-scp-ou-data.json` **and**
+      `awsds-org-scp-ou-identity.json`, deliberately, as one idea in two files. `./scripts/check-index.py`
+      compares **`Sid`s, not action lists**, so a one-document amendment passes every gate and leaves the
+      two silently divergent — **Lesson 14 exactly**, in the shape the file itself predicted.
+   2. **⚠ THE COST OF CLOSING IT, stated before rather than discovered after.** `DenyUserCompute` carries
+      **no condition**: after the amendment, *nothing in Data Governance can run an Athena query, ever* —
+      `InfrastructureAccess` included. The reading that proved the sample rows exist (`count(*) = 12`,
+      taken in-account on 2026-08-20) **stops being reproducible from that account**; the equivalent
+      afterwards is a query from Sandbox or Development over the share. That is the design working —
+      D13 says the lake account is not a query surface — but it removes a diagnostic, and a later session
+      debugging the lake will meet the deny and should meet this sentence first.
+   3. **Amend both JSONs, then `update-policy` in place** — the id does not change, nothing is created,
+      moved or detached. Read each document back from Organizations after upload, as 7.5a/7.6a did.
+   4. **Re-probe in phase 4b, from `awsds-infra-data` AND `awsds-infra-identity`** (the runbook's rule:
+      a document amended and not re-probed is one whose last measurement describes a version that no
+      longer exists), plus the *must still succeed* trio. **Probe shape, and its fork**: call
+      `athena:StartQueryExecution` against a **workgroup that does not exist**, so a not-denied call
+      fails harmlessly rather than actually running something — `safety = blocked` in `probes.py`. Two
+      distinguishable outcomes: `AccessDenied` naming the policy = the amendment landed; a
+      workgroup-not-found/`InvalidRequestException` = **untested**, because Athena validated before it
+      authorized (Lesson 21's fork, per-action and not knowable in advance). **If it lands on
+      *untested*, do not escalate silently**: the only escalation is a *real* workgroup, and that
+      leaves a failed execution record in the account — a cost to accept deliberately and write down,
+      not to slip in.
+   5. **Then the paperwork that the amendment invalidates**: `POLICIES.md`'s Athena non-coverage bullet
+      says in its own words that "this row is rewritten when it lands" — both sections — and
+      `./aws/org-policies.py` is re-run (this stage's step 871 already asks for it). `probes.py` gains
+      the two new entries in the same sitting, or the battery's next run measures the old ceiling.
 
 ---
 
@@ -769,9 +810,15 @@ own:
   half. **One caveat the reading carries and the bullet did not predict**: the S3 denial arrives as an
   *explicit deny in an identity-based policy* rather than the implicit deny D13 argues from, because
   `DenyControlPlaneOffVpn` fires on every direct S3 call made from the tunnel (the drop-box bullet
-  below). D13's own mechanism is therefore **still unmeasured** — it is masked by a deny that would
-  refuse the call whatever Lake Formation had granted, and it stays owed until that statement is
-  amended.
+  below). D13's own mechanism was therefore unmeasured — masked by a deny that would refuse the call
+  whatever Lake Formation had granted. **RESOLVED 2026-08-20, after the amendment applied**: the same
+  call from the persona in both accounts now returns *"because no identity-based policy allows the
+  `s3:ListBucket` action"* — the **implicit** deny, absence of grant, which is the mechanism D13 argues
+  from. Taken with a **contrast pair** rather than alone: `GetBucketLocation` succeeds on the account's
+  own `awsds-<env>-derived` and implicit-denies on `awsds-data-curated`, one action and one session, so
+  *"the network refuses S3"* and *"this bucket is not granted"* stop being the same reading — which is
+  exactly what they were while the explicit deny sat on top. `GetBucketLocation` was used deliberately
+  over `ListObjectsV2`: it is a **management** event, so CloudTrail carries it.
 - **The classification pair (2026-08-17):** a default consumer session reads the sample table and the
   `restricted` column is **absent from the column list**; after the explicit restricted grant, present.
   **The absent half is ANSWERED 2026-08-19, and one layer earlier than this bullet assumed**: read as each
@@ -821,8 +868,9 @@ own:
   and both crawlers read `Schedule: null` with zero triggers and zero workflows. The role is an
   *execution* role, never an identity anyone becomes. **Verified by reading (Lesson 22), not by running.**
   **The consequence reaches past this bullet:** D18/D25's ingestion is `PutObject → crawler catalogues`,
-  and **both halves are broken for unrelated causes** — amending `DenyControlPlaneOffVpn` does not make a
-  crawler run. **And it surfaces an untaken decision: the crawlers' `Schedule`** — whether it exists, at
+  and the two halves were broken for unrelated causes — amending `DenyControlPlaneOffVpn` does not make a
+  crawler run. **Since 2026-08-20 the write half is fixed and measured, so this is the only half left**:
+  a file can now be delivered into the drop-box and nothing will catalogue it. **And it surfaces an untaken decision: the crawlers' `Schedule`** — whether it exists, at
   what frequency, and whether the drop-box's cadence differs from `raw`'s. Neither document is at fault;
   the schedule was simply never chosen.
 - **The drop-box asymmetry, the halves that exist:** an Interactive-OU session `PutObject`s into the dated
@@ -831,9 +879,18 @@ own:
   denied *with an explicit deny in an identity-based policy* — `DenyControlPlaneOffVpn`, whose single
   `aws:SourceIp` condition cannot see that the tunnel's S3 traffic leaves through the `[P]` **gateway
   endpoint** and therefore never presents the Elastic IP. Its bucket-policy twin carries three branches
-  for exactly this reason; the identity twin carries one. **The asymmetry is untested** — all three verbs
-  failed for the same unrelated reason — and stays owed until the statement is amended. The log entry of
-  that date carries the elimination and the control that isolates it.
+  for exactly this reason; the identity twin carried one. The log entry of that date carries the
+  elimination and the control that isolates it.
+  **ANSWERED 2026-08-20, after the amendment applied — and the asymmetry is real in three directions.**
+  From the persona in `Sandbox 1`, tunnel up: `PutObject` into the dated prefix **succeeds**;
+  `GetObject` on that same object, `ListObjectsV2` on `incoming/` and `DeleteObject` on it are each
+  denied **implicitly**. The delete probe is what completes the claim rather than decorating it — a
+  writer that can retract is a writer that can launder, so "put-only" is a statement about three verbs,
+  not one. The `PutObject` was sent as a **fixed-size file, never stdin**: an unknown-length stream goes
+  multipart, and the identity half grants `s3:PutObject` with no multipart companion, so the probe would
+  have failed for a reason that is not the one under test. And its success response carried the finding —
+  `SSEKMSKeyId` naming the lake CMK, i.e. a **third** grant on the call (Lesson 28 amended).
+  **Still owed here: the crawler's read**, which has no demander (the bullet above).
 - **The parameters bracket:** three readings of `DataLakeSettings.Parameters` — before pass 1, after 5.4's
   apply, after the first share — all reading `CROSS_ACCOUNT_VERSION=4, SET_CONTEXT=TRUE`.
 - **The lifecycle:** `make down`/`make up` leaves every `[P]` ID in the three
@@ -939,7 +996,7 @@ Record every answer, including the ones that come out fine.
 | vii | *(removed 2026-08-17 — the NFS requirement was withdrawn; there is no EFS to mount)* | — |
 | viii | Can a per-user LF filter be expressed and observed on the SQL path at all (the grain's raw material)? — **ANSWERED 2026-08-19 by the written map** (`docs/GOVERNANCE.md` §"The grain"): *expressed* yes, but only through **TIP**, which reaches the SQL path and not JupyterLab and whose documented price is remote access — so it is reachable and **not adopted**. An LF filter on its own attaches to the role, never the person. `${aws:userid}` prefixes stay the genuinely per-user control, over **copies**. *Observed* is not claimed: nothing was run | 6.4 |
 | ix | Does Security Hub's auto-enable cover existing members and later vends, and which FSBP controls were disabled as not-applicable in the first triage? | 13 |
-| x | Does the default consumer grant exclude the `restricted` column (the classification-scoped TBAC holding), and does the explicit grant admit it? — **answered by the COLUMN LIST, not by rows**: `sample_trades` was applied empty (4.1), so a row count discriminates nothing and the column list discriminates all three states. **THE EXCLUSION HALF IS ANSWERED 2026-08-19, and one layer earlier than this row assumed**: read as each account's own `InfrastructureAccess`, `sample_trades` carries six columns in Data Governance and **five** through the link in both consumers — `counterparty` never crossed the account line, because an account may pass on only what it received and `classification=restricted` was never in the received expression. The negative control is in the same reading. What is still owed is the **persona** session (4d) and the explicit-grant half. **THE PERSONA HALF IS ANSWERED 2026-08-19 (4d group A), in Sandbox, and it says more than the account-level reading did**: `glue:GetTable` through the link returns five columns to the persona, and so does `ResultSetMetadata.ColumnInfo` on the query — **the filter holds at the ENGINE, which the catalog read alone could not establish**. **Development answered the same way 2026-08-19 (group B), from a different provisioned role**; the explicit-grant half remains | 6.1, 7.2 |
+| x | Does the default consumer grant exclude the `restricted` column (the classification-scoped TBAC holding), and does the explicit grant admit it? — **answered by the COLUMN LIST, not by rows**: `sample_trades` was applied empty (4.1), so a row count discriminates nothing and the column list discriminates all three states. **THE EXCLUSION HALF IS ANSWERED 2026-08-19, and one layer earlier than this row assumed**: read as each account's own `InfrastructureAccess`, `sample_trades` carries six columns in Data Governance and **five** through the link in both consumers — `counterparty` never crossed the account line, because an account may pass on only what it received and `classification=restricted` was never in the received expression. The negative control is in the same reading. What is still owed is the **persona** session (4d) and the explicit-grant half. **THE PERSONA HALF IS ANSWERED 2026-08-19 (4d group A), in Sandbox, and it says more than the account-level reading did**: `glue:GetTable` through the link returns five columns to the persona, and so does `ResultSetMetadata.ColumnInfo` on the query — **the filter holds at the ENGINE, which the catalog read alone could not establish**. **Development answered the same way 2026-08-19 (group B), from a different provisioned role**. **THE EXPLICIT-GRANT HALF IS ANSWERED 2026-08-19 (4d's second authorized act), at the account/administrator grain** — a `classification=restricted AND layer IN (curated, raw)` TABLE grant to the **Sandbox account only** took its column list to six with `counterparty` present while **Development, read in the same minute, stayed at five**; the grant was then revoked and both returned to five. Granting in **one** account rather than two is what excludes time, catalog caching and a stale session — the control is the account that did *not* receive it. **So this row is closed.** *Not measured, and deliberately: the persona grain of the explicit grant* — that needs a consumer-side re-grant on top of the boundary gate, which `consumer-data` does not carry | 6.1, 7.2 |
 
 ## Risks
 

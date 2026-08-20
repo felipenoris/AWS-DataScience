@@ -355,6 +355,25 @@ requires an allow in the writer's own identity policy, so `DataScientistAccess` 
 permission set names the one prefix and the one key. The asymmetry is unchanged — the identity half
 grants no read-back, no list, no delete.
 
+**MEASURED 2026-08-20 (Stage 5 pass 4d), and the contract survives contact in three verbs.** From a
+persona session with the tunnel up: `PutObject` into the dated prefix **succeeds**, and `GetObject` on
+that same object, `ListObjectsV2` on the prefix and `DeleteObject` on it are each denied — all three
+**implicitly**, i.e. because nothing grants them rather than because a rule intervenes. The **delete**
+is the verb this section had described but never proved, and it is the one that carries the D18
+argument: a writer that can retract is a writer that can launder, so "put-only" is a claim about
+retraction as much as about reading. Two consequences worth carrying forward:
+
+- **The write needs a third allow, not two.** The bucket policy, the identity policy **and** the lake
+  CMK's key policy all fire on one call, because the drop-box is SSE-KMS and S3 calls
+  `kms:GenerateDataKey` with the *caller's* credentials. The paragraph above names the KMS statement
+  already; what was not written down is that this term is **invisible on failure** — it surfaces as a
+  KMS error against the S3 call — and legible only in a successful `PutObject`'s `SSEKMSKeyId`.
+- **The letterbox has no collector yet.** The writer cannot clean up after itself by design, and the
+  pickup is Stage 9's `awsds-prod-job-exec`. Until that exists, anything written here stays — including
+  the proof object, declared as `EXC-02` in `docs/AWS_STATE.md`. **This is the drop-box working, not
+  failing**, but it means the letterbox fills monotonically until Stage 9 lands, and the crawler that
+  would at least catalogue the arrivals has no demander either (open question 19).
+
 **The catalog half of the asymmetry, written down 2026-08-19 because it was nearly lost.** The drop-box
 has a catalog database and a crawler, so it has *metadata* that a grant can reach even though its bucket
 holds nothing a consumer may read. Three things keep the letterbox shut on that side, and they are not

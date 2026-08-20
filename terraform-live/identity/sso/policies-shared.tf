@@ -236,6 +236,17 @@ data "aws_iam_policy_document" "shared_denies" {
 #                               key, the test passes, the deny still fires. What it widens:
 #                               anything inside the home's own VPC reaching those endpoints -
 #                               today, only the WireGuard host itself.
+#                               APPLIED AND PROVEN 2026-08-20, and the proof shape matters to
+#                               anyone re-touching this: the document changing is NOT the
+#                               evidence. The statement is shared, so it was read back off BOTH
+#                               PROVISIONED ROLES, and the behavioural check was the same call
+#                               that diagnosed the defect (ListBuckets, explicit -> implicit
+#                               deny) beside a CONTRAST PAIR - one action, a granted bucket and
+#                               a non-granted one, one session - because "the network refuses
+#                               S3" and "this bucket is not granted" are the same reading
+#                               otherwise. Downstream consequence worth keeping: while this
+#                               statement over-fired, every IMPLICIT deny behind it was
+#                               unmeasurable, D13's whole mechanism included.
 #
 # WHAT THIS FRAGMENT IS NOT COMPOSED INTO, and it is the difference between a bad session and a
 # bad month: InfrastructureAccess. Step 8.3 applies it to the six personas ONLY. Getting this

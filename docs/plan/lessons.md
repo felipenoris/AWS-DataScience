@@ -428,6 +428,27 @@ lesson can be *recognised* without opening this file; the reasoning that makes e
    converse is the useful half in review: a resource policy that names a **foreign** principal is by
    itself always incomplete, in every service, with no exception — so it can be read as a marker that an
    identity-side statement exists somewhere or the permission is dead.
+   **AMENDED AGAIN 2026-08-20 (Stage 5 pass 4d, when the drop-box `PutObject` finally ran), because
+   "the two halves" is the wrong arity on an encrypted write path: there are THREE.** The write
+   succeeded only because the identity half (`WriteIngestionDropBox`), the resource half
+   (`AllowInteractiveWriterPutOnly`) **and the lake CMK's key policy** meeting `UseLakeDataKeyViaS3` all
+   agreed at once — three policies in two accounts, one call. The third term is not an exotic case: it is
+   present on **every** write to a bucket with SSE-KMS default encryption, because S3 calls
+   `kms:GenerateDataKey` with the **caller's** credentials, not its own.
+   **What makes this amendment worth its own paragraph is where the term is legible.** The first two
+   halves announce themselves on failure — the `AccessDenied` names the action and the resource, and the
+   wording says which layer refused. The key term does not: a missing KMS grant surfaces as a **KMS**
+   error about an action nobody wrote in the policy they are debugging, which is exactly the shape the
+   Athena `INSERT` failure took the day before (Lesson 34's finding arrived wearing this costume). And on
+   **success** the key term is the only one that is visible at all — the `PutObject` response echoes
+   `SSEKMSKeyId`, naming the key and its owning account, while nothing in the response mentions the
+   bucket policy or the identity policy that also had to allow it.
+   **The discriminator, third and last:** after asking *which service has a layer above IAM* and *whose
+   account owns the object*, ask **is the target encrypted, and with whose key** — and if the key lives
+   in another account, that is a third grant on the same call. The review habit that follows: a
+   successful encrypted write is worth reading for its `SSEKMSKeyId` rather than for its exit code,
+   because that field is a **positive** proof of a grant that no failure elsewhere would have attributed
+   correctly.
 
 29. **An attribute assigned to describe a thing becomes a selector the moment somebody writes a rule over
    it — and the rule inherits every resource that wears the attribute for an unrelated reason.** Stage 5
@@ -534,6 +555,25 @@ lesson can be *recognised* without opening this file; the reasoning that makes e
    `consumer_vpce_ids` is built along "who consumes the lake" and was being asked "what is on the network
    path"; today the two intersect by coincidence, since the single VPN home also happens to be a consumer
    (Lesson 10's axis question and Lesson 29's *describe-becomes-select*, arriving together).
+   **CLOSED 2026-08-20 — the fix is applied and *proven*, and the proof shape is the reusable part.** The
+   third condition (`StringNotEqualsIfExists aws:SourceVpce` over the VPN home's gateway endpoints) went
+   in, and the evidence was taken three ways rather than one. **(a) The same call, before and after:**
+   `s3api list-buckets` — the call whose CloudTrail record diagnosed the defect — moved from *explicit
+   deny in an identity-based policy* to the **implicit** deny, one variable changed. **(b) A contrast
+   pair:** one action (`GetBucketLocation`), two buckets, one session — granted bucket succeeds, lake
+   bucket implicit-denies — which is what distinguishes *"the network is blocked"* from *"this bucket is
+   not granted"*, two hypotheses that had produced identical output while the over-broad deny sat on top.
+   **(c) Both provisioned roles, not the document:** the defect belonged to a shared fragment, so the fix
+   is only proven where the fragment lands, and the two accounts that failed identically are the two that
+   had to be read back.
+   **The lesson's own tail:** a deny that is debugged only by the traffic it wrongly blocks is also
+   *closed* only that way — the apply proves the document changed, and nothing more. **The bracket that
+   opens with "a control reports healthy until someone tries the rare case" closes by someone trying the
+   rare case**, which means the fix and its behavioural proof belong in the same sitting or the finding is
+   merely relocated. A second consequence, cheap and general: while an unrelated **explicit** deny is in
+   the path, every **implicit** deny behind it is unmeasurable — so a fix like this one does not just
+   restore access, it restores the *evidentiary* value of every negative control downstream of it (here,
+   D13's whole mechanism).
 
 34. **A deferred obligation recorded only at the deferring end is a promise the receiving stage never
    gets — and a decision scheduled around an unexercised capability inherits a premise nobody measured.**

@@ -74,6 +74,7 @@ IDENTITY_PROFILE = "awsds-infra-identity"
 # The contracts (see header).
 NAME_TAG_PATTERN = "awsds-*-vpn"
 DENY_SID = "DenyControlPlaneOffVpn"
+VPCE_CONDITION_KEY = "aws:SourceVpce"
 HOST_KEY_SECRET_SUFFIX = "-vpn-host-key"
 HOST_KEY_DENY_SID = "DenyValueReadExceptHostAndInfrastructure"
 
@@ -458,7 +459,20 @@ def main(argv: list) -> int:
                 elif not r.stdout.strip():
                     set_rows.append((name, "(no inline policy)"))
                 else:
-                    set_rows.append((name, "yes" if DENY_SID in r.stdout else "no"))
+                    # Presence of the Sid is not enough, and 2026-08-20 is why: the
+                    # statement carried the right Sid and the wrong condition set for
+                    # three days while this check reported "all six carry it" (Lesson
+                    # 31 - a check inheriting the scope it was written in). Tunnel
+                    # traffic splits by destination, so an aws:SourceIp-only test denies
+                    # every direct S3 call made from INSIDE the perimeter. The vpce
+                    # condition is therefore read as well; the grep stays a grep, but it
+                    # now greps for the thing that was actually wrong.
+                    if DENY_SID not in r.stdout:
+                        set_rows.append((name, "no"))
+                    elif VPCE_CONDITION_KEY in r.stdout:
+                        set_rows.append((name, "yes"))
+                    else:
+                        set_rows.append((name, "yes, IP only"))
 
     # -------------------------------------------------------------------------------- the checks
     # VP-1: exactly one WireGuard host in the VPN home, t4g.nano (D4). Absent = not built
@@ -603,8 +617,9 @@ def main(argv: list) -> int:
     # in the OPPOSITE direction.
     if identity_live and set_rows:
         persona = {n: v for n, v in set_rows if n in PERSONA_SETS}
-        carrying = [n for n, v in persona.items() if v == "yes"]
-        missing = [n for n in PERSONA_SETS if persona.get(n) != "yes"]
+        carrying = [n for n, v in persona.items() if v.startswith("yes")]
+        missing = [n for n in PERSONA_SETS if not persona.get(n, "").startswith("yes")]
+        ip_only = sorted(n for n, v in persona.items() if v == "yes, IP only")
         if not carrying:
             checks.note(
                 "VP-7",
@@ -619,10 +634,28 @@ def main(argv: list) -> int:
                 "a partial rollout is Lesson 14; the fragment reaches all six in one diff "
                 "(step 8.2).",
             )
+        elif ip_only:
+            checks.fail(
+                "VP-7",
+                f"{DENY_SID} tests {VPCE_CONDITION_KEY}",
+                f"MISSING from: {', '.join(ip_only)} - the statement is present and "
+                "wrong, which is the Stage 5 pass 4d defect (Lesson 33). Tunnel traffic "
+                "SPLITS BY DESTINATION: S3 and DynamoDB leave through the VPN home's [P] "
+                "gateway endpoints and arrive with the host's PRIVATE address plus "
+                "aws:SourceVpce, never the Elastic IP - so an address-only test denies "
+                "every direct S3 call a persona makes from INSIDE the perimeter (the "
+                "scientist runs the query and cannot fetch the CSV). The fix is a third "
+                "condition, StringNotEqualsIfExists over the HOME's endpoint ids, not the "
+                "consumers' - see terraform-live/identity/sso/policies-shared.tf.",
+            )
         else:
-            checks.ok("VP-7", f"{DENY_SID} in the persona sets", "all six carry it")
-        infra = dict(set_rows).get(INFRA_SET)
-        if infra == "yes":
+            checks.ok(
+                "VP-7",
+                f"{DENY_SID} in the persona sets",
+                f"all six carry it, each testing {VPCE_CONDITION_KEY} as well as the address",
+            )
+        infra = dict(set_rows).get(INFRA_SET, "")
+        if infra.startswith("yes"):
             checks.fail(
                 "VP-7",
                 f"{DENY_SID} in {INFRA_SET}",
@@ -821,9 +854,13 @@ then the handshake log calls it `peer=unknown`.""")
 
         # ==============================================================================
         rep.h1("5. The control-plane deny (step 8), per permission set")
-        rep.text(f"""The reading greps each set's inline policy for the Sid `{DENY_SID}` - presence,
-never sufficiency: the conditions inside it (the EIP list, aws:ViaAWSService) are
-proven by the stage's deny pair, not by this file.
+        rep.text(f"""The reading greps each set's inline policy for the Sid `{DENY_SID}` and for the
+condition key `{VPCE_CONDITION_KEY}` inside it. Presence of the Sid alone was the
+reading until 2026-08-20, and it reported "all six carry it" for three days over a
+statement that denied every direct S3 call a persona made from inside the perimeter
+(Stage 5 pass 4d; Lesson 33). `yes, IP only` is that defect. It is still not
+sufficiency - the values in the lists, and aws:ViaAWSService, are proven by the
+stage's deny pair and by a behavioural probe, not by this file.
 
 """)
         if not identity_live:

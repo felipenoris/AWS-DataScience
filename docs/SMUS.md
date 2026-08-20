@@ -340,6 +340,18 @@ reached *from*, not where it runs — open question 12, Stage 6 step 1.6).
 - One required entry cannot be satisfied in-Region: the `q` row pairs with
   `com.amazonaws.us-east-1.codewhisperer`, *available only in `us-east-1`* — a `us-west-2` VPC
   cannot reach it through an interface endpoint at all (Stage 6 step 4.2 records what that breaks).
+- **The `s3` entry in that list is the one to verify rather than provision on faith, and Stage 5 pass
+  4d is why.** Each account already carries a `[P]` **gateway** endpoint for S3, whose prefix-list
+  route is more specific than any default — so where that route is on an app subnet's route table,
+  S3 traffic takes the **gateway**, and the request arrives carrying the **gateway's**
+  `aws:SourceVpce`, not the interface endpoint's. Stage 5 measured exactly this on the VPN home and
+  it cost a working control: a network condition written for one endpoint id silently failed to
+  match traffic that took the other (Lesson 33). **What Stage 6 step 4.2 owes, therefore, is a
+  measurement and not an assumption** — for each project subnet, which S3 route wins, and which
+  endpoint id the resulting call presents in CloudTrail. Every `aws:SourceVpce` list the SMUS
+  projects must satisfy (the lake's `trusted_vpce_ids`, the derived buckets') is written against
+  that answer, and the failure mode if it is guessed is the 4d one: an `AccessDenied` on a path
+  everybody believes is allowed.
 
 **How it is enforced, not just chosen:** `VpcOnly` is already the blueprint **default** (read
 2026-08-16). Stage 6 step 1.5 sets `sagemakerDomainNetworkType = VpcOnly` in both project profiles
