@@ -208,6 +208,19 @@ the worst kind: the principal sees **no database at all**, holding every permiss
 both, and read `list-permissions` afterwards rather than the code (pass 4's four rows per account are the
 shape).
 
+> **A prerequisite this section silently owed was DELIVERED EARLY, 2026-08-20 (Stage 5, its log's
+> entry of that date).** The registration role `awsds-data-lf-registration` — the session every
+> LF-vended access to the registered locations runs as, 2.4's job included — shipped **read-only**,
+> its `.tf` comment deferring the write half to "Stage 9, which amends this policy (its step 2)".
+> **This file never carried that amendment**: the promise existed only at the promising end
+> (Lesson 34), and 2.4's write proof would have failed inside the cross-account job with the share,
+> the job role and the key all on the suspect list. Stage 5's sample-row load hit the wall first, in
+> the one-account configuration, and the ceiling now exists: `registered-locations-write`
+> (`s3:PutObject`+`s3:DeleteObject` on the two registered prefixes, `kms:GenerateDataKey`). **Nothing
+> here needs to touch it** — 2.1's grants and 2.3's regrants are the per-principal gate under a
+> ceiling that is already wide enough, and a 2.4 denial naming `kms:GenerateDataKey` or `s3:PutObject`
+> for an `AWSLF-…` session would now mean the ceiling *regressed*, not that it was never built.
+
 - **2.1 — [Claude] Amend `data-governance/data/` with the Production grant**: LF permissions
   `DESCRIBE, SELECT, INSERT, DELETE, ALTER` on the `curated` database and its tables (**`ALTER` is not
   optional** — an Iceberg commit rewrites table metadata, so a write without it fails at the commit, not

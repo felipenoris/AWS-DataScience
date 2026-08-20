@@ -114,7 +114,13 @@ that needs a session now waits only on the tunnel (4d).
    crawler's read) — the Production pickup stays Stage 9's;
 3. **the sample-row decision, which 4.3 turns into a one-way door** — see 4.1's callout: `sample_trades`
    was created **empty** by Terraform, and the only way to put rows in it from inside this account is
-   Athena, which is exactly what the next item closes;
+   Athena, which is exactly what the next item closes. **DECIDED AND DONE 2026-08-19/20 — the user chose
+   rows, against the recommendation, and the attempt measured that this item's premise was false**: the
+   door it hurried to use "before 4.3 closes it" had never been built. The registration role shipped
+   read-only, its `.tf` comment deferring the write to a Stage 9 step that stage's file never carried
+   (Lesson 34); the first governed write ever attempted was denied with `kms:GenerateDataKey` named. The
+   write ceiling (`registered-locations-write`) was applied 2026-08-20 and **12 synthetic rows are in** —
+   so the door now exists for real, and 4.3 genuinely closes it;
 4. **4.3's `athena:StartQueryExecution` amendment to `DenyUserCompute`, LAST**, through battery phase 4b.
    It binds every principal in Data Governance, `InfrastructureAccess` included. **It does not constrain
    pass 4's consumer queries** — those run in Sandbox and Development, under the `Interactive` OU — so the
@@ -316,6 +322,16 @@ ROWS, and that is a scheduling fact rather than a detail (written down 2026-08-1
   Stage 11, by which time Stage 9 has run. The cost of that choice is named rather than discovered:
   **Stage 11's filter proof inherits a dependency on Stage 9 having written real rows**, and Stage 11's
   prerequisites row says so.
+  **DECIDED 2026-08-19: the user took the FIRST option, and the attempt was worth more than either
+  branch** (log, the 2026-08-20 entry). The INSERT was denied — the vended `AWSLF` session lacked
+  `kms:GenerateDataKey`, because the registration role was read-only by its own design, its write half
+  promised to "Stage 9's step 2", **a step Stage 9's file never carried**. So the paragraph above argued
+  both options from a door that did not exist, and the real finding is Lesson 34's. The write ceiling
+  was applied 2026-08-20 (`registered-locations-write` — also Stage 9's 2.4 prerequisite, delivered
+  early in the one-account configuration instead of failing inside its cross-account job), the 12
+  synthetic rows landed (`count(*)` 12, metadata `00000→00001`), and **Stage 11's dependency on
+  Stage 9's rows is LIFTED** — its row-filter proof has data now, with the caveat that
+  production-*shaped* data still arrives only with Stage 9's write.
 
 **4.2 — Table maintenance gets an owner on day one**: scheduled `OPTIMIZE` (compaction) and `VACUUM`
 (snapshot expiry) through Athena, or Glue's automatic compaction (the table-optimizer path, whose runs the

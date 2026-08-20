@@ -535,6 +535,30 @@ lesson can be *recognised* without opening this file; the reasoning that makes e
    path"; today the two intersect by coincidence, since the single VPN home also happens to be a consumer
    (Lesson 10's axis question and Lesson 29's *describe-becomes-select*, arriving together).
 
+34. **A deferred obligation recorded only at the deferring end is a promise the receiving stage never
+   gets — and a decision scheduled around an unexercised capability inherits a premise nobody measured.**
+   The lake's registration role shipped read-only at Stage 5 pass 1, its comment deferring the write
+   half to "Stage 9, which amends this policy (its step 2)" — and **Stage 9's file never carried that
+   amendment**. The promise lived only where it was made; the stage that was supposed to redeem it had
+   never heard of it. Meanwhile Stage 5's own file scheduled a one-way-door decision — *load sample rows
+   through Athena before 4.3's amendment closes that door* — on the belief that the in-account write
+   path was open. Three files, three spellings of one capability: the plan said *open*, the code said
+   *deferred*, the receiving stage said *nothing* — and every one of them survived because **nothing had
+   ever exercised the path**. This is Lesson 20's mirror: an unexercised *allow-path* is exactly as
+   unmeasured as an unexercised deny, and it fails the first time someone needs it rather than the first
+   time someone attacks it. The first governed write ever attempted (2026-08-19) measured all three
+   files at once — DENIED, the vended session naming `kms:GenerateDataKey` — and the mechanism side was
+   the true one, again (Lesson 32). The user's against-recommendation choice to load rows is what
+   surfaced it in the cheapest possible configuration — one account, one role, one key — instead of
+   inside Stage 9's cross-account job, where the share, the job role and two keys would all have been on
+   the suspect list. **Two discriminators.** When a comment defers work to a later stage, open that
+   stage's file and write the obligation there *in the same sitting* — an obligation recorded at one end
+   is Lesson 4's state-only-in-one-place, for plans; the cheap check is Lesson 32's citation test run in
+   reverse, *follow the promise to its addressee*. And before scheduling anything "before the door
+   closes", **try the door**: as posed, both options of the sample-row decision described a door that
+   was not there, so whichever the user picked, the decision was argued from a premise the first
+   attempt destroyed.
+
 ---
 
 *Plan core: [GENERAL_PLAN.md](../GENERAL_PLAN.md) · Decisions: [docs/plan/decisions/INDEX.md](decisions/INDEX.md) · Stages: [docs/plan/stages/INDEX.md](stages/INDEX.md)*

@@ -62,8 +62,10 @@ what is genuinely still unanswered:
    written down either way.
    INT-11's organization halves were **enabled in Stage 1d** (RAM org-wide sharing on 2026-08-14; the LF
    cross-account version already read 4 with `SET_CONTEXT: TRUE`); its Stage 5 half **closed 2026-08-19
-   (pass 3, confirmed per account at pass 4 — see the row)**. What is left is the credential-vending half
-   of `sts:SetContext` against the RCP, which pass 4d's first persona query exercises, and — since D26 —
+   (pass 3, confirmed per account at pass 4 — see the row)**. The credential-vending half of
+   `sts:SetContext` against the RCP is **exercised too (2026-08-19, 4d groups A and B)**: the persona's
+   cross-account queries `SUCCEEDED` through the version-4 share from two provisioned roles, so vending
+   worked and the RCP left it untouched. What is left is — since D26 —
    the domain's account associations (INT-12) at Stage 6; its failure mode is silence rather than an
    error. INT-13 (CodeConnections from the unified domain to the self-hosted GitLab in a private subnet)
    is the one with no convenience-preserving fallback: check it while building Stage 7, when GitLab first

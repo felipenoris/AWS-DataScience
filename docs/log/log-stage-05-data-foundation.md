@@ -2362,4 +2362,125 @@ with its reason.
 
 ---
 
+## 2026-08-20 — The sample rows: the one-way door was walled shut all along, and unbricking it delivers Stage 9's write ceiling early
+
+*Provenance. **This entry is Claude's, and so are the commands.** The readings ran under the standing
+rule. The writes ran on two authorizations, each given by name in this sitting: the **INSERT** by the
+user's answer to the sample-row question — the first option, rows before 4e, chosen against the
+recommendation with both stated costs in view — and the **Terraform apply** by the user's explicit
+"autorizo o apply das mudanças", given after the finding was reported and with the diff described.
+Identifiers were masked at capture. Everything else is verbatim.*
+
+### The decision, and what neither branch knew
+
+The stage's 4.1 callout posed the one-way door: load rows through Athena in this account *before*
+4.3's amendment closes that path, or leave the table empty and let Stage 9's producer write the first
+real rows. The recommendation was the second; the user took the first. **Both options, as posed,
+described a door that was not there** — and that is the finding, not a detail of it.
+
+### The attempt (2026-08-19, 23:35 local): DENIED, and the principal in the error is nobody at the keyboard
+
+A 12-row `INSERT INTO curated.sample_trades` through the `primary` workgroup, as
+`InfrastructureAccess` in `Data Governance`. Athena accepted it and failed it in 1.3 s:
+
+```
+PERMISSION_DENIED: User: arn:aws:sts::<Data Governance Account>:assumed-role/awsds-data-lf-registration/AWSLF-00-AT-<Data Governance Account>-yqjVkpVOQG
+is not authorized to perform: kms:GenerateDataKey on resource: <the account data CMK>
+because no identity-based policy allows the kms:GenerateDataKey action (Service: S3, Status Code: 403 …)
+```
+
+The denied principal is a **vended session of `awsds-data-lf-registration`** — the `AWSLF-…-AT-…`
+session Lake Formation mints for Athena to touch a registered location. The caller's own permissions
+never entered into it: the write died at the vending ceiling.
+
+**Nothing was left behind, verified rather than assumed**: the table's `metadata_location` still read
+the original `00000-…` (no Iceberg commit), the table prefix held only the creation-time metadata
+JSON, and `athena-results/` in the artifacts bucket was empty.
+
+### The reconnaissance: three files, three spellings, and the mechanism side was right again
+
+| where | what it said |
+|---|---|
+| the role's live policy | **one** inline policy, `registered-locations-read`: `s3:GetObject`+`ListBucket` on the two registered locations, `kms:Decrypt`. No write action of any kind |
+| the slice's `.tf` comment | *"READ-side only today: the governed WRITE arrives at Stage 9, which amends this policy in the same slice (its step 2)"* — deliberate, documented |
+| Stage 9's file | **silent** — steps 2.1–2.4 grant, regrant and prove, and none of them amends this policy. The promise existed only at the promising end |
+| Stage 5's file (item 3, 4.1) | *"the only way to put rows in it from inside this account is Athena, which is exactly what the next item closes"* — a door asserted open that was never built |
+
+The key policy was checked and exonerated: `EnableIamPolicyDelegationInThisAccount` gives the account
+root `kms:*`, so IAM delegation works inside Data Governance and the missing half was **IAM-side
+only** — one statement, one file, one account.
+
+**This is Lesson 34, and the user's choice is what made it cheap.** Nothing had ever exercised the
+governed write, so all three spellings survived (Lesson 20's mirror — an unexercised allow-path is
+exactly as unmeasured as an unexercised deny). Left alone, the wall stood until Stage 9's 2.4 — a
+cross-account Glue job, with the share, the job role and two keys all on the suspect list when it
+failed. The rows-now decision hit it with one account, one role, one key.
+
+### The fix: a second inline policy, because the ceiling is not a grant
+
+Authored in `data-governance/data/lakeformation.tf` as **pure addition** —
+`registered-locations-write`, beside the read policy rather than inside it, so the diff adds, the
+revert deletes one thing, and each policy's name stays true:
+
+- `S3WriteRegisteredLocations` — `s3:PutObject`, `s3:DeleteObject`, **object ARNs only**, on the two
+  registered prefixes;
+- `KmsGenerateDataKey` — the exact action the denial named.
+
+`s3:DeleteObject` is the one action **reasoned rather than measured**, and the code says so: engine
+failure-path cleanup and Iceberg maintenance delete data files, and a put-only ceiling strands every
+failed commit where no engine can remove it. The role's description now says "reads and writes". The
+comment carries the history and the frame that matters: **this policy is the vending ceiling for every
+governed access to the two locations, from any account** — widening it widens a ceiling, and the LF
+grants stay the per-principal gate underneath. The slice README gained the two Sid rows in the same
+sitting, and the read row's "write arrives at Stage 9" sentence is preserved struck-through with its
+correction.
+
+### The apply, inside the standing discipline
+
+`terraform plan`: **`1 to add, 1 to change, 0 to destroy`** — the add the new policy, the change read
+in full and confirmed to be the role's **description string alone**. Applied from the saved plan file;
+re-plan **`No changes`**. Then the read-backs the slice's own rule demands after any apply:
+`GetDataLakeSettings` returned one admin, `CROSS_ACCOUNT_VERSION: 4`, `SET_CONTEXT: TRUE`, both
+default-permission lists `[]` — **the DL-5/INT-11 hazard did not fire** — and the role listed both
+policies with the write statements exactly as authored.
+
+### The load, and its verification chain
+
+The identical 12-row INSERT, re-run: **`SUCCEEDED`, 1 947 ms.** Then, each reading a different claim:
+
+| reading | result |
+|---|---|
+| `SELECT count(*), count(DISTINCT counterparty)` | **12** rows, **4** counterparties |
+| `metadata_location` | moved `00000-…` → `00001-…` — a real Iceberg commit, not a file drop |
+| the table prefix | one parquet data file (1 416 B) + manifest, manifest-list and snapshot avros |
+| `./aws/datalake.py` | **0 check(s) FAILED** |
+
+The rows are synthetic and obviously fictitious — four invented counterparties over five instruments
+and six trade dates in 2026-08 — with enough variety that Stage 11's row filters have something real
+to discriminate on.
+
+### What this settles, and where it was written
+
+- **Stage 5 item 3 / 4.1**: corrected in place — the premise was false, the decision and outcome are
+  recorded, and the one-way door **now exists for real**: 4e closes in-account Athena while the write
+  ceiling stays, because Stage 9's engine sits in Production and never calls Athena here.
+- **Stage 9 §2**: a dated callout where the amendment would have been owed — 2.4 rides this same role,
+  nothing there needs to touch the policy now, and a future `AWSLF` denial on these actions means the
+  ceiling *regressed*, not that it was never built.
+- **Stage 11**: the row-proof's dependency on Stage 9 is **lifted**, with the surviving caveat named —
+  twelve synthetic rows prove the filter, not production shape or volume.
+- **Lesson 34** (`lessons.md`), the `AWS_STATE.md` lake row, and the slice README — one copy each.
+
+### What was left behind
+
+12 synthetic rows in `curated.sample_trades`; the count query's CSV under
+`awsds-data-artifacts/athena-results/`; the failed execution id and the two successful ones, in
+Athena's 45-day history. No object anywhere else.
+
+### Still owed
+
+**4e**, unchanged and now honest — there is finally an in-account Athena door to close — then pass 6.
+
+---
+
 *Log index: [docs/log/INDEX.md](INDEX.md) · Stage index: [docs/plan/stages/INDEX.md](../plan/stages/INDEX.md)*

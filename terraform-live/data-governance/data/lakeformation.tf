@@ -59,8 +59,26 @@ resource "aws_lakeformation_data_lake_settings" "this" {
 #
 # LF vends data access for registered locations THROUGH a role, and with SSE-KMS buckets the
 # documented path is a custom role holding S3 + KMS on exactly the registered prefixes - the
-# service-linked role cannot be granted the CMK cleanly. READ-side only today: the governed
-# WRITE arrives at Stage 9, which amends this policy in the same slice (its step 2).
+# service-linked role cannot be granted the CMK cleanly.
+#
+# THIS POLICY IS THE VENDING CEILING FOR EVERY GOVERNED ACCESS TO THE TWO LOCATIONS, FROM ANY
+# ACCOUNT: the engine can sit in Production (Stage 9's job) while the credentials it receives
+# are a session of THIS role - so what these statements allow is the most any LF grant can
+# ever deliver, and the grants stay the per-principal gate underneath. Widening this widens a
+# ceiling, not anyone's access.
+#
+# THE WRITE HALF LANDED 2026-08-20, AND ITS HISTORY IS THE POINT (stage 5 log, that entry).
+# This block shipped read-only at pass 1, its comment deferring the write to "Stage 9, which
+# amends this policy (its step 2)" - but Stage 9's own file never carried that amendment, and
+# Stage 5's file meanwhile scheduled a decision on the belief that in-account Athena could
+# already load rows. The first governed write ever attempted (2026-08-19) measured all three
+# files at once: DENIED, the vended AWSLF session naming kms:GenerateDataKey. The mechanism
+# side was the true one (Lesson 32), and the write half lands here, early, instead of failing
+# inside Stage 9's 2.4 cross-account job with four more pieces on the path.
+#
+# s3:DeleteObject is the one action below REASONED rather than measured: the engine's own
+# failure-path cleanup and Iceberg maintenance (VACUUM, rewrites) delete data files, and a
+# put-only ceiling strands every failed commit where no engine can remove it.
 #
 # permissions_boundary = null is the module's one legitimate case: a service role authored
 # by the infrastructure user (the module's own variable note).
@@ -70,7 +88,7 @@ module "lf_registration_role" {
   source = "git::git@github.com:felipenoris/AWS-DataScience.git//terraform-modules/iam-role?ref=iam-role-v0.1.0"
 
   name        = "awsds-${var.env}-lf-registration"
-  description = "Lake Formation registered-location access - vends governed reads of raw and curated (D13)"
+  description = "Lake Formation registered-location access - vends governed reads and writes of raw and curated (D13)"
 
   permissions_boundary = null
 
@@ -108,6 +126,30 @@ module "lf_registration_role" {
           Sid      = "KmsDecryptDataKey"
           Effect   = "Allow"
           Action   = "kms:Decrypt"
+          Resource = module.data_key.key_arn
+        },
+      ]
+    })
+
+    # The write half - a SECOND inline policy rather than new statements in the first, so the
+    # diff that created it is pure addition, its revert is one deletion, and each policy's
+    # name stays true to what it holds. Object-level actions carry object ARNs only.
+    registered-locations-write = jsonencode({
+      Version = "2012-10-17"
+      Statement = [
+        {
+          Sid    = "S3WriteRegisteredLocations"
+          Effect = "Allow"
+          Action = ["s3:PutObject", "s3:DeleteObject"]
+          Resource = [
+            "${local.bucket_arns["raw"]}/*",
+            "${local.bucket_arns["curated"]}/*",
+          ]
+        },
+        {
+          Sid      = "KmsGenerateDataKey"
+          Effect   = "Allow"
+          Action   = "kms:GenerateDataKey"
           Resource = module.data_key.key_arn
         },
       ]

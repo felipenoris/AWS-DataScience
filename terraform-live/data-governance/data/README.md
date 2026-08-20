@@ -168,8 +168,10 @@ condition. That is why the principals above read as roots.
 | | `VendedDataAccess` | `lakeformation:GetDataAccess` — the registered-location read path |
 | | `CrawlerLogs` | `/aws-glue/*` only, encrypted by the key-policy statement above |
 | `awsds-data-lf-registration` | `LakeFormationService` (trust) | Trusts `lakeformation.amazonaws.com` alone, `aws:SourceAccount`-pinned to this account (row added 2026-08-19 — the discipline's own gap, found by review, not a change to the code) |
-| | `S3ReadRegisteredLocations` | How Lake Formation **vends** governed reads of `raw` and `curated`. Read-side only — the governed write arrives at Stage 9, amending this policy in this slice |
+| | `S3ReadRegisteredLocations` | How Lake Formation **vends** governed reads of `raw` and `curated`. *(This row said "read-side only — the write arrives at Stage 9" until 2026-08-20; the promise existed only on this side — Stage 9's file never carried the amendment — and the write half is now the second policy below)* |
 | | `KmsDecryptDataKey` | The SSE-KMS half of the same path. The service-linked role cannot be granted the CMK cleanly, which is why this is a custom role |
+| | `S3WriteRegisteredLocations` | The write half of the vending ceiling (added 2026-08-20 — the first governed write ever attempted was denied, measuring that no write path existed; stage 5 log, that entry). `PutObject`+`DeleteObject` on the two registered prefixes, object ARNs only. **This is a ceiling, not a grant**: LF grants stay the per-principal gate, and Stage 9's cross-account job writes through a session of this same role. `DeleteObject` is reasoned rather than measured — engine failure-cleanup and Iceberg maintenance delete files; a put-only ceiling strands every failed commit |
+| | `KmsGenerateDataKey` | The SSE-KMS half of the write path — the exact action the 2026-08-19 denial named. `Decrypt` alone reads; `GenerateDataKey` is what S3 calls to encrypt each new object |
 
 ### The maintenance role's own Lake Formation grants (`maintenance.tf`)
 

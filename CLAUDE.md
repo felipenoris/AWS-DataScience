@@ -206,7 +206,7 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   decisions taken (`docs/GOVERNANCE.md` is the one copy of the ontology + grant rules). Applied: five
   `awsds-data-*` buckets under one CMK, `raw`+`curated` registered, 2 LF-Tag keys (3 until the
   2026-08-19 revision), 3 databases,
-  `curated.sample_trades` (Iceberg, EMPTY, `restricted` column) + optimizer, the maintenance role + 2
+  `curated.sample_trades` (Iceberg, `restricted` column; **12 synthetic rows since 2026-08-20**) + optimizer, the maintenance role + 2
   never-run crawlers + a Glue security configuration; the GM's own grants; the 2 TBAC shares (4 RAM
   shares `ACTIVE`, 0 invitations → **INT-11 closed**). The findings that outlived the passes are
   Lessons 27-30 below and the grant rules in `docs/GOVERNANCE.md`.
@@ -218,23 +218,23 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   provisioned roles read back with `${aws:userid}` intact) — Athena run family on the 2 workgroup ARNs,
   derived-zone scoping (write per-user, read persona-grain, delete `scratch/` only), **and the drop-box
   identity half**; `identity/sso/` now reads 3 `data` states (`backend.py` emits `data_consumers`+`lake`),
-  and the lake key ARN lives in state, never tracked. Register **13 rows / 24 triples**. Findings:
-  INT-11's reset hazard is **symmetric**, `DL-6` reported `pass` over two failing accounts
-  (**Lesson 31**), a cross-account write needs **BOTH** policy halves (**Lesson 28 amended**), and
-  `counterparty` is absent in BOTH consumers → verification (x)'s exclusion half closed early. Settled:
-  **`scratch` is a PREFIX** (D13's wording, not D19's).
+  and the lake key ARN lives in state, never tracked. Register **13 rows / 24 triples**. Findings recorded
+  in their owners (Lessons 28-amended/31; INT-11's hazard symmetric; **`scratch` is a PREFIX**, D13's
+  wording; verification (x)'s exclusion half closed early).
 - **Stage 5 pass 4d DONE 2026-08-19 as far as it can go** — perimeter pair, groups A+B (2 accounts,
   2 provisioned roles), the 2 controls as `InfrastructureAccess`, and 4d's 2 authorized acts.
   **Verifications (ii) and (x) closed on the consumer side.** **Two structural defects, both unapplied:**
-  (a) **`DenyControlPlaneOffVpn` denies every direct S3 call a persona makes from the tunnel** — S3 leaves
-  by the `[P]` gateway endpoint carrying a *private* address (`10.20.160.254` + a vpce id, measured in
-  CloudTrail against Glue's Elastic IP on the same session). **Lesson 33.** Fix =
-  `StringNotEqualsIfExists aws:SourceVpce` over the **VPN homes'** endpoints — *not* the consumers',
-  which are never on the path. (b) **No principal can start the crawlers**: the SCP admits only the
-  maintenance role *or* a service principal, that role's trust admits only `glue.amazonaws.com`, and
-  `Schedule` is `null` (**Lesson 22**; the schedule is an open question). **So D18/D25 ingestion is broken
-  at BOTH ends, independently — fixing one fixes half a path.** Masked by (a) and still owed: the drop-box
-  asymmetry and **D13's own mechanism**. **Owed: 4e** (the SCP amendment, last), pass 6.
+  (a) **`DenyControlPlaneOffVpn` denies every direct persona S3 call from the tunnel** (S3 exits by the
+  `[P]` gateway endpoint wearing a *private* address, measured in CloudTrail — **Lesson 33**). Fix =
+  `StringNotEqualsIfExists aws:SourceVpce` over the **VPN homes'** endpoints, *not* the consumers', which
+  are never on the path. (b) **no principal can start the crawlers** — the SCP admits only the maintenance
+  role or a service principal, its trust only `glue.amazonaws.com`, `Schedule` null (**Lesson 22**; open
+  question 19). **So D18/D25 ingestion is broken at BOTH ends, independently.** Masked by (a) and still
+  owed: the drop-box asymmetry and **D13's own mechanism**. **Third defect FIXED 2026-08-20 via the
+  sample-row load (user decision):** the registration role was read-only, its write half promised to a
+  Stage 9 step that never existed (**Lesson 34**); `registered-locations-write` applied — the vending
+  ceiling Stage 9's 2.4 rides — 12 rows loaded, Stage 11's row-proof dependency LIFTED.
+  **Owed: 4e** (the SCP amendment, last — the in-account Athena door now truly exists to close), pass 6.
 - **`security-zone` WITHDRAWN 2026-08-19 (user revision, same day it was applied): one data CMK per
   account** — LF-Tag + `ASSOCIATE` grant destroyed, 3 keys renamed in place to `alias/awsds-<env>-data`
   (`data-data`/`sandbox-data`/`dev-data`; Stage 9's future: `prod-data`), `consumer-data` → **v0.2.0**,
@@ -264,8 +264,7 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   question 10 waits for N=2; Config recorder left alone, Management unrecorded (Stage 12 hooks).
   **Every governed account sits under `us-west-2`.**
 - **All 37 decisions closed** (D30 as a revert). **Still needed from the user: the domain name**
-  (blocks Stage 13). **Settle earliest:** INT-11's credential-vending half of `sts:SetContext` (pass 4d's
-  first persona query), INT-13.
+  (blocks Stage 13). **Settle earliest:** INT-13 (INT-11's vending half closed at 4d, 2026-08-19).
 - **The repository is not documentation-only:** the read-only `aws/` scripts, both Terraform trees,
   `scripts/`, the `Makefile`, the `pre-commit`/`tflint`/`checkov`/`ruff` gates. **Every script is
   Python 3 on `uv`** — shared code in `aws/awslib`, `scripts/repohygiene`, `scripts/tfhygiene`.
@@ -323,3 +322,6 @@ the reasoning that makes it *usable* is in the file. Recognising one is the sign
     build it is the one that was right.**
 33. **One intent enforced in two places diverges — and sharing the *values* while duplicating the
     *structure* is what makes it look like it cannot.**
+34. **A deferred obligation recorded only at the deferring end is a promise the receiving stage never
+    gets — and a decision scheduled around an unexercised capability inherits a premise nobody
+    measured.**
