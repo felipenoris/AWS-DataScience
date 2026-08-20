@@ -679,6 +679,51 @@ lesson can be *recognised* without opening this file; the reasoning that makes e
    and is that object still changed the way this text says?** If the text predates the tree that now owns
    the object, assume it is stale until checked.
 
+36. **"Auto-enable" is a word each service defines for itself — and a cross-service finding written down
+    in the stage that hit it stays in that stage.**
+
+    *Found 2026-08-20, checking Stage 5 step 13 against the service before running it — the third time
+    this plan has made the same assumption about a different service, and the second time it had already
+    been corrected in writing.*
+
+    Three security services in this plan share a management **shape**: delegate administration to Audit,
+    then turn the thing on for the whole organization. The shape is real. The semantics underneath it are
+    not shared at all, and this project has now measured three different answers:
+
+    | Service | What "auto-enable" actually covers | Where it was learned |
+    |---|---|---|
+    | GuardDuty | `ALL` — existing accounts included | Stage 4, recorded; Stage 15 step 2 inherits it |
+    | Macie | **new accounts only**; existing ones added one at a time by the administrator | Stage 11, corrected 2026-08-17 |
+    | Security Hub CSPM | **new accounts only, current Region only** — so on an organization whose accounts all already exist, it covers **none of them** | Stage 5 step 13, corrected 2026-08-20 |
+
+    The plan wrote *"auto-enable for existing and future accounts"* into Stage 5 because the surrounding
+    shape was familiar from GuardDuty. Familiarity is exactly the mechanism: nothing about the sentence
+    looked like a guess, because the sentence next door had been true.
+
+    **The part worth more than the table: the repair was not a different setting.** For Macie the fix was
+    "then add the existing accounts too" — same feature, more work. For Security Hub the fix is an
+    entirely different feature: **central configuration**, with its own prerequisite (a home Region /
+    finding aggregator), its own API family, its own console workflow, its own drift semantics, and an
+    account-level API surface that is *refused* for accounts a policy governs. So when a mechanism
+    assumption turns out to be wrong, do not budget for a corrected parameter — **budget for the
+    possibility that the thing the plan described does not exist**, and that what replaces it changes who
+    runs the act, from where, and what else must be true first.
+
+    **And the second half, which is about this repository rather than about AWS.** The Macie instance was
+    found, understood and written down — correctly, and dated — in **Stage 11's Status row**. That is
+    where it was discovered, so that is where it went. Stage 5's step 13 then carried the same wrong
+    assumption for three more days, because nothing routes a reader from "I am executing Stage 5" to "a
+    sibling stage learned something about the *class* of service you are about to configure". `CLAUDE.md`'s
+    routing table sends you to **the stage you are executing** and to the decisions it consumes; it cannot
+    send you to a paragraph in a stage you are not reading. **A finding about the stage's own subject
+    belongs in the stage. A finding about a *class* of thing — a service family, a provider behaviour, a
+    console pattern — belongs somewhere cross-cutting**, here or in `docs/AWS_STATE.md`'s expectations,
+    *and* in the stage. Duplicating it is not the waste; the waste is the third stage rediscovering it.
+
+    **The discriminator, while writing any correction down:** ask whether the sentence you just wrote
+    would be useful to someone configuring a *different service*. If yes, the stage file is the wrong
+    only-home for it.
+
 ---
 
 *Plan core: [GENERAL_PLAN.md](../GENERAL_PLAN.md) · Decisions: [docs/plan/decisions/INDEX.md](decisions/INDEX.md) · Stages: [docs/plan/stages/INDEX.md](stages/INDEX.md)*

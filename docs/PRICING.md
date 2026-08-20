@@ -198,7 +198,7 @@ Paid every month even with the lab shut down. Same rows as `docs/plan/cost-model
 | Public domain registration (D15 phase 2 — **Stage 13 only**) | registrar, region-independent | idem | 0 → ~1.00 | 0 → ~1.00 |
 | ACM **imported** certificates (D15 phase 1 — the internal CA's leaves) | free | free | 0 | 0 |
 | CodeArtifact | **not available — see §9** | 0.05 USD/GB-mo + 0.05/10k req | **n/a** | ~0.10 |
-| Security Hub + IAM Access Analyzer | 0.001 USD/check (first 100k) | 0.001 USD/check | 1.00-2.00 | 1.00-2.00 |
+| Security Hub + IAM Access Analyzer (Security Hub **after its own 30-day free window**) | 0.001 USD/check (first 100k) | 0.001 USD/check | 1.00-2.00 | 1.00-2.00 |
 | GuardDuty (after the 30-day free window) | 1.75 USD/GB, 0.000007 USD/event | 1.00 USD/GB, 0.000004 USD/event | 0 → 5.00-9.00 | 0 → 3.00-5.00 |
 | WireGuard EBS (8 GB) + CloudWatch logs | 0.152 USD/GB-mo; logs 0.90 USD/GB | 0.08; logs 0.50 USD/GB | ~1.80 | ~1.00 |
 | ~~EFS (shared filesystem + project storage, IA)~~ | **removed — the NFS requirement was withdrawn 2026-08-17 (D24 with it)** | | **0** | **0** |
@@ -548,7 +548,12 @@ external-access findings, AWS Cost Anomaly Detection, VPC / subnets / route tabl
 security groups / NACLs, **AWS Resource Access Manager (the share itself is not metered; you pay for the
 shared resource)**, S3 gateway VPC endpoints, ECR pull-through cache (you pay only for the stored
 images), SageMaker Studio **domains** and user profiles at rest (only running apps and home-directory
-storage bill), and the first 30 days of GuardDuty per account.
+storage bill), the first 30 days of GuardDuty per account, and — **read 2026-08-20, and it is a second,
+separate window rather than the same one** — the first 30 days of **Security Hub CSPM** per account, from
+that account's first enablement. The two windows open at different stages (Security Hub at Stage 5 step 13,
+GuardDuty at Stage 15), so "the first thirty days" is never one date for the whole floor. **What neither
+trial covers is the AWS Config cost underneath**: Security Hub's checks run as Config rules, and each
+control's compliance-state change writes an `AWS::Config::ResourceCompliance` item from day one.
 
 ---
 

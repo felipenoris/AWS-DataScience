@@ -182,26 +182,23 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
 ### Current position
 
 - **Landing zone closed — Stages 0-1d DONE (2026-08-15)**, except the `Staging` vend: held on the
-  account cap, open ticket (`aws/cloudshell/management-quotas.sh` re-asks). Battery 93/93.
+  account cap, open ticket (`aws/cloudshell/management-quotas.sh` re-asks). Battery **96** (2 `note`).
 - **Stage 2 DONE (2026-08-16), all nine verifications answered.** A state bucket per Terraform-managed
   account (`prod` carries D36's 2nd key); `identity/sso/` and `identity/org-policies/` (**adopted, none
   created**). Delegation narrowed to `InfrastructureAccess`, hand-applied, **out of Terraform**
-  (`INV-15`). D11: `scripts/tfhygiene/layers.py` + `make up`/`down`/`status`/`slices`. SSM naming:
-  conventions §6 (`awsds` is reserved).
+  (`INV-15`). D11: `scripts/tfhygiene/layers.py` + `make up`/`down`/`status`/`slices`.
 - **Gates, no CI:** `make check` (offline), `make check-ou` (session), `make check-docs` — red on
-  pre-Stage-2 prose, outside the commit gate. `check-identifiers.py` in both: no account id or e-mail in
-  a tracked file; redact to `<The Account Name>`/`<that user's role>`, declared once per entry.
+  pre-St.2 prose, outside the commit gate. `check-identifiers.py` in both: **no account id or e-mail in a
+  tracked file**; redact to `<The Account Name>`/`<that user's role>`, declared once per entry.
 - **Stage 3 DONE 2026-08-16 — applied, measured, torn down; 0.0000 USD/h** (detail: its Status row).
   `egress_mode=A`; **a NAT does not bypass the S3 allow-list**; INT-05 names the gateway endpoints, never
   `egress/` ids. CIDR/`zone_ids`/peers: `scripts/tfhygiene/backend.py`. Left elsewhere: `Staging`'s
-  NXDOMAIN; verification (ii) is Stage 6's.
+  NXDOMAIN; verification (ii) is St.6's.
 - **NFS/EFS requirement withdrawn (2026-08-17; user edit to `objectives.md`, D24 withdrawn):** no `nfs/`
   slice anywhere, `DL-10` measures EFS *absence*. Detail: `docs/plan/history.md`.
-- **Stage 4 DONE 2026-08-18 — closed by the GuardDuty split** (close-out log entry is the user's; the
-  host was left `running` — tunnel down first, then `make down`). **Stage 15 created the same day** and
-  carries the whole GuardDuty scope, prepared; principle 9 is overruled there once, argued in the
-  institutional-delta row. `aws/guardduty.py` (`GD-1`–`GD-3`); `VP-8` retired; `vpn.py` default narrowed
-  to two profiles.
+- **Stage 4 DONE 2026-08-18 — closed by the GuardDuty split** (host left `running`; tunnel down first,
+  then `make down`). **Stage 15 created the same day**, carrying the whole GuardDuty scope, prepared.
+  `aws/guardduty.py` (`GD-1`–`GD-3`); `VP-8` retired; `vpn.py` default narrowed to two profiles.
 - **Stage 5 DONE except pass 6 (2026-08-18/20) — the governed lake exists, is granted, shared and
   consumed.** Six decisions; `docs/GOVERNANCE.md` is the one copy of the ontology + grant rules, and
   **one data CMK per account** since the `security-zone` withdrawal (2026-08-19; `consumer-data` v0.2.0,
@@ -215,32 +212,37 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   `DataScientistAccess` — the Athena run family on the 2 workgroup ARNs, derived-zone scoping (write
   per-user, read persona-grain, delete `scratch/` only — **`scratch` is a PREFIX**), and the drop-box
   identity half; `identity/sso/` reads 3 `data` states and the lake key ARN lives in state, never
-  tracked. Register **13 rows / 24 triples**. **Owed: pass 6** (Security Hub).
+  tracked. Register **13 rows / 24 triples**.
+- **Pass 6 REWRITTEN 2026-08-20 before it ran — its mechanism did not exist** (no AWS call; before-reading:
+  6 profiled accounts `not enabled`, delegated admin `(none registered)`). Product is **Security Hub CSPM**,
+  NOT the v2 beside it in one CLI namespace — **both on hands the Config recorder from Control Tower to a
+  service-linked one**, so `DL-11` fails on v2's ARRIVAL. Org-wide is **central configuration on the root**
+  (auto-enable = new accounts only → would cover **zero**); **CloudShell in Audit, not console** (console
+  demands a linked Region the ceiling denies); INV-09 → **nine/four**, not "ten". **Management is
+  SELF-MANAGED** (user, 2026-08-20): CSPM does NOT record an account, so including it would buy a bill and
+  a `WARNING` dashboard, not coverage — which also kills **St.1d decision 8's revision trigger**, whose
+  named candidate was this very step. Nothing records Management before St.12.
 - **Three things Stage 5 leaves standing — read the owner before calling any of them a gap:**
   (1) **no principal can start the crawlers** (trust admits `glue.amazonaws.com` alone, `Schedule` null;
-  Lesson 22; **OQ 19** — no-cron was decided on cost, the DEMANDER never was), **so D18/D25 ingestion is
-  broken at ONE end**: files land and nothing catalogues them. (2) **`EXC-02`**, one uncollectable object
-  in the drop-box — do not grant a delete to tidy it. (3) since 4e, **no Athena in Data Governance at
-  all**, `InfrastructureAccess` included — D13 working, and a diagnostic given up on purpose.
+  Lesson 22; **OQ 19**), **so D18/D25 ingestion is broken at ONE end**: files land and nothing catalogues
+  them. (2) **`EXC-02`**, one uncollectable object in the drop-box — do not grant a delete to tidy it.
+  (3) since 4e, **no Athena in Data Governance at all**, `InfrastructureAccess` included.
 - **A denied call does not always name the policy** (2026-08-20): Athena answers a blocked
-  `StartQueryExecution` with a bare "not authorized", so `scp-battery.py`'s `classify()` files it
-  `DENY-NOT-SCP` — an assumption held since St.1c, right in general, wrong there, unfixable by wording.
-  **Attribution moves to a CONTRAST PROBE** (same call from an OU the deny misses). `probes.py` 93→**96**;
-  those 2 rows read `note` forever, by design. **Athena authorizes BEFORE it validates** — per-action;
-  St.6's 1.6 inherits both readings.
-- **A cached SSO token is keyed by `sso-session` name, NEVER by user** (2026-08-20): signing in as the
-  wrong identity fills the right one's slot, `aws sso login` then succeeds doing nothing — **the remedy
-  is `aws sso logout` plus a portal sign-out**, and `ForbiddenException`/`GetRoleCredentials` is its
-  wording. **That same wording was a real ceiling breach on 2026-08-14**, so `scp-battery.py` tells them
-  apart by asking **IdC what the token is assigned** (a path STS never touches), keeping the finding on
-  `True` *and* on "cannot tell". Never suppress that wording by text alone — Lesson 24, in reverse.
-- **Stage 6 NOT open; its decisions 3, 4 and 5 are CLOSED (2026-08-19, doc-only — no AWS call;
-  [log](docs/log/log-stage-06-unified-studio.md) initialized early because the stage file homes such
-  decisions there).** Athena Spark off by **SCP** `athena:StartSession`/`UpdateSession` at **1.6 — not
-  pulled forward** into Stage 5's phase-4b sitting. **Decision 1 REOPENED** on an endpoint-count cost,
-  settled in-stage by **two readings** (4.2 flow logs; `fineGrained` from an IdC notebook). Blueprints are
-  an **allow-list in 3 categories — `docs/SMUS.md` is the one copy**, `US-3` the category-1 list;
-  `AmazonBedrockGenerativeAI` owes a `PRICING.md` row before 1.4.
+  `StartQueryExecution` with a bare "not authorized" → `classify()` files it `DENY-NOT-SCP`. **Attribution
+  moves to a CONTRAST PROBE** (same call from an OU the deny misses); `probes.py` 93→**96**, 2 rows read
+  `note` forever by design (`EXC-03`). **Athena authorizes BEFORE it validates** — per-action; St.6's 1.6
+  inherits both.
+- **A cached SSO token is keyed by `sso-session` name, NEVER by user** (2026-08-20): the wrong identity
+  fills the right one's slot and `aws sso login` then succeeds doing nothing — **remedy is `aws sso
+  logout` + portal sign-out**; wording is `ForbiddenException`/`GetRoleCredentials`. **That same wording
+  was a real ceiling breach on 2026-08-14**, so the battery separates them by asking **IdC what the token
+  is assigned** (STS never touches that path). Never suppress it by text alone — Lesson 24, in reverse.
+- **Stage 6 NOT open; its decisions 3, 4 and 5 are CLOSED** (2026-08-19, doc-only — no AWS call; its log
+  was initialized early). Athena Spark off by **SCP** `athena:StartSession`/`UpdateSession` at **1.6 — not
+  pulled forward**. **Decision 1 REOPENED** on an endpoint-count cost, settled in-stage by **two readings**
+  (4.2 flow logs; `fineGrained` from an IdC notebook). Blueprints are an **allow-list in 3 categories —
+  `docs/SMUS.md` is the one copy**, `US-3` the category-1 list; `AmazonBedrockGenerativeAI` owes a
+  `PRICING.md` row before 1.4.
 - **Stages 5-11 revised, pre-instrumented (2026-08-16/17):**
   `aws/{vpn,datalake,studio,supplychain,cicd,deploytargets,orchestration,dlp}.py` — `DL-5`/`DT-5` guard
   the LF `Parameters` (INT-11). **St.8 pass 4, St.9 passes 4-5, St.10's Staging leg wait on the vend;
@@ -259,10 +261,10 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   **Every governed account sits under `us-west-2`.**
 - **All 37 decisions closed** (D30 as a revert). **Still needed from the user: the domain name**
   (blocks Stage 13). **Settle earliest:** INT-13 (INT-11's vending half closed at 4d, 2026-08-19).
-- **The repository is not documentation-only:** the read-only `aws/` scripts, both Terraform trees,
-  `scripts/`, the `Makefile`, the `pre-commit`/`tflint`/`checkov`/`ruff` gates. **Every script is
-  Python 3 on `uv`** — shared code in `aws/awslib`, `scripts/repohygiene`, `scripts/tfhygiene`.
-  **Exception: `aws/cloudshell/` is shell, standalone, for the no-profile accounts.**
+- **The repository is not documentation-only:** read-only `aws/` scripts, both Terraform trees, `scripts/`,
+  the `Makefile`, the `pre-commit`/`tflint`/`checkov`/`ruff` gates. **Every script is Python 3 on `uv`** —
+  shared code in `aws/awslib`, `scripts/repohygiene`, `scripts/tfhygiene`. **Exception:
+  `aws/cloudshell/` is shell, standalone, for the no-profile accounts.**
 
 **Budget: ~8 KB** (raised from 4 KB by the user, 2026-08-19). State, not reasoning — **a bullet here that explains *why*, or that a stage file should
 be carrying, is a stale copy of something that already lives elsewhere.** Re-trim whenever a stage closes.
@@ -322,3 +324,5 @@ the reasoning that makes it *usable* is in the file. Recognising one is the sign
     measured.**
 35. **Adopting an object into IaC invalidates every *procedure* written about it, and touches none of the
     files that carry them — the stale path is the one that still succeeds, quietly, past every guard.**
+36. **"Auto-enable" is a word each service defines for itself — and a cross-service finding written down
+    in the stage that hit it stays in that stage.**

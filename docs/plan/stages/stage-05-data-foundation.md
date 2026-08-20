@@ -33,7 +33,7 @@ sharing shape gets proven before Stage 9 repeats it for Production.
 | `data-governance/data/` (new) | the account data CMK, the four lake buckets + drop-box, Glue catalog, crawlers + the maintenance role, Iceberg, Lake Formation (settings, registrations, LF-Tags), the cross-account shares | `[P]` |
 | `sandbox/data/`, `development/data/` (**applied 2026-08-19**, one module: `consumer-data` v0.1.0 → v0.2.0 with the same-day revision) | the account's own `DataLakeSettings`, Athena workgroup, LF resource links + the local re-grants, the derived-zone bucket with its three prefix families, the D31 CMK (`alias/awsds-<env>-data` — `-zn-lab` until the revision that withdrew `security-zone`) | `[P]` |
 | `identity/sso/` (**existing slice, amended 2026-08-19, pass 4c**) | the persona's identity-side grants: the Athena run family on the two workgroup ARNs, the derived zone's three prefix families, and the drop-box write's identity half + its KMS pair | `[P]` |
-| Management + Audit, by hand | Security Hub delegated administration and org-wide enablement (step 13) | — (no slice, no profile) |
+| Management + Audit, by hand | Security Hub **CSPM** delegated administration, and org-wide enablement through a **central-configuration policy on the root** (step 13, revised 2026-08-20) | — (no slice, no profile) |
 
 ```mermaid
 flowchart LR
@@ -80,7 +80,7 @@ change. The sequence to work in is **six passes**:
 | **2** | 6 | D13 made real — grants, the grain decision, the sso/ reading — **DONE 2026-08-19: `9 added`, re-plan `No changes`; the sso/ reading, the grain map and the register rows all landed. The behavioural half (can the persona actually tag?) needs a GM session and the tunnel** - **scheduled 2026-08-19 as [Stage 6](stage-06-unified-studio.md)'s verification (xiii)**, beside (xii), because both need the same sign-in | idem, plus a reading of `identity/sso/` | idem |
 | **3** | 7 | the two cross-account shares, and the INT-11 after-reading — **DONE 2026-08-19: `4 added`, re-plan `No changes`; four `LakeFormation-V4-*` shares `ACTIVE` and held by both consumers, zero invitations, `DL-5` bracket holds. Two findings changed what was applied — the grant option is mandatory, and the default expression needed a `layer` gate to keep the drop-box out** | `data-governance/data/` (`shares.tf`) + RAM | idem |
 | **4** | 8, 9 | the consumer side: workgroups, links, derived zone + CMK; the pandas proofs — **opening with a `DataLakeSettings` per consumer account (7.3's finding)**. It also carries the behavioural debts pass 1 left, and the 4.3 amendment, listed below. **4a/4b DONE 2026-08-19** — one module (`consumer-data` v0.1.0) applied twice, Recipe D per account, `DL-5`/`DL-6` extended per account in the same sitting (the debt pass 3 wrote down), four re-grants per account verified by `list-permissions`, and verification (v) closed. **`scratch` left this row: it is a PREFIX in the derived bucket, not a bucket** — D13's own wording, §8 below. **4c DONE 2026-08-19** (the paragraph below); **4d DONE 2026-08-20 in full** — the `aws:SourceVpce` amendment applied (`0/6/0`, re-plan `No changes`, read back on both provisioned roles, `VP-7` both halves), and the two proofs it had been masking taken from the persona: the drop-box asymmetry in three verbs and D13's pandas negative as an **implicit** deny. **4e DONE 2026-08-20 — the pass is closed**: the Athena deny applied by Recipe A in both documents, re-probed in both accounts, its attribution carried by a contrast probe because Athena names no policy | `sandbox/data/`, `development/data/` `[P]` + `identity/sso/` | `awsds-infra-sandbox-1`, `awsds-infra-dev`, **`awsds-infra-identity` (4c)** — 4c additionally *reads* state in Sandbox, Development and Data Governance through each account's `InfrastructureAccess`, one sign-in covering all four on the `awsds` sso-session |
-| **6** | 13 | Security Hub org-wide | by hand: Management, then Audit | `AWS Control Tower Admin`, console/CloudShell |
+| **6** | 13 | Security Hub org-wide — **the step was REVISED 2026-08-20 before it ran** (its mechanism did not exist as written): the product is **Security Hub CSPM**, not the v2 product beside it, and the org-wide mechanism is **central configuration** on the root, not auto-enable | by hand: Management (the delegation), then Audit (everything else) | `AWS Control Tower Admin`, **CloudShell preferred over console** — 13.1a's linked-Region collision |
 
 Pass 6 sits last so its first standards report covers a lake that exists — and keeps its number:
 pass 5 was the EFS pass, removed 2026-08-17 with the NFS requirement. Pass 4 cannot precede pass 3 (a resource link to a share that does not exist
@@ -805,11 +805,170 @@ AWS Foundational Security Best Practices — and before this stage there were ba
 Turning it on here means its first report is about a lake, a catalog and a set of buckets that will still
 exist next month, rather than about scaffolding (principle 9, as amended).
 
-**13.1 — The same two-account, no-profile mechanics as GuardDuty** (Stage 15 step 1): designate **Audit**
-from **Management** (delegating *is* enabling — 1b step 8's finding), then from Audit set the org
-configuration: auto-enable for existing and future accounts, the **AWS Foundational Security Best
-Practices** standard and no others. Both acts in **`us-west-2`** — the Region control does not exempt
-Security Hub — both as `AWS Control Tower Admin`, console or CloudShell, recorded in the log.
+> **⚠ REVISED 2026-08-20, before the step ran, against the service as it is today — and the mechanism
+> this step named does not exist.** The step was written when "Security Hub" was one product configured
+> per account. It is now **two** products, and the org-wide mechanism it describes — *"auto-enable for
+> existing and future accounts"* — is not a setting anyone can choose: auto-enable reaches **new accounts
+> only**, so on this organization, where every account already exists, it would have enabled Security Hub
+> in **zero** of them. The sub-steps below are rewritten. **The numbers 13.1-13.4 keep their meanings**
+> (Stage 15's prerequisites row cites 13.2 by number); what is new is lettered.
+
+**Who runs every act below, and from where** — the same sentence Stage 15 step 1 carries, because it is the
+same two accounts: both hold **no CLI profile** (D33/D34), so every AWS act here is **[user]** as
+**`AWS Control Tower Admin` → `AWSAdministratorAccess`**, console or CloudShell, in **`us-west-2`**. The
+delegated administrator must be the **same account in every Region**, so a second Region later repeats
+13.1's command and never picks a different account.
+
+**13.0 — Which product. This is a decision, not a console click, and it is the first act.** The console
+now offers **AWS Security Hub CSPM** and **AWS Security Hub**; the installed CLI carries both API
+generations side by side (`enable-security-hub` beside `enable-security-hub-v2`, `describe-hub` beside
+`describe-security-hub-v2`), which is how the split was noticed. **Only CSPM runs security standards** —
+FSBP, CIS, PCI — and standards are this step's entire reason to exist (the preamble above). **Enable
+CSPM. Do not enable the v2 product**, and the reason is not that it is unwanted:
+
+> **Enabling *both* silently takes the Config recorder away from Control Tower.** AWS documents it
+> plainly — with both enabled, CSPM creates a service-linked recorder named
+> `AWSConfigurationRecorderForSecurityHubCSPM` in every account and Region, and *"Security Hub does not
+> use the customer-managed configuration recorder in AWS Config"*. The customer-managed recorder here is
+> **`aws-controltower-BaselineConfigRecorder`**, which the landing zone owns and which this plan has a
+> standing decision to leave alone until Stage 12. A second recorder nobody chose, displacing a
+> Control-Tower-owned object, with its own bill — **Lesson 17 exactly**. The v2 product is not refused
+> on merit; it is deferred because turning it on is a Config-recorder decision wearing a security-findings
+> costume, and that decision belongs to Stage 12.
+
+**13.0a — The Config prerequisite, measured 2026-08-20 rather than assumed.** CSPM generates control
+findings through service-linked **AWS Config rules**, and AWS is explicit that without recording you get
+`WARNING` findings that *"[do not] actually evaluate the configuration state of the resource"* — a
+dashboard that looks answered and is not (Lesson 13's shape, arriving as a service behaviour). Read across
+every governed account that holds a profile: each one carries `aws-controltower-BaselineConfigRecorder`
+with **`allSupported: true`, `includeGlobalResourceTypes: true`, `CONTINUOUS`, status `SUCCESS`**. The
+prerequisite is met, and it is met *because Control Tower did it* — which is the second reason 13.0 leaves
+that recorder alone. **Management is the exception, by standing decision** (unrecorded until Stage 12), and
+that is what 13.1c is about.
+
+**13.1 — The delegation, from Management.** Designate **Audit** as the Security Hub CSPM delegated
+administrator, in **`us-west-2`** — the Region control does not exempt Security Hub, and `securityhub`
+appears in **no** policy of this organization (checked 2026-08-20), so nothing in the ceiling shapes these
+calls. The management account **cannot** be the delegated administrator; Audit is the same account that
+already holds `access-analyzer` and `config`.
+
+> **"Delegating *is* enabling" holds here too — and it is documented for *this* service, not inherited
+> from GuardDuty.** `docs/REFERENCES.md` already carries the page: designating the delegated administrator
+> *"enables Security Hub CSPM in the current AWS Region for the delegated administrator account"*. **Two
+> acts now assert it**, because the central-configuration call in 13.1a separately *"[e]nables Security
+> Hub CSPM in the delegated administrator account"* — so Audit's hub is on either way and the order cannot
+> break it. Still read `describe-hub` in Audit **between** 13.1 and 13.1a: that reading is the difference
+> between two documented sentences and one observed fact, and it costs one command.
+
+**13.1a — Central configuration, from Audit — and this is why the whole step moved.** Local configuration
+(the default) can only auto-enable Security Hub and a *default* standards set in **new** accounts, in the
+**current Region**, and cannot express "FSBP and no others" from the administrator at all — every other
+account would need CIS switched off by hand, one at a time (**Lesson 14**: a condition that must appear in
+N places by hand will be missing from one of them). **Central configuration** is the mechanism that does
+what 13.1 always meant: one policy, associated with the **root**, covering existing accounts, future
+accounts, and every OU.
+
+Its prerequisite is a **home Region**, which is also the finding-aggregation Region. This organization
+runs one Region, so the home Region is `us-west-2` and **nothing is linked to it**.
+
+> **Prefer CloudShell in Audit over the console for this act, and the reason is a real collision.** The
+> console's opt-in workflow instructs *"Select at least one Region to link to the home Region"* — and a
+> linked Region is a Region where the configuration policy would then try to enable Security Hub, which
+> the `us-west-2` ceiling denies (`securityhub` is **not** in `CT.MULTISERVICE.PV.1`'s `NotAction` list —
+> `docs/AWS_STATE.md`). The CLI path takes no linked-Region argument at all, and the aggregator has an
+> explicit **`NO_REGIONS`** mode — *"[a]ggregates no data because no Regions are selected"* — which is
+> precisely a single-Region organization. Console here is not merely slower; it pushes toward a
+> configuration the ceiling will refuse.
+
+**13.1b — The configuration policy, on the root.** AWS's own **recommended configuration policy** is this
+step's wording verbatim — *"Security Hub CSPM, the AWS Foundational Security Best Practices (FSBP)
+standard, and all existing and new FSBP controls are enabled"*, nothing else — and *"all existing and
+new"* is the property that matters most: a control released next year is enabled without anyone
+remembering to. Associate it with the **root** so it reaches every OU and every later vend. **Note the
+asymmetry the console has here**: the recommended policy is offered by the console only; over the CLI a
+delegated administrator can create **custom** policies only, so a CloudShell run authors the same content
+explicitly. Either way the association is what enables Security Hub in the member accounts — the
+`CENTRAL` call by itself enables it in **Audit alone**.
+
+**13.1c — Management is designated SELF-MANAGED. Decided by the user 2026-08-20, before the step ran.**
+Management is deliberately **unrecorded** by AWS Config (**Stage 1d decision 8**, taken 2026-08-14;
+`INV-13` — the organization aggregator lists eight accounts and Management is correctly not among them).
+A root-associated policy would otherwise reach it, and the reason that is the wrong outcome is sharper
+than "noise":
+
+> **Enabling Security Hub CSPM does NOT record an account.** With CSPM alone, AWS requires that *"you
+> must manually enable AWS Config and turn on resource recording"*. So including Management under the
+> root policy would **not** cover it — it would give it a Security Hub bill and a dashboard whose controls
+> return `WARNING`, the status that *"doesn't actually evaluate the configuration state of the resource"*.
+> Apparent coverage, which is worse than a declared gap: **Lesson 5**, arrived at by console default.
+
+**A finding this decision surfaced, and it belongs to Stage 1d rather than here.** Decision 8's own
+**revision trigger** reads *"if Management becomes recorded for any other reason, the rule costs nothing
+and goes on then"* — and it names **"Stage 5's Security Hub central configuration"** as the candidate.
+**That candidate does not fire.** The only Security Hub path that creates a recorder is enabling the **v2
+product alongside CSPM**, which manufactures a service-linked recorder in every account — and **13.0
+refuses that**, because the same act takes the recorder away from Control Tower in all eight governed
+accounts. One account's free recorder against eight accounts' recorder ownership is not a close trade, but
+it is a **trade**, and it was invisible while the two facts sat in different stages. **Stage 1d decision 8
+is corrected in place**: its trigger now says this candidate was checked and does not fire.
+
+**What this decision costs, written down so it is not rediscovered as drift:** Management is outside
+Security Hub until Stage 12 takes up the recorder question. That absence is recorded in
+`docs/AWS_STATE.md`. It is invisible to `DL-11`, which measures only accounts holding a profile and
+Management holds none — so the *only* place this shows is Audit's console view of organization coverage,
+and a reader who has not read this sub-step will read it as a gap.
+
+**13.1d — The acts, in order.** Every verb and every field below was read from the installed CLI's own
+help on 2026-08-20, not written from memory. Account ids are **not** in this repository (`check-identifiers.py`);
+take them from the Organizations console at the keyboard.
+
+**In Management** — CloudShell, `us-west-2`:
+
+```
+aws securityhub enable-organization-admin-account \
+  --admin-account-id <AUDIT_ACCOUNT_ID> --region us-west-2
+```
+
+**In Audit** — CloudShell, `us-west-2`. First the reading 13.1's callout asks for, then the two calls that
+turn central configuration on:
+
+```
+aws securityhub describe-hub --region us-west-2
+aws securityhub create-finding-aggregator --region-linking-mode NO_REGIONS --region us-west-2
+aws securityhub update-organization-configuration --no-auto-enable \
+  --organization-configuration '{"ConfigurationType":"CENTRAL"}' --region us-west-2
+```
+
+Then the policy. **`EnabledStandardIdentifiers` takes the AWS FSBP ARN and there is a near-identical decoy
+beside it** — `describe-standards` returns both `aws-foundational-security-best-practices` and
+`azure-foundational-security-best-practices`, and the Azure one is a **multicloud** standard that a
+configuration policy cannot carry at all. Read the ARN, do not pattern-match the word *foundational*.
+An **empty** `DisabledSecurityControlIdentifiers` is what makes new FSBP controls arrive enabled — it is
+the recommended policy's semantics, expressed by hand:
+
+```
+aws securityhub create-configuration-policy --name awsds-fsbp-only \
+  --description 'FSBP only, all controls incl. future ones (Stage 5 step 13.1b)' \
+  --configuration-policy '{"SecurityHub":{"ServiceEnabled":true,"EnabledStandardIdentifiers":["arn:aws:securityhub:us-west-2::standards/aws-foundational-security-best-practices/v/1.0.0"],"SecurityControlsConfiguration":{"DisabledSecurityControlIdentifiers":[]}}}' \
+  --region us-west-2
+```
+
+Associate it with the **root**, then carve Management out per 13.1c — `SELF_MANAGED_SECURITY_HUB` is a
+reserved value of the same `--configuration-policy-identifier` argument, not a separate call:
+
+```
+aws securityhub start-configuration-policy-association \
+  --configuration-policy-identifier <POLICY_UUID_FROM_THE_PREVIOUS_CALL> \
+  --target '{"RootId":"<ROOT_ID>"}' --region us-west-2
+aws securityhub start-configuration-policy-association \
+  --configuration-policy-identifier SELF_MANAGED_SECURITY_HUB \
+  --target '{"AccountId":"<MANAGEMENT_ACCOUNT_ID>"}' --region us-west-2
+```
+
+**Read back before calling it done:** `list-configuration-policy-associations` from Audit (the root
+associated, Management self-managed), and `./aws/datalake.py` from the infrastructure user — `DL-11`
+should turn from its standing `note` into one `ok` per profiled account, **with `V2 PRODUCT` still reading
+`absent` everywhere**. `DL-11` cannot see Management; that is 13.1c's recorded cost, not a failure.
 
 **13.2 — Ingest what already flows — which, since the 2026-08-18 split, is nothing yet:** GuardDuty is
 Stage 15 now, so at this stage's runtime there are no GuardDuty findings to ingest; the integration needs
@@ -821,13 +980,33 @@ produces its largest finding count ever, and the useful act is deciding which co
 not-applicable rather than carrying a permanently red dashboard. A dashboard nobody believes is worth less
 than no dashboard. Record the disabled-control list in the log.
 
-**13.4 — Close the paperwork:** restate `INV-09` (ten principals now; `securityhub` delegated to Audit)
-and re-run `./aws/org-trusted-access-services.py`.
+> **Central configuration changes *how* this triage is performed, and 13.1b is what forces it.** A
+> centrally managed account **cannot** run `BatchUpdateStandardsControlAssociations` or
+> `UpdateStandardsControl` — those are refused in the home Region for exactly the accounts a policy
+> governs. So disabling a control is **not** a console click in the account that reported it: it is an
+> edit to the configuration policy, which means **the recommended policy must become a custom one at the
+> first disable**. Expect that conversion; it is the price of drift-proofing, not a mistake. Plan for the
+> triage to produce **one custom policy**, not a list of per-account exclusions.
 
-**Cost:** per check and per finding above the free tier (`docs/plan/cost-model.md`). Note the compounding this
-stage inherits: Security Hub's checks run as **AWS Config rules**, so they add rule evaluations on top of
-the configuration items Control Tower already records — the measured ~USD 0.5/month Config row is the one
-to re-read at Stage 12.
+**13.4 — Close the paperwork:** restate `INV-09` and re-run `./aws/org-trusted-access-services.py`.
+
+> **⚠ The count in this sub-step was stale, and the 2026-08-18 split is what made it so.** It read *"ten
+> principals now"*, written when GuardDuty was Stage 4 and therefore landed **before** this stage. Moving
+> GuardDuty to Stage 15 moved it **after**. `INV-09` stands at **eight** principals and **three**
+> delegations; Security Hub takes it to **nine and four** — `securityhub` delegated to **Audit**, joining
+> `access-analyzer` and `config` there. GuardDuty's ninth-to-tenth is Stage 15's to restate, and Macie's
+> is Stage 11's.
+
+**Cost:** per check and per finding above the free tier (`docs/plan/cost-model.md`). **Every account gets a
+30-day free trial on first enablement** (AWS, read 2026-08-20), so this step produces **no Security Hub
+line on the bill until roughly 2026-09-19** — which is a reading Stage 11 step 4's "a month of billing"
+gate should expect, not a billing failure. Note the compounding this stage inherits: Security Hub's checks
+run as **AWS Config rules**, so they add rule evaluations on top of the configuration items Control Tower
+already records — the measured ~USD 0.5/month Config row is the one to re-read at Stage 12. **The precise
+driver, now documented rather than inferred:** each control's compliance-state change writes an
+`AWS::Config::ResourceCompliance` configuration item, and AWS states that recording that item is **not
+required** for the checks to work — a Stage 12 lever, deliberately not pulled here because the recorder
+belongs to Control Tower (13.0).
 
 ---
 
@@ -954,7 +1133,7 @@ own:
 | Crawler runs | USD 0.44/DPU-h, 10-min minimum (`docs/PRICING.md` §5) | event-driven/on-demand only — 3.6 |
 | Iceberg auto-compaction runs | USD 0.44/DPU-h (`docs/PRICING.md` §5, measured) | decision 4 — the optimizer runs D27's carve-out names; config free at rest |
 | Athena | USD 5/TB scanned | the workgroup scan limit is the guard |
-| Security Hub | ~USD 1-2/month + Config-rule evaluations | floor row; enabled at 13 |
+| Security Hub | ~USD 1-2/month + Config-rule evaluations | floor row; enabled at 13. **Nothing on the bill for the first 30 days** — a per-account free trial on first enablement (13's cost note) |
 | Glue catalog storage/requests | negligible at lab scale | `docs/PRICING.md` §5 |
 
 ## Decisions due while executing
@@ -1036,7 +1215,7 @@ Record every answer, including the ones that come out fine.
 | vi | Does `DenyIamPrincipalMutation` in fact cover `iam:UpdateAssumeRolePolicy` for all six persona sets (a reading of `identity/sso/`, Lesson 22)? | 3.5 |
 | vii | *(removed 2026-08-17 — the NFS requirement was withdrawn; there is no EFS to mount)* | — |
 | viii | Can a per-user LF filter be expressed and observed on the SQL path at all (the grain's raw material)? — **ANSWERED 2026-08-19 by the written map** (`docs/GOVERNANCE.md` §"The grain"): *expressed* yes, but only through **TIP**, which reaches the SQL path and not JupyterLab and whose documented price is remote access — so it is reachable and **not adopted**. An LF filter on its own attaches to the role, never the person. `${aws:userid}` prefixes stay the genuinely per-user control, over **copies**. *Observed* is not claimed: nothing was run | 6.4 |
-| ix | Does Security Hub's auto-enable cover existing members and later vends, and which FSBP controls were disabled as not-applicable in the first triage? | 13 |
+| ix | Does Security Hub's auto-enable cover existing members and later vends, and which FSBP controls were disabled as not-applicable in the first triage? — **THE FIRST HALF IS ANSWERED BY DOCUMENTATION, 2026-08-20, before the step ran, and the answer is NO** (Stage 15 verification (i)'s shape): auto-enable is a **local-configuration** setting and reaches *"new organization accounts"* in the *current Region* only — on this organization, where every account already exists, it covers **none of them**. The mechanism that covers existing members *and* later vends is **central configuration** with a policy associated with the **root**, which is why 13.1a now exists. The question was worth asking and the plan's own answer to it was wrong. **The triage half stays open** — it needs the first report, and 13.3 now also records that a disable produces a **custom configuration policy** rather than a per-account exclusion | 13 |
 | x | Does the default consumer grant exclude the `restricted` column (the classification-scoped TBAC holding), and does the explicit grant admit it? — **answered by the COLUMN LIST, not by rows**: `sample_trades` was applied empty (4.1), so a row count discriminates nothing and the column list discriminates all three states. **THE EXCLUSION HALF IS ANSWERED 2026-08-19, and one layer earlier than this row assumed**: read as each account's own `InfrastructureAccess`, `sample_trades` carries six columns in Data Governance and **five** through the link in both consumers — `counterparty` never crossed the account line, because an account may pass on only what it received and `classification=restricted` was never in the received expression. The negative control is in the same reading. What is still owed is the **persona** session (4d) and the explicit-grant half. **THE PERSONA HALF IS ANSWERED 2026-08-19 (4d group A), in Sandbox, and it says more than the account-level reading did**: `glue:GetTable` through the link returns five columns to the persona, and so does `ResultSetMetadata.ColumnInfo` on the query — **the filter holds at the ENGINE, which the catalog read alone could not establish**. **Development answered the same way 2026-08-19 (group B), from a different provisioned role**. **THE EXPLICIT-GRANT HALF IS ANSWERED 2026-08-19 (4d's second authorized act), at the account/administrator grain** — a `classification=restricted AND layer IN (curated, raw)` TABLE grant to the **Sandbox account only** took its column list to six with `counterparty` present while **Development, read in the same minute, stayed at five**; the grant was then revoked and both returned to five. Granting in **one** account rather than two is what excludes time, catalog caching and a stale session — the control is the account that did *not* receive it. **So this row is closed.** *Not measured, and deliberately: the persona grain of the explicit grant* — that needs a consumer-side re-grant on top of the boundary gate, which `consumer-data` does not carry | 6.1, 7.2 |
 
 ## Risks

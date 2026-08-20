@@ -22,7 +22,7 @@
 #             lakeformation:GetDataLakeSettings, ListResources, ListLFTags,
 #             ram:GetResourceShares, GetResourceShareInvitations,
 #             athena:ListWorkGroups, GetWorkGroup, efs:DescribeFileSystems,
-#             securityhub:DescribeHub, GetEnabledStandards,
+#             securityhub:DescribeHub, GetEnabledStandards, DescribeSecurityHubV2,
 #             organizations:ListDelegatedAdministrators, sts:GetCallerIdentity.
 #             It never creates, updates or deletes anything.
 #   exits:    0 all checks passed | 1 a call failed | 2 a check FAILED
@@ -492,9 +492,30 @@ def main(argv: list) -> int:
             )
 
     # ------------------------------------------------------------- Security Hub, per account
-    sh_rows: list = []  # (profile, hub, fsbp)
+    #
+    # TWO PRODUCTS SHARE THIS API NAMESPACE (measured 2026-08-20). "Security Hub CSPM" is the
+    # one that runs the FSBP standard, and it is the one step 13 enables. Beside it sits the
+    # v2 product ("Security Hub"), reached through the *-v2 call family. Step 13.0 decides
+    # AGAINST enabling v2, and not on merit: with BOTH enabled, CSPM creates a service-linked
+    # configuration recorder and AWS stops using the customer-managed one - which here is
+    # Control Tower's aws-controltower-BaselineConfigRecorder. That displacement is silent,
+    # costs money, and voids the plan's standing "leave the recorder to Stage 12" deferral.
+    # So v2 is read per account purely so its ARRIVAL is noticed (Lesson 17).
+    sh_rows: list = []  # (profile, hub, fsbp, hub_v2)
     for p in live:
         cli = cli_for(p)
+        v2 = cli.run(
+            "securityhub",
+            "describe-security-hub-v2",
+            "--query",
+            "HubV2Arn",
+            "--output",
+            "text",
+            log=False,
+            tolerate="not subscribed to HubV2|ResourceNotFound|InvalidAccess",
+        )
+        # tolerated -> "You are not subscribed to HubV2", which is the expected state
+        hub_v2 = "absent" if v2.tolerated else ("PRESENT" if v2.ok else "(call failed)")
         res = cli.run(
             "securityhub",
             "describe-hub",
@@ -506,11 +527,11 @@ def main(argv: list) -> int:
             tolerate="not subscribed|InvalidAccess|ResourceNotFound",
         )
         if res.tolerated:
-            sh_rows.append((p, "not enabled", "-"))
+            sh_rows.append((p, "not enabled", "-", hub_v2))
             continue
         if not res.ok:
             logerr(p, "securityhub describe-hub", res.stderr)
-            sh_rows.append((p, "(call failed)", "-"))
+            sh_rows.append((p, "(call failed)", "-", hub_v2))
             continue
         std = cli.run(
             "securityhub",
@@ -522,7 +543,7 @@ def main(argv: list) -> int:
             log=False,
         )
         fsbp = "yes" if (std.ok and FSBP in std.stdout) else "no"
-        sh_rows.append((p, "enabled", fsbp))
+        sh_rows.append((p, "enabled", fsbp, hub_v2))
     sh_delegation = "(not read)"
     if IDENTITY_PROFILE in live:
         cli = cli_for(IDENTITY_PROFILE)
@@ -866,32 +887,51 @@ def main(argv: list) -> int:
                     "withdrawn); drift, not progress.",
                 )
 
-    # DL-11: Security Hub coverage (step 13).
+    # DL-11: Security Hub CSPM coverage (step 13).
     enabled = [r for r in sh_rows if r[1] == "enabled"]
     if not enabled:
         checks.note(
             "DL-11",
-            "Security Hub",
+            "Security Hub CSPM",
             "not enabled in any measured account - expected before Stage 5 step 13.",
         )
     else:
-        for p, hub, fsbp in sh_rows:
+        for p, hub, fsbp, _v2 in sh_rows:
             if hub == "not enabled":
                 checks.fail(
                     "DL-11",
-                    f"Security Hub in {p}",
-                    "not enabled while other accounts are - auto-enable did not reach "
-                    "this account (verification (ix)).",
+                    f"Security Hub CSPM in {p}",
+                    "not enabled while other accounts are - the root configuration "
+                    "policy did not reach this account (verification (ix)). NOTE: if "
+                    "this is the MANAGEMENT account, step 13.1c may have designated it "
+                    "self-managed on purpose - read the stage log before calling it "
+                    "drift.",
                 )
             elif hub == "enabled" and fsbp != "yes":
                 checks.fail(
                     "DL-11",
                     f"FSBP standard in {p}",
                     "hub enabled without the Foundational Security Best Practices "
-                    "standard - the checks are the point (step 13.1).",
+                    "standard - the checks are the point (step 13.1b).",
                 )
             elif hub == "enabled":
-                checks.ok("DL-11", f"Security Hub in {p}", "enabled, FSBP on")
+                checks.ok("DL-11", f"Security Hub CSPM in {p}", "enabled, FSBP on")
+
+    # DL-11 second half: the v2 product must stay ABSENT (step 13.0). Checked whether or not
+    # CSPM is on, because the failure this guards against is arrival, not absence - and it is
+    # silent when it happens: enabling v2 alongside CSPM hands the Config recorder from
+    # Control Tower to a service-linked one nobody chose.
+    for p, _hub, _fsbp, hub_v2 in sh_rows:
+        if hub_v2 == "PRESENT":
+            checks.fail(
+                "DL-11",
+                f"Security Hub v2 in {p}",
+                "the v2 product is enabled and step 13.0 decided against it. With both "
+                "products on, Security Hub stops using Control Tower's "
+                "aws-controltower-BaselineConfigRecorder and manages its own service-linked "
+                "recorder instead - a Config decision that belongs to Stage 12, taken here "
+                "by a console click. Read docs/plan/stages/stage-05-data-foundation.md 13.0.",
+            )
 
     # --------------------------------------------------------------------------- the report
     with open(out_path, "w", encoding="utf-8") as stream:
@@ -1091,13 +1131,25 @@ visible there, so a zero in the admins table explains the emptiness by itself.""
 
         # ==============================================================================
         rep.h1("11. Security Hub")
-        rep.tabulate(["PROFILE\tHUB\tFSBP STANDARD"] + [f"{p}\t{h}\t{f}" for p, h, f in sh_rows])
+        rep.tabulate(
+            ["PROFILE\tCSPM HUB\tFSBP STANDARD\tV2 PRODUCT"]
+            + [f"{p}\t{h}\t{f}\t{v}" for p, h, f, v in sh_rows]
+        )
         rep.line()
         rep.line(f"delegated administrator (securityhub.amazonaws.com): {sh_delegation}")
         rep.text("""
-Delegating IS enabling (step 13.1); the org configuration lives in Audit, which
-holds no profile - only each member's subscription is read here. Restate INV-09
-when the delegation lands.""")
+TWO PRODUCTS, ONE NAMESPACE. "CSPM HUB" is Security Hub CSPM - the one that runs
+the FSBP standard, and the one step 13 enables. "V2 PRODUCT" must read absent:
+step 13.0 decided against it because enabling BOTH makes Security Hub abandon
+Control Tower's customer-managed Config recorder for a service-linked one. That
+swap is silent and costs money; DL-11 fails on its arrival, never on its absence.
+
+The org configuration lives in Audit, which holds no profile - only each member's
+subscription is read here, so this table shows the RESULT of the root configuration
+policy (step 13.1b), never the policy itself. Delegating IS enabling for CSPM too -
+documented for this service, and asserted twice (the designation AND the central-
+configuration call), so Audit's hub is on either way. Restate INV-09 - to NINE
+principals and FOUR delegations, not ten - when it lands.""")
 
         # ==============================================================================
         rep.h1("12. CHECKS")
@@ -1127,7 +1179,9 @@ What the checks are, and where each comes from:
   DL-10  no EFS in the VPN home beyond a Studio domain's own tagged home
          (conventions 5.1 rule 2) - the plan itself creates none (the NFS
          requirement was withdrawn 2026-08-17, D24 with it)
-  DL-11  Security Hub + FSBP in every measured account, or in none (step 13)
+  DL-11  Security Hub CSPM + FSBP in every measured account, or in none (step 13),
+         AND the v2 product absent everywhere (step 13.0 - its arrival would hand
+         the Config recorder from Control Tower to a service-linked one)
   DL-12  the persona's IDENTITY half of the drop-box write, read off the
          PROVISIONED role in each consumer account (pass 4c). DL-2 measures the
          resource half; a cross-account permission is the AND of the two, and

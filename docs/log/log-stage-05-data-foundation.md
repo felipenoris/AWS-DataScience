@@ -3166,6 +3166,133 @@ file references the battery procedure or `update-policy`. **Open question 14 gai
 copy**: 1.6's two inherited readings, plus the fact that 4e binds `Data` and `Identity` while that item's
 D13 query path runs under `Interactive` — so nothing there is narrowed by today.
 
+## 2026-08-20 — Pass 6 read before it was run, and the step turned out to describe a mechanism that does not exist
+
+*Claude's hand throughout, at the user's "proceed with the plan". **No AWS write of any kind** — every call
+in this entry is read-only, and pass 6 itself is still unexecuted. The one decision here is the user's,
+recorded at its sub-step. The sitting produced no infrastructure change and a large plan change.*
+
+**The before-reading, first.** `./aws/datalake.py` as the infrastructure user: **six profiled accounts, all
+`not enabled`**, and — read from Identity, which the script tolerates failing — `securityhub.amazonaws.com`
+returning **`(none registered)`** as delegated administrator. `securityhub` appears in **no policy of this
+organization**, checked separately, so nothing in the ceiling shapes these calls. `DL-11` sat on its
+standing `note`, which is what it is there to say before the step runs.
+
+### The step's mechanism was not a setting anybody could choose
+
+Step 13.1 said *"auto-enable for existing and future accounts"*. **Auto-enable reaches new accounts only,
+in the current Region only** — so on this organization, where every account already exists, it would have
+enabled Security Hub in **zero of them**. Not a wrong parameter: the described thing is not offered.
+
+What does what 13.1 meant is **central configuration** — a configuration policy associated with the
+**root**, covering existing accounts, future accounts and every OU. It arrives with its own prerequisite
+(a home Region, which doubles as the finding aggregator), its own API family, and one consequence that
+reshaped a later sub-step: **a centrally managed account cannot run `BatchUpdateStandardsControlAssociations`**,
+so 13.3's triage stops being a per-account click and becomes an edit to the policy — the recommended
+policy must become a **custom** one at the first disable. That was written into 13.3 rather than left to
+be discovered at the keyboard.
+
+### Two products wear one name, and enabling both would have taken the Config recorder from Control Tower
+
+The installed CLI carries both generations side by side — `describe-hub` beside `describe-security-hub-v2`
+— which is how the split was noticed at all. Only **Security Hub CSPM** runs the FSBP standard, which is
+this step's whole reason to exist. The v2 product is now refused **by decision (13.0), with its reason
+stated**, because the reason is not preference: with both enabled, CSPM creates a service-linked
+configuration recorder and AWS documents that *"Security Hub does not use the customer-managed
+configuration recorder"* — which here is **`aws-controltower-BaselineConfigRecorder`**. A recorder nobody
+chose, displacing a Control-Tower-owned object, with its own bill, silently voiding this plan's standing
+"leave the recorder to Stage 12" deferral. Lesson 17 in its exact shape.
+
+`DL-11` was extended to guard that decision: `describe-security-hub-v2` is now read per account and the
+check **fails on the v2 product's arrival**, never on its absence. It is the one Security Hub reading that
+is not "has the stage run yet". The report gained a `V2 PRODUCT` column; all six accounts read `absent`.
+
+### Three smaller corrections the reading forced
+
+**The console pushes toward a configuration the ceiling denies.** Its opt-in workflow instructs *"Select at
+least one Region to link to the home Region"*, and a linked Region is a Region where the policy would try
+to enable Security Hub — which the `us-west-2` ceiling refuses (`securityhub` is not in
+`CT.MULTISERVICE.PV.1`'s `NotAction` list). The CLI path takes no linked-Region argument, and the
+aggregator has a `NO_REGIONS` mode. **13.1a now prefers CloudShell in Audit over the console**, with the
+collision as the reason rather than taste.
+
+**The Config prerequisite was measured, not assumed.** Every governed account holding a profile carries
+Control Tower's recorder with `allSupported: true`, `includeGlobalResourceTypes: true`, `CONTINUOUS`,
+status `SUCCESS`. So FSBP has what it needs — and it has it *because Control Tower did it*, which is the
+second reason 13.0 leaves that recorder alone.
+
+**`INV-09`'s count in 13.4 was stale, and the 2026-08-18 split is what made it so.** It read "ten
+principals", written when GuardDuty preceded this stage. The split moved GuardDuty **after** it. Security
+Hub is the **ninth** principal and the **fourth** delegation. `AWS_STATE.md` now says to read the count
+from its own row and never from a stage file.
+
+### The Management decision, and the finding it unlocked
+
+**The user chose: Management is designated self-managed** until Stage 12. The first framing offered was
+two-way and wrong, and was corrected before the choice: including Management would **not** cover it,
+because **enabling Security Hub CSPM does not record an account** — AWS requires the recorder to be turned
+on manually. It would have bought a bill and a dashboard whose controls return `WARNING`, the status that
+*"doesn't actually evaluate the configuration state of the resource"*. Apparent coverage, which is worse
+than a declared gap.
+
+Writing that reason down surfaced something belonging to another stage. **Stage 1d decision 8's revision
+trigger** — *"if Management becomes recorded for any other reason, the rule costs nothing and goes on
+then"* — names **"Stage 5's Security Hub central configuration"** as its candidate. **That candidate does
+not fire.** The only Security Hub path that manufactures a recorder is the v2 product, which 13.0 refuses.
+One account's free recorder against eight accounts' recorder ownership is not a close trade, but it *is* a
+trade, and it was invisible while the two halves sat in different stages. **Decision 8 was corrected in
+place**: no candidate remains before Stage 12, so nothing should wait for it.
+
+The cost of the choice is recorded rather than left to be rediscovered: `DL-11` **cannot see Management**
+(no profile), so the absence shows only in Audit's organization-coverage view, where a reader who has not
+read 13.1c will read it as a gap.
+
+### Two things this sitting got wrong, and how they were caught
+
+**An assertion written into the stage that the repository already contradicted.** The 13.1 callout claimed
+"delegating *is* enabling" was unmeasured for this service and must not be inherited from GuardDuty.
+`REFERENCES.md` already carried the page saying the opposite — designation *"enables Security Hub CSPM …
+for the delegated administrator account"* — recorded at some earlier reading. Corrected: the coupling is
+documented for CSPM, **two** acts now assert it, and the read-back survives as confirmation rather than
+discovery. This is precisely the failure the sitting's own new lesson describes, arriving while the lesson
+was being written.
+
+**`make check-docs` caught a rule violation and a wrong number in the same line.** The Config measurement
+had been written as "all four accounts holding a profile — " followed by their names, which the gate
+refuses (enumerating accounts instead of "every governed account"). Rewriting it exposed that **four was
+wrong**: the instrument had read **six**. The prose count came from four manual calls made earlier in the
+sitting; the script's own answer was never re-read against it.
+
+### Lesson 36
+
+*"Auto-enable" is a word each service defines for itself — and a cross-service finding written down in the
+stage that hit it stays in that stage.* Three services, three measured answers: GuardDuty's `ALL` covers
+existing accounts, Macie's covers new ones only, Security Hub's covers new ones only and is replaced
+outright by a different feature. Two halves make it worth its own number. First, **the repair was not a
+corrected parameter** — for Macie it was "add the existing accounts too", for Security Hub it is an
+entirely different mechanism with different prerequisites and a different executor; so a wrong mechanism
+assumption should be budgeted as "the described thing may not exist", not "the setting is off by one".
+Second, **the Macie instance had already been found and written down** — correctly, and dated — in Stage
+11's Status row, where Stage 5's step 13 would never read it. A finding about a *class* of thing cannot
+have a stage file as its only home.
+
+### What was touched, and what was deliberately not
+
+Plan and instrument: `stage-05-data-foundation.md` (step 13 rewritten, sub-numbers 13.1-13.4 kept because
+Stage 15's prerequisites row cites 13.2 by number; verification (ix)'s first half answered NO **by
+documentation, before the step ran**), `stage-01d-org-wide-enablement.md` (decision 8's trigger),
+`aws/datalake.py` (the v2 guard, the report column, the legend), `lessons.md`, `AWS_STATE.md`,
+`REFERENCES.md` (four pages), `cost-model.md` and `PRICING.md` (Security Hub's **own** 30-day free trial,
+a second window from GuardDuty's, opening at a different stage — and neither trial covers the Config cost
+underneath), `CLAUDE.md`.
+
+**Not touched, on purpose:** the working tree carried unrelated uncommitted work of the user's — the VPN
+host's move to `t4g.medium` and its slice, runbook and script. `REFERENCES.md` is the one file both hands
+edited this sitting; both sets of entries are present and neither overwrote the other.
+
+`make check: OK`. `check-docs` red only on `stage-03-networking.md`, which is the known pre-existing
+failure and was not touched. `./aws/datalake.py`: **0 check(s) FAILED**.
+
 ---
 
 *Log index: [docs/log/INDEX.md](INDEX.md) · Stage index: [docs/plan/stages/INDEX.md](../plan/stages/INDEX.md)*
