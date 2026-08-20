@@ -110,6 +110,21 @@ resource "aws_ssoadmin_permission_set_inline_policy" "persona" {
       ])
       error_message = "A VPN home's Elastic IP did not read back as an address: ${jsonencode(local.vpn_egress_cidrs)}. DenyControlPlaneOffVpn would apply cleanly and deny every call from every network for all six personas. Check that each vpn_homes account's foundation/ slice is applied and still exports wireguard_eip_public_ip (Stage 4 step 2.1)."
     }
+
+    # THE ENDPOINT IDS GET THE SAME GUARD (2026-08-20) - and 4d's controls entry is why this
+    # one exists at all: the precondition above predicted the right SYMPTOM for the wrong
+    # CAUSE (it guards a malformed address list, and the defect arrived through a well-formed
+    # list whose key was absent on the S3 path). The asymmetry worth naming: a bad entry here
+    # is not a lockout - it silently un-fixes the S3 path, a REGRESSION to the 4d defect that
+    # only a behavioural proof would notice. Same price for the cheap version: a plan-time
+    # failure naming the value.
+    precondition {
+      condition = alltrue([
+        for id in local.vpn_egress_vpce_ids :
+        can(regex("^vpce-[0-9a-f]+$", id))
+      ])
+      error_message = "A VPN home's gateway endpoint did not read back as a vpce id: ${jsonencode(local.vpn_egress_vpce_ids)}. DenyControlPlaneOffVpn's aws:SourceVpce branch would go quiet and the tunnel's S3 path would be explicitly denied again (the 4d defect). Check that each vpn_homes account's foundation/ still exports s3_gateway_endpoint_id and dynamodb_gateway_endpoint_id (Stage 3 step 1; INT-05)."
+    }
   }
 }
 

@@ -175,6 +175,26 @@ locals {
     "${remote.outputs.wireguard_eip_public_ip}/32"
   ])
 
+  # THE SAME HOMES, BY THEIR GATEWAY ENDPOINTS - the half 4d measured missing (Lesson 33;
+  # stage 5 log, the 2026-08-19 controls entry). Tunnel traffic SPLITS BY DESTINATION in the
+  # home's public subnet: S3 and DynamoDB leave through the [P] gateway endpoints - whose
+  # prefix-list routes are more specific than 0.0.0.0/0 -> IGW - and arrive carrying the
+  # HOST'S PRIVATE ADDRESS plus aws:SourceVpce, never the Elastic IP. So the aws:SourceIp pin
+  # alone explicitly denied every direct S3 call a persona made from INSIDE the perimeter.
+  #
+  # THESE ARE THE VPN HOMES' ENDPOINTS, DELIBERATELY NOT THE CONSUMERS' (the locals below):
+  # the home is the tunnel's exit whatever account the persona works in, so "who consumes the
+  # lake" is the wrong axis - the two lists coincide today only because the single home also
+  # consumes (Lessons 10, 29). Both gateway services ride one mechanism, so both ids are here:
+  # any service with a gateway endpoint on the home's route table takes this path, and today
+  # that is S3 and DynamoDB (INT-05's [P] anchors, exported by every foundation/).
+  vpn_egress_vpce_ids = sort(flatten([
+    for home, remote in data.terraform_remote_state.vpn_home : [
+      remote.outputs.s3_gateway_endpoint_id,
+      remote.outputs.dynamodb_gateway_endpoint_id,
+    ]
+  ]))
+
   # ------------------------------------------------- the lake's consumer-side ARNs - pass 4c
   #
   # ENUMERATED FROM STATE, NEVER COMPOSED FROM A NAMING CONVENTION - the whole point of 4c's

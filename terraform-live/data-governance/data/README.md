@@ -128,7 +128,7 @@ The three branches of `DenyOutsideTrustedNetworks`, and why each is written the 
 
 | Branch | Condition | The rule behind it |
 |---|---|---|
-| 1 | `aws:SourceVpce` ∈ the consumers' **gateway** endpoint ids | **Never the `[E]` interface endpoints** ([Lesson 3](../../../docs/plan/lessons.md), INT-05): those change id on every `make up` and live in accounts this policy could never repair itself against. Anchored on `[P]` state, read live, never pasted |
+| 1 | `aws:SourceVpce` ∈ `trusted_vpce_ids` — the consumers' **gateway** endpoint ids **∪ the VPN homes'** (the union since 2026-08-20; it renders identically today) | **Never the `[E]` interface endpoints** ([Lesson 3](../../../docs/plan/lessons.md), INT-05): those change id on every `make up` and live in accounts this policy could never repair itself against. Anchored on `[P]` state, read live, never pasted. **The homes joined on their own axis** ([Lesson 33](../../../docs/plan/lessons.md)'s second finding, 4d): every tunnel call exits through the *home's* gateway endpoint whichever account the persona works in, so its id was in this list only because the single home happens to consume — correct by coincidence until the host moves or a second home appears |
 | 2 | `aws:SourceIp` ∈ the WireGuard Elastic IPs | D18's laptop path. A **list**, per D35 — one entry per VPN home |
 | 3 | `aws:PrincipalAccount` = this account | The stage's own "looser and easier to get right" option, **taken deliberately** over naming the maintenance role alone: the crawler runs in Glue with no VPC and no tunnel (D27's collision), and the infrastructure user works off-VPN by decision (open question 17a). A role-only branch would lock the account's own administrator out of its own lake |
 

@@ -74,6 +74,13 @@ what is genuinely still unanswered:
    decides whether D18's "read named S3 prefixes in Production" is usable through the console at all, or
    whether it is a CLI-over-the-tunnel operation that `README.md` has to say so about. Cheap to answer,
    annoying to discover by symptom.
+   **Informed 2026-08-19 by 4d's measurement, not closed**: S3 traffic from a tunneled laptop exits
+   through the **VPN home's gateway endpoint** and presents `aws:SourceVpce` = that endpoint id, never
+   the Elastic IP (CloudTrail, one session: S3 as the host's private address + the vpce id, Glue as the
+   EIP). The console's own S3 API calls ride the same full tunnel (`vpn.md` §C routes `0.0.0.0/0`), so
+   INT-06's allow-list must carry the VPN home's endpoint — the same axis rule Lesson 33's second
+   finding states for the lake — and the open half narrows to *which* calls the S3 console actually
+   makes, from where.
 9. **Whether sampled or synthetic Staging data makes the integration tests meaningful** (D20, Stage 9).
    The decision that Staging never holds a copy of production data is firm — the reasoning is in D20 and
    it is a security argument, not a cost one. What is open is the consequence: a test suite running
@@ -337,23 +344,29 @@ length, under item numbers 10-12 that collided with the live items above; the du
     permits is Glue's own scheduler, and `Schedule` is `null` on both.**
     **Neither document is at fault, and the question is not "how do we unblock it".** The SCP and the
     trust policy together express something defensible and arguably stronger than intended: catalog
-    refreshes happen on a cadence somebody chose, and no human can force one. What is missing is the
-    cadence. **Do not settle this by loosening either document** — that trades a real control for the
-    convenience of a manual run.
+    refreshes happen on a cadence somebody chose, and no human can force one. **And half of this WAS
+    chosen (found 2026-08-20, re-reading `maintenance.tf`'s own comment): a standing schedule was
+    deliberately rejected on cost** — DPU-hour with a 10-minute billed minimum, cron-always out-costing
+    the storage it catalogs — **`DL-3` checks that rejection, and the chosen trigger was "on-demand,
+    before a pickup". What 4d measured is that on-demand has NO DEMANDER.** So the untaken decision is
+    narrower than a cadence: *who, or what event, demands a run.* **Do not settle this by loosening
+    either document** — that trades a real control for the convenience of a manual run.
     **The two crawlers are not the same question, and that is the substance.** `awsds-data-dropbox`
     sits on an **ingestion** path (D18/D25): a person uploads a file and waits for it to appear, so the
     cadence is a latency promise to a user. `awsds-data-raw` catalogues a zone whose producer is
     **Stage 9's governed cross-account write**, so its cadence is about an ETL that does not exist yet
     and may not need a crawler at all once the writer registers its own tables. A single schedule
     applied to both is the answer nobody should reach for first.
-    **Three inputs this needs before it can be decided.** (a) **Cost, measured rather than reasoned**
-    (Lesson 6) — a crawler is billed per DPU-hour with a minimum billed duration, so a frequent schedule
-    over a near-empty bucket is a real recurring line; it needs a [`docs/PRICING.md`](../PRICING.md) row.
+    **Three inputs this needs before it can be decided.** (a) **Cost** — the shape is already in
+    `maintenance.tf`'s comment (DPU-hour, 10-minute billed minimum) and is what killed the cron; a
+    per-demand run pays the same minimum per event, which is the other side of the same argument.
     (b) **Whether Glue's S3 event-driven crawl mode satisfies the SCP** — the crawler subscribes to a
     queue and Glue initiates the run, which *may* present as `aws:PrincipalIsAWSService` and would suit
-    the drop-box far better than a fixed interval. **This is unverified and must be measured, not
-    assumed**; if it does not qualify, event-driven ingestion is blocked by the SCP as written and that
-    becomes a decision in its own right. (c) Whether Stage 9's writer makes `awsds-data-raw` redundant.
+    the drop-box far better than a fixed interval. **This is verification (iv)'s exact shape**
+    (S3 → EventBridge → Glue workflow, landing on the 3.4 service-guard side), already asked by the
+    stage — **measure it against the guard rather than assuming it lands on the allow side**; if it
+    does not qualify, event-driven ingestion is blocked by the SCP as written and that becomes a
+    decision in its own right. (c) Whether Stage 9's writer makes `awsds-data-raw` redundant.
     **The consequence of leaving it open, said plainly**: D25's drop-box stays inert **even after
     `DenyControlPlaneOffVpn` is amended**. The write and the catalogue are independent failures, and
     fixing the first alone produces a bucket that accepts files nothing ever reads.

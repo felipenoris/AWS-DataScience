@@ -226,10 +226,11 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   **Verifications (ii) and (x) closed on the consumer side.** **Two structural defects, both unapplied:**
   (a) **`DenyControlPlaneOffVpn` denies every direct persona S3 call from the tunnel** (S3 exits by the
   `[P]` gateway endpoint wearing a *private* address, measured in CloudTrail — **Lesson 33**). Fix =
-  `StringNotEqualsIfExists aws:SourceVpce` over the **VPN homes'** endpoints, *not* the consumers', which
-  are never on the path. (b) **no principal can start the crawlers** — the SCP admits only the maintenance
-  role or a service principal, its trust only `glue.amazonaws.com`, `Schedule` null (**Lesson 22**; open
-  question 19). **So D18/D25 ingestion is broken at BOTH ends, independently.** Masked by (a) and still
+  `StringNotEqualsIfExists aws:SourceVpce` over the **VPN homes'** endpoints, *not* the consumers' —
+  **AUTHORED 2026-08-20, NOT applied** (`identity/sso` plans `0/6/0`; lake's `trusted_vpce_ids` renders
+  identical; apply → re-run the 2 masked proofs → then 4e). (b) **no principal can start the crawlers** —
+  trust admits only `glue.amazonaws.com`, `Schedule` null (**Lesson 22**; OQ 19 — no-cron WAS decided on
+  cost, the DEMANDER was not). **So D18/D25 ingestion is broken at BOTH ends, independently.** Masked by (a) and still
   owed: the drop-box asymmetry and **D13's own mechanism**. **Third defect FIXED 2026-08-20 via the
   sample-row load (user decision):** the registration role was read-only, its write half promised to a
   Stage 9 step that never existed (**Lesson 34**); `registered-locations-write` applied — the vending

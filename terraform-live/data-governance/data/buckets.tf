@@ -47,7 +47,7 @@ locals {
         Resource  = [arn, "${arn}/*"]
         Condition = {
           StringNotEquals = {
-            "aws:SourceVpce"       = local.consumer_vpce_ids
+            "aws:SourceVpce"       = local.trusted_vpce_ids
             "aws:PrincipalAccount" = data.aws_caller_identity.current.account_id
           }
           NotIpAddress = { "aws:SourceIp" = local.wireguard_eip_cidrs }

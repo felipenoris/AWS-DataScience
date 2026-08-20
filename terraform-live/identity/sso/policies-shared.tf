@@ -199,7 +199,7 @@ data "aws_iam_policy_document" "shared_denies" {
 # from the VPN"; the honest statement is the total one, and the exceptions are then argued
 # ONE BY ONE below rather than implied by an omission.
 #
-# THE TWO CONDITIONS ARE ANDed, and each one is doing different work:
+# THE THREE CONDITIONS ARE ANDed, and each one is doing different work:
 #
 #   NotIpAddress aws:SourceIp   the deny fires when the call did NOT come from a VPN home's
 #                               Elastic IP. This only means anything because step 5 routes
@@ -218,13 +218,33 @@ data "aws_iam_policy_document" "shared_denies" {
 #                               deliberate: a request context missing the key must not be read
 #                               as `false` by accident.
 #
+#   StringNotEqualsIfExists aws:SourceVpce    added 2026-08-20, and it CORRECTS A MEASURED
+#                               DEFECT rather than extending the design (Lesson 33; stage 5
+#                               log, 4d's controls entry). Tunnel traffic SPLITS BY
+#                               DESTINATION in the VPN home's public subnet: S3 and DynamoDB
+#                               leave through the [P] GATEWAY ENDPOINTS - their prefix-list
+#                               routes are more specific than the IGW default - and arrive
+#                               carrying the HOST'S PRIVATE ADDRESS plus aws:SourceVpce,
+#                               never the Elastic IP. CloudTrail, one session: ListBuckets as
+#                               a 10.20.x.x source plus the home's vpce id, the same
+#                               minute's Glue call as the EIP. Without this test the
+#                               statement explicitly denied every direct S3 call a persona
+#                               made from INSIDE the perimeter - the scientist ran the query
+#                               and could not fetch the CSV. The values are the VPN HOMES'
+#                               endpoints (locals.tf), deliberately not the consumers'.
+#                               IfExists holds the polarity: off-VPN traffic carries no vpce
+#                               key, the test passes, the deny still fires. What it widens:
+#                               anything inside the home's own VPC reaching those endpoints -
+#                               today, only the WireGuard host itself.
+#
 # WHAT THIS FRAGMENT IS NOT COMPOSED INTO, and it is the difference between a bad session and a
 # bad month: InfrastructureAccess. Step 8.3 applies it to the six personas ONLY. Getting this
 # wrong on a persona costs a data-scientist session; getting it wrong on the credential every
 # Terraform apply in the organization runs as costs break-glass (D16). The seventh set gains
 # the statement in a separate, deliberate diff, after the recorded control-plane pair - and
-# note what the statement pins: a single Elastic IP, which is exactly why that address is [P],
-# allocated in foundation/ where `make down` cannot reach it (step 2.1).
+# note what the statement pins: a single Elastic IP and, since 2026-08-20, the home's two
+# gateway endpoints - all [P], allocated in foundation/ where `make down` cannot reach them
+# (step 2.1; INT-05).
 #
 # WHAT IT DOES NOT PROTECT, said here rather than discovered later (8.4, INT-16): the Unified
 # Studio portal is entered by an IdC SIGN-IN, not by an IAM call, and whether a permission-set
@@ -243,6 +263,12 @@ data "aws_iam_policy_document" "control_plane_vpn" {
       test     = "NotIpAddress"
       variable = "aws:SourceIp"
       values   = local.vpn_egress_cidrs
+    }
+
+    condition {
+      test     = "StringNotEqualsIfExists"
+      variable = "aws:SourceVpce"
+      values   = local.vpn_egress_vpce_ids
     }
 
     condition {

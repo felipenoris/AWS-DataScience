@@ -124,6 +124,19 @@ resource "aws_glue_catalog_table" "sample_trades" {
     }
   }
 
+  # THE COLUMN MIRROR IS THE ENGINE'S FROM THE FIRST COMMIT ON (2026-08-20; stage 5 log,
+  # the review entry). The first INSERT stamped iceberg.field.{id,current,optional} onto
+  # every column of the live table - the Glue columns are Iceberg's mirror of its own
+  # metadata, re-stamped at each commit - and without this block every later plan wants to
+  # strip them: permanent drift burying real diffs, and an apply the next engine commit
+  # would undo (Lesson 23: a managed service owns its artifacts' packing - bind to the
+  # schema's source of truth, the metadata JSON, never to the mirror). Terraform keeps the
+  # table's existence, location and format; schema EVOLUTION goes through the engine, which
+  # is how an Iceberg table changes anyway.
+  lifecycle {
+    ignore_changes = [storage_descriptor[0].columns]
+  }
+
   depends_on = [module.bucket]
 }
 

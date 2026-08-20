@@ -226,6 +226,16 @@ resource "aws_glue_security_configuration" "catalog_maintenance" {
 # whether a compute-free event shape exists (S3 -> EventBridge -> Glue workflow, landing on
 # the 3.4 service-guard side) is verification (iv), answered while executing, and the
 # fallback costs only ordering.
+#
+# 4D MEASURED THE WORD THIS PARAGRAPH LEANED ON (2026-08-19/20; stage 5 log): "ON-DEMAND"
+# HAS NO DEMANDER. The Data OU SCP admits StartCrawler only from the maintenance role or a
+# service principal, the role's trust admits glue.amazonaws.com alone, and Schedule is null -
+# so no person and no other service's role can demand a run, and the Glue scheduler never
+# will (Lesson 22: closed by reading, after InfrastructureAccess measured the SCP deny).
+# The no-cron choice above STANDS on its cost argument, DL-3 still checks it; what is open
+# is the demander - open question 19, whose live candidate is exactly the event shape
+# verification (iv) names, to be measured against the SCP's service guard rather than
+# assumed to land on its allow side.
 
 resource "aws_glue_crawler" "raw" {
   name          = "awsds-${var.env}-raw"

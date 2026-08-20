@@ -2026,7 +2026,7 @@ their own account CMK, their own derived bucket, their own resource links and th
 re-grants. Nothing measured in Sandbox is evidence about Development, and this project has already
 been bitten once by a check that kept reporting `pass` about the account it was written in.
 
-### The eight readings
+### The ten readings
 
 | | Development | against Sandbox |
 |---|---|---|
@@ -2311,7 +2311,9 @@ missing is the schedule itself. Pass 1 created the two crawlers deliberately **n
 since has said when they should run — so **`Schedule` is an open design decision surfaced by this
 attempt**: whether it exists at all, at what frequency, and whether the drop-box's cadence differs from
 `raw`'s, given that the drop-box is an ingestion path and `raw` is a zone. Recorded here rather than
-answered, because it is the stage's call and not this sitting's.
+answered, because it is the stage's call and not this sitting's. *(Refined in the review entry below:
+half of it **was** decided — `maintenance.tf` rejects a standing schedule on cost, `DL-3` checks the
+rejection, and the chosen trigger was "on-demand". The untaken half is the DEMANDER.)*
 
 ### Act 2 — the explicit `restricted` grant, with a live control beside it
 
@@ -2473,13 +2475,134 @@ to discriminate on.
 
 ### What was left behind
 
-12 synthetic rows in `curated.sample_trades`; the count query's CSV under
-`awsds-data-artifacts/athena-results/`; the failed execution id and the two successful ones, in
-Athena's 45-day history. No object anywhere else.
+12 synthetic rows in `curated.sample_trades`; **three objects** under
+`awsds-data-artifacts/athena-results/` — the count query's CSV with its `.metadata`, and the
+successful INSERT's own `.metadata` *(corrected by listing in the review entry below; this line first
+said "the count query's CSV")*; the failed execution id and the two successful ones, in Athena's
+45-day history. No object anywhere else.
 
 ### Still owed
 
 **4e**, unchanged and now honest — there is finally an in-account Athena door to close — then pass 6.
+
+---
+
+## 2026-08-20 — The sitting reviewed: three log corrections, a drift the INSERT left behind, the 4d amendments authored but not applied, and the session's command reference
+
+*Provenance. **This entry is Claude's, at the user's request** — a review sitting. **No AWS write ran**:
+every `aws` call was a read, and the Terraform work is AUTHORING plus read-only `plan`s — nothing was
+applied. One tooling note so the record reads honestly (Lesson 30's spirit): several commands in this
+sitting and the previous one were re-issued after a local harness permission-classifier returned
+transient errors of its own; no AWS call was affected, and a repeated invocation in this record is that,
+not a retry against AWS.*
+
+### The audit: the log against the session, three corrections
+
+- **"The eight readings" → "The ten readings"** (group B's section header). The table under it has ten
+  rows and the index already said ten; the header was the copy that drifted.
+- **Entry 23's leftover line said "the count query's CSV"; the listing says three objects** — the count
+  query's CSV *and its `.metadata`*, plus the successful INSERT's own `.metadata`. Corrected in place
+  with the correction marked. The miss is the usual one: the line was written from intent, the listing
+  was taken afterwards.
+- **Entry 22's "a decision nobody took" was half wrong, and the code knew better.** `maintenance.tf`'s
+  own comment — re-read this sitting — rejects a standing schedule **on cost** (DPU-hour, 10-minute
+  billed minimum, cron-always out-costing the storage it catalogs), has `DL-3` check that rejection,
+  and names the chosen trigger: *"on-demand, before a pickup"*. What 4d actually measured is narrower
+  and sharper: **on-demand has no demander.** Entry 22 carries a pointer; open question 19, the stage
+  bullet and `AWS_STATE.md` are refined — and the question's live candidate was **already in the
+  stage** as verification (iv)'s event shape (S3 → EventBridge → Glue workflow), now to be measured
+  against the SCP's service guard rather than assumed past it.
+
+### A finding the review itself produced: the INSERT left Terraform drift on the sample table
+
+The first lake-slice `plan` of this sitting read `1 to change` — **not** the authored change:
+`aws_glue_catalog_table.sample_trades`. The first Iceberg commit stamped
+`iceberg.field.{id,current,optional}` onto every column of the **live** table — the Glue columns are
+the engine's mirror of its own metadata, re-stamped at each commit — and Terraform, whose config
+declares bare columns, wanted to **strip them**: permanent drift, dirtying every future plan, and an
+apply the next commit would undo. **Lesson 23 exactly** (a managed service owns its artifacts'
+packing). Authored: `lifecycle { ignore_changes = [storage_descriptor[0].columns] }` with the argument
+in the comment — Terraform keeps the table's existence, location and format; schema *evolution* goes
+through the engine, which is how an Iceberg table changes anyway. The slice then plans **`No
+changes`**.
+
+### The 4d amendments: AUTHORED, planned, and deliberately not applied
+
+**`identity/sso/` — the third condition on `DenyControlPlaneOffVpn`** (`policies-shared.tf`, values in
+`locals.tf`): `StringNotEqualsIfExists aws:SourceVpce` over the **VPN homes'** gateway endpoints — both
+of each home's, S3 and DynamoDB, one mechanism (any service with a gateway endpoint on the home's route
+table takes that path). `IfExists` holds the polarity: off-VPN traffic carries no vpce key, the test
+passes, the deny still fires. The comment block now argues **three** ANDed conditions and carries the
+measured history. Beside it, **a second plan-time guard** in `permission-sets.tf` — the existing one
+predicted the right symptom for the wrong cause (a malformed address list), and the new one guards the
+measured cause, naming its own asymmetry: a bad vpce entry is not a lockout but a silent **regression**
+to the 4d defect.
+
+The plan, read in full before being left unapplied: **`0 to add, 6 to change, 0 to destroy`** — the six
+persona inline policies and nothing else, each gaining exactly the one condition with the two Sandbox
+endpoint ids; both preconditions passed; the saved plan file sits in the session scratchpad.
+
+**`data-governance/data/` — the trusted list rebuilt on the right axis**: `trusted_vpce_ids =
+sort(distinct(consumer ∪ vpn_home))`, consumed by `DenyOutsideTrustedNetworks`. **It renders
+identically today** — the slice plans `No changes` — because the single home is also a consumer; the
+line exists so that stops being load-bearing (Lesson 33's second finding). And `maintenance.tf`'s
+crawler comment now carries the demander finding beside its own cost argument.
+
+**Why not applied, said plainly**: the statement binds six permission sets in every governed account,
+and this sitting's authorization was for review and propagation. **The apply is its own sitting**, and
+its sequence is already written into the stage: apply → `VP-7` read-back → the two unblocked proofs
+(the drop-box `PutObject`, which should now meet `AllowInteractiveWriterPutOnly`; the pandas negative,
+which should finally return D13's **implicit** deny) → then 4e, still last. **For the crawler demander,
+no Terraform was authored, deliberately**: open question 19 is an undecided design input, and authoring
+a `Schedule` or an event pipe would be inventing the decision it asks for.
+
+### The session's AWS CLI, as a debugging reference
+
+Every command family this session used, with what it was *for* and what it *does* — the readings live
+verbatim in the entries above; this is the map. All reads unless marked.
+
+| Command | Why it was run | What it does, and what to read |
+|---|---|---|
+| `aws sts get-caller-identity` | First call of every episode: which principal, which account | STS echoes `Account`/`Arn`/`UserId` of the active credentials. Every later error is relative to this answer |
+| `curl https://checkip.amazonaws.com` | Vary identity, not route: prove the tunnel before any control | Returns the public IP the world sees. The `[P]` Elastic IP = full tunnel up; anything else = down or split. No AWS auth involved |
+| `aws cloudtrail lookup-events --lookup-attributes AttributeKey=EventSource,AttributeValue=<svc>.amazonaws.com --start-time …` | Measure which network path a call took, after the fact | Reads 90 days of **management** events. `CloudTrailEvent` is a JSON string — `jq 'fromjson'` — holding `sourceIPAddress` and `vpcEndpointId`. **Data events (`GetObject`, `ListObjectsV2`) are NOT here**: a missing event is instrument scope, not proof the call never happened |
+| `aws s3api list-buckets` / `get-bucket-location` | Re-create a denied data call's path with a call the trail records | S3 **management** calls — same wire, same endpoint split, but CloudTrail-visible. The pair that measured `10.20.160.254` + the vpce id |
+| `aws ec2 describe-vpc-endpoints --filters Name=vpc-endpoint-type,Values=Gateway` | Turn a `vpce-…` id from CloudTrail into a name | Lists endpoints with `ServiceName`/`State`. What said `vpce-0cc3…` is Sandbox's S3 gateway |
+| `aws ec2 describe-vpcs` | Place a private source address | The VPC CIDRs; `10.20.160.254 ∈ 10.20.0.0/16` is what identified the WireGuard host's ENI behind the NAT |
+| `aws iam get-role --role-name X` | Who can *become* the role — act 1's decisive read | Returns the **trust policy** (`AssumeRolePolicyDocument`). `GlueServiceOnly` here is what closed the positive half by reading (Lesson 22) |
+| `aws iam list-role-policies` / `get-role-policy` | The identity half of a permission (Lesson 28) | Inline policy names, then the document. What proved the vending ceiling read-only — and, after the fix, read back the write half verbatim |
+| `aws kms get-key-policy --key-id … --policy-name default` | The resource half of the same permission | The key policy's statements. `EnableIamPolicyDelegationInThisAccount` (root, `kms:*`) is what proved the fix needed one side only |
+| `aws glue get-crawler --name X` | Can anything run it, has anything ever | `State`, `Schedule`, `LastCrawl`. `Schedule: null` + `LastCrawl: null` is "never, and the scheduler never will" |
+| `aws glue list-triggers` / `list-workflows` | The invocation paths that are not the scheduler | Both `[]` = the crawler has no demander at all |
+| `aws glue start-crawler --name X` *(write — denied)* | The probe whose **denial wording names the layer** | *"explicit deny in a **service control policy**"* vs *"…identity-based policy"* vs implicit. Lesson 21: Glue authorizes before validating, so the denial arrives even for a crawler that does not exist |
+| `aws glue get-table --query 'Table.StorageDescriptor.Columns[].Name'` | The classification boundary, read at the engine's input | The LF-filtered column list. Three distinguishable states: 5 columns (gate holding), 6 (gate open), error (share broken) — Lesson 13's requirement |
+| `aws glue get-table --query 'Table.Parameters.metadata_location'` | Did Iceberg **commit**, or only stage files | The pointer moves (`00000→00001`) only on a successful commit. Distinguishes a real write from debris |
+| `aws lakeformation get-data-lake-settings` | The DL-5 bracket — after **every** apply of the owning slice | `DataLakeAdmins`, `Parameters` (`CROSS_ACCOUNT_VERSION`/`SET_CONTEXT`), both `Create*DefaultPermissions` — the reset is silent, so it is read, never assumed |
+| `aws lakeformation list-permissions` | The applied grants, from the API rather than the code | Ground truth for the register: principal, resource kind, `Expression`, `Permissions`, `PermissionsWithGrantOption`. Also the source the grant's own shape was mirrored from |
+| `aws lakeformation grant-permissions` / `revoke-permissions` *(writes — authorized)* | The explicit `restricted` grant and its revert | `--principal DataLakePrincipalIdentifier=<account>` + `--resource '{"LFTagPolicy":{"CatalogId","ResourceType","Expression"}}'` + the two permission lists. **Mirror the shape `list-permissions` returns; never compose from memory** |
+| `aws athena list-work-groups` / `get-work-group` | Where results go, and who decides | `EnforceWorkGroupConfiguration` + `ResultConfiguration.OutputLocation`. `primary` enforces nothing, so the client must supply the location |
+| `aws athena start-query-execution --work-group … --query-execution-context … --result-configuration OutputLocation=…` *(write — authorized)* | Run the INSERT / the count | Returns only the execution id. Nothing about success |
+| `aws athena get-query-execution` | **The debugging read of the session** | `Status.State` and `Status.StateChangeReason` — the reason carries the denied **principal** and **action** verbatim. The `AWSLF-00-AT-…` session name in it is what moved the diagnosis from "my permissions" to "the vending ceiling" |
+| `aws athena get-query-results` | The rows themselves | `ResultSet.Rows[].Data[].VarCharValue`, header row first. The `count(*) = 12` proof |
+| `aws s3 ls s3://… [--recursive]` | Footprint, orphans, and the isolation control | Issues `ListBucket`/`ListObjectsV2` — a **data** event. On a denial, the wording (which policy kind, explicit vs implicit) is the evidence |
+| `terraform plan -detailed-exitcode -out=<file>` → `show <file>` → `apply <file>` → `plan` | The change discipline, end to end | Plan once and save; **read the `~` in full** (the description-only change was confirmed at `show`); apply exactly the reviewed file; re-plan to `No changes` as the closing bracket |
+| `./aws/datalake.py` | The lake battery, after anything touches the lake | `0 check(s) FAILED` is the line; per-profile `FAILED` headers are absent SSO sessions, not findings |
+
+### Where this sitting wrote
+
+The stage file (debt items 1-2, the Status row, the pass-4 row), open questions **19** (refined) and
+**8** (informed, not closed), `AWS_STATE.md` (both §C rows), `GOVERNANCE.md` (the artifacts bucket's
+incidental writer), `maintenance.tf` + `catalog.tf` + the four amendment files, and the three log
+corrections above. `terraform fmt` clean on every touched file; the identifier gate reads 385 files,
+none.
+
+### Still owed, in order
+
+1. **The amendment apply** (`identity/sso`, `0/6/0`) — its own sitting, then the two unblocked proofs;
+2. **4e**, last, through battery phase 4b;
+3. **pass 6** (Security Hub);
+4. open question **19** — the demander — decided by the user, with verification (iv) as the live
+   candidate.
 
 ---
 

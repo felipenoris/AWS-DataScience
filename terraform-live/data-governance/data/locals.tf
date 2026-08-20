@@ -42,6 +42,19 @@ locals {
     for k, s in data.terraform_remote_state.vpn_home : "${s.outputs.wireguard_eip_public_ip}/32"
   ]
 
+  # THE VPN HOMES' OWN S3 ENDPOINTS, ON THE AXIS THAT CARRIES THEM (2026-08-20; Lesson 33's
+  # second finding, stage 5 log's controls entry). Every tunnel call - whichever account's
+  # persona makes it - exits through the HOME's gateway endpoint, so its id belongs in the
+  # trusted list because the home is the tunnel's exit, NOT because the home happens to
+  # consume the lake. Today the two lists intersect (the single home is also a consumer) and
+  # the rendered policy is UNCHANGED by this line; the day a second home appears, or the host
+  # moves to a non-consumer account, this is what keeps the perimeter's S3 branch honest
+  # instead of correct by coincidence (Lessons 10, 29).
+  vpn_home_vpce_ids = [
+    for k, s in data.terraform_remote_state.vpn_home : s.outputs.s3_gateway_endpoint_id
+  ]
+  trusted_vpce_ids = sort(distinct(concat(local.consumer_vpce_ids, local.vpn_home_vpce_ids)))
+
   # The peer account roots the cross-account statements hang off. A bucket policy VALIDATES
   # its Principal, so a role that does not exist yet (awsds-prod-job-exec, Stage 9's
   # contract) cannot be a Principal - the account root is, and the ArnLike condition narrows
