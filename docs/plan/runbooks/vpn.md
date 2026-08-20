@@ -173,12 +173,17 @@ handshake (§C2).
    AWS_PROFILE=awsds-infra-sandbox-1 aws ec2 stop-instances --region us-west-2 --instance-ids <INSTANCE_ID>
    ```
 
-### S6. Switch the host's size — the `instance_type` parameter
+### S6. Switch the host's shape — the `instance_type` and `root_volume_size` parameters
 
-*New 2026-08-20. The size is **a parameter of `sandbox/vpn/`, held in a tracked tfvars**, not a
-property of the design: `t4g.nano` (D4's, the default) for a tunnel that only forwards, `t4g.medium` (2 vCPU,
-4 GiB) when the host needs room to work in, `t4g.micro` as §S5's capacity fallback. Switching is
-this section; it runs in both directions and nothing below is specific to growing.*
+*New 2026-08-20, extended the same day with the disk. The host's shape is **two parameters of
+`sandbox/vpn/`, both held in one tracked tfvars**, not a property of the design: `instance_type` —
+`t4g.nano` (D4's, the default) for a tunnel that only forwards, `t4g.medium` (2 vCPU, 4 GiB) when the
+host needs room to work in, `t4g.micro` as §S5's capacity fallback — and `root_volume_size`, GiB of
+gp3 root disk, `8` by default. **The one thing to carry out of this section is that they are not
+symmetrical**: the type switches in both directions, the disk only grows. What follows is common to
+both down to the pre-flight reads; the disk's own asymmetries have their own subsection, and the
+switch procedure at the end is written for the type, with the disk's differences called out where
+they land.*
 
 **The AMI decides the family. The parameter decides only the size within it.** The `wireguard`
 module pins the Amazon Linux 2023 **arm64** image by SSM parameter —
@@ -193,20 +198,27 @@ rather than to this section. The variable's `validation` block encodes the close
 this reason; widening it is a decision taken with the two pre-flight reads below, never a
 convenience.
 
-#### How the size is selected — one tracked file, edited in both directions
+#### How the shape is selected — one tracked file, two keys, one of them reversible
 
 **`terraform-live/sandbox/vpn/instance_type.auto.tfvars`** — committed to the repository, and the
-only tfvars in this tree a person edits to change what is *running*:
+only tfvars in this tree a person edits to change what is *running*. **Its name is now narrower than
+its contents**: the disk key joined it on 2026-08-20 and the file was not renamed, because a rename
+costs the `.gitignore` negation, `check-tfvars-shape.py`'s `SIZE` constant and every path written
+about the file, and buys a name. The file's own header says so, which is where a puzzled reader
+lands anyway.
 
 | To | Do | Then |
 |---|---|---|
-| **Switch up** | assign the type: `instance_type = "t4g.medium"` | `terraform apply` on the slice |
-| **Go back to the default** | **comment the assignment out** | `terraform apply` on the slice |
+| **Switch the type up** | assign it: `instance_type = "t4g.medium"` | `terraform apply` on the slice |
+| **Go back to the default type** | **comment the assignment out** | `terraform apply` on the slice |
+| **Grow the disk** | assign it: `root_volume_size = 64` | `terraform apply` on the slice |
+| **~~Shrink the disk~~** | **not this file, and not an apply** | EBS cannot shrink a volume — see below |
 
-With nothing assigned, `variables.tf`'s default governs — `t4g.nano`, D4's shape — so commenting the
-line out *is* the way back, and the plan reads `~ instance_type` with `1 to change` in that
-direction exactly as it did on the way up. Both readings were measured 2026-08-20, on a bare `plan`
-with no flags of any kind.
+With nothing assigned, `variables.tf`'s defaults govern — `t4g.nano`, D4's shape, on 8 GiB — so for
+the **type** commenting the line out *is* the way back, and the plan reads `~ instance_type` with
+`1 to change` in that direction exactly as it did on the way up. Both of those readings were
+measured 2026-08-20, on a bare `plan` with no flags of any kind. **For the disk the same act does
+not do the same thing**, and the next subsection is that difference.
 
 **Three properties of this arrangement, each chosen against a specific failure:**
 
@@ -233,22 +245,76 @@ with no flags of any kind.
   default is a commented-out line, a change that has to reach the repository as reliably as the one
   that set it. The negation names the file in full so it cannot admit the generated
   `terraform.auto.tfvars` beside it, which does hold the region and the CIDR.
-- **`./scripts/check-tfvars-shape.py` allows it exactly one key.** The file is committable because
-  it holds an instance type and nothing else; the gate is what keeps that true when somebody adds
-  `zone_index` "while they are in there".
+- **`./scripts/check-tfvars-shape.py` allows it exactly the two keys above.** The file is
+  committable because both of them are *sizes* — no id, no address, no key material; the gate is
+  what keeps that true when somebody adds `zone_index` or a CIDR "while they are in there". Growing
+  that set is the decision, not the formality: a key belongs in this file only if it is a size.
 
 **What `make up` / `make down` do with all this: nothing.** A `[D]` slice is started and stopped,
 never applied (refusal 5), so the machinery cannot switch the size in either direction — every
 change here is a deliberate apply.
 
-#### What is *not* coupled to this parameter — deliberately
 
-**The cost model stays written against `t4g.nano`.** `scripts/tfhygiene/layers.py` carries `0.0042`
+#### The disk — `root_volume_size`, and the three ways it is not the type
+
+**One: it only goes up.** An EBS volume is *grown* in place — the provider issues `ModifyVolume`,
+and unlike a type change it does not even stop the instance — but **EBS cannot shrink a volume**.
+Commenting the assignment out therefore does not walk the disk back the way it walks the type back:
+it asks for a shrink the API refuses. Going smaller is a **host replacement** — a new instance on a
+new root volume, `/etc/wireguard/` rebuilt from the `[P]` secret and the roster — which is Part K's
+territory, not this section's. Assign the disk expecting to keep it.
+
+> **Documented, not measured, and marked so rather than left to be assumed** (Lesson 30, in
+> reverse): the shrink rule above is EBS's, and *what `plan` prints before such an apply fails* has
+> not been read here — because nothing in this repository should ever produce it. Carry "down is a
+> replacement" as the rule; do not carry any particular error text as a promise.
+
+**Two: growing the volume is not growing the filesystem.** `ModifyVolume` hands the instance more
+block device; the partition and the XFS filesystem on top of it are untouched until something grows
+them, and on AL2023 that something is **cloud-init's `growpart`, which runs at BOOT**:
+
+| If the disk change… | The filesystem… |
+|---|---|
+| rides along with an `instance_type` switch | grows by itself — that apply stops and starts the host, so `growpart` runs |
+| goes out **alone**, host left running | does **not** grow, until a reboot or until the pair below is run by hand |
+
+The by-hand pair, in an SSM session (§K0a), for the case where the volume grew and the host was not
+restarted:
+
+```bash
+sudo growpart /dev/nvme0n1 1 && sudo xfs_growfs -d /
+```
+
+**Three: it is a standing cost, where the type is an hourly one.** A stopped instance bills nothing
+per hour; its EBS volume bills every hour of the month regardless — the deal a `[D]` slice makes,
+and the thing `scripts/tfhygiene/layers.py`'s own comment already says about the volume and the
+Elastic IP. At the `us-west-2` gp3 rate of **0.08 USD/GB-mo** (`docs/PRICING.md` §8):
+
+| `root_volume_size` | USD/month, standing, tunnel up or down |
+|---|---|
+| 8 GiB — the default, and what the cost tables are written against | ~0.64 |
+| 64 GiB — assigned 2026-08-20 | ~5.12 |
+| 128 GiB — the validation's ceiling | ~10.24 |
+
+The ceiling is where a fat-fingered `640` — ~51 USD/month, **D12's whole budget**, on a host that
+may never be started — is caught at *plan* time rather than on a bill. Raising it is a decision
+taken against that budget, with this table in hand.
+
+#### What is *not* coupled to these parameters — deliberately
+
+**The cost model stays written against `t4g.nano` on 8 GiB.** `scripts/tfhygiene/layers.py` carries `0.0042`
 for the slice and `docs/PRICING.md` §3's WireGuard row prices the nano, and neither follows the
 parameter. The consequence, stated plainly so nobody reports it as a defect: **while a larger host
 runs, `make status` understates the burn** — a `t4g.medium` is **0.0336 USD/h**, eight times the
 figure quoted (measured 2026-08-20, `docs/PRICING.md` §8's `t4g.medium` row is the same reading).
 That is the accepted trade: one baseline in the cost tables beats a table that drifts with a knob.
+
+**The same holds for the disk, and it understates in a worse direction.** `docs/PRICING.md` §2's
+`WireGuard EBS (8 GB) + CloudWatch logs` row prices the default, and does not follow this file
+either — so at 64 GiB the monthly floor is understated by **~4.50 USD**, and unlike the hourly gap
+above **that one accrues while the lab is shut down**. Stated here rather than fixed in the table
+for the same reason: `docs/PRICING.md` prices what a fresh clone builds. What a *particular* host was
+grown to is this section's table, and the log's.
 
 **`./aws/vpn.py` reports the size, it does not judge it.** `VP-1` passes at any admitted type and,
 when the host is not the `BASELINE_INSTANCE_TYPE` baseline, **names the type it found** and says the
@@ -299,8 +365,14 @@ that needed a flag would be a plan somebody could run without one.
 
 - **`~ instance_type` with `Plan: 0 to add, 1 to change, 0 to destroy`** — the switch. This is the
   expected reading, in either direction.
-- **anything `must be replaced`** — *not* a size switch. Something else moved with it (the AMI
-  parameter, the user data, the roster), and the consequences are §K2/§K4's, not this section's.
+- **`~ root_block_device[0].volume_size`, and still `1 to change`** — the disk. `root_block_device`
+  is a block *inside* `aws_instance`, not a resource of its own, so moving both keys in one apply
+  still counts **one** changed resource. `1 to change` is therefore not by itself proof that only
+  the type moved: read the attribute lines, not the tally.
+- **anything `must be replaced`** — *not* a shape change. Something else moved with it (the AMI
+  parameter, the user data, the roster), and the consequences are §K2/§K4's, not this section's. On
+  a disk change specifically, `must be replaced` is the reading that says the plan is **shrinking**
+  the volume rather than growing it.
 
 Then the apply, in the order §S5's teardown already establishes:
 
@@ -316,7 +388,7 @@ Then the apply, in the order §S5's teardown already establishes:
 | Survives | Because |
 |---|---|
 | The **instance id** | it is a modify, not a replacement — the same instance restarts |
-| `/etc/wireguard/`, so the **host's private key and the peer roster** | the EBS root volume is kept across stop/start. Note that the **user data does NOT re-run** — it is first-boot only — so nothing re-fetches the `[P]` secret, and nothing needs to |
+| `/etc/wireguard/`, so the **host's private key and the peer roster** | the EBS root volume is kept across stop/start, and a `ModifyVolume` that grows it keeps its contents too — growing a disk is not reformatting one. Note that the **user data does NOT re-run** — it is first-boot only — so nothing re-fetches the `[P]` secret, and nothing needs to |
 | The **address**, so **every client `.conf` stays valid** | the public IPv4 is the `[P]` **Elastic IP**. The documented "we release the public address on stop/start" warning applies to *auto-assigned* addresses; this host has none (`associate_public_ip_address = false`) |
 | The **private IPv4**, and with it the security group, the subnet and the AZ | stop/start keeps the primary ENI |
 
@@ -326,6 +398,18 @@ name the **new** type with `state running`, and `VP-2` must still read the Elast
 further minute before a shell works (§K0a's `Online` check). The tunnel itself needs only the
 handshake (§C2). `make status` will keep quoting the nano rate — expected, per the coupling note
 above.
+
+**If the disk moved, one more reading, and `./aws/vpn.py` is not it** — `VP-1` reports the instance
+type and says nothing about the volume, so the disk is confirmed in a shell (§K0a) or not at all:
+
+```bash
+lsblk && df -h /
+```
+
+`lsblk` must show the **new** size on the device, and `df -h /` the new size on the **filesystem**.
+They can disagree, and the disagreement is the whole point of the `growpart` note above: a device
+that grew under a filesystem that did not is a host with the space it was billed for and none of the
+space it was given. Read both, not one.
 
 **If the start fails with `InsufficientInstanceCapacity`, §S5's rule holds unchanged — retry, change
 nothing.** A stopped instance holds no hardware, and a switch re-contests the pool at the new size in

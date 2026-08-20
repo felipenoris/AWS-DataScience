@@ -35,10 +35,11 @@ module "wireguard" {
   zone_index = var.zone_index
   peer_cidr  = var.peer_cidr
 
-  # THE SIZE IS A PARAMETER, NOT A CONSTANT - the one knob this slice adds to the module,
-  # and the reason it is a variable rather than the literal it briefly was: the host is
-  # SWITCHED between a forwarding-only nano and a t4g.medium with room to work in, by whoever
-  # runs the apply, without touching a .tf file either way. THE SELECTION LIVES IN A TRACKED
+  # THE SIZE IS A PARAMETER, NOT A CONSTANT - the first of the two knobs this slice adds to
+  # the module (the disk below is the second), and the reason it is a variable rather than the
+  # literal it briefly was: the host is SWITCHED between a forwarding-only nano and a
+  # t4g.medium with room to work in, by whoever runs the apply, without touching a .tf file
+  # either way. THE SELECTION LIVES IN A TRACKED
   # TFVARS: instance_type.auto.tfvars beside this file - assigned there to switch up,
   # COMMENTED OUT to fall back to variables.tf's default (t4g.nano, D4's). Auto-loaded, so
   # both directions are a plain `terraform apply`. variables.tf carries the default and the
@@ -54,6 +55,19 @@ module "wireguard" {
   # would be an AMI change in the MODULE - a different SSM parameter, a replaced instance,
   # user data re-run - never a value of this variable.
   instance_type = var.instance_type
+
+  # AND THE DISK, THE SAME WAY AND FROM THE SAME FILE - a second variable rather than the
+  # module's default because that default (8 GiB) is sized for a host that only forwards, and
+  # a host somebody works on has to hold something. WHAT MAKES THIS KNOB DIFFERENT FROM THE ONE
+  # ABOVE, and it is worth reading before assigning rather than after: instance_type goes both
+  # ways, root_volume_size does not. EBS grows a volume IN PLACE - the provider issues
+  # ModifyVolume and the instance is not even stopped - but EBS CANNOT SHRINK ONE, so
+  # commenting the assignment out does not return the disk the way it returns the type; it
+  # asks for a shrink EBS refuses. Down is a host REPLACEMENT (Part K), never an apply. Two
+  # consequences of the same asymmetry: the growth reaches the OS only at BOOT, when
+  # cloud-init's growpart runs, and the volume bills while the host is STOPPED. Both, with the
+  # readings that settle them, are docs/plan/runbooks/vpn.md section S6.
+  root_volume_size = var.root_volume_size
 
   public_subnet_ids = data.terraform_remote_state.foundation.outputs.public_subnet_ids
   security_group_id = data.terraform_remote_state.foundation.outputs.wireguard_security_group_id

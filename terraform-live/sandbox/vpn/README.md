@@ -99,16 +99,28 @@ by **recovery** (the `[P]` secret holds the key), never by a new key.
 
 ## The one input a person changes to alter what is running
 
-[`instance_type.auto.tfvars`](instance_type.auto.tfvars) — **tracked**, one key, and the only
-tfvars here that is edited rather than generated or enrolled. Assign a type to switch the host up;
-**comment the assignment out** to fall back to [`variables.tf`](variables.tf)'s default, `t4g.nano`.
-Auto-loaded, so both directions are a plain `terraform apply` with no flag to forget. The admitted
-values are all `t4g` — the module pins an **arm64** AMI, so `t3.medium` is not an alternative to
-`t4g.medium` and the validation rejects it at plan time.
+[`instance_type.auto.tfvars`](instance_type.auto.tfvars) — **tracked**, two keys, and the only
+tfvars here that is edited rather than generated or enrolled. Its **name is narrower than its
+contents** since the disk joined it (2026-08-20): renaming would cost the `.gitignore` negation,
+`check-tfvars-shape.py`'s constant and every path written about the file, and buy a name.
 
-Read before switching — the two pre-flight commands, what the plan must say, what survives the
-stop/start, and the fact that the cost tables and `make status` stay written against `t4g.nano`:
-[the VPN runbook, §S6](../../../docs/plan/runbooks/vpn.md).
+- **`instance_type` — both directions.** Assign a type to switch the host up; **comment the
+  assignment out** to fall back to [`variables.tf`](variables.tf)'s default, `t4g.nano`. The
+  admitted values are all `t4g` — the module pins an **arm64** AMI, so `t3.medium` is not an
+  alternative to `t4g.medium` and the validation rejects it at plan time.
+- **`root_volume_size` — up only.** GiB of gp3 root disk, `8` by default, `8`–`128` admitted.
+  EBS **grows** a volume in place and **cannot shrink** one, so commenting this assignment out does
+  not return the disk: down is a host **replacement**, not an apply. Two consequences worth knowing
+  before assigning: the extra space reaches the filesystem only at **boot** (`growpart`), and the
+  volume **bills while the host is stopped**.
+
+Auto-loaded, so every direction that *is* an apply is a plain `terraform apply` with no flag to
+forget.
+
+Read before switching either — the pre-flight commands, what the plan must say (`1 to change` counts
+the instance, not the attributes), what survives the stop/start, how to confirm the filesystem
+actually grew, and the fact that the cost tables and `make status` stay written against `t4g.nano`
+on 8 GiB: [the VPN runbook, §S6](../../../docs/plan/runbooks/vpn.md).
 
 ## Applying it
 

@@ -50,15 +50,19 @@ SIZE = Path("terraform-live/sandbox/vpn/instance_type.auto.tfvars")
 # `git add -f` and a reason", and the reason lands here, greppable.
 TRACKED_SHAPES: dict[str, set[str]] = {
     str(ROSTER): {"peers"},
-    # The VPN host's size, tracked since 2026-08-20 - the second exception, and the first one
-    # .gitignore names rather than leaving to `git add -f`. ONE key, which is the whole reason
-    # this row can be short: the file holds an instance type and nothing else, so the failure
-    # mode the roster's row defends against (key material arriving in a tracked tfvars) has no
-    # foothold here. What the row DOES defend is scope creep - the day somebody adds the
-    # zone_index or a CIDR "while they are in there", this gate says no, because a file that
-    # is committed on the strength of holding nothing sensitive stops deserving that the
-    # moment it holds something else.
-    str(SIZE): {"instance_type"},
+    # The VPN host's SHAPE, tracked since 2026-08-20 - the second exception, and the first one
+    # .gitignore names rather than leaving to `git add -f`. TWO keys since the same day, the
+    # disk having joined the instance type, and the row stays short for the reason it always
+    # did: both values are sizes, so the failure mode the roster's row defends against (key
+    # material arriving in a tracked tfvars) has no foothold here. What the row DOES defend is
+    # scope creep - the day somebody adds the zone_index or a CIDR "while they are in there",
+    # this gate says no, because a file that is committed on the strength of holding nothing
+    # sensitive stops deserving that the moment it holds something else. GROWING THIS SET IS
+    # THEREFORE THE DECISION, not a formality: a key belongs here only if it is a size, and a
+    # reader who has to ask why the file is still called instance_type.auto.tfvars is answered
+    # by the file's own header (renaming it costs the .gitignore negation and every path
+    # written about it, and buys a name).
+    str(SIZE): {"instance_type", "root_volume_size"},
 }
 
 # The attributes an entry of the roster may carry.
