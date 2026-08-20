@@ -2604,6 +2604,149 @@ none.
 4. open question **19** — the demander — decided by the user, with verification (iv) as the live
    candidate.
 
+## 2026-08-20 — The amendment applied, and the four proofs it was blocking: the deny stands down, D13's mechanism is finally its own reason, and the drop-box is put-only in three directions
+
+*Provenance. **This entry is Claude's, and so are the commands.** **Three writes ran, each authorized in
+its own sitting**: the `terraform apply` of the amendment ("pode aplicar a emenda"), and the drop-box
+`PutObject` and `DeleteObject` probes ("pode executar"). Everything else is a read. Identifiers are
+masked in the usual shape — an account id by the account's **name** in angle brackets, the e-mail inside
+a role ARN by **the persona's role**; the readings are otherwise verbatim.*
+
+### The apply, and the guard that fired on the second try
+
+The saved plan from the review sitting (`0 to add, 6 to change, 0 to destroy`) was applied from
+`terraform-live/identity/sso` as the **infrastructure user**, `InfrastructureAccess`, in `Management`.
+It succeeded. A second invocation of the same file was **refused — "Saved plan is stale"** — which is
+Recipe D's guard doing exactly its job: a saved plan is spent once, and the refusal is the mechanism
+that stops a re-run from applying a world that has moved. Re-plan: **`No changes`**.
+
+**The read-back was taken on both provisioned roles, not on the document.** The defect was a property of
+the shared fragment, so the fix is only proven where the fragment lands — `AWSReservedSSO_DataScientistAccess_…07f8` in
+`Sandbox 1` and `…bf66` in `Development`, the same two roles that had failed identically in groups A and
+B. Both now carry three conditions:
+
+```json
+{ "BoolIfExists":            { "aws:ViaAWSService": "false" },
+  "NotIpAddress":            { "aws:SourceIp": "52.89.212.1/32" },
+  "StringNotEqualsIfExists": { "aws:SourceVpce": ["vpce-0a215b90df70b23c3", "vpce-0cc3e139c1167ca83"] } }
+```
+
+`./aws/vpn.py` → **all checks passed**. **`VP-7` passes in both directions** — the fragment is on all six
+persona sets, and **absent from `InfrastructureAccess`** — which is the half that keeps the recovery
+path open and would have been the expensive thing to get wrong.
+
+### The proofs, taken as the persona
+
+The user signed in as the **data-scientist persona**, `DataScientistAccess`, in `Sandbox 1` and
+`Development`. `curl checkip` → `52.89.212.1` first, so identity varied and route did not.
+
+**The before/after, on the one call that diagnosed the defect.** `s3api list-buckets` is what the
+previous sitting caught in CloudTrail arriving with `aws:SourceVpce` and a private address. Re-run now:
+
+```
+not authorized to perform: s3:ListAllMyBuckets
+because no identity-based policy allows the s3:ListAllMyBuckets action
+```
+
+**Explicit deny in an identity-based policy → implicit.** Same call, same role, same tunnel, one
+variable changed. Nothing else in this stage measures the fix that directly.
+
+**The contrast pair — one action, two buckets, one session.** This is what separates *"S3 is blocked"*
+from *"this bucket is not granted"*, and the two were indistinguishable while the deny sat on top:
+
+| `s3api get-bucket-location` on | `Sandbox 1` | `Development` |
+|---|---|---|
+| `awsds-<env>-derived` | **`us-west-2`** | **`us-west-2`** |
+| `awsds-data-curated` | implicit deny | implicit deny |
+
+`GetBucketLocation` was chosen over `ListObjectsV2` for the same reason as last sitting: it is a
+**management** event, so the trail will carry it. The instrument's scope is a standing constraint here,
+not a one-off.
+
+**D13's mechanism, closed.** The direct S3 path to a registered location is refused **because nothing
+grants it** — not because an unrelated rule intervened:
+
+```
+s3:ListBucket on "arn:aws:s3:::awsds-data-curated"
+because no identity-based policy allows the s3:ListBucket action
+```
+
+Both accounts, identical wording, so the property belongs to the design and not to an accident of one
+account. While the explicit deny was in the way, this reading and a broken-share reading produced the
+same output — **Lesson 13 in its live form**, and the reason the amendment had to land before the claim
+could be made at all.
+
+### The drop-box: `PutObject` lands, and the success response carries the third half
+
+`s3api put-object` on `awsds-data-dropbox/incoming/2026/08/20/probe-4d-sandbox.txt`, 38 bytes, fixed
+size **deliberately** — a stdin stream of unknown length would have gone multipart, and the identity
+half grants `s3:PutObject` with no multipart companion, so the probe would have failed for a reason that
+was not the one under test. It succeeded, and returned:
+
+```
+ServerSideEncryption: aws:kms
+SSEKMSKeyId:          arn:aws:kms:us-west-2:<the lake account>:key/31e29a7d-…
+BucketKeyEnabled:     true
+VersionId:            FdI4Gv5zaoOYBH_SaVIpCdD7Pv37GfNm
+```
+
+**`AllowInteractiveWriterPutOnly` moves from attached to exercised** — Lesson 20 discharged for that
+statement, and the identity half authored in 4c delivered.
+
+**The finding: on an encrypted write path, Lesson 28's intersection has three terms, not two.** Three
+policies in two accounts had to agree at once — the identity half (`WriteIngestionDropBox`), the
+resource half (`AllowInteractiveWriterPutOnly`, `ArnLike` over both consumer accounts' reserved-SSO
+pattern), and **the key policy** of the lake CMK meeting `UseLakeDataKeyViaS3`, each side carrying the
+`ViaService = s3` scope that bounds the other. The third term is invisible in the failure taxonomy the
+stage has been using — a missing key policy surfaces as a **KMS** error, which is precisely the shape
+yesterday's INSERT failure took. It is visible here only because a *successful* `PutObject` echoes
+`SSEKMSKeyId`. **Lesson 28's wording is owed an amendment**: two halves is the identity/resource case;
+encryption adds a third, and the success response is where you read it.
+
+**Put-only, measured in three directions.** All three refusals are implicit — absence of grant, the same
+reason as D13's:
+
+| the persona attempts | result |
+|---|---|
+| `PutObject` | **succeeds** |
+| `GetObject` on the object it just wrote | implicit deny |
+| `ListObjectsV2` on `incoming/` | implicit deny |
+| `DeleteObject` on its own object | implicit deny |
+
+Write and lose sight of it. **D18's refusal of an exchange bucket is now a construction, not a
+convention** — and the delete probe is what makes that claim complete, since a writer that can retract
+is a writer that can launder.
+
+The `Development` leg was **not** run, deliberately: the resource half is an `ArnLike` pattern covering
+both accounts and both provisioned roles were already read back above, so a second uncollectable object
+would have bought weaker evidence than what the read-back already gives.
+
+### The residue, declared rather than discovered later
+
+**The probe object stays.** Versioned, under the lake CMK, and **no principal in the current design can
+collect it**: the pickup is `awsds-prod-job-exec`, a Stage 9 object that does not exist. This is the
+expected consequence of the drop-box being complete before its consumer, not stray debris — but
+undeclared it becomes a phantom finding in some later snapshot, so `AWS_STATE.md` is owed an `EXC` row
+naming the object and the stage that removes it.
+
+### New to the session's command reference
+
+The families below join the table in the entry above; the rest were already there.
+
+| Command | Why it was run | What it does, and what to read |
+|---|---|---|
+| `aws s3api put-object --body <file>` *(write — authorized)* | The 4c deliverable, unexercised until now | Single `PutObject`; **use a fixed-size file, never stdin**, or the CLI goes multipart and fails on a permission that is not under test. On success read `SSEKMSKeyId` — it is the only place the **key** half of the intersection is visible |
+| `aws s3api get-object` / `delete-object` *(delete is a write — authorized)* | The put-only asymmetry, all three directions | Each returns the denial wording that names the layer. A probe expected to be **denied** is still a write API and is authorized as one |
+| `aws s3api get-bucket-location` on a granted **and** a non-granted bucket | Isolate "the network is blocked" from "this bucket is not granted" | One action, two resources, one session. The contrast is the control; either reading alone is ambiguous |
+| `aws iam get-role-policy` on the **provisioned** role, not the permission set | Prove a shared fragment where it actually lands | A permission set is a template; the role in each account is the enforced object. Two accounts failed identically, so two read-backs are what closes it |
+
+### What this closes, and what is left
+
+Closed: the Lesson 33 fix, **proven** rather than authored; `VP-7` both halves; **D13's mechanism**;
+`AllowInteractiveWriterPutOnly`; the drop-box asymmetry. Still owed, in order: **4e** (the SCP
+amendment, last, through battery phase 4b — the in-account Athena door now genuinely exists to close),
+**pass 6** (Security Hub), and open question **19**, the crawler demander, which is the user's decision.
+
 ---
 
 *Log index: [docs/log/INDEX.md](INDEX.md) · Stage index: [docs/plan/stages/INDEX.md](../plan/stages/INDEX.md)*
