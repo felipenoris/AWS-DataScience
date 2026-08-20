@@ -56,6 +56,23 @@ variable "zone_index" {
   default     = 0
 }
 
+variable "instance_type" {
+  description = "THE HOST'S SIZE, SELECTED PER APPLY - the only knob this slice adds to the wireguard module, so the tunnel can be run either as a forwarder or as a machine with room to work in, without a code change either way. t4g.nano is D4's shape and the default; t4g.medium (2 vCPU, 4 GiB) is the larger option; t4g.micro is section S5's documented capacity fallback, kept here so the fallback is a value rather than an edit. EVERY ALLOWED VALUE IS arm64 ON PURPOSE - the module pins the AL2023 arm64 AMI, and an AMI is specific to its processor architecture, so t3.medium is not a same-shape alternative to t4g.medium: EC2 refuses the request. HOW A SELECTION IS MADE: not here, and not on the command line, but in the TRACKED FILE BESIDE THIS ONE - instance_type.auto.tfvars, the second exception to the wholesale *.tfvars ignore and the first one .gitignore names outright. Assigning there overrides this default; COMMENTING THE ASSIGNMENT OUT falls back to it. The .auto. in the name is load-bearing: Terraform reads the file by itself, so both directions are a complete `AWS_PROFILE=awsds-infra-sandbox-1 terraform -chdir=terraform-live/sandbox/vpn apply` with no -var-file to append and no flag anybody can forget. WHAT THIS DEFAULT THEREFORE IS: the value that governs whenever nothing is assigned - so it is also what a FRESH CLONE builds, and what the cost tables are written against. Changing it is changing the baseline, which is a different act from switching the running host. The procedure is docs/plan/runbooks/vpn.md section S6."
+  type        = string
+  default     = "t4g.nano"
+
+  validation {
+    # A CLOSED LIST, not a free-form string, and the failure it prevents is not a typo: the
+    # module's AMI is arm64, so an x86 type is rejected by EC2 at apply time with an
+    # architecture error - late, after a stop has already happened. Widening this list is a
+    # decision that belongs with the reading of section S6's two pre-flight commands
+    # (architecture, and whether the type is offered in the zone_index AZ), never a
+    # convenience.
+    condition     = contains(["t4g.nano", "t4g.micro", "t4g.medium"], var.instance_type)
+    error_message = "instance_type must be one of t4g.nano, t4g.micro or t4g.medium - all arm64, as the module's pinned AL2023 AMI requires (vpn.md section S6)."
+  }
+}
+
 variable "account_folder" {
   description = "This slice's terraform-live/ folder name - the first path segment of every state key. Consumed by the remote-state read of foundation/."
   type        = string

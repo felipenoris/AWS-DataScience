@@ -97,6 +97,19 @@ client config silently (Lesson 4).
 [the VPN runbook, Part K](../../../docs/plan/runbooks/vpn.md). Its one rule — loss is answered
 by **recovery** (the `[P]` secret holds the key), never by a new key.
 
+## The one input a person changes to alter what is running
+
+[`instance_type.auto.tfvars`](instance_type.auto.tfvars) — **tracked**, one key, and the only
+tfvars here that is edited rather than generated or enrolled. Assign a type to switch the host up;
+**comment the assignment out** to fall back to [`variables.tf`](variables.tf)'s default, `t4g.nano`.
+Auto-loaded, so both directions are a plain `terraform apply` with no flag to forget. The admitted
+values are all `t4g` — the module pins an **arm64** AMI, so `t3.medium` is not an alternative to
+`t4g.medium` and the validation rejects it at plan time.
+
+Read before switching — the two pre-flight commands, what the plan must say, what survives the
+stop/start, and the fact that the cost tables and `make status` stay written against `t4g.nano`:
+[the VPN runbook, §S6](../../../docs/plan/runbooks/vpn.md).
+
 ## Applying it
 
 ```bash

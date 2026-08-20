@@ -43,12 +43,22 @@ import sys
 from pathlib import Path
 
 ROSTER = Path("terraform-live/sandbox/vpn/peers.auto.tfvars")
+SIZE = Path("terraform-live/sandbox/vpn/instance_type.auto.tfvars")
 
 # path -> the top-level keys that tracked tfvars may assign. Growing this table is the
 # deliberate act that tracking a new tfvars requires: the .gitignore asks for "an explicit
 # `git add -f` and a reason", and the reason lands here, greppable.
 TRACKED_SHAPES: dict[str, set[str]] = {
     str(ROSTER): {"peers"},
+    # The VPN host's size, tracked since 2026-08-20 - the second exception, and the first one
+    # .gitignore names rather than leaving to `git add -f`. ONE key, which is the whole reason
+    # this row can be short: the file holds an instance type and nothing else, so the failure
+    # mode the roster's row defends against (key material arriving in a tracked tfvars) has no
+    # foothold here. What the row DOES defend is scope creep - the day somebody adds the
+    # zone_index or a CIDR "while they are in there", this gate says no, because a file that
+    # is committed on the strength of holding nothing sensitive stops deserving that the
+    # moment it holds something else.
+    str(SIZE): {"instance_type"},
 }
 
 # The attributes an entry of the roster may carry.

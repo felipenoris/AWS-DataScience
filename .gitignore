@@ -56,6 +56,16 @@ terraform-modules/*/.terraform.lock.hcl
 *.tfvars
 *.tfvars.json
 
+# THE ONE EXCEPTION DECLARED HERE RATHER THAN BY `git add -f` - added 2026-08-20 with the VPN
+# host's instance_type parameter. This file is edited to change what is RUNNING, in both
+# directions, and the way back to the default is COMMENTING A LINE OUT - a change that must
+# reach the repository as reliably as the change that set it. An exception carried only by
+# `git add -f` (the peers roster's arrangement, two lines above) survives fine once the file is
+# tracked, but says nothing to whoever creates it the next time this pattern is copied to
+# another account's vpn/ slice. Named in full rather than globbed: the negation must not admit
+# the generated terraform.auto.tfvars sitting beside it, which holds the region and the CIDR.
+!terraform-live/sandbox/vpn/instance_type.auto.tfvars
+
 # Generated per slice by scripts/gen-backend-hcl.py - the one file allowed to hold the region
 # literal (step 2.5). Ignored unconditionally, whichever mechanism writes it.
 backend.hcl

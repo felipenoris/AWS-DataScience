@@ -78,6 +78,16 @@ VPCE_CONDITION_KEY = "aws:SourceVpce"
 HOST_KEY_SECRET_SUFFIX = "-vpn-host-key"
 HOST_KEY_DENY_SID = "DenyValueReadExceptHostAndInfrastructure"
 
+# The size the COST MODEL is written against - D4's, the slice's default, and the only one
+# scripts/tfhygiene/layers.py and docs/PRICING.md 3 price. Since 2026-08-20 the slice takes
+# instance_type as a PARAMETER (t4g.nano | t4g.micro | t4g.medium, vpn.md section S6), so a
+# host that is not this size is a deliberate selection and NOT A FAILURE - VP-1 reports the
+# type it found and passes. What that report is for: the burn line of `make status` and the
+# hourly rows of PRICING keep quoting the nano's 0.0042 USD/h whatever is running, so this
+# line is the only place the reader is told the two have parted company (a t4g.medium is
+# EIGHT times the rate). Deliberately not a fail, and deliberately not silent.
+BASELINE_INSTANCE_TYPE = "t4g.nano"
+
 # The six persona sets the step 8 fragment reaches, and the one it deliberately does not
 # (8.2/8.3). Control Tower's own sets are ignored entirely.
 PERSONA_SETS = (
@@ -475,8 +485,8 @@ def main(argv: list) -> int:
                         set_rows.append((name, "yes, IP only"))
 
     # -------------------------------------------------------------------------------- the checks
-    # VP-1: exactly one WireGuard host in the VPN home, t4g.nano (D4). Absent = not built
-    # yet; two = a rebuild that leaked.
+    # VP-1: exactly one WireGuard host in the VPN home. Absent = not built yet; two = a
+    # rebuild that leaked. The SIZE is reported, never judged - see BASELINE_INSTANCE_TYPE.
     if home_live:
         if not instances:
             checks.note(
@@ -493,14 +503,20 @@ def main(argv: list) -> int:
             )
         else:
             iid, itype, istate, _sub, _ip, _tok, _sgs = instances[0]
-            if itype != "t4g.nano":
-                checks.fail(
+            if itype != BASELINE_INSTANCE_TYPE:
+                checks.ok(
                     "VP-1",
-                    f"instance type of {iid}",
-                    f"{itype} - D4 says t4g.nano; anything larger is paying for idle CPU.",
+                    f"one WireGuard host ({iid})",
+                    f"{itype}, state {istate} - NOT the {BASELINE_INSTANCE_TYPE} baseline, so "
+                    "every hourly figure in this report and in `make status` understates the "
+                    "burn (vpn.md section S6).",
                 )
             else:
-                checks.ok("VP-1", f"one WireGuard host ({iid})", f"t4g.nano, state {istate}")
+                checks.ok(
+                    "VP-1",
+                    f"one WireGuard host ({iid})",
+                    f"{BASELINE_INSTANCE_TYPE}, state {istate}",
+                )
 
     # VP-2: the [P] Elastic IP exists and is associated with the host (step 2.1). The EIP
     # bills whether or not it is associated, so an orphan allocation is pure cost.
@@ -880,7 +896,9 @@ stage's deny pair and by a behavioural probe, not by this file.
         rep.line(f"{n_fail} check(s) FAILED.")
         rep.text("""
 What the checks are, and where each comes from:
-  VP-1  exactly one t4g.nano WireGuard host in the VPN home (steps 1.1, 1.3; D4)
+  VP-1  exactly one WireGuard host in the VPN home (steps 1.1, 1.3; D4). The instance
+        TYPE is reported, not judged - it is a slice parameter (vpn.md section S6), and a
+        non-baseline size is named here because the cost lines do not follow it
   VP-2  the [P] Elastic IP exists and is associated with the host (step 2.1)
   VP-3  exactly one world-open ingress rule, UDP/51820; never port 22 (step 3)
   VP-4  IMDSv2 required on the host

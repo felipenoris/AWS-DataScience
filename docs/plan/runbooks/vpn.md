@@ -2,10 +2,10 @@
 
 | | |
 |---|---|
-| **Scope** | The whole VPN surface, in three parts. **Part S — the system**: what the pieces are, which slice owns each, how a packet actually travels, what the VPN is *not* (the NAT), and how the host is started and stopped. **Part C — the client**: one enrolled device's side of the tunnel — writing its `.conf`, bringing it up, proving it, taking it down. **Part K — the server**: the shell on the host (§K0a), the two kinds of key pair, and the four procedures — recovery, revocation, host rotation, device rotation (the last also being how a device is *added*) |
+| **Scope** | The whole VPN surface, in three parts. **Part S — the system**: what the pieces are, which slice owns each, how a packet actually travels, what the VPN is *not* (the NAT), how the host is started and stopped, and how its size is switched (§S6). **Part C — the client**: one enrolled device's side of the tunnel — writing its `.conf`, bringing it up, proving it, taking it down. **Part K — the server**: the shell on the host (§K0a), the two kinds of key pair, and the four procedures — recovery, revocation, host rotation, device rotation (the last also being how a device is *added*) |
 | **Operator** | Parts S and K: the **infrastructure user**, profile `awsds-infra-sandbox-1` (`InfrastructureAccess` in `Sandbox`) — plus `awsds-infra-identity` for §K6's fragment toggles. Part C: the **device's owner, on the device** — no AWS profile and no SSO session: nothing in that part calls an AWS API |
 | **The two rules** | **Loss is answered by recovery, never by rotation** (Part K): a new host key forces an instance replacement and breaks every client config at once — each one pins the server's public key. Rotate for *compromise* (§K3), recover for *loss* (§K1); the mechanised violation is Secrets Manager's own rotation feature, off forever (§K5, `VP-9`). **Full tunnel, never split** (Part C): `AllowedIPs = 0.0.0.0/0, ::/0`, both families — `DenyControlPlaneOffVpn`'s `aws:SourceIp` can only match traffic that actually exits through the Elastic IP, so a split tunnel is a lockout with the tunnel up |
-| **Written** | The keys half 2026-08-16 (Stage 4's third design review; rewritten the same day when the host key moved into the `[P]` secret), the client half 2026-08-17 (the first handshake). **Unified 2026-08-19, at the user's request, replacing `vpn-keys.md` and `vpn-client.md`** — their content is Parts K and C, kept whole; Part S is new, written from the topology readings of Stage 5 pass 4d's first sitting |
+| **Written** | §S6 added 2026-08-20 (the size becoming a slice parameter). The keys half 2026-08-16 (Stage 4's third design review; rewritten the same day when the host key moved into the `[P]` secret), the client half 2026-08-17 (the first handshake). **Unified 2026-08-19, at the user's request, replacing `vpn-keys.md` and `vpn-client.md`** — their content is Parts K and C, kept whole; Part S is new, written from the topology readings of Stage 5 pass 4d's first sitting |
 
 ---
 
@@ -24,7 +24,7 @@ survive forever versus what is powered off between sessions (D11):
 | The **Elastic IP** allocation | `sandbox/foundation/` · `[P]` | `52.89.212.1` — the one stable address. Every client config pins it (`Endpoint =`), and so does the `DenyControlPlaneOffVpn` fragment and the lake's bucket-policy branch (§S2). It survives every host stop, start and replacement — only its *association* follows the instance |
 | The **security group** `awsds-sandbox-vpn` | `sandbox/foundation/` · `[P]` | carries **the estate's only world-open rule**: UDP/51820 (`VP-3`). Anything else world-open anywhere is a finding |
 | The **host-key secret** `awsds-sandbox-vpn-host-key` | `sandbox/foundation/` · `[P]` | the container for the host's private key — value written by the user at enrollment, read by the instance at boot, resource-policy deny on every other reader (§K0) |
-| The **WireGuard host** | `sandbox/vpn/` · `[D]` | one `t4g.nano` (arm64) in the **public** subnet of `usw2-az1`, tag `Name=awsds-sandbox-vpn` — the tag is the contract everything looks the host up by (§K0a). `wg0` at `10.90.0.1/24`, IMDSv2 required, no port 22, no key pair — the shell is SSM (§K0a) |
+| The **WireGuard host** | `sandbox/vpn/` · `[D]` | one **arm64** burstable instance in the **public** subnet of `usw2-az1` — the size is the slice's `instance_type` **parameter**, selected per apply since 2026-08-20 (§S6): `t4g.nano` by default and what the cost tables price, `t4g.medium` when the host needs room, tag `Name=awsds-sandbox-vpn` — the tag is the contract everything looks the host up by (§K0a). `wg0` at `10.90.0.1/24`, IMDSv2 required, no port 22, no key pair — the shell is SSM (§K0a) |
 | The **handshake log + alarm** | `sandbox/vpn/` · `[D]` | log group `/awsds/sandbox/vpn` (30 days) with per-peer named lines, and the health alarm `awsds-sandbox-vpn-health` |
 | The **roster** `peers.auto.tfvars` | the repository (tracked) | every enrolled device's *public* key and `host` number. Public halves only — the shape gate `./scripts/check-tfvars-shape.py` refuses the regressions it can see (§K5) |
 
@@ -151,10 +151,10 @@ The first-ever start after a `make down` returned exactly this —
 `An error occurred (InsufficientInstanceCapacity) … reached max retries: 2` — with the instance left
 cleanly `stopped` (nothing to undo), `t4g.nano` confirmed *offered* in the AZ (so not a
 configuration problem), and the retry succeeded minutes later. If it persists for ~30 minutes, the
-documented fallback is **`t4g.micro` via a deliberate `terraform apply` of the `[D]` slice** — a
-known-survivable replacement: the interface key comes from the `[P]` secret and the address from the
-`[P]` allocation, so client configs do not move (measured at Stage 4 step 4.2). **Never an AZ
-change** — the subnets anchor on `zone_id` in `[P]` `foundation/` — and never a configuration change
+documented fallback is **`t4g.micro`, an admitted value of the slice's `instance_type` parameter
+(§S6)** — a known-survivable change: the interface key comes from the `[P]` secret and the address
+from the `[P]` allocation, so client configs do not move (measured at Stage 4 step 4.2). **Never an
+AZ change** — the subnets anchor on `zone_id` in `[P]` `foundation/` — and never a configuration change
 on the first transient signal.
 
 **After the start**: `./aws/vpn.py` must read `running` with everything passing; the SSM agent needs
@@ -172,6 +172,167 @@ handshake (§C2).
    ```bash
    AWS_PROFILE=awsds-infra-sandbox-1 aws ec2 stop-instances --region us-west-2 --instance-ids <INSTANCE_ID>
    ```
+
+### S6. Switch the host's size — the `instance_type` parameter
+
+*New 2026-08-20. The size is **a parameter of `sandbox/vpn/`, held in a tracked tfvars**, not a
+property of the design: `t4g.nano` (D4's, the default) for a tunnel that only forwards, `t4g.medium` (2 vCPU,
+4 GiB) when the host needs room to work in, `t4g.micro` as §S5's capacity fallback. Switching is
+this section; it runs in both directions and nothing below is specific to growing.*
+
+**The AMI decides the family. The parameter decides only the size within it.** The `wireguard`
+module pins the Amazon Linux 2023 **arm64** image by SSM parameter —
+`/aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-arm64` — and an AMI is specific to
+its processor architecture, so every value the variable admits is a Graviton one. This is the trap
+worth naming, because the two names look like siblings: **`t3.medium` and `t4g.medium` are the same
+2 vCPU / 4 GiB shape and are NOT interchangeable here** — `t3` is x86_64, and EC2 **refuses** the
+request rather than handing back a host that boots badly. Wanting x86 is therefore not a value of
+this parameter at all: it is an **AMI change inside the module** (a different SSM parameter), which
+replaces the instance and re-runs its user data — a host replacement, subject to Part K's rules
+rather than to this section. The variable's `validation` block encodes the closed list for exactly
+this reason; widening it is a decision taken with the two pre-flight reads below, never a
+convenience.
+
+#### How the size is selected — one tracked file, edited in both directions
+
+**`terraform-live/sandbox/vpn/instance_type.auto.tfvars`** — committed to the repository, and the
+only tfvars in this tree a person edits to change what is *running*:
+
+| To | Do | Then |
+|---|---|---|
+| **Switch up** | assign the type: `instance_type = "t4g.medium"` | `terraform apply` on the slice |
+| **Go back to the default** | **comment the assignment out** | `terraform apply` on the slice |
+
+With nothing assigned, `variables.tf`'s default governs — `t4g.nano`, D4's shape — so commenting the
+line out *is* the way back, and the plan reads `~ instance_type` with `1 to change` in that
+direction exactly as it did on the way up. Both readings were measured 2026-08-20, on a bare `plan`
+with no flags of any kind.
+
+**Three properties of this arrangement, each chosen against a specific failure:**
+
+- **The `.auto.` in the filename is load-bearing.** Terraform auto-loads any `*.auto.tfvars` in
+  the working directory, so the file is read by a bare apply:
+
+  ```bash
+  AWS_PROFILE=awsds-infra-sandbox-1 terraform -chdir=terraform-live/sandbox/vpn apply
+  ```
+
+  Named `instance_type.tfvars` instead, it would have to be passed on **every** plan and apply —
+  `-var-file` being an option of those subcommands, after the subcommand, where `-chdir` is an
+  option of `terraform` itself and goes before it:
+
+  ```bash
+  AWS_PROFILE=awsds-infra-sandbox-1 terraform -chdir=terraform-live/sandbox/vpn apply -var-file=instance_type.tfvars
+  ```
+
+  Forgetting that flag once plans the host back to the default with nothing to warn you — the plan
+  reads `1 to change` either way. There is no flag to forget here, which is the point.
+- **It is TRACKED, and `.gitignore` names it** rather than leaving it to a `git add -f` (the peers
+  roster's older arrangement). A `git add -f` works, but says nothing to whoever creates the file
+  the next time this pattern reaches another account's `vpn/` slice — and the way *back* to the
+  default is a commented-out line, a change that has to reach the repository as reliably as the one
+  that set it. The negation names the file in full so it cannot admit the generated
+  `terraform.auto.tfvars` beside it, which does hold the region and the CIDR.
+- **`./scripts/check-tfvars-shape.py` allows it exactly one key.** The file is committable because
+  it holds an instance type and nothing else; the gate is what keeps that true when somebody adds
+  `zone_index` "while they are in there".
+
+**What `make up` / `make down` do with all this: nothing.** A `[D]` slice is started and stopped,
+never applied (refusal 5), so the machinery cannot switch the size in either direction — every
+change here is a deliberate apply.
+
+#### What is *not* coupled to this parameter — deliberately
+
+**The cost model stays written against `t4g.nano`.** `scripts/tfhygiene/layers.py` carries `0.0042`
+for the slice and `docs/PRICING.md` §3's WireGuard row prices the nano, and neither follows the
+parameter. The consequence, stated plainly so nobody reports it as a defect: **while a larger host
+runs, `make status` understates the burn** — a `t4g.medium` is **0.0336 USD/h**, eight times the
+figure quoted (measured 2026-08-20, `docs/PRICING.md` §8's `t4g.medium` row is the same reading).
+That is the accepted trade: one baseline in the cost tables beats a table that drifts with a knob.
+
+**`./aws/vpn.py` reports the size, it does not judge it.** `VP-1` passes at any admitted type and,
+when the host is not the `BASELINE_INSTANCE_TYPE` baseline, **names the type it found** and says the
+hourly figures understate the burn. A check that failed here would go red about a change somebody
+made on purpose, which is how a check stops being read (Lesson 31) — and a check that stayed silent
+would leave the cost gap above with nowhere to surface. Report, not verdict.
+
+#### Before the switch — two reads, both cheap, both answering a question the plan will not
+
+As the **infrastructure user** in **Sandbox** (`InfrastructureAccess`, profile
+`awsds-infra-sandbox-1`):
+
+```bash
+AWS_PROFILE=awsds-infra-sandbox-1 aws ec2 describe-instance-types --region us-west-2 --instance-types t4g.medium --query 'InstanceTypes[].[InstanceType,ProcessorInfo.SupportedArchitectures[0],VCpuInfo.DefaultVCpus,MemoryInfo.SizeInMiB]' --output text
+```
+
+```bash
+AWS_PROFILE=awsds-infra-sandbox-1 aws ec2 describe-instance-type-offerings --region us-west-2 --location-type availability-zone-id --filters 'Name=instance-type,Values=t4g.medium' --query 'InstanceTypeOfferings[].Location' --output text
+```
+
+The first is the architecture check — `arm64`, or stop here. The second is the one people skip: the
+host is pinned to **one** zone id by `zone_index`, and the subnets it may use are `[P]` in
+`foundation/`, so **a type not offered in that zone is a type this host cannot have** — and the
+symptom arrives later, as an `InsufficientInstanceCapacity` that looks like §S5's transient one and
+never clears. `t4g.medium` was read as offered in all four `us-west-2` zone ids on 2026-08-20.
+
+The price, when the size being selected has no row yet — `us-east-1` regardless of where the
+instance runs, that being where the endpoint lives, and it needs a session like any other call
+(`docs/PRICING.md` §0's `curl` against the bulk endpoint is the credential-free alternative):
+
+```bash
+AWS_PROFILE=awsds-infra-sandbox-1 aws pricing get-products --region us-east-1 --service-code AmazonEC2 --filters 'Type=TERM_MATCH,Field=instanceType,Value=t4g.medium' 'Type=TERM_MATCH,Field=regionCode,Value=us-west-2' 'Type=TERM_MATCH,Field=operatingSystem,Value=Linux' 'Type=TERM_MATCH,Field=tenancy,Value=Shared' 'Type=TERM_MATCH,Field=preInstalledSw,Value=NA' 'Type=TERM_MATCH,Field=capacitystatus,Value=Used' --query 'PriceList' --output text | jq -r '.terms.OnDemand|to_entries[0].value.priceDimensions|to_entries[0].value.pricePerUnit.USD'
+```
+
+#### The switch itself — a stop and a start, not a rebuild, and Terraform performs it
+
+EC2 requires the instance to be **stopped** before its type changes; the AWS provider does the stop,
+the modify and the start itself, in one apply. Read the plan and confirm which of the two shapes it
+is:
+
+```bash
+AWS_PROFILE=awsds-infra-sandbox-1 terraform -chdir=terraform-live/sandbox/vpn plan
+```
+
+That command is complete as written — no `-var 'instance_type=…'` and no
+`-var-file=instance_type.tfvars` appended after `plan`, because the tfvars is auto-loaded. A plan
+that needed a flag would be a plan somebody could run without one.
+
+- **`~ instance_type` with `Plan: 0 to add, 1 to change, 0 to destroy`** — the switch. This is the
+  expected reading, in either direction.
+- **anything `must be replaced`** — *not* a size switch. Something else moved with it (the AMI
+  parameter, the user data, the roster), and the consequences are §K2/§K4's, not this section's.
+
+Then the apply, in the order §S5's teardown already establishes:
+
+1. **Tunnel down on each device first** (§C3). The host is about to stop; with a full tunnel up, a
+   stopped host strands the laptop's default route until `wg-quick down` runs.
+2. `terraform apply` on the slice — a deliberate, authorized apply
+   (`docs/plan/runbooks/terraform-changes.md`). Nothing to pass: the file is already what the plan
+   just read.
+3. Bring the tunnel back up (§C2) and read the three proofs.
+
+**What survives, and why each one is safe** — the same in both directions:
+
+| Survives | Because |
+|---|---|
+| The **instance id** | it is a modify, not a replacement — the same instance restarts |
+| `/etc/wireguard/`, so the **host's private key and the peer roster** | the EBS root volume is kept across stop/start. Note that the **user data does NOT re-run** — it is first-boot only — so nothing re-fetches the `[P]` secret, and nothing needs to |
+| The **address**, so **every client `.conf` stays valid** | the public IPv4 is the `[P]` **Elastic IP**. The documented "we release the public address on stop/start" warning applies to *auto-assigned* addresses; this host has none (`associate_public_ip_address = false`) |
+| The **private IPv4**, and with it the security group, the subnet and the AZ | stop/start keeps the primary ENI |
+
+**After — the readings, in the order they become answerable.** `./aws/vpn.py` first: `VP-1` must
+name the **new** type with `state running`, and `VP-2` must still read the Elastic IP **associated**
+(the one thing whose loss would be silent until a client tried to connect). The SSM agent needs a
+further minute before a shell works (§K0a's `Online` check). The tunnel itself needs only the
+handshake (§C2). `make status` will keep quoting the nano rate — expected, per the coupling note
+above.
+
+**If the start fails with `InsufficientInstanceCapacity`, §S5's rule holds unchanged — retry, change
+nothing.** A stopped instance holds no hardware, and a switch re-contests the pool at the new size in
+the same pinned AZ. The distinction that matters is the one §S5 already draws: transient until
+proven otherwise, and the `describe-instance-type-offerings` read above is what proves it is not a
+configuration problem. §S5's documented fallback is `t4g.micro` — an admitted value of this
+parameter, so the fallback is this same procedure with a different value in the same file.
 
 ---
 

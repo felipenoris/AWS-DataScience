@@ -35,6 +35,26 @@ module "wireguard" {
   zone_index = var.zone_index
   peer_cidr  = var.peer_cidr
 
+  # THE SIZE IS A PARAMETER, NOT A CONSTANT - the one knob this slice adds to the module,
+  # and the reason it is a variable rather than the literal it briefly was: the host is
+  # SWITCHED between a forwarding-only nano and a t4g.medium with room to work in, by whoever
+  # runs the apply, without touching a .tf file either way. THE SELECTION LIVES IN A TRACKED
+  # TFVARS: instance_type.auto.tfvars beside this file - assigned there to switch up,
+  # COMMENTED OUT to fall back to variables.tf's default (t4g.nano, D4's). Auto-loaded, so
+  # both directions are a plain `terraform apply`. variables.tf carries the default and the
+  # closed-list validation; the procedure - what to read before, what the plan must say, what
+  # survives the stop/start - is docs/plan/runbooks/vpn.md section S6.
+  #
+  # WHY EVERY ALLOWED VALUE IS t4g: THE AMI DECIDES THE FAMILY, NOT THE SIZE. The module
+  # pins the AL2023 ARM64 image (/aws/service/ami-amazon-linux-latest/al2023-ami-kernel-
+  # default-arm64), and an AMI is specific to its processor architecture - so t3.medium is
+  # not a same-shape alternative to t4g.medium, it is a machine this image cannot run on,
+  # and EC2 REFUSES the request rather than producing a broken host (documented, not
+  # measured here: the EC2 resize-compatibility page, docs/REFERENCES.md). Moving to x86
+  # would be an AMI change in the MODULE - a different SSM parameter, a replaced instance,
+  # user data re-run - never a value of this variable.
+  instance_type = var.instance_type
+
   public_subnet_ids = data.terraform_remote_state.foundation.outputs.public_subnet_ids
   security_group_id = data.terraform_remote_state.foundation.outputs.wireguard_security_group_id
   eip_allocation_id = data.terraform_remote_state.foundation.outputs.wireguard_eip_allocation_id
