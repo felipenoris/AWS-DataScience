@@ -1913,4 +1913,168 @@ can run a query, and every verification of this stage reads column lists rather 
 
 ---
 
+## 2026-08-19 — Group A re-run by Claude's hand: every reading reproduces, and the finding's width is settled — the persona cannot read its own derived zone
+
+*Provenance. **This entry is Claude's, and so are the commands in it** — run at the user's request in
+this sitting, from the same laptop and the same tunnel, to re-validate the entry above. **The
+read-only calls were run under the standing rule; the five write calls were run only after the user
+authorized them explicitly, by name, in this sitting** — three of them are denied and create nothing,
+which is the probe battery's shape (`aws/probes/`), and two create an Athena execution and a CSV.
+**The redaction is mechanically different here and it is worth knowing which**: the account id and the
+persona's e-mail were masked **at capture**, by a filter on the command's own output, so — unlike the
+user's pastes above, which are redacted after the fact — the raw values never entered a file at all.
+Everything else is verbatim.*
+
+### The session it was measured in
+
+`curl` returned the `[P]` Elastic IP and the `sandbox.internal` SOA answered, so the tunnel was the
+same one; `sts:GetCallerIdentity` returned `AWSReservedSSO_DataScientistAccess_37932702010107f8`, the
+same provisioned role. Neither is decoration: without both, every denial below has two explanations.
+
+### Nine read-only readings, all identical to the entry above
+
+`glue:GetTables` through the link (`sample_trades`), the five-column list, `s3 ls` and `get-object` on
+`awsds-data-curated`, `get-object` and `list-objects-v2` on `awsds-data-dropbox` — same wording, down
+to which action the message names. And **A3's and A4's original execution ids still answer**, so those
+two were re-read rather than re-derived: `SUCCEEDED`, `Reason: null`, `Scanned: 0`, output at
+`results/19893d80-….csv`, `ColumnInfo` five long, and the hijacked query still recorded as having
+written to `results/021ea6de-….csv`.
+
+### The measurement that was missing, and it settles the width
+
+```
+B0.1  the PERSONA lists its OWN derived bucket
+
+aws: [ERROR]: An error occurred (AccessDenied) when calling the ListObjectsV2 operation: User: arn:aws:sts::<Sandbox Account 1>:assumed-role/AWSReservedSSO_DataScientistAccess_37932702010107f8/<data scientist user> is not authorized to perform: s3:ListBucket on resource: "arn:aws:s3:::awsds-sandbox-derived" with an explicit deny in an identity-based policy
+
+B0.2  the PERSONA downloads its own query result
+
+download failed: s3://awsds-sandbox-derived/results/19893d80-17d4-45dd-b5b7-398e8de15032.csv to - An error occurred (403) when calling the HeadObject operation: Forbidden
+```
+
+**The prediction the entry above left untested is now measured, and it holds.** `awsds-sandbox-derived`
+carries no network perimeter of its own — only `DenyStalePresignedUrls` beside the module's TLS deny —
+and `UseDerivedZoneBuckets` grants this persona `s3:ListBucket` on exactly that ARN. **So a `Deny` is
+overriding an explicit `Allow`, and the only statement in the document able to do that is
+`DenyControlPlaneOffVpn`.** The finding is therefore **not about the lake's buckets: it is about the S3
+path**, and its cost has a shape a user would feel — *the scientist runs the query and cannot fetch the
+CSV*. Athena writes the result (forward access session, `aws:ViaAWSService` true, the statement's own
+carve-out); the person reading it does not.
+
+**B0.2's `403 Forbidden` is the weaker of the two and is recorded as such**: `aws s3 cp` issues a
+`HeadObject` first, and HeadObject returns no body, so the mechanism is invisible in it. The wording
+that carries the finding is B0.1's.
+
+### The five writes, re-run on explicit authorization
+
+The three that create nothing came back **word for word** as the entry above: Athena's unnamed refusal
+on `primary`, `s3:PutObject` on the drop-box key *with an explicit deny in an identity-based policy*,
+and `glue:StartCrawler` *because no identity-based policy allows* — the latter again naming a crawler
+ARN in an account that has none, `glue:StartCrawler` authorizing before it validates.
+
+The two that create something were re-run as **fresh executions rather than re-reads**, which is the
+point of running them at all:
+
+| | |
+|---|---|
+| `ca9c2014-c92c-48f2-8973-5ea81ab323f5` | `SUCCEEDED`, `Reason: null`, `Scanned: 0`, `results/ca9c2014-….csv`, `ColumnInfo` = the same five names |
+| `63d8b373-24c3-4a84-bc83-f30b59ce863f` | asked for `scratch/hijack/`, **wrote to `results/63d8b373-….csv`** |
+
+So `EnforceWorkGroupConfiguration` overrode the client's location a **second** time, in an execution
+that shares nothing with the first. Cost of the re-run: two more CSVs under the derived zone's 30-day
+lifecycle. The drop-box gained nothing — the `PutObject` was denied — so there is no probe object
+anywhere to clean up, in either account.
+
+### The two controls that were NOT taken, and what they need
+
+- **`InfrastructureAccess` listing the same bucket through the same endpoint.** This is the clean
+  control: step 8.3 applied `DenyControlPlaneOffVpn` to the six personas **only**, so if that role
+  succeeds where the persona fails, the deny is isolated to the persona fragment rather than to the
+  bucket, the endpoint or the network. It was attempted and returned
+  `Error loading SSO Token: Token for awsds does not exist` — the browser is signed into the access
+  portal as the persona, which is Stage 4's own finding about consecutive sign-ins.
+- **CloudTrail's `vpcEndpointId` and `sourceIPAddress`, on a denied S3 management event beside the
+  Glue one.** That would measure the split directly instead of inferring it. Same blocker: the persona
+  holds no `cloudtrail:LookupEvents`.
+
+**So the diagnosis today rests on three measurements and one reading** — the Glue-implicit /
+S3-explicit pair in one session, the derived-bucket denial over an explicit allow, and the
+reproduction above, against an elimination over the document's five `Deny` statements. That is enough
+to act on and not enough to call it measured; the two controls above are what would close the gap, and
+both are one `aws sso login --sso-session awsds` away.
+
+---
+
+## 2026-08-19 — Pass 4d group B, in Development: every reading mirrors Sandbox, and the second role is what makes the finding a property of the DOCUMENT
+
+*Provenance. **This entry is Claude's, and so are the commands** — run at the user's request, from the
+same laptop and the same tunnel, immediately after the group-A re-run above. The read-only calls ran
+under the standing rule; **the five write calls ran because the user authorized group B by name in
+this sitting, with those five enumerated in the handover that preceded it** — three are denied and
+create nothing, two create an Athena execution and a CSV. Identifiers were **masked at capture**, as
+in the entry above, so no raw value entered a file. Everything else is verbatim.*
+
+### Why this was repeated rather than assumed
+
+Lesson 31, and it is not a formality here: the two consumers hold **their own** `DataLakeSettings`,
+their own account CMK, their own derived bucket, their own resource links and their own four
+re-grants. Nothing measured in Sandbox is evidence about Development, and this project has already
+been bitten once by a check that kept reporting `pass` about the account it was written in.
+
+### The eight readings
+
+| | Development | against Sandbox |
+|---|---|---|
+| identity | `AWSReservedSSO_DataScientistAccess_93e51218b5f8bf66` | **a different role** |
+| `glue:GetTables` through the link | `sample_trades` | same |
+| column list | `trade_id trade_date instrument quantity price` | same — five, `counterparty` absent |
+| the query `cbc25fa7-c41c-4ce6-92cd-2aa6a4767bc6` | `SUCCEEDED`, `Reason: null`, `Scanned: 0`, `s3://awsds-dev-derived/results/cbc25fa7-….csv`, `ColumnInfo` five long | same |
+| the hijack `a0f29aae-d2d9-484f-be7f-98f8b37515aa` | asked `scratch/hijack/`, wrote `results/a0f29aae-….csv` | same |
+| `primary` | `AccessDeniedException`, naming no policy | same |
+| `s3 ls` on `awsds-data-curated` | *explicit deny in an identity-based policy* | same |
+| **`s3 ls` on `awsds-dev-derived`** | *explicit deny in an identity-based policy* | same |
+| `PutObject` on the drop-box | *explicit deny in an identity-based policy* | same |
+| `glue:StartCrawler` | *because no identity-based policy allows*, naming a crawler ARN in an account that has none | same |
+
+### What the repetition bought, and it is one line of the table
+
+**The provisioned role is a different one** — `93e51218b5f8bf66` here against `37932702010107f8` in
+Sandbox. One permission set, two accounts, **two distinct IAM roles**, and both fail identically. That
+moves `DenyControlPlaneOffVpn`'s defect from *"something is wrong in Sandbox"* to **a property of the
+document**: it reaches every account the set is provisioned into, and it will reach `Staging` at its
+vend and every Sandbox unit D35 adds, with nobody having done anything. The same is true of the two
+proofs that *worked*: the workgroup enforcement and the column filter hold in both, from two different
+roles, which is what the pass needed and could not get from one account.
+
+**`s3 ls` on `awsds-dev-derived` is the row that matters most.** The derived-zone consequence measured
+in Sandbox reproduces here: the persona cannot list its own zone, in either consumer. The finding is
+systemic across the consumer side rather than an accident of one account.
+
+### Two verification rows close
+
+- **(ii)** — version-4 cross-account credential vending through `sts:SetContext` now answered **in both
+  consumers**, each with its own `DataLakeSettings` and its own re-grants. The RCP leaves it untouched.
+- **(x)**'s exclusion half — the column filter holds at the **engine** in both accounts, read from
+  `ResultSetMetadata.ColumnInfo` rather than from the catalog alone. **The explicit-grant half is still
+  owed** and is one of the two authorized acts below.
+
+### Cost, and what was left behind
+
+Two more CSVs under `s3://awsds-dev-derived/results/`, on the zone's 30-day lifecycle. **The drop-box
+gained no object in either account** — the write is denied on both sides — so there is nothing to
+clean up anywhere, and `incoming/2026/08/19/` does not exist.
+
+### Not done, and owed by name
+
+**4d's two authorized acts remain, and both need an identity this sitting did not use**: the
+maintenance pair's positive half (`StartCrawler` as `awsds-data-catalog-maintenance`, still never run
+since pass 1) and the **explicit `restricted` grant with its revert** (four writes across two
+accounts). Then **4e**, last, through battery phase 4b. And the two controls the entry above names as
+not taken — `InfrastructureAccess` on the derived bucket, and CloudTrail's `vpcEndpointId` — which are
+what would turn the `DenyControlPlaneOffVpn` diagnosis from deduced into measured. **The persona
+session has now done everything it can do**, so the identity switch those controls need costs nothing
+that was still needed.
+
+---
+
 *Log index: [docs/log/INDEX.md](INDEX.md) · Stage index: [docs/plan/stages/INDEX.md](../plan/stages/INDEX.md)*

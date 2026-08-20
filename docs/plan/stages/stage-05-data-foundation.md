@@ -737,9 +737,16 @@ own:
   Athena from Sandbox **and** Development over the LF share — and **pointing pandas at its S3 path fails
   from either account**, which is the only convincing evidence that D13 holds, now with the account
   boundary underneath it. **The METADATA half landed 2026-08-19** (pass 4b): the resource links resolve and
-  `glue:GetTables` through the `curated` link returns `sample_trades` from both accounts. **Both halves of
-  the pair above are still owed** — they need a persona session and nothing else: 4c landed the
-  entitlement on 2026-08-19, so the only remaining blocker is the tunnel (4d).
+  `glue:GetTables` through the `curated` link returns `sample_trades` from both accounts. **BOTH HALVES
+  ANSWERED 2026-08-19 (4d groups A and B), in both consumers and from two different provisioned roles**:
+  the persona's Athena query over the link returns `SUCCEEDED` with the result in that account's own
+  `results/` prefix, and the same session is denied `s3:ListBucket` on `awsds-data-curated` — the pandas
+  half. **One caveat the reading carries and the bullet did not predict**: the S3 denial arrives as an
+  *explicit deny in an identity-based policy* rather than the implicit deny D13 argues from, because
+  `DenyControlPlaneOffVpn` fires on every direct S3 call made from the tunnel (the drop-box bullet
+  below). D13's own mechanism is therefore **still unmeasured** — it is masked by a deny that would
+  refuse the call whatever Lake Formation had granted, and it stays owed until that statement is
+  amended.
 - **The classification pair (2026-08-17):** a default consumer session reads the sample table and the
   `restricted` column is **absent from the column list**; after the explicit restricted grant, present.
   **The absent half is ANSWERED 2026-08-19, and one layer earlier than this bullet assumed**: read as each
@@ -759,7 +766,7 @@ own:
   **overrides** the client's `OutputLocation` instead of refusing it, so **the reading is the resulting
   execution's `OutputLocation`, never an error code** — and the hijack target must be a prefix the
   persona CAN write, so that a failure of enforcement appears as a wrong-place write rather than as a
-  permission error two causes could explain. **ANSWERED in Sandbox; Development owes its own.**
+  permission error two causes could explain. **ANSWERED IN BOTH CONSUMERS 2026-08-19 (groups A and B), from two different provisioned roles** - in Development the hijack asked for `scratch/hijack/` and the execution recorded `results/`, exactly as in Sandbox.
 - **The maintenance pair:** the raw crawler runs as `awsds-data-catalog-maintenance` (the phase-4 positive
   half), and the same `StartCrawler` from a persona session is denied. **CORRECTED 2026-08-19 (4d group
   A): the denial does NOT name an OU policy and cannot.** `DenyCatalogMaintenanceRunsExceptMaintenanceRole`
@@ -772,7 +779,7 @@ own:
   resolved in the good direction for this action).
 - **The drop-box asymmetry, the halves that exist:** an Interactive-OU session `PutObject`s into the dated
   prefix and is denied the matching `GetObject`; the crawler reads it. (The Production read-and-delete
-  half is Stage 9's.) **BLOCKED 2026-08-19 (4d group A) AND THE BLOCKER IS OURS**: all three verbs were
+  half is Stage 9's.) **BLOCKED IN BOTH CONSUMERS 2026-08-19 (4d groups A and B) AND THE BLOCKER IS OURS**: all three verbs were
   denied *with an explicit deny in an identity-based policy* — `DenyControlPlaneOffVpn`, whose single
   `aws:SourceIp` condition cannot see that the tunnel's S3 traffic leaves through the `[P]` **gateway
   endpoint** and therefore never presents the Elastic IP. Its bucket-policy twin carries three branches
@@ -876,7 +883,7 @@ Record every answer, including the ones that come out fine.
 | # | Question | Step |
 |---|---|---|
 | i | Do the three parameter readings bracket the applies unchanged — before, after 5.4, after the first share? — **ANSWERED 2026-08-19, yes, all three: `CROSS_ACCOUNT_VERSION=4` / `SET_CONTEXT=TRUE` before pass 1, after the settings apply, and after the four shares exist** | 5.4, 7.3 |
-| ii | Does the first cross-account grant arrive on the consumer side with a **fresh** session — i.e. does the RCP's `sts:SetContext` statement leave version-4 vending untouched? — **HALF ANSWERED 2026-08-19: the METADATA half travelled** (four shares `ACTIVE`, held by both consumers, no invitation). **The vending half is untested** — version 4 vends *data* credentials through `sts:SetContext` and nothing has read a row yet, so this closes at pass 4's first query, not here. **CLOSED IN FULL 2026-08-19 (4d group A), in Sandbox**: the persona's first Athena query over the `curated` link returned `SUCCEEDED` with `Reason: null`, so the RCP leaves version-4 credential vending untouched and **INT-11's vending half is exercised for the first time**. Development owes the same reading (Lesson 31) | 7.3 |
+| ii | Does the first cross-account grant arrive on the consumer side with a **fresh** session — i.e. does the RCP's `sts:SetContext` statement leave version-4 vending untouched? — **HALF ANSWERED 2026-08-19: the METADATA half travelled** (four shares `ACTIVE`, held by both consumers, no invitation). **The vending half is untested** — version 4 vends *data* credentials through `sts:SetContext` and nothing has read a row yet, so this closes at pass 4's first query, not here. **CLOSED IN FULL 2026-08-19 (4d group A), in Sandbox**: the persona's first Athena query over the `curated` link returned `SUCCEEDED` with `Reason: null`, so the RCP leaves version-4 credential vending untouched and **INT-11's vending half is exercised for the first time**. **AND IN DEVELOPMENT, 2026-08-19 (group B)**, from its own `DataLakeSettings` and its own re-grants - so this row is closed on the consumer side entirely | 7.3 |
 | iii | Does the maintenance role start the raw crawler (the phase-4 positive half), and is the same call denied for a persona session? — **still open, and now with an owner: pass 4's debt list.** The role and both crawlers exist since pass 1 and **neither crawler has ever run**, so the D27 carve-out remains unmeasured in the positive direction | 3.3 |
 | iv | Which compute-free trigger shape starts the drop-box crawler on object creation — and does its run land on the service-guard side of the carve-out? | 3.6 |
 | v | Do the resource links appear with **no** pending RAM invitation anywhere — the org-sharing path working end to end? — **ANSWERED IN FULL 2026-08-19 (pass 4b)**: `DL-7` reads *4 share(s) out, 4 resource link(s) on the consumer side, no pending invitation*. The links resolve — `glue:GetTables` through the `curated` link returns `sample_trades` from both accounts — and no invitation ever existed anywhere | 7.3, 8 |
@@ -884,7 +891,7 @@ Record every answer, including the ones that come out fine.
 | vii | *(removed 2026-08-17 — the NFS requirement was withdrawn; there is no EFS to mount)* | — |
 | viii | Can a per-user LF filter be expressed and observed on the SQL path at all (the grain's raw material)? — **ANSWERED 2026-08-19 by the written map** (`docs/GOVERNANCE.md` §"The grain"): *expressed* yes, but only through **TIP**, which reaches the SQL path and not JupyterLab and whose documented price is remote access — so it is reachable and **not adopted**. An LF filter on its own attaches to the role, never the person. `${aws:userid}` prefixes stay the genuinely per-user control, over **copies**. *Observed* is not claimed: nothing was run | 6.4 |
 | ix | Does Security Hub's auto-enable cover existing members and later vends, and which FSBP controls were disabled as not-applicable in the first triage? | 13 |
-| x | Does the default consumer grant exclude the `restricted` column (the classification-scoped TBAC holding), and does the explicit grant admit it? — **answered by the COLUMN LIST, not by rows**: `sample_trades` was applied empty (4.1), so a row count discriminates nothing and the column list discriminates all three states. **THE EXCLUSION HALF IS ANSWERED 2026-08-19, and one layer earlier than this row assumed**: read as each account's own `InfrastructureAccess`, `sample_trades` carries six columns in Data Governance and **five** through the link in both consumers — `counterparty` never crossed the account line, because an account may pass on only what it received and `classification=restricted` was never in the received expression. The negative control is in the same reading. What is still owed is the **persona** session (4d) and the explicit-grant half. **THE PERSONA HALF IS ANSWERED 2026-08-19 (4d group A), in Sandbox, and it says more than the account-level reading did**: `glue:GetTable` through the link returns five columns to the persona, and so does `ResultSetMetadata.ColumnInfo` on the query — **the filter holds at the ENGINE, which the catalog read alone could not establish**. Development and the explicit-grant half remain | 6.1, 7.2 |
+| x | Does the default consumer grant exclude the `restricted` column (the classification-scoped TBAC holding), and does the explicit grant admit it? — **answered by the COLUMN LIST, not by rows**: `sample_trades` was applied empty (4.1), so a row count discriminates nothing and the column list discriminates all three states. **THE EXCLUSION HALF IS ANSWERED 2026-08-19, and one layer earlier than this row assumed**: read as each account's own `InfrastructureAccess`, `sample_trades` carries six columns in Data Governance and **five** through the link in both consumers — `counterparty` never crossed the account line, because an account may pass on only what it received and `classification=restricted` was never in the received expression. The negative control is in the same reading. What is still owed is the **persona** session (4d) and the explicit-grant half. **THE PERSONA HALF IS ANSWERED 2026-08-19 (4d group A), in Sandbox, and it says more than the account-level reading did**: `glue:GetTable` through the link returns five columns to the persona, and so does `ResultSetMetadata.ColumnInfo` on the query — **the filter holds at the ENGINE, which the catalog read alone could not establish**. **Development answered the same way 2026-08-19 (group B), from a different provisioned role**; the explicit-grant half remains | 6.1, 7.2 |
 
 ## Risks
 
