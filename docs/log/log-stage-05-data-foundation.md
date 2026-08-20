@@ -2843,4 +2843,150 @@ expired.
 
 ---
 
+## 2026-08-20 — The sign-in that succeeded as the wrong human: one wording, two opposite causes, and the instrument that would have written an operator's click down as a ceiling breach
+
+*Provenance. **This entry is Claude's, at the user's request.** The user signed in and authorized the
+two owed checks; every AWS call below is a **read** (`sts:GetCallerIdentity`, `sso:ListAccounts`,
+`sso:ListAccountRoles`, and whatever `./aws/vpn.py` and `check-ou-coverage.py` issue). **No write ran
+and no probe fired.** Account ids and the caller's e-mail are redacted here as `<acct>` and
+`<that user's role>`; the readings are otherwise verbatim.*
+
+### The blocker: `aws sso login` reported success, and none of it was ours
+
+The sitting opened to run the two things the propagation left owed — `./aws/vpn.py`, whose amended
+`VP-7` branch had never met AWS, and `make check-ou`. Both failed at the preflight, on every profile:
+
+```
+An error occurred (ForbiddenException) when calling the GetRoleCredentials operation: No access
+```
+
+The token was **not** expired: cached one minute earlier, valid for another hour. So the CLI held a
+token, presented it, and Identity Center refused to exchange it for the role. Asking IdC what the token
+*is* assigned answered it:
+
+| Account | Roles this token holds |
+|---|---|
+| `Development` | `DataScientistAccess` |
+| `Production` | `DataScientistProdAccess` |
+| `Sandbox 1` | `DataScientistAccess` |
+
+**The persona's token.** The browser still held the portal session from the entry above, and the device
+authorization was re-approved against it without a prompt.
+
+**The mechanism worth keeping: the token cache is keyed by `sso-session` name, never by user.** So a
+sign-in as the wrong identity does not fail — it *occupies the right identity's slot*, and every
+subsequent `aws sso login --sso-session awsds` finds a valid token there and returns success without
+asking the browser anything. The remedy is the logout, not the login.
+
+### Three instruments were pointing at the wrong fix
+
+**1. `awslib/profiles.py` handed back the command that had just run.** Its preflight prints
+"no profile authenticated. log in first: `aws sso login --sso-session awsds`" — literally the inert
+command in this state. It now recognises the two causes apart and, in this one, prints the logout.
+
+**2. `check-ou-coverage.py` named the right human and still handed over the inert command.** Its message
+already said *sign in as the INFRASTRUCTURE USER, Identity account, `InfrastructureAccess`* — correct,
+and not enough: naming the right human does not help when the wrong one's token is already in the slot.
+
+**3. `scp-battery.py` — and this is the one that mattered.** Its `ensure_session` forks on the *wording*
+(Lesson 24) between an expired token, which stops the run, and anything else, which is recorded as
+**`NO-CREDENTIALS`, a floor breach** and, in its own docstring's words, the most serious finding the
+battery can produce. That fork is right, and it was written from a real measurement: on **2026-08-14**
+this exact wording *was* the ceiling — `awsds-org-rcp-perimeter` denied the SAML flow's own STS actions
+in all six member accounts.
+
+So the wording has **two causes and no third state**: the ceiling refusing a sign-in that is assigned,
+and a token belonging to somebody the role was never assigned to. **Filtering the second by its text
+would have suppressed the first along with it** — which is Lesson 24 arriving from the opposite
+direction, in the very function whose docstring cites it.
+
+The discriminator therefore asks a *different system*, not a different string: **IdC's own listing of
+what the token is assigned. That path never traverses STS, so no SCP and no RCP can shape its answer.**
+
+| `assignment_exists` | Meaning | What the battery does |
+|---|---|---|
+| `True` | the role is assigned and STS still refused | the breach stands — record it |
+| `False` | this token's user holds no such role | stop, operator error, record nothing |
+| `None` | could not tell | **keep the finding** — hiding a real breach is the expensive direction |
+
+Exercised in the wrong-identity state, which was the only window to test it, by loading the functions
+directly — **the battery itself was never run and no probe fired**:
+
+```
+account    profile                    sts     wrong_identity  assignment_exists
+canary     awsds-policy-canary        FAILED  True            False   -> STOP (operator)
+data       awsds-infra-data           FAILED  True            False   -> STOP (operator)
+identity   awsds-infra-identity       FAILED  True            False   -> STOP (operator)
+dev        awsds-infra-dev            FAILED  True            False   -> STOP (operator)
+sandbox1   awsds-infra-sandbox-1      FAILED  True            False   -> STOP (operator)
+prod       awsds-infra-prod           FAILED  True            False   -> STOP (operator)
+```
+
+Six correct classifications. Without the discriminator this sitting would have written **six floor
+breaches** into the battery's report — a tool's failure recorded as a property of the world, which is
+**Lesson 30**. Note that `dev`, `prod` and `sandbox1` answer `False` even though the token *does* hold
+those accounts: the comparison is by **role**, not by account, and that granularity is what makes it a
+test rather than a coincidence.
+
+### New to the session's command reference
+
+Asking what a cached token is assigned, without printing the token — the diagnostic that separated the
+two causes, and the one to reach for whenever a valid token is refused:
+
+```bash
+H=$(printf '%s' awsds | shasum | cut -d' ' -f1)
+TOKEN=$(jq -r '.accessToken' ~/.aws/sso/cache/$H.json)
+aws sso list-accounts --access-token "$TOKEN" --region us-west-2
+```
+
+The cache file is named for the **sso-session**, which is why the hash is taken over that name and why
+the wrong user's token is found there at all.
+
+### The two owed checks, run
+
+After the logout-and-login as the **infrastructure user** (`Identity` and `Sandbox 1`,
+`InfrastructureAccess`; both ARNs read back as `<that user's role>`):
+
+**`./aws/vpn.py` — all checks passed**, and the row that had been owed since the propagation:
+
+```
+pass  VP-7  DenyControlPlaneOffVpn in the persona sets   all six carry it, each testing
+                                                         aws:SourceVpce as well as the address
+pass  VP-7  DenyControlPlaneOffVpn absent from InfrastructureAccess   by decision (open question 17)
+```
+
+That is the amended branch reading the amended policy: the instrument that spent three days reporting
+`pass` over the defect now passes for the reason it claims to. **It is still not sufficiency** — the
+endpoint ids inside the condition are not compared against anything — and the report says so.
+
+**`make check-ou` — OK.** The root plus seven OUs, all four sections clean: every OU accounted for
+(three deliberately empty, with their reasons), every mapped OU still present, every named document a
+file in `policies/`, and every attachment as authored — six documents at the root, one each on
+`Workloads`, `Identity`, `Interactive` and `Data`.
+
+### Where the finding was written down
+
+**Lesson 24, amended** rather than a new lesson — it is the same family, and saying so is part of the
+record. The parent lesson produced the wording fork; the amendment says that fork is **necessary and not
+sufficient**, and that the missing half is *where to look*, not *how to read*. A second text rule would
+have repeated the lesson in reverse, because the two causes emit the same sentence by construction. So
+the separating evidence has to come from **a channel the tested mechanism cannot influence** — which is
+the rule the parent lesson's own instruments were already following (Management, which RCPs cannot
+reach; the trust policy, read rather than exercised) without naming it. It carries a corollary that is
+not about sign-in at all: **before a harness records a breach in every account at once, ask what single
+local thing could produce that same uniformity.**
+
+`CLAUDE.md`'s current position also carries the operational half, because it outlives this stage: the
+cache is keyed by sso-session name, the remedy is the logout, and that wording is never to be suppressed
+by text alone.
+
+### Gates
+
+`make check: **OK**`. `ruff check` and `ruff format --check` clean on the three amended scripts
+(`aws/awslib/profiles.py`, `aws/probes/scp-battery.py`, `scripts/check-ou-coverage.py`).
+**Nothing is owed to a machine from the propagation sitting any more.** Nothing was committed in this
+sitting; six files stand modified.
+
+---
+
 *Log index: [docs/log/INDEX.md](INDEX.md) · Stage index: [docs/plan/stages/INDEX.md](../plan/stages/INDEX.md)*

@@ -51,6 +51,7 @@ from pathlib import Path
 # as the aws/ snapshots (awslib) plus the authored-map loader (tfhygiene). Both come from
 # the uv environment - this check always runs from a clone, never from CloudShell alone.
 from awslib.awscli import AwsCli
+from awslib.profiles import wrong_identity
 from tfhygiene import attachments
 
 MAP = "terraform-live/identity/org-policies/attachments.json"
@@ -102,7 +103,14 @@ def main(argv: list) -> int:
         say(f"no usable session{suffix}:")
         say(f"  {res.merged}")
         say("  sign in as the INFRASTRUCTURE USER, Identity account, InfrastructureAccess:")
-        say("      aws sso login --sso-session awsds")
+        if wrong_identity(res.merged):
+            # Naming the right identity is not enough when a token for the WRONG one is
+            # already cached under this sso-session: the login below finds it valid and
+            # returns success without asking the browser anything (measured 2026-08-20).
+            say("      aws sso logout && aws sso login --sso-session awsds")
+            say("  a token IS cached - for a user without this role. the logout is the fix.")
+        else:
+            say("      aws sso login --sso-session awsds")
         return 2
     who = res.stdout
     say("== identity ==")

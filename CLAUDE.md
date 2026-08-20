@@ -238,8 +238,14 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   decision): the registration role was read-only, its write half promised to a Stage 9 step that never
   existed (**Lesson 34**); `registered-locations-write` applied — the vending ceiling Stage 9's 2.4 rides
   — 12 rows loaded, Stage 11's row-proof dependency LIFTED. **`VP-7` now also greps the vpce condition**
-  (it reported `pass` over the defect for 3 days — Lesson 31); **the amended branch is unexercised**.
+  (it reported `pass` over the defect for 3 days — Lesson 31); **ran green 2026-08-20**, `check-ou` too.
   **Owed: 4e** (the SCP amendment, last — the in-account Athena door now truly exists to close), pass 6.
+- **A cached SSO token is keyed by `sso-session` name, NEVER by user** (2026-08-20): signing in as the
+  wrong identity fills the right one's slot, `aws sso login` then succeeds doing nothing — **the remedy
+  is `aws sso logout` plus a portal sign-out**, and `ForbiddenException`/`GetRoleCredentials` is its
+  wording. **That same wording was a real ceiling breach on 2026-08-14**, so `scp-battery.py` tells them
+  apart by asking **IdC what the token is assigned** (a path STS never touches), keeping the finding on
+  `True` *and* on "cannot tell". Never suppress that wording by text alone — Lesson 24, in reverse.
 - **`security-zone` WITHDRAWN 2026-08-19 (user revision, same day it was applied): one data CMK per
   account** — LF-Tag + `ASSOCIATE` grant destroyed, 3 keys renamed in place to `alias/awsds-<env>-data`
   (`data-data`/`sandbox-data`/`dev-data`; Stage 9's future: `prod-data`), `consumer-data` → **v0.2.0**,
@@ -308,7 +314,8 @@ the reasoning that makes it *usable* is in the file. Recognising one is the sign
 22. **A control whose principal the harness cannot produce is verified by reading, not by attempting.**
 23. **A managed service owns its artifacts' packing — bind to contents, never to an id or a name.**
 24. **A harness authenticates through the mechanism it measures — and the defence against the benign
-    failure hides the serious one.**
+    failure hides the serious one; one wording with two causes is separated by a different *channel*,
+    never by a better reading.**
 25. **A borrowed session outlives the command that needed it, and every later error names the wrong
     account.**
 26. **An "already exists" error is a free authorization probe — and proves nothing without a negative

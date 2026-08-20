@@ -39,6 +39,8 @@
 
 from __future__ import annotations
 
+import hashlib
+import json
 import re
 import subprocess
 import sys
@@ -48,6 +50,10 @@ from pathlib import Path
 # probes.py and readback.py sit beside this script, which Python puts on sys.path.
 import probes as probes_data
 import readback
+
+# The one recognizer for "a token vended, just not for this human". It lives in awslib
+# because three callers now need it and the wording is the datum in all three.
+from awslib.profiles import wrong_identity
 
 HERE = Path(__file__).resolve().parent
 REPO = HERE.parents[1]
@@ -96,6 +102,68 @@ def aws(argv: list) -> tuple[str, int]:
     separated or discarded."""
     proc = subprocess.run(["aws", *argv], capture_output=True, text=True)
     return (proc.stdout + proc.stderr).rstrip("\n"), proc.returncode
+
+
+def assignment_exists(profile: str) -> bool | None:
+    """Does Identity Center itself say the CACHED TOKEN is assigned this profile's role?
+
+    WHY THIS EXISTS, AND WHY IT IS NOT A SHORTCUT - Lesson 24, arriving from the other
+    side. `ForbiddenException ... GetRoleCredentials` has ONE wording and TWO causes:
+
+      - the ceiling denied the sign-in flow itself. `awsds-org-rcp-perimeter` did this on
+        2026-08-14 in all six member accounts - the most serious finding this battery can
+        produce, and the reason ensure_session stopped treating that wording as expiry.
+      - a valid token cached for a DIFFERENT human, who holds no such role. Measured
+        2026-08-20: a browser silently re-approved a live portal session, `aws sso login`
+        reported success, and every `awsds-infra-*` profile failed exactly like a breach.
+
+    Suppressing the second BY ITS WORDING would suppress the first with it - which is the
+    failure ensure_session's docstring is already about, run in reverse. So ask the system
+    that answers a different question: IdC's own listing of what this token is assigned.
+    That path never traverses STS, so no SCP and no RCP can shape its answer.
+
+    True  - the assignment exists, so a refusal to vend is the ceiling. The finding stands.
+    False - this token's user has no such role. Operator error, and nothing about the org.
+    None  - could not tell, and the caller must KEEP the finding: hiding a real breach is
+            the expensive direction; a spurious one costs an investigation.
+    """
+
+    def conf(key: str) -> str:
+        out, rc = aws(["configure", "get", key, "--profile", profile])
+        return out.strip() if rc == 0 else ""
+
+    account_id, role, session = conf("sso_account_id"), conf("sso_role_name"), conf("sso_session")
+    if not (account_id and role and session):
+        return None
+    # The cache file is named for the sso-session, never for the user - which is precisely
+    # how the wrong human's token comes to occupy the right human's slot.
+    digest = hashlib.sha1(session.encode(), usedforsecurity=False).hexdigest()
+    cache = Path.home() / ".aws" / "sso" / "cache" / f"{digest}.json"
+    try:
+        token = json.loads(cache.read_text()).get("accessToken")
+    except (OSError, ValueError):
+        return None
+    if not token:
+        return None
+    out, rc = aws(
+        [
+            "sso",
+            "list-account-roles",
+            "--account-id",
+            account_id,
+            "--access-token",
+            token,
+            "--region",
+            REGION_DEFAULT,
+            "--query",
+            "roleList[].roleName",
+            "--output",
+            "text",
+        ]
+    )
+    if rc != 0:
+        return None
+    return role in out.split()
 
 
 class Battery:
@@ -156,6 +224,19 @@ class Battery:
    Sign in as the infrastructure user and run the battery again:
        aws sso login --sso-session awsds
    Nothing was recorded for this phase - a dead session makes every probe read like a deny.""",
+                2,
+            )
+
+        # The wording below is the ceiling's, but it is also the wrong human's. Ask IdC
+        # which, and stop ONLY when IdC says the role was never this token's to vend -
+        # otherwise fall through and record the breach, including when it cannot answer.
+        if wrong_identity(out) and assignment_exists(profile) is False:
+            die(
+                f"""a valid SSO token is cached, but for a user who does not hold
+   {profile}'s role. Identity Center does not list that role for this token, so this is a
+   sign-in as the wrong identity - NOT a ceiling finding, and nothing was recorded.
+   Logging in again will not fix it: the browser re-approves the session it already has.
+       aws sso logout && aws sso login --sso-session awsds""",
                 2,
             )
 

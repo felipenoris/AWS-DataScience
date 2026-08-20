@@ -63,6 +63,19 @@ class Caller:
         return self.account is not None
 
 
+def wrong_identity(failure: str) -> bool:
+    """Does this failure say 'a token exists, but not for the human who holds these roles'?
+
+    ``GetRoleCredentials`` is the call the CLI makes *after* it already has a valid SSO
+    token, to exchange it for the profile's role. A ``ForbiddenException`` there means the
+    token authenticated somebody - just not somebody with an assignment to this account and
+    permission set. Measured 2026-08-20: the browser silently re-approved a live portal
+    session belonging to a different user, and every ``awsds-infra-*`` profile failed this
+    way while ``aws sso login`` reported success.
+    """
+    return "ForbiddenException" in failure and "GetRoleCredentials" in failure
+
+
 def preflight(
     profiles: list,
     errors: ErrorLog,
@@ -74,9 +87,15 @@ def preflight(
     Progress goes to stderr exactly as before (``  <profile>  OK`` / ``FAILED``). When no
     profile authenticates the script cannot measure anything: say how to log in and exit 1,
     leaving any previous report untouched.
+
+    "How to log in" is two different answers, and printing the wrong one costs a sitting.
+    The token cache is keyed by *sso-session name*, never by user, so a sign-in as the wrong
+    identity fills the right identity's slot - and re-running the login below finds a valid
+    token and does nothing. ``wrong_identity`` tells the two apart from the error text.
     """
     note(f"region: {region}")
     callers = []
+    failures = []
     for p in profiles:
         cli = AwsCli(profile=p, region=region, errors=errors, echo_profile=True)
         res = cli.call("sts", "get-caller-identity", "--query", "[Account,Arn]", "--output", "text")
@@ -87,11 +106,18 @@ def preflight(
         else:
             errors.add(("sts", "get-caller-identity"), res.merged, p)
             callers.append(Caller(p, None, None))
+            failures.append(res.merged)
             note(f"  {p}  FAILED")
     if not any(c.live for c in callers):
         note("")
-        note("no profile authenticated. log in first:")
-        note(f"  aws sso login --sso-session {context.SSO_SESSION}")
+        if failures and all(wrong_identity(f) for f in failures):
+            note("a valid SSO token is cached, but for a user who holds none of these roles.")
+            note("logging in again will NOT fix it: the browser re-approves the session it")
+            note("already has. sign the portal out first, then pick the other identity:")
+            note(f"  aws sso logout && aws sso login --sso-session {context.SSO_SESSION}")
+        else:
+            note("no profile authenticated. log in first:")
+            note(f"  aws sso login --sso-session {context.SSO_SESSION}")
         if out_label:
             note("")
             note(f"the previous {out_label}, if any, is left untouched.")

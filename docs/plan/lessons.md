@@ -281,6 +281,35 @@ lesson can be *recognised* without opening this file; the reasoning that makes e
    the general form outlives this project, and applies to any test rig that signs in through the system
    it is testing.
 
+   **AMENDED 2026-08-20 — the wording fork above is necessary and it is not sufficient, and the missing
+   half is where to look rather than how to read.** The fix this lesson produced classifies by error
+   text: expiry stops the run, anything else is recorded as a floor breach. Then a sitting arrived where
+   `aws sso login` reported success and every `awsds-*` profile failed with
+   `ForbiddenException … GetRoleCredentials … No access` — **the exact wording of 2026-08-14**, and this
+   time nothing was wrong with the organization: the browser had silently re-approved a live portal
+   session belonging to a *different* human, and the token cache is keyed by **sso-session name, never by
+   user**, so the wrong identity's token had come to occupy the right identity's slot. One wording, two
+   causes, and they demand opposite handling — record the most serious finding the harness can produce,
+   or stop and record nothing. **Adding a second text rule would have repeated this lesson in reverse**:
+   any pattern narrow enough to recognise the operator's mistake also matches the real breach, because
+   the two produce the same sentence *by construction* — the ceiling denies the sign-in flow, and a
+   sign-in flow with no assignment behind it is refused by the same call for the same reason shape.
+   **So the discriminator cannot be a better reading of the answer; it has to be a different question,
+   put to a system whose path does not traverse the mechanism under measurement.** Here that is Identity
+   Center's own listing of what the token is assigned (`sso:ListAccountRoles` against the cached token):
+   it never reaches STS, so no SCP and no RCP can shape it. Assigned but refused is the ceiling and the
+   finding stands; not assigned is an operator's click and nothing about the estate. **The third state
+   is the one that makes it safe to use** — "could not tell" must keep the finding, because a hidden
+   breach costs an incident and a spurious one costs an investigation. Note the continuity with the
+   parent lesson: its instruments were also chosen for being *outside* the path (Management, which RCPs
+   cannot reach; the role's trust policy, which is a read of configuration rather than an exercise of
+   it). The amendment only names the rule those choices were already following, and generalises it past
+   sign-in: **whenever a negative result has more than one origin, the separating evidence must come from
+   a channel the tested mechanism cannot influence.** A corollary worth carrying on its own: an
+   operator-side mistake can present as an estate-wide finding, so before a harness writes down a breach
+   in *every* account at once, it is worth asking what single local thing could produce that same
+   uniformity.
+
 25. **A borrowed session outlives the command that needed it, and every later error then describes the
    wrong account.** Stage 1d step 9 had to write past `CTS3PV8`, which exempts `AWSControlTowerExecution`
    alone, so the credentials were assumed from Management and exported into the shell. The write was not
