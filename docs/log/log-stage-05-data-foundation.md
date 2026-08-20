@@ -1675,6 +1675,242 @@ workgroup boundary, the drop-box asymmetry (`PutObject` yes, `GetObject` no) and
 through battery phase 4b) and pass 6 (Security Hub). What this sitting closed is the carve-out pair
 alone — the one 4d proof that needed no persona.
 
+## 2026-08-19 — Pass 4d, group A in Sandbox: five proofs land, and the drop-box write is broken by a deny nobody connected to the gateway endpoint
+
+*Provenance. **Every command and every output below is the user's**, run from the laptop with the
+tunnel up and pasted verbatim, with **one mechanical substitution, named here and made nowhere else:
+account ids → the account's name, and the persona's e-mail inside an ARN → that user's role**. Nothing
+else is touched — the `AWSReservedSSO_*` suffix, the query-execution ids, the shell prompt fragments
+and the error wording arrived as they read. **Claude wrote the analysis around them and nothing else**,
+and made no AWS call in this sitting. The two writes below are the user's hand: one Athena query and
+one attempted `PutObject`.*
+
+### A1-A3 — the identity, the column list, and the first persona query
+
+```
+aws sso login --sso-session awsds-scientist
+
+# checking profile
+
+AWS_PROFILE=awsds-scientist-sandbox aws sts get-caller-identity --query Arn --output text
+
+arn:aws:sts::<Sandbox Account 1>:assumed-role/AWSReservedSSO_DataScientistAccess_37932702010107f8/<data scientist user>
+
+AWS_PROFILE=awsds-scientist-sandbox aws glue get-tables --database-name curated --query 'TableList[].Name' --output text
+
+sample_trades
+
+AWS_PROFILE=awsds-scientist-sandbox aws glue get-table --database-name curated --name sample_trades --query 'Table.StorageDescriptor.Columns[].Name' --output text
+
+trade_id        trade_date      instrument      quantity        price
+
+AWS_PROFILE=awsds-scientist-sandbox aws athena start-query-execution --work-group awsds-sandbox-athena --query-string "SELECT * FROM curated.sample_trades LIMIT 10" --query QueryExecutionId --output text
+
+19893d80-17d4-45dd-b5b7-398e8de15032
+
+AWS_PROFILE=awsds-scientist-sandbox aws athena get-query-execution --query-execution-id 19893d80-17d4-45dd-b5b7-398e8de15032 --query 'QueryExecution.{State:Status.State,Reason:Status.StateChangeReason,Out:ResultConfiguration.OutputLocation,Scanned:Statistics.DataScannedInBytes}'
+
+{
+    "State": "SUCCEEDED",
+    "Reason": null,
+    "Out": "s3://awsds-sandbox-derived/results/19893d80-17d4-45dd-b5b7-398e8de15032.csv",
+    "Scanned": 0
+}
+
+AWS_PROFILE=awsds-scientist-sandbox aws athena get-query-results --query-execution-id 19893d80-17d4-45dd-b5b7-398e8de15032 --query 'ResultSet.ResultSetMetadata.ColumnInfo[].Name' --output text
+
+trade_id        trade_date      instrument      quantity        price
+```
+
+**Four readings, and each closes something different.** The identity is the control the rest depend
+on — `DataScientistAccess`, not an infrastructure role. `glue:GetTable` through the **resource link**
+returns **five** columns against the lake's six: **verification (x)'s persona half is answered**, and
+it agrees with the account-level reading taken as `InfrastructureAccess` on 2026-08-19 — the
+`classification` gate filters `counterparty` at the account boundary and the persona inherits that,
+rather than being filtered a second time.
+
+**The query is the entry that matters.** `SUCCEEDED`, `Reason: null`, `Scanned: 0` (the table is
+empty, as applied), and `ResultSetMetadata.ColumnInfo` carries the **same five names** — so the
+column filter holds at the **engine**, not only in the catalog, which the metadata read alone could
+not say. This is **verification (ii) closed in full**: version-4 cross-account credential vending
+through `sts:SetContext` works, and **INT-11's vending half — untested since the RCP was written —
+is exercised for the first time**. The output landed at
+`s3://awsds-sandbox-derived/results/<id>.csv`: D19 practice (i) holding, the result inside the zone
+that carries the account's CMK, the 30-day lifecycle and Stage 11's future Macie scope.
+
+**And the shape of it is the D13 argument made visible**: the persona read a governed table while
+holding no `s3:GetObject` anywhere on the lake — A5 below is the same session failing to reach the
+bytes.
+
+### A4 — the workgroup boundary, and the stage file predicted the wrong half
+
+```
+AWS_PROFILE=awsds-scientist-sandbox aws athena start-query-execution --work-group awsds-sandbox-athena --query-string "SELECT 1" --result-configuration OutputLocation=s3://awsds-sandbox-derived/scratch/hijack/ --query QueryExecutionId --output text
+
+021ea6de-160c-4bf8-b52a-1d43a98092a4
+
+AWS_PROFILE=awsds-scientist-sandbox aws athena get-query-execution --query-execution-id 021ea6de-160c-4bf8-b52a-1d43a98092a4 --query 'QueryExecution.ResultConfiguration.OutputLocation' --output text
+
+s3://awsds-sandbox-derived/results/021ea6de-160c-4bf8-b52a-1d43a98092a4.csv
+```
+
+**The client asked for `scratch/hijack/` and got `results/`.** `EnforceWorkGroupConfiguration`
+**overrides** the client's result location rather than refusing the query — so the deliverable's own
+wording, *"a query whose client asks for a result location outside the derived prefix **fails**"*, is
+**wrong about the mechanism and right about the control**, and is corrected in the stage file in this
+sitting. The discriminating reading is the `OutputLocation` of the resulting execution, never an error
+code (Lesson 13 again): the hijack target was chosen inside a prefix the persona **can** write, so a
+failure of enforcement would have shown up as a successful write in the wrong place rather than as a
+permission error that two causes could explain.
+
+**The second half — the unenforced `primary` workgroup, which the design leaves alone deliberately
+(`athena.tf`, Lesson 5) and denies from the identity plane instead:**
+
+```
+✗ AWS_PROFILE=awsds-scientist-sandbox aws athena start-query-execution --work-group primary --query-string "SELECT 1" --result-configuration OutputLocation=s3://awsds-sandbox-derived/scratch/
+
+aws: [ERROR]: An error occurred (AccessDeniedException) when calling the StartQueryExecution operation: You are not authorized to perform: athena:StartQueryExecution on the resource. After your AWS administrator or you have updated your permissions, please try again.
+```
+
+**Athena's own message names no policy and no mechanism** — *"You are not authorized to perform:
+athena:StartQueryExecution on the resource"* — so this reading proves the denial and **not** what
+produced it. What produces it is written in the policy rather than in the message: the run family is
+scoped to an enumeration of two workgroup ARNs, `primary` is absent from it, and the absence is the
+control (`athena.tf`'s own note). Recorded as a **weaker reading than the S3 ones below**, which do
+distinguish their mechanism, rather than written up as if the two were the same kind of evidence.
+
+### A5 — the D13 bypass is refused, but not by the deny the plan expected
+
+```
+✗ AWS_PROFILE=awsds-scientist-sandbox aws s3 ls s3://awsds-data-curated/
+
+aws: [ERROR]: An error occurred (AccessDenied) when calling the ListObjectsV2 operation: User: arn:aws:sts::<Sandbox Account 1>:assumed-role/AWSReservedSSO_DataScientistAccess_37932702010107f8/<data scientist user> is not authorized to perform: s3:ListBucket on resource: "arn:aws:s3:::awsds-data-curated" with an explicit deny in an identity-based policy
+
+✗ AWS_PROFILE=awsds-scientist-sandbox aws s3api get-object --bucket awsds-data-curated --key qualquer-coisa /dev/null
+
+aws: [ERROR]: An error occurred (AccessDenied) when calling the GetObject operation: User: arn:aws:sts::<Sandbox Account 1>:assumed-role/AWSReservedSSO_DataScientistAccess_37932702010107f8/<data scientist user> is not authorized to perform: s3:ListBucket on resource: "arn:aws:s3:::awsds-data-curated" with an explicit deny in an identity-based policy
+```
+
+**The bypass is closed — and the wording says it was closed by something nobody predicted.** The
+prediction, written into this sitting's plan, was the *implicit* deny of D13: the persona holds no
+`s3:GetObject` on the lake and never will, so *"no resource-based policy allows"* was the expected
+sentence. What came back is **`with an explicit deny in an identity-based policy`**, which means a
+`Deny` statement inside `DataScientistAccess` itself matched. The next block says which one, and why
+it matters far more than this proof does.
+
+### A6 — the drop-box write, which is supposed to work, does not
+
+```
+✗ AWS_PROFILE=awsds-scientist-sandbox aws s3api put-object --bucket awsds-data-dropbox --key incoming/2026/08/19/probe-sandbox.txt --body /tmp/dropbox-probe.txt
+
+aws: [ERROR]: An error occurred (AccessDenied) when calling the PutObject operation: User: arn:aws:sts::<Sandbox Account 1>:assumed-role/AWSReservedSSO_DataScientistAccess_37932702010107f8/<data scientist user> is not authorized to perform: s3:PutObject on resource: "arn:aws:s3:::awsds-data-dropbox/incoming/2026/08/19/probe-sandbox.txt" with an explicit deny in an identity-based policy
+
+✗ AWS_PROFILE=awsds-scientist-sandbox aws s3api get-object --bucket awsds-data-dropbox --key incoming/2026/08/19/probe-sandbox.txt /dev/null
+
+aws: [ERROR]: An error occurred (AccessDenied) when calling the GetObject operation: User: arn:aws:sts::<Sandbox Account 1>:assumed-role/AWSReservedSSO_DataScientistAccess_37932702010107f8/<data scientist user> is not authorized to perform: s3:ListBucket on resource: "arn:aws:s3:::awsds-data-dropbox" with an explicit deny in an identity-based policy
+
+➜  AWS-DataScience git:(main) ✗ AWS_PROFILE=awsds-scientist-sandbox aws s3api list-objects-v2 --bucket awsds-data-dropbox --prefix incoming/
+
+aws: [ERROR]: An error occurred (AccessDenied) when calling the ListObjectsV2 operation: User: arn:aws:sts::<Sandbox Account 1>:assumed-role/AWSReservedSSO_DataScientistAccess_37932702010107f8/<data scientist user> is not authorized to perform: s3:ListBucket on resource: "arn:aws:s3:::awsds-data-dropbox" with an explicit deny in an identity-based policy
+```
+
+**`PutObject` was DENIED, and it is the one call in this sitting that was supposed to succeed.** The
+drop-box write is pass 4c's own deliverable — the identity half whose absence 6.2's correction
+explains, applied on 2026-08-19 as `WriteIngestionDropBox`. It is present, it is correct, and it is
+**overridden by an explicit `Deny` in the same document**, because an explicit deny beats every allow.
+The read-back and the list are denied too, which is the designed asymmetry — but the asymmetry is not
+what this measured, since all three verbs failed for the same reason.
+
+### The diagnosis: `DenyControlPlaneOffVpn` fires on S3 *because* the tunnel works as designed
+
+`DataScientistAccess` composes exactly five `Deny` statements, and four of them cannot match these
+calls: `DenyIamPrincipalMutation` (iam only), `DenyMakingStorageOrImagesPublic` (no `PutObject`, no
+`ListBucket`), `DenyInternetFacingCompute` (ec2 only), and `DenyTerraformStateAccess`, whose ARNs are
+`awsds-*-tfstate` and `awsds-*-tfstate/*` — a pattern neither `awsds-data-curated` nor
+`awsds-data-dropbox` matches, since the wildcard still requires the name to *end* in `-tfstate`. **The
+fifth is `DenyControlPlaneOffVpn`: `Action *` on `Resource *`, denying whenever
+`NotIpAddress aws:SourceIp` ∉ the VPN Elastic IPs AND `aws:ViaAWSService` is false.**
+
+**The condition is met by S3 and not by Glue or Athena, and the reason is the split this project
+already measured and wrote down one entry ago.** The public subnet's route table carries the two `[P]`
+gateway endpoints, so tunnel traffic **splits by destination**: an S3 call leaves through the gateway
+endpoint, every other API through the internet gateway wearing the Elastic IP. A request arriving at
+S3 through a VPC endpoint does not present the Elastic IP in `aws:SourceIp` — the key is either absent
+or carries a private address, and **either way a negated operator makes the deny fire**. Glue and
+Athena, on the same session and in the same minutes, arrive as `aws:SourceIp` = the Elastic IP and the
+deny stays quiet. A2, A3 and A7 are therefore not just other proofs: **they are the control that
+isolates this one to the S3 path** rather than to a broken session, an expired token or a lost tunnel.
+
+**Why A3 wrote to `results/` anyway**, and it is the second half of the same mechanism: Athena stages
+the result with the caller's credentials through a **forward access session**, where
+`aws:ViaAWSService` is `true` — so the statement's own carve-out excludes it. Service-mediated S3
+works; the persona's *own* S3 call does not.
+
+**This is the two halves of the design disagreeing about a split only one of them knows about.** The
+bucket policy's `DenyOutsideTrustedNetworks` carries **three** branches — `aws:SourceVpce`,
+`aws:SourceIp`, `aws:PrincipalAccount` — precisely because traffic can arrive either way. The identity
+policy's twin carries **one**, `aws:SourceIp`, and the comment above it argues the split-tunnel case
+(step 5's `0.0.0.0/0` route) without ever reaching the gateway-endpoint case. The resource half was
+written against the measured topology; the identity half was written against the intended one.
+
+**What it costs, stated at its real width rather than at the width of the failing command.** Every
+direct S3 call a persona makes from the tunnel is explicitly denied, which reaches past the drop-box:
+the derived zone's own three prefix families — `results/`, `derived/$${aws:userid}/`, `scratch/` — are
+granted by four statements of `DataScientistAccess` applied at 4c, and **a person cannot download
+their own query result with `aws s3 cp`** under the same mechanism. That prediction is untested and is
+the first thing group B should measure, because it separates "the deny is about the lake" from "the
+deny is about S3".
+
+**It is a real defect and it is not a hole in the perimeter** — the failure is closed, not open, and
+nothing reached data it should not. What it breaks is a designed path (D18/D25's ingestion) and,
+probably, the usability of the derived zone. **The fix is not this sitting's**: the shape is a third
+condition on `DenyControlPlaneOffVpn` mirroring the bucket policy's `aws:SourceVpce` branch, and
+`identity/sso/` already reads the consumer states that hold those endpoint ids — but amending a
+statement that binds **six** permission sets in every governed account is a deliberate change with its
+own review, and Stage 4's own warning about it (getting this wrong on a persona costs a session) is
+the reason it is written down here rather than applied.
+
+### A7 — the crawler's negative half, and the second thing the plan predicted wrongly
+
+```
+✗ AWS_PROFILE=awsds-scientist-sandbox aws glue start-crawler --name awsds-data-raw
+
+aws: [ERROR]: An error occurred (AccessDeniedException) when calling the StartCrawler operation: User: arn:aws:sts::<Sandbox Account 1>:assumed-role/AWSReservedSSO_DataScientistAccess_37932702010107f8/<data scientist user> is not authorized to perform: glue:StartCrawler on resource: arn:aws:glue:us-west-2:<Sandbox Account 1>:crawler/awsds-data-raw because no identity-based policy allows the glue:StartCrawler action
+```
+
+**The deliverable says this call is "denied naming the OU policy". It is not, and could not be.** The
+`glue:StartCrawler` deny is `DenyCatalogMaintenanceRunsExceptMaintenanceRole` in
+`awsds-org-scp-ou-data`, attached to the **Data** OU; Sandbox and Development sit under
+**`Interactive`**, whose only statement is `DenyClassicNotebookInstances`. So no SCP is in the path at
+all, and what refuses the call is the **absence of any `glue:Start*` allow** in the persona's own
+document — *"because no identity-based policy allows"*, the implicit form. Corrected in the stage file
+in this sitting. The D27 carve-out remains **unexercised in both directions** by this reading: it was
+never the mechanism here.
+
+**Two things fall out of it that are worth more than the proof itself.** The resource ARN in the
+message is `arn:aws:glue:us-west-2:<Sandbox Account 1>:crawler/awsds-data-raw` — a crawler that does
+**not exist**, since both crawlers live in Data Governance — and IAM still answered with an
+authorization decision rather than `EntityNotFoundException`. That is **Lesson 21's fork resolved in
+the good direction for this action**: `glue:StartCrawler` authorizes before it validates, so the
+reading is real and not an artefact. And the *wording* is the control for the diagnosis above: the
+same session, the same minute, produces an **implicit** deny from Glue and an **explicit identity**
+deny from S3. Only the network path differs.
+
+### Not done, and owed by name
+
+**Group B — every proof above repeated in Development** — is untouched, and Lesson 31 is exactly why
+it is not optional: the two consumers have their own `DataLakeSettings`, their own CMK, their own
+derived bucket and their own re-grants, and a check written in one account keeps reporting `pass`
+about that one. It gains one probe this sitting did not have: **the persona reading its own derived
+bucket**, which decides how wide the `DenyControlPlaneOffVpn` finding is.
+
+Then the three acts that need authorization and were deliberately not run: the maintenance pair's
+**positive** half (`StartCrawler` as `awsds-data-catalog-maintenance`, still never run since pass 1),
+the **explicit `restricted` grant and its revert** (four writes across two accounts), and **4e** — the
+`athena:StartQueryExecution` amendment, last, through battery phase 4b. One decision is now sequenced
+rather than open: **whether `sample_trades` ever gets rows**, since after 4e nothing in Data Governance
+can run a query, and every verification of this stage reads column lists rather than rows.
+
 ---
 
 *Log index: [docs/log/INDEX.md](INDEX.md) · Stage index: [docs/plan/stages/INDEX.md](../plan/stages/INDEX.md)*
