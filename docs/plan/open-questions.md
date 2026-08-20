@@ -356,6 +356,39 @@ length, under item numbers 10-12 that collided with the live items above; the du
     `DenyControlPlaneOffVpn` is amended**. The write and the catalogue are independent failures, and
     fixing the first alone produces a bucket that accepts files nothing ever reads.
 
+### Raised while reading the persona sets, 2026-08-19
+
+20. **Does `datazone:Get*` in the governance manager's set reach `GetEnvironmentCredentials` — and does
+    credential vending carry the set past its own `DenyReadingTheRows`?** `OwnTheDataZoneDomain`, in
+    `terraform-live/identity/sso/policies-approvers.tf`, states its intent in the comment above it —
+    *"read as the approval verbs rather than as `datazone:*`"* — and then admits `datazone:Get*`, which
+    matches `GetEnvironmentCredentials` lexically. **The statement below it denies the sibling API by
+    name**: `DenyReadingTheRows` closes `lakeformation:GetDataAccess` with an argument that applies here
+    verbatim — it *"vends temporary credentials for the underlying S3 objects"*, and *"the set
+    ADMINISTERS this mechanism; using it is the thing it must not do."* Two credential-vending APIs on
+    one axis; one denied by name, the other admitted by a wildcard.
+    **What makes it a path rather than an ugly wildcard** is its neighbour in the same statement,
+    `datazone:CreateProjectMembership`. Self-add to a project, then ask that project's environment for
+    credentials, and the resulting session is a **different principal** — one the permission set's own
+    `Deny` does not follow into. Lesson 28 read backwards: a deny attached to an identity says nothing
+    about an identity that identity can obtain.
+    **Why this is a question and not a finding.** Nothing has been attempted — the domain does not exist,
+    Stage 6 is not open — and no page consulted says what `GetEnvironmentCredentials` requires of its
+    caller or *which* role it hands back; the environment user role and the project role may not be the
+    same object. The D13 boundary (`awsds-<env>-project-boundary`, step 2.1) may already cap whatever is
+    vended, and the OU SCPs reach it regardless. **Lesson 30 is the reason for the restraint**: a page
+    that was not found is not a property of the world.
+    **Settled by attempting it, in the session (xii) and (xiii) already require** — a governance-manager
+    sign-in with the tunnel up, against Stage 6 step 2.4's throwaway project. Three outcomes, costing
+    different things: **(a) denied** — record it and close; **(b) it vends, and the boundary caps what the
+    vended role reads** — the wildcard is still worth narrowing, because the intent in the comment and the
+    reach of the document have drifted, which is the failure the comment was written to prevent;
+    **(c) it vends a principal that reads rows** — `Get*` becomes an enumeration in that statement, and
+    the same audit is owed to every other wildcard in the approver sets.
+    **Where it sits in the map**: the same axis as INT-11's credential-vending half — what a *service* can
+    hand a principal that the principal could not ask for directly. Two surfaces now, which is the
+    argument for carrying it as an axis rather than as two incidents.
+
 ---
 
 *Plan core: [GENERAL_PLAN.md](../GENERAL_PLAN.md) · Decisions: [docs/plan/decisions/INDEX.md](decisions/INDEX.md) · Stages: [docs/plan/stages/INDEX.md](stages/INDEX.md)*

@@ -336,6 +336,15 @@ roles arrive **without** the boundary, attach it through the slice (or IAM) and 
 the next blueprint reconciliation — the diff is INT-15's survival half.** If nothing holds, follow INT-15's
 fallback chain in order, and record the outcome as an incomplete control rather than widening D13.
 
+**Also settled here — open question 20:** whether `datazone:Get*` in `GovernanceManagerAccess` reaches
+`GetEnvironmentCredentials`, and whether vending hands back a principal `DenyReadingTheRows` never touches.
+`./aws/studio.py` cannot answer it — the read-back sees roles and boundaries, not what a session can
+*obtain*. The attempt is the **user's**, in the governance-manager sign-in verifications (xii) and (xiii)
+already need, against 2.4's throwaway project; it lands in this step because 2.4's project is the instrument
+and 2.5 is where its readings are recorded. **If the call is denied, that is the answer.** If it vends, the
+next reading is what the vended principal reads *with* the D13 boundary in place — the same diff this step
+already runs, pointed at a different role.
+
 **2.6 — Extend Stage 5's extension point to the real role names** — Claude writes, **user** applies: the
 consumer data-key policy `Decrypt` — a second element in `AllowDataScientistUseViaS3`'s `Principal`, which
 means widening `consumer-data`'s `data_scientist_role_arn` to a list, cutting a module tag (Recipe B) and
@@ -696,6 +705,7 @@ Record every answer, including the ones that come out fine.
 | xiv | **Does the blueprint's manage-access role have to be a Lake Formation data lake administrator in each member account** — and if it does, is it added to the **one** settings resource those slices already have — which since pass 4a lives in `terraform-modules/consumer-data/` (`admins = [var.data_lake_admin_role_arn]`), so the change is a module edit widening that input to a list, a new module tag (Recipe B) and a re-apply of every consumer slice, never a second `aws_lakeformation_data_lake_settings` and never by hand? That resource replaces `admins`, `parameters` and both default blocks wholesale (INT-11), so two writers of it in one account is a principal that disappears on the next apply of the other | 1.4 |
 | xv | **Does a database or table the blueprint creates in a member account come out with no `IAMAllowedPrincipals` grant** — i.e. did Stage 5 pass 4's default-clearing land *before* this stage created anything? The reading is per catalog object, at creation, and there is no second chance: the defaults act at creation time and clearing them later does not reach what already exists (Lesson 27). **The precondition is measured, not assumed, since 2026-08-19**: `DL-6` reads clear in both member accounts and the check now reports per account, so a regression here is the blueprint's doing rather than an open question about the settings | 1.4, 3 |
 | xvi | **When the portal fulfils an approved subscription, what shape is the Lake Formation grant it writes** — named-resource or an LF-Tag expression? If DataZone ever writes expressions, Lesson 29 applies to a grantor this repository does not author: an expression on `classification` alone reaches `layer=dropbox`, and the near-miss Stage 5 caught by reading its own plan would arrive from a service instead | 1, 7.4 (Stage 5) |
+| xvii | **Does `datazone:Get*` in `GovernanceManagerAccess` reach `GetEnvironmentCredentials`** — and does vending hand back a principal `DenyReadingTheRows` never touches? **Open question 20.** The statement below it denies the sibling vending API, `lakeformation:GetDataAccess`, **by name**, on the argument that the set administers the mechanism and must not use it; `Get*` admits the other one by wildcard, beside `datazone:CreateProjectMembership` in the same statement. `./aws/studio.py` cannot answer it — the read-back sees roles and boundaries, not what a session can **obtain**. **Attempted in the governance-manager session (xii) and (xiii) already need**, tunnel up, against 2.4's throwaway project. If it vends, the second reading is what the vended principal reads *with* the D13 boundary in place | 2.4, 2.5 |
 
 ## Risks
 
