@@ -310,6 +310,27 @@ lesson can be *recognised* without opening this file; the reasoning that makes e
    in *every* account at once, it is worth asking what single local thing could produce that same
    uniformity.
 
+   **WIDENED THE SAME DAY, by a second instance that arrived within the hour and did not fit the sentence
+   above.** Pass 4e denied `athena:StartQueryExecution` and probed it. The refusal has exactly **one**
+   origin — the SCP — so "more than one origin" does not describe it; what it has is **no attribution in
+   its own text**: Athena answers with a bare *"You are not authorized to perform: … on the resource"*,
+   naming no policy and no id. The battery's `classify()` has read wording since Stage 1c and files a
+   policy-less `AccessDenied` as `DENY-NOT-SCP`, *"an IAM/permission-set deny, not the ceiling"* — sound
+   reasoning, wrong here, and **unfixable by any pattern, because the service never emits the string the
+   pattern would need.** Every probe written before this one happened to hit a service that names the
+   document, so the assumption was invisible for eleven weeks. The remedy was the same one and it was
+   reached faster for having been written down: attribution by a **contrast probe** — the same call, same
+   principal type, same region, one session, from an account in an OU the amendment does not reach; it
+   passed authorization, so the two refusals can only be the ceiling. **So the rule is not about
+   ambiguity, it is about locus**: *when a result cannot be attributed from its own text — because the
+   text is ambiguous OR because it is silent — the attribution must come from a channel the tested
+   mechanism cannot influence.* Two consequences worth acting on. **A probe's expected wording is an
+   assumption about the SERVICE, not about the control**, and it is worth stating when writing the probe,
+   because it is the kind that holds for years and then does not. And **do not fix this by loosening the
+   classifier**: teaching it to read a policy-less deny as the ceiling would misread every genuine IAM
+   deny in the battery, so those two rows are left reporting `note` rather than `ok`, permanently and on
+   purpose, with the contrast probe beside them carrying the meaning.
+
 25. **A borrowed session outlives the command that needed it, and every later error then describes the
    wrong account.** Stage 1d step 9 had to write past `CTS3PV8`, which exempts `AWSControlTowerExecution`
    alone, so the credentials were assumed from Management and exported into the shell. The write was not
@@ -627,6 +648,36 @@ lesson can be *recognised* without opening this file; the reasoning that makes e
    closes", **try the door**: as posed, both options of the sample-row decision described a door that
    was not there, so whichever the user picked, the decision was argued from a premise the first
    attempt destroyed.
+
+35. **Adopting an object into infrastructure-as-code silently invalidates every *procedure* written about
+   it — and the adoption touches none of the files that carry those procedures.** Stage 2 step 5.5
+   imported the ten Organizations policy documents into Terraform. Nothing about that commit reached
+   `POLICIES.md` or the battery runbook, because adoption changes code and state, not prose *about* the
+   object — so both files went on saying, correctly for the world they were written in, that an amendment
+   is `update-policy` in place. Four days before pass 4e, that instruction was copied out of them into a
+   stage file as the plan for the next act, and it was wrong by a whole stage. **Against Lesson 11, which
+   is the neighbour**: there a change of authorship invalidates *claims* — sentences that were true
+   because we wrote the thing — and the remedy is to re-read the decisions whose enforcement depends on
+   it. Here it invalidates *instructions*, and the remedy is different in kind: **on any adoption into
+   IaC, grep every prose file for a mutating command naming that object, and correct it in the adoption's
+   own sitting.** A procedure has no revision trigger and no gate; `check-index.py` reads the documents'
+   `Sid`s and would not have noticed, and neither would a plan.
+
+   **What makes this one worth its own number rather than a line under 11 is the failure shape, not the
+   subject.** A stale procedure that *errors* is self-correcting — you find out immediately and go read.
+   This one **succeeds**: `update-policy` would have returned cleanly, the document would have attached,
+   every gate in the repository would have stayed green. The damage was one layer down and silent — the
+   tracked JSONs carry `<PLACEHOLDER>` tokens substituted at render time, and `awsds-org-scp-ou-data.json`
+   carries `<ACCOUNT_ID_DATA>` *inside the D27 crawler carve-out*, so the hand-uploaded document would
+   have held an `ArnNotEquals` comparing against the literal string `<ACCOUNT_ID_DATA>`: a carve-out
+   matching no principal, no error at upload, none at evaluation, and a control that has quietly become
+   decoration (Lesson 5, arrived at by accident instead of by argument). Two guards exist against exactly
+   that — `render.py`'s survivor check and `policies.tf`'s precondition — and **the abandoned path is
+   precisely the one that uses neither**, which is the general danger: the guards were built into the
+   sanctioned route, so leaving the route leaves the guards, and nothing announces that you have. **The
+   discriminator to apply while reading any procedure: does it name a command that mutates a real object,
+   and is that object still changed the way this text says?** If the text predates the tree that now owns
+   the object, assume it is stale until checked.
 
 ---
 

@@ -2989,4 +2989,183 @@ sitting; six files stand modified.
 
 ---
 
+## 2026-08-20 — 4e applied, and two assumptions it broke on the way: the procedure the item carried was stale by a stage, and Athena's refusal names no policy
+
+*Provenance. **This entry is Claude's, at the user's request.** The user authorized the apply explicitly
+after reading the plan ("pode aplicar"). **Writes performed: one `terraform apply` changing three
+Organizations policies, and three `athena:StartQueryExecution` calls that created nothing** — each aimed
+at a workgroup that does not exist, which is the probe design. Everything else is reads and authoring.
+Account ids are redacted as `<acct>`; the two policy ids are stable public identifiers and are written
+as they are, per this log's convention.*
+
+### The procedure in the item was wrong, and it was wrong in a way that would not have announced itself
+
+Debt item 4 step 3 said *"amend both JSONs, then `update-policy` in place"*. That instruction came from
+`POLICIES.md` and the battery runbook, and both describe the **Stage 1c** world, where these documents
+were pasted into the console by hand. **Stage 2 step 5.5 adopted all ten into Terraform** —
+`aws_organizations_policy.this`, imported, `prevent_destroy` — so the hand upload is drift the next apply
+reverts, and it bypasses the four `precondition` blocks written to catch a bad amendment.
+
+**It would have broken something concrete, silently.** `awsds-org-scp-ou-data.json` carries
+`<ACCOUNT_ID_DATA>` inside the D27 crawler carve-out; the real id is substituted at render time and never
+enters a tracked file. Uploading the tracked file raw leaves an `ArnNotEquals` comparing against the
+literal string `<ACCOUNT_ID_DATA>` — a carve-out that matches nothing, with no error at upload, no error
+at evaluation, and a `DenyCatalogMaintenanceRunsExceptMaintenanceRole` that has quietly become
+decoration. Two independent guards exist against exactly this (`render.py`'s `SURVIVOR_RE`, `policies.tf`'s
+precondition), and the hand path uses neither.
+
+**Lesson 11's shape**: Stage 2 changed *who authors* these documents, and that invalidated every
+procedure written about them — including one written four days ago, by reading the two files that had not
+been updated either. The correction is in the item, at the step that carried the error.
+
+### The apply
+
+**Recipe A**, from `awsds-infra-identity` (the infrastructure user, `Identity` account,
+`InfrastructureAccess`). Plan read before applying:
+
+```
+Plan: 0 to add, 3 to change, 0 to destroy.
+```
+
+**Three, where the amendment is two** — and the third was **declared in advance rather than discovered**:
+commit `6a5bf33`'s message ends *"One change reaches AWS on the next apply: locals.tf's RCP description
+(1 to change, description only) - not applied."* Verified in the plan: `awsds-org-rcp-perimeter` changes
+`description` and nothing else — zero occurrences of `content` or `Statement` in its diff. **It could not
+be left out without `-target`**, which the runbook's §8 permits only in Recipe D, so it was carried on
+purpose and named out loud. The alternative — a sanctioned exception to avoid a description edit — would
+have been the more expensive choice.
+
+| Document | Id | Change | Bytes |
+|---|---|---|---|
+| `awsds-org-scp-ou-data` | `p-gl01bcdm` | `+ athena:StartQueryExecution` | 1028 → 1057 |
+| `awsds-org-scp-ou-identity` | `p-mmfc17ac` | `+ athena:StartQueryExecution` | 494 → 523 |
+| `awsds-org-rcp-perimeter` | — | `description` only, the declared rider | — |
+
+Re-plan: **`No differences`**. Both documents read back from Organizations carrying the action.
+`./aws/org-policies.py` re-run — all checks passed, both attached, and **`CHK-3` still passes**, which is
+the placeholder substitution proving itself on the very statement the hand path would have wrecked.
+
+### The probe, and the third outcome
+
+The item's fork had two branches: `AccessDenied` naming the policy = landed; workgroup-not-found =
+**untested**, because Athena would have validated before authorizing. **Neither happened.**
+
+| From | OU | Answer |
+|---|---|---|
+| `awsds-infra-data` | `Data` | `AccessDeniedException` — *"You are not authorized to perform: athena:StartQueryExecution on the resource"* |
+| `awsds-infra-identity` | `Identity` | the same, verbatim |
+| `awsds-infra-sandbox-1` | `Interactive` | `InvalidRequestException: WorkGroup is not found` |
+
+So Lesson 21's fork resolved the useful way — **Athena authorizes before it validates for this action**,
+proven by the third row reaching validation. But the denial **names no policy**: no *"explicit deny in a
+service control policy"*, no policy id.
+
+**That breaks an assumption the battery has held since Stage 1c.** `classify()` reads wording, in a
+deliberate order, and its last rule before `UNTESTED` says *"an AccessDenied that names no policy is an
+IAM/permission-set deny, not the ceiling — worth separating, because it answers a different question"*.
+That reasoning is right in general and **wrong here**, and no phrasing would fix it, because the service
+never emits one. Every probe written before this one happened to hit a service that names the document;
+the assumption was invisible until a service that does not came along.
+
+**So the attribution was moved out of the string and into a contrast probe.** Same action, same principal
+type, same region, one session — the only difference is which OU the account sits in. Sandbox 1 is in
+`Interactive`, which this amendment does not reach, and it got past authorization. Given that, the two
+denials can only be the per-OU documents.
+
+`probes.py` therefore gained **three** entries rather than two, the third an `allow`, with a comment
+saying the three are one measurement and naming the row to look at first if the pair ever stops
+attributing. **The two denies will report `note`, never `ok`** — that is the honest reading, and pretending
+otherwise would mean teaching the classifier to call a policy-less deny an SCP, which would misread every
+genuine IAM deny in the battery. 93 probes → **96**.
+
+*Must still succeed* trio in both amended accounts — `sts:GetCallerIdentity`, `s3 ls`,
+`ec2:DescribeVpcs` — all six calls OK.
+
+### The cost, paid as predicted
+
+Nothing in Data Governance can run an Athena query now, `InfrastructureAccess` included. The
+`count(*) = 12` that proved the sample rows exist is no longer reproducible from that account; the
+equivalent runs from a consumer over the share. That is D13 working, and it was argued before the change
+rather than discovered after — which is the only reason it reads as a design and not as a regression.
+
+### Paperwork, same sitting
+
+`POLICIES.md`: both `DenyUserCompute` rows carry the action and the names-no-policy caveat; the Athena
+non-coverage bullet, which had asked in its own words to be rewritten when this landed, became a
+blockquote **kept rather than deleted** — an allow whose justification had been withdrawn for two days is
+precisely the state that list exists to make visible, and deleting the entry would delete the evidence
+that the list works. The `Identity` row records that what closed there was a **shape without content**.
+`check-index.py` clean over all ten documents.
+
+**Stage 6 inherits two of today's measurements**, written into its 1.6 because the cheapest place to learn
+them is not the sitting that needs them: Athena names no policy, so `DenyAthenaSparkStartSession` must be
+probed as a contrast pair; and authorize-before-validate is **per-action**, so it must be re-measured for
+`StartSession` rather than assumed. Plus one thing to check rather than a correction: the installed CLI's
+Athena operation list has no `update-session`, while 1.6's action pair names `athena:UpdateSession` — it
+came from AWS's own sample statement, which is the better authority for a policy, so the note asks for
+the machine-readable action list to be consulted before shipping it, as 7.6a did for the EC2 siblings.
+
+### Gates
+
+`make check: **OK**` · `check-index.py` clean · `terraform fmt -check -recursive` clean on both trees ·
+`ruff check` clean over `aws/` and `scripts/`. **Pass 4 is closed. What remains of Stage 5 is pass 6**
+(Security Hub) and one input owed to the user (open question 19, the crawler demander).
+
+### The review that followed, in the same sitting
+
+Pass 4 closing is the trigger to re-trim `CLAUDE.md`'s current position, and it was **over budget**:
+10859 bytes against ~8 KB. The four sub-passes collapsed into one state bullet plus **three things Stage 5
+leaves standing** — crawlers with no demander, `EXC-02`, and now no Athena in Data Governance — and the
+`security-zone` bullet folded into the same line, since `GOVERNANCE.md` §Encryption is its one copy.
+**8080 bytes.** What was dropped was apply counts and commit shapes, which the stage file and this log
+already hold; what was kept is what a cold session would otherwise get wrong.
+
+Then the two findings were followed to the files that could repeat them.
+
+**`scp-battery.md` was one of the two sources of the stale instruction, and still said it.** Phase 4b's
+opening sentence read *"`update-policy` replaces its content in place"* — true when written, false since
+Stage 2. Corrected with the reasoning rather than the command alone, because the danger is not the verb:
+it is that the hand path **succeeds** and only the placeholder substitution degrades. `terraform-changes.md`
+§8 gained the paired rule, on both sides — never change a Terraform-owned object by hand because a
+document told you to, and **when you import something, grep the prose for a mutating command naming it and
+fix those files in the same sitting.** An adoption is not finished when the plan is clean.
+
+**`terraform-live/identity/org-policies/README.md` had the near-miss written into it as a defect already.**
+Its placeholder sentence enumerated four tokens and omitted the fifth — `<ACCOUNT_ID_DATA>`, the one inside
+the D27 carve-out, the one that would have caused the damage. Fixed, and the sentence now says why that
+particular omission is the expensive one. **Nobody found this by running anything**; it surfaced because
+the near-miss sent a reader to the file.
+
+**`stage-01c`'s copy was deliberately left alone.** Its sentence is dated 2026-08-13 and describes what
+closed that sitting, accurately, under the mechanism of the time. History records what happened; runbooks
+say what to do. Only the second kind was corrected.
+
+**`AWS_STATE.md` gained `EXC-03`**, because the battery will now print two `note` rows forever and the next
+reader will investigate them. The row says they are expected, says the attribution lives in the third
+probe, and says explicitly **not** to fix them by loosening the classifier — which would misread every
+genuine IAM deny in the battery.
+
+**Lessons.** A new **35** — *adopting an object into IaC invalidates every procedure written about it, and
+touches none of the files carrying them; the stale path is the one that still succeeds.* It sits beside
+Lesson 11 rather than inside it: 11 is about **claims** going false when authorship changes and is repaired
+by re-reading decisions; this is about **instructions**, repaired by grepping prose, and its failure shape
+is the opposite — a stale procedure that errors is self-correcting, this one returns cleanly and leaves a
+carve-out matching nothing.
+
+And **Lesson 24 was widened, hours after being amended**, by a second instance that did not fit the
+sentence just written. The morning's case was one wording with **two causes**; the afternoon's has one
+cause and **no attribution at all**. Same remedy, so the rule was restated on the property both share:
+*when a result cannot be attributed from its own text — ambiguous **or** silent — the attribution must come
+from a channel the tested mechanism cannot influence.* Recorded with its consequence: **a probe's expected
+wording is an assumption about the service, not about the control**, and worth stating when the probe is
+written, because it is the kind that holds for years and then does not.
+
+**Decisions: none needed changing, and that was checked rather than assumed.** D13 is enforced on the
+identity side and 4e is an SCP in a different account — its pass-4d proof stands untouched. No decision
+file references the battery procedure or `update-policy`. **Open question 14 gained a pointer, not a
+copy**: 1.6's two inherited readings, plus the fact that 4e binds `Data` and `Identity` while that item's
+D13 query path runs under `Interactive` — so nothing there is narrowed by today.
+
+---
+
 *Log index: [docs/log/INDEX.md](INDEX.md) · Stage index: [docs/plan/stages/INDEX.md](../plan/stages/INDEX.md)*

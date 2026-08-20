@@ -174,7 +174,13 @@ started. **The first one is load-bearing against principle 4.**
     2026-08-16). **Sharpened by the 2026-08-16 documentation pass:** the documented "disable" is three
     controls, and only the SCP on `athena:StartSession`/`UpdateSession` removes Spark *without* removing
     Athena SQL — the Tooling blueprint's Athena flag removes both, and SQL is the D13 path (Stage 6
-    step 1.6 owns the choice).
+    step 1.6 owns the choice). **Two riders added 2026-08-20 from pass 4e, which denied
+    `athena:StartQueryExecution` elsewhere and probed it — 1.6 carries them in full, this is the pointer.**
+    The action *pair* above wants confirming against the machine-readable action list before it ships (the
+    installed CLI has no `update-session`), and **Athena's refusal names no policy**, so the probe for
+    whatever statement lands here has to be a contrast pair rather than a wording match. Note also that 4e
+    does **not** touch this item's surface: it binds `Data` and `Identity`, while the D13 query path runs
+    in the consumer accounts, under `Interactive`.
     **Re-examined 2026-08-19 against [Athena Spark's PrivateLink release](../REFERENCES.md) (2026-04-21),
     which looks like it retires this item and does not.** PrivateLink moved the **client → session** path —
     Spark Connect, the Live UI, the History Server, three new interface endpoints — and **not where the

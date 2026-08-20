@@ -38,7 +38,12 @@ AWS session, no side effects, exits non-zero when it drifts. `render.py` stayed:
 ./terraform-live/identity/org-policies/render.py
 ```
 
-`<ORG_ID>`, `<ROOT_ID>`, `<OU_ID_DATA>` and `<ORG_PATH_DATA>` are filled from the Organizations API, and
+`<ORG_ID>`, `<ROOT_ID>`, `<OU_ID_DATA>`, `<ORG_PATH_DATA>` and **`<ACCOUNT_ID_DATA>`** are filled from the
+Organizations API — that fifth one **was missing from this sentence until 2026-08-20**, and it is the one
+whose omission bites hardest: it sits inside the D27 crawler carve-out in `awsds-org-scp-ou-data.json`, so
+a document shipped with it unsubstituted has an `ArnNotEquals` comparing against a literal string and a
+carve-out that matches nothing, silently. It is derived **from the OU, never from an account name** (the
+rule `aws/import-ids.py` states in capitals), and
 the result lands in `aws/output/rendered-policies/` — which is untracked, so **no identifier enters a
 tracked file** (`aws/INDEX.md` rule 1). `render.py` also refuses to leave a placeholder unsubstituted,
 checks that the JSON parses, and prints each document's size against **5 120 characters** — the RCP limit,

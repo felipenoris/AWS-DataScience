@@ -202,55 +202,38 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   carries the whole GuardDuty scope, prepared; principle 9 is overruled there once, argued in the
   institutional-delta row. `aws/guardduty.py` (`GD-1`–`GD-3`); `VP-8` retired; `vpn.py` default narrowed
   to two profiles.
-- **Stage 5 passes 0-3 DONE (2026-08-18/19) — the governed lake exists, granted and shared.** Six
-  decisions taken (`docs/GOVERNANCE.md` is the one copy of the ontology + grant rules). Applied: five
-  `awsds-data-*` buckets under one CMK, `raw`+`curated` registered, 2 LF-Tag keys (3 until the
-  2026-08-19 revision), 3 databases,
-  `curated.sample_trades` (Iceberg, `restricted` column; **12 synthetic rows since 2026-08-20**) + optimizer, the maintenance role + 2
-  never-run crawlers + a Glue security configuration; the GM's own grants; the 2 TBAC shares (4 RAM
-  shares `ACTIVE`, 0 invitations → **INT-11 closed**). The findings that outlived the passes are
-  Lessons 27-30 below and the grant rules in `docs/GOVERNANCE.md`.
-- **Stage 5 pass 4a/4b/4c APPLIED 2026-08-19 — the consumer side exists and the persona can query.**
-  `consumer-data` v0.1.0 (the tree's first *nested* module-by-tag) + `s3-bucket` v0.3.0, Recipe B as a
-  3-commit chain, Recipe D per account. Per consumer: `alias/awsds-<env>-data` CMK, `awsds-<env>-derived`
-  (30-day expiry), enforced `awsds-<env>-athena` (10 GiB → `results/`), own `DataLakeSettings`, 2 links,
-  4 re-grants. Then **4c**: 7 statements in `DataScientistAccess` (`1 changed`, re-plan `No changes`, both
-  provisioned roles read back with `${aws:userid}` intact) — Athena run family on the 2 workgroup ARNs,
-  derived-zone scoping (write per-user, read persona-grain, delete `scratch/` only), **and the drop-box
-  identity half**; `identity/sso/` now reads 3 `data` states (`backend.py` emits `data_consumers`+`lake`),
-  and the lake key ARN lives in state, never tracked. Register **13 rows / 24 triples**. Findings recorded
-  in their owners (Lessons 28-amended/31; INT-11's hazard symmetric; **`scratch` is a PREFIX**, D13's
-  wording; verification (x)'s exclusion half closed early).
-- **Stage 5 pass 4d DONE IN FULL 2026-08-20** — perimeter pair, groups A+B (2 accounts, 2 provisioned
-  roles), the 2 controls as `InfrastructureAccess`, 4d's 2 authorized acts, **verifications (ii) and (x)
-  closed**, and the 2 structural defects it found. **(a) FIXED AND PROVEN 2026-08-20**:
-  `DenyControlPlaneOffVpn` denied every direct persona S3 call from the tunnel (S3 exits by the `[P]`
-  gateway endpoint wearing a *private* address — **Lesson 33, now closed**); the 3rd condition
-  (`StringNotEqualsIfExists aws:SourceVpce` over the **VPN homes'** endpoints, *not* the consumers')
-  applied `0/6/0`, read back on **both provisioned roles**, `VP-7` both halves. Then the 2 masked proofs:
-  **drop-box asymmetry in 3 verbs** (`PutObject` ok; get/list/**delete** implicit) and **D13's mechanism**
-  as the implicit deny it argues from. **Lesson 28 amended — 3 terms on an encrypted write** (+key
-  policy), invisible on failure, legible only in a success's `SSEKMSKeyId`; INT-05 proven behaviourally
-  by that same `PutObject`; `EXC-02` = the uncollectable probe object. **(b) STILL OPEN — no principal can
-  start the crawlers** (trust admits only `glue.amazonaws.com`, `Schedule` null; **Lesson 22**; OQ 19 —
-  no-cron WAS decided on cost, the DEMANDER was not). **So D18/D25 ingestion is now broken at ONE end**:
-  files land and nothing catalogues them. Third defect fixed 2026-08-20 via the sample-row load (user
-  decision): the registration role was read-only, its write half promised to a Stage 9 step that never
-  existed (**Lesson 34**); `registered-locations-write` applied — the vending ceiling Stage 9's 2.4 rides
-  — 12 rows loaded, Stage 11's row-proof dependency LIFTED. **`VP-7` now also greps the vpce condition**
-  (it reported `pass` over the defect for 3 days — Lesson 31); **ran green 2026-08-20**, `check-ou` too.
-  **Owed: 4e** (the SCP amendment, last — the in-account Athena door now truly exists to close), pass 6.
+- **Stage 5 DONE except pass 6 (2026-08-18/20) — the governed lake exists, is granted, shared and
+  consumed.** Six decisions; `docs/GOVERNANCE.md` is the one copy of the ontology + grant rules, and
+  **one data CMK per account** since the `security-zone` withdrawal (2026-08-19; `consumer-data` v0.2.0,
+  keys `alias/awsds-<env>-data`, Sid `UseLakeDataKeyViaS3`; detail in `history.md`). **Producer:** five
+  `awsds-data-*` buckets under one CMK, `raw`+`curated` registered, 2 LF-Tag keys, 3 databases,
+  `curated.sample_trades` (Iceberg, `restricted` column, **12 synthetic rows**) + optimizer, the
+  maintenance role + 2 **never-run** crawlers, a Glue security configuration, and the 2 TBAC shares
+  (4 RAM shares `ACTIVE`, 0 invitations → **INT-11 closed**). **Consumer, per account:**
+  `alias/awsds-<env>-data` CMK, `awsds-<env>-derived` (30-day expiry), enforced `awsds-<env>-athena`
+  (10 GiB → `results/`), own `DataLakeSettings`, 2 links, 4 re-grants. **Persona:** 7 statements in
+  `DataScientistAccess` — the Athena run family on the 2 workgroup ARNs, derived-zone scoping (write
+  per-user, read persona-grain, delete `scratch/` only — **`scratch` is a PREFIX**), and the drop-box
+  identity half; `identity/sso/` reads 3 `data` states and the lake key ARN lives in state, never
+  tracked. Register **13 rows / 24 triples**. **Owed: pass 6** (Security Hub).
+- **Three things Stage 5 leaves standing — read the owner before calling any of them a gap:**
+  (1) **no principal can start the crawlers** (trust admits `glue.amazonaws.com` alone, `Schedule` null;
+  Lesson 22; **OQ 19** — no-cron was decided on cost, the DEMANDER never was), **so D18/D25 ingestion is
+  broken at ONE end**: files land and nothing catalogues them. (2) **`EXC-02`**, one uncollectable object
+  in the drop-box — do not grant a delete to tidy it. (3) since 4e, **no Athena in Data Governance at
+  all**, `InfrastructureAccess` included — D13 working, and a diagnostic given up on purpose.
+- **A denied call does not always name the policy** (2026-08-20): Athena answers a blocked
+  `StartQueryExecution` with a bare "not authorized", so `scp-battery.py`'s `classify()` files it
+  `DENY-NOT-SCP` — an assumption held since St.1c, right in general, wrong there, unfixable by wording.
+  **Attribution moves to a CONTRAST PROBE** (same call from an OU the deny misses). `probes.py` 93→**96**;
+  those 2 rows read `note` forever, by design. **Athena authorizes BEFORE it validates** — per-action;
+  St.6's 1.6 inherits both readings.
 - **A cached SSO token is keyed by `sso-session` name, NEVER by user** (2026-08-20): signing in as the
   wrong identity fills the right one's slot, `aws sso login` then succeeds doing nothing — **the remedy
   is `aws sso logout` plus a portal sign-out**, and `ForbiddenException`/`GetRoleCredentials` is its
   wording. **That same wording was a real ceiling breach on 2026-08-14**, so `scp-battery.py` tells them
   apart by asking **IdC what the token is assigned** (a path STS never touches), keeping the finding on
   `True` *and* on "cannot tell". Never suppress that wording by text alone — Lesson 24, in reverse.
-- **`security-zone` WITHDRAWN 2026-08-19 (user revision, same day it was applied): one data CMK per
-  account** — LF-Tag + `ASSOCIATE` grant destroyed, 3 keys renamed in place to `alias/awsds-<env>-data`
-  (`data-data`/`sandbox-data`/`dev-data`; Stage 9's future: `prod-data`), `consumer-data` → **v0.2.0**,
-  Sid `UseLakeZoneKeyViaS3` → `UseLakeDataKeyViaS3` (`DL-12` follows). The one copy: `GOVERNANCE.md`
-  §Encryption. No re-encryption, count unchanged; D31 intact. Detail: `history.md`.
 - **Stage 6 NOT open; its decisions 3, 4 and 5 are CLOSED (2026-08-19, doc-only — no AWS call;
   [log](docs/log/log-stage-06-unified-studio.md) initialized early because the stage file homes such
   decisions there).** Athena Spark off by **SCP** `athena:StartSession`/`UpdateSession` at **1.6 — not
@@ -314,8 +297,8 @@ the reasoning that makes it *usable* is in the file. Recognising one is the sign
 22. **A control whose principal the harness cannot produce is verified by reading, not by attempting.**
 23. **A managed service owns its artifacts' packing — bind to contents, never to an id or a name.**
 24. **A harness authenticates through the mechanism it measures — and the defence against the benign
-    failure hides the serious one; one wording with two causes is separated by a different *channel*,
-    never by a better reading.**
+    failure hides the serious one; a result that cannot be attributed from its own text — ambiguous OR
+    silent — is separated by a different *channel*, never by a better reading.**
 25. **A borrowed session outlives the command that needed it, and every later error names the wrong
     account.**
 26. **An "already exists" error is a free authorization probe — and proves nothing without a negative
@@ -337,3 +320,5 @@ the reasoning that makes it *usable* is in the file. Recognising one is the sign
 34. **A deferred obligation recorded only at the deferring end is a promise the receiving stage never
     gets — and a decision scheduled around an unexercised capability inherits a premise nobody
     measured.**
+35. **Adopting an object into IaC invalidates every *procedure* written about it, and touches none of the
+    files that carry them — the stale path is the one that still succeeds, quietly, past every guard.**

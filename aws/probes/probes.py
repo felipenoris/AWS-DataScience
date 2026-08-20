@@ -244,6 +244,33 @@ probe("ou", "data", "deny", "EntityNotFoundException", "blocked",
        "--resource-arn", "arn:aws:s3:::awsds-canary-does-not-exist",
        "--region", "us-west-2"])
 
+# --- THE 4e AMENDMENT (2026-08-20), AND THE THREE PROBES ARE ONE MEASUREMENT. Read them
+#     together or none of them says anything.
+#
+#     WHY THIS ONE CANNOT REPORT `ok`, AND THAT IS NOT A DEFECT. Athena answers a refused
+#     StartQueryExecution with a bare "You are not authorized to perform:
+#     athena:StartQueryExecution on the resource" - it names NO policy. classify() reads the
+#     wording, so it lands on DENY-NOT-SCP, whose verdict is `note`: "an AccessDenied that
+#     names no policy is an IAM/permission-set deny, not the ceiling". Here that reading is
+#     WRONG and there is no wording that would correct it, because the service never emits
+#     one. Every probe written before this amendment happened to hit services that name the
+#     policy; this is the first that does not, and the assumption was invisible until then.
+#
+#     SO THE ATTRIBUTION IS CARRIED BY THE THIRD PROBE, not by any string. Same action, same
+#     principal type (InfrastructureAccess), same region, one session - and Sandbox 1 sits in
+#     `Interactive`, which the amendment does not reach. It gets past authorization and dies
+#     on the workgroup, proving both that the call is authorized outside the amended OUs and
+#     that Athena AUTHORIZES BEFORE IT VALIDATES for this action (Lesson 21's fork, resolved
+#     by measurement rather than assumed). Given that, the two denials above can only be the
+#     ceiling. Measured exactly this way on 2026-08-20.
+#
+#     If the sandbox1 row ever turns into a denial too, the pair stops attributing anything
+#     and the two notes below become unreadable - that is the row to look at first.
+probe("ou", "data", "deny", "InvalidRequestException|WorkGroup is not found", "blocked",
+      "data: athena:StartQueryExecution (4e; Athena names no policy - see sandbox1 row)",
+      ["athena", "start-query-execution", "--query-string", "SELECT 1",
+       "--work-group", "awsds-canary-probe", "--region", "us-west-2"])
+
 # --- Identity: the same DenyUserCompute and NONE of Data's neighbours. The last two are the
 #     cross-check: denied in Data, allowed here, which is what says nothing leaks from the
 #     root set and the two documents differ exactly where they were written to differ.
@@ -271,6 +298,21 @@ probe("ou", "identity", "allow", "EntityNotFoundException", "blocked",
       ["lakeformation", "deregister-resource",
        "--resource-arn", "arn:aws:s3:::awsds-canary-does-not-exist",
        "--region", "us-west-2"])
+
+# The 4e amendment's second half - one idea in two documents, so it is probed in both. The
+# comment on the `data` row above carries the whole reading; this row is not independent
+# evidence of anything on its own.
+probe("ou", "identity", "deny", "InvalidRequestException|WorkGroup is not found", "blocked",
+      "identity: athena:StartQueryExecution (4e; Athena names no policy)",
+      ["athena", "start-query-execution", "--query-string", "SELECT 1",
+       "--work-group", "awsds-canary-probe", "--region", "us-west-2"])
+
+# The attribution probe for both rows above. It is an `allow` on purpose: what it proves is
+# that the call reaches authorization and passes it in an OU the amendment does not touch.
+probe("ou", "sandbox1", "allow", "InvalidRequestException|WorkGroup is not found", "blocked",
+      "sandboxes: athena:StartQueryExecution still authorized (4e contrast)",
+      ["athena", "start-query-execution", "--query-string", "SELECT 1",
+       "--work-group", "awsds-canary-probe", "--region", "us-west-2"])
 
 # --- the floor, in each OU's own account
 probe("ou", "data", "allow", None, "ro", "floor: s3:ListAllMyBuckets",

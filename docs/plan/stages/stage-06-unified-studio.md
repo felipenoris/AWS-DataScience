@@ -219,7 +219,36 @@ three controls (**re-read 2026-08-19**), and only one is preventive, **retroacti
 on **`athena:StartSession` + `athena:UpdateSession`** (the Spark-session surface; SQL uses
 `StartQueryExecution`, which D13 depends on). **AWS ships the statement itself** — `Sid`
 `DenyAthenaSparkStartSession`, `Resource` `arn:aws:athena:*:*:workgroup/*`, scopable by Region, account or
-workgroup. The other two are worse than the 2026-08-16 reading recorded:
+workgroup.
+
+> **TWO THINGS MEASURED ELSEWHERE THAT THIS STEP INHERITS (2026-08-20, Stage 5 pass 4e, which denied
+> `athena:StartQueryExecution` in two other OUs and probed it).** They are recorded here because the
+> cheapest place to learn them is not the sitting that needs them.
+>
+> 1. **Athena's refusal names no policy.** A denied `StartQueryExecution` answers with a bare
+>    *"You are not authorized to perform: … on the resource"* — no `explicit deny in a service control
+>    policy`, no policy id. The battery's classifier reads wording, so it files that as `DENY-NOT-SCP`,
+>    an IAM deny, and there is no phrasing that would correct it. **Expect the same from
+>    `StartSession`**, and plan this step's probe as a **contrast pair** — the same call from an account
+>    the deny does not reach — rather than as a wording match. Pass 4e's three `probes.py` entries are
+>    the working example.
+> 2. **Athena authorizes before it validates, for `StartQueryExecution` at least.** A call naming a
+>    non-existent workgroup reached authorization and passed it where the deny was absent, so
+>    Lesson 21's fork resolves the useful way and a nonexistent-workgroup probe is sound here.
+>    **Per-action, not per-service** — it says nothing about `StartSession`, which this step must
+>    measure for itself.
+>
+> **And one thing to verify rather than assume, before writing the statement:** the CLI's Athena
+> operation list for the version installed on 2026-08-20 has `start-session`, `terminate-session`,
+> `get-session`, `list-sessions` and `start-calculation-execution` — and **no `update-session`**. The
+> action pair above came from AWS's own sample statement, which is the better authority for a policy,
+> so this is not a correction; it is the check 7.6a's practice asks for — **confirm
+> `athena:UpdateSession` against the machine-readable action list before shipping it**, because an
+> action that does not exist denies nothing while looking like it does (Lesson 5). While there, decide
+> in writing whether `StartCalculationExecution` belongs: denying `StartSession` should choke it by
+> dependency, and "should" is the word that makes it worth one sentence either way.
+
+The other two are worse than the 2026-08-16 reading recorded:
 
 - **The Tooling blueprint's Athena flag** removes Athena SQL with it — the D13 path — **and applies to new
   projects only**, so it is blunt *and* not retroactive. Two reasons to leave it on, where the plan had one.

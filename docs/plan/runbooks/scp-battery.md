@@ -352,11 +352,25 @@ does not change, so nothing is created, moved or detached.
 ### Phase 4b — re-probing an amended document, in place
 
 **An amendment is not a smaller version of phase 4; it is the same phase with a shorter probe list.** Once a
-document sits on its real OU, `update-policy` replaces its content in place and the id does not change — so
+document sits on its real OU, the update replaces its content in place and the id does not change — so
 there is nothing to park on `Policy Test` and nothing to move. What must happen is that **every statement
 the amendment touched is probed again in that OU's own account**, plus the *must still succeed* trio, before
 the sitting is called done. A document amended and not re-probed is a document whose last measurement
 describes a version that no longer exists.
+
+> **⚠ WHO ISSUES THAT UPDATE CHANGED AT STAGE 2, AND THIS PARAGRAPH USED TO SAY `update-policy`.**
+> It described the Stage 1c world, where these documents were authored by hand and pasted into the console.
+> **Stage 2 step 5.5 adopted all ten into Terraform** (`aws_organizations_policy.this`, imported,
+> `prevent_destroy`), so **the amendment is [Recipe A](terraform-changes.md), never a hand
+> `update-policy`** — which would be drift the next apply reverts, and which skips the four
+> `precondition` blocks written to catch a bad amendment. **This is not pedantry about tooling.** The
+> tracked JSONs carry `<PLACEHOLDER>` tokens; `awsds-org-scp-ou-data.json` carries `<ACCOUNT_ID_DATA>`
+> *inside the D27 crawler carve-out*, and uploading the tracked file raw leaves an `ArnNotEquals`
+> comparing against that literal string — a carve-out matching nothing, with no error at upload and none
+> at evaluation. Two guards exist against exactly that (`render.py`'s survivor check, `policies.tf`'s
+> precondition) and the hand path uses neither. **Read this paragraph as being about the OBJECT, not the
+> command: everything below about probes is unchanged.** Found 2026-08-20, on the sitting that had
+> already copied the stale instruction into a stage file — see Lesson 35.
 
 **The 2026-08-13 amendment — the EC2 launch siblings in `awsds-org-scp-ou-data` and
 `awsds-org-scp-ou-identity`, and the service guard on the D27 carve-out:**

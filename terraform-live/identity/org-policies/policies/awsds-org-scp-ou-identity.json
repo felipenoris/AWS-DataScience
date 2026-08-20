@@ -19,6 +19,7 @@
         "glue:RunStatement",
         "glue:CreateMLTransform",
         "glue:StartNotebook",
+        "athena:StartQueryExecution",
         "lambda:CreateFunction",
         "ecs:RegisterTaskDefinition",
         "ecs:RunTask",

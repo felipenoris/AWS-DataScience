@@ -286,6 +286,14 @@ peers' facts through aliased providers instead of pasting ids.
 
 - **Apply a plan you did not just read.** A stale plan fails on its own (the state serial moved), but
   the rule is about you, not Terraform.
+- **Change a Terraform-owned object by hand because a document told you to.** Prose about an object is
+  not touched by the commit that adopts it, so every procedure written before an `import` survives,
+  reads fine, and is wrong — and the hand path usually **succeeds**, which is why nothing announces it
+  (Lesson 35; measured 2026-08-20, when a runbook still said `update-policy` for documents Stage 2 had
+  imported, and following it would have shipped an unsubstituted `<ACCOUNT_ID_DATA>` into a live
+  carve-out). **The paired obligation, on the adopting side: when you import something, grep the prose
+  for a mutating command that names it, and fix those files in the same sitting.** An adoption is not
+  finished when the plan is clean.
 - **Edit `backend.hcl` or `terraform.auto.tfvars`.** Regenerate them (§2 step 3) — they carry a
   header saying exactly this.
 - **Force-add anything `.gitignore` refuses** — state, plans, tfvars all carry account ids.
