@@ -18,7 +18,8 @@
 #             ./aws/vpn.py --on-host              # ALSO read inside the host (see below)
 #             python3 aws/vpn.py -                # CloudShell, ambient credentials
 #   writes:   aws/output/vpn.txt   (untracked - see .gitignore)
-#   reads:    ec2:DescribeInstances, DescribeAddresses, DescribeSecurityGroups,
+#   reads:    ec2:DescribeInstances, DescribeVolumes, DescribeAddresses,
+#             DescribeSecurityGroups,
 #             logs:DescribeLogGroups, cloudwatch:DescribeAlarms,
 #             secretsmanager:ListSecrets, GetResourcePolicy,
 #             sso-admin:ListInstances, ListPermissionSets, DescribePermissionSet,
@@ -88,6 +89,21 @@ HOST_KEY_DENY_SID = "DenyValueReadExceptHostAndInfrastructure"
 # EIGHT times the rate). Deliberately not a fail, and deliberately not silent.
 BASELINE_INSTANCE_TYPE = "t4g.nano"
 
+# The DISK the cost model is written against - the wireguard module's default, and the size
+# docs/PRICING.md 2's `WireGuard EBS (8 GB)` row prices. Since 2026-08-20 the slice takes
+# root_volume_size as a PARAMETER too (8-128 GiB, vpn.md section S6), so a host on a bigger
+# disk is a deliberate selection and NOT A FAILURE - VP-1 reports the size it found and
+# passes, exactly as it does for the type.
+#
+# WHY IT IS A SECOND CONSTANT RATHER THAN A SECOND CLAUSE ON THE FIRST: the two gaps are not
+# the same kind of wrong, so one "non-baseline" verdict would blur them. A stopped instance
+# bills no hours, so the TYPE's understatement is only live while somebody is working - it is
+# an hourly figure being wrong for an hour that is happening. The VOLUME bills every hour of
+# the month regardless, so ITS understatement is standing: it is wrong in a month when the
+# tunnel was never brought up at all (64 GiB is ~5.12 USD/month against this baseline's
+# ~0.64). VP-1 therefore names them separately, and points at different cost lines.
+BASELINE_ROOT_VOLUME_SIZE_GIB = 8
+
 # The six persona sets the step 8 fragment reaches, and the one it deliberately does not
 # (8.2/8.3). Control Tower's own sets are ignored entirely.
 PERSONA_SETS = (
@@ -131,6 +147,15 @@ HOST_PROBE_COMMANDS = (
     "echo ---SAMPLER---",
     "systemctl is-active awsds-wg-handshakes.timer",
     "tail -4 /var/log/wireguard-handshakes.log",
+    # THE OTHER HALF OF THE DISK READING, and the reason it is worth an SSM round trip:
+    # section 2's ROOT DISK column is DescribeVolumes, which is the BLOCK DEVICE. Growing a
+    # volume does not grow the partition or the XFS on top of it - cloud-init's growpart does
+    # that, at BOOT - so a disk change applied to a running host leaves the two disagreeing,
+    # and vpn.md section S6 says to read both rather than one. These two lines are the only
+    # place the second one is legible. Both are reads (HOST_PROBE_BANNED is unmoved).
+    "echo ---DISK---",
+    "lsblk",
+    "df -h /",
 )
 HOST_PROBE_BANNED = ("dump", ">", "rm ", "systemctl start", "systemctl stop", "wg set")
 HOST_PROBE_POLLS = 20
@@ -242,6 +267,7 @@ def main(argv: list) -> int:
     # ------------------------------------------------------- the VPN home: host, EIP, SG, alarm
     home_live = VPN_HOME_PROFILE in live
     instances: list = []  # (id, type, state, subnet, public ip, http tokens, sg ids)
+    root_volumes: dict = {}  # instance id -> (volume id, size in GiB, volume type)
     addresses: list = []  # (allocation id, public ip, instance id or '-')
     world_open: list = []  # (sg id, sg name, proto, from, to)
     log_groups: list = []  # (name, retention)
@@ -277,6 +303,46 @@ def main(argv: list) -> int:
                             [g.get("GroupId") for g in inst.get("SecurityGroups", [])],
                         )
                     )
+                    # The ROOT device only - a WireGuard host has one, but the mapping is a
+                    # list and matching on RootDeviceName is what keeps this honest if a
+                    # second volume is ever attached for something.
+                    root_name = inst.get("RootDeviceName")
+                    for bdm in inst.get("BlockDeviceMappings", []):
+                        if bdm.get("DeviceName") == root_name:
+                            vol_id = (bdm.get("Ebs") or {}).get("VolumeId")
+                            if vol_id:
+                                root_volumes[inst.get("InstanceId", "?")] = (vol_id, "?", "?")
+
+        # THE SIZE IS NOT IN THE ANSWER ABOVE, which is the whole reason this is a second
+        # call rather than one more field: DescribeInstances names the root device and its
+        # VOLUME ID and stops - capacity is a property of the volume, so DescribeVolumes is
+        # where it lives. One extra call, for the hosts already found. A failure here leaves
+        # the size reading `?` rather than taking the section down, because the disk is a
+        # REPORT and not a control: nothing in this file fails on it (see
+        # BASELINE_ROOT_VOLUME_SIZE_GIB), so nothing should stop for it either.
+        if root_volumes:
+            res = cli.run(
+                "ec2",
+                "describe-volumes",
+                "--volume-ids",
+                *sorted(v[0] for v in root_volumes.values()),
+                "--query",
+                "Volumes[].[VolumeId,Size,VolumeType]",
+                "--output",
+                "text",
+                log=False,
+            )
+            if not res.ok:
+                logerr(VPN_HOME_PROFILE, "ec2 describe-volumes", res.stderr)
+            else:
+                sized = {}
+                for line in (res.stdout or "").splitlines():
+                    parts = line.split("\t")
+                    if len(parts) == 3:
+                        sized[parts[0]] = (parts[1], parts[2])
+                for iid, (vol_id, _sz, _vt) in list(root_volumes.items()):
+                    size, vtype = sized.get(vol_id, ("?", "?"))
+                    root_volumes[iid] = (vol_id, size, vtype)
 
         # Only a RUNNING host can answer; a stopped one is D11 working, not a failure, so it
         # is skipped rather than attempted and reported as an error.
@@ -486,7 +552,10 @@ def main(argv: list) -> int:
 
     # -------------------------------------------------------------------------------- the checks
     # VP-1: exactly one WireGuard host in the VPN home. Absent = not built yet; two = a
-    # rebuild that leaked. The SIZE is reported, never judged - see BASELINE_INSTANCE_TYPE.
+    # rebuild that leaked. The SHAPE - the instance type AND the root volume - is reported,
+    # never judged: both are slice parameters (vpn.md section S6), so a host that is not the
+    # baseline is somebody's decision, and a check that went red about it would be a check
+    # nobody reads (Lesson 31). See BASELINE_INSTANCE_TYPE and BASELINE_ROOT_VOLUME_SIZE_GIB.
     if home_live:
         if not instances:
             checks.note(
@@ -503,20 +572,34 @@ def main(argv: list) -> int:
             )
         else:
             iid, itype, istate, _sub, _ip, _tok, _sgs = instances[0]
+            _vol, vsize, vtype = root_volumes.get(iid, ("-", "?", "?"))
+            shape = f"{itype} on {vsize} GiB {vtype}, state {istate}"
+
+            # THE TWO DEPARTURES ARE NAMED SEPARATELY because they break different cost lines
+            # in different ways, and a single "not the baseline" sentence would hide the one
+            # that keeps costing while nothing is happening. Order is deliberate: hourly
+            # first, standing second, so the sentence ends on the one a reader who stops
+            # early should still have seen.
+            drift = []
             if itype != BASELINE_INSTANCE_TYPE:
+                drift.append(
+                    f"the type is not the {BASELINE_INSTANCE_TYPE} baseline, so every HOURLY "
+                    "figure here and in `make status` understates the burn while it runs"
+                )
+            if vsize.isdigit() and int(vsize) != BASELINE_ROOT_VOLUME_SIZE_GIB:
+                drift.append(
+                    f"the root volume is not the {BASELINE_ROOT_VOLUME_SIZE_GIB} GiB baseline, "
+                    "so docs/PRICING.md 2's monthly floor understates the burn even while the "
+                    "host is STOPPED"
+                )
+            if drift:
                 checks.ok(
                     "VP-1",
                     f"one WireGuard host ({iid})",
-                    f"{itype}, state {istate} - NOT the {BASELINE_INSTANCE_TYPE} baseline, so "
-                    "every hourly figure in this report and in `make status` understates the "
-                    "burn (vpn.md section S6).",
+                    f"{shape} - " + "; and ".join(drift) + " (vpn.md section S6).",
                 )
             else:
-                checks.ok(
-                    "VP-1",
-                    f"one WireGuard host ({iid})",
-                    f"{BASELINE_INSTANCE_TYPE}, state {istate}",
-                )
+                checks.ok("VP-1", f"one WireGuard host ({iid})", shape)
 
     # VP-2: the [P] Elastic IP exists and is associated with the host (step 2.1). The EIP
     # bills whether or not it is associated, so an orphan allocation is pure cost.
@@ -773,12 +856,25 @@ never a compliant one.
             rep.line(f"No instance tagged {NAME_TAG_PATTERN}. Expected before Stage 4 step 1.")
         else:
             rep.tabulate(
-                ["INSTANCE\tTYPE\tSTATE\tSUBNET\tPUBLIC IP\tIMDS"]
-                + [f"{i}\t{t}\t{s}\t{sub}\t{ip}\t{tok}" for i, t, s, sub, ip, tok, _ in instances]
+                ["INSTANCE\tTYPE\tROOT DISK\tSTATE\tSUBNET\tPUBLIC IP\tIMDS"]
+                + [
+                    "{}\t{}\t{} GiB {}\t{}\t{}\t{}\t{}".format(
+                        i, t, *root_volumes.get(i, ("-", "?", "?"))[1:], s, sub, ip, tok
+                    )
+                    for i, t, s, sub, ip, tok, _ in instances
+                ]
             )
             rep.text("""
 State `stopped` between sessions is D11 working, not an outage. `running` while
-nobody is working is the [D] idle burn (~USD 0.004/h + the EBS).""")
+nobody is working is the [D] idle burn (~USD 0.004/h + the EBS) - and the EBS
+half is the one that does NOT stop, which is why the disk is in the table.
+
+ROOT DISK IS THE BLOCK DEVICE, NOT THE FILESYSTEM. It comes from DescribeVolumes
+- what EC2 attached. Growing a volume does not grow the partition or the XFS on
+top of it; cloud-init's growpart does that, at BOOT. So after a disk change
+applied to a RUNNING host the two legitimately disagree, and this column shows
+the half you are already paying for. Section 2a's `lsblk` / `df -h /` is the
+only place the other half is legible (vpn.md section S6).""")
 
         # ==============================================================================
         rep.h1("2a. Inside the host - OPT-IN, --on-host")
@@ -788,16 +884,24 @@ part that is not, so it has to be typed:
 
     ./aws/vpn.py --on-host
 
-It runs ten READ commands on the host through SSM Run Command - the boot's
+It runs thirteen READ commands on the host through SSM Run Command - the boot's
 say-lines, `cloud-init status`, `wg show wg0`, the name map, the sampler timer
-and the tail of its log. The commands read; `ssm:SendCommand` writes, which is
-the whole reason for the flag. A stopped host is skipped, not attempted.
+and the tail of its log, then `lsblk` and `df -h /`. The commands read;
+`ssm:SendCommand` writes, which is the whole reason for the flag. A stopped host
+is skipped, not attempted.
 
-What it answers that no describe call can: WHICH PEERS THE INTERFACE ACTUALLY
-HOLDS. Section 3's checks prove the host, the address and the secret exist -
-they cannot prove that the running wg0 matches peers.auto.tfvars, and the gap
-between those two is exactly what the keys runbook section 4 calls
-`peer=unknown`.""")
+What it answers that no describe call can, and there are two of them now:
+
+  WHICH PEERS THE INTERFACE ACTUALLY HOLDS. Section 3's checks prove the host,
+  the address and the secret exist - they cannot prove that the running wg0
+  matches peers.auto.tfvars, and the gap between those two is exactly what the
+  keys runbook section 4 calls `peer=unknown`.
+
+  WHETHER THE FILESYSTEM FOLLOWED THE VOLUME. Section 2's ROOT DISK is what EC2
+  attached; growing it does not grow the XFS on top, which happens at boot via
+  growpart. `lsblk` and `df -h /` are the only reading that separates the two -
+  a device that grew under a filesystem that did not is a host billed for space
+  it cannot use (vpn.md section S6).""")
         elif not host_reads:
             rep.line("--on-host was given, but no RUNNING host was found to read.")
         else:
@@ -896,9 +1000,12 @@ stage's deny pair and by a behavioural probe, not by this file.
         rep.line(f"{n_fail} check(s) FAILED.")
         rep.text("""
 What the checks are, and where each comes from:
-  VP-1  exactly one WireGuard host in the VPN home (steps 1.1, 1.3; D4). The instance
-        TYPE is reported, not judged - it is a slice parameter (vpn.md section S6), and a
-        non-baseline size is named here because the cost lines do not follow it
+  VP-1  exactly one WireGuard host in the VPN home (steps 1.1, 1.3; D4). The host's
+        SHAPE - instance TYPE and ROOT VOLUME - is reported, not judged: both are slice
+        parameters (vpn.md section S6), and each is named here when it leaves its
+        baseline because the cost lines follow neither. The two are named separately
+        because they are wrong differently - the type's gap is HOURLY and only while the
+        host runs, the volume's is STANDING and survives a month nobody connects
   VP-2  the [P] Elastic IP exists and is associated with the host (step 2.1)
   VP-3  exactly one world-open ingress rule, UDP/51820; never port 22 (step 3)
   VP-4  IMDSv2 required on the host

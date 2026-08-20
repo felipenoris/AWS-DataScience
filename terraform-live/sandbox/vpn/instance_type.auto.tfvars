@@ -16,16 +16,48 @@
 #                     change` on the way down exactly as it did on the way up. Terraform
 #                     stops, modifies and starts the instance in one apply.
 #
-#   root_volume_size  ONE WAY - GiB, and UP ONLY. EBS grows a volume in place (ModifyVolume,
-#                     with the instance left RUNNING), but it CANNOT SHRINK ONE. Commenting
-#                     this assignment out therefore does NOT return the disk: it asks for a
-#                     shrink that EBS refuses. Going smaller is a host REPLACEMENT, under Part
-#                     K's rules, never an apply. And GROWING THE VOLUME IS NOT GROWING THE
-#                     FILESYSTEM: the extra GiB reach the OS at BOOT, when cloud-init's
-#                     growpart runs - so a disk change that rides along with an instance_type
-#                     switch is picked up by the stop/start that switch performs, while a disk
-#                     change made ALONE needs a reboot or a hand-run growpart + xfs_growfs
-#                     (AL2023's root is xfs). Section S6 has the two readings that prove it.
+#   root_volume_size  ONE WAY - GiB, and UP ONLY. The two warnings below are this key's
+#                     whole difference from the one above; read them before assigning.
+#
+# ---------------------------------------------------------------------------------------
+# WARNING 1 - THIS IS NOT REVERSIBLE. EBS GROWS A VOLUME; IT CANNOT SHRINK ONE.
+# ---------------------------------------------------------------------------------------
+#
+# Growing is cheap and in place: the provider issues ModifyVolume and does not even stop the
+# instance. GOING BACK IS NOT THE MIRROR OF THAT. Commenting this assignment out does NOT
+# return the disk the way commenting out instance_type returns the type - it asks for a
+# shrink, and EBS refuses. There is no flag, no force and no apply that undoes it.
+#
+# The only way down is a HOST REPLACEMENT: a new instance on a new root volume, with
+# /etc/wireguard/ rebuilt from the [P] secret and the roster - Part K's rules, not this
+# file's. So assign a value you intend to KEEP, and assign it once. The validation in
+# variables.tf caps this at 128 GiB for the same reason: past that, an accident is a
+# standing bill nobody can hand back.
+#
+# ---------------------------------------------------------------------------------------
+# WARNING 2 - GROWING THE VOLUME DOES NOT GROW THE FILESYSTEM.
+# ---------------------------------------------------------------------------------------
+#
+# ModifyVolume hands the instance a bigger BLOCK DEVICE. The partition and the XFS on top of
+# it are untouched until something grows them, and on AL2023 that something is cloud-init's
+# growpart, WHICH RUNS AT BOOT. So the apply can succeed, `lsblk` can show the new size, and
+# `df -h /` still show the old one - a host billed for space it cannot use.
+#
+#   IF THE DISK CHANGE RIDES ALONG WITH AN instance_type SWITCH: nothing to do. That apply
+#   stops and starts the host, so growpart runs and the filesystem follows by itself.
+#
+#   IF THE DISK CHANGE GOES OUT ALONE (host left running, which is the normal case when only
+#   this key moved): the filesystem does NOT follow. Either reboot the host, or grow it by
+#   hand in an SSM session (vpn.md section K0a):
+#
+#       sudo growpart /dev/nvme0n1 1 && sudo xfs_growfs -d /
+#
+#   THEN CONFIRM, and read BOTH - they are what can disagree:
+#
+#       lsblk && df -h /
+#
+# `./aws/vpn.py` reports the volume in section 2 and VP-1, but that is DescribeVolumes - the
+# device half only. The filesystem half is `./aws/vpn.py --on-host`, or the commands above.
 #
 # HOW TO APPLY EITHER OF THEM - and there is no flag in any direction:
 #
