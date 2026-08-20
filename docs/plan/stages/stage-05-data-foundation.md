@@ -922,7 +922,26 @@ and a reader who has not read this sub-step will read it as a gap.
 help on 2026-08-20, not written from memory. Account ids are **not** in this repository (`check-identifiers.py`);
 take them from the Organizations console at the keyboard.
 
-**In Management** — CloudShell, `us-west-2`:
+> **Collect all three ids while still in Management — the second leg cannot go back for them.** Audit is a
+> member account: it holds no Organizations view, and `list-roots` is refused there unless a resource-based
+> delegation grants it, which nothing in this organization does. Yet **two of the three ids are needed in
+> Audit** — the `RootId` and Management's own account id. So the first leg ends with them written down,
+> not with the delegation call.
+
+**In Management** — CloudShell, `us-west-2`. The reads first, then the one write:
+
+```
+aws organizations list-roots --query 'Roots[0].Id' --output text
+aws organizations describe-organization --query 'Organization.MasterAccountId' --output text
+aws organizations list-accounts \
+  --query "Accounts[?Name=='Audit Account' && Status=='ACTIVE'].Id" --output text
+```
+
+The third query carries the standing rule in both halves: the vended name is **`Audit Account`**, not
+`Audit` (`docs/ORGANIZATION.md`), and `Status=='ACTIVE'` is there because a **SUSPENDED `Sandbox`** sits in
+this roster. **If it prints an empty line, stop** — do not relax the name to make it match. An empty answer
+means the roster is not what this step assumes, and the next call would delegate to whatever id got
+substituted.
 
 ```
 aws securityhub enable-organization-admin-account \
