@@ -1836,7 +1836,9 @@ already measured and wrote down one entry ago.** The public subnet's route table
 gateway endpoints, so tunnel traffic **splits by destination**: an S3 call leaves through the gateway
 endpoint, every other API through the internet gateway wearing the Elastic IP. A request arriving at
 S3 through a VPC endpoint does not present the Elastic IP in `aws:SourceIp` — the key is either absent
-or carries a private address, and **either way a negated operator makes the deny fire**. Glue and
+or carries a private address, and **either way a negated operator makes the deny fire**. *(Measured
+later the same day: it is the second — present, carrying the host's private address. The controls
+entry below.)* Glue and
 Athena, on the same session and in the same minutes, arrive as `aws:SourceIp` = the Elastic IP and the
 deny stays quiet. A2, A3 and A7 are therefore not just other proofs: **they are the control that
 isolates this one to the S3 path** rather than to a broken session, an expired token or a lost tunnel.
@@ -1865,7 +1867,10 @@ deny is about S3".
 nothing reached data it should not. What it breaks is a designed path (D18/D25's ingestion) and,
 probably, the usability of the derived zone. **The fix is not this sitting's**: the shape is a third
 condition on `DenyControlPlaneOffVpn` mirroring the bucket policy's `aws:SourceVpce` branch, and
-`identity/sso/` already reads the consumer states that hold those endpoint ids — but amending a
+`identity/sso/` already reads the consumer states that hold those endpoint ids — ***and the consumer
+states are the wrong ones**: the controls entry below measures that every tunnel call, in either
+consumer, leaves through the **VPN home's** endpoint. Read that before implementing this sentence* —
+but amending a
 statement that binds **six** permission sets in every governed account is a deliberate change with its
 own review, and Stage 4's own warning about it (getting this wrong on a persona costs a session) is
 the reason it is written down here rather than applied.
@@ -2074,6 +2079,160 @@ not taken — `InfrastructureAccess` on the derived bucket, and CloudTrail's `vp
 what would turn the `DenyControlPlaneOffVpn` diagnosis from deduced into measured. **The persona
 session has now done everything it can do**, so the identity switch those controls need costs nothing
 that was still needed.
+
+---
+
+## 2026-08-19 — The two controls, taken as the infrastructure user: the split is measured, and the proposed fix was aimed at the wrong endpoint list
+
+*Provenance. **This entry is Claude's, and so are the commands.** Every call is read-only and ran under
+the standing rule — including the two `s3api` calls fired **deliberately, so that CloudTrail would have
+something to show**: the persona's denied call is an S3 *data* event and the trail carries management
+events only, so the path had to be re-created by a call of the right kind rather than looked up.
+Identifiers were masked at capture. Everything else is verbatim.*
+
+### Why the identity changed, and what the change cost
+
+Nothing that was still needed. The entry above closed with the persona session having done everything
+it could do, and both controls need either `cloudtrail:LookupEvents` or a role the deny does not bind.
+The user signed in as **the infrastructure user, `InfrastructureAccess`, in `Sandbox 1` and
+`Development`**.
+
+**The tunnel was confirmed up before anything else ran** — `curl checkip` returned `52.89.212.1`.
+Without that check the control would have varied identity **and** route at once, and a success would
+have proven nothing about which of the two mattered.
+
+### Control 1 — the isolation holds, and the listing costs the finding its abstraction
+
+`aws s3 ls` on `s3://awsds-sandbox-derived/` and on `s3://awsds-dev-derived/`, same tunnel, same
+endpoint, `InfrastructureAccess`: **both list without error.** The bucket policy, the account CMK, the
+gateway endpoint and the network are exonerated in one reading, and step 8.3 is why — it applied
+`DenyControlPlaneOffVpn` to the six personas **only**.
+
+**What the listing returned matters more than that it returned.** The objects are there:
+
+| bucket | contents | written by |
+|---|---|---|
+| `awsds-sandbox-derived/results/` | 4 CSVs + 4 `.metadata` | group A (21:42, 21:45) and the re-run (22:20), local time |
+| `awsds-dev-derived/results/` | 2 CSVs + 2 `.metadata` | group B (22:38) |
+
+Every one is the output of a query **the persona itself ran**. The scientist submits the query, Athena
+writes the answer into the scientist's own bucket, and the scientist cannot fetch it. That is the
+defect stated the way a person meets it, rather than as a denied API call.
+
+### Control 2 — the instrument had to change before it could answer
+
+`cloudtrail lookup-events` over the persona's window returned the two denied `StartCrawler` calls and
+**no denied S3 call at all**. That is not a gap in the trail: `aws s3 ls s3://bucket/` issues
+`ListObjectsV2`, an S3 **data** event, and the Control Tower trail records management events only. The
+control as the entry above named it — *"a denied S3 management event beside the Glue one"* — could not
+be taken, **because the persona never made one**. The instrument was fine; the event did not exist.
+
+So the path was measured with a call of the right kind, over the same tunnel:
+
+| call | `sourceIPAddress` | `vpcEndpointId` |
+|---|---|---|
+| `ListBuckets` — S3, over the tunnel | **`10.20.160.254`** | **`vpce-0cc3e139c1167ca83`** |
+| `StartCrawler` — Glue, denied, persona session | **`52.89.212.1`** | *absent* |
+| `GetBucketLocation` — Athena staging a result, persona's own `sessionIssuer` | `athena.amazonaws.com` | *absent* |
+
+`10.20.160.254` sits inside `10.20.0.0/16`, the Sandbox VPC, and is the WireGuard host's own ENI after
+its NAT. `vpce-0cc3e139c1167ca83` is **Sandbox's** S3 gateway endpoint, read back from
+`describe-vpc-endpoints`. And `local.vpn_egress_cidrs` is built from one thing only: one `/32` per VPN
+home, from that home's `wireguard_eip_public_ip`.
+
+**Three rows, three different claims closed.** An S3 call from the tunnel presents a private address
+and an endpoint id, so `NotIpAddress aws:SourceIp` is **true** and the deny fires. The same session's
+Glue call presents the Elastic IP, so the deny stays quiet and what was seen was the implicit deny —
+the two are minutes apart on one tunnel and differ only in destination. And Athena's staging write is
+recorded with the **service** as its origin under the persona's `sessionIssuer`, which is
+`aws:ViaAWSService` being true, measured rather than argued.
+
+### What this changes in the diagnosis above
+
+**The mechanism is precise where it was a disjunction.** The entry above said the key "is either
+absent or carries a private address, and either way a negated operator makes the deny fire". It is the
+second. The conclusion was right and half the reasoning covered a case that does not occur.
+
+**The elimination was re-done rather than carried forward**, by reading the documents instead of the
+earlier entry: of the six `Deny` statements `DataScientistAccess` composes,
+`DenyTerraformStateAccess` requires a name *ending* in `-tfstate`, `DenyMakingStorageOrImagesPublic`
+carries a closed action list holding neither `ListBucket` nor `GetObject`, and
+`DenyIamPrincipalMutation`, `DenyInternetFacingCompute` and `DenyLakeFormationAdministration` are
+other services. Only `DenyControlPlaneOffVpn` — `Action *` on `Resource *` — can reach the call.
+**Proved by exhaustion over the file, not remembered from the entry that first proposed it.**
+
+**The sharpest evidence in this pass is not a measurement.** `permission-sets.tf` already carries a
+`precondition` over `vpn_egress_cidrs` whose error message predicts this pass's exact symptom —
+*"DenyControlPlaneOffVpn would apply cleanly and deny every call from every network for all six
+personas"*. It was written against the list coming back **malformed**. Nothing in it considers the
+list being well-formed and the key being irrelevant on the route the traffic takes. **The failure was
+foreseen; the way it would arrive was not**, and a guard was built for the half that did not happen.
+
+### The second finding: the fix was aimed at the wrong list
+
+The entry above proposed the amendment and said `identity/sso/` "already reads the consumer states
+that hold those endpoint ids". **The consumer endpoints are the wrong ones.**
+
+`vpn_homes` holds exactly one row, `sandbox`. Every persona call over the tunnel — in *either*
+consumer — leaves through **Sandbox's** endpoint, because that is where the host is. Development's own
+`vpce-0a222aef0c577abbb` is not on that path and will not be until Stage 6 puts compute inside
+Development's VPC.
+
+**The same axis error is already in the lake's bucket policy, and there it is working by luck.**
+`local.consumer_vpce_ids` is built as *each consumer's own* endpoint. The branch that actually carries
+a Development persona's reach to `awsds-data-curated` is Sandbox's endpoint id — **in that list
+because Sandbox is a consumer, not because it is the VPN home**. The right value is in the right list
+for the wrong reason, and it stops being true the day the host moves, a second home is added, or a
+consumer appears that is not a VPN home.
+
+Lesson 10's axis question and Lesson 29's *describe-becomes-select*, arriving together: a list built
+along "who consumes the lake" is being asked "what is on the network path", and today the two
+intersect.
+
+### The fix, now shaped by measurement rather than by symmetry with the bucket policy
+
+A third condition on `DenyControlPlaneOffVpn`, its values from the **VPN homes'**
+`s3_gateway_endpoint_id` — an output every `foundation/` already exports, out of the `vpn_home` remote
+state `identity/sso/` already reads, so no new output and no new state read:
+
+```hcl
+condition {
+  test     = "StringNotEqualsIfExists"
+  variable = "aws:SourceVpce"
+  values   = local.vpn_egress_vpce_ids
+}
+```
+
+**`IfExists` is what holds the polarity.** On the internet-gateway path the key is absent, the
+condition passes, and the deny still closes every off-VPN call — which is the statement's whole
+purpose. On the endpoint path with a matching id the condition is false and the deny stands down.
+
+**Two consequences stated rather than discovered.** It widens the carve-out to anything able to reach
+Sandbox's S3 gateway endpoint — the host today, Sandbox compute after Stage 6. That is inside the
+perimeter and it is still a choice. And **it covers S3 and nothing else**: the DynamoDB gateway
+endpoint has the identical property and any interface endpoint presents `aws:SourceVpce` too, so the
+local is plural by design rather than by accident.
+
+**It is still not this sitting's change.** The statement binds six permission sets in every governed
+account, and nothing measured here softens Stage 4's warning that getting it wrong costs a session.
+
+### What the amendment does not promise, and this is the part to carry forward
+
+**That the drop-box write starts working.** The explicit deny masked whatever sits under it, and by
+Lesson 28 reach is an intersection: `AllowInteractiveWriterPutOnly` on the drop-box bucket is the
+other half, and no call has yet got past the identity half to exercise it.
+
+**And D13's own mechanism stays unmeasured.** The argument is that an execution role holds *no* S3
+grant on a registered prefix — an **implicit** deny — and every attempt so far has been intercepted by
+an explicit one. Both become measurable only after the amendment lands. **This is the pass's one
+genuine regression in evidence**: a proof the stage counted on is not merely deferred, it was
+overwritten by a louder failure.
+
+### Still owed, unchanged by this sitting
+
+4d's two authorized acts — the maintenance pair's positive half (`StartCrawler` as
+`awsds-data-catalog-maintenance`, still never run since pass 1) and the explicit `restricted` grant
+with its revert — then **4e**, last, through battery phase 4b.
 
 ---
 
