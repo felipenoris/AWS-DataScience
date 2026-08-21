@@ -116,6 +116,12 @@ variable "instance_type" {
   default     = "t3.nano"
 }
 
+variable "vpc_nat_cidrs" {
+  description = "SOURCE RANGES INSIDE THE VPC THIS HOST MASQUERADES FOR - empty by default, and empty is the posture every earlier stage was measured under. A non-empty list turns this host into a NAT INSTANCE for those ranges as well as the tunnel endpoint it already is: it disables source/destination checking (see main.tf, where the argument for keeping it ON is stated and now has an exception) and adds one MASQUERADE plus two FORWARD rules per range to wg0's PostUp. WHY THE RULES RIDE wg0 AND NOT THE USER DATA: user data runs at FIRST BOOT ONLY and this is a [D] host that is stopped and started between sessions, so a rule written directly by the user data is gone after the first stop - wg-quick re-runs PostUp on every boot, which is the only re-entrant hook this host already has. THE LIST IS A CAPABILITY, NOT AN ACTIVATION: a masquerade rule matches nothing until some route table sends traffic here, and that route lives in the [E] slice that wants it (Stage 6, terraform-live/sandbox/devbox/). So the standing cost of a non-empty list is exactly one thing - the source/dest check - and the reach is decided by a route somewhere else. Ranges, never 0.0.0.0/0: a rule that masquerades everything also masquerades this host's own traffic and every packet the tunnel already handles."
+  type        = list(string)
+  default     = []
+}
+
 variable "mtu" {
   description = "The tunnel's MTU on the SERVER side, and it governs one direction only: the size of what this host injects into the tunnel, which is the DOWNLOAD direction for every client. Absent this line wg-quick derives it from the uplink - 9001 on an AWS ENA, so wg0 came up at 8921 (measured 2026-08-17), a value nobody chose and which no internet path carries. WHY 1280 AND NOT A LARGER 'CORRECT' VALUE: it is the IPv6 minimum and the same number the client template pins, so the two sides of the design say one thing. The reason this was left open at pass 2 - that a server value trades against every client's path at once, rather than one - only bites when the value chosen sits BETWEEN paths; the floor trades against nobody. WHAT IT DOES NOT FIX: the upload direction is still governed by the client's own MTU line, typed by hand per device, and closing that needs an MSS clamp in PostUp - deliberately not here, because a clamp is two rules whose directions are easy to get wrong by reading and which nothing in this repository would exercise (Lesson 20)."
   type        = number

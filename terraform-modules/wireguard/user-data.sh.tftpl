@@ -95,6 +95,14 @@ say "(3) key in hand (base64 length $${#HOST_KEY})"
 # misdiagnosing. The value is the client template's own, for the reason in variables.tf: the
 # floor trades against no path. What this does NOT cover is the client-to-host direction,
 # which remains the client's line to carry.
+# THE TWO PostUp/PostDown LINES BELOW CARRY A SECOND, OPTIONAL HALF - ${vpc_nat_post_up != "" ? "ACTIVE on this host" : "empty on this host"}.
+# vpc_nat_cidrs (main.tf builds the string) appends one MASQUERADE and two FORWARD rules per
+# VPC range this host is asked to be a NAT instance for. They ride wg0's PostUp rather than
+# this script for one reason worth stating where somebody debugging will read it: THIS SCRIPT
+# RUNS AT FIRST BOOT ONLY. The host is [D] - stopped and started between sessions - so a rule
+# written here directly would be gone after the first stop, while wg-quick re-runs PostUp on
+# every boot. If VPC-side NAT is ever mysteriously dead, `iptables -t nat -L POSTROUTING -n`
+# and `systemctl status wg-quick@wg0` are the two readings, in that order.
 say "(4) writing /etc/wireguard/wg0.conf for ${peer_count} peer(s)"
 umask 077
 mkdir -p /etc/wireguard
@@ -104,8 +112,8 @@ Address = ${server_address}
 ListenPort = ${listen_port}
 MTU = ${mtu}
 PrivateKey = $HOST_KEY
-PostUp = iptables -t nat -A POSTROUTING -s ${peer_cidr} -o $UPLINK -j MASQUERADE; iptables -A FORWARD -i %i -j ACCEPT; iptables -A FORWARD -o %i -j ACCEPT
-PostDown = iptables -t nat -D POSTROUTING -s ${peer_cidr} -o $UPLINK -j MASQUERADE; iptables -D FORWARD -i %i -j ACCEPT; iptables -D FORWARD -o %i -j ACCEPT
+PostUp = iptables -t nat -A POSTROUTING -s ${peer_cidr} -o $UPLINK -j MASQUERADE; iptables -A FORWARD -i %i -j ACCEPT; iptables -A FORWARD -o %i -j ACCEPT${vpc_nat_post_up}
+PostDown = iptables -t nat -D POSTROUTING -s ${peer_cidr} -o $UPLINK -j MASQUERADE; iptables -D FORWARD -i %i -j ACCEPT; iptables -D FORWARD -o %i -j ACCEPT${vpc_nat_post_down}
 %{ for name, peer in peers ~}
 
 # ${name}

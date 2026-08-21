@@ -76,7 +76,29 @@ locals {
     }
   })
 
+  # THE VPC-SIDE NAT RULES, BUILT HERE RATHER THAN IN THE TEMPLATE, because a `%{ for }`
+  # directive inside a single wg0.conf LINE has to trim its own newlines on both sides and is
+  # then unreadable in the one place it must not be. `$UPLINK` survives verbatim: Terraform
+  # interpolates `${`, not `$U`, and the heredoc that writes wg0.conf is unquoted, so the
+  # shell substitutes the real interface name at write time.
+  #
+  # THREE RULES PER RANGE, AND THE TWO FORWARD ONES ARE NOT DECORATION. The existing pair is
+  # `-i wg0` / `-o wg0`, and VPC-side traffic touches wg0 at neither end - it arrives on the
+  # uplink and leaves on the uplink, a hairpin the tunnel rules do not describe. AL2023's
+  # default FORWARD policy is ACCEPT, so these are belt-and-braces today; they stop being so
+  # the first time anything sets a policy.
+  vpc_nat_post_up = join("", [
+    for c in var.vpc_nat_cidrs :
+    "; iptables -t nat -A POSTROUTING -s ${c} -o $UPLINK -j MASQUERADE; iptables -A FORWARD -s ${c} -j ACCEPT; iptables -A FORWARD -d ${c} -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT"
+  ])
+  vpc_nat_post_down = join("", [
+    for c in var.vpc_nat_cidrs :
+    "; iptables -t nat -D POSTROUTING -s ${c} -o $UPLINK -j MASQUERADE; iptables -D FORWARD -s ${c} -j ACCEPT; iptables -D FORWARD -d ${c} -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT"
+  ])
+
   user_data = templatefile("${path.module}/user-data.sh.tftpl", {
+    vpc_nat_post_up     = local.vpc_nat_post_up
+    vpc_nat_post_down   = local.vpc_nat_post_down
     peer_cidr           = var.peer_cidr
     server_address      = local.server_address
     listen_port         = var.listen_port
@@ -118,13 +140,27 @@ resource "aws_instance" "this" {
   # the host on the new key.
   user_data_replace_on_change = true
 
-  # KEPT ON, DELIBERATELY, ON A HOST THAT FORWARDS PACKETS. The usual NAT-instance recipe
-  # disables it; here every forwarded packet is masqueraded to this instance's own address
-  # (step 1.2), so nothing legitimate is asymmetric and the check stays as anti-spoofing. It
-  # also fails in the useful direction: if the masquerade rule is ever wrong, traffic is
-  # dropped visibly instead of leaving with a ${var.peer_cidr} source that the peering would
-  # discard three hops later, where nobody would connect the two.
-  source_dest_check = true
+  # KEPT ON WHENEVER IT CAN BE, AND THE EXCEPTION IS NAMED RATHER THAN ASSUMED (amended
+  # 2026-08-21, with vpc_nat_cidrs).
+  #
+  # The original argument still holds for the TUNNEL and is why this is not simply `false`:
+  # every packet wg0 forwards is masqueraded to this instance's own address (step 1.2), so
+  # nothing legitimate is asymmetric, and the check stays as anti-spoofing that fails in the
+  # useful direction - a wrong masquerade rule drops traffic visibly instead of letting it
+  # leave with a ${var.peer_cidr} source that a peering discards three hops later.
+  #
+  # WHAT VPC-SIDE NAT CHANGES, AND IT IS NOT A PREFERENCE. Source/destination checking is
+  # applied by the ENI on the way IN as well as out: a packet from a devbox in this VPC
+  # carries neither this instance's address as source nor as destination, so EC2 drops it
+  # BEFORE the kernel could route or masquerade it. There is no iptables rule that recovers
+  # from that, which is why every NAT-instance recipe disables the check - the masquerade is
+  # what makes the OUTBOUND leg legitimate, and this attribute is about the inbound one.
+  #
+  # SO THE POSTURE IS: unchanged while vpc_nat_cidrs is empty, which is the default and what
+  # every reading before 2026-08-21 was taken under. A caller that fills the list is deciding
+  # to trade this host's anti-spoofing for being the single public egress of a private tier,
+  # and the trade is bounded by the ROUTE rather than by this line.
+  source_dest_check = length(var.vpc_nat_cidrs) == 0
 
   metadata_options {
     http_endpoint = "enabled"
