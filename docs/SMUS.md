@@ -193,7 +193,7 @@ parameters
 | environment | DataZone, through the provisioning role | the member account | read back by `US-8` / step 2.5 |
 | environment profile | the V1 flow | — | none, by design |
 
-## Blueprints
+## Blueprints — the object
 
 An **environment blueprint** is a provisioning template owned by AWS. It works in two steps:
 
@@ -231,9 +231,11 @@ resources in the account; disabled, the feature is absent. Three consequences fo
 - **Enabling is cheap to do later** (one Terraform resource per account); disabling after
   environments were provisioned from it is not symmetrical. Start minimal.
 
-### The three categories (user decision, 2026-08-19)
+### Blueprint Categories
 
-Mechanically, *every* blueprint requires a Terraform apply to exist — what distinguishes the
+The three are the user's decision of 2026-08-19; **`undefined` is not a fourth choice but the absence
+of one**, and it exists because the 2026-08-21 roster reading found thirteen blueprints no decision
+covers. Mechanically, *every* blueprint requires a Terraform apply to exist — what distinguishes the
 categories is what must happen **before** that apply:
 
 | Category | Meaning | To enable |
@@ -241,44 +243,74 @@ categories is what must happen **before** that apply:
 | **1 — enabled by default** | in the step 1.4 map from the stage's first apply | nothing — born with the stage |
 | **2 — on demand** | already authorized, with a **named trigger**; outside the map until it fires | commit + apply when the trigger fires — and the price measured at that moment if the row below lacks one (Lesson 6) |
 | **3 — disabled** | outside the decision | an **amendment to Stage 6 decision 5**: price measured first, recorded in the stage log, then commit + apply. The *never* subset requires reopening an earlier decision instead |
+| **`undefined`** | **nothing has been weighed** — the blueprint was never seen by the plan, or the decision that would have covered it named an object with no API identifier | decide its category first. **`US-3` fails on an `undefined` exactly as it fails on a category-3**, which is the point: a red battery that is merely uncategorised is indistinguishable from one that caught something |
 
 The `US-3` allow-list in [`aws/studio.py`](../aws/studio.py) holds **category 1**; a category-2
 blueprint joins the constant in the same commit that adds it to the step 1.4 map, so the check and
 the code never disagree (Lesson 14).
 
-### The eleven blueprints
+### Blueprints
 
-The full list, from the *Supported blueprints* admin-guide page (read 2026-08-16 — there is no
-"ML experience" blueprint; the per-project SageMaker AI domain comes from **Tooling**, correcting
-D26's wording; **re-read 2026-08-19 for the per-blueprint resource lists — which caught
-`LakehouseCatalog` being Redshift-backed**, Stage 6 decision 4). Billing **shape** is read from
-documentation; billing **numbers** only where `PRICING.md` measured them.
+**THE ROSTER IS MEASURED, AND THE HEADING THIS REPLACES SAID *"the eleven blueprints"*.** Read
+2026-08-21 from the live domain `awsds-studio` — `datazone list-environment-blueprints --managed`
+returns **23**, and the console's *Blueprints* page lists **13**. The two reconcile exactly, and the
+way they reconcile is the reason this table is keyed on the **API name**:
 
-#### Category 1 — enabled by default
+- **`AmazonBedrockGenerativeAI` is a console GROUPING, not an API blueprint.** The console shows one
+  entry — *"consists of multiple blueprints"* — and the API returns the **seven** `AmazonBedrock*`
+  rows below. Terraform and `US-3` can only name the seven. Stage 6 decision 5 put the *grouping* in
+  category 1, which is why all seven arrive here as `undefined`: the decision was taken about an
+  object that has no API identifier, so it does not carry to any of them by itself.
+- **`LakeHouseDatabase` (console) is `DataLake` (API)** — the pair the plan already carried (Lesson 32).
+- **12 direct + 7 from the grouping = 19**, leaving **four the API returns and the console never
+  offers**: `LakehouseAdmin`, `S3Bucket`, `S3TableCatalog`, `ToolingLite`. Their descriptions below
+  come from `get-environment-blueprint`, the only place they are written down.
 
-| Blueprint (API name) | What it provisions when a project uses it | Billing shape and measured cost (`us-west-2`) |
-|---|---|---|
-| `Tooling` | The project's basic environment: the per-project **SageMaker AI domain**, project roles, security groups, the project S3 location — and the parameter surface Stage 6 step 1.5 locks (`sagemakerDomainNetworkType`, idle shutdown, `maxEbsVolumeSize`, TIP). Mandatory — nothing else provisions a working environment | Per **app-hour running** (`ml.t3.medium` JupyterLab/Code Editor at **USD 0.050/h**, `PRICING.md` §8) + EBS. An open app bills whether used or not — the step 8 idle shutdown is what converts "up" into "in use" |
-| `LakeHouseDatabase` (API name **`DataLake`**) | Per project: **Glue databases, Lake Formation permissions, an Athena workgroup** — the catalog/SQL surface on the Glue + LF substrate Stage 5 built, the query path D13 depends on (Stage 6 decision 4: this variant alone; `LakehouseCatalog` is category 3) | **Per use**: Athena SQL **USD 5.00/TB scanned** (`PRICING.md` §5); Glue catalog negligible at lab scale. No standing resource |
-| `EMRServerless` | An EMR Serverless application per project — the VPC-capable Spark runtime replacing the Athena-Spark default (open question 12), and **the only engine whose compute connection documents an LF fine-grained mode** (`project.spark.fineGrained`; the notebook Spark Connect path is full-table on every engine). **Contingent on Stage 6 decision 1, reopened 2026-08-19**: under `VpcOnly` it asks for **four** optional endpoints against Glue interactive sessions' one (≈USD 0.06/h across both Interactive accounts under Stage 3's single-AZ rule, while the `egress/` slices are up — the decision row carries the corrected numbers and the two in-stage readings) — if that decision lands on Glue sessions, this row leaves the map (Glue needs no blueprint) | **Per use**: **USD 0.0526/vCPU-h + 0.0058/GB-h** (x86; ARM cheaper), billed only while a session runs (`PRICING.md` §5). Near-standing tail: a **started** interactive application keeps one 4 vCPU/16 GB kernel worker even with no *pre-initialized capacity* configured (`autoStop` 30 min idle; the 60-min kernel timeout is not configurable) |
-| `AmazonBedrockGenerativeAI` | The Bedrock generative-AI app surface (chat/flow apps over Bedrock models) — the `objectives.md` AI-models feature (`bedrock:*` + SageMaker inference, Stage 1c's feature→API table) | **Per use** — token-billed (on-demand), no standing resource. **MEASURED 2026-08-21 — the row is in `PRICING.md` §5** (`AmazonBedrock` offer file, published 2026-08-20), and it carries two readings the rate table alone would hide: the `us-west-2` file has **no `output-tokens` SKU for any Claude model** (current Claude is reached through a cross-region inference profile, published under the profile's home Region), and **`sa-east-1` carries no Claude and no Nova at all** — so §9's Ratio column is *absent*, not a premium. Under `VpcOnly` the Bedrock runtime endpoint(s) join the step 4.2 list at +USD 0.010/h each |
+**Three names in the previous table did not exist**: `EMRServerless` → **`EmrServerless`**, `EMRonEC2`
+→ **`EmrOnEc2`**, `Quicksight` → **`QuickSight`**. All three were read off documentation prose and
+none resolves — Lesson 38, and the reason the column header says *API name* rather than *name*.
 
-#### Category 2 — on demand (authorized; named trigger, then commit + apply)
+Billing **shape** is read from documentation; billing **numbers** only where `PRICING.md` measured
+them. The per-blueprint resource lists were re-read 2026-08-19 (that pass caught `LakehouseCatalog`
+being Redshift-backed, Stage 6 decision 4); there is no "ML experience" blueprint, and the per-project
+SageMaker AI domain comes from **`Tooling`** — both corrections to D26's wording, 2026-08-16.
 
-| Blueprint (API name) | What it provisions | Billing shape | Trigger |
-|---|---|---|---|
-| `Workflows` (OnDemand) | A **provisioned MWAA (Airflow) environment** — billed hourly while it exists | **Standing**: MWAA `mw1.micro` **≈ USD 211.70/month** left up (`PRICING.md` §1) — the shape D7 rejected for daily use | **D28's documented last-rung fallback**: enabled only if INT-14's chain falls through at Stage 10 (`awscc_mwaaserverless_workflow`, then the CFN wrapper, then this) — and then as `[E]`, torn down between uses. The *serverless* Workflows surface is separate: Stage 10 verification (i) finds what enables it |
-| `MLExperiments` | An **MLflow tracking server** for the project | **Standing** — the server bills per hour while up (no idle shutdown like the apps have) + storage; **not measured**. Known floor under `VpcOnly`: the `aws.sagemaker.us-west-2.mlflow` interface endpoint, +USD 0.010/h per account | Experiment tracking concretely needed; **measure the tracking-server price first** (Lesson 6) |
+Alphabetical by API name, the order `list-environment-blueprints` returns sorted — so a future roster
+can be diffed against this table directly.
 
-#### Category 3 — disabled (enabling requires amending the decision)
+| Blueprint (API name) | What it provisions | Billing shape | Trigger | Category |
+|---|---|---|---|---|
+| `AmazonBedrockChatAgent` | A configurable generative AI app with a conversational interface | **Per use** — token-billed on demand, no standing resource (`PRICING.md` §5) | — | `undefined` |
+| `AmazonBedrockEvaluation` | LLM evaluation for text generation, classification, question answering and summarization | **Per use** — token-billed; evaluation jobs bill the models they call | — | `undefined` |
+| `AmazonBedrockFlow` | A configurable generative AI workflow | **Per use** — token-billed | — | `undefined` |
+| `AmazonBedrockFunction` | A reusable component for including dynamic information in model output | **Per use** — token-billed | — | `undefined` |
+| `AmazonBedrockGuardrail` | A reusable component for implementing safeguards on model output | **Per use** — token-billed; guardrail evaluation is its own unit | — | `undefined` |
+| `AmazonBedrockKnowledgeBase` | A reusable component for providing your own data to apps | **Per use** — token-billed **plus** whatever vector store it stands up; the storage half is **not measured** and is the one shape here that can bill while idle | — | `undefined` |
+| `AmazonBedrockPrompt` | A reusable set of inputs that guide model output | **Per use** — token-billed | — | `undefined` |
+| `DataLake` (console: `LakeHouseDatabase`) | Per project: **Glue databases, Lake Formation permissions, an Athena workgroup** — the catalog/SQL surface on the Glue + LF substrate Stage 5 built, the query path D13 depends on | **Per use**: Athena SQL **USD 5.00/TB scanned** (`PRICING.md` §5); Glue catalog negligible at lab scale. No standing resource | default — configured at step 1.4 | **1** |
+| `EmrOnEc2` | EMR clusters on EC2 instances — Spark, Hive and other big-data workloads from a reusable CloudFormation template | **Standing in practice** — instance-hours + EMR uplift while the cluster exists; a forgotten cluster bills on. Not measured | amend the decision (unowned until 2026-08-19) | **3** |
+| `EmrOnEks` | Amazon EMR on EKS resources, same workload family as `EmrOnEc2` | **Standing in practice** — an EKS cluster underneath, plus EMR uplift. Not measured | — | `undefined` |
+| `EmrServerless` | An EMR Serverless application per project — the VPC-capable Spark runtime replacing the Athena-Spark default (open question 12), and **the only engine whose compute connection documents an LF fine-grained mode** (`project.spark.fineGrained`; the notebook Spark Connect path is full-table on every engine). Under `VpcOnly` it asks for **four** optional endpoints against Glue interactive sessions' one (≈USD 0.06/h across both Interactive accounts under Stage 3's single-AZ rule, while the `egress/` slices are up) | **Per use**: **USD 0.0526/vCPU-h + 0.0058/GB-h** (x86; ARM cheaper), billed only while a session runs (`PRICING.md` §5). Near-standing tail: a **started** interactive application keeps one 4 vCPU/16 GB kernel worker even with no *pre-initialized capacity* configured (`autoStop` 30 min idle; the 60-min kernel timeout is not configurable) | default — **Stage 6 decision 1, taken 2026-08-21 as KEEP-or-REMOVE**: enabled at 1.4, and removed if either of the two in-stage readings comes out against it | **1** |
+| `LakehouseAdmin` | *"Creates a unified data source across all Lakehouse catalogs in the account and automatically ingests and catalogs all available data."* **Read this row before categorising it**: an automatic, account-wide ingest-and-catalog is the shape `docs/GOVERNANCE.md` exists to prevent, and the account it would run in holds a governed lake | Not documented. Whatever a standing crawl of everything costs, plus the catalog it writes | — | `undefined` |
+| `LakehouseCatalog` | A new catalog in the SageMaker Lakehouse **backed by S3 tables or Redshift Managed Storage** — *not* the Glue/Athena surface its name suggests (the 2026-08-19 re-read) | RMS storage + the Redshift query path — the same cost family D12 excluded. Not measured | amend **decision 4** (2026-08-19); the Glue/Athena form this project uses is `DataLake` | **3** |
+| `MLExperiments` | An **MLflow tracking server** for the project (OnDemand blueprint) | **Standing** — the server bills per hour while up (no idle shutdown like the apps have) + storage; **not measured**. Known floor under `VpcOnly`: the `aws.sagemaker.us-west-2.mlflow` interface endpoint, +USD 0.010/h per account | experiment tracking concretely needed; **measure the tracking-server price first** (Lesson 6) | **2** |
+| `MLflowApp` | *"Creates an MLflow App for SageMaker Unified Studio."* **The same capability as `MLExperiments`, arriving twice** — categorise the pair together, so enabling one does not quietly imply the other | Not measured. App-shaped rather than server-shaped, so probably per app-hour — **unread** | — | `undefined` |
+| `PartnerApps` | An IAM role and a Connection giving access to third-party Partner AI Apps | **Standing/subscription** — partner licence + deployed infrastructure; varies by partner. Not measured | amend the decision | **3** |
+| `QuickSight` | The QuickSight analytics/dashboard surface inside a project | **Subscription** — per author/month + per reader session. Not measured | amend the decision. **Also blocked in fact**: the console reads *"QuickSight account not set up"* (2026-08-21) | **3** |
+| `RedshiftServerless` | A Redshift Serverless workgroup + namespace | **Per use** with a **per-query RPU minimum** + storage — a second, larger query bill on top of Athena's (`PRICING.md` §5) | **Never** — excluded by **D26/D12**; enabling means reopening those decisions, not amending this one. `US-3` fails if it appears, with its own message | **3** |
+| `S3Bucket` | *"Create S3 bucket for SageMaker Unified Studio project."* Not offered by the console — read from `get-environment-blueprint` | Storage + requests. Not measured. **The governing question is not cost**: a bucket born here has an encryption key and a policy nobody in this project chose (`docs/GOVERNANCE.md` §Encryption) | — | `undefined` |
+| `S3TableCatalog` | *"Create S3 table catalog for SageMaker Unified Studio project."* Not offered by the console. **Possibly what `LakehouseCatalog` expands into when its S3-tables form is picked** — the same one-console-entry-to-many-API-rows shape as the Bedrock grouping. **Hypothesis, not a reading** | S3 Tables storage + maintenance. Not measured | — | `undefined` |
+| `Tooling` | The project's basic environment: the per-project **SageMaker AI domain**, project roles, security groups, Athena workgroups, the project S3 location — and the parameter surface Stage 6 step 1.5 locks (`sagemakerDomainNetworkType`, idle shutdown, `maxEbsVolumeSize`, TIP). Mandatory — nothing else provisions a working environment | Per **app-hour running** (`ml.t3.medium` JupyterLab/Code Editor at **USD 0.050/h**, `PRICING.md` §8) + EBS. An open app bills whether used or not — the step 8 idle shutdown is what converts "up" into "in use" | default — mandatory | **1** |
+| `ToolingLite` | *"Create basic resources for SageMaker Unified Studio project."* Not offered by the console. **Read alongside `Tooling` before categorising**: if the service picks it as a lighter variant on its own, an `undefined` here becomes a `US-3` failure about something nobody chose (Lesson 17) | Not documented. Presumably the same app-hour shape as `Tooling` with fewer resources — **unread** | — | `undefined` |
+| `Workflows` | A **provisioned MWAA (Airflow) environment** from a CloudFormation template — billed hourly while it exists | **Standing**: MWAA `mw1.micro` **≈ USD 211.70/month** left up (`PRICING.md` §1) — the shape D7 rejected for daily use | **D28's documented last-rung fallback**: enabled only if INT-14's chain falls through at Stage 10 (`awscc_mwaaserverless_workflow`, then the CFN wrapper, then this) — and then as `[E]`, torn down between uses. The *serverless* Workflows surface is separate: Stage 10 verification (i) finds what enables it | **2** |
 
-| Blueprint (API name) | What it provisions | Billing shape | Note |
-|---|---|---|---|
-| `RedshiftServerless` | A Redshift Serverless workgroup + namespace | Per use with a **per-query RPU minimum** + storage — a second, larger query bill on top of Athena's (`PRICING.md` §5) | **Never** — excluded by **D26/D12**; enabling means reopening those decisions, not amending this one. `US-3` fails if it appears, with its own message |
-| `LakehouseCatalog` | A new catalog in the SageMaker Lakehouse **backed by Amazon Redshift Managed Storage** — *not* the Glue/Athena surface its name suggests (the 2026-08-19 re-read; Stage 6 decision 4) | RMS storage + the Redshift query path — the same cost family D12 excluded. Not measured | disabled by decision 4 (2026-08-19); the Glue/Athena form this project uses is `DataLake`, category 1 |
-| `EMRonEC2` | EMR clusters on EC2 instances | Standing in practice — instance-hours + EMR uplift while the cluster exists; a forgotten cluster bills on. Not measured | disabled by decision (was unowned until 2026-08-19) |
-| `PartnerApps` | Third-party partner ML applications | Standing/subscription — partner license + deployed infrastructure; varies by partner. Not measured | idem |
-| `Quicksight` | The QuickSight analytics/dashboard surface | Subscription — per author/month + per reader session. Not measured | idem |
+**Ten rows carry a category and thirteen do not**, which is the honest state rather than a gap to be
+filled quickly: seven are the Bedrock family that decision 5 addressed only through its console
+grouping, two (`EmrOnEks`, `MLflowApp`) are blueprints the plan never saw, and four
+(`LakehouseAdmin`, `S3Bucket`, `S3TableCatalog`, `ToolingLite`) the console does not offer at all.
+**`US-3` fails on every one of them**, so the table must be completed before step 1.4's first apply —
+not because an `undefined` is dangerous, but because a red battery that is merely uncategorised is
+indistinguishable from one that caught something.
 
 ## S3 — the project's own storage, and where the lake is not
 
