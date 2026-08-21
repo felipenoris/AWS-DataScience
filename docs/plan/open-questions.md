@@ -333,6 +333,18 @@ length, under item numbers 10-12 that collided with the live items above; the du
 
 ### Raised by Stage 5 pass 3, 2026-08-19
 
+    **A FOURTH use, 2026-08-21, and this one was surfaced by the user rather than by an executor.**
+    Stage 6 step 5.0's build host (`sandbox/devbox/`) is reached with `aws ssm start-session`, and the
+    user noticed it works **with the tunnel down** and asked whether that was expected. It is, for
+    exactly this decision: `start-session` is an API call to a public endpoint, the agent holds its
+    channel open outbound, and `InfrastructureAccess` carries no `DenyControlPlaneOffVpn`. What it
+    cost was a **false sentence** — the slice had shipped claiming *"reachable only with the tunnel
+    up"*, which was true of its network path and false of its shell. The user's resolution was to
+    **withdraw the requirement rather than fake it**: the devbox now has no ingress rule at all and
+    SSM is the only way in, with the egress-through-the-VPN-host requirement kept unchanged. **The
+    reusable part is the shape, not the host:** an exemption taken for a recovery path keeps arriving
+    in places nobody weighed it for, and each arrival is a chance for a design to describe itself
+    wrongly. That is what this item is for.
 18. **Does `lakeformation:CreateLFTag` in the governance manager's IAM half make it an "LF-Tag creator",
     and therefore able to *grant data* it cannot read?** The larger question this came from is
     **answered** and closed: AWS states that granting data permissions through an LF-Tag expression

@@ -337,14 +337,13 @@ def tfvars_values(account: str, slice_name: str) -> dict:
                 # inside AWS: the host SNATs, so no VPC, route table or security group ever
                 # sees it, and its single job is not colliding with a home or cafe LAN.
                 values["peer_cidr"] = WIREGUARD_PEER_CIDR
-            if slice_name == "devbox":
-                # Stage 6 step 5.0's build host, added 2026-08-21. It takes the SAME range
-                # vpn/ does and for the mirror-image reason: vpn/ needs it to MASQUERADE the
-                # clients, this needs it to ADMIT them. The devbox has no public address and
-                # no inbound rule for anything else, so the client range is the whole of its
-                # ingress - "reachable only with the tunnel up" written as a security group
-                # rather than as a habit. It is still never chosen in the slice.
-                values["peer_cidr"] = WIREGUARD_PEER_CIDR
+            # NOTHING EXTRA FOR `devbox`, AND THE ABSENCE IS A DECISION TAKEN THE DAY THE
+            # SLICE WAS BUILT (2026-08-21). It briefly took WIREGUARD_PEER_CIDR, to admit the
+            # tunnel's clients on its security group - and the requirement behind that was
+            # WITHDRAWN by the user the same day, once a measurement showed the rule did not
+            # gate the one path anybody uses: `ssm start-session` reaches the agent's OUTBOUND
+            # channel and no security group sees it. The devbox now has no ingress rule at
+            # all, so an emission here would feed a variable that feeds nothing.
             if slice_name == "probes":
                 # Each side's security group names the OTHER side's VPC range: Production
                 # admits the source, Sandbox egresses to the target. Keeping the peer range

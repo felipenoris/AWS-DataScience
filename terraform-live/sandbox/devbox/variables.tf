@@ -2,9 +2,13 @@
 #
 # The first five arrive from the GENERATED, untracked terraform.auto.tfvars
 # (./scripts/gen-tfvars.py sandbox devbox): region and env for Stage 2's standing reasons,
-# zone_ids because the AZ choice lives in scripts/tfhygiene/backend.py (D9), account_folder
-# because a remote-state key is keyed by the account FOLDER, and peer_cidr because the
-# WireGuard client range is an allocation, not a decision this slice may take (Lesson 14).
+# zone_ids because the AZ choice lives in scripts/tfhygiene/backend.py (D9), and account_folder
+# because a remote-state key is keyed by the account FOLDER.
+#
+# peer_cidr LEFT THIS FILE ON 2026-08-21, with the ingress rule it fed: the user withdrew the
+# "reachable only over the VPN" requirement once a measurement showed it was not true of the
+# shell, and an input with no consumer sends the next reader hunting for the resource that
+# uses it (the same argument that keeps zone_ids out of bootstrap/'s tfvars).
 #
 # The two SIZE knobs arrive from the TRACKED instance_type.auto.tfvars beside this file - the
 # second file in this repository to use that mechanism, deliberately mirroring the first so a
@@ -53,12 +57,6 @@ variable "zone_index" {
 
 variable "account_folder" {
   description = "This slice's terraform-live/ folder name - the first path segment of every state key. Consumed by the remote-state reads of foundation/ and vpn/."
-  type        = string
-  nullable    = false
-}
-
-variable "peer_cidr" {
-  description = "The WireGuard client range, from scripts/tfhygiene/backend.py through the generated tfvars. THE WHOLE OF THIS HOST'S INGRESS: the security group admits it and nothing else, so 'reachable only with the tunnel up' is a rule rather than a habit. Not chosen here."
   type        = string
   nullable    = false
 }

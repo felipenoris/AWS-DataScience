@@ -14,11 +14,29 @@
 # ------------------------------------------------------------------------------------------
 # THE NETWORK SHAPE, WHICH IS THE WHOLE DESIGN, AND IT IS TWO SENTENCES:
 #
-#   IN   nothing reaches this host except from the WireGuard client range. It has no public
-#        address, it is in a tier with no internet gateway, and its security group admits
-#        var.peer_cidr and nothing else. A shell arrives over Session Manager, which needs no
-#        inbound rule at all - so the ingress rule is for the direct paths (docker daemon,
-#        a served port during a test) rather than for the shell.
+#   IN   NOTHING. There is no ingress rule at all, and that is the design rather than an
+#        omission - decided by the user 2026-08-21, after a measurement made the earlier shape
+#        dishonest. This host has no public address and sits in a tier with no internet
+#        gateway; the only way to a shell is Session Manager, which needs NO inbound rule
+#        because the agent holds the channel open OUTBOUND.
+#
+#        WHAT THE RULE THAT USED TO BE HERE WAS FOR, AND WHY IT WENT. It admitted the
+#        WireGuard client range on every port, to deliver "reachable only with the tunnel up".
+#        Two things were wrong with it. It did not gate the SHELL - `ssm start-session` goes
+#        laptop -> the PUBLIC SSM API -> the agent's outbound channel, and this group never
+#        sees it, so the claim was false for the one path anybody actually uses. And it was a
+#        grant with no consumer: AL2023 runs sshd, so the rule left port 22 REACHABLE from the
+#        tunnel on a host with zero authorized keys - one `key_name` away from a second way in
+#        that nothing in this design asked for. A rule nobody uses is not neutral; it is the
+#        shape a later convenience grows out of (Lesson 5).
+#
+#        SO THE REQUIREMENT WAS WITHDRAWN RATHER THAN FAKED. "Reachable only over the VPN" is
+#        not delivered for this host, and saying so is the point - the access path is IAM, and
+#        for InfrastructureAccess it does not require the tunnel (open question 17, the user's
+#        option (a): the administrative credential is also the fire escape). If a port served
+#        during a build ever has to be reached from the laptop, the answer is SSM PORT
+#        FORWARDING - AWS-StartPortForwardingSession - which is still Session Manager and
+#        still needs no ingress rule.
 #
 #   OUT  through the WireGuard host, which is the single public egress of this design. THREE
 #        THINGS IN THREE SLICES, AND ALL THREE ARE NEEDED - reach is an intersection (Lesson
@@ -61,26 +79,15 @@ resource "aws_route" "default_via_wireguard" {
   network_interface_id   = data.terraform_remote_state.vpn.outputs.primary_network_interface_id
 }
 
-# ---------------------------------------------------------------------- the security group
+# ------------------------------------------------- the security group: EGRESS ONLY
+#
+# NO ingress BLOCK. An aws_security_group with none is a group that admits nothing, which is
+# exactly the posture this host wants: Session Manager needs no inbound rule, and nothing else
+# connects. The header above carries why the rule that used to be here was withdrawn.
 resource "aws_security_group" "devbox" {
   name        = "awsds-${var.env}-devbox"
-  description = "Stage 6 build host - ingress from the WireGuard client range only; egress through the VPN host"
+  description = "Stage 6 build host - NO ingress at all (Session Manager needs none); egress through the VPN host"
   vpc_id      = data.terraform_remote_state.foundation.outputs.vpc_id
-
-  # THE CLIENT RANGE, AND IT IS THE ONLY INGRESS THERE IS. It is also a range that never
-  # appears anywhere else inside AWS: the WireGuard host SNATs the tunnel, so no other
-  # security group in this design has ever had reason to name it. Here it is named because
-  # this rule is the answer to "reachable only over the VPN" - with the tunnel down there is
-  # no source address that satisfies it, and with the host stopped there is no path at all.
-  ingress {
-    # NO APOSTROPHE, and it is not a style rule: AWS validates a rule description against
-    # ^[0-9A-Za-z_ .:/()#,@\[\]+=&;{}!$*-]*$, and an apostrophe fails it at PLAN time.
-    description = "the WireGuard client range - the whole of the inbound surface"
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = [var.peer_cidr]
-  }
 
   # UNRESTRICTED ON PURPOSE, and the argument is the one sandbox/probes/ makes for its own
   # egress: what bounds this host's reach is the ROUTE - a single default at a NAT instance

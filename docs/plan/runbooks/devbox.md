@@ -28,7 +28,7 @@ and nothing more. The push is step 5.0's own act, from an identity that may.
 | Piece | Where | What it does |
 |---|---|---|
 | the instance | isolated tier, no public IP | the build host itself |
-| its security group | the slice, `[E]` | admits **`peer_cidr`** — the WireGuard client range — and nothing else |
+| its security group | the slice, `[E]` | **egress only — no ingress rule at all.** Session Manager needs none |
 | **the route** | `0.0.0.0/0` in the **isolated** route table, `[E]` | sends this tier's default at the WireGuard host's **ENI** |
 | `vpc_nat_cidrs` | `sandbox/vpn/`, module `wireguard-v0.4.0`, `[D]` | makes that host a **NAT instance** for this tier: source/dest check off, MASQUERADE + FORWARD in `wg0`'s `PostUp` |
 | the WireGuard **security group** | `sandbox/foundation/vpn-anchors.tf`, `[P]` | admits the isolated tier's ranges **inbound**. Without it the other three do their jobs and the packet is dropped on arrival |
@@ -38,15 +38,12 @@ an **intersection** (Lesson 28): the first apply had the route and the masquerad
 rule, so the host booted, installed its packages through the S3 gateway endpoint, and then timed out on
 `ssm.<region>.amazonaws.com`. Nothing in any single file was wrong.
 
-**In: two paths, and only one of them is a network path.** The **network** path — a port served during a
-test, the docker daemon, anything aimed at the private IP — is gated by the VPN and by nothing else: no
-public address, a tier with no internet gateway, `peer_cidr` alone in the security group. The **Session
-Manager shell** is gated by **IAM, not the network**: `start-session` goes laptop → the *public* SSM API →
-the channel the agent holds open outbound, and the security group never sees it. For the six persona sets
-the VPN still gates it (`DenyControlPlaneOffVpn` denies `*` on `*` off-VPN); for `InfrastructureAccess` it
-does not, **by decision** — open question 17, option (a): the administrative credential is outside the VPN
-because it is also the fire escape. **So `devbox.py ssm` works with the tunnel down, and that is the
-standing decision behaving as decided.**
+**In: nothing.** There is no ingress rule at all — the *"reachable only over the VPN"* requirement was
+**withdrawn by the user on 2026-08-21** rather than delivered in name only: the rule that used to be here
+did not gate the shell (`ssm start-session` reaches the agent's *outbound* channel and no security group
+sees it) and it left port 22 reachable on a host with no authorized keys. **What gates the shell is IAM** —
+for the six persona sets the VPN still does; for `InfrastructureAccess` it does not, by open question 17,
+option (a). A port served during a build is reached with SSM **port forwarding**, not with an ingress rule.
 
 **Out:** through the WireGuard host, the single public egress of this design. **No NAT gateway is
 involved**, so `egress/` need never be up for a build — 0.170 USD/h not spent.
