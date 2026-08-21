@@ -17,8 +17,9 @@ exactly once, at bootstrap, and it is **replaced by [Stage 8](../docs/plan/stage
 step 1**, whose pipeline builds these same files from a GitLab repository the data scientist can write
 to, smoke-tests them, scans them, and releases them behind the **Dev Env Steward**'s approval gate
 (`docs/ORGANIZATION.md`). Until that exists, the discipline the pipeline will enforce is enforced here
-by the files themselves: every base pinned by **digest**, every download **checksum-verified**, and
-every assumption about the base image expressed as a **build-time assertion** rather than a comment.
+by the files themselves: every base pinned by **digest**, every download **checksum-verified**, every
+assumption about the base image expressed as a **build-time assertion** rather than a comment, and every
+package moved inside the base's conda environment made to **prove it moved nothing else**.
 
 **One rebuild in between**, and it is scheduled rather than incidental: **Stage 7 step 2.6** fills the
 CA-install layer with the internal PKI root (D36 §3, amended 2026-08-21). The layer already exists and
@@ -31,8 +32,9 @@ is asserted empty — see [`base/ca-certificates/README.md`](base/ca-certificate
 tag list), and SMUS spaces run on x86 instance types, so the platform is not a choice. The laptop
 also has no docker installed. So the build happens on
 [`terraform-live/sandbox/devbox/`](../terraform-live/sandbox/devbox/README.md) — an `[E]` `t3.xlarge`
-in the Sandbox account's isolated tier, reachable only over the VPN, reaching the internet only
-through the WireGuard host. It exists while a build runs and is destroyed after.
+in the Sandbox account's isolated tier, reached over Session Manager and **with no ingress rule at
+all**, reaching the internet only through the WireGuard host. It exists while a build runs and is
+destroyed after.
 
 ```bash
 ./scripts/devbox.py up && ./scripts/devbox.py sync && ./scripts/devbox.py ssm
@@ -51,6 +53,11 @@ sudo docker build -t awsds/dev-env:local dev-env
 ```bash
 ./scripts/devbox.py down
 ```
+
+**A change to `base` rebuilds `dev-env` from its first layer**, and a rebuild needs room for a second
+copy of a ~17 GB image before the old one loses its tag. The 64 GiB root is enough for that and not for
+much more: [`docs/plan/runbooks/devbox.md`](../docs/plan/runbooks/devbox.md) §S is how to look before
+starting one, and what to prune when the answer is no.
 
 **Nothing in either `Dockerfile` compiles anything** — Julia is a prebuilt tarball, `rustup` fetches
 prebuilt binaries, the R environment is conda-forge binaries. That was a requirement while the build
