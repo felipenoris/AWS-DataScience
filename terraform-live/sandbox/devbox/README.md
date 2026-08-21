@@ -15,10 +15,27 @@ while a build is running. The build code itself is [`images/`](../../../images/R
 
 ## The network shape, which is the whole design
 
+**One way in, and it is not a network path** — the shape since 2026-08-21, when the user withdrew the
+*"reachable only over the VPN"* requirement rather than let it be delivered in name only.
+
 | | |
 |---|---|
-| **in** | **Nothing reaches it except from the WireGuard client range.** No public address, a tier with no internet gateway, and a security group that admits `peer_cidr` and nothing else. The shell arrives over **Session Manager**, which needs no inbound rule — so the ingress rule is for the direct paths (a served port during a test), not for the shell |
-| **out** | **Through the WireGuard host**, the single public egress of this design. **Three things in three slices, and all three are needed** (Lesson 28 — the first apply had two of them and the host timed out reaching SSM): one **route** here sends this tier's default at that instance's ENI; `sandbox/vpn/` gives the host the **masquerade rules** that make it a NAT instance for these ranges; and `sandbox/foundation/`'s WireGuard **security group** admits them inbound, or the packet is dropped on arrival. **No NAT gateway is involved** — `egress/` is not a prerequisite and need never come up, which is **0.170 USD/h not spent** to run a build |
+| **in** | **Nothing. There is no ingress rule at all.** No public address, a tier with no internet gateway, and a security group with an empty ingress list. The only way to a shell is **Session Manager**, which needs no inbound rule because the agent holds the channel open *outbound* — measured: the host registers `Online` with the group admitting nothing |
+| **out** | **Through the WireGuard host**, the single public egress of this design — unchanged, and the requirement that stayed. **Three things in three slices, all three needed** (Lesson 28): the **route** here, the **masquerade rules** in `sandbox/vpn/`, and the WireGuard **security group** in `sandbox/foundation/` admitting them inbound. **No NAT gateway is involved** — `egress/` need never come up, which is 0.170 USD/h not spent |
+
+**Why the ingress rule went, and it is worth one paragraph because it looked like a control.** It admitted
+the WireGuard client range on every port, to deliver *"reachable only with the tunnel up"*. Two things were
+wrong with it. **It did not gate the shell** — `ssm start-session` goes laptop → the *public* SSM API → the
+agent's outbound channel, and the group never sees it, so the claim was false for the one path anybody
+uses. **And it was a grant with no consumer**: AL2023 runs `sshd`, so the rule left port 22 *reachable*
+from the tunnel on a host with zero authorized keys — one `key_name` away from a second way in that
+nothing here asked for. A rule nobody uses is not neutral; it is what a later convenience grows out of.
+
+**What gates the shell is IAM.** For the six persona sets the VPN still does (`DenyControlPlaneOffVpn`
+denies `*` on `*` off-VPN); for `InfrastructureAccess` it does not, by **open question 17**, option (a) —
+the administrative credential is outside the VPN because it is also the fire escape. **If a port served
+during a build ever has to be reached from the laptop:** SSM **port forwarding**
+(`AWS-StartPortForwardingSession`), which is still Session Manager and still needs no ingress rule.
 
 **It is the isolated tier, and that is a choice with a co-tenant.** The private tier's default
 route belongs to `egress/` under `egress_mode=A`, and two slices writing `0.0.0.0/0` into one

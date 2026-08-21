@@ -1331,3 +1331,50 @@ disagreed with the sibling lock file I had copied in (6.61.0 cached, 6.60.0 lock
 box exists for and has not been done — and the push of the results into the Production ECR from an identity
 that may. **The devbox is UP and billing at 0.1664 USD/h as this is written**; `./scripts/devbox.py down`
 is the cure and `status` is the reading.
+
+### A follow-up the same day: the requirement was withdrawn rather than delivered in name
+
+The user asked *"`devbox.py ssm` works without me being on the VPN — is that expected?"* **It is, and the
+sentence I had written was wrong.** `ssm start-session` goes laptop → the **public** SSM API → the channel
+the agent holds open **outbound**; the security group never sees it. So *"reachable only with the tunnel
+up"* was false for the one path anybody uses — and the slice README said so **itself**, two clauses after
+claiming the opposite. A sentence disagreeing with itself inside one table cell.
+
+**What the measurement found beside it, and it is the half that decided the outcome.** Asked what other
+ways in exist, the host answered: `sshd` **active on 0.0.0.0:22**, `ec2-instance-connect` **installed**,
+`AuthorizedKeysCommand` already wired to it, and **zero authorized keys**. So the ingress rule was not
+merely failing to gate the shell — it was leaving port 22 *reachable* from the tunnel on a host one
+`key_name` away from a second way in that nothing in this design asked for. **A grant with no consumer is
+not neutral; it is the shape a later convenience grows out of** (Lesson 5, from the side where the control
+is real but guards nothing). Two other paths were priced and reported: **EC2 Instance Connect** would have
+worked today with no infrastructure change *and* would genuinely have required the tunnel (ephemeral
+60-second key, IAM-authenticated, but the SSH still has to reach a private IP) — and the **serial console**
+is shut off org-wide, which the API states in its own words: `SerialConsoleAccessEnabled: false`,
+**`ManagedBy: declarative-policy`**. That is Stage 1c step 7.8's declarative policy exercised for the first
+time against something real.
+
+**The user's decision: SSM only, and drop the VPN-only requirement — keep the egress one.** So the ingress
+rule was **removed entirely** rather than narrowed, `peer_cidr` left the slice's variables and
+`backend.py`'s emission with it, and five documents stopped claiming a control that was not one. The
+security group now has an **empty ingress list**, and the host registers `Online` with it that way —
+which is the same fact measured from the other side.
+
+**A `description` change forces a security-group replacement, so this went out as `down` then `up`** rather
+than as an in-place edit fought through ordering. That is what the `[E]` layer is for, and it cost one
+teardown.
+
+**And the re-`up` found a defect in my own helper.** `docker --version` taken the moment `up` returned came
+back **empty**, with `systemctl is-active docker` saying `inactive` and the boot log mid-install: **the SSM
+agent registers while cloud-init is still running**, so `up` had been reporting *"up. next: sync, ssm"*
+about the agent while the toolchain was not there yet — one measurement standing in for another
+(Lesson 13). `up` now waits for `docker` to be **active** and says which of the two it is waiting on.
+
+**What did not change, and is the requirement that stayed:** egress. The build host still reaches the
+internet only through the WireGuard host, still with no NAT gateway anywhere, and still leaves under
+`52.89.212.1` — re-measured after the rebuild.
+
+**Not edited: `objectives.md`.** The brief's *"All user access to the cloud infrastructure will be
+performed through a VPN"* is untouched by this, because open question 17 already records the reading that
+covers it — the objective is delivered **for every persona**, and the administrative credential is
+deliberately outside it. This is that exemption being leaned on again, in a new place; the question exists
+to keep it visible rather than let it become furniture.

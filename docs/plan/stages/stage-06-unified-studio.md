@@ -756,8 +756,10 @@ find out. `images/base/Dockerfile` fails the build instead.
 (2026-08-21, the same sitting): the distribution publishes **no `arm64` tag at all** — only `-cpu`/`-gpu`,
 both `linux/amd64` — SMUS spaces run on x86, and the laptop is `arm64` **with no docker installed**. So
 this step gained a host: **`terraform-live/sandbox/devbox/`**, an `[E]` `t3.xlarge` in the Sandbox
-account's isolated tier, whose whole network shape is two sentences — reachable **only** from the
-WireGuard client range, and reaching the internet **only** through the WireGuard host, which
+account's isolated tier, whose whole network shape is two sentences — **no ingress rule at all** (Session
+Manager needs none, and the *"VPN-only"* requirement was **withdrawn by the user on 2026-08-21** once a
+measurement showed the rule it rested on gated nothing anybody used), and reaching the internet **only**
+through the WireGuard host, which
 `wireguard-v0.4.0` turns into a NAT instance for exactly that tier. **No NAT gateway is involved**, so
 `egress/` need never come up for a build (0.170 USD/h not spent). `./scripts/devbox.py up|sync|ssm|down`
 drives it; its README carries the design and the refusals.

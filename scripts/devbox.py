@@ -239,6 +239,58 @@ def terraform(action: str, auto: bool) -> int:
     return 0
 
 
+def wait_for_docker(iid: str) -> bool:
+    """The SECOND readiness question, and `up` used to answer only the first (2026-08-21).
+
+    The SSM agent registers while cloud-init is still running, so `Online` arrives a minute or
+    so BEFORE `dnf install docker` finishes - measured, not guessed: a `docker --version` taken
+    the moment `up` returned came back EMPTY, with `systemctl is-active docker` saying
+    `inactive` and the boot log mid-install. Printing "up. next: sync, ssm" at that instant is
+    a readiness claim about the wrong thing - the agent being reachable and the box being
+    usable are two different measurements, and one was standing in for the other (Lesson 13).
+    """
+    for attempt in range(20):
+        res = sh(
+            aws(
+                "ssm",
+                "send-command",
+                "--instance-ids",
+                iid,
+                "--document-name",
+                "AWS-RunShellScript",
+                "--parameters",
+                json.dumps({"commands": ["systemctl is-active docker"]}),
+                "--query",
+                "Command.CommandId",
+                "--output",
+                "text",
+            )
+        )
+        if res.returncode == 0:
+            time.sleep(5)
+            got = sh(
+                aws(
+                    "ssm",
+                    "get-command-invocation",
+                    "--command-id",
+                    res.stdout.strip(),
+                    "--instance-id",
+                    iid,
+                    "--query",
+                    "StandardOutputContent",
+                    "--output",
+                    "text",
+                )
+            )
+            if got.returncode == 0 and got.stdout.strip() == "active":
+                print("    docker: active")
+                return True
+        print(f"    docker not up yet ({attempt + 1}) - the first boot is still installing")
+        time.sleep(10)
+    print(f"\n{RED}docker never came up.{RESET} Read /var/log/awsds-devbox-boot.log over `ssm`.")
+    return False
+
+
 def cmd_up(args) -> int:
     print(f"{BOLD}devbox up{RESET} - Stage 6 step 5.0's build host, in {ACCOUNT}")
     refuse_if_probes_up()
@@ -259,7 +311,10 @@ def cmd_up(args) -> int:
     print(f"\n  {BOLD}waiting for Session Manager{RESET} (first boot installs docker and git)")
     for attempt in range(30):
         if ssm_online(iid, quiet=attempt not in (0, 29)):
-            print(f"\n  {BOLD}up.{RESET} next:")
+            print(f"\n  {BOLD}up{RESET} - the agent is online. Now the toolchain.")
+            if not wait_for_docker(iid):
+                return 1
+            print(f"\n  {BOLD}ready.{RESET} next:")
             print("    ./scripts/devbox.py sync     put images/ on the host")
             print("    ./scripts/devbox.py ssm      open a shell")
             print(
