@@ -1,0 +1,14 @@
+# Python packages ADDED ON TOP of the SageMaker Distribution (Stage 6 step 5.0).
+#
+# THE FILE IS EMPTY AND THAT IS THE STARTING POSITION, not an oversight. The base already
+# carries the distribution's Python stack - pandas, numpy, scikit-learn, pyarrow, boto3,
+# JupyterLab and the SageMaker extensions - and a package pinned here that the base already
+# ships is a second opinion about its version, resolved at build time by whichever line runs
+# last. Add here only what the base does not have.
+#
+# PIN EVERYTHING (`name==x.y.z`). Stage 8 step 1.2's smoke test asserts that every runtime
+# resolves the version the manifest asked for; an unpinned line makes that test meaningless
+# and makes two builds of the same commit different images.
+#
+# UNDER DESIGN B this file is resolved through CodeArtifact (`pypi`), not public PyPI - the
+# build argument PIP_INDEX_URL is what switches it, and no line here changes.

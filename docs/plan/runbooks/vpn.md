@@ -48,10 +48,41 @@ laptop 10.90.0.2 ──wg0──▶ host (masquerade: source becomes the host's 
 
 - **The masquerade is the mechanism**: `iptables -t nat … -j MASQUERADE` in the user data rewrites
   every forwarded packet's source to the host's own address, so tunnel traffic leaves AWS carrying
-  the Elastic IP. `source_dest_check` stays **on**, deliberately — with everything masqueraded,
+  the Elastic IP. For the tunnel, `source_dest_check` stays **on** — with everything masqueraded,
   nothing legitimate is asymmetric, and a broken masquerade rule drops traffic *visibly at the host*
   instead of emitting `10.90.0.x`-sourced packets a peering would discard three hops later
   ([`terraform-modules/wireguard/main.tf`](../../../terraform-modules/wireguard/main.tf)).
+- **THE HOST IS ALSO A NAT INSTANCE FOR THE ISOLATED TIER SINCE 2026-08-21, and that is what turns
+  the check off** (`wireguard-v0.4.0`, module variable `vpc_nat_cidrs`, filled by `sandbox/vpn/`
+  from the isolated subnets' own CIDRs). Two things to hold apart, because the sentence above is
+  still true of the tunnel:
+  - **why the check cannot stay on.** Source/destination checking is applied by the ENI on the way
+    **in** as well as out. A packet from a host in the isolated tier carries neither this
+    instance's address as source nor as destination, so EC2 drops it *before* the kernel could
+    route or masquerade it. No `iptables` rule recovers from that — the masquerade makes the
+    **outbound** leg legitimate, the check is about the **inbound** one. This is why every
+    NAT-instance recipe disables it, and the earlier paragraph's argument was never wrong about
+    the tunnel; it was only ever about the tunnel.
+  - **what is a capability and what is a reach.** The rules ride **wg0's `PostUp`**, not the user
+    data, because this host is `[D]`: user data runs at first boot only, so a rule written there
+    is gone after the first stop, while `wg-quick` re-runs `PostUp` on every boot. And a
+    masquerade rule matches **nothing** until some route table sends traffic here. The route —
+    `0.0.0.0/0` in the isolated route table, at this host's ENI — belongs to
+    [`terraform-live/sandbox/devbox/`](../../../terraform-live/sandbox/devbox/README.md), which is
+    `[E]`. So the standing change is exactly one attribute, and the reach comes and goes with a
+    build session. **If VPC-side NAT is ever mysteriously dead:** `iptables -t nat -L POSTROUTING -n`
+    then `systemctl status wg-quick@wg0`, in that order, over §K0a's session.
+  - **TURNING IT ON THE FIRST TIME REPLACES THE HOST, and that is predicted here rather than
+    discovered in a plan.** The rules live in `wg0.conf`, which is written by the user data, and
+    `user_data_replace_on_change = true` — so the apply that first passes `vpc_nat_cidrs` reads
+    `1 to add, 1 to destroy`, not `1 to change`. Under §K's rules that is routine: the `[P]`
+    Elastic IP and the `[P]` host key survive, so **no client `.conf` moves** and no peer is
+    re-enrolled. What it does cost is the tunnel, for the minutes the rebuild takes — so do it
+    when nobody is on it. **It is not a lockout risk**: `DenyControlPlaneOffVpn` pins the six
+    **persona** sets to the Elastic IP and `InfrastructureAccess` is not one of them, so the
+    `awsds-infra-*` session running the apply is not the session being interrupted. That
+    separation is what `scripts/slices.py` calls "the day `InfrastructureAccess` joins the deny" —
+    it has not, and this is the first change that would have cared.
 - **The path splits by destination, and the lake's perimeter policy mirrors the split exactly.**
   The public subnet's route table carries the two `[P]` **gateway endpoints** (S3, DynamoDB), so S3
   calls from the tunnel arrive at a bucket as **`aws:SourceVpce`** — the endpoint-id branch, the

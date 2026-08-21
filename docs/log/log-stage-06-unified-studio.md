@@ -1117,3 +1117,139 @@ a cause which is not the cause*, and it was refuted as an instance of Lesson 24 
 attributed from its own text is separated by a different channel) standing on Lesson 30 (a tool's failure is
 not a property of the world) — two lessons that already cover it, in a file where the bar is a mistake worth
 not repeating rather than an observation worth having.
+
+---
+
+## 2026-08-21 — The build code, and a build host to run it on: `images/`, `sandbox/devbox/`, and the VPN host's second job
+
+**Claude's hand, on the user's request, across two asks in one sitting.** The first was *"escreve os
+Dockerfiles"*; the second re-scoped where they would be built. **Nothing in this entry is a measurement of
+a running system yet** — the applies are the section at the end, written after they ran, and every
+sentence before it describes code, documentation and readings taken from publishers' metadata.
+
+### It started as a doc correction, and the correction was load-bearing
+
+Step 5.0 named the SMUS BYOI requirement as *"base on `jupyterlab/default`, health check on 8888"*. Read
+against the specification, **`jupyterlab/default` is the Base URL** from the health-check section
+(`jupyterlab/default/api/status`; one application, always named `default`) — the required **base image**
+is `public.ecr.aws/sagemaker/sagemaker-distribution`, **≥ `2.6-cpu`**, whose whole point is that it
+already carries the extensions without which an image will not run in SMUS at all. Building to the old
+sentence would have produced an image the service refuses. Three more constraints the summary did not
+carry, each now enforced in the files rather than restated: **no `ENTRYPOINT`** (the page says adding one
+*"will not work as expected"* — the distribution's `_entrypoint.sh` must survive, and a custom one is a
+`ContainerConfig` setting); `/opt/ml`, `/opt/.sagemakerinternal` and `/var/log/studio` are **AWS's**; and
+the space's EBS volume mounts at `/home/sagemaker-user` on a path that cannot be changed.
+
+**And the ancestry is forced from both ends, which nearly collide.** Stage 8 step 1 wants ONE ancestor —
+application images `FROM base`, so that D17's *"promote only the code"* is true by construction; the BYOI
+spec wants the notebook image to descend from the distribution. The only shape satisfying both is **`base`
+being the distribution plus this project's layer**, with everything else descending from it. The cost is
+named rather than discovered: an ETL container inherits a JupyterLab distribution it never opens. The
+alternative — a slim application base beside a distribution-rooted `dev-env` — is exactly the *"two
+independently built images"* Stage 8 rejects in as many words.
+
+### `images/`, and what the files are made to defend
+
+`base/` and `dev-env/`, their package sets as plain text files (the data scientist owns them —
+`ORGANIZATION.md`'s *Dev Env Steward* — and a merge request against a list is reviewable in a way one
+against a `RUN` line is not), and a README carrying the seam. Every pin came from the publisher's own
+metadata on the day: the base **by digest** read anonymously from the public registry's Docker Registry v2
+API (no IAM action, so `DenyEcrPublicEntirely` does not reach it), Julia's sha256 from
+`versions.json`, `rustup-init`'s from its published `.sha256`.
+
+**Three build-time assertions, because the discipline the Stage 8 pipeline will enforce has to be
+somewhere until it exists.** The activity-monitor extension is **checked, not installed** — the base is
+*documented* to carry it, documented is not measured, and re-installing would paper over a base that
+stopped shipping it, whose symptom is an app billing all night (`US-7`/`US-10`), which is the expensive
+place to find out. The **CA-root count** is asserted in both directions, so Stage 7 step 2.6 flipping
+`CA_ROOTS_EXPECTED=1` cannot half-happen. The **Julia kernelspec** is relocated and then asserted, because
+`IJulia.installkernel` delegates to `jupyter kernelspec install --user` when a `jupyter` is on the PATH —
+and there is one — which lands the spec in *root's* home, invisible to `sagemaker-user`, failing later and
+silently as *"Julia is missing from the launcher"*.
+
+**The CA layer went into `base`, not `dev-env`**, which is a deviation from the sentence Stage 7 step 2.6
+was written with: `dev-env` is `FROM base`, and one intent enforced in two places diverges (Lesson 33).
+Step 2.6 now says it rebuilds both, with the BuildKit registry-cache note that keeps the re-push to the
+changed layer.
+
+**Four defects in my own first draft, found by re-reading it rather than by running it** (there is no
+docker on this laptop, so none of it has been built): `ARG` does not survive `FROM` — three provenance
+LABELs would have recorded the empty string, *a label that looks like a measurement and is not*;
+`pip config set` defaults to the USER level, so run as root it lands in `/root/.config` and holds for the
+rest of the build and not at runtime; a `sed 's/[^,]*/"&"/g'` join emits `""` artifacts at every comma;
+and `rustup-init --component rustfmt clippy` needed the repeated-flag form.
+
+### The re-scope, and the two facts that forced it
+
+The user then set the base image to **`4.3.0-cpu`** by name (digest measured here:
+`sha256:7f5d9c64…`, amd64, Ubuntu 24.04, 24 layers ≈ 3.93 GB compressed, built 2026-07-10) and moved the
+build off the laptop. **Two measurements say it had to move:** the distribution publishes **`cpu`/`gpu`
+suffixes and no `arm64` variant at all**, and SMUS spaces run on x86 — while this laptop is `arm64` **with
+no docker installed**. What the first draft treated as a slow path was not a path.
+
+### `sandbox/devbox/` — an `[E]` build host whose network shape is the whole design
+
+`t3.xlarge`, 64 GiB, both selectable in a tracked `instance_type.auto.tfvars` that deliberately mirrors
+`sandbox/vpn/`'s down to the name and the two keys — **with one difference written on both**: there the
+host is `[D]` and the disk is a standing commitment EBS will not shrink; here it is `[E]`, so a wrong
+value costs one teardown. **In:** nothing reaches it except from the WireGuard client range; the shell
+arrives over Session Manager, which needs no inbound rule at all. **Out:** through the WireGuard host,
+with **no NAT gateway anywhere** — `egress/` is not a prerequisite and need never come up for a build,
+which is 0.170 USD/h not spent.
+
+**It is the ISOLATED tier, and that was a choice between two conflicts.** The private tier's default route
+belongs to `egress/` under `egress_mode=A`, and two slices writing `0.0.0.0/0` into one route table is a
+collision rather than a design. The isolated tier has no default route by construction — the property that
+leaves room for one, **and** the premise `sandbox/probes/`'s perimeter probe measures. So the conflict was
+not removed, it was **moved to a slice that is not normally up**, and then made a control:
+`./scripts/devbox.py` refuses to apply while a probe instance exists, because a comment is an intention
+(Lesson 5).
+
+**What the host deliberately cannot do is push.** Its role carries `AmazonSSMManagedInstanceCore` and no
+`ecr:` at all: the Production registry grants the Interactive accounts a *pull* and nothing more, so a
+push from Sandbox is refused at the far end anyway — and granting the near half of a permission the far
+half denies would produce a role that reads as if it could publish (Lesson 5 again, from the other side).
+
+### The VPN host's second job, and why one attribute had to change
+
+`wireguard-v0.4.0` adds `vpc_nat_cidrs`. Filled, it turns **source/destination checking off** and adds one
+MASQUERADE plus two FORWARD rules per range. **The module's existing comment argued for keeping the check
+ON, and that argument was never wrong — it was only ever about the tunnel.** Source/dest checking is
+applied by the ENI on the way **in** as well as out: a packet from the isolated tier carries neither the
+host's address as source nor as destination, so EC2 drops it *before* the kernel could route or
+masquerade it. No `iptables` rule recovers from that — the masquerade makes the **outbound** leg
+legitimate, the attribute is about the **inbound** one.
+
+**Two details that are the reusable part.** The rules ride **`wg0`'s `PostUp`**, not the user data,
+because this host is `[D]`: user data runs at first boot only, so a rule written there is gone after the
+first stop, while `wg-quick` re-runs `PostUp` on every boot — the only re-entrant hook the host already
+has. And **the capability is `[D]` while the reach is `[E]`**: a masquerade rule matches nothing until a
+route table sends traffic at it, and that route is created and destroyed with the build session. So the
+standing change is exactly one attribute.
+
+**Predicted before the apply, from the code rather than from a plan:** turning it on the first time
+**replaces the host**, because the rules live in `wg0.conf` which the user data writes and
+`user_data_replace_on_change = true`. Under §K's rules that is routine — the `[P]` Elastic IP and host key
+survive, so no client `.conf` moves — and **it is not a lockout risk**: `DenyControlPlaneOffVpn` pins the
+six **persona** sets to the Elastic IP and `InfrastructureAccess` is not one of them, so the session
+running the apply is not the session being interrupted. That is `slices.py`'s *"the day
+`InfrastructureAccess` joins the deny"*, still future, and this is the first change that would have cared.
+
+### Readings taken rather than assumed, and one method note
+
+- **No preventive control requires the image push to cross the tunnel** — a `grep` over all ten
+  organization policy documents finds no `aws:SourceVpce`, `aws:SourceVpc` or `aws:SourceIp` condition
+  anywhere. Worth knowing before sending several GB through a `t3.nano`.
+- **`t3.xlarge` = 0.1664 USD/h `us-west-2`, 0.2688 `sa-east-1`** (ratio 1.62, the same every other `t3`
+  row carries). Measured — but through **`aws pricing get-products`** rather than the bulk offer file,
+  because the `AmazonEC2` region file is hundreds of megabytes. `PRICING.md` §0 now names that door and
+  the one difference that matters to somebody repeating it: it needs credentials.
+- **The build context does not fit in user data.** A gzip+base64 of `images/` is ~27 KB against the
+  16 KB ceiling — measured, not estimated, which is why `devbox.py sync` exists at all and rides
+  `ssm:SendCommand`, fenced the way `./aws/vpn.py --on-host` is.
+- **`SMUS.md`'s Bedrock cell still said a `PRICING.md` row was owed**, six hours after that row was
+  written. Corrected, and the cell now carries the two readings the rate table alone would hide.
+
+### The applies
+
+**Written after they ran.** See the section below, which is the only place their results are recorded.

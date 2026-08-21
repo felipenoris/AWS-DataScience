@@ -65,6 +65,11 @@ terraform-modules/*/.terraform.lock.hcl
 # another account's vpn/ slice. Named in full rather than globbed: the negation must not admit
 # the generated terraform.auto.tfvars sitting beside it, which holds the region and the CIDR.
 !terraform-live/sandbox/vpn/instance_type.auto.tfvars
+# The SECOND exception, and the same shape as the first (Stage 6 step 5.0, 2026-08-21): the
+# build host's machine size and disk size, two decisions worth having in git history rather
+# than in somebody's shell. No account id, no address, no key material - and
+# ./scripts/check-tfvars-shape.py holds it to exactly those two keys.
+!terraform-live/sandbox/devbox/instance_type.auto.tfvars
 
 # Generated per slice by scripts/gen-backend-hcl.py - the one file allowed to hold the region
 # literal (step 2.5). Ignored unconditionally, whichever mechanism writes it.

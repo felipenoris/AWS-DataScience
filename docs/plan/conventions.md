@@ -185,7 +185,16 @@ terraform-live/
 │   ├── probes/           # [E] Stage 3's measurement instruments (perimeter + peering),
 │   │                     #     created and destroyed by make up/make down, ranked after
 │   │                     #     egress/ so down tears them first
-│   ├── vpn/              # [D] WireGuard EC2 (stopped, not destroyed)
+│   ├── vpn/              # [D] WireGuard EC2 (stopped, not destroyed) - and, since Stage 6
+│   │                     #     step 5.0, the NAT INSTANCE for the isolated tier as well:
+│   │                     #     vpc_nat_cidrs turns source/dest checking off and adds the
+│   │                     #     masquerade rules devbox/ routes traffic into
+│   ├── devbox/           # [E] the amd64 BUILD HOST for the dev-env image (Stage 6 step 5.0).
+│   │                     #     Isolated tier: ingress from the WireGuard client range only,
+│   │                     #     egress ONLY through vpn/ - no NAT gateway, so egress/ need
+│   │                     #     never be up for a build. Driven by ./scripts/devbox.py, not by
+│   │                     #     make up: it must NOT coexist with probes/, whose perimeter
+│   │                     #     reading is the absence of the default route this slice adds
 │   ├── dev-env/          # [P] the approved dev-env image registered for this account:
 │   │                     #     aws_sagemaker_image + image_version + app_image_config.
 │   │                     #     Applied by the Stage 8 step 1 pipeline after the dev-env

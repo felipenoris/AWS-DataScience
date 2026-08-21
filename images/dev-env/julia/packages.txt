@@ -1,0 +1,17 @@
+# The Julia package set - one package name per line, comments and blanks ignored.
+#
+# WHY IT IS BAKED IN: Pkg is the ecosystem CodeArtifact does not cover at all
+# (docs/plan/architecture.md §4.3), so under design B the only path a Julia package has into a
+# notebook is this image. IJulia is not optional - it is the kernel.
+#
+# VERSIONS ARE RESOLVED, NOT PINNED HERE, and the resolution is captured: the build writes the
+# resulting Manifest.toml to /opt/julia-depot/environments/awsds/Manifest.toml, which is what
+# a reader (and Stage 8 step 1.2's smoke test) reads to learn what was actually installed.
+# Stage 8 commits that manifest and builds from it; a hand build cannot, because there is no
+# manifest before the first resolve.
+
+IJulia
+DataFrames
+CSV
+Plots
+StatsBase

@@ -206,10 +206,20 @@ something to clone.
   each have their own CA-bundle opinion — Claude drafts the exact commands). The other two surfaces:
   the `dev-env` image takes it at **2.6**; the runner takes it in step 6's user data. The
   three-surface proof is this stage's INT-19 deliverable.
-- **2.6 — [user] Rebuild and repush the `dev-env` image with the root** (new 2026-08-21, the price of
-  moving `pki/` back into this stage): the image Stage 6 step 5.0 built by hand carries an **empty
+- **2.6 — [user] Rebuild and repush the images with the root** (new 2026-08-21, the price of
+  moving `pki/` back into this stage): the images Stage 6 step 5.0 built by hand carry an **empty
   CA-install layer** — the `Dockerfile`'s copy + `update-ca-certificates` with no source — and this is
-  where it gets filled, from 2.3's one source, never a pasted PEM. Same laptop, same tunnel, same
+  where it gets filled, from 2.3's one source, never a pasted PEM. **It is BOTH images, because the layer
+  lives in `base`** (written 2026-08-21 with the build code; [`images/`](../../../images/README.md) carries
+  the reasoning): `dev-env` is `FROM base`, and duplicating the layer in the descendant is one intent
+  enforced in two places, which diverges (Lesson 33). Drop the root PEM into
+  `images/base/ca-certificates/` with a `.crt` extension and build with
+  **`--build-arg CA_ROOTS_EXPECTED=1`** — the build asserts the count in both directions, so *"I thought I
+  added it"* fails loudly rather than shipping a trusting-nothing image. Rebuild `base` first, then
+  `dev-env`; **use BuildKit's registry cache** (`--cache-from`/`--cache-to`) or the unchanged Julia/R/Rust
+  layers re-upload for a two-kilobyte change. **What this layer does NOT cover, and it is this step's to
+  close:** Python does not read the OS trust store — `certifi` ships its own bundle, and `git`, `curl` and
+  conda each have their own opinion. Same laptop, same tunnel, same
   immutable-tag discipline; **record the new digest in the log** beside the old one, because the SMUS
   spaces select an image by version and Stage 6 step 5.1's registration has to be pointed at the new one
   (INT-17's mechanism, already recorded there). **This is the second and last hand-built image**, and it
