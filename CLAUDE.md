@@ -202,10 +202,12 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
 - **The VPN host is amd64 IN AWS — applied 2026-08-20 (`wireguard-v0.3.0`; D4 amended).** Module AMI
   `…-arm64` → `…-x86_64`, so `instance_type` admits `t3.nano|micro|medium` and baselines `t3.nano`
   (0.0052 USD/h, **+23.8%** on `t4g`). **It was a REPLACEMENT, not a resize** — the `[P]` address and host
-  key survived, so no client `.conf` moved; the root volume did not. **Measured now: `t3.medium`, 64 GiB
-  gp3, `running`, `VP-1`–`VP-9` pass, 0 FAILED.** Both are ABOVE baseline, so every hourly figure in `vpn.py` and
-  `make status` **understates the burn**, and `PRICING.md` 2's monthly floor understates it even while
-  STOPPED. `stopped` between sessions is D11 working. The probe slices stay Graviton — not the VPN.
+  key survived, so no client `.conf` moved; the root volume did not. **Back at BASELINE since 2026-08-21:
+  `t3.nano`, 8 GiB gp3, `running`, `VP-1`–`VP-9` pass, 0 FAILED** — no cost table understates anything today.
+  **The DISK comes down only by `-replace`**: EBS refuses a shrinking `ModifyVolume`, which strands the slice
+  one `~ volume_size 64 -> 8` short of its own code — an apply that can never succeed (measured 2026-08-21).
+  The type falls in place; the disk never does. `stopped` between sessions is D11 working. The probe slices
+  stay Graviton — not the VPN.
 - **Stage 5 DONE, every pass (2026-08-18/20) — the governed lake exists, is granted, shared and
   consumed.** Six decisions; `docs/GOVERNANCE.md` is the one copy of the ontology + grant rules, and
   **one data CMK per account** since the `security-zone` withdrawal (`alias/awsds-<env>-data`;
