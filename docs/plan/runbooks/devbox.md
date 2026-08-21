@@ -81,10 +81,69 @@ first connection, so the first boot cannot add it to the `docker` group. Use `su
 cd /opt/awsds/images && sudo docker build -t awsds/base:local base && sudo docker build -t awsds/dev-env:local dev-env
 ```
 
+**`dev-env` is `FROM base`, so any change to `base` rebuilds `dev-env` from its first layer** — Julia,
+R and Rust download again. That is the price of D17's single ancestor and it is paid on every edit to
+`images/base/`, not only on the big ones. It also means a rebuild writes a **second** copy of a ~17 GB
+image before the old one loses its tag: read §S before starting one on a disk you have not looked at.
+
 **If it never registers with SSM**, the route is failing nine times out of ten. Read the first boot
 without SSM: `aws ec2 get-console-output --instance-id <id> --latest`, and `/var/log/awsds-devbox-boot.log`
 once you are in — its egress check prints the public address the host leaves under, which must be the
 WireGuard Elastic IP.
+
+To test a docker container:
+
+```bash
+sudo docker run --rm -it awsds/dev-env:local bash
+```
+
+Neither `Dockerfile` sets an `ENTRYPOINT` or a `CMD` — that is the SMUS BYOI rule, not an omission — so
+both are inherited from the distribution: `/usr/local/bin/_entrypoint.sh` with `/bin/bash`, running as
+`sagemaker-user` in `/home/sagemaker-user`. The entrypoint activates the conda environment and `exec`s
+what you passed, which is why the run above is also the cheapest proof that the rule was respected.
+
+## S. Space — checking it, and getting it back
+
+**The root volume is 64 GiB and the two images are most of it.** `base` is ~12 GB and `dev-env` ~17.4 GB
+(measured 2026-08-21, first build). A rebuild is where the wall is actually hit, because the new image is
+written *before* the old one loses its tag, and the failure arrives mid-build as `no space left on
+device` — after the twenty minutes, not before.
+
+```bash
+df -h / && sudo docker system df
+```
+
+**Read them in that order and do not add the two image sizes together.** `df` is the truth about the
+filesystem; `docker system df` says who is holding it, split into Images / Containers / Build Cache with
+a RECLAIMABLE column. The `SIZE` column of `docker images` counts **shared layers once per image**, so
+`base` at 12 GB and `dev-env` at 17.4 GB are not 29.4 GB on disk — `dev-env` *contains* `base`'s layers.
+`docker system df` is the one that de-duplicates. `-v` breaks it down per image and per cache record.
+
+**Dropping the notebook image:**
+
+```bash
+sudo docker rmi awsds/dev-env:local
+```
+
+It frees the **delta**, not the 17.4 GB: `base` still references the shared layers below. If a container
+still exists from that image the removal is refused — `sudo docker ps -a`, then `sudo docker rm <id>`
+(a `docker run --rm` has already done this for you).
+
+**What usually holds the space is not an image.** After a rebuild the previous `dev-env` is still there,
+untagged, holding its unique layers, and the build cache holds another copy of everything expensive:
+
+```bash
+sudo docker image prune && sudo docker builder prune
+```
+
+The first removes dangling images (no tag, nothing referencing them), the second the build cache. Both
+are safe: neither touches a tagged image, and the cache only costs time to rebuild. **`docker system
+prune -a` is a different thing** — it removes every image not backing a running container, `base`
+included, so the next build starts by pulling the distribution again.
+
+**And the escape hatch is the layer.** This host is `[E]` and holds nothing worth keeping: if the disk
+is a mess, `down` then `up` gives a clean 64 GiB in about two minutes. Weigh it against a full rebuild
+(~20 minutes) — pruning first is nearly always the cheaper move, recreating is for when it is not.
 
 ## X. Down
 
