@@ -16,7 +16,7 @@
 #
 #   1. terraform apply                       roles, boundary, key (blueprints_enabled = false)
 #   2. (console) request + accept the SMUS account association for this account, then add its
-#      row to SMUS_MEMBERS in scripts/tfhygiene/backend.py and regenerate the tfvars
+#      row to SMUS_ASSOCIATED in scripts/tfhygiene/backend.py and regenerate the tfvars
 #   3. terraform apply                       the blueprint configurations
 #
 # STEP 2 IS WHERE verification (iv) IS ANSWERED (is there any API path at all?) and where
@@ -44,7 +44,7 @@ locals {
 
 module "sagemaker_prereqs" {
   # checkov:skip=CKV_TF_1:pinned by git TAG by convention (conventions §6, Stage 3 step 1.1a) - a repository-internal tag only the repo owner can move
-  source = "git::git@github.com:felipenoris/AWS-DataScience.git//terraform-modules/sagemaker-prereqs?ref=sagemaker-prereqs-v0.1.0"
+  source = "git::git@github.com:felipenoris/AWS-DataScience.git//terraform-modules/sagemaker-prereqs?ref=sagemaker-prereqs-v0.1.1"
 
   env    = var.env
   region = var.region
