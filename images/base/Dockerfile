@@ -81,7 +81,8 @@ ARG NB_UID=1000
 ARG NB_GID=100
 ENV MAMBA_USER=$NB_USER
 
-# The package index. EMPTY means "the public one" - which is what the hand build of step 5.0
+# The package index, for BOTH Python installers - the name is pip's for continuity, the reach
+# is not (section 4). EMPTY means "the public one" - which is what the hand build of step 5.0
 # uses, and what egress design A keeps using. Design B (step 5.2) and Stage 8's pipeline pass
 # the CodeArtifact endpoint instead, so the switch is a build argument rather than an edit.
 ARG PIP_INDEX_URL=""
@@ -131,22 +132,125 @@ RUN set -eu; \
     apt-get clean; \
     rm -rf /var/lib/apt/lists/*
 
-# The index switch, applied once so every later pip in every descendant inherits it.
+# --------------------------------------- 3. uv - an UPGRADE in place, never a second binary
+#
+# THE DISTRIBUTION ALREADY SHIPS uv, and that single fact is the whole shape of this layer.
+# Measured 2026-08-21 from the distribution's own resolved environment - `cpu.env.out` under
+# build_artifacts/v4/v4.3/v4.3.0/ in aws/sagemaker-distribution, the @EXPLICIT list this exact
+# tag is built from - whose line 913 pins `uv-0.11.28` from conda-forge, i.e. /opt/conda/bin/uv.
+# So "install the latest uv" is a version MOVE inside a package that is already here.
+#
+# WHICH RULES OUT THE OBVIOUS IMPLEMENTATION, and the first draft of this layer was it: drop
+# Astral's static binary into /opt/uv/bin and put it first on PATH. That leaves TWO uv in the
+# image, and which one answers depends on where you ask - a RUN in a descendant, the
+# entrypoint's activated environment and a Jupyter kernel do not share one PATH. One intent in
+# two places (Lesson 33), with the added cruelty that both answers look right in isolation.
+# It goes through micromamba for the same reason: the package manager's manifest keeps agreeing
+# with the filesystem, so the next `micromamba update` cannot silently revert this layer.
+#
+# NOTHING ELSE MAY MOVE, AND `--freeze-installed` CANNOT EXPRESS THAT. The flag was in the
+# first draft of this layer and came out again after mamba's own source was read
+# (`create_install_request`, libmamba/src/api/install.cpp): with it set, mamba emits a Freeze
+# job for EVERY package already in the prefix, with no exemption for the specs you are
+# explicitly asking for. `uv` is in the prefix - so the flag would freeze the one package this
+# layer exists to move, giving either an unsolvable request or a silent no-op, both of which
+# read afterwards as "the flag protected me". A guard that cannot distinguish those is not one.
+#
+# SO THE GUARANTEE IS A MEASUREMENT, and a cheaper one: conda's own on-disk record.
+# $MAMBA_ROOT_PREFIX/conda-meta holds one `<name>-<version>-<build>.json` per installed package,
+# so the before/after listing IS the change set - no output format to guess at, no solver
+# behaviour to trust. Anything in it that is not `uv-*` means the solve moved a locked
+# environment underneath this build, and it stops with the names printed. The expected change
+# set is exactly two lines: uv 0.12.5 declares only `__glibc >=2.17`, `libgcc >=15` and
+# `libstdcxx >=15`, and this image carries libgcc/libstdcxx 15.2.0 - read from conda-forge and
+# from cpu.env.out the same day.
+#
+# THE VERSION IS AN ARG so Stage 8's pipeline bumps it without editing a build - and `UV_VERSION`
+# is NOT one of uv's own environment variables (checked against uv-static's `EnvVars` at 0.12.5),
+# so the build argument cannot be read back by the tool it names.
+ARG UV_VERSION=0.12.5
+RUN set -eu; \
+    echo "== uv before: $(uv --version 2>/dev/null || echo none)"; \
+    ls "${MAMBA_ROOT_PREFIX}/conda-meta" | sed 's/\.json//' | sort > /tmp/awsds-env-before.txt; \
+    micromamba install -y --name base -c conda-forge "uv==${UV_VERSION}"; \
+    micromamba clean --all --yes --force-pkgs-dirs; \
+    ls "${MAMBA_ROOT_PREFIX}/conda-meta" | sed 's/\.json//' | sort > /tmp/awsds-env-after.txt; \
+    changed="$(diff /tmp/awsds-env-before.txt /tmp/awsds-env-after.txt | grep -E '^[<>] ' || true)"; \
+    echo "== the change set this install produced =="; echo "${changed}"; \
+    unexpected="$(echo "${changed}" | grep -vE '^[<>] uv-' | grep -E '^[<>] ' || true)"; \
+    [ -z "${unexpected}" ] \
+      || { echo "FATAL: the solve moved packages other than uv:" >&2; \
+           echo "${unexpected}" >&2; exit 1; }; \
+    rm -f /tmp/awsds-env-before.txt /tmp/awsds-env-after.txt; \
+    found="$(uv --version | cut -d' ' -f2)"; \
+    where="$(command -v uv)"; \
+    echo "== uv after : ${found} at ${where}"; \
+    [ "${found}" = "${UV_VERSION}" ] \
+      || { echo "FATAL: asked for uv ${UV_VERSION}, got ${found}." >&2; exit 1; }; \
+    [ "${where}" = "${MAMBA_ROOT_PREFIX}/bin/uv" ] \
+      || { echo "FATAL: uv resolves to ${where}, not to the managed one in" >&2; \
+           echo "  ${MAMBA_ROOT_PREFIX}/bin - a second uv is ahead of it on PATH." >&2; \
+           echo "  Read section 3's comment before working around this." >&2; \
+           exit 1; }
+
+# THE TWO SETTINGS uv NEEDS IN A GOVERNED IMAGE, AND ONE IT DELIBERATELY DOES NOT GET.
+#
+#   UV_PYTHON_DOWNLOADS=never  uv's default, when it cannot find the Python a project asks for,
+#                              is to FETCH a standalone CPython from the internet. That would
+#                              put code on an interpreter which is not the distribution's - the
+#                              exact thing D17 buys by making every image share one ancestor -
+#                              and under egress design B it fails as a network timeout instead
+#                              of saying what it wanted. `never` turns it into an error naming
+#                              the missing Python; a user who genuinely wants one passes
+#                              --python-downloads=allow for that one command.
+#   UV_SYSTEM_CERTS=true       uv carries its own root bundle and does not read the OS trust
+#                              store unless told to. Section 5 lists the tools that "each have
+#                              their own opinion" and leaves them to Stage 7; uv's half is
+#                              closed here because it is one word, and because the alternative
+#                              is Stage 7 rediscovering it as a TLS error.
+#
+# NOT SET: UV_LINK_MODE. `copy` is the container reflex and it would be wrong here - uv's cache
+# (~/.cache/uv) and any project venv both land on the space's EBS volume under
+# /home/sagemaker-user, one filesystem, where hardlinking is exactly what should happen.
+ENV UV_PYTHON_DOWNLOADS=never \
+    UV_SYSTEM_CERTS=true
+
+# ---------------------------------- 4. the package index, and it must reach BOTH installers
+#
+# Applied once, so every later install in every descendant inherits it.
 #
 # WRITTEN TO /etc/pip.conf RATHER THAN THROUGH `pip config set`, and the difference is the
 # whole value of the layer: `pip config set` defaults to the USER level, so run as root during
 # a build it lands in /root/.config/pip/pip.conf - a file `sagemaker-user` never reads. The
 # setting would then hold for the rest of the build and silently not hold at runtime, which is
 # the failure mode that looks like a network fault in a notebook.
+#
+# AND uv DOES NOT READ /etc/pip.conf AT ALL, which is why one RUN writes two files. Section 3
+# put a second Python installer in this image and it has its own configuration system; switching
+# only pip would leave Stage 8 and egress design B pointing pip at CodeArtifact while uv keeps
+# talking to public PyPI - one intent in two places again, in the direction that fails least
+# visibly. The branch below writes both or neither.
+#
+# /etc/uv/uv.toml IS THE SYSTEM LEVEL, AND IS DISCOVERED RATHER THAN FORCED. Read from uv's own
+# source at 0.12.5 (`system_config_file` in uv-dirs): on Linux it tries XDG_CONFIG_DIRS first
+# and falls back to /etc/uv/uv.toml. Pointing UV_CONFIG_FILE at the file would also work and is
+# WRONG - --config-file replaces discovery, so a data scientist's own project uv.toml would stop
+# being read. System level layers UNDER the user's, which is the point of a default here.
+#
+# `[[index]]` rather than the top-level `index-url` key: both resolve at 0.12.5 (measured), and
+# `index-url` is the deprecated spelling.
 RUN set -eu; \
+    mkdir -p /etc/uv; \
     if [ -n "${PIP_INDEX_URL}" ]; then \
       printf '[global]\nindex-url = %s\n' "${PIP_INDEX_URL}" > /etc/pip.conf; \
-      echo "pip index: ${PIP_INDEX_URL} (/etc/pip.conf)"; \
+      printf '[[index]]\nurl = "%s"\ndefault = true\n' "${PIP_INDEX_URL}" > /etc/uv/uv.toml; \
+      echo "package index: ${PIP_INDEX_URL} (/etc/pip.conf + /etc/uv/uv.toml)"; \
     else \
-      echo "pip index: default (public PyPI)"; \
+      printf '# Built against the public index: no override.\n' > /etc/uv/uv.toml; \
+      echo "package index: default (public PyPI)"; \
     fi
 
-# ------------------------------------------------- 3. the CA-install layer - EMPTY BY DESIGN
+# ------------------------------------------------- 5. the CA-install layer - EMPTY BY DESIGN
 #
 # THE LAYER IS HERE; THE CONTENT ARRIVES AT STAGE 7 STEP 2.6. D36 §3 was amended 2026-08-21:
 # the internal CA root moved back to Stage 7 with the leaves, because the only names the root
@@ -168,6 +272,8 @@ RUN set -eu; \
 #
 # NOT COVERED HERE, and it is Stage 7's to close: Python does not read the OS trust store -
 # `certifi` ships its own bundle, and `git`, `curl` and conda each have their own opinion.
+# uv had the same opinion and is the one already answered, in section 3 (UV_SYSTEM_CERTS) -
+# it is listed here so Stage 7 crosses it off rather than rediscovering it.
 COPY ca-certificates/ /usr/local/share/ca-certificates/awsds/
 RUN set -eu; \
     installed="$(find /usr/local/share/ca-certificates/awsds -name '*.crt' -type f | wc -l | tr -d ' ')"; \
@@ -178,7 +284,7 @@ RUN set -eu; \
     fi; \
     update-ca-certificates
 
-# --------------------------------------------------------------------------- 4. provenance
+# --------------------------------------------------------------------------- 6. provenance
 #
 # Read back with `docker inspect`, and by the Stage 8 pipeline that replaces this hand build.
 LABEL org.opencontainers.image.title="awsds-base" \
@@ -187,6 +293,7 @@ LABEL org.opencontainers.image.title="awsds-base" \
       org.opencontainers.image.base.name="${SMD_IMAGE}:${SMD_TAG}" \
       org.opencontainers.image.base.digest="${SMD_DIGEST}" \
       org.awsds.stage="6.5.0" \
-      org.awsds.ca-roots="${CA_ROOTS_EXPECTED}"
+      org.awsds.ca-roots="${CA_ROOTS_EXPECTED}" \
+      org.awsds.uv="${UV_VERSION}"
 
 USER $MAMBA_USER

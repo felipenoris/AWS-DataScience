@@ -177,6 +177,7 @@ RUN set -eu; \
 RUN set -eu; \
     { echo "base image      : ${BASE_IMAGE}:${BASE_TAG}"; \
       echo "python          : $(python --version 2>&1)"; \
+      echo "uv              : $(uv --version)"; \
       echo "julia           : $(julia --version)"; \
       echo "R               : $(/opt/conda/envs/r/bin/R --version | head -1)"; \
       echo "rust            : $(rustc --version)"; \
