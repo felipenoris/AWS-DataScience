@@ -28,9 +28,15 @@ and nothing more. The push is step 5.0's own act, from an identity that may.
 | Piece | Where | What it does |
 |---|---|---|
 | the instance | isolated tier, no public IP | the build host itself |
-| its security group | the slice | admits **`peer_cidr`** — the WireGuard client range — and nothing else |
-| **the route** | `0.0.0.0/0` in the **isolated** route table | sends this tier's default at the WireGuard host's **ENI**. Created and destroyed with the slice |
-| `vpc_nat_cidrs` | `sandbox/vpn/`, module `wireguard-v0.4.0` | makes that host a **NAT instance** for this tier: source/dest check off, MASQUERADE + FORWARD in `wg0`'s `PostUp` |
+| its security group | the slice, `[E]` | admits **`peer_cidr`** — the WireGuard client range — and nothing else |
+| **the route** | `0.0.0.0/0` in the **isolated** route table, `[E]` | sends this tier's default at the WireGuard host's **ENI** |
+| `vpc_nat_cidrs` | `sandbox/vpn/`, module `wireguard-v0.4.0`, `[D]` | makes that host a **NAT instance** for this tier: source/dest check off, MASQUERADE + FORWARD in `wg0`'s `PostUp` |
+| the WireGuard **security group** | `sandbox/foundation/vpn-anchors.tf`, `[P]` | admits the isolated tier's ranges **inbound**. Without it the other three do their jobs and the packet is dropped on arrival |
+
+**Those last three are one path in three slices, and that is what made the gap easy to miss.** Reach is
+an **intersection** (Lesson 28): the first apply had the route and the masquerade and no security-group
+rule, so the host booted, installed its packages through the S3 gateway endpoint, and then timed out on
+`ssm.<region>.amazonaws.com`. Nothing in any single file was wrong.
 
 **In:** nothing reaches it except from the tunnel. The shell arrives over Session Manager, which needs
 no inbound rule — so the ingress rule is for direct paths (a served port during a test), not for the
@@ -41,6 +47,9 @@ involved**, so `egress/` need never be up for a build — 0.170 USD/h not spent.
 
 **Three couplings worth holding in mind:**
 
+- **Three lifetimes, one path.** The security group is `[P]` (a private range, admitting a tier that is
+  empty between sessions), the masquerade rules are `[D]` with the host, and only the **route** is `[E]`.
+  So the reach is the one thing that comes and goes.
 - **The capability is `[D]`, the reach is `[E]`.** A masquerade rule matches nothing until a route
   table sends traffic at it. Turning `vpc_nat_cidrs` on is one standing attribute; everything
   metered comes and goes with the session. (`vpn.md` §S carries the rest, including why the rules

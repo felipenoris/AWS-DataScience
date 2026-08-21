@@ -18,7 +18,7 @@ while a build is running. The build code itself is [`images/`](../../../images/R
 | | |
 |---|---|
 | **in** | **Nothing reaches it except from the WireGuard client range.** No public address, a tier with no internet gateway, and a security group that admits `peer_cidr` and nothing else. The shell arrives over **Session Manager**, which needs no inbound rule — so the ingress rule is for the direct paths (a served port during a test), not for the shell |
-| **out** | **Through the WireGuard host**, the single public egress of this design. One route sends this tier's default at that instance's ENI; `sandbox/vpn/` gives the host the masquerade rules that make it a NAT instance for exactly these ranges. **No NAT gateway is involved** — `egress/` is not a prerequisite and need never come up, which is **0.170 USD/h not spent** to run a build |
+| **out** | **Through the WireGuard host**, the single public egress of this design. **Three things in three slices, and all three are needed** (Lesson 28 — the first apply had two of them and the host timed out reaching SSM): one **route** here sends this tier's default at that instance's ENI; `sandbox/vpn/` gives the host the **masquerade rules** that make it a NAT instance for these ranges; and `sandbox/foundation/`'s WireGuard **security group** admits them inbound, or the packet is dropped on arrival. **No NAT gateway is involved** — `egress/` is not a prerequisite and need never come up, which is **0.170 USD/h not spent** to run a build |
 
 **It is the isolated tier, and that is a choice with a co-tenant.** The private tier's default
 route belongs to `egress/` under `egress_mode=A`, and two slices writing `0.0.0.0/0` into one

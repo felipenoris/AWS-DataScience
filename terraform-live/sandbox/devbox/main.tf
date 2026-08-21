@@ -20,9 +20,13 @@
 #        inbound rule at all - so the ingress rule is for the direct paths (docker daemon,
 #        a served port during a test) rather than for the shell.
 #
-#   OUT  through the WireGuard host, which is the single public egress of this design. The
-#        route below sends this tier's default at that instance's ENI; sandbox/vpn/ gives the
-#        host the masquerade rules that make it a NAT instance for exactly these ranges.
+#   OUT  through the WireGuard host, which is the single public egress of this design. THREE
+#        THINGS IN THREE SLICES, AND ALL THREE ARE NEEDED - reach is an intersection (Lesson
+#        28), and the first apply of this slice had two of them: the route below sends this
+#        tier's default at that instance's ENI; sandbox/vpn/ gives the host the masquerade
+#        rules that make it a NAT instance for these ranges; and sandbox/foundation/'s
+#        WireGuard security group ADMITS those ranges inbound, or the packet is dropped on
+#        arrival - which is what happened, and it read as a broken package mirror.
 #        NO NAT GATEWAY IS INVOLVED - egress/ is not a prerequisite of this slice and does not
 #        have to be up, which is 0.170 USD/h not spent to run a build.
 #
@@ -69,7 +73,9 @@ resource "aws_security_group" "devbox" {
   # this rule is the answer to "reachable only over the VPN" - with the tunnel down there is
   # no source address that satisfies it, and with the host stopped there is no path at all.
   ingress {
-    description = "the WireGuard client range - the whole of this host's inbound surface"
+    # NO APOSTROPHE, and it is not a style rule: AWS validates a rule description against
+    # ^[0-9A-Za-z_ .:/()#,@\[\]+=&;{}!$*-]*$, and an apostrophe fails it at PLAN time.
+    description = "the WireGuard client range - the whole of the inbound surface"
     from_port   = 0
     to_port     = 0
     protocol    = "-1"
