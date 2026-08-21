@@ -38,9 +38,15 @@ an **intersection** (Lesson 28): the first apply had the route and the masquerad
 rule, so the host booted, installed its packages through the S3 gateway endpoint, and then timed out on
 `ssm.<region>.amazonaws.com`. Nothing in any single file was wrong.
 
-**In:** nothing reaches it except from the tunnel. The shell arrives over Session Manager, which needs
-no inbound rule — so the ingress rule is for direct paths (a served port during a test), not for the
-shell.
+**In: two paths, and only one of them is a network path.** The **network** path — a port served during a
+test, the docker daemon, anything aimed at the private IP — is gated by the VPN and by nothing else: no
+public address, a tier with no internet gateway, `peer_cidr` alone in the security group. The **Session
+Manager shell** is gated by **IAM, not the network**: `start-session` goes laptop → the *public* SSM API →
+the channel the agent holds open outbound, and the security group never sees it. For the six persona sets
+the VPN still gates it (`DenyControlPlaneOffVpn` denies `*` on `*` off-VPN); for `InfrastructureAccess` it
+does not, **by decision** — open question 17, option (a): the administrative credential is outside the VPN
+because it is also the fire escape. **So `devbox.py ssm` works with the tunnel down, and that is the
+standing decision behaving as decided.**
 
 **Out:** through the WireGuard host, the single public egress of this design. **No NAT gateway is
 involved**, so `egress/` need never be up for a build — 0.170 USD/h not spent.
@@ -94,3 +100,19 @@ deliberately leaves the WireGuard host running — `make down ENV=sandbox` is wh
 
 **`./scripts/devbox.py status` is the reading**, and the reason to take it: `t3.xlarge` is
 **0.1664 USD/h** (`PRICING.md` §8) — a week left up is USD 28 against D12's USD 50/month.
+
+## Setting up github conectivity
+
+```
+ssh-keygen -t ed25519 -C "<EMAIL>"
+eval "$(ssh-agent -s)"
+cat ~/.ssh/id_ed25519.pub
+```
+
+- go to <https://github.com/settings/keys> and add new ssh key. paste pulic key.
+
+- Clone with git protocol:
+
+```
+git clone git@github.com:felipenoris/AWS-DataScience
+```
