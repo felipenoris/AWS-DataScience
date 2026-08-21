@@ -105,6 +105,27 @@ RANKS = {
     # read, so the rank is documentation of dependency, not an ordering up/down ever acts on:
     # every slice at this rank is [P].
     "data": 45,
+    # STAGE 6, AND THE TWO RANKS WHOSE ORDER IS ONLY THE ORDER OF THE *FIRST* APPLY.
+    # Both are [P], so `up` and `down` refuse them and no target ever acts on the number -
+    # what it records is the dependency an executor has to respect by hand. The real
+    # sequence is FOUR applies over two slices, because the account association in the
+    # middle of it has no public API (Stage 6 step 1.3):
+    #
+    #   1. */sagemaker/     the blueprint PREREQUISITES - provisioning and manage-access
+    #                       roles, the D13 boundary, the KMS key, the VPC parameters
+    #   2. governance/      the domain and its three IAM roles
+    #   3. (console)        request + accept the account association, per member account,
+    #                       then add the row to backend.SMUS_MEMBERS
+    #   4. */sagemaker/     again - the blueprint CONFIGURATIONS, which need both a domain
+    #                       and an accepted association
+    #   5. governance/      again - the two project profiles, which name blueprints that
+    #                       have to be configured in the target account first
+    #
+    # So sagemaker ranks BELOW governance on the strength of step 1, and steps 4 and 5 are
+    # the inversion the two-pass split exists to make safe - the same shape Stage 3 pass 2
+    # has for the peerings, and the cross-account exception note above covers it.
+    "sagemaker": 46,
+    "governance": 47,
     "egress": 50,
     "probes": 60,
 }
@@ -234,6 +255,34 @@ SLICES = [
         "data",
         PERSISTENT,
         "consumer side: same module as sandbox/data (Stage 5)",
+    ),
+    # Stage 6 pass 0 (2026-08-21) - Stage 7 step 5.a, applied one stage early because Stage 6
+    # step 5.0 pushes the first dev-env image into it. [P] and floor-priced at rest: one CMK
+    # (key-month, docs/PRICING.md 2), two ECR repositories and a CodeArtifact domain with two
+    # repositories - all three billed for STORED BYTES and requests, never by the hour, so
+    # usd_per_hour is 0.0 and the guard is the lifecycle policy on untagged images. The rank
+    # (31) landed on 2026-08-21, ahead of the folder, because an unranked name raises at
+    # import; this row is the half that had to wait for the slice to exist.
+    Slice(
+        "production",
+        "registry",
+        PERSISTENT,
+        "ECR base+dev-env, CodeArtifact, the slice key (St.7 5.a)",
+    ),
+    # Stage 6 pass 1 - the blueprint prerequisites in each member account. [P] and FREE at
+    # rest: two IAM roles, a permissions boundary policy and one CMK (the key-month floor
+    # line). What the blueprint later provisions from them - the per-project SageMaker AI
+    # domain and its apps - is NOT in this slice and never will be: DataZone owns those, and
+    # the running apps are the [E] half, deleted by scripts/down-studio-apps.py rather than
+    # by terraform destroy (conventions 6; Stage 6 step 8.3).
+    Slice("sandbox", "sagemaker", PERSISTENT, "blueprint prereqs: 2 roles, D13 boundary, CMK"),
+    Slice("development", "sagemaker", PERSISTENT, "same module as sandbox/sagemaker (Stage 6)"),
+    # Stage 6 pass 2 - the registry, and it is a registry (D26): the DataZone V2 domain, its
+    # three IAM roles and the two project profiles. [P] and metadata-priced (~USD 0.50/month,
+    # docs/PRICING.md 5). NO COMPUTE LIVES HERE and none ever may - US-2 measures exactly
+    # that, and Stage 6 step 0.4 reads the plan for it before the first apply.
+    Slice(
+        "data-governance", "governance", PERSISTENT, "the DataZone V2 domain + 2 project profiles"
     ),
 ]
 

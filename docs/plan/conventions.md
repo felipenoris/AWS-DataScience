@@ -201,7 +201,14 @@ terraform-live/
 │                         #     pointed at, the KMS key, and the D13 boundary policy attached
 │                         #     to the project roles (INT-15). It does NOT declare the
 │                         #     project environments themselves: DataZone owns those, and a
-│                         #     Terraform resource for them would fight the blueprint
+│                         #     Terraform resource for them would fight the blueprint.
+│                         #     APPLIED 2026-08-21, and it APPLIES TWICE: the second apply
+│                         #     adds the BLUEPRINT CONFIGURATIONS, which live here and not
+│                         #     in governance/ because PutEnvironmentBlueprintConfiguration
+│                         #     takes no account parameter - it configures the CALLER's
+│                         #     account, which is why an associated account is what enables
+│                         #     blueprints against a shared domain. The flag is
+│                         #     backend.SMUS_ASSOCIATED, whose rows are measurements
 ├── development/          # DEVELOPMENT (D21): the unit of work is a pipeline
 │   ├── bootstrap/        # [P] state bucket for the Development account
 │   ├── foundation/       # [P] VPC (own CIDR), KMS, IAM roles, peering requester to
@@ -232,14 +239,24 @@ terraform-live/
 │   │                     #     cross-account shares to sandbox/development/production,
 │   │                     #     Glue Crawlers on raw + drop-box under the D27 exception
 │   │                     #     (config is free at rest; runs are metered, event-driven)
-│   └── governance/       # [P] the SageMaker unified domain (DataZone V2, D26) via the
-│                         #     aws-ia module: domain + IAM through the aws provider,
-│                         #     project profiles / blueprints / projects through awscc.
-│                         #     Account associations to sandbox and development
-│                         #     (INT-12). A registry: blueprints provision compute
-│                         #     into those accounts, never into this one.
-│                         #     No foundation/ slice: no VPC, no user compute, nothing
-│                         #     standing - which is also why INT-13 has no host
+│   └── governance/       # [P] the SageMaker unified domain (DataZone V2, D26) - APPLIED
+│                         #     2026-08-21. VERIFICATION (ii) ANSWERED: the aws-ia module
+│                         #     was NOT consumed. Its root requires vpc_id/subnet_ids and
+│                         #     enables the Tooling blueprint IN THE DOMAIN ACCOUNT, which
+│                         #     is what D22 forbids - and the resources are five, so
+│                         #     writing them directly was cheaper than splitting a module
+│                         #     that assumes a single account. The provider split the old
+│                         #     text predicted is right and stands: domain + IAM through
+│                         #     `aws`, project profiles through `awscc` (the only provider
+│                         #     with awscc_datazone_project_profile at all).
+│                         #     Account associations to sandbox and development (INT-12)
+│                         #     are CONSOLE-ONLY - no public API - and the blueprint
+│                         #     CONFIGURATIONS are not here either: they are applied from
+│                         #     the MEMBER account (see */sagemaker/ below).
+│                         #     A registry: blueprints provision compute into those
+│                         #     accounts, never into this one. No foundation/ slice: no
+│                         #     VPC, no user compute, nothing standing - which is also why
+│                         #     INT-13 has no host
 ├── staging/              # deployment target (D20): no Studio domain, no Model
 │   │                     # Registry of its own, no GitLab
 │   ├── bootstrap/        # [P] state bucket for the Staging account
@@ -290,7 +307,8 @@ terraform-live/
     │                     #     consumer policies (Stage 7 step 5.a) go in at STAGE 6's pass 0,
     │                     #     because Stage 6 step 5.0 pushes into them; the pull-through
     │                     #     cache and the per-application repositories (5.b) wait for
-    │                     #     Stage 7, which is the first thing that pulls from either
+    │                     #     Stage 7, which is the first thing that pulls from either.
+    │                     #     THE 5.a HALF IS APPLIED (2026-08-21, 14 resources)
     ├── sagemaker/        # [P] Model Registry (model package groups) + the execution role
     │                     #     pipeline-submitted jobs assume. No domain, no user profiles (D17)
     ├── egress/           # [E] NAT, endpoints - and the internal ALB for GitLab/Pages ONLY

@@ -155,6 +155,56 @@ DATA_PRODUCERS = ["production"]
 # prefix and the lake data key the persona's write statements name).
 DATA_LAKE = ["data-governance"]
 
+# THE SUPPLY CHAIN'S CONSUMERS (Stage 7 step 5.4, applied at Stage 6 pass 0) - the eighth
+# vocabulary, and D35's forward constraint written as a table rather than as three literals.
+# production/registry/ enumerates them in FOUR policies: the ECR registry policy, the two
+# repository policies, the CodeArtifact domain policy and the slice's own KMS key policy. A
+# vend adds one row here and nothing else changes (Lesson 14; Stage 7's option-preservation
+# note). The row carries the profile because the slice resolves each consumer's ACCOUNT ID
+# through an aliased provider - aws/INDEX.md rule 1 keeps ids out of tracked files, and a
+# pasted id would be the copy Lesson 3 warns about.
+#
+# IT IS NOT DATA_CONSUMERS. The two lists happen to hold the same two rows today and answer
+# different questions: who reads the governed LAKE, and who pulls IMAGES AND PACKAGES. Stage 9
+# adds production to the first and must not add it to the second (the registry lives there),
+# which is exactly the split Stage 9 step 1.4 already anticipates for the lake list.
+REGISTRY_CONSUMERS = ["sandbox", "development"]
+
+# THE UNIFIED DOMAIN AND ITS MEMBER ACCOUNTS (Stage 6, D26/D35) - the ninth and tenth
+# vocabularies, and the second one is a MEASUREMENT rather than a decision, which is why it
+# is worth reading the comment before editing the list.
+#
+# SMUS_DOMAIN is the account that owns the domain: a singleton by D22/D26, kept as a list so
+# the emissions below have the same shape as every other cross-account read in this tree.
+# Consumed by each member's sagemaker/ slice, which resolves the domain id out of
+# data-governance/governance/'s state.
+#
+# TWO LISTS, AND THE SPLIT IS THE WHOLE POINT: one is a DECISION and the other a MEASUREMENT,
+# and merging them would make it impossible to tell "we have not associated this account yet"
+# from "this account was never meant to be a member" (D28: Staging and Production never are).
+#
+#   SMUS_MEMBERS     the accounts that are meant to be associated - D26/D35's answer, and the
+#                    map the project profiles' environment configurations are built from. It
+#                    is also what the aliased providers in data-governance/governance/ resolve
+#                    account ids through, so it must be populated from the first apply.
+#   SMUS_ASSOCIATED  the accounts whose association has actually been ACCEPTED. The account
+#                    association is console-only - there is no public associate-account API
+#                    (Stage 6 step 1.3) - so a row is added AFTER the invitation is accepted in
+#                    the member account, and the SECOND apply of that account's sagemaker/
+#                    slice is what creates its blueprint configurations. Adding a row before
+#                    the association exists produces an apply that fails inside
+#                    PutEnvironmentBlueprintConfiguration - the honest failure; adding one
+#                    after an association was REVOKED produces a slice that keeps re-creating
+#                    a configuration nobody can use, which is not.
+#
+# THE MEASUREMENT GATES BOTH SIDES OF THE SAME ORDERING. A project profile's environment
+# configurations name (blueprint, account, region), and the blueprint has to be configured in
+# that account first - so the profiles wait until EVERY member is associated, which is what
+# `profiles_enabled` below computes rather than restates.
+SMUS_DOMAIN = ["data-governance"]
+SMUS_MEMBERS = ["sandbox", "development"]
+SMUS_ASSOCIATED: list = []
+
 # Subnets anchor on ZONE IDS, never on AZ names and never on list position (Stage 3 step 1.5,
 # settled by 1b step 6; ./aws/AZs.py is the measurement). Authored per account because a
 # vended account is assigned its own name->id mapping and may legitimately differ (INV-08);
@@ -319,6 +369,46 @@ def tfvars_values(account: str, slice_name: str) -> dict:
             acct: {"profile": PROFILES[acct], "env": ENV_TOKENS[acct]} for acct in DATA_LAKE
         }
 
+    # Stage 6 pass 0 - production/registry/'s consumer map (Stage 7 step 5.4).
+    if account == "production" and slice_name == "registry":
+        values["consumers"] = {
+            acct: {"profile": PROFILES[acct], "env": ENV_TOKENS[acct]}
+            for acct in REGISTRY_CONSUMERS
+        }
+
+    # Stage 6 pass 1 and pass 2 - the blueprint prerequisites and, on the second apply, the
+    # blueprint configurations. account_folder is the same emission every non-foundation
+    # network slice takes: this slice reads its OWN foundation/ state for the VPC, the subnets
+    # and the endpoint security group, and the state KEY is keyed by the account FOLDER, which
+    # no .tf file may re-derive from the env token (Lesson 14).
+    if slice_name == "sagemaker":
+        values["account_folder"] = account
+        # TWO MAPS AT THE SAME ACCOUNT, AND THEY ARE NOT ONE MAP. `lake` is the governed lake's
+        # state (the registered bucket ARNs the D13 boundary excludes, the drop-box prefix, the
+        # lake data key); `domain` is the SMUS registry's. D22/D26 put both in Data Governance
+        # today, so the two rows are identical - and merging them would be the coincidence
+        # Lesson 10 warns about: they answer different questions and a design that separated
+        # them would have to unpick one emission from the other.
+        values["lake"] = {
+            acct: {"profile": PROFILES[acct], "env": ENV_TOKENS[acct]} for acct in DATA_LAKE
+        }
+        values["domain"] = {
+            acct: {"profile": PROFILES[acct], "env": ENV_TOKENS[acct]} for acct in SMUS_DOMAIN
+        }
+        values["blueprints_enabled"] = account in SMUS_ASSOCIATED
+
+    # Stage 6 pass 2 - the domain account's own slice. The members map is what the project
+    # profiles' environment configurations are built from (one per member account); the flag
+    # is the same SMUS_MEMBERS reading, so the profiles cannot be written before the
+    # blueprints they name are configured.
+    if account == "data-governance" and slice_name == "governance":
+        values["members"] = {
+            acct: {"profile": PROFILES[acct], "env": ENV_TOKENS[acct]} for acct in SMUS_MEMBERS
+        }
+        values["profiles_enabled"] = bool(SMUS_MEMBERS) and set(SMUS_MEMBERS) <= set(
+            SMUS_ASSOCIATED
+        )
+
     if account == "identity" and slice_name == "sso":
         values["vpn_homes"] = {
             acct: {"profile": PROFILES[acct], "env": ENV_TOKENS[acct]} for acct in VPN_HOMES
@@ -391,6 +481,22 @@ def render_tfvars(account: str, slice_name: str) -> str:
             for acct, p in v["producers"].items()
         )
         out += f"producers = {{\n{rows}}}\n"
+    if "blueprints_enabled" in v:
+        out += f"blueprints_enabled = {str(v['blueprints_enabled']).lower()}\n"
+    if "profiles_enabled" in v:
+        out += f"profiles_enabled = {str(v['profiles_enabled']).lower()}\n"
+    if "domain" in v:
+        rows = "".join(
+            f'  {acct} = {{ profile = "{p["profile"]}", env = "{p["env"]}" }}\n'
+            for acct, p in v["domain"].items()
+        )
+        out += f"domain = {{\n{rows}}}\n"
+    if "members" in v:
+        rows = "".join(
+            f'  {acct} = {{ profile = "{p["profile"]}", env = "{p["env"]}" }}\n'
+            for acct, p in v["members"].items()
+        )
+        out += f"members = {{\n{rows}}}\n"
     if "lake" in v:
         rows = "".join(
             f'  {acct} = {{ profile = "{p["profile"]}", env = "{p["env"]}" }}\n'

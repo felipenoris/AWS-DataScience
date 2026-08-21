@@ -93,6 +93,7 @@ data "aws_iam_policy_document" "data_scientist" {
   source_policy_documents = [
     data.aws_iam_policy_document.shared_denies.json,
     data.aws_iam_policy_document.control_plane_vpn.json,
+    data.aws_iam_policy_document.stage6_denies.json,
   ]
 
   # Reading the catalog is not reading the data. Lake Formation is the entitlement mechanism
@@ -406,6 +407,7 @@ data "aws_iam_policy_document" "data_scientist_staging" {
   source_policy_documents = [
     data.aws_iam_policy_document.shared_denies.json,
     data.aws_iam_policy_document.control_plane_vpn.json,
+    data.aws_iam_policy_document.stage6_denies.json,
   ]
 
   statement {
@@ -512,6 +514,7 @@ data "aws_iam_policy_document" "data_scientist_prod" {
   source_policy_documents = [
     data.aws_iam_policy_document.shared_denies.json,
     data.aws_iam_policy_document.control_plane_vpn.json,
+    data.aws_iam_policy_document.stage6_denies.json,
   ]
 
   statement {
