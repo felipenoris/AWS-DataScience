@@ -764,3 +764,14 @@
   `amazon-cloudwatch-agent-ctl -a fetch-config -m ec2 -s -c file:…` invocation itself, whose page did
   not render on three fetch attempts (2026-08-16). The user data therefore reports that command's exit
   status and follows it with `-a status`, so the first boot answers it.
+
+- **AWS Price List bulk API — the Amazon Bedrock offer files, `us-west-2` and `sa-east-1`** (read
+  2026-08-21, both published `2026-08-20`): the measured source of `docs/PRICING.md` §5's Bedrock rows,
+  owed before the Stage 6 step 1.4 apply because decision 5 put `AmazonBedrockGenerativeAI` in
+  category 1 with the cell empty. Two readings came out of the files themselves rather than out of a
+  pricing page: **the `us-west-2` file carries no `output-tokens` usagetype for any Claude model** (the
+  current models are reached through cross-region inference profiles, whose SKUs publish under the
+  profile's home region), and **the `sa-east-1` file carries no Claude and no Nova model at all** — so
+  §9's "what moving to São Paulo would change" is, for Bedrock, a change of *model* rather than of
+  price. The endpoint needs no credentials:
+  <https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AmazonBedrock/current/us-west-2/index.json>.

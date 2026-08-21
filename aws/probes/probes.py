@@ -209,6 +209,62 @@ probe("ou", "sandbox1", "deny", "ValidationException|does not exist", "blocked",
        "--role-arn", "arn:aws:iam::@ACCT@:role/awsds-canary-nonexistent",
        "--region", "us-west-2"])
 
+# --- THE STAGE 6 1.6 AMENDMENT (2026-08-21) - DenyAthenaSparkStartSession, and the three
+#     rows below are ONE measurement for exactly the reason 4e's three are (see the long
+#     comment further down): Athena's AccessDenied names no policy, so classify() files a
+#     real ceiling deny as DENY-NOT-SCP and reports `note`. Nothing in the wording can fix
+#     that, and the attribution is carried by the `prod` row instead.
+#
+#     WHY prod IS THE CONTRAST AND data IS NOT. The contrast has to be an account the
+#     amendment does not reach where the SAME call is otherwise authorized.
+#     awsds-org-scp-ou-workloads carries no athena action at all (measured 2026-08-21:
+#     DenyInteractiveSageMakerSurface is sagemaker-only, DenyDataZoneEntirely is datazone:*),
+#     so Production is authorized and dies on the workgroup. Data Governance and Identity are
+#     NOT usable here: 4e put athena:StartQueryExecution into their DenyUserCompute, and while
+#     StartSession is a different action, an account already carrying an athena deny is the
+#     worst possible control for an athena probe.
+#
+#     WHAT THE PAIR PROVES, AND WHAT IT DOES NOT. Denied in both Interactive accounts and
+#     authorized in Workloads => the deny is the amended document. It does NOT prove the
+#     ordering Lesson 21 asks about for this action: if the `prod` row ever comes back as a
+#     validation error BEFORE authorization, these two notes stop attributing anything and
+#     that is the first row to read. Measured for StartQueryExecution on 2026-08-20 and
+#     deliberately NOT assumed for StartSession - per-action, not per-service.
+#
+#     THE WORKGROUP DOES NOT EXIST, which is what makes these `blocked`: an authorized call
+#     cannot start a Spark session and cannot bill a DPU-hour.
+probe("ou", "dev", "deny", "InvalidRequestException|WorkGroup is not found", "blocked",
+      "interactive: athena:StartSession (1.6; Athena names no policy - see prod row)",
+      ["athena", "start-session", "--work-group", "awsds-canary-probe",
+       "--engine-configuration",
+       '{"CoordinatorDpuSize":1,"MaxConcurrentDpus":2,"DefaultExecutorDpuSize":1}',
+       "--region", "us-west-2"])
+probe("ou", "sandbox1", "deny", "InvalidRequestException|WorkGroup is not found", "blocked",
+      "sandboxes: athena:StartSession inherits Interactive's deny (1.6)",
+      ["athena", "start-session", "--work-group", "awsds-canary-probe",
+       "--engine-configuration",
+       '{"CoordinatorDpuSize":1,"MaxConcurrentDpus":2,"DefaultExecutorDpuSize":1}',
+       "--region", "us-west-2"])
+probe("ou", "prod", "allow", "InvalidRequestException|WorkGroup is not found", "blocked",
+      "workloads: athena:StartSession still authorized (1.6 contrast)",
+      ["athena", "start-session", "--work-group", "awsds-canary-probe",
+       "--engine-configuration",
+       '{"CoordinatorDpuSize":1,"MaxConcurrentDpus":2,"DefaultExecutorDpuSize":1}',
+       "--region", "us-west-2"])
+
+# --- 1.6's NEGATIVE probe, and it is the one that matters most: the amendment must not have
+#     taken D13's query path with it. Athena SQL rides StartQueryExecution on the required
+#     `athena` API endpoint; the three Spark session surfaces are a different product wearing
+#     the same service name. If this row ever flips to a denial, 1.6 broke the lake read.
+#     ONE ROW, NOT TWO: Sandbox's half already exists as 4e's contrast probe further down
+#     ("sandboxes: athena:StartQueryExecution still authorized"), and it measures exactly this
+#     - a second copy would be the same call under two labels, which makes a count of probes
+#     stop meaning a count of questions.
+probe("ou", "dev", "allow", "InvalidRequestException|WorkGroup is not found", "blocked",
+      "interactive: athena:StartQueryExecution STILL WORKS (1.6's negative probe - D13)",
+      ["athena", "start-query-execution", "--query-string", "SELECT 1",
+       "--work-group", "awsds-canary-probe", "--region", "us-west-2"])
+
 # --- Data: nothing runs in the lake account
 probe("ou", "data", "deny", None, "dryrun", "data: ec2:RunInstances",
       ["ec2", "run-instances", "--dry-run", "--image-id", "@AMI@",

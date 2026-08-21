@@ -40,6 +40,7 @@ data "aws_iam_policy_document" "deployment_manager" {
   source_policy_documents = [
     data.aws_iam_policy_document.shared_denies.json,
     data.aws_iam_policy_document.control_plane_vpn.json,
+    data.aws_iam_policy_document.stage6_denies.json,
   ]
 
   # THE CLOUDWATCH LOGS GRANT IS NOT HERE ANY MORE (2026-08-17). It is the AWS managed policy
@@ -197,6 +198,7 @@ data "aws_iam_policy_document" "governance_manager" {
   source_policy_documents = [
     data.aws_iam_policy_document.shared_denies.json,
     data.aws_iam_policy_document.control_plane_vpn.json,
+    data.aws_iam_policy_document.stage6_denies.json,
   ]
 
   statement {
@@ -364,6 +366,7 @@ data "aws_iam_policy_document" "dev_env_steward" {
   source_policy_documents = [
     data.aws_iam_policy_document.shared_denies.json,
     data.aws_iam_policy_document.control_plane_vpn.json,
+    data.aws_iam_policy_document.stage6_denies.json,
   ]
 
   statement {

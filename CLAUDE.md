@@ -182,7 +182,7 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
 ### Current position
 
 - **Landing zone closed — Stages 0-1d DONE (2026-08-15)**, except the `Staging` vend: held on the
-  account cap, open ticket (`aws/cloudshell/management-quotas.sh` re-asks). Battery **96** (2 `note`).
+  account cap, open ticket (`aws/cloudshell/management-quotas.sh` re-asks). Battery **100** (4 `note`).
 - **Stage 2 DONE (2026-08-16), all nine verifications answered.** A state bucket per Terraform-managed
   account (`prod` carries D36's 2nd key); `identity/sso/` and `identity/org-policies/` (**adopted, none
   created**). Delegation narrowed to `InfrastructureAccess`, hand-applied, **out of Terraform**
@@ -192,66 +192,72 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   tracked file**; redact to `<The Account Name>`/`<that user's role>`, declared once per entry.
 - **Stage 3 DONE 2026-08-16 — applied, measured, torn down; 0.0000 USD/h** (detail: its Status row).
   `egress_mode=A`; **a NAT does not bypass the S3 allow-list**; INT-05 names the gateway endpoints, never
-  `egress/` ids. CIDR/`zone_ids`/peers: `scripts/tfhygiene/backend.py`. Left elsewhere: `Staging`'s
-  NXDOMAIN; verification (ii) is St.6's.
+  `egress/` ids. CIDR/`zone_ids`/peers: `scripts/tfhygiene/backend.py`.
 - **NFS/EFS requirement withdrawn (2026-08-17; user edit to `objectives.md`, D24 withdrawn):** no `nfs/`
   slice anywhere, `DL-10` measures EFS *absence*. Detail: `docs/plan/history.md`.
-- **Stage 4 DONE 2026-08-18 — closed by the GuardDuty split** (host left `running`; tunnel down first,
-  then `make down`). **Stage 15 created the same day**, carrying the whole GuardDuty scope, prepared.
-  `aws/guardduty.py` (`GD-1`–`GD-3`); `VP-8` retired; `vpn.py` default narrowed to two profiles.
-- **The VPN host is amd64 IN AWS — applied 2026-08-20 (`wireguard-v0.3.0`; D4 amended).** Module AMI
-  `…-arm64` → `…-x86_64`, so `instance_type` admits `t3.nano|micro|medium` and baselines `t3.nano`
-  (0.0052 USD/h, **+23.8%** on `t4g`). **It was a REPLACEMENT, not a resize** — the `[P]` address and host
-  key survived, so no client `.conf` moved; the root volume did not. **Back at BASELINE since 2026-08-21:
-  `t3.nano`, 8 GiB gp3, `running`, `VP-1`–`VP-9` pass, 0 FAILED** — no cost table understates anything today.
-  **The DISK comes down only by `-replace`**: EBS refuses a shrinking `ModifyVolume`, which strands the slice
-  one `~ volume_size 64 -> 8` short of its own code — an apply that can never succeed (measured 2026-08-21).
-  The type falls in place; the disk never does. `stopped` between sessions is D11 working. The probe slices
-  stay Graviton — not the VPN.
+- **Stage 4 DONE 2026-08-18 — closed by the GuardDuty split**; **Stage 15** created the same day carries
+  the whole GuardDuty scope, prepared (`aws/guardduty.py`, `GD-1`–`GD-3`).
+- **The VPN host is amd64 and back at BASELINE (`t3.nano`, 8 GiB gp3, 2026-08-21; `wireguard-v0.3.0`, D4
+  amended).** `VP-1`–`VP-9` pass, 0 FAILED, no cost table understates anything. Two standing facts: a shape
+  change is a **REPLACEMENT** — the `[P]` EIP and host key survive, so no client `.conf` moves — and **the
+  DISK comes down only by `-replace`**, because EBS refuses a shrinking `ModifyVolume` and strands the
+  slice one `~ volume_size` short of its own code. Detail: `AWS_STATE.md`'s VPN row, `vpn.md` §S6. The
+  probe slices stay Graviton — not the VPN.
 - **Stage 5 DONE, every pass (2026-08-18/20) — the governed lake exists, is granted, shared and
-  consumed.** Six decisions; `docs/GOVERNANCE.md` is the one copy of the ontology + grant rules, and
-  **one data CMK per account** since the `security-zone` withdrawal (`alias/awsds-<env>-data`;
-  `history.md`). **Producer:** five `awsds-data-*` buckets, `raw`+`curated` registered, 2 LF-Tag keys,
-  `curated.sample_trades` (**12 synthetic rows**), 2 **never-run** crawlers, and the 2 TBAC shares
-  (**INT-11 closed**). **Consumer, per account:** own CMK, `awsds-<env>-derived`, enforced
+  consumed.** `docs/GOVERNANCE.md` is the one copy of the ontology + grant rules; **one data CMK per
+  account** (`alias/awsds-<env>-data`). **Producer:** 5 `awsds-data-*` buckets, `raw`+`curated`
+  registered, 2 LF-Tag keys, `curated.sample_trades` (12 synthetic rows), 2 **never-run** crawlers, 2 TBAC
+  shares (**INT-11 closed**). **Consumer, per account:** own CMK, `awsds-<env>-derived`, enforced
   `awsds-<env>-athena`, own `DataLakeSettings`, 2 links, 4 re-grants. **Persona:** 7 statements in
-  `DataScientistAccess` — derived-zone scoping, **`scratch` is a PREFIX**. **The full inventory is
-  `AWS_STATE.md`'s lake row + the two slice READMEs, not here.** Register **13 rows / 24 triples**.
-- **Pass 6 RAN 2026-08-20 — Stage 5 has no unrun pass left.** CSPM, never the **v2** beside it in one CLI
-  namespace: both on hands the Config recorder from Control Tower to a service-linked one, so `DL-11` fails
-  on v2's **ARRIVAL**. Org-wide is **central configuration on the root** (`awsds-fsbp-only`), never
-  auto-enable; **CloudShell, not console**. Management **`SELF_MANAGED`** — CSPM does not record an account,
-  which also killed **St.1d decision 8's trigger**; nothing records Management before St.12.
-  **16/18 associations `SUCCESS`**; the 2 left are the **suspended `Sandbox` AND the `ROOT` above it**, so
-  *"every row `SUCCESS`"* is unavailable here — `EXC-01` has the narrow invariant. `INV-09` → **nine/four**,
-  measured. **Left: 13.3's triage**, and a disable there is a **policy edit** that turns the policy custom.
+  `DataScientistAccess`; **`scratch` is a PREFIX**. **Full inventory: `AWS_STATE.md`'s lake row + the two
+  slice READMEs, not here.** Register **13 rows / 24 triples**.
+- **Pass 6 RAN 2026-08-20 — Stage 5 has no unrun pass left.** Security Hub **CSPM**, never the **v2**
+  beside it (both on hands the Config recorder to a service-linked one, so `DL-11` fails on v2's
+  **ARRIVAL**); org-wide by **central configuration on the root** (`awsds-fsbp-only`), never auto-enable;
+  Management **`SELF_MANAGED`**, so **nothing records it before St.12** (this also killed St.1d decision
+  8's trigger). **16/18 `SUCCESS`** — the 2 left are the suspended `Sandbox` **and the `ROOT` above it**,
+  so *"every row `SUCCESS`"* is unavailable here (`EXC-01`). `INV-09` → **nine/four**. **Left: 13.3's
+  triage**, and a disable there turns the policy custom.
 - **Three things Stage 5 leaves standing — read the owner before calling any of them a gap:**
   (1) **no principal can start the crawlers** (trust admits `glue.amazonaws.com` alone, `Schedule` null;
   Lesson 22; **OQ 19**), **so D18/D25 ingestion is broken at ONE end**: files land and nothing catalogues
   them. (2) **`EXC-02`**, one uncollectable object in the drop-box — do not grant a delete to tidy it.
   (3) since 4e, **no Athena in Data Governance at all**, `InfrastructureAccess` included.
-- **A denied call does not always name the policy** (2026-08-20): Athena answers a blocked
-  `StartQueryExecution` with a bare "not authorized" → `classify()` files it `DENY-NOT-SCP`. **Attribution
-  moves to a CONTRAST PROBE** (same call from an OU the deny misses); `probes.py` 93→**96**, 2 rows read
-  `note` forever by design (`EXC-03`). **Athena authorizes BEFORE it validates** — per-action; St.6's 1.6
-  inherits both.
+- **A denied call does not always name the policy** (Athena, 2026-08-20/21): attribution moves to a
+  **CONTRAST PROBE** — the same call from an OU the deny misses. `probes.py` 93→96→**100**; 4 rows read
+  `note` forever by design (`EXC-03`).
 - **A cached SSO token is keyed by `sso-session` name, NEVER by user** (2026-08-20): the wrong identity
   fills the right one's slot and `aws sso login` then succeeds doing nothing — **remedy is `aws sso
   logout` + portal sign-out**; wording is `ForbiddenException`/`GetRoleCredentials`. **That same wording
   was a real ceiling breach on 2026-08-14**, so the battery separates them by asking **IdC what the token
   is assigned** (STS never touches that path). Never suppress it by text alone — Lesson 24, in reverse.
-- **Stage 6 NOT open; its decisions 3, 4 and 5 are CLOSED** (2026-08-19, doc-only — no AWS call; its log
-  was initialized early). Athena Spark off by **SCP** `athena:StartSession`/`UpdateSession` at **1.6 — not
-  pulled forward**. **Decision 1 REOPENED** on an endpoint-count cost, settled in-stage by **two readings**
-  (4.2 flow logs; `fineGrained` from an IdC notebook). Blueprints are an **allow-list in 3 categories —
-  `docs/SMUS.md` is the one copy**, `US-3` the category-1 list; `AmazonBedrockGenerativeAI` owes a
-  `PRICING.md` row before 1.4.
-- **St.6's pull-forward never happened — audited, RE-CUT 2026-08-21.** `production/pki/` and
-  `production/registry/` were **never built** (`--diff-filter=ADR` empty, every ref) though the
-  Prerequisites row read *applied* since 2026-08-16. Now: **`registry/` 5.a is St.6's PASS 0** (ECR
-  `base`+`dev-env`, CodeArtifact, key, consumer policies — St.7 authors, St.6 applies); **`pki/` is St.7
-  pass 1** (D36 §3 amended, D36 off St.6's Consumes), so **5.0's image carries NO CA root** — it takes one
-  at **St.7 2.6**. `registry` rank added ahead of the slice. Pass 0 blocks 5.0 and its descendants only.
+- **Stage 6 OPEN — passes 0, 1 and 2a APPLIED 2026-08-21; the stage file's §"What ran" is the one record.**
+  Four new slices (24 total): `production/registry/` (5.a — ECR `base`+`dev-env`, CodeArtifact, key,
+  consumer policies), `{sandbox,development}/sagemaker/` (roles, `awsds-<env>-project-boundary`, project
+  CMK, `/awsds/<env>/studio`), `data-governance/governance/` (**`awsds-studio`, V2, `AVAILABLE`**). Plus
+  step 3's deny pair in **all six** persona sets and **1.6's `DenyAthenaSparkStartSession`**.
+  `./aws/studio.py`: `US-1/2/6/9` **pass**; `US-3`/`US-4` `note` — correct before 1.3.
+  **`pki/` is St.7 pass 1** (D36 §3 amended, D36 off the Consumes row), so **5.0's image carries NO CA
+  root** — it takes one at St.7 2.6.
+- **BOTH St.6 MEASUREMENTS RAN 2026-08-21 and both are clean.** **Verification (i) answered BOTH ways** —
+  created from `Data`, and the identical shape replayed on the canary returned *explicit deny in a service
+  control policy* naming `awsds-org-scp-baseline`: `DenyDataZoneDomainOutsideDataOu` had been **attached
+  and unexercised since 1c**, and INT-12's forbidden fallback is now closed. **It also explains the
+  2026-08-20 wall by measurement: the missing `--service-role`**, not a cross-account pass role (Lesson
+  24 — the message named neither field nor account). Battery **`--phase ou`: 25/0/7**; `StartSession`
+  denied in dev AND sandbox, **allowed in prod** (contrast), `StartQueryExecution` still authorized (D13
+  intact) — and `StartSession` **authorizes before it validates**, which Lesson 21 forbade assuming.
+- **What St.6 still owes:** **1.3's console association** — no public API, then a row in
+  `backend.SMUS_ASSOCIATED` (a **measurement**, gating the blueprint configs AND the profiles) and a
+  SECOND apply of two slices; **5.0's docker push**; then passes 3-5. Decisions 1 (EMR-S vs Glue),
+  2 (TIP — coded `false`, following St.5's grain) and 6 (prefix shape) stay in-stage.
+- **Three St.6 findings that changed other files.** (i) **Lesson 8 paid off**: `awscc`'s blueprint
+  configuration carries **`environment_role_permission_boundary`** and the `aws` one does not — INT-15's
+  boundary is imposed BY the service as it authors the role, not raced afterwards. (ii) A blueprint
+  configuration is applied **from the MEMBER account** (`PutEnvironmentBlueprintConfiguration` takes no
+  account param) — the pass table said the domain account. (iii) **`athena:UpdateSession` is in no Athena
+  API model** — shipped anyway (AWS's own sample statement), with `StartCalculationExecution` added beside
+  it.
 - **Stages 5-11 revised, pre-instrumented (2026-08-16/17):**
   `aws/{vpn,datalake,studio,supplychain,cicd,deploytargets,orchestration,dlp}.py` — `DL-5`/`DT-5` guard
   the LF `Parameters` (INT-11). **St.8 pass 4, St.9 passes 4-5, St.10's Staging leg wait on the vend;

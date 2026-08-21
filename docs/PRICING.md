@@ -357,6 +357,47 @@ than discoveries:
   wrote "ML experience", a name the blueprint list does not carry) bill exactly like the Studio apps in §8
   (`ml.t3.medium` at 0.081/0.050 USD/h) — the domain adds nothing to the hourly rate.
 
+### Amazon Bedrock — the `AmazonBedrockGenerativeAI` blueprint (Stage 6 decision 5, category 1)
+
+**Read 2026-08-21** from `AmazonBedrock/current/{us-west-2,sa-east-1}/index.json`, both published
+`2026-08-20`. The row was **owed before the Stage 6 step 1.4 apply** — the upkeep rule asks for one per
+new service referenced, and decision 5 put this blueprint in category 1 with the cell empty.
+
+**The billing shape is what matters more than any single rate: per use, token-metered, no standing
+resource.** Enabling the blueprint costs nothing; a project that never opens a chat app costs nothing.
+That is why it sits in category 1 beside `DataLake` rather than in category 2 beside MLflow.
+
+On-demand, in-region, per **1 000 tokens** (`us-west-2`):
+
+| Model | Input | Output |
+|---|---|---|
+| Nova Micro | 0.000035 | 0.00014 |
+| Nova Lite | 0.00006 | 0.00024 |
+| Nova Pro | 0.0008 | 0.0032 |
+| Nova Premier | 0.0025 | 0.0125 |
+| Claude 3 Haiku | 0.00025 | — |
+| Claude 3 Sonnet | 0.0030 | — |
+
+**Two gaps in that table are readings, not omissions** (Lesson 6 — a cell without a number means *not
+measured*, never *free*):
+
+- **The `us-west-2` offer file carries no `output-tokens` usagetype for any Claude model** — only
+  `input-tokens`. Every current Claude model is reached through a **cross-region inference profile**, and
+  those SKUs are published under the profile's home region rather than under `us-west-2`. So the two
+  Claude rows above are the legacy in-region SKUs and are **not** what a SMUS chat app would actually
+  bill; price the specific model against the inference profile before anyone leans on it.
+- **Batch, Flex and Priority tiers exist for the Nova family** (roughly ×0.5, ×0.5 and ×1.75 of the
+  on-demand rate respectively) and are not in the table because nothing in this design selects one.
+
+**And a `sa-east-1` finding for §9, which is why the file is read in both regions:** the São Paulo offer
+carries **no Claude and no Nova model at all** — its catalogue is DeepSeek, Qwen, Llama, Mistral, GPT-OSS
+and friends. The Ratio column is therefore not "a premium"; it is **absent**, and a move would be a change
+of *model*, not of price. That is a larger fact than any rate above.
+
+**What this does not price:** provisioned throughput (model units by the hour — the one Bedrock shape that
+*is* standing, and the one D12 would notice), model customisation, Knowledge Bases (which bill their own
+vector store), and Guardrails. None is reachable from the blueprint as enabled.
+
 ---
 
 ## 6. Security, governance and observability

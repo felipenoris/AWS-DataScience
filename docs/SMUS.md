@@ -185,10 +185,21 @@ parameters
 
 An **environment blueprint** is a provisioning template owned by AWS. It works in two steps:
 
-1. **Enabling it in an associated account** (Stage 6 step 1.4 —
-   `aws_datazone_environment_blueprint_configuration`) registers the template in that member
-   account, naming the provisioning role, the manage-access role and the VPC parameters it may use.
-   Enabling by itself creates no billed resource.
+1. **Enabling it in an associated account** (Stage 6 step 1.4) registers the template in that
+   member account, naming the provisioning role, the manage-access role and the VPC parameters it
+   may use. Enabling by itself creates no billed resource.
+
+   **Two things about that resource were measured on 2026-08-21 and neither was what the plan
+   assumed.** *(a)* **The API takes a `domainIdentifier` and no account parameter**, so
+   `PutEnvironmentBlueprintConfiguration` configures the **caller's** account — which is why
+   enabling blueprints is something an *associated* account does against a *shared* domain
+   (`AWSRAMPermissionDataZoneDefault` is what lets it), and why the resources live in each member's
+   `sagemaker/` slice rather than in `data-governance/governance/`. *(b)* **The resource this
+   project uses is `awscc_datazone_environment_blueprint_configuration`, not the `aws` provider's**,
+   because only the `awscc` one carries **`environment_role_permission_boundary`** — the field that
+   makes DataZone attach the D13 boundary **while it creates a project role**, instead of the
+   boundary being attached afterwards and racing reconciliation. That is INT-15's mechanism, and it
+   is Lesson 8 (check `awscc` before declaring a Terraform gap) paying off rather than a workaround.
 2. **A project uses it**: when a project whose profile targets that account exercises the blueprint,
    DataZone provisions the real resources the template describes — into the member account, through
    the registered provisioning role. The resource set this leaves behind is an **environment**
