@@ -205,29 +205,23 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   REPLACEMENT, not a size switch** — address and host key are `[P]` so no client `.conf` moves; the root
   volume does not survive. **`wireguard-v0.3.0` needs its two-commit tag before the slice can init.**
   A running `t4g.*` is that pending apply, never drift. The probe slices stay Graviton — not the VPN.
-- **Stage 5 DONE except pass 6 (2026-08-18/20) — the governed lake exists, is granted, shared and
+- **Stage 5 DONE, every pass (2026-08-18/20) — the governed lake exists, is granted, shared and
   consumed.** Six decisions; `docs/GOVERNANCE.md` is the one copy of the ontology + grant rules, and
-  **one data CMK per account** since the `security-zone` withdrawal (2026-08-19; `consumer-data` v0.2.0,
-  keys `alias/awsds-<env>-data`, Sid `UseLakeDataKeyViaS3`; detail in `history.md`). **Producer:** five
-  `awsds-data-*` buckets under one CMK, `raw`+`curated` registered, 2 LF-Tag keys, 3 databases,
-  `curated.sample_trades` (Iceberg, `restricted` column, **12 synthetic rows**) + optimizer, the
-  maintenance role + 2 **never-run** crawlers, a Glue security configuration, and the 2 TBAC shares
-  (4 RAM shares `ACTIVE`, 0 invitations → **INT-11 closed**). **Consumer, per account:**
-  `alias/awsds-<env>-data` CMK, `awsds-<env>-derived` (30-day expiry), enforced `awsds-<env>-athena`
-  (10 GiB → `results/`), own `DataLakeSettings`, 2 links, 4 re-grants. **Persona:** 7 statements in
-  `DataScientistAccess` — the Athena run family on the 2 workgroup ARNs, derived-zone scoping (write
-  per-user, read persona-grain, delete `scratch/` only — **`scratch` is a PREFIX**), and the drop-box
-  identity half; `identity/sso/` reads 3 `data` states and the lake key ARN lives in state, never
-  tracked. Register **13 rows / 24 triples**.
-- **Pass 6 REWRITTEN 2026-08-20 before it ran — its mechanism did not exist** (no AWS call; before-reading:
-  6 profiled accounts `not enabled`, delegated admin `(none registered)`). Product is **Security Hub CSPM**,
-  NOT the v2 beside it in one CLI namespace — **both on hands the Config recorder from Control Tower to a
-  service-linked one**, so `DL-11` fails on v2's ARRIVAL. Org-wide is **central configuration on the root**
-  (auto-enable = new accounts only → would cover **zero**); **CloudShell in Audit, not console** (console
-  demands a linked Region the ceiling denies); INV-09 → **nine/four**, not "ten". **Management is
-  SELF-MANAGED** (user, 2026-08-20): CSPM does NOT record an account, so including it would buy a bill and
-  a `WARNING` dashboard, not coverage — which also kills **St.1d decision 8's revision trigger**, whose
-  named candidate was this very step. Nothing records Management before St.12.
+  **one data CMK per account** since the `security-zone` withdrawal (`alias/awsds-<env>-data`;
+  `history.md`). **Producer:** five `awsds-data-*` buckets, `raw`+`curated` registered, 2 LF-Tag keys,
+  `curated.sample_trades` (**12 synthetic rows**), 2 **never-run** crawlers, and the 2 TBAC shares
+  (**INT-11 closed**). **Consumer, per account:** own CMK, `awsds-<env>-derived`, enforced
+  `awsds-<env>-athena`, own `DataLakeSettings`, 2 links, 4 re-grants. **Persona:** 7 statements in
+  `DataScientistAccess` — derived-zone scoping, **`scratch` is a PREFIX**. **The full inventory is
+  `AWS_STATE.md`'s lake row + the two slice READMEs, not here.** Register **13 rows / 24 triples**.
+- **Pass 6 RAN 2026-08-20 — Stage 5 has no unrun pass left.** CSPM, never the **v2** beside it in one CLI
+  namespace: both on hands the Config recorder from Control Tower to a service-linked one, so `DL-11` fails
+  on v2's **ARRIVAL**. Org-wide is **central configuration on the root** (`awsds-fsbp-only`), never
+  auto-enable; **CloudShell, not console**. Management **`SELF_MANAGED`** — CSPM does not record an account,
+  which also killed **St.1d decision 8's trigger**; nothing records Management before St.12.
+  **16/18 associations `SUCCESS`**; the 2 left are the **suspended `Sandbox` AND the `ROOT` above it**, so
+  *"every row `SUCCESS`"* is unavailable here — `EXC-01` has the narrow invariant. `INV-09` → **nine/four**,
+  measured. **Left: 13.3's triage**, and a disable there is a **policy edit** that turns the policy custom.
 - **Three things Stage 5 leaves standing — read the owner before calling any of them a gap:**
   (1) **no principal can start the crawlers** (trust admits `glue.amazonaws.com` alone, `Schedule` null;
   Lesson 22; **OQ 19**), **so D18/D25 ingestion is broken at ONE end**: files land and nothing catalogues

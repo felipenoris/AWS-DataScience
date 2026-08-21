@@ -3293,6 +3293,417 @@ edited this sitting; both sets of entries are present and neither overwrote the 
 `make check: OK`. `check-docs` red only on `stage-03-networking.md`, which is the known pre-existing
 failure and was not touched. `./aws/datalake.py`: **0 check(s) FAILED**.
 
+## 2026-08-20 — Pass 6, leg 1: Audit designated Security Hub CSPM delegated administrator
+
+*Provenance: the AWS acts and the pasted transcript are **[user]**'s hand, in CloudShell; the framing
+prose is Claude's, written in the same sitting because the user asked for the entry to be reviewed.
+**Account ids are redacted as `<MANAGEMENT_ACCOUNT_ID>` and `<AUDIT_ACCOUNT_ID>`, declared once here** —
+deliberately the same placeholders step 13.1d uses, so the log and the runbook map onto each other line by
+line. The organization **root id** is written in full: a stable public identifier, like the two policy ids
+of the 4e entry above.*
+
+**This is the first AWS write of pass 6.** Everything in the entry above it was doc-only — no AWS call at
+all — and that is why this is a separate sitting rather than a section of that one.
+
+### Leg 1, in Management
+
+Console sign-in as **`AWS Control Tower Admin` → `Management` → `AWSAdministratorAccess`**, then
+CloudShell, `us-west-2`. The three reads come first **because Audit cannot go back for them**: it is a
+member account, holds no Organizations view, and `list-roots` is refused there — so the `RootId` and
+Management's own id, both of which leg 2 needs, have to leave this shell written down. That ordering was
+added to 13.1d before the leg ran; without it the pass stalls halfway, in the account that cannot fix it.
+
+```
+~ $ aws organizations list-roots --query 'Roots[0].Id' --output text
+r-zhj6
+~ $ aws organizations describe-organization --query 'Organization.MasterAccountId' --output text
+<MANAGEMENT_ACCOUNT_ID>
+~ $ aws organizations list-accounts --query "Accounts[?Name=='Audit Account' && Status=='ACTIVE'].Id" --output text
+<AUDIT_ACCOUNT_ID>
+~ $ aws securityhub enable-organization-admin-account --admin-account-id <AUDIT_ACCOUNT_ID> --region us-west-2
+{
+    "AdminAccountId": "<AUDIT_ACCOUNT_ID>"
+}
+```
+
+**What the third read proves is not the id.** The query carries the standing rule in both halves — the
+vended name is `Audit Account`, not `Audit`, and `Status=='ACTIVE'` is there because a **SUSPENDED
+`Sandbox`** sits in this roster. It returned **exactly one line**, so the fail-loudly condition did not
+fire and no wrong id was substituted into the write that followed it.
+
+**The write was accepted with no denial, which is the expected shape and not a lucky one:** `securityhub`
+appears in **no policy of this organization** (checked 2026-08-20, before the step), so nothing in the
+ceiling shapes these calls. The response echoes the admin account and says nothing about state — per
+13.1's callout the designation *"enables Security Hub CSPM in the current AWS Region for the delegated
+administrator account"*, and **that sentence stays documentation until leg 2's `describe-hub` reads it
+back**. The delegation is Region-scoped: a second Region later repeats this same command and must never
+pick a different account.
+
+### Leg 2, in Audit — RUN, 23:07 to 23:24 UTC
+
+Console sign-in as **`AWS Control Tower Admin` → `Audit` → `AWSAdministratorAccess`**, then CloudShell,
+`us-west-2`. Ids entered the shell once as variables so the rest could be pasted unchanged.
+
+*Second redaction, declared here because it differs from leg 1's on purpose: below, an account id becomes
+**the account's name in this repository**, not 13.1d's input placeholder — what every row in the last
+listing is about is **which** account, and a uniform `<ACCOUNT_ID>` would erase exactly the thing worth
+reading. The SSO user's e-mail inside the caller ARN becomes `<the AWS Control Tower Admin user>`. Role,
+root, OU, aggregator and configuration-policy ids stay in full: stable identifiers, the 4e entry's rule.*
+
+```
+$ aws sts get-caller-identity
+{
+    "UserId": "AROAZTW7Y2Q76PRCMMFSI:<the AWS Control Tower Admin user>",
+    "Account": "<Audit>",
+    "Arn": "arn:aws:sts::<Audit>:assumed-role/AWSReservedSSO_AWSAdministratorAccess_b987a8e362f41c3e/<the AWS Control Tower Admin user>"
+}
+~ $ aws securityhub describe-hub --region us-west-2
+{
+    "HubArn": "arn:aws:securityhub:us-west-2:<Audit>:hub/default",
+    "SubscribedAt": "2026-08-20T23:07:11.384Z",
+    "AutoEnableControls": true,
+    "ControlFindingGenerator": "STANDARD_CONTROL"
+}
+~ $ ROOT_ID=r-zhj6
+~ $ MGMT_ID=<Management>
+~ $ aws securityhub create-finding-aggregator --region-linking-mode NO_REGIONS --region us-west-2
+{
+    "FindingAggregatorArn": "arn:aws:securityhub:us-west-2:<Audit>:finding-aggregator/0ad010bc-b0a6-1d40-52e6-ce351655c0ac",
+    "FindingAggregationRegion": "us-west-2",
+    "RegionLinkingMode": "NO_REGIONS"
+}
+~ $ aws securityhub update-organization-configuration --no-auto-enable --organization-configuration '{"ConfigurationType": "CENTRAL"}' --region us-west-2
+
+$ aws securityhub describe-organization-configuration --region us-west-2
+{
+    "AutoEnable": false,
+    "MemberAccountLimitReached": false,
+    "AutoEnableStandards": "NONE",
+    "OrganizationConfiguration": {
+        "ConfigurationType": "CENTRAL",
+        "Status": "ENABLED",
+        "StatusMessage": "Central configuration has been enabled successfully."
+    }
+}
+
+~ $ FSBP_ARN=$(aws securityhub describe-standards --region us-west-2 --query "Standards[?contains(StandardsArn,'aws-foundational-security-best-practices')].StandardsArn" --output text) && echo "$FSBP_ARN"
+arn:aws:securityhub:us-west-2::standards/aws-foundational-security-best-practices/v/1.0.0
+~ $ POLICY_JSON=$(jq -nc --arg arn "$FSBP_ARN" '{SecurityHub:{ServiceEnabled:true,EnabledStandardIdentifiers:[$arn],SecurityControlsConfiguration:{DisabledSecurityControlIdentifiers:[]}}}') && echo "$POLICY_JSON"
+{"SecurityHub":{"ServiceEnabled":true,"EnabledStandardIdentifiers":["arn:aws:securityhub:us-west-2::standards/aws-foundational-security-best-practices/v/1.0.0"],"SecurityControlsConfiguration":{"DisabledSecurityControlIdentifiers":[]}}}
+~ $ POLICY_ID=$(aws securityhub create-configuration-policy --name awsds-fsbp-only --description 'FSBP only, all controls incl. future ones (Stage 5 step 13.1b)' --configuration-policy "$POLICY_JSON" --region us-west-2 --query Id --output text) && echo "$POLICY_ID"
+2f983d0c-8742-4392-8b13-24fa39fe5799
+~ $ aws securityhub start-configuration-policy-association --configuration-policy-identifier "$POLICY_ID" --target "$(jq -nc --arg r "$ROOT_ID" '{RootId:$r}')" --region us-west-2
+{
+    "ConfigurationPolicyId": "2f983d0c-8742-4392-8b13-24fa39fe5799",
+    "TargetId": "r-zhj6",
+    "TargetType": "ROOT",
+    "AssociationType": "APPLIED",
+    "UpdatedAt": "2026-08-20T23:22:08.467000+00:00",
+    "AssociationStatus": "PENDING"
+}
+~ $ aws securityhub start-configuration-policy-association --configuration-policy-identifier SELF_MANAGED_SECURITY_HUB --target "$(jq -nc --arg a "$MGMT_ID" '{AccountId:$a}')" --region us-west-2
+{
+    "ConfigurationPolicyId": "SELF_MANAGED_SECURITY_HUB",
+    "TargetId": "<Management>",
+    "TargetType": "ACCOUNT",
+    "AssociationType": "APPLIED",
+    "UpdatedAt": "2026-08-20T23:23:15.051000+00:00",
+    "AssociationStatus": "PENDING"
+}
+
+aws securityhub list-configuration-policy-associations --region us-west-2
+
+{
+    "ConfigurationPolicyAssociationSummaries": [
+        {
+            "ConfigurationPolicyId": "SELF_MANAGED_SECURITY_HUB",
+            "TargetId": "<Management>",
+            "TargetType": "ACCOUNT",
+            "AssociationType": "APPLIED",
+            "UpdatedAt": "2026-08-20T23:24:38.038000+00:00",
+            "AssociationStatus": "SUCCESS"
+        },
+        {
+            "ConfigurationPolicyId": "2f983d0c-8742-4392-8b13-24fa39fe5799",
+            "TargetId": "r-zhj6",
+            "TargetType": "ROOT",
+            "AssociationType": "APPLIED",
+            "UpdatedAt": "2026-08-20T23:23:21.802000+00:00",
+            "AssociationStatus": "PENDING"
+        },
+        {
+            "ConfigurationPolicyId": "2f983d0c-8742-4392-8b13-24fa39fe5799",
+            "TargetId": "ou-zhj6-hrcu9hog",
+            "TargetType": "ORGANIZATIONAL_UNIT",
+            "AssociationType": "INHERITED",
+            "UpdatedAt": "2026-08-20T23:22:16.104000+00:00",
+            "AssociationStatus": "PENDING"
+        },
+        {
+            "ConfigurationPolicyId": "2f983d0c-8742-4392-8b13-24fa39fe5799",
+            "TargetId": "ou-zhj6-vn5q14hi",
+            "TargetType": "ORGANIZATIONAL_UNIT",
+            "AssociationType": "INHERITED",
+            "UpdatedAt": "2026-08-20T23:22:16.007000+00:00",
+            "AssociationStatus": "PENDING"
+        },
+        {
+            "ConfigurationPolicyId": "2f983d0c-8742-4392-8b13-24fa39fe5799",
+            "TargetId": "<Identity>",
+            "TargetType": "ACCOUNT",
+            "AssociationType": "INHERITED",
+            "UpdatedAt": "2026-08-20T23:22:23.526000+00:00",
+            "AssociationStatus": "PENDING"
+        },
+        {
+            "ConfigurationPolicyId": "2f983d0c-8742-4392-8b13-24fa39fe5799",
+            "TargetId": "<Development>",
+            "TargetType": "ACCOUNT",
+            "AssociationType": "INHERITED",
+            "UpdatedAt": "2026-08-20T23:22:23.401000+00:00",
+            "AssociationStatus": "PENDING"
+        },
+        {
+            "ConfigurationPolicyId": "2f983d0c-8742-4392-8b13-24fa39fe5799",
+            "TargetId": "ou-zhj6-hisvfbzq",
+            "TargetType": "ORGANIZATIONAL_UNIT",
+            "AssociationType": "INHERITED",
+            "UpdatedAt": "2026-08-20T23:22:15.840000+00:00",
+            "AssociationStatus": "PENDING"
+        },
+        {
+            "ConfigurationPolicyId": "2f983d0c-8742-4392-8b13-24fa39fe5799",
+            "TargetId": "<Policy Canary>",
+            "TargetType": "ACCOUNT",
+            "AssociationType": "INHERITED",
+            "UpdatedAt": "2026-08-20T23:22:24.160000+00:00",
+            "AssociationStatus": "PENDING"
+        },
+        {
+            "ConfigurationPolicyId": "2f983d0c-8742-4392-8b13-24fa39fe5799",
+            "TargetId": "<Log Archive>",
+            "TargetType": "ACCOUNT",
+            "AssociationType": "INHERITED",
+            "UpdatedAt": "2026-08-20T23:22:24.327000+00:00",
+            "AssociationStatus": "PENDING"
+        },
+        {
+            "ConfigurationPolicyId": "2f983d0c-8742-4392-8b13-24fa39fe5799",
+            "TargetId": "<Sandbox 1>",
+            "TargetType": "ACCOUNT",
+            "AssociationType": "INHERITED",
+            "UpdatedAt": "2026-08-20T23:22:24.455000+00:00",
+            "AssociationStatus": "PENDING"
+        },
+        {
+            "ConfigurationPolicyId": "2f983d0c-8742-4392-8b13-24fa39fe5799",
+            "TargetId": "<Production>",
+            "TargetType": "ACCOUNT",
+            "AssociationType": "INHERITED",
+            "UpdatedAt": "2026-08-20T23:22:24.010000+00:00",
+            "AssociationStatus": "PENDING"
+        },
+        {
+            "ConfigurationPolicyId": "2f983d0c-8742-4392-8b13-24fa39fe5799",
+            "TargetId": "ou-zhj6-z3drywoq",
+            "TargetType": "ORGANIZATIONAL_UNIT",
+            "AssociationType": "INHERITED",
+            "UpdatedAt": "2026-08-20T23:22:16.227000+00:00",
+            "AssociationStatus": "PENDING"
+        },
+        {
+            "ConfigurationPolicyId": "2f983d0c-8742-4392-8b13-24fa39fe5799",
+            "TargetId": "<Audit>",
+            "TargetType": "ACCOUNT",
+            "AssociationType": "INHERITED",
+            "UpdatedAt": "2026-08-20T23:22:23.782000+00:00",
+            "AssociationStatus": "PENDING"
+        },
+        {
+            "ConfigurationPolicyId": "2f983d0c-8742-4392-8b13-24fa39fe5799",
+            "TargetId": "<Sandbox, SUSPENDED - EXC-01>",
+            "TargetType": "ACCOUNT",
+            "AssociationType": "INHERITED",
+            "UpdatedAt": "2026-08-20T23:22:23.652000+00:00",
+            "AssociationStatus": "PENDING"
+        },
+        {
+            "ConfigurationPolicyId": "2f983d0c-8742-4392-8b13-24fa39fe5799",
+            "TargetId": "<Data Governance>",
+            "TargetType": "ACCOUNT",
+            "AssociationType": "INHERITED",
+            "UpdatedAt": "2026-08-20T23:22:23.266000+00:00",
+            "AssociationStatus": "PENDING"
+        },
+        {
+            "ConfigurationPolicyId": "2f983d0c-8742-4392-8b13-24fa39fe5799",
+            "TargetId": "ou-zhj6-u9qe0l0h",
+            "TargetType": "ORGANIZATIONAL_UNIT",
+            "AssociationType": "INHERITED",
+            "UpdatedAt": "2026-08-20T23:22:16.428000+00:00",
+            "AssociationStatus": "PENDING"
+        },
+        {
+            "ConfigurationPolicyId": "2f983d0c-8742-4392-8b13-24fa39fe5799",
+            "TargetId": "ou-zhj6-mojnh3rs",
+            "TargetType": "ORGANIZATIONAL_UNIT",
+            "AssociationType": "INHERITED",
+            "UpdatedAt": "2026-08-20T23:22:19.310000+00:00",
+            "AssociationStatus": "PENDING"
+        },
+        {
+            "ConfigurationPolicyId": "2f983d0c-8742-4392-8b13-24fa39fe5799",
+            "TargetId": "ou-zhj6-ebwso7wp",
+            "TargetType": "ORGANIZATIONAL_UNIT",
+            "AssociationType": "INHERITED",
+            "UpdatedAt": "2026-08-20T23:22:16.405000+00:00",
+            "AssociationStatus": "PENDING"
+        }
+    ]
+}
+```
+
+#### `describe-hub` turned a documented sentence into a measurement
+
+The hub in Audit reads `SubscribedAt: 2026-08-20T23:07:11Z` — **before any enabling call was made in
+Audit**, because none ever was. The only act that preceded it is leg 1's designation, from Management. So
+*"delegating is enabling"* is now **observed for Security Hub CSPM**, not inherited from GuardDuty and not
+taken on the documentation's word; this is the reading 13.1's callout asked for, and it is the whole reason
+that callout said one command was worth spending.
+
+Two attributes came with it that central configuration now owns: `AutoEnableControls: true` and
+`ControlFindingGenerator: STANDARD_CONTROL`. They are Audit's local settings, and from here on the
+configuration policy is what decides them for every governed account — which is the point of 13.1b.
+
+#### The census: seven OUs, ten accounts — and the tenth is EXC-01
+
+`list-configuration-policy-associations` returns **eighteen rows**, and the arithmetic closes exactly:
+**seven `ORGANIZATIONAL_UNIT` rows** — every OU this organization has (`Security`, `Interactive`,
+`Sandboxes`, `Data`, `Identity`, `Policy Test`, `Workloads`) — plus **ten `ACCOUNT` rows**, plus the
+`ROOT` row itself. Nothing was missed and nothing unexpected was reached, with **one exception that is
+worth a paragraph rather than a shrug**.
+
+**Ten accounts, not nine.** The organization holds nine live accounts; the tenth row is
+`<Sandbox, SUSPENDED - EXC-01>` — the suspended `Sandbox` attached **directly to the organization root**,
+left over from an experiment that predates this project. **`EXC-01` says the policy sets never reach it and
+that this costs nothing. Security Hub is the first control that reaches it**, and the reason is structural
+rather than accidental: a configuration policy associated with the **root** walks the organization tree,
+and that account hangs off the root itself. `EXC-01` is amended in `docs/AWS_STATE.md` to say so, because
+the next reader of this listing will otherwise meet a row that no document predicts.
+
+What it will cost is one row that never turns green: a suspended account cannot have a service enabled in
+it, so its association is expected to sit at `PENDING` or settle at `FAILED` **permanently**. That is a
+known, named row — not the signal that the pass failed. Any *other* row failing is.
+
+#### PENDING is not SUCCESS — this read-back does not close the pass
+
+The read-back was taken roughly ninety seconds after the root association, and **only one row had
+settled**: `<Management>`, `SELF_MANAGED_SECURITY_HUB`, `SUCCESS` — 13.1c applied, and the one act of this
+leg that is already proven. **Every other row is `PENDING`**, including the root itself and all nine
+inherited accounts.
+
+Association is asynchronous, so `PENDING` at ninety seconds is the expected reading and not a fault. But it
+means that at *this* point in the sitting nothing had been established except that the calls were
+*accepted* — not that Security Hub was enabled anywhere but Audit. That is the distinction Lesson 13 exists
+for, and it is why the sitting did not stop here.
+
+#### The re-read — and it lands one row away from where the section above predicted
+
+Same listing, filtered to everything that is **not** `SUCCESS`, which is the shape that makes a short answer
+mean something. *The column rule below was widened to fit the redaction; the values are the run's own.*
+
+```
+$ aws securityhub list-configuration-policy-associations --region us-west-2 --query "ConfigurationPolicyAssociationSummaries[?AssociationStatus!='SUCCESS'].{Target:TargetId,Type:TargetType,Status:AssociationStatus}" --output table
+-----------------------------------------------------
+|      ListConfigurationPolicyAssociations          |
++---------+---------------------------+-------------+
+| Status  |          Target           |    Type     |
++---------+---------------------------+-------------+
+|  PENDING|  r-zhj6                   |  ROOT       |
+|  PENDING|  <the SUSPENDED Sandbox>  |  ACCOUNT    |
++---------+---------------------------+-------------+
+```
+
+**Sixteen of the eighteen rows settled — all seven OUs and all nine live accounts.** So the association
+half of pass 6 is done: Security Hub CSPM is enabled under `awsds-fsbp-only` in every governed account, and
+`<Management>` is self-managed exactly as 13.1c decided.
+
+**Two rows remain, and the section above predicted one.** `<the SUSPENDED Sandbox>` is the expected one.
+The **`ROOT` row is not**, and the likeliest reading is that it is not a second problem but the same one
+seen from above: a parent's association status has nothing to summarise except its descendants, and one
+descendant can never succeed. **That is a reading, not a measurement**, and the two candidates are
+distinguishable by doing nothing — propagation still in flight settles in minutes, while an aggregate over
+a permanently stuck child stays `PENDING` for as long as the suspended account exists. Re-read this one row
+on a later sitting and the answer arrives for free.
+
+**What it costs if the reading is right, and this is the part worth carrying:** the obvious invariant —
+*every association row reads `SUCCESS`* — is **not available to this organization**, and a check written
+that way would fail forever, on two rows, for one reason. The true invariant is narrower, and `EXC-01` now
+states it: **every OU and every live account `SUCCESS`; the suspended account, and the root above it,
+exempt by name.** An invariant written from the happy path would have had to be unlearned later, from a red
+check nobody could explain.
+
+#### The two instrument readings, and what they close
+
+*Run by **[user]** from their own machine as the infrastructure user, `./aws/datalake.py`; the
+trusted-access snapshot re-run by Claude in the same sitting. Both are read-only. Account ids are in
+`aws/output/`, which is untracked — none is copied here.*
+
+`DL-11` turned from its standing `note` into **six `pass`**, and section 11 of the report reads the same way
+across every profiled account:
+
+```
+PROFILE                CSPM HUB  FSBP STANDARD  V2 PRODUCT
+awsds-infra-data       enabled   yes            absent
+awsds-infra-dev        enabled   yes            absent
+awsds-infra-identity   enabled   yes            absent
+awsds-infra-prod       enabled   yes            absent
+awsds-infra-sandbox-1  enabled   yes            absent
+awsds-policy-canary    enabled   yes            absent
+
+delegated administrator (securityhub.amazonaws.com): <Audit Account>  ACTIVE
+```
+
+`0 check(s) FAILED`. **`V2 PRODUCT: absent` in all six is the reading worth naming**, because it is the only
+one here that is not "has the stage run yet": 13.0 refused the v2 product so that Control Tower keeps
+`aws-controltower-BaselineConfigRecorder`, and `DL-11` fails on that product's **arrival**, never on its
+absence. Six accounts enabled and the recorder still Control Tower's is the whole decision, measured.
+
+**Read what this table is and is not.** The org configuration lives in Audit, which holds no profile — so
+these six rows are the **result** of the root-associated policy, never the policy itself. Management is
+absent by 13.1c's decision, not by an oversight of the instrument.
+
+#### 13.4 — INV-09 restated from a measurement, not derived
+
+`./aws/org-trusted-access-services.py` re-run: **nine** trusted-access principals, `securityhub.amazonaws.com`
+now among them, and **four** delegations — `access-analyzer`, `config` and **`securityhub`** to
+`<Audit Account>`, `sso` to `<Identity Account>`, all `ACTIVE`.
+
+**Nine and four is what the corrected ordering predicted**, and it is worth recording that the prediction
+was itself a repair: the sub-step said *"ten"* until 2026-08-20, written when GuardDuty was Stage 4 and so
+landed *before* this stage. The 2026-08-18 split moved GuardDuty to Stage 15 and no count followed it.
+`docs/AWS_STATE.md` now carries the rule that made this come out right — **read the count from INV-09's row,
+never from a stage file.**
+
+**One shape to notice for the two delegations still to come:** nobody enabled trusted access for
+`securityhub`. The designation in leg 1 did it, and the principal appeared in section 1 as a side effect.
+GuardDuty (Stage 15) and Macie (Stage 11) will arrive the same way, which is why neither has a step that
+turns trusted access on.
+
+#### What is left of pass 6, and it is not paperwork
+
+**13.3's triage.** Enablement is minutes old, so the first FSBP report does not exist yet; when it does it
+will be this environment's largest finding count ever, and the useful act is deciding which controls are
+not applicable. **Central configuration changes how that is done** — a centrally managed account cannot run
+`BatchUpdateStandardsControlAssociations`, so a disable is an edit to the policy and **turns
+`awsds-fsbp-only` from the recommended shape into a custom one**. Expect one custom policy, not a list of
+per-account exclusions.
+
+Everything else in the step is closed: the product decision (13.0) measured as `absent`, the Config
+prerequisite (13.0a) met by Control Tower, the delegation (13.1) observed rather than assumed, central
+configuration and the root policy (13.1a/13.1b) associated, Management self-managed (13.1c), and `INV-09`
+restated (13.4).
+
 ---
 
 *Log index: [docs/log/INDEX.md](INDEX.md) · Stage index: [docs/plan/stages/INDEX.md](../plan/stages/INDEX.md)*
