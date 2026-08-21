@@ -792,6 +792,33 @@ lesson can be *recognised* without opening this file; the reasoning that makes e
     exactly the claims no gate reads and no owner re-reads. A stage saying what it itself did is checked
     by the next person executing it; a stage saying what *another* stage already did is checked by nobody.
 
+38. **An identifier read out of prose is a claim, not a reading — and it travels further than the sentence
+   that carried it.** Stage 6 step 1.3's table named the RAM permission the account association would
+   attach: `AWSRAMPermissionDataZoneDefault`, *"never `AWSRAMPermissionDataZonePortalReadWrite`"*. Both
+   names came from a documentation page's body text, read carefully and quoted accurately. **Neither
+   exists.** `ram list-permissions --resource-type datazone:Domain` publishes six permissions and no name
+   resembling either; what the console attaches is
+   `AWSRAMPermissionsAmazonDatazoneDomainExtendedServiceAccess`. The *decision* the sentence expressed —
+   no data-portal access — was right, available, and taken. Only the proper nouns were fiction.
+   **The damage is not the wrong name, it is where the wrong name ends up.** By the time this was
+   measured, `AWSRAMPermissionDataZoneDefault` had reached `docs/SMUS.md` twice and — worse — a comment in
+   `terraform-modules/sagemaker-prereqs/blueprints.tf`, where it was doing real work: it was the stated
+   *reason* the blueprint resources live in the member account's slice. A name is the most portable thing
+   in a document. It gets quoted without its hedge, it survives every re-read because it looks like a
+   fact rather than an inference, and it ends up load-bearing in a file nobody would think to re-check
+   against an API.
+   **This is not Lesson 16, and not Lesson 23.** Lesson 16 is about a console wizard being under-specified
+   — fields the documentation does not name. This is the opposite: the documentation named something
+   confidently and the API disagrees. Lesson 23 says bind to *contents* rather than to a name, which is
+   about drift over time; this name never had a referent at all.
+   **The discriminator is mechanical and costs one command.** Every class of identifier this project
+   quotes has a cheap enumeration behind it — `ram list-permissions`, `aws iam list-policies --scope AWS`,
+   a service's `list_*.html` action table, a registry's tag list. **If a plan sentence names an
+   AWS-published identifier, enumerate the namespace before the sentence is written**, and if the name
+   cannot be enumerated yet, say *"the console's no-portal option, name unread"* rather than inventing
+   the precision. **The tell in review**: a proper noun with no measurement date beside it, in a file
+   whose neighbours all carry one — the same shape Lesson 37 describes for verbs, applied to nouns.
+
 ---
 
 *Plan core: [GENERAL_PLAN.md](../GENERAL_PLAN.md) · Decisions: [docs/plan/decisions/INDEX.md](decisions/INDEX.md) · Stages: [docs/plan/stages/INDEX.md](stages/INDEX.md)*

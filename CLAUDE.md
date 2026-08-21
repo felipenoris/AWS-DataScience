@@ -354,3 +354,5 @@ the reasoning that makes it *usable* is in the file. Recognising one is the sign
     tell is a clause carrying no date, no measurement and no verdict while its neighbours carry all
     three, and the risk concentrates in claims about another stage or another account, which no gate
     reads and no owner re-reads.**
+38. **An identifier read out of prose is a claim, not a reading — and a name travels further than the
+    sentence that carried it, ending up load-bearing where nobody re-checks it.**

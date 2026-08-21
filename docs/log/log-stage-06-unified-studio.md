@@ -1412,7 +1412,7 @@ the share carries `AWSRAMPermissionsAmazonDatazoneDomainExtendedServiceAccess`, 
 on `datazone:Domain` — read from `ram list-resource-share-permissions`, not from the console label.
 `ram list-permissions --resource-type datazone:Domain` publishes **six**, and
 `AWSRAMPermissionDataZoneDefault` / `AWSRAMPermissionDataZonePortalReadWrite` — the pair the step's table
-named from the V1 user guide — are **not among them**. What exists is a `...ExtendedServiceAccess` and a
+named from the V1 user guide — are **not among them**. **That became Lesson 38** in the sitting that reviewed the plan against these findings: both were proper nouns quoted accurately out of prose, and one had already reached a Terraform module comment as load-bearing reasoning. What exists is a `...ExtendedServiceAccess` and a
 `...ExtendedServiceWithPortalAccess` twin, plus the resource-type default
 `AWSRAMDefaultPermissionAmazonDataZoneDomain`. **So the design's decision was honoured and its wording was
 not**: the user's *"IAM users can access APIs only"* toggle is precisely the no-portal choice the step
