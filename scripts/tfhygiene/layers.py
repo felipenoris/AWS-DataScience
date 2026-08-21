@@ -156,8 +156,11 @@ SLICES = [
     # Stage 3's Deliverables, as slices rather than as a script (2026-08-16). These are
     # INSTRUMENTS: created, read from the serial console, destroyed in the same sitting -
     # `make down` is the whole reason they are here and not in aws/probes/, whose declared
-    # safety class is that nothing is created. Three t4g.nano at 0.0042/h (docs/PRICING.md 3,
-    # the same row Stage 4's WireGuard host uses); no IAM principal is created by either row.
+    # safety class is that nothing is created. Three t4g.nano at 0.0042/h (docs/PRICING.md 8);
+    # no IAM principal is created by either row. THESE STAYED ON GRAVITON when the VPN host
+    # moved to amd64 on 2026-08-20: they are their own slices with their own AMI data source,
+    # nothing about them was the subject of that change, and a probe pays the ~20% Graviton
+    # discount for measuring exactly what an x86 one would.
     # THEY ARE ORDERED: production/probes is the target, so it applies BEFORE the two source
     # rows, which find it by name in prod.internal. rank 60 puts all three after egress/,
     # whose S3 gateway policy the perimeter probe measures.
@@ -172,11 +175,18 @@ SLICES = [
     ),
     # Stage 4 pass 1 (step 1.3, third edit) - THE REPOSITORY'S FIRST [D] ROW, and the rank
     # above it (40, between foundation and egress) landed early because the ORDER is what was
-    # got wrong once. usd_per_hour is the t4g.nano row of docs/PRICING.md 3, measured us-west-2
-    # (Lesson 6) - and it is the WHILE-RUNNING figure: the EBS volume and the [P] Elastic IP go
-    # on billing while the host is stopped, monthly rather than hourly, and they are floor lines
-    # in docs/plan/cost-model.md rather than anything this column can carry.
-    Slice("sandbox", "vpn", DORMANT, "WireGuard host - the only human path in (Stage 4)", 0.0042),
+    # got wrong once. usd_per_hour is the t3.nano row of docs/PRICING.md 3, measured us-west-2
+    # (Lesson 6) - t4g.nano's 0.0042 until 2026-08-20, when the host moved to amd64 and the
+    # baseline it prices moved with it: the same shape on x86 is +23.8%, measured the same day.
+    # AND IT IS THE WHILE-RUNNING figure: the EBS volume and the [P] Elastic IP go on billing
+    # while the host is stopped, monthly rather than hourly, and they are floor lines in
+    # docs/plan/cost-model.md rather than anything this column can carry.
+    #
+    # IT ALSO PRICES THE BASELINE AND NOT THE HOST. instance_type is a slice parameter (vpn.md
+    # section S6), so a t3.medium session burns 0.0416/h - EIGHT times this figure - and
+    # `make status` still quotes this one. Deliberate: ./aws/vpn.py VP-1 is where the reader is
+    # told the two have parted company.
+    Slice("sandbox", "vpn", DORMANT, "WireGuard host - the only human path in (Stage 4)", 0.0052),
     # Stage 5 pass 1 (2026-08-18). Free or floor-priced at rest: one CMK (key-month), five
     # buckets, catalog objects, LF settings/tags/grants, two on-demand crawlers and the
     # compaction optimizer (config free; runs metered per DPU-hour, docs/PRICING.md 5).

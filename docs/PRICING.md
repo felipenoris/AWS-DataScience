@@ -254,7 +254,7 @@ one Stage 12 step 5 measures against the real bill — this is arithmetic over l
 | Internal ALB | 0.034 + 0.011/LCU-h | 0.0225 + 0.008/LCU-h | 1.51 |
 | SageMaker Studio JupyterLab / CodeEditor `ml.t3.medium` | 0.081 | 0.050 | 1.62 |
 | SageMaker processing job `ml.t3.medium` | 0.066 | — | |
-| WireGuard EC2 `t4g.nano` | 0.0067 | 0.0042 | 1.60 |
+| WireGuard EC2 `t3.nano` (`t4g.nano` at 0.0067 / 0.0042 until 2026-08-20) | 0.0084 | 0.0052 | 1.62 |
 | Public IPv4 address (in use or idle) | 0.005 | 0.005 | **1.00** |
 | VPC peering data (each way) | 0.01/GB | 0.01/GB | **1.00** |
 | Internet data transfer out, first 10 TB (see §7 note) | 0.150/GB | 0.090/GB | 1.67 |
@@ -476,8 +476,13 @@ in São Paulo that discipline is worth exactly twice as much.
 | Item | `sa-east-1` USD/h | `us-west-2` USD/h | Ratio |
 |---|---|---|---|
 | EC2 `t4g.nano` (0.5 GiB) | 0.0067 | 0.0042 | 1.60 |
+| EC2 `t4g.micro` (1 GiB) | 0.0134 | 0.0084 | 1.60 |
 | EC2 `t4g.small` (2 GiB) | 0.0268 | 0.0168 | 1.60 |
+| EC2 `t4g.medium` (4 GiB) | 0.0536 | 0.0336 | 1.60 |
 | EC2 `t4g.large` (8 GiB) | 0.1072 | 0.0672 | 1.60 |
+| EC2 `t3.nano` (0.5 GiB, x86) | 0.0084 | 0.0052 | 1.62 |
+| EC2 `t3.micro` (1 GiB, x86) | 0.0168 | 0.0104 | 1.62 |
+| EC2 `t3.medium` (4 GiB, x86) | 0.0672 | 0.0416 | 1.62 |
 | EC2 `t3.large` (8 GiB, x86) | 0.1344 | 0.0832 | 1.62 |
 | EC2 `m5.large` (8 GiB, x86) | 0.1530 | 0.0960 | 1.59 |
 | EBS `gp3` storage (USD/GB-mo) | 0.152 | 0.08 | 1.90 |
@@ -495,6 +500,17 @@ in São Paulo that discipline is worth exactly twice as much.
 
 `t4g` (Graviton) is ~20% cheaper than `t3` for the same memory in both regions, which is the sizing
 argument D8 makes for GitLab, and it holds in São Paulo unchanged.
+
+**The six burstable rows above are the same-memory pairs, measured 2026-08-20** (offer file
+`AmazonEC2`, published `2026-08-20T22:12:05Z`, read from the bulk endpoint of §0 for both regions in
+one sitting) — added when the WireGuard host moved off Graviton onto amd64 at the user's direction,
+which is the one place in this project where that ~20% is *paid* rather than saved. The premium is
+**+23.8% in `us-west-2`** and **+25.4% in `sa-east-1`**, and it is flat across the three sizes:
+`0.0052 / 0.0042`, `0.0104 / 0.0084`, `0.0416 / 0.0336`. In the money that matters here — a `[D]`
+host billed only while a lab session runs — the baseline `t3.nano` costs **+0.0010 USD/h** over the
+`t4g.nano` it replaced, and the `t3.medium` currently selected costs **+0.0080 USD/h** over
+`t4g.medium`. **Nothing about D8's GitLab sizing changes**: that argument is about an 8 GiB
+always-on host, where the same ~20% is ~13 USD/month.
 
 **The three SageMaker serving rows were measured 2026-08-16 for Stage 10 step 5, and the shape matters
 more than the rate:** batch transform bills only while the job runs and Serverless Inference scales to

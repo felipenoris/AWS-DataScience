@@ -9,7 +9,7 @@ reasoning, its consequences or its revision trigger.
 | [D1](D01-region.md) | Region | `us-west-2`, and it stays there; region portability is Terraform hygiene, not planned work. | S1a |
 | [D2](D02-control-tower.md) | Control Tower vs. plain Organizations | Control Tower rather than plain Organizations; AWS Config is the price of it. | — |
 | [D3](D03-terraform-state.md) | Terraform state location | Terraform state in a per-account S3 bucket with native S3 locking; no DynamoDB, nothing in Management. | S2 |
-| [D4](D04-vpn-wireguard.md) | VPN technology | Self-managed WireGuard on `t4g.nano`, layer `[D]`; Client VPN documented as the managed alternative. | S4 |
+| [D4](D04-vpn-wireguard.md) | VPN technology | Self-managed WireGuard on the smallest burstable instance, layer `[D]`; Client VPN documented as the managed alternative. Amended 2026-08-20: **amd64 `t3.nano`**, not the `t4g.nano` decided. | S4 |
 | [D5](D05-sagemaker-egress.md) | SageMaker internet restriction mechanism | Two egress designs built behind a switch and compared: (A) NAT plus allowlist, (B) no NAT at all. | S3, S6, S8, S11 |
 | [D6](D06-dlp-approach.md) | DLP approach | DLP is four problems with four native controls on top of the data perimeter, and IAM Access Analyzer is the one component that checks the others instead of adding to them. | S1b, S11, S12 |
 | [D7](D07-orchestration.md) | Workflow orchestration in production | Two orchestrators built and compared: (A) MWAA Serverless, (B) EventBridge Scheduler + Step Functions. | S10 |

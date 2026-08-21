@@ -71,7 +71,7 @@ Two cost levers worth applying rather than discovering later:
 | Internal ALB in front of GitLab/Pages (only while GitLab is up) | ~0.023 + LCU usage |
 | **Production `egress/`** (only while runner builds or orchestration need it) | NAT ~0.050 + **endpoints ~0.100-0.120** — the endpoint half was missing from every earlier version of this table |
 | SageMaker Studio `ml.t3.medium` (per running app) | ~0.050 |
-| WireGuard EC2 `t4g.nano` | ~0.004 |
+| WireGuard EC2 `t3.nano` | ~0.005 (`t4g.nano` at ~0.004 until the amd64 move of 2026-08-20; a `t3.medium` session is ~0.042) |
 | Sandbox ↔ Production **and** Development ↔ Production VPC peering (two of them, D21) | free within an AZ; USD 0.01/GB each way across AZs — see `docs/plan/open-questions.md` item 3 |
 | **Staging `egress/` during a promotion run** (D20) | ~0.140/h, but measured in *minutes* per promotion, not hours — `make up ENV=staging` is a pipeline step, and the pipeline tears it down. Budget ~USD 0.03 per promotion, not a standing hourly cost |
 | **Development `egress/` + Studio apps** (D21) | ~0.160/h under design A, ~0.130 under B, plus ~0.05/h per running app — but only while pipeline-engineering work is happening. A session is either exploratory (Sandbox up) or engineering (Development up), so the *typical* hourly burn does not double even though the worst case does |

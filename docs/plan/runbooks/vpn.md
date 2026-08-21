@@ -24,7 +24,7 @@ survive forever versus what is powered off between sessions (D11):
 | The **Elastic IP** allocation | `sandbox/foundation/` · `[P]` | `52.89.212.1` — the one stable address. Every client config pins it (`Endpoint =`), and so does the `DenyControlPlaneOffVpn` fragment and the lake's bucket-policy branch (§S2). It survives every host stop, start and replacement — only its *association* follows the instance |
 | The **security group** `awsds-sandbox-vpn` | `sandbox/foundation/` · `[P]` | carries **the estate's only world-open rule**: UDP/51820 (`VP-3`). Anything else world-open anywhere is a finding |
 | The **host-key secret** `awsds-sandbox-vpn-host-key` | `sandbox/foundation/` · `[P]` | the container for the host's private key — value written by the user at enrollment, read by the instance at boot, resource-policy deny on every other reader (§K0) |
-| The **WireGuard host** | `sandbox/vpn/` · `[D]` | one **arm64** burstable instance in the **public** subnet of `usw2-az1` — the size is the slice's `instance_type` **parameter**, selected per apply since 2026-08-20 (§S6): `t4g.nano` by default and what the cost tables price, `t4g.medium` when the host needs room, tag `Name=awsds-sandbox-vpn` — the tag is the contract everything looks the host up by (§K0a). `wg0` at `10.90.0.1/24`, IMDSv2 required, no port 22, no key pair — the shell is SSM (§K0a) |
+| The **WireGuard host** | `sandbox/vpn/` · `[D]` | one **x86_64** burstable instance in the **public** subnet of `usw2-az1` — **arm64 from D4 until 2026-08-20**, when the user moved it (§S6) — the size is the slice's `instance_type` **parameter**, selected per apply since the same day (§S6): `t3.nano` by default and what the cost tables price, `t3.medium` when the host needs room, tag `Name=awsds-sandbox-vpn` — the tag is the contract everything looks the host up by (§K0a). `wg0` at `10.90.0.1/24`, IMDSv2 required, no port 22, no key pair — the shell is SSM (§K0a) |
 | The **handshake log + alarm** | `sandbox/vpn/` · `[D]` | log group `/awsds/sandbox/vpn` (30 days) with per-peer named lines, and the health alarm `awsds-sandbox-vpn-health` |
 | The **roster** `peers.auto.tfvars` | the repository (tracked) | every enrolled device's *public* key and `host` number. Public halves only — the shape gate `./scripts/check-tfvars-shape.py` refuses the regressions it can see (§K5) |
 
@@ -75,7 +75,7 @@ The confusion is natural — both are "how traffic gets out" — and the split i
 | Exit | its own Elastic IP, via the **IGW** of the public subnet | the **NAT gateway** — its route is installed in the *private* route tables only |
 | Endpoints | the `[P]` **gateway** endpoints (free, in `foundation/`, always there) | the `[E]` **interface** endpoints (billed hourly, new ids every `make up`) |
 | Who needs it | every Stage 5 pass 4d proof — all run from the laptop | Stage 6's notebooks, Stage 7's runners — anything that *lives* in a private subnet |
-| At-rest burn | USD 0.0042/h running | USD 0.160/h (NAT + 11 interface endpoints), plus `probes/` if applied |
+| At-rest burn | USD 0.0052/h running | USD 0.160/h (NAT + 11 interface endpoints), plus `probes/` if applied |
 
 The two never meet: the host's subnet routes `0.0.0.0/0` to the IGW, the NAT's route exists only in
 the private tables. A session that needs only the tunnel starts only the host (§S5).
@@ -146,16 +146,23 @@ rate.
 
 **`InsufficientInstanceCapacity` on start is transient until proven otherwise — retry, change
 nothing (measured 2026-08-19).** A stopped instance holds no hardware: every start re-contests
-capacity like a fresh launch, and a Graviton nano pinned to one AZ is where the pool runs dry first.
+capacity like a fresh launch, and a nano pinned to one AZ is where the pool runs dry first.
 The first-ever start after a `make down` returned exactly this —
 `An error occurred (InsufficientInstanceCapacity) … reached max retries: 2` — with the instance left
-cleanly `stopped` (nothing to undo), `t4g.nano` confirmed *offered* in the AZ (so not a
+cleanly `stopped` (nothing to undo), the type confirmed *offered* in the AZ (so not a
 configuration problem), and the retry succeeded minutes later. If it persists for ~30 minutes, the
-documented fallback is **`t4g.micro`, an admitted value of the slice's `instance_type` parameter
+documented fallback is **`t3.micro`, an admitted value of the slice's `instance_type` parameter
 (§S6)** — a known-survivable change: the interface key comes from the `[P]` secret and the address
 from the `[P]` allocation, so client configs do not move (measured at Stage 4 step 4.2). **Never an
 AZ change** — the subnets anchor on `zone_id` in `[P]` `foundation/` — and never a configuration change
 on the first transient signal.
+
+> **That measurement was taken on Graviton** (`t4g.nano`, the family this host carried until
+> 2026-08-20), and it is quoted above with the family filed off on purpose: what it establishes is
+> that a *start* re-contests capacity and that the first signal is transient, which is EC2 behaviour
+> and not a property of an architecture. What it does **not** establish is that the x86_64 pool
+> behaves the same way in this zone. Carry the procedure — retry, then `t3.micro`; never an AZ
+> change — and do not carry "the nano pool here runs dry" as a measured claim about `t3`.
 
 **After the start**: `./aws/vpn.py` must read `running` with everything passing; the SSM agent needs
 a further minute before a shell works (§K0a's `Online` check); the tunnel itself needs only the
@@ -177,8 +184,8 @@ handshake (§C2).
 
 *New 2026-08-20, extended the same day with the disk. The host's shape is **two parameters of
 `sandbox/vpn/`, both held in one tracked tfvars**, not a property of the design: `instance_type` —
-`t4g.nano` (D4's, the default) for a tunnel that only forwards, `t4g.medium` (2 vCPU, 4 GiB) when the
-host needs room to work in, `t4g.micro` as §S5's capacity fallback — and `root_volume_size`, GiB of
+`t3.nano` (D4's shape, the default) for a tunnel that only forwards, `t3.medium` (2 vCPU, 4 GiB) when
+the host needs room to work in, `t3.micro` as §S5's capacity fallback — and `root_volume_size`, GiB of
 gp3 root disk, `8` by default. **The one thing to carry out of this section is that they are not
 symmetrical**: the type switches in both directions, the disk only grows. What follows is common to
 both down to the pre-flight reads; the disk's own asymmetries have their own subsection, and the
@@ -186,17 +193,49 @@ switch procedure at the end is written for the type, with the disk's differences
 they land.*
 
 **The AMI decides the family. The parameter decides only the size within it.** The `wireguard`
-module pins the Amazon Linux 2023 **arm64** image by SSM parameter —
-`/aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-arm64` — and an AMI is specific to
-its processor architecture, so every value the variable admits is a Graviton one. This is the trap
+module pins the Amazon Linux 2023 **x86_64** image by SSM parameter —
+`/aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-x86_64` — and an AMI is specific to
+its processor architecture, so every value the variable admits is an Intel/AMD one. This is the trap
 worth naming, because the two names look like siblings: **`t3.medium` and `t4g.medium` are the same
-2 vCPU / 4 GiB shape and are NOT interchangeable here** — `t3` is x86_64, and EC2 **refuses** the
-request rather than handing back a host that boots badly. Wanting x86 is therefore not a value of
-this parameter at all: it is an **AMI change inside the module** (a different SSM parameter), which
-replaces the instance and re-runs its user data — a host replacement, subject to Part K's rules
+2 vCPU / 4 GiB shape and are NOT interchangeable here** — `t4g` is arm64, and EC2 **refuses** the
+request rather than handing back a host that boots badly. Wanting Graviton is therefore not a value
+of this parameter at all: it is an **AMI change inside the module** (a different SSM parameter),
+which replaces the instance and re-runs its user data — a host replacement, subject to Part K's rules
 rather than to this section. The variable's `validation` block encodes the closed list for exactly
 this reason; widening it is a decision taken with the two pre-flight reads below, never a
 convenience.
+
+#### The architecture move of 2026-08-20 — this section's own rule, exercised
+
+**This host was arm64 from D4 until 2026-08-20**, when the user moved it to amd64: the module's SSM
+parameter went `…-arm64` → `…-x86_64` (`wireguard-v0.3.0`), and every admitted value of
+`instance_type` went `t4g.*` → `t3.*` **as a consequence, not as a choice** — the list follows the
+image, in that direction and never the other. Read that as the worked example of the paragraph above
+rather than as an exception to it, and take three things from it:
+
+- **It is a REPLACEMENT, not a switch.** Everything below this heading — "a stop and a start, not a
+  rebuild", `~ instance_type` with `1 to change`, "the instance id survives" — describes moving
+  *within* a family and describes **none** of that move. The plan reads `must be replaced`, which
+  everywhere else in this section is the signal to stop and read §K2/§K4. Here it is the expected
+  reading.
+- **What survives is nevertheless the same list**, and for the same `[P]` reasons: the **address**
+  (the Elastic IP is `foundation/`'s), and the **server's public key** (its private half is
+  `foundation/`'s secret, re-fetched at first boot by the new host). So **no client `.conf` changes**
+  and no device is re-enrolled — the one thing an architecture change might have been expected to
+  cost, and does not.
+- **What does not survive is the root volume**, and with it anything ever put on the host by hand.
+  `/etc/wireguard/` is rebuilt by the user data from the `[P]` secret and the tracked roster, which
+  is why that costs nothing; a working copy, a capture or a container image on the old disk is
+  simply gone. A `root_volume_size` already grown is re-created at its assigned size — the disk's
+  "up only" rule is about `ModifyVolume`, and a replacement is not one.
+
+**What did NOT have to be re-measured, and why:** the user data names no architecture anywhere. It
+installs `wireguard-tools`, `iptables-nft` and `amazon-cloudwatch-agent` **by name** from the AL2023
+repository, derives the uplink interface (`ip route`) instead of assuming `ens5`/`enX0` per
+generation, and downloads no binary of its own. The 2026-08-16 package measurement was itself read
+off the repository's **`/x86_64/` mirror path** (`docs/REFERENCES.md`), so it applies to the new host
+directly. What *is* worth a fresh read is §S5's capacity note, which was measured on the Graviton
+pool — the box there says so.
 
 #### How the shape is selected — one tracked file, two keys, one of them reversible
 
@@ -209,12 +248,12 @@ lands anyway.
 
 | To | Do | Then |
 |---|---|---|
-| **Switch the type up** | assign it: `instance_type = "t4g.medium"` | `terraform apply` on the slice |
+| **Switch the type up** | assign it: `instance_type = "t3.medium"` | `terraform apply` on the slice |
 | **Go back to the default type** | **comment the assignment out** | `terraform apply` on the slice |
 | **Grow the disk** | assign it: `root_volume_size = 64` | `terraform apply` on the slice |
 | **~~Shrink the disk~~** | **not this file, and not an apply** | EBS cannot shrink a volume — see below |
 
-With nothing assigned, `variables.tf`'s defaults govern — `t4g.nano`, D4's shape, on 8 GiB — so for
+With nothing assigned, `variables.tf`'s defaults govern — `t3.nano`, D4's shape, on 8 GiB — so for
 the **type** commenting the line out *is* the way back, and the plan reads `~ instance_type` with
 `1 to change` in that direction exactly as it did on the way up. Both of those readings were
 measured 2026-08-20, on a bare `plan` with no flags of any kind. **For the disk the same act does
@@ -302,12 +341,18 @@ taken against that budget, with this table in hand.
 
 #### What is *not* coupled to these parameters — deliberately
 
-**The cost model stays written against `t4g.nano` on 8 GiB.** `scripts/tfhygiene/layers.py` carries `0.0042`
-for the slice and `docs/PRICING.md` §3's WireGuard row prices the nano, and neither follows the
-parameter. The consequence, stated plainly so nobody reports it as a defect: **while a larger host
-runs, `make status` understates the burn** — a `t4g.medium` is **0.0336 USD/h**, eight times the
-figure quoted (measured 2026-08-20, `docs/PRICING.md` §8's `t4g.medium` row is the same reading).
+**The cost model stays written against `t3.nano` on 8 GiB.** `scripts/tfhygiene/layers.py` carries
+`0.0052` for the slice and `docs/PRICING.md` §3's WireGuard row prices the nano, and neither follows
+the parameter. The consequence, stated plainly so nobody reports it as a defect: **while a larger
+host runs, `make status` understates the burn** — a `t3.medium` is **0.0416 USD/h**, eight times the
+figure quoted (measured 2026-08-20; `docs/PRICING.md` §8's `t3.medium` row is the same reading).
 That is the accepted trade: one baseline in the cost tables beats a table that drifts with a knob.
+
+**Both of those figures moved with the architecture, and by exactly the same fraction.** The amd64
+host is **+23.8%** on the Graviton one it replaced at every size measured — `0.0052` against
+`0.0042` at the nano, `0.0416` against `0.0336` at the medium (`docs/PRICING.md` §8, both regions,
+one sitting). So the *ratio* this section quotes is untouched: the medium is still eight times the
+nano, and the disk table below is unaffected — EBS is priced per GB, not per architecture.
 
 **The same holds for the disk, and it understates in a worse direction.** `docs/PRICING.md` §2's
 `WireGuard EBS (8 GB) + CloudWatch logs` row prices the default, and does not follow this file
@@ -328,25 +373,25 @@ As the **infrastructure user** in **Sandbox** (`InfrastructureAccess`, profile
 `awsds-infra-sandbox-1`):
 
 ```bash
-AWS_PROFILE=awsds-infra-sandbox-1 aws ec2 describe-instance-types --region us-west-2 --instance-types t4g.medium --query 'InstanceTypes[].[InstanceType,ProcessorInfo.SupportedArchitectures[0],VCpuInfo.DefaultVCpus,MemoryInfo.SizeInMiB]' --output text
+AWS_PROFILE=awsds-infra-sandbox-1 aws ec2 describe-instance-types --region us-west-2 --instance-types t3.medium --query 'InstanceTypes[].[InstanceType,ProcessorInfo.SupportedArchitectures[0],VCpuInfo.DefaultVCpus,MemoryInfo.SizeInMiB]' --output text
 ```
 
 ```bash
-AWS_PROFILE=awsds-infra-sandbox-1 aws ec2 describe-instance-type-offerings --region us-west-2 --location-type availability-zone-id --filters 'Name=instance-type,Values=t4g.medium' --query 'InstanceTypeOfferings[].Location' --output text
+AWS_PROFILE=awsds-infra-sandbox-1 aws ec2 describe-instance-type-offerings --region us-west-2 --location-type availability-zone-id --filters 'Name=instance-type,Values=t3.medium' --query 'InstanceTypeOfferings[].Location' --output text
 ```
 
-The first is the architecture check — `arm64`, or stop here. The second is the one people skip: the
+The first is the architecture check — `x86_64`, or stop here. The second is the one people skip: the
 host is pinned to **one** zone id by `zone_index`, and the subnets it may use are `[P]` in
 `foundation/`, so **a type not offered in that zone is a type this host cannot have** — and the
 symptom arrives later, as an `InsufficientInstanceCapacity` that looks like §S5's transient one and
-never clears. `t4g.medium` was read as offered in all four `us-west-2` zone ids on 2026-08-20.
+never clears. `t4g.medium` was read as offered in all four `us-west-2` zone ids on 2026-08-20, **on the Graviton family the host carried that morning** — the amd64 move of the same day makes that reading history, so run this one again for the `t3` size being selected rather than inheriting it.
 
 The price, when the size being selected has no row yet — `us-east-1` regardless of where the
 instance runs, that being where the endpoint lives, and it needs a session like any other call
 (`docs/PRICING.md` §0's `curl` against the bulk endpoint is the credential-free alternative):
 
 ```bash
-AWS_PROFILE=awsds-infra-sandbox-1 aws pricing get-products --region us-east-1 --service-code AmazonEC2 --filters 'Type=TERM_MATCH,Field=instanceType,Value=t4g.medium' 'Type=TERM_MATCH,Field=regionCode,Value=us-west-2' 'Type=TERM_MATCH,Field=operatingSystem,Value=Linux' 'Type=TERM_MATCH,Field=tenancy,Value=Shared' 'Type=TERM_MATCH,Field=preInstalledSw,Value=NA' 'Type=TERM_MATCH,Field=capacitystatus,Value=Used' --query 'PriceList' --output text | jq -r '.terms.OnDemand|to_entries[0].value.priceDimensions|to_entries[0].value.pricePerUnit.USD'
+AWS_PROFILE=awsds-infra-sandbox-1 aws pricing get-products --region us-east-1 --service-code AmazonEC2 --filters 'Type=TERM_MATCH,Field=instanceType,Value=t3.medium' 'Type=TERM_MATCH,Field=regionCode,Value=us-west-2' 'Type=TERM_MATCH,Field=operatingSystem,Value=Linux' 'Type=TERM_MATCH,Field=tenancy,Value=Shared' 'Type=TERM_MATCH,Field=preInstalledSw,Value=NA' 'Type=TERM_MATCH,Field=capacitystatus,Value=Used' --query 'PriceList' --output text | jq -r '.terms.OnDemand|to_entries[0].value.priceDimensions|to_entries[0].value.pricePerUnit.USD'
 ```
 
 #### The switch itself — a stop and a start, not a rebuild, and Terraform performs it
@@ -415,7 +460,7 @@ space it was given. Read both, not one.
 nothing.** A stopped instance holds no hardware, and a switch re-contests the pool at the new size in
 the same pinned AZ. The distinction that matters is the one §S5 already draws: transient until
 proven otherwise, and the `describe-instance-type-offerings` read above is what proves it is not a
-configuration problem. §S5's documented fallback is `t4g.micro` — an admitted value of this
+configuration problem. §S5's documented fallback is `t3.micro` — an admitted value of this
 parameter, so the fallback is this same procedure with a different value in the same file.
 
 ---
@@ -669,7 +714,7 @@ the same row answers the third prerequisite in the same glance:
 
 ```
 INSTANCE              TYPE       STATE     SUBNET        PUBLIC IP     IMDS
-i-0…                  t4g.nano   running   subnet-0…     <the EIP>     required
+i-0…                  t3.nano    running   subnet-0…     <the EIP>     required
 ```
 
 That file is untracked and carries account ids: read it, never copy out of it
@@ -933,7 +978,7 @@ why anything else pending goes in the same window.
    **Expect two resources replaced by one cause** — the instance, because the peer list rides its user
    data, and its `aws_eip_association`, which follows the instance id. **The address does not change**
    (the allocation is `[P]`, a slice away). Read the plan, then apply that exact file. The tunnel drops
-   for the replacement window — minutes, and **longer if `t4g.nano` capacity is short in the AZ**: the
+   for the replacement window — minutes, and **longer if nano capacity is short in the AZ**: the
    first build took 11 minutes across 13 refusals (Stage 4 step 1.4). Budget for that before starting.
 
 4. **On the device, swap one line.** The config's own `PrivateKey =` becomes the new private half —

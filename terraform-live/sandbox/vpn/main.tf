@@ -28,7 +28,7 @@ data "terraform_remote_state" "foundation" {
 
 module "wireguard" {
   # checkov:skip=CKV_TF_1:pinned by git TAG by convention (conventions §6, Stage 3 step 1.1a) - a repository-internal tag only the repo owner can move
-  source = "git::git@github.com:felipenoris/AWS-DataScience.git//terraform-modules/wireguard?ref=wireguard-v0.2.0"
+  source = "git::git@github.com:felipenoris/AWS-DataScience.git//terraform-modules/wireguard?ref=wireguard-v0.3.0"
 
   env        = var.env
   zone_ids   = var.zone_ids
@@ -38,22 +38,27 @@ module "wireguard" {
   # THE SIZE IS A PARAMETER, NOT A CONSTANT - the first of the two knobs this slice adds to
   # the module (the disk below is the second), and the reason it is a variable rather than the
   # literal it briefly was: the host is SWITCHED between a forwarding-only nano and a
-  # t4g.medium with room to work in, by whoever runs the apply, without touching a .tf file
+  # t3.medium with room to work in, by whoever runs the apply, without touching a .tf file
   # either way. THE SELECTION LIVES IN A TRACKED
   # TFVARS: instance_type.auto.tfvars beside this file - assigned there to switch up,
-  # COMMENTED OUT to fall back to variables.tf's default (t4g.nano, D4's). Auto-loaded, so
-  # both directions are a plain `terraform apply`. variables.tf carries the default and the
+  # COMMENTED OUT to fall back to variables.tf's default (t3.nano, D4's shape). Auto-loaded,
+  # so both directions are a plain `terraform apply`. variables.tf carries the default and the
   # closed-list validation; the procedure - what to read before, what the plan must say, what
   # survives the stop/start - is docs/plan/runbooks/vpn.md section S6.
   #
-  # WHY EVERY ALLOWED VALUE IS t4g: THE AMI DECIDES THE FAMILY, NOT THE SIZE. The module
-  # pins the AL2023 ARM64 image (/aws/service/ami-amazon-linux-latest/al2023-ami-kernel-
-  # default-arm64), and an AMI is specific to its processor architecture - so t3.medium is
-  # not a same-shape alternative to t4g.medium, it is a machine this image cannot run on,
+  # WHY EVERY ALLOWED VALUE IS t3: THE AMI DECIDES THE FAMILY, NOT THE SIZE. The module
+  # pins the AL2023 X86_64 image (/aws/service/ami-amazon-linux-latest/al2023-ami-kernel-
+  # default-x86_64), and an AMI is specific to its processor architecture - so t4g.medium is
+  # not a same-shape alternative to t3.medium, it is a machine this image cannot run on,
   # and EC2 REFUSES the request rather than producing a broken host (documented, not
-  # measured here: the EC2 resize-compatibility page, docs/REFERENCES.md). Moving to x86
-  # would be an AMI change in the MODULE - a different SSM parameter, a replaced instance,
-  # user data re-run - never a value of this variable.
+  # measured here: the EC2 resize-compatibility page, docs/REFERENCES.md).
+  #
+  # AND THAT IS PRECISELY HOW THE ARCHITECTURE ITSELF WAS MOVED, on 2026-08-20 (user
+  # direction): the values here were t4g.nano / t4g.micro / t4g.medium on the arm64 image
+  # from D4 until that day, and going to x86 was an AMI change IN THE MODULE - a different
+  # SSM parameter, wireguard-v0.3.0, a REPLACED instance and a re-run of the user data -
+  # exactly as this paragraph said it would have to be, and never a value of this variable.
+  # Going back would be the same act in reverse, at the same price.
   instance_type = var.instance_type
 
   # AND THE DISK, THE SAME WAY AND FROM THE SAME FILE - a second variable rather than the

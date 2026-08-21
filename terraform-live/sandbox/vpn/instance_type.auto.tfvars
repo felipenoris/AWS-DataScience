@@ -12,9 +12,15 @@
 #
 #   instance_type     BOTH DIRECTIONS. Assign it to switch the host up; COMMENT THE
 #                     ASSIGNMENT OUT and apply to fall back to variables.tf's default
-#                     (t4g.nano, D4's shape). The plan reads `~ instance_type` with `1 to
+#                     (t3.nano, D4's shape). The plan reads `~ instance_type` with `1 to
 #                     change` on the way down exactly as it did on the way up. Terraform
 #                     stops, modifies and starts the instance in one apply.
+#
+#                     WITHIN ONE FAMILY, which is the whole of what this key can do. The
+#                     ARCHITECTURE is not here and never was: it is the module's AMI, moved
+#                     from arm64 to x86_64 on 2026-08-20, which is why every value below is
+#                     now a t3 where it was a t4g. That move REPLACES the host; this key
+#                     never does.
 #
 #   root_volume_size  ONE WAY - GiB, and UP ONLY. The two warnings below are this key's
 #                     whole difference from the one above; read them before assigning.
@@ -73,10 +79,10 @@
 # of the subcommand and goes after it.) Forgetting that flag once plans the host back down
 # with nothing to warn you.
 #
-# WHAT THE ALLOWED VALUES ARE. instance_type: variables.tf's validation admits t4g.nano,
-# t4g.micro and t4g.medium, and they are ALL t4g because the wireguard module pins the AL2023
-# ARM64 AMI - an x86 type (t3.medium, the same 2 vCPU / 4 GiB shape as t4g.medium) is not an
-# alternative, and the validation rejects it at PLAN time, before a stop has happened.
+# WHAT THE ALLOWED VALUES ARE. instance_type: variables.tf's validation admits t3.nano,
+# t3.micro and t3.medium, and they are ALL t3 because the wireguard module pins the AL2023
+# X86_64 AMI - a Graviton type (t4g.medium, the same 2 vCPU / 4 GiB shape as t3.medium) is not
+# an alternative, and the validation rejects it at PLAN time, before a stop has happened.
 # root_volume_size: 8 to 128 GiB - 8 being the AL2023 image's own snapshot size, which is the
 # floor EC2 accepts for a root volume, and 128 the ceiling where a fat-fingered 640 is caught
 # at plan time rather than on a bill.
@@ -93,6 +99,6 @@
 # docs/plan/runbooks/vpn.md section S6.
 
 
-#instance_type    = "t4g.nano"
-instance_type    = "t4g.medium"
+#instance_type    = "t3.nano"
+instance_type    = "t3.medium"
 root_volume_size = 64

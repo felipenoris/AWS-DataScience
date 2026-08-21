@@ -104,10 +104,13 @@ tfvars here that is edited rather than generated or enrolled. Its **name is narr
 contents** since the disk joined it (2026-08-20): renaming would cost the `.gitignore` negation,
 `check-tfvars-shape.py`'s constant and every path written about the file, and buy a name.
 
-- **`instance_type` — both directions.** Assign a type to switch the host up; **comment the
-  assignment out** to fall back to [`variables.tf`](variables.tf)'s default, `t4g.nano`. The
-  admitted values are all `t4g` — the module pins an **arm64** AMI, so `t3.medium` is not an
-  alternative to `t4g.medium` and the validation rejects it at plan time.
+- **`instance_type` — both directions, within one family.** Assign a type to switch the host up;
+  **comment the assignment out** to fall back to [`variables.tf`](variables.tf)'s default,
+  `t3.nano`. The admitted values are all `t3` — the module pins an **x86_64** AMI, so
+  `t4g.medium` is not an alternative to `t3.medium` and the validation rejects it at plan time.
+  **The architecture itself is not this key**: it is the module's AMI, moved off Graviton on
+  2026-08-20, which is why these values are `t3` where they were `t4g` — and that move replaces
+  the host, where this key only stops and starts it.
 - **`root_volume_size` — up only.** GiB of gp3 root disk, `8` by default, `8`–`128` admitted.
   EBS **grows** a volume in place and **cannot shrink** one, so commenting this assignment out does
   not return the disk: down is a host **replacement**, not an apply. Two consequences worth knowing
@@ -119,7 +122,7 @@ forget.
 
 Read before switching either — the pre-flight commands, what the plan must say (`1 to change` counts
 the instance, not the attributes), what survives the stop/start, how to confirm the filesystem
-actually grew, and the fact that the cost tables and `make status` stay written against `t4g.nano`
+actually grew, and the fact that the cost tables and `make status` stay written against `t3.nano`
 on 8 GiB: [the VPN runbook, §S6](../../../docs/plan/runbooks/vpn.md).
 
 ## Applying it

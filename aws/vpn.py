@@ -79,15 +79,21 @@ VPCE_CONDITION_KEY = "aws:SourceVpce"
 HOST_KEY_SECRET_SUFFIX = "-vpn-host-key"
 HOST_KEY_DENY_SID = "DenyValueReadExceptHostAndInfrastructure"
 
-# The size the COST MODEL is written against - D4's, the slice's default, and the only one
-# scripts/tfhygiene/layers.py and docs/PRICING.md 3 price. Since 2026-08-20 the slice takes
-# instance_type as a PARAMETER (t4g.nano | t4g.micro | t4g.medium, vpn.md section S6), so a
-# host that is not this size is a deliberate selection and NOT A FAILURE - VP-1 reports the
-# type it found and passes. What that report is for: the burn line of `make status` and the
-# hourly rows of PRICING keep quoting the nano's 0.0042 USD/h whatever is running, so this
-# line is the only place the reader is told the two have parted company (a t4g.medium is
-# EIGHT times the rate). Deliberately not a fail, and deliberately not silent.
-BASELINE_INSTANCE_TYPE = "t4g.nano"
+# The size the COST MODEL is written against - D4's shape, the slice's default, and the only
+# one scripts/tfhygiene/layers.py and docs/PRICING.md 3 price. Since 2026-08-20 the slice takes
+# instance_type as a PARAMETER (t3.nano | t3.micro | t3.medium, vpn.md section S6), so a host
+# that is not this size is a deliberate selection and NOT A FAILURE - VP-1 reports the type it
+# found and passes. What that report is for: the burn line of `make status` and the hourly rows
+# of PRICING keep quoting the nano's rate whatever is running, so this line is the only place
+# the reader is told the two have parted company (a t3.medium is EIGHT times the rate).
+# Deliberately not a fail, and deliberately not silent.
+#
+# THE FAMILY MOVED THE SAME DAY, and it is a different kind of change from the size: the
+# wireguard module's AMI went from AL2023 arm64 to x86_64 on user direction, so the baseline is
+# t3.nano where it was t4g.nano and every admitted value is a t3. This constant follows the
+# module, never the running host - a host still reading t4g here after that apply is not drift
+# this check is measuring, it is an apply that has not happened yet.
+BASELINE_INSTANCE_TYPE = "t3.nano"
 
 # The DISK the cost model is written against - the wireguard module's default, and the size
 # docs/PRICING.md 2's `WireGuard EBS (8 GB)` row prices. Since 2026-08-20 the slice takes
