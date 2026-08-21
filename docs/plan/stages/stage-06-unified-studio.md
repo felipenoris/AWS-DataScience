@@ -44,7 +44,7 @@ provision the working environments into whichever account the project profile na
 | `data-governance/data/` (amended) | `writer_role_patterns` extended to the blueprint-provisioned project execution roles, if a notebook writes to the drop-box (2.1); **and `trusted_vpce_ids`, if 4.2's `s3` measurement returns an endpoint id the list does not carry** — verification (xix), Recipe A | `[P]` |
 | `sandbox/data/`, `development/data/` (amended through a `consumer-data` tag) | the consumer data-key policy's second `Decrypt` principal (`alias/awsds-<env>-data`, D31) — a **new** module input under Recipe B, never a slice edit and never a widening of `data_scientist_role_arn` (2.6); **and the derived buckets' `aws:SourceVpce` condition, on the same verification (xix) answer** | `[P]` |
 | `sandbox/egress/`, `development/egress/` (amended) | design A: DNS Firewall + allowlist; design B: `egress_mode=B` + the CodeArtifact endpoints; the `datazone` endpoint under both | `[E]` |
-| Domain portal + member-account consoles, by hand | the account associations — **no public API (read 2026-08-16)**: a RAM share the domain initiates | — |
+| The **management** console of the DOMAIN account, by hand | the account associations — **no public API (read 2026-08-16)**: a RAM share the domain initiates. **RUN 2026-08-21**: the share auto-accepts, so no member-account console is involved at all — this cell used to name two surfaces and one of them is never opened | — |
 | `scripts/` | `layers.py` rows for the **four** new slices; the body of `down-studio-apps.py`. **`registry`'s RANK landed 2026-08-21, ahead of the slice** — an unranked slice name raises at import, so a `production/registry/` written without one breaks `make check` before it can be applied (the same reasoning that put `vpn`'s rank in early); its `SLICES` row lands with the slice, in the same commit | — |
 
 ```mermaid
@@ -84,7 +84,7 @@ change. The sequence to work in is **six passes**:
 | **1** | 3 | the deny fragment: jobs off VPC, instance ceiling, `StartSession` scope | `identity/sso/` `[P]` | `awsds-infra-identity` |
 | **1** | 5.0 | the hand-built `base`/`dev-env` images into the Production ECR — **needs pass 0's repositories, and carries no CA root** (Stage 7 step 2.6) | laptop, by hand | **user** (docker + push) |
 | **2a** | 1.1-1.2 | the domain and its two IAM roles — **and 0.1a's creation act rides this apply** | `data-governance/governance/` `[P]` | `awsds-infra-data` — **DONE 2026-08-21** |
-| **2b** | 1.3 | the account associations, **console-only, no public API** — then the row in `backend.SMUS_ASSOCIATED` | portal + member consoles | **user** |
+| **2b** | 1.3 | the account associations, **console-only, no public API**. **DONE 2026-08-21** — auto-accepted, zero invitations. **The `backend.SMUS_ASSOCIATED` row is NOT part of this row's work**: it arms 1.4 *and* 1.5, so it belongs to the sitting that runs them | the domain account's management console | **user** |
 | **2c** | 1.4 | the blueprint configurations — **in each MEMBER account, not the domain account** (corrected 2026-08-21: `PutEnvironmentBlueprintConfiguration` takes no account parameter, so it configures the caller's; 1.4's own body said so and this table did not) | `sandbox/sagemaker/`, `development/sagemaker/` `[P]`, second apply | `awsds-infra-sandbox-1`, `awsds-infra-dev` |
 | **2d** | 1.5, 1.7 | the two project profiles, which need 2c done first; INT-16's portal reading | `data-governance/governance/` `[P]`, second apply + browser | `awsds-infra-data`; the reading: **user** |
 | **2** | 1.6 | the Athena Spark deny into `awsds-org-scp-ou-interactive`, through battery **phase 4b** — 1.6's body owns the procedure | `identity/org-policies/` `[P]` | `awsds-infra-identity` — the ten documents are Terraform-owned since Stage 2 step 5.5 and the delegation names **one** account (`INV-15`), so `awsds-infra-data` cannot update an org policy at all and a hand upload is drift the next apply reverts |
@@ -1081,8 +1081,10 @@ Record every answer, including the ones that come out fine.
   carried by prose alone**, and prose is where the intention and the reading part company.
 - **The module's single-account shape (verification ii)** is the likeliest early surprise: budget for
   writing the domain resources directly rather than fighting the module.
-- **The association is console-only with a 7-day invitation window** — a rebuild has a by-hand step in its
-  middle; it is recorded, not hidden, and it is once per account, not per session.
+- **The association is console-only** — a rebuild has a by-hand step in its middle; it is recorded, not
+  hidden, and it is once per account, not per session. **The *"7-day invitation window"* this line used to
+  add is gone (measured 2026-08-21): the share auto-accepts, so a rebuild's by-hand step is one request in
+  the domain account and nothing waiting in the member.**
 - **The 3-AZ recommendation (verification iii)** could force a third private subnet per Interactive VPC —
   address space exists (Stage 3's plan), so the cost is an amendment, not a rebuild; do not re-cut D9
   pre-emptively.

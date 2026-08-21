@@ -431,8 +431,15 @@ length, under item numbers 10-12 that collided with the live items above; the du
     credentials, and the resulting session is a **different principal** — one the permission set's own
     `Deny` does not follow into. Lesson 28 read backwards: a deny attached to an identity says nothing
     about an identity that identity can obtain.
-    **Why this is a question and not a finding.** Nothing has been attempted — the domain does not exist,
-    Stage 6 is not open — and no page consulted says what `GetEnvironmentCredentials` requires of its
+    **THE BLOCKER IN THE NEXT SENTENCE EXPIRED ON 2026-08-21** — the domain exists (`dzd-d8yrvx1ko7im6o`,
+    `AVAILABLE`) and **both Interactive accounts are associated**, so *"the domain does not exist, Stage 6
+    is not open"* no longer holds and the attempt this question waits on is available as soon as step 2.4
+    has a project. **One half is already answered**: the account association's RAM permission contains
+    `datazone:GetEnvironmentCredentials` **and** `GetDomainExecutionRoleCredentials`, so the share does
+    not stand between a caller and either API — whatever settles this will be an IAM statement, not a
+    sharing one. The wider surface that measurement opened is **question 21**.
+    **Why this is a question and not a finding.** Nothing has been attempted — and no page
+    consulted says what `GetEnvironmentCredentials` requires of its
     caller or *which* role it hands back; the environment user role and the project role may not be the
     same object. The D13 boundary (`awsds-<env>-project-boundary`, step 2.1) may already cap whatever is
     vended, and the OU SCPs reach it regardless. **Lesson 30 is the reason for the restraint**: a page
@@ -447,6 +454,47 @@ length, under item numbers 10-12 that collided with the live items above; the du
     **Where it sits in the map**: the same axis as INT-11's credential-vending half — what a *service* can
     hand a principal that the principal could not ask for directly. Two surfaces now, which is the
     argument for carrying it as an axis rather than as two incidents.
+
+### Raised by Stage 6 step 1.3, 2026-08-21
+
+21. **Nothing in this design writes a `datazone:` policy for the Interactive OU — and since the account
+    association there is now a cross-account surface with a 152-action ceiling.** The association shares
+    the Data Governance domain into Sandbox and Development under
+    `AWSRAMPermissionsAmazonDatazoneDomainExtendedServiceAccess`: **152 actions**, a strict superset of
+    the resource-type default's 111, including `AddPolicyGrant`/`RemovePolicyGrant`, `CreateProject`,
+    `DeleteProject`, `DeleteEnvironmentBlueprintConfiguration` and
+    `GetDomainExecutionRoleCredentials` — the last of which hands out credentials for a role that lives
+    in the **domain** account.
+    **This is a ceiling, not access, and today the intersection is narrow** (Lesson 28). Measured the
+    same day: `datazone:` appears in the persona sets **only** in `policies-approvers.tf`, as the
+    approval family; `DataScientistAccess` names none. `DenyDataZoneEntirely` covers the **Workloads**
+    OU in full, and the **Interactive** OU carries no `datazone:` statement at all — so there the whole
+    constraint is member-account IAM, and the only identity holding it is `InfrastructureAccess`.
+    **What makes it a question rather than a note is what happens at 1.4/1.5.** Those steps have the
+    blueprint author IAM policies for project and environment roles **in the member accounts**
+    (INT-15), and the D13 boundary `awsds-<env>-project-boundary` does not narrow `datazone:` at all —
+    its ceiling statement is `Allow *` with three lake-shaped denies (S3 on registered prefixes, the
+    drop-box write, the lake key). So from the moment blueprints are enabled, what a service-authored
+    role may do against the shared domain is bounded by **AWS's managed RAM permission and AWS's own
+    policy authorship**, and by nothing this project wrote. Lesson 18 is the reason that is worth
+    naming: a policy never constrains the principal that authors it.
+    **Three things to settle, in this order.** (a) Is a **customer-managed RAM permission** even
+    available for `datazone:Domain`, or is the managed set the only choice? — a reading, and it decides
+    whether the ceiling is negotiable at all. (b) If it is not, does the Interactive OU want an SCP
+    naming the handful of verbs that are governance rather than project work
+    (`AddPolicyGrant`, `RemovePolicyGrant`, `DeleteEnvironmentBlueprintConfiguration`,
+    `GetDomainExecutionRoleCredentials`)? — weigh it against Lesson 5, because an SCP that would break
+    the blueprint machinery is worse than none, and against Lesson 20, because a deny nothing exercises
+    reads as coverage. (c) Whichever way, **the answer belongs in step 1.6**, whose subject is exactly
+    the controls on this surface, and it should be settled **before 1.4** — after that, service-authored
+    roles exist and the question stops being theoretical.
+    **Not a reason to delay 1.3, which is done**: nothing reaches the wide half today.
+    **Read with question 20, which is the same axis at a different scale** — that one asks whether one
+    wildcard in one approver set reaches `GetEnvironmentCredentials`; this one asks what governs the
+    surface that API sits on. The measurement below settles the RAM half of 20 in passing: **both**
+    `GetEnvironmentCredentials` and `GetDomainExecutionRoleCredentials` are inside the share's
+    permission, so the share is not what stands between a caller and either API. Whatever answers 20
+    will be an IAM statement, not a sharing one.
 
 ---
 

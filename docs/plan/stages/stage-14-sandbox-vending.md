@@ -117,8 +117,9 @@ than a rewrite.
    it is six parts in a fixed order.** Nothing creates a domain — the root deny on `datazone:CreateDomain`
    stands (exercised in both directions on 2026-08-21, so it is now known to fire rather than merely
    attached), and this stage is where the pressure to break it will first be felt. **INT-12 owns the
-   mechanics** — console-only, a RAM share the domain initiates, a 7-day invitation window — and they are
-   not restated here. What this step owes is the sentence INT-12 cannot carry: **a stage whose whole
+   mechanics** — console-only, a RAM share the domain initiates — and they are not restated here.
+   **The *"7-day invitation window"* this sentence used to add was retired on 2026-08-21 by running the
+   act once: the share is organization-scoped and AUTO-ACCEPTS, so there is no invitation and no clock.** What this step owes is the sentence INT-12 cannot carry: **a stage whose whole
    promise is "one input and one merge request" contains a console act, and the parts either side of it
    are two different applies of the same slice.**
 
@@ -126,10 +127,25 @@ than a rewrite.
       manage-access roles, the D13 boundary, the project CMK, the VPC/subnet/AZ parameters, with
       `blueprints_enabled` **false**. (Step 1's composition list does not mention a `sagemaker/` slice; it
       is the unit's, and it precedes this act.)
-   2. **Request the association** from the domain's admin portal and **accept it** in the new account's
-      console. Record every field the console asks for (Lesson 16).
-   3. **The `backend.SMUS_ASSOCIATED` row** — the *measurement* table, added only once the invitation has
-      actually been accepted.
+   2. **Request the association** in the **AWS management console** (`console.aws.amazon.com/datazone`)
+      of the DOMAIN account — *View domains* → the domain → *Account associations* → *Request
+      association*. **There is nothing to accept in the new account** (measured 2026-08-21): the share
+      auto-accepts and the unit is associated when you look. Record every field the console asks for
+      (Lesson 16) — the two toggles it offers are `AWS Organization-only RAM share` and `IAM users can
+      access APIs only`, and the second is the no-portal choice this design requires.
+
+      > **BOTH HALVES OF THE SENTENCE THIS REPLACES WERE WRONG, AND THE FIRST HALF WAS ALREADY KNOWN.**
+      > It said *"from the domain's **admin portal**"* — the `dzd-*.sagemaker.<region>.on.aws` surface,
+      > which is not where this lives; Stage 6 step 1.3 was corrected on that exact point on 2026-08-21,
+      > **before** it was executed, and this copy never heard. **Lesson 35**: the correction landed at one
+      > end and the stale path stayed alive at the other, where nothing reads it until someone follows it.
+      > The second half — *"accept it in the new account's console"* — was retired by the measurement.
+   3. **The `backend.SMUS_ASSOCIATED` row** — the *measurement* table. **Add it only after the
+      association is confirmed BY A CALL, never by a console label**: `aws datazone
+      list-environment-blueprint-configurations --domain-identifier <dzd-…>` run as the new unit's own
+      profile must **succeed** (returning an empty list). Before the association it cannot succeed at
+      all, which is what makes the empty answer evidence. **And the row is a TRIGGER, not a note**: it
+      arms this step's part 4 *and*, once every member carries one, the project profiles in part 5.
    4. **The unit's `sagemaker/` pass-2 apply** — the blueprint configurations, applied **from the member
       account**, because `PutEnvironmentBlueprintConfiguration` takes no account parameter and configures
       the caller's (`terraform-modules/sagemaker-prereqs/blueprints.tf` carries the reasoning). The enabled

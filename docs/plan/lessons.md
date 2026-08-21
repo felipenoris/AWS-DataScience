@@ -555,6 +555,23 @@ lesson can be *recognised* without opening this file; the reasoning that makes e
    session of a green check over two failing accounts, which is the argument for extending the instrument
    **in the same sitting** as the resource rather than in the one that notices.
 
+   **THE SAME MECHANISM ALSO ARRIVES AS A FALSE `FAIL`, AND THAT IS THE SECOND OCCURRENCE (2026-08-21,
+   Stage 6 step 1.3).** `US-2` asks whether a DataZone domain exists outside Data Governance. It counted
+   the rows `datazone list-domains` returned in each account and treated any non-zero as *"a domain was
+   created here"* — true in a world where nothing is shared, which was the world it was written in. The
+   account association shares one domain **into** the member accounts, so on the day the association
+   succeeded the check went red in both, about a domain that had never moved. **A topology change again,
+   and the same lesson at the opposite sign.**
+   **Two things generalise from the second occurrence that the first does not give you.** The **tell** is
+   different and cheaper than counting accounts: *the failure arrived from the act that was supposed to
+   work*. A check that goes red at the exact moment a step succeeds is making a claim about the world
+   before it is making a claim about the estate — audit the check first, and only then the estate.
+   And the **fix** is not scope, it is a discarded field: the collection built `(id, name, version,
+   status)` and **threw away the ARN**, the one attribute carrying the owner. **A check that infers a
+   property it could have read is the shape to look for** — here, inferring ownership from *who is
+   asking* instead of reading it from what the API returned. Ask of any list-shaped check: what did the
+   collection drop, and does the verdict depend on it?
+
 32. **Two spellings of the same object survive indefinitely while nothing has to build it — and the side
    that has to build it is the one that was right.** For weeks the plan said both "scratch + derived-zone
    **buckets**" (`architecture.md`, `conventions.md` §6, the Stage 5 table) and "scratch and derived

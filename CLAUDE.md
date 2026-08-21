@@ -279,7 +279,7 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   before each probe block and read the denial *wording*, never the exit code; account-level BPA is
   hand-managed. **Log Archive and Audit hold no CLI profile.**
 - **Before reporting a gap, read the file that owns it:** unexercised denies → `POLICIES.md`;
-  "expected" readings → `docs/AWS_STATE.md`; SMUS findings → open questions 12-15.
+  "expected" readings → `docs/AWS_STATE.md`; SMUS findings → open questions 12-15 and **21**.
 - **Deferred by decision — do not offer to close:** the USD 50 budget notifies nobody (D12); open
   question 10 waits for N=2; Config recorder left alone, Management unrecorded (Stage 12 hooks).
   **Every governed account sits under `us-west-2`.**

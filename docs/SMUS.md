@@ -30,8 +30,11 @@ Three properties this design leans on:
   where `sagemaker:Create*` is denied (1c step 7.6) — a denial that stays free precisely because of
   this split (Stage 6 step 0.4).
 - **Member accounts join by *account association*** — console-only (**no public API**, read
-  2026-08-16): a RAM share DataZone initiates, invitations expiring in 7 days. Sandbox and
-  Development are associated; **Staging and Production never are** (D28).
+  2026-08-16): a RAM share DataZone initiates. Sandbox and Development are associated; **Staging and
+  Production never are** (D28). **RUN 2026-08-21, and the invitation half of this line was wrong**:
+  under Stage 1d's org-wide RAM enablement the share is created organization-scoped and
+  **auto-accepts** — zero invitations either side, so *"invitations expiring in 7 days"* names a clock
+  that never starts. §RAM below had the evidence for that before the measurement did.
 - **The domain and IdC must share a Region** (Stage 6 step 1.1) — `us-west-2` twice, and neither can
   move afterwards.
 
@@ -51,9 +54,18 @@ RAM is AWS **Resource Access Manager** — the cross-account sharing service, ne
 ([`GLOSSARY.md`](GLOSSARY.md) owns the definition). It is the machinery under two SMUS seams, one
 visible and one that should stay invisible:
 
-- **Account association *is* a RAM share** the domain initiates on your behalf
-  (`AWSRAMPermissionDataZoneDefault`) — which is why there is no public API for it and why an
-  unaccepted invitation expires in 7 days (§Domain above).
+- **Account association *is* a RAM share** the domain initiates on your behalf — which is why there
+  is no public API for it. **Both particulars in this line were wrong and are now measured
+  (2026-08-21).** The permission is
+  **`AWSRAMPermissionsAmazonDatazoneDomainExtendedServiceAccess`**; `AWSRAMPermissionDataZoneDefault`
+  **does not exist in RAM at all** — it was a name copied out of the V1 user guide's prose, and
+  `ram list-permissions --resource-type datazone:Domain` publishes six, none of them called that. It
+  is also **152 actions against the resource-type default's 111**, the extras being the SMUS **V2**
+  workbench surface (notebooks, cells, compute, connections, `GetDomainExecutionRoleCredentials`).
+  And there is **no invitation to expire**: the share is organization-scoped, so it auto-accepts —
+  the same behaviour the LF shares below already showed. **Read that permission as a CEILING on the
+  share, never as access** (Lesson 28); what any principal can do is that ∩ its IAM ∩ the SCPs, and
+  the Interactive OU carries no `datazone:` deny — open question 21.
 - **Cross-account catalog access rides Lake Formation cross-account sharing, which rides RAM.** The
   substrate is already exercised: Stage 5's TBAC shares are RAM shares, measured at INT-11's close
   as 4 `ACTIVE` with **0 invitations** in both consumers — the zero is Stage 1d step 11's
@@ -193,7 +205,8 @@ An **environment blueprint** is a provisioning template owned by AWS. It works i
    assumed.** *(a)* **The API takes a `domainIdentifier` and no account parameter**, so
    `PutEnvironmentBlueprintConfiguration` configures the **caller's** account — which is why
    enabling blueprints is something an *associated* account does against a *shared* domain
-   (`AWSRAMPermissionDataZoneDefault` is what lets it), and why the resources live in each member's
+   (the share's RAM permission is what lets it — `…DatazoneDomainExtendedServiceAccess`, measured
+   2026-08-21; §RAM), and why the resources live in each member's
    `sagemaker/` slice rather than in `data-governance/governance/`. *(b)* **The resource this
    project uses is `awscc_datazone_environment_blueprint_configuration`, not the `aws` provider's**,
    because only the `awscc` one carries **`environment_role_permission_boundary`** — the field that

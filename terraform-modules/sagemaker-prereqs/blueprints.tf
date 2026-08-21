@@ -5,7 +5,11 @@
 # 2026-08-21, from the API shape and the RAM permission set): PutEnvironmentBlueprintConfigu-
 # ration takes a domainIdentifier and NO account parameter. The account it configures is the
 # CALLER'S - which is why enabling blueprints is something an associated account does against
-# a shared domain (AWSRAMPermissionDataZoneDefault is what lets it), and why these resources
+# a shared domain. The share's RAM permission is what lets it, and the name this comment used to
+# give - AWSRAMPermissionDataZoneDefault - does NOT EXIST: measured 2026-08-21, RAM publishes six
+# permissions for datazone:Domain and the one the console attaches is
+# AWSRAMPermissionsAmazonDatazoneDomainExtendedServiceAccess. The mechanism was right, the proper
+# noun was read off a documentation page. And why these resources
 # live in the MEMBER account's slice rather than in data-governance/governance/. Step 1.4's
 # own body says the same thing in as many words: "user applies as that account's profile".
 #
