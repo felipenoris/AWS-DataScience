@@ -232,7 +232,7 @@ ZONE_IDS = {
 # The slices whose generated tfvars carry the allocation. bootstrap/ deliberately does not:
 # it has no subnet, and an unused zone list would send the next reader hunting for the
 # resource that consumes it (gen-tfvars.py's original argument, now scoped instead of total).
-NETWORK_SLICES = {"foundation", "egress", "vpn", "probes"}
+NETWORK_SLICES = {"foundation", "egress", "vpn", "probes", "devbox"}
 
 # Stage 3's reachability probes: which accounts each side has to admit or reach. Every side's
 # security group names the OTHER side's VPC range, and the pairing is authored here rather
@@ -336,6 +336,14 @@ def tfvars_values(account: str, slice_name: str) -> dict:
                 # slice. It is the one address literal in this table that never appears
                 # inside AWS: the host SNATs, so no VPC, route table or security group ever
                 # sees it, and its single job is not colliding with a home or cafe LAN.
+                values["peer_cidr"] = WIREGUARD_PEER_CIDR
+            if slice_name == "devbox":
+                # Stage 6 step 5.0's build host, added 2026-08-21. It takes the SAME range
+                # vpn/ does and for the mirror-image reason: vpn/ needs it to MASQUERADE the
+                # clients, this needs it to ADMIT them. The devbox has no public address and
+                # no inbound rule for anything else, so the client range is the whole of its
+                # ingress - "reachable only with the tunnel up" written as a security group
+                # rather than as a habit. It is still never chosen in the slice.
                 values["peer_cidr"] = WIREGUARD_PEER_CIDR
             if slice_name == "probes":
                 # Each side's security group names the OTHER side's VPC range: Production

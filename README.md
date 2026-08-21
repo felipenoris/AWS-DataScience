@@ -54,6 +54,13 @@ Blueprint for using AWS as a Data Science infrastructure provider.
   `kms-key`, `iam-role`, `wireguard`; `consumer-data` is Stage 5's. Nesting started earlier than it looks —
   `wireguard` has called `iam-role` by tag since Stage 4 — and `consumer-data` is the first module a
   *slice pair* applies twice. The current roster is `terraform-modules/README.md`'s.
+- `images/` — the build code for the **two container images** the estate runs on: `base/`, the common
+  ancestor every application image and the notebook image descend from (D17), and `dev-env/`, the
+  SageMaker Unified Studio custom image (BYOI) carrying the Julia, R and Rust that CodeArtifact cannot
+  deliver. Not infrastructure code — `terraform-live/production/registry/` owns the ECR repositories, this
+  owns what goes in them. Built **by hand exactly once**, at Stage 6 step 5.0, and replaced by Stage 8's
+  pipeline building the same files from a GitLab repository the data scientist writes to. `images/README.md`
+  carries that seam and the three constraints that shape both files.
 - `.pre-commit-config.yaml` and `.tflint.hcl` — the repository's Terraform gates (Stage 2 step 6):
   `terraform fmt`, `terraform validate`, `tflint` and `checkov` as a *required* check, since a policy gate
   that can be skipped is a policy suggestion.

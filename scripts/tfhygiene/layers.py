@@ -129,6 +129,23 @@ RANKS = {
     "sagemaker": 46,
     "governance": 47,
     "egress": 50,
+    # STAGE 6 STEP 5.0's BUILD HOST (2026-08-21). ABOVE `vpn` (40) and BELOW `probes` (60),
+    # and only one of those two neighbours is a dependency:
+    #
+    #   vpn      IS one, and hard. This slice's single route points at the WireGuard host's
+    #            ENI and the host must be RUNNING, or the route is a blackhole rather than an
+    #            error. `up` ascends rank, so the [D] hook starts the tunnel first.
+    #   egress   is NOT one, and the absence is the design rather than an accident: the build
+    #            reaches the internet through the VPN host, so no NAT gateway is involved and
+    #            `egress/` need never come up for a build session (0.170 USD/h not spent).
+    #            The rank sits above it anyway - nothing is ordered wrongly by that, and it
+    #            keeps the reading "everything ephemeral in this account is at or above 50".
+    #   probes   is a CONFLICT, not a dependency, and it is the reason this row's slice
+    #            refuses to coexist with it: sandbox/probes/'s perimeter probe measures the
+    #            isolated tier's ABSENCE of a default route, and this slice's whole mechanism
+    #            is adding one. ./scripts/devbox.py enforces the exclusion; the rank only
+    #            records that this one goes down first.
+    "devbox": 55,
     "probes": 60,
 }
 
@@ -232,6 +249,15 @@ SLICES = [
     # `make status` still quotes this one. Deliberate: ./aws/vpn.py VP-1 is where the reader is
     # told the two have parted company.
     Slice("sandbox", "vpn", DORMANT, "WireGuard host - the only human path in (Stage 4)", 0.0052),
+    # Stage 6 step 5.0 (2026-08-21) - the amd64 build host, [E]. usd_per_hour is the
+    # t3.xlarge row of docs/PRICING.md 8, MEASURED us-west-2 (Lesson 6) - and unlike the
+    # WireGuard row above it, this figure DOES follow the tracked tfvars, because the default
+    # and the assignment agree by design (the slice's own instance_type.auto.tfvars says why).
+    # The 64 GiB gp3 is ~0.007/h on top and is not in this column: it is billed per GB-MONTH
+    # and this slice is [E], so it exists only while the host does.
+    Slice(
+        "sandbox", "devbox", EPHEMERAL, "amd64 build host for the dev-env image (St.6 5.0)", 0.1664
+    ),
     # Stage 5 pass 1 (2026-08-18). Free or floor-priced at rest: one CMK (key-month), five
     # buckets, catalog objects, LF settings/tags/grants, two on-demand crawlers and the
     # compaction optimizer (config free; runs metered per DPU-hour, docs/PRICING.md 5).

@@ -29,6 +29,15 @@ offer file only when something in it changes. **The EMR Serverless and DNS Firew
 both services load-bearing: EMR Serverless is the VPC-capable replacement for the Athena Spark default the
 stage disables, and DNS Firewall is egress design A's allowlist mechanism.
 
+**The three `t3` rows added on 2026-08-21 came through a different door, and it is named rather
+than glossed** (`t3.xlarge`/`t3.2xlarge` in §8 and §3, for Stage 6's `sandbox/devbox/`): the
+`AmazonEC2` bulk offer file for one region is hundreds of megabytes, so those were read with
+**`aws pricing get-products`** — the Price List *Query* API, same catalogue, filtered server-side
+on `instanceType`/`location`/`operatingSystem=Linux`/`tenancy=Shared`/`preInstalledSw=NA`/
+`capacitystatus=Used`. It needs credentials where the bulk endpoint does not, which is the only
+difference that matters to a reader repeating it. The numbers are still measured, not estimated,
+and the `1.62` ratio they land on is the same one every other `t3` row in this file carries.
+
 **What these prices are:** on-demand, list, pre-tax, in USD. They exclude the AWS Free Tier, any private
 pricing, and Brazilian taxes, which are added on the invoice for accounts billed through AWS Brazil and
 are not part of any figure below. Monthly figures use **730 hours** unless stated otherwise.
@@ -265,6 +274,7 @@ one Stage 12 step 5 measures against the real bill — this is arithmetic over l
 | — Development 12 / Staging 9 / Production 10-12 | 0.252 / 0.189 / 0.210-0.252 | 0.120 / 0.090 / 0.100-0.120 | 2.10 |
 | GitLab EC2 `t4g.large` | 0.1072 | 0.0672 | 1.60 |
 | — `t3.large`, the x86 equivalent | 0.1344 | 0.0832 | 1.62 |
+| Stage 6 build host `t3.xlarge` (`sandbox/devbox/`, `[E]`) | 0.2688 | **0.1664** | 1.62 |
 | Internal ALB | 0.034 + 0.011/LCU-h | 0.0225 + 0.008/LCU-h | 1.51 |
 | SageMaker Studio JupyterLab / CodeEditor `ml.t3.medium` | 0.081 | 0.050 | 1.62 |
 | SageMaker processing job `ml.t3.medium` | 0.066 | — | |
@@ -540,6 +550,8 @@ in São Paulo that discipline is worth exactly twice as much.
 | EC2 `t3.micro` (1 GiB, x86) | 0.0168 | 0.0104 | 1.62 |
 | EC2 `t3.medium` (4 GiB, x86) | 0.0672 | 0.0416 | 1.62 |
 | EC2 `t3.large` (8 GiB, x86) | 0.1344 | 0.0832 | 1.62 |
+| EC2 `t3.xlarge` (4 vCPU, 16 GiB, x86) — **the Stage 6 build host** | 0.2688 | **0.1664** | 1.62 |
+| EC2 `t3.2xlarge` (8 vCPU, 32 GiB, x86) | 0.5376 | 0.3328 | 1.62 |
 | EC2 `m5.large` (8 GiB, x86) | 0.1530 | 0.0960 | 1.59 |
 | EBS `gp3` storage (USD/GB-mo) | 0.152 | 0.08 | 1.90 |
 | EBS `gp3` provisioned IOPS (USD/IOPS-mo) | 0.0095 | — | |

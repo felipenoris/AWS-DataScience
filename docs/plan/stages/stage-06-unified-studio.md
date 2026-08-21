@@ -342,13 +342,47 @@ first (Recipe D), read the three-outcome fork there — created / SCP-denied / t
 again, whose plan B is **console-create + `terraform import`** — and take the CloudTrail-shaped canary
 replay in the same sitting, whichever branch runs.
 
-**1.3 — Associate Sandbox and Development, in the console** — **user**, from the domain's admin portal:
-*Request association* to each account, then *Accept* in the member account. **There is no public
-associate-account API (read 2026-08-16)** — DataZone creates the RAM share on your behalf
-(`AWSRAMPermissionDataZoneDefault`), and invitations expire in **7 days**; Stage 1d's org-wide RAM sharing
-is what should make acceptance frictionless — record whether an invitation still appears (the INT-11
-shape). **Staging and Production are never associated** (D28). Record every field the console asks for
-(Lesson 16). Answered as verification (iv) either way.
+**1.3 — Associate Sandbox and Development, in the console** — **user**. **There is no public
+associate-account API** (re-confirmed 2026-08-21 against the installed CLI: `aws datazone` has
+`create-account-pool` and `create-domain-unit` and nothing association-shaped), so this is a console act
+in both directions. **Staging and Production are never associated** (D28). Answered as verification (iv)
+either way.
+
+> **THE SURFACE IS THE MANAGEMENT CONSOLE, NOT THE DOMAIN PORTAL — corrected 2026-08-21 from both
+> documentation pages, before the step was executed.** The sentence this replaces said *"from the domain's
+> admin portal"*, which is the `dzd-*.sagemaker.<region>.on.aws` surface an IdC user signs into; the
+> association flow is in **`https://console.aws.amazon.com/datazone`** on both sides, reached with an IAM
+> role holding administrative permissions in that account (`InfrastructureAccess` carries it). Getting
+> this wrong costs a sitting looking for a tab that is not there.
+
+**The fields, named rather than described** (Lesson 16 — the pair of pages was re-read 2026-08-21 and the
+V1 user guide carries a field the V2 admin guide does not mention at all):
+
+| Where | Path | The field |
+|---|---|---|
+| **Data Governance** (`awsds-infra-data`) | **View domains** → `awsds-studio` → **Account associations** tab → **Request association** | the member **account IDs**, then **Request association** again to confirm. The row appears under the tab with status **`Requested`** |
+| same page, **V1 guide only** | the **RAM Policy** selector | **`AWSRAMPermissionDataZoneDefault`** — *"execute Amazon DataZone APIs"* and **no** data portal access — never `AWSRAMPermissionDataZonePortalReadWrite`. The member accounts need exactly one thing from this share, `PutEnvironmentBlueprintConfiguration` (1.4); portal access is an **IdC** path into the domain account and does not come from here. **If the V2 console does not offer the choice, record that** — a field that vanished is a reading, and the default it chose is what the share actually carries |
+| **each member** (`awsds-infra-sandbox-1`, `awsds-infra-dev`) | **View requests** → the domain (state **`Requested`**) → **Review request** → **Accept and configure AWS association** | **Accept new permissions** — and **nothing else on that page** |
+
+**Then STOP, and this is the half worth arriving warned about (Lesson 17).** Both accept pages offer to
+build the environment for you, in different words: the V2 page lands on **Next steps for your domain** with
+**Configure** buttons (Data analytics and AI/ML, Generative AI, SQL analytics), and the V1 page puts
+**DefaultDataLake / DefaultDataWarehouse** checkboxes *inside* the accept step, each opening a **Manage
+access IAM role** / **Provisioning IAM role** picker whose default is *"have Amazon DataZone create and use
+a new IAM role"*. **Take none of them.** Every one of those objects is 1.4's, is written in
+`terraform-modules/sagemaker-prereqs/`, and already exists in both accounts by name —
+`awsds-<env>-smus-provisioning`, `awsds-<env>-smus-manage-access`, `alias/awsds-<env>-project` — and the
+console path skips the one attribute this design's whole INT-15 answer rests on, the
+`environment_role_permission_boundary`. A console-created blueprint configuration is not a shortcut to
+1.4's result; it is a different result that Terraform then has to adopt or fight.
+
+**Two readings to take in the same sitting, because the invitation is short-lived** — the V1 guide says
+association requests **expire after 7 days**, and Stage 1d's org-wide RAM sharing is what *should* make
+acceptance frictionless: (a) whether a **RAM invitation** appears at all in the member account
+(`aws ram get-resource-share-invitations`, the INT-11 shape — the Stage 5 LF shares auto-accepted and
+raised none), and (b) what the DataZone **accept** step is, given (a). The baseline was read immediately
+before this step, 2026-08-21: **four `LakeFormation-V4-*` shares owned by Data Governance, zero pending
+invitations in either member account.**
 
 **1.4 — Enable the blueprints in each associated account, and only there** — Claude writes, **user**
 applies as that account's profile: `aws_datazone_environment_blueprint_configuration` (the same resource
@@ -698,12 +732,47 @@ repositories** — `awsds-prod-ecr-base` and `awsds-prod-ecr-dev-env` do not exi
 > with the source parameterised and empty, so Stage 7 fills a blank rather than editing a build.
 > **Revision trigger:** the first internal-TLS surface this stage has to reach.
 
+**THE BUILD CODE EXISTS SINCE 2026-08-21 AND IS [`images/`](../../../images/README.md)** — `base/` and
+`dev-env/`, their package manifests as plain text files, and a README carrying the seam. What is left of
+this step is the `docker build` and the push.
+
 **Requirements the image must already carry** — two, since the third left with the CA root above: the
-**SMUS BYOI specification** (base on `jupyterlab/default`, health check on 8888) and the
-**activity-monitor extension** — without it step 8's idle shutdown cannot see activity (SageMaker
-Distribution v2+ behaviour, read 2026-08-16). `docker login` to the Production ECR through the tunnel, tag
-immutably, push as `awsds-prod-ecr-dev-env`. **Record the digest in the log** so the Stage 8 changeover is
-visible.
+**SMUS BYOI specification** and the **activity-monitor extension**, without which step 8's idle shutdown
+cannot see activity. **Both were re-read from the specification on 2026-08-21, and the parenthesis this
+replaces was wrong in a way that would have produced an image SMUS refuses to run:** *"base on
+`jupyterlab/default`"* is the JupyterLab **base URL** in the health-check section — the required **base
+image** is `public.ecr.aws/sagemaker/sagemaker-distribution`, version **≥ `2.6-cpu`**, whose whole point is
+that it already carries the extensions SMUS needs. Three more requirements the older summary did not
+carry: **no `ENTRYPOINT`** (the page states it *"will not work as expected"*; a custom one is a
+`ContainerConfig` setting), `/opt/ml`, `/opt/.sagemakerinternal` and `/var/log/studio` are **AWS's**, and
+the space's EBS volume mounts at `/home/sagemaker-user` on a path that cannot be changed.
+
+**And the activity-monitor extension is asserted, not installed** — the base is *documented* to carry it,
+documented is not measured, and re-installing it would paper over a base that stopped shipping it. The
+failure would then surface as an app billing all night (`US-7`/`US-10`), which is the expensive place to
+find out. `images/base/Dockerfile` fails the build instead.
+
+**THE BUILD DOES NOT HAPPEN ON THE LAPTOP, and the reason is a measurement rather than a preference**
+(2026-08-21, the same sitting): the distribution publishes **no `arm64` tag at all** — only `-cpu`/`-gpu`,
+both `linux/amd64` — SMUS spaces run on x86, and the laptop is `arm64` **with no docker installed**. So
+this step gained a host: **`terraform-live/sandbox/devbox/`**, an `[E]` `t3.xlarge` in the Sandbox
+account's isolated tier, whose whole network shape is two sentences — reachable **only** from the
+WireGuard client range, and reaching the internet **only** through the WireGuard host, which
+`wireguard-v0.4.0` turns into a NAT instance for exactly that tier. **No NAT gateway is involved**, so
+`egress/` need never come up for a build (0.170 USD/h not spent). `./scripts/devbox.py up|sync|ssm|down`
+drives it; its README carries the design and the refusals.
+
+**What that host deliberately cannot do is push**, so the two acts split: the **build** happens on the
+devbox, and the **push** is taken from an identity that may. The registry grants the Interactive accounts
+a *pull* and nothing more, and granting the near half of a permission the far half denies would produce a
+role that reads as if it could publish. Related and worth knowing before sending several GB through a
+`t3.nano`: **no preventive control requires the push to cross the tunnel** — a `grep` over all ten
+organization policy documents finds no `aws:SourceVpce`, `aws:SourceVpc` or `aws:SourceIp` condition
+anywhere, so `docker push` to ECR's public endpoint under the SSO session is unblocked.
+
+`docker login` to the Production ECR, tag immutably, push as `awsds-prod-ecr-base` **and**
+`awsds-prod-ecr-dev-env`. **Record both digests in the log** so the Stage 8 changeover — and Stage 7 step
+2.6's rebuild — are visible.
 
 **5.1 — Make the image selectable in the throwaway project — INT-17, before the comparison starts.** The
 attachment point (read 2026-08-16) is the **Tooling-provisioned SageMaker AI domain** in the member

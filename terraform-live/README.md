@@ -132,7 +132,24 @@ down** — the order that becomes load-bearing once Stage 4 step 8.3 makes every
 its Elastic IP. `make status` reads a `[D]` row's **power state from EC2**, not its state file, or a
 stopped host would report a burn forever.
 
-**That slice is also this tree's clearest instance of the layer deciding the folder, not the topic.** The
+**And since Stage 6 step 5.0 that `[D]` host has a second job, with its activation in a different
+slice — the pattern is worth naming because it will recur.** `wireguard-v0.4.0` gave the module a
+`vpc_nat_cidrs` input: filled, it turns source/destination checking **off** and adds masquerade rules
+that make the tunnel host a **NAT instance** for the isolated tier, which is what lets
+[`sandbox/devbox/`](sandbox/devbox/README.md) — an `[E]` `amd64` build host — reach the internet with **no
+NAT gateway anywhere**, so `egress/` need not be up for a build at all. **The capability is `[D]` and the
+reach is `[E]`:** a masquerade rule matches nothing until a route table sends traffic at it, and the route
+(`0.0.0.0/0` in the isolated tier, at that ENI) is created and destroyed with the build session. So the
+standing change is exactly one attribute, and everything metered comes and goes.
+
+**`devbox/` is also the tree's first slice `make up` deliberately does not drive.** It is `[E]` and it has
+a row, so `make status` sees it and `make down ENV=sandbox` would destroy it — but bringing it *up* is
+[`scripts/devbox.py`](../scripts/devbox.py), because the slice must **not** coexist with `probes/`, whose
+perimeter reading is precisely the absence of the default route this one adds. That refusal is code in the
+helper rather than a sentence here (Lesson 5), and the helper also starts the tunnel host first: the route
+points at its ENI, and a stopped target is a **blackhole**, not an error.
+
+**That `[D]` slice is also this tree's clearest instance of the layer deciding the folder, not the topic.** The
 VPN's three durable things — the Elastic IP, the host security group and the **host private key's Secrets
 Manager container** — are `[P]` and live in [`sandbox/foundation/vpn-anchors.tf`](sandbox/foundation/),
 one slice away from the `[D]` instance that consumes them. Each is named from outside Stage 4 (the

@@ -26,9 +26,21 @@ data "terraform_remote_state" "foundation" {
   }
 }
 
+# THE ISOLATED TIER'S ADDRESS RANGES, READ FROM THE SUBNETS THEMSELVES (2026-08-21, with the
+# devbox). foundation/ exports subnet IDs and not their CIDRs, and the right repair is this
+# data source rather than a new output: a CIDR is a property of the subnet, `aws_subnet`
+# already reports it, and adding an output would be a second place for the same fact to live
+# (Lesson 14). Writing the range as a literal here would be a third - a copy of the allocation
+# table in scripts/tfhygiene/backend.py that nothing keeps in step.
+data "aws_subnet" "isolated" {
+  for_each = data.terraform_remote_state.foundation.outputs.isolated_subnet_ids
+
+  id = each.value
+}
+
 module "wireguard" {
   # checkov:skip=CKV_TF_1:pinned by git TAG by convention (conventions §6, Stage 3 step 1.1a) - a repository-internal tag only the repo owner can move
-  source = "git::git@github.com:felipenoris/AWS-DataScience.git//terraform-modules/wireguard?ref=wireguard-v0.3.0"
+  source = "git::git@github.com:felipenoris/AWS-DataScience.git//terraform-modules/wireguard?ref=wireguard-v0.4.0"
 
   env        = var.env
   zone_ids   = var.zone_ids
@@ -81,6 +93,27 @@ module "wireguard" {
   # The POINTER, never the key (decision 4, third review): the module grants its instance
   # role GetSecretValue on exactly this ARN and the host fetches the value at first boot.
   host_key_secret_arn = data.terraform_remote_state.foundation.outputs.wireguard_host_key_secret_arn
+
+  # THE HOST BECOMES A NAT INSTANCE FOR THE ISOLATED TIER - added 2026-08-21, and it is the
+  # smaller half of a two-part arrangement whose other half lives in an [E] slice.
+  #
+  # WHAT THIS LINE DOES: one MASQUERADE and two FORWARD rules per range in wg0's PostUp, and
+  # source/destination checking OFF on this ENI (the module's own comment carries the argument
+  # and now carries the exception too). WHAT IT DOES NOT DO: send anything here. A masquerade
+  # rule matches only traffic that was ROUTED to this host, and the route that does it -
+  # 0.0.0.0/0 in the isolated route table, pointed at this instance's ENI - is created and
+  # destroyed by terraform-live/sandbox/devbox/, which is [E]. So the capability stands with
+  # the [D] host and the reach comes and goes with the session.
+  #
+  # WHY THE ISOLATED TIER AND NOT THE PRIVATE ONE: the private tier's default route belongs to
+  # egress/ under egress_mode=A, and two slices writing 0.0.0.0/0 into one route table is a
+  # collision rather than a design. The isolated tier has no default route by construction,
+  # which is exactly the property that leaves room for one.
+  #
+  # WHY IT IS A LIST AND NOT THE VPC CIDR: `-s <vpc_cidr>` would also match this host's own
+  # traffic, since the host is in that VPC - harmless, and still a rule that says more than it
+  # means. The subnets that can actually be routed here are the ones named.
+  vpc_nat_cidrs = [for s in data.aws_subnet.isolated : s.cidr_block]
 
   peers = var.peers
 }
