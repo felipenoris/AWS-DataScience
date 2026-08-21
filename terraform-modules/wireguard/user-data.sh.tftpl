@@ -28,8 +28,12 @@ say "BEGIN - $(uname -srm)"
 # ------------------------------------------------------------------------- (1) packages
 #
 # THE THREE NAMES WERE MEASURED PRESENT in the AL2023 core repository for this region on
-# 2026-08-16, read from the repository bucket itself. iptables-nft is what provides
-# /usr/sbin/iptables on AL2023 - the masquerade rule below has no command without it.
+# 2026-08-16, read from the repository bucket itself - and read on the X86_64 mirror path,
+# which is the architecture this host runs since 2026-08-20 (docs/REFERENCES.md carries the
+# URL). So the amd64 move inherits that measurement rather than owing a re-read; nothing in
+# this script names an architecture, because dnf resolves every one of them by name.
+# iptables-nft is what provides /usr/sbin/iptables on AL2023 - the masquerade rule below has
+# no command without it.
 say "(1) installing wireguard-tools iptables-nft amazon-cloudwatch-agent"
 dnf -y install wireguard-tools iptables-nft amazon-cloudwatch-agent
 say "(1) done"

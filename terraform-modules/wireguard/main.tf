@@ -12,11 +12,30 @@
 # [P], the server's public key because its private half lives in the caller's [P] Secrets
 # Manager secret, fetched at first boot, rather than being generated on the host (step 4.3;
 # decision 4, third review).
+#
+# AND THE ARCHITECTURE IS ONE OF THOSE REBUILDS - the one taken deliberately, on 2026-08-20:
+# this module was arm64 (Graviton, the `-arm64` spelling of the parameter below) from D4 until
+# the user moved it to x86_64. THE AMI IS WHERE THAT DECISION LIVES, and it is the only place
+# it can live: an AMI is specific to its processor architecture, so the image below is what
+# makes `instance_type` a t3 family rather than a t4g one, and NOT the other way round. The
+# caller's closed-list validation follows this line; it does not constrain it.
+#
+# WHAT THE MOVE COSTS, stated here because it is the same list as any other AMI change and is
+# therefore already answered above: a REPLACED INSTANCE - x86_64 and arm64 are not a stop,
+# modify and start the way two sizes in one family are, and EC2 refuses the in-place change -
+# so the user data re-runs and /etc/wireguard/ is rebuilt from the [P] secret and the roster.
+# What it does NOT cost is a client edit: the address is the [P] Elastic IP and the server's
+# public key is the [P] secret's, so every .conf on every device stays valid across it.
+#
+# WHAT IS ARCHITECTURE-NEUTRAL, and it is why the move is this one line: the user data installs
+# every package BY NAME from the AL2023 repository (wireguard-tools, iptables-nft,
+# amazon-cloudwatch-agent - all three built for both architectures), derives the uplink
+# interface rather than assuming a generation's name, and downloads no binary of its own.
 
 data "aws_partition" "current" {}
 
 data "aws_ssm_parameter" "al2023" {
-  name = "/aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-arm64"
+  name = "/aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-x86_64"
 }
 
 locals {
@@ -72,7 +91,7 @@ locals {
 
 resource "aws_instance" "this" {
   # checkov:skip=CKV_AWS_126:detailed monitoring is 5x the metric volume for a one-host tunnel whose alarm is on the free basic status checks (step 7.3) - CloudWatch spend is Stage 12's subject
-  # checkov:skip=CKV_AWS_135:t4g.nano is not EBS-optimized-capable; the instance type is D4's, chosen by measured price (docs/PRICING.md 3)
+  # checkov:skip=CKV_AWS_135:t3.nano is not EBS-optimized-capable; the instance type is D4's shape on the x86_64 image of 2026-08-20, chosen by measured price (docs/PRICING.md 3)
   # checkov:skip=CKV_AWS_88:A PUBLIC ADDRESS IS THE WHOLE POINT - this is the tunnel endpoint, the one internet-facing resource in the design, and it is what GuardDuty is enabled for at Stage 15. What bounds it is the security group (one UDP port, step 3.1) and the absence of port 22
   ami           = data.aws_ssm_parameter.al2023.value
   instance_type = var.instance_type

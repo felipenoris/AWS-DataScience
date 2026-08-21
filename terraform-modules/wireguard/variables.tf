@@ -23,6 +23,10 @@ variable "zone_ids" {
 
 # WHY THIS KNOB EXISTS: t4g.nano capacity was MEASURED ABSENT in one of this region's zones
 # during Stage 3 - Server.InsufficientInstanceCapacity, after 25 minutes of provider retry.
+# That measurement was taken on the Graviton family this module carried until 2026-08-20, and
+# the knob is kept for the x86_64 one rather than retired with it: what it defends against is a
+# zone's pool being short of a size, which is not a property of an architecture, and the cost of
+# keeping it is one variable nobody has to touch.
 # (The region literal belongs in this comment and not in the description below: step 9.1's
 # scan reads string VALUES and skips full-line comments, deliberately.)
 variable "zone_index" {
@@ -107,9 +111,9 @@ variable "host_key_secret_arn" {
 # ------------------------------------------------------------------ shape and observability
 
 variable "instance_type" {
-  description = "D4's choice, measured at 0.0042 USD/h in this region (docs/PRICING.md 3, the t4g.nano row). A variable rather than a literal so a capacity or throughput finding is a one-line change - not an invitation to grow it."
+  description = "D4's shape - the smallest burstable there is - on the ARCHITECTURE main.tf's AMI pins, x86_64 since 2026-08-20 (it was t4g.nano, arm64, from D4 until then). Measured at 0.0052 USD/h in this region, +23.8% on the Graviton shape it replaced (docs/PRICING.md 8, both rows read the same day; Lesson 6). A variable rather than a literal so a capacity or throughput finding is a one-line change - not an invitation to grow it. THE VALUE MUST MATCH THE IMAGE: this module validates nothing here, deliberately - a size list belongs with the caller that selects from it, and the caller's own validation is the closed list. What decides which family is admissible is the SSM parameter in main.tf and nothing else, so moving that line is what moves this default, in that order."
   type        = string
-  default     = "t4g.nano"
+  default     = "t3.nano"
 }
 
 variable "mtu" {
