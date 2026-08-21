@@ -56,3 +56,57 @@ variable "extra_services" {
   type        = list(string)
   default     = []
 }
+
+# ------------------------------------------------ design A's control (Stage 6 step 4.1)
+
+variable "dns_firewall" {
+  description = "Attach the Route 53 Resolver DNS Firewall to this VPC - design A's allow-list. false everywhere it does not apply: the deployment targets have no interactive user to constrain, and under egress_mode = B there is no default route for a name to be useful on (dns-firewall.tf enforces the second half itself, so a caller cannot half-enable it)."
+  type        = bool
+  default     = false
+}
+
+variable "dns_firewall_allow_domains" {
+  description = "The allow-list, and THE ONE COPY OF IT (Lesson 33): both Interactive slices enable the firewall and neither carries a list, so the two cannot drift. Read the note in dns-firewall.tf before editing."
+  type        = list(string)
+
+  # WHAT IS ON THE LIST, BY REASON RATHER THAN BY NAME - the names go stale, the reasons do
+  # not, and Stage 6 step 4.1 says in as many words to read the ACTUAL names at the time.
+  #
+  #   AWS itself      without it every SDK call over the NAT fails to resolve, including the
+  #                   ones this design WANTS to leave the VPC. Design A is "limited
+  #                   internet", not "no AWS".
+  #   the four        PyPI, conda, CRAN, the Julia package server, crates.io - the ecosystems
+  #   ecosystems      docs/plan/architecture.md 4.3 names. Under design B these are replaced
+  #                   by CodeArtifact and this list is not consulted at all.
+  #   distro mirrors  the SageMaker Distribution image is Debian-based; an apt-get in a
+  #                   notebook is a normal thing to do and a silent NXDOMAIN on it is an
+  #                   afternoon.
+  #   the internal    prod.internal / pages.internal / sandbox.internal. DNS Firewall is
+  #   zones           evaluated by the VPC resolver, which is also what answers a private
+  #                   hosted zone - so an unlisted internal name is blocked exactly like an
+  #                   internet one, and GitLab stops resolving at Stage 7.
+  #
+  # ONE FAMILY IS KEPT OFF THIS LIST ON PURPOSE, and the instruction is the point rather than
+  # the omission (Stage 6 decision 3, 2026-08-19): Athena Spark's session hosting domains.
+  # Default-deny already excludes them, so nothing is being ADDED here - what is being added
+  # is the instruction NOT to add them when somebody debugging a blocked lookup works down
+  # this list. The reasoning is in Stage 6 step 1.6 and in the `extra_services` comment of
+  # both Interactive egress slices: Spark's executors run outside this VPC, so a notebook on
+  # them sits outside every control the perimeter is made of. The SQL path does not touch
+  # these names.
+  default = [
+    "amazonaws.com", "*.amazonaws.com",
+    "pypi.org", "*.pypi.org",
+    "pythonhosted.org", "*.pythonhosted.org",
+    "anaconda.com", "*.anaconda.com",
+    "anaconda.org", "*.anaconda.org",
+    "r-project.org", "*.r-project.org",
+    "julialang.org", "*.julialang.org",
+    "crates.io", "*.crates.io",
+    "debian.org", "*.debian.org",
+    "ubuntu.com", "*.ubuntu.com",
+    "prod.internal", "*.prod.internal",
+    "pages.internal", "*.pages.internal",
+    "sandbox.internal", "*.sandbox.internal",
+  ]
+}

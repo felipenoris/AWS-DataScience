@@ -1,10 +1,22 @@
 # `terraform-modules/` — the reusable half
 
-**Seven modules today** (2026-08-19): `vpc`, `vpc-egress`, `s3-bucket`, `kms-key`, `iam-role`,
-`wireguard`, `consumer-data`. The tree exists from Stage 2 step 1 and was empty until **Stage 3 step
-1.1/1.1a** wrote the first four; the section below is why the wait was deliberate, and it is kept because
-the argument outlives the emptiness — it is the same argument `conventions.md` still applies to the
-unwritten `sandbox-unit` module.
+**Ten modules today** (2026-08-21): `vpc`, `vpc-egress`, `s3-bucket`, `kms-key`, `iam-role`,
+`wireguard`, `consumer-data`, and Stage 6's three — **`ecr-repo`**, **`sagemaker-prereqs`** and
+**`sagemaker-denies`**. The tree exists from Stage 2 step 1 and was empty until **Stage 3 step 1.1/1.1a**
+wrote the first four; the section below is why the wait was deliberate, and it is kept because the
+argument outlives the emptiness — it is the same argument `conventions.md` still applies to the unwritten
+`sandbox-unit` module.
+
+**`sagemaker-denies` is the first module here that creates NO RESOURCE AT ALL**, and it is worth saying why
+that is not a violation of "a module that only forwards variables answers no question" below. It holds one
+`aws_iam_policy_document` and outputs its JSON. What earns it a tag is that **the same statements have to
+reach two different objects, in two different accounts, written by two different services**: the six
+persona permission sets in `terraform-live/identity/sso/`, and the D13 permissions boundary that
+`sagemaker-prereqs` imposes on the roles the SMUS blueprint authors. That is Lesson 33's exact shape — one
+intent enforced in two places diverges, and sharing the *values* while duplicating the *structure* is what
+makes it look like it cannot — so the structure **and** the values live here and both ends compose the
+result through `source_policy_documents`. **The cost is named rather than hidden:** `identity/sso/`, the
+entitlement plane, now has a module dependency it did not have before.
 
 ## Why it was still empty at the end of Stage 2
 
@@ -54,6 +66,13 @@ commit 1  s3-bucket edited          ->  tag s3-bucket-v0.3.0      ->  push
 commit 2  consumer-data (calls it)  ->  tag consumer-data-v0.1.0  ->  push
 commit 3  the slices (call that)
 ```
+
+**Stage 6 added a second nesting, and its rungs are worth writing out because one of them is a RELATIVE
+path rather than a tag:** `sagemaker-prereqs` calls `kms-key` and `iam-role` by tag, and calls
+`sagemaker-denies` by **`../sagemaker-denies`**. That is legal and deliberate — Terraform's git getter
+clones the whole repository and resolves a submodule inside that clone — and it makes the coupling honest:
+the pin on the shared document is **`sagemaker-prereqs`'s own tag**, so a change to the denies is a new tag
+at this level too. `identity/sso/` calls `sagemaker-denies` by tag, like any other caller.
 
 Skip a rung and `terraform init` stops at `invalid ref: "<tag>"` — the same message
 [Recipe B](../docs/plan/runbooks/terraform-changes.md) step 5 is written to prevent, one level deeper.
