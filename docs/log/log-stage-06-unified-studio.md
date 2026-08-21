@@ -570,3 +570,90 @@ D26 forbids one in.
 
 Step 0 in the stage file now carries the measurement as a blockquote, including the sentence about what it
 does not license. `make check` green. Nothing committed.
+
+## 2026-08-21 — Step 0 rebuilt around the instrument that died: the probe now rides step 1.2's own creation act
+
+*Provenance: **Claude's hand throughout, on the user's request in this sitting.** No AWS call at all —
+this is a plan revision responding to the previous entry's measurement. **The sitting is continuous with
+that one and crossed midnight**, which is why the measurement is dated the 20th and the replacement the
+21st. No identifier substitutions were needed.*
+
+The entry above measured step 0's CLI probe pair dead in both directions. That reading was recorded there
+and nothing else moved — so for one sitting the stage carried a **step whose procedure was known not to
+work**, which is the state Lesson 35 is about. This entry is the repair.
+
+### What a dead instrument actually costs, and why annotating it was not enough
+
+A blockquote saying "this does not work" leaves the executor with an unrunnable step and no next move,
+and leaves two other files pointing at the procedure as though it ran. The question the step exists to
+answer — **does `DenyDataZoneDomainOutsideDataOu` reach `Data` too** — did not go away when its instrument
+did. So the repair had to name a *different* instrument rather than downgrade the question.
+
+### The replacement: the probe rides the creation act it was protecting
+
+**0.1a.** There is exactly one `CreateDomain` this organization is going to issue anyway — step 1.2's
+`aws_datazone_domain`. It rides the same API the CLI could not clear, in the same account, as the same
+principal. So the apply *is* the positive probe, and the step's remaining job is to make it **read** as
+one: stage it so the domain goes first (Recipe D — the sanctioned `-target`, so nothing is half-built
+around a refused domain), and meet it with a three-outcome fork instead of a surprise.
+
+The third outcome is the one worth having written down in advance: **if Terraform inherits the same
+validation wall, the answer is adoption, not force.** Create the domain through the SMUS console setup
+path — which builds its own execution and service roles and names every field it needs — then
+`terraform import` it. **The reading that makes this more than a workaround is Lesson 16's**: the fields
+AWS's own wizard fills in are precisely what four hand-built roles could not synthesize, so the branch
+that looks like a defeat is the branch that produces the missing knowledge. The precedent is Stage 2's
+`identity/sso/` and `identity/org-policies/` — **adopted, none created** — and Lesson 35 attaches the
+moment it happens: the module's create-path prose stops describing this domain.
+
+### The canary half comes back through a different door
+
+The negative half cannot be a console wizard: that would strand wizard-built roles in `Policy Canary` and,
+worse, **change the instrument between the two accounts** — which is exactly the defect that made
+yesterday's contrast unreadable. Both halves answered the same string because both failed *upstream* of
+the thing being compared.
+
+So the replay is built from **CloudTrail**: once a `CreateDomain` has succeeded in Data Governance, its
+event carries the request shape that clears validation. Rebuild that shape in the canary and replay it.
+`AccessDenied` there → the deny fired, and it is attributable *because* the same shape succeeded next
+door (Lesson 24's different channel, supplied by the event rather than by the error text). A domain
+created → the statement fires nowhere, INT-12's forbidden fallback is already open — delete it and go to
+0.3. **Holding the instrument constant across the two accounts is the property the flat contrast lacked**,
+and it is the whole design criterion for the replacement.
+
+### The Status row had been born stale — the second time in this repository on the same day
+
+`5df5a83` committed a Status row reading **"step 0 is now runnable"**, written hours before the same day's
+execution proved it was not. That is the identical shape as the `CLAUDE.md` VPN bullet recorded in
+[Stage 4's log](log-stage-04-vpn.md) — **prose describing state, written from the intention rather than
+from a reading, in the commit that was about to make the reading available.** Both were corrected from
+measurements rather than from the text that produced them.
+
+Two instances in one day is a pattern but not yet a lesson: `docs/plan/lessons.md` gets a new entry if it
+appears a third time in a different shape. Recorded here and in Stage 4's log so the third occurrence is
+recognisable rather than novel.
+
+### The two indexes that still pointed at the dead procedure
+
+Annotating only the stage would have left both of these describing a probe that cannot be run — the
+failure mode Lesson 35 names, where the stale path is the one that still *looks* fine.
+
+- **`scp-battery.md`'s DataZone probe** now carries the second measurement: the real role does not clear
+  validation either, so the probe **has no runnable CLI form today** — the same standing as the snapshot
+  probe measured un-runnable in 1c — and its future template is the CloudTrail-read request shape. *The
+  `check-plan-refs.py` gate caught this edit referring to a sibling probe by its row number, which the
+  project forbids for exactly the reason the reference was convenient; replaced with a stable one.*
+- **`POLICIES.md`'s `DenyDataZoneDomainOutsideDataOu` row** reads *re-measured 2026-08-20*: still
+  unexercised in both directions, no standalone CLI probe exists, the exercise moved to 0.1a. Its "attached
+  but unexercised" effect is unchanged — **what changed is that it is now unexercised for a measured
+  reason rather than an assumed one.**
+
+### Also revised in the stage
+
+The 0.1 outcome table's third row keeps its "not evidence" reading and strikes its *"fix the role and
+retry"* advice — four shapes, two accounts, one string. The 0.2 and 0.3 triggers, the pass-0 row, the
+"who does what" sentence and step 1.2 itself all now name 0.1a rather than the CLI pair, so the executor
+meets the fork at the moment of the apply rather than after it.
+
+`make check` green; `check-docs` red only on the three pre-existing pre-Stage-2 lines;
+`check-identifiers` clean. Three files changed, nothing committed.

@@ -77,7 +77,7 @@ change. The sequence to work in is **six passes**:
 
 | Pass | # | What | Slice · layer | Applied as / by |
 |---|---|---|---|---|
-| **0** | 0 | the two preflights — the no-SageMaker plan reading, and the `CreateDomain` carve-out probe, **which since 2026-08-20 rides step 1.2's creation act plus a CloudTrail-shaped canary replay (0.1a): no standalone CLI probe reaches authorization** | readings + the 0.1a pair | creation act and replay: **user**; readings: Claude |
+| **0** | 0 | the two preflights — the no-SageMaker plan reading, and the `CreateDomain` carve-out probe, **which since 2026-08-21 rides step 1.2's creation act plus a CloudTrail-shaped canary replay (0.1a): no standalone CLI probe reaches authorization** | readings + the 0.1a pair | creation act and replay: **user**; readings: Claude |
 | **1** | 2.1-2.3 | the prerequisite slices: roles, boundary, KMS, params; the `layers.py` rows | `*/sagemaker/` `[P]` | `awsds-infra-sandbox-1`, `awsds-infra-dev` |
 | **1** | 3 | the deny fragment: jobs off VPC, instance ceiling, `StartSession` scope | `identity/sso/` `[P]` | `awsds-infra-identity` |
 | **1** | 5.0 | the hand-built `base`/`dev-env` images into the Production ECR | laptop, by hand | **user** (docker + push) |
@@ -170,7 +170,7 @@ aws datazone create-domain --name awsds-probe-positive --domain-version V2 \
 > authorization decision is identical and only the validation ahead of it is lighter. This is a probe of
 > the SCP, not of the domain shape step 1 will build.
 
-**0.1a — The instrument that replaces the CLI pair (added 2026-08-20, the sitting the pair died).** The
+**0.1a — The instrument that replaces the CLI pair (added 2026-08-21, the same sitting the pair died in — it crossed midnight, so the measurement is the 20th's and the replacement is the 21st's).** The
 positive half now rides **step 1.2's own apply**: the module's `aws_datazone_domain` is the next
 `CreateDomain` this organization will issue, and it rides the same API the CLI could not get past
 validation — so **expect the same wall as one of three outcomes, and stage the apply so the domain goes
@@ -248,7 +248,7 @@ official module is **`aws-ia/sagemaker-unified-studio/aws`** (v0.2.0, 2026-07-02
 what this design forbids (D22: no VPC there; 0.4's premise). Take the domain + IAM half (and its
 `project-profile` submodule); the blueprint half lands in the *member* accounts (1.4). If the module cannot
 be split that way, write the few resources directly — the resource types are known and small.
-**This apply doubles as the carve-out probe (0.1a, since 2026-08-20)**: stage it so the domain goes
+**This apply doubles as the carve-out probe (0.1a, since 2026-08-21)**: stage it so the domain goes
 first (Recipe D), read the three-outcome fork there — created / SCP-denied / the CLI's validation wall
 again, whose plan B is **console-create + `terraform import`** — and take the CloudTrail-shaped canary
 replay in the same sitting, whichever branch runs.
