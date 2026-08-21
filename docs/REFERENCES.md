@@ -787,3 +787,32 @@
   that every number in that file came from the bulk API stays exactly true:
   <https://aws.amazon.com/kms/pricing/> and
   <https://docs.aws.amazon.com/kms/latest/developerguide/rotate-keys.html>.
+
+- **`uv` in the `base` image — the five sources behind its layer, two of which overturned the obvious
+  implementation** (read 2026-08-21, to answer *"install the latest uv"*). **The latest is `0.12.5`,
+  published 2026-08-14** — the same version this repository's own tooling runs on (`CLAUDE.md`), which
+  is a coincidence worth not mistaking for a constraint:
+  <https://github.com/astral-sh/uv/releases/tag/0.12.5>. **The first overturn is that the image was
+  never without uv**: the distribution's own resolved environment — the `@EXPLICIT` list the `4.3.0-cpu`
+  tag is built from — pins `uv-0.11.28` from conda-forge at line 913, so this is a version **move**
+  inside an existing package and not an install, and a second binary under `/opt` would have left two
+  `uv` whose answers depend on which PATH asks (Lesson 33):
+  <https://github.com/aws/sagemaker-distribution/blob/main/build_artifacts/v4/v4.3/v4.3.0/cpu.env.out>.
+  conda-forge publishes `0.12.5` for `linux-64` with dependencies `__glibc >=2.17`, `libgcc >=15` and
+  `libstdcxx >=15`, all satisfied at 15.2.0 in this image, so the move should cost nothing else:
+  <https://anaconda.org/conda-forge/uv>. **The second overturn is `--freeze-installed`, which cannot
+  express what it looks like it expresses**: `create_install_request` emits a `Freeze` job for *every*
+  package in the prefix with **no exemption for the specs on the command line**, so the flag would have
+  frozen `uv` itself — an unsolvable request or a silent no-op, indistinguishable afterwards from
+  protection. The guarantee became a before/after reading of `$MAMBA_ROOT_PREFIX/conda-meta` instead:
+  <https://github.com/mamba-org/mamba/blob/main/libmamba/src/api/install.cpp>. Two readings from uv's
+  own source close the layer: `system_config_file` tries `XDG_CONFIG_DIRS` and falls back to
+  **`/etc/uv/uv.toml`**, which is why the CodeArtifact default is written there to be *discovered*
+  rather than forced through `UV_CONFIG_FILE` (`--config-file` **replaces** discovery and would silence
+  a data scientist's own project config); and `uv-static`'s `EnvVars` confirms `UV_SYSTEM_CERTS` and
+  `UV_PYTHON_DOWNLOADS` while containing **no `UV_VERSION`**, which is what makes the build argument of
+  that name safe: <https://github.com/astral-sh/uv/blob/0.12.5/crates/uv-dirs/src/lib.rs> and
+  <https://github.com/astral-sh/uv/blob/0.12.5/crates/uv-static/src/env_vars.rs>. **Astral's static
+  binary was measured and not used** — `uv-x86_64-unknown-linux-gnu.tar.gz` at
+  `sha256:68a509da24b06b4223a1c0175fb5eb5bc79342b76cbeff0cfe51ac3f5b17b6b2`, recorded here so the
+  rejected branch stays legible rather than looking unexamined.
