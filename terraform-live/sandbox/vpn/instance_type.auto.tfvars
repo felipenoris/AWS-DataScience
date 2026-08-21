@@ -99,7 +99,7 @@
 # docs/plan/runbooks/vpn.md section S6.
 
 
-#instance_type    = "t3.nano"
+instance_type = "t3.nano"
 #instance_type    = "t3.medium"
-instance_type    = "t3.xlarge"
-root_volume_size = 64
+#instance_type    = "t3.xlarge"
+root_volume_size = 8
