@@ -657,3 +657,116 @@ meets the fork at the moment of the apply rather than after it.
 
 `make check` green; `check-docs` red only on the three pre-existing pre-Stage-2 lines;
 `check-identifiers` clean. Three files changed, nothing committed.
+
+---
+
+## 2026-08-21 — The pull-forward audited: a prerequisite asserted for five days with nothing behind it, and the re-cut that followed
+
+*Provenance: **Claude's hand throughout, on the user's request, in one sitting later the same day as the
+entry above.** **No AWS call of any kind — not a write, not a read.** Every measurement below is `git` or
+`grep` against this working tree. No identifier substitutions were needed.*
+
+### What was asked, in two steps
+
+The user asked for the next step of the plan to be prepared. Preparing it surfaced that
+`production/pki/` and `production/registry/` — named in the Prerequisites row as *"pulled forward and
+**applied** before this stage"* — do not exist in `terraform-live/production/`, which holds only
+`bootstrap/`, `egress/`, `foundation/` and `probes/`. The user then asked whether any previous session's
+log records **why** it had not been done. That question is what this entry answers, and the answer turned
+out to be structural rather than anecdotal.
+
+### The audit
+
+Run as a fan-out over five corpora — the stage logs, the stage and decision files, the git history, the
+cross-cutting plan files, and the executable half (`scripts/`, `aws/`, both Terraform trees) — then two
+adversarial passes against the result and a synthesis. Every load-bearing citation was re-checked by hand
+afterwards. The three commands that decide it:
+
+```
+git log --all --oneline -S "Pulled forward and applied before this stage" \
+    -- docs/plan/stages/stage-06-unified-studio.md
+f44559f review stage 6. proceding stage 3.
+
+git show --stat f44559f
+ 14 files changed, 1924 insertions(+), 720 deletions(-)        # zero under terraform-live/
+
+git log --all --diff-filter=ADR --name-only \
+    -- 'terraform-live/production/pki*' 'terraform-live/production/registry*'
+                                                               # empty, every ref
+```
+
+So: the clause entered on **2026-08-16**, in a documentation-only commit, and the two paths have **never
+been added, never deleted, never renamed** anywhere in the history. Nothing was deferred, attempted or
+torn down.
+
+### The finding, and it is a negative one
+
+**No file records a reason, because there was no event to record.** Supporting reads, each a `grep` over
+the tracked tree:
+
+| Where a reason would live | What is there |
+|---|---|
+| `docs/plan/history.md` | no match for pki / registry / ECR / CodeArtifact / D36 — and per that file's own contract a row is earned only once something is *provisioned*, so the silence is the policy working |
+| `docs/AWS_STATE.md` | no match for either slice: the gap is not filed as a known exception either |
+| this log file | `grep -ic 'pki'` returns **0** through six entries; its only `registry` token is D26's registry/runtime split |
+| the corpus generally | when something *is* weighed for pulling forward, this log tables it and records the verdict — the 2026-08-19 entry does exactly that for five candidates. Neither slice ever entered such a table |
+
+**The tense disagreement was four-sided**, and the isolated party was this stage: Stage 7 states the same
+pull-forward in the **future** tense (*"Pass 0 … runs before Stage 6"*), `production/bootstrap/pki-key.tf`
+schedules the slice at *"Stage 7"* — written **2026-08-15, one day before** the Stage 6 clause — and D36's
+own *Referenced by stages* row never listed Stage 6 at all.
+
+**What HAD been executed is one half of D36 and only the lower half:** `production/bootstrap/pki-key.tf`,
+applied 2026-08-15 (Stage 2 step 3.4) — the second state key, `alias/awsds-prod-tfstate-pki`, ~USD 1/month,
+encrypting nothing until its slice exists. Three further name-only pre-wirings, all for `pki`: the
+`RANKS` entry, `NEVER_DESTROY = {("production", "pki")}`, and `gen-backend-hcl.py`'s usage example. For
+`registry` there was nothing at all — **not even a rank**, and an unranked slice name raises at import, so
+a `production/registry/` written today would have failed `make check` before it could be applied.
+
+**Nothing in the repository would have surfaced this before it bit.** `./aws/studio.py` never asks;
+`./aws/supplychain.py` reads ECR, CodeArtifact and the CA parameter but gates its whole note→fail flip on
+`built = bool(host_rows)` — the GitLab host, two stages away — so it stays green over a missing pass 0;
+`scripts/slices.py` validates the declared `SLICES` table against the tree and would not look for a folder
+nobody declared.
+
+### The re-cut, on the user's instruction: move to Stage 7 what belongs there and is not a prerequisite
+
+Decided by asking, per piece, *who consumes it before Stage 7 ends*:
+
+- **`production/pki/` → Stage 7 pass 1, with the leaves.** Its only Stage-6-time consumer was step 5.0's
+  image, and the only names the root lets a container trust are served by nothing until Stage 7 — whose
+  own step 2.4 defers the leaves for that reason. **D36 §3 amended**; the cost is named rather than
+  removed: **new Stage 7 step 2.6** rebuilds and repushes the `dev-env` image with the root, in the
+  sitting that first has something to clone (INT-09 already lives there). Step 5.0 keeps an **empty
+  CA-install layer** so 2.6 fills a blank instead of editing a build.
+- **`production/registry/` stays a prerequisite, narrowed to what this stage consumes, and becomes this
+  stage's PASS 0.** Step 5 of Stage 7 splits: **5.a** — the `base`/`dev-env` repositories, CodeArtifact,
+  the slice's KMS key and the D35-map consumer policies, authored there and applied here; **5.b** — the
+  pull-through cache and the per-application repositories, which nothing before Stage 7 pulls from.
+- **The obligation moved out of prose into structures an executor reads:** a build-table row, a pass-table
+  row, a sentence in the ordering paragraph, and the `registry` rank in `layers.py` (added ahead of the
+  slice, deliberately, for the import-time reason above).
+
+### Files changed in this sitting
+
+`docs/plan/stages/stage-06-unified-studio.md`, `…/stage-07-gitlab-runners-ecr.md`,
+`…/stage-08-cicd-pipelines.md` (step 1.1's `Dockerfile` requirement list), `…/stage-03-networking.md`
+(step 8.4's CodeArtifact domain), `…/stages/INDEX.md`, `docs/plan/decisions/D36-internal-pki.md` (§3 and
+the Status line), `docs/plan/decisions/INDEX.md`, `docs/plan/conventions.md` (both slice comments),
+`docs/plan/integrations.md` (INT-01 and INT-19 — where each surface takes the root, recorded at the
+receiving end), `docs/GENERAL_PLAN.md`, `CLAUDE.md`, `scripts/tfhygiene/layers.py`, `docs/log/INDEX.md`.
+
+**Deliberately not written:** a `docs/plan/history.md` row — nothing described by the amendment has been
+provisioned, which is that file's own bar.
+
+### Lesson 37, promoted by the trigger the previous entry declared
+
+The entry above recorded two instances of *prose describing state, written from the intention rather than
+from a reading*, and said a third in a different shape would make it a lesson. This is the third, and the
+first to survive five days and two full stage reviews. `docs/plan/lessons.md` gains it and `CLAUDE.md` the
+recognition key: **the tell is a clause carrying no date, no measurement and no verdict while its
+neighbours in the same row carry all three**, and the risk concentrates in claims about another stage or
+another account, which no gate reads and no owner re-reads.
+
+`make check` green; `check-docs` red only on the pre-existing pre-Stage-2 lines, byte-identical to the
+baseline at `HEAD`; `check-identifiers` clean. Nothing committed.

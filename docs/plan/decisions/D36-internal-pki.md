@@ -1,7 +1,9 @@
 # D36 — Custody of the internal PKI
 
 **Status:** Decided (2026-08-09): **its own `[P]` slice, `production/pki/`, with its own state and its own
-KMS key; no revocation path, and the compensating controls are detective**
+KMS key; no revocation path, and the compensating controls are detective** — **§3 amended 2026-08-21: the
+slice is no longer pulled forward ahead of Stage 6; it is built at Stage 7 pass 1 with the leaves, and the
+`dev-env` image takes the root at Stage 7 step 2.6. Custody (§1, §2) is untouched.**
 
 **In one line:** The internal CA root gets a slice, a state file and a KMS key of its own — so "who can mint
 a certificate for any internal name" is an isolable question rather than a subset of "who administers the
@@ -53,11 +55,38 @@ anyone who merely needed to change a subnet.**
    sharing Production's general key would put the root back inside the blast radius it was moved out of.
    This is the same shape D31 uses for the derived zone: *the key policy is what says who may read this*.
    Cost: ~USD 1/month, in `docs/plan/cost-model.md`'s KMS row.
-3. **Created early — applied before Stage 6, alongside Stage 7 step 5.** Not a placement question but a
-   scheduling one: the `dev-env` image exists from Stage 6 (INT-01) and has to be built with the root
-   already in it. A CA created at its natural place in Stage 7 would mean the first image is built without
-   it and rebuilt afterwards. Stage 7's ordering note already pulls step 5 forward for the same class of
-   reason; `pki/` joins it.
+3. **~~Created early — applied before Stage 6, alongside Stage 7 step 5.~~ AMENDED 2026-08-21: the CA is
+   created at its natural place, Stage 7 pass 1. Only Stage 7 step 5's `5.a` half stays pulled forward.**
+   The original scheduling argument was: the `dev-env` image exists from Stage 6 (INT-01) and has to be
+   built with the root already in it; a CA created at Stage 7 would mean the first image is built without
+   it and rebuilt afterwards. **What the amendment adds is the other half of that trade, which the
+   original never priced** — and one fact that makes it decisive:
+
+   - **The root would have had nothing to authenticate.** Its only purpose is to make
+     `gitlab.prod.internal` and `*.pages.internal` trustworthy, and Stage 7 step 2.4 defers the leaves to
+     its own pass 1 *"when something exists to serve them"*. An image built at Stage 6 would carry a trust
+     anchor for names that answer nowhere for a whole stage, so the early CA bought the image nothing it
+     could use.
+   - **The rebuild the pull-forward was avoiding is one `docker build`**, and it is owed anyway: Stage 6
+     step 5.0 declares its own image a bootstrap artifact *"replaced by Stage 8's pipeline building the
+     same `Dockerfile`s"*. Against it, the early CA cost a slice, an apply, a fingerprint reading and a
+     `[P]` KMS key put to work a whole stage before anything consumed it.
+   - **So the cost is named rather than removed:** Stage 7 gains **step 2.6** — rebuild and repush the
+     `dev-env` image with the root, in the same sitting that first has something to clone (INT-09). The
+     `Dockerfile` keeps an **empty CA-install layer** from Stage 6, so 2.6 fills a blank instead of editing
+     a build.
+
+   **What did NOT change:** §1, §2 and the custody argument — own slice, own state, own key, the private
+   key never an output — and the state key `alias/awsds-prod-tfstate-pki`, which `production/bootstrap/`
+   has held since 2026-08-15 (Stage 2 step 3.4) and which now simply waits for its slice, as that file's
+   own comment always said it would.
+   **What triggered the amendment:** an audit of the pull-forward clause on 2026-08-21 found it had never
+   been executed — one docs-only commit of 2026-08-16, and `git log --diff-filter=ADR` empty for both
+   `terraform-live/production/pki*` and `…/registry*` across every ref. Nothing had been deferred; the
+   sentence had simply been written in the perfect tense from the start.
+   **Revision trigger:** an internal-TLS surface appearing before Stage 7 — any name this project's own
+   CA must certify that a Stage 6 client has to reach. Nothing in Stage 6 has one today: every endpoint it
+   touches is an AWS public endpoint with a public certificate.
 4. **Leaves are issued from this slice and imported into ACM by the consuming slice.** `production/egress/`
    (or `tooling/`, if Stage 7 chooses nginx-on-instance) reads the certificate through
    `terraform_remote_state` outputs. **The root's private key is never an output** — only the CA

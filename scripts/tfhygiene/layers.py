@@ -74,7 +74,23 @@ RANKS = {
     "sso": 10,
     "org-policies": 11,
     "foundation": 20,
+    # THE TWO RANKS WITH NO SLICE BEHIND THEM YET, and the comment they went four months
+    # without (added 2026-08-21). A rank is legal on its own - `slices.py check` validates the
+    # SLICES table against the tree and only asks that every ROW have a rank, never the
+    # reverse - and both of these are deliberate, for the reason `vpn` states above: the
+    # ORDER is the part that gets got wrong once, so it is declared before the slice arrives.
+    #
+    #   pki      production/pki/, Stage 7 pass 1. Its state key has existed since 2026-08-15
+    #            (production/bootstrap/pki-key.tf, D36) and NEVER_DESTROY below already arms
+    #            refusal 3 for it. It was scheduled ahead of Stage 6 until 2026-08-21, when
+    #            D36 3 was amended: nothing serves a .internal name before Stage 7.
+    #   registry production/registry/, written under Stage 7 step 5 and applied in two passes -
+    #            5.a at STAGE 6's pass 0 (Stage 6 step 5.0 pushes into it), 5.b at Stage 7.
+    #            The rank landed ahead of the slice because an unranked name raises at import,
+    #            so a registry/ folder written without one fails `make check` before it can be
+    #            applied at all. After foundation: the slice reads the VPC/subnet outputs.
     "pki": 30,
+    "registry": 31,
     # BELOW egress ON PURPOSE (Stage 4 step 1.3): `up` ascends rank and `down` descends it,
     # so a rank under egress starts the tunnel BEFORE the [E] slices exist and stops it AFTER
     # they are gone. That is the order 8.3 makes load-bearing - from then on every API call

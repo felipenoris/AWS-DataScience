@@ -246,6 +246,12 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   (4.2 flow logs; `fineGrained` from an IdC notebook). Blueprints are an **allow-list in 3 categories —
   `docs/SMUS.md` is the one copy**, `US-3` the category-1 list; `AmazonBedrockGenerativeAI` owes a
   `PRICING.md` row before 1.4.
+- **St.6's pull-forward never happened — audited, RE-CUT 2026-08-21.** `production/pki/` and
+  `production/registry/` were **never built** (`--diff-filter=ADR` empty, every ref) though the
+  Prerequisites row read *applied* since 2026-08-16. Now: **`registry/` 5.a is St.6's PASS 0** (ECR
+  `base`+`dev-env`, CodeArtifact, key, consumer policies — St.7 authors, St.6 applies); **`pki/` is St.7
+  pass 1** (D36 §3 amended, D36 off St.6's Consumes), so **5.0's image carries NO CA root** — it takes one
+  at **St.7 2.6**. `registry` rank added ahead of the slice. Pass 0 blocks 5.0 and its descendants only.
 - **Stages 5-11 revised, pre-instrumented (2026-08-16/17):**
   `aws/{vpn,datalake,studio,supplychain,cicd,deploytargets,orchestration,dlp}.py` — `DL-5`/`DT-5` guard
   the LF `Parameters` (INT-11). **St.8 pass 4, St.9 passes 4-5, St.10's Staging leg wait on the vend;
@@ -329,3 +335,7 @@ the reasoning that makes it *usable* is in the file. Recognising one is the sign
     files that carry them — the stale path is the one that still succeeds, quietly, past every guard.**
 36. **"Auto-enable" is a word each service defines for itself — and a cross-service finding written down
     in the stage that hit it stays in that stage.**
+37. **A sentence written in the perfect tense from an intention is indistinguishable from a record — the
+    tell is a clause carrying no date, no measurement and no verdict while its neighbours carry all
+    three, and the risk concentrates in claims about another stage or another account, which no gate
+    reads and no owner re-reads.**

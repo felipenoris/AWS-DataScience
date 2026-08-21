@@ -266,10 +266,14 @@ terraform-live/
     ├── pki/              # [P] the internal root CA (D36). OWN state file and OWN KMS key,
     │                     #     deliberately not foundation/'s: foundation is opened to change
     │                     #     a CIDR or accept a peering, and every such edit would otherwise
-    │                     #     decrypt the root. Applied EARLY, with registry/ below, because
-    │                     #     the dev-env image is built from Stage 6 and must carry the root
-    │                     #     (INT-19). Outputs the CA cert and the issued leaves - NEVER the
-    │                     #     root private key. Excluded from every make down path
+    │                     #     decrypt the root. Applied at STAGE 7 PASS 1, with the leaves -
+    │                     #     the "applied EARLY, before Stage 6" schedule was withdrawn on
+    │                     #     2026-08-21 (D36 3 amended): nothing serves a .internal name
+    │                     #     before Stage 7, so the dev-env image takes the root at Stage 7
+    │                     #     step 2.6 instead (INT-19). Its state key already exists, in
+    │                     #     production/bootstrap/ since 2026-08-15. Outputs the CA cert and
+    │                     #     the issued leaves - NEVER the root private key. Excluded from
+    │                     #     every make down path
     ├── data/             # [P] application-output buckets, Athena workgroup, LF resource
     │                     #     links + the governed-write REGRANT to the job role (D22; the
     │                     #     account-level grant is data-governance/data/'s - Stage 9
@@ -280,7 +284,13 @@ terraform-live/
     │                     #     data/ on 2026-08-09 to preserve D14's revision option: if the
     │                     #     supply chain ever moves to a Shared Services account, this
     │                     #     slice leaves and data/ stays. A folder is not a boundary - it
-    │                     #     buys migration cost only (Stage 7, option-preservation note)
+    │                     #     buys migration cost only (Stage 7, option-preservation note).
+    │                     #     APPLIED IN TWO PASSES, split by consumer on 2026-08-21: the
+    │                     #     base/dev-env repositories, CodeArtifact, the key and the
+    │                     #     consumer policies (Stage 7 step 5.a) go in at STAGE 6's pass 0,
+    │                     #     because Stage 6 step 5.0 pushes into them; the pull-through
+    │                     #     cache and the per-application repositories (5.b) wait for
+    │                     #     Stage 7, which is the first thing that pulls from either
     ├── sagemaker/        # [P] Model Registry (model package groups) + the execution role
     │                     #     pipeline-submitted jobs assume. No domain, no user profiles (D17)
     ├── egress/           # [E] NAT, endpoints - and the internal ALB for GitLab/Pages ONLY

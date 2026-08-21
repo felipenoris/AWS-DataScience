@@ -723,6 +723,57 @@ lesson can be *recognised* without opening this file; the reasoning that makes e
     **The discriminator, while writing any correction down:** ask whether the sentence you just wrote
     would be useful to someone configuring a *different service*. If yes, the stage file is the wrong
     only-home for it.
+37. **A sentence written in the perfect tense from an intention is, from that moment on, indistinguishable
+    from a record — and all three of this project's have been authored in the commit that was about to
+    make the reading available.**
+
+    *Promoted to a lesson 2026-08-21, on the third occurrence, by the trigger the second one declared
+    ("two instances is a pattern but not yet a lesson; a third in a different shape makes it one").*
+
+    | # | The sentence | Written | Falsified | By what |
+    |---|---|---|---|---|
+    | 1 | a `CLAUDE.md` bullet describing the VPN host's state | Stage 4 | same day | reading the host |
+    | 2 | *"step 0 is now runnable"*, Stage 6's Status row, commit `5df5a83` | 2026-08-21 | hours later | running step 0 |
+    | 3 | *"**Pulled forward and applied before this stage:** `production/registry/` … and `production/pki/`"* | 2026-08-16 | **five days and two full stage reviews later** | auditing the prerequisite before executing it |
+
+    **All three were written by the same hand, in the same motion, and none of them was a lie**: each was
+    a true statement of what was about to be done, typed into a document, and then the doing either did
+    not happen or came back with a different answer. The commit that carries the sentence is systematically
+    the commit *before* the evidence exists. That is the shape to recognise — not carelessness, but the
+    ordinary sequence of writing the plan and then going to execute it.
+
+    **The third is the expensive one, and what made it survive is worth more than what made it wrong.**
+    A prerequisite in another account, owned by a stage that had not started, asserted once in one
+    Prerequisites row. Nothing could catch it: `check-plan-refs.py` validates identifiers, links and
+    sizes; `slices.py` validates the declared slice table against the tree and would not look for a folder
+    nobody declared; `./aws/studio.py` never asks; `./aws/supplychain.py` reads ECR and the CA but gates
+    its whole note→fail flip on a host two stages away, so it reports green over the absence. **A false
+    claim about state degrades gracefully: reading it produces no error, only the belief that something
+    was done.** Its only symptom was that the *other* files disagreed — the owning stage said "runs
+    before Stage 6" in the future tense, a `.tf` comment scheduled the slice at Stage 7, and the decision's
+    own navigation row never listed Stage 6 at all. Four statements, three tenses, no gate between them.
+
+    **The tell, and it is cheap enough to use every time.** This repository dates and grades its claims —
+    *SATISFIED 2026-08-19*, *4d AND 4e are DELIVERED (2026-08-20)*, *measured*, *0 FAILED*. So the question
+    to ask of any perfect-tense clause is not "is this true?", which invites a re-derivation, but: **why
+    does this one clause carry no date, no measurement and no delivery verdict, when the clauses beside it
+    in the same row carry all three?** In case 3 that asymmetry was visible from the day it was written.
+
+    **Two practices, both nearly free:**
+
+    - **Write intentions in the future tense and let the past tense be earned by a reading.** *"runs
+      before Stage 6"* and *"applied 2026-08-16, measured"* are both fine; *"applied before this stage"*
+      with no date is the form that cannot be told apart from either.
+    - **Where prose cannot be checked, move the obligation into a structure that can.** The repair here
+      was not better wording: it was a row in the pass table, a row in the build table, a sentence in the
+      ordering paragraph, and a `layers.py` rank — four places an executor actually reads, against one
+      row nobody executes from. **Prose is where an intention and a reading part company**, so the fix is
+      to stop asking prose to carry a dependency at all.
+
+    **The scope test, so this does not become paranoia about every past-tense verb:** the risk is
+    concentrated in claims about work **outside the file's own stage or account**, because those are
+    exactly the claims no gate reads and no owner re-reads. A stage saying what it itself did is checked
+    by the next person executing it; a stage saying what *another* stage already did is checked by nobody.
 
 ---
 

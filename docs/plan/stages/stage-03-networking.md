@@ -559,8 +559,10 @@ its data plane needs (under design B, a missing `athena`/`glue` means no query e
   | **Production** | `sagemaker.api`, `sagemaker.runtime`, and under D7(B) `states` + `scheduler` | Holds the LF read **and governed write** share (D22), so `lakeformation` is load-bearing here |
 
 - **8.4 — Under D5(B) the Interactive accounts add `codeartifact.api` and `codeartifact.repositories`** —
-  the package path when there is no NAT, resolving a domain created by **Stage 7 step 5** (applied early,
-  before Stage 6, precisely so this works when the comparison runs).
+  the package path when there is no NAT, resolving a domain created by **Stage 7 step 5.a** — written
+  there, applied in **Stage 6's pass 0**, precisely so this works when the comparison runs. *(Reworded
+  2026-08-21: this used to read "applied early, before Stage 6", which was a claim about a thing that had
+  not been done — the whole clause is Stage 6's Status row.)*
 - **8.5 — [Claude] Per endpoint**: private DNS enabled (needs 4.1), the endpoint SG from 2.4, and a
   **single AZ** (D9) — two AZs doubles the largest hourly line item, and a resource in the other AZ still
   resolves and reaches it.

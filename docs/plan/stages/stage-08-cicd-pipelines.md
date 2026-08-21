@@ -118,8 +118,11 @@ re-prices the D5 comparison (1.7).
   the gate's authorization, per 3.3's recorded answer.
 - **1.1 — [Claude] Write the build jobs**: both images with **BuildKit rootless** on the build runner
   (Stage 7 step 6.2), tags **derived from the commit** (`<tag>-<short-sha>`), pushed nowhere yet. The
-  `Dockerfile`s keep Stage 6 step 5.0's requirements unchanged: the CA root from the one source (INT-19),
-  the SMUS BYOI specification, the activity-monitor extension.
+  `Dockerfile`s keep the requirements of the two hand builds unchanged: the SMUS BYOI specification and
+  the activity-monitor extension from Stage 6 step 5.0, **plus the CA root from the one source (INT-19),
+  which joins at Stage 7 step 2.6 and not at 5.0** — D36 §3 was amended 2026-08-21 and the root does not
+  exist while Stage 6 runs. By the time this pipeline builds, the layer is filled and this job inherits it
+  rather than introducing it.
 - **1.2 — [Claude] Write the smoke-test job**: the `dev-env` image starts, every language runtime resolves
   the **pinned** versions the manifest asked for, the key libraries import. Cheap, and it catches the class
   of failure that otherwise reaches every workstation at once — the analogue of step 3.3's integration
