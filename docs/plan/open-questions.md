@@ -398,6 +398,11 @@ length, under item numbers 10-12 that collided with the live items above; the du
     that stage lands (`AWS_STATE.md` `EXC-02` declares the one object that already has). An answer that
     starts the crawler does not empty the box; only the pickup does.
 
+    **The addressee, added 2026-08-20 so this is not recorded only at the end that raised it (Lesson 34):
+    Stage 6 step 2.1 is the first consumer.** That step is where a blueprint-provisioned notebook role
+    would join `writer_role_patterns` and become a drop-box writer — so the demander question is read
+    **before** that grant, not after it. Stage 6's Prerequisites row now carries the pointer back.
+
 ### Raised while reading the persona sets, 2026-08-19
 
 20. **Does `datazone:Get*` in the governance manager's set reach `GetEnvironmentCredentials` — and does

@@ -269,8 +269,11 @@ Workgroup output, and temporary storage for individual workflow runs". The bucke
 2025-09 shared-storage announcement is `amazon-datazone-<account-id>-<region>-<domain-id>`; the
 `shared/` scope mounts as a folder in JupyterLab and Code Editor (a space's *personal* work is its
 EBS volume, not S3). **Not yet observed in this project** — the exact bucket, which account it lands
-in for a profile pinned to a member account, and who creates it (domain setup or the Tooling
-provisioning) are read at Stage 6 step 2.4's throwaway project (Lesson 16: record every field).
+in for a profile pinned to a member account, who creates it (domain setup or the Tooling
+provisioning), **and the bucket's default encryption key** — which decides whether it sits inside
+`docs/GOVERNANCE.md` §Encryption's per-account data CMK rule or outside every key this project chose —
+are read at Stage 6 step 2.4's throwaway project (Lesson 16: record every field). **Stage 6's
+verification (xviii) is the receiving end**, so the field list exists at both ends and not only here.
 
 **2. Project files storage — S3 or Git.** A project-profile field. The terminology page still says a
 default CodeCommit git connection is provided; the 2025-09 announcement makes S3 the default, born
@@ -292,17 +295,22 @@ catalog as an **S3 Object Collection** asset — a curated, versioned *metadata*
 subscription rules. No stage uses it: this lake's path into the catalog is tables on the LF
 substrate, not object collections.
 
-Three buckets in a member account all answer to "working storage", and are three different objects:
+Three things in a member account all answer to "working storage" — **two buckets and a workgroup**, and
+the third row read as a bucket until 2026-08-20, which is the error that made the destination question
+below easy to miss:
 
-| Bucket | Created by | Holds |
+| Object | Created by | Holds |
 |---|---|---|
-| the project path (`amazon-datazone-…`) | the service (2.4's reading settles by which hand) | `shared/` files, the blueprint workgroup's Athena output, workflow temp, the consumer Glue database location |
-| `awsds-<env>-derived` | `consumer-data` (Stage 5 pass 4a) | the persona's derived zone — per-user write, persona-grain read, the `scratch/` prefix |
-| `awsds-<env>-athena` | `consumer-data` (Stage 5 pass 4a) | the **enforced** workgroup's results (10 GiB, → `results/`) |
+| the project path (`amazon-datazone-…`), a **bucket** | the service (2.4's reading settles by which hand) | `shared/` files, the blueprint workgroup's Athena output, workflow temp, the consumer Glue database location |
+| `awsds-<env>-derived`, a **bucket** | `consumer-data` (Stage 5 pass 4a) | the persona's derived zone — per-user write, persona-grain read, the `scratch/` prefix |
+| `awsds-<env>-athena`, **a workgroup, not a bucket** | `consumer-data` (Stage 5 pass 4a) | nothing of its own. The module creates exactly **one** bucket (`buckets.tf`); this is the *enforced* workgroup (`athena.tf`), and its results are forced into `s3://awsds-<env>-derived/results/` under a 10 GiB cap. **So the enforced results already live inside the derived zone** — they are not a third place |
 
 The last row is a boundary worth stating: pass 4c scoped the persona's Athena run family to the two
 *enforced* workgroup ARNs, and a blueprint-provisioned project workgroup is a third workgroup
-outside that scope — exercised by project roles, not by the persona. Whether the two query paths
+outside that scope — exercised by project roles, not by the persona. **And the first row is where its
+output lands**, which is the fact Stage 6's decision 6 must point at rather than assume: a project
+workgroup writes into the *project path*, not into `awsds-<env>-derived`, unless Stage 6 step 2.4/2.6
+measures that the location can be repointed and enforced. Record that answer **here** when it returns. Whether the two query paths
 stay parallel or converge (TIP — Stage 6 decision 2) is Stage 6's to measure, not this file's to
 assert.
 
