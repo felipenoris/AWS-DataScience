@@ -478,16 +478,30 @@ length, under item numbers 10-12 that collided with the live items above; the du
     role may do against the shared domain is bounded by **AWS's managed RAM permission and AWS's own
     policy authorship**, and by nothing this project wrote. Lesson 18 is the reason that is worth
     naming: a policy never constrains the principal that authors it.
-    **Three things to settle, in this order.** (a) Is a **customer-managed RAM permission** even
-    available for `datazone:Domain`, or is the managed set the only choice? — a reading, and it decides
-    whether the ceiling is negotiable at all. (b) If it is not, does the Interactive OU want an SCP
-    naming the handful of verbs that are governance rather than project work
-    (`AddPolicyGrant`, `RemovePolicyGrant`, `DeleteEnvironmentBlueprintConfiguration`,
-    `GetDomainExecutionRoleCredentials`)? — weigh it against Lesson 5, because an SCP that would break
-    the blueprint machinery is worse than none, and against Lesson 20, because a deny nothing exercises
-    reads as coverage. (c) Whichever way, **the answer belongs in step 1.6**, whose subject is exactly
-    the controls on this surface, and it should be settled **before 1.4** — after that, service-authored
-    roles exist and the question stops being theoretical.
+    **(a) ANSWERED 2026-08-21 — the ceiling is NOT negotiable.** `datazone:Domain`'s row on RAM's
+    shareable-resources page reads **"Can use customer managed permissions: No"**, and RAM agrees:
+    `ram list-permissions --resource-type datazone:Domain --permission-type CUSTOMER_MANAGED` returns
+    empty. AWS's managed set is the only choice, so the six published permissions are the whole menu and
+    the 152-action one is the narrowest that carries the V2 half. *(The same row also says the domain
+    **can** be shared with accounts outside its organization — not what was done, and worth knowing.)*
+    **So the only remaining lever is (b), an SCP on the Interactive OU** naming the verbs that are
+    governance rather than project work — `AddPolicyGrant`, `RemovePolicyGrant`,
+    `DeleteEnvironmentBlueprintConfiguration`, `GetDomainExecutionRoleCredentials`.
+    **(c) AND THE SEQUENCING IN THE SENTENCE THIS REPLACES WAS BACKWARDS.** It said settle *before* 1.4,
+    *"after that, service-authored roles exist and the question stops being theoretical"* — which is
+    exactly why it must come **after**. The question is whether those four verbs are governance-only or
+    whether the blueprint machinery itself uses them, and **that cannot be read until AWS has authored
+    the policies**: `DeleteEnvironmentBlueprintConfiguration` in particular is what a `terraform destroy`
+    of a `sagemaker/` slice calls, so a deny written blind would break the estate's own teardown.
+    Lesson 5 cuts both ways here — an SCP that breaks the product is worse than none — and Lesson 20 says
+    a deny nothing exercises reads as coverage.
+    **So: measure at 1.5, decide at 1.6.** After the profiles exist, read the policies the blueprint
+    authored on the project and environment roles (the same reading `US-8` already takes for the
+    boundary) and check whether any of the four verbs appears. None appearing makes the SCP cheap and
+    safe; any appearing turns the deny into a product break, and the answer becomes "recorded ceiling,
+    no deny".
+    **This does NOT block step 1.4** — corrected the same day it was written. Nothing outside the member
+    accounts is reachable today that `InfrastructureAccess` could not already reach directly.
     **Not a reason to delay 1.3, which is done**: nothing reaches the wide half today.
     **Read with question 20, which is the same axis at a different scale** — that one asks whether one
     wildcard in one approver set reaches `GetEnvironmentCredentials`; this one asks what governs the

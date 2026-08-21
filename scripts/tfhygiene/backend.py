@@ -216,7 +216,13 @@ REGISTRY_CONSUMERS = ["sandbox", "development"]
 
 SMUS_DOMAIN = ["data-governance"]
 SMUS_MEMBERS = ["sandbox", "development"]
-SMUS_ASSOCIATED: list = []
+# MEASURED 2026-08-21, not assumed: the association raised no invitation (organization-scoped share,
+# Stage 1d's org-wide RAM enablement), so the console's "Associated" label is not the evidence. What is:
+# `datazone list-environment-blueprint-configurations --domain-identifier dzd-...` run as each member's
+# OWN profile SUCCEEDS and returns an empty list - a call that cannot succeed at all before the
+# association. Both rows are added in one edit because both accounts were associated in one act; the
+# APPLY ORDER is what is staged, not this list (Stage 6 step 1.4 before 1.5).
+SMUS_ASSOCIATED: list = ["sandbox", "development"]
 
 # Subnets anchor on ZONE IDS, never on AZ names and never on list position (Stage 3 step 1.5,
 # settled by 1b step 6; ./aws/AZs.py is the measurement). Authored per account because a

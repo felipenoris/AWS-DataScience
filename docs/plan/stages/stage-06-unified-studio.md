@@ -948,6 +948,26 @@ Recommendations stated so the keyboard is not the decision-maker.
    notebook. **The outcome propagates:** decision 5's category 1 lists `EMRServerless` as following this
    decision — landing on Glue removes it from `US-3`'s allow-list, `docs/SMUS.md` and the 1.4 map in one
    commit, and needs no blueprint at all (a Glue connection in the project).
+
+   > **TAKEN 2026-08-21 AS `EMRServerless`, AND THE FORM OF THE DECISION CHANGED — because as written it
+   > could not be taken at all.** Both settling readings are **downstream of the step they gate**: (i)
+   > needs a working session and (ii) needs a `fineGrained` connection from a notebook, and neither
+   > exists until the blueprint is enabled at 1.4 and a project profile exists at 1.5. A decision whose
+   > evidence is unlocked by the act it blocks is a deadlock, and following the sentence literally would
+   > have stalled the stage on a reading nobody could take.
+   > **What breaks the deadlock is that enabling costs nothing.** A blueprint *configuration* provisions
+   > no compute and bills no rate; EMR Serverless meters per vCPU-hour on a **started application**, and
+   > `PutEnvironmentBlueprintConfiguration` starts none. The endpoint delta (~USD 0.06/h) is `[E]` in
+   > `egress/` and is not spent by this apply either.
+   > **So the decision is re-cut from "add or not" to "KEEP or REMOVE".** `EMRServerless` goes into 1.4's
+   > enabled set on the standing recommendation; readings (i) and (ii) are taken during passes 3-4 as
+   > already planned; and if either comes out against it, removal is the same one-commit propagation the
+   > paragraph above already describes — `US-3`'s allow-list, `docs/SMUS.md`, the 1.4 map, plus a
+   > `DeleteEnvironmentBlueprintConfiguration` the slice performs by dropping the entry.
+   > **The FGAC axis is what makes "keep" the right default rather than a coin toss**: EMR-S is the only
+   > engine whose SMUS page documents `project.spark.fineGrained`, so starting from Glue would mean
+   > writing off Stage 5's column scoping on the notebook Spark path *before* measuring whether it works.
+   > Starting from EMR-S keeps both outcomes reachable; starting from Glue forecloses one.
 2. **`enableTrustedIdentityPropagationPermissions`** (1.5, the grain — Stage 5 decision 6's mechanism) —
    recommended: **follow the grain Stage 5 chose**. If per-user on the SQL path, enable it and accept the
    documented cost — **remote access does not work with TIP enabled** — recording which objective yielded;
