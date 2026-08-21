@@ -1250,6 +1250,84 @@ running the apply is not the session being interrupted. That is `slices.py`'s *"
 - **`SMUS.md`'s Bedrock cell still said a `PRICING.md` row was owed**, six hours after that row was
   written. Corrected, and the cell now carries the two readings the rate table alone would hide.
 
-### The applies
+### The applies, and the defect they found
 
-**Written after they ran.** See the section below, which is the only place their results are recorded.
+**Written after they ran.** Three slices in Sandbox, in this order, every one re-planned to `No changes`
+afterwards.
+
+| Slice | Plan | Result |
+|---|---|---|
+| `sandbox/vpn/` | `2 to add, 1 to change, 2 to destroy` | **The host was REPLACED, exactly as predicted before the plan was taken** — `user_data` *forces replacement*, `source_dest_check true -> false`, the EIP association replaced, the health alarm updated in place. `52.89.212.1` re-associated with the new instance, so the prediction that no client `.conf` moves held |
+| `sandbox/foundation/` | `0 to add, 1 to change, 0 to destroy` | **Not planned before the sitting — see below.** One ingress rule added to the `[P]` WireGuard security group |
+| `sandbox/devbox/` | `6 to add, 0 to change, 0 to destroy` | The host, its SG, its role and profile, and the one route |
+
+**THE DEFECT IS MINE AND IT IS LESSON 28 IN ITS PUREST FORM: reach is an INTERSECTION, and I built two
+thirds of it.** The route sent the isolated tier's default at the WireGuard host, `vpc_nat_cidrs` gave that
+host the masquerade rules — and the host's `[P]` security group still admitted **UDP/51820 and nothing
+else**, so every forwarded packet was dropped on arrival, after the routing and the translation had both
+done their jobs. **The three pieces live in three slices, so no file I wrote or read was wrong.**
+
+**The symptom is worth keeping, because it is not the symptom of a firewall.** The devbox came up,
+installed docker and git **successfully** — those come from the AL2023 repository through the S3 *gateway*
+endpoint, which needs no route at all — and then sat there until `devbox.py up` gave up waiting for Session
+Manager. The console output ends with `Post "https://ssm.us-west-2.amazonaws.com/": dial tcp … i/o
+timeout`. A dnf that works followed by an SSM that times out reads as a broken mirror or a flaky agent, not
+as a missing security-group rule. **Two things I had already written are what made it a ten-minute
+diagnosis instead of an evening**: the first-boot script takes an egress reading and prints
+`NO EGRESS - the route through the WireGuard host is not working`, and `devbox.py`'s own failure message
+says *"that is the route through the WireGuard host failing, nine times out of ten"*.
+
+**The fix is in `foundation/`, not in the `[E]` slice that wants it, and the reason is mechanical:** that
+security group declares its rules **inline**, which makes them authoritative — a separate
+`aws_vpc_security_group_ingress_rule` written by `devbox/` would be silently removed by the next apply of
+`foundation/` and show as perpetual drift until it was. That is INT-11's failure mode wearing a security
+group. So the path now sits at **three lifetimes**: the group `[P]`, the masquerade `[D]` with the host,
+the **route** `[E]` with the session — and the route stays the only thing that comes and goes. What is left
+standing is a **private** range admitting a tier that is empty between sessions.
+
+**`VP-3` was the check to worry about and it was checked rather than assumed:** `./aws/vpn.py` reads
+**`exactly one world-open rule`** after the change, because the new rule is a private range. All nine VP
+rows pass. Its second `VP-7` row also states in the tool's own words the thing this sitting reasoned about
+before the apply: `DenyControlPlaneOffVpn` is **absent from `InfrastructureAccess` by decision**, which is
+why replacing the tunnel endpoint from the laptop is not a lockout.
+
+### The end-to-end reading, which is the only thing that proves the design
+
+Taken over SSM after the fix:
+
+```
+public address this host leaves under:
+52.89.212.1
+docker:  Docker version 25.0.14
+arch:    x86_64
+disk:    /dev/nvme0n1p1  64G  2.5G  62G  4% /
+```
+
+**`52.89.212.1` is the WireGuard host's Elastic IP.** That single line is the whole claim measured rather
+than argued: the build host is in a tier with no internet gateway, it reaches the internet, and it leaves
+under the address of the one host in this design that is allowed to face the world. `devbox.py sync` also
+ran clean — 16 728 bytes of base64, 8 files, landed at `/opt/awsds/images`.
+
+### One more thing I got wrong, and it was already written down two lines away
+
+The security group rule description I first wrote carried an apostrophe, and
+`AuthorizeSecurityGroupIngress` rejects the whole call — at **plan** time, on a regex. The file I was
+editing already said so, in capitals, eight lines above the block I was adding to: *"A RULE DESCRIPTION
+CARRIES NO APOSTROPHE … measured in Stage 3."* It cost one plan. **No new lesson**: the fact was recorded,
+in the right place, and I did not read it — which is a reading failure, not a missing rule.
+
+### Files, commits, and what is owed
+
+Two commits on `claude/stage-06-devbox` in Recipe B's order — the module alone, then `wireguard-v0.4.0`
+pushed and **confirmed on origin by `git ls-remote` against the local `rev-parse`** before the second. The
+commit gate caught two things the runbook's §7 predicts and both were re-inits: `devbox/`'s provider cache
+disagreed with the sibling lock file I had copied in (6.61.0 cached, 6.60.0 locked), and `vpn/`'s
+`.terraform/modules` still recorded `wireguard-v0.3.0`.
+
+`make check` green, `checkov` 0 failed on both new trees, all three touched slices re-plan `No changes`,
+`./aws/vpn.py` 0 FAILED.
+
+**Owed, and both are the user's:** the `docker build` of the two images on this host — which is what the
+box exists for and has not been done — and the push of the results into the Production ECR from an identity
+that may. **The devbox is UP and billing at 0.1664 USD/h as this is written**; `./scripts/devbox.py down`
+is the cure and `status` is the reading.

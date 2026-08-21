@@ -72,6 +72,15 @@ laptop 10.90.0.2 ──wg0──▶ host (masquerade: source becomes the host's 
     `[E]`. So the standing change is exactly one attribute, and the reach comes and goes with a
     build session. **If VPC-side NAT is ever mysteriously dead:** `iptables -t nat -L POSTROUTING -n`
     then `systemctl status wg-quick@wg0`, in that order, over §K0a's session.
+  - **AND THERE IS A THIRD PIECE, WHICH THE FIRST APPLY DID NOT HAVE (2026-08-21, measured).** This
+    host's `[P]` security group in `sandbox/foundation/vpn-anchors.tf` admitted **UDP/51820 and
+    nothing else**, so a forwarded packet arriving from the isolated tier was dropped by the group
+    after the route and the masquerade had done their jobs — reach is an **intersection** (Lesson 28),
+    and the three pieces live in three slices, so no single file showed the gap. The symptom was a
+    devbox that installed its packages fine (S3 gateway endpoint) and then timed out on
+    `ssm.<region>.amazonaws.com`, which reads as a broken mirror. The group now carries a second
+    ingress rule for the isolated tier's ranges: **a private range, so `VP-3` still reads exactly one
+    world-open rule** — confirmed after the fix.
   - **TURNING IT ON THE FIRST TIME REPLACES THE HOST, and that is predicted here rather than
     discovered in a plan.** The rules live in `wg0.conf`, which is written by the user data, and
     `user_data_replace_on_change = true` — so the apply that first passes `vpc_nat_cidrs` reads
