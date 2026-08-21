@@ -199,12 +199,13 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
 - **Stage 4 DONE 2026-08-18 — closed by the GuardDuty split** (host left `running`; tunnel down first,
   then `make down`). **Stage 15 created the same day**, carrying the whole GuardDuty scope, prepared.
   `aws/guardduty.py` (`GD-1`–`GD-3`); `VP-8` retired; `vpn.py` default narrowed to two profiles.
-- **The VPN host is amd64 in CODE, not yet in AWS (2026-08-20, user direction; D4 amended).** Module AMI
+- **The VPN host is amd64 IN AWS — applied 2026-08-20 (`wireguard-v0.3.0`; D4 amended).** Module AMI
   `…-arm64` → `…-x86_64`, so `instance_type` admits `t3.nano|micro|medium` and baselines `t3.nano`
-  (0.0052 USD/h measured, **+23.8%** on `t4g`; `t3.medium` selected today at 0.0416). **The apply is a
-  REPLACEMENT, not a size switch** — address and host key are `[P]` so no client `.conf` moves; the root
-  volume does not survive. **`wireguard-v0.3.0` needs its two-commit tag before the slice can init.**
-  A running `t4g.*` is that pending apply, never drift. The probe slices stay Graviton — not the VPN.
+  (0.0052 USD/h, **+23.8%** on `t4g`). **It was a REPLACEMENT, not a resize** — the `[P]` address and host
+  key survived, so no client `.conf` moved; the root volume did not. **Measured now: `t3.medium`, 64 GiB
+  gp3, `running`, `VP-1`–`VP-9` pass, 0 FAILED.** Both are ABOVE baseline, so every hourly figure in `vpn.py` and
+  `make status` **understates the burn**, and `PRICING.md` 2's monthly floor understates it even while
+  STOPPED. `stopped` between sessions is D11 working. The probe slices stay Graviton — not the VPN.
 - **Stage 5 DONE, every pass (2026-08-18/20) — the governed lake exists, is granted, shared and
   consumed.** Six decisions; `docs/GOVERNANCE.md` is the one copy of the ontology + grant rules, and
   **one data CMK per account** since the `security-zone` withdrawal (`alias/awsds-<env>-data`;

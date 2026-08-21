@@ -12,7 +12,7 @@ files outright. Since **2026-08-17** the rule is cooperative and the same reques
 ([`INDEX.md`](INDEX.md)). What does not change either way is the record of whose hand wrote what — the
 point of this note, and why it is kept as written rather than restated.*
 
-*The ten entries below: on **2026-08-16** the user authorised Claude, explicitly, to
+*The thirteen entries below: on **2026-08-16** the user authorised Claude, explicitly, to
 create this file and write the first two directly, and on **2026-08-17** to write the third through the
 eighth the same way. The first three record no AWS call — one is
 a repository change merged with the Stage 3 teardown, one is pass 1 authored and gated but **not
@@ -35,7 +35,13 @@ user reported them, and marked as reported rather than as observed. **Its closin
 entry invert the split once more**: there every command and every output is the user's, run on the
 laptop and pasted, and Claude wrote only the analysis around them — with one correction made to the
 user's own text and declared where it was made, because what had been pasted was a draft configuration
-that was never applied.*
+that was never applied. **The walk above stops at the tenth, and the count did not** — it read "ten"
+until 2026-08-20 while the file held twelve, the eleventh and twelfth (the lifecycle cycle, the server's
+MTU) having been added without it. Corrected to thirteen with the entry below; each of the three carries
+its own provenance note, which is what a reader needs. **The thirteenth is an addendum after the stage
+closed**, and it is the plainest split in the file: the *direction* is the user's and everything
+performed is Claude's — the code, the two commits and the tag, the plan, the apply and every reading —
+on the user's explicit authorisation in that sitting. Only the merge to `main` is the user's hand.*
 
 ---
 
@@ -1964,6 +1970,139 @@ change. `VP-6` confirms the alarm's in-place dimension swap landed on the new in
   `egress` and `probes` down. Tunnel down first, then `make down ENV=sandbox`.
 - **The upload direction of an *unpinned* client stays unprotected**, which is the MSS clamp declined in
   the module commit — deliberate, and unchanged by anything measured here.
+
+---
+
+## 2026-08-20 — Addendum, after the stage closed: the host moves to amd64
+
+*Provenance. **The direction is the user's** — move the VPN to amd64, keeping the equivalents of
+`t4g.nano` and `t4g.medium`. **Everything performed here is Claude's**, on the user's explicit
+authorisation in the same sitting: the module and caller change, the price measurement, the two commits
+and the tag, the plan, the apply, and every reading below. **The merge to `main` is the user's.** No
+identifier substitution was needed in this entry.*
+
+**This is an addendum to a stage that closed on 2026-08-18**, not a reopening: nothing in the stage's
+scope changed. The stage file keeps its `t4g.nano` record at step 1.1 with a pointer, because that is
+what was built.
+
+### One line changed, and the closed list followed it
+
+`terraform-modules/wireguard/main.tf`'s SSM parameter, `…al2023-ami-kernel-default-arm64` →
+`…-x86_64`. That is the whole of the architecture decision — everything else is consequence:
+`sandbox/vpn/`'s `instance_type` list moved `t4g.{nano,micro,medium}` → `t3.{nano,micro,medium}`, and
+the tracked tfvars kept its selection at the same shape, `t3.medium` on 64 GiB. **Nothing in the user
+data needed touching**: it installs every package by name and derives the uplink, so it names no
+architecture anywhere.
+
+Prices were measured before anything was written, both regions from the bulk endpoint in one sitting
+(offer `AmazonEC2`, `publicationDate 2026-08-20T22:12:05Z`) and are in `docs/PRICING.md` §8. The two
+that govern here: **`t3.nano` 0.0052 USD/h** against `t4g.nano`'s 0.0042, and **`t3.medium` 0.0416**
+against `t4g.medium`'s 0.0336 — **+23.8% in `us-west-2`, flat across all three sizes**, so the ratios
+§S6 quotes are untouched and the medium is still exactly eight times the nano.
+
+Released as `wireguard-v0.3.0` through the two-commit tag order. `git ls-remote` answered with one line
+before the callers were committed, which is the check that stops §7's `invalid ref` from being a
+surprise.
+
+### Three pre-flight reads, and the third is the one that decided when
+
+```
+t3.medium	x86_64	2	4096
+usw2-az1	usw2-az2	usw2-az3	usw2-az4
+```
+
+Architecture and offering, both as §S6 requires — and the offering read matters because `zone_index`
+pins the host to one zone id. The third read is not in §S6's list and should be: **the handshake log,
+for whether anybody is connected.** Both peers read `handshake=never` over the preceding fifteen
+minutes, so the replacement stranded nobody and §C3's "tunnel down on each device first" was already
+satisfied rather than owed. **A destructive apply on this host is gated by a reading, not by an
+assumption about who is at their desk.**
+
+### The plan named its own reason, and the apply was a replacement
+
+`2 to add, 1 to change, 2 to destroy`, with the causes read out of the JSON rather than inferred:
+
+| Resource | Action | Replaced on |
+|---|---|---|
+| `aws_instance.this` | replace | `ami`, `instance_type`, `user_data` |
+| `aws_eip_association.this` | replace | `instance_id` |
+| `aws_cloudwatch_metric_alarm.health` | update | its dimension |
+
+**`must be replaced` is the reading that means "stop and read §K2/§K4" everywhere else in §S6, and here
+it is the expected one** — which is exactly what that section predicted an x86 move would look like.
+The old host `i-0eed9bac55077691c` (`t4g.medium`, `arm64`) took 1m22s to terminate; the new one came up
+in 15s as **`i-07780c6ec8029dae0`**.
+
+### The boot, on the new architecture
+
+The console did **not** populate for the first ten minutes — two empty reads — and the first thing that
+answered was the log group: a new stream `i-07780c6ec8029dae0/handshakes` carrying **both peers by
+name**. That alone proves the chain, because `peer=mbp` rather than `peer=unknown` requires the `dnf`
+install through the S3 gateway endpoint, the `[P]` secret fetch, `wg0.conf` and `peer-names` all to
+have worked. The console caught up later and confirms it directly:
+
+```
+=== AWSDS-VPN 00:18:29Z BEGIN - Linux 6.18.41-94.142.amzn2023.x86_64 x86_64 ===
+=== AWSDS-VPN 00:19:00Z (1) done ===
+=== AWSDS-VPN 00:19:00Z (2) uplink interface: ens5 ===
+=== AWSDS-VPN 00:19:02Z (3) key in hand (base64 length 44) ===
+=== AWSDS-VPN 00:19:05Z END - the tunnel endpoint is up ===
+```
+
+**36 seconds, and the host's own `uname` is the architecture evidence** — `…amzn2023.x86_64 x86_64`
+where the 2026-08-18 entry recorded `…amzn2023.aarch64`. Two things replicate across the change rather
+than merely repeating: the uplink is **still `ens5`** on a t3, so deriving it kept costing nothing; and
+the key fetch again took **2 seconds with zero retries**, behind a 31-second `dnf install`. That is the
+2026-08-18 finding measured a second time on different hardware — **verification (viii)'s retry loop is
+effectively unexercisable on the normal path**, because step (1) always wins the race step (3) exists to
+survive.
+
+### What survived, and the one thing that did not
+
+| | |
+|---|---|
+| the **address**, `52.89.212.1`, re-associated | the allocation is `[P]` in `foundation/` — so **no client `.conf` moved** |
+| the **host's public key** | its private half is the `[P]` secret, re-fetched at first boot |
+| the AZ, the security group, IMDSv2 | unchanged |
+| the **root volume** — **did not survive** | a new 64 GiB gp3, encrypted; `/etc/wireguard/` rebuilt from the secret and the roster |
+
+**One thing moved that no document had promised would not: the private IPv4**, `10.20.160.254` →
+`10.20.160.90`. Nothing broke, and the reason is worth writing down rather than rediscovering:
+`DenyControlPlaneOffVpn` pins the **Elastic IP** and the **gateway-endpoint ids**, never the host's
+private address. The consequence for a later reader is documentary — `docs/AWS_STATE.md`'s account of
+the 4d defect quotes `10.20.160.254` as CloudTrail evidence, and **that address no longer exists**; it
+is a record of a measurement, not a current fact.
+
+### The readings after
+
+`./aws/vpn.py` — **0 FAILED**, `VP-1` through `VP-9`:
+
+```
+pass    VP-1  one WireGuard host (i-07780c6ec8029dae0)   t3.medium on 64 GiB gp3, state running - the type is not the t3.nano baseline ... and the root volume is not the 8 GiB baseline
+pass    VP-2  Elastic IP associated with the host        52.89.212.1 -> i-07780c6ec8029dae0
+pass    VP-6  health alarm                               awsds-sandbox-vpn-health (OK)
+```
+
+`VP-1` naming **both** departures from baseline is the designed behaviour, not a complaint — and it is
+now naming them against `t3.nano`. `VP-2` is again the one that mattered, for the reason the 2026-08-18
+entry gives. A re-plan reads `-detailed-exitcode 0`, and `make status` quotes **0.0052 USD/h** — the
+baseline, while the host actually running burns 0.0416.
+
+### A correction to `terraform-changes.md` §3's post-merge expectation
+
+That section says to check the tag against `main` **and expect `orphaned`**, a rebase merge having
+rewritten every hash. After this merge the same command reads **`ancestor`**, and both commits are on
+`main` with their original hashes — so the expectation is conditional on the *merge style*, not a
+property of merging. What is unconditional is the content check, which is what the section actually
+tells you to rely on: both tree hashes read `094bf301aa4603db8908c46f1c5a95222565e60a`. **Read
+`orphaned` as "normal after a rebase merge", never as "normal".**
+
+### Not done
+- **The estate is up**: the apply left the host `running`, `egress` and `probes` down. Tunnel down
+  first, then `make down ENV=sandbox`.
+- **No tunnel has been brought up against the new host.** Every peer still reads `handshake=never`, so
+  the claim that no client `.conf` moved is argued from the `[P]` address and the `[P]` key rather than
+  measured end-to-end. The first connection is the measurement.
 
 ---
 
