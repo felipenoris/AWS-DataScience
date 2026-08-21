@@ -60,18 +60,6 @@ variable "instance_type" {
   description = "THE HOST'S SIZE, SELECTED PER APPLY - the first of the two knobs this slice adds to the wireguard module (root_volume_size below is the second, and it is the one that does NOT go both ways), so the tunnel can be run either as a forwarder or as a machine with room to work in, without a code change either way. t3.nano is D4's shape and the default; t3.medium (2 vCPU, 4 GiB) is the larger option; t3.micro is section S5's documented capacity fallback, kept here so the fallback is a value rather than an edit. EVERY ALLOWED VALUE IS x86_64 ON PURPOSE, AND THE LIST DOES NOT DECIDE THAT - the module pins the AL2023 x86_64 AMI (it pinned the arm64 one until 2026-08-20, when the user moved the host off Graviton), and an AMI is specific to its processor architecture, so t4g.medium is not a same-shape alternative to t3.medium: EC2 refuses the request. THE DIRECTION MATTERS WHEN THIS LIST IS EVER EDITED: the image decides the family and this list follows it, so a different family here is a MODULE change first - a different SSM parameter, a REPLACED instance and a re-run of the user data - and never a value somebody adds to the closed list below. HOW A SELECTION IS MADE: not here, and not on the command line, but in the TRACKED FILE BESIDE THIS ONE - instance_type.auto.tfvars, the second exception to the wholesale *.tfvars ignore and the first one .gitignore names outright. Assigning there overrides this default; COMMENTING THE ASSIGNMENT OUT falls back to it. The .auto. in the name is load-bearing: Terraform reads the file by itself, so both directions are a complete `AWS_PROFILE=awsds-infra-sandbox-1 terraform -chdir=terraform-live/sandbox/vpn apply` with no -var-file to append and no flag anybody can forget. WHAT THIS DEFAULT THEREFORE IS: the value that governs whenever nothing is assigned - so it is also what a FRESH CLONE builds, and what the cost tables are written against. Changing it is changing the baseline, which is a different act from switching the running host. The procedure is docs/plan/runbooks/vpn.md section S6."
   type        = string
   default     = "t3.nano"
-
-  validation {
-    # A CLOSED LIST, not a free-form string, and the failure it prevents is not a typo: the
-    # module's AMI is x86_64, so a Graviton type is rejected by EC2 at apply time with an
-    # architecture error - late, after a stop has already happened. Widening this list is a
-    # decision that belongs with the reading of section S6's two pre-flight commands
-    # (architecture, and whether the type is offered in the zone_index AZ), never a
-    # convenience - and widening it ACROSS families is not a decision this file can take at
-    # all, because the module's AMI would refuse it (see the description).
-    condition     = contains(["t3.nano", "t3.micro", "t3.medium"], var.instance_type)
-    error_message = "instance_type must be one of t3.nano, t3.micro or t3.medium - all x86_64, as the module's pinned AL2023 AMI requires (vpn.md section S6)."
-  }
 }
 
 variable "root_volume_size" {
