@@ -134,6 +134,32 @@ aws datazone create-domain --name awsds-probe-positive --domain-version V2 \
 | `AccessDenied … explicit deny in a service control policy` | `aws:PrincipalOrgPaths` does not populate for DataZone. **Stop** — go to 0.3 |
 | any DataZone validation error (`Cross-account pass role…`, trust failures) | the probe never reached authorization — the 1c outcome, and not evidence. Fix the role and retry (Lesson 21) |
 
+> **⚠ RAN 2026-08-20, and step 0 DID NOT CLOSE ITS OWN QUESTION — read this before spending a sitting on
+> it.** All four variants below returned the byte-identical
+> `AccessDeniedException … Cross-account pass role is not allowed`, **in Data Governance and in
+> `Policy Canary` alike**: the throwaway role name and the conventional `AmazonDataZoneDomainExecutionRole`;
+> the trust with and without the `aws:SourceAccount` condition; `--domain-version` V2 and V1. The caller and
+> the role were **proved to be in the same account** before each attempt, the role carried the AWS managed
+> policy, and `InfrastructureAccess` carries `AdministratorAccess`, so no `iam:PassRole` deny is available
+> to explain it. **The contrast came out FLAT** — the account the deny reaches and the account it does not
+> answer the same string — so *neither* call reached authorization and
+> `DenyDataZoneDomainOutsideDataOu` is **still unexercised in both directions**, exactly as 1c left it.
+>
+> **What this does NOT license anyone to write down:** that DataZone forbids a same-account pass role. It
+> does not; the message is not attributable from its own text (Lesson 24), and a tool's failure is not a
+> property of the world (Lesson 30). What is measured is narrower and it is enough: **a hand-built
+> execution role does not get `create-domain` past validation from the CLI**, so the third outcome row's
+> *"fix the role and retry"* has no CLI fix and this sub-step cannot be completed as written.
+>
+> **The next lever is the console**, which builds its own execution role and names the fields it needs
+> (Lesson 16) — or SageMaker Unified Studio's own setup path. Whichever runs, the reading to take is the
+> role AWS builds, field by field, because that is the thing this probe could not synthesize. **Do the
+> canary half in the same sitting either way**: a positive result alone still cannot tell a matching
+> carve-out from a statement that fires nowhere. Nothing was created by the attempt and all three probe
+> roles were deleted; `list-domains` reads `0` in both accounts.
+>
+> **The V1 fallback below is kept, and it is now known not to be sufficient on its own.**
+
 > **If validation keeps blocking, fall back to `--domain-version V1` rather than giving up the reading.**
 > A V2 domain may also demand `--service-role`. **Both condition keys of this statement —
 > `aws:PrincipalOrgPaths` and `aws:PrincipalIsAWSService` — are version-independent**, so the

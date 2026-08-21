@@ -2097,12 +2097,39 @@ property of merging. What is unconditional is the content check, which is what t
 tells you to rely on: both tree hashes read `094bf301aa4603db8908c46f1c5a95222565e60a`. **Read
 `orphaned` as "normal after a rebase merge", never as "normal".**
 
+### Two readings later the same day, and one of them is a defect in this addendum's own commit
+
+*Claude's hand, in a later sitting, on the user's request to check the repository was consistent before
+Stage 6 opened. Read-only: `./aws/vpn.py` and `git show`.*
+
+**The `CLAUDE.md` bullet describing this change was stale in the commit that introduced it.** The same
+commit whose message says `APPLIED 2026-08-20` added a Current-position bullet reading *"The VPN host is
+amd64 **in CODE, not yet in AWS**"*, *"`wireguard-v0.3.0` needs its two-commit tag before the slice can
+init"*, and *"a running `t4g.*` is that pending apply, never drift"*. All three were false when written —
+the tag existed, the apply had happened, and no `t4g` is running. **A bullet born stale is worse than one
+that goes stale**, because nothing later disturbs it: the next reader would either re-plan an apply that
+already ran, or read the live `t3.medium` as drift. Corrected in place, and corrected from a
+**measurement** rather than from this commit message, which is the same class of source that produced the
+error:
+
+```
+i-07780c6ec8029dae0  t3.medium  64 GiB gp3  running  IMDSv2 required
+```
+
+`./aws/vpn.py` re-run: **all checks pass, 0 FAILED**, `VP-1` still naming both departures from the
+`t3.nano`/8 GiB baseline. So the estate is **still up** hours after the apply — the "Not done" note below
+has not been acted on, and the two departures mean every hourly figure understates the burn while it runs,
+and `docs/PRICING.md` §2's monthly floor understates it **even stopped**, because the volume does not care.
+
 ### Not done
-- **The estate is up**: the apply left the host `running`, `egress` and `probes` down. Tunnel down
-  first, then `make down ENV=sandbox`.
+- **The estate is up**: the apply left the host `running`, `egress` and `probes` down — **re-measured
+  `running` later the same day**. Tunnel down first, then `make down ENV=sandbox`.
 - **No tunnel has been brought up against the new host.** Every peer still reads `handshake=never`, so
   the claim that no client `.conf` moved is argued from the `[P]` address and the `[P]` key rather than
   measured end-to-end. The first connection is the measurement.
+- **This addendum has no `docs/log/INDEX.md` consequence beyond the row already written**, but the
+  `CLAUDE.md` correction above has one for every future sitting: *state* bullets in that file are
+  written from a reading, never from the commit that is about to make the reading true.
 
 ---
 

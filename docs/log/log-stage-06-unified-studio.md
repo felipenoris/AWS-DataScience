@@ -360,3 +360,213 @@ to be blunt.
 `stage-03-networking.md` and the `CLAUDE.md` size budget, which this sitting pushed further over (31.9 KB
 against 20); **the re-trim is owed at the stage's close**, as the file's own budget note says. Nothing
 committed by Claude.
+
+## 2026-08-20 — The stage re-read against Stage 5 as CLOSED: nine defects, one of them a probe that could have built the thing the stage forbids
+
+*Provenance: **Claude's hand throughout, on the user's request in this sitting**; no AWS write, and the
+only AWS calls are the read-only `./aws/studio.py` before-reading and CLI `help` output. **One decision in
+here is the user's** — the instruction to run the step 0 probes, recorded in the next entry with what they
+returned. No identifier substitutions were needed: nothing in this sitting produced an account id.*
+
+Stage 5 closed completely earlier today. This stage's prose was written 2026-08-16/19, so parts of it
+describe a world that no longer exists — and the interesting finding is that **staleness was the smaller
+half**. The larger half is two places where the plan, as written, could not have been executed at all, and
+one where executing it exactly would have created the object the stage exists to forbid.
+
+### Method, and the part of it that was wrong first
+
+Five reading lenses over the stage against Stage 5's outcomes, each finding then handed to an adversarial
+verifier told to **refute** it and to default to refuted when uncertain. **23 candidate defects, 9
+survived, 14 refuted.** The refutations are kept below rather than discarded: several were right for
+reasons worth not re-deriving.
+
+**The first pass capped verification at the top 8 and left 15 unread** — a cap that was written into the
+harness deliberately and then reported by it, which is the only reason it was caught. The sweep was re-run
+without the cap before anything was applied. A capped audit that reports its own cap is recoverable; one
+that does not is indistinguishable from a complete one.
+
+### Two defects that make the stage un-executable as written
+
+**The pass table sent step 1.6 to a slice that cannot do the work.** 1.6's own body says the Athena Spark
+deny lands in `awsds-org-scp-ou-interactive` through battery phase 4b — an Organizations document, in
+`terraform-live/identity/org-policies/`, appliable from **Identity** alone (`INV-15`). The table filed the
+whole of step 1 under `data-governance/governance/` with `awsds-infra-data`, which cannot update an
+organization policy at all. **Lesson 35 in its exact shape**, and the same trap Stage 5's 4e hit at the
+keyboard. Now its own row, and the build table gained the slice it never listed.
+
+**Step 2.6 prescribed widening the wrong variable.** It said to widen `consumer-data`'s
+`data_scientist_role_arn` to a list. Read in the module: that variable is the **single-string `principal`
+of three `aws_lakeformation_permissions`** and the `Principal` of the key policy. So the instruction is
+either a plan-time failure, or — if a future reader "fixes" the type — a silent fan-out of the persona's
+`DESCRIBE`/`SELECT` re-grants over the project roles, a Lake Formation grant this stage never takes and no
+row of the register carries. **A data grant wearing the costume of a refactor.** It is a new list input now.
+
+### The premise that was false, and the fourth destination it was hiding
+
+Decision 6's recommendation rested on *"each project brings its OWN Athena workgroup, so the
+one-workgroup-one-location ceiling dissolves"*. It does not dissolve: a blueprint-provisioned workgroup
+writes into the **project path**, not into `awsds-<env>-derived`. The unsound half was load-bearing — it
+was what made "Stage 11's scope is unchanged" sound true. With it removed, the project path is a **fourth**
+designed destination, owed the three things the derived zone already has: a row under `docs/GOVERNANCE.md`
+§Encryption, an expiry, and a place in Stage 11's Macie/data-event scope, which `consumer-data/buckets.tf`
+declares precisely because Stage 11 cannot discover it. **That is the second, undesigned copy zone Stage 5
+step 8's enforced output location was written to prevent, arriving by a different hand.**
+
+**And the error that made it hard to see was in `docs/SMUS.md`, the one copy of the object model:** its
+"Three buckets in a member account" table listed `awsds-<env>-athena` as a bucket. Read in the module,
+`athena.tf` creates a **workgroup** by that name and `buckets.tf` creates exactly **one** bucket — so the
+enforced results already live inside the derived zone, and there was never a third bucket. Corrected there,
+where the fact is owned, rather than in the stage that points at it.
+
+### The probe that could have built what the stage forbids
+
+Step 0.2 said to run `datazone create-domain` *"from any account outside the `Data` OU (e.g.
+`awsds-infra-dev`)"*. `create-domain` is creation-shaped and has no `--dry-run`, and
+[`aws/probes/README.md`](../../aws/probes/README.md)'s `safety` rule refuses exactly that outside
+`Policy Canary`. **The failure mode is not abstract: if the deny does not fire — which is the whole thing
+the probe is testing — the probe has created a DataZone V2 domain in Development**, the second interactive
+entry point D26 exists to forbid, with its own blueprints and project roles. A probe whose *negative*
+result builds the forbidden object. Moved to the canary, where the same accident is disposable.
+
+**Three more things step 0 gained, all of them so a failure is not misread as the SCP:** four pre-checks
+against the live organization (the RCP's `PrincipalIsAWSService` exclusion, the `Data` OU document's three
+statements naming no `iam:`/`datazone:`/`sts:` action, tag enforcement covering `ec2:RunInstances` only,
+and the managed policy's real ARN under `service-role/`); a **real** throwaway execution role, because
+DataZone validates before authorizing and a fake ARN measures nothing; and a **V1 fallback** with the
+argument that licenses it — both condition keys of the statement are version-independent, so the
+authorization decision is identical and only the validation ahead of it is lighter.
+
+**The same misreading was live in the SCP battery.** Its row 6 read *"any validation error about the role
+= **allowed**"* — a conclusion — while `POLICIES.md` said the identical outcome *"measures nothing"*. The
+second is right, and the first is **Lesson 24 in reverse**: a result that cannot be attributed from its own
+text does not become attributable through a better reading. Row 6 corrected, with the real-role recipe and
+the V1 ladder.
+
+### Two readings the stage demanded and never recorded
+
+Verification **(xviii)** — where the project S3 path lands, by whose hand, and **under which key**;
+`docs/SMUS.md` §S3 books that reading onto step 2.4 by name, the step named two questions and no bucket,
+and the encryption key was in neither list. Verification **(xix)** — which `aws:SourceVpce` an S3 call from
+a project subnet actually presents; Stage 5 pass 4d routed that measurement to "Stage 6 step 4.2" by name,
+4.2 framed its whole reading as a cost question, and **the instrument it named cannot answer it**: gateway
+traffic crosses no ENI, so flow logs are silent and the field is CloudTrail's `vpcEndpointId`. Both
+amendments they may force are now budgeted in the build table; verification (viii) was narrowed so a reader
+cannot believe the flow-log reading discharged either.
+
+### What was deliberately NOT changed
+
+**`INT-05` keeps its stage column, and `docs/AWS_STATE.md` gains no row.** Adding Stage 6 to either now
+would assert as settled the very thing verification (xix) exists to decide. They are joined in the sitting
+the measurement returns, with the measured id in hand.
+
+**No Security Hub or AWS Config row in the Cost table.** Stage 5 pass 6 turned Security Hub CSPM on
+org-wide today, so every resource this stage creates is now evaluated against FSBP — but `docs/PRICING.md`
+and `cost-model.md` own the rate, Stage 5 step 13 already routes the re-read to **Stage 12** and the
+trial-expiry reading to **Stage 11 step 4**, and this stage creates neither resource and holds no lever
+over either. Lesson 34 is satisfied at both ends already; a row here would be a third copy.
+
+**Decision 3's register entry keeps its superseded recommendation.** The revocation is thirteen lines
+below it in bold, which is the register's shape — decision 4 preserves its own the same way. A third
+in-file copy of "no boundary mirror (Lesson 20)" would have been the defect.
+
+**Nine other refutations**, kept so they are not re-raised: no `identity/sso/` widening is entailed by
+family-first (`…/results/*` already covers `results/<project>/`, and the runtime principal in a project is
+the project role, not the persona — open question 13); `athena_workgroup_arns` is enumerated from
+`consumer_data` remote state by design and a blueprint workgroup exists in no state it reads; step 0.4 is
+about `sagemaker:Create*`, which 4e never touched; the three separate claims that 2.1 widens the drop-box
+writer set without receiving `EXC-02`/OQ 19 are already answered by line 345's pointer to
+`docs/GOVERNANCE.md` §Drop-box; and copying `docs/SMUS.md`'s gateway/interface reasoning into 4.2 would
+have been the defect rather than the fix — **that last refutation was correcting the instruction given to
+the audit, not the file under audit.**
+
+### Paperwork
+
+`docs/plan/open-questions.md` item 19 gained its **addressee** — Stage 6 step 2.1 is the first consumer of
+the crawler question, so it is read *before* that grant, not after; the question had been recorded only at
+the end that raised it (Lesson 34). The stage's Prerequisites row stops asserting a clean inheritance from
+Stage 5 and names that residue. `docs/SMUS.md` §S3 item 1 gained the encryption-key field at the deferring
+end, so both ends list the same fields.
+
+**Before-reading, `./aws/studio.py`, taken this sitting:** `US-1` no unified domain in Data Governance;
+`US-2` no SageMaker domain there either (the registry/runtime split holding, D26); `US-6` `datazone` reads
+denied in Production (D28's headless control holding); `US-9` both deny statements absent from all six
+persona sets. All four expected before this stage runs. The `FAILED` rows in section 10 are persona
+`sso-session`s with no login, not findings.
+
+`make check` green. `check-docs` red only on the three pre-existing pre-Stage-2 lines. Nothing committed.
+
+## 2026-08-20 — Step 0 RAN and did not close: four variants, two accounts, one identical string — the contrast came out flat
+
+*Provenance: **Claude's hand, on the user's explicit instruction in this sitting** — "pode rodar os
+probes". **The stage assigns step 0 to the user** ("the step 0 probes (they write)"), so this is an
+authorized deviation for one sitting and not a change to the split; the stage file still reads **user**.
+These were WRITE calls: three IAM roles created and deleted, four `datazone create-domain` attempts.
+Account ids are redacted as `<Data Governance>` and `<Policy Canary>`, declared once here.*
+
+### What ran
+
+Sessions confirmed first: `awsds-infra-data` reaches **Data Governance** through `InfrastructureAccess`,
+`awsds-policy-canary` reaches **Policy Canary** through `AWSAdministratorAccess` — worth recording because
+the second is *broader* than the first, and it removes "the canary lacked a permission" from the table of
+explanations later.
+
+A throwaway execution role was created in each account — trust on `datazone.amazonaws.com` for
+`sts:AssumeRole`+`sts:TagSession`, `arn:aws:iam::aws:policy/service-role/AmazonDataZoneDomainExecutionRolePolicy`
+attached — and `datazone create-domain` called against it. **Four variants, and every one returned the
+byte-identical string:**
+
+```
+An error occurred (AccessDeniedException) when calling the CreateDomain operation:
+Cross-account pass role is not allowed.
+```
+
+| Variant | Account | Result |
+|---|---|---|
+| `awsds-datazone-probe`, trust with `aws:SourceAccount`, `--domain-version V2` | `<Data Governance>` | the string above |
+| same, retried after IAM propagation | `<Data Governance>` | the string above |
+| same role, trust condition **removed**, V2 | `<Data Governance>` | the string above |
+| same role, `--domain-version V1` | `<Data Governance>` | the string above |
+| `awsds-datazone-probe`, V2 | `<Policy Canary>` | the string above |
+| `AmazonDataZoneDomainExecutionRole` — the **conventional** name — V2 | `<Policy Canary>` | the string above |
+
+Before each attempt the caller's account and the role's account were compared programmatically and
+**proved equal**. `InfrastructureAccess` carries `AdministratorAccess`, and the `create-role` and
+`attach-role-policy` calls that preceded the probe both succeeded, so no `iam:PassRole` deny is available
+to explain it either.
+
+### The finding, and it is a negative one
+
+**The contrast came out FLAT.** The account the deny is written to miss and the account it is written to
+catch answer with the same string, so **neither call reached authorization**, and
+`DenyDataZoneDomainOutsideDataOu` is **still unexercised in both directions** — precisely the state 1c
+recorded and this step existed to leave behind.
+
+**So step 0's premise is wrong, and that is the useful output.** The sub-step said a role "DataZone will
+accept (a throwaway role trusting `datazone.amazonaws.com`)" was the missing ingredient, and its third
+outcome row said *"fix the role and retry"*. **The role was fixed four ways and there is no CLI fix of
+this shape.** A probe that cannot reach the thing it probes is not a probe that needs another attempt; it
+is a probe that needs a different instrument.
+
+**What this does NOT establish, written down because it is the tempting sentence:** that DataZone forbids
+a same-account pass role. It plainly does not — domains exist in the world. The message is **not
+attributable from its own text** (Lesson 24), and **a tool's failure is not a property of the world**
+(Lesson 30). Recording "DataZone rejects same-account pass role" would be inventing a fact about AWS out
+of an error string, and the next reader would design around it.
+
+**The next lever is the console** — it builds its own execution role and names the fields it needs, which
+is exactly the thing this probe could not synthesize (Lesson 16 makes recording those fields the point) —
+or SageMaker Unified Studio's own setup path. The canary half runs in that sitting too, whatever the
+instrument: a positive result alone still cannot separate *the carve-out matches* from *the statement
+fires nowhere*.
+
+### State left behind
+
+**Nothing was created.** `datazone list-domains` reads `0` in both accounts after the attempts, and all
+**three** probe roles were detached and deleted (`awsds-datazone-probe` in each account, plus the
+conventionally-named one in the canary). The 0.2 relocation made earlier in this sitting was load-bearing
+in a way that only shows in the counterfactual: had the negative half still named Development and had one
+of these attempts got past validation, the "failure" would have been a DataZone V2 domain in the account
+D26 forbids one in.
+
+Step 0 in the stage file now carries the measurement as a blockquote, including the sentence about what it
+does not license. `make check` green. Nothing committed.
