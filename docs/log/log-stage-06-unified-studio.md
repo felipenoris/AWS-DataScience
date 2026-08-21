@@ -948,3 +948,172 @@ configurations) and the second apply of `governance/` (the two project profiles)
 image build and push (5.0); then passes 3, 4 and 5. Decisions 1, 2 and 6 remain in-stage — decision 2 is
 **coded** as `enable_trusted_identity_propagation = false`, following the grain Stage 5 chose, and
 flipping it is a decision that reopens Stage 5's decision 6 rather than a parameter change.
+
+## 2026-08-21 — The plan reviewed against the build: two defects in the sitting above, a four-month gap no gate read, and an ECR grant that was never needed
+
+*Provenance. **Claude's hand throughout, on the user's request in this sitting** — *"revise o plano com base
+nos achados da sessão"*, after *"fiz o merge do PR, sincroniza a pasta local"* — plus a separate
+authorization, given at the end, for the commits, the module tag and the pull request. **The user ran
+nothing.** One AWS write is recorded below and it was covered by the standing `terraform apply`
+authorization of the sitting above; everything else in this entry is reading, editing and measurement. **No
+identifier substitution was needed in this entry.***
+
+### The sync, and the check the runbook makes non-optional after it
+
+`main` at `f828730`, worktree clean, `claude/stage-06-unified-studio` deleted. **The merge was a REBASE
+merge**, so all three commit hashes moved and **all four module tags came out `orphaned`** — which
+[`terraform-changes.md`](../plan/runbooks/terraform-changes.md) §3 says is the normal outcome and instructs
+you not to fix. What it does ask for is the content check, one command per module:
+
+```
+git rev-parse "<tag>^{}:terraform-modules/<name>"  vs  "main:terraform-modules/<name>"
+```
+
+**Four out of four IDENTICAL** — `ecr-repo` `2e8e0af…`, `sagemaker-denies` `3c75d54…`, `sagemaker-prereqs`
+`8fdc99b…`, `vpc-egress` `5791bf7…` — so every tag serves exactly what `main` carries and no version bump
+was owed on the merge. **Worth one note for the next reader:** the first attempt at this check produced four
+false DIFFERENTs, because in zsh `"$t:terraform-…"` applies the `:t` history modifier to the variable. The
+shape that works is `"${t}^{}:path"`, and the `^{}` also dereferences an annotated tag.
+
+### The review itself, and what it cost
+
+Six lenses over the surfaces a build sitting can invalidate — the decision files, the stages that come
+after, the cross-cutting documents, cost, the gates, and "is what is recorded actually true" — with **every
+candidate finding verified adversarially against the repository before it was allowed to count**. **97
+candidates, 37 survived, 20 edits after deduplication**; 104 agents, ~70 minutes. **The refutations were
+kept rather than discarded**, which is the half worth having: fourteen of them are variations on *this is
+already written two files away*, and in a repository whose rule is one copy per fact, a restatement is a
+defect rather than an improvement. Three of the refuted ones are recorded here because they read like
+findings and are not: a `history.md` row is **not** owed (its bar is "after provisioning", and what changed
+describes objects that are not provisioned); decision 2 has **not** been taken silently by a default
+(`profiles_enabled` is false, so the `for_each` is empty and no apply can take it); and `CLAUDE.md` gets
+**nothing** (its Current position is already over budget, and every fact below has an owner elsewhere).
+
+### Two defects in the sitting above, and both are mine
+
+1. **Seven executor instructions named the wrong table.** Six files told whoever runs step 1.3 to add the
+   row to `backend.SMUS_MEMBERS`. The flag that gates the second apply reads `SMUS_ASSOCIATED`. **Following
+   the instruction is a no-op that announces nothing**: `blueprints_enabled` stays false, pass 2c re-plans
+   `No changes`, and the reader concludes the association did not work. The worst instance did not merely
+   name the wrong table — it assigned the *decision* table the *measurement* table's defining property
+   ("a table whose rows are measurements, not intentions").
+2. **`profiles_enabled` REVERSES, and nothing said so.** It feeds a `for_each` in
+   `governance/profiles.tf`, so a member added to `SMUS_MEMBERS` while `SMUS_ASSOCIATED` lacks it takes the
+   flag back to false and **the next `governance/` apply destroys the project profiles that already
+   exist** — or fails, if projects hang off them. The rule that falls out of it is an ordering: once a
+   profile exists, the `SMUS_ASSOCIATED` row is written **before** the `SMUS_MEMBERS` row, never the other
+   way round. The property is now in `backend.py`; the ordering went to **Stage 14 step 4**, the step that
+   performs it — which until today read "associate the new Sandbox … and configure the ML blueprint into
+   it", a sentence naming a blueprint that does not exist and hiding six ordered acts, two of them
+   different applies of one slice.
+
+### A gap four months old, exposed sideways
+
+Setting up the three-platform lock for the four new slices is what made it visible: **three slices carried
+ONE platform** — `{data-governance,development,sandbox}/data/`, byte-identical to each other, one `h1:`
+hash each — where every other slice carried three. Stage 2 step 6.3 has required three since 2026-08-15 and
+**nothing had ever read a lock file.**
+
+**The failure mode was measured rather than assumed, and it is two different things:** with the
+`TF_PLUGIN_CACHE_DIR` this repository *mandates*, Terraform has a directory and not a zip, so it can only
+compute an `h1:` — there is none for that platform and `init` **fails outright**, with a checksum error that
+reads like a supply-chain attack. Without the cache it verifies against the 16 `zh:` hashes the registry
+signs, **appends** the missing `h1:` and silently rewrites a committed file. The consumers are Stage 7-8's
+runners (Linux, both architectures) and Stage 8 step 6.2's GitHub Actions job.
+
+Fixed by **copying** `sandbox/foundation`'s lock over the three — step 6.3's own instruction — rather than
+by `terraform providers lock`, which re-resolves `~> 6.60` and would have carried three applied `[P]` slices
+to 6.61.0 and manufactured a third version island. All three re-planned `No changes` afterwards and the
+`init` did not rewrite them.
+
+**And it landed with a gate, in the same commit** — `scripts/check-provider-locks.py`, in `make check` and
+in `pre-commit`. **The negative control was run**: two `h1:` hashes were removed from one slice on purpose,
+**both** of its checks fired (the platform count, and the subset-of-a-sibling-at-the-same-version test), and
+the file was restored. It reports the version census (`aws 6.60.0 ×20, 6.61.0 ×4, awscc 1.98.0 ×3`) without
+failing on it, because the split was accepted the day before — and its header states what it **cannot** see:
+a lock file records no platform *name*, so counts and sets are all it can compare.
+
+### The cost cluster — the floor had moved and four rows disagreed
+
+- **The KMS enumeration resolved to ten keys; twelve were measured live** (`list-aliases` across the five
+  profiled accounts). None of the three Stage 6 keys matched any clause of it — which is exactly how a floor
+  moves unrecorded. Both `cost-model.md` and `PRICING.md` §2 now say thirteen at N=1, and the attribution of
+  D36's key is corrected: it is `alias/awsds-prod-tfstate-pki`, created by `production/bootstrap/` on
+  2026-08-15, and **`production/pki/` has still never existed**.
+- **The unit is a key VERSION, not a key.** The offer file prices *"$1 per customer managed KMS key
+  version"*, and every CMK here rotates at the 365-day default (`True 365`, measured on six keys). So the
+  count cell is a **year-one** figure: the Stage 2 keys reach two versions around 2027-08 and three around
+  2028-08. Recorded as a **rule** beside the row rather than as a rate, so §0's "every number came from the
+  bulk API" stays true.
+- **The Floor range was deliberately NOT moved.** Two independent re-sums of the same column during the
+  review disagreed on the base by half a dollar, and that row already holds an unapplied −USD 2-4.5 Config
+  correction. A dated note instead, and the recompute stays Stage 12 step 5's.
+- **A business unit costs three CMKs, not two** — its Sandbox is an Interactive account and now hosts SMUS
+  projects too. D35's own parenthetical became a pointer, so the enumeration has one copy.
+- **`datazone` took the Interactive accounts from 11 endpoints to 12.** That was the previous sitting's own
+  edit and it was not propagated: `layers.py`'s `usd_per_hour` (0.160 → **0.170**), `PRICING.md` §3 in both
+  region columns, the two hourly summaries, `cost-model.md`, Stage 3's table and `aws/egress.py`. **`make
+  status` had been under-reporting the burn by a cent an hour per account.** One curiosity kept:
+  `egress.py` carried "~USD 4.08/day" in one place and 3.84 in another for four days — the 2026-08-17
+  NFS-removal commit decremented one and not the other — and `datazone` has now made the stale figure
+  accidentally right. Both are stated from the same arithmetic so the next change moves them together.
+- **D12 stopped carrying a second era of arithmetic.** Its "~USD 21-27/month floor … roughly USD 29-31" were
+  the pre-D29/D31 numbers `cost-model.md` retired on 2026-08-08 as understatements, while the revision
+  trigger four lines below already read USD 29-43. One decision file, two eras, the older one flattering the
+  ceiling — Lesson 7's shape. It now points at the file that owns the projection and carries no figure.
+
+### The one AWS write, and it corrects a claim of mine
+
+**A cross-account ECR pull needs the repository policy and NO KMS grant.** ECR creates two grants on the
+repository's key for itself at repository creation and makes the `Decrypt` call on the caller's behalf —
+`REFERENCES.md` has carried that page since it deleted half of Stage 9's old step 7, and Stage 9 says it in
+three places. The registry key's consumer statement named `ecr` beside `codeartifact` anyway, and the INT-01
+sentence written the day before claimed `SC-7` proved "the repository policy and the key policy agree".
+**It proved neither half of that**: `describe-images` decrypts no layer.
+
+Narrowed to `kms:ViaService = codeartifact` alone — where the pair *is* real, because CodeArtifact assets
+are decrypted **as the reader** — applied (`0 to add, 1 to change, 0 to destroy`), re-planned `No changes`,
+and read back from `get-key-policy`: three statements, one `ViaService`, `codeartifact.us-west-2`. **What is
+still unmeasured is said out loud in the file itself**: Stage 6 step 5.1's first real cross-account pull is
+the test, and if it fails on KMS the AWS page is wrong and the fix is one service name.
+
+### Six more corrections, each in the file that owns it
+
+`layers.py` said the domain had "three IAM roles" where `governance/iam.tf` heads itself *TWO, NOT THREE* —
+the count was copied from the `aws-ia` module's shape and was never true of this slice. `GLOSSARY.md` and
+`SMUS.md` still routed a reader to that module and to the wrong step number. **Verification (ii) had never
+recorded its own answer** — it lived only in a tree comment in `conventions.md` — and step 1.2's "consume
+the module selectively" is now marked superseded, since it is the instruction that re-seeds the error.
+**"The ML blueprint" appeared in six places and names nothing**; the per-project SageMaker AI domain comes
+from `Tooling`. `aws/INDEX.md` said three probes would really act where `probes/README.md` says seven, and
+still described the supply-chain baseline in the future tense. And **`US-3` read empty on success and on
+failure, permanently** (Lesson 13): it looked only in the domain account, where a blueprint configuration
+must never appear. It now reads every member account too — the configuration belongs to the account that
+*called* the API — and its verdict is split by column: `pass` for an empty domain account, `note` per member
+until its association exists.
+
+**A new verification (xx)** was added rather than a fix: `alias/awsds-<env>-project` is referenced by
+nothing today — no blueprint regional parameter and no Tooling parameter takes a key — so USD 2.00/month is
+being paid for two CMKs whose purpose is written entirely in the future tense. The branch is made explicit
+(name the parameter, or delete them) instead of drifting.
+
+### Files, commits, and what this sitting did not do
+
+Two commits on `claude/stage-06-plan-review`, in Recipe B's order — the module alone, then
+`sagemaker-prereqs-v0.1.1` pushed and confirmed on origin, then the callers and everything else. **The
+module diff is one comment block and one variable `description`, no behaviour**, but the tag would otherwise
+stop serving what `main` carries, which §3's post-merge check calls a real problem. Both `*/sagemaker/`
+slices were re-initialised against the new tag and re-planned `No changes`.
+
+`make check` green with the new ninth gate in it; `make check-ou` green; `check-docs` red on exactly the one
+pre-existing line it was red on before (compared against a stash of the baseline, not assumed); checkov
+854/0; every one of the nine applied slices re-plans `No changes`; `./aws/studio.py`, `./aws/supplychain.py`,
+`./aws/org-policies.py` and `./aws/datalake.py` all 0 FAILED.
+
+**Not done, deliberately:** no `docs/plan/history.md` row, for the reason the seventh and eighth entries
+already reached — that file's bar is *after provisioning*, and what changed here describes objects that are
+not provisioned. No `CLAUDE.md` edit. And **no new lesson**: the candidate was *an error message that names
+a cause which is not the cause*, and it was refuted as an instance of Lesson 24 (a result that cannot be
+attributed from its own text is separated by a different channel) standing on Lesson 30 (a tool's failure is
+not a property of the world) — two lessons that already cover it, in a file where the bar is a mistake worth
+not repeating rather than an observation worth having.

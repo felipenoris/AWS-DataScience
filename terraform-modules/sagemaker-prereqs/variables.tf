@@ -79,10 +79,10 @@ variable "log_retention_days" {
 # THE ACCOUNT ASSOCIATION HAS NO PUBLIC API (Stage 6 step 1.3), so the blueprint configuration
 # cannot be created in the same apply as the roles it names: a domain has to exist and this
 # account has to have ACCEPTED an invitation to it. Both halves ride on one flag, emitted from
-# backend.SMUS_MEMBERS - a table whose rows are measurements, not intentions.
+# backend.SMUS_ASSOCIATED - a table whose rows are measurements, not intentions.
 
 variable "blueprints_enabled" {
-  description = "false until this account's SMUS association is accepted (backend.SMUS_MEMBERS). true creates the blueprint configurations - the pass 2b apply."
+  description = "false until this account's SMUS association is accepted (backend.SMUS_ASSOCIATED). true creates the blueprint configurations - the pass 2b apply."
   type        = bool
   default     = false
 }

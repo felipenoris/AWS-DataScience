@@ -113,9 +113,41 @@ than a rewrite.
    with `aws s3control get-public-access-block`, and **record it in the vend log** — the carve-out makes the
    baseline recoverable, not automatic, and a unit that silently differs from the others is exactly what
    this stage exists to prevent.
-4. **Domain association (D26, INT-12).** Associate the new Sandbox with the single unified domain in Data
-   Governance and configure the ML blueprint into it. Nothing creates a domain — the root deny on
-   `datazone:CreateDomain` stands, and this stage is where the pressure to break it will first be felt.
+4. **Domain association (D26, INT-12) — the one act in this stage that no merge request can perform, and
+   it is six parts in a fixed order.** Nothing creates a domain — the root deny on `datazone:CreateDomain`
+   stands (exercised in both directions on 2026-08-21, so it is now known to fire rather than merely
+   attached), and this stage is where the pressure to break it will first be felt. **INT-12 owns the
+   mechanics** — console-only, a RAM share the domain initiates, a 7-day invitation window — and they are
+   not restated here. What this step owes is the sentence INT-12 cannot carry: **a stage whose whole
+   promise is "one input and one merge request" contains a console act, and the parts either side of it
+   are two different applies of the same slice.**
+
+   1. **The unit's `sagemaker/` pass-1 apply** — the blueprint prerequisites: the provisioning and
+      manage-access roles, the D13 boundary, the project CMK, the VPC/subnet/AZ parameters, with
+      `blueprints_enabled` **false**. (Step 1's composition list does not mention a `sagemaker/` slice; it
+      is the unit's, and it precedes this act.)
+   2. **Request the association** from the domain's admin portal and **accept it** in the new account's
+      console. Record every field the console asks for (Lesson 16).
+   3. **The `backend.SMUS_ASSOCIATED` row** — the *measurement* table, added only once the invitation has
+      actually been accepted.
+   4. **The unit's `sagemaker/` pass-2 apply** — the blueprint configurations, applied **from the member
+      account**, because `PutEnvironmentBlueprintConfiguration` takes no account parameter and configures
+      the caller's (`terraform-modules/sagemaker-prereqs/blueprints.tf` carries the reasoning). The enabled
+      set is [`docs/SMUS.md`](../../SMUS.md)'s category-1 table — **never "the ML blueprint", which does
+      not exist**.
+   5. **Three by-hand edits in `data-governance/governance/`, and an alias alone is not enough.** The
+      `backend.SMUS_MEMBERS` row, a new aliased provider in `providers.tf` (Terraform cannot `for_each` a
+      provider) **and** new entries in `locals.tf`: `member_account_ids` and `project_profiles` are static
+      literals, and `experimentation` is pinned to `sandbox`, so unit 2 is reachable by no profile until
+      both maps grow. **Record the choice this raises rather than performing it by rote:** three hand edits
+      per unit against AWS's own account-agnostic mechanism, `datazone create-account-pool` (CLI-only) —
+      the note Stage 6's forward-constraint paragraph deliberately did not adopt at N=1.
+   6. **The `governance/` apply — and read the plan before running it.** `profiles_enabled` feeds a
+      `for_each`, so it **reverses**: a `SMUS_MEMBERS` row added while `SMUS_ASSOCIATED` lacks the same
+      account takes the flag false and the next apply **destroys the project profiles that already exist**.
+      That is why part 3 precedes part 5. The tell is a plan showing `awscc_datazone_project_profile`
+      destroyed; the destroy count is what
+      [`terraform-changes.md`](../runbooks/terraform-changes.md) Recipe A step 5 exists to make you read.
 5. **Data access is *not* granted here.** A new unit arrives with no Lake Formation permissions. Whether units
    share data or are isolated by LF-Tags is the governance manager's decision (D35), routed through the
    subscription workflow like any other access — a vending flow that also grants data access is a flow that

@@ -201,6 +201,19 @@ REGISTRY_CONSUMERS = ["sandbox", "development"]
 # configurations name (blueprint, account, region), and the blueprint has to be configured in
 # that account first - so the profiles wait until EVERY member is associated, which is what
 # `profiles_enabled` below computes rather than restates.
+# THE GATE IS MONOTONE ONLY ON THE FIRST BUILD, and that is the half a reader of the two rows
+# above will not guess. `profiles_enabled` below feeds a `for_each` in
+# data-governance/governance/profiles.tf - and the blueprint-id lookup in its data.tf - so it
+# REVERSES: a member added to SMUS_MEMBERS while SMUS_ASSOCIATED lacks it takes the flag back to
+# false, and the next apply of governance/ DESTROYS the project profiles that already exist, or
+# fails outright if projects hang off them.
+#
+# SO, ONCE A PROFILE EXISTS, THE SMUS_ASSOCIATED ROW IS WRITTEN BEFORE THE SMUS_MEMBERS ROW,
+# never the other way round. The tell is a plan showing `awscc_datazone_project_profile`
+# destroyed - which is why the by-hand change reads the add/change/DESTROY counts before
+# applying (docs/plan/runbooks/terraform-changes.md, Recipe A step 5). The ordering itself is
+# not this file's to carry: the stage that performs it is Stage 14 step 4, for a vended unit.
+
 SMUS_DOMAIN = ["data-governance"]
 SMUS_MEMBERS = ["sandbox", "development"]
 SMUS_ASSOCIATED: list = []
@@ -399,7 +412,7 @@ def tfvars_values(account: str, slice_name: str) -> dict:
 
     # Stage 6 pass 2 - the domain account's own slice. The members map is what the project
     # profiles' environment configurations are built from (one per member account); the flag
-    # is the same SMUS_MEMBERS reading, so the profiles cannot be written before the
+    # is a SMUS_ASSOCIATED reading over the same members, so the profiles cannot be written before the
     # blueprints they name are configured.
     if account == "data-governance" and slice_name == "governance":
         values["members"] = {

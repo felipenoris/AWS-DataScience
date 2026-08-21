@@ -57,13 +57,22 @@
 # real AWS account id or a personal e-mail address reaching git, which is undone by a rewrite
 # of history rather than by an edit. Unlike check-plan-refs.py it is GREEN on the tree it was
 # written against, and it was written the same day the redaction it enforces was made.
+#
+# A THIRD ENTRY LANDED 2026-08-21, from the Stage 6 plan review: check-provider-locks.py. It
+# belongs here for the same three reasons - offline, fast, one mistake - and the mistake had
+# ALREADY HAPPENED in three slices: Stage 2 step 6.3 requires three platforms in every
+# committed lock file and nothing had ever read one. Under this repository's mandated
+# TF_PLUGIN_CACHE_DIR a missing platform fails `init` outright on a Linux runner; without the
+# cache it silently rewrites a committed file. It landed in the SAME commit as the fix, because
+# the note above about check-plan-refs.py applies in reverse: a gate that is red the day it
+# arrives trains people to ignore the gate.
 
 SHELL := /bin/bash
 .PHONY: help check check-ou check-docs check-all clean up down status slices guard-env
 
 help:
 	@printf 'targets:\n'
-	@printf '  check       step 9 offline - conventions, wildcard ARNs, bootstrap parity, slice layers, tfvars shapes, the policy index, account ids and e-mails\n'
+	@printf '  check       step 9 offline - conventions, wildcard ARNs, bootstrap parity, slice layers, tfvars shapes, the policy index, account ids and e-mails, provider locks\n'
 	@printf '  check-ou    step 9.3 - OU coverage, needs an SSO session (Identity)\n'
 	@printf '  check-docs  the plan reference check (known red, see the note in this file)\n'
 	@printf '  check-all   all of the above\n'
@@ -83,7 +92,8 @@ check:
 	         "./scripts/slices.py check" \
 	         "./scripts/check-tfvars-shape.py" \
 	         "./scripts/check-index.py" \
-	         "./scripts/check-identifiers.py"; do \
+	         "./scripts/check-identifiers.py" \
+	         "./scripts/check-provider-locks.py"; do \
 	  printf '\n\033[1m--- %s\033[0m\n' "$$c"; \
 	  $$c || fail=1; \
 	done; \
