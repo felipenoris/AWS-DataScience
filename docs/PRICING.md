@@ -189,8 +189,22 @@ Paid every month even with the lab shut down. Same rows as `docs/plan/cost-model
 | Organization, accounts, Identity Center, VPC, subnets, IGW, security groups, IAM roles | — | — | **0** | **0** |
 | GitLab EBS volume (50 GB gp3) | 0.152 USD/GB-mo | 0.08 USD/GB-mo | 7.60 | 4.00 |
 | Elastic IP for WireGuard (idle or in use) | 0.005 USD/h | 0.005 USD/h | 3.65 | 3.65 |
-| KMS customer-managed keys (one tfstate key per Terraform-managed account, plus one data CMK per account that holds data — the lake's `alias/awsds-data-data` and each Interactive account's (D31) — plus the PKI key (D36); the encryption rule's one copy is `docs/GOVERNANCE.md` §Encryption) | 1.00 USD/key-mo | 1.00 USD/key-mo | 10.00 | 10.00 |
+| KMS customer-managed keys (one tfstate key per Terraform-managed account, plus one data CMK per account that holds data — the lake's `alias/awsds-data-data` and each Interactive account's (D31) — plus D36's second state key `alias/awsds-prod-tfstate-pki`, created by `production/bootstrap/` on 2026-08-15 (**`production/pki/` has never existed**; it arrives at Stage 7 pass 1) — plus the supply-chain key `alias/awsds-prod-registry` (`production/registry/`) and one project key per Interactive account, `alias/awsds-<env>-project` (`terraform-modules/sagemaker-prereqs/`), **all three applied 2026-08-21**; the encryption rule's one copy is `docs/GOVERNANCE.md` §Encryption) | 1.00 USD/key-mo | 1.00 USD/key-mo | 13.00 | 13.00 |
 | S3 data + state + backups (~25 GB Standard) | 0.0405 USD/GB-mo | 0.023 USD/GB-mo | ~1.50 | ~1.00 |
+
+**The KMS row's unit is a key VERSION, not a key, and that is a rule rather than a rate** — read from
+AWS's KMS pricing and key-rotation pages (`docs/REFERENCES.md`), never from the bulk API, so §0's "every
+number came from the Price List API" stays exactly true: the *rate* above is the API's, this paragraph is
+the documentation's. A rotation-enabled CMK bills **1 version in its first year, 2 after its first
+rotation, 3 after its second, and is capped there**. Every CMK in this design sets
+`enable_key_rotation = true` with no `rotation_period_in_days`, i.e. the 365-day default — measured live
+2026-08-21, `True 365` on every key. **So the count cell above is a YEAR-ONE figure**: the Stage 2
+bootstrap keys (created 2026-08-15) reach 2 versions around 2027-08 and 3 around 2028-08, and the same
+clock starts for each later key on its own creation date. The multi-year consequence belongs to
+`docs/plan/cost-model.md`'s Floor row, which already defers a full recompute to Stage 12 step 5. **The
+levers, named without choosing between them:** fewer keys; rotation disabled on a *named* key — which is
+not free, because FSBP `KMS.4` runs org-wide under `awsds-fsbp-only` and suppressing a control there is a
+policy edit that turns that policy custom (Stage 5 step 13.3); or D12's ceiling revised.
 | ECR images (~10 GB) | 0.10 USD/GB-mo | 0.10 USD/GB-mo | 1.00 | 1.00 |
 | AWS Config, every governed account (**Management is the one not recorded — confirmed 2026-08-14**, verification (xiii)) | 0.003 USD/item | 0.003 USD/item | 2.50-5.00 → **billed ~0.5** | 2.50-5.00 |
 | Route 53 **private** hosted zones (**3 at N=1**: `sandbox.internal` per business unit, plus `prod.internal` and `pages.internal`, both in Production — Development and Staging get none, Stage 3 step 4.2) | 0.50 USD/zone-mo (global) | 0.50 USD/zone-mo | 1.00-1.50 | 1.00-1.50 |
@@ -246,9 +260,9 @@ one Stage 12 step 5 measures against the real bill — this is arithmetic over l
 |---|---|---|---|
 | NAT Gateway (1) | 0.093 + 0.093/GB | 0.045 + 0.045/GB | 2.07 |
 | Interface VPC endpoint (each, per AZ) | 0.021 + 0.01/GB | 0.010 + 0.01/GB | 2.10 |
-| — Sandbox, 11 endpoints, single AZ (D9), design A (12 until 2026-08-17 — `elasticfilesystem` left with the NFS requirement) | 0.231 | 0.110 | 2.10 |
-| — Sandbox, 13 endpoints, design B | 0.273 | 0.130 | (design B needs CodeArtifact — see §9) |
-| — Development 11 / Staging 9 / Production 10-12 | 0.231 / 0.189 / 0.210-0.252 | 0.110 / 0.090 / 0.100-0.120 | 2.10 |
+| — Sandbox, 12 endpoints, single AZ (D9), design A (12 until 2026-08-17 when `elasticfilesystem` left with the NFS requirement, 11 until 2026-08-21 when `datazone` joined at Stage 6 step 4.2) | 0.252 | 0.120 | 2.10 |
+| — Sandbox, 14 endpoints, design B (`datazone` is required under `VpcOnly` in either design) | 0.294 | 0.140 | (design B needs CodeArtifact — see §9) |
+| — Development 12 / Staging 9 / Production 10-12 | 0.252 / 0.189 / 0.210-0.252 | 0.120 / 0.090 / 0.100-0.120 | 2.10 |
 | GitLab EC2 `t4g.large` | 0.1072 | 0.0672 | 1.60 |
 | — `t3.large`, the x86 equivalent | 0.1344 | 0.0832 | 1.62 |
 | Internal ALB | 0.034 + 0.011/LCU-h | 0.0225 + 0.008/LCU-h | 1.51 |
@@ -261,10 +275,11 @@ one Stage 12 step 5 measures against the real bill — this is arithmetic over l
 | Inter-region transfer to the other region | 0.16/GB out of São Paulo | 0.02/GB into São Paulo | asymmetric |
 
 **Typical Sandbox hour** (its endpoints + one Studio app + WireGuard, plus the NAT under design A):
-design A `sa-east-1` **≈ 0.44/h**, `us-west-2` **≈ 0.22/h**; design B **≈ 0.38** and **≈ 0.19**.
+design A `sa-east-1` **≈ 0.46/h**, `us-west-2` **≈ 0.23/h**; design B **≈ 0.40** and **≈ 0.20**
+(each up by one endpoint since 2026-08-21 — `datazone`, Stage 6 step 4.2).
 
 **Full-stack hour** (a design-A Sandbox + GitLab + its ALB + Production's NAT **and its endpoints**):
-`sa-east-1` **≈ 0.89/h**, `us-west-2` **≈ 0.46/h**.
+`sa-east-1` **≈ 0.91/h**, `us-west-2` **≈ 0.47/h**.
 
 **Both figures rose on 2026-08-08** — from 0.37/0.19 and 0.79/0.41 — for two reasons recorded in
 `docs/plan/cost-model.md`: the endpoint list was missing `athena`, `glue` and `lakeformation`, without which
@@ -325,7 +340,7 @@ São Paulo as in Oregon.
 | EFS Archive (USD/GB-mo) | 0.0166 | 0.008 | 2.08 |
 | EFS IA reads/writes (USD/GB) | 0.019 | 0.010 (read) | 1.90 |
 | **ECR** storage (USD/GB-mo) | 0.10 | 0.10 | **1.00** |
-| **KMS** customer-managed key (USD/key-mo) | 1.00 | 1.00 | **1.00** |
+| **KMS** customer-managed key, per key **version** (USD/key-version-mo) | 1.00 | 1.00 | **1.00** |
 | KMS requests (USD per 10 000) | 0.03 | 0.03 | **1.00** |
 
 Athena at 9.00 USD/TB in São Paulo makes the two cost levers in `docs/plan/cost-model.md` — **S3 Bucket Keys** and
@@ -580,7 +595,7 @@ design A only.
 |---|---|---|---|
 | Monthly floor (§2) | ~USD 30-43, central ~36 | ~USD 25-34, central ~30 | ~1.25-1.4x |
 | Typical lab hour (§3) | ~USD 0.38-0.44 | ~USD 0.19-0.22 | ~2.0x |
-| Full-stack hour (§3) | ~USD 0.89 | ~USD 0.46 | ~1.9x |
+| Full-stack hour (§3) | ~USD 0.91 | ~USD 0.47 | ~1.9x |
 | **Projection at 20 h/month** | **~USD 38-61** | **~USD 29-43** | |
 | Against the D12 ceiling of USD 50 | **breaches it** at anything above a light month | **~USD 7** at the top of the range | |
 
@@ -589,7 +604,7 @@ favour: **technically yes except for CodeArtifact, but it no longer fits under t
 data-plane endpoints are counted.** Interface endpoints carry the sharpest premium in this file (2.10x) and
 the correction added three of them to every account, so São Paulo absorbed the change roughly twice over.
 The first overrun there would be a session that leaves a design-A Sandbox `egress/` up for a full day:
-24 h × 0.324 = **USD 7.78** in `sa-east-1` against 24 h × 0.160 = USD 3.84 in `us-west-2`.
+24 h × 0.345 = **USD 8.28** in `sa-east-1` against 24 h × 0.170 = USD 4.08 in `us-west-2`.
 
 ---
 

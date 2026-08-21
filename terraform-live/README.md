@@ -50,9 +50,14 @@ Git does not track empty directories, so a skeleton of ~35 empty slices means ~3
 copy of §6's listing, in a form that drifts silently and that no reader consults. Each slice folder is created
 by the stage that first writes a `.tf` file into it, and **§6 stays the one place the layout is written down**.
 
-**`versions.tf` is byte-identical in every slice**, because Terraform has no repository-wide pin: the
-constraint belongs to each root module. The parity check above is what keeps the copies from drifting
-(Lesson 14). **Three slices deviate since Stage 6 (2026-08-21), and each says so in its own file**:
+**`versions.tf` carries the same CONSTRAINTS in every slice**, because Terraform has no repository-wide
+pin: the constraint belongs to each root module. **It is no longer byte-identical, and the sentence that
+said it was named the wrong enforcement** (corrected 2026-08-21): `check-bootstrap-parity.py` has only ever
+looked at `bootstrap/`, so outside those five slices nothing compared the copies at all — five byte-variants
+exist today. What is enforced now is the property that matters, by
+[`scripts/check-provider-locks.py`](../scripts/check-provider-locks.py): the `required_version` and the
+`hashicorp/aws` constraint must equal `sandbox/foundation`'s, **a second provider block is explicitly
+permitted**, and every committed `.terraform.lock.hcl` must carry Stage 2 step 6.3's three platforms. **Three slices deviate since Stage 6 (2026-08-21), and each says so in its own file**:
 `sandbox/sagemaker/`, `development/sagemaker/` and `data-governance/governance/` add a **second** provider,
 `awscc`. The `aws` block is unchanged — what the drift rule is about — and the second one is there because
 two resources exist in no other provider at all: the V2 project profile, and the blueprint configuration's
@@ -97,13 +102,15 @@ slice are unlike anything else in the tree, and both are permanent:**
   procedure for **every** account that gains this resource: Sandbox and Development at Stage 5 pass 4,
   Production and Staging at Stage 9.
 
-**Seven checks stand over this tree — Stage 2 steps 9, 3.5 and 8.1, plus Stage 4's — and there is no CI to
-run them in.** Until Stage 8 puts them in a pipeline the surfaces are `pre-commit` and the repository's
+**Nine checks stand over this tree — Stage 2 steps 9, 3.5 and 8.1, Stage 4's, and the two later ones the
+count never grew for: `check-identifiers.py` (2026-08-17) and `check-provider-locks.py` (2026-08-21) — and
+there is no CI to run them in.** Until Stage 8 puts them in a pipeline the surfaces are `pre-commit` and the repository's
 `Makefile`, both calling the same scripts:
 
 ```bash
 make check      # offline: region literals, indexed AZs, account-level BPA, wildcard ARNs,
-                #          bootstrap parity, slice layers, tracked tfvars shape, the policy index
+                #          bootstrap parity, slice layers, tracked tfvars shape, the policy index,
+                #          account ids and e-mails, provider locks
 make check-ou   # needs an SSO session as the infrastructure user on Identity
 ```
 

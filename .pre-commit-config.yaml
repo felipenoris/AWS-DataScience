@@ -136,6 +136,19 @@ repos:
         language: system
         pass_filenames: false
 
+      # 2026-08-21, from the Stage 6 plan review - Stage 2 step 6.3's requirement, which had
+      # been held by attention alone and had already been missed in three slices. A committed
+      # lock file with one platform in it fails `terraform init` outright on a Linux runner
+      # under the TF_PLUGIN_CACHE_DIR this repository mandates, and silently rewrites itself
+      # without the cache. It fires on versions.tf too, because the constraint and the lock are
+      # one question: a slice whose constraint drifts resolves a different provider build.
+      - id: check-provider-locks
+        name: every lock file carries the three platforms (6.3)
+        entry: ./scripts/check-provider-locks.py
+        language: system
+        pass_filenames: false
+        files: (\.terraform\.lock\.hcl|versions\.tf)$
+
       - id: checkov
         name: checkov (terraform)
         entry: checkov

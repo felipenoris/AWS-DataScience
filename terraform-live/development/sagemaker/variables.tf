@@ -48,7 +48,7 @@ variable "domain" {
 }
 
 variable "blueprints_enabled" {
-  description = "false until this account's SMUS association has been ACCEPTED and the row added to backend.SMUS_MEMBERS (Stage 6 step 1.3 - the association has no public API). true is the pass 2b apply: the blueprint configurations."
+  description = "false until this account's SMUS association has been ACCEPTED and the row added to backend.SMUS_ASSOCIATED (Stage 6 step 1.3 - the association has no public API). true is the pass 2b apply: the blueprint configurations."
   type        = bool
   default     = false
 }

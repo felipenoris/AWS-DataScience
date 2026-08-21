@@ -8,6 +8,13 @@
 # blast radius, and the second one's key policy is a control this module has no business
 # widening.
 #
+# NOTHING NAMES IT AS OF PASS 1, and the paragraph above is written in the future tense, so this
+# says the present one out loud: no parameter written in this module takes a key -
+# blueprints.tf's regional_parameters carry VpcId/Subnets/AZs and nothing else - and none of the
+# Tooling settings docs/SMUS.md lists is a key parameter either. The key exists because Stage 6
+# step 2.1's build list asks for it. REVISION TRIGGER: Stage 6 verification (xx), which is what
+# decides whether it has a consumer at all.
+#
 # THE POLICY DELEGATES TO THIS ACCOUNT'S IAM, which is the module default (kms-key's own
 # comment). What may use it is decided by the boundary and by the roles below, not by a second
 # copy of that decision written as a key policy.

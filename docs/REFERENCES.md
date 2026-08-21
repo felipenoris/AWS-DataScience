@@ -775,3 +775,15 @@
   §9's "what moving to São Paulo would change" is, for Bedrock, a change of *model* rather than of
   price. The endpoint needs no credentials:
   <https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AmazonBedrock/current/us-west-2/index.json>.
+
+- **KMS pricing and key rotation — the unit that is billed is a key VERSION, not a key** (read 2026-08-21,
+  from the Stage 6 plan review). The bulk API prices SKU `us-west-2-KMS-Keys` as *"$1 per customer managed
+  KMS key **version**"*, and the rotation page is what turns that wording into a multi-year number: a
+  rotation-enabled CMK bills **1 version in its first year, 2 after its first rotation, 3 after its second,
+  and is capped there**. Every CMK in this design sets `enable_key_rotation = true` with no
+  `rotation_period_in_days` — the 365-day default, measured live as `True 365` on every key the same day —
+  so `docs/PRICING.md` §2's count cell is a **year-one** figure and `docs/plan/cost-model.md`'s Floor row
+  is where the consequence is carried. **Recorded as a rule rather than as an API rate**, so §0's claim
+  that every number in that file came from the bulk API stays exactly true:
+  <https://aws.amazon.com/kms/pricing/> and
+  <https://docs.aws.amazon.com/kms/latest/developerguide/rotate-keys.html>.

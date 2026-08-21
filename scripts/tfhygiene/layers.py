@@ -113,9 +113,11 @@ RANKS = {
     #
     #   1. */sagemaker/     the blueprint PREREQUISITES - provisioning and manage-access
     #                       roles, the D13 boundary, the KMS key, the VPC parameters
-    #   2. governance/      the domain and its three IAM roles
+    #   2. governance/      the domain and its two IAM roles - execution and service, with
+    #                       their two managed-policy attachments: five resources, measured
+    #                       2026-08-21 (governance/iam.tf names the third and why it is absent)
     #   3. (console)        request + accept the account association, per member account,
-    #                       then add the row to backend.SMUS_MEMBERS
+    #                       then add the row to backend.SMUS_ASSOCIATED
     #   4. */sagemaker/     again - the blueprint CONFIGURATIONS, which need both a domain
     #                       and an accepted association
     #   5. governance/      again - the two project profiles, which name blueprints that
@@ -187,8 +189,14 @@ SLICES = [
     Slice("production", "foundation", PERSISTENT, "VPC 3x2, gw endpoints, prod+pages.internal"),
     # Stage 3 pass 3 (2026-08-16). The endpoint counts are step 8.3's per-role lists:
     # core 8 + the account's extras; every row includes a mode-A NAT (0.050 = 0.045 + IPv4).
-    Slice("sandbox", "egress", EPHEMERAL, "NAT + 11 interface endpoints (8.3)", 0.160),
-    Slice("development", "egress", EPHEMERAL, "NAT + 11 interface endpoints (8.3)", 0.160),
+    Slice("sandbox", "egress", EPHEMERAL, "NAT + 12 interface endpoints (8.3 + St.6 4.2)", 0.170),
+    Slice(
+        "development",
+        "egress",
+        EPHEMERAL,
+        "NAT + 12 interface endpoints (8.3 + St.6 4.2)",
+        0.170,
+    ),
     Slice("production", "egress", EPHEMERAL, "NAT + 10 interface endpoints (8.3)", 0.150),
     # Stage 3's Deliverables, as slices rather than as a script (2026-08-16). These are
     # INSTRUMENTS: created, read from the serial console, destroyed in the same sitting -
@@ -278,7 +286,7 @@ SLICES = [
     Slice("sandbox", "sagemaker", PERSISTENT, "blueprint prereqs: 2 roles, D13 boundary, CMK"),
     Slice("development", "sagemaker", PERSISTENT, "same module as sandbox/sagemaker (Stage 6)"),
     # Stage 6 pass 2 - the registry, and it is a registry (D26): the DataZone V2 domain, its
-    # three IAM roles and the two project profiles. [P] and metadata-priced (~USD 0.50/month,
+    # two IAM roles and the two project profiles. [P] and metadata-priced (~USD 0.50/month,
     # docs/PRICING.md 5). NO COMPUTE LIVES HERE and none ever may - US-2 measures exactly
     # that, and Stage 6 step 0.4 reads the plan for it before the first apply.
     Slice(

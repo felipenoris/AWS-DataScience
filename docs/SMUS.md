@@ -158,8 +158,8 @@ member (after creation) to the domain admin (before). The entity survives in V2'
 model (a blueprint configuration carries "create environment profiles using this blueprint"
 policies, grantable to projects and to domain-unit owners) but nothing in this plan touches it. The
 practical rule has Lesson 32's shape: **material speaking "environment profile" is V1-flow
-material** — for this V2 domain the object to write is the project profile (the `aws-ia` module's
-`project-profile` submodule, Stage 6 step 1.2).
+material** — for this V2 domain the object to write is the project profile
+(`awscc_datazone_project_profile`, in `terraform-live/data-governance/governance/profiles.tf` — Stage 6 step **1.5**, which this file already says twice above).
 
 ### The chain, in one place
 

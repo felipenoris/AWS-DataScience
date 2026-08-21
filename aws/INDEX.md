@@ -12,7 +12,7 @@ now*. Each answers a different question, and the three disagreeing is itself inf
 [`probes/`](probes/README.md).** The SCP battery has to *attempt* the calls a policy forbids — that is the
 only way to measure a preventive control — so it reaches authorization and leaves `AccessDenied` events in
 CloudTrail. It still creates nothing: every probe is read-only, carries `--dry-run`, or names a prerequisite
-that does not exist, and the three that would really act if a deny were missing are refused by the driver
+that does not exist, and the **seven** that would really act if a deny were missing are refused by the driver
 anywhere but `Policy Canary`. **The difference that matters for this index: the scripts above are safe to
 run to gather information; the battery is run deliberately.** Its reports land in `output/` alongside these
 snapshots.
@@ -643,8 +643,11 @@ contracts: the two Name tags (`awsds-prod-gitlab`, `awsds-prod-runner*`), the tw
 (`awsds-prod-ecr-base`, `awsds-prod-ecr-dev-env`), the CodeArtifact domain (`awsds-prod-packages`, repos
 `pypi`/`crates`), the secret container (`awsds-prod-gitlab-secrets`) and the CA root parameter
 (`/datascience/prod/pki/ca-root-pem`). **Its first run measured a clean pre-stage state**: nothing
-supply-chain-shaped exists in Production yet — every reading a `note`, zero failures — which is the
-baseline the pass-0 apply will be diffed against. One check is deliberately one-sided: `SC-7` exercises
+supply-chain-shaped existed in Production then — every reading a `note`, zero failures — which was the
+baseline the pass-0 apply was diffed against. **That apply happened on 2026-08-21** (Stage 6 pass 0,
+Stage 7 step 5.a): both ECR repositories and the CodeArtifact domain with its two repositories now
+exist, so `SC-4` and `SC-6` read `pass` and the two GitLab rows and the CA-root row still read `note`
+— which is Stage 7's remaining half, not a regression. One check is deliberately one-sided: `SC-7` exercises
 the consumer map with a **real cross-account read** from each Interactive profile, because a policy listing
 in Production cannot show a missing consumer (Lesson 13's shape, applied to resource policies).
 

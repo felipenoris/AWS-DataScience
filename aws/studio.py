@@ -145,7 +145,16 @@ def main(argv: list) -> int:
 
     # ------------------------------- the registry's contents (Data Governance only)
     data_live = DATA_PROFILE in live
-    bp_configs: list = []  # (blueprint name, enabled regions, provisioning role set?, accounts)
+    # profile -> [(blueprint name, enabled regions, provisioning role set?, manage-access set?)]
+    #
+    # KEYED BY PROFILE SINCE 2026-08-21, AND THE REASON IS THE WHOLE POINT OF THE CHECK.
+    # PutEnvironmentBlueprintConfiguration takes a domainIdentifier and NO account parameter, so
+    # the account it configures is the CALLER'S - an associated account enabling blueprints
+    # against a shared domain (Stage 6, the sitting's finding 4). Reading only the domain account
+    # therefore cannot tell "no blueprint is configured anywhere" from "every blueprint is
+    # configured where it is supposed to be", which is Lesson 13 in its purest form: the same
+    # empty list on success and on failure, permanently.
+    bp_configs: dict = {}
     project_profiles: list = []  # (name, id, status)
     projects: list = []  # (name, id, status)
     domain_id = ""
@@ -181,7 +190,7 @@ def main(argv: list) -> int:
                     log=False,
                 )
                 name = r.stdout.strip() if r.ok else bpid
-                bp_configs.append(
+                bp_configs.setdefault(DATA_PROFILE, []).append(
                     (
                         name,
                         " ".join(c.get("enabledRegions", []) or ["-"]),
@@ -189,6 +198,53 @@ def main(argv: list) -> int:
                         "yes" if c.get("manageAccessRoleArn") else "-",
                     )
                 )
+        # THE MEMBER ACCOUNTS' HALF (2026-08-21). Same domain id, each member's own session -
+        # which is what the read is for: the configuration belongs to the caller's account.
+        # `tolerate` matters here and is not politeness: between the domain's creation and the
+        # console account association the call legitimately fails, and a failing call must not
+        # flip this script's exit code for the whole of that window (the same seam
+        # list-project-profiles already uses below).
+        for member in INTERACTIVE_PROFILES:
+            if member not in live:
+                continue
+            mcli = cli_for(member)
+            mres = mcli.run(
+                "datazone",
+                "list-environment-blueprint-configurations",
+                "--domain-identifier",
+                domain_id,
+                "--output",
+                "json",
+                log=False,
+                tolerate="AccessDenied|ResourceNotFound|ValidationException",
+            )
+            if not mres.ok:
+                continue
+            for c in json.loads(mres.stdout or "{}").get("items", []):
+                bpid = c.get("environmentBlueprintId", "?")
+                r = mcli.run(
+                    "datazone",
+                    "get-environment-blueprint",
+                    "--domain-identifier",
+                    domain_id,
+                    "--identifier",
+                    bpid,
+                    "--query",
+                    "name",
+                    "--output",
+                    "text",
+                    log=False,
+                    tolerate="AccessDenied|ResourceNotFound",
+                )
+                bp_configs.setdefault(member, []).append(
+                    (
+                        r.stdout.strip() if r.ok else bpid,
+                        " ".join(c.get("enabledRegions", []) or ["-"]),
+                        "yes" if c.get("provisioningRoleArn") else "-",
+                        "yes" if c.get("manageAccessRoleArn") else "-",
+                    )
+                )
+
         res = cli.run(
             "datazone",
             "list-project-profiles",
@@ -452,15 +508,41 @@ def main(argv: list) -> int:
     # allow-list above (step 1.4; docs/SMUS.md). Names are read, not assumed. The two
     # Redshift-backed blueprints keep their own message: enabling either reopens D26/D12,
     # not decision 5 (LakehouseCatalog is RMS-backed - the 2026-08-19 re-read, decision 4).
+    # THE VERDICT IS SPLIT BY COLUMN, and the two halves are opposite in sign (2026-08-21).
+    # In the DOMAIN account, zero configurations is the CORRECT state and a pass with its own
+    # message: D22 forbids enabling any blueprint there, and one appearing is US-2-shaped rather
+    # than an allow-list question. In each MEMBER account it is the allow-list that is measured -
+    # and `note` while the association does not exist yet, because before it the call cannot
+    # succeed at all.
     if data_live and domain_id:
-        if not bp_configs:
-            checks.note(
+        if bp_configs.get(DATA_PROFILE):
+            checks.fail(
                 "US-3",
-                "blueprint configurations",
-                "none - expected before Stage 6 step 1.",
+                "blueprint configured in the DOMAIN account",
+                f"{', '.join(n for n, *_ in bp_configs[DATA_PROFILE])} - D22 puts no compute in "
+                "Data Governance and the OU's sagemaker:Create* deny is free only because "
+                "nothing is enabled here (Stage 6 step 0.4).",
             )
         else:
-            names = [n for n, _r, _p, _m in bp_configs]
+            checks.ok(
+                "US-3",
+                "no blueprint configured in the domain account",
+                "the registry/runtime split holding (D26, D22)",
+            )
+
+        for member in INTERACTIVE_PROFILES:
+            if member not in live:
+                continue
+            rows = bp_configs.get(member)
+            if not rows:
+                checks.note(
+                    "US-3",
+                    f"blueprint configurations in {member}",
+                    "none - expected until this account's SMUS association is accepted "
+                    "(Stage 6 step 1.3) and backend.SMUS_ASSOCIATED carries its row.",
+                )
+                continue
+            names = [n for n, _r, _p, _m in rows]
             redshift = [n for n in names if "redshift" in n.lower() or n == "LakehouseCatalog"]
             extra = [
                 n
@@ -472,7 +554,7 @@ def main(argv: list) -> int:
             if redshift:
                 checks.fail(
                     "US-3",
-                    "Redshift-backed blueprint enabled",
+                    f"Redshift-backed blueprint enabled in {member}",
                     f"{', '.join(redshift)} - D26/D12 exclude the Redshift-managed-storage "
                     "family by decision (RedshiftServerless, and LakehouseCatalog since "
                     "2026-08-19).",
@@ -480,7 +562,7 @@ def main(argv: list) -> int:
             if extra:
                 checks.fail(
                     "US-3",
-                    "blueprint outside decision 5's category 1",
+                    f"blueprint outside decision 5's category 1 in {member}",
                     f"{', '.join(extra)} - the allow-list is "
                     f"{', '.join(BLUEPRINT_ALLOWLIST)} + {BLUEPRINT_ALLOW_PREFIX}* "
                     "(docs/SMUS.md); enabling more amends Stage 6 decision 5.",
@@ -488,7 +570,7 @@ def main(argv: list) -> int:
             if not redshift and not extra:
                 checks.ok(
                     "US-3",
-                    f"{len(bp_configs)} blueprint configuration(s)",
+                    f"{len(rows)} blueprint configuration(s) in {member}",
                     "all inside decision 5's category 1",
                 )
 
@@ -675,7 +757,8 @@ A domain anywhere else is either INT-12's per-account fallback happening by
 accident or the 1c root deny (DenyDataZoneDomainOutsideDataOu) not holding.""")
 
         # ==============================================================================
-        rep.h1("3. The registry's contents: blueprints, project profiles, projects")
+        rep.h1("3. The registry's contents: blueprint configurations (per account),")
+        rep.h1("   project profiles and projects")
         if not data_live:
             rep.line(f"{DATA_PROFILE} was not measured - nothing to show.")
         elif not domain_id:
@@ -685,11 +768,22 @@ accident or the 1c root deny (DenyDataZoneDomainOutsideDataOu) not holding.""")
             rep.line()
             if bp_configs:
                 rep.tabulate(
-                    ["BLUEPRINT\tREGIONS\tPROVISIONING ROLE\tMANAGE-ACCESS ROLE"]
-                    + [f"{n}\t{r}\t{pr}\t{m}" for n, r, pr, m in bp_configs]
+                    ["ACCOUNT\tBLUEPRINT\tREGIONS\tPROVISIONING ROLE\tMANAGE-ACCESS ROLE"]
+                    + [
+                        f"{prof}\t{n}\t{r}\t{pr}\t{m}"
+                        for prof in sorted(bp_configs)
+                        for n, r, pr, m in bp_configs[prof]
+                    ]
                 )
             else:
-                rep.line("No blueprint configuration.")
+                rep.line("No blueprint configuration, in any measured account.")
+            rep.line()
+            rep.text("""THE ACCOUNT COLUMN IS THE POINT. A blueprint configuration belongs to the
+account that CALLED PutEnvironmentBlueprintConfiguration - the API takes a domain
+and no account - so an associated member enables blueprints against the shared
+domain, and a reading taken only in Data Governance cannot tell "nothing is
+configured" from "everything is configured where it belongs" (Lesson 13). Rows in
+awsds-infra-data are a US-3 FAILURE, not a success: D22 puts no compute there.""")
             rep.line()
             if project_profiles:
                 rep.tabulate(
@@ -787,8 +881,10 @@ What the checks are, and where each comes from:
   US-1   exactly one DataZone V2 domain, in Data Governance (step 1; D26)
   US-2   no domain anywhere else; nothing SageMaker-shaped in Data Governance
          (step 0's second preflight; the registry/runtime split)
-  US-3   blueprint configurations exist, none is Redshift-backed, and none is
-         outside decision 5's category 1 (step 1.4; D12/D26, docs/SMUS.md)
+  US-3   blueprint configurations, read PER ACCOUNT and judged in opposite
+         directions: NONE in the domain account (D22 - one there is a finding),
+         and in each member account none Redshift-backed and none outside
+         decision 5's category 1 (step 1.4; D12/D26, docs/SMUS.md)
   US-4   the experimentation and engineering project profiles exist (step 1)
   US-5   every Interactive SageMaker AI domain is VpcOnly (step 1)
   US-6   the deployment targets stay headless (D28): no SageMaker domain there,

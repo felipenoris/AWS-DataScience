@@ -82,7 +82,7 @@ AWS Organization (Management account - console only)                        [P]
 │       ├── S3 raw/curated (Iceberg) - the only copy of governed data       [P]
 │       ├── Glue Data Catalog + Lake Formation (LF-Tags, D13 registration)  [P]
 │       ├── SageMaker unified domain (DataZone V2) + project profiles,
-│       │     blueprints (Tooling, Lakehouse Glue/Athena, ML), account
+│       │     blueprints (`Tooling` + the enabled set - docs/SMUS.md), account
 │       │     associations, SageMaker Catalog            <- D26            [P]
 │       │     A REGISTRY, NOT A RUNTIME: blueprints provision compute
 │       │     into Sandbox and Development, never here

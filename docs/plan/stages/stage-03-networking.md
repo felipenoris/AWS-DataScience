@@ -739,8 +739,8 @@ account, single AZ, at USD 0.010/h per endpoint and USD 0.050/h for a NAT gatewa
 
 | Account | Design A (NAT) | Design B (no NAT) |
 |---|---|---|
-| Sandbox | 11 endpoints + NAT = **0.160/h** | 13 endpoints = **0.130/h** |
-| Development | 11 + NAT = **0.160/h** | 13 = **0.130/h** |
+| Sandbox | 12 endpoints + NAT = **0.170/h** | 14 endpoints = **0.140/h** |
+| Development | 12 + NAT = **0.170/h** | 14 = **0.140/h** |
 | Staging | 9 + NAT = **0.140/h**, for the minutes a promotion runs | — (D5 governs the Interactive accounts) |
 | Production | 10-12 + NAT = **0.150-0.170/h**, while runners or orchestration are up | — |
 
@@ -801,7 +801,7 @@ Record every answer, including the ones that come out fine.
   the VPC — in an account somebody is working in, once Stage 6 exists.
 - **The step 9 failure mode is silent**: an endpoint policy fails as a package manager hanging rather
   than as an `AccessDenied` anyone reads.
-- **A forgotten `egress/` costs ~USD 3.84 per day** at 0.160/h, and since the budget alerts were skipped
+- **A forgotten `egress/` costs ~USD 4.08 per day** at 0.170/h, and since the budget alerts were skipped
   by decision (D12) nothing *alerts* until the end of the month. The manual instrument that risk gets is
   `./aws/egress.py` §6, the burn meter — run it at the end of every session; zero everywhere is D11
   working.

@@ -197,8 +197,11 @@ terraform-live/
 │                         #     data-governance/; running apps are [E], deleted by make down.
 │                         #     What Terraform owns in this slice is the PREREQUISITES the
 │                         #     blueprint consumes - the provisioning and manage-access roles,
-│                         #     the VPC/subnet/security-group parameters the ML blueprint is
-│                         #     pointed at, the KMS key, and the D13 boundary policy attached
+│                         #     the VPC/subnet/AZ parameters handed PER REGION to EVERY blueprint
+│                         #     configured in this account (`regional_parameters` over the enabled
+│                         #     set - there is no "ML blueprint"; the per-project SageMaker AI
+│                         #     domain comes from `Tooling`, and docs/SMUS.md is the one copy of
+│                         #     the enabled list), the KMS key, and the D13 boundary policy attached
 │                         #     to the project roles (INT-15). It does NOT declare the
 │                         #     project environments themselves: DataZone owns those, and a
 │                         #     Terraform resource for them would fight the blueprint.
@@ -341,7 +344,7 @@ is what makes a unit disposable rather than merely creatable. `[P]` slices are n
 are applied deliberately, by hand. One `[E]` resource lives outside any slice: the running **apps inside a
 Unified Studio project** are created by users, not by Terraform, so `make down` deletes them through the
 API before touching the slices. **Which API, since D26 changed the answer:** the apps live in the
-per-project SageMaker AI domain that the ML blueprint provisioned into the account, so the teardown is
+per-project SageMaker AI domain that the `Tooling` blueprint provisioned into the account, so the teardown is
 `sagemaker:ListApps`/`DeleteApp` (and the enclosing space) scoped to that domain — *not* a call against
 the DataZone domain, which owns no compute. `make down` must discover the domain ID rather than have it
 pasted in, since the blueprint chose it. This is the one place where the registry/runtime split shows up
@@ -558,7 +561,7 @@ the Organization, the accounts, Control Tower, Identity Center, SCPs, Terraform 
 **VPC itself** (VPC, subnets, route tables, internet gateway, security groups, NACLs cost nothing),
 Route 53 private zone, IAM roles, KMS keys, S3 data buckets, ECR repositories, budgets and alarms — and
 the **SageMaker unified domain and its projects** (D26 — a DataZone V2 domain at rest bills only metadata
-requests and storage; the per-project SageMaker AI domain that the ML blueprint provisions likewise bills
+requests and storage; the per-project SageMaker AI domain that the `Tooling` blueprint provisions likewise bills
 nothing until an app runs). Rule 2 below records why it moved out of `[E]`.
 The domain is also where the *catalog* lives — glossary, data products, subscription decisions — which is
 state in the rule-2 sense and on its own settles the layer question.

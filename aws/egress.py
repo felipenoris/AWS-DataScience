@@ -35,9 +35,16 @@
 #   HANGS, which no error message will ever attribute to an endpoint policy.
 #
 #   AT make down - AND WHENEVER IN DOUBT: section 6 is the burn meter. A forgotten egress/
-#   costs ~USD 3.84/day and, by decision D12, NO BUDGET ALERT EXISTS to catch it; this
+#   costs ~USD 4.08/day and, by decision D12, NO BUDGET ALERT EXISTS to catch it; this
 #   section is the manual instrument that risk gets. Zero everywhere is the correct
 #   between-sessions answer (D11).
+#
+#   THE 4.08 IS RE-DERIVED, NOT COPIED (2026-08-21): 12 interface endpoints x 0.010 plus
+#   the NAT and its IPv4 at 0.050 = 0.170/h = 4.08/day, at the Sandbox list. It read 4.08
+#   here and 3.84 in section 6's own text for four days - the 2026-08-17 commit that
+#   removed elasticfilesystem decremented one and not the other - and `datazone` joining
+#   at Stage 6 step 4.2 has now made the stale figure accidentally right. Both are stated
+#   from the same arithmetic so the next change moves them together (docs/PRICING.md 3).
 #
 # ONE MORE PREFLIGHT IT CARRIES, before anything is paid for: section 7 lists the region's
 # endpoint service names - which answers stage verification (i) (is SageMaker Studio's
