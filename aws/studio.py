@@ -105,13 +105,23 @@ def main(argv: list) -> int:
         errors.entries.append(f"[{profile}] aws {what}\n    {head2(err)}")
 
     # -------------------------------------------- the DataZone domain, in EVERY account
-    # One listing everywhere, on purpose: a domain in any account but Data Governance is
-    # either the INT-12 fallback happening by accident or the 1c root deny not holding.
+    # One listing everywhere, on purpose - and THE OWNER IS READ, NOT INFERRED FROM WHO IS
+    # ASKING (corrected 2026-08-21, the sitting that ran step 1.3). The original premise was
+    # that a domain listed in any account but Data Governance is either the INT-12 fallback
+    # happening by accident or the 1c root deny not holding. That was true only while no
+    # domain was SHARED: an associated account's ListDomains returns the domain it is a
+    # member of, so on the day 1.3 succeeded this check failed in both member accounts and
+    # was wrong in both. The tell is that the finding arrived from the act that was supposed
+    # to work. Lesson 31, arriving as a false FAIL rather than as a false pass.
+    #
+    # So the ARN is kept: it carries the OWNING account, which is what separates "a domain
+    # was created here" (the violation) from "this account can see the one domain" (1.3
+    # working). Reading the id alone cannot tell those apart, and never could.
     # In the HEADLESS accounts the Workloads OU denies datazone:* in full (1c, D26), so an
     # SCP denial THERE is the D28 control holding, not a failed call - measured on this
     # script's first run, 2026-08-16.
     SCP_DENIED = "SCP_DENIED"
-    dz_domains: dict = {}  # profile -> [(id, name, version, status)] | None | SCP_DENIED
+    dz_domains: dict = {}  # profile -> [(id, name, version, status, owner)] | None | SCP_DENIED
     for p in live:
         cli = cli_for(p)
         note(f"measuring {p} ...")
@@ -139,6 +149,11 @@ def main(argv: list) -> int:
                 d.get("name", "?"),
                 d.get("domainVersion", "?"),
                 d.get("status", "?"),
+                # element 4 is the OWNER, split out of the ARN rather than assumed to be the
+                # caller. Positions 0-3 are unchanged so every other reader still works.
+                (d.get("arn", "") or "").split(":")[4]
+                if len((d.get("arn", "") or "").split(":")) > 4
+                else "?",
             )
             for d in doc.get("items", [])
         ]
@@ -470,8 +485,10 @@ def main(argv: list) -> int:
         else:
             checks.ok("US-1", f"one unified domain ({doms[0][0]})", f"version {doms[0][2]}")
 
-    # US-2: no DataZone domain anywhere else (1c's root deny holding), and NOTHING
+    # US-2: no DataZone domain OWNED anywhere else (1c's root deny holding), and NOTHING
     # SageMaker-shaped in Data Governance (the registry-not-runtime negative deliverable).
+    # OWNED, not visible - see the collection comment above.
+    account_of = {c.profile: c.account for c in callers if c.live}
     for p in live:
         if p == DATA_PROFILE or dz_domains.get(p) is None:
             continue
@@ -482,12 +499,41 @@ def main(argv: list) -> int:
                 "the Workloads OU denying datazone:* - D28's headless control holding",
             )
             continue
-        if dz_domains[p]:
+        here = account_of.get(p)
+        owned = [d for d in dz_domains[p] if d[4] == here]
+        shared_in = [d for d in dz_domains[p] if d[4] != here]
+        if owned:
             checks.fail(
                 "US-2",
-                f"DataZone domain in {p}",
-                f"{len(dz_domains[p])} domain(s) outside Data Governance - either INT-12's "
-                "fallback happened by accident or the 1c root deny is not holding.",
+                f"DataZone domain OWNED by {p}",
+                f"{len(owned)} domain(s) created outside Data Governance "
+                f"({', '.join(d[0] for d in owned)}) - either INT-12's fallback happened by "
+                "accident or the 1c root deny is not holding.",
+            )
+        if shared_in:
+            foreign = [d for d in shared_in if domain_id and d[0] != domain_id]
+            if foreign:
+                checks.fail(
+                    "US-2",
+                    f"an UNEXPECTED domain is shared into {p}",
+                    f"{', '.join(d[0] for d in foreign)} - not {domain_id}, the one domain "
+                    "D26 allows. A share from somewhere nobody chose.",
+                )
+            else:
+                checks.ok(
+                    "US-2",
+                    f"{p} sees the shared domain and owns none",
+                    f"{shared_in[0][0]} owned by Data Governance - step 1.3's association, "
+                    "measured rather than read off a console label",
+                )
+        if not owned and not shared_in:
+            checks.note(
+                "US-2",
+                f"no DataZone domain visible in {p}",
+                "correct before this account's association (Stage 6 step 1.3)."
+                if p in INTERACTIVE_PROFILES
+                else "and none is ever expected - only the Interactive accounts are "
+                "associated (D28), so this is the resting state rather than a pending one.",
             )
     if data_live and sm_domains.get(DATA_PROFILE) is not None:
         if sm_domains[DATA_PROFILE]:
@@ -535,10 +581,22 @@ def main(argv: list) -> int:
                 continue
             rows = bp_configs.get(member)
             if not rows:
+                # WHICH GATE IS STILL SHUT IS MEASURED, NOT ASSUMED. Before 1.3 the call could
+                # not succeed at all; after it, an empty list means 1.4 has not run. The two
+                # are distinguished by whether the shared domain is visible here - a reading
+                # this script already has - rather than by importing the tfvars generator's
+                # SMUS_ASSOCIATED, which would report the intention instead of the state.
+                associated = any(
+                    d[4] != account_of.get(member) for d in (dz_domains.get(member) or [])
+                )
                 checks.note(
                     "US-3",
                     f"blueprint configurations in {member}",
-                    "none - expected until this account's SMUS association is accepted "
+                    "none - the association exists (step 1.3, measured above), so what is "
+                    "left is step 1.4: backend.SMUS_ASSOCIATED carries this account's row "
+                    "and the sagemaker/ slice is applied a second time."
+                    if associated
+                    else "none - expected until this account's SMUS association is accepted "
                     "(Stage 6 step 1.3) and backend.SMUS_ASSOCIATED carries its row.",
                 )
                 continue
@@ -737,24 +795,32 @@ never a compliant one.
         )
 
         # ==============================================================================
-        rep.h1("2. DataZone domains, in EVERY account (one expected, in one account)")
-        rows = ["PROFILE\tDOMAIN\tNAME\tVERSION\tSTATUS"]
+        rep.h1("2. DataZone domains VISIBLE in every account, and who OWNS each")
+        rows = ["PROFILE\tDOMAIN\tNAME\tVERSION\tSTATUS\tOWNER"]
         for p in live:
             doms = dz_domains.get(p)
             if doms is None:
-                rows.append(f"{p}\t(call failed)\t-\t-\t-")
+                rows.append(f"{p}\t(call failed)\t-\t-\t-\t-")
             elif doms == SCP_DENIED:
-                rows.append(f"{p}\t(denied by SCP - Workloads datazone:* ceiling, D28)\t-\t-\t-")
+                rows.append(f"{p}\t(denied by SCP - Workloads datazone:* ceiling, D28)\t-\t-\t-\t-")
             elif not doms:
-                rows.append(f"{p}\t(none)\t-\t-\t-")
+                rows.append(f"{p}\t(none)\t-\t-\t-\t-")
             else:
-                for i, n, v, s in doms:
-                    rows.append(f"{p}\t{i}\t{n}\t{v}\t{s}")
+                for i, n, v, st, own in doms:
+                    where = "self" if own == account_of.get(p) else "shared in"
+                    rows.append(f"{p}\t{i}\t{n}\t{v}\t{st}\t{where}")
         rep.tabulate(rows)
         rep.text("""
-Exactly one row may name a domain, and its profile must be awsds-infra-data (D26).
-A domain anywhere else is either INT-12's per-account fallback happening by
-accident or the 1c root deny (DenyDataZoneDomainOutsideDataOu) not holding.""")
+Read the OWNER column, never the row count - the two answer different questions
+and only one of them is a control. Exactly one row may say `self`, and its
+profile must be awsds-infra-data (D26); a `self` anywhere else is either
+INT-12's per-account fallback happening by accident or the 1c root deny
+(DenyDataZoneDomainOutsideDataOu) not holding.
+
+A `shared in` row is Stage 6 step 1.3 working: an associated account's
+ListDomains returns the domain it is a member of. Before 1.3 the member rows
+read `(none)`, and this table's earlier version - which had no OWNER column -
+called the first `shared in` a violation on the day the association succeeded.""")
 
         # ==============================================================================
         rep.h1("3. The registry's contents: blueprint configurations (per account),")
@@ -879,7 +945,8 @@ own deny pair (a job submitted with no VPC config, an oversized instance type).
         rep.text("""
 What the checks are, and where each comes from:
   US-1   exactly one DataZone V2 domain, in Data Governance (step 1; D26)
-  US-2   no domain anywhere else; nothing SageMaker-shaped in Data Governance
+  US-2   no domain OWNED anywhere else (a shared-in one is 1.3, not a breach);
+         nothing SageMaker-shaped in Data Governance
          (step 0's second preflight; the registry/runtime split)
   US-3   blueprint configurations, read PER ACCOUNT and judged in opposite
          directions: NONE in the domain account (D22 - one there is a finding),

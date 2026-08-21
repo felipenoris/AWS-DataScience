@@ -233,11 +233,9 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   was a real ceiling breach on 2026-08-14**, so the battery separates them by asking **IdC what the token
   is assigned** (STS never touches that path). Never suppress it by text alone — Lesson 24, in reverse.
 - **Stage 6 OPEN — passes 0, 1 and 2a APPLIED 2026-08-21; the stage file's §"What ran" is the one record.**
-  Four new slices (24 total): `production/registry/` (5.a — ECR `base`+`dev-env`, CodeArtifact, key,
-  consumer policies), `{sandbox,development}/sagemaker/` (roles, `awsds-<env>-project-boundary`, project
-  CMK, `/awsds/<env>/studio`), `data-governance/governance/` (**`awsds-studio`, V2, `AVAILABLE`**). Plus
+  Four new slices (24 total): `production/registry/`, `{sandbox,development}/sagemaker/`,
+  `data-governance/governance/` (**`awsds-studio`, V2, `AVAILABLE`**, domain `dzd-d8yrvx1ko7im6o`), plus
   step 3's deny pair in **all six** persona sets and **1.6's `DenyAthenaSparkStartSession`**.
-  `./aws/studio.py`: `US-1/2/6/9` **pass**; `US-3`/`US-4` `note` — correct before 1.3.
   **`pki/` is St.7 pass 1** (D36 §3 amended, D36 off the Consumes row), so **5.0's image carries NO CA
   root** — it takes one at St.7 2.6.
 - **BOTH St.6 MEASUREMENTS RAN 2026-08-21 and both are clean.** **Verification (i) answered BOTH ways** —
@@ -248,10 +246,20 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   24 — the message named neither field nor account). Battery **`--phase ou`: 25/0/7**; `StartSession`
   denied in dev AND sandbox, **allowed in prod** (contrast), `StartQueryExecution` still authorized (D13
   intact) — and `StartSession` **authorizes before it validates**, which Lesson 21 forbade assuming.
-- **What St.6 still owes:** **1.3's console association** — no public API, then a row in
-  `backend.SMUS_ASSOCIATED` (a **measurement**, gating the blueprint configs AND the profiles) and a
-  SECOND apply of two slices; **5.0's docker push**; then passes 3-5. Decisions 1 (EMR-S vs Glue),
-  2 (TIP — coded `false`, following St.5's grain) and 6 (prefix shape) stay in-stage.
+- **1.3 DONE 2026-08-21 — the association AUTO-ACCEPTS; there is no accept step and no 7-day clock.**
+  Zero RAM invitations either side, one `DataZone-EXTENDED_ACCESS-…-ORG-ONLY` share. Permission is
+  `…DatazoneDomainExtendedServiceAccess` — **neither name the plan predicted exists in RAM**; 152 actions
+  vs the default's 111, the +41 being the **V2** workbench surface. A **ceiling**, not access (no persona
+  set names those verbs). Proof is functional: `list-environment-blueprint-configurations` **succeeds**
+  from both members, empty. **`./aws/studio.py` US-2 then FAILED because it worked** — it read visibility
+  as ownership; the owner now comes out of the **ARN**, battery **0 FAILED**.
+- **`backend.SMUS_ASSOCIATED` is STILL EMPTY BY DECISION — a TRIGGER, not bookkeeping**: the row arms 1.4
+  **and** 1.5 (both slices already carry the gated resources), enabling `EMRServerless` while **decision 1
+  is reopened** and skipping `AmazonBedrockGenerativeAI`'s owed `PRICING.md` row. **Order, encoded nowhere
+  else: the two `sagemaker/` slices BEFORE `governance/`.**
+- **What St.6 still owes:** that row, then 1.4/1.5; **5.0's docker PUSH** (build clean on the devbox
+  2026-08-21; the devbox cannot push); then passes 3-5. Decisions 1 (EMR-S vs Glue), 2 (TIP — coded
+  `false`) and 6 (prefix shape) stay in-stage.
 - **Three St.6 findings that changed other files.** (i) **Lesson 8 paid off**: `awscc`'s blueprint
   configuration carries **`environment_role_permission_boundary`** and the `aws` one does not — INT-15's
   boundary is imposed BY the service as it authors the role, not raced afterwards. (ii) A blueprint

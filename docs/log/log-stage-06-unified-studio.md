@@ -1378,3 +1378,103 @@ performed through a VPN"* is untouched by this, because open question 17 already
 covers it — the objective is delivered **for every persona**, and the administrative credential is
 deliberately outside it. This is that exemption being leaned on again, in a new place; the question exists
 to keep it visible rather than let it become furniture.
+
+## 2026-08-21 — Step 1.3 RAN: the association auto-accepts, the RAM permission is not one the plan could name, and a check failed because the step worked
+
+### What was done in the console — **the user's hand, their words, verbatim**
+
+- Login AWS Console as Infrastructure User -> Data Governance Account -> InfrastructureAccess -> Amazon DataZone -> View Domains -> `awsds-studio`.
+
+- Account Associations -> Request Association. Added account numbers for `Sandbox-1 Account`, `Development Account` -> Request Association. Selected `AWS Organization-only RAM share` and `IAM users can access APIs only`.
+
+- In `Account Associations` I can see account IDs for `Sandbox` and `Development`, both with RAM Policy `AWSRAMPermissionsAmazonDatazoneDomainExtendedServiceAccess`, with status `Associated`.
+
+- Changing account to Sandbox Account 1 -> InfrastructureAccess -> Amazon DataZone. It's already associated with the domain. Same for Development Account.
+
+
+### The readings — **Claude's hand, read-only, through `awsds-infra-{data,sandbox-1,dev}`**
+
+The step asked for two, *"in the same sitting, because the invitation is short-lived"*. Both are answered,
+and a third arrived that the step had pre-declared as a reading in case it happened.
+
+**(a) Does a RAM invitation appear at all? No — zero, in both member accounts.**
+`ram get-resource-share-invitations` returns an empty list in Sandbox and in Development. On the producer
+side the baseline of four `LakeFormation-V4-*` shares is now **five**, the new one being
+`DataZone-EXTENDED_ACCESS-dzd-d8yrvx1ko7im6o-ORG-ONLY`, `ACTIVE`, created 18:12 local. The name carries
+the whole answer: `ORG-ONLY` is the share the user's *"AWS Organization-only RAM share"* choice produced,
+and an organization-scoped share into an organization that has RAM sharing enabled (Stage 1d) raises no
+invitation. **(b) follows from (a): there IS no accept step** — which is why the user found both member
+accounts *"already associated"* rather than a request waiting. The 7-day expiry the V1 guide warns about
+never starts running. Same shape as Stage 5's LF shares, and now measured for DataZone as well.
+
+**(c) The RAM permission is not one of the two the step named, and neither of those exists.** RAM says
+the share carries `AWSRAMPermissionsAmazonDatazoneDomainExtendedServiceAccess`, version 10, `ASSOCIATED`,
+on `datazone:Domain` — read from `ram list-resource-share-permissions`, not from the console label.
+`ram list-permissions --resource-type datazone:Domain` publishes **six**, and
+`AWSRAMPermissionDataZoneDefault` / `AWSRAMPermissionDataZonePortalReadWrite` — the pair the step's table
+named from the V1 user guide — are **not among them**. What exists is a `...ExtendedServiceAccess` and a
+`...ExtendedServiceWithPortalAccess` twin, plus the resource-type default
+`AWSRAMDefaultPermissionAmazonDataZoneDomain`. **So the design's decision was honoured and its wording was
+not**: the user's *"IAM users can access APIs only"* toggle is precisely the no-portal choice the step
+demanded, expressed in the console's words rather than in the doc's.
+
+**How much wider than the default it is, measured rather than feared.** The default carries **111**
+actions and the one that landed **152** — a strict superset, nothing removed. The 41 extras are one
+coherent family: notebooks, cells, cell runs, `StartCompute`/`StopCompute`, connections, plus
+`GetDomainExecutionRoleCredentials` and `StartAccountBootstrapAction`. That is the **SMUS V2 workbench
+surface**, which the V1-era default predates. The console did not over-grant by accident; it picked the
+permission a V2 domain's members need.
+
+**The step's sentence that this retires.** *"The member accounts need exactly one thing from this share,
+`PutEnvironmentBlueprintConfiguration`"* is now known to be unachievable: RAM publishes nothing that
+narrow for `datazone:Domain`, and the narrowest available is 111 actions deep and lacks the V2 half.
+A share permission is a **ceiling**, and Lesson 28 is what keeps that from being alarming: reach is the
+intersection of the RAM permission, the caller's IAM, and the SCPs. Measured on the IAM side — `datazone:`
+appears in the persona sets **only** in `policies-approvers.tf`, as the approval verbs
+(`AcceptSubscriptionRequest`, `Create`/`DeleteProjectMembership`, `Get*`/`List*`/`Search*`,
+`Reject`/`RevokeSubscription`, the two `UpdateSubscription*`); `DataScientistAccess` names none at all.
+On the SCP side, `DenyDataZoneEntirely` covers the **Workloads** OU in full and the Interactive OU carries
+no `datazone:` deny, so in Sandbox and Development the constraint is IAM alone — and today no persona
+reaches the wide half. **Recorded as a ceiling that widened, not as access that did.**
+
+**(d) The functional proof, which no console label can give.**
+`datazone list-environment-blueprint-configurations --domain-identifier dzd-d8yrvx1ko7im6o` **succeeds
+from both member accounts** and returns `{"items": []}`. Before the association that call could not
+succeed at all. Empty is the correct pre-1.4 state, and the *success* is the association working.
+
+### The check that failed because the step succeeded
+
+`./aws/studio.py` came back **`2 check(s) FAILED`** immediately after the association: `US-2`, *"DataZone
+domain in awsds-infra-sandbox-1 — 1 domain(s) outside Data Governance"*, and the same in Development. It
+was wrong, and the tell was that the failure arrived from the act that was supposed to work.
+
+**Measured before being believed** — the domain visible in each member account is `dzd-d8yrvx1ko7im6o`,
+and its **ARN names Data Governance**, not the local account, in all three accounts. There is one domain.
+INT-12's fallback did not happen and the 1c root deny is holding.
+
+**The defect:** `US-2` counted the rows `datazone list-domains` returns and treated any non-zero as *"a
+domain was created here"*. The collection built a 4-tuple of `(id, name, version, status)` and **discarded
+the ARN** — the only field that separates *visible* from *owned*. The premise held exactly as long as
+nothing was shared; step 1.3 is the event that made it false. **Lesson 31, arriving as a false FAIL
+instead of a false pass** — a check whose scope was inherited from the world it was written in.
+
+**Fixed in the same sitting.** The owner is split out of the ARN and kept as element 4; `US-2` now fails
+on a domain **owned** by a member account, passes with *"sees the shared domain and owns none"* when the
+shared one is the expected `dzd-*`, and fails distinctly if some other domain is shared in from a place
+nobody chose. Section 2 of the report gained an **OWNER** column reading `self` / `shared in`, and its
+prose now says to read that column rather than the row count. Two further messages were made to follow the
+measurement rather than a guess: `US-2`'s empty case distinguishes an account awaiting association from
+one that is never associated (D28), and `US-3`'s note now points at **1.4** once it can see the shared
+domain, instead of continuing to ask for a 1.3 that has already happened. **Battery re-run: 0 FAILED.**
+
+### What was deliberately NOT done, and it looks like bookkeeping
+
+**No row was added to `backend.SMUS_ASSOCIATED`.** It reads like the clerical half of 1.3 and it is the
+**trigger** for the next two steps: it flips `blueprints_enabled` in both `sagemaker/` slices (1.4) and,
+because it would then hold every member, `profiles_enabled` in `data-governance/governance/` (1.5). Both
+slices already carry the gated resources, so the row puts an apply one command away — and that apply would
+cross two gates this stage has open in writing: **decision 1 is reopened**, yet `category_one_blueprints`
+already lists `EMRServerless` and would enable it, and **`AmazonBedrockGenerativeAI`'s `PRICING.md` row is
+owed before the 1.4 apply** by the step's own text. The ordering also matters and is not encoded anywhere:
+the two `sagemaker/` slices apply **before** `governance/`, because a project profile names blueprints that
+must already be configured. Written down here so the next sitting starts from it.

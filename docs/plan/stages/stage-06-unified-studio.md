@@ -361,7 +361,7 @@ V1 user guide carries a field the V2 admin guide does not mention at all):
 | Where | Path | The field |
 |---|---|---|
 | **Data Governance** (`awsds-infra-data`) | **View domains** → `awsds-studio` → **Account associations** tab → **Request association** | the member **account IDs**, then **Request association** again to confirm. The row appears under the tab with status **`Requested`** |
-| same page, **V1 guide only** | the **RAM Policy** selector | **`AWSRAMPermissionDataZoneDefault`** — *"execute Amazon DataZone APIs"* and **no** data portal access — never `AWSRAMPermissionDataZonePortalReadWrite`. The member accounts need exactly one thing from this share, `PutEnvironmentBlueprintConfiguration` (1.4); portal access is an **IdC** path into the domain account and does not come from here. **If the V2 console does not offer the choice, record that** — a field that vanished is a reading, and the default it chose is what the share actually carries |
+| same page, the share's shape | **ANSWERED 2026-08-21 — the console offers two toggles and NEITHER predicted name exists.** Chosen: **`AWS Organization-only RAM share`** and **`IAM users can access APIs only`** | The share carries **`AWSRAMPermissionsAmazonDatazoneDomainExtendedServiceAccess`** v10, read from RAM rather than off the console label. `ram list-permissions --resource-type datazone:Domain` publishes **six**, and `AWSRAMPermissionDataZoneDefault` / `AWSRAMPermissionDataZonePortalReadWrite` — the pair this row named from the V1 user guide — **are not among them**. The real pair is `…ExtendedServiceAccess` and its `…WithPortalAccess` twin, so the *decision* (no portal) was honoured by the APIs-only toggle even though the *names* were unavailable. **The sentence this replaces also asked for something unachievable**: nothing published is as narrow as *"exactly `PutEnvironmentBlueprintConfiguration`"* — the resource-type default is already 111 actions and the one that landed is a strict superset at 152, the 41 extras being the SMUS **V2** workbench surface (notebooks, cells, compute, connections, `GetDomainExecutionRoleCredentials`). **Read it as a ceiling, never as access** (Lesson 28): the IAM half is measured in the log — no persona set names those actions — and `DenyDataZoneEntirely` covers the Workloads OU while the Interactive OU carries no `datazone:` deny |
 | **each member** (`awsds-infra-sandbox-1`, `awsds-infra-dev`) | **View requests** → the domain (state **`Requested`**) → **Review request** → **Accept and configure AWS association** | **Accept new permissions** — and **nothing else on that page** |
 
 **Then STOP, and this is the half worth arriving warned about (Lesson 17).** Both accept pages offer to
@@ -383,6 +383,19 @@ acceptance frictionless: (a) whether a **RAM invitation** appears at all in the 
 raised none), and (b) what the DataZone **accept** step is, given (a). The baseline was read immediately
 before this step, 2026-08-21: **four `LakeFormation-V4-*` shares owned by Data Governance, zero pending
 invitations in either member account.**
+
+> **BOTH ANSWERED 2026-08-21, and they collapse into one answer: THERE IS NO ACCEPT STEP.** (a)
+> `ram get-resource-share-invitations` returns **empty in both member accounts**; the producer side went
+> from four shares to five, the new one being `DataZone-EXTENDED_ACCESS-dzd-…-ORG-ONLY`, `ACTIVE`. An
+> organization-scoped share into an organization with RAM sharing enabled (Stage 1d) raises no invitation,
+> so (b) has nothing to accept and **the 7-day expiry never starts running** — the shape Stage 5's LF
+> shares showed, now measured for DataZone too. The member-side pages the fields table describes
+> (*View requests* → *Review request* → *Accept new permissions*) were therefore **never reached**, and
+> with them the Lesson 17 trap below: both accounts were already associated when opened.
+> **The functional proof is a separate reading and was taken**: `list-environment-blueprint-configurations`
+> succeeds from both members and returns empty — a call that could not succeed at all before the
+> association, which is what a console status label cannot tell you. Full detail, including the check this
+> broke, is the log's step 1.3 entry.
 
 **1.4 — Enable the blueprints in each associated account, and only there** — Claude writes, **user**
 applies as that account's profile: `aws_datazone_environment_blueprint_configuration` (the same resource
@@ -1041,7 +1054,7 @@ Record every answer, including the ones that come out fine.
 | i | Does the `CreateDomain` carve-out admit Data Governance **and** deny an Interactive account, by wording? | 0.1, 0.2 |
 | ii | Can the `aws-ia` module be consumed with no VPC in the domain account — or is the domain written directly? **ANSWERED 2026-08-21: written directly, and the module was not consumed at all.** Its root *requires* `vpc_id`/`subnet_ids` and enables the Tooling blueprint **in the domain account**, which is what D22 forbids and what 0.4's reading exists to catch — and the domain half is five resources, so writing them cost less than splitting a module built on the single-account assumption. The reasoning's one copy is [`docs/plan/conventions.md`](../conventions.md) §6's `governance/` comment; the provider split it predicted stands (`aws` for the domain and IAM, `awscc` for the project profiles) | 1.2 |
 | iii | Does the blueprint configuration accept D9's two AZs, or does the ≥3-subnet recommendation bind? | 1.4 |
-| iv | Is there any API/Terraform path for the account association, or console-only as documented? | 1.3 |
+| iv | **ANSWERED 2026-08-21 — console-only, as documented, and the CLI confirms it from the other side.** `aws datazone` carries no association-shaped verb, and the association leaves a **RAM** trace rather than a DataZone one: one `DataZone-EXTENDED_ACCESS-…-ORG-ONLY` share, auto-accepted, no invitation. So there is a read path (`ram get-resource-shares`, `ram list-resource-share-permissions`, and `datazone list-domains` showing the shared domain by its **owning** ARN) but no write path — which is why the state is recorded by a measured row in `backend.SMUS_ASSOCIATED` rather than by a resource | 1.3 |
 | v | Does the D13 boundary survive a blueprint reconciliation (INT-15) — diff of two `./aws/studio.py` runs? | 2.5 |
 | vi | Which call makes the dev-env image selectable, does it survive reconciliation, and does the cross-account pull work at all (INT-01/INT-17)? | 5.1 |
 | vii | Does the portal open with the tunnel down (INT-16's portal half) — and does the domain-execution-role deny candidate hold with the on-behalf carve-out intact? | 1.7 |
