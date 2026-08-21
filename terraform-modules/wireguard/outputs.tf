@@ -28,3 +28,8 @@ output "instance_role_arn" {
   description = "The host's role - named here because a carve-out written against a role that already exists is the one shape this plan trusts (D27), and Stage 7's GitLab reasons about this principal."
   value       = module.role.role_arn
 }
+
+output "primary_network_interface_id" {
+  description = "THE ROUTE TARGET, and the reason it is an output rather than a lookup: a route that sends a private tier's default through this host has to name an ENI, and an ENI belongs to an instance that may be REPLACED (a shape change, a user-data change). Reading it through terraform_remote_state means the consumer re-plans onto the new interface instead of pointing at a deleted one - which is a route that blackholes rather than an error. Paired with vpc_nat_cidrs: without the masquerade rules this id routes traffic into a host that drops it."
+  value       = aws_instance.this.primary_network_interface_id
+}
