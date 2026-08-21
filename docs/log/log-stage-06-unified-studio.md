@@ -770,3 +770,181 @@ another account, which no gate reads and no owner re-reads.
 
 `make check` green; `check-docs` red only on the pre-existing pre-Stage-2 lines, byte-identical to the
 baseline at `HEAD`; `check-identifiers` clean. Nothing committed.
+
+## 2026-08-21 — Passes 0, 1 and 2a APPLIED, and verification (i) answered in both directions after being attached and unexercised since Stage 1c
+
+*Provenance. **Claude's hand throughout, and the user ran nothing.** Three authorizations, all given by
+the user in this sitting: the standing one that opened it — *"prepare todos os artefatos e autorizo o
+terraform apply para tudo que não depender de decisão minha"* — and two asked for and granted mid-sitting,
+for the git commits with their module tags and for the two probe batteries. **The stage file assigns
+0.1a's canary replay and 1.6's phase-4b probes to the *user*; running them here is an authorized
+deviation, named rather than absorbed.** One mechanical substitution, made here and nowhere else:
+**account ids → the account's name**. Nothing else is edited — the organization and policy ids, the
+`AWSReservedSSO_*` suffix and the error wording arrived as they read; the e-mail inside the one pasted ARN
+becomes that user's role, as every entry in this repository does.*
+
+*The session was the **infrastructure user** throughout (`felipenoris+infrastructure_user@…`), through
+`InfrastructureAccess` in each account's own `awsds-infra-*` profile — and through
+`AWSAdministratorAccess` in `Policy Canary`, which is what `awsds-policy-canary` reaches.*
+
+### What ran, in order
+
+Each apply was planned to a file outside the repository, applied from that file, and re-planned. **Every
+re-plan read `No changes`.**
+
+| # | Slice / act | Profile | Result |
+|---|---|---|---|
+| 1 | `production/registry/` | `awsds-infra-prod` | `14 added` |
+| 2 | `sandbox/sagemaker/` | `awsds-infra-sandbox-1` | `7 added` |
+| 3 | `development/sagemaker/` | `awsds-infra-dev` | `7 added` |
+| 4 | `identity/sso/` | `awsds-infra-identity` | `0 added, 6 to change, 0 to destroy` |
+| 5 | `data-governance/governance/` | `awsds-infra-data` | `5 added` — the domain `dzd-d8yrvx1ko7im6o`, `AVAILABLE`, `V2` |
+| 6 | `identity/org-policies/` | `awsds-infra-identity` | `0 added, 1 to change, 0 to destroy` |
+| 7 | both `*/sagemaker/` again | as above | `1 added` each — the step 9.1 log group, added to the module in the same sitting |
+| 8 | 0.1a's canary replay | `awsds-policy-canary` | `AccessDeniedException`, below |
+| 9 | `scp-battery.py --phase ou` | six profiles | `25 as expected, 0 unexpected, 7 not measured` |
+
+**No `[E]` slice was applied.** Their lifecycle is `make up` / `make down` (D11), and the runbook lists a
+hand-apply of one under *what you never do* — so design A's DNS Firewall was written, validated and
+planned (`25 to add` against a torn-down `sandbox/egress/`) and left waiting. `make status` reads
+**USD 0.0052/h** at the end of the sitting, the `[D]` VPN host and nothing else.
+
+### Step 0.4, taken before the first apply of the domain slice
+
+`terraform plan` of `data-governance/governance/` renders **five** resource changes: one
+`aws_datazone_domain`, two `aws_iam_role`, two `aws_iam_role_policy_attachment`. **No `aws_sagemaker_*`
+and no `awscc_sagemaker_*`.** The premise that makes the `Data` OU's `sagemaker:Create*` deny free holds,
+and `./aws/studio.py` `US-2` keeps it read after the fact.
+
+### Verification (i) — the half that had never been measured, and the half that explains the previous entry
+
+**Positive.** Apply #5 issued `CreateDomain` from Data Governance and it succeeded in 16 seconds. That is
+outcome 1 of 0.1a's three-way fork; the console plan B and the V1 fallback were never needed.
+
+**Negative, in the same sitting.** Two throwaway roles were created in `Policy Canary` — an execution role
+and a **service** role, trust and managed policies copied from the two the apply had just built — and the
+identical call replayed there:
+
+```
+aws datazone create-domain --profile awsds-policy-canary --region us-west-2 \
+  --name awsds-probe-canary --domain-version V2 \
+  --domain-execution-role arn:aws:iam::<Policy Canary Account>:role/awsds-datazone-probe-exec \
+  --service-role         arn:aws:iam::<Policy Canary Account>:role/awsds-datazone-probe-svc
+```
+
+```
+An error occurred (AccessDeniedException) when calling the CreateDomain operation: User:
+arn:aws:sts::<Policy Canary Account>:assumed-role/AWSReservedSSO_AWSAdministratorAccess_59a09ed7d34a9cd1/<the infrastructure user>
+is not authorized to perform: datazone:CreateDomain on resource:
+arn:aws:datazone:us-west-2:<Policy Canary Account>:domain/* with an explicit deny in a service control
+policy: arn:aws:organizations::<Management Account>:policy/o-4z1leiit0c/service_control_policy/p-1fp032g8
+```
+
+`describe-policy` resolves that id to **`awsds-org-scp-baseline`**. So `aws:PrincipalOrgPaths` **does**
+populate for DataZone, the `ForAllValues`-over-an-empty-set failure mode did not fire, and
+`DenyDataZoneDomainOutsideDataOu` — *attached but unexercised* in every reading since 1c — is exercised
+in **both** directions. The instrument was held constant across the two accounts, which is exactly the
+property the flat contrast of the fifth entry lacked.
+
+**And it explains that flat contrast, by measurement rather than by inference.** The four variants of
+2026-08-20 passed `--domain-execution-role` and **no `--service-role`**; this replay passed both and
+reached authorization, from the same CLI on the same machine. `Cross-account pass role is not allowed` was
+DataZone objecting to the *absent service role* — in a message that names neither the field nor the
+account, which is why no amount of re-reading it could have said so. The V1 fallback note had suspected it
+in one clause (*"a V2 domain may also demand `--service-role`"*) and the probe never tested it.
+
+**State left behind: none.** Both probe roles were detached and deleted in the same sitting;
+`list-domains` and `list-roles --query 'Roles[?starts_with(RoleName,\`awsds-\`)]'` both read empty in
+`Policy Canary`.
+
+### Phase 4b, for the amendment applied at #6
+
+`./aws/probes/scp-battery.py --phase ou`, the four rows `probes.py` gained this sitting plus one that
+already existed:
+
+```
+note ou dev      deny  DENY-NOT-SCP                interactive: athena:StartSession (1.6; Athena names no policy - see prod row)
+note ou sandbox1 deny  DENY-NOT-SCP                sandboxes: athena:StartSession inherits Interactive's deny (1.6)
+ok   ou prod     allow ALLOWED reached-authorization  workloads: athena:StartSession still authorized (1.6 contrast)
+ok   ou dev      allow ALLOWED reached-authorization  interactive: athena:StartQueryExecution STILL WORKS (1.6's negative probe - D13)
+ok   ou sandbox1 allow ALLOWED reached-authorization  sandboxes: athena:StartQueryExecution still authorized (4e contrast)
+```
+
+Three things this settles, and only the first was expected. The deny reaches **both** Interactive
+accounts, Sandbox by **inheritance** through the nested OU that carries no document of its own (D37). The
+**negative probe passed** — `StartQueryExecution` still reaches authorization in both — so the amendment
+did not take D13's query path with it, which was the one outcome that would have made 1.6 a mistake. And
+**`StartSession` authorizes before it validates**: 4e measured that for `StartQueryExecution` only, and
+Lesson 21 forbids carrying it across actions, so it had to be read here. The seven `not measured` rows are
+pre-existing — `ec2:RunInstances` / `RequestSpotInstances` in the two accounts that have no VPC.
+
+### Four readings that were measurements rather than choices
+
+- **The SMUS managed-policy family, read from `iam list-policies --scope AWS` rather than remembered.**
+  What exists: `service-role/SageMakerStudioDomainExecutionRolePolicy`,
+  `service-role/SageMakerStudioDomainServiceRolePolicy`,
+  `service-role/SageMakerStudioProjectProvisioningRolePolicy`,
+  `AmazonDataZoneSageMakerManageAccessRolePolicy`. What does **not**, though each is a plausible guess:
+  `SageMakerStudioProjectRoleForManageAccessPolicy`, `AmazonDataZoneSageMakerProvisioningPolicy`.
+  A fifth exists and was deliberately **not** used — `service-role/SageMakerStudioQueryExecutionRolePolicy`
+  reads as an Athena **federation** role (`glue:GetConnection`, an Athena spill bucket,
+  `lambda:InvokeFunction`), and nothing in this design federates a query, so creating it would be a
+  principal nobody chose.
+- **`athena:UpdateSession` is in no Athena API model.** The botocore model shipped with the installed CLI
+  (`athena/2017-05-18`) carries `StartSession`, `TerminateSession`, `GetSession`, `GetSessionStatus`,
+  `GetSessionEndpoint`, `ListSessions`, `ListNotebookSessions` and `StartCalculationExecution` — and no
+  `UpdateSession`. Shipped in the statement anyway, since it is AWS's own sample and denies nothing while
+  costing nothing, with `StartCalculationExecution` **added** beside it: `StartSession` choking a
+  calculation by dependency was a *should*, and the API takes a `SessionId` obtained however.
+- **`awscc_datazone_environment_blueprint_configuration` carries `environment_role_permission_boundary`
+  and `aws_datazone_environment_blueprint_configuration` does not** — read from
+  `terraform providers schema -json` on both pinned providers, not from a changelog.
+- **`PutEnvironmentBlueprintConfiguration` takes a `domainIdentifier` and no account parameter**, so the
+  account it configures is the caller's. The stage's pass table had the resource in the domain account;
+  step 1.4's own body said *"user applies as that account's profile"* and was right.
+
+### Two pieces of hygiene the sitting produced rather than planned
+
+- **The new slices locked `hashicorp/aws` at `6.61.0` while every slice before them holds `6.60.0`**, both
+  inside `~> 6.60`. Left as it landed — a slice initialised today gets today's patch, which is what a lock
+  file is for — but the **platform coverage was fixed**: `terraform providers lock` re-run for
+  `darwin_arm64`, `linux_amd64`, `linux_arm64` on all four new slices, because Stage 2 step 6.3's reason
+  is the Stage 7-8 runners failing `init` with a checksum error that reads like an attack. Re-planned
+  `No changes` afterwards, all four.
+- **`versions.tf` stopped being byte-identical in every slice**, in three of them, deliberately: the two
+  `sagemaker/` slices and `governance/` declare a second provider (`awscc`). The `aws` block is
+  untouched, each file says why in place, and `terraform-live/README.md` records the exception.
+
+### What was deliberately not done
+
+No `[E]` apply (above). No log entry until this one was asked for. No `docs/plan/history.md` row: the two
+things this sitting changed about the *plan* — the blueprint configuration's owning slice and the pass
+table split — describe objects that were provisioned in the same sitting, so the correction and the build
+are one event rather than a later revision. And `scripts/down-studio-apps.py` deletes apps but **not**
+spaces by default: step 8.3 puts only the running apps in `[E]`, a space is an EBS volume plus whatever
+was not committed yet, and `--spaces` is the opt-in.
+
+### Files, commits, and what is owed
+
+Two commits on `claude/stage-06-unified-studio`, in Recipe B's order. **Commit 1** — `terraform-modules/`
+alone: `ecr-repo/`, `sagemaker-denies/`, `sagemaker-prereqs/` (new) and `vpc-egress/dns-firewall.tf`. Then
+`ecr-repo-v0.1.0`, `sagemaker-denies-v0.1.0`, `sagemaker-prereqs-v0.1.0`, `vpc-egress-v0.2.0`, pushed with
+`--tags` and **each one confirmed on origin with `git ls-remote` before commit 2**, which is the step §3
+exists to make routine. **Commit 2** — the four new slices, the amended ones, `scripts/`, and the
+documentation. The four applied slices were then **re-initialised against the pushed tags** rather than
+the local paths the authoring plans used, and all four re-planned `No changes`: that is what says the tag
+serves exactly the code that was applied. [PR #24](https://github.com/felipenoris/AWS-DataScience/pull/24).
+
+`make check` green. `make check-ou` green. `check-docs` red only on the pre-existing pre-Stage-2 lines.
+`./aws/studio.py` **0 FAILED** — `US-1`, `US-2`, `US-6` and both `US-9` rows pass; `US-3` and `US-4` read
+`note`, which is the correct reading before an account association exists rather than a gap.
+`./aws/supplychain.py` **0 FAILED**, and `SC-7` reads both ECR repositories and the CodeArtifact endpoint
+**cross-account from both Interactive accounts** — 0 images visible, which is the honest answer before
+step 5.0. `./aws/org-policies.py` and `./aws/datalake.py` both clean.
+
+**Owed, and none of it is code:** the account association in the console (1.3 — no public API), which
+gates the row in `backend.SMUS_ASSOCIATED`, the second apply of both `sagemaker/` slices (the blueprint
+configurations) and the second apply of `governance/` (the two project profiles); the `base`/`dev-env`
+image build and push (5.0); then passes 3, 4 and 5. Decisions 1, 2 and 6 remain in-stage — decision 2 is
+**coded** as `enable_trusted_identity_propagation = false`, following the grain Stage 5 chose, and
+flipping it is a decision that reopens Stage 5's decision 6 rather than a parameter change.
