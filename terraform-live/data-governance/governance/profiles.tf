@@ -37,8 +37,10 @@ resource "awscc_datazone_project_profile" "this" {
       aws_account = { aws_account_id = local.member_account_ids[each.value.account] }
       aws_region  = { region_name = var.region }
 
-      configuration_parameters = bp == "Tooling" ? {
-        parameter_overrides = local.tooling_parameters
+      # locals.blueprint_parameters says which blueprints carry overrides and why the two
+      # non-Tooling entries exist (the UpdateProjectProfile required-parameter validation).
+      configuration_parameters = contains(keys(local.blueprint_parameters), bp) ? {
+        parameter_overrides = local.blueprint_parameters[bp]
       } : null
     }
   ]
