@@ -74,14 +74,28 @@ resource "awscc_datazone_environment_blueprint_configuration" "enabled" {
 
   environment_role_permission_boundary = aws_iam_policy.project_boundary.arn
 
+  # TOOLING ALONE CARRIES TWO MORE PARAMETERS (v0.3.2, 2026-08-22): S3Location - the wizard's
+  # "S3 bucket for projects", whose absence deploys AND deletes every project into "Invalid S3
+  # path provided null" - and KmsKeyArn, which is the project CMK finding its consumer (kms.tf).
+  # Both names are aws-samples' SMUS-IaC Tooling block, the same source as the grant principal.
+  # THE MERGE IS DELIBERATELY NOT APPLIED TO THE OTHER TEN: a regional-parameter change is an
+  # UPDATE to an applied configuration, and an applied configuration is IMMUTABLE through this
+  # provider (docs/SMUS.md §Blueprints (b)) - widening all eleven would manufacture twenty
+  # more impossible updates for zero behaviour.
   regional_parameters = [
     {
       region = var.region
-      parameters = {
-        VpcId   = var.vpc_id
-        Subnets = join(",", values(var.private_subnet_ids))
-        AZs     = join(",", keys(var.private_subnet_ids))
-      }
+      parameters = merge(
+        {
+          VpcId   = var.vpc_id
+          Subnets = join(",", values(var.private_subnet_ids))
+          AZs     = join(",", keys(var.private_subnet_ids))
+        },
+        each.value == "Tooling" ? {
+          S3Location = "s3://${module.projects_bucket.bucket_name}"
+          KmsKeyArn  = module.project_key.key_arn
+        } : {}
+      )
     },
   ]
 }
