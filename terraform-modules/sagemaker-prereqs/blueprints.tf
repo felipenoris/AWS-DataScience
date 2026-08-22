@@ -24,6 +24,26 @@
 # Verification (v) does not go away: it now asks whether the boundary SURVIVES, which is a
 # question about reconciliation rather than about our timing.
 #
+# THE IDENTIFIER THIS RESOURCE TAKES IS THE NAME, NOT THE ID (measured 2026-08-21: twelve
+# identical create failures, then one CLI contrast that succeeded). The two providers spell
+# the same input differently - the aws provider's resource takes environment_blueprint_id,
+# an id; this resource rides CloudFormation's contract, where EnvironmentBlueprintIdentifier
+# is resolved BY NAME among the domain's managed blueprints (the official example passes
+# "DefaultDataLake" - a name) and the resolved id comes back in the SEPARATE read-only
+# environment_blueprint_id. Fed the id, the handler looked for a blueprint NAMED like an id -
+# "Managed Environment Blueprint with <id> doesn't exist", all twelve - while
+# get-environment-blueprint returned every one of those ids from the same profile. Lesson 32:
+# two spellings of one object, and the side that has to build it is the one that decides.
+# Passing the name is diff-safe: the CFN schema marks EnvironmentBlueprintIdentifier
+# createOnly + writeOnly, so the read never returns it and Terraform keeps what was sent.
+# The name is routed through the data source's .name - the same string that went in - so the
+# roster guard below (data.tf) is a declared dependency, not an unused declaration.
+#
+# WRITE-ONLY CUTS THE OTHER WAY TOO: EnvironmentRolePermissionBoundary is write-only as well,
+# so a boundary stripped behind Terraform's back would never surface as a plan diff. The
+# sentinel for verification (v) is ./aws/studio.py US-8 (the datazone read API does return
+# the field, measured in the same sitting), not this file's plan.
+#
 # THE REGIONAL PARAMETERS ARE READ, NOT PASTED (step 1.4). VpcId, Subnets and AZs come from
 # this account's foundation/ state through the caller. THE CONSOLE RECOMMENDS THREE SUBNETS IN
 # THREE AZs AND D9 BUILT TWO - verification (iii): the apply either accepts two or it does
@@ -33,7 +53,7 @@ resource "awscc_datazone_environment_blueprint_configuration" "enabled" {
   for_each = var.blueprints_enabled ? toset(var.blueprint_names) : toset([])
 
   domain_identifier                = var.domain_id
-  environment_blueprint_identifier = data.aws_datazone_environment_blueprint.enabled[each.value].id
+  environment_blueprint_identifier = data.aws_datazone_environment_blueprint.enabled[each.value].name
   enabled_regions                  = [var.region]
 
   provisioning_role_arn = module.provisioning_role.role_arn
