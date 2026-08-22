@@ -128,7 +128,7 @@ depend on a decision of mine"), each one planned to a file, applied from that fi
 | **2c** | 1.4 — the blueprint configurations, per member (second/third sittings) | **`12 added` each, then `1 destroyed` each — 11 stand.** The first apply failed twelve for twelve on the awscc NAME contract (finding 7; fixed by `sagemaker-prereqs-v0.2.2`); the ToolingLite re-cut (finding 9; `v0.2.3`) removed one. Re-plan `No changes` in both; **11/11 carry the boundary**; `US-3` **pass** in both members |
 | **2d** | 1.5 — the two project profiles | **`2 added`**, after the twelve-bundle refusal (finding 9): `experimentation`→Sandbox, `engineering`→Development, eleven configurations each, `Tooling` the only base (`ON_CREATE`), the five locked parameters read back non-editable, TIP `false` — **decision 2 delivered**. `US-4` **pass**; battery **0 FAILED** |
 
-### Eleven findings, each of which changes something written elsewhere
+### Thirteen findings, each of which changes something written elsewhere
 
 1. **VERIFICATION (i) IS ANSWERED, IN BOTH DIRECTIONS, AND IT HAD BEEN OPEN SINCE 1c.** *Positive:* the
    `terraform apply` of `data-governance/governance/` created the domain from the `Data` OU — the
@@ -204,6 +204,41 @@ depend on a decision of mine"), each one planned to a file, applied from that fi
     with D9's two AZs passed validation and persist in the read-back. Verification (iii)'s first half;
     whether Tooling *provisions* under two AZs is still pass 2's half.
 
+*Findings 12-13 are 2026-08-22 — step 1.7's portal sitting, whose second half nobody had planned for.*
+
+12. **INT-16 IS ANSWERED, AND THE ANSWER IS FALLBACK (ii): the permission-set `aws:SourceIp` deny does
+    not reach the portal.** The user opened the portal with the tunnel **down** (source: their carrier's
+    address, **not** the Elastic IP — the literal is deliberately not written down, since it
+    locates a person and the measurement is the *inequality*), completed the IdC sign-in and saw **both project profiles
+    enumerated** — `datazone:` reads that `DenyControlPlaneOffVpn`, a `Deny *` on `*`, would have
+    refused had it applied to that session. The identity was a persona and not the infrastructure
+    user, which was verified rather than assumed: the domain holds exactly **one `ACTIVATED` SSO user
+    profile**, and that IdC principal is assigned by group to `DataScientistAccess` in Sandbox and
+    Development and `DataScientistProdAccess` in Production — both sets carry the deny. Repeated with
+    the tunnel up (`52.89.212.1`, confirmed the same day as the Sandbox WireGuard Elastic IP, so the
+    tunnel was full rather than split) the behaviour was **identical**. What this delivers is what
+    `policies-shared.tf` already refused to overclaim: **VPN-only APIs and console, not a VPN-only
+    portal.** `README.md`'s "all user access through the VPN" needs the qualification fallback (ii)
+    names, or fallback (i) — AWS's `DenyUserAccessFromUnauthorizedVPCs` shape, re-keyed on
+    `aws:SourceIp` — has to be adopted and proven. **One leg is still missing and is cheap**: a
+    console call from the same identity, off VPN, in the same sitting. Without it the attribution
+    rests on the deny being in those sets *by code* plus the 2026-08-20 read-back, rather than on a
+    same-minute contrast (Lesson 24).
+13. **THE TWO PROJECT PROFILES WERE UNINSTANTIABLE, AND NOTHING IN THE STAGE WOULD HAVE SAID SO.**
+    The same sitting clicked *Create project* and got `User is not permitted to perform operation:
+    CreateProject` — **the same message on and off the VPN**, which is the contrast that ruled the
+    network out from inside the observation itself. `list-policy-grants` on the root domain unit then
+    returned an **empty list** for `CREATE_PROJECT` *and* `CREATE_PROJECT_FROM_PROJECT_PROFILE`, and
+    `list-entity-owners` returned a single owner: the group profile whose `rolePrincipalArn` is the
+    `InfrastructureAccess` role that created the domain. **Creating from a profile is an
+    authorization, not a property of the profile** — listing them is a read and needs neither — and
+    pass 3 was blocked before it began. `docs/SMUS.md` had described the facet (*"which users/groups
+    may create projects from it"*) since it was written; it never became a step. **Terraform-able,
+    checked before being called a gap (Lesson 8):** `AWS::DataZone::PolicyGrant` is in the
+    CloudFormation registry and `awscc_datazone_policy_grant` is in the pinned awscc 1.98.0, so
+    `grants.tf` joins the slice that owns the profiles — **every field `createOnly`**, so a
+    re-association is a destroy-and-create rather than an edit.
+
 ### What is owed, and by whom
 
 | # | Owed | Whose |
@@ -211,7 +246,8 @@ depend on a decision of mine"), each one planned to a file, applied from that fi
 | ~~0.1a~~ | **DONE 2026-08-21** — the canary replay returned an explicit SCP deny naming the policy. Finding 1 above | Claude, user-authorized |
 | ~~1.6~~ | **DONE 2026-08-21** — `./aws/probes/scp-battery.py --phase ou`: **25 as expected, 0 unexpected**. The trio reads `DENY-NOT-SCP` in Development, `DENY-NOT-SCP` in Sandbox (the nested-OU inheritance) and **`ALLOWED reached-authorization` in Production** — so the deny is the amended document, **and `StartSession` authorizes before it validates**, which 4e measured only for `StartQueryExecution` and which Lesson 21 forbids assuming across actions. The negative probe passed: `athena:StartQueryExecution` **still reaches authorization in Development**, so the amendment did not take D13's query path with it | Claude, user-authorized |
 | ~~1.3~~ | **DONE 2026-08-21** — the associations auto-accepted (both members), `SMUS_ASSOCIATED` filled, and the second applies ran: rows 2c and 2d above | **user** + Claude |
-| 1.7 | INT-16's **portal reading** — the browser half of row 2d | **user** |
+| ~~1.7~~ | **DONE 2026-08-22** — the portal opened with the tunnel down, same behaviour with it up; **INT-16 answered as fallback (ii)**. Findings 12-13 above. **One cheap leg left**: the same-sitting console contrast | **user** |
+| 2.4's grant | `grants.tf` — the two `CREATE_PROJECT_FROM_PROJECT_PROFILE` grants. **Written and `validate`-clean 2026-08-22, NOT applied.** Blocks every throwaway project | Claude wrote; apply: **user** as `awsds-infra-data` |
 | 5.0 | The `base`/`dev-env` **image build and push** — **one devbox session**, `devbox.md` §P. The host was found **absent** on 2026-08-22, so the 2026-08-21 build is gone and this starts from `up` | **user** |
 
 
@@ -671,7 +707,20 @@ a slice with no row fails `make check`, and a name with no rank raises at import
 
 **2.3 — Apply both slices** — **user**, as `awsds-infra-sandbox-1` and `awsds-infra-dev`.
 
-**2.4 — Provision one throwaway project per profile** — **user**, in the portal, after pass 2. This is the
+**2.4 — Provision one throwaway project per profile** — **user**, in the portal, after pass 2.
+
+> **FIRST, THE APPLY THIS STEP DEPENDS ON, discovered 2026-08-22 by trying it (finding 13).** A project
+> profile is a template; **creating a project from it is a separate authorization**, and until that
+> sitting nothing granted it — the portal offered both profiles and refused the button. The grant is
+> `terraform-live/data-governance/governance/grants.tf`, one
+> `CREATE_PROJECT_FROM_PROJECT_PROFILE` per profile on the root domain unit, applied as
+> `awsds-infra-data`. **`experimentation` answers to `sso-group-data-scientists` and `engineering` to
+> `sso-group-deployment-managers`** (user decision, same day; `docs/SMUS.md` §"Who may create a
+> project" carries the reasoning and the standing/instrumental distinction). **So the person who
+> provisions each throwaway project is that profile's persona, not the infrastructure identity** —
+> which is also the only way the readings below say anything about what a data scientist can do.
+
+This is the
 measurement instrument for INT-15 and INT-17, one project, before anything is built on top — **and it is
 also where the project S3 path is first observed**: [`docs/SMUS.md`](../../SMUS.md) §S3 item 1 defers its
 unread fields to this step **by name**, so record every one of them (Lesson 16), **plus the bucket's

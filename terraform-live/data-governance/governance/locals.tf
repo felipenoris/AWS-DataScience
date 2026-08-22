@@ -62,16 +62,39 @@ locals {
     development = data.aws_caller_identity.development.account_id
   }
 
-  # THE TWO PROFILES AND WHERE EACH PROVISIONS (D21/D26). The names are a contract with
-  # ./aws/studio.py (US-4) and the account pinning is what turns D21's boundary from "which URL
-  # did the person open" into a property of the project.
+  # THE TWO PROFILES, WHERE EACH PROVISIONS, AND WHO MAY CREATE FROM IT (D21/D26). The names
+  # are a contract with ./aws/studio.py (US-4) and the account pinning is what turns D21's
+  # boundary from "which URL did the person open" into a property of the project.
+  #
+  # THE `group` COLUMN ARRIVED 2026-08-22, AND IT CLOSES A GAP THE STAGE HAD NOT NOTICED. A
+  # profile is a template; being able to CREATE from it is a separate authorization, granted
+  # per domain unit, and nothing granted it - measured in the portal (step 1.7's sitting) as
+  # `User is not permitted to perform operation: CreateProject`, identical on and off the VPN,
+  # with `list-policy-grants` returning an empty list for both CREATE_PROJECT and
+  # CREATE_PROJECT_FROM_PROJECT_PROFILE. Until then the ONLY principal that could create a
+  # project was the role that created the domain, which is the one nobody works as.
+  #
+  # WHY THE COLUMN LIVES HERE rather than in grants.tf: the account and the group are the same
+  # kind of fact about the same object, and splitting them is how a profile ends up pinned to
+  # one account while its grant names another (Lesson 33 - share the values, do not duplicate
+  # the structure). grants.tf iterates THIS map.
+  #
+  # WHY THESE TWO GROUPS (user decision, 2026-08-22). `experimentation` is Sandbox and D21 is
+  # already decided there, so the data scientists' grant is a standing right. `engineering` is
+  # DEVELOPMENT, and whether a person needs an interactive surface next to Development's data
+  # at all is the OPEN half of D21 - so it goes to the persona that owns the promotion chain
+  # the account exists to start, and the grant is the instrument of that open question rather
+  # than a settled entitlement. If D21 closes against the interactive surface, this row is
+  # removed and that removal is the expected outcome, not a regression.
   project_profiles = {
     experimentation = {
       account     = "sandbox"
+      group       = "sso-group-data-scientists"
       description = "Experimentation (D21): the unit of work is a notebook. Provisions into a business unit's Sandbox."
     }
     engineering = {
       account     = "development"
+      group       = "sso-group-deployment-managers"
       description = "Engineering (D21): the unit of work is a pipeline. Provisions into Development, where the promotion chain starts."
     }
   }

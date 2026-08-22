@@ -434,6 +434,12 @@ def tfvars_values(account: str, slice_name: str) -> dict:
         values["profiles_enabled"] = bool(SMUS_MEMBERS) and set(SMUS_MEMBERS) <= set(
             SMUS_ASSOCIATED
         )
+        # The directory read (2026-08-22, grants.tf): who may create a project from which
+        # profile is granted to an sso-group-*, and IdC is delegated to Identity - so the
+        # slice needs one read-only alias pointing there. The NAMES are the decision and they
+        # live in the slice's locals.tf; only the profile that can resolve them comes from
+        # here, the same way every other cross-account read in this table does.
+        values["identity_profile"] = PROFILES["identity"]
 
     if account == "identity" and slice_name == "sso":
         values["vpn_homes"] = {
@@ -529,6 +535,8 @@ def render_tfvars(account: str, slice_name: str) -> str:
             for acct, p in v["lake"].items()
         )
         out += f"lake = {{\n{rows}}}\n"
+    if "identity_profile" in v:
+        out += f'identity_profile = "{v["identity_profile"]}"\n'
     return out
 
 

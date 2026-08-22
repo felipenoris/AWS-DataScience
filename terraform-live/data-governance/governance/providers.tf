@@ -53,3 +53,21 @@ provider "aws" {
   region  = var.region
   profile = var.members["development"].profile
 }
+
+# ------------------------------------------------------- the read-only directory provider
+#
+# A THIRD ALIAS, SAME IDIOM, DIFFERENT REASON (2026-08-22, with grants.tf). The two above
+# resolve an account id; this one resolves a GROUP id, and it exists because Identity Center
+# is delegated to the Identity account (Stage 2 step 5, INV-15): the identity store cannot be
+# read from Data Governance at all, so the name -> id lookup has to be taken where the
+# directory lives. It creates nothing and carries no default_tags.
+#
+# WHY NOT PASS THE IDS IN: a group id is an identifier, and aws/INDEX.md rule 1 keeps those out
+# of tracked files. Resolving from the DisplayName on every plan also makes a renamed or
+# deleted group a readable plan failure instead of a grant pointing at nothing - the same
+# argument the sagemaker-prereqs roster guard makes for blueprint names (Lesson 38).
+provider "aws" {
+  alias   = "identity"
+  region  = var.region
+  profile = var.identity_profile
+}
