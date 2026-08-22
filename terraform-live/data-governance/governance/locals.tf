@@ -109,7 +109,16 @@ locals {
   # different object from a default.
   tooling_parameters = [
     { name = "sagemakerDomainNetworkType", value = "VpcOnly", is_editable = false },
-    { name = "lifecycleManagement", value = "true", is_editable = false },
+    # "ENABLED", NOT "true" (corrected 2026-08-22): the template's AllowedValues are
+    # ENABLED/DISABLED - an enum, not the boolean the plan's prose implied (Lesson 38; the TIP
+    # parameter below IS "true"/"false", so both spellings coexist in one template). The wrong
+    # value survived 1.5's apply because CreateProjectProfile validates no parameter against
+    # the template; the FIRST deploy to reach CloudFormation refused it ("Parameter
+    # 'lifecycleManagement' must be one of AllowedValues", 400) - itself proof the whole
+    # pre-CFN pipeline had just started working. AllowedValues were read from the downloaded
+    # template itself, and every other locked value was checked against it in the same
+    # sitting: the five below are valid.
+    { name = "lifecycleManagement", value = "ENABLED", is_editable = false },
     { name = "idleTimeoutInMinutes", value = tostring(var.idle_timeout_minutes), is_editable = true },
     { name = "maxIdleTimeoutInMinutes", value = tostring(var.max_idle_timeout_minutes), is_editable = false },
     { name = "maxEbsVolumeSize", value = tostring(var.max_ebs_volume_size_gb), is_editable = false },
