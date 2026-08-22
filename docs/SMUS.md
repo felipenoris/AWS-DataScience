@@ -546,3 +546,83 @@ reached *from*, not where it runs — open question 12, Stage 6 step 1.6).
 2026-08-16). Stage 6 step 1.5 sets `sagemakerDomainNetworkType = VpcOnly` in both project profiles
 and marks the parameter **non-Editable** — the *Editable* flag is what turns a default into a
 control (Lesson 5): the parameter exists so nobody can flip a project to `PublicInternetOnly`.
+
+### Custom images (BYOI) — and how they are named
+
+A project's spaces run the **SageMaker Distribution** unless a custom image is attached to the
+SageMaker AI domain `Tooling` provisions in the member account: an image, an image version and an app
+image config, then the domain's `CustomImages` (Stage 6 step 5.1; INT-01/INT-17 are the open ends and
+verification (vi) is where the working mechanism gets recorded).
+
+**What such an image must satisfy** — the `public.ecr.aws/sagemaker/sagemaker-distribution` ancestor at
+≥ `2.6-cpu`, **no `ENTRYPOINT`**, AWS's three owned paths, the EBS mount at `/home/sagemaker-user`, the
+activity-monitor extension idle shutdown reads — is [`images/README.md`](../images/README.md)'s and
+Stage 6 step 5.0's, and is deliberately **not repeated here**. What this section owns is the
+**naming**, because naming is the part that outlives the hand build: Stage 8 step 1's pipeline inherits
+whatever convention the first push wrote, and both repositories are **tag-immutable**, so a tag is
+spent the first time it lands.
+
+#### The repository is the name — the tag is everything else
+
+```
+<account-id>.dkr.ecr.us-west-2.amazonaws.com/awsds-prod-ecr-dev-env:default-v0.1.0
+└──────────────── registry ─────────────────┘└──── repository ────┘└──── tag ────┘
+```
+
+**Both repositories live in the Production account, and the `prod` in their names is where the
+*registry* is, not who the image serves** — `terraform-live/production/registry/ecr.tf` builds them as
+`awsds-${var.env}-ecr-*` with `env = prod`, and Sandbox and Development reach them by
+`AllowConsumerAccountsToPull`. Reading the pair as "one for production, one for development" inverts
+D17: there is **one** ancestor for every environment, and what gets promoted is the code, never a
+per-environment image.
+
+| Repository | What it is | Who pulls it |
+|---|---|---|
+| `awsds-prod-ecr-base` | the **common ancestor** (D17) — every application image is `FROM base`, `dev-env` included | Stage 8's pipeline; the consumer accounts carry the pull grant on purpose, so a project building its own image does not read a missing grant as a network fault |
+| `awsds-prod-ecr-dev-env` | the **SMUS custom image (BYOI)** — the runtime a space actually starts | the member accounts, through `CustomImages` |
+
+So the repository already answers *what the image is*. Putting that word back inside the tag —
+`awsds-prod-ecr-dev-env:dev-env-…` — spends it twice in every pipeline line that ever references it.
+
+#### The rule
+
+**`<flavour>-v<major>.<minor>.<patch>`, and the same number in both repositories.**
+
+The **flavour** is the axis this estate will actually branch on, decided by the user on 2026-08-22
+while choosing the first tag: a project wanting **GPUs**, one wanting **Spark** libraries, and one
+wanting neither are three different runtimes, and the plain one is named `default` rather than left
+implicit. **The flavour axis reaches `base` too, and that is the half that is easy to miss** — a GPU
+`dev-env` descends from `sagemaker-distribution:<version>-gpu`, a different digest and therefore a
+different ancestor, so the branch happens at `base` first. If only `dev-env` carried the flavour, the
+day a GPU base arrives `base:v0.1.0` silently starts meaning *the CPU one*.
+
+**Why flavour first and version second**, when the ancestor itself writes `4.3.0-cpu` the other way
+round: a lifecycle policy is the first thing that will ever select a subset of these tags, and *"keep
+the last 3 GPU images"* is a rule worth having separately from the CPU ones, because a GPU image costs
+several times the storage. ECR's simple selector, `tagPrefixList`, matches a **prefix** only, so
+flavour-first is selectable with it and groups the flavours together in any listing.
+**Stated honestly, this is convenience and not capability** (read 2026-08-22): the other selector,
+`tagPatternList`, takes up to four `*` wildcards per string, would match `*-gpu` just as well, and is
+the one AWS calls best practice. Two things to know before writing that first policy either way — the
+two selectors are **mutually exclusive** within a rule, and *"if you specify multiple tags, only the
+images with all specified tags are selected"*, which is an **AND** where a list reads like an OR.
+
+**Why one number across both repositories.** `dev-env` is `FROM base`, so a change to `base` rebuilds
+`dev-env` from its first layer — Julia, R and Rust download again. The two therefore never move alone,
+and a shared number says so; **Stage 7 step 2.6**, which fills the CA-install layer with the internal
+PKI root, is the first scheduled bump and takes both to `default-v0.2.0`.
+
+**When a flavour graduates from a tag to its own repository.** The trigger is not size or taste, it is
+reaching for a knob that exists **per repository and not per tag**: a different set of accounts allowed
+to pull (the repository policy), a different retention (the lifecycle policy), a different scan
+configuration, or a different KMS key. Until one of those differs, a flavour is a tag — reversible, and
+one `module "ecr_…"` block cheaper.
+
+**And the tag is not the identity — the digest is.** A tag is a movable pointer everywhere except here,
+where `IMMUTABLE` freezes it on first landing; what Stage 6 step 5.1 registers as an image version and
+what Stage 7 step 2.6 must be able to say it replaced is the **digest**, which is why both are recorded
+in the stage log at push time. The image cannot be asked either: `dev-env`'s own
+`/opt/awsds-runtimes.txt` records the **build-time** reference (`awsds/base:local`), not the ECR tag it
+was later given.
+
+**First applied 2026-08-22, Stage 6 step 5.0:** `default-v0.1.0` in both repositories.

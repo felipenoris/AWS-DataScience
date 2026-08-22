@@ -76,6 +76,11 @@ a tag is spent the first time it lands and a re-push under the same tag is rejec
 control, not a nuisance. **Record the pushed digests in the stage log**: Stage 6 step 5.1 registers
 a SageMaker image *version*, and Stage 7 step 2.6 has to be able to say which digest it replaced.
 
+**What tag to spend is not decided here.** The convention — `<flavour>-v<major>.<minor>.<patch>`, the
+same number in both repositories, `default-v0.1.0` first written 2026-08-22 — has one copy, in
+[`docs/SMUS.md`](../docs/SMUS.md) §*Custom images (BYOI) — and how they are named*, together with the
+reason the flavour comes first and the trigger that turns a flavour into a repository of its own.
+
 ## The three things worth knowing before editing either file
 
 1. **The ancestry is forced from both ends and they nearly collide.** SMUS's BYOI specification

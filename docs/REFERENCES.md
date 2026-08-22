@@ -300,6 +300,8 @@
 
 - Amazon ECR private image replication (cross-account — the fallback if SageMaker custom images cannot be pulled cross-account from Production): <https://docs.aws.amazon.com/AmazonECR/latest/userguide/replication.html>.
 
+- **ECR lifecycle policy properties** — read 2026-08-22, while choosing the image tag convention ([`SMUS.md`](SMUS.md) §Custom images), because the ordering argument rested on how a rule selects tags and that is a mechanism, not a preference. `tagPrefixList` matches a **prefix** only (*"if your images are tagged as `prod`, `prod1`, `prod2` … you would use the tag prefix `prod`"*); `tagPatternList` takes patterns with up to **four** `*` wildcards each, so it can match a suffix, and the page calls it *"best practice"*. The two are **mutually exclusive** in one rule — each is required only when the other is absent and `tagStatus` is `tagged` — and for both, *"if you specify multiple tags, only the images with all specified tags are selected"*, an **AND** where a list reads like an OR: <https://docs.aws.amazon.com/AmazonECR/latest/userguide/lifecycle_policy_parameters.html>.
+
 - GitLab SAML SSO for self-managed instances (login works in CE; SAML group sync is a paid-tier feature): <https://docs.gitlab.com/ee/integration/saml.html>.
 
 - AWS CodeArtifact (package proxy for egress design B; check the supported formats page for Cargo, and note that Julia and CRAN are not covered): <https://docs.aws.amazon.com/codeartifact/latest/ug/welcome.html>.
