@@ -264,8 +264,21 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   2 — its vector store bills while it exists); **`LakehouseAdmin` is cat 2** (an account-wide
   ingest-and-catalog TEMPLATE, not LF's *data lake administrator*). The list lives in **three** places
   (`locals.tf`, the module default, `US-3`) — one commit moves all three, a module TAG BUMP each time.
-- **What St.6 still owes:** **5.0's docker PUSH** (build clean on the devbox 2026-08-21; the devbox
-  cannot push); **1.7's portal reading (user)**; then passes 3-5. Decisions 1 (EMR-S vs Glue) and 6
+- **1.7 DONE 2026-08-22 — INT-16 ANSWERED, fallback (ii): the permission-set `aws:SourceIp` deny does
+  NOT reach the portal.** It opened with the tunnel down and enumerated both profiles for a
+  `DataScientistAccess` identity; identical with it up (EIP confirmed). **VPN-only APIs and console, not
+  a VPN-only portal** — `README.md` needs the qualification, or fallback (i) gets adopted and proven.
+  Missing one cheap leg: the same-sitting console contrast.
+- **THE PROFILES WERE UNINSTANTIABLE — creating from a profile is an AUTHORIZATION, not a property of
+  the profile (2026-08-22).** `CreateProject` denied identically on and off VPN; **zero policy grants**
+  on the root domain unit, whose only owner was the domain-creating role. `grants.tf` written and
+  `validate`-clean, **NOT applied**: one `CREATE_PROJECT_FROM_PROJECT_PROFILE` per profile —
+  `experimentation`→`sso-group-data-scientists` (standing), `engineering`→`sso-group-deployment-managers`
+  (**the instrument of D21's open half**; removal is the expected outcome if it closes). Every field
+  **`createOnly`**. A third read-only provider alias (`aws.identity`) resolves the group NAMES.
+- **What St.6 still owes:** **the `grants.tf` apply** (blocks every project); **5.0's docker PUSH** —
+  **build and push are ONE devbox session**, the host was found absent 2026-08-22 so the build is gone
+  (`devbox.md` §P); then passes 3-5. Decisions 1 (EMR-S vs Glue) and 6
   (prefix shape) stay in-stage; **2 is delivered** (TIP `false`, non-editable, both profiles).
 - **Standing St.6 mechanics:** a blueprint configuration is applied **from the MEMBER account** (the
   Put takes no account param); `awscc`'s carries **`environment_role_permission_boundary`** and the

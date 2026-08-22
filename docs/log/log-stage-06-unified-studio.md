@@ -1556,3 +1556,167 @@ parameters non-editable — `sagemakerDomainNetworkType=VpcOnly`, `lifecycleMana
 5's category 1"* in both members, `US-4` *"experimentation and engineering exist"*.
 
 **Left owed after this sitting**: 1.7's portal reading (user), 5.0's image push (user), passes 3-5.
+
+## 2026-08-22 — Step 1.7 RAN and answered INT-16; the same click found two project profiles nobody could instantiate, and `grants.tf` closed it
+
+**Two hands, and the split matters for every claim below.** The portal readings are the **user's**,
+in their browser, and are quoted verbatim. Everything else — the read-only AWS calls, the
+documentation, the code, and the one apply — is **Claude's**, under the authorizations given in the
+sitting: *"Pode sincronizar e preparar a próxima etapa do plano"*, then the association decision in
+the user's own words, then *"Pode realizar o apply. Faça commit e abra um PR."* The stage file's
+findings 12-13 are the plan-facing consequences; this entry is what happened.
+
+### Before the portal — the push procedure, written from measurements rather than from intent
+
+The sitting opened by synchronising after PR #30 and preparing step 5.0. Preparing it turned up three
+things the repository did not say, and one it said wrongly.
+
+**The devbox was absent** (`./scripts/devbox.py status`: *"absent (nothing billing)"*), so the clean
+build of 2026-08-21 was gone with its volume. `images/README.md` and step 5.0 described the build and
+the push in consecutive sentences that read as two sittings; they are **one session**, because the
+host is `[E]` and holds nothing. That reading costs a full rebuild, and it is now stated in three
+places.
+
+**No identity in Sandbox can push.** Both repository policies were read live: one statement each,
+`AllowConsumerAccountsToPull`, granting the two Interactive accounts
+`BatchCheckLayerAvailability`, `BatchGetImage`, `GetDownloadUrlForLayer`, `DescribeImages`. **Nothing
+grants a push to anybody**, and nothing needs to — a same-account push is decided by the identity
+policy alone. So the push is a Production principal's act and the credential has to travel to the
+build host as a 12-hour ECR authorization token; the host's role stays without an `ecr:` permission.
+
+**The ceiling permits it and denies its mirror image.** `awsds-org-scp-perimeter`'s
+`DenyEcrPushOutsideOrganization` denies the four push verbs when `aws:ResourceOrgID` is *not* ours;
+`awsds-org-rcp-perimeter`'s `EnforceOrgIdentitiesOnRegistry` denies `ecr:*` to principals outside the
+organization. Neither sees an org identity pushing into an org registry.
+
+**And the S3 gateway endpoint is not on the push path**, which was checked because the Sandbox
+endpoint policy grants `s3:GetObject`/`ListBucket` on `prod-us-west-2-starport-layer-bucket` and no
+`PutObject` — a shape that reads like a gap until AWS's own page is read: `ecr.dkr` is the Docker
+Registry API and *"Docker client commands such as `push` and `pull` use this endpoint"*, while S3 is
+what a container reaches to **download** layers (documented minimum: `s3:GetObject`). The Sandbox VPC
+has **no interface endpoint of any kind** (the `egress/` slice is `[E]` and down), so the upload
+leaves through the WireGuard `t3.nano` — the same path the build already pulled the distribution in
+through, which is what makes it slow rather than novel.
+
+One more read, so the procedure's safety claim is a measurement: the account has **no
+`SSM-SessionManagerRunShell` document**, so Session Manager runs on defaults and no session stream is
+logged — `read -rs` keeps the token off the screen and out of history, and nothing else records it.
+
+All of it became [`devbox.md`](../plan/runbooks/devbox.md) **§P**, with `images/README.md`, step 5.0
+and two pass-table rows corrected to match. **Step 5.0 itself did not run** and is still owed.
+
+### 1.7 — the user's reading, verbatim
+
+Asked for the procedure, Claude gave three readings — a positive control (a console call off VPN,
+which must be denied), the portal off VPN, and the portal on VPN — because *"the portal opened"*
+alone cannot distinguish a portal that is ungated from a deny that is not firing (Lesson 24). The
+user took the second and third:
+
+> o portal abriu normalmente com o túnel desligado, IP `<their carrier's address>`. Consegui logar
+> com o sso user sandbox. Aparece opção para criar projeto novo, com perfil `engineering` ou
+> `experimentation`. Porém, ao clicar em `Criar projeto` aparece a mensagem `User is not permitted to
+> perform operation: CreateProject`. Habilitando VPN, IP `52.89.212.1`, e executando o mesmo
+> procedimento, o resultado é exatamente o mesmo.
+
+**The carrier address is deliberately not written down here.** It locates a person, and the
+measurement is the *inequality* — that it was not the Elastic IP — not the literal.
+
+Two things were then verified rather than assumed, because the reading is worthless without them.
+**`52.89.212.1` is the Sandbox WireGuard Elastic IP** (`describe-addresses`, tagged
+`awsds-sandbox-vpn`, attached to the running host), so the second leg genuinely exited through the
+perimeter and the tunnel was full rather than split. And **the identity was a persona**: the domain
+holds exactly **one `ACTIVATED` SSO user profile**, and that IdC principal is assigned — by group —
+to `DataScientistAccess` in Sandbox and Development and `DataScientistProdAccess` in Production, both
+of which carry `DenyControlPlaneOffVpn`.
+
+**So INT-16 is answered, and the answer is its fallback (ii).** A `Deny *` on `*` would have refused
+the `datazone:` reads that enumerated those two profiles from outside the perimeter; it did not, so
+it does not reach the portal's session. What the control delivers is what `policies-shared.tf`
+already refused to overclaim — VPN-only APIs and console, not a VPN-only portal.
+
+**What is still missing is one cheap leg**, and it is recorded rather than glossed: the positive
+control was not taken in the same sitting, so the attribution rests on the deny being in those two
+sets *by code* plus the read-back of 2026-08-20, rather than on a same-minute contrast.
+
+### The second half of the same click, which nobody had planned for
+
+`User is not permitted to perform operation: CreateProject` — **identical with the tunnel up and
+down**, which is the contrast that ruled the network out from inside the user's own observation. The
+locating reads followed, all read-only through `awsds-infra-data`:
+
+- `list-policy-grants` on the root domain unit: **empty list** for `CREATE_PROJECT` *and* for
+  `CREATE_PROJECT_FROM_PROJECT_PROFILE`;
+- `list-entity-owners` on the same unit: **one owner**, the group profile whose `rolePrincipalArn` is
+  the `InfrastructureAccess` role that created the domain.
+
+**Creating a project from a profile is an authorization, not a property of the profile** — listing
+them is a read and needs neither — so the design had exactly one principal able to create a project
+and it was the one that runs Terraform. Pass 3 was blocked before it began, and nothing in the stage
+would have said so: step 2.4 says *"user provisions one throwaway project per profile"* and no step
+created the authorization. `docs/SMUS.md` had carried the facet (*"which users/groups may create
+projects from it"*) since it was written; it never became a step.
+
+**Checked before being called a gap** (Lesson 8): `AWS::DataZone::PolicyGrant` is in the
+CloudFormation registry, and `awscc_datazone_policy_grant` is present in the **pinned** awscc 1.98.0
+binary — the same provider the slice already loads. The schema also settled the grain question:
+`Principal` accepts a `Group`, the detail of `CREATE_PROJECT_FROM_PROJECT_PROFILE` takes a
+`ProjectProfiles` list, and **every field is `createOnly`**.
+
+### The user's decision, and what got asked before it
+
+Asked what actually differs between the two profiles today, the answer was measured rather than
+recalled: field by field, the two are identical in all eleven environment configurations — same
+blueprint ids, same order, same deployment modes, same Tooling parameters — and **the only divergent
+field is `awsAccountId`**, Sandbox against Development. The names promise a difference of *kind*
+(D21) and today deliver a difference of *place*.
+
+That reframed the grant: choosing who may create from `engineering` is choosing who may work
+interactively **in Development**, which is the open half of D21. The user's decision, verbatim:
+
+> Vamos de `CREATE_PROJECT_FROM_PROJECT_PROFILE`. `experimentation` fica com data scientists,
+> `engineering` para deployment manager. Registre esta associação no `SMUS.md`.
+
+Written up with the two halves distinguished — `experimentation` a standing right, `engineering` the
+**instrument** of D21's open question, whose removal would be the expected outcome if that question
+closes against the interactive surface.
+
+### The code, and the apply
+
+The association became a **column on the profile's own row** in the slice's `locals.tf`, not a second
+structure beside it, so a profile cannot end up pinned to one account while its grant names another
+(Lesson 33). `grants.tf` iterates that map. Two supporting pieces: a third read-only provider alias,
+`aws.identity`, because Identity Center is delegated to the Identity account and the directory cannot
+be read from Data Governance at all; and `identity_profile` emitted from
+`scripts/tfhygiene/backend.py`, so no profile literal sits in a `.tf` file. The **group names** are
+the decision and live in `locals.tf`; the ids are resolved from `DisplayName` on every plan, which
+also turns a renamed or deleted group into a readable plan failure (Lesson 38).
+
+Recipe A, as `awsds-infra-data`: plan **`2 to add`** → apply **`2 added`** → re-plan **`No changes`**.
+
+**One named risk did not materialise.** Both groups show `status: None` in
+`search-group-profiles` — no DataZone group profile has been created for either — and the grant was
+expected to possibly refuse an unmaterialised group; the fallback, `awscc_datazone_group_profile`,
+had been confirmed present in the pinned provider before the apply. The service accepted the IdC
+group id directly.
+
+**Read back through the API rather than off Terraform's state**, which is the half that matters:
+`list-policy-grants` now returns two grants, `includeChildDomainUnits` false in both, and the pairing
+is the decided one — the deployment-managers group against the `engineering` profile id, the
+data-scientists group against `experimentation`. `./aws/studio.py`: **0 checks FAILED**.
+
+No new `US-` check was added for this control, and the reason is that one is not needed: unlike the
+environment-role boundary, a policy grant **is** readable, so Terraform's own plan is the drift
+sentinel — a grant removed by hand comes back as `1 to add`.
+
+### Files, and what is owed
+
+Touched: `docs/plan/runbooks/devbox.md` (§P, new), `images/README.md`, `docs/SMUS.md` (the
+installed-profiles table gains a fourth column, plus the new subsection the user asked for),
+`docs/plan/stages/stage-06-unified-studio.md` (findings 12-13, step 2.4's prerequisite, step 5.0, the
+owed table, two pass rows), `docs/plan/integrations.md` (INT-16 answered), `docs/REFERENCES.md`,
+`CLAUDE.md`, and the governance slice — `grants.tf` (new), `locals.tf`, `data.tf`, `providers.tf`,
+`variables.tf`, `outputs.tf`, plus `scripts/tfhygiene/backend.py`.
+
+Owed after this sitting: **step 5.0's build and push, one devbox session** (§P); INT-16's missing
+positive control, a minute's work; and then pass 3, which the grants have unblocked — **and whose
+projects are now provisioned by each profile's persona, not by the infrastructure identity**.

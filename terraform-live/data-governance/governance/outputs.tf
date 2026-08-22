@@ -16,7 +16,7 @@ output "portal_url" {
 }
 
 output "root_domain_unit_id" {
-  description = "The root domain unit - where authorization policies (who may create projects, who may join) would be granted if this design ever subdivided the domain. Nothing creates one today."
+  description = "The root domain unit - where the authorization policies live. Since 2026-08-22 that is not hypothetical: grants.tf attaches a CREATE_PROJECT_FROM_PROJECT_PROFILE grant per profile here. The domain is still not subdivided, so this is the only unit there is."
   value       = aws_datazone_domain.this.root_domain_unit_id
 }
 
@@ -33,4 +33,9 @@ output "domain_service_role_arn" {
 output "project_profile_ids" {
   description = "The two profiles, by name - empty until pass 2c."
   value       = { for k, p in awscc_datazone_project_profile.this : k => p.project_profile_id }
+}
+
+output "project_profile_creators" {
+  description = "Who may create a project from which profile - the applied form of local.project_profiles' group column, by GROUP NAME rather than group id (aws/INDEX.md rule 1). Empty until pass 2c."
+  value       = { for k, p in local.project_profiles : k => p.group if var.profiles_enabled }
 }

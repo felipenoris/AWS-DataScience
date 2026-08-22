@@ -35,6 +35,12 @@ variable "members" {
   nullable    = false
 }
 
+variable "identity_profile" {
+  description = "The CLI profile for the Identity account, used by ONE read-only aliased provider: resolving the sso-group-* names in local.project_profiles to the group ids the CREATE_PROJECT_FROM_PROJECT_PROFILE grants take. IdC is delegated to Identity (Stage 2 step 5), so the directory cannot be read from Data Governance; the value arrives from the generated tfvars (PROFILES in scripts/tfhygiene/backend.py), never as a literal here."
+  type        = string
+  nullable    = false
+}
+
 variable "profiles_enabled" {
   description = "false until EVERY member account's association has been accepted (SMUS_ASSOCIATED in backend.py). true is the pass 2c apply: the two project profiles, whose environment configurations name blueprints that must already be configured in the target account."
   type        = bool

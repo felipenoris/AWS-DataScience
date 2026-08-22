@@ -198,10 +198,10 @@ parameters
 The two project profiles this installation carries — created 2026-08-21 by the second apply of
 `terraform-live/data-governance/governance/` (step 1.5), both `ENABLED`, read back by `US-4`:
 
-| Profile | Provisions into | The unit of work (D21) |
-|---|---|---|
-| `experimentation` | **Sandbox** | a notebook — experimentation happens where nothing downstream depends on it |
-| `engineering` | **Development** | a pipeline — where the promotion chain starts |
+| Profile | Provisions into | The unit of work (D21) | Who may create from it |
+|---|---|---|---|
+| `experimentation` | **Sandbox** | a notebook — experimentation happens where nothing downstream depends on it | `sso-group-data-scientists` |
+| `engineering` | **Development** | a pipeline — where the promotion chain starts | `sso-group-deployment-managers` |
 
 Identical in everything but the target account: **eleven environment configurations** (decision 5's
 category 1), `Tooling` the only base — `ON_CREATE`, every other blueprint `ON_DEMAND`; a second base
@@ -216,6 +216,43 @@ blueprint table below) — and the same Tooling parameters, read back after the 
 | `maxIdleTimeoutInMinutes` | `120` | no — the admin ceiling (step 8.1) |
 | `maxEbsVolumeSize` | `100` (GB) | no |
 | `enableTrustedIdentityPropagationPermissions` | `false` | no — decision 2, delivered |
+
+#### Who may create a project, and from which profile
+
+**The fourth column is a separate object from the other three, and forgetting that is how the
+installation spent a day with two profiles nobody could instantiate.** A project profile is a
+*template*; creating a project from it is an **authorization**, granted on a domain unit and named
+`CREATE_PROJECT_FROM_PROJECT_PROFILE`. Listing the profiles in the portal is a read and needs
+neither.
+
+**Measured 2026-08-22, in step 1.7's portal sitting:** the portal offered both profiles and the
+button returned `User is not permitted to perform operation: CreateProject` — **identical with the
+tunnel up and down**, which is what ruled the network out. `list-policy-grants` on the root domain
+unit then returned an **empty list** for `CREATE_PROJECT` *and*
+`CREATE_PROJECT_FROM_PROJECT_PROFILE`, and the unit's only owner was the group profile whose
+`rolePrincipalArn` is the `InfrastructureAccess` role that created the domain. So the only principal
+that could create a project was the one that runs Terraform.
+
+**The association above is the user's decision of 2026-08-22**, and the two halves are not the same
+kind of claim:
+
+- **`experimentation` → the data scientists** is a standing right. It is the Sandbox, where D21 is
+  already decided.
+- **`engineering` → the deployment managers** is the **instrument of D21's open half** — whether a
+  person needs an interactive surface next to *Development's* data at all. It goes to the persona
+  that owns the promotion chain the account exists to start, and if that question closes against the
+  surface, the grant is removed. **That removal would be the expected outcome, not a regression.**
+
+**The grain is per profile, not domain-wide** (`CREATE_PROJECT` would carry every profile the domain
+gains later), and **every field of a grant is `createOnly`** in the CFN schema — there is no in-place
+edit, so moving a profile to another group destroys and re-creates the grant, and a coarse grant
+would not have been a cheap starting point to refine. The entity is the **root domain unit**, the
+only one this design has; `include_child_domain_units` is `false`, describing today's shape rather
+than restricting anything.
+
+**Status: declared, not yet applied.** `terraform-live/data-governance/governance/grants.tf` was
+written 2026-08-22 and `terraform validate` passes against the pinned providers
+(`awscc_datazone_policy_grant`, awscc 1.98.0); the apply and the portal re-read are step 2.4's.
 
 The account pinning is D21's boundary as a property of the *project* rather than of the URL a person
 opened, and the two names are the `US-4` contract. The reasoning lives with the code
