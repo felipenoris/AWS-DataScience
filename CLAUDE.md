@@ -317,12 +317,18 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   (`S3Bucket.bucketName`, `S3TableCatalog.catalogName`, both literal `Ref` → per-project names),
   now editable placeholders in both profiles. Templates are downloadable via the blueprint's
   `templateUrl` by an associated account — check locked values against them, not against prose.**
-- **What St.6 still owes:** **the project-creation RETRY in the portal** (the behavioural half of the
-  grant apply; user's browser — two stuck projects to delete first: `first-…` DELETE_FAILED,
-  `second-…` ACTIVE) and the off-VPN portal reading (unblocked); then passes 3-5 + 5.1.
-  **5.0 is DONE** (`default-v0.1.0` pushed to both repos 2026-08-22, one buildbox session). Decisions 1
-  (EMR-S vs Glue) and 6 (prefix shape) stay in-stage; **2 is delivered** (TIP `false`, non-editable,
-  both profiles).
+- **THE CREATE PATH CLOSED 2026-08-22 — the FIFTH attempt created a project END TO END** (`ACTIVE`,
+  Tooling stack `CREATE_COMPLETE`, ~4.5 min): the behavioural proof of all seven findings, and the
+  three stuck projects deleted cleanly. **Verification (v)'s first real reading: the D13 boundary IS
+  on the provisioned role — delivered via the stack TEMPLATE** (the write-only configuration field is
+  injected as the `ToolingUserRole`'s `PermissionsBoundary`; **the template's two conditional EMR
+  roles carry NONE** — AWS's template, noted for the day `createEmrResourceInTooling` turns true).
+  **US-8 said the opposite first and the instrument was wrong** (Lesson 30): `iam list-roles` OMITS
+  `PermissionsBoundary` by documented contract (`GetRole`-only, with `Tags`) — fixed to `get-role`
+  per role, re-run `pass`. **What St.6 still owes: the off-VPN portal reading (user's browser), then
+  passes 3-5 + 5.1** — pass 3 stands on a measured create path. **5.0 is DONE** (`default-v0.1.0`
+  pushed to both repos 2026-08-22, one buildbox session). Decisions 1 (EMR-S vs Glue) and 6 (prefix
+  shape) stay in-stage; **2 is delivered** (TIP `false`, non-editable, both profiles).
 - **Standing St.6 mechanics:** a blueprint configuration is applied **from the MEMBER account** (the
   Put takes no account param); `awscc`'s carries **`environment_role_permission_boundary`** and the
   `aws` resource does not (INT-15's mechanism, Lesson 8); **an EXISTING configuration is IMMUTABLE

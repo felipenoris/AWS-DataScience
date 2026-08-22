@@ -2158,3 +2158,72 @@ caller change today.
 unchanged at its four pre-existing pre-Stage-2 prose failures, none of them in these files.
 
 Owed: nothing from this sitting but the commit. The stage's own next move is **pass 3**.
+
+---
+
+## 2026-08-22 — Pass 3's first project: five attempts, seven findings, one success — and the boundary read off the first real role
+
+*Claude's hand throughout, at the user's request in the same sitting. Every portal and console reading
+quoted below is the user's, verbatim (two are in Portuguese — the user's chat language; the log stays
+English around them). Redactions declared once: the member account id inside one quoted KMS error is
+`<member-account>`; no other identifier in this entry is an account id or an e-mail.*
+
+### The shape of the sitting
+
+One data scientist clicked "create project" (`experimentation` profile, Sandbox 1) five times across
+one long day, and the five attempts produced **seven findings, each one layer deeper than the last** —
+three authorization layers, two wizard fields, two service-role defects, one template enum. Every
+round ran the same loop: the user pastes the portal's error → measurement → a Terraform fix → a
+user-authorized apply (and twice a user-authorized CLI `put`) → the user retries. The detailed
+engineering record is the stage file's owed table (six struck rows); what follows is what was done by
+hand in AWS, with the readings that drove it.
+
+| attempt | died on (user's paste, trimmed) | root cause → fix |
+|---|---|---|
+| 1 | `Caller is not authorized to create environment using blueprintId 4k186sfh08eqxc` | all 22 blueprint configurations carried **zero** `CREATE_ENVIRONMENT_FROM_BLUEPRINT` grants → `sagemaker-prereqs-v0.3.0` (`grants.tf`, 11 per member; entity id is the undocumented `<member-account>:<blueprint-id>`) |
+| 2 | `Manage Access Role Arn for environment blueprint id 4k186sfh08eqxc not defined` — on deploy **and on the stuck project's delete** | Tooling alone passed a null manage-access role → `v0.3.1` removes the conditional; the apply hit `NotUpdatableException`, so the remote was reconciled by the first user-authorized full-object `put-environment-blueprint-configuration`, per member |
+| 3 | `Invalid S3 path provided null` — again both directions | the wizard's projects bucket and encryption key, absent from the API-enabled configuration → `v0.3.2` (`awsds-<env>-smus-projects` + `S3Location`/`KmsKeyArn`; second Put, this time predicted before it ran) |
+| 3′ | `Failed to remove EMR EKS IAM roles (System Namespace, Query Engine)` (environments `bowy6k5b0v14i8`, `cthkk9g9ibbxqo`) **and** `Could not resolve KMS key arn:aws:kms:us-west-2:<member-account>:key/a81b1ef3-… to its canonical ARN` | **two independent defects, neither a wizard field**: both service-role trusts pinned the member account where the documented guard is `aws:SourceAccount = the domain account`, and the project CMK's delegate-to-IAM policy reached no service principal → `v0.3.3` (trusts re-aimed; the documented SMUS key-policy statement set, minus the category-2 Redshift/Airflow rows). CloudTrail on both sides held **no datazone event at all** — a cross-account service denial is invisible in the target trail, so the attribution came from the documentation |
+| 4 | `Stack creation failed with Parameter 'lifecycleManagement' must be one of AllowedValues` (stack `DataZone-Env-djh2z3p7erhcpc`, CloudFormation 400) | the profile locked `"true"` against the template's `ENABLED`/`DISABLED` enum — and the fix apply then met `Missing required Blueprint parameter(s): bucketName`: **`UpdateProjectProfile` validates what `CreateProjectProfile` never did.** Governance apply, `2 changed`: `ENABLED`, plus the only two required-no-default parameters in all 11 blueprints (`S3Bucket.bucketName`, `S3TableCatalog.catalogName`) as editable placeholders |
+| 5 | — | **"O projeto foi criado com sucesso!"** |
+
+Attempt 4 was itself the proof the first five findings landed: the failure had **moved inside the
+member account** — the stage's first CloudFormation-level error — and the three stuck projects **all
+deleted cleanly** in the same sitting ("Os projetos anteriores foram excluídos com sucesso!"), the
+teardown half of the trust fix measured. The fourth project deleted cleanly too.
+
+### What success left standing, read in this sitting
+
+`fifth-experimentation` is `ACTIVE` (created 20:58 UTC by the data-scientist SSO identity), its
+Tooling environment `ACTIVE`, and stack `DataZone-Env-cdvdkco1klne6o` in Sandbox 1 reads
+**`CREATE_COMPLETE`** — created 20:58:27, roles at 20:58:47, the environment updated 21:02: about four
+and a half minutes from click to a working environment, forty resources in the template.
+
+**Verification (v) took its first real reading, and the mechanism works — via the template.** The one
+blueprint-provisioned role, `datazone_usr_role_5ihyqdcj9fpl00_cdvdkco1klne6o`, carries
+`awsds-sandbox-project-boundary` — and the stack's template shows HOW: the configuration's write-only
+`environmentRolePermissionBoundary` is injected as the `PermissionsBoundary` property of the
+`ToolingUserRole` resource (and of the two conditional Bedrock roles). The role's tags close two loops
+from this sitting's own fixes: `DomainBucketName = awsds-sandbox-smus-projects`, `KmsKeyId` = the
+project CMK. **One qualification, recorded before anyone needs it:** the template's two conditional
+EMR roles (`createEmrResourceInTooling`, false today) declare **no** boundary — if EMR-in-Tooling is
+ever enabled, those two are born unbounded, and that is AWS's template, not our configuration.
+
+**US-8 first reported the opposite, and the fail was the instrument's** (Lesson 30). The check read
+boundaries through `iam list-roles`, whose response **omits `PermissionsBoundary` by documented
+contract** (`GetRole`-only, along with `Tags` and `RoleLastUsed`) — so it would have said "no
+boundary" about every bounded role in existence. It was never caught because until 20:58 today there
+was **no datazone role anywhere for it to misread**: the check's first exercise with a real object was
+the thing that falsified it. Fixed in the same sitting — one `get-role` per discovered role — and the
+re-run reads `pass US-8 … all 1 datazone role(s) bounded`, battery otherwise unchanged (0 FAILED;
+US-10 notes the running Tooling apps as the burn they are).
+
+### Files, and what is owed
+
+Touched this closing sitting: `aws/studio.py` (the US-8 fix), `docs/plan/stages/stage-06-unified-studio.md`
+(the owed table's retry row), `CLAUDE.md`, this log and its index cell, and PR #32's body. The seven
+rounds' own files — `sagemaker-prereqs` v0.3.0→v0.3.3, both member slices, the governance slice, and
+their records — are the branch's earlier commits.
+
+Owed after this sitting: **the off-VPN portal reading** (user's browser, the input to `README.md`'s
+item-3 choice), then **passes 3-5 and 5.1** — pass 3 now standing on a measured, working create path.
