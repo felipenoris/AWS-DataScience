@@ -44,7 +44,7 @@ locals {
 
 module "sagemaker_prereqs" {
   # checkov:skip=CKV_TF_1:pinned by git TAG by convention (conventions §6, Stage 3 step 1.1a) - a repository-internal tag only the repo owner can move
-  source = "git::git@github.com:felipenoris/AWS-DataScience.git//terraform-modules/sagemaker-prereqs?ref=sagemaker-prereqs-v0.2.3"
+  source = "git::git@github.com:felipenoris/AWS-DataScience.git//terraform-modules/sagemaker-prereqs?ref=sagemaker-prereqs-v0.3.0"
 
   env    = var.env
   region = var.region
@@ -62,6 +62,11 @@ module "sagemaker_prereqs" {
   domain_id = (
     var.blueprints_enabled
     ? data.terraform_remote_state.governance[0].outputs.domain_id
+    : null
+  )
+  root_domain_unit_id = (
+    var.blueprints_enabled
+    ? data.terraform_remote_state.governance[0].outputs.root_domain_unit_id
     : null
   )
 }
