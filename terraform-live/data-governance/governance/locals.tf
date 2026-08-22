@@ -6,11 +6,51 @@ locals {
   # all three in ONE commit, which is Lesson 14's rule applied to a list that lives in a
   # module, a slice and a check.
   #
-  # EMRServerless FOLLOWS DECISION 1, which is reopened on an endpoint count and settled
-  # in-stage by two readings (4.2's flow logs; whether a `fineGrained` EMR-S connection is
-  # usable from an IdC-domain notebook). Landing on Glue interactive sessions removes this one
-  # entry - and needs no blueprint at all, a Glue connection in the project instead.
-  category_one_blueprints = ["Tooling", "DataLake", "EMRServerless", "AmazonBedrockGenerativeAI"]
+  # EmrServerless FOLLOWS DECISION 1, taken 2026-08-21 as KEEP-or-REMOVE: it is enabled here and
+  # removed if either in-stage reading comes out against it (4.2's flow logs; whether a
+  # `fineGrained` EMR-S connection is usable from an IdC-domain notebook). Landing on Glue
+  # interactive sessions removes this one entry - Glue needs no blueprint at all.
+  #
+  # EVERY NAME HERE WAS RE-READ FROM THE LIVE DOMAIN ON 2026-08-21, and three of the four this
+  # list used to carry did not resolve: `EMRServerless` (the API says `EmrServerless`),
+  # `EMRonEC2` (`EmrOnEc2`) and `AmazonBedrockGenerativeAI` (a console grouping with no API
+  # identifier at all). They were proper nouns taken from documentation prose - Lesson 38 - and
+  # the plan of step 1.4 failed on them before anything was applied.
+  #
+  # THE ORDER IS A CONTRACT, AND ONLY ITS FIRST ELEMENT IS MEASURED: profiles.tf reads
+  # `index(local.category_one_blueprints, bp)` as each environment's `deployment_order`, so
+  # Tooling must come first - nothing else provisions a working project. The grouping after it
+  # is deliberate but NOT a dependency graph anybody has read; if a project's environments turn
+  # out to need a stricter order, that is a measurement at step 2.4, not a preference.
+  category_one_blueprints = [
+    # The base environment, FIRST and deliberately so - it provisions the project's SageMaker AI
+    # domain, roles and security groups, and nothing else works without it. `deployment_order`
+    # below is `index()` into this list.
+    "Tooling",
+    "ToolingLite",
+    # Storage and catalog.
+    "DataLake",
+    "S3Bucket",
+    "S3TableCatalog",
+    # LakehouseAdmin IS DELIBERATELY ABSENT - category 2 since 2026-08-21, not an omission. It is a
+    # PROVISIONING TEMPLATE whose own description is an account-wide automatic ingest-and-catalog,
+    # and NOT Lake Formation's data lake administrator (different objects, similar names). It was
+    # briefly category 1 with a comment saying "measure it at 2.4 first"; a comment is an intention,
+    # not a control (Lesson 5), so the measurement became the enabling trigger instead. It joins
+    # this list when step 2.4 has read what the environment provisions and what the D13 boundary
+    # actually stops - or when a blueprint here proves to depend on it.
+    # Compute.
+    "EmrServerless",
+    # The generative-AI surface. SEVEN ENTRIES, NOT ONE: `AmazonBedrockGenerativeAI` is a CONSOLE
+    # GROUPING with no API identifier (measured 2026-08-21 - `list-environment-blueprints` returns
+    # these seven and no aggregate), so decision 5's category 1 is delivered by naming them.
+    "AmazonBedrockChatAgent",
+    "AmazonBedrockEvaluation",
+    "AmazonBedrockFlow",
+    "AmazonBedrockFunction",
+    "AmazonBedrockGuardrail",
+    "AmazonBedrockPrompt",
+  ]
 
   member_account_ids = {
     sandbox     = data.aws_caller_identity.sandbox.account_id

@@ -68,9 +68,33 @@ HEADLESS_PROFILES = ("awsds-infra-prod", "awsds-infra-staging")
 # Decision 5's category 1 (2026-08-19; docs/SMUS.md is the reference table): the only
 # blueprints that may be enabled. A category-2 blueprint (Workflows OnDemand, MLExperiments)
 # joins this tuple in the same commit that enables it (Lesson 14). The AmazonBedrock prefix
-# covers the seven sub-blueprints the combined AmazonBedrockGenerativeAI blueprint carries.
-BLUEPRINT_ALLOWLIST = ("Tooling", "DataLake", "EMRServerless")
-BLUEPRINT_ALLOW_PREFIX = "AmazonBedrock"
+# ENUMERATED, AND THE PREFIX RULE THAT USED TO STAND HERE IS GONE (2026-08-21). It read
+# BLUEPRINT_ALLOW_PREFIX = "AmazonBedrock" beside a three-name tuple, and it was carrying two
+# defects at once. The tuple named `EMRServerless`, which the API does not publish - the real name
+# is `EmrServerless` - so US-3 would have reported the CORRECT blueprint as outside category 1 the
+# moment 1.4 configured it; a latent false FAIL nobody could see while no blueprint was configured
+# anywhere. And the prefix silently admitted anything AWS might add under that namespace: a new
+# AmazonBedrock* blueprint appearing in a member account would have passed as expected rather than
+# surfacing as the finding it is. Both are the same failure - a name standing in for a reading
+# (Lesson 38) - so the list is now the thirteen the user categorised on 2026-08-21, spelled as
+# `datazone list-environment-blueprints` returns them.
+#
+# THE SAME LIST LIVES IN THREE PLACES (Lesson 14): here, terraform-modules/sagemaker-prereqs/'s
+# blueprint_names default, and data-governance/governance/locals.tf. One commit moves all three.
+BLUEPRINT_ALLOWLIST = (
+    "Tooling",
+    "ToolingLite",
+    "DataLake",
+    "S3Bucket",
+    "S3TableCatalog",
+    "EmrServerless",
+    "AmazonBedrockChatAgent",
+    "AmazonBedrockEvaluation",
+    "AmazonBedrockFlow",
+    "AmazonBedrockFunction",
+    "AmazonBedrockGuardrail",
+    "AmazonBedrockPrompt",
+)
 PROJECT_PROFILE_NAMES = ("experimentation", "engineering")
 STEP3_SIDS = ("DenySageMakerJobsOffVpc", "DenySageMakerInstanceCeiling")
 BOUNDARY_NAME_FRAGMENT = "project-boundary"
@@ -602,13 +626,7 @@ def main(argv: list) -> int:
                 continue
             names = [n for n, _r, _p, _m in rows]
             redshift = [n for n in names if "redshift" in n.lower() or n == "LakehouseCatalog"]
-            extra = [
-                n
-                for n in names
-                if n not in BLUEPRINT_ALLOWLIST
-                and not n.startswith(BLUEPRINT_ALLOW_PREFIX)
-                and n not in redshift
-            ]
+            extra = [n for n in names if n not in BLUEPRINT_ALLOWLIST and n not in redshift]
             if redshift:
                 checks.fail(
                     "US-3",
@@ -622,8 +640,11 @@ def main(argv: list) -> int:
                     "US-3",
                     f"blueprint outside decision 5's category 1 in {member}",
                     f"{', '.join(extra)} - the allow-list is "
-                    f"{', '.join(BLUEPRINT_ALLOWLIST)} + {BLUEPRINT_ALLOW_PREFIX}* "
-                    "(docs/SMUS.md); enabling more amends Stage 6 decision 5.",
+                    f"{', '.join(BLUEPRINT_ALLOWLIST)} "
+                    "(docs/SMUS.md carries the full table and the category of every blueprint "
+                    "the domain publishes); enabling more amends Stage 6 decision 5. A name "
+                    "that is ALMOST one of these is the likely cause - the API spells them "
+                    "EmrServerless, EmrOnEc2, QuickSight (Lesson 38).",
                 )
             if not redshift and not extra:
                 checks.ok(

@@ -253,10 +253,22 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   set names those verbs). Proof is functional: `list-environment-blueprint-configurations` **succeeds**
   from both members, empty. **`./aws/studio.py` US-2 then FAILED because it worked** — it read visibility
   as ownership; the owner now comes out of the **ARN**, battery **0 FAILED**.
-- **`backend.SMUS_ASSOCIATED` is STILL EMPTY BY DECISION — a TRIGGER, not bookkeeping**: the row arms 1.4
-  **and** 1.5 (both slices already carry the gated resources), enabling `EMRServerless` while **decision 1
-  is reopened** and skipping `AmazonBedrockGenerativeAI`'s owed `PRICING.md` row. **Order, encoded nowhere
-  else: the two `sagemaker/` slices BEFORE `governance/`.**
+- **`SMUS_ASSOCIATED` carries both members (2026-08-21) — the row is a TRIGGER, not bookkeeping**: it
+  arms 1.4 **and** 1.5. **Order, encoded nowhere else: the two `sagemaker/` slices BEFORE `governance/`.**
+- **THE BLUEPRINT ROSTER IS MEASURED, AND THE PLAN'S NAMES WERE NOT (2026-08-21).** 1.4's plan returned
+  `empty result`: the API says **`EmrServerless`**/`EmrOnEc2`/`QuickSight`, and
+  **`AmazonBedrockGenerativeAI` is a CONSOLE GROUPING with no API identifier** — 23 by API against 13 in
+  the console, four API-only. **Lesson 38.** Decision 5 completed by the user the same day:
+  **ALL 23 CATEGORISED — 1 = 12, 2 = 5, 3 = 6, none undefined.** Category 1 adds six
+  `AmazonBedrock*`, `S3Bucket`, `S3TableCatalog`, `ToolingLite`; **the Bedrock family is SPLIT** —
+  `KnowledgeBase` is cat 2, its vector store bills while it exists — so never reason about "the Bedrock
+  blueprints" as one thing. **`LakehouseAdmin` is cat 2**: a provisioning template whose own description
+  is an account-wide **automatic ingest-and-catalog**, NOT Lake Formation's *data lake administrator*
+  (different object, similar name, assigned at St.5 p4). It was cat 1 with a "measure at 2.4" comment
+  for an hour — **a comment is an intention, not a control (Lesson 5)**, so the measurement became the
+  enabling trigger. The list lives in **three** places
+  (`locals.tf`, the module default, `US-3`) — one commit moves all three, and **the module needs a TAG
+  BUMP before 1.4 can plan**.
 - **What St.6 still owes:** that row, then 1.4/1.5; **5.0's docker PUSH** (build clean on the devbox
   2026-08-21; the devbox cannot push); then passes 3-5. Decisions 1 (EMR-S vs Glue), 2 (TIP — coded
   `false`) and 6 (prefix shape) stay in-stage.

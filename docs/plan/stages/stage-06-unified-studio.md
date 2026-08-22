@@ -401,17 +401,50 @@ invitations in either member account.**
 applies as that account's profile: `aws_datazone_environment_blueprint_configuration` (the same resource
 the module uses) per member account, naming the provisioning role, the manage-access role and the
 `regional_parameters` (`VpcId`, `Subnets`, `AZs`) **from the `sagemaker/` slice outputs of 2.1 — read
-through `terraform_remote_state`, never pasted**. Enabled set and no others — **decision 5's category 1
-(2026-08-19; [`docs/SMUS.md`](../../SMUS.md) carries the full table)**: **Tooling** (mandatory — it is
-what provisions each project's SageMaker AI domain, roles and security groups), **`LakeHouseDatabase`**
-(API name **`DataLake`** — decision 4: the Glue/Athena form; **not** `LakehouseCatalog`, which the
-2026-08-19 re-read found RMS-backed), **EMRServerless** (decision 1's current recommendation — that
-decision is reopened on the endpoint count, and this entry follows its outcome), and
-**AmazonBedrockGenerativeAI** (per-use, token-billed — **its `PRICING.md` row is owed before this
-apply**, and its runtime endpoints join 4.2's measurement). **Never `RedshiftServerless`, and now
-`LakehouseCatalog` beside it** (both provision on Redshift-managed storage — D26/D12). Category 2 —
-`Workflows` OnDemand, `MLExperiments` — enters only by its named trigger; category 3 — `EMRonEC2`,
-`PartnerApps`, `Quicksight` — only by amending decision 5.
+through `terraform_remote_state`, never pasted**. Enabled set and no others — **decision 5's category 1,
+COMPLETED 2026-08-21 against the measured roster** ([`docs/SMUS.md`](../../SMUS.md) carries the full
+table, all 23 blueprints with a category each): **thirteen**, not four.
+
+> **THE FOUR-NAME LIST THIS PARAGRAPH USED TO CARRY DID NOT PLAN, LET ALONE APPLY.** Run 2026-08-21,
+> `terraform plan` resolved `Tooling` and `DataLake` and returned **`empty result`** for the other two:
+> `EMRServerless` is spelled **`EmrServerless`** by the API, and **`AmazonBedrockGenerativeAI` has no
+> API identifier at all** — it is a *console grouping* the API publishes as **seven** separate
+> `AmazonBedrock*` blueprints. `EMRonEC2` and `Quicksight` below were wrong the same way
+> (`EmrOnEc2`, `QuickSight`). All four were proper nouns taken from documentation prose — **Lesson 38**,
+> written the same day — and the enumeration that would have caught them,
+> `datazone list-environment-blueprints`, could not be run until the domain existed at 1.2.
+
+**Category 1 (12):** `Tooling`, `ToolingLite`, `DataLake` (console `LakeHouseDatabase` — decision 4's
+Glue/Athena form; **not** `LakehouseCatalog`, RMS-backed), `S3Bucket`, `S3TableCatalog`,
+`EmrServerless` (**decision 1, taken as KEEP-or-REMOVE**), and **six** of the
+seven `AmazonBedrock*` — `ChatAgent`, `Evaluation`, `Flow`, `Function`, `Guardrail`, `Prompt` — which
+is how the generative-AI objective is delivered now that the grouping turns out not to be an API
+object. Bedrock's `PRICING.md` row is **filled** (§5, read 2026-08-21) and its runtime endpoints join
+4.2's measurement.
+**Category 2 (5):** `Workflows` OnDemand, `MLExperiments`, `MLflowApp`,
+**`AmazonBedrockKnowledgeBase`** and **`LakehouseAdmin`** — by named trigger only. Two pairings to keep: `MLExperiments` and
+`MLflowApp` are the same capability twice and move together; and **the Bedrock family is deliberately
+split across categories 1 and 2**, so nothing downstream may reason about "the Bedrock blueprints" as
+one thing. `KnowledgeBase` is the one that stands up a **vector store billing while it exists** — the
+trigger names the measurement (Lesson 6) rather than meeting the bill first.
+**Category 3 (6):** `EmrOnEc2`, `EmrOnEks`, `PartnerApps`, `QuickSight`, plus **never**
+`RedshiftServerless` and `LakehouseCatalog` (both on Redshift-managed storage — D26/D12).
+**Nothing is `undefined`** — which is what this step needed, since `US-3` fails on an uncategorised
+blueprint exactly as on a forbidden one.
+
+> **`LakehouseAdmin` was placed in category 1 and moved to 2 the same day, and the move is worth
+> reading because nothing was applied in between.** The category-1 row carried a note — *read it at
+> step 2.4's throwaway project first* — and **a note is an intention, not a control** (Lesson 5).
+> Category 2 turns that same sentence into the **trigger**, so the measurement gates the enabling
+> instead of merely accompanying it. Enabling provisions nothing either way; what category 1 would
+> have bought is an **account-wide automatic ingest-and-catalog sitting one click from a project
+> member**, in an account holding a governed lake, with the D13 boundary's reach over it unmeasured —
+> INT-15 and verification (v)'s question, and note that the boundary's S3 deny names the LF-registered
+> buckets only, so it says nothing about the derived zone. **Nothing in `objectives.md` asks for this
+> blueprint**, so the deferral costs nothing anyone has named. If **2.4** finds a category-1 blueprint
+> depends on it, it moves up with evidence and before any real project exists. It is also **not** Lake
+> Formation's *data lake administrator* — a different object with a similar name, already assigned at
+> Stage 5 pass 4 (`docs/SMUS.md` carries the distinction).
 **The console recommends ≥ 3 subnets in 3 AZs; D9 built 2 — verification (iii)**, answered before anything
 is layered on the answer.
 
