@@ -109,7 +109,12 @@ variable "blueprint_names" {
     # domain, roles and security groups, and nothing else works without it. `deployment_order`
     # below is `index()` into this list.
     "Tooling",
-    "ToolingLite",
+    # ToolingLite IS DELIBERATELY ABSENT - category 3 since 2026-08-21 (user decision, the second
+    # amendment to decision 5 that day). Step 1.5's apply measured what no page documents: it is a
+    # BASE variant, not a capability - the service refuses it ON_DEMAND in a project profile
+    # ("ToolingLite environment blueprint configuration must have deployment mode ON_CREATE"),
+    # and a second base beside Tooling would double-provision every new project with a shape
+    # nobody measured. Category 3 means disabled: re-enabling starts by amending the decision.
     # Storage and catalog.
     "DataLake",
     "S3Bucket",
