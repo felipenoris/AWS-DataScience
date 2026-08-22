@@ -250,13 +250,45 @@ would not have been a cheap starting point to refine. The entity is the **root d
 only one this design has; `include_child_domain_units` is `false`, describing today's shape rather
 than restricting anything.
 
-**Status: declared, not yet applied.** `terraform-live/data-governance/governance/grants.tf` was
-written 2026-08-22 and `terraform validate` passes against the pinned providers
-(`awscc_datazone_policy_grant`, awscc 1.98.0); the apply and the portal re-read are step 2.4's.
+**Status: applied 2026-08-22** — `2 added`, re-plan `No changes`, read back independently through
+`list-policy-grants`; the stage file's owed table carries the record. **The same day's first real
+project creation then measured the next layer down — the twin section below.**
 
 The account pinning is D21's boundary as a property of the *project* rather than of the URL a person
 opened, and the two names are the `US-4` contract. The reasoning lives with the code
 (`terraform-live/data-governance/governance/locals.tf`); this section is the index.
+
+#### Who may create an environment, and from which blueprint
+
+**The authorization above has a twin one layer down, and the first real project creation found it
+(2026-08-22).** With the profile grants applied, `CreateProject` succeeded — and the project died in
+deployment: *"Caller is not authorized to create environment using blueprintId \<Tooling's id\>"*,
+full rollback, nothing provisioned or billed in the member account. Creating a project and creating
+the environments its profile bundles are **separate authorizations**: the second is
+`CREATE_ENVIRONMENT_FROM_BLUEPRINT`, granted on the **blueprint configuration** rather than on a
+domain unit — and `list-policy-grants` read **zero** such grants across all 22 configurations
+(11 per member). The cause is the same shape as the profile gap: the console's *enable blueprint*
+flow fills **"Authorized domain units"**, which emits this grant; `PutEnvironmentBlueprintConfiguration`
+— all step 1.4 ran — only creates the configuration.
+
+Two facts about the grant are documented nowhere, and were measured, then confirmed against AWS's
+own working sample (`aws-samples/sample-automate-sagemaker-unified-studio-using-iac`):
+
+- **the entity identifier is `<account-id>:<blueprint-id>`** — the account is the configuration's
+  *owner*, the member, not the domain account (fed the domain account the API answers "does not
+  exist in account"); every publicly derivable spelling — bare id, `domain|id`, the ARN — is
+  rejected as *format invalid*, and the API reference gives no format at all;
+- **the principal is copied from the sample, not designed**: every project in the root domain unit,
+  designation `CONTRIBUTOR`. What a designation means for this policy type is unwritten; the sample
+  is a working end-to-end implementation whose `ON_CREATE` Tooling deploys at project creation —
+  exactly the failure mode above — so its principal is a measurement where a choice of ours would be
+  a guess.
+
+Because the entity is per member account, the grant lives in **`terraform-modules/sagemaker-prereqs/`
+(`grants.tf`, tag `v0.3.0`)**, riding `for_each` over the blueprint configurations so a blueprint
+joining category 1 arrives authorized in the same apply. Without its grant, every `ON_DEMAND`
+blueprint fails exactly as Tooling did — one capability-enable at a time. **Status: written
+2026-08-22, apply owed in both member slices** (the stage file's owed table is the record).
 
 ## Blueprints — the object
 
