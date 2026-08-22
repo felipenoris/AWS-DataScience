@@ -63,6 +63,8 @@ write anything into it. Claude can read the files in this folder to gather infor
 
 - Never run write operations using aws, unless explicitly authorized.
 
+- if the current aws cli session is expired, always ask the user to login, informing which sso user o use. **Never login by yourself**.
+
 - all scripts inside `aws/*` should perform only read-only operations. You are free to run them to gather information.
 
 - **The first exception, and it is fenced: [`aws/probes/`](aws/probes/README.md)** — the SCP battery has to
@@ -172,7 +174,7 @@ its `Consumes` row lists.
 | "What would an institution do?" | [`docs/plan/institutional-delta.md`](docs/plan/institutional-delta.md) — so a lab compromise is not learned as a pattern |
 | Root is needed, or its alarm chain is being changed | [`docs/plan/runbooks/break-glass.md`](docs/plan/runbooks/break-glass.md) |
 | **Anything VPN** — what the pieces are and what the NAT is *not* part of, starting/stopping the host, connecting a device, a tunnel that will not come up, a key event (loss, revocation, rotation), or a shell on the VPN host | [`docs/plan/runbooks/vpn.md`](docs/plan/runbooks/vpn.md) — one runbook, three parts (unified 2026-08-19). **§S** the system: components, the measured topology, host start/stop (`InsufficientInstanceCapacity` is retried, never redesigned around). **§C** the client, no AWS call in it: the five config values, the three checks that prove three different claims, the silent-by-design failure modes. **§K** the keys — loss is recovery from the `[P]` secret, never rotation — and **§K0a is the SSM session** and where `--target` comes from |
-| **Anything DEVBOX** — the `[E]` `amd64` build host of St.6 5.0, its route, or why the VPN host is also a NAT instance | [`docs/plan/runbooks/devbox.md`](docs/plan/runbooks/devbox.md) — seven short sections: what it is, why it exists (**the images are `amd64`, the laptop is `arm64`**), the components (**the route is the reach; `vpc_nat_cidrs` is the capability**), `up`, **§S space** (the 64 GiB root against two images that share layers — prune before recreating), **§P push** (**build and push are ONE session** — the volume dies with the host; the identity arrives as an ECR **token**, never as a permission), `down`. It **must not coexist with `sandbox/probes/`** and a **stopped VPN host makes its route a blackhole, not an error** |
+| **Anything BUILDBOX** — the `[E]` `amd64` build host of St.6 5.0, its route, or why the VPN host is also a NAT instance | [`docs/plan/runbooks/buildbox.md`](docs/plan/runbooks/buildbox.md) — seven short sections: what it is, why it exists (**the images are `amd64`, the laptop is `arm64`**), the components (**the route is the reach; `vpc_nat_cidrs` is the capability**), `up`, **§S space** (the 64 GiB root against two images that share layers — prune before recreating), **§P push** (**build and push are ONE session** — the volume dies with the host; the identity arrives as an ECR **token**, never as a permission), `down`. It **must not coexist with `sandbox/probes/`** and a **stopped VPN host makes its route a blackhole, not an error** |
 | **A policy is about to be attached, or was amended** | [`docs/plan/runbooks/scp-battery.md`](docs/plan/runbooks/scp-battery.md) — the probes, and the two distinguishable outcomes of each. **Running them is `./aws/probes/scp-battery.py`** ([`aws/probes/README.md`](aws/probes/README.md)); amending the ceiling means editing `probes.py` |
 | Explaining the design to someone | [`README.md`](README.md) — the argument for the account split and the three distinctions |
 | How the plan got here | [`docs/plan/history.md`](docs/plan/history.md) — almost never |
@@ -318,7 +320,7 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
 - **What St.6 still owes:** **the project-creation RETRY in the portal** (the behavioural half of the
   grant apply; user's browser — two stuck projects to delete first: `first-…` DELETE_FAILED,
   `second-…` ACTIVE) and the off-VPN portal reading (unblocked); then passes 3-5 + 5.1.
-  **5.0 is DONE** (`default-v0.1.0` pushed to both repos 2026-08-22, one devbox session). Decisions 1
+  **5.0 is DONE** (`default-v0.1.0` pushed to both repos 2026-08-22, one buildbox session). Decisions 1
   (EMR-S vs Glue) and 6 (prefix shape) stay in-stage; **2 is delivered** (TIP `false`, non-editable,
   both profiles).
 - **Standing St.6 mechanics:** a blueprint configuration is applied **from the MEMBER account** (the

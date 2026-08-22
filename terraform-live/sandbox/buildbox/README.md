@@ -1,4 +1,4 @@
-# `sandbox/devbox/` — the build host
+# `sandbox/buildbox/` — the build host
 
 **Layer `[E]`.** Created for a build session and destroyed at the end of it. It holds nothing:
 the state carries no secret, the volume dies with the instance, and anything worth keeping
@@ -42,24 +42,24 @@ route belongs to `egress/` under `egress_mode=A`, and two slices writing `0.0.0.
 route table is a collision rather than a design. The isolated tier has no default route by
 construction — which is the property that leaves room for one, **and** the premise
 `sandbox/probes/`'s perimeter probe measures. The two are never up together, and that is
-enforced by [`scripts/devbox.py`](../../../scripts/devbox.py) rather than asked for in a comment.
+enforced by [`scripts/buildbox.py`](../../../scripts/buildbox.py) rather than asked for in a comment.
 
 ## Using it
 
 ```bash
-./scripts/devbox.py up
+./scripts/buildbox.py up
 ```
 
 ```bash
-./scripts/devbox.py sync
+./scripts/buildbox.py sync
 ```
 
 ```bash
-./scripts/devbox.py ssm
+./scripts/buildbox.py ssm
 ```
 
 ```bash
-./scripts/devbox.py down
+./scripts/buildbox.py down
 ```
 
 `up` refuses to run while a probe instance exists, **starts the WireGuard host if it is
@@ -89,7 +89,7 @@ the far half denies would produce a role that reads as if it could publish. The 
 
 `t3.xlarge` is **0.1664 USD/h** (`docs/PRICING.md` §8, `us-west-2`) plus ~0.007/h for the 64 GiB
 gp3 while it exists. **A week left running is USD 28** against D12's USD 50/month — which is why
-every helper the script prints ends in `down`, and why `./scripts/devbox.py status` exists.
+every helper the script prints ends in `down`, and why `./scripts/buildbox.py status` exists.
 
 **One thing a bigger instance does not fix:** every byte this host pulls crosses the WireGuard
 host, a `t3.nano` by default. If a build is network-bound rather than CPU-bound, the knob is

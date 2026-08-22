@@ -1,7 +1,7 @@
 # Inputs, from two files - the same split sandbox/vpn/ uses, and for the same reason.
 #
 # The first five arrive from the GENERATED, untracked terraform.auto.tfvars
-# (./scripts/gen-tfvars.py sandbox devbox): region and env for Stage 2's standing reasons,
+# (./scripts/gen-tfvars.py sandbox buildbox): region and env for Stage 2's standing reasons,
 # zone_ids because the AZ choice lives in scripts/tfhygiene/backend.py (D9), and account_folder
 # because a remote-state key is keyed by the account FOLDER.
 #
@@ -85,7 +85,7 @@ variable "root_volume_size" {
   validation {
     # FLOOR 32: below that the two images do not both fit and the failure arrives late.
     # CEILING 256: at 0.08 USD/GB-mo that is ~20 USD/month IF it were standing - it is not,
-    # because this slice is [E], but a devbox left up for a week at 256 GiB is still real
+    # because this slice is [E], but a buildbox left up for a week at 256 GiB is still real
     # money against D12, and this is where a fat-fingered 2560 is caught at PLAN time.
     condition     = var.root_volume_size >= 32 && var.root_volume_size <= 256
     error_message = "root_volume_size must be between 32 GiB (below this the two images do not both fit) and 256 GiB."

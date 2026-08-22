@@ -9,8 +9,8 @@
 #   there   the host is [D]. The disk is a STANDING cost that EBS will not shrink, so
 #           root_volume_size is a commitment and going back is a host replacement.
 #   here    the host is [E]. Volume and instance are created together and destroyed
-#           together, so a value that turns out wrong costs one `devbox.py down` and one
-#           `devbox.py up`. Assign freely; just do not leave it up.
+#           together, so a value that turns out wrong costs one `buildbox.py down` and one
+#           `buildbox.py up`. Assign freely; just do not leave it up.
 #
 # AND THE DEFAULT MEANS SOMETHING DIFFERENT. In the VPN's file the default is a posture to
 # fall back to; here it is a FLOOR - the shape that can actually build the image - so the
@@ -26,8 +26,8 @@
 #
 #   + gp3 at 0.08 USD/GB-month: 64 GiB is ~5.12/month IF it stood, ~0.007/h while it does not
 #
-# A t3.xlarge left running for a week is USD 28. `./scripts/devbox.py status` is the reading;
-# `./scripts/devbox.py down` is the cure. The WireGuard host is the OTHER half of that bill
+# A t3.xlarge left running for a week is USD 28. `./scripts/buildbox.py status` is the reading;
+# `./scripts/buildbox.py down` is the cure. The WireGuard host is the OTHER half of that bill
 # while a build runs, and it is a [D] host that `down` deliberately does NOT stop - see the
 # script's own note.
 #
@@ -40,7 +40,7 @@
 # HOW TO APPLY EITHER - the name ends in .auto.tfvars, so Terraform loads it by itself and
 # there is no -var-file to forget:
 #
-#   ./scripts/devbox.py up
+#   ./scripts/buildbox.py up
 
 
 instance_type = "t3.xlarge"

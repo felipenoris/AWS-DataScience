@@ -188,12 +188,12 @@ terraform-live/
 │   ├── vpn/              # [D] WireGuard EC2 (stopped, not destroyed) - and, since Stage 6
 │   │                     #     step 5.0, the NAT INSTANCE for the isolated tier as well:
 │   │                     #     vpc_nat_cidrs turns source/dest checking off and adds the
-│   │                     #     masquerade rules devbox/ routes traffic into
-│   ├── devbox/           # [E] the amd64 BUILD HOST for the dev-env image (Stage 6 step 5.0).
+│   │                     #     masquerade rules buildbox/ routes traffic into
+│   ├── buildbox/         # [E] the amd64 BUILD HOST for the dev-env image (Stage 6 step 5.0).
 │   │                     #     Isolated tier, NO ingress rule at all (Session Manager needs
 │   │                     #     none; the VPN-only requirement was withdrawn 2026-08-21),
 │   │                     #     egress ONLY through vpn/ - no NAT gateway, so egress/ need
-│   │                     #     never be up for a build. Driven by ./scripts/devbox.py, not by
+│   │                     #     never be up for a build. Driven by ./scripts/buildbox.py, not by
 │   │                     #     make up: it must NOT coexist with probes/, whose perimeter
 │   │                     #     reading is the absence of the default route this slice adds
 │   ├── dev-env/          # [P] the approved dev-env image registered for this account:

@@ -238,7 +238,7 @@ ZONE_IDS = {
 # The slices whose generated tfvars carry the allocation. bootstrap/ deliberately does not:
 # it has no subnet, and an unused zone list would send the next reader hunting for the
 # resource that consumes it (gen-tfvars.py's original argument, now scoped instead of total).
-NETWORK_SLICES = {"foundation", "egress", "vpn", "probes", "devbox"}
+NETWORK_SLICES = {"foundation", "egress", "vpn", "probes", "buildbox"}
 
 # Stage 3's reachability probes: which accounts each side has to admit or reach. Every side's
 # security group names the OTHER side's VPC range, and the pairing is authored here rather
@@ -343,12 +343,12 @@ def tfvars_values(account: str, slice_name: str) -> dict:
                 # inside AWS: the host SNATs, so no VPC, route table or security group ever
                 # sees it, and its single job is not colliding with a home or cafe LAN.
                 values["peer_cidr"] = WIREGUARD_PEER_CIDR
-            # NOTHING EXTRA FOR `devbox`, AND THE ABSENCE IS A DECISION TAKEN THE DAY THE
+            # NOTHING EXTRA FOR `buildbox`, AND THE ABSENCE IS A DECISION TAKEN THE DAY THE
             # SLICE WAS BUILT (2026-08-21). It briefly took WIREGUARD_PEER_CIDR, to admit the
             # tunnel's clients on its security group - and the requirement behind that was
             # WITHDRAWN by the user the same day, once a measurement showed the rule did not
             # gate the one path anybody uses: `ssm start-session` reaches the agent's OUTBOUND
-            # channel and no security group sees it. The devbox now has no ingress rule at
+            # channel and no security group sees it. The buildbox now has no ingress rule at
             # all, so an emission here would feed a variable that feeds nothing.
             if slice_name == "probes":
                 # Each side's security group names the OTHER side's VPC range: Production

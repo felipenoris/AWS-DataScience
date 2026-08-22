@@ -1120,7 +1120,7 @@ not repeating rather than an observation worth having.
 
 ---
 
-## 2026-08-21 — The build code, and a build host to run it on: `images/`, `sandbox/devbox/`, and the VPN host's second job
+## 2026-08-21 — The build code, and a build host to run it on: `images/`, `sandbox/buildbox/`, and the VPN host's second job
 
 **Claude's hand, on the user's request, across two asks in one sitting.** The first was *"escreve os
 Dockerfiles"*; the second re-scoped where they would be built. **Nothing in this entry is a measurement of
@@ -1187,7 +1187,7 @@ build off the laptop. **Two measurements say it had to move:** the distribution 
 suffixes and no `arm64` variant at all**, and SMUS spaces run on x86 — while this laptop is `arm64` **with
 no docker installed**. What the first draft treated as a slow path was not a path.
 
-### `sandbox/devbox/` — an `[E]` build host whose network shape is the whole design
+### `sandbox/buildbox/` — an `[E]` build host whose network shape is the whole design
 
 `t3.xlarge`, 64 GiB, both selectable in a tracked `instance_type.auto.tfvars` that deliberately mirrors
 `sandbox/vpn/`'s down to the name and the two keys — **with one difference written on both**: there the
@@ -1202,7 +1202,7 @@ belongs to `egress/` under `egress_mode=A`, and two slices writing `0.0.0.0/0` i
 collision rather than a design. The isolated tier has no default route by construction — the property that
 leaves room for one, **and** the premise `sandbox/probes/`'s perimeter probe measures. So the conflict was
 not removed, it was **moved to a slice that is not normally up**, and then made a control:
-`./scripts/devbox.py` refuses to apply while a probe instance exists, because a comment is an intention
+`./scripts/buildbox.py` refuses to apply while a probe instance exists, because a comment is an intention
 (Lesson 5).
 
 **What the host deliberately cannot do is push.** Its role carries `AmazonSSMManagedInstanceCore` and no
@@ -1245,7 +1245,7 @@ running the apply is not the session being interrupted. That is `slices.py`'s *"
   because the `AmazonEC2` region file is hundreds of megabytes. `PRICING.md` §0 now names that door and
   the one difference that matters to somebody repeating it: it needs credentials.
 - **The build context does not fit in user data.** A gzip+base64 of `images/` is ~27 KB against the
-  16 KB ceiling — measured, not estimated, which is why `devbox.py sync` exists at all and rides
+  16 KB ceiling — measured, not estimated, which is why `buildbox.py sync` exists at all and rides
   `ssm:SendCommand`, fenced the way `./aws/vpn.py --on-host` is.
 - **`SMUS.md`'s Bedrock cell still said a `PRICING.md` row was owed**, six hours after that row was
   written. Corrected, and the cell now carries the two readings the rate table alone would hide.
@@ -1259,7 +1259,7 @@ afterwards.
 |---|---|---|
 | `sandbox/vpn/` | `2 to add, 1 to change, 2 to destroy` | **The host was REPLACED, exactly as predicted before the plan was taken** — `user_data` *forces replacement*, `source_dest_check true -> false`, the EIP association replaced, the health alarm updated in place. `52.89.212.1` re-associated with the new instance, so the prediction that no client `.conf` moves held |
 | `sandbox/foundation/` | `0 to add, 1 to change, 0 to destroy` | **Not planned before the sitting — see below.** One ingress rule added to the `[P]` WireGuard security group |
-| `sandbox/devbox/` | `6 to add, 0 to change, 0 to destroy` | The host, its SG, its role and profile, and the one route |
+| `sandbox/buildbox/` | `6 to add, 0 to change, 0 to destroy` | The host, its SG, its role and profile, and the one route |
 
 **THE DEFECT IS MINE AND IT IS LESSON 28 IN ITS PUREST FORM: reach is an INTERSECTION, and I built two
 thirds of it.** The route sent the isolated tier's default at the WireGuard host, `vpc_nat_cidrs` gave that
@@ -1267,19 +1267,19 @@ host the masquerade rules — and the host's `[P]` security group still admitted
 else**, so every forwarded packet was dropped on arrival, after the routing and the translation had both
 done their jobs. **The three pieces live in three slices, so no file I wrote or read was wrong.**
 
-**The symptom is worth keeping, because it is not the symptom of a firewall.** The devbox came up,
+**The symptom is worth keeping, because it is not the symptom of a firewall.** The buildbox came up,
 installed docker and git **successfully** — those come from the AL2023 repository through the S3 *gateway*
-endpoint, which needs no route at all — and then sat there until `devbox.py up` gave up waiting for Session
+endpoint, which needs no route at all — and then sat there until `buildbox.py up` gave up waiting for Session
 Manager. The console output ends with `Post "https://ssm.us-west-2.amazonaws.com/": dial tcp … i/o
 timeout`. A dnf that works followed by an SSM that times out reads as a broken mirror or a flaky agent, not
 as a missing security-group rule. **Two things I had already written are what made it a ten-minute
 diagnosis instead of an evening**: the first-boot script takes an egress reading and prints
-`NO EGRESS - the route through the WireGuard host is not working`, and `devbox.py`'s own failure message
+`NO EGRESS - the route through the WireGuard host is not working`, and `buildbox.py`'s own failure message
 says *"that is the route through the WireGuard host failing, nine times out of ten"*.
 
 **The fix is in `foundation/`, not in the `[E]` slice that wants it, and the reason is mechanical:** that
 security group declares its rules **inline**, which makes them authoritative — a separate
-`aws_vpc_security_group_ingress_rule` written by `devbox/` would be silently removed by the next apply of
+`aws_vpc_security_group_ingress_rule` written by `buildbox/` would be silently removed by the next apply of
 `foundation/` and show as perpetual drift until it was. That is INT-11's failure mode wearing a security
 group. So the path now sits at **three lifetimes**: the group `[P]`, the masquerade `[D]` with the host,
 the **route** `[E]` with the session — and the route stays the only thing that comes and goes. What is left
@@ -1305,7 +1305,7 @@ disk:    /dev/nvme0n1p1  64G  2.5G  62G  4% /
 
 **`52.89.212.1` is the WireGuard host's Elastic IP.** That single line is the whole claim measured rather
 than argued: the build host is in a tier with no internet gateway, it reaches the internet, and it leaves
-under the address of the one host in this design that is allowed to face the world. `devbox.py sync` also
+under the address of the one host in this design that is allowed to face the world. `buildbox.py sync` also
 ran clean — 16 728 bytes of base64, 8 files, landed at `/opt/awsds/images`.
 
 ### One more thing I got wrong, and it was already written down two lines away
@@ -1318,9 +1318,9 @@ in the right place, and I did not read it — which is a reading failure, not a 
 
 ### Files, commits, and what is owed
 
-Two commits on `claude/stage-06-devbox` in Recipe B's order — the module alone, then `wireguard-v0.4.0`
+Two commits on `claude/stage-06-buildbox` in Recipe B's order — the module alone, then `wireguard-v0.4.0`
 pushed and **confirmed on origin by `git ls-remote` against the local `rev-parse`** before the second. The
-commit gate caught two things the runbook's §7 predicts and both were re-inits: `devbox/`'s provider cache
+commit gate caught two things the runbook's §7 predicts and both were re-inits: `buildbox/`'s provider cache
 disagreed with the sibling lock file I had copied in (6.61.0 cached, 6.60.0 locked), and `vpn/`'s
 `.terraform/modules` still recorded `wireguard-v0.3.0`.
 
@@ -1329,12 +1329,12 @@ disagreed with the sibling lock file I had copied in (6.61.0 cached, 6.60.0 lock
 
 **Owed, and both are the user's:** the `docker build` of the two images on this host — which is what the
 box exists for and has not been done — and the push of the results into the Production ECR from an identity
-that may. **The devbox is UP and billing at 0.1664 USD/h as this is written**; `./scripts/devbox.py down`
+that may. **The buildbox is UP and billing at 0.1664 USD/h as this is written**; `./scripts/buildbox.py down`
 is the cure and `status` is the reading.
 
 ### A follow-up the same day: the requirement was withdrawn rather than delivered in name
 
-The user asked *"`devbox.py ssm` works without me being on the VPN — is that expected?"* **It is, and the
+The user asked *"`buildbox.py ssm` works without me being on the VPN — is that expected?"* **It is, and the
 sentence I had written was wrong.** `ssm start-session` goes laptop → the **public** SSM API → the channel
 the agent holds open **outbound**; the security group never sees it. So *"reachable only with the tunnel
 up"* was false for the one path anybody uses — and the slice README said so **itself**, two clauses after
@@ -1571,7 +1571,7 @@ findings 12-13 are the plan-facing consequences; this entry is what happened.
 The sitting opened by synchronising after PR #30 and preparing step 5.0. Preparing it turned up three
 things the repository did not say, and one it said wrongly.
 
-**The devbox was absent** (`./scripts/devbox.py status`: *"absent (nothing billing)"*), so the clean
+**The buildbox was absent** (`./scripts/buildbox.py status`: *"absent (nothing billing)"*), so the clean
 build of 2026-08-21 was gone with its volume. `images/README.md` and step 5.0 described the build and
 the push in consecutive sentences that read as two sittings; they are **one session**, because the
 host is `[E]` and holds nothing. That reading costs a full rebuild, and it is now stated in three
@@ -1602,7 +1602,7 @@ One more read, so the procedure's safety claim is a measurement: the account has
 `SSM-SessionManagerRunShell` document**, so Session Manager runs on defaults and no session stream is
 logged — `read -rs` keeps the token off the screen and out of history, and nothing else records it.
 
-All of it became [`devbox.md`](../plan/runbooks/devbox.md) **§P**, with `images/README.md`, step 5.0
+All of it became [`buildbox.md`](../plan/runbooks/buildbox.md) **§P**, with `images/README.md`, step 5.0
 and two pass-table rows corrected to match. **Step 5.0 itself did not run** and is still owed.
 
 ### 1.7 — the user's reading, verbatim
@@ -1710,14 +1710,14 @@ sentinel — a grant removed by hand comes back as `1 to add`.
 
 ### Files, and what is owed
 
-Touched: `docs/plan/runbooks/devbox.md` (§P, new), `images/README.md`, `docs/SMUS.md` (the
+Touched: `docs/plan/runbooks/buildbox.md` (§P, new), `images/README.md`, `docs/SMUS.md` (the
 installed-profiles table gains a fourth column, plus the new subsection the user asked for),
 `docs/plan/stages/stage-06-unified-studio.md` (findings 12-13, step 2.4's prerequisite, step 5.0, the
 owed table, two pass rows), `docs/plan/integrations.md` (INT-16 answered), `docs/REFERENCES.md`,
 `CLAUDE.md`, and the governance slice — `grants.tf` (new), `locals.tf`, `data.tf`, `providers.tf`,
 `variables.tf`, `outputs.tf`, plus `scripts/tfhygiene/backend.py`.
 
-Owed after this sitting: **step 5.0's build and push, one devbox session** (§P); INT-16's missing
+Owed after this sitting: **step 5.0's build and push, one buildbox session** (§P); INT-16's missing
 positive control, a minute's work; and then pass 3, which the grants have unblocked — **and whose
 projects are now provisioned by each profile's persona, not by the infrastructure identity**.
 
@@ -1725,21 +1725,21 @@ projects are now provisioned by each profile's persona, not by the infrastructur
 
 ## 2026-08-22 — Step 5.0's BUILD ran: both images clean in fifteen minutes, and the tag convention the first push will spend
 
-**Two hands, and the split is the point of the entry.** The user brought the devbox up and gave the
-authorization — *"O devbox está ativo. Pode fazer o passo 5.0?"* — and the **tag convention below is
+**Two hands, and the split is the point of the entry.** The user brought the buildbox up and gave the
+authorization — *"O buildbox está ativo. Pode fazer o passo 5.0?"* — and the **tag convention below is
 their decision**. Everything else is **Claude's**: the readings, the build, and the doc changes.
 **The push is not in this entry.** It had not run when this was written; it is the user's, §P
 literal, on the host this build left standing.
 
 ### Why the sitting happened
 
-It opened as a plan question — which pending Stage 6 verification uses the devbox — and the answer is
+It opened as a plan question — which pending Stage 6 verification uses the buildbox — and the answer is
 **verification (x)**, the only one whose step column names 5.0: its build-time half is the
 activity-monitor assertion, its firing half is 8.1. The user then asked for the step itself.
 
 ### The state the host was found in, before anything was built
 
-`./scripts/devbox.py status`: the devbox **running** and **Online** in Session Manager (agent
+`./scripts/buildbox.py status`: the buildbox **running** and **Online** in Session Manager (agent
 3.3.4624.0), the WireGuard host **running**, no probe instance — the refusal that matters was not
 even close.
 
@@ -1755,12 +1755,12 @@ Four readings taken because the alternative was to assume them:
 - **The egress path is the designed one, measured rather than believed**: `curl` from inside the box
   returns the **WireGuard host's Elastic IP**, and that instance carries `SourceDestCheck: false`.
   The `[E]` route, the `[D]` masquerade and the `[P]` security-group rule were all doing their jobs
-  at once, which is the intersection `devbox.md` §C says is easy to get wrong.
+  at once, which is the intersection `buildbox.md` §C says is easy to get wrong.
 
 ### The mechanism, and where it deviates from the runbook
 
 §P's build is typed into an interactive `ssm start-session`; Claude cannot hold a TTY, so the build
-was driven by **`ssm send-command`** — the same write API `devbox.py sync` and `vpn.py --on-host` are
+was driven by **`ssm send-command`** — the same write API `buildbox.py sync` and `vpn.py --on-host` are
 fenced behind, under this sitting's authorization — and launched **detached under `systemd-run`**,
 logging to `/var/log/awsds-build.log`, so a twenty-minute build does not depend on the invocation
 that started it. Progress was polled with short Run Commands.
@@ -1880,7 +1880,7 @@ $ aws ecr get-login-password --profile awsds-infra-prod --region us-west-2
 - starting ssm session:
 
 ```
-./scripts/devbox.py ssm
+./scripts/buildbox.py ssm
 ```
 
 - Define registry url:
@@ -1928,7 +1928,7 @@ either is refused from here on):
 | `awsds-prod-ecr-dev-env` | `default-v0.1.0` | `sha256:76d9b5e8b6b9ada94ba52ae27a8e9a43ba37e7196d0de46f5859cd2325cd3e56` | 5,648,737,291 B | 05:30:34 |
 
 **The stored sizes are the compressed ones and §P's warning is confirmed from the other side**: 12.1
-GB and 17.5 GB uncompressed on the devbox became 3.96 GB and 5.65 GB in ECR — and `dev-env` carries
+GB and 17.5 GB uncompressed on the buildbox became 3.96 GB and 5.65 GB in ECR — and `dev-env` carries
 its own copy of `base`'s layers, because ECR stores layers per repository. Two uploads, not one
 deduplicated push.
 
@@ -1974,12 +1974,12 @@ which is what the flavour segment makes expressible. `docs/SMUS.md` now says thi
 
 ### What this closes, and what it leaves
 
-**Step 5.0 is DONE** — build and push, one devbox session, as §P requires. Pass 1 has no unfinished
+**Step 5.0 is DONE** — build and push, one buildbox session, as §P requires. Pass 1 has no unfinished
 step left, and **pass 3 is unblocked** (its other predecessor, the `grants.tf` apply, closed in the
 previous entry).
 
-**The devbox was still `running` when this was written**, at 0.1664 USD/h, with its images now
-redundant — everything worth keeping is in ECR. `./scripts/devbox.py down` is the user's call and the
+**The buildbox was still `running` when this was written**, at 0.1664 USD/h, with its images now
+redundant — everything worth keeping is in ECR. `./scripts/buildbox.py down` is the user's call and the
 only thing standing between this sitting and 0 USD/h in Sandbox.
 
 Owed next: **5.1** — image, image version, app image config, and the domain's `CustomImages`, which is
@@ -2077,7 +2077,7 @@ apply**: this sitting is documentation and two web reads. Where a choice was the
 
 ### The two readings it opened with
 
-The devbox reads **`absent (nothing billing)`** — `devbox.py down` ran, and the Sandbox `[E]` layer is
+The buildbox reads **`absent (nothing billing)`** — `buildbox.py down` ran, and the Sandbox `[E]` layer is
 back to nothing. The previous sitting's three files are all in `HEAD`: the `docs/SMUS.md` section with
 its lifecycle correction, this log's fifteenth entry with the account id redacted, and the index cell.
 

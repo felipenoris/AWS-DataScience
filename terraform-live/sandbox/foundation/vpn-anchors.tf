@@ -80,17 +80,17 @@ resource "aws_security_group" "wireguard" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 
-  # THE THIRD LAYER OF THE DEVBOX PATH, AND IT WAS MISSING FOR EXACTLY ONE APPLY (Stage 6
+  # THE THIRD LAYER OF THE BUILDBOX PATH, AND IT WAS MISSING FOR EXACTLY ONE APPLY (Stage 6
   # step 5.0, 2026-08-21). Reach is an INTERSECTION (Lesson 28): sending the isolated tier's
   # default route at this host and giving the host masquerade rules gets a packet routed and
   # translated - and this security group still drops it on arrival, because the rule above
-  # admits UDP/51820 and nothing else. The devbox came up, installed its packages through the
+  # admits UDP/51820 and nothing else. The buildbox came up, installed its packages through the
   # S3 gateway endpoint, and then timed out reaching ssm.<region>.amazonaws.com; the three
   # layers are in three slices, so no single file showed the gap.
   #
   # WHY IT LIVES HERE AND NOT IN THE [E] SLICE THAT WANTS IT: this resource declares its rules
   # INLINE, which makes them authoritative - a separate aws_vpc_security_group_ingress_rule
-  # written by devbox/ would be silently removed by the next apply of this slice, and would
+  # written by buildbox/ would be silently removed by the next apply of this slice, and would
   # show as perpetual drift until it was (INT-11's failure mode, in a security group).
   #
   # WHAT IT IS SAFE TO LEAVE STANDING: a PRIVATE range that nothing outside this VPC can
@@ -99,7 +99,7 @@ resource "aws_security_group" "wireguard" {
   # ROUTE [E] with the session - and the route remains the only one that comes and goes.
   # It is not a second world-open rule, so VP-3 still reads one.
   ingress {
-    description = "the isolated tier - devbox egress, with this host as its NAT instance (Stage 6 step 5.0)"
+    description = "the isolated tier - buildbox egress, with this host as its NAT instance (Stage 6 step 5.0)"
     from_port   = 0
     to_port     = 0
     protocol    = "-1"

@@ -30,7 +30,7 @@ both services load-bearing: EMR Serverless is the VPC-capable replacement for th
 stage disables, and DNS Firewall is egress design A's allowlist mechanism.
 
 **The three `t3` rows added on 2026-08-21 came through a different door, and it is named rather
-than glossed** (`t3.xlarge`/`t3.2xlarge` in §8 and §3, for Stage 6's `sandbox/devbox/`): the
+than glossed** (`t3.xlarge`/`t3.2xlarge` in §8 and §3, for Stage 6's `sandbox/buildbox/`): the
 `AmazonEC2` bulk offer file for one region is hundreds of megabytes, so those were read with
 **`aws pricing get-products`** — the Price List *Query* API, same catalogue, filtered server-side
 on `instanceType`/`location`/`operatingSystem=Linux`/`tenancy=Shared`/`preInstalledSw=NA`/
@@ -274,7 +274,7 @@ one Stage 12 step 5 measures against the real bill — this is arithmetic over l
 | — Development 12 / Staging 9 / Production 10-12 | 0.252 / 0.189 / 0.210-0.252 | 0.120 / 0.090 / 0.100-0.120 | 2.10 |
 | GitLab EC2 `t4g.large` | 0.1072 | 0.0672 | 1.60 |
 | — `t3.large`, the x86 equivalent | 0.1344 | 0.0832 | 1.62 |
-| Stage 6 build host `t3.xlarge` (`sandbox/devbox/`, `[E]`) | 0.2688 | **0.1664** | 1.62 |
+| Stage 6 build host `t3.xlarge` (`sandbox/buildbox/`, `[E]`) | 0.2688 | **0.1664** | 1.62 |
 | Internal ALB | 0.034 + 0.011/LCU-h | 0.0225 + 0.008/LCU-h | 1.51 |
 | SageMaker Studio JupyterLab / CodeEditor `ml.t3.medium` | 0.081 | 0.050 | 1.62 |
 | SageMaker processing job `ml.t3.medium` | 0.066 | — | |

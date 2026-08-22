@@ -1,5 +1,5 @@
 #!/usr/bin/env -S uv run --quiet
-# devbox.py - the [E] build host of Stage 6 step 5.0: bring it up, put the build context on
+# buildbox.py - the [E] build host of Stage 6 step 5.0: bring it up, put the build context on
 # it, open a shell, tear it down.
 #
 # WHY IT IS A SCRIPT OF ITS OWN AND NOT `make up ENV=sandbox`. That target acts on EVERY [E]
@@ -35,11 +35,11 @@
 # on a throwaway host, and an S3 hop needs a bucket and a grant for a file that lives for an
 # hour. It sends no credential and reads nothing back but the command's own status.
 #
-#   run:   ./scripts/devbox.py up         # apply the slice (starts the tunnel host first)
-#          ./scripts/devbox.py sync       # copy images/ to /opt/awsds/images on the host
-#          ./scripts/devbox.py ssm        # interactive shell (needs session-manager-plugin)
-#          ./scripts/devbox.py status     # what is up, and what it is costing
-#          ./scripts/devbox.py down       # destroy the slice - the host AND its route
+#   run:   ./scripts/buildbox.py up         # apply the slice (starts the tunnel host first)
+#          ./scripts/buildbox.py sync       # copy images/ to /opt/awsds/images on the host
+#          ./scripts/buildbox.py ssm        # interactive shell (needs session-manager-plugin)
+#          ./scripts/buildbox.py status     # what is up, and what it is costing
+#          ./scripts/buildbox.py down       # destroy the slice - the host AND its route
 #
 #   needs: a live SSO session as the infrastructure user:  aws sso login --sso-session awsds
 
@@ -61,7 +61,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from tfhygiene import backend, layers  # noqa: E402
 
 ACCOUNT = "sandbox"
-SLICE = "devbox"
+SLICE = "buildbox"
 CONTEXT = Path("images")
 REMOTE_DIR = "/opt/awsds/images"
 
@@ -91,7 +91,7 @@ def instance(name: str) -> tuple[str, str] | None:
     """(id, state) of a running-or-stopped instance by Name tag, or None if there is none.
 
     None means NOT PRESENT. A read that FAILED raises instead of returning None - the two
-    must not collapse into one answer (Lesson 13), because "no devbox" and "cannot see the
+    must not collapse into one answer (Lesson 13), because "no buildbox" and "cannot see the
     account" lead to opposite next moves.
     """
     res = sh(
@@ -116,7 +116,7 @@ def instance(name: str) -> tuple[str, str] | None:
     return rows[0] if rows else None
 
 
-def devbox_name() -> str:
+def buildbox_name() -> str:
     return f"awsds-{backend.env_token(ACCOUNT)}-{SLICE}"
 
 
@@ -165,7 +165,7 @@ def ensure_vpn_running() -> str:
     print(f"    {vpn_name()} is {state} - starting it ([D] is stop/start, D11)")
     sh(aws("ec2", "start-instances", "--instance-ids", iid), check=True)
     sh(aws("ec2", "wait", "instance-running", "--instance-ids", iid), capture=False, check=True)
-    print(f"    started {iid} - note that `devbox.py down` will NOT stop it again")
+    print(f"    started {iid} - note that `buildbox.py down` will NOT stop it again")
     return iid
 
 
@@ -189,15 +189,15 @@ def ssm_online(iid: str, quiet: bool = False) -> bool:
     return res.returncode == 0 and status.startswith("Online")
 
 
-def require_devbox() -> str:
-    found = instance(devbox_name())
+def require_buildbox() -> str:
+    found = instance(buildbox_name())
     if not found:
         raise SystemExit(
-            f"\n{RED}no {devbox_name()}{RESET} - bring it up first:  ./scripts/devbox.py up"
+            f"\n{RED}no {buildbox_name()}{RESET} - bring it up first:  ./scripts/buildbox.py up"
         )
     iid, state = found
     if state != "running":
-        raise SystemExit(f"\n{RED}{devbox_name()} is {state}{RESET}, not running ({iid}).")
+        raise SystemExit(f"\n{RED}{buildbox_name()} is {state}{RESET}, not running ({iid}).")
     return iid
 
 
@@ -287,24 +287,24 @@ def wait_for_docker(iid: str) -> bool:
                 return True
         print(f"    docker not up yet ({attempt + 1}) - the first boot is still installing")
         time.sleep(10)
-    print(f"\n{RED}docker never came up.{RESET} Read /var/log/awsds-devbox-boot.log over `ssm`.")
+    print(f"\n{RED}docker never came up.{RESET} Read /var/log/awsds-buildbox-boot.log over `ssm`.")
     return False
 
 
 def cmd_up(args) -> int:
-    print(f"{BOLD}devbox up{RESET} - Stage 6 step 5.0's build host, in {ACCOUNT}")
+    print(f"{BOLD}buildbox up{RESET} - Stage 6 step 5.0's build host, in {ACCOUNT}")
     refuse_if_probes_up()
     ensure_vpn_running()
     print(f"\n  {BOLD}apply{RESET}")
     if terraform("apply", args.auto_approve) != 0:
         return 1
 
-    found = instance(devbox_name())
+    found = instance(buildbox_name())
     if not found:
         # The apply returned 0 and there is no instance. That is not "wait longer" - it is a
         # state file describing something the account does not have, and the next command to
         # touch this slice should be a plan, not a retry.
-        print(f"\n{RED}apply succeeded but no {devbox_name()} exists.{RESET}")
+        print(f"\n{RED}apply succeeded but no {buildbox_name()} exists.{RESET}")
         print("  Read the plan before doing anything else - the state and the account disagree.")
         return 1
     iid = found[0]
@@ -315,12 +315,12 @@ def cmd_up(args) -> int:
             if not wait_for_docker(iid):
                 return 1
             print(f"\n  {BOLD}ready.{RESET} next:")
-            print("    ./scripts/devbox.py sync     put images/ on the host")
-            print("    ./scripts/devbox.py ssm      open a shell")
+            print("    ./scripts/buildbox.py sync     put images/ on the host")
+            print("    ./scripts/buildbox.py ssm      open a shell")
             print(
                 f"\n  {YELLOW}it is billing from now on{RESET} - "
                 f"{row().usd_per_hour} USD/h (docs/PRICING.md 8). "
-                "Finish with ./scripts/devbox.py down"
+                "Finish with ./scripts/buildbox.py down"
             )
             return 0
         time.sleep(10)
@@ -333,12 +333,12 @@ def cmd_up(args) -> int:
 
 
 def cmd_sync(args) -> int:
-    print(f"{BOLD}devbox sync{RESET} - {CONTEXT}/ -> {REMOTE_DIR}")
+    print(f"{BOLD}buildbox sync{RESET} - {CONTEXT}/ -> {REMOTE_DIR}")
     print(
         f"  {YELLOW}this is the one WRITE api in this file{RESET} (ssm:SendCommand), "
         "the ./aws/vpn.py --on-host fence"
     )
-    iid = require_devbox()
+    iid = require_buildbox()
     if not ssm_online(iid):
         raise SystemExit(
             f"{RED}{iid} is not Online in Session Manager{RESET} - see the status above."
@@ -423,8 +423,8 @@ def cmd_sync(args) -> int:
 
 
 def cmd_ssm(args) -> int:
-    print(f"{BOLD}devbox ssm{RESET}")
-    iid = require_devbox()
+    print(f"{BOLD}buildbox ssm{RESET}")
+    iid = require_buildbox()
     if not ssm_online(iid):
         raise SystemExit(
             f"{RED}{iid} is not Online in Session Manager{RESET} - see the status above."
@@ -439,23 +439,25 @@ def cmd_ssm(args) -> int:
 
 
 def cmd_status(args) -> int:
-    print(f"{BOLD}devbox status{RESET} - {ACCOUNT}")
-    box = instance(devbox_name())
+    print(f"{BOLD}buildbox status{RESET} - {ACCOUNT}")
+    box = instance(buildbox_name())
     vpn = instance(vpn_name())
-    print(f"\n  {devbox_name():<28} {box[1] + ' ' + box[0] if box else 'absent (nothing billing)'}")
+    print(
+        f"\n  {buildbox_name():<28} {box[1] + ' ' + box[0] if box else 'absent (nothing billing)'}"
+    )
     print(f"  {vpn_name():<28} {vpn[1] + ' ' + vpn[0] if vpn else 'absent'}")
     if box and box[1] == "running":
         ssm_online(box[0])
-        print(f"\n  {YELLOW}billing{RESET}: the build host is up. ./scripts/devbox.py down")
+        print(f"\n  {YELLOW}billing{RESET}: the build host is up. ./scripts/buildbox.py down")
     for name in probe_names():
         found = instance(name)
         if found:
-            print(f"  {RED}{name}{RESET} is {found[1]} - it and the devbox contradict each other")
+            print(f"  {RED}{name}{RESET} is {found[1]} - it and the buildbox contradict each other")
     return 0
 
 
 def cmd_down(args) -> int:
-    print(f"{BOLD}devbox down{RESET} - destroying the host AND its default route")
+    print(f"{BOLD}buildbox down{RESET} - destroying the host AND its default route")
     print(
         "  the WireGuard host is [D] and shared: this does NOT stop it (make down ENV=sandbox does)"
     )
@@ -467,7 +469,9 @@ def cmd_down(args) -> int:
 
 def main(argv: list) -> int:
     os.chdir(Path(__file__).resolve().parents[1])
-    ap = argparse.ArgumentParser(prog="devbox.py", description="Stage 6 step 5.0's [E] build host")
+    ap = argparse.ArgumentParser(
+        prog="buildbox.py", description="Stage 6 step 5.0's [E] build host"
+    )
     sub = ap.add_subparsers(dest="cmd", required=True)
     for name, fn, needs_approve in (
         ("up", cmd_up, True),

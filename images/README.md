@@ -25,19 +25,19 @@ package moved inside the base's conda environment made to **prove it moved nothi
 CA-install layer with the internal PKI root (D36 §3, amended 2026-08-21). The layer already exists and
 is asserted empty — see [`base/ca-certificates/README.md`](base/ca-certificates/README.md).
 
-## Building them — on the devbox, not on the laptop
+## Building them — on the buildbox, not on the laptop
 
 **Both images are `linux/amd64` and the laptop is `arm64`.** The SageMaker Distribution publishes
 `-cpu` and `-gpu` tags and **no `arm64` variant at all** (read 2026-08-21 from the public registry's
 tag list), and SMUS spaces run on x86 instance types, so the platform is not a choice. The laptop
 also has no docker installed. So the build happens on
-[`terraform-live/sandbox/devbox/`](../terraform-live/sandbox/devbox/README.md) — an `[E]` `t3.xlarge`
+[`terraform-live/sandbox/buildbox/`](../terraform-live/sandbox/buildbox/README.md) — an `[E]` `t3.xlarge`
 in the Sandbox account's isolated tier, reached over Session Manager and **with no ingress rule at
 all**, reaching the internet only through the WireGuard host. It exists while a build runs and is
 destroyed after.
 
 ```bash
-./scripts/devbox.py up && ./scripts/devbox.py sync && ./scripts/devbox.py ssm
+./scripts/buildbox.py up && ./scripts/buildbox.py sync && ./scripts/buildbox.py ssm
 ```
 
 Then, in the session (you land as `ssm-user` with `sudo`; the `docker` group belongs to `ec2-user`):
@@ -51,25 +51,25 @@ sudo docker build -t awsds/dev-env:local dev-env
 ```
 
 ```bash
-./scripts/devbox.py down
+./scripts/buildbox.py down
 ```
 
 **A change to `base` rebuilds `dev-env` from its first layer**, and a rebuild needs room for a second
 copy of a ~17 GB image before the old one loses its tag. The 64 GiB root is enough for that and not for
-much more: [`docs/plan/runbooks/devbox.md`](../docs/plan/runbooks/devbox.md) §S is how to look before
+much more: [`docs/plan/runbooks/buildbox.md`](../docs/plan/runbooks/buildbox.md) §S is how to look before
 starting one, and what to prune when the answer is no.
 
 **Nothing in either `Dockerfile` compiles anything** — Julia is a prebuilt tarball, `rustup` fetches
 prebuilt binaries, the R environment is conda-forge binaries. That was a requirement while the build
-was still planned for an emulated laptop; on the devbox it is simply why the build is short.
+was still planned for an emulated laptop; on the buildbox it is simply why the build is short.
 
-**The devbox cannot push, and the build does not survive it being asked to.** Its role carries
+**The buildbox cannot push, and the build does not survive it being asked to.** Its role carries
 Session Manager and no `ecr:` permission, because the Production registry grants the Interactive
 accounts a *pull* and nothing more — read live on 2026-08-22, both repository policies carry one
 statement and it is `AllowConsumerAccountsToPull`. The push into `awsds-prod-ecr-base` /
 `awsds-prod-ecr-dev-env` is Stage 6 step 5.0's own act from an identity that may
 (`awsds-infra-prod`), and it reaches this host as a 12-hour ECR **authorization token** rather than
-as a permission: **the whole procedure is [`devbox.md`](../docs/plan/runbooks/devbox.md) §P.** Read
+as a permission: **the whole procedure is [`buildbox.md`](../docs/plan/runbooks/buildbox.md) §P.** Read
 it before the build, not after — **the host is `[E]` and its volume dies with it, so build and push
 are one session** and a `down` in between costs the rebuild. The repositories are tag-immutable, so
 a tag is spent the first time it lands and a re-push under the same tag is rejected — that is the

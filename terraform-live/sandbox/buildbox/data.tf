@@ -17,7 +17,7 @@ data "terraform_remote_state" "foundation" {
 # THE [D] SLICE THIS ONE HANGS OFF, and the dependency is real rather than tidy: the route
 # below points at the WireGuard host's ENI, so this slice cannot be applied before vpn/ has
 # been, and the host must be RUNNING or the route is a blackhole rather than an error. The
-# rank in scripts/tfhygiene/layers.py (vpn 40, devbox 55) is what records the order; the
+# rank in scripts/tfhygiene/layers.py (vpn 40, buildbox 55) is what records the order; the
 # helper script is what enforces it, because a rank is not a control (Lesson 5).
 data "terraform_remote_state" "vpn" {
   backend = "s3"

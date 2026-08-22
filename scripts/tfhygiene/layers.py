@@ -143,9 +143,9 @@ RANKS = {
     #   probes   is a CONFLICT, not a dependency, and it is the reason this row's slice
     #            refuses to coexist with it: sandbox/probes/'s perimeter probe measures the
     #            isolated tier's ABSENCE of a default route, and this slice's whole mechanism
-    #            is adding one. ./scripts/devbox.py enforces the exclusion; the rank only
+    #            is adding one. ./scripts/buildbox.py enforces the exclusion; the rank only
     #            records that this one goes down first.
-    "devbox": 55,
+    "buildbox": 55,
     "probes": 60,
 }
 
@@ -256,7 +256,11 @@ SLICES = [
     # The 64 GiB gp3 is ~0.007/h on top and is not in this column: it is billed per GB-MONTH
     # and this slice is [E], so it exists only while the host does.
     Slice(
-        "sandbox", "devbox", EPHEMERAL, "amd64 build host for the dev-env image (St.6 5.0)", 0.1664
+        "sandbox",
+        "buildbox",
+        EPHEMERAL,
+        "amd64 build host for the dev-env image (St.6 5.0)",
+        0.1664,
     ),
     # Stage 5 pass 1 (2026-08-18). Free or floor-priced at rest: one CMK (key-month), five
     # buckets, catalog objects, LF settings/tags/grants, two on-demand crawlers and the
