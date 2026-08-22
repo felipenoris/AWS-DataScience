@@ -186,12 +186,40 @@ parameters
 
 | Object | Written by | Lives in | In this design |
 |---|---|---|---|
-| blueprint | AWS | the service | the eleven below (custom blueprints exist as a console feature; outside decision 5, so outside `US-3`'s allow-list) |
-| blueprint configuration | Terraform, per member account (1.4) | domain × account | category 1's four, in Sandbox and in Development |
+| blueprint | AWS | the service | the 23 in the table below (custom blueprints exist as a console feature; outside decision 5, so outside `US-3`'s allow-list) |
+| blueprint configuration | Terraform, per member account (1.4) | domain × account | category 1's **eleven**, in Sandbox and in Development (applied 2026-08-21) |
 | project profile + its environment configurations | domain admin (1.5) | the domain | `experimentation`, `engineering` |
 | project | an authorized user, in the portal | the domain (registry) | step 2.4's throwaway first |
 | environment | DataZone, through the provisioning role | the member account | read back by `US-8` / step 2.5 |
 | environment profile | the V1 flow | — | none, by design |
+
+### The installed profiles
+
+The two project profiles this installation carries — created 2026-08-21 by the second apply of
+`terraform-live/data-governance/governance/` (step 1.5), both `ENABLED`, read back by `US-4`:
+
+| Profile | Provisions into | The unit of work (D21) |
+|---|---|---|
+| `experimentation` | **Sandbox** | a notebook — experimentation happens where nothing downstream depends on it |
+| `engineering` | **Development** | a pipeline — where the promotion chain starts |
+
+Identical in everything but the target account: **eleven environment configurations** (decision 5's
+category 1), `Tooling` the only base — `ON_CREATE`, every other blueprint `ON_DEMAND`; a second base
+cannot ride along on demand, which is what re-cut `ToolingLite` to category 3 (its row in the
+blueprint table below) — and the same Tooling parameters, read back after the apply:
+
+| Parameter | Value | Editable |
+|---|---|---|
+| `sagemakerDomainNetworkType` | `VpcOnly` | no |
+| `lifecycleManagement` | `true` | no |
+| `idleTimeoutInMinutes` | `60` | **yes** — the per-project default a member may tune, under the ceiling |
+| `maxIdleTimeoutInMinutes` | `120` | no — the admin ceiling (step 8.1) |
+| `maxEbsVolumeSize` | `100` (GB) | no |
+| `enableTrustedIdentityPropagationPermissions` | `false` | no — decision 2, delivered |
+
+The account pinning is D21's boundary as a property of the *project* rather than of the URL a person
+opened, and the two names are the `US-4` contract. The reasoning lives with the code
+(`terraform-live/data-governance/governance/locals.tf`); this section is the index.
 
 ## Blueprints — the object
 
