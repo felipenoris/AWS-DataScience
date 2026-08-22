@@ -1720,3 +1720,123 @@ owed table, two pass rows), `docs/plan/integrations.md` (INT-16 answered), `docs
 Owed after this sitting: **step 5.0's build and push, one devbox session** (§P); INT-16's missing
 positive control, a minute's work; and then pass 3, which the grants have unblocked — **and whose
 projects are now provisioned by each profile's persona, not by the infrastructure identity**.
+
+---
+
+## 2026-08-22 — Step 5.0's BUILD ran: both images clean in fifteen minutes, and the tag convention the first push will spend
+
+**Two hands, and the split is the point of the entry.** The user brought the devbox up and gave the
+authorization — *"O devbox está ativo. Pode fazer o passo 5.0?"* — and the **tag convention below is
+their decision**. Everything else is **Claude's**: the readings, the build, and the doc changes.
+**The push is not in this entry.** It had not run when this was written; it is the user's, §P
+literal, on the host this build left standing.
+
+### Why the sitting happened
+
+It opened as a plan question — which pending Stage 6 verification uses the devbox — and the answer is
+**verification (x)**, the only one whose step column names 5.0: its build-time half is the
+activity-monitor assertion, its firing half is 8.1. The user then asked for the step itself.
+
+### The state the host was found in, before anything was built
+
+`./scripts/devbox.py status`: the devbox **running** and **Online** in Session Manager (agent
+3.3.4624.0), the WireGuard host **running**, no probe instance — the refusal that matters was not
+even close.
+
+Four readings taken because the alternative was to assume them:
+
+- **Both ECR repositories exist and are empty.** `IMMUTABLE`, KMS-encrypted, scan-on-push, and
+  `describe-images` returns nothing in either — **no tag has been spent**, so pass 0 is applied and
+  the first push is still free to choose its convention.
+- **The build context was already on the host and is the repository's.** `/opt/awsds/images` was
+  compared file by file against `images/` — **eight files, every md5 identical** — so no `sync` was
+  needed and there is no question about *what* was built. `images/` is clean in git.
+- **The host was clean**: no images, no containers, no build cache, 62 GiB free of 64.
+- **The egress path is the designed one, measured rather than believed**: `curl` from inside the box
+  returns the **WireGuard host's Elastic IP**, and that instance carries `SourceDestCheck: false`.
+  The `[E]` route, the `[D]` masquerade and the `[P]` security-group rule were all doing their jobs
+  at once, which is the intersection `devbox.md` §C says is easy to get wrong.
+
+### The mechanism, and where it deviates from the runbook
+
+§P's build is typed into an interactive `ssm start-session`; Claude cannot hold a TTY, so the build
+was driven by **`ssm send-command`** — the same write API `devbox.py sync` and `vpn.py --on-host` are
+fenced behind, under this sitting's authorization — and launched **detached under `systemd-run`**,
+logging to `/var/log/awsds-build.log`, so a twenty-minute build does not depend on the invocation
+that started it. Progress was polled with short Run Commands.
+
+**Nothing about the push was sent this way, and that is deliberate.** Run Command parameters stay
+readable from the command history for weeks, so relaying an ECR authorization token through it would
+put a 12-hour credential exactly where §P's `read -rs` exists to keep it out of. The runbook's
+procedure is unchanged and the push stays the user's act.
+
+### The build
+
+`base` **`exit=0` at 04:17:21Z**, about 4m45s. `dev-env` **`exit=0` at 04:27:35Z**, `BUILD DONE
+rc=0` — roughly fifteen minutes end to end. `base` 12.1 GB and `dev-env` 17.5 GB by `docker images`,
+which counts shared layers twice: `docker system df` de-duplicates them to **17.46 GB**, and the
+root volume went to 19 GiB of 64.
+
+### What the images were asked, rather than assumed
+
+- **The activity-monitor assertion passed with a name and a version**, which is the half of
+  verification (x) that lives at 5.0: *"== searching the base for the activity-monitor extension =="*
+  then `jupyter-activity-monitor-extension 0.3.2 pyhd8ed1ab_1 conda-forge`. The distribution still
+  ships it, so nothing was installed over it. **This does not answer (x)** — that idle shutdown
+  *fires* is 8.1's measurement; what is closed here is the failure mode where the base quietly stops
+  carrying the extension and the discovery arrives as an app billing overnight.
+- **The BYOI entrypoint rule holds**: `Entrypoint=["/usr/local/bin/_entrypoint.sh"]`,
+  `Cmd=["/bin/bash"]`, `User=sagemaker-user`, `WorkingDir=/home/sagemaker-user` — the distribution's
+  own, inherited, neither `Dockerfile` having set one. Read from `docker inspect` and exercised by a
+  `docker run --rm`, which is the same proof from the other side.
+- **The CA layer is empty and says so**: *"CA roots found in the build context: 0 (expected 0)"* —
+  D36 §3 as amended. Stage 7 step 2.6 fills the blank rather than editing a build.
+- **The ancestor is recorded in the image**:
+  `org.opencontainers.image.base.name=public.ecr.aws/sagemaker/sagemaker-distribution:4.3.0-cpu`
+  with `base.digest=sha256:7f5d9c64684cebd53f65173c1f41d7bfe68419e5de9d0f55c4c25910a92f5f2c`.
+- **The runtimes, from `/opt/awsds-runtimes.txt` inside the image**: Python 3.12.13, uv 0.12.5,
+  Julia 1.12.7, R 4.5.3 (2026-03-11), rustc 1.98.0. **One thing that file does not carry**: it
+  records `base image : awsds/base:local`, the build-time reference — not the ECR tag the image is
+  given afterwards. The image cannot be asked what it was published as; only the digest chain can.
+
+### The tag convention — the user's decision, and two corrections on the way to it
+
+The tag had to be settled before the push because both repositories are `IMMUTABLE`: it is spent on
+first landing, and Stage 8 step 1's pipeline inherits whatever the first push writes.
+
+The user's requirement is the **flavour** axis — a project wanting GPUs, one wanting Spark libraries,
+and one wanting neither are three runtimes — and their first proposal was `dev-env-default-v0.1.0`.
+Two corrections were needed before it became the rule:
+
+1. **The two repositories are not "production" and "development".** Both live in the Production
+   account: `production/registry/ecr.tf` builds them as `awsds-${var.env}-ecr-*` with `env = prod`,
+   and the consumer accounts hold a *pull*. The axis between them is **ancestor** (`base`, D17)
+   versus **BYOI runtime** (`dev-env`), not environment.
+2. **The repository already is the name**, so `dev-env-…` inside the tag spends it twice in every
+   pipeline line that ever references it.
+
+**Decided: `<flavour>-v<major>.<minor>.<patch>`, the same number in both repositories** —
+`default-v0.1.0` first. The flavour axis reaches `base` too, because a GPU `dev-env` needs a GPU
+ancestor; naming the plain one `default` from the start stops `v0.1.0` from silently coming to mean
+*the CPU one*.
+
+**And one of Claude's arguments was checked instead of asserted, which changed it.** Flavour-first
+was offered on the claim that a lifecycle policy can only select tags by prefix; the page says
+`tagPrefixList` does match a prefix only, but `tagPatternList` takes up to four `*` wildcards, would
+match `*-gpu` just as well, and is the one AWS calls best practice. So flavour-first is **convenience
+and grouping, not capability**, and `docs/SMUS.md` says that rather than the stronger claim. The same
+read turned up the trap for whoever writes the first policy: the two selectors are mutually exclusive
+in a rule, and multiple entries are an **AND**.
+
+### Files, and what is owed
+
+Touched, all documentation — **no Terraform, no apply, and the only AWS writes were the Run Commands
+that drove the build**: `docs/SMUS.md` (new section, *Custom images (BYOI) — and how they are
+named*), `docs/REFERENCES.md` (the ECR lifecycle-policy page, with the three sentences the argument
+rests on), `images/README.md` (a pointer, so the convention has one copy and it is not there), and
+`CLAUDE.md`'s routing row. `make check` **OK**; `./scripts/check-identifiers.py` **OK**.
+
+Owed: **the push** — `default-v0.1.0` into both repositories, §P, **on this host while it is still
+up**, because build and push are one session and a `down` in between costs the fifteen minutes
+again. The host bills 0.1664 USD/h meanwhile. Both digests belong in this entry once they exist;
+then pass 3, and 5.1's cross-account pull question (INT-01/INT-17, verification (vi)).
