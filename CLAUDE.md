@@ -275,17 +275,25 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   APIs and console, not a VPN-only portal**; `README.md` now carries the qualification. What is left is
   a choice, not a measurement: adopt fallback (i) — `DenyUserAccessFromUnauthorizedVPCs` on the domain
   execution role, re-keyed on the EIP — or leave item 3 stated as bounded.
-- **THE PROFILES WERE UNINSTANTIABLE — creating from a profile is an AUTHORIZATION, not a property of
-  the profile (2026-08-22).** `CreateProject` denied identically on and off VPN; **zero policy grants**
-  on the root domain unit, whose only owner was the domain-creating role. `grants.tf` written and
-  `validate`-clean, **NOT applied**: one `CREATE_PROJECT_FROM_PROJECT_PROFILE` per profile —
-  `experimentation`→`sso-group-data-scientists` (standing), `engineering`→`sso-group-deployment-managers`
-  (**the instrument of D21's open half**; removal is the expected outcome if it closes). Every field
-  **`createOnly`**. A third read-only provider alias (`aws.identity`) resolves the group NAMES.
-- **What St.6 still owes:** **the `grants.tf` apply** (blocks every project); **5.0's docker PUSH** —
-  **build and push are ONE devbox session**, the host was found absent 2026-08-22 so the build is gone
-  (`devbox.md` §P); then passes 3-5. Decisions 1 (EMR-S vs Glue) and 6
-  (prefix shape) stay in-stage; **2 is delivered** (TIP `false`, non-editable, both profiles).
+- **CREATING IS AUTHORIZED IN TWO LAYERS, AND BOTH STARTED AT ZERO (measured 2026-08-22, one per
+  sitting).** Layer 1, the PROFILE: `CREATE_PROJECT_FROM_PROJECT_PROFILE` on the root domain unit —
+  governance `grants.tf` **APPLIED 2026-08-22**: `experimentation`→`sso-group-data-scientists`
+  (standing), `engineering`→`sso-group-deployment-managers` (**D21's open half**; removal is the
+  expected outcome if it closes). Layer 2, the BLUEPRINT: the first real project then got past
+  `CreateProject` and **rolled back on `Caller is not authorized to create environment using
+  blueprintId`** — `CREATE_ENVIRONMENT_FROM_BLUEPRINT` sits on each blueprint CONFIGURATION, and all
+  22 had ZERO grants (the console's "Authorized domain units" emits it; the Put API does not).
+  **The entity id is the undocumented `<member-account>:<blueprint-id>`** — the configuration's OWNER,
+  and every other spelling is rejected; principal copied from `aws-samples`' SMUS-IaC sample
+  (root-unit projects, `CONTRIBUTOR` — a measurement where ours would be a guess); the detail is a
+  JSON-string `"{}"` in awscc. `sagemaker-prereqs` **`v0.3.0`** adds the 11 grants per member
+  (`for_each` the configurations) + `root_domain_unit_id`; both member slices bump the ref. Every
+  grant field **`createOnly`**, both layers.
+- **What St.6 still owes:** **the `v0.3.0` blueprint-grant apply in BOTH member slices** (blocks
+  every project; the retry is the verification, and the off-VPN portal reading waits on it); then
+  passes 3-5 + 5.1. **5.0 is DONE** (`default-v0.1.0` pushed to both repos 2026-08-22, one devbox
+  session). Decisions 1 (EMR-S vs Glue) and 6 (prefix shape) stay in-stage; **2 is delivered**
+  (TIP `false`, non-editable, both profiles).
 - **Standing St.6 mechanics:** a blueprint configuration is applied **from the MEMBER account** (the
   Put takes no account param); `awscc`'s carries **`environment_role_permission_boundary`** and the
   `aws` resource does not (INT-15's mechanism, Lesson 8); **`athena:UpdateSession` is in no API model**

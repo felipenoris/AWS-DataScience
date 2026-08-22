@@ -93,6 +93,12 @@ variable "domain_id" {
   default     = null
 }
 
+variable "root_domain_unit_id" {
+  description = "The domain's root domain unit - the scope of grants.tf's project principal. Read from data-governance/governance/'s state; null while blueprints_enabled is false."
+  type        = string
+  default     = null
+}
+
 # Decision 5's category 1, BY API NAME - and the emphasis is earned: three of the four names this
 # default used to carry do not exist in the API (`EMRServerless`, `EMRonEC2`, and
 # `AmazonBedrockGenerativeAI`, which is a console grouping the API expands into seven). Measured
