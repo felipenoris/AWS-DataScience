@@ -232,55 +232,45 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   logout` + portal sign-out**; wording is `ForbiddenException`/`GetRoleCredentials`. **That same wording
   was a real ceiling breach on 2026-08-14**, so the battery separates them by asking **IdC what the token
   is assigned** (STS never touches that path). Never suppress it by text alone — Lesson 24, in reverse.
-- **Stage 6 OPEN — passes 0, 1 and 2a APPLIED 2026-08-21; the stage file's §"What ran" is the one record.**
+- **Stage 6 OPEN — passes 0 THROUGH 2 APPLIED 2026-08-21, three sittings; the stage file's §"What ran" is the one record.**
   Four new slices (24 total): `production/registry/`, `{sandbox,development}/sagemaker/`,
   `data-governance/governance/` (**`awsds-studio`, V2, `AVAILABLE`**, domain `dzd-d8yrvx1ko7im6o`), plus
   step 3's deny pair in **all six** persona sets and **1.6's `DenyAthenaSparkStartSession`**.
   **`pki/` is St.7 pass 1** (D36 §3 amended, D36 off the Consumes row), so **5.0's image carries NO CA
   root** — it takes one at St.7 2.6.
-- **BOTH St.6 MEASUREMENTS RAN 2026-08-21 and both are clean.** **Verification (i) answered BOTH ways** —
-  created from `Data`, and the identical shape replayed on the canary returned *explicit deny in a service
-  control policy* naming `awsds-org-scp-baseline`: `DenyDataZoneDomainOutsideDataOu` had been **attached
-  and unexercised since 1c**, and INT-12's forbidden fallback is now closed. **It also explains the
-  2026-08-20 wall by measurement: the missing `--service-role`**, not a cross-account pass role (Lesson
-  24 — the message named neither field nor account). Battery **`--phase ou`: 25/0/7**; `StartSession`
-  denied in dev AND sandbox, **allowed in prod** (contrast), `StartQueryExecution` still authorized (D13
-  intact) — and `StartSession` **authorizes before it validates**, which Lesson 21 forbade assuming.
-- **1.3 DONE 2026-08-21 — the association AUTO-ACCEPTS; there is no accept step and no 7-day clock.**
-  Zero RAM invitations either side, one `DataZone-EXTENDED_ACCESS-…-ORG-ONLY` share. Permission is
-  `…DatazoneDomainExtendedServiceAccess` — **neither name the plan predicted exists in RAM**; 152 actions
-  vs the default's 111, the +41 being the **V2** workbench surface. A **ceiling**, not access (no persona
-  set names those verbs). Proof is functional: `list-environment-blueprint-configurations` **succeeds**
-  from both members, empty. **`./aws/studio.py` US-2 then FAILED because it worked** — it read visibility
-  as ownership; the owner now comes out of the **ARN**, battery **0 FAILED**.
-- **`SMUS_ASSOCIATED` carries both members (2026-08-21) — the row is a TRIGGER, not bookkeeping**: it
-  arms 1.4 **and** 1.5. **Order, encoded nowhere else: the two `sagemaker/` slices BEFORE `governance/`.**
-- **THE BLUEPRINT ROSTER IS MEASURED, AND THE PLAN'S NAMES WERE NOT (2026-08-21).** 1.4's plan returned
-  `empty result`: the API says **`EmrServerless`**/`EmrOnEc2`/`QuickSight`, and
-  **`AmazonBedrockGenerativeAI` is a CONSOLE GROUPING with no API identifier** — 23 by API against 13 in
-  the console, four API-only. **Lesson 38.** Decision 5 completed by the user the same day:
-  **ALL 23 CATEGORISED — closed 1 = 12 / 2 = 5 / 3 = 6, re-cut SAME DAY to 1 = 11 / 3 = 7:
-  `ToolingLite` to cat 3 by 1.5's measurement (a second BASE — the service demands ON_CREATE when
-  it is bundled), none undefined.** Category 1 adds six
-  `AmazonBedrock*`, `S3Bucket`, `S3TableCatalog`; **the Bedrock family is SPLIT** —
-  `KnowledgeBase` is cat 2, its vector store bills while it exists — so never reason about "the Bedrock
-  blueprints" as one thing. **`LakehouseAdmin` is cat 2**: a provisioning template whose own description
-  is an account-wide **automatic ingest-and-catalog**, NOT Lake Formation's *data lake administrator*
-  (different object, similar name, assigned at St.5 p4). It was cat 1 with a "measure at 2.4" comment
-  for an hour — **a comment is an intention, not a control (Lesson 5)**, so the measurement became the
-  enabling trigger. The list lives in **three** places
-  (`locals.tf`, the module default, `US-3`) — one commit moves all three, and **the module needs a TAG
-  BUMP before 1.4 can plan**.
-- **What St.6 still owes:** that row, then 1.4/1.5; **5.0's docker PUSH** (build clean on the devbox
-  2026-08-21; the devbox cannot push); then passes 3-5. Decisions 1 (EMR-S vs Glue), 2 (TIP — coded
-  `false`) and 6 (prefix shape) stay in-stage.
-- **Three St.6 findings that changed other files.** (i) **Lesson 8 paid off**: `awscc`'s blueprint
-  configuration carries **`environment_role_permission_boundary`** and the `aws` one does not — INT-15's
-  boundary is imposed BY the service as it authors the role, not raced afterwards. (ii) A blueprint
-  configuration is applied **from the MEMBER account** (`PutEnvironmentBlueprintConfiguration` takes no
-  account param) — the pass table said the domain account. (iii) **`athena:UpdateSession` is in no Athena
-  API model** — shipped anyway (AWS's own sample statement), with `StartCalculationExecution` added beside
-  it.
+- **St.6's two pre-apply measurements are clean (2026-08-21).** Verification (i) answered both ways —
+  domain created from `Data`; the canary replay hit `awsds-org-scp-baseline`'s **explicit SCP deny** —
+  so INT-12's fallback is closed, and the 2026-08-20 wall was the **missing `--service-role`** (Lesson
+  24). Battery `--phase ou` **25/0/7**; `StartSession` denied in dev+sandbox, allowed in prod,
+  `StartQueryExecution` intact (D13) — and `StartSession` **authorizes before it validates**.
+- **1.3 DONE 2026-08-21 — the association AUTO-ACCEPTS: no invitation, no 7-day clock** (org-scoped
+  RAM share). Permission: `…DatazoneDomainExtendedServiceAccess` (152 actions, the +41 = the V2
+  workbench) — a **ceiling**, not access. `US-2` reads the owner from the **ARN** (it first FAILED by
+  working — visibility is not ownership).
+- **1.4/1.5 DONE 2026-08-21: 11 blueprint configurations per member (all carrying the D13 boundary),
+  two project profiles** (`experimentation`→Sandbox, `engineering`→Development; `Tooling` sole base,
+  `ON_CREATE`; five locked params read back non-editable; **TIP `false` — decision 2 DELIVERED**);
+  battery **0 FAILED**. **The `awscc` configuration takes the blueprint NAME, the `aws` resource the id**
+  (Lesson 32; the first apply failed 12/12 — `v0.2.2` fixes it; **`v0.2.1` is a STILLBORN tag nothing may
+  reference**). **The boundary field is WRITE-ONLY — drift never surfaces in a plan; `US-8` is the
+  sentinel** (verification v). **`ToolingLite` is a BASE variant** (the service demands `ON_CREATE` when
+  it is bundled) — **re-cut to category 3 by the user** (`v0.2.3`, 12→11). `DataLakeSettings` untouched
+  by enablement (xiv's seat question is subscription-time). **The member-before-`governance/` order rule
+  survives for the next member (St.14).**
+- **THE ROSTER IS MEASURED, THE PLAN'S NAMES WERE NOT (2026-08-21; Lesson 38):** the API says
+  `EmrServerless`/`EmrOnEc2`/`QuickSight`, and **`AmazonBedrockGenerativeAI` is a CONSOLE GROUPING
+  with no API identifier** — 23 by API, 13 in the console. **Decision 5 closed 12/5/6, re-cut SAME DAY
+  to 11/5/7** (`ToolingLite` → cat 3, finding 9). **The Bedrock family is SPLIT** (`KnowledgeBase` cat
+  2 — its vector store bills while it exists); **`LakehouseAdmin` is cat 2** (an account-wide
+  ingest-and-catalog TEMPLATE, not LF's *data lake administrator*). The list lives in **three** places
+  (`locals.tf`, the module default, `US-3`) — one commit moves all three, a module TAG BUMP each time.
+- **What St.6 still owes:** **5.0's docker PUSH** (build clean on the devbox 2026-08-21; the devbox
+  cannot push); **1.7's portal reading (user)**; then passes 3-5. Decisions 1 (EMR-S vs Glue) and 6
+  (prefix shape) stay in-stage; **2 is delivered** (TIP `false`, non-editable, both profiles).
+- **Standing St.6 mechanics:** a blueprint configuration is applied **from the MEMBER account** (the
+  Put takes no account param); `awscc`'s carries **`environment_role_permission_boundary`** and the
+  `aws` resource does not (INT-15's mechanism, Lesson 8); **`athena:UpdateSession` is in no API model**
+  — shipped anyway from AWS's own sample, `StartCalculationExecution` beside it.
 - **Stages 5-11 revised, pre-instrumented (2026-08-16/17):**
   `aws/{vpn,datalake,studio,supplychain,cicd,deploytargets,orchestration,dlp}.py` — `DL-5`/`DT-5` guard
   the LF `Parameters` (INT-11). **St.8 pass 4, St.9 passes 4-5, St.10's Staging leg wait on the vend;
