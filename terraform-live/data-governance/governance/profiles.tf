@@ -14,7 +14,7 @@
 # design actually pulls - which account, and which parameters the creator can no longer change.
 #
 # deployment_mode = ON_CREATE for Tooling, ON_DEMAND for the rest. Tooling is what provisions
-# the working environment at all, so a project without it is not a project; the other three
+# the working environment at all, so a project without it is not a project; the other ten
 # are capabilities a project member enables when they need them, which keeps a new project from
 # standing up an EMR Serverless application nobody asked for. Both are per-environment-
 # configuration, which is the grain the API takes.

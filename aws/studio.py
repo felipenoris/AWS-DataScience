@@ -83,7 +83,6 @@ HEADLESS_PROFILES = ("awsds-infra-prod", "awsds-infra-staging")
 # blueprint_names default, and data-governance/governance/locals.tf. One commit moves all three.
 BLUEPRINT_ALLOWLIST = (
     "Tooling",
-    "ToolingLite",
     "DataLake",
     "S3Bucket",
     "S3TableCatalog",
