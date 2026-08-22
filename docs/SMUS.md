@@ -597,15 +597,28 @@ different ancestor, so the branch happens at `base` first. If only `dev-env` car
 day a GPU base arrives `base:v0.1.0` silently starts meaning *the CPU one*.
 
 **Why flavour first and version second**, when the ancestor itself writes `4.3.0-cpu` the other way
-round: a lifecycle policy is the first thing that will ever select a subset of these tags, and *"keep
-the last 3 GPU images"* is a rule worth having separately from the CPU ones, because a GPU image costs
-several times the storage. ECR's simple selector, `tagPrefixList`, matches a **prefix** only, so
-flavour-first is selectable with it and groups the flavours together in any listing.
-**Stated honestly, this is convenience and not capability** (read 2026-08-22): the other selector,
-`tagPatternList`, takes up to four `*` wildcards per string, would match `*-gpu` just as well, and is
-the one AWS calls best practice. Two things to know before writing that first policy either way — the
-two selectors are **mutually exclusive** within a rule, and *"if you specify multiple tags, only the
-images with all specified tags are selected"*, which is an **AND** where a list reads like an OR.
+round: the lifecycle policy is what will select a subset of these tags, and *"keep the last N GPU
+images"* is a rule worth having separately from the CPU ones, because a GPU image costs several times
+the storage.
+
+**And the policy already exists, which sharpens the argument rather than making it hypothetical**
+(corrected 2026-08-22, after `./aws/supplychain.py` reported `LIFECYCLE: yes` against a sentence here
+that had assumed otherwise — the first draft grepped the live slice and not the module that builds it).
+`terraform-modules/ecr-repo` gives every repository two rules, applied and read back: **untagged
+expire after 14 days**, and **tagged images are kept to the most recent 30** — selected with
+`tagPatternList = ["*"]`, so **rule 2 counts every flavour together**. That is exactly the collision:
+the day a second flavour exists, a burst of `default-` pushes evicts `gpu-` images that nothing else
+would have touched, and the fix is to split rule 2 per flavour. The flavour segment is what makes that
+split expressible at all.
+
+**What flavour-first buys, stated at its real size** (read 2026-08-22): ECR's simpler selector,
+`tagPrefixList`, matches a **prefix** only, so flavour-first is selectable with it and groups the
+flavours in any listing — but `tagPatternList` takes up to four `*` wildcards per string, would match
+`*-gpu` just as well, and is both AWS's stated best practice and what this module already uses. So the
+ordering is **readability and convenience, not capability**. Two things to know before amending that
+rule either way: the two selectors are **mutually exclusive** within a rule, and *"if you specify
+multiple tags, only the images with all specified tags are selected"* — an **AND** where a list reads
+like an OR.
 
 **Why one number across both repositories.** `dev-env` is `FROM base`, so a change to `base` rebuilds
 `dev-env` from its first layer — Julia, R and Rust download again. The two therefore never move alone,

@@ -145,9 +145,15 @@ two are proven:
    This is the half that needs a policy, because nothing about a tunnel stops a valid SSO session from
    working over café Wi-Fi. It is also the half that can lock a person out, which is why
    `InfrastructureAccess` is deliberately outside it.
-3. **The Unified Studio portal — unverified** (INT-16). The portal is entered by an Identity Center
-   sign-in, not by an IAM call, and whether a permission-set condition gates that sign-in at all is an
-   open row settled at Stage 6. Read "all access through the VPN" as items 1 and 2 until it closes.
+3. **The Unified Studio portal — measured, and the deny does not reach it** (INT-16, answered
+   2026-08-22 at Stage 6 step 1.7). The portal is entered by an Identity Center sign-in rather than by
+   an IAM call, and a permission-set condition does not gate that sign-in: off the tunnel, a Data
+   Scientist session opened the portal and enumerated its project profiles **in the same sitting in
+   which the AWS console refused `logs:DescribeLogGroups` *with an explicit deny in an identity-based
+   policy***. So **"all user access through the VPN" is items 1 and 2 — the private network and the
+   AWS control plane — and not item 3.** Narrowing it further is a decision nobody has taken yet, not
+   an omission: it means adopting AWS's `DenyUserAccessFromUnauthorizedVPCs` shape on the domain
+   execution role, re-keyed on the WireGuard address (INT-16 fallback (i)).
 
 **The procedure is [`docs/plan/runbooks/vpn.md`](docs/plan/runbooks/vpn.md) Part C and it is not
 repeated here** — the five values a config needs, where each comes from, the three checks that prove

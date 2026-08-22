@@ -1840,3 +1840,147 @@ Owed: **the push** — `default-v0.1.0` into both repositories, §P, **on this h
 up**, because build and push are one session and a `down` in between costs the fifteen minutes
 again. The host bills 0.1664 USD/h meanwhile. Both digests belong in this entry once they exist;
 then pass 3, and 5.1's cross-account pull question (INT-01/INT-17, verification (vi)).
+
+---
+
+## 2026-08-22 — Step 5.0 CLOSED: the push ran, both tags spent, and `default-v0.1.0` exists in the registry
+
+**Two hands, and the order tells them apart.** The section immediately below is the **user's** — the
+procedure as they ran it, their commands and their pasted output, verbatim. The readings under
+*"After the push"* are **Claude's**, read-only through `awsds-infra-prod` and `awsds-infra-sandbox-1`,
+on the user's request to *"fazer as verificações pendentes"*. **Substitution, declared once for the
+whole entry: `<Production Account>` replaces that account's twelve-digit id wherever it appeared in a
+registry URI.** Nothing else in the pasted output is touched.
+
+### The push — the user's hand, verbatim
+
+- Let's test pushing to ECR. Login as infrastructure user on laptop.
+
+```
+
+$ aws ecr describe-repositories --profile awsds-infra-prod --region us-west-2 --query 'repositories[0].repositoryUri' --output text | cut -d/ -f1
+
+<Production Account>.dkr.ecr.us-west-2.amazonaws.com/awsds-prod-ecr-dev-env     <Production Account>.dkr.ecr.us-west-2.amazonaws.com/awsds-prod-ecr-base
+```
+
+> **Claude's note, not a correction to the evidence:** the output above is the **two full repository
+> URIs**, which is what `--query 'repositories[].repositoryUri'` returns — not what the command line
+> above it produces, since `repositories[0]` plus `cut -d/ -f1` yields the bare host on one line. Both
+> commands were offered in the same sitting and the paste pairs one with the other's output. The value
+> actually used is the next block's, and it is the right one.
+
+- read the session token:
+
+```
+$ aws ecr get-login-password --profile awsds-infra-prod --region us-west-2
+
+(output ommited)
+```
+
+- starting ssm session:
+
+```
+./scripts/devbox.py ssm
+```
+
+- Define registry url:
+
+```
+REGISTRY=<Production Account>.dkr.ecr.us-west-2.amazonaws.com
+```
+
+- put token on variable:
+
+```
+read -rs ECR_TOKEN
+```
+
+- login:
+
+```
+echo "$ECR_TOKEN" | sudo docker login --username AWS --password-stdin "$REGISTRY" && unset ECR_TOKEN
+
+WARNING! Your password will be stored unencrypted in /root/.docker/config.json.
+Configure a credential helper to remove this warning. See
+https://docs.docker.com/engine/reference/commandline/login/#credentials-store
+
+Login Succeeded
+
+sudo docker tag awsds/base:local "$REGISTRY/awsds-prod-ecr-base:default-v0.1.0" && sudo docker tag awsds/dev-env:local "$REGISTRY/awsds-prod-ecr-dev-env:default-v0.1.0"
+
+sudo docker push "$REGISTRY/awsds-prod-ecr-base:default-v0.1.0"
+sudo docker push "$REGISTRY/awsds-prod-ecr-dev-env:default-v0.1.0"
+sudo docker logout "$REGISTRY"
+```
+
+**The warning in that paste is the reason the procedure ends with `logout`.** `docker login` writes
+the token to `/root/.docker/config.json` in clear; the host is `[E]` and takes it to the grave either
+way, but `logout` is what makes that a *choice* rather than a dependency on the teardown happening.
+
+### After the push — Claude's readings, read-only
+
+**Both tags landed, and they are now spent** (both repositories are `IMMUTABLE`, so a re-push under
+either is refused from here on):
+
+| Repository | Tag | Digest | Stored | Pushed (UTC) |
+|---|---|---|---|---|
+| `awsds-prod-ecr-base` | `default-v0.1.0` | `sha256:6c53def4fb30acbfff112e8c85c454019d96ca5a256eba563b455d21aeec5b3a` | 3,959,751,035 B | 05:21:51 |
+| `awsds-prod-ecr-dev-env` | `default-v0.1.0` | `sha256:76d9b5e8b6b9ada94ba52ae27a8e9a43ba37e7196d0de46f5859cd2325cd3e56` | 5,648,737,291 B | 05:30:34 |
+
+**The stored sizes are the compressed ones and §P's warning is confirmed from the other side**: 12.1
+GB and 17.5 GB uncompressed on the devbox became 3.96 GB and 5.65 GB in ECR — and `dev-env` carries
+its own copy of `base`'s layers, because ECR stores layers per repository. Two uploads, not one
+deduplicated push.
+
+**Scan-on-push ran, and the first reading of it was a trap worth writing down.** `describe-images`
+returns **no scan field at all** for these images — not `IN_PROGRESS`, not null-because-pending: the
+key is absent from the response — while `describe-image-scan-findings` answers `COMPLETE` for both.
+A check written where a reader would naturally look would therefore report *"never scanned"* on a
+scanned image, and would report the same thing if scanning were genuinely off (Lesson 13).
+`./aws/supplychain.py` does not fall into it — it measures the *configuration* (`BASIC (no rules)`,
+the legacy per-repository `scanOnPush: True`) and its own comment already names
+`DescribeImageScanFindings` as what the Stage 8 gate must call.
+
+**And the findings counts are identical in the two images**, which is the reading that matters more
+than the numbers:
+
+```
+base     COMPLETE 05:23:55Z   CRITICAL 30  HIGH 430  MEDIUM 514  LOW 3  UNDEFINED 7
+dev-env  COMPLETE 05:34:30Z   CRITICAL 30  HIGH 430  MEDIUM 514  LOW 3  UNDEFINED 7
+```
+
+`dev-env` is `base` plus Julia, R and Rust, and it contributed **exactly zero** findings: **basic
+scanning reads OS packages only**, so it is blind to the three ecosystems this image exists to add,
+and to the conda environment the Python stack lives in. That is Stage 7 decision 2's input measured
+rather than argued — the counts themselves are the SageMaker Distribution's inherited debt (the
+sampled MEDIUM was a Linux **kernel** CVE, which a container cannot exercise against the host's
+kernel), so the number to watch after an ENHANCED upgrade is not this one.
+
+**The consumer side answered for the first time against a real image.** `./aws/supplychain.py`:
+**0 checks FAILED**, `SC-4` both repositories `IMMUTABLE`, and `SC-7` *"ECR cross-account read from
+`awsds-infra-sandbox-1`: ok (1 image(s) visible)"* — the first exercise of
+`AllowConsumerAccountsToPull` with something behind it. **This is visibility, not a pull**:
+`DescribeImages` is one of that statement's four actions, and whether the layers actually come down
+cross-account is 5.1's question (INT-01/INT-17, verification (vi)).
+
+**One correction to a document written earlier in the same sitting, and the tool caught it.**
+`docs/SMUS.md`'s new tag section said the lifecycle policy was still to be written; `supplychain.py`
+reports `LIFECYCLE: yes` on both repositories, and `terraform-modules/ecr-repo` does build one — read
+back live: **untagged expire at 14 days**, and **tagged kept to the most recent 30**, selected with
+`tagPatternList = ["*"]`. The first draft had grepped the live slice and not the module that builds
+it. The argument survives and gets sharper: **rule 2 counts every flavour together**, so the day a
+`gpu-` image exists a burst of `default-` pushes evicts it, and rule 2 has to be split per flavour —
+which is what the flavour segment makes expressible. `docs/SMUS.md` now says this.
+
+### What this closes, and what it leaves
+
+**Step 5.0 is DONE** — build and push, one devbox session, as §P requires. Pass 1 has no unfinished
+step left, and **pass 3 is unblocked** (its other predecessor, the `grants.tf` apply, closed in the
+previous entry).
+
+**The devbox was still `running` when this was written**, at 0.1664 USD/h, with its images now
+redundant — everything worth keeping is in ECR. `./scripts/devbox.py down` is the user's call and the
+only thing standing between this sitting and 0 USD/h in Sandbox.
+
+Owed next: **5.1** — image, image version, app image config, and the domain's `CustomImages`, which is
+where the cross-account pull is answered rather than assumed.

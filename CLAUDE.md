@@ -264,11 +264,17 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   2 — its vector store bills while it exists); **`LakehouseAdmin` is cat 2** (an account-wide
   ingest-and-catalog TEMPLATE, not LF's *data lake administrator*). The list lives in **three** places
   (`locals.tf`, the module default, `US-3`) — one commit moves all three, a module TAG BUMP each time.
-- **1.7 DONE 2026-08-22 — INT-16 ANSWERED, fallback (ii): the permission-set `aws:SourceIp` deny does
-  NOT reach the portal.** It opened with the tunnel down and enumerated both profiles for a
-  `DataScientistAccess` identity; identical with it up (EIP confirmed). **VPN-only APIs and console, not
-  a VPN-only portal** — `README.md` needs the qualification, or fallback (i) gets adopted and proven.
-  Missing one cheap leg: the same-sitting console contrast.
+- **1.7 DONE AND FULLY ATTRIBUTED 2026-08-22 — INT-16 ANSWERED, fallback (ii): the permission-set
+  `aws:SourceIp` deny does NOT reach the portal.** It opened with the tunnel down and enumerated both
+  profiles for a `DataScientistAccess` identity; identical with it up (EIP confirmed). **The
+  same-sitting console contrast closed the attribution**: off VPN the console refused
+  `logs:DescribeLogGroups` **`with an explicit deny in an identity-based policy`** — no SCP or boundary
+  produces that wording and no other deny those six documents carry reaches `logs:` — clean with the
+  tunnel up. **The message named the persona role and `us-west-2` itself**, so identity and the
+  wrong-Region trap were ruled out from inside the reading, not from the operator's report. **VPN-only
+  APIs and console, not a VPN-only portal**; `README.md` now carries the qualification. What is left is
+  a choice, not a measurement: adopt fallback (i) — `DenyUserAccessFromUnauthorizedVPCs` on the domain
+  execution role, re-keyed on the EIP — or leave item 3 stated as bounded.
 - **THE PROFILES WERE UNINSTANTIABLE — creating from a profile is an AUTHORIZATION, not a property of
   the profile (2026-08-22).** `CreateProject` denied identically on and off VPN; **zero policy grants**
   on the root domain unit, whose only owner was the domain-creating role. `grants.tf` written and

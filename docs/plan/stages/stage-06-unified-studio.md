@@ -220,10 +220,35 @@ depend on a decision of mine"), each one planned to a file, applied from that fi
     `policies-shared.tf` already refused to overclaim: **VPN-only APIs and console, not a VPN-only
     portal.** `README.md`'s "all user access through the VPN" needs the qualification fallback (ii)
     names, or fallback (i) — AWS's `DenyUserAccessFromUnauthorizedVPCs` shape, re-keyed on
-    `aws:SourceIp` — has to be adopted and proven. **One leg is still missing and is cheap**: a
-    console call from the same identity, off VPN, in the same sitting. Without it the attribution
-    rests on the deny being in those sets *by code* plus the 2026-08-20 read-back, rather than on a
-    same-minute contrast (Lesson 24).
+    `aws:SourceIp` — has to be adopted and proven. **THE MISSING LEG WAS TAKEN THE SAME DAY, AND
+    THE ATTRIBUTION NO LONGER RESTS ON CODE:** in one sitting, off VPN, the portal and its two
+    profiles worked while the AWS console's **CloudWatch → Log groups** in `us-west-2` returned
+    `logs:DescribeLogGroups` … **`with an explicit deny in an identity-based policy`** — and with
+    the tunnel up, in the same sitting, both surfaces were clean. **The wording is what names the
+    statement.** An SCP denies *"in a service control policy"* and a boundary *"in a permissions
+    boundary"*, so *identity-based* confines it to the set's own documents; of the deny fragments
+    those documents carry, `shared_denies` reaches `iam:`, the `awsds-*-tfstate` bucket, the
+    public-access family and `ec2:`, `policies-data-scientists.tf` reaches `lakeformation:` and the
+    `sagemaker-denies` module reaches `sagemaker:` — **none of them touches `logs:`**, and
+    `DenyControlPlaneOffVpn` is a `Deny *` on `*`. It is the only candidate left. **Two things the
+    operator would otherwise have had to be believed about came out of the message itself**, which
+    is the half worth reusing: the principal reads `assumed-role/AWSReservedSSO_DataScientistAccess_…`,
+    so the session was the persona set and not the infrastructure user *measured rather than
+    inferred from the domain's single ACTIVATED profile*; and the resource ARN reads `us-west-2`,
+    so Stage 4 verification (iv)'s region trap — a console opened in the wrong Region meeting the
+    OU ceiling and naming the wrong policy — is ruled out **from inside the observation**. Lesson 24
+    discharged: the result is attributable from its own text, and by a same-minute contrast rather
+    than by the 2026-08-20 read-back. **The probe turned out not to be new, and that is the last
+    thing worth keeping**: Stage 4 step 8.3's pair ran `aws logs describe-log-groups` off the tunnel
+    on 2026-08-17 against the same role and got the **IAM sentence byte for byte** (`log-stage-04-vpn.md`,
+    reading 1). This is not a redundant measurement — Stage 4 read the **CLI** channel on its own
+    day, and what INT-16 needed was the **console** channel inside the **portal's** sitting — but the
+    agreement across five days, two channels and two sittings is a consistency neither reading
+    supplies alone. It also settles Stage 4 verification (iv)'s open residual, which asked for an
+    action chosen *for producing the canonical wording*: **the console wraps but does not rewrite**
+    (its own `This IAM user does not have permission…` line, then the IAM sentence intact), so
+    `logs:DescribeLogGroups` satisfies the criterion on both channels rather than, as that row put
+    it, by luck.
 13. **THE TWO PROJECT PROFILES WERE UNINSTANTIABLE, AND NOTHING IN THE STAGE WOULD HAVE SAID SO.**
     The same sitting clicked *Create project* and got `User is not permitted to perform operation:
     CreateProject` — **the same message on and off the VPN**, which is the contrast that ruled the
@@ -246,7 +271,7 @@ depend on a decision of mine"), each one planned to a file, applied from that fi
 | ~~0.1a~~ | **DONE 2026-08-21** — the canary replay returned an explicit SCP deny naming the policy. Finding 1 above | Claude, user-authorized |
 | ~~1.6~~ | **DONE 2026-08-21** — `./aws/probes/scp-battery.py --phase ou`: **25 as expected, 0 unexpected**. The trio reads `DENY-NOT-SCP` in Development, `DENY-NOT-SCP` in Sandbox (the nested-OU inheritance) and **`ALLOWED reached-authorization` in Production** — so the deny is the amended document, **and `StartSession` authorizes before it validates**, which 4e measured only for `StartQueryExecution` and which Lesson 21 forbids assuming across actions. The negative probe passed: `athena:StartQueryExecution` **still reaches authorization in Development**, so the amendment did not take D13's query path with it | Claude, user-authorized |
 | ~~1.3~~ | **DONE 2026-08-21** — the associations auto-accepted (both members), `SMUS_ASSOCIATED` filled, and the second applies ran: rows 2c and 2d above | **user** + Claude |
-| ~~1.7~~ | **DONE 2026-08-22** — the portal opened with the tunnel down, same behaviour with it up; **INT-16 answered as fallback (ii)**. Findings 12-13 above. **One cheap leg left**: the same-sitting console contrast | **user** |
+| ~~1.7~~ | **DONE AND FULLY ATTRIBUTED 2026-08-22** — the portal opened with the tunnel down, same behaviour with it up; **INT-16 answered as fallback (ii)**. Findings 12-13 above. The console contrast was taken the same day and closed the leg: `logs:DescribeLogGroups` denied *in an identity-based policy* off VPN, clean on VPN, both from a principal the message itself names as the persona set. **Nothing measurable is left here** — what remains is `README.md`'s wording, a choice and not a reading | **user** |
 | 2.4's grant | `grants.tf` — the two `CREATE_PROJECT_FROM_PROJECT_PROFILE` grants. **Written and `validate`-clean 2026-08-22, NOT applied.** Blocks every throwaway project | Claude wrote; apply: **user** as `awsds-infra-data` |
 | 5.0 | The `base`/`dev-env` **image build and push** — **one devbox session**, `devbox.md` §P. The host was found **absent** on 2026-08-22, so the 2026-08-21 build is gone and this starts from `up` | **user** |
 

@@ -258,9 +258,15 @@ data "aws_iam_policy_document" "shared_denies" {
 # (step 2.1; INT-05).
 #
 # WHAT IT DOES NOT PROTECT, said here rather than discovered later (8.4, INT-16): the Unified
-# Studio portal is entered by an IdC SIGN-IN, not by an IAM call, and whether a permission-set
-# condition gates that sign-in at all is unverified. This delivers VPN-only APIs and console.
-# Do not write it up as more.
+# Studio portal is entered by an IdC SIGN-IN, not by an IAM call, and this statement does not
+# reach that sign-in. MEASURED 2026-08-22 (Stage 6 step 1.7), both directions in ONE sitting:
+# off the tunnel a persona session opened the portal and enumerated its project profiles, while
+# the console refused logs:DescribeLogGroups "with an explicit deny in an identity-based
+# policy" - the wording that names THIS statement and nothing else, because an SCP says
+# "service control policy", a boundary says "permissions boundary", and no other deny these
+# six documents carry reaches logs: at all. With the tunnel up, both surfaces were clean.
+# So: VPN-only APIs and console. Do not write it up as more - which is what the sentence
+# standing here while it was unverified already said, and the measurement did not change it.
 data "aws_iam_policy_document" "control_plane_vpn" {
 
   statement {
