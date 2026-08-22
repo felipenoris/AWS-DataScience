@@ -49,6 +49,17 @@ resource "aws_ecr_repository" "this" {
 # `tagPatternList` with a single "*" is the documented way to say "any tagged image" without
 # enumerating prefixes; `tagStatus = "any"` would also catch untagged ones and make rule 1
 # unreachable.
+#
+# REVISION TRIGGER - RULE 2 COUNTS EVERY FLAVOUR TOGETHER, AND THAT BECOMES WRONG THE DAY A
+# SECOND ONE EXISTS (recorded 2026-08-22, when Stage 6 step 5.0 settled the image tag
+# convention `<flavour>-v<semver>` - one copy in docs/SMUS.md, "Custom images (BYOI)").
+# `imageCountMoreThan` over `["*"]` keeps the most recent N across ALL tags, so once
+# `gpu-v…` images share a repository with `default-v…`, a burst of pushes on one flavour
+# expires the other's images - which nothing else would have touched and which cost far
+# more to rebuild. The fix is one rule PER FLAVOUR, and it is cheap precisely because the
+# flavour is the tag's PREFIX: `tagPrefixList = ["gpu-"]` selects it without a wildcard.
+# This comment is the trigger's only home - the module has no README, and a note written
+# only in the stage that noticed it never reaches the hand that adds the second flavour.
 
 resource "aws_ecr_lifecycle_policy" "this" {
   repository = aws_ecr_repository.this.name

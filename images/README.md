@@ -110,3 +110,19 @@ a merge request against a `RUN` line is not:
 | [`dev-env/julia/packages.txt`](dev-env/julia/packages.txt) | Julia | **No** — under design B this image is the only path |
 | [`dev-env/r/conda-packages.txt`](dev-env/r/conda-packages.txt) | R (conda-forge) | **No** — same |
 | — | Rust | Yes (`crates`) — the toolchain is baked, the crates are not |
+
+**And for two of those rows, reviewing the merge request is not just good practice — it is the only
+control there is.** Measured 2026-08-22, when Stage 6 step 5.0 pushed the first images: ECR's scan read
+`base` and `dev-env` to **identical** severity counts, so the Julia, R and Rust content of this image
+produced **zero findings because nothing scanned it** — basic scanning reads OS packages, and Amazon
+Inspector's supported languages for container images do not include Julia or R at any price. Python has
+a second reader (`pip-audit`, Stage 8 step 5); Julia and R have none, and under design B this image is
+their only delivery path.
+
+**So the version pinned in these files is admitted to the whole estate by a human reading a diff.**
+That is the accepted position, not an oversight — the acceptance, what it costs and what would reverse
+it are one row in [`docs/plan/institutional-delta.md`](../docs/plan/institutional-delta.md),
+*"Vulnerability scanning of what the notebook image actually contains"*. Two practical consequences for
+whoever reviews one of these merge requests: **prefer a version you can look up an advisory for**, and
+remember the review sees the package **at the moment it is pinned** — a CVE published next month against
+a version already in the image will be found by nobody here.

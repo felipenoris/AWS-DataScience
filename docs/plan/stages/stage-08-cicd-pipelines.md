@@ -114,10 +114,27 @@ re-prices the D5 comparison (1.7).
 
 - **1.0 — [user] Set the repository's roles and protection** (with Stage 7 steps 3.4-3.5, restated with
   the fields named): on `dev-env/` — `data-scientists` **Developer**, `dev-env-stewards` **Maintainer**;
-  the release tag pattern (`v*`) **protected, creation Maintainers-only** — in CE that role mapping *is*
+  the release tag pattern **protected, creation Maintainers-only** — in CE that role mapping *is*
   the gate's authorization, per 3.3's recorded answer.
+  **THE PATTERN IS `*-v*` AND NOT `v*`, AND THE CORRECTION IS SECURITY-RELEVANT RATHER THAN COSMETIC**
+  (2026-08-22, when Stage 6 step 5.0 settled the image tag convention — `<flavour>-v<semver>`, one copy in
+  [`docs/SMUS.md`](../../SMUS.md) §*Custom images*): a release of this repository is now tagged
+  `default-v0.2.0`, which **`v*` does not match**. Left as it was, the protection would silently apply to
+  nothing this repository ever tags, and since 3.3's answer makes *who can push the protected tag* the
+  whole of the CE authorization, the gate would be open to every **Developer** — i.e. to
+  `data-scientists` — while still reading as protected in the settings page. The failure is invisible
+  from inside GitLab: an unprotected tag is created successfully. **Verify by attempting a tag creation
+  as a Developer after setting it**, rather than by reading the pattern back.
 - **1.1 — [Claude] Write the build jobs**: both images with **BuildKit rootless** on the build runner
-  (Stage 7 step 6.2), tags **derived from the commit** (`<tag>-<short-sha>`), pushed nowhere yet. The
+  (Stage 7 step 6.2), tagged **`<flavour>-v<semver>-<short-sha>`** — the release tag this pipeline runs
+  on, plus the commit — pushed nowhere yet. **This is the hand convention carried forward rather than a
+  second one** (2026-08-22): `<flavour>-v<semver>` is Stage 6 step 5.0's, whose one copy is
+  [`docs/SMUS.md`](../../SMUS.md) §*Custom images*, and the `-<short-sha>` suffix is what this step
+  always wanted — it keeps two builds of the same release tag from colliding in a repository where
+  **a tag is spent on first landing**, and it makes a pipeline-built image distinguishable from the two
+  hand-built ones (5.0 and Stage 7 step 2.6), which carry no suffix. **The flavour stays in front**, so
+  the registry's lifecycle rule can be split per flavour with a plain `tagPrefixList` when a second one
+  exists — see that same section for why rule 2 has to be split at all. The
   `Dockerfile`s keep the requirements of the two hand builds unchanged: the SMUS BYOI specification and
   the activity-monitor extension from Stage 6 step 5.0, **plus the CA root from the one source (INT-19),
   which joins at Stage 7 step 2.6 and not at 5.0** — D36 §3 was amended 2026-08-21 and the root does not
@@ -133,7 +150,15 @@ re-prices the D5 comparison (1.7).
 - **1.4 — [Claude] Write the scan gate**: `aws ecr wait image-scan-complete`, then
   `describe-image-scan-findings`; **blocks on decision 1's severity set**. It **reads the push's own scan
   and never triggers another** — basic scanning allows one scan per image per 24 h — and it covers **OS
-  packages only**; the language-package half is step 5's `pip-audit`, and the two compose.
+  packages only**; the language-package half is step 5's `pip-audit`. **The two compose to OS + Python
+  and no further, which is less than "the two compose" used to imply** (corrected 2026-08-22 from a
+  measurement, not a re-reading): Stage 6 step 5.0's `base` and `dev-env` scanned to **identical**
+  severity counts, so **Julia, R and the baked Rust toolchain passed this gate contributing nothing,
+  because nothing looked at them**. That residual is **accepted with a named control** — the Dev Env
+  Steward's review of a version-pinned manifest — and both the acceptance and its price live in
+  [`institutional-delta.md`](../institutional-delta.md)'s row *"Vulnerability scanning of what the
+  notebook image actually contains"*. **Do not close it by enabling enhanced scanning**: Inspector's
+  ECR language list has no Julia and no R (Stage 7 decision 2, re-framed the same day).
 - **1.5 — [user] Run the release gate**: a **blocking manual job** — `when: manual` under `rules:`, so
   `allow_failure` defaults false and the pipeline stops — with the image diff, the scan report and the
   smoke output in its artifacts. Premium form: a deployment approval assigned to `dev-env-stewards`. CE
@@ -165,6 +190,12 @@ promotion — the chain starts at the tag (D21) and its first target is Staging.
 - **2.1 — [user] Create `app-etl` from the template** (Stage 7 step 3.5 named it; this step fixes the
   fields): `data-scientists` **Developer**, `deployment-managers` **Maintainer**, release tag pattern
   (`v*`) **protected, creation Maintainers-only** — the CE anchor of step 3.5's gate.
+  **`v*` is correct HERE and the difference from 1.0 is deliberate** (2026-08-22): the flavour segment
+  exists because `base`/`dev-env` branch by *runtime* — GPU, Spark, plain — and an application does not.
+  Its repository already names it, its ECR repository is `awsds-prod-ecr-app-etl`, and a mandatory
+  `default-` on every application tag would be a word that never varies. **Application images are
+  `v<semver>-<short-sha>`.** If an application ever does gain a runtime variant, it gets the flavour
+  segment and this pattern moves with it.
 - **2.2 — [Claude] Write `.gitlab-ci.yml`**: on every branch — `uv sync`, `ruff`, `pytest`, plus step 5's
   gates; on the default branch — docs built and published to **Pages** (Stage 7 step 4); on the protected
   tag — the image built with BuildKit **`FROM base:<pinned tag>`** (never `FROM dev-env` — the runtime has

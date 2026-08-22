@@ -220,7 +220,13 @@ something to clone.
   layers re-upload for a two-kilobyte change. **What this layer does NOT cover, and it is this step's to
   close:** Python does not read the OS trust store — `certifi` ships its own bundle, and `git`, `curl` and
   conda each have their own opinion. Same laptop, same tunnel, same
-  immutable-tag discipline; **record the new digest in the log** beside the old one, because the SMUS
+  immutable-tag discipline — and since 2026-08-22 that discipline has a **shape and a next value**:
+  the convention is `<flavour>-v<major>.<minor>.<patch>`, the same number in both repositories, whose one
+  copy is [`docs/SMUS.md`](../../SMUS.md) §*Custom images (BYOI) — and how they are named*. Step 5.0 spent
+  **`default-v0.1.0`**; this rebuild is **`default-v0.2.0`** in `base` and `dev-env` alike, and the tag is
+  spent the moment it lands. **A hand build carries no `-<short-sha>` suffix and a pipeline build does**
+  (Stage 8 step 1.1), which is what will distinguish these two hand-built images from everything that
+  follows them; **record the new digest in the log** beside the old one, because the SMUS
   spaces select an image by version and Stage 6 step 5.1's registration has to be pointed at the new one
   (INT-17's mechanism, already recorded there). **This is the second and last hand-built image**, and it
   is the *same* bootstrap exception rather than a new one — Stage 8 step 1's pipeline replaces both.
@@ -479,6 +485,19 @@ the decision-maker.
    `DescribeImageScanFindings`, which is what Stage 8's gate reads. Enhanced (Inspector — OS *and*
    language packages, continuous) is measured at USD 0.09/image + 0.01/re-scan and is decided at
    **Stage 11 step 4** with the rest of the paid detection, against a real bill (principle 9, Lesson 6).
+   **RE-FRAMED 2026-08-22, AND THE DEFERRAL MUST NOT BE READ AS EVENTUAL FULL COVERAGE.** As written
+   above, "enhanced later" implies the language half arrives when the bill is read. It does not, for
+   this estate: Inspector's supported languages for ECR images are **C#, Go, Java, JavaScript, PHP,
+   Python, Ruby and Rust** (read 2026-08-22, `REFERENCES.md`) — **Julia and R are not on the list and
+   no AWS service scans them**. What Stage 11 step 4 can actually buy is Rust, Python beyond the OS
+   packages, and continuous re-scanning of all of it as new CVEs land; what it cannot buy at any price
+   is the two ecosystems the `dev-env` image exists to deliver. **The measurement that forced this
+   sentence:** Stage 6 step 5.0's two images scanned to **identical** severity counts, so everything
+   `dev-env` adds over `base` produced zero findings. The Julia/R residual is therefore **accepted
+   rather than deferred**, with the Dev Env Steward's review of a pinned text manifest as its named
+   control — the row *"Vulnerability scanning of what the notebook image actually contains"* in
+   [`institutional-delta.md`](../institutional-delta.md) is where that acceptance and its price live,
+   and this decision must not be closed in a way that contradicts it.
 3. **The pull-through cache upstream set** (5.2) — recommended: the credential-free three (ECR Public,
    `registry.k8s.io`, Quay). Docker Hub adds a credential secret (their account, their rate limits,
    +USD 0.40/month) — added when a build actually pulls from it, not before.

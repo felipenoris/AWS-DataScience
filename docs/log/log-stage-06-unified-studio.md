@@ -2064,3 +2064,97 @@ label and the paragraph written *for* a negative INT-16 now describe one.
 
 Owed next: **the `README.md` decision** — item 3 stated as bounded, or INT-16 fallback (i) adopted. The
 stage file carries the input that decides it.
+
+---
+
+## 2026-08-22 — The plan read back against the session: seven places where the two disagreed, and a paid upgrade that turns out never to close the gap it was deferred against
+
+**Claude's hand throughout, under four requests in this sitting** — *"Verifique se todas as suas
+alterações estão no arquivo. Verifique necessidade de revisar algum aspecto do plano com base no que
+encontramos nesta sessão"*, then *"aplique 1-4 e 7"*, *"propague o padrão que decidimos neste estágio,
+`<flavour>-v<semver>`, para o restante do plano"*, then *"escreva (a)+(c)"*. **No AWS write and no
+apply**: this sitting is documentation and two web reads. Where a choice was the user's it is marked.
+
+### The two readings it opened with
+
+The devbox reads **`absent (nothing billing)`** — `devbox.py down` ran, and the Sandbox `[E]` layer is
+back to nothing. The previous sitting's three files are all in `HEAD`: the `docs/SMUS.md` section with
+its lifecycle correction, this log's fifteenth entry with the account id redacted, and the index cell.
+
+### What the review found, and the shape of the list
+
+Seven places. Four were **stale prose** — the file asserting something the session had already
+falsified — one was an **unrecorded answer**, and **two were decisions** that no reading could settle:
+
+| # | What | Fate |
+|---|---|---|
+| 1 | the owed table still said `grants.tf` was **NOT applied**, five days after the apply | **the user had already fixed it**, in `d7a6fc0`, while this review was being written |
+| 2 | step 5.0 owed in two tables | struck, with tags and digests |
+| 3 | the Status row still owed 5.0 and 1.7 | passes 0-2 now span **two dates and four sittings** |
+| 4 | verification (x) had an answer nobody wrote down | recorded — **and fenced to its 5.0 half** |
+| 5 | Stage 8 tags `<tag>-<short-sha>`; the convention is `<flavour>-v<semver>` | propagated on the user's instruction — below |
+| 6 | Julia, R and Rust are scanned by nothing | the user asked what the question was; measured, then written as (a)+(c) |
+| 7 | Stage 7 step 2.6 named no tag; the lifecycle trigger had no receiving end | both given one |
+
+**Item 1 is the interesting one and it is not about ECR.** Two hands were editing
+`stage-06-unified-studio.md` in the same minutes: the first edit was refused with *"File has been
+modified since read"*, and the re-read showed the row already corrected plus a new owed row that had
+not existed a moment earlier. Nothing was lost, and the reason nothing was lost is that the tool
+refuses to write over a file it has not seen — the same guarantee the two-commit module rule buys for
+Terraform, applied to prose.
+
+### The propagation, and the thing it uncovered
+
+The user's instruction was to carry `<flavour>-v<semver>` into the rest of the plan. It **changes shape
+once**, and the three rows are now a table in `docs/SMUS.md` — hand builds bare (`default-v0.1.0`,
+`default-v0.2.0` at Stage 7 step 2.6), pipeline builds with `-<short-sha>` (Stage 8 step 1.1), and
+**application images with no flavour at all** (`v<semver>-<short-sha>`), because the flavour axis is
+about *runtimes* branching and an application does not branch that way. That last row is written as a
+decision so the absence is not read later as an oversight.
+
+**And the propagation found something no one was looking for.** GitLab's protected-tag pattern for
+`dev-env/` is **`v*`** in Stage 8 step 1.0 — and `v*` **does not match `default-v0.2.0`**. Stage 7 step
+3.3's recorded answer makes the protected tag *the whole of the CE authorization* for the release gate,
+so the pattern left alone would silently unprotect every release of that repository while the settings
+page still read as protected: creating an unprotected tag simply succeeds. Corrected to `*-v*`, with
+the instruction to **verify by attempting a tag creation as a Developer** rather than by re-reading the
+pattern — a control that cannot be confirmed by looking at its own configuration (Lesson 5).
+
+### Item 6 — the question could not be framed until something was measured
+
+The user asked, fairly, what the decision actually was. The framing needed one fact that no file in
+this repository had: **Amazon Inspector's supported languages for ECR images are C#, Go, Java,
+JavaScript, PHP, Python, Ruby and Rust — Julia and R are on no list at any price** (read 2026-08-22,
+both pages in `REFERENCES.md`). That turns the previous sitting's measurement — `base` and `dev-env`
+scanning to **identical** counts, so the three added ecosystems produced zero findings — from a cost
+question into a **permanent** one, because Stage 7 decision 2 had deferred the language half to Stage
+11 step 4 *against a real bill*, and no bill buys Julia or R.
+
+The user chose **(a) accept, with the control named** and **(c) re-frame the deferral**, declining the
+optional `cargo audit`. Written to four places, deliberately split between where the acceptance **lives**
+and where someone **trips over it**: the acceptance is one row in
+[`institutional-delta.md`](../plan/institutional-delta.md) (*"Vulnerability scanning of what the
+notebook image actually contains"*), with its price and its revision trigger — a second data scientist,
+or the first Julia/R package from outside a registry the steward reads; `images/README.md` says that for
+two of its four manifest rows the merge-request review **is** the control, and what that review
+structurally cannot see; Stage 8 step 1.4's *"the two compose"* is corrected to **OS + Python and no
+further**, with *do not close this by enabling enhanced scanning*; and Stage 7 decision 2 keeps its
+recommendation while losing the implication that waiting eventually covers everything. **Lesson 34 is
+why it is four places and not one** — an acceptance recorded only in the decision that deferred it never
+reaches the hand that writes the gate.
+
+### Files, and what is owed
+
+Touched: `docs/plan/stages/stage-06-unified-studio.md` (the two 5.0 rows, the Status row, verification
+(x)), `docs/plan/stages/stage-07-gitlab-runners-ecr.md` (2.6's tag, decision 2 re-framed),
+`docs/plan/stages/stage-08-cicd-pipelines.md` (1.0's pattern, 1.1's tag, 2.1's deliberate difference,
+1.4's correction), `docs/SMUS.md` (the hand-off table), `docs/plan/institutional-delta.md` (the new
+row), `images/README.md`, `docs/REFERENCES.md` (both Inspector pages), and
+`terraform-modules/ecr-repo/main.tf` — a **comment-only** revision trigger for the day a second flavour
+shares a repository with the first, which therefore reaches consumers on the next tag bump and needs no
+caller change today.
+
+`make check` **OK**, `./scripts/check-identifiers.py` **OK**, the module `validate` clean; `check-docs`
+unchanged at its four pre-existing pre-Stage-2 prose failures, none of them in these files.
+
+Owed: nothing from this sitting but the commit. The stage's own next move is **pass 3**.

@@ -639,3 +639,22 @@ in the stage log at push time. The image cannot be asked either: `dev-env`'s own
 was later given.
 
 **First applied 2026-08-22, Stage 6 step 5.0:** `default-v0.1.0` in both repositories.
+
+#### How it survives the hand-off to the pipeline
+
+The convention was written by a hand build, and **Stage 8 step 1 is where a pipeline takes it over** —
+so it is propagated rather than merely inherited, and it changes shape once on the way (all three rows
+settled 2026-08-22, with the stage files carrying the same words):
+
+| Who builds | Tag | Why the difference |
+|---|---|---|
+| the two **hand** builds — Stage 6 step 5.0, Stage 7 step 2.6 | `<flavour>-v<semver>` | there is no pipeline provenance to record; the tag is exactly the release |
+| the **pipeline**, Stage 8 step 1.1 | `<flavour>-v<semver>-<short-sha>` | two runs of one release tag must not collide where a tag is spent on first landing — and the suffix's absence is what identifies the two hand-built images forever |
+| **application** images (`app-etl` and successors), Stage 8 step 2 | `v<semver>-<short-sha>` — **no flavour** | the flavour axis is about *runtimes* branching (GPU, Spark, plain); an application does not branch that way, and a mandatory `default-` would be a word that never varies |
+
+**One consequence is not cosmetic and is easy to miss**: GitLab's protected-tag pattern for `dev-env/`
+was `v*`, which **does not match `default-v0.2.0`**. Since a Community Edition release gate *is* the
+protected tag (who may create it), leaving the pattern alone would quietly unprotect every release of
+this repository while the settings page still reads as protected. Stage 8 step 1.0 now specifies `*-v*`
+and says to verify it by attempting a tag creation as a Developer — the application repositories keep
+`v*`, correctly, because their tags have no flavour segment.
