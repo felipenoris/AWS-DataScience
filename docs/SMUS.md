@@ -311,6 +311,13 @@ An **environment blueprint** is a provisioning template owned by AWS. It works i
    makes DataZone attach the D13 boundary **while it creates a project role**, instead of the
    boundary being attached afterwards and racing reconciliation. That is INT-15's mechanism, and it
    is Lesson 8 (check `awscc` before declaring a Terraform gap) paying off rather than a workaround.
+   **The trade measured 2026-08-22: an EXISTING configuration is immutable through `awscc`** — its
+   identifiers are createOnly *and* write-only, the read never returns them, so every update patch
+   looks like it adds createOnly properties and CloudControl refuses (`NotUpdatableException`).
+   A field change on a configuration already applied is therefore a **`put-environment-blueprint-configuration`
+   that re-sends the full object to match the already-committed code** (recorded per occurrence in
+   the stage file; the Tooling manage-access fix is the first), or a replace — never an in-place
+   update. Creates are unaffected.
 2. **A project uses it**: when a project whose profile targets that account exercises the blueprint,
    DataZone provisions the real resources the template describes — into the member account, through
    the registered provisioning role. The resource set this leaves behind is an **environment**
