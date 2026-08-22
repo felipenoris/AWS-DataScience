@@ -63,13 +63,18 @@ starting one, and what to prune when the answer is no.
 prebuilt binaries, the R environment is conda-forge binaries. That was a requirement while the build
 was still planned for an emulated laptop; on the devbox it is simply why the build is short.
 
-**The devbox cannot push.** Its role carries Session Manager and no `ecr:` permission, because the
-Production registry grants the Interactive accounts a *pull* and nothing more. The push into
-`awsds-prod-ecr-base` / `awsds-prod-ecr-dev-env` is Stage 6 step 5.0's own act from an identity that
-may (`awsds-infra-prod`); the repositories are tag-immutable, so a tag is spent the first time it
-lands and a re-push under the same tag is rejected — that is the control, not a nuisance. **Record
-the pushed digests in the stage log**: Stage 6 step 5.1 registers a SageMaker image *version*, and
-Stage 7 step 2.6 has to be able to say which digest it replaced.
+**The devbox cannot push, and the build does not survive it being asked to.** Its role carries
+Session Manager and no `ecr:` permission, because the Production registry grants the Interactive
+accounts a *pull* and nothing more — read live on 2026-08-22, both repository policies carry one
+statement and it is `AllowConsumerAccountsToPull`. The push into `awsds-prod-ecr-base` /
+`awsds-prod-ecr-dev-env` is Stage 6 step 5.0's own act from an identity that may
+(`awsds-infra-prod`), and it reaches this host as a 12-hour ECR **authorization token** rather than
+as a permission: **the whole procedure is [`devbox.md`](../docs/plan/runbooks/devbox.md) §P.** Read
+it before the build, not after — **the host is `[E]` and its volume dies with it, so build and push
+are one session** and a `down` in between costs the rebuild. The repositories are tag-immutable, so
+a tag is spent the first time it lands and a re-push under the same tag is rejected — that is the
+control, not a nuisance. **Record the pushed digests in the stage log**: Stage 6 step 5.1 registers
+a SageMaker image *version*, and Stage 7 step 2.6 has to be able to say which digest it replaced.
 
 ## The three things worth knowing before editing either file
 

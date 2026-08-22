@@ -21,7 +21,8 @@ machine of the right architecture, inside the perimeter, that exists only while 
 
 It is a **builder, not a workstation**. It cannot push: its role carries Session Manager and no
 `ecr:` permission at all, because the Production registry grants the Interactive accounts a *pull*
-and nothing more. The push is step 5.0's own act, from an identity that may.
+and nothing more. The push is step 5.0's own act, from an identity that may — **§P is how that
+identity reaches a host that has none, and why the two acts share one session**.
 
 ## C. The components, and how they connect
 
@@ -144,6 +145,118 @@ included, so the next build starts by pulling the distribution again.
 **And the escape hatch is the layer.** This host is `[E]` and holds nothing worth keeping: if the disk
 is a mess, `down` then `up` gives a clean 64 GiB in about two minutes. Weigh it against a full rebuild
 (~20 minutes) — pruning first is nearly always the cheaper move, recreating is for when it is not.
+
+## P. Push — the one act this host cannot do under its own name
+
+**Build and push are ONE session, and that is a property of the layer rather than a preference.** The
+volume dies with the instance (§D), so a `down` between the two acts throws the build away — measured on
+2026-08-22, when the host was absent and the 2026-08-21 images with it. Until this section existed the
+two were described in consecutive sentences that read as two sittings; the cost of that reading is the
+full rebuild, and the rebuild is the twenty minutes, not the push.
+
+**Why the identity has to arrive from somewhere else — read from the live registry, 2026-08-22, not
+inferred.** Both repository policies carry exactly one statement, `AllowConsumerAccountsToPull`, granting
+the two Interactive accounts `BatchCheckLayerAvailability`, `BatchGetImage`, `GetDownloadUrlForLayer` and
+`DescribeImages`. **No statement anywhere grants a push to anybody**, and none needs to: same-account
+access is decided by the identity policy alone, so the push is a **Production** principal's act and can
+be nothing else. Giving this instance's role an `ecr:` permission would not change that — it would meet
+a repository policy that offers Sandbox a *pull*, which is the design (§M), not an oversight.
+
+**So the credential travels and the permission does not.** `ecr:GetAuthorizationToken`, called on the
+laptop as `awsds-infra-prod`, mints a 12-hour bearer token that the docker client presents to the
+registry: what authorizes the upload is the **token's identity**, not the host holding it. Nothing here
+is granted to the devbox, nothing survives the session, and the box's role is untouched.
+
+**The ceiling permits this and forbids its mirror image**, which is worth knowing before the first
+`InitiateLayerUpload` fails and gets blamed on the relay. `awsds-org-scp-perimeter`'s
+`DenyEcrPushOutsideOrganization` denies the four push actions when `aws:ResourceOrgID` is **not** ours —
+it is the exfiltration shape, our layers into somebody else's registry — and `awsds-org-rcp-perimeter`'s
+`EnforceOrgIdentitiesOnRegistry` denies `ecr:*` to principals outside the organization. This push is an
+org identity into an org registry and neither statement sees it.
+
+### The relay
+
+On the **laptop** — SSO user: the **infrastructure user**; account: **Production**; permission set:
+**`InfrastructureAccess`**, through `awsds-infra-prod`. The first command prints the two registry URIs
+(the host part before the first `/` is the registry); the second prints the token, and only the token:
+
+```bash
+aws ecr describe-repositories --profile awsds-infra-prod --region us-west-2 --query 'repositories[].repositoryUri' --output text
+```
+
+```bash
+aws ecr get-login-password --profile awsds-infra-prod --region us-west-2
+```
+
+In the **devbox session**, take it without echoing it. `read -rs` keeps the token off the screen and out
+of the shell history, and nothing else records it: the account has **no `SSM-SessionManagerRunShell`
+document** (measured 2026-08-22), so Session Manager runs on defaults and no session stream is logged.
+The daemon runs as root and every build command here is `sudo docker`, so the login has to be `sudo`
+too — otherwise the credential lands in `ssm-user`'s config and the push looks unauthenticated.
+
+```bash
+read -rs ECR_TOKEN
+```
+
+```bash
+REGISTRY=<the host part of either URI>
+```
+
+```bash
+echo "$ECR_TOKEN" | sudo docker login --username AWS --password-stdin "$REGISTRY" && unset ECR_TOKEN
+```
+
+### Tag, push, record
+
+**The repositories are `IMMUTABLE`, so a tag is spent the first time it lands** — a re-push under the
+same tag is refused, and that is the control rather than a nuisance (`images/README.md`). Pick the tag
+deliberately: the first one written here is the convention Stage 8's pipeline inherits.
+
+```bash
+sudo docker tag awsds/base:local "$REGISTRY/awsds-prod-ecr-base:v0.1.0" && sudo docker tag awsds/dev-env:local "$REGISTRY/awsds-prod-ecr-dev-env:v0.1.0"
+```
+
+```bash
+sudo docker push "$REGISTRY/awsds-prod-ecr-base:v0.1.0"
+```
+
+```bash
+sudo docker push "$REGISTRY/awsds-prod-ecr-dev-env:v0.1.0"
+```
+
+```bash
+sudo docker logout "$REGISTRY"
+```
+
+**Both digests go in the stage log** — Stage 6 step 5.1 registers a SageMaker image *version* against
+one of them, and Stage 7 step 2.6 has to be able to say which digest its CA rebuild replaced. Read them
+back from the laptop rather than from the push output:
+
+```bash
+aws ecr describe-images --profile awsds-infra-prod --region us-west-2 --repository-name awsds-prod-ecr-base --query 'imageDetails[].{Tag:imageTags[0],Digest:imageDigest,Bytes:imageSizeInBytes}' --output table
+```
+
+### What the bytes do on the way out
+
+**The push does not touch the S3 gateway endpoint, and the endpoint policy's missing `PutObject` is not
+a gap.** AWS's own page is explicit in both directions: `ecr.dkr` is the Docker Registry API and *"Docker
+client commands such as `push` and `pull` use this endpoint"*, while the S3 gateway endpoint exists so
+that containers **downloading** an image can fetch the layers — its documented minimum is `s3:GetObject`
+on `prod-<region>-starport-layer-bucket`. Sandbox's endpoint policy grants exactly that plus
+`ListBucket`, which is the pull path Stage 3 already provided for; the push uploads its layer parts to
+the registry endpoint instead.
+
+**And the Sandbox VPC has no interface endpoint of any kind** (measured 2026-08-22 — the `egress/`
+slice that would carry them is `[E]` and down), so `dkr.ecr` resolves to its public address and the
+upload leaves through the default route: the WireGuard host, a `t3.nano`, doing NAT for this tier (§C).
+**That path is proven rather than novel** — the build pulls the SageMaker distribution and every Julia,
+R and Rust artifact through the same instance, in the same hop, and the first build did it clean. The
+push is the same order of magnitude in the other direction, so budget the time and do not go looking
+for a broken mirror when it is merely slow.
+
+**Do not size it from `docker images`.** That column is uncompressed and counts shared layers once per
+image; ECR stores layers **compressed** and **per repository**, so `dev-env` uploads its copy of
+`base`'s layers again into the second repository. Two repositories, not one deduplicated push.
 
 ## X. Down
 

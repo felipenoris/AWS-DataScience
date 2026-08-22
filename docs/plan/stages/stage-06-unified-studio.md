@@ -82,7 +82,7 @@ change. The sequence to work in is **six passes**:
 | **0** | 5.a (St. 7) | **`production/registry/` — the ECR pair, CodeArtifact, the key and the consumer policies.** Added as a row here 2026-08-21: it was a prerequisite the whole time and appeared in no table this stage executes from, which is how a slice that had never been written could be read as applied | `production/registry/` `[P]` | write + apply: **Claude ⚡ / user** as `awsds-infra-prod` |
 | **1** | 2.1-2.3 | the prerequisite slices: roles, boundary, KMS, params; the `layers.py` rows | `*/sagemaker/` `[P]` | `awsds-infra-sandbox-1`, `awsds-infra-dev` |
 | **1** | 3 | the deny fragment: jobs off VPC, instance ceiling, `StartSession` scope | `identity/sso/` `[P]` | `awsds-infra-identity` |
-| **1** | 5.0 | the hand-built `base`/`dev-env` images into the Production ECR — **needs pass 0's repositories, and carries no CA root** (Stage 7 step 2.6) | laptop, by hand | **user** (docker + push) |
+| **1** | 5.0 | the hand-built `base`/`dev-env` images into the Production ECR — **needs pass 0's repositories, and carries no CA root** (Stage 7 step 2.6) | the **devbox**, build and push in **one session** (`devbox.md` §P) | **user** (docker + push) |
 | **2a** | 1.1-1.2 | the domain and its two IAM roles — **and 0.1a's creation act rides this apply** | `data-governance/governance/` `[P]` | `awsds-infra-data` — **DONE 2026-08-21** |
 | **2b** | 1.3 | the account associations, **console-only, no public API**. **DONE 2026-08-21** — auto-accepted, zero invitations. **The `backend.SMUS_ASSOCIATED` row is NOT part of this row's work**: it arms 1.4 *and* 1.5, so it belongs to the sitting that runs them | the domain account's management console | **user** |
 | **2c** | 1.4 | the blueprint configurations — **in each MEMBER account, not the domain account** (corrected 2026-08-21: `PutEnvironmentBlueprintConfiguration` takes no account parameter, so it configures the caller's; 1.4's own body said so and this table did not) | `sandbox/sagemaker/`, `development/sagemaker/` `[P]`, second apply | `awsds-infra-sandbox-1`, `awsds-infra-dev` — **DONE 2026-08-21** (findings 7-9: the NAME contract, two module tags, the ToolingLite re-cut; **11 stand per member**) |
@@ -212,7 +212,7 @@ depend on a decision of mine"), each one planned to a file, applied from that fi
 | ~~1.6~~ | **DONE 2026-08-21** — `./aws/probes/scp-battery.py --phase ou`: **25 as expected, 0 unexpected**. The trio reads `DENY-NOT-SCP` in Development, `DENY-NOT-SCP` in Sandbox (the nested-OU inheritance) and **`ALLOWED reached-authorization` in Production** — so the deny is the amended document, **and `StartSession` authorizes before it validates**, which 4e measured only for `StartQueryExecution` and which Lesson 21 forbids assuming across actions. The negative probe passed: `athena:StartQueryExecution` **still reaches authorization in Development**, so the amendment did not take D13's query path with it | Claude, user-authorized |
 | ~~1.3~~ | **DONE 2026-08-21** — the associations auto-accepted (both members), `SMUS_ASSOCIATED` filled, and the second applies ran: rows 2c and 2d above | **user** + Claude |
 | 1.7 | INT-16's **portal reading** — the browser half of row 2d | **user** |
-| 5.0 | The `base`/`dev-env` **image build and push**, on the laptop, through the tunnel | **user** |
+| 5.0 | The `base`/`dev-env` **image build and push** — **one devbox session**, `devbox.md` §P. The host was found **absent** on 2026-08-22, so the 2026-08-21 build is gone and this starts from `up` | **user** |
 
 
 ---
@@ -846,17 +846,33 @@ through the WireGuard host, which
 `egress/` need never come up for a build (0.170 USD/h not spent). `./scripts/devbox.py up|sync|ssm|down`
 drives it; its README carries the design and the refusals.
 
-**What that host deliberately cannot do is push**, so the two acts split: the **build** happens on the
-devbox, and the **push** is taken from an identity that may. The registry grants the Interactive accounts
-a *pull* and nothing more, and granting the near half of a permission the far half denies would produce a
-role that reads as if it could publish. Related and worth knowing before sending several GB through a
-`t3.nano`: **no preventive control requires the push to cross the tunnel** — a `grep` over all ten
-organization policy documents finds no `aws:SourceVpce`, `aws:SourceVpc` or `aws:SourceIp` condition
-anywhere, so `docker push` to ECR's public endpoint under the SSO session is unblocked.
+**What that host deliberately cannot do is push**, so the two acts split **by identity and not by
+sitting** — a distinction this paragraph did not draw until 2026-08-22, when the host was found absent
+and the first build with it. The **build** happens on the devbox and the **push** is authorized by an
+identity that may, but they share **one session**: the volume is `[E]` and dies with the instance, so a
+`down` between them is a rebuild. The registry grants the Interactive accounts a *pull* and nothing more
+— read live on 2026-08-22, both repository policies carry a single `AllowConsumerAccountsToPull`
+statement and nothing grants a push to anyone, because a same-account push needs no resource statement —
+and granting the near half of a permission the far half denies would produce a role that reads as if it
+could publish. **The whole procedure, with the token relay that carries `awsds-infra-prod`'s identity to
+a host that holds none of its permissions, is [`devbox.md`](../runbooks/devbox.md) §P.**
+
+Two readings from the same sitting, both of which remove a reason to redesign the path. **No preventive
+control requires the push to cross the tunnel** — a `grep` over all ten organization policy documents
+finds no `aws:SourceVpce`, `aws:SourceVpc` or `aws:SourceIp` condition anywhere, and the two `ecr`
+statements that do exist (`DenyEcrPushOutsideOrganization`, `EnforceOrgIdentitiesOnRegistry`) deny this
+push's **mirror image**: our layers into a registry outside the organization, and outside identities into
+ours. And **the S3 gateway endpoint is not on the push path at all** — `push` and `pull` are both
+Docker Registry API traffic to `ecr.dkr`, and S3 carries the *download* of layers, which is why AWS's
+documented minimum for that endpoint is `s3:GetObject` and why Sandbox's allow-list already has exactly
+that on `prod-us-west-2-starport-layer-bucket` and no `PutObject`. So the bytes leave through the
+`t3.nano`, on the same path the build already pulled the distribution in through.
 
 `docker login` to the Production ECR, tag immutably, push as `awsds-prod-ecr-base` **and**
 `awsds-prod-ecr-dev-env`. **Record both digests in the log** so the Stage 8 changeover — and Stage 7 step
-2.6's rebuild — are visible.
+2.6's rebuild — are visible. **The tag is spent the first time it lands** (both repositories are
+`IMMUTABLE`), and the first one written is the convention Stage 8's pipeline inherits, so it is chosen
+rather than typed.
 
 **5.1 — Make the image selectable in the throwaway project — INT-17, before the comparison starts.** The
 attachment point (read 2026-08-16) is the **Tooling-provisioned SageMaker AI domain** in the member
