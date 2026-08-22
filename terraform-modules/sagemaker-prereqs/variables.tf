@@ -93,6 +93,18 @@ variable "domain_id" {
   default     = null
 }
 
+variable "domain_account_id" {
+  description = "The DOMAIN account id - the value aws:SourceAccount must carry on both service-role trusts (roles.tf, v0.3.3): the service assumes them on behalf of the domain, so the guard names the domain's account, never this one. Known before the domain exists (it is the Data Governance account), so not gated."
+  type        = string
+  nullable    = false
+}
+
+variable "domain_execution_role_arn" {
+  description = "The domain execution role (data-governance/governance/'s output) - a principal in the project CMK's key policy (kms.tf, the SMUS statements). null while blueprints_enabled is false drops it from the policy; the datazone service principal stays either way."
+  type        = string
+  default     = null
+}
+
 variable "root_domain_unit_id" {
   description = "The domain's root domain unit - the scope of grants.tf's project principal. Read from data-governance/governance/'s state; null while blueprints_enabled is false."
   type        = string

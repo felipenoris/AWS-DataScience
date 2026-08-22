@@ -33,14 +33,21 @@ data "aws_iam_policy_document" "provisioning_trust" {
       identifiers = ["datazone.amazonaws.com", "cloudformation.amazonaws.com"]
     }
 
-    # THE CONFUSED-DEPUTY PAIR. Without aws:SourceAccount any DataZone domain in any account
-    # could ask the service to assume this role; the ArnLike narrows it to a domain, and the
-    # domain id is deliberately a wildcard because this role is created BEFORE the domain
-    # exists (pass 1 precedes pass 2) and pinning it would make the two applies circular.
+    # THE CONFUSED-DEPUTY GUARD, AND ITS VALUE WAS WRONG UNTIL v0.3.3 (2026-08-22).
+    # aws:SourceAccount on a service-principal trust names the account of the RESOURCE the
+    # service acts on behalf of - the DataZone DOMAIN's account - and until v0.3.3 this said
+    # data.aws_caller_identity.current (the MEMBER account), which made both roles
+    # unassumable: the documented trust of AmazonSageMakerProvisioning-<domainAccountId> is
+    # SourceAccount = domain_account, the role's very NAME carries the domain account, and
+    # CloudTrail in the member account showed NO datazone AssumeRole ever - a cross-account
+    # service denial is invisible in the target account's trail, which is why three
+    # deployment failures were attributed before this one (the wizard-field ladder) and the
+    # teardown's "Failed to remove EMR EKS IAM roles" is this trust, not those fields. The
+    # sample never caught it: single-account, the two values coincide there.
     condition {
       test     = "StringEquals"
       variable = "aws:SourceAccount"
-      values   = [data.aws_caller_identity.current.account_id]
+      values   = [var.domain_account_id]
     }
   }
 }
@@ -56,10 +63,11 @@ data "aws_iam_policy_document" "manage_access_trust" {
       identifiers = ["datazone.amazonaws.com"]
     }
 
+    # Same guard, same v0.3.3 correction as the provisioning trust above.
     condition {
       test     = "StringEquals"
       variable = "aws:SourceAccount"
-      values   = [data.aws_caller_identity.current.account_id]
+      values   = [var.domain_account_id]
     }
   }
 }
