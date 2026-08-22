@@ -24,6 +24,6 @@ output "instance_role_arn" {
 }
 
 output "primary_network_interface_id" {
-  description = "WHAT A ROUTE POINTS AT, read by terraform-live/sandbox/devbox/ through this slice's state (Stage 6). It is the instance's ENI rather than its id because that is what aws_route accepts - and it is read rather than pasted because the instance is [D] and REPLACEABLE: a shape change or a user-data change mints a new interface, and a pasted id would leave a route that blackholes silently instead of a plan that moves."
+  description = "WHAT A ROUTE POINTS AT, read by terraform-live/sandbox/buildbox/ through this slice's state (Stage 6). It is the instance's ENI rather than its id because that is what aws_route accepts - and it is read rather than pasted because the instance is [D] and REPLACEABLE: a shape change or a user-data change mints a new interface, and a pasted id would leave a route that blackholes silently instead of a plan that moves."
   value       = module.wireguard.primary_network_interface_id
 }

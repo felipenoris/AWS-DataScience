@@ -136,15 +136,15 @@ stopped host would report a burn forever.
 slice — the pattern is worth naming because it will recur.** `wireguard-v0.4.0` gave the module a
 `vpc_nat_cidrs` input: filled, it turns source/destination checking **off** and adds masquerade rules
 that make the tunnel host a **NAT instance** for the isolated tier, which is what lets
-[`sandbox/devbox/`](sandbox/devbox/README.md) — an `[E]` `amd64` build host — reach the internet with **no
+[`sandbox/buildbox/`](sandbox/buildbox/README.md) — an `[E]` `amd64` build host — reach the internet with **no
 NAT gateway anywhere**, so `egress/` need not be up for a build at all. **The capability is `[D]` and the
 reach is `[E]`:** a masquerade rule matches nothing until a route table sends traffic at it, and the route
 (`0.0.0.0/0` in the isolated tier, at that ENI) is created and destroyed with the build session. So the
 standing change is exactly one attribute, and everything metered comes and goes.
 
-**`devbox/` is also the tree's first slice `make up` deliberately does not drive.** It is `[E]` and it has
+**`buildbox/` is also the tree's first slice `make up` deliberately does not drive.** It is `[E]` and it has
 a row, so `make status` sees it and `make down ENV=sandbox` would destroy it — but bringing it *up* is
-[`scripts/devbox.py`](../scripts/devbox.py), because the slice must **not** coexist with `probes/`, whose
+[`scripts/buildbox.py`](../scripts/buildbox.py), because the slice must **not** coexist with `probes/`, whose
 perimeter reading is precisely the absence of the default route this one adds. That refusal is code in the
 helper rather than a sentence here (Lesson 5), and the helper also starts the tunnel host first: the route
 points at its ENI, and a stopped target is a **blackhole**, not an error.

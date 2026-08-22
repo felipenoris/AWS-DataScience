@@ -1,4 +1,4 @@
-# sandbox/devbox/ - THE BUILD HOST (Stage 6 step 5.0), layer [E].
+# sandbox/buildbox/ - THE BUILD HOST (Stage 6 step 5.0), layer [E].
 #
 # WHY IT EXISTS, and it is one measurement rather than a preference: the images this project
 # runs on are linux/amd64 - SageMaker instance types are x86 and the sagemaker-distribution
@@ -54,7 +54,7 @@
 # by construction - which is the property that leaves room for one, AND the premise
 # sandbox/probes/'s perimeter probe measures ("this subnet has no default route, so a host
 # that is neither S3 nor DynamoDB must fail to connect"). While this slice is up, that premise
-# is false. The two are never up together: ./scripts/devbox.py refuses to apply while the
+# is false. The two are never up together: ./scripts/buildbox.py refuses to apply while the
 # perimeter probe exists, because a comment is not a control (Lesson 5).
 # ------------------------------------------------------------------------------------------
 
@@ -84,8 +84,8 @@ resource "aws_route" "default_via_wireguard" {
 # NO ingress BLOCK. An aws_security_group with none is a group that admits nothing, which is
 # exactly the posture this host wants: Session Manager needs no inbound rule, and nothing else
 # connects. The header above carries why the rule that used to be here was withdrawn.
-resource "aws_security_group" "devbox" {
-  name        = "awsds-${var.env}-devbox"
+resource "aws_security_group" "buildbox" {
+  name        = "awsds-${var.env}-buildbox"
   description = "Stage 6 build host - NO ingress at all (Session Manager needs none); egress through the VPN host"
   vpc_id      = data.terraform_remote_state.foundation.outputs.vpc_id
 
@@ -106,7 +106,7 @@ resource "aws_security_group" "devbox" {
   }
 
   tags = {
-    Name = "awsds-${var.env}-devbox"
+    Name = "awsds-${var.env}-buildbox"
   }
 }
 
@@ -129,7 +129,7 @@ module "role" {
   # checkov:skip=CKV_TF_1:pinned by git TAG by convention (conventions §6, Stage 3 step 1.1a) - a repository-internal tag only the repo owner can move
   source = "git::git@github.com:felipenoris/AWS-DataScience.git//terraform-modules/iam-role?ref=iam-role-v0.1.0"
 
-  name        = "awsds-${var.env}-devbox"
+  name        = "awsds-${var.env}-buildbox"
   description = "Stage 6 build host - Session Manager only; it builds images and pushes none"
 
   permissions_boundary = null
@@ -151,13 +151,13 @@ module "role" {
   ]
 }
 
-resource "aws_iam_instance_profile" "devbox" {
-  name = "awsds-${var.env}-devbox"
+resource "aws_iam_instance_profile" "buildbox" {
+  name = "awsds-${var.env}-buildbox"
   role = module.role.role_name
 }
 
 # -------------------------------------------------------------------------- the host itself
-resource "aws_instance" "devbox" {
+resource "aws_instance" "buildbox" {
   # checkov:skip=CKV_AWS_126:detailed monitoring on a host destroyed the same session buys nothing - CloudWatch spend is Stage 12's subject
   # checkov:skip=CKV_AWS_135:t3 is not EBS-optimized-capable at these sizes and the build's bottleneck is the network, not the volume
   # checkov:skip=CKV_AWS_88:no public address is set here and none is inherited - the subnet is the isolated tier, which has no internet gateway behind it at all
@@ -165,8 +165,8 @@ resource "aws_instance" "devbox" {
   instance_type = var.instance_type
 
   subnet_id                   = data.terraform_remote_state.foundation.outputs.isolated_subnet_ids[local.zone]
-  vpc_security_group_ids      = [aws_security_group.devbox.id]
-  iam_instance_profile        = aws_iam_instance_profile.devbox.name
+  vpc_security_group_ids      = [aws_security_group.buildbox.id]
+  iam_instance_profile        = aws_iam_instance_profile.buildbox.name
   associate_public_ip_address = false
 
   user_data = local.user_data
@@ -196,13 +196,13 @@ resource "aws_instance" "devbox" {
     volume_type = "gp3"
     # DELETED WITH THE HOST, which is the default and is stated because this slice is [E] and
     # the whole D11 claim rests on it: a volume that outlived its instance would be a bill
-    # nobody is looking for and `./scripts/devbox.py status` would not see it.
+    # nobody is looking for and `./scripts/buildbox.py status` would not see it.
     delete_on_termination = true
   }
 
-  # THE NAME TAG IS A CONTRACT: ./scripts/devbox.py finds this host by `awsds-<env>-devbox`
+  # THE NAME TAG IS A CONTRACT: ./scripts/buildbox.py finds this host by `awsds-<env>-buildbox`
   # to open a session and to report status. A rename here is a rename there.
   tags = {
-    Name = "awsds-${var.env}-devbox"
+    Name = "awsds-${var.env}-buildbox"
   }
 }

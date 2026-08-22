@@ -68,7 +68,7 @@ laptop 10.90.0.2 ──wg0──▶ host (masquerade: source becomes the host's 
     is gone after the first stop, while `wg-quick` re-runs `PostUp` on every boot. And a
     masquerade rule matches **nothing** until some route table sends traffic here. The route —
     `0.0.0.0/0` in the isolated route table, at this host's ENI — belongs to
-    [`terraform-live/sandbox/devbox/`](../../../terraform-live/sandbox/devbox/README.md), which is
+    [`terraform-live/sandbox/buildbox/`](../../../terraform-live/sandbox/buildbox/README.md), which is
     `[E]`. So the standing change is exactly one attribute, and the reach comes and goes with a
     build session. **If VPC-side NAT is ever mysteriously dead:** `iptables -t nat -L POSTROUTING -n`
     then `systemctl status wg-quick@wg0`, in that order, over §K0a's session.
@@ -77,7 +77,7 @@ laptop 10.90.0.2 ──wg0──▶ host (masquerade: source becomes the host's 
     nothing else**, so a forwarded packet arriving from the isolated tier was dropped by the group
     after the route and the masquerade had done their jobs — reach is an **intersection** (Lesson 28),
     and the three pieces live in three slices, so no single file showed the gap. The symptom was a
-    devbox that installed its packages fine (S3 gateway endpoint) and then timed out on
+    buildbox that installed its packages fine (S3 gateway endpoint) and then timed out on
     `ssm.<region>.amazonaws.com`, which reads as a broken mirror. The group now carries a second
     ingress rule for the isolated tier's ranges: **a private range, so `VP-3` still reads exactly one
     world-open rule** — confirmed after the fix.

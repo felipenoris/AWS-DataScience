@@ -150,7 +150,7 @@ resource "aws_instance" "this" {
   # leave with a ${var.peer_cidr} source that a peering discards three hops later.
   #
   # WHAT VPC-SIDE NAT CHANGES, AND IT IS NOT A PREFERENCE. Source/destination checking is
-  # applied by the ENI on the way IN as well as out: a packet from a devbox in this VPC
+  # applied by the ENI on the way IN as well as out: a packet from a buildbox in this VPC
   # carries neither this instance's address as source nor as destination, so EC2 drops it
   # BEFORE the kernel could route or masquerade it. There is no iptables rule that recovers
   # from that, which is why every NAT-instance recipe disables the check - the masquerade is

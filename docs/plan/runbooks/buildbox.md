@@ -1,7 +1,7 @@
-# Runbook — the devbox
+# Runbook — the buildbox
 
 The `amd64` build host of [Stage 6 step 5.0](../stages/stage-06-unified-studio.md), in the Sandbox
-account. Slice: [`terraform-live/sandbox/devbox/`](../../../terraform-live/sandbox/devbox/README.md).
+account. Slice: [`terraform-live/sandbox/buildbox/`](../../../terraform-live/sandbox/buildbox/README.md).
 Layer **`[E]`** — created for a build session, destroyed at the end of it.
 
 ## D. What it is
@@ -61,12 +61,12 @@ involved**, so `egress/` need never be up for a build — 0.170 USD/h not spent.
 - **A stopped WireGuard host makes the route a blackhole**, not an error — every symptom then looks
   like a broken package mirror. `up` starts it; `down` does **not** stop it (it is `[D]` and shared).
 - **It must not coexist with `sandbox/probes/`.** That slice's perimeter probe measures the isolated
-  tier's *absence* of a default route; this one adds one. `devbox.py` refuses rather than warns.
+  tier's *absence* of a default route; this one adds one. `buildbox.py` refuses rather than warns.
 
 ## U. Up
 
 ```bash
-./scripts/devbox.py up && ./scripts/devbox.py sync && ./scripts/devbox.py ssm
+./scripts/buildbox.py up && ./scripts/buildbox.py sync && ./scripts/buildbox.py ssm
 ```
 
 `up` refuses if a probe instance exists, starts the WireGuard host if it is stopped, applies the
@@ -88,7 +88,7 @@ R and Rust download again. That is the price of D17's single ancestor and it is 
 image before the old one loses its tag: read §S before starting one on a disk you have not looked at.
 
 **If it never registers with SSM**, the route is failing nine times out of ten. Read the first boot
-without SSM: `aws ec2 get-console-output --instance-id <id> --latest`, and `/var/log/awsds-devbox-boot.log`
+without SSM: `aws ec2 get-console-output --instance-id <id> --latest`, and `/var/log/awsds-buildbox-boot.log`
 once you are in — its egress check prints the public address the host leaves under, which must be the
 WireGuard Elastic IP.
 
@@ -165,7 +165,7 @@ a repository policy that offers Sandbox a *pull*, which is the design (§M), not
 **So the credential travels and the permission does not.** `ecr:GetAuthorizationToken`, called on the
 laptop as `awsds-infra-prod`, mints a 12-hour bearer token that the docker client presents to the
 registry: what authorizes the upload is the **token's identity**, not the host holding it. Nothing here
-is granted to the devbox, nothing survives the session, and the box's role is untouched.
+is granted to the buildbox, nothing survives the session, and the box's role is untouched.
 
 **The ceiling permits this and forbids its mirror image**, which is worth knowing before the first
 `InitiateLayerUpload` fails and gets blamed on the relay. `awsds-org-scp-perimeter`'s
@@ -188,7 +188,7 @@ aws ecr describe-repositories --profile awsds-infra-prod --region us-west-2 --qu
 aws ecr get-login-password --profile awsds-infra-prod --region us-west-2
 ```
 
-In the **devbox session**, take it without echoing it. `read -rs` keeps the token off the screen and out
+In the **buildbox session**, take it without echoing it. `read -rs` keeps the token off the screen and out
 of the shell history, and nothing else records it: the account has **no `SSM-SessionManagerRunShell`
 document** (measured 2026-08-22), so Session Manager runs on defaults and no session stream is logged.
 The daemon runs as root and every build command here is `sudo docker`, so the login has to be `sudo`
@@ -261,13 +261,13 @@ image; ECR stores layers **compressed** and **per repository**, so `dev-env` upl
 ## X. Down
 
 ```bash
-./scripts/devbox.py down
+./scripts/buildbox.py down
 ```
 
 Destroys the host **and the route**, so the isolated tier goes back to having no default route. It
 deliberately leaves the WireGuard host running — `make down ENV=sandbox` is what stops that.
 
-**`./scripts/devbox.py status` is the reading**, and the reason to take it: `t3.xlarge` is
+**`./scripts/buildbox.py status` is the reading**, and the reason to take it: `t3.xlarge` is
 **0.1664 USD/h** (`PRICING.md` §8) — a week left up is USD 28 against D12's USD 50/month.
 
 ## Setting up github conectivity

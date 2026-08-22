@@ -54,7 +54,7 @@
 #
 # THE ARCHITECTURE IS NOT A CHOICE EITHER WAY: SageMaker images are amd64, and the repository
 # publishes `cpu`/`gpu` suffixes with no arm64 variant at all - measured from the tag list the
-# same day. That is the fact the devbox exists for (terraform-live/sandbox/devbox/README.md).
+# same day. That is the fact the buildbox exists for (terraform-live/sandbox/buildbox/README.md).
 #
 # REVISION TRIGGER: a SMUS release raising the floor, or a base advisory the ECR scan flags.
 # Bump the pair TOGETHER - a tag without its digest is the thing this comment exists against.

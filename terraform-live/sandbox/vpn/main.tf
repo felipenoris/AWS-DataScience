@@ -27,7 +27,7 @@ data "terraform_remote_state" "foundation" {
 }
 
 # THE ISOLATED TIER'S ADDRESS RANGES, READ FROM THE SUBNETS THEMSELVES (2026-08-21, with the
-# devbox). foundation/ exports subnet IDs and not their CIDRs, and the right repair is this
+# buildbox). foundation/ exports subnet IDs and not their CIDRs, and the right repair is this
 # data source rather than a new output: a CIDR is a property of the subnet, `aws_subnet`
 # already reports it, and adding an output would be a second place for the same fact to live
 # (Lesson 14). Writing the range as a literal here would be a third - a copy of the allocation
@@ -102,7 +102,7 @@ module "wireguard" {
   # and now carries the exception too). WHAT IT DOES NOT DO: send anything here. A masquerade
   # rule matches only traffic that was ROUTED to this host, and the route that does it -
   # 0.0.0.0/0 in the isolated route table, pointed at this instance's ENI - is created and
-  # destroyed by terraform-live/sandbox/devbox/, which is [E]. So the capability stands with
+  # destroyed by terraform-live/sandbox/buildbox/, which is [E]. So the capability stands with
   # the [D] host and the reach comes and goes with the session.
   #
   # WHY THE ISOLATED TIER AND NOT THE PRIVATE ONE: the private tier's default route belongs to

@@ -4,7 +4,7 @@
 # once, unattended, with its output in a log nobody is watching, and a container build is an
 # iterative act whose whole value is watching it fail. This host is a place to build FROM a
 # session, not a build that happens to leave a host behind. The build context arrives with
-# `./scripts/devbox.py sync`, which can be re-run against a running host; baking it in here
+# `./scripts/buildbox.py sync`, which can be re-run against a running host; baking it in here
 # was measured and rejected - a gzip+base64 of images/ is ~27 KB against user data's 16 KB
 # ceiling, and it would make every Dockerfile edit REPLACE the host (user_data_replace_on_
 # change), which is the opposite of what iterating wants.
@@ -19,8 +19,8 @@ locals {
   user_data = <<-EOT
     #!/bin/bash
     set -euo pipefail
-    exec > >(tee /var/log/awsds-devbox-boot.log) 2>&1
-    echo "=== awsds devbox first boot: $(date -Is) ==="
+    exec > >(tee /var/log/awsds-buildbox-boot.log) 2>&1
+    echo "=== awsds buildbox first boot: $(date -Is) ==="
 
     # docker AND git: git because a build context is usually a checkout, and because the
     # dev-env image's own INT-09 story starts with one. Both come from the AL2023 repository,
@@ -45,17 +45,17 @@ locals {
     mkdir -p /opt/awsds
     chown ec2-user:ec2-user /opt/awsds
 
-    cat > /etc/profile.d/awsds-devbox.sh <<'BANNER'
+    cat > /etc/profile.d/awsds-buildbox.sh <<'BANNER'
     echo
-    echo "  awsds devbox - Stage 6 step 5.0's build host. [E]: destroyed at the end of the session."
+    echo "  awsds buildbox - Stage 6 step 5.0's build host. [E]: destroyed at the end of the session."
     echo "  You are $(id -un). Session Manager gives you passwordless sudo; the docker group"
     echo "  belongs to ec2-user, so use  sudo docker ...  or  sudo -iu ec2-user"
     echo
-    echo "  build context (after ./scripts/devbox.py sync):  /opt/awsds/images"
-    echo "  first-boot log:                                  /var/log/awsds-devbox-boot.log"
+    echo "  build context (after ./scripts/buildbox.py sync):  /opt/awsds/images"
+    echo "  first-boot log:                                    /var/log/awsds-buildbox-boot.log"
     echo
     BANNER
 
-    echo "=== awsds devbox first boot done: $(date -Is) ==="
+    echo "=== awsds buildbox first boot done: $(date -Is) ==="
   EOT
 }
