@@ -298,7 +298,12 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   both profiles).
 - **Standing St.6 mechanics:** a blueprint configuration is applied **from the MEMBER account** (the
   Put takes no account param); `awscc`'s carries **`environment_role_permission_boundary`** and the
-  `aws` resource does not (INT-15's mechanism, Lesson 8); **`athena:UpdateSession` is in no API model**
+  `aws` resource does not (INT-15's mechanism, Lesson 8); **an EXISTING configuration is IMMUTABLE
+  via `awscc`** (createOnly+write-only ids break every update patch — `NotUpdatableException`): a
+  field change is a full-object `put-environment-blueprint-configuration` matching the committed
+  code (user-authorized per occurrence; Tooling manage-access 2026-08-22 was the first) or a
+  replace, never an update — and **an incomplete configuration pins its projects in BOTH directions**
+  (deploy AND delete validate it); **`athena:UpdateSession` is in no API model**
   — shipped anyway from AWS's own sample, `StartCalculationExecution` beside it.
 - **Stages 5-11 revised, pre-instrumented (2026-08-16/17):**
   `aws/{vpn,datalake,studio,supplychain,cicd,deploytargets,orchestration,dlp}.py` — `DL-5`/`DT-5` guard
