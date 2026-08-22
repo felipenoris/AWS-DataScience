@@ -57,9 +57,20 @@ resource "awscc_datazone_environment_blueprint_configuration" "enabled" {
   enabled_regions                  = [var.region]
 
   provisioning_role_arn = module.provisioning_role.role_arn
-  manage_access_role_arn = (
-    each.value == "Tooling" ? null : module.manage_access_role.role_arn
-  )
+
+  # EVERY CONFIGURATION NAMES THE MANAGE-ACCESS ROLE, TOOLING INCLUDED (v0.3.1, 2026-08-22).
+  # Until v0.3.0 Tooling alone passed null here - an undocumented assumption that the base
+  # environment, provisioning no catalog, needed no subscription-fulfilment role. The service
+  # disagrees, and at DEPLOYMENT time rather than at Put time: the configuration accepted the
+  # null on 2026-08-21, and the first project whose policy grants let it get that far (the
+  # v0.3.0 sitting) died with "Manage Access Role Arn for environment blueprint id <Tooling's>
+  # not defined" - the project survived ACTIVE, the Tooling environment failed before its
+  # CloudFormation stack existed. The console's own Enable-Tooling wizard asks for this role,
+  # which is the reading the null contradicted (Lesson 16: a wizard is only as specified as
+  # the fields it names - and this field it names). It is the SAME role the other ten name:
+  # AmazonDataZoneSageMakerManageAccessRolePolicy is AWS's one SMUS manage-access policy, and
+  # a second role for Tooling would be a split nothing measures.
+  manage_access_role_arn = module.manage_access_role.role_arn
 
   environment_role_permission_boundary = aws_iam_policy.project_boundary.arn
 
