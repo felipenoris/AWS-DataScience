@@ -1984,3 +1984,83 @@ only thing standing between this sitting and 0 USD/h in Sandbox.
 
 Owed next: **5.1** — image, image version, app image config, and the domain's `CustomImages`, which is
 where the cross-account pull is answered rather than assumed.
+
+## 2026-08-22 — Step 1.7's missing leg: the console contrast, and a message that named two things by itself
+
+**Two hands.** The readings below are the **user's** — the browser, both directions, one sitting, on a
+procedure Claude wrote. The probe design and the readings *against the provisioned policy documents*
+are **Claude's**, offline. **Substitution, declared once for the whole entry: `<Sandbox Account 1>`
+replaces that account's twelve-digit id, and `<data scientist user>` the e-mail inside the ARN** — the
+id resolved against `awsds-infra-sandbox-1`, not guessed. Nothing else in the pasted output is touched.
+
+### What was missing, and why it was not a formality
+
+The previous entry answered INT-16 — the portal opened off the tunnel and enumerated both project
+profiles — but the attribution rested on the deny being in those six sets *by code*, plus the
+2026-08-20 read-back. **A deny that was simply not in effect that afternoon would have produced an
+identical portal reading**, and nothing in the observation separated the two. Lesson 24: what separates
+them is a different **channel**, never a better reading of the same one.
+
+### The probe, and why this action
+
+`logs:DescribeLogGroups`, from the AWS console, **`us-west-2`**, **Sandbox** under
+**`DataScientistAccess`**. Chosen because it is granted on `*` through the `CloudWatchLogsReadOnlyAccess`
+attachment (`permission-sets.tf`), so the on-VPN half is guaranteed to succeed — an action denied on
+both sides measures nothing (Lesson 13). Athena was deliberately not used: its denial names no policy
+(`EXC-03`).
+
+### The reading — the user's hand
+
+**Off VPN.** SageMaker (the portal) worked normally. CloudWatch:
+
+```
+This IAM user does not have permission to view Log Groups in this account.
+User: arn:aws:sts::<Sandbox Account 1>:assumed-role/AWSReservedSSO_DataScientistAccess_37932702010107f8/<data scientist user> is not authorized to perform: logs:DescribeLogGroups on resource: arn:aws:logs:us-west-2:<Sandbox Account 1>:log-group::log-stream: with an explicit deny in an identity-based policy
+```
+
+**On VPN.** SageMaker and CloudWatch both worked, no errors.
+
+### Claude's readings, offline, against the documents that were provisioned
+
+**The wording names the statement, and only one statement is left.** *Identity-based* excludes an SCP
+(which says *"service control policy"*) and a boundary (*"permissions boundary"*), so the deny is in the
+set's own documents. Of those:
+
+| Document | What its denies reach |
+|---|---|
+| `shared_denies` | `iam:`, `awsds-*-tfstate`, the public-access family, `ec2:` |
+| `data_scientist` | one deny, `DenyLakeFormationAdministration` — `lakeformation:` only |
+| the `sagemaker-denies` module | `sagemaker:` only |
+| `control_plane_vpn` | **`DenyControlPlaneOffVpn` — `Deny *` on `*`** |
+
+`DenyEveryWrite` and `DenyProductionControlPlane` sit in the same file but belong to the
+`data_scientist_staging` and `data_scientist_prod` documents, and the session was Sandbox. **Nothing but
+`DenyControlPlaneOffVpn` can produce an explicit deny on `logs:` for that principal.**
+
+**Two things came out of the message itself rather than out of the operator's report**, and that is the
+half worth reusing. The principal reads `AWSReservedSSO_DataScientistAccess_…`, so the session was the
+persona set — *measured*, where the previous entry inferred it from the domain holding a single
+`ACTIVATED` SSO user profile. And the resource ARN reads `us-west-2`, so Stage 4 verification (iv)'s
+wrong-Region trap — a console opened elsewhere, meeting the OU ceiling, naming the wrong policy — is
+ruled out from inside the observation instead of from a report about the Region selector.
+
+**The probe turned out not to be new.** Stage 4 step 8.3's pair ran `aws logs describe-log-groups` off
+the tunnel on 2026-08-17, against the same role, and got the **IAM sentence byte for byte**
+(`log-stage-04-vpn.md`, reading 1). Not a redundant measurement — that was the **CLI** channel on its
+own day, and INT-16 needed the **console** channel inside the **portal's** sitting — but the agreement
+across five days, two channels and two sittings is a consistency neither reading gives alone. It also
+settles Stage 4 verification (iv)'s residual, which asked for an action chosen *for producing the
+canonical wording* and conceded that `logs:DescribeLogGroups` qualified by luck: **the console wraps but
+does not rewrite** — its own `This IAM user does not have permission…` line, then the IAM sentence
+intact.
+
+### What this closes
+
+**Step 1.7 is fully attributed; nothing measurable is left in it.** Written up in
+`stage-06-unified-studio.md` (finding 12 and the owed table), `integrations.md` (INT-16), `README.md`
+(the third role of the VPN, which stopped saying *unverified*), `CLAUDE.md`, the `policies-shared.tf`
+comment that had refused to overclaim — and `stage-04-vpn.md`, whose `Proves` row, `UNVERIFIED` diagram
+label and the paragraph written *for* a negative INT-16 now describe one.
+
+Owed next: **the `README.md` decision** — item 3 stated as bounded, or INT-16 fallback (i) adopted. The
+stage file carries the input that decides it.
