@@ -287,13 +287,15 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   and every other spelling is rejected; principal copied from `aws-samples`' SMUS-IaC sample
   (root-unit projects, `CONTRIBUTOR` — a measurement where ours would be a guess); the detail is a
   JSON-string `"{}"` in awscc. `sagemaker-prereqs` **`v0.3.0`** adds the 11 grants per member
-  (`for_each` the configurations) + `root_domain_unit_id`; both member slices bump the ref. Every
-  grant field **`createOnly`**, both layers.
-- **What St.6 still owes:** **the `v0.3.0` blueprint-grant apply in BOTH member slices** (blocks
-  every project; the retry is the verification, and the off-VPN portal reading waits on it); then
-  passes 3-5 + 5.1. **5.0 is DONE** (`default-v0.1.0` pushed to both repos 2026-08-22, one devbox
-  session). Decisions 1 (EMR-S vs Glue) and 6 (prefix shape) stay in-stage; **2 is delivered**
-  (TIP `false`, non-editable, both profiles).
+  (`for_each` the configurations) + `root_domain_unit_id`; both member slices bump the ref —
+  **APPLIED 2026-08-22, both members: `11 added`, re-plan `No changes`, 22/22 read back** (the member
+  MAY AddPolicyGrant on its own configuration — the cross-account risk was empty). Every grant field
+  **`createOnly`**, both layers.
+- **What St.6 still owes:** **the project-creation RETRY in the portal** (the behavioural half of the
+  grant apply; user's browser) and the off-VPN portal reading (unblocked); then passes 3-5 + 5.1.
+  **5.0 is DONE** (`default-v0.1.0` pushed to both repos 2026-08-22, one devbox session). Decisions 1
+  (EMR-S vs Glue) and 6 (prefix shape) stay in-stage; **2 is delivered** (TIP `false`, non-editable,
+  both profiles).
 - **Standing St.6 mechanics:** a blueprint configuration is applied **from the MEMBER account** (the
   Put takes no account param); `awscc`'s carries **`environment_role_permission_boundary`** and the
   `aws` resource does not (INT-15's mechanism, Lesson 8); **`athena:UpdateSession` is in no API model**

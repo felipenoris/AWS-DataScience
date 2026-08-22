@@ -287,8 +287,9 @@ own working sample (`aws-samples/sample-automate-sagemaker-unified-studio-using-
 Because the entity is per member account, the grant lives in **`terraform-modules/sagemaker-prereqs/`
 (`grants.tf`, tag `v0.3.0`)**, riding `for_each` over the blueprint configurations so a blueprint
 joining category 1 arrives authorized in the same apply. Without its grant, every `ON_DEMAND`
-blueprint fails exactly as Tooling did — one capability-enable at a time. **Status: written
-2026-08-22, apply owed in both member slices** (the stage file's owed table is the record).
+blueprint fails exactly as Tooling did — one capability-enable at a time. **Status: applied 2026-08-22 in both
+member slices** — `11 added` each, re-plan `No changes`, all 22 read back with exactly one grant
+(the stage file's owed table is the record).
 
 ## Blueprints — the object
 
