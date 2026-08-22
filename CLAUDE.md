@@ -259,8 +259,10 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   `empty result`: the API says **`EmrServerless`**/`EmrOnEc2`/`QuickSight`, and
   **`AmazonBedrockGenerativeAI` is a CONSOLE GROUPING with no API identifier** — 23 by API against 13 in
   the console, four API-only. **Lesson 38.** Decision 5 completed by the user the same day:
-  **ALL 23 CATEGORISED — 1 = 12, 2 = 5, 3 = 6, none undefined.** Category 1 adds six
-  `AmazonBedrock*`, `S3Bucket`, `S3TableCatalog`, `ToolingLite`; **the Bedrock family is SPLIT** —
+  **ALL 23 CATEGORISED — closed 1 = 12 / 2 = 5 / 3 = 6, re-cut SAME DAY to 1 = 11 / 3 = 7:
+  `ToolingLite` to cat 3 by 1.5's measurement (a second BASE — the service demands ON_CREATE when
+  it is bundled), none undefined.** Category 1 adds six
+  `AmazonBedrock*`, `S3Bucket`, `S3TableCatalog`; **the Bedrock family is SPLIT** —
   `KnowledgeBase` is cat 2, its vector store bills while it exists — so never reason about "the Bedrock
   blueprints" as one thing. **`LakehouseAdmin` is cat 2**: a provisioning template whose own description
   is an account-wide **automatic ingest-and-catalog**, NOT Lake Formation's *data lake administrator*

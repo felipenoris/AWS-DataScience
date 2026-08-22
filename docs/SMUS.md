@@ -301,15 +301,16 @@ can be diffed against this table directly.
 | `S3Bucket` | *"Create S3 bucket for SageMaker Unified Studio project."* Not offered by the console — read from `get-environment-blueprint` | Storage + requests. Not measured. **The governing question is not cost**: a bucket born here has an encryption key and a policy nobody in this project chose (`docs/GOVERNANCE.md` §Encryption) | — | **1** |
 | `S3TableCatalog` | *"Create S3 table catalog for SageMaker Unified Studio project."* Not offered by the console. **Possibly what `LakehouseCatalog` expands into when its S3-tables form is picked** — the same one-console-entry-to-many-API-rows shape as the Bedrock grouping. **Hypothesis, not a reading** | S3 Tables storage + maintenance. Not measured | — | **1** |
 | `Tooling` | The project's basic environment: the per-project **SageMaker AI domain**, project roles, security groups, Athena workgroups, the project S3 location — and the parameter surface Stage 6 step 1.5 locks (`sagemakerDomainNetworkType`, idle shutdown, `maxEbsVolumeSize`, TIP). Mandatory — nothing else provisions a working environment | Per **app-hour running** (`ml.t3.medium` JupyterLab/Code Editor at **USD 0.050/h**, `PRICING.md` §8) + EBS. An open app bills whether used or not — the step 8 idle shutdown is what converts "up" into "in use" | default — mandatory | **1** |
-| `ToolingLite` | *"Create basic resources for SageMaker Unified Studio project."* Not offered by the console. **Read alongside `Tooling` before categorising**: if the service picks it as a lighter variant on its own, an `undefined` here becomes a `US-3` failure about something nobody chose (Lesson 17) | Not documented. Presumably the same app-hour shape as `Tooling` with fewer resources — **unread** | — | **1** |
+| `ToolingLite` | *"Create basic resources for SageMaker Unified Studio project."* Not offered by the console. **Measured at step 1.5 (2026-08-21): a BASE variant, not a capability** — bundled in a project profile, the service demands `deployment_mode = ON_CREATE` (*"ToolingLite environment blueprint configuration must have deployment mode ON_CREATE"*, DataZone 400), so it cannot ride a `Tooling` profile as an on-demand extra, and a second base would double-provision every new project | Not documented. Presumably the same app-hour shape as `Tooling` with fewer resources — **unread** | amending the decision | **3** |
 | `Workflows` | A **provisioned MWAA (Airflow) environment** from a CloudFormation template — billed hourly while it exists | **Standing**: MWAA `mw1.micro` **≈ USD 211.70/month** left up (`PRICING.md` §1) — the shape D7 rejected for daily use | **D28's documented last-rung fallback**: enabled only if INT-14's chain falls through at Stage 10 (`awscc_mwaaserverless_workflow`, then the CFN wrapper, then this) — and then as `[E]`, torn down between uses. The *serverless* Workflows surface is separate: Stage 10 verification (i) finds what enables it | **2** |
 
 **ALL 23 ROWS CARRY A CATEGORY (user, 2026-08-21)** — settled against the measured roster rather than
-against the console grouping decision 5 had addressed. **Category 1 is twelve**, not four:
-`Tooling`, `ToolingLite`, `DataLake`, `S3Bucket`, `S3TableCatalog`, `EmrServerless` and six of the
-seven `AmazonBedrock*`. Category 2 is five, category 3 is six, and **no row is `undefined`** — which
-is what step 1.4 needed, because `US-3` fails on an uncategorised blueprint exactly as it fails on a
-forbidden one.
+against the console grouping decision 5 had addressed; closed at 12/5/6 and **re-cut to 11/5/7 the
+same day**, when step 1.5's refusal measured `ToolingLite` as a second BASE (its row above).
+**Category 1 is eleven**: `Tooling`, `DataLake`, `S3Bucket`, `S3TableCatalog`, `EmrServerless` and
+six of the seven `AmazonBedrock*`. Category 2 is five, category 3 is seven, and **no row is
+`undefined`** — which is what step 1.4 needed, because `US-3` fails on an uncategorised blueprint
+exactly as it fails on a forbidden one.
 
 **Three placements carry a consequence worth holding rather than rediscovering.**
 
@@ -324,9 +325,12 @@ measurement (Lesson 6) instead of a category-1 default that would meet the bill 
 is not their cost but their **encryption key and bucket policy**, which come from the blueprint rather
 than from `docs/GOVERNANCE.md` §Encryption's per-account CMK rule. Stage 6 step 2.4's throwaway project
 is where those fields get read (Lesson 16); verification (xviii) is the receiving end. **`ToolingLite`
-in category 1 closes a trap rather than opening one**: if the service selects the lighter variant on
-its own, it is inside the allow-list instead of surfacing as a `US-3` failure about something nobody
-chose (Lesson 17).
+moved 1 → 3 by measurement (step 1.5, 2026-08-21), and the trap its category-1 placement guarded
+against does not exist in that form**: the service does not select the lighter variant on its own —
+it refuses a profile that bundles it `ON_DEMAND`, which makes it a second BASE, present only by
+explicit choice. A base beside `Tooling` would double-provision every new project with an unmeasured
+shape, so it is disabled; if it ever returns, it returns as its own project profile, never as an
+extra on these two.
 
 **`LakehouseAdmin` is category 2, and the move is the clearest case in this table of what the
 categories are *for*.**
