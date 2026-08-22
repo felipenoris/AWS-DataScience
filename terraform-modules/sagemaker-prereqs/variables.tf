@@ -93,8 +93,44 @@ variable "domain_id" {
   default     = null
 }
 
+# Decision 5's category 1, BY API NAME - and the emphasis is earned: three of the four names this
+# default used to carry do not exist in the API (`EMRServerless`, `EMRonEC2`, and
+# `AmazonBedrockGenerativeAI`, which is a console grouping the API expands into seven). Measured
+# against the live domain 2026-08-21 after step 1.4's plan failed on them; Lesson 38.
+#
+# THE SAME LIST LIVES IN THREE PLACES (Lesson 14, and locals.tf says so too): here, in
+# data-governance/governance/locals.tf, and in ./aws/studio.py's US-3 constant. A category change
+# moves all three in ONE commit.
 variable "blueprint_names" {
   description = "Decision 5's category 1, by API name (docs/SMUS.md is the reference table; ./aws/studio.py US-3 holds the same list). A category-2 blueprint joins BOTH in the same commit that enables it (Lesson 14)."
   type        = list(string)
-  default     = ["Tooling", "DataLake", "EMRServerless", "AmazonBedrockGenerativeAI"]
+  default = [
+    # The base environment, FIRST and deliberately so - it provisions the project's SageMaker AI
+    # domain, roles and security groups, and nothing else works without it. `deployment_order`
+    # below is `index()` into this list.
+    "Tooling",
+    "ToolingLite",
+    # Storage and catalog.
+    "DataLake",
+    "S3Bucket",
+    "S3TableCatalog",
+    # LakehouseAdmin IS DELIBERATELY ABSENT - category 2 since 2026-08-21, not an omission. It is a
+    # PROVISIONING TEMPLATE whose own description is an account-wide automatic ingest-and-catalog,
+    # and NOT Lake Formation's data lake administrator (different objects, similar names). It was
+    # briefly category 1 with a comment saying "measure it at 2.4 first"; a comment is an intention,
+    # not a control (Lesson 5), so the measurement became the enabling trigger instead. It joins
+    # this list when step 2.4 has read what the environment provisions and what the D13 boundary
+    # actually stops - or when a blueprint here proves to depend on it.
+    # Compute.
+    "EmrServerless",
+    # The generative-AI surface. SEVEN ENTRIES, NOT ONE: `AmazonBedrockGenerativeAI` is a CONSOLE
+    # GROUPING with no API identifier (measured 2026-08-21 - `list-environment-blueprints` returns
+    # these seven and no aggregate), so decision 5's category 1 is delivered by naming them.
+    "AmazonBedrockChatAgent",
+    "AmazonBedrockEvaluation",
+    "AmazonBedrockFlow",
+    "AmazonBedrockFunction",
+    "AmazonBedrockGuardrail",
+    "AmazonBedrockPrompt",
+  ]
 }
