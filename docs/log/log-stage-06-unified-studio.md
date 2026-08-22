@@ -1478,3 +1478,81 @@ already lists `EMRServerless` and would enable it, and **`AmazonBedrockGenerativ
 owed before the 1.4 apply** by the step's own text. The ordering also matters and is not encoded anywhere:
 the two `sagemaker/` slices apply **before** `governance/`, because a project profile names blueprints that
 must already be configured. Written down here so the next sitting starts from it.
+
+## 2026-08-21 — Steps 1.4 and 1.5 RAN: twelve failures that were the provider's contract, two probes that bracketed it, and a base variant the service refused to bundle
+
+**Claude's hand throughout, under the user's authorizations given in the sitting**: *"pode fazer o
+apply"* for the step 1.4/1.5 applies; *"Sim, pode fazer o teste sugerido"* for the two write probes;
+and the reclassification below in the user's own words. Every AWS write in this entry is one of those
+three. The plan-facing consequences are the stage file's findings 7-11 — this entry is what happened.
+
+### 1.4, first attempt — twelve for twelve, and the error contradicted a read
+
+Recipe A on `sandbox/sagemaker/` (`sagemaker-prereqs-v0.2.0`): plan `12 to add`, apply — **all twelve
+blueprint configurations failed**, each with
+
+> waiter state transitioned to FAILED. StatusMessage: Managed Environment Blueprint with `<id>`
+> doesn't exist.. ErrorCode: InvalidRequest
+
+while `get-environment-blueprint`, same profile, same domain, same region, **answered for those exact
+ids**. Nothing was created: re-plan read `12 to add` again and
+`list-environment-blueprint-configurations` returned `{"items": []}`.
+
+### The contract, measured three ways and bracketed by two authorized probes
+
+The CFN page's `EnvironmentBlueprintIdentifier` is documented against **names** (*"only
+`DefaultDataLake` and `DefaultDataWarehouse` are supported"* — V1-era names) with the resolved id in a
+**separate** `EnvironmentBlueprintId` GetAtt; the awscc example passes the literal `"DefaultDataLake"`;
+and the live type schema (`describe-type`) marks the identifier **createOnly + writeOnly**. The `aws`
+provider's resource takes the id; the `awscc` one rides CloudFormation and takes the **NAME**. We fed
+it ids, so the handler hunted for blueprints *named* like ids (Lesson 32).
+
+Two probes, individually authorized, separated tool from world (Lesson 30): a plain-CLI
+`put-environment-blueprint-configuration` for `Tooling` **with the id** — provisioning role, boundary,
+two-subnet regional parameters — **succeeded**, was read back intact, and was deleted (`count: 0`); a
+Cloud Control `create-resource` **with the name** `"Tooling"` returned `SUCCESS` with identifier
+`dzd-d8yrvx1ko7im6o|4k186sfh08eqxc` — the name resolved to the id by the handler itself — and was
+deleted the same way. The schema also showed `EnvironmentRolePermissionBoundary` is **write-only**:
+boundary drift will never appear in a plan, so `US-8` is verification (v)'s sentinel.
+
+### v0.2.2, and the fix cycle's scar
+
+`sagemaker-prereqs-v0.2.2` passes the name, routed through the data source's `.name` so the roster
+guard is a declared dependency (tflint had refused the dangling form — correctly). The cycle minted a
+**stillborn `sagemaker-prereqs-v0.2.1`**: the tag was cut while commit 1 was still hook-blocked, the
+failure hidden behind a piped exit code, so it landed on the previous `main` tip — v0.2.0 content
+under a v0.2.1 name. Runbook §8 forbids moving tags; the version stepped forward and **nothing may
+ever reference v0.2.1**. After the merge: `12 added` in Sandbox, `12 added` in Development, re-plan
+`No changes` in both, 12/12 carrying the boundary — and `get-data-lake-settings` **byte-identical
+before and after** in both members (verification (xiv)'s enablement half: enabling touches no
+`DataLakeSettings`), the two-subnet parameters accepted (verification (iii)'s first half).
+
+### 1.5, first attempt — the service refused the bundle, and the user re-cut the roster
+
+`data-governance/governance/` second apply (`profiles_enabled` computed true by `gen-tfvars.py` from
+`SMUS_MEMBERS ⊆ SMUS_ASSOCIATED`): plan `2 to add, 0 to destroy`, account pinning verified per profile
+against `sts` without printing ids. **Both profile creates failed**, DataZone 400:
+
+> ToolingLite environment blueprint configuration must have deployment mode ON_CREATE.
+
+Nothing was created. The domain's own descriptions settled what that means — `Tooling`: *"Creates
+resources for the project, including IAM user role, security groups, Amazon Athena workgroup for
+querying data, and Amazon SageMaker domain."*; `ToolingLite`: *"Create basic resources for SageMaker
+Unified Studio project."* — a second **BASE**, not a capability, exactly the shape `SMUS.md`'s row had
+flagged for reading before trusting. **The user's decision, verbatim: "Reclassifique ToolingLite como
+Categoria 3."** Decision 5 re-cut 12/5/6 → 11/5/7; `sagemaker-prereqs-v0.2.3` moved all three copies
+of the list; the member applies each read `0 to add, 0 to change, 1 to destroy` — **11 configurations
+stand per member**.
+
+### 1.5, second attempt — done
+
+`2 added`: `experimentation` → Sandbox, `engineering` → Development. Read back by
+`get-project-profile` (the list call omits configurations — Lesson 13's shape, so the get answered):
+**11 environment configurations each, `Tooling` the only base, `ON_CREATE`**, and the five locked
+parameters non-editable — `sagemakerDomainNetworkType=VpcOnly`, `lifecycleManagement=true`,
+`maxIdleTimeoutInMinutes=120`, `maxEbsVolumeSize=100`, `enableTrustedIdentityPropagationPermissions=false`
+— with `idleTimeoutInMinutes=60` the one editable default. **Decision 2 is delivered as coded.**
+`./aws/studio.py`: **0 checks FAILED** — `US-3` *"11 blueprint configuration(s) … all inside decision
+5's category 1"* in both members, `US-4` *"experimentation and engineering exist"*.
+
+**Left owed after this sitting**: 1.7's portal reading (user), 5.0's image push (user), passes 3-5.
