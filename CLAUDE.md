@@ -291,8 +291,18 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   **APPLIED 2026-08-22, both members: `11 added`, re-plan `No changes`, 22/22 read back** (the member
   MAY AddPolicyGrant on its own configuration — the cross-account risk was empty). Every grant field
   **`createOnly`**, both layers.
+- **THE WIZARD-FIELD LADDER (2026-08-22, one sitting): what the console's Enable-Tooling wizard
+  fills and the Put API does not require is validated at DEPLOY *and* TEARDOWN** — an incomplete
+  configuration pins its projects in both directions (a stuck project cannot even be deleted).
+  Three rungs measured: the `CREATE_ENVIRONMENT_FROM_BLUEPRINT` grants (v0.3.0), `manageAccessRoleArn`
+  (v0.3.1), and `S3Location`+`KmsKeyArn` regional parameters (v0.3.2 — `awsds-<env>-smus-projects`
+  per member via the house s3-bucket module; the **project CMK found its consumer**; bucket name is
+  FREE, the managed policy reaches content by `*/dzd*/<project>/` path). Each config fix = apply
+  (predicted `NotUpdatableException`) + user-authorized Put + re-plan `No changes`. Tooling's set is
+  believed complete — it now matches every wizard field.
 - **What St.6 still owes:** **the project-creation RETRY in the portal** (the behavioural half of the
-  grant apply; user's browser) and the off-VPN portal reading (unblocked); then passes 3-5 + 5.1.
+  grant apply; user's browser — two stuck projects to delete first: `first-…` DELETE_FAILED,
+  `second-…` ACTIVE) and the off-VPN portal reading (unblocked); then passes 3-5 + 5.1.
   **5.0 is DONE** (`default-v0.1.0` pushed to both repos 2026-08-22, one devbox session). Decisions 1
   (EMR-S vs Glue) and 6 (prefix shape) stay in-stage; **2 is delivered** (TIP `false`, non-editable,
   both profiles).

@@ -317,7 +317,12 @@ An **environment blueprint** is a provisioning template owned by AWS. It works i
    A field change on a configuration already applied is therefore a **`put-environment-blueprint-configuration`
    that re-sends the full object to match the already-committed code** (recorded per occurrence in
    the stage file; the Tooling manage-access fix is the first), or a replace — never an in-place
-   update. Creates are unaffected.
+   update. Creates are unaffected. *(c)* **Every field the console wizard fills and the Put API
+   does not require is validated at environment DEPLOYMENT and TEARDOWN, not at Put** — an
+   incomplete configuration pins its projects in both directions. Tooling's full set, measured
+   rung by rung on 2026-08-22: `manageAccessRoleArn`, and the regional parameters `S3Location`
+   (`s3://awsds-<env>-smus-projects`, one bucket per member under the project CMK) and
+   `KmsKeyArn` (the project CMK itself) beside `VpcId`/`Subnets`/`AZs`.
 2. **A project uses it**: when a project whose profile targets that account exercises the blueprint,
    DataZone provisions the real resources the template describes — into the member account, through
    the registered provisioning role. The resource set this leaves behind is an **environment**
