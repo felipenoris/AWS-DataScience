@@ -280,37 +280,93 @@ can be diffed against this table directly.
 
 | Blueprint (API name) | What it provisions | Billing shape | Trigger | Category |
 |---|---|---|---|---|
-| `AmazonBedrockChatAgent` | A configurable generative AI app with a conversational interface | **Per use** — token-billed on demand, no standing resource (`PRICING.md` §5) | — | `undefined` |
-| `AmazonBedrockEvaluation` | LLM evaluation for text generation, classification, question answering and summarization | **Per use** — token-billed; evaluation jobs bill the models they call | — | `undefined` |
-| `AmazonBedrockFlow` | A configurable generative AI workflow | **Per use** — token-billed | — | `undefined` |
-| `AmazonBedrockFunction` | A reusable component for including dynamic information in model output | **Per use** — token-billed | — | `undefined` |
-| `AmazonBedrockGuardrail` | A reusable component for implementing safeguards on model output | **Per use** — token-billed; guardrail evaluation is its own unit | — | `undefined` |
-| `AmazonBedrockKnowledgeBase` | A reusable component for providing your own data to apps | **Per use** — token-billed **plus** whatever vector store it stands up; the storage half is **not measured** and is the one shape here that can bill while idle | — | `undefined` |
-| `AmazonBedrockPrompt` | A reusable set of inputs that guide model output | **Per use** — token-billed | — | `undefined` |
+| `AmazonBedrockChatAgent` | A configurable generative AI app with a conversational interface | **Per use** — token-billed on demand, no standing resource (`PRICING.md` §5) | — | **1** |
+| `AmazonBedrockEvaluation` | LLM evaluation for text generation, classification, question answering and summarization | **Per use** — token-billed; evaluation jobs bill the models they call | — | **1** |
+| `AmazonBedrockFlow` | A configurable generative AI workflow | **Per use** — token-billed | — | **1** |
+| `AmazonBedrockFunction` | A reusable component for including dynamic information in model output | **Per use** — token-billed | — | **1** |
+| `AmazonBedrockGuardrail` | A reusable component for implementing safeguards on model output | **Per use** — token-billed; guardrail evaluation is its own unit | — | **1** |
+| `AmazonBedrockKnowledgeBase` | A reusable component for providing your own data to apps | **Per use** — token-billed **plus** whatever vector store it stands up; the storage half is **not measured** and is the one shape here that can bill while idle | a project concretely needs retrieval over its own data — and **the vector store priced first** (Lesson 6). It is the only Bedrock row that is not purely per use, which is why it left category 1 on 2026-08-21 while its six siblings stayed | **2** |
+| `AmazonBedrockPrompt` | A reusable set of inputs that guide model output | **Per use** — token-billed | — | **1** |
 | `DataLake` (console: `LakeHouseDatabase`) | Per project: **Glue databases, Lake Formation permissions, an Athena workgroup** — the catalog/SQL surface on the Glue + LF substrate Stage 5 built, the query path D13 depends on | **Per use**: Athena SQL **USD 5.00/TB scanned** (`PRICING.md` §5); Glue catalog negligible at lab scale. No standing resource | default — configured at step 1.4 | **1** |
 | `EmrOnEc2` | EMR clusters on EC2 instances — Spark, Hive and other big-data workloads from a reusable CloudFormation template | **Standing in practice** — instance-hours + EMR uplift while the cluster exists; a forgotten cluster bills on. Not measured | amend the decision (unowned until 2026-08-19) | **3** |
-| `EmrOnEks` | Amazon EMR on EKS resources, same workload family as `EmrOnEc2` | **Standing in practice** — an EKS cluster underneath, plus EMR uplift. Not measured | — | `undefined` |
+| `EmrOnEks` | Amazon EMR on EKS resources, same workload family as `EmrOnEc2` | **Standing in practice** — an EKS cluster underneath, plus EMR uplift. Not measured | — | **3** |
 | `EmrServerless` | An EMR Serverless application per project — the VPC-capable Spark runtime replacing the Athena-Spark default (open question 12), and **the only engine whose compute connection documents an LF fine-grained mode** (`project.spark.fineGrained`; the notebook Spark Connect path is full-table on every engine). Under `VpcOnly` it asks for **four** optional endpoints against Glue interactive sessions' one (≈USD 0.06/h across both Interactive accounts under Stage 3's single-AZ rule, while the `egress/` slices are up) | **Per use**: **USD 0.0526/vCPU-h + 0.0058/GB-h** (x86; ARM cheaper), billed only while a session runs (`PRICING.md` §5). Near-standing tail: a **started** interactive application keeps one 4 vCPU/16 GB kernel worker even with no *pre-initialized capacity* configured (`autoStop` 30 min idle; the 60-min kernel timeout is not configurable) | default — **Stage 6 decision 1, taken 2026-08-21 as KEEP-or-REMOVE**: enabled at 1.4, and removed if either of the two in-stage readings comes out against it | **1** |
-| `LakehouseAdmin` | *"Creates a unified data source across all Lakehouse catalogs in the account and automatically ingests and catalogs all available data."* **Read this row before categorising it**: an automatic, account-wide ingest-and-catalog is the shape `docs/GOVERNANCE.md` exists to prevent, and the account it would run in holds a governed lake | Not documented. Whatever a standing crawl of everything costs, plus the catalog it writes | — | `undefined` |
+| `LakehouseAdmin` | *"Creates a unified data source across all Lakehouse catalogs in the account and automatically ingests and catalogs all available data."* **Read this row before categorising it**: an automatic, account-wide ingest-and-catalog is the shape `docs/GOVERNANCE.md` exists to prevent, and the account it would run in holds a governed lake | Not documented. Whatever a standing crawl of everything costs, plus the catalog it writes | **step 2.4 has measured** what the environment provisions, under whose role, and what the D13 boundary actually stops — **or** a category-1 blueprint proves it depends on this one. Until then it is not registered, so no project can create it | **2** |
 | `LakehouseCatalog` | A new catalog in the SageMaker Lakehouse **backed by S3 tables or Redshift Managed Storage** — *not* the Glue/Athena surface its name suggests (the 2026-08-19 re-read) | RMS storage + the Redshift query path — the same cost family D12 excluded. Not measured | amend **decision 4** (2026-08-19); the Glue/Athena form this project uses is `DataLake` | **3** |
 | `MLExperiments` | An **MLflow tracking server** for the project (OnDemand blueprint) | **Standing** — the server bills per hour while up (no idle shutdown like the apps have) + storage; **not measured**. Known floor under `VpcOnly`: the `aws.sagemaker.us-west-2.mlflow` interface endpoint, +USD 0.010/h per account | experiment tracking concretely needed; **measure the tracking-server price first** (Lesson 6) | **2** |
-| `MLflowApp` | *"Creates an MLflow App for SageMaker Unified Studio."* **The same capability as `MLExperiments`, arriving twice** — categorise the pair together, so enabling one does not quietly imply the other | Not measured. App-shaped rather than server-shaped, so probably per app-hour — **unread** | — | `undefined` |
+| `MLflowApp` | *"Creates an MLflow App for SageMaker Unified Studio."* **The same capability as `MLExperiments`, arriving twice** — categorise the pair together, so enabling one does not quietly imply the other | Not measured. App-shaped rather than server-shaped, so probably per app-hour — **unread** | — | **2** |
 | `PartnerApps` | An IAM role and a Connection giving access to third-party Partner AI Apps | **Standing/subscription** — partner licence + deployed infrastructure; varies by partner. Not measured | amend the decision | **3** |
 | `QuickSight` | The QuickSight analytics/dashboard surface inside a project | **Subscription** — per author/month + per reader session. Not measured | amend the decision. **Also blocked in fact**: the console reads *"QuickSight account not set up"* (2026-08-21) | **3** |
 | `RedshiftServerless` | A Redshift Serverless workgroup + namespace | **Per use** with a **per-query RPU minimum** + storage — a second, larger query bill on top of Athena's (`PRICING.md` §5) | **Never** — excluded by **D26/D12**; enabling means reopening those decisions, not amending this one. `US-3` fails if it appears, with its own message | **3** |
-| `S3Bucket` | *"Create S3 bucket for SageMaker Unified Studio project."* Not offered by the console — read from `get-environment-blueprint` | Storage + requests. Not measured. **The governing question is not cost**: a bucket born here has an encryption key and a policy nobody in this project chose (`docs/GOVERNANCE.md` §Encryption) | — | `undefined` |
-| `S3TableCatalog` | *"Create S3 table catalog for SageMaker Unified Studio project."* Not offered by the console. **Possibly what `LakehouseCatalog` expands into when its S3-tables form is picked** — the same one-console-entry-to-many-API-rows shape as the Bedrock grouping. **Hypothesis, not a reading** | S3 Tables storage + maintenance. Not measured | — | `undefined` |
+| `S3Bucket` | *"Create S3 bucket for SageMaker Unified Studio project."* Not offered by the console — read from `get-environment-blueprint` | Storage + requests. Not measured. **The governing question is not cost**: a bucket born here has an encryption key and a policy nobody in this project chose (`docs/GOVERNANCE.md` §Encryption) | — | **1** |
+| `S3TableCatalog` | *"Create S3 table catalog for SageMaker Unified Studio project."* Not offered by the console. **Possibly what `LakehouseCatalog` expands into when its S3-tables form is picked** — the same one-console-entry-to-many-API-rows shape as the Bedrock grouping. **Hypothesis, not a reading** | S3 Tables storage + maintenance. Not measured | — | **1** |
 | `Tooling` | The project's basic environment: the per-project **SageMaker AI domain**, project roles, security groups, Athena workgroups, the project S3 location — and the parameter surface Stage 6 step 1.5 locks (`sagemakerDomainNetworkType`, idle shutdown, `maxEbsVolumeSize`, TIP). Mandatory — nothing else provisions a working environment | Per **app-hour running** (`ml.t3.medium` JupyterLab/Code Editor at **USD 0.050/h**, `PRICING.md` §8) + EBS. An open app bills whether used or not — the step 8 idle shutdown is what converts "up" into "in use" | default — mandatory | **1** |
-| `ToolingLite` | *"Create basic resources for SageMaker Unified Studio project."* Not offered by the console. **Read alongside `Tooling` before categorising**: if the service picks it as a lighter variant on its own, an `undefined` here becomes a `US-3` failure about something nobody chose (Lesson 17) | Not documented. Presumably the same app-hour shape as `Tooling` with fewer resources — **unread** | — | `undefined` |
+| `ToolingLite` | *"Create basic resources for SageMaker Unified Studio project."* Not offered by the console. **Read alongside `Tooling` before categorising**: if the service picks it as a lighter variant on its own, an `undefined` here becomes a `US-3` failure about something nobody chose (Lesson 17) | Not documented. Presumably the same app-hour shape as `Tooling` with fewer resources — **unread** | — | **1** |
 | `Workflows` | A **provisioned MWAA (Airflow) environment** from a CloudFormation template — billed hourly while it exists | **Standing**: MWAA `mw1.micro` **≈ USD 211.70/month** left up (`PRICING.md` §1) — the shape D7 rejected for daily use | **D28's documented last-rung fallback**: enabled only if INT-14's chain falls through at Stage 10 (`awscc_mwaaserverless_workflow`, then the CFN wrapper, then this) — and then as `[E]`, torn down between uses. The *serverless* Workflows surface is separate: Stage 10 verification (i) finds what enables it | **2** |
 
-**Ten rows carry a category and thirteen do not**, which is the honest state rather than a gap to be
-filled quickly: seven are the Bedrock family that decision 5 addressed only through its console
-grouping, two (`EmrOnEks`, `MLflowApp`) are blueprints the plan never saw, and four
-(`LakehouseAdmin`, `S3Bucket`, `S3TableCatalog`, `ToolingLite`) the console does not offer at all.
-**`US-3` fails on every one of them**, so the table must be completed before step 1.4's first apply —
-not because an `undefined` is dangerous, but because a red battery that is merely uncategorised is
-indistinguishable from one that caught something.
+**ALL 23 ROWS CARRY A CATEGORY (user, 2026-08-21)** — settled against the measured roster rather than
+against the console grouping decision 5 had addressed. **Category 1 is twelve**, not four:
+`Tooling`, `ToolingLite`, `DataLake`, `S3Bucket`, `S3TableCatalog`, `EmrServerless` and six of the
+seven `AmazonBedrock*`. Category 2 is five, category 3 is six, and **no row is `undefined`** — which
+is what step 1.4 needed, because `US-3` fails on an uncategorised blueprint exactly as it fails on a
+forbidden one.
+
+**Three placements carry a consequence worth holding rather than rediscovering.**
+
+**`AmazonBedrockKnowledgeBase` is in category 2 and its six siblings are in category 1** — the Bedrock
+family is deliberately **not uniform**, so nothing downstream may reason about "the Bedrock blueprints"
+as one thing. The reason is billing shape: the other six are purely token-billed, while a knowledge
+base stands up a **vector store that bills while it exists**. That is the standing shape D12's silent
+budget is worst at catching, and it is unmeasured — hence a category-2 trigger that names the
+measurement (Lesson 6) instead of a category-1 default that would meet the bill first.
+
+**`S3Bucket` and `S3TableCatalog` create storage this project did not author.** The governing question
+is not their cost but their **encryption key and bucket policy**, which come from the blueprint rather
+than from `docs/GOVERNANCE.md` §Encryption's per-account CMK rule. Stage 6 step 2.4's throwaway project
+is where those fields get read (Lesson 16); verification (xviii) is the receiving end. **`ToolingLite`
+in category 1 closes a trap rather than opening one**: if the service selects the lighter variant on
+its own, it is inside the allow-list instead of surfacing as a `US-3` failure about something nobody
+chose (Lesson 17).
+
+**`LakehouseAdmin` is category 2, and the move is the clearest case in this table of what the
+categories are *for*.**
+
+> **It was placed in category 1 and moved on the same day, before anything was applied.** The
+> category-1 row carried a note — *read it at step 2.4's throwaway project before a real project uses
+> it* — and a note is an **intention, not a control** (Lesson 5): nothing executes it, and the
+> capability exists from the apply regardless. In category 2 that same sentence becomes the **trigger**,
+> which is the condition of enabling. The measurement stops being advice and starts being a gate.
+> **The asymmetry is what makes it cheap**: nothing in `objectives.md` asks for this blueprint, no stage
+> consumes it, and it was not known to exist before 2026-08-21 — so category 2 costs nothing anyone has
+> named, while category 1 buys availability nobody requested. §Blueprints — the object already says it:
+> *"Enabling is cheap to do later … disabling after environments were provisioned from it is not
+> symmetrical. Start minimal."*
+> **The counter-argument, recorded because it is not settled**: if *"a unified data source across all
+> Lakehouse catalogs"* turns out to be how a project sees the shared catalog at all, this belongs in
+> category 1 and its absence would break the point of the stage. That looks unlikely — `DataLake`
+> provisions the per-project catalog surface and Stage 5 already established the lake path through
+> resource links and Athena — but it is unread. Category 2 handles that uncertainty better than
+> category 1 does: if step 2.4 finds a dependency, it moves up **with evidence**, before any real
+> project exists. The failure mode of being wrong this way is a loud apply error; the other way it is an
+> unmeasured account-wide ingest sitting one click from a project member.
+
+> **And it is NOT Lake Formation's *data lake administrator*, which is what makes the name a trap.** The AWS portal text consulted on 2026-08-21 describes that other object — a privileged IAM
+> principal designated under *Administration → Data lake administrators*, which this project already
+> owns and already assigned (Stage 5 pass 4, `DL-6`, and `docs/ORGANIZATION.md` names who). **This
+> blueprint's own description, from `get-environment-blueprint`, is a provisioning template**:
+> *"Creates a unified data source across all Lakehouse catalogs in the account and **automatically
+> ingests and catalogs all available data**."* The two share a word and nothing else, and reading one
+> as the other is Lesson 38's shape in reverse — a real name attached to the wrong object.
+>
+> **What the risk actually is, stated so the trigger can retire it.** Enabling a blueprint provisions
+> nothing — it *registers* a template, and the ingest happens only if a project creates an environment
+> from it. So the concern was never the apply; it was that a category-1 placement puts an account-wide
+> automatic ingest **one click from a project member**, in an account holding a governed lake. Whether
+> the D13 boundary `awsds-<env>-project-boundary` and Lake Formation's own permissions stop that ingest
+> reaching registered locations is **unmeasured** — squarely INT-15 and Stage 6 verification (v)'s
+> question, what a service-authored role can do that this project did not grant. Note that the
+> boundary's S3 deny names the **LF-registered** buckets, so it says nothing about the derived zone,
+> which is where a project's outputs live.
 
 ## S3 — the project's own storage, and where the lake is not
 
