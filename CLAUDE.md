@@ -299,7 +299,15 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   per member via the house s3-bucket module; the **project CMK found its consumer**; bucket name is
   FREE, the managed policy reaches content by `*/dzd*/<project>/` path). Each config fix = apply
   (predicted `NotUpdatableException`) + user-authorized Put + re-plan `No changes`. Tooling's set is
-  believed complete — it now matches every wizard field.
+  believed complete — it now matches every wizard field. **Rounds 5-6 (same day, v0.3.3) were NOT
+  wizard fields but two independent defects: both service-role TRUSTS pinned the MEMBER account
+  where the documented `AmazonSageMakerProvisioning-<domainAccountId>` trust demands
+  `aws:SourceAccount = the DOMAIN account` (the service could never assume them; invisible in the
+  member trail — cross-account service denials leave no event, attribution came from the doc), and
+  the project CMK's delegate-to-IAM policy reached no service principal (the validator's
+  `DescribeKey` is `datazone.amazonaws.com` + the domain execution role; the key now carries the
+  documented SMUS statement set minus Redshift/Airflow, category 2). `3 changed` per member,
+  in-place, no Put.**
 - **What St.6 still owes:** **the project-creation RETRY in the portal** (the behavioural half of the
   grant apply; user's browser — two stuck projects to delete first: `first-…` DELETE_FAILED,
   `second-…` ACTIVE) and the off-VPN portal reading (unblocked); then passes 3-5 + 5.1.
