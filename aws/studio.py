@@ -396,8 +396,7 @@ def main(argv: list) -> int:
             "iam",
             "list-roles",
             "--query",
-            "Roles[?contains(RoleName, 'datazone') || contains(RoleName, 'DataZone')]"
-            ".[RoleName,PermissionsBoundary.PermissionsBoundaryArn]",
+            "Roles[?contains(RoleName, 'datazone') || contains(RoleName, 'DataZone')].RoleName",
             "--output",
             "json",
             log=False,
@@ -406,8 +405,27 @@ def main(argv: list) -> int:
             logerr(p, "iam list-roles", res.stderr)
             continue
         rows = []
-        for name, barn in json.loads(res.stdout or "[]"):
-            rows.append((name, (barn or "-").split("/")[-1]))
+        # ListRoles NEVER returns PermissionsBoundary - a documented API omission (it,
+        # Tags and RoleLastUsed are GetRole-only), so reading the boundary through it
+        # is null for every role that has one. Measured 2026-08-22 on the FIRST real
+        # project role: list-roles said none, get-role said awsds-sandbox-project-
+        # boundary. One GetRole per role is the only honest reading (Lesson 30).
+        for name in json.loads(res.stdout or "[]"):
+            rr = cli.run(
+                "iam",
+                "get-role",
+                "--role-name",
+                name,
+                "--query",
+                "Role.PermissionsBoundary.PermissionsBoundaryArn",
+                "--output",
+                "text",
+                log=False,
+            )
+            barn = rr.stdout.strip() if rr.ok else ""
+            if barn in ("", "None"):
+                barn = "-"
+            rows.append((name, barn.split("/")[-1]))
         role_rows[p] = rows
 
     # ------------------- the step 3 deny, read back from Identity Center (like vpn.py)
