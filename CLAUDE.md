@@ -307,7 +307,14 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   the project CMK's delegate-to-IAM policy reached no service principal (the validator's
   `DescribeKey` is `datazone.amazonaws.com` + the domain execution role; the key now carries the
   documented SMUS statement set minus Redshift/Airflow, category 2). `3 changed` per member,
-  in-place, no Put.**
+  in-place, no Put. Round 7 (governance slice, no tag): the profile locked `lifecycleManagement =
+  "true"` against the template's `ENABLED`/`DISABLED` enum — CreateProjectProfile validates nothing
+  against the template, and the CFN 400 that caught it was the FIRST in-account failure (the trust
+  fix proven; the three stuck projects all deleted). UpdateProjectProfile then validated what Create
+  did not: required blueprint params without defaults must be declared — exactly two across all 11
+  (`S3Bucket.bucketName`, `S3TableCatalog.catalogName`, both literal `Ref` → per-project names),
+  now editable placeholders in both profiles. Templates are downloadable via the blueprint's
+  `templateUrl` by an associated account — check locked values against them, not against prose.**
 - **What St.6 still owes:** **the project-creation RETRY in the portal** (the behavioural half of the
   grant apply; user's browser — two stuck projects to delete first: `first-…` DELETE_FAILED,
   `second-…` ACTIVE) and the off-VPN portal reading (unblocked); then passes 3-5 + 5.1.

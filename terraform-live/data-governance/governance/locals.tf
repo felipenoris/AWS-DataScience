@@ -128,4 +128,26 @@ locals {
       is_editable = false
     },
   ]
+
+  # PARAMETER OVERRIDES PER BLUEPRINT - the map profiles.tf consumes. Tooling's rows above are
+  # CONTROLS (locked, is_editable=false); the two rows below are the OPPOSITE and exist for a
+  # different reason, measured 2026-08-22: UpdateProjectProfile validates that every REQUIRED
+  # blueprint parameter without a default is declared ("Missing required Blueprint
+  # parameter(s): bucketName") - a validation CreateProjectProfile never ran, which is how the
+  # profiles were created without them. S3Bucket's bucketName and S3TableCatalog's catalogName
+  # are PER-PROJECT names: both templates consume them by literal Ref (no per-project suffix is
+  # added), so a locked value would collide between projects - S3's namespace is global. The
+  # placeholder is what the portal PRE-FILLS when a member enables the capability
+  # (deployment_mode ON_DEMAND), and is_editable = true is the point: the member REPLACES it.
+  # A project deployed with the placeholder unchanged fails or collides visibly - preferable
+  # to a silently shared name.
+  blueprint_parameters = {
+    Tooling = local.tooling_parameters
+    S3Bucket = [
+      { name = "bucketName", value = "changeme-project-bucket", is_editable = true },
+    ]
+    S3TableCatalog = [
+      { name = "catalogName", value = "changemecatalog", is_editable = true },
+    ]
+  }
 }
