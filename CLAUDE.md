@@ -330,7 +330,7 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   **US-8 said the opposite first and the instrument was wrong** (Lesson 30): `iam list-roles` OMITS
   `PermissionsBoundary` by documented contract (`GetRole`-only, with `Tags`) — fixed to `get-role`
   per role, re-run `pass`. **What St.6 still owes: the fallback-(i)-or-acceptance decision (the 1.7
-  bullet), the off-VPN probe's teardown confirmed, then passes 3-5 + 5.1** — pass 3 stands on a
+  bullet), the off-VPN probe's teardown confirmed, then passes 3-5 + 5.1 (less 4.1, DELIVERED 2026-08-22 — `EXC-04`)** — pass 3 stands on a
   measured create path. **5.0 is DONE** (`default-v0.1.0`
   pushed to both repos 2026-08-22, one buildbox session). Decisions 1 (EMR-S vs Glue) and 6 (prefix
   shape) stay in-stage; **2 is delivered** (TIP `false`, non-editable, both profiles).

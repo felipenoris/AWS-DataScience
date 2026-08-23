@@ -96,6 +96,15 @@ resource "aws_security_group" "buildbox" {
   # public.ecr.aws, PyPI, conda-forge, julialang and static.rust-lang.org over 443; naming
   # them would be an allow-list maintained by hand in the wrong layer (egress design A owns
   # that question, and answers it with a DNS firewall).
+  #
+  # AND THAT DEFERRAL REACHES FURTHER THAN IT SAID, measured 2026-08-22: the DNS firewall's
+  # rule group associates to the VPC ID, not to a route table, so it filters THIS host too
+  # whenever egress/ is up - even though this host's egress leaves through the WireGuard NAT
+  # instance and never touches that slice's NAT. Two of the five names above, public.ecr.aws
+  # and static.rust-lang.org, were NOT on that allow-list until vpc-egress-v0.2.1. The
+  # coupling has never been exercised - no build has yet run while egress/ was up - so this
+  # is a note and not a war story: a build that dies on a NAME is diagnosed in
+  # terraform-modules/vpc-egress/variables.tf, never here.
   egress {
     # checkov:skip=CKV_AWS_382:deliberate - the control is the route (a NAT instance this design owns), not this rule; see the note above
     description = "out through the VPN host - the route is the control, not this rule"

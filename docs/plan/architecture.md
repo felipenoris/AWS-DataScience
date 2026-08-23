@@ -347,9 +347,14 @@ opposite ways, and the point of building both is to find out what the strict one
 day-to-day friction.
 
 **(A) Limited internet — NAT plus allowlist.** The SageMaker private subnets route to the NAT gateway;
-Route 53 Resolver DNS Firewall permits an explicit list of domains (PyPI, conda, CRAN, the Julia package
-server, crates.io, the distro mirrors, GitLab) and blocks the rest, optionally with a Squid proxy for
-HTTP-layer control. Familiar and flexible. Its honest weakness is that DNS-name filtering is bypassable by
+Route 53 Resolver DNS Firewall permits an explicit list of domains and blocks the rest, optionally with a
+Squid proxy for HTTP-layer control. **The list itself is deliberately not written here** — it is the
+`dns_firewall_allow_domains` default in `terraform-modules/vpc-egress/`, one copy, each family annotated
+with the reason it is on. What this paragraph used to enumerate (PyPI, conda, CRAN, Julia, crates.io, the
+distro mirrors, GitLab) turned out to be **the package indexes and nothing else**, and the first working
+session added the families an index does not cover: the container registry the images descend from, the
+toolchain *installer* hosts, and a runtime that fetches its own extensions mid-query (Stage 6 step 4.1,
+2026-08-22). Familiar and flexible. Its honest weakness is that DNS-name filtering is bypassable by
 connecting to a raw IP, so it is a strong control against accident and a weak one against intent.
 
 **(B) No internet — proxied artifacts only.** The SageMaker subnets have no route to a NAT gateway at all.

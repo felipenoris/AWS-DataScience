@@ -47,7 +47,8 @@ for the six persona sets the VPN still does; for `InfrastructureAccess` it does 
 option (a). A port served during a build is reached with SSM **port forwarding**, not with an ingress rule.
 
 **Out:** through the WireGuard host, the single public egress of this design. **No NAT gateway is
-involved**, so `egress/` need never be up for a build — 0.170 USD/h not spent.
+involved**, so `egress/` need never be up for a build — 0.170 USD/h not spent. **That is true of the
+route and not of the names** — see the last coupling below.
 
 **Three couplings worth holding in mind:**
 
@@ -62,6 +63,14 @@ involved**, so `egress/` need never be up for a build — 0.170 USD/h not spent.
   like a broken package mirror. `up` starts it; `down` does **not** stop it (it is `[D]` and shared).
 - **It must not coexist with `sandbox/probes/`.** That slice's perimeter probe measures the isolated
   tier's *absence* of a default route; this one adds one. `buildbox.py` refuses rather than warns.
+- **`egress/` is irrelevant to this host's ROUTE and not to its NAME RESOLUTION** (measured 2026-08-22).
+  Design A's DNS Firewall rule group associates to the **VPC id**, not to a route table, so while
+  `egress/` is up every lookup from this host is judged by an allow-list written for the SageMaker
+  subnets — and `public.ecr.aws` and `static.rust-lang.org`, two of the five things a build pulls, were
+  **not on it** until `vpc-egress-v0.2.1`. Never yet exercised: no build has run while `egress/` was up.
+  **The symptom is the giveaway** — a blackholed route hangs, a blocked name returns *no such host*
+  immediately, and the rule action is in `/awsds/sandbox/dns-firewall`. The list is
+  `terraform-modules/vpc-egress/variables.tf`, and its own plan never converges (`EXC-04`).
 
 ## U. Up
 
