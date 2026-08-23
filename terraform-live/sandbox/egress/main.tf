@@ -128,8 +128,8 @@ module "egress" {
     "pypi.org",
     "files.pythonhosted.org", "dualstack.python.map.fastly.net",
 
-    "install.julialang.org",
-    "julialang-s3.julialang.org",
+    #"install.julialang.org", "c.sni.global.fastly.net",
+    "julialang-s3.julialang.org", "dualstack.j2.shared.global.fastly.net",
     "pkg.julialang.org",
     "storage.julialang.net",
     "us-west.pkg.julialang.org",
