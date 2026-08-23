@@ -159,6 +159,64 @@
 
 - AWS Network Firewall: <https://docs.aws.amazon.com/network-firewall/latest/developerguide/what-is-aws-network-firewall.html>.
 
+- **The Network account, and the OU it sits in — AWS's own answer to "where does a single internet exit
+  point live"**, read 2026-08-23 while weighing where the buildbox's egress belongs. The Security
+  Reference Architecture puts a **Network account in an Infrastructure OU** and states the reason as
+  separation of duties rather than topology: it "isolates the networking services, configuration, and
+  operation from the individual application workloads", and **splits inbound from outbound into two VPCs**
+  because "the inbound network is generally considered higher risk". A third, the **inspection VPC**,
+  carries Network Firewall and must host nothing else:
+  <https://docs.aws.amazon.com/prescriptive-guidance/latest/security-reference-architecture/network.html>.
+  The multi-account whitepaper names this project's exact use case as an Infrastructure-OU
+  responsibility — "VPCs and network security stacks used for centralized internet traffic inbound and
+  outbound **proxying and filtering**":
+  <https://docs.aws.amazon.com/whitepapers/latest/organizing-your-aws-environment/infrastructure-ou.html>.
+  **The same page also licenses this estate's current shape**: peering "is best used when ... the number
+  of VPCs to be connected is fewer than 10", and Transit Gateway is the default "but specific needs
+  around cost, bandwidth, and latency might make VPC peering a better fit". At three VPCs, the SRA is not
+  telling us to centralize.
+
+- **Centralized egress — the principle, and the cost caveat AWS states against its own pattern**, read
+  2026-08-23. The principle: "a single, common entry point for all network traffic that is destined to
+  the internet", where inspection sits and traffic is allowed "only to specified domains":
+  <https://docs.aws.amazon.com/prescriptive-guidance/latest/transitioning-to-multiple-aws-accounts/centralized-egress.html>
+  (its "Best practices for securing egress traffic" list is worth reading against `sandbox/egress/`'s
+  allow-list — it recommends starting in **logging-only mode**, which this project never did). The
+  mechanism whitepaper: <https://docs.aws.amazon.com/whitepapers/latest/building-scalable-secure-multi-vpc-network-infrastructure/centralized-egress-to-internet.html>.
+  **The caveat is the load-bearing sentence for this estate**, and it is AWS arguing against
+  centralization at small scale: "When you centralize NAT gateway using Transit Gateway, you pay an extra
+  Transit Gateway data processing charge — compared to the decentralized approach of running a NAT
+  gateway in every VPC ... keeping the NAT local in the VPC to avoid the Transit Gateway data processing
+  charge might be a more cost-effective option":
+  <https://docs.aws.amazon.com/whitepapers/latest/building-scalable-secure-multi-vpc-network-infrastructure/using-nat-gateway-for-centralized-egress.html>.
+  Measured the same day from the Price List bulk API (`AmazonVPC`, offer file 2026-07-24): a TGW **VPC
+  attachment is USD 0.05/h in `us-west-2`** (0.09 in `sa-east-1`) and **data processed USD 0.02/GB** in
+  both — against **USD 0.01/GB each way** for VPC peering, which charges no hourly fee at all.
+
+- **The explicit proxy reached by PrivateLink — the shape that needs no peering and no Transit Gateway**,
+  read 2026-08-23, and the finding that dissolves the edge-to-edge wall rather than working around it. A
+  Squid fleet in a hub account behind an NLB published as an **endpoint service**; spokes consume it with
+  an interface endpoint and point `HTTP(S)_PROXY` at it. The claim, in AWS's words: "**L3 network
+  connectivity is NOT required** between the central hub and 'spoke' account VPCs, as it leverages AWS
+  PrivateLink" — because the proxy is reached as a *service*, never as a route, so no packet with a
+  public destination ever has to cross a VPC boundary:
+  <https://aws.amazon.com/blogs/networking-and-content-delivery/providing-controlled-internet-access-through-centralised-proxy-servers-using-aws-fargate-and-privatelink/>.
+  The single-VPC ancestor of the same idea, with the allow-list in Secrets Manager:
+  <https://aws.amazon.com/blogs/security/how-to-set-up-an-outbound-vpc-proxy-with-domain-whitelisting-and-content-filtering/>.
+
+- **AWS Network Firewall Proxy — the managed version of the above, and NOT available here**, read
+  2026-08-23. Explicit forward proxy as a Network Firewall deployment mode ("no-source-preservation"),
+  where "clients must be explicitly configured to send traffic to the proxy through a PrivateLink
+  endpoint" — the same shape as the blog above, with AWS's managed rule groups behind it:
+  <https://docs.aws.amazon.com/network-firewall/latest/developerguide/network-firewall-proxy-developer-guide.html>.
+  **The availability sentence is the whole reading**: "Try out AWS Network Firewall in
+  *no-source-preservation* deployment with *proxy* functionality in your test environment today in **US
+  East (Ohio)** region", free during public preview:
+  <https://aws.amazon.com/about-aws/whats-new/2026/08/aws-network-firewall-forward-proxy-preview/>.
+  Every account in this estate sits in `us-west-2` (`CLAUDE.md`), so this is a **revision trigger**, not
+  an option: the day it reaches `us-west-2` and GA, a hand-run Squid fleet stops being the only way to
+  have an explicit proxy.
+
 - VPC peering: <https://docs.aws.amazon.com/vpc/latest/peering/what-is-vpc-peering.html>.
 
 - VPC peering unsupported configurations (no edge-to-edge routing — a VPN attached to one VPC cannot reach the peer VPC without NAT): <https://docs.aws.amazon.com/vpc/latest/peering/invalid-peering-configurations.html>.
