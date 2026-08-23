@@ -1,6 +1,7 @@
 #!/usr/bin/env -S uv run --quiet
 # slices.py - Stage 2 step 8. The teardown/rebuild tooling of D11, and the table behind it.
 #
+#   ./scripts/slices.py envs               the ENV values, and what each one acts on
 #   ./scripts/slices.py list [<env>]        the layer table, whole or for one account folder
 #   ./scripts/slices.py check               table vs. disk - runs inside `make check`
 #   ./scripts/slices.py up   --env <env>    start the [D] slices, apply the [E] ones
@@ -245,6 +246,37 @@ def cmd_list(args) -> int:
     return 0
 
 
+def cmd_envs(args) -> int:
+    """The values ENV accepts, and what each one would actually act on.
+
+    THE LIST IS READ FROM THE TABLE up AND down VALIDATE AGAINST, never typed into the
+    Makefile. An account-folder list written out a second time is a list that goes stale on
+    the first vend, in the copy nobody re-reads (Lesson 33) - and this one would go stale
+    silently, because `make help` is not a thing any check reads.
+
+    IT PRINTS THE [D]/[E] COUNTS BESIDE EACH NAME, because the name on its own answers the
+    wrong question. Three of the five folders hold nothing but [P] slices today, so `make
+    down ENV=identity` is a target that CORRECTLY does nothing - and an operator who cannot
+    tell that from a target that silently did nothing is reading the shape Lesson 13 warns
+    about. The counts say which one they are about to get, before they type it.
+    """
+    print(
+        f"{BOLD}ENV values{RESET} - the account folders of terraform-live/, "
+        "declared in scripts/tfhygiene/layers.py:"
+    )
+    for env in layers.environments():
+        rows = layers.for_env(env)
+        acts = [
+            f"{len([s for s in rows if s.layer == key])} [{key}]"
+            for key in (layers.DORMANT, layers.EPHEMERAL)
+            if any(s.layer == key for s in rows)
+        ]
+        why = ", ".join(acts) if acts else "only [P] - up and down are honest no-ops here"
+        print(f"  {env:<17}{why}")
+    print("\n  `./scripts/slices.py list <env>` for the slices behind one of these.")
+    return 0
+
+
 def cmd_check(args) -> int:
     """Table vs. disk, in both directions - the two-list shape of step 9.3."""
     failures = []
@@ -476,6 +508,8 @@ def main(argv: list) -> int:
     p = sub.add_parser("list")
     p.add_argument("env", nargs="?")
     p.set_defaults(fn=cmd_list)
+
+    sub.add_parser("envs").set_defaults(fn=cmd_envs)
 
     sub.add_parser("check").set_defaults(fn=cmd_check)
 

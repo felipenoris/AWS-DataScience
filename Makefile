@@ -21,6 +21,13 @@
 # `make down` with no ENV must FAIL rather than mean "everything", and that is the one whose
 # failure mode is expensive enough to guard twice.
 #
+# NEITHER `help` NOR THE ENV GUARD SPELLS THE ENV LIST OUT (2026-08-23). Both call
+# `./scripts/slices.py envs`, which reads the same table `up` and `down` validate ENV against,
+# so the three cannot disagree: an account folder added to layers.py appears in all of them, and
+# one removed disappears from all of them. A list typed into this file instead would be a second
+# copy of the account map in the one file no check reads (Lesson 33), and it would go stale in
+# the direction that looks fine - `make help` offering an ENV that up and down reject.
+#
 # EVERY SLICE ON DISK WAS [P] WHEN THESE TARGETS WERE WRITTEN, so `make up` and `make down`
 # were honest no-ops. They were written before the first [E] slice (Stage 3's egress/) rather
 # than after it, which is step 8.6's own argument applied to the whole target. SINCE STAGE 3
@@ -81,6 +88,8 @@ help:
 	@printf '  down ENV=x  delete Studio apps, destroy the [E] slices, stop the [D] ones\n'
 	@printf '  status      what is up and the estimated hourly burn (static rates, PRICING 3)\n'
 	@printf '  clean       remove the volatile artifacts (aws/output, .venv, caches) - never secrets/\n'
+	@printf '\n'
+	@./scripts/slices.py envs
 
 # Each script runs even when an earlier one failed - a check suite that stops at the first red
 # hides the other two, and the reason to run them together is to see all of it at once.
@@ -119,7 +128,8 @@ guard-env:
 	@if [ -z "$(ENV)" ]; then \
 	  printf '\033[1mENV is required\033[0m - `make down` never means "everything" (step 8.3 refusal 2).\n'; \
 	  printf 'usage: make %s ENV=<account-folder>\n' "$(TARGET)"; \
-	  ./scripts/slices.py list >/dev/null 2>&1 && printf '\nknown slices:\n' && ./scripts/slices.py list; \
+	  printf '\n'; ./scripts/slices.py envs 2>/dev/null \
+	    || printf 'the ENV list is unavailable - `./scripts/slices.py envs` failed\n'; \
 	  exit 2; \
 	fi
 
