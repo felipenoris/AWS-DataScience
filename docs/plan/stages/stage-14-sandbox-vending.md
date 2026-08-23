@@ -124,7 +124,10 @@ than a rewrite.
    are two different applies of the same slice.**
 
    1. **The unit's `sagemaker/` pass-1 apply** — the blueprint prerequisites: the provisioning and
-      manage-access roles, the D13 boundary, the project CMK, the VPC/subnet/AZ parameters, with
+      manage-access roles (**both trusts pinned to the DOMAIN account** — `domain_account_id` is a
+      required module input since v0.3.3; the member-pinned trust was the measured defect that made the
+      roles unassumable), the D13 boundary, the project CMK (carrying the documented SMUS key-policy
+      statement set), the `awsds-<env>-smus-projects` bucket, the VPC/subnet/AZ parameters, with
       `blueprints_enabled` **false**. (Step 1's composition list does not mention a `sagemaker/` slice; it
       is the unit's, and it precedes this act.)
    2. **Request the association** in the **AWS management console** (`console.aws.amazon.com/datazone`)
@@ -146,9 +149,15 @@ than a rewrite.
       profile must **succeed** (returning an empty list). Before the association it cannot succeed at
       all, which is what makes the empty answer evidence. **And the row is a TRIGGER, not a note**: it
       arms this step's part 4 *and*, once every member carries one, the project profiles in part 5.
-   4. **The unit's `sagemaker/` pass-2 apply** — the blueprint configurations, applied **from the member
-      account**, because `PutEnvironmentBlueprintConfiguration` takes no account parameter and configures
-      the caller's (`terraform-modules/sagemaker-prereqs/blueprints.tf` carries the reasoning). The enabled
+   4. **The unit's `sagemaker/` pass-2 apply** — the blueprint configurations **with the complete
+      wizard-field set** (manage-access role on every one; Tooling's `S3Location` + `KmsKeyArn`) **and the
+      11 per-configuration `CREATE_ENVIRONMENT_FROM_BLUEPRINT` grants** — all carried by
+      `sagemaker-prereqs` at **v0.3.3 or later**, applied **from the member account**, because
+      `PutEnvironmentBlueprintConfiguration` takes no account parameter and configures the caller's
+      (`terraform-modules/sagemaker-prereqs/blueprints.tf` carries the reasoning). **The measured rule
+      (2026-08-22, five attempts): a configuration missing a wizard field pins its projects in BOTH
+      directions — deploy and delete both validate it — and a configuration with no grant refuses every
+      create one layer past `CreateProject`.** The enabled
       set is [`docs/SMUS.md`](../../SMUS.md)'s category-1 table — **never "the ML blueprint", which does
       not exist**.
    5. **Three by-hand edits in `data-governance/governance/`, and an alias alone is not enough.** The

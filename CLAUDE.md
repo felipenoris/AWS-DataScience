@@ -274,9 +274,13 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   produces that wording and no other deny those six documents carry reaches `logs:` — clean with the
   tunnel up. **The message named the persona role and `us-west-2` itself**, so identity and the
   wrong-Region trap were ruled out from inside the reading, not from the operator's report. **VPN-only
-  APIs and console, not a VPN-only portal**; `README.md` now carries the qualification. What is left is
-  a choice, not a measurement: adopt fallback (i) — `DenyUserAccessFromUnauthorizedVPCs` on the domain
-  execution role, re-keyed on the EIP — or leave item 3 stated as bounded.
+  APIs and console, not a VPN-only portal**; `README.md` now carries the qualification. **The off-VPN reading
+  (same day, evening) delivered the choice's missing input in the STRONG form: all three rungs —
+  create, space, JupyterLab — pass IDENTICALLY on and off VPN.** `VpcOnly` governs the app's ENIs and
+  egress, never the user's ingress (the Studio front-end under the portal session). `README.md` item 3
+  states the full reach; **the ripe decision — the user's — is fallback (i)
+  (`DenyUserAccessFromUnauthorizedVPCs` on the domain execution role, re-keyed on the EIP, AWS's
+  `*:user-*` third condition kept) versus recorded acceptance; recommendation on record: (i).**
 - **CREATING IS AUTHORIZED IN TWO LAYERS, AND BOTH STARTED AT ZERO (measured 2026-08-22, one per
   sitting).** Layer 1, the PROFILE: `CREATE_PROJECT_FROM_PROJECT_PROFILE` on the root domain unit —
   governance `grants.tf` **APPLIED 2026-08-22**: `experimentation`→`sso-group-data-scientists`
@@ -325,8 +329,9 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   roles carry NONE** — AWS's template, noted for the day `createEmrResourceInTooling` turns true).
   **US-8 said the opposite first and the instrument was wrong** (Lesson 30): `iam list-roles` OMITS
   `PermissionsBoundary` by documented contract (`GetRole`-only, with `Tags`) — fixed to `get-role`
-  per role, re-run `pass`. **What St.6 still owes: the off-VPN portal reading (user's browser), then
-  passes 3-5 + 5.1** — pass 3 stands on a measured create path. **5.0 is DONE** (`default-v0.1.0`
+  per role, re-run `pass`. **What St.6 still owes: the fallback-(i)-or-acceptance decision (the 1.7
+  bullet), the off-VPN probe's teardown confirmed, then passes 3-5 + 5.1** — pass 3 stands on a
+  measured create path. **5.0 is DONE** (`default-v0.1.0`
   pushed to both repos 2026-08-22, one buildbox session). Decisions 1 (EMR-S vs Glue) and 6 (prefix
   shape) stay in-stage; **2 is delivered** (TIP `false`, non-editable, both profiles).
 - **Standing St.6 mechanics:** a blueprint configuration is applied **from the MEMBER account** (the
@@ -427,3 +432,6 @@ the reasoning that makes it *usable* is in the file. Recognising one is the sign
     reads and no owner re-reads.**
 38. **An identifier read out of prose is a claim, not a reading — and a name travels further than the
     sentence that carried it, ending up load-bearing where nobody re-checks it.**
+39. **What a console wizard fills and the authoring API does not require is still required — the validator
+    is the deploy AND the teardown, so an incomplete object pins its dependents in both directions; and
+    the strict validator arrives one act late.**

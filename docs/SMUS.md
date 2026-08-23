@@ -114,7 +114,7 @@ answer (Lesson 28):
 
 | Layer | The control |
 |---|---|
-| the **IAM permissions boundary** — the literal object | `awsds-<env>-project-boundary` (Stage 6 step 2.1; name contract `US-8`), imposed on the roles the blueprint authors: no `s3:*` on LF-registered prefixes (D13), the drop-box `PutObject` + lake-data-key KMS pair as the one sanctioned direct write. Whether it **survives blueprint reconciliation** is INT-15, measured at step 2.5 |
+| the **IAM permissions boundary** — the literal object | `awsds-<env>-project-boundary` (Stage 6 step 2.1; name contract `US-8`), imposed on the roles the blueprint authors: no `s3:*` on LF-registered prefixes (D13), the drop-box `PutObject` + lake-data-key KMS pair as the one sanctioned direct write. **First real reading 2026-08-22: it IS on the provisioned role** — the configuration's write-only field is injected into the environment's stack template as the `ToolingUserRole`'s `PermissionsBoundary` (the conditional Bedrock roles too; **the template's two conditional EMR roles carry NONE** — AWS's template, the recorded gap for the day EMR-in-Tooling turns on). Whether it **survives blueprint reconciliation** is INT-15's remaining half, measured at step 2.5 — `US-8` reads it per role via `get-role` (`list-roles` omits the field by contract, Lesson 30) |
 | OU SCPs | reach every IAM principal in the member accounts, project roles included — why the Athena Spark disable is an SCP (step 1.6), never an edit to blueprint-authored policies (Lesson 11) |
 | Lake Formation | what a project *queries* is governed by LF grants, not IAM — broad IAM with no grant reads no table (Lesson 28's producer-README section) |
 | network | `VpcOnly` non-Editable, the endpoint policies, both egress designs (§`VpcOnly` below) |
@@ -130,7 +130,12 @@ file exists to prevent.
 "A template for projects … a collection of blueprints, which are configurations used to create
 projects. A project profile can define if a particular blueprint is enabled during the creation of
 the project, or available later for the project users to enable on demand." Domain-admin-only,
-created in the domain account (Stage 6 step 1.5). What one fixes, per the custom-create console flow
+created in the domain account (Stage 6 step 1.5). **Two validation facts, measured 2026-08-22 (Lesson 39):
+`CreateProjectProfile` validates NOTHING against the blueprint templates — a locked value the template
+rejects sails through and dies at the first deploy — while `UpdateProjectProfile` validates required
+template parameters without defaults. The templates themselves are downloadable by any associated account
+via the blueprint's `templateUrl`, so locked values are checked against the template, never against prose
+(Lesson 38).** What one fixes, per the custom-create console flow
 (read 2026-08-19):
 
 | Field | What it fixes |
@@ -206,12 +211,17 @@ The two project profiles this installation carries — created 2026-08-21 by the
 Identical in everything but the target account: **eleven environment configurations** (decision 5's
 category 1), `Tooling` the only base — `ON_CREATE`, every other blueprint `ON_DEMAND`; a second base
 cannot ride along on demand, which is what re-cut `ToolingLite` to category 3 (its row in the
-blueprint table below) — and the same Tooling parameters, read back after the apply:
+blueprint table below) — and the same Tooling parameters, read back after the apply. **Since 2026-08-22
+both profiles also declare the only two required-no-default blueprint parameters across all 11**
+(`S3Bucket.bucketName`, `S3TableCatalog.catalogName`, both consumed by literal `Ref`) **as editable
+placeholders** (`changeme-project-bucket`, `changemecatalog`) **that the member replaces per project at
+capability-enable time** — `UpdateProjectProfile` demands them declared even though `CreateProjectProfile`
+never did:
 
 | Parameter | Value | Editable |
 |---|---|---|
 | `sagemakerDomainNetworkType` | `VpcOnly` | no |
-| `lifecycleManagement` | `true` | no |
+| `lifecycleManagement` | `ENABLED` | no — **corrected 2026-08-22**: the template's AllowedValues are the enum `ENABLED`/`DISABLED`, and the boolean `"true"` this row used to carry was rejected by CloudFormation at the first deploy (`CreateProjectProfile` had validated nothing; Lesson 39) |
 | `idleTimeoutInMinutes` | `60` | **yes** — the per-project default a member may tune, under the ceiling |
 | `maxIdleTimeoutInMinutes` | `120` | no — the admin ceiling (step 8.1) |
 | `maxEbsVolumeSize` | `100` (GB) | no |
@@ -359,6 +369,28 @@ The `US-3` allow-list in [`aws/studio.py`](../aws/studio.py) holds **category 1*
 blueprint joins the constant in the same commit that adds it to the step 1.4 map, so the check and
 the code never disagree (Lesson 14).
 
+**Promoting a blueprint out of category 2 — the checklist (2026-08-22, Lesson 39's discipline made
+reusable, so the next enabler does not re-climb the five-attempt ladder).** One commit, one module tag
+bump, in this order:
+
+1. **The three roster copies move together** (Lesson 14): `sagemaker-prereqs`' `blueprint_names`
+   default, `data-governance/governance/locals.tf`'s list, `US-3`'s allow-list.
+2. **The project CMK gains the blueprint's documented key-policy statements** — `kms.tf` names the two
+   absentees today (Redshift for `RedshiftServerless`-backed shapes, Airflow for `Workflows`); the
+   adminguide key-permissions page is the source, never prose.
+3. **Download the blueprint's template** (`templateUrl`, readable by any associated account) and read
+   two things against it: every **required parameter without a default** (declare it in BOTH profiles —
+   `UpdateProjectProfile` validates what `CreateProjectProfile` will not) and every **locked value
+   against its `AllowedValues`** (the `lifecycleManagement` trap).
+4. **Enumerate the console's enable-wizard fields for that blueprint and treat every one as required**
+   (Lesson 39): a field the wizard fills and the Put does not demand is validated at environment deploy
+   AND teardown, and an incomplete configuration pins its projects in both directions.
+5. **What arrives free**: the `CREATE_ENVIRONMENT_FROM_BLUEPRINT` grant (`grants.tf` `for_each`s the
+   configurations) and — because a NEW configuration is a create, not an update — no reconciliation Put
+   (§Blueprints item (b) bites only on changes to an existing one).
+6. **The profile side**: an `ON_DEMAND` environment configuration in the profiles' list (the governance
+   copy of step 1) — and the price measured at that moment if the category row lacks one (Lesson 6).
+
 ### Blueprints
 
 **THE ROSTER IS MEASURED, AND THE HEADING THIS REPLACES SAID *"the eleven blueprints"*.** Read
@@ -494,12 +526,14 @@ projects". Three named tenants: "the location for the provisioned consumer AWS G
 Workgroup output, and temporary storage for individual workflow runs". The bucket pattern in AWS's
 2025-09 shared-storage announcement is `amazon-datazone-<account-id>-<region>-<domain-id>`; the
 `shared/` scope mounts as a folder in JupyterLab and Code Editor (a space's *personal* work is its
-EBS volume, not S3). **Not yet observed in this project** — the exact bucket, which account it lands
-in for a profile pinned to a member account, who creates it (domain setup or the Tooling
-provisioning), **and the bucket's default encryption key** — which decides whether it sits inside
-`docs/GOVERNANCE.md` §Encryption's per-account data CMK rule or outside every key this project chose —
-are read at Stage 6 step 2.4's throwaway project (Lesson 16: record every field). **Stage 6's
-verification (xviii) is the receiving end**, so the field list exists at both ends and not only here.
+EBS volume, not S3). **Measured 2026-08-22 (v0.3.2), and the answer overrode the default**: the bucket is
+`awsds-<env>-smus-projects`, one per member account, created by **Terraform** (the `sagemaker-prereqs`
+module's house `s3-bucket` call — not by the service; the `amazon-datazone-*` pattern above is what the
+wizard would have defaulted to), handed to Tooling as the `S3Location` regional parameter, and encrypted
+under the **project CMK** — a key this project chose, the deliberate exception `docs/GOVERNANCE.md`
+§Encryption names beside the data-CMK rule. The name is FREE because the managed provisioning policy
+reaches content by the PATH shape (`*/dzd*/<project>/…`), never by bucket name. What Stage 6 step 2.4
+still records is the project **path shape** inside it — verification (xviii)'s remaining third.
 
 **2. Project files storage — S3 or Git.** A project-profile field. The terminology page still says a
 default CodeCommit git connection is provided; the 2025-09 announcement makes S3 the default, born
@@ -527,7 +561,7 @@ below easy to miss:
 
 | Object | Created by | Holds |
 |---|---|---|
-| the project path (`amazon-datazone-…`), a **bucket** | the service (2.4's reading settles by which hand) | `shared/` files, the blueprint workgroup's Athena output, workflow temp, the consumer Glue database location |
+| `awsds-<env>-smus-projects`, a **bucket** (the project path lives inside it) | **Terraform** — the member's `sagemaker-prereqs` slice (v0.3.2), consumed by Tooling's `S3Location`; settled 2026-08-22 | `shared/` files, the blueprint workgroup's Athena output, workflow temp, the consumer Glue database location |
 | `awsds-<env>-derived`, a **bucket** | `consumer-data` (Stage 5 pass 4a) | the persona's derived zone — per-user write, persona-grain read, the `scratch/` prefix |
 | `awsds-<env>-athena`, **a workgroup, not a bucket** | `consumer-data` (Stage 5 pass 4a) | nothing of its own. The module creates exactly **one** bucket (`buckets.tf`); this is the *enforced* workgroup (`athena.tf`), and its results are forced into `s3://awsds-<env>-derived/results/` under a 10 GiB cap. **So the enforced results already live inside the derived zone** — they are not a third place |
 

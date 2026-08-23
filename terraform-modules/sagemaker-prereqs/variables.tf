@@ -82,7 +82,7 @@ variable "log_retention_days" {
 # backend.SMUS_ASSOCIATED - a table whose rows are measurements, not intentions.
 
 variable "blueprints_enabled" {
-  description = "false until this account's SMUS association is accepted (backend.SMUS_ASSOCIATED). true creates the blueprint configurations - the pass 2b apply."
+  description = "false until this account's SMUS association exists (it auto-accepts - no invitation; backend.SMUS_ASSOCIATED). true creates the blueprint configurations and their grants - the pass 2b apply."
   type        = bool
   default     = false
 }
@@ -146,9 +146,12 @@ variable "blueprint_names" {
     # actually stops - or when a blueprint here proves to depend on it.
     # Compute.
     "EmrServerless",
-    # The generative-AI surface. SEVEN ENTRIES, NOT ONE: `AmazonBedrockGenerativeAI` is a CONSOLE
-    # GROUPING with no API identifier (measured 2026-08-21 - `list-environment-blueprints` returns
-    # these seven and no aggregate), so decision 5's category 1 is delivered by naming them.
+    # The generative-AI surface. SIX ENTRIES, NOT ONE AND NOT SEVEN: `AmazonBedrockGenerativeAI`
+    # is a CONSOLE GROUPING with no API identifier (measured 2026-08-21 -
+    # `list-environment-blueprints` returns seven `AmazonBedrock*` blueprints and no aggregate),
+    # and SIX of the seven are category 1. AmazonBedrockKnowledgeBase IS DELIBERATELY ABSENT -
+    # category 2 (its vector store bills while it exists); it joins in the commit that enables it
+    # (Lesson 14). Decision 5's category 1 is delivered by naming them.
     "AmazonBedrockChatAgent",
     "AmazonBedrockEvaluation",
     "AmazonBedrockFlow",

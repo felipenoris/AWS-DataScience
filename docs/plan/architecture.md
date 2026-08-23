@@ -149,7 +149,9 @@ is the control plane, not the account.
 **How a human actually reaches each account, because "the VPN is the only entry point" hides two different
 paths.** The WireGuard instance lives in Sandbox and is a **full tunnel** (Stage 4 step 5), so *all* the
 laptop's traffic leaves through its Elastic IP — and that, not a route into every VPC, is what makes the
-single entry point true. Concretely there are two paths and they should not be confused:
+single entry point true **for a laptop with the tunnel up; the Unified Studio portal is the measured
+exception (INT-16, 2026-08-22 — a portal session works with the tunnel down; the closing choice is the
+user's, deferred)**. Concretely there are two paths and they should not be confused:
 
 - **VPC-level reach**, which only Sandbox and Production have. The tunnel terminates in the Sandbox VPC,
   and the Sandbox↔Production peering extends it to the GitLab subnet. This is the path for private DNS
@@ -161,7 +163,10 @@ single entry point true. Concretely there are two paths and they should not be c
   reaches the UI. The laptop needs no route into the Development VPC.
 
 The control that makes the second path VPN-only is therefore **`aws:SourceIp` on the WireGuard Elastic IP**
-(Stage 4 step 8), not `aws:SourceVpce`. Getting that backwards is the fastest way to write a condition that
+(Stage 4 step 8), not `aws:SourceVpce` — **measured 2026-08-22 to gate the API/console half of this path
+and NOT the portal half**: the portal is entered by an IdC sign-in the permission-set deny never sees
+(INT-16; `README.md` item 3 carries the full statement, the fallback-(i)-versus-acceptance choice is the
+user's, deferred). Getting that backwards is the fastest way to write a condition that
 either denies everything or protects nothing.
 
 **Where the humans are (D17, D18, D21).** D14 refined that boundary once; the decisions above refine it
@@ -482,11 +487,12 @@ contradicts some part of it.
   not because it routes into every VPC. Only Sandbox and Production are reachable at the VPC level;
   Development and Staging are used entirely through AWS API endpoints exited via the WireGuard Elastic IP
   — including the Unified Studio portal, which is a public endpoint even when project compute is
-  VPC-only. The control there is `aws:SourceIp`, never `aws:SourceVpce` (`docs/plan/architecture.md` §3) — **and whether that control
-  reaches the portal at all is INT-16, unverified**: the portal is entered by an Identity Center
-  sign-in, not by an IAM-authorized call under a permission set, so the condition demonstrably covers the
-  API half and not yet the portal half. Answered across Stages 4 and 6 — the portal surface first exists
-  at Stage 6.
+  VPC-only. The control there is `aws:SourceIp`, never `aws:SourceVpce` (`docs/plan/architecture.md` §3) — **and INT-16 ANSWERED (2026-08-22, at Stage 6): that control does NOT reach the portal**. The portal is
+  entered by an Identity Center sign-in, not by an IAM-authorized call under a permission set, and the
+  off-VPN reading took the strong form — the whole interactive surface works with the tunnel down,
+  JupyterLab included (`VpcOnly` governs the app's egress, never the user's ingress). The condition covers
+  the API/console half only; the closing choice — fallback (i) on the domain execution role versus
+  recorded acceptance — is the user's, deferred, presumed nowhere.
 - **D24 (withdrawn 2026-08-17):** the NFS requirement left `objectives.md`, and the shared filesystem
   with it; the exchange between the two Interactive accounts is S3 and git. **D25:** the ingestion drop-box is
   picked up by Production's job role on the producer path — which also closed a hole where the `Data` OU

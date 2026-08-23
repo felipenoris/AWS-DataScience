@@ -10,7 +10,10 @@
 #                                     lake data key - the three values D13's boundary is built
 #                                     from. A bucket renamed on the producer side becomes a
 #                                     plan diff here rather than a deny that stops matching
-#   3. the DOMAIN's governance/       the domain id, on the second apply only. count-gated:
+#   3. the DOMAIN's governance/       three values, on the second apply only: the domain id,
+#                                     the domain execution role ARN (a principal in the
+#                                     project CMK's key policy, v0.3.3) and the root domain
+#                                     unit id (the grants' scope, v0.3.0). count-gated:
 #                                     before pass 2 the state does not exist, and an
 #                                     unconditional read would fail every pass-1 plan
 #

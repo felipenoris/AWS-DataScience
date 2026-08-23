@@ -13,7 +13,7 @@ is a broken caller.
 
 ## What is here today
 
-**Twenty-four slices across five account folders: seventeen `[P]`, one `[D]`, six `[E]`.** That is a summary,
+**Twenty-five slices across five account folders: seventeen `[P]`, one `[D]`, seven `[E]`.** That is a summary,
 not an authority — `make slices` prints the live table, and a slice that reaches disk without a row in it
 fails `make check`.
 
@@ -60,9 +60,10 @@ exist today. What is enforced now is the property that matters, by
 permitted**, and every committed `.terraform.lock.hcl` must carry Stage 2 step 6.3's three platforms. **Three slices deviate since Stage 6 (2026-08-21), and each says so in its own file**:
 `sandbox/sagemaker/`, `development/sagemaker/` and `data-governance/governance/` add a **second** provider,
 `awscc`. The `aws` block is unchanged — what the drift rule is about — and the second one is there because
-two resources exist in no other provider at all: the V2 project profile, and the blueprint configuration's
-`environment_role_permission_boundary`, which is how the D13 boundary reaches roles **DataZone authors**
-(INT-15). `docs/plan/conventions.md` §6 anticipated exactly that split.
+three resources exist in no other provider at all: the V2 project profile, the blueprint configuration's
+`environment_role_permission_boundary` — which is how the D13 boundary reaches roles **DataZone authors**
+(INT-15) — and the DataZone policy grant (`awscc_datazone_policy_grant`, both layers of the create
+authorization since 2026-08-22). `docs/plan/conventions.md` §6 anticipated exactly that split.
 
 **Stage 3 put a network on disk in the three accounts that have one — `sandbox/`, `development/` and
 `production/`, split three ways (2026-08-16, applied and measured).** `foundation/` is `[P]`: the VPC, its
@@ -212,14 +213,18 @@ the four are worth reading as a set** — they are one design split by *which ac
 what*, which is D26's whole argument made concrete:
 
 - **`data-governance/governance/` `[P]` — the registry, and nothing else.** The DataZone V2 domain, its
-  execution and service roles, and the two project profiles. **No compute lives here and none ever may**:
+  execution and service roles, the two project profiles, and the two `CREATE_PROJECT_FROM_PROJECT_PROFILE`
+  grants on the root domain unit (`grants.tf`, 2026-08-22 — without them the profiles were templates
+  nobody could instantiate). **No compute lives here and none ever may**:
   `sagemaker:Create*` is denied in this account by the `Data` OU document, a deny that stays free precisely
   because no blueprint is enabled here, and Stage 6 step 0.4 reads the slice's own plan for any
   `aws_sagemaker_*` resource before every apply.
 - **`sandbox/sagemaker/` and `development/sagemaker/` `[P]` — the runtime's prerequisites**, one module
   (`terraform-modules/sagemaker-prereqs/`) applied twice, so the two accounts cannot drift. The blueprint
-  provisioning and manage-access roles, the account's project CMK, the `/awsds/<env>/studio` log group and
-  the **D13 permissions boundary** the blueprint imposes on every project role it authors. **They declare
+  provisioning and manage-access roles, the account's project CMK, the `/awsds/<env>/studio` log group,
+  the **D13 permissions boundary** the blueprint imposes on every project role it authors — and, since
+  v0.3.x (2026-08-22), the projects bucket `awsds-<env>-smus-projects` (SSE under the project CMK) and the
+  11 per-configuration `CREATE_ENVIRONMENT_FROM_BLUEPRINT` grants. **They declare
   no project environment and never will** — DataZone owns those, and a Terraform resource for one would
   fight the blueprint.
 - **`production/registry/` `[P]`** — written under Stage 7 step 5 and applied a stage early, because Stage 6
@@ -228,8 +233,9 @@ what*, which is D26's whole argument made concrete:
 
 **Two of them apply twice, and the second apply is a different sitting rather than a continuation.** The
 SMUS account association is **console-only — there is no public API** — so the blueprint configurations
-(in each member's `sagemaker/`) and the project profiles (in `governance/`) cannot exist until an
-invitation has been accepted. Both halves ride on `SMUS_ASSOCIATED` in `scripts/tfhygiene/backend.py`, a
+(in each member's `sagemaker/`) and the project profiles (in `governance/`) cannot exist until the
+account association exists (it AUTO-ACCEPTS — org-scoped RAM share, no invitation is ever issued;
+measured 2026-08-21). Both halves ride on `SMUS_ASSOCIATED` in `scripts/tfhygiene/backend.py`, a
 list whose rows are **measurements, not intentions**.
 
 

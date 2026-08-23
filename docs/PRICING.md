@@ -382,9 +382,9 @@ than discoveries:
   wrote "ML experience", a name the blueprint list does not carry) bill exactly like the Studio apps in §8
   (`ml.t3.medium` at 0.081/0.050 USD/h) — the domain adds nothing to the hourly rate.
 
-### Amazon Bedrock — the seven `AmazonBedrock*` blueprints (Stage 6 decision 5, category 1)
+### Amazon Bedrock — the `AmazonBedrock*` blueprints (Stage 6 decision 5: six in category 1, `KnowledgeBase` in 2)
 
-**Named for the console's `AmazonBedrockGenerativeAI` until 2026-08-21**, when the roster reading found that grouping has no API identifier: the domain publishes `AmazonBedrockChatAgent`, `Evaluation`, `Flow`, `Function`, `Guardrail`, `KnowledgeBase` and `Prompt` as seven separate blueprints, and all seven are category 1. The rates below are unaffected — they are the model's, not the blueprint's — but **`AmazonBedrockKnowledgeBase` is NOT among the six**: it adds a shape this section does not price — a knowledge base stands up a vector store, which bills while it exists rather than per token — and it was moved to **category 2** on 2026-08-21 for exactly that reason, with a trigger that names the measurement. Price it when the trigger fires (Lesson 6), not at the first invoice. So category 1 carries **six** `AmazonBedrock*` blueprints, not seven.
+**Named for the console's `AmazonBedrockGenerativeAI` until 2026-08-21**, when the roster reading found that grouping has no API identifier: the domain publishes `AmazonBedrockChatAgent`, `Evaluation`, `Flow`, `Function`, `Guardrail`, `KnowledgeBase` and `Prompt` as seven separate blueprints. The rates below are unaffected — they are the model's, not the blueprint's — but **`AmazonBedrockKnowledgeBase` is NOT among the six**: it adds a shape this section does not price — a knowledge base stands up a vector store, which bills while it exists rather than per token — and it was moved to **category 2** on 2026-08-21 for exactly that reason, with a trigger that names the measurement. Price it when the trigger fires (Lesson 6), not at the first invoice. So category 1 carries **six** `AmazonBedrock*` blueprints, not seven.
 
 **Read 2026-08-21** from `AmazonBedrock/current/{us-west-2,sa-east-1}/index.json`, both published
 `2026-08-20`. The row was **owed before the Stage 6 step 1.4 apply** — the upkeep rule asks for one per
@@ -632,7 +632,9 @@ capabilities, and the `sts:AssumeRoot` sessions it grants (Stage 1a step 6); the
 indirect, one break-glass SMS per privileged session — AWS Budgets (first two budgets), IAM Access Analyzer
 external-access findings, AWS Cost Anomaly Detection, VPC / subnets / route tables / internet gateway /
 security groups / NACLs, **AWS Resource Access Manager (the share itself is not metered; you pay for the
-shared resource)**, S3 gateway VPC endpoints, ECR pull-through cache (you pay only for the stored
+shared resource)**, **AWS CloudFormation** (stacks managing AWS-namespace resources are free — only
+third-party resource-type handler operations bill; it is the deploy mechanism of every SMUS project
+environment since 2026-08-22, one `DataZone-Env-…` stack each), S3 gateway VPC endpoints, ECR pull-through cache (you pay only for the stored
 images), SageMaker Studio **domains** and user profiles at rest (only running apps and home-directory
 storage bill), the first 30 days of GuardDuty per account, and — **read 2026-08-20, and it is a second,
 separate window rather than the same one** — the first 30 days of **Security Hub CSPM** per account, from

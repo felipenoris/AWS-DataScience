@@ -1379,6 +1379,15 @@ covers it — the objective is delivered **for every persona**, and the administ
 deliberately outside it. This is that exemption being leaned on again, in a new place; the question exists
 to keep it visible rather than let it become furniture.
 
+**AMENDED 2026-08-22 — the clause *"delivered for every persona"* was sound about the surfaces this
+entry reasons over and is false as a standing claim.** That evening's off-VPN reading put a Data
+Scientist in **JupyterLab with the tunnel down**: the objective is delivered for the private network
+and for the AWS control plane, and **not** for the Unified Studio portal — the surface a persona
+actually works in. This entry's own decision is untouched (SSM egress is unaffected, and the
+administrative exemption is still open question 17's). The amendment exists because the sentence is
+quotable out of its paragraph, and read that way it is exactly the kind of confident, undated,
+unmeasured claim about another surface that Lesson 37 names.
+
 ## 2026-08-21 — Step 1.3 RAN: the association auto-accepts, the RAM permission is not one the plan could name, and a check failed because the step worked
 
 ### What was done in the console — **the user's hand, their words, verbatim**
@@ -1995,7 +2004,7 @@ id resolved against `awsds-infra-sandbox-1`, not guessed. Nothing else in the pa
 
 ### What was missing, and why it was not a formality
 
-The previous entry answered INT-16 — the portal opened off the tunnel and enumerated both project
+The 1.7 sitting's entry — *"Step 1.7 RAN and answered INT-16…"*, which is no longer the one above, step 5.0's two having landed between — answered INT-16: the portal opened off the tunnel and enumerated both project
 profiles — but the attribution rested on the deny being in those six sets *by code*, plus the
 2026-08-20 read-back. **A deny that was simply not in effect that afternoon would have produced an
 identical portal reading**, and nothing in the observation separated the two. Lesson 24: what separates
@@ -2227,3 +2236,264 @@ their records — are the branch's earlier commits.
 
 Owed after this sitting: **the off-VPN portal reading** (user's browser, the input to `README.md`'s
 item-3 choice), then **passes 3-5 and 5.1** — pass 3 now standing on a measured, working create path.
+
+---
+
+## 2026-08-22 — The off-VPN reading: all three rungs pass on both networks, and the item-3 decision is ripe
+
+*Claude's hand, in the sitting the user reported the reading; the reading itself is the user's, from
+their browser on both networks, and their report is quoted verbatim (Portuguese — the user's chat
+language). Nothing in this entry needs redaction.*
+
+The reading step 1.7 left owed — *create a throwaway project with the tunnel down and record how far
+it gets* — ran in one browser sitting, on both sides of the tunnel. The user's report, whole:
+
+> Fora da VPN ou dentro da VPN o resultado é o mesmo: (a), (b) e (c) funcionam normalmente.
+
+Off VPN or on it, the result is the same: **(a) the project provisions, (b) the space starts, (c)
+JupyterLab is reachable and usable.** There is no error message to quote, and that absence is the
+finding.
+
+### What the reading decides
+
+This is the strong form of the answer — the one that costs something. INT-16's fallback (ii) leaned
+on two facts: the data access is LF-gated, and *the project compute the portal fronts is VPC-only*.
+The second fact is true and does not help. `VpcOnly` governs the **app's** traffic — its ENIs and its
+egress live in the VPC — while the **user's** ingress arrives through the Studio front-end under the
+portal session, a path neither a permission-set deny nor a VPC boundary touches. That was an
+architecture sentence until today; rung (c) working with the tunnel down is what makes it a
+measurement.
+
+So "all user access through the VPN" holds for `README.md`'s items 1 and 2 — the private network and
+the AWS control plane — and **not for the portal's interactive surface, JupyterLab included**, which
+is the data scientist's primary one. The missing measurement that kept the item-3 decision open is
+now taken, and the decision is ripe. It is the user's, not this entry's: **adopt INT-16 fallback
+(i)** — the documented `DenyUserAccessFromUnauthorizedVPCs` shape on the domain execution role,
+re-keyed from `aws:SourceVpc` to the WireGuard EIP, keeping the `aws:userid = *:user-*` third
+condition that spares the catalog service — **or record acceptance** in the threat model (fallback
+(iii)'s discipline). The recommendation on record is (i), because `objectives.md`'s sentence names
+*user access* and this surface is the one a data scientist actually works in.
+
+One reading could not be taken in this sitting: the SSO token had expired when Claude went to read
+the running apps, so **the probe's teardown is recorded as owed-to-confirm rather than as read** —
+whatever the reading provisioned meters by the hour until its space stops and the project is deleted.
+
+### Files
+
+`README.md` item 3 (the full reach, with the ingress/egress distinction), `docs/plan/integrations.md`
+INT-16 (the reading; fallback (ii)'s premise half-measured false; the choice marked ripe), the stage
+file's owed row, `CLAUDE.md`, this log and its index cell.
+
+Owed after this sitting: **the fallback-(i)-or-acceptance decision** (user), **the probe's teardown
+confirmed**, then passes 3-5 + 5.1.
+
+## 2026-08-22 — Can fallback (i) even work? The premise measured, the cost measured, and the reason the VPN exists at all
+
+*Claude's hand. Both readings are Claude's, read-only, on the user's request while the implementation
+strategy was being agreed; the paragraph on device trust is the **user's**, given in chat and recorded
+here because it entered the project on this date and no file held it. Substitution, declared once: the
+two carrier addresses appear as `<carrier address, 21 Aug>` and `<carrier address, 22 Aug>` — they
+locate a person, and the finding is that **they differ from each other and from the Elastic IP**, never
+the literals.*
+
+The entry above recommends **adopting INT-16 fallback (i)** — the `DenyUserAccessFromUnauthorizedVPCs`
+shape on the domain execution role, "re-keyed from `aws:SourceVpc` to the WireGuard EIP". **Nothing in
+the repository said whether that re-keying can work.** A deny on `aws:SourceIp` discriminates only if
+the portal user's address reaches that role's request context, and no file recorded a measurement of
+it. That is a control recommended on an unrecorded premise, so the premise was measured before a line
+of Terraform was written.
+
+### Reading 1 — does the user's address travel? CloudTrail, Data Governance, `awsds-infra-data`
+
+`lookup-events` over `EventSource = datazone.amazonaws.com`, from 2026-08-21. **770 events under
+`awsds-data-studio-domain-execution`**, carrying three distinct source addresses:
+
+| `sourceIPAddress` | Events |
+|---|---|
+| `52.89.212.1` — the WireGuard Elastic IP | 390 |
+| `<carrier address, 22 Aug>` | 246 |
+| `<carrier address, 21 Aug>` | 134 |
+
+**What makes it conclusive is not the list but the distribution in time** (UTC):
+
+| Hour | Off VPN | On VPN |
+|---|---|---|
+| 22 Aug 02h | 134 | 143 |
+| 22 Aug 05h | 89 | 78 |
+| 22 Aug 06h | 157 | 169 |
+
+02h is the 1.7 sitting, 05h/06h the console-contrast sitting — **each with its tunnel-up and
+tunnel-down halves in the same hour, exactly as the user described them, reconstructed from the trail
+without reference to their report.** The end user's browser address reaches the execution role's
+request context, and it changes when the tunnel state changes. **Fallback (i) is mechanically viable.**
+
+Two by-products. **Every session name is `user-<uuid>`** — the shape AWS's third condition
+(`StringLike aws:userid = *:user-*`) selects, predicted by the 2026-08-19 re-read of the isolation page
+and now matched against real sessions. And **no call under that role was service-initiated**
+(`invokedBy` absent on all 770). *(The 691 events with no principal ARN that appeared in the first cut
+are `AWSAccount` — the blueprint-configuration applies from the two members. Not portal traffic.)*
+
+**One link is an identification, not a measurement, and it is the last one:** CloudTrail's
+`sourceIPAddress` and the IAM key `aws:SourceIp` are populated from the same request context, so one
+discriminates if the other does. Sound, but the policy is only measured after it is applied.
+
+**And what the window does not show is where a careless reading would go wrong.** No non-`user-`
+session appeared — which is *not* evidence that the role only ever carries humans. The window is two
+days of a domain that had **no project** for almost all of it; the catalog had nothing to do. The
+`*:user-*` carve-out therefore goes in because AWS wrote it and it costs nothing, **not** because its
+necessity was demonstrated here (Lesson 31: a check inherits the scope of the period it was taken in).
+
+### The trap in taking that reading, because it nearly produced a false correlation
+
+The first correlation was wrong and looked right. `cloudwatch get-metric-statistics` rendered its
+timestamps in **local time (`-03:00`)** while CloudTrail returned **UTC**; lining the two up by the
+hour field put a 14 GB spike inside a portal sitting and made the portal look expensive. The tell was
+structural rather than semantic — **a list requested from midnight came back starting at 21:00** — and
+the fix was to stop reading the hour field and print the offset. Lesson 30, in the shape this project
+keeps meeting it: the tool's rendering is not a property of the world. **Anything correlating
+CloudTrail with a CloudWatch metric in this repository has to normalise the zone first.**
+
+### Reading 2 — what the tunnel actually costs, because a control was about to be rejected on it
+
+`NetworkOut` on `awsds-sandbox-vpn`, hourly, both days (local time, as the API returns it):
+
+| Window | Out |
+|---|---|
+| 1.7 sitting, tunnel-up half (21 Aug 23h) | **9.8 MB** |
+| Console-contrast sitting, tunnel-up half (22 Aug 03h) | **18.6 MB** |
+| Idle, nobody connected | 0.4 MB/h |
+| 21 Aug 14h–16h and 22 Aug 01h–02h | **4.6 + 5.2 + 1.1 + 5.0 + 9.7 GB** |
+
+**The gigabytes are the devbox** — step 5.0's image build and push, which leave through this host
+because `egress/` is `[E]` and down. **A portal sitting is tens of megabytes**: 18.6 MB at 0.09 USD/GB
+is **USD 0.0017**.
+
+Two things that number is not. `NetworkOut` counts every byte leaving the instance and **not every
+byte is priced the same** — the laptop's traffic is internet egress and is charged, the push went to
+ECR **in-region** and by AWS's rules is not; the authoritative figure is the bill, not this metric
+(Lesson 6). And **these sittings had no project and no JupyterLab** — this bounds the portal shell, not
+a working day. It should be re-read once pass 3's project has been used in anger.
+
+**What it settles anyway is the shape of the argument.** The expense is not SageMaker crossing the
+tunnel; it is the **full tunnel carrying everything else**, a 14 GB docker push included. A control was
+about to be traded away against a cost that, measured, sits somewhere else — Lesson 7 exactly.
+
+### Why the VPN exists — the user's context, recorded because no file held it
+
+> In the real environment the VPN is a **DLP** control: only institution-owned computers can connect,
+> and those computers cannot share files out (no removable media, Office 365 DLP). So what a data
+> scientist extracts through SageMaker cannot be forwarded freely. On a personal computer, without
+> those endpoint controls, it could be.
+
+**The consequence for how this design is read: the VPN is a stand-in for device trust, not the control
+itself.** The control lives on the endpoint; an IP allow-list is the cheap way to *observe* that the
+device is a managed one. Left unwritten, a reader learns *"IP allow-list = DLP"*, which is the
+laboratory's compromise rather than the pattern — `institutional-delta.md` gains a row, and it is also
+the sentence Stage 11 needs, where DLP is a requirement in its own right.
+
+**It also sharpens what the off-VPN reading found.** Rung (c) — JupyterLab reachable with the tunnel
+down — is not merely a perimeter gap in the abstract: it is *the* path the DLP argument exists to
+close, available from an unmanaged laptop.
+
+### The implementation strategy, agreed in this sitting
+
+The user's instinct to **isolate the statement in its own file** is kept, and for a second reason
+beyond reversibility: its conditions depend on live infrastructure, which is the same argument that
+already split `shared_denies` from `control_plane_vpn` in `policies-shared.tf`.
+
+**The toggle-by-commenting is not.** The disabled state would be the normal one and nothing would
+record it — the indexes and `./aws/studio.py` would describe a statement that is not attached (Lesson
+5), and each flip would be a commit turning a security control on and off with a diff that does not say
+why. **The undo is `git revert` of one commit whose message says what it does** — strictly easier than
+commenting, and it leaves the repository never claiming a control it is not running. No flag, no dead
+code; `profiles_enabled` remains the precedent if a runtime switch is ever genuinely wanted.
+
+### Files
+
+This entry and its index cell. Two corrections of wording elsewhere in this file are noted at the
+entries they belong to.
+
+Owed: unchanged — **the fallback-(i)-or-acceptance decision** is the user's, now with both its premise
+and its cost measured; the probe's teardown; passes 3-5 and 5.1.
+
+---
+
+## 2026-08-22 — The plan read back against the closed create path: sixty-five findings, one new lesson, and the tag check the merge owed
+
+*Claude's hand, at the user's request ("revisit the stage's findings and review the plan for the next
+stages"). No AWS write, no apply — one read-only battery run earlier in the sitting and a `git
+rev-parse` are the only commands that touched anything outside this repository. No identifiers to
+redact.*
+
+### The pendência first: the post-merge tag check
+
+PR #32 merged (rebase — the branch's commits took new hashes on `main`) and the check the runbook
+prescribes read **identical tree hashes** for `sagemaker-prereqs-v0.3.3:terraform-modules/sagemaker-prereqs`
+and `main:terraform-modules/sagemaker-prereqs`: the module a consumer pins by tag is byte-identical to
+what `main` reviews. The four `v0.3.x` tags are orphaned by the rebase — expected, held by their tags,
+never to be re-cut.
+
+### The sweep
+
+Eight parallel read-only reviewers, each holding the session's measured facts against one disjoint file
+set (the stage file; stages 7-15 + the plan core; decisions + open questions; lessons + `CLAUDE.md`;
+`SMUS.md`/`GOVERNANCE.md`/`AWS_STATE.md`; architecture/conventions/integrations/`README.md`; both
+Terraform trees + `PRICING.md`; `aws/` + this log). **Sixty-five findings, every one verified against
+the session history before an edit was made, all accepted.** They fall in exactly the two classes a
+closed stage produces: **promises already delivered that nobody struck** (the Status row still owing
+5.0's push; verification rows (v), (vii), (xviii), (xx) unannotated; `AWS_STATE.md` still asserting "no
+blueprint configuration and no project profile"; the stages INDEX calling Stage 6 "not started" and
+still carrying the un-re-cut pki prerequisite; INT-12/INT-15/INT-16 residuals; D21's uncrossed
+boundary) and **premises the measurements falsified** (the project CMK "with no consumer today"; the
+projects bucket as "service-created, name `amazon-datazone-*`"; the association's "invitation";
+`lifecycleManagement true`; "SEVEN ENTRIES" over six Bedrock names in both roster copies and the
+PRICING header; the slice count one `[E]` behind; `versions.tf`'s "one resource and one attribute";
+`GENERAL_PLAN`'s unqualified "only public entry point" and both `architecture.md` VPN-only claims —
+qualified with the measurement, the fallback-(i) decision stated as the user's and deferred,
+everywhere).
+
+Three corrections deserve their own line. **`aws/INDEX.md` still described US-2 and US-3's
+pre-2026-08-21 semantics** — visibility as the violation, one direction of judgement — which would have
+sent a future reader to re-file step 1.3's success as a finding (the exact false-FAIL Lesson 31
+removed). **`aws/studio.py`'s header claimed reads it never makes** (`GetDomain`,
+`ListEnvironmentBlueprints`, `ListSpaces`, `ListAppImageConfigs`) and omitted one it does
+(`GetEnvironmentBlueprint`); and **US-8 now emits an explicit `note` for a live account with zero
+datazone roles** — silence there was the same shape that hid the `list-roles` defect until the first
+real role arrived. **Stage 14's onboarding choreography** was brought to the measured order and the
+complete field set (a next member following the old text would have replayed the five-attempt ladder),
+and **open question 21 received a measured input**: `AddPolicyGrant`/`RemovePolicyGrant` are now
+exercised by the estate's own member-slice Terraform, so a blanket Interactive-OU deny on them breaks
+the estate's own applies — and the question's deferred reading is unblocked, a real provisioned role
+existing at last.
+
+### The lessons verdict
+
+Four candidates were weighed against all thirty-eight. **One earned a number — Lesson 39**: what a
+console wizard fills and the authoring API does not require is still required, the validator is the
+deploy AND the teardown (an incomplete object pins its dependents in both directions), and the strict
+validator arrives one act late (`CreateProjectProfile`/`UpdateProjectProfile`'s asymmetry folded in as
+the second face; Lesson 16 cited as the inverse shape). **Two became dated occurrences under standing
+numbers**: the trust defect's absent-event attribution under Lesson 24 (ambiguous text → silent text →
+absent event, documentation as the outside channel) and the `ListRoles` contract omission under
+Lesson 30 (the drop can live in the API's own documented contract; a check no object can falsify).
+The fourth decomposed into 21/32 and was folded into 39's second face rather than numbered.
+
+### Files
+
+Twenty-six: the stage file (13 — the OQ-21 reading's owed-table row and decision 1's `createEmrResourceInTooling` hook were added when the user asked what remained to revisit), `GENERAL_PLAN.md`, `docs/plan/stages/INDEX.md`,
+`stage-14`, `stage-11`, `open-questions.md`, `D21`, `lessons.md` (+39, 24/30 occurrences),
+`CLAUDE.md` (key 39 + the Stage-6 bullets), `SMUS.md` (7 — the category-2 promotion checklist on the same question), `GOVERNANCE.md`, `AWS_STATE.md`,
+`architecture.md` (3), `integrations.md` (4), `README.md` (2), `conventions.md` (2),
+`terraform-live/README.md` (5), both member slices' `data.tf`/`main.tf`, the governance `locals.tf`,
+the module's `versions.tf`/`variables.tf`/`outputs.tf` (comment-only — they reach consumers on the
+next tag, the `ecr-repo` precedent), `PRICING.md` (3, CloudFormation added to §10), `aws/studio.py`,
+`aws/INDEX.md`, this log and its index cell.
+
+**One process note, the entry-17 precedent repeating**: while this sweep ran, the fallback-(i) sitting
+(the entry above) landed its own index-cell update from another session; this entry's first index write
+was refused by its own anchor check against the changed cell, re-read, and re-applied as the
+twenty-first on top of that sitting's twentieth — two hands, one file, nothing lost, for the same
+reason as before: no write happens over a state the writer has not seen.
+
+Owed after this sitting: unchanged — the INT-16 decision (user; its premise and cost now measured by
+the entry above), the probe project's teardown confirmation, passes 3-5 + 5.1.

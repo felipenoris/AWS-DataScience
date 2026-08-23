@@ -15,9 +15,11 @@
 # after a console act this repository cannot perform:
 #
 #   1. terraform apply                       roles, boundary, key (blueprints_enabled = false)
-#   2. (console) request + accept the SMUS account association for this account, then add its
-#      row to SMUS_ASSOCIATED in scripts/tfhygiene/backend.py and regenerate the tfvars
-#   3. terraform apply                       the blueprint configurations
+#   2. (console) request the SMUS account association for this account from the DOMAIN
+#      account's console - it AUTO-ACCEPTS (measured 2026-08-21: org-scoped RAM share, no
+#      invitation) - then add its row to SMUS_ASSOCIATED in scripts/tfhygiene/backend.py
+#      and regenerate the tfvars
+#   3. terraform apply                       the blueprint configurations + the 11 grants
 #
 # STEP 2 IS WHERE verification (iv) IS ANSWERED (is there any API path at all?) and where
 # Lesson 16 applies hardest: record every field the console asks for.

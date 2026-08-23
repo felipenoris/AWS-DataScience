@@ -211,7 +211,11 @@ terraform-live/
 │                         #     configured in this account (`regional_parameters` over the enabled
 │                         #     set - there is no "ML blueprint"; the per-project SageMaker AI
 │                         #     domain comes from `Tooling`, and docs/SMUS.md is the one copy of
-│                         #     the enabled list), the KMS key, and the D13 boundary policy attached
+│                         #     the enabled list - Tooling alone adds S3Location/KmsKeyArn, the
+│                         #     wizard-field set of 2026-08-22), the KMS key, the projects bucket
+│                         #     awsds-<env>-smus-projects, the 11 CREATE_ENVIRONMENT_FROM_BLUEPRINT
+│                         #     grants (layer 2 of the create authorization; layer 1 sits in
+│                         #     governance/), and the D13 boundary policy attached
 │                         #     to the project roles (INT-15). It does NOT declare the
 │                         #     project environments themselves: DataZone owns those, and a
 │                         #     Terraform resource for them would fight the blueprint.
@@ -260,7 +264,9 @@ terraform-live/
 │                         #     writing them directly was cheaper than splitting a module
 │                         #     that assumes a single account. The provider split the old
 │                         #     text predicted is right and stands: domain + IAM through
-│                         #     `aws`, project profiles through `awscc` (the only provider
+│                         #     `aws`, project profiles AND the CREATE_PROJECT_FROM_PROJECT_PROFILE
+│                         #     grants on the root unit (grants.tf, applied 2026-08-22 - layer 1
+│                         #     of the create authorization) through `awscc` (the only provider
 │                         #     with awscc_datazone_project_profile at all).
 │                         #     Account associations to sandbox and development (INT-12)
 │                         #     are CONSOLE-ONLY - no public API - and the blueprint

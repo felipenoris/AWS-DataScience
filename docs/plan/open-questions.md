@@ -58,16 +58,21 @@ what is genuinely still unanswered:
    **INT-15 and 16, added 2026-08-08 by the pre-Stage-1 review, are not integration risks but
    control risks** — whether D13's constraint on execution roles survives blueprint-authored roles (INT-15),
    and whether the VPN restriction reaches the Unified Studio portal at all (INT-16). Each can invalidate an
-   objective stated in [`docs/plan/objectives.md`](objectives.md), so they are answered at Stages 6 and 4 respectively and their outcome is
-   written down either way.
+   objective stated in [`docs/plan/objectives.md`](objectives.md), and **both took their measured answers at
+   Stage 6 on 2026-08-22**: INT-15's first real reading is the boundary PRESENT on the provisioned role —
+   injected via the configuration's write-only field into the stack template, with the qualification that
+   the template's two conditional EMR roles carry none — and INT-16 is answered in the strong form (VPN-only
+   APIs and console, NOT a VPN-only portal: off-VPN the whole interactive surface works, JupyterLab
+   included). The INT-16 closing choice — fallback (i) versus recorded acceptance — is the user's, deferred.
    INT-11's organization halves were **enabled in Stage 1d** (RAM org-wide sharing on 2026-08-14; the LF
    cross-account version already read 4 with `SET_CONTEXT: TRUE`); its Stage 5 half **closed 2026-08-19
    (pass 3, confirmed per account at pass 4 — see the row)**. The credential-vending half of
    `sts:SetContext` against the RCP is **exercised too (2026-08-19, 4d groups A and B)**: the persona's
    cross-account queries `SUCCEEDED` through the version-4 share from two provisioned roles, so vending
-   worked and the RCP left it untouched. What is left is — since D26 —
-   the domain's account associations (INT-12) at Stage 6; its failure mode is silence rather than an
-   error. INT-13 (CodeConnections from the unified domain to the self-hosted GitLab in a private subnet)
+   worked and the RCP left it untouched. The domain's account associations (INT-12)
+   **closed at Stage 6 (2026-08-21): the association AUTO-ACCEPTS** — org-scoped RAM share, no invitation,
+   no clock — and the feared silent-failure mode never materialised; the measured onboarding choreography
+   exercised it end to end. INT-13 (CodeConnections from the unified domain to the self-hosted GitLab in a private subnet)
    is the one with no convenience-preserving fallback: check it while building Stage 7, when GitLab first
    exists.
 8. **How much of the S3 console survives the `aws:SourceVpce` condition** (INT-06, Stage 9). This
@@ -210,7 +215,9 @@ started. **The first one is load-bearing against principle 4.**
     `enableTrustedIdentityPropagationPermissions`; JupyterLab and Visual ETL still resolve through the
     project role either way. **Its documented cost: remote access does not work with TIP enabled** — so the
     grain decision and the remote-VS-Code objective pull against each other, and Stage 6 decision 2 records
-    which yields. **The Stage 5 half is answered (2026-08-18, Stage 5 decision 6, the user's): the grain
+    which yields. **Decision 2 DELIVERED 2026-08-21: TIP locked `"false"`, non-editable, in both project
+    profiles — remote access won, as this item's default predicted; the per-user options stay mapped, not
+    required.** **The Stage 5 half is answered (2026-08-18, Stage 5 decision 6, the user's): the grain
     target is reframed** — entitlement follows the toolset's practice (grants to roles/projects, assumed
     by people and services), and per-user attribution is an *exploration*, not a requirement; the
     objective is met at the role/project grain, stated in `docs/GOVERNANCE.md` §"The grain". What
@@ -487,6 +494,13 @@ length, under item numbers 10-12 that collided with the live items above; the du
     **So the only remaining lever is (b), an SCP on the Interactive OU** naming the verbs that are
     governance rather than project work — `AddPolicyGrant`, `RemovePolicyGrant`,
     `DeleteEnvironmentBlueprintConfiguration`, `GetDomainExecutionRoleCredentials`.
+    **A measured input arrived 2026-08-22 and it halves the menu: `AddPolicyGrant` is now exercised by the
+    estate's OWN Terraform from inside the member accounts** — `sagemaker-prereqs` v0.3.0's `grants.tf`
+    applies the 11 `CREATE_ENVIRONMENT_FROM_BLUEPRINT` grants per member, and `RemovePolicyGrant` is what
+    their destroy calls — so a blanket Interactive-OU deny on those two verbs breaks the estate's own
+    applies, the exact product-break outcome this question reserved for
+    `DeleteEnvironmentBlueprintConfiguration`. At minimum those two are "recorded ceiling, no blanket
+    deny" (or a deny needing a principal condition).
     **(c) AND THE SEQUENCING IN THE SENTENCE THIS REPLACES WAS BACKWARDS.** It said settle *before* 1.4,
     *"after that, service-authored roles exist and the question stops being theoretical"* — which is
     exactly why it must come **after**. The question is whether those four verbs are governance-only or
@@ -495,9 +509,12 @@ length, under item numbers 10-12 that collided with the live items above; the du
     of a `sagemaker/` slice calls, so a deny written blind would break the estate's own teardown.
     Lesson 5 cuts both ways here — an SCP that breaks the product is worse than none — and Lesson 20 says
     a deny nothing exercises reads as coverage.
-    **So: measure at 1.5, decide at 1.6.** After the profiles exist, read the policies the blueprint
-    authored on the project and environment roles (the same reading `US-8` already takes for the
-    boundary) and check whether any of the four verbs appears. None appearing makes the SCP cheap and
+    **So: measure at 1.5, decide at 1.6 — and the measurement UNBLOCKED 2026-08-22**: the first provisioned
+    role exists (`datazone_usr_role_…`, Sandbox 1), so the reading is now performable against a real
+    object. Read the policies the blueprint
+    authored on the project and environment roles (an extension of the reading `US-8` takes for the
+    boundary — and note US-8 itself reads via per-role `get-role` since the same day, because `list-roles`
+    omits the field) and check whether any of the four verbs appears. None appearing makes the SCP cheap and
     safe; any appearing turns the deny into a product break, and the answer becomes "recorded ceiling,
     no deny".
     **This does NOT block step 1.4** — corrected the same day it was written. Nothing outside the member

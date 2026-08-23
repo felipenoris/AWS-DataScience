@@ -19,7 +19,7 @@ output "project_key_arn" {
 }
 
 output "regional_parameters" {
-  description = "The VpcId/Subnets/AZs a blueprint configuration is pointed at - exported so a reader can see what the second apply will send without opening a plan."
+  description = "The VpcId/Subnets/AZs every blueprint configuration is pointed at - exported so a reader can see the network half of what the second apply will send without opening a plan. Tooling alone adds S3Location and KmsKeyArn on top (blueprints.tf, v0.3.2) - not repeated here."
   value = {
     VpcId   = var.vpc_id
     Subnets = join(",", values(var.private_subnet_ids))

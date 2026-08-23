@@ -16,10 +16,10 @@
 #             ./aws/studio.py awsds-infra-data     # only the ones named
 #             python3 aws/studio.py -              # CloudShell, ambient credentials
 #   writes:   aws/output/studio.txt   (untracked - see .gitignore)
-#   reads:    datazone:ListDomains, GetDomain, ListEnvironmentBlueprintConfigurations,
-#             ListEnvironmentBlueprints, ListProjectProfiles, ListProjects,
-#             sagemaker:ListDomains, DescribeDomain, ListApps, ListSpaces, ListImages,
-#             ListAppImageConfigs, iam:ListRoles, GetRole,
+#   reads:    datazone:ListDomains, ListEnvironmentBlueprintConfigurations,
+#             GetEnvironmentBlueprint, ListProjectProfiles, ListProjects,
+#             sagemaker:ListDomains, DescribeDomain, ListApps, ListImages,
+#             iam:ListRoles, GetRole,
 #             sso-admin:ListInstances, ListPermissionSets, DescribePermissionSet,
 #             GetInlinePolicyForPermissionSet, sts:GetCallerIdentity.
 #             It never creates, updates or deletes anything.
@@ -727,6 +727,15 @@ def main(argv: list) -> int:
     # shape made visible.
     for p, rows in role_rows.items():
         if not rows:
+            # An account with no datazone roles yet is UNEXERCISED, not passing - and
+            # silence here is the exact shape that hid this check's list-roles defect
+            # until the first real role arrived (2026-08-22; Lesson 13: absence of a
+            # row reads the same as absence of a measurement).
+            checks.note(
+                "US-8",
+                f"project-role boundary in {p}",
+                "no blueprint-provisioned role exists yet - the check is unexercised here.",
+            )
             continue
         unbounded = [n for n, b in rows if b == "-"]
         wrong = [n for n, b in rows if b != "-" and BOUNDARY_NAME_FRAGMENT not in b]

@@ -371,7 +371,10 @@ residuals, not against fear. **Explanation:** a reading, recorded in the threat 
 
 - **6.1 — [Claude] Walk the threat model's residual column** — the remote-IDE
   channel, design A's raw-IP bypass (if A survived), `UpdateTrail`, the within-persona result visibility
-  (Stage 9's stated limit) — and ask which, if any, an agent would actually close, at what cost, with what
+  (Stage 9's stated limit), **and the portal's off-VPN user ingress (INT-16, measured 2026-08-22 — the
+  strong form: JupyterLab works with the tunnel down; whether it enters this ledger as a recorded
+  acceptance or was closed by fallback (i) is the user's decision, deferred at Stage 6 and read here, not
+  re-taken)** — and ask which, if any, an agent would actually close, at what cost, with what
   new principals (Lesson 17). Recommended answer at lab scale: none — record it and the reasoning in
   `docs/plan/threat-model.md` and `docs/plan/institutional-delta.md` (an institution buys the catalog with
   lineage first, D19 practice v).

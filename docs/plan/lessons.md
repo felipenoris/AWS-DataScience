@@ -331,6 +331,17 @@ lesson can be *recognised* without opening this file; the reasoning that makes e
    deny in the battery, so those two rows are left reporting `note` rather than `ok`, permanently and on
    purpose, with the contrast probe beside them carrying the meaning.
 
+   **A THIRD OCCURRENCE (2026-08-22, Stage 6's trust defect) EXTENDED THE PROGRESSION ONE STEP: ambiguous
+   text → silent text → ABSENT EVENT.** Both SMUS service-role trusts pinned the member account where the
+   documented guard wants the domain account, so the service could never assume them — and the observation
+   channel itself was empty: a cross-account service `AssumeRole` denial leaves **no CloudTrail event in
+   the target account**. There was no wording to read, no exit code to misread, nothing. The outside
+   channel that carried the attribution was the **documentation** — the published trust contract for
+   `AmazonSageMakerProvisioning-<domainAccountId>` names `aws:SourceAccount = the domain account` — read
+   against the deployed trust, Lesson 22's remedy arriving through Lesson 24's rule. The consequence worth
+   acting on: **when the failing principal is another account's service, plan the attribution as a reading
+   from the start**, because the trail on your side will structurally never carry the denial.
+
 25. **A borrowed session outlives the command that needed it, and every later error then describes the
    wrong account.** Stage 1d step 9 had to write past `CTS3PV8`, which exempts `AWSControlTowerExecution`
    alone, so the credentials were assumed from Management and exported into the shell. The write was not
@@ -537,6 +548,17 @@ lesson can be *recognised* without opening this file; the reasoning that makes e
    purpose. **The generalisation this project should keep**: the same shape sits behind an `aws` call that
    fails on the wrong profile, a plan that "cannot express" something the API supports, and a check that
    returns empty — each says something about the reach of the instrument first, and the world second.
+
+   **A SECOND OCCURRENCE (2026-08-22) MOVED THE LIMIT INSIDE THE API'S OWN CONTRACT.** `US-8` read
+   permission boundaries through `iam list-roles` — and `ListRoles` **omits `PermissionsBoundary` by
+   documented contract** (`GetRole`-only, along with `Tags` and `RoleLastUsed`), so the reading was a
+   constant `null` for every role that had one. The check reported the world's first real project role as
+   unbounded while `get-role` showed the boundary in place. Two sharpenings: **reading everything the
+   response returned is not enough — the field contract itself has to be read**, because the drop happens
+   at the API's end, not in the collection code (Lesson 31's "what did the collection drop?" asked one
+   layer deeper); and the defect survived from birth because **no object existed that could falsify the
+   check** — its first exercise with a real role was what exposed it, which is Lesson 13's shape stretched
+   over time.
 
 31. **A check inherits the scope of the account it was written in, and keeps reporting `pass` about that
    one while the design spreads past it.** `DL-6` decides whether Lake Formation's create-defaults still
@@ -818,6 +840,33 @@ lesson can be *recognised* without opening this file; the reasoning that makes e
    cannot be enumerated yet, say *"the console's no-portal option, name unread"* rather than inventing
    the precision. **The tell in review**: a proper noun with no measurement date beside it, in a file
    whose neighbours all carry one — the same shape Lesson 37 describes for verbs, applied to nouns.
+
+39. **What a console wizard fills and the authoring API does not require is still required — and the
+   validator is the deploy and the teardown, so an incomplete object pins its dependents in both
+   directions.** Stage 6's blueprint configurations were created through
+   `PutEnvironmentBlueprintConfiguration`, which accepted objects missing three things the Enable-Tooling
+   wizard always fills: the manage-access role, the projects-bucket `S3Location`, the `KmsKeyArn`. Nothing
+   failed at Put time. Each absence surfaced only when a project tried to **deploy** an environment — and,
+   worse, when a stuck project tried to **delete** one: teardown validates the same fields, so a project
+   born under an incomplete configuration could neither finish nor be removed until the configuration was
+   completed. Five portal attempts paid for the ladder one rung at a time (2026-08-22).
+   **This is Lesson 16 inverted, and the inversion is the content.** Lesson 16's failure mode is a human
+   at a wizard answering fields the plan never named — the wizard as the under-specified surface. Here no
+   wizard was used at all: the API was the lax surface and **the wizard was the de facto completeness
+   specification** — the checklist of what the service will eventually demand. When automating an act a
+   console wizard also performs, enumerate the wizard's fields and treat every one as required, whatever
+   the API's schema says.
+   **The second face, from the same sitting: the strict validator arrives exactly one act late.**
+   `CreateProjectProfile` validated nothing against the blueprint templates — a locked
+   `lifecycleManagement = "true"` sailed through where the template's enum is `ENABLED`/`DISABLED` — and
+   the error arrived from CloudFormation at the first deploy; then `UpdateProjectProfile` validated what
+   Create had not (required template parameters with no default). An authoring API that accepts an object
+   proves only that the object parses; **the act that has to build or redeclare it is the real validator**
+   (Lesson 32's "the side that has to build it is the one that was right", as a lifecycle rule), and the
+   templates were downloadable all along (Lesson 38's discriminator: check locked values against the
+   template, never against prose). **The cost profile is what earns the number**: validation deferred past
+   the authoring act lands on a *destructive or irreversible* act, so the defect is discovered exactly
+   where it is most expensive to hold — a system that cannot deploy AND cannot tear down.
 
 ---
 

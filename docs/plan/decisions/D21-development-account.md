@@ -171,7 +171,9 @@ Studio is a separate claim.
   intention becomes a **control** rather than a convention (Lesson 5).
 - **Files that would be revised:** this one (benefit 1 moves to Sandbox), **D17**, **D18**, **D19**, **D23**
   (`Interactive` collapses onto `Sandboxes`), **D26** and Stage 6 (domain associations become N, not N + 1;
-  the `engineering` profile changes target or disappears), **D35**, Stage 8 (INT-18 loses half) and
+  the `engineering` profile changes target or disappears — **and since 2026-08-22, its profile grant in
+  `data-governance/governance/grants.tf` and the member's `development/sagemaker/` configurations + grants
+  come out with it**), **D35**, Stage 8 (INT-18 loses half) and
   Stage 10.
 - **The cost model barely moves, and an earlier draft of this section said otherwise.** Losing the Studio
   does **not** return Development's interface endpoints: the account keeps running pipeline jobs, those jobs
@@ -206,6 +208,12 @@ If experimentation shows the two accounts are barely distinguishable in practice
 - **The cheap moment has not passed, but it is passing.** Stages 3, 5 and 6 have not run, so today the
   change is prose. After Stage 6 it is a domain, a blueprint and an OU move. *(Written before Stages 3
   and 5 ran; the note below is where the trigger's clock actually started.)*
+  **The boundary was crossed 2026-08-21/22**: the open half now has applied artifacts standing on it —
+  the `engineering` profile with its `CREATE_PROJECT_FROM_PROJECT_PROFILE` grant to the deployment
+  managers (governance `grants.tf`, applied 2026-08-22; **removing that grant is the expected first act
+  if this closes as "nothing"**), and Development's 11 blueprint configurations with their
+  `CREATE_ENVIRONMENT_FROM_BLUEPRINT` grants (`development/sagemaker/`, v0.3.3). Closure now also
+  unwinds those.
 - **Revision trigger:** the test above being asked with **real grants in place** — that is, once Stage 5
   settles what Sandbox and Development may each read — or a first stretch of real work in Development that
   reports nothing Sandbox could not have done.

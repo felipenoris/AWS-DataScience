@@ -46,9 +46,12 @@ locals {
     # actually stops - or when a blueprint here proves to depend on it.
     # Compute.
     "EmrServerless",
-    # The generative-AI surface. SEVEN ENTRIES, NOT ONE: `AmazonBedrockGenerativeAI` is a CONSOLE
-    # GROUPING with no API identifier (measured 2026-08-21 - `list-environment-blueprints` returns
-    # these seven and no aggregate), so decision 5's category 1 is delivered by naming them.
+    # The generative-AI surface. SIX ENTRIES, NOT ONE AND NOT SEVEN: `AmazonBedrockGenerativeAI`
+    # is a CONSOLE GROUPING with no API identifier (measured 2026-08-21 -
+    # `list-environment-blueprints` returns seven `AmazonBedrock*` blueprints and no aggregate),
+    # and SIX of the seven are category 1. AmazonBedrockKnowledgeBase IS DELIBERATELY ABSENT -
+    # category 2 (its vector store bills while it exists); it joins in the commit that enables it
+    # (Lesson 14). Decision 5's category 1 is delivered by naming them.
     "AmazonBedrockChatAgent",
     "AmazonBedrockEvaluation",
     "AmazonBedrockFlow",

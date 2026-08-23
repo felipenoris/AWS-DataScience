@@ -48,7 +48,9 @@ Blueprint for using AWS as a Data Science infrastructure provider.
   and its reason — Stage 3's network in the three VPC accounts (`foundation/` `[P]`; `egress/` and `probes/`
   `[E]`, destroyed between sessions), Stage 4's `sandbox/vpn/`, the tree's first `[D]` slice, **plus Stage 5's
   three `data/` slices — the governed lake in `data-governance/`, and its consumer half in `sandbox/` and
-  `development/`, which are one module (`consumer-data`) applied twice**.
+  `development/`, which are one module (`consumer-data`) applied twice** — and Stage 6's five:
+  `production/registry/`, `data-governance/governance/` (the domain, the profiles and both grant layers),
+  the two member `sagemaker/` slices (one module, `sagemaker-prereqs`), and the `[E]` `sandbox/buildbox/`.
 - `terraform-modules/` — the reusable modules, consumed **by git tag, never by branch**. `terraform-live/`
   composes; it does not define. The first six arrived with Stages 3-4: `vpc`, `vpc-egress`, `s3-bucket`,
   `kms-key`, `iam-role`, `wireguard`; `consumer-data` is Stage 5's. Nesting started earlier than it looks —
@@ -131,11 +133,11 @@ Blueprint for using AWS as a Data Science infrastructure provider.
 
 ---
 
-## Connecting — the tunnel is the way in, and after Stage 4 step 8.3 it is the only one
+## Connecting — the tunnel is the way in, and for the network and the control plane it is the only one
 
 A WireGuard tunnel into the VPN home account (D4, Stage 4). It is worth being precise about what it
-buys, because it is three different guarantees held by three different mechanisms, and only the first
-two are proven:
+buys, because it is three different guarantees held by three different mechanisms — the first two are
+proven, and the third was measured NOT to hold (item 3 below):
 
 1. **The private network, by construction.** GitLab, Pages and the private hosted zones have no
    public address at all. A laptop without the tunnel does not fail to reach them — for that laptop they
@@ -150,10 +152,23 @@ two are proven:
    an IAM call, and a permission-set condition does not gate that sign-in: off the tunnel, a Data
    Scientist session opened the portal and enumerated its project profiles **in the same sitting in
    which the AWS console refused `logs:DescribeLogGroups` *with an explicit deny in an identity-based
-   policy***. So **"all user access through the VPN" is items 1 and 2 — the private network and the
-   AWS control plane — and not item 3.** Narrowing it further is a decision nobody has taken yet, not
-   an omission: it means adopting AWS's `DenyUserAccessFromUnauthorizedVPCs` shape on the domain
-   execution role, re-keyed on the WireGuard address (INT-16 fallback (i)).
+   policy***. **And the reach is the full interactive surface, not just the lobby (the off-VPN
+   reading, 2026-08-22 evening): with the tunnel down a Data Scientist created a project, started its
+   space and worked in JupyterLab — identically to on-VPN.** `VpcOnly` does not narrow this, and the
+   reason is worth one sentence: it governs the *app's* traffic — the ENIs and egress live in the VPC —
+   while the *user's* ingress arrives through the Studio front-end under the portal session, a path
+   neither a permission-set deny nor a VPC boundary touches. So **"all user access through the VPN" is
+   items 1 and 2 — the private network and the AWS control plane — and not item 3.** Narrowing it
+   further is a decision nobody has taken yet, not an omission — and its missing measurement is now
+   taken: it means adopting AWS's `DenyUserAccessFromUnauthorizedVPCs` shape on the domain
+   execution role, re-keyed on the WireGuard address (INT-16 fallback (i)). **That re-keying is
+   viable and was measured before being recommended**: the portal's calls run under the domain
+   execution role and CloudTrail records them carrying the *end user's* address — the Elastic IP with
+   the tunnel up, the carrier's with it down, in the same hour — so a condition there discriminates
+   where a permission-set one cannot. **And the reason any of this matters is not the tunnel**: in a
+   real institution the VPN stands in for *device trust*, the data-leakage controls living on the
+   managed endpoint (see [`docs/plan/institutional-delta.md`](docs/plan/institutional-delta.md)), so
+   item 3's gap is an unmanaged laptop reaching the surface those controls exist to bound.
 
 **The procedure is [`docs/plan/runbooks/vpn.md`](docs/plan/runbooks/vpn.md) Part C and it is not
 repeated here** — the five values a config needs, where each comes from, the three checks that prove

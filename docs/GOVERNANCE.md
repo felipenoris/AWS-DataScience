@@ -83,7 +83,11 @@ exists once something is written under it):
 section). One uniform alias pattern, `alias/awsds-<env>-data`: the lake's five buckets under
 `alias/awsds-data-data` in Data Governance, each consumer's derived zone under
 `alias/awsds-sandbox-data` and `alias/awsds-dev-data`; Production's arrives with Stage 9
-(`alias/awsds-prod-data`). The `tfstate` keys (Stage 2) and the PKI key (D36) are separate objects on
+(`alias/awsds-prod-data`). The `tfstate` keys (Stage 2), the PKI key (D36) **and each Interactive
+account's PROJECT CMK (`alias/awsds-<env>-project`, Stage 6 — the SMUS projects bucket
+`awsds-<env>-smus-projects` and the blueprint-provisioned volumes sit under it, deliberately, since
+2026-08-22; its key policy carries the documented SMUS statement set and is
+`terraform-modules/sagemaker-prereqs/kms.tf`'s)** are separate objects on
 purpose — "the account's data CMK" is one key per account for *data*, not a merger of every key in the
 account (a key that also had to serve Terraform state and every other job in the account could not
 express "who may read derived data", which is D31's whole argument; the lake's own `logs` bucket *is*
