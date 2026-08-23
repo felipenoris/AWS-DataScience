@@ -79,6 +79,7 @@ locals {
 # the forbidden one are equally allowed here: the security group must not be part of what
 # distinguishes them.
 resource "aws_security_group" "int09" {
+  # checkov:skip=CKV_AWS_382:the egress is scoped to two PRIVATE ranges and never to 0.0.0.0/0 - the rule fires on cidr_blocks it CANNOT RESOLVE, not on an open one (measured 2026-08-22 by contrast: the same block with a resolvable default PASSES, and only the default was removed). peer_cidrs is built by scripts/tfhygiene/backend.py from the closed CIDRS table - four RFC1918 /16s, and an account outside PROBE_PEERS raises rather than defaults - while local.vpc_cidr is foundation/ remote state; neither is literal in a .tf file, which is exactly why the scanner sees nothing
   name        = "awsds-${var.env}-probe-int09"
   description = "Stage 3 INT-09 probe - egress to the peer VPC and to the resolver of this VPC"
   vpc_id      = local.vpc_id
