@@ -126,7 +126,7 @@ module "egress" {
     "extensions.duckdb.org",
 
     "pypi.org",
-    "files.pythonhosted.org",
+    "files.pythonhosted.org", "dualstack.python.map.fastly.net",
 
     "install.julialang.org",
     "julialang-s3.julialang.org",
