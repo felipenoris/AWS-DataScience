@@ -22,7 +22,7 @@ data "terraform_remote_state" "foundation" {
 
 module "egress" {
   # checkov:skip=CKV_TF_1:pinned by git TAG by convention (conventions §6, Stage 3 step 1.1a) - a repository-internal tag only the repo owner can move
-  source = "git::git@github.com:felipenoris/AWS-DataScience.git//terraform-modules/vpc-egress?ref=vpc-egress-v0.2.1"
+  source = "git::git@github.com:felipenoris/AWS-DataScience.git//terraform-modules/vpc-egress?ref=vpc-egress-v0.3.0"
 
   env    = var.env
   vpc_id = data.terraform_remote_state.foundation.outputs.vpc_id
@@ -61,12 +61,83 @@ module "egress" {
   extra_services = ["sagemaker.api", "sagemaker.runtime", "sagemaker.studio", "datazone"]
 
   # DESIGN A's CONTROL (Stage 6 step 4.1) - the allow-list that makes the NAT "limited
-  # internet" instead of internet. The LIST is not here: it lives once, in the module's
-  # dns_firewall_allow_domains default, so the two Interactive accounts cannot drift and so
-  # the instruction about what must stay OFF it is written where somebody adding a name will
-  # read it (Lesson 33). The module refuses to enable itself under egress_mode = "B", where a
-  # name filter would be a control over a route that does not exist.
+  # internet" instead of internet. The module refuses to enable itself under
+  # egress_mode = "B", where a name filter would be a control over a route that does not
+  # exist.
   dns_firewall = true
+
+  # THE ALLOW-LIST ITSELF, and every name on it was MEASURED before it was written
+  # (2026-08-23, step 4.3's session). The rule the module's dns-firewall.tf states and this
+  # list obeys: DNS Firewall evaluates the WHOLE RESOLUTION CHAIN, so a name belongs here
+  # only if its chain ends inside this list. `dig +short <name>` is the check - a line
+  # ending in a dot is a hop to somewhere that also has to be listed.
+  #
+  # WHAT IS DELIBERATELY ABSENT IS THE LARGER HALF, and it is not an omission: the ARTIFACT
+  # host of nearly every ecosystem. files.pythonhosted.org, index/static.crates.io,
+  # static.rust-lang.org, sh.rustup.rs, pkg.julialang.org, cran/cloud.r-project.org,
+  # deb.debian.org, archive/security.ubuntu.com and public.ecr.aws are each a CNAME into
+  # Fastly, CloudFront, Cloudflare or Global Accelerator. Listing them changes nothing;
+  # listing the CDN namespaces would work and would END this control, because those
+  # namespaces are self-service - anyone can publish into them in minutes. So pip
+  # downloads, cargo, rustup, CRAN, apt and ECR Public have NO path under design A. That is
+  # the measured input D5 exists to receive (step 6.1), not a gap to close by widening this
+  # list.
+  dns_firewall_allow_domains = [
+    # AWS itself, and a wildcard rather than names because the regional service endpoints
+    # cannot be enumerated and are AWS's own namespace. Without it every SDK call over the
+    # NAT fails to resolve: design A is "limited internet", not "no AWS".
+    "amazonaws.com", "*.amazonaws.com",
+
+    # SageMaker Unified Studio's own control plane, and it is NOT under amazonaws.com - it
+    # sits on the `aws` TLD, which the wildcard above does not reach, and the `datazone`
+    # interface endpoint does not cover it either (its private DNS is the amazonaws.com
+    # spelling). Measured BLOCKED 52 times in one session before it was added: the estate's
+    # own workbench refused by the estate's own firewall.
+    "datazone.${var.region}.api.aws",
+
+    # PyPI's INDEX, and only the index. Resolution and metadata work; the download does not,
+    # because files.pythonhosted.org is Fastly. A half path, listed knowingly - `uv pip
+    # install` finds a version and dies fetching the wheel, and this line is the reason.
+    "pypi.org",
+
+    # conda - a COMPLETE path. Both channel hosts answer with A records.
+    "conda.anaconda.org",
+    "repo.anaconda.com",
+
+    # Julia - a COMPLETE path, and the one entry here that needs its second hop named:
+    # us-west.pkg.julialang.ORG is a CNAME to us-west.pkg.julialang.NET, so both are listed
+    # and the chain lands on a name this list carries. Pkg's DEFAULT server,
+    # pkg.julialang.org, is Fastly and is deliberately not here - point Pkg at the regional
+    # one (JULIA_PKG_SERVER) or it has no path at all.
+    "us-west.pkg.julialang.org",
+    "us-west.pkg.julialang.net",
+    "storage.julialang.net",
+
+    # uv and ruff - a COMPLETE path: the installer host answers with A records.
+    "releases.astral.sh",
+
+    # DuckDB - a COMPLETE path. Extensions are fetched at FIRST QUERY, from inside the
+    # notebook process and long after any install step, so a miss here surfaces as a broken
+    # query rather than a broken install.
+    "extensions.duckdb.org",
+    "blobs.duckdb.org",
+
+    # The internal zones REACHABLE FROM THIS ACCOUNT, and the set differs per account, which
+    # is half of why this list moved out of the module (v0.3.0). DNS Firewall is evaluated by
+    # the VPC resolver, which is also what answers a private hosted zone - so an unlisted
+    # internal name is blocked exactly like an internet one, and GitLab stops resolving at
+    # Stage 7. sandbox.internal is this account's own; prod.internal and pages.internal are
+    # Production's, reaching here through the cross-account associations of Stage 3 step 4.4.
+    "sandbox.internal", "*.sandbox.internal",
+    "prod.internal", "*.prod.internal",
+    "pages.internal", "*.pages.internal",
+  ]
+
+  # ONE REACH THIS LIST HAS THAT ITS NAME DOES NOT SUGGEST: the rule group associates to the
+  # VPC ID, not to a route table, so it also filters sandbox/buildbox/ in the isolated tier -
+  # whose egress leaves through the WireGuard NAT instance and never touches this slice's
+  # NAT. public.ecr.aws is one of the five things that host pulls and is NOT on the list
+  # above, for the CDN reason; a build run while this slice is up will fail on it.
 
   # DELIBERATELY ABSENT, and this is the record that makes it a control rather than an
   # oversight (Lesson 5; Stage 6 decision 3, 2026-08-19): Athena Spark's three session
