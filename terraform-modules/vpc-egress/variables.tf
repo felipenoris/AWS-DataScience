@@ -113,7 +113,8 @@ variable "dns_firewall_allow_domains" {
   # Flattening is a switch its owner can turn off without announcing it; the day one does,
   # that name starts answering with a CNAME, the chain leaves the list, and the notebook
   # breaks in a way that looks like this estate's fault. It is a live failure mode, not a
-  # hypothetical - docs/AWS_STATE.md EXC-05 carries the symptom and the triage, and the
-  # diagnostic is the same dig, re-run.
+  # hypothetical - docs/AWS_STATE.md EXC-05 carries the symptom and the triage, and
+  # ./aws/dns-allowlist.py is that dig re-run over both lists, on demand and with no AWS
+  # session needed.
   default = []
 }
