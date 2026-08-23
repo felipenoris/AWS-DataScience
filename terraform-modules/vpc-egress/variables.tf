@@ -66,7 +66,7 @@ variable "dns_firewall" {
 }
 
 variable "dns_firewall_allow_domains" {
-  description = "The allow-list, and THE ONE COPY OF IT (Lesson 33): both Interactive slices enable the firewall and neither carries a list, so the two cannot drift. Read the note in dns-firewall.tf before editing."
+  description = "The allow-list, and THE ONE COPY OF IT (Lesson 33): both Interactive slices enable the firewall and neither carries a list, so the two cannot drift. Write names WITHOUT a trailing dot - dns-firewall.tf canonicalises to the fully-qualified form the API stores, so the dot is never one more thing to remember (Lesson 14). Read the note in dns-firewall.tf before editing."
   type        = list(string)
 
   # WHAT IS ON THE LIST, BY REASON RATHER THAN BY NAME - the names go stale, the reasons do
