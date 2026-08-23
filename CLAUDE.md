@@ -189,7 +189,8 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
 - **Stage 2 DONE (2026-08-16), all nine verifications answered.** A state bucket per Terraform-managed
   account (`prod` carries D36's 2nd key); `identity/sso/` and `identity/org-policies/` (**adopted, none
   created**). Delegation narrowed to `InfrastructureAccess`, hand-applied, **out of Terraform**
-  (`INV-15`). D11: `scripts/tfhygiene/layers.py` + `make up`/`down`/`status`/`slices`.
+  (`INV-15`). D11: `scripts/tfhygiene/layers.py` + `make up`/`down`/`status`/`slices`; the
+  **`ENV` list is `slices.py envs` alone** — `make help` and the missing-ENV guard read it (2026-08-23).
 - **Gates, no CI:** `make check` (offline), `make check-ou` (session), `make check-docs` — red on
   pre-St.2 prose, outside the commit gate. `check-identifiers.py` in both: **no account id or e-mail in a
   tracked file**; redact to `<The Account Name>`/`<that user's role>`, declared once per entry.
