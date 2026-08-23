@@ -101,7 +101,7 @@ module "egress" {
   # list.
   dns_firewall_allow_domains = [
 
-    "*",
+    #"*",
 
     # AWS itself, and a wildcard rather than names because the regional service endpoints
     # cannot be enumerated and are AWS's own namespace. Without it every SDK call over the
@@ -115,32 +115,29 @@ module "egress" {
     # own workbench refused by the estate's own firewall.
     "datazone.${var.region}.api.aws",
 
-    # PyPI's INDEX, and only the index. Resolution and metadata work; the download does not,
-    # because files.pythonhosted.org is Fastly. A half path, listed knowingly - `uv pip
-    # install` finds a version and dies fetching the wheel, and this line is the reason.
-    "pypi.org",
+    "public.ecr.aws",
+    "archive.ubuntu.com",
+    "security.ubuntu.com",
 
-    # conda - a COMPLETE path. Both channel hosts answer flat, so each chain is one name.
-    "conda.anaconda.org",
-    "repo.anaconda.com",
-
-    # Julia - a COMPLETE path, and the one entry here that needs its second hop named:
-    # us-west.pkg.julialang.ORG is a CNAME to us-west.pkg.julialang.NET, so both are listed
-    # and the chain lands on a name this list carries. Pkg's DEFAULT server,
-    # pkg.julialang.org, is Fastly and is deliberately not here - point Pkg at the regional
-    # one (JULIA_PKG_SERVER) or it has no path at all.
-    "us-west.pkg.julialang.org",
-    "us-west.pkg.julialang.net",
-    "storage.julialang.net",
-
-    # uv and ruff - a COMPLETE path: the installer host answers flat.
+    "astral.sh",
     "releases.astral.sh",
 
-    # DuckDB - a COMPLETE path. Extensions are fetched at FIRST QUERY, from inside the
-    # notebook process and long after any install step, so a miss here surfaces as a broken
-    # query rather than a broken install.
-    "extensions.duckdb.org",
     "blobs.duckdb.org",
+    "extensions.duckdb.org",
+
+    "pypi.org",
+    "files.pythonhosted.org",
+
+    "install.julialang.org",
+    "julialang-s3.julialang.org",
+    "pkg.julialang.org",
+    "storage.julialang.net",
+    "us-west.pkg.julialang.org",
+
+    "index.crates.io",
+    "sh.rustup.rs",
+    "static.crates.io",
+    "static.rust-lang.org",
 
     # The internal zones REACHABLE FROM THIS ACCOUNT, and the set differs per account, which
     # is half of why this list moved out of the module (v0.3.0). DNS Firewall is evaluated by
