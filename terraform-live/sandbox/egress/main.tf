@@ -101,7 +101,7 @@ module "egress" {
   # list.
   dns_firewall_allow_domains = [
 
-    #"*",
+    "*",
 
     # AWS itself, and a wildcard rather than names because the regional service endpoints
     # cannot be enumerated and are AWS's own namespace. Without it every SDK call over the
