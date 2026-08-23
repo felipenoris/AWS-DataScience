@@ -342,6 +342,22 @@ lesson can be *recognised* without opening this file; the reasoning that makes e
    acting on: **when the failing principal is another account's service, plan the attribution as a reading
    from the start**, because the trail on your side will structurally never carry the denial.
 
+   **AMENDED 2026-08-23 — the same shape without a harness in it, and the instrument was a LOG.** Stage 6
+   step 4.3's session found the SMUS notebook unable to resolve `files.pythonhosted.org` while
+   `pythonhosted.org` answered. The Resolver query log was read for attribution and reported, for every
+   failing name, `BLOCK` against **the queried name** with the catch-all list id — which reads, exactly
+   and only, as *"that name is not on the allow-list"*. It was not: the name was on the list, and what
+   the catch-all had matched was a **CNAME target one hop further down**, a name the log never prints. The
+   log also populates no `firewall_rule_action` on an ALLOW, so the allowed names looked un-evaluated
+   too — two ambiguities in one field, pointing the same wrong way. **A correct hypothesis was abandoned
+   on the strength of that reading**, which is this lesson's cost measured on its own terms. The
+   discriminator was again not a better reading but a different question: a **paired probe under an
+   identical rule shape**, run from a second host in the same VPC — `blobs.duckdb.org` (A records) against
+   `index.crates.io` (CNAME to a CDN), both under a wildcard of the same depth. Same rule, opposite
+   outcomes, one variable. **The general form for any log: a field naming the object you asked about is
+   not evidence about the object that matched**, and when a system resolves through a chain, indirection,
+   or redirect, the log will name the entry point every time.
+
 25. **A borrowed session outlives the command that needed it, and every later error then describes the
    wrong account.** Stage 1d step 9 had to write past `CTS3PV8`, which exempts `AWSControlTowerExecution`
    alone, so the credentials were assumed from Management and exported into the shell. The write was not
@@ -840,6 +856,19 @@ lesson can be *recognised* without opening this file; the reasoning that makes e
    cannot be enumerated yet, say *"the console's no-portal option, name unread"* rather than inventing
    the precision. **The tell in review**: a proper noun with no measurement date beside it, in a file
    whose neighbours all carry one — the same shape Lesson 37 describes for verbs, applied to nouns.
+
+   **AMENDED 2026-08-23 — the more dangerous variant is a MECHANISM read out of prose and written down as
+   a measurement.** While extending the DNS Firewall allow-list on 2026-08-22, the question *does
+   `*.name` reach a nested subdomain* was settled from a documentation summary and then recorded — in a
+   module comment, a stage step, `REFERENCES.md` and a log entry — with the words *"measured rather than
+   assumed"*. The claim happened to be **true**, which is what made it costly: it read as a closed
+   question, so the next reader had no reason to ask what else governs a match, and the thing that
+   actually governed it (the whole resolution chain is evaluated, so a listed name whose CNAME target is
+   unlisted is blocked) went unexamined for a day while the fix it produced did not work. An identifier
+   read out of prose at least stays a name; a *rule* read out of prose becomes the recorded explanation
+   for behaviour nobody has watched. **The tell is the word, not the content:** "measured" is reserved
+   for something this project ran, and a doc reading that says so is worse than an admitted guess,
+   because a guess invites the measurement and a false measurement forbids it.
 
 39. **What a console wizard fills and the authoring API does not require is still required — and the
    validator is the deploy and the teardown, so an incomplete object pins its dependents in both

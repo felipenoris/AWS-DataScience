@@ -63,14 +63,19 @@ route and not of the names** — see the last coupling below.
   like a broken package mirror. `up` starts it; `down` does **not** stop it (it is `[D]` and shared).
 - **It must not coexist with `sandbox/probes/`.** That slice's perimeter probe measures the isolated
   tier's *absence* of a default route; this one adds one. `buildbox.py` refuses rather than warns.
-- **`egress/` is irrelevant to this host's ROUTE and not to its NAME RESOLUTION** (measured 2026-08-22).
-  Design A's DNS Firewall rule group associates to the **VPC id**, not to a route table, so while
-  `egress/` is up every lookup from this host is judged by an allow-list written for the SageMaker
-  subnets — and `public.ecr.aws` and `static.rust-lang.org`, two of the five things a build pulls, were
-  **not on it** until `vpc-egress-v0.2.1`. Never yet exercised: no build has run while `egress/` was up.
-  **The symptom is the giveaway** — a blackholed route hangs, a blocked name returns *no such host*
-  immediately, and the rule action is in `/awsds/sandbox/dns-firewall`. The list is
-  `terraform-modules/vpc-egress/variables.tf`, and its own plan never converges (`EXC-04`).
+- **`egress/` is irrelevant to this host's ROUTE and hostile to its NAME RESOLUTION** — so **build with
+  `egress/` DOWN**, which is the normal state anyway (measured 2026-08-23). Design A's DNS Firewall rule
+  group associates to the **VPC id**, not to a route table, so while `egress/` is up every lookup from
+  this host is judged by an allow-list written for the SageMaker subnets — and `public.ecr.aws` and
+  `static.rust-lang.org`, two of the five things a build pulls, are **deliberately off it**: both are
+  CNAMEs into a shared CDN, DNS Firewall evaluates the whole chain, and the only thing that would make
+  them resolve is allowing the CDN namespace, which ends the control (Stage 6 step 4.3). **Adding the
+  names does not fix it, and the list is not the place to try.** Never yet exercised: no build has run
+  while `egress/` was up. **The symptom distinguishes the two failures** — a blackholed route hangs, a
+  blocked name returns *no such host* immediately — and the rule action is in
+  `/awsds/sandbox/dns-firewall`, where the block is reported against the **queried** name even when a
+  CNAME target is what matched. The list is `terraform-live/sandbox/egress/main.tf`, and its own plan
+  never converges (`EXC-04`).
 
 ## U. Up
 

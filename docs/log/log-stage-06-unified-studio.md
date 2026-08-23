@@ -2500,6 +2500,12 @@ the entry above), the probe project's teardown confirmation, passes 3-5 + 5.1.
 
 ## 2026-08-22 — The DNS Firewall allow-list: six domains it was missing, the wildcard rule measured, and the diff that will never converge
 
+> **SUPERSEDED IN ITS DIAGNOSIS BY THE 2026-08-23 ENTRY BELOW, and left standing as evidence.**
+> The six domains were necessary and nowhere near sufficient: what governs a match is the whole
+> CNAME chain, not the name. And the wildcard-depth claim below says *"measured rather than
+> assumed"* when its source was documentation — true, but not measured, and that wording is what
+> closed the question for a day (Lesson 38, 2026-08-23 occurrence).
+
 *Both hands. The eighteen hostnames are the **user's**, brought back from a working session and taken
 as given; the coverage reading, the wildcard measurement, the release and the apply are Claude's, on the
 user's request ("revise a whitelist em vpc-egress variables acrescentando os domínios desses sites") and
@@ -2620,3 +2626,118 @@ tag, `vpc-egress-v0.2.1`.
 Owed after this sitting: unchanged — the INT-16 decision, the probe project's teardown confirmation,
 passes 3-5 + 5.1. Plus one new and small: **`development/egress/` carries the bump in code and not in the
 account.** It is down, and picks `v0.2.1` up on its next `make up`.
+
+## 2026-08-23 — Step 4.3 ran: the allow-list was never a list of names, and a correct hypothesis was abandoned on a log that named the wrong object
+
+*Both hands, and the split matters for this one. The two terminal transcripts — `uv pip install pandas`
+and `apt install htop` from a JupyterLab terminal in a real project — are the **user's**, pasted and
+taken verbatim; so is the SSO session that made the rest possible, the authorisation to drive the
+buildbox over SSM, and the apply. The resolver readings, the query-log analysis, the probes and the
+redesign are Claude's. No identifiers to redact.*
+
+### What the session showed, and it was two tools with one cause
+
+`uv pip install pandas` **resolved the index, found `pandas==3.0.5`, and died fetching the wheel** from
+`files.pythonhosted.org` (*"dns error … Name or service not known"*), while `wget pythonhosted.org` in
+the same shell succeeded. `apt install htop` died the same way on `archive.ubuntu.com`. `getent hosts
+public.ecr.aws` and `curl https://static.rust-lang.org/` returned nothing — and `public.ecr.aws` had
+been added to the allow-list the previous day, as an **exact** entry.
+
+### The wrong turn, recorded because it is the useful part
+
+The first reading was the right one: resolving each failing name showed a **CNAME leaving the
+allow-listed domain** — `files.pythonhosted.org` → Fastly, `public.ecr.aws` → Global Accelerator,
+`archive.ubuntu.com` → Cloudflare — while every name that worked answered with A records directly.
+
+Then the Resolver query log was read for attribution, and **it appeared to refute that**. For every
+failing name the log reported `BLOCK` against **the queried name** with the catch-all domain list id,
+which reads as *"this name is not on the allow-list"*. `checkip.amazonaws.com` appeared blocked although
+`*.amazonaws.com` has been listed since the beginning; `public.ecr.aws` appeared blocked 75 minutes after
+its own list finished updating (`DomainCount 38`, `Status COMPLETE`). And in **881 records there was not
+one `ALLOW`** — the names that worked carried no `firewall_rule_action` at all. On that reading the
+conclusion was that the ALLOW rule matched nothing and the hypothesis was dropped.
+
+**It was the log naming the wrong object.** The block was caused by a CNAME target one hop down, a name
+the log never prints; and an ALLOW match populates no `firewall_rule_action` in log version `1.100000`,
+so allowed names looked un-evaluated. Two ambiguities in one field, both pointing the same wrong way.
+Recorded as a dated occurrence under **Lesson 24** — the discriminator cannot be a better reading of the
+answer.
+
+### What settled it: a paired probe, from a second host, under one rule shape
+
+Run from the buildbox over SSM (`AWS-RunShellScript`, the fenced write API, user-authorised), against
+entries chosen so that only one variable differed:
+
+| Entry on the list | Name queried | Chain | Result |
+|---|---|---|---|
+| `*.duckdb.org` | `blobs.duckdb.org` | A records | **RESOLVED** |
+| `*.astral.sh` | `releases.astral.sh` | A records | **RESOLVED** |
+| `*.crates.io` | `index.crates.io` | → Fastly | **FAILED** |
+| `*.r-project.org` | `cloud.r-project.org` | → CloudFront | **FAILED** |
+
+Same rule, same wildcard depth, opposite outcomes, one variable. **DNS Firewall evaluates the whole
+resolution chain.** The one apparent counterexample was checked rather than waved through:
+`julialang.net` failed because its apex **has no A record at all** — ordinary DNS, not the firewall.
+
+### What that means for design A, which is the finding rather than the fix
+
+Every ecosystem serves its **artifacts** from a shared CDN. Of the twenty-one hostnames the four required
+ecosystems actually use, **fourteen are CNAMEs leaving any plausible allow-list**. So the list carried
+every index and no download path — `pip`, `cargo`, `rustup`, CRAN, `apt` and ECR Public all broken — and
+the only fix is to allow `*.fastly.net`, `*.cloudfront.net`, `*.cdn.cloudflare.net`, `*.fastlydns.net`
+and `*.awsglobalaccelerator.com`, which are **self-service**: anyone can publish into them in minutes.
+Allowing them ends the control. **This is step 6.1's input, not this step's problem to solve.**
+
+### One finding that was the estate blocking itself
+
+`datazone.<region>.api.aws` — **52 blocked lookups in one session**. SMUS's own control plane, on the
+`aws` TLD that no `*.amazonaws.com` wildcard reaches, and uncovered by the `datazone` interface endpoint,
+whose private DNS is the `amazonaws.com` spelling. Two more of the same shape, left alone: `time.aws.com`
+(54) and `cdn.amazonlinux.com` (2).
+
+### The redesign, on the user's instruction
+
+`vpc-egress-v0.3.0`: the module default becomes **empty**, and the ALLOW **rule** is gated on the list
+having content — a caller declaring nothing now gets no allow rule, the catch-all alone, and NXDOMAIN on
+every lookup. Each Interactive slice declares its own set, which the two accounts already needed:
+Sandbox carries `sandbox.internal`, Development authors no zone and carries only Production's two. The
+cost side is written into the module: two lists can now diverge and nothing compares them.
+
+**Applied to Sandbox 2026-08-23** — `0 added, 2 changed, 0 destroyed`, `buildbox` and `probes` planned
+`No changes` first because `make up` applies all three and the build host takes its AMI from an SSM
+parameter. **18 names, read back `COMPLETE` from the API.** `development/egress/` has the bump in code
+only; its slice is down.
+
+### The verification, behavioural rather than read-back
+
+From inside the VPC, **23 of 23 as designed, nothing unexpected**. Resolving: `datazone.<region>.api.aws`,
+both conda hosts, `us-west.pkg.julialang.org`, `storage.julialang.net`, `releases.astral.sh`, both DuckDB
+hosts, `pypi.org`, `sts.<region>.amazonaws.com`. Blocked: the eight CDN-backed artifact hosts, the
+`google.com` control, and the five entries removed for serving no path (`crates.io`, `ubuntu.com`,
+`debian.org`, `r-project.org`, `duckdb.org`).
+
+**`us-west.pkg.julialang.org` resolving is the strongest single result.** It is a CNAME to
+`us-west.pkg.julialang.net`, and it works *because both are on the list* — the chain closing inside the
+allow-list, which is the mechanism confirmed in the positive direction rather than only through failures.
+Julia therefore has a working path, provided `JULIA_PKG_SERVER` points at the regional server; the
+default `pkg.julialang.org` is Fastly.
+
+### Files
+
+Ten plus this log. Code: `terraform-modules/vpc-egress/variables.tf` and `dns-firewall.tf` (v0.3.0 — the
+empty default, the gated rule, the chain rule written where a name gets added), both Interactive
+`egress/main.tf` (the lists, and `datazone.${var.region}.api.aws` — step 9.1's gate caught the region
+literal, and the interpolation is better code). Docs: `stage-06` (4.1 rewritten, 4.3 recorded as run, the
+Status row), `architecture.md` §4.3 (design A's weakness restated — *against accident it does not work
+either*), `REFERENCES.md`, `lessons.md` (occurrences under **24** and **38**), `CLAUDE.md`,
+`sandbox/buildbox/main.tf` and `runbooks/buildbox.md` (**build with `egress/` down** — while it is up
+this host cannot pull `public.ecr.aws`, and adding the name does not fix it).
+
+**The previous entry's account of this is superseded**, and the pointer is on it rather than an edit: it
+recorded six missing domains as the explanation and the wildcard-depth reading as the finding. The
+domains were necessary and nowhere near sufficient, and the depth reading came from documentation while
+being written down as *"measured"* — Lesson 38's occurrence.
+
+Owed after this sitting: passes 3 and 5 plus 5.1; 4.2's measurement half; **4.3's friction reading** —
+what a working day costs under the names that do work, which is the other half of step 6.1's evidence.
+And the INT-16 decision, unchanged.
