@@ -23,20 +23,44 @@
 
 locals {
   dns_firewall_enabled = var.dns_firewall && var.egress_mode == "A"
+
+  # AN EMPTY ALLOW-LIST IS A VALID AND MEANINGFUL CONFIGURATION - it is this module's
+  # DEFAULT since v0.3.0 - so the allow half is gated on the list having content rather
+  # than on the firewall being on. With no names, no ALLOW rule is created at all and the
+  # catch-all below is the only rule in the group: every lookup in the VPC returns
+  # NXDOMAIN. That is the intended default (a caller who forgets the list gets a closed
+  # door, not an open one), and it is built this way rather than by passing `domains = []`
+  # because a domain list with no entries is not something to rely on the API accepting.
+  dns_firewall_allow_enabled = local.dns_firewall_enabled && length(var.dns_firewall_allow_domains) > 0
 }
 
-# The allow-list. A domain list entry matches the name EXACTLY; `*.name` matches its
-# subdomains - so nearly everything below is written twice, and an entry appearing only once
-# is a bug rather than a shorthand.
+# The allow-list. THE NAMES ARE NOT HERE AND ARE NOT IN variables.tf EITHER (v0.3.0): the
+# default is EMPTY and every caller declares its own set. What each entry has to satisfy is
+# below, because it is the part that cannot be inferred from a hostname.
 #
-# THE WILDCARD COVERS DEPTH, AND THAT HALF IS MEASURED RATHER THAN ASSUMED (re-read
-# 2026-08-22, REFERENCES.md): `*.name` matches EVERY nesting level beneath it -
-# `*.julialang.org` matches `us-west.pkg.julialang.org` - and never the apex, which is why the
-# bare name sits beside it. The `*` must replace a whole leftmost label: `*prod.example.com`
-# is rejected. What a wildcard does NOT cross is a sibling registrable domain, and the list
-# in variables.tf carries the case that caught it.
+# HOW AN ENTRY IS MATCHED. A domain list entry matches the name EXACTLY; `*.name` matches
+# every nesting level beneath it (`*.example.com` matches `a.b.example.com`) and never the
+# apex, so a wildcard entry and its bare name are two different entries. The `*` must replace
+# a whole leftmost label: `*prod.example.com` is rejected. A wildcard never crosses into a
+# sibling registrable domain.
+#
+# AND THE RULE THAT ACTUALLY GOVERNS WHAT BELONGS ON A LIST, MEASURED 2026-08-23 (Stage 6
+# step 4.3): DNS FIREWALL EVALUATES THE WHOLE RESOLUTION CHAIN, NOT THE QUERIED NAME. If a
+# listed name is a CNAME to a target that is not also listed, the lookup is blocked - and the
+# log reports the block against the ORIGINAL name with the catch-all list id, which reads
+# exactly like "that name was not on the allow-list" and is not. The proof is a pair measured
+# under the same wildcard shape: `blobs.duckdb.org` (A records) resolved while
+# `index.crates.io` (CNAME to Fastly) did not.
+#
+# THE CONSEQUENCE FOR THIS ESTATE IS NOT SMALL: every package ecosystem serves its ARTIFACTS
+# from a shared CDN, so an allow-list can carry the index and still have no working download
+# path - and the only way to change that is to allow `*.fastly.net`, `*.cloudfront.net`,
+# `*.cdn.cloudflare.net` and friends, which are self-service namespaces anyone can publish
+# into. Allowing them ends this control. A caller therefore lists names it has MEASURED to
+# resolve with their whole chain inside its own list, and does not add a name on the strength
+# of what it is called.
 resource "aws_route53_resolver_firewall_domain_list" "allow" {
-  count = local.dns_firewall_enabled ? 1 : 0
+  count = local.dns_firewall_allow_enabled ? 1 : 0
 
   name    = "awsds-${var.env}-egress-allow"
   domains = var.dns_firewall_allow_domains
@@ -67,8 +91,11 @@ resource "aws_route53_resolver_firewall_rule_group" "this" {
 # PRIORITY IS EVALUATION ORDER, ASCENDING, AND THE TWO NUMBERS ARE THE WHOLE DESIGN: the
 # allow-list is consulted first and the catch-all only sees what it did not match. Reverse
 # them and every lookup is blocked, including the ones on the list.
+#
+# WITH NO NAMES THIS RULE DOES NOT EXIST and the group holds the catch-all alone - the
+# closed-door default described on `dns_firewall_allow_enabled` above.
 resource "aws_route53_resolver_firewall_rule" "allow" {
-  count = local.dns_firewall_enabled ? 1 : 0
+  count = local.dns_firewall_allow_enabled ? 1 : 0
 
   name                    = "allow-listed-names"
   action                  = "ALLOW"
