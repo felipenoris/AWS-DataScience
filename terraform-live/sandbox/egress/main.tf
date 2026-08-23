@@ -116,8 +116,8 @@ module "egress" {
     "datazone.${var.region}.api.aws",
 
     "public.ecr.aws",
-    "archive.ubuntu.com",
-    "security.ubuntu.com",
+    "archive.ubuntu.com", "archive.ubuntu.com.cdn.cloudflare.net",
+    "security.ubuntu.com", "security.ubuntu.com.cdn.cloudflare.net",
 
     "astral.sh",
     "releases.astral.sh",
