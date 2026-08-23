@@ -153,7 +153,7 @@
 
 - AWS PrivateLink / VPC endpoints: <https://docs.aws.amazon.com/vpc/latest/privatelink/what-is-privatelink.html>.
 
-- Route 53 Resolver DNS Firewall: <https://docs.aws.amazon.com/Route53/latest/DeveloperGuide/resolver-dns-firewall.html>.
+- Route 53 Resolver DNS Firewall: <https://docs.aws.amazon.com/Route53/latest/DeveloperGuide/resolver-dns-firewall.html>. **Domain-list syntax re-read 2026-08-22**, to settle whether the allow-list's `*.name` entries reach a nested hostname (`us-west.pkg.julialang.org` under `*.julialang.org`) before adding names on the strength of a guess: the `*` must replace the **entire leftmost label** (`*prod.example.com` and `prod*.example.com` are both rejected), and it matches that label **and every subdomain beneath it** at any nesting depth — but not the apex, which is why every entry in `terraform-modules/vpc-egress/variables.tf` is written twice. <https://docs.aws.amazon.com/Route53/latest/DeveloperGuide/resolver-dns-firewall-user-managed-domain-lists.html> and <https://docs.aws.amazon.com/Route53/latest/DeveloperGuide/DomainNameFormat.html>.
 
 - AWS Network Firewall: <https://docs.aws.amazon.com/network-firewall/latest/developerguide/what-is-aws-network-firewall.html>.
 

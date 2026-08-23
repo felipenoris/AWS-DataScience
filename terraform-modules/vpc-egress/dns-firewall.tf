@@ -28,6 +28,13 @@ locals {
 # The allow-list. A domain list entry matches the name EXACTLY; `*.name` matches its
 # subdomains - so nearly everything below is written twice, and an entry appearing only once
 # is a bug rather than a shorthand.
+#
+# THE WILDCARD COVERS DEPTH, AND THAT HALF IS MEASURED RATHER THAN ASSUMED (re-read
+# 2026-08-22, REFERENCES.md): `*.name` matches EVERY nesting level beneath it -
+# `*.julialang.org` matches `us-west.pkg.julialang.org` - and never the apex, which is why the
+# bare name sits beside it. The `*` must replace a whole leftmost label: `*prod.example.com`
+# is rejected. What a wildcard does NOT cross is a sibling registrable domain, and the list
+# in variables.tf carries the case that caught it.
 resource "aws_route53_resolver_firewall_domain_list" "allow" {
   count = local.dns_firewall_enabled ? 1 : 0
 
