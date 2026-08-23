@@ -116,27 +116,34 @@ module "egress" {
     "datazone.${var.region}.api.aws",
 
     "public.ecr.aws",
+
+    # ubuntu package manager
     "archive.ubuntu.com", "archive.ubuntu.com.cdn.cloudflare.net",
     "security.ubuntu.com", "security.ubuntu.com.cdn.cloudflare.net",
 
+    # uv
     "astral.sh",
     "releases.astral.sh",
 
+    # duckdb
     "blobs.duckdb.org",
     "extensions.duckdb.org",
 
+    # python
     "pypi.org",
     "files.pythonhosted.org", "dualstack.python.map.fastly.net",
 
-    #"install.julialang.org", "c.sni.global.fastly.net",
+    # julia
+    #"install.julialang.org", "c.sni.global.fastly.net", # bypassed: manual install from s3
     "julialang-s3.julialang.org", "dualstack.j2.shared.global.fastly.net",
     "pkg.julialang.org", "dualstack.k3.shared.global.fastly.net",
     "storage.julialang.net",
     "us-west.pkg.julialang.org", "us-west.pkg.julialang.net",
 
+    # rust
     "index.crates.io", "fastly-index.crates.io", "dualstack.k.sni.global.fastly.net",
-    #"sh.rustup.rs", "dks7yomi95k2d.cloudfront.net",
-    "static.crates.io",
+    #"sh.rustup.rs", "dks7yomi95k2d.cloudfront.net", # bypassed: `sudo apt install rustup`
+    "static.crates.io", "fastly-static.crates.io", "dualstack.k.sni.global.fastly.net",
     "static.rust-lang.org", "fastly-static.rust-lang.org", "dualstack.k.sni.global.fastly.net",
 
     # The internal zones REACHABLE FROM THIS ACCOUNT, and the set differs per account, which
