@@ -1,0 +1,16 @@
+[project]
+name = "s3-read-write"
+version = "0.1.0"
+description = "Read, write and list files in a SageMaker Unified Studio project's S3 storage from outside Studio, via S3 Access Grants credential vending"
+readme = "README.md"
+authors = [
+    { name = "Felipe Noronha" }
+]
+requires-python = ">=3.14"
+dependencies = [
+    "boto3>=1.40",
+]
+
+[build-system]
+requires = ["uv_build>=0.12.5,<0.13.0"]
+build-backend = "uv_build"

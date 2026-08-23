@@ -219,6 +219,23 @@ locals {
     for l, r in data.terraform_remote_state.lake_data : r.outputs.data_key_arn
   ])
 
+  # --------------------------------------------- the project-storage vending instance (SMUS)
+  #
+  # COMPOSED, AND THE EXCEPTION IS ARGUED HERE ONCE. This slice's rule is "enumerated from
+  # state, never composed from a naming convention" - but S3 Access Grants allows exactly ONE
+  # instance per account x Region and the SERVICE names it `default`, so the trailing segment
+  # is the service's contract, not a convention of ours. The instance itself was created by
+  # SMUS at first project provisioning (measured 2026-08-23 in Sandbox: instance `default`
+  # plus one location per project, the location's vending role being the project role), so it
+  # lives in no Terraform state this slice could read - composition from the documented
+  # singleton shape is the only address that exists. The account id still comes from the
+  # roster lookup above, never typed.
+  #
+  # SANDBOX ONLY, DELIBERATELY. Development holds no instance until its first project is born
+  # there; its entry joins as a second element that day. Naming it now would be this file's
+  # own file-top failure - an allow scoped to an object that does not exist yet.
+  sandbox_access_grants_instance_arn = "arn:aws:s3:${var.region}:${local.account_ids["sandbox"]}:access-grants/default"
+
   # The rendered inline policy of each written set, in one map, so the size precondition and
   # the reporting output read the same values (Lesson 14, at the smallest scale it occurs).
   inline_policies = {

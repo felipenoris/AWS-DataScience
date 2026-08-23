@@ -329,6 +329,7 @@ São Paulo as in Oregon.
 | S3 Intelligent-Tiering, Archive Instant Access | 0.0083 | — | |
 | S3 PUT/COPY/POST/LIST (USD per 1 000) | 0.007 | 0.005 | 1.40 |
 | S3 GET and all others (USD per 10 000) | 0.0056 | 0.004 | 1.40 |
+| S3 Access Grants requests (USD per 1 000) — `GetDataAccess`, `ListCallerAccessGrants` and every other non-delete AG call; deletes are 0.00. **The public pages say nothing** (pricing page, user guide, FAQ — all read 2026-08-23); the Price List offer file is where the meter is written | 0.03 | 0.03 | **1.00** |
 | **Glue** ETL (USD/DPU-h) | 0.69 | 0.44 | 1.57 |
 | Glue Flex ETL (USD/DPU-h) | 0.45 | 0.29 | 1.55 |
 | Glue crawler (USD/DPU-h) | 0.69 | 0.44 | 1.57 |
