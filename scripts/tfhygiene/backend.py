@@ -224,6 +224,33 @@ SMUS_MEMBERS = ["sandbox", "development"]
 # APPLY ORDER is what is staged, not this list (Stage 6 step 1.4 before 1.5).
 SMUS_ASSOCIATED: list = ["sandbox", "development"]
 
+# ------------------------------------------------- the persona's project-storage vending policy
+#
+# ONE NAME, THREE SLICES, AND IT IS A CONTRACT RATHER THAN A CONVENTION. A customer-managed
+# policy is referenced from a permission set BY NAME, and the object must exist under that exact
+# name in EVERY account the set is provisioned into - a missing one fails PROVISIONING, per
+# account, in an account nobody is watching (the failure decision 4 deferred the boundary over).
+# So the name is generated here and consumed by three slices, never typed three times
+# (Lesson 14): each member's foundation/ creates the object, identity/sso/ references it.
+#
+# `org` IS THE CORRECT ENV TOKEN AND THE EXCEPTION IS THE POINT. Every other name in this design
+# carries the token of the account it lives in - but this object is materialised in sandbox AND
+# development under ONE name, so an <env> token would make the two names differ and a permission
+# set can reference only one. conventions.md gives `org` to platform resources of the identity
+# plane, which is exactly what this is: entitlement-plane content that happens to need a per-
+# account body. The Environment TAG still says sandbox or development, because the tag describes
+# where the object lives and the name describes what references it.
+PERSONA_VENDING_POLICY_NAME = "awsds-org-project-storage-vending"
+
+# WHERE THAT OBJECT MUST EXIST - and the list AWS actually constrains is "every account
+# DataScientistAccess is provisioned into", which is authored in identity/sso/locals.tf's
+# `assignments` map and cannot be read from here. DERIVED from SMUS_MEMBERS rather than authored
+# a third time: only a SMUS member account can hold an S3 Access Grants instance to vend from,
+# and the set's two assignment rows name exactly these accounts today. If the two ever diverge,
+# THIS LIST FOLLOWS THE ASSIGNMENTS, not the members - the symptom of getting it wrong is a
+# provisioning error in the account that was left out, not a plan failure here.
+PERSONA_VENDING_ACCOUNTS = list(SMUS_MEMBERS)
+
 # Subnets anchor on ZONE IDS, never on AZ names and never on list position (Stage 3 step 1.5,
 # settled by 1b step 6; ./aws/AZs.py is the measurement). Authored per account because a
 # vended account is assigned its own name->id mapping and may legitimately differ (INV-08);
@@ -441,6 +468,13 @@ def tfvars_values(account: str, slice_name: str) -> dict:
         # here, the same way every other cross-account read in this table does.
         values["identity_profile"] = PROFILES["identity"]
 
+    # The persona's vending policy: the OBJECT half, in each account the set reaches (the name
+    # block above carries the argument). foundation/ rather than sagemaker/ because a permission
+    # set that cannot find this policy fails to provision - so it must outlive every slice that
+    # can be torn down, and foundation/ is [P].
+    if slice_name == "foundation" and account in PERSONA_VENDING_ACCOUNTS:
+        values["persona_vending_policy_name"] = PERSONA_VENDING_POLICY_NAME
+
     if account == "identity" and slice_name == "sso":
         values["vpn_homes"] = {
             acct: {"profile": PROFILES[acct], "env": ENV_TOKENS[acct]} for acct in VPN_HOMES
@@ -456,6 +490,10 @@ def tfvars_values(account: str, slice_name: str) -> dict:
         values["lake"] = {
             acct: {"profile": PROFILES[acct], "env": ENV_TOKENS[acct]} for acct in DATA_LAKE
         }
+        # The persona's vending policy: the REFERENCE half. The set names the policy; the object
+        # is created by each member's foundation/ (the emission above), and the apply order is
+        # members first - a reference to a policy that does not exist yet fails provisioning.
+        values["persona_vending_policy_name"] = PERSONA_VENDING_POLICY_NAME
 
     return values
 
@@ -535,6 +573,8 @@ def render_tfvars(account: str, slice_name: str) -> str:
             for acct, p in v["lake"].items()
         )
         out += f"lake = {{\n{rows}}}\n"
+    if "persona_vending_policy_name" in v:
+        out += f'persona_vending_policy_name = "{v["persona_vending_policy_name"]}"\n'
     if "identity_profile" in v:
         out += f'identity_profile = "{v["identity_profile"]}"\n'
     return out

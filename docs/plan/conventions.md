@@ -171,7 +171,11 @@ terraform-live/
 │   ├── bootstrap/        # [P] state bucket for this account (state migrated in, never committed)
 │   ├── foundation/       # [P] VPC, subnets, route tables, IGW, security groups, private
 │   │                     #     hosted zone, KMS keys, IAM roles, WireGuard Elastic IP,
-│   │                     #     peering requester + routes to Production (D14)
+│   │                     #     peering requester + routes to Production (D14), and the
+│   │                     #     persona's vending policy - a customer-managed policy the
+│   │                     #     entitlement plane references BY NAME, so it lives in a [P]
+│   │                     #     slice: a missing one fails PROVISIONING of the permission
+│   │                     #     set in this account (2026-08-23, persona-vending.tf)
 │   ├── data/             # [P] the derived zone (ONE bucket, three prefix families:
 │   │                     #     results/, derived/${aws:userid}/, scratch/ - D19, and
 │   │                     #     `scratch` is a PREFIX, per D13's own wording), its
@@ -229,7 +233,9 @@ terraform-live/
 ├── development/          # DEVELOPMENT (D21): the unit of work is a pipeline
 │   ├── bootstrap/        # [P] state bucket for the Development account
 │   ├── foundation/       # [P] VPC (own CIDR), KMS, IAM roles, peering requester to
-│   │                     #     Production - Studio here must reach GitLab (INT-09)
+│   │                     #     Production - Studio here must reach GitLab (INT-09) - and
+│   │                     #     the same persona vending policy as sandbox/foundation/,
+│   │                     #     byte for byte: one NAME, one object per member account
 │   ├── data/             # [P] the same consumer-data module as sandbox/data/, byte for
 │   │                     #     byte: derived zone + its CMK + workgroup + settings + links
 │   ├── egress/           # [E] NAT + endpoints, same D5 switch as sandbox

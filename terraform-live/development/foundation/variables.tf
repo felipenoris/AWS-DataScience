@@ -67,3 +67,13 @@ variable "cost_center" {
   type        = string
   default     = "stage-03"
 }
+
+# GENERATED INTO THE TFVARS, NEVER TYPED (Lesson 14): the same name must resolve in every account
+# DataScientistAccess reaches, and identity/sso/ references it from a third place. The one copy is
+# scripts/tfhygiene/backend.py's PERSONA_VENDING_POLICY_NAME, which carries the argument for the
+# `org` token in a name that lives in a per-account object. See persona-vending.tf.
+variable "persona_vending_policy_name" {
+  description = "Name of the customer-managed policy carrying the persona's S3 Access Grants vending handshake."
+  type        = string
+  nullable    = false
+}

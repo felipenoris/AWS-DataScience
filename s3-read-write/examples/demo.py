@@ -69,7 +69,7 @@ def main() -> int:
         print(f"Discovery failed ({error_code(error)}): {error}")
         print(
             "Checks: is the VPN tunnel up? Is the persona's "
-            "VendProjectStorageCredentials statement applied?"
+            "vending policy applied (see README.md, prerequisite 1)?"
         )
         return 1
 

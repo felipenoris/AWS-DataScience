@@ -172,3 +172,13 @@ variable "inline_policy_max_bytes" {
   type        = number
   default     = 10240
 }
+
+# GENERATED INTO THE TFVARS, NEVER TYPED (Lesson 14). The object it names is created by each
+# member account's foundation/ slice, under this exact name - a reference that does not resolve
+# in an account fails PROVISIONING there, not planning here, so the two sides read one constant:
+# scripts/tfhygiene/backend.py's PERSONA_VENDING_POLICY_NAME.
+variable "persona_vending_policy_name" {
+  description = "Name of the customer-managed policy carrying the persona's S3 Access Grants vending handshake."
+  type        = string
+  nullable    = false
+}
