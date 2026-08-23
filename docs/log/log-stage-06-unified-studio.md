@@ -2741,3 +2741,153 @@ being written down as *"measured"* — Lesson 38's occurrence.
 Owed after this sitting: passes 3 and 5 plus 5.1; 4.2's measurement half; **4.3's friction reading** —
 what a working day costs under the names that do work, which is the other half of step 6.1's evidence.
 And the INT-16 decision, unchanged.
+
+## 2026-08-23 — Eight of the nine names are CDN-fronted: "does it use a CDN" was the wrong question, and the sentence that hid it was true
+
+*Second sitting of the day, and a quiet one: **no AWS call, no SSO session, nothing applied**. The
+question that opened it is the **user's**, as is every authorisation to commit and push and the decision
+to leave the number-40 lesson uncut. The measurements, the corrections and the script are Claude's. No
+identifiers to redact.*
+
+### What opened it — a verification question, not a failure
+
+The user asked how one **verifies** that a name goes through a CDN, naming `static.rust-lang.org`. Nothing
+was broken. The allow-list applied that morning was working, `US-8` was green, and the previous entry had
+just closed step 4.3.
+
+The answer is one command, and the form matters:
+
+```
+dig +noall +answer static.rust-lang.org
+  static.rust-lang.org.        CNAME  fastly-static.rust-lang.org.
+  fastly-static.rust-lang.org. CNAME  dualstack.k.sni.global.fastly.net.
+  dualstack.k.sni.global.fastly.net.  A  151.101.178.137
+```
+
+`+short` was what the freshly written module comment prescribed, and it is the wrong form: it flattens the
+answer into a column of bare values and **hides the record type**, which is the discriminator. Three names
+in that chain, two of them unlistable.
+
+### The measurement, run because writing about names that had not been measured is how the last mistake happened
+
+Rather than answer from the four names already in hand, every name on both lists was resolved and every
+answer address attributed by `whois` and by response header. That produced the finding:
+
+| Name | Owner of the answer address | Shape |
+|---|---|---|
+| `datazone.<region>.api.aws` | **CloudFront** (`via: … cloudfront.net`, `x-amz-cf-pop`) | flat |
+| `pypi.org` | **Fastly** (`x-served-by: cache-…`) | flat |
+| `conda.anaconda.org`, `repo.anaconda.com` | **Cloudflare** | flat |
+| `storage.julialang.net` | **Cloudflare** | flat |
+| `releases.astral.sh` | **Cloudflare** | flat |
+| `extensions.duckdb.org`, `blobs.duckdb.org` | **Cloudflare** | flat |
+| `us-west.pkg.julialang.org` → `.net` | Amazon | CNAME, own namespace |
+
+**Eight of the nine external names are CDN-fronted.** Exactly one — `us-west.pkg.julialang.net` — is a
+host of its own. They resolve because the authoritative side **flattens**: the A record is served under
+the name that was queried, so the chain never leaves the list and the firewall matches.
+
+So the object the firewall matches is the **shape of the DNS answer**, never the provider. Whether a CDN
+serves the bytes afterwards is not its business.
+
+### The part worth recording: the sentence was true
+
+The previous entry said *"every name that worked answered with A records directly"*. That is correct, was
+correct when written, and remains correct. The module comment derived a rule from it — *"a name that
+answers with A records only is listable"* — and that rule is also correct: every name it admits does
+work.
+
+What was wrong was neither the sentence nor the rule but the **model** a reader builds from them, that A
+records mean *not a CDN*. Under that model the estate's own allow-list is a list of non-CDN hosts, and it
+never was. The user's design instruction of the previous day — *"only the cases that do not go through a
+CDN"* — describes almost nothing, and the list that came out of it was right for a reason nobody had
+stated.
+
+**Nothing would have caught this.** Every gate in this repository reads text or structure; none reads a
+model, and both the sentence and the rule pass any test one could write for them. It surfaced only
+because someone asked how to *verify* a claim that was already believed.
+
+*Candidate for lesson 40, left uncut and recorded here rather than in `lessons.md`, because cutting a
+number is authorship and the key belongs in a `CLAUDE.md` that is over its budget:* **a true statement
+can carry a false model, and the model is what gets reused.** It sits beside Lesson 38's occurrence from
+the morning — a documentation reading written down as *"measured"* — as the second way this arc produced
+a defect no reviewer would flag: the first was a false claim in true clothing, the second a true claim in
+false clothing.
+
+### What was corrected
+
+The rule became **three shapes** rather than two, and the missing one is the shape the estate actually
+uses: a CNAME staying inside the project's own namespace is listable **if every hop is listed**, which is
+why `us-west.pkg.julialang.net` sits beside the `.org` and is load-bearing rather than decoration. The
+third shape — a CNAME into a shared multi-tenant namespace — remains the unusable one, and the note that
+listing its tail *ends* the control stayed where it was.
+
+`architecture.md` §4.3, `stage-06` 4.1 and the buildbox files were left as the morning had them: their
+statements are about **what has no path**, which this measurement does not touch.
+
+### `EXC-05` — the risk, registered by its symptom
+
+Flattening is a switch its owner controls. The day one of the eight turns it off, that name answers with
+a CNAME, its chain leaves the list, and the lookup is blocked — **and the query log will report the block
+against the queried name**, which is precisely the misattribution that cost a correct hypothesis nine
+hours earlier in this same file.
+
+It is therefore filed under the **symptom** and not the cause: *a name still on the list, code untouched,
+stops resolving inside the VPC*. That is the sentence someone will be holding. The disposition names the
+one command, and says plainly that the repair is **not** to list the CNAME target.
+
+### The instrument, and the control that makes it one
+
+`aws/dns-allowlist.py`. It re-resolves every name on both lists and reports the chain the firewall would
+evaluate, the verdict (`ok-flat` / `ok-chain` / **`BROKEN`**), the terminal address, and with `--whois`
+who owns it.
+
+`DN-1` every queryable name answers · `DN-2` every chain stays inside its own list — the `EXC-05` alarm ·
+`DN-3` the two Interactive lists carry the same external names · `DN-4` the exposure count, a note.
+Exits 2 on a failure. First run: **22 names, DN-1/2/3 pass, 20 resolve flat.**
+
+**`DN-3` is the one nothing else did.** `vpc-egress` v0.3.0 moved the list to the callers and its own
+comment admits the cost — two slices that can diverge, with nothing mechanical comparing them. That
+sentence was written the previous day as an accepted cost; it is now closed for the price of six lines.
+
+**The negative control, run because a check that passes either way is not a check (Lesson 13).**
+`DN-2` against `static.rust-lang.org` with only that name listed returned `BROKEN` and named both
+uncovered hops; the same answer with **every** hop listed returned `ok-chain`. The wildcard semantics were
+tested in the same pass: `*.foo.com` covers `a.b.foo.com`, does **not** cover `foo.com`, and does not
+match `barfoo.com` by substring.
+
+Two deviations from `aws/INDEX.md`'s norms, both deliberate. It needs **no AWS identity** — every other
+script there photographs AWS and this one photographs the public DNS the allow-list depends on, which is
+not AWS's to answer. And `--from-api` is not the default, because `egress/` is `[E]` and down most of the
+time: a check that only ran while the slice was up would not be running at the moment it matters, which
+is *before* it goes up.
+
+**One extraction bug caught in its own trap.** `whois 151.101.64.223` answers first with RIPE's
+`NON-RIPE-NCC-MANAGED-ADDRESS-BLOCK` placeholder and only then refers to ARIN, which says `Fastly, Inc.`.
+Taking the first owner-shaped line printed the placeholder under a column headed OWNER — an appearance of
+a reading, in a script written to stop exactly that. Placeholders are dropped and `OrgName` preferred.
+
+### What this sitting did not establish
+
+**The resolver is not the VPC's.** Every reading here came from a laptop, and a CDN can steer a chain by
+geography or by EDNS client subnet, so a name can be flat here and a CNAME there. The script says so in
+its header, in its report and in its index row. A `BROKEN` row is real from any vantage point; an `ok` row
+is *no reason to worry from this one*. The proof stays what it was: a resolution from inside the VPC.
+
+### Files
+
+Six plus this log, across two commits. Code: `terraform-modules/vpc-egress/variables.tf` (three shapes,
+the eight names, the flattening dependency), both Interactive `egress/main.tf` (the same paragraph where
+the list is), **`aws/dns-allowlist.py`** (new). Docs: `docs/AWS_STATE.md` (**`EXC-05`**), `aws/INDEX.md`
+(the row, and a preamble paragraph on why one script here has no identity columns).
+
+*Two files, `Makefile` and `scripts/slices.py`, were modified in the working tree by another hand while
+this sitting was running — a `slices.py envs` feature feeding `make help` and the missing-`ENV` guard.
+They were unstaged before committing here and left untouched; that hand committed them itself, onto this
+same branch, as `97d26dd`. Recorded because a working tree with two authors in it is the condition under
+which someone else's change gets swept into an unrelated commit.*
+
+Owed after this sitting: unchanged from the morning — passes 3 and 5 plus 5.1, 4.2's measurement half,
+**4.3's friction reading**, and the INT-16 decision. Available and not taken, because it is the user's
+call: a `make check-dns` target in the `check-ou` family, since the script needs the network and
+`make check` is offline by contract.
