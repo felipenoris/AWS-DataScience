@@ -352,22 +352,49 @@ Squid proxy for HTTP-layer control. **The list itself is not written here and is
 either** — since `vpc-egress-v0.3.0` the module default is empty, and each `egress/` slice declares the
 set its own account may reach.
 
-**MEASURED 2026-08-23 (Stage 6 step 4.3), and it changes what design A can be claimed to deliver.** DNS
-Firewall evaluates the **whole resolution chain**, not the queried name: a listed name whose CNAME target
-is unlisted is blocked. Every package ecosystem serves its **artifacts** from a shared CDN —
+**MEASURED 2026-08-23 (Stage 6 step 4.3), then repaired the same day — and both halves belong here,
+because the first half was written into three files as a property of the service and it was a property of
+a default.** The measurement: DNS Firewall evaluated the **whole resolution chain**, so a listed name whose
+CNAME target was unlisted was blocked. Every package ecosystem serves its **artifacts** from a shared CDN —
 `files.pythonhosted.org`, `index`/`static.crates.io`, `static.rust-lang.org`, `sh.rustup.rs`,
 `pkg.julialang.org`, `cloud.r-project.org`, `deb.debian.org`, `archive.ubuntu.com`, `public.ecr.aws` —
-so an allow-list of *names* can carry every index and still have **no download path**. Making them work
-means allowing `*.fastly.net`, `*.cloudfront.net`, `*.cdn.cloudflare.net` and friends, which are
-**self-service namespaces**: anyone can publish into them in minutes, and allowing them ends the control.
-What survives the rule is the small set whose chain stays inside the list — conda, Julia through the
-regional package server, uv, DuckDB extensions, the PyPI index without its downloads.
+so an allow-list of *names* carried every index and had **no download path**, and the only apparent repair
+was to allow `*.fastly.net`, `*.cloudfront.net`, `*.cdn.cloudflare.net` and friends: **self-service
+namespaces** anyone can publish into, which ends the control. For one day that read as design A's ceiling.
 
-**So the honest statement of A's weakness is stronger than this file used to make it.** The old one was
-that DNS-name filtering is bypassable by a raw IP — a strong control against accident, a weak one against
-intent. The measurement adds that **against accident it does not work either**, unless the CDN namespaces
-are opened, at which point it is no longer a control. This is the concrete reason design B is the shape
-regulated institutions converge on, and it is an input to D5 rather than an argument settled here.
+**It was the API default.** `FirewallDomainRedirectionAction` is a per-rule setting with a second value,
+`TRUST_REDIRECTION_DOMAIN` (released 2024-05); `terraform-modules/vpc-egress` had never set it and so took
+`INSPECT_REDIRECTION_DOMAIN`. Since **`vpc-egress-v0.4.0`** it is a module **input** whose default stays
+`INSPECT` — the strict reading is what a caller gets for not thinking about it — and **each `egress/` slice
+declares its own**, beside the allow-list it governs. Both Interactive slices pass `TRUST`: the firewall
+inspects the **queried** name and trusts the chain beneath it. Production, which sets no list at all, is
+untouched. **This does not open the CDN, and that is the reading
+the repair stands on:** the trust is scoped to a single query transaction, so a redirection target *queried
+directly* is evaluated independently, matches nothing and is blocked by the catch-all. The estate gets the
+artifact hosts without the namespace they sit in — twelve hop entries came off the Sandbox list, one off
+Development's, and each removal is a narrowing.
+
+**So the honest statement of A's weakness returns to what it was, with one addition this file never made.**
+Name filtering is bypassable by a raw IP — strong against accident, weak against intent. The addition:
+it is also bypassable by **asking a different resolver**. DNS Firewall only inspects what the VPC resolver
+is asked, and nothing stops a process from reaching `1.1.1.1:53` over the NAT or DoH on 443 — the tier
+security groups permit all egress and the NACLs are at the default allow. Neither bypass is closable at
+the DNS layer; both need an **SNI/Host** control (AWS Network Firewall's stateful domain list, or an
+explicit proxy — §4.3a). That, and not the CDN chain, is the real reason design B is the shape regulated
+institutions converge on.
+
+#### 4.3a The two L7 options, priced but not built
+
+Both bypasses above are invisible to a DNS control and visible to one that reads the **connection**. Two
+shapes exist and neither is built; they are recorded so a future session does not re-derive them.
+
+| | Where it matches | Measured cost (`us-west-2`) | The catch |
+|---|---|---|---|
+| **AWS Network Firewall**, stateful domain list | **TLS SNI** and **HTTP Host** — never DNS, so the CNAME chain is irrelevant by construction | USD **0.395/h** per endpoint + **0.065/GB** (`docs/PRICING.md`) | ~USD 288/month **always-on**, against a USD 50 ceiling (D12) — but `egress/` is `[E]`, so an 8-hour session is ~USD 3.16. The monthly figure is the one that made this look unaffordable; the hourly one is what this estate actually pays. Still ~8× the NAT |
+| **Explicit HTTP `CONNECT` proxy** (Squid) | the `CONNECT` line, which is plaintext to the proxy — so it survives **ECH**, which will eventually blind SNI matching | ~USD **0.008–0.017/h** (`t4g.nano`/`micro`) | an EC2 to run and patch; every tool needs `http_proxy`/`https_proxy` (pip, cargo, `Pkg`, R, apt, the container runtime); and the proxy must resolve **outside** the DNS Firewall, so it needs its own resolver or a VPC without the rule-group association |
+
+Neither is a Stage 6 deliverable. They are the answer to *"the requirement is SNI, not name"* — a different
+requirement from the one design A was built for, and one nothing in `docs/plan/objectives.md` states today.
 
 **(B) No internet — proxied artifacts only.** The SageMaker subnets have no route to a NAT gateway at all.
 Packages arrive through **CodeArtifact** repositories configured with an upstream to the public registry

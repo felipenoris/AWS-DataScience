@@ -17,7 +17,7 @@ data "terraform_remote_state" "foundation" {
 
 module "egress" {
   # checkov:skip=CKV_TF_1:pinned by git TAG by convention (conventions §6, Stage 3 step 1.1a) - a repository-internal tag only the repo owner can move
-  source = "git::git@github.com:felipenoris/AWS-DataScience.git//terraform-modules/vpc-egress?ref=vpc-egress-v0.3.0"
+  source = "git::git@github.com:felipenoris/AWS-DataScience.git//terraform-modules/vpc-egress?ref=vpc-egress-v0.4.0"
 
   env    = var.env
   vpc_id = data.terraform_remote_state.foundation.outputs.vpc_id
@@ -58,39 +58,50 @@ module "egress" {
   # exist.
   dns_firewall = true
 
-  # THE ALLOW-LIST ITSELF, and every name on it was MEASURED before it was written
-  # (2026-08-23, step 4.3's session). The rule the module's dns-firewall.tf states and this
-  # list obeys: DNS Firewall evaluates the WHOLE RESOLUTION CHAIN, so a name belongs here
-  # only if its chain ends inside this list. `dig +noall +answer <name>` is the check - a
-  # CNAME row is a hop to a name that has to be on this list too. Use that form and not
-  # `+short`, which hides the record type and so hides the discriminator.
+  # HOW THE ALLOW-LIST BELOW IS READ, and it is this slice's call rather than the module's
+  # (v0.4.0 - the module defaults to INSPECT_REDIRECTION_DOMAIN, the API's own default and the
+  # stricter reading). TRUST means the firewall inspects the name that was QUERIED and trusts
+  # the CNAME/DNAME chain beneath it. This account reaches package artifacts, and every
+  # ecosystem serves those from a shared CDN, so under INSPECT the list can carry every index
+  # and still have no download path - that is the whole reason this line exists.
   #
-  # AND EVERY EXTERNAL NAME HERE BUT ONE IS CDN-FRONTED, which is not the contradiction it
-  # looks like (measured the same day: dig, whois on the answer address, response headers).
-  # datazone.<region>.api.aws is CloudFront; pypi.org is Fastly; conda.anaconda.org,
-  # repo.anaconda.com, storage.julialang.net, releases.astral.sh, extensions.duckdb.org and
-  # blobs.duckdb.org are Cloudflare. Exactly one - us-west.pkg.julialang.net - is a host of
-  # its own. They resolve here because their authoritative side FLATTENS the CDN behind an A
-  # record served under the queried name, so the chain never leaves this list. What this
-  # firewall matches is the SHAPE OF THE DNS ANSWER, never the provider - so "the names that
-  # do not go through a CDN" describes almost nothing and is not what this list is.
+  # IT DOES NOT ALLOW THE CDN, which is the reading to check before accepting it: the trust
+  # is scoped to a SINGLE query transaction, so a redirection target asked for on its own is
+  # an independent query, matches no entry and is blocked by the catch-all. What it costs is
+  # narrower and real - the chain is trusted wherever the OWNER of a listed name points it.
+  firewall_domain_redirection_action = "TRUST_REDIRECTION_DOMAIN"
+
+  # THE ALLOW-LIST ITSELF, AND THE LINE ABOVE IS THE RULE IT OBEYS. Under TRUST the firewall
+  # reads the name that was queried, so an entry here is a name a tool asks for; a CNAME
+  # target is not an entry. Listing a hop is
+  # a widening rather than a safety net - the trust holds inside one query transaction, so a
+  # redirection target stays unreachable on its own unless somebody lists it. This list
+  # carried exactly one hop, `us-west.pkg.julialang.net`, removed on 2026-08-23.
   #
-  # THE COST OF THAT, stated because it is a live failure mode and not a hypothetical: eight
-  # of these nine entries work by a switch a third party owns and can turn off without
-  # announcing it. The day one does, that name answers with a CNAME, its chain leaves this
-  # list, and a notebook breaks in a way that looks like this estate's fault.
-  # docs/AWS_STATE.md EXC-05 carries the symptom and the triage.
+  # WHAT THE PARAGRAPH HERE USED TO SAY, and why it is gone: until v0.4.0 a name belonged
+  # here only if its whole chain ended inside this list, so eight of nine external names
+  # worked only because their authoritative side FLATTENS the CDN behind an A record served
+  # under the queried name - a switch a third party could turn off unannounced
+  # (docs/AWS_STATE.md EXC-05, now closed). Whether a CDN serves the bytes is no longer this
+  # list's business. Who OWNS a listed name still is: the chain is trusted wherever that
+  # owner points it.
   #
-  # WHAT IS DELIBERATELY ABSENT IS THE LARGER HALF, and it is not an omission: the ARTIFACT
-  # host of nearly every ecosystem. files.pythonhosted.org, index/static.crates.io,
-  # static.rust-lang.org, sh.rustup.rs, pkg.julialang.org, cran/cloud.r-project.org,
-  # deb.debian.org, archive/security.ubuntu.com and public.ecr.aws are each a CNAME into
-  # Fastly, CloudFront, Cloudflare or Global Accelerator. Listing them changes nothing;
-  # listing the CDN namespaces would work and would END this control, because those
-  # namespaces are self-service - anyone can publish into them in minutes. So pip
-  # downloads, cargo, rustup, CRAN, apt and ECR Public have NO path under design A. That is
-  # the measured input D5 exists to receive (step 6.1), not a gap to close by widening this
-  # list.
+  # WHAT IS STILL ABSENT IS THE ARTIFACT HALF, and it is now a CHOICE rather than a ceiling.
+  # files.pythonhosted.org, index/static.crates.io, static.rust-lang.org, sh.rustup.rs,
+  # pkg.julialang.org, cloud.r-project.org, deb.debian.org, archive/security.ubuntu.com and
+  # public.ecr.aws are each a CNAME into Fastly, CloudFront, Cloudflare or Global
+  # Accelerator, and every one of them is a single listable name under v0.4.0. They are not
+  # here because THIS account has not needed them - `development/` is the pipeline-engineering
+  # account, and D5's comparison at step 6.1 is about where packages should come from, which
+  # is a different question from whether the firewall can express it. The sandbox list is
+  # where the ad-hoc set lives; the two lists diverging is expected and DN-3 reports it.
+  #
+  # WHAT THIS LIST DOES NOT DO, unchanged by v0.4.0: it is a control against ACCIDENT. A
+  # process that already knows an ADDRESS asks no resolver, and a query sent to `1.1.1.1:53`
+  # over the NAT or over DoH on 443 is never seen by this firewall - the VPC resolver only
+  # inspects what it is asked, the tier security group permits all egress and the NACLs sit
+  # at the default allow. Closing either needs an SNI/Host control (Network Firewall, or a
+  # proxy), and neither is built.
   dns_firewall_allow_domains = [
     # AWS itself, and a wildcard rather than names because the regional service endpoints
     # cannot be enumerated and are AWS's own namespace. Without it every SDK call over the
@@ -104,25 +115,29 @@ module "egress" {
     # own workbench refused by the estate's own firewall.
     "datazone.${var.region}.api.aws",
 
-    # PyPI's INDEX, and only the index. Resolution and metadata work; the download does not,
-    # because files.pythonhosted.org is Fastly. A half path, listed knowingly - `uv pip
-    # install` finds a version and dies fetching the wheel, and this line is the reason.
+    # PyPI's INDEX, and only the index - still a half path, but for a different reason since
+    # vpc-egress-v0.4.0. files.pythonhosted.org is Fastly-fronted and used to be UNLISTABLE;
+    # under TRUST_REDIRECTION_DOMAIN it is one ordinary name and adding it would work. It is
+    # absent because nothing in this account has asked for it yet, not because it cannot be
+    # reached: `uv pip install` finds a version and dies fetching the wheel, and this line is
+    # the reason. Adding it is a one-line decision now, not a design question.
     "pypi.org",
 
-    # conda - a COMPLETE path. Both channel hosts answer flat, so each chain is one name.
+    # conda - a COMPLETE path. Both channel hosts, and no hop of theirs, is the whole rule.
     "conda.anaconda.org",
     "repo.anaconda.com",
 
-    # Julia - a COMPLETE path, and the one entry here that needs its second hop named:
-    # us-west.pkg.julialang.ORG is a CNAME to us-west.pkg.julialang.NET, so both are listed
-    # and the chain lands on a name this list carries. Pkg's DEFAULT server,
-    # pkg.julialang.org, is Fastly and is deliberately not here - point Pkg at the regional
-    # one (JULIA_PKG_SERVER) or it has no path at all.
+    # Julia - a COMPLETE path. Pkg queries us-west.pkg.julialang.ORG (JULIA_PKG_SERVER), and
+    # that is the whole entry: the .NET spelling it hops to was listed until v0.4.0 and was
+    # removed with every other hop, because the ALLOW rule trusts the chain and a listed hop
+    # is what makes the hop resolvable on its own. Pkg's DEFAULT server, pkg.julialang.org,
+    # is listable now too and is still not here - the regional one is the deliberate choice,
+    # not a workaround for the firewall.
     "us-west.pkg.julialang.org",
-    "us-west.pkg.julialang.net",
     "storage.julialang.net",
 
-    # uv and ruff - a COMPLETE path: the installer host answers flat.
+    # uv and ruff - a COMPLETE path. "Answers flat" stopped being the criterion at v0.4.0;
+    # this is simply the name the installer asks for.
     "releases.astral.sh",
 
     # DuckDB - a COMPLETE path. Extensions are fetched at FIRST QUERY, from inside the
