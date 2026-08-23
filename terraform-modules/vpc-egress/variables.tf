@@ -84,11 +84,36 @@ variable "dns_firewall_allow_domains" {
   # blames the original name). The operational form of it is one command per candidate,
   # BEFORE it goes on a list:
   #
-  #     dig +short <name>          # any line ending in a dot is a CNAME hop
+  #     dig +noall +answer <name>     # +short hides the record TYPE, and the type is the answer
   #
-  # A name that answers with A records only is listable. A name that hops to a shared CDN
-  # (fastly.net, cloudfront.net, cdn.cloudflare.net, fastlydns.net, awsglobalaccelerator.com)
-  # is NOT made to work by listing it, and the CDN namespace is not the fix - it is
-  # self-service, so allowing it ends the control this firewall is.
+  # READ THE CHAIN, NEVER THE PROVIDER. Three shapes, and only the third is unusable:
+  #
+  #   1. A records under the name that was asked for  -> listable; one name in the chain.
+  #   2. CNAME staying inside the project's own namespace -> listable, but LIST EVERY HOP.
+  #      us-west.pkg.julialang.ORG hops to us-west.pkg.julialang.NET, which is why both are
+  #      on the Interactive lists - the second is load-bearing, not decoration.
+  #   3. CNAME into a shared multi-tenant namespace (fastly.net, cloudfront.net,
+  #      cdn.cloudflare.net, fastlydns.net, awsglobalaccelerator.com) -> NOT listable, and
+  #      listing the tail is not the fix: those namespaces are self-service, so allowing one
+  #      ends the control this firewall is. Widening the list is not the answer to shape 3;
+  #      D5 is (step 6.1).
+  #
+  # "DOES IT GO THROUGH A CDN" IS THE WRONG QUESTION, and it is wrong in the direction that
+  # flatters the list (measured 2026-08-23, `dig` + `whois` on the answer address + response
+  # headers). Of the nine external names the two Interactive slices carry, EIGHT are
+  # CDN-fronted: datazone.<region>.api.aws is CloudFront, pypi.org is Fastly, and
+  # conda.anaconda.org, repo.anaconda.com, storage.julialang.net, releases.astral.sh,
+  # extensions.duckdb.org and blobs.duckdb.org are Cloudflare. Exactly one -
+  # us-west.pkg.julialang.net - is a host of its own. They work anyway because the
+  # authoritative side FLATTENS the CDN behind an A record served under the queried name, so
+  # the chain never leaves the list. What this firewall matches is the SHAPE OF THE DNS
+  # ANSWER; whether a CDN serves the bytes afterwards is not its business.
+  #
+  # WHICH MAKES EVERY ONE OF THOSE EIGHT A DEPENDENCY ON A THIRD PARTY'S DNS CONFIGURATION.
+  # Flattening is a switch its owner can turn off without announcing it; the day one does,
+  # that name starts answering with a CNAME, the chain leaves the list, and the notebook
+  # breaks in a way that looks like this estate's fault. It is a live failure mode, not a
+  # hypothetical - docs/AWS_STATE.md EXC-05 carries the symptom and the triage, and the
+  # diagnostic is the same dig, re-run.
   default = []
 }

@@ -69,8 +69,25 @@ module "egress" {
   # THE ALLOW-LIST ITSELF, and every name on it was MEASURED before it was written
   # (2026-08-23, step 4.3's session). The rule the module's dns-firewall.tf states and this
   # list obeys: DNS Firewall evaluates the WHOLE RESOLUTION CHAIN, so a name belongs here
-  # only if its chain ends inside this list. `dig +short <name>` is the check - a line
-  # ending in a dot is a hop to somewhere that also has to be listed.
+  # only if its chain ends inside this list. `dig +noall +answer <name>` is the check - a
+  # CNAME row is a hop to a name that has to be on this list too. Use that form and not
+  # `+short`, which hides the record type and so hides the discriminator.
+  #
+  # AND EVERY EXTERNAL NAME HERE BUT ONE IS CDN-FRONTED, which is not the contradiction it
+  # looks like (measured the same day: dig, whois on the answer address, response headers).
+  # datazone.<region>.api.aws is CloudFront; pypi.org is Fastly; conda.anaconda.org,
+  # repo.anaconda.com, storage.julialang.net, releases.astral.sh, extensions.duckdb.org and
+  # blobs.duckdb.org are Cloudflare. Exactly one - us-west.pkg.julialang.net - is a host of
+  # its own. They resolve here because their authoritative side FLATTENS the CDN behind an A
+  # record served under the queried name, so the chain never leaves this list. What this
+  # firewall matches is the SHAPE OF THE DNS ANSWER, never the provider - so "the names that
+  # do not go through a CDN" describes almost nothing and is not what this list is.
+  #
+  # THE COST OF THAT, stated because it is a live failure mode and not a hypothetical: eight
+  # of these nine entries work by a switch a third party owns and can turn off without
+  # announcing it. The day one does, that name answers with a CNAME, its chain leaves this
+  # list, and a notebook breaks in a way that looks like this estate's fault.
+  # docs/AWS_STATE.md EXC-05 carries the symptom and the triage.
   #
   # WHAT IS DELIBERATELY ABSENT IS THE LARGER HALF, and it is not an omission: the ARTIFACT
   # host of nearly every ecosystem. files.pythonhosted.org, index/static.crates.io,
@@ -100,7 +117,7 @@ module "egress" {
     # install` finds a version and dies fetching the wheel, and this line is the reason.
     "pypi.org",
 
-    # conda - a COMPLETE path. Both channel hosts answer with A records.
+    # conda - a COMPLETE path. Both channel hosts answer flat, so each chain is one name.
     "conda.anaconda.org",
     "repo.anaconda.com",
 
@@ -113,7 +130,7 @@ module "egress" {
     "us-west.pkg.julialang.net",
     "storage.julialang.net",
 
-    # uv and ruff - a COMPLETE path: the installer host answers with A records.
+    # uv and ruff - a COMPLETE path: the installer host answers flat.
     "releases.astral.sh",
 
     # DuckDB - a COMPLETE path. Extensions are fetched at FIRST QUERY, from inside the
