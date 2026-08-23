@@ -535,6 +535,23 @@ under the **project CMK** — a key this project chose, the deliberate exception
 reaches content by the PATH shape (`*/dzd*/<project>/…`), never by bucket name. What Stage 6 step 2.4
 still records is the project **path shape** inside it — verification (xviii)'s remaining third.
 
+**1a. The vending surface under that same path — S3 Access Grants (measured 2026-08-23).** At first
+project provisioning in a member account, SMUS also creates the account×Region **S3 Access Grants**
+singleton instance (`default`) and one Access Grants **location** per project — `LocationScope` = the
+project prefix, the location's IAM role = the **project role** — with
+`enableS3AccessGrantsForTools = true` on the Tooling environment and **zero grants**. This is the
+surface the 2026-08-23 laptop-access decision (strategy 1-A, user-approved) builds on: one
+per-project, user-authorized **grant** to the `DataScientistAccess` role lets a laptop on the VPN
+vend prefix-scoped **project-role** credentials (`s3control GetDataAccess`) — the same identity
+Studio uses, so no second permission surface appears over the projects bucket or the project CMK.
+The persona's handshake statement is `identity/sso`'s `VendProjectStorageCredentials` (Sandbox
+instance only — Development's instance is born with its first project, and the composed instance-ARN
+local in `identity/sso/locals.tf` gains its entry that day); the consumer is **`s3-read-write/`**,
+whose README carries the grant recipe and the first-run probe sequence. Two properties to hold onto:
+grants are **membership-blind** (the grantee grain is the persona role — every set holder vends for
+every granted project), and the vended credentials are **bearer** for their duration (the OQ-14
+shape). Requests are metered: USD 0.03 per 1,000 non-delete AG calls (`PRICING.md` §5).
+
 **2. Project files storage — S3 or Git.** A project-profile field. The terminology page still says a
 default CodeCommit git connection is provided; the 2025-09 announcement makes S3 the default, born
 of CodeCommit's deprecation. Two spellings of one object (Lesson 32) — what the console actually

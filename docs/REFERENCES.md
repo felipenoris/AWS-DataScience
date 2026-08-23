@@ -251,6 +251,27 @@
 
 - AWS DataSync (S3 <-> EFS synchronisation): <https://docs.aws.amazon.com/datasync/latest/userguide/what-is-datasync.html>.
 
+- **S3 Access Grants — the laptop→project-storage strategy of 2026-08-23** (`s3-read-write/`, the
+  `VendProjectStorageCredentials` statement). The pages behind the four load-bearing facts, all read
+  2026-08-23:
+  - *The model* — instances (one per account × Region, named `default`), locations (a registered
+    prefix with an IAM role the service assumes), grants (grantee × prefix × permission), and
+    `GetDataAccess` vending credentials scoped to the granted prefix:
+    <https://docs.aws.amazon.com/AmazonS3/latest/userguide/access-grants.html> and
+    <https://docs.aws.amazon.com/AmazonS3/latest/userguide/access-grants-data.html>.
+  - *The vend call* — `GetDataAccess` (s3control), its `Permission`/`Privilege`/`DurationSeconds`
+    (900–43200 s) parameters: <https://docs.aws.amazon.com/AmazonS3/latest/API/API_control_GetDataAccess.html>.
+  - *Why not the DataZone vending API* — AWS's own `sagemaker-studio` SDK (PyPI, no public repo)
+    marks its `GetEnvironmentCredentials`-based method deprecated — "*uses GetEnvironmentCredentials
+    which is being removed*" — and delegates to `GetConnection(withSecret=True)` on the project's
+    `project.iam` connection; the library README also documents laptop use via a named profile.
+    Strategy 1-B's anchor if 1-A ever falls through: <https://pypi.org/project/sagemaker-studio/> and
+    <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/python-library.html>, with
+    `GetConnection` at <https://docs.aws.amazon.com/datazone/latest/APIReference/API_GetConnection.html>.
+  - *The price is written only in the Price List offer file* — USD 0.03 per 1,000 non-delete AG
+    requests, both Regions, while the pricing page, user guide and FAQ say nothing (`docs/PRICING.md`
+    §5's row; Lesson 6): <https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AmazonS3/current/us-west-2/index.json>.
+
 ## Data platform
 
 - AWS Glue Data Catalog: <https://docs.aws.amazon.com/glue/latest/dg/catalog-and-crawler.html>.
