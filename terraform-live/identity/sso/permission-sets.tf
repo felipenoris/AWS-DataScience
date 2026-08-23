@@ -186,3 +186,40 @@ resource "aws_ssoadmin_managed_policy_attachment" "cloudwatch_logs_readonly" {
   managed_policy_arn = "arn:${data.aws_partition.current.partition}:iam::aws:policy/CloudWatchLogsReadOnlyAccess"
   permission_set_arn = aws_ssoadmin_permission_set.persona[each.key].arn
 }
+
+# ------------------------------------------------------------------------------------------
+# THE CUSTOMER-MANAGED REFERENCE THE COMMENT ABOVE SAYS DID NOT WORK - and what changed is not
+# the constraint but whether it is MET (user decision of 2026-08-23, strategy 1-A; consumer:
+# `s3-read-write/`). Decision 4 deferred the boundary because a customer-managed policy must
+# exist as an aws_iam_policy of the same name in every account the set is provisioned into, and
+# no governed account had a foundation/ slice to put one in. Both member accounts have had one
+# since Stage 3. So the object is created there - terraform-live/{sandbox,development}/
+# foundation/persona-vending.tf, which carries the whole argument for what it authorizes - and
+# this is the reference.
+#
+# WHY THIS STATEMENT IS NOT INLINE LIKE EVERY OTHER GRANT IN THIS SLICE: `DataScientistAccess`
+# renders at 10217 characters against the 10240 precondition, and the statement costs ~251.
+# See "The size discipline" in README.md - the answer to a full document is a customer-managed
+# policy, not a larger threshold, because the threshold is the IAM inline-ROLE limit this set
+# becomes in every account it reaches.
+#
+# THE APPLY ORDER IS THE MEMBERS FIRST, AND IT IS NOT A PREFERENCE. Provisioning resolves the
+# name in each target account: applied here first, DataScientistAccess fails to provision in
+# both members - an entitlement outage whose message names a policy, not a slice. The order OUT
+# is the reverse: this reference is removed before the objects are.
+#
+# ONE REFERENCE, TWO ACCOUNTS. Unlike the assignments, this resource is per PERMISSION SET, not
+# per (set, account) - the accounts come from wherever the set is assigned, which is why the
+# object has to exist in each of them and why backend.py's PERSONA_VENDING_ACCOUNTS follows the
+# assignment rows rather than the other way round.
+#
+# NO `path` ON EITHER SIDE. The reference carries a name AND a path, both default to "/", and
+# leaving both implicit keeps them equal by construction rather than by two literals agreeing.
+resource "aws_ssoadmin_customer_managed_policy_attachment" "persona_vending" {
+  instance_arn       = local.instance_arn
+  permission_set_arn = aws_ssoadmin_permission_set.persona["data_scientist"].arn
+
+  customer_managed_policy_reference {
+    name = var.persona_vending_policy_name
+  }
+}

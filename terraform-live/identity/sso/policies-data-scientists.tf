@@ -324,47 +324,16 @@ data "aws_iam_policy_document" "data_scientist" {
   }
 
   # ------------------------------------------------------------------------------------------
-  # THE PROJECT-STORAGE VENDING HANDSHAKE (user decision 2026-08-23, Stage-6-adjacent; the
-  # consumer is the s3-read-write/ library). The laptop half of reading and writing a SMUS
-  # project's S3 path from OUTSIDE Studio: the persona asks S3 Access Grants for credentials
-  # (s3:GetDataAccess) and receives a session OF THE PROJECT ROLE, scoped down to the granted
-  # prefix - the same identity Studio itself uses, so the projects bucket, the project CMK and
-  # the D13 boundary all keep their one owner. That is the argument for this path over a
-  # static grant here: a persona ARN for `<domain-id>/<project-id>/` would be a SECOND
-  # permission surface over the same objects (Lesson 33), naming project ids that exist in no
-  # state (the file-top rule, and Lesson 14).
-  #
-  # THESE TWO ACTIONS OPEN NO OBJECT. They are the handshake with the instance - discover
-  # (ListCallerAccessGrants) and vend (GetDataAccess); nothing else is granted, because the
-  # library consumes nothing else. What opens objects is the GRANT: an S3 Access Grants grant
-  # on the SMUS-provisioned location (whose IAM role IS the project role - measured
-  # 2026-08-23), created per project and user-authorized per occurrence, revocable without
-  # touching this document. No kms statement rides along: the vended session carries the
-  # project role's own tag-keyed key statements, and the project CMK delegates to IAM in its
-  # own account (sagemaker-prereqs/kms.tf) - this persona never meets the key directly.
-  #
-  # ON-VPN ONLY, BY THE EXISTING PIN - and only the INVARIANT half is measured: off-VPN these
-  # calls carry neither the EIP nor a home gateway-endpoint id, so DenyControlPlaneOffVpn
-  # fires whichever branch is asked. WHICH branch admits them on-VPN is a routing fact nobody
-  # has measured yet: s3-control.<region> resolves inside the S3 public ranges the home's
-  # pl-s3 gateway route captures, so the call likely arrives as aws:SourceVpce - the pass-4d
-  # split, not the EIP. The first real run settles it (the s3-read-write README's probe
-  # sequence names the CloudTrail read: GetDataAccess's sourceIPAddress/vpcEndpointId), and
-  # this sentence is then replaced by the reading - Lesson 33's discipline, the split is
-  # measured rather than assumed. The vended credentials are bearer for their duration once
-  # issued - the OQ-14 shape (remote-IDE sessions), accepted there and accepted here for the
-  # same reason.
-  statement {
-    sid    = "VendProjectStorageCredentials"
-    effect = "Allow"
-
-    actions = [
-      "s3:GetDataAccess",
-      "s3:ListCallerAccessGrants",
-    ]
-
-    resources = [local.sandbox_access_grants_instance_arn]
-  }
+  # THE PROJECT-STORAGE VENDING HANDSHAKE IS NOT HERE, AND ITS ABSENCE IS THE DELIVERY
+  # (user decision of 2026-08-23, strategy 1-A; consumer: `s3-read-write/`). It is a
+  # CUSTOMER-MANAGED policy - `var.persona_vending_policy_name`, created by each member's
+  # foundation/ and referenced in permission-sets.tf - because this document had 23 characters
+  # of headroom against the size precondition and the statement costs ~251. That is the ceiling
+  # working as designed, not an obstacle worked around: the README's size discipline says the
+  # answer is a customer-managed policy rather than a larger threshold, and the threshold is the
+  # IAM inline-ROLE limit this set becomes in every account it reaches.
+  # WHAT THE STATEMENT SAYS, AND WHY IT OPENS NOTHING, is argued once - in
+  # terraform-live/<member>/foundation/persona-vending.tf, beside the object itself.
 
   # Status of the work, in the account the work runs in. Describe/List only - every verb that
   # creates, changes or stops anything is denied below.

@@ -32,14 +32,17 @@ S3 Access Grants instance ──assumes──▶ datazone_usr_role_<project>_<en
 - A **grant** on that location authorizes the persona role to call `GetDataAccess` for the
   prefix; the vended session *is* the project role, so bucket access and the project CMK
   behave exactly as they do for Studio itself.
-- The persona's own IAM policy carries only the vending handshake
-  (`VendProjectStorageCredentials` in `terraform-live/identity/sso/`), which opens no object.
+- The persona's own permissions carry only the vending handshake — the customer-managed policy
+  `awsds-org-project-storage-vending`, referenced by `DataScientistAccess` — which opens no object.
 
 ## Prerequisites — administered outside this library
 
-1. **The persona statement** `VendProjectStorageCredentials` applied in
-   [`terraform-live/identity/sso/`](../terraform-live/identity/sso/policies-data-scientists.tf)
-   (this repository, same branch as this library).
+1. **The persona's vending permission applied** — two slices, **members first**: the
+   customer-managed policy `awsds-org-project-storage-vending` in each member account's
+   [`foundation/`](../terraform-live/sandbox/foundation/persona-vending.tf), then the reference
+   to it from `DataScientistAccess` in
+   [`terraform-live/identity/sso/`](../terraform-live/identity/sso/permission-sets.tf). Applied
+   in the other order, the permission set fails to provision until the objects exist.
 2. **One grant per project** on the SMUS-provisioned location — a write to AWS, authorized per
    occurrence. Recipe (infrastructure user, Sandbox):
 
@@ -87,7 +90,7 @@ S3 Access Grants instance ──assumes──▶ datazone_usr_role_<project>_<en
 
 Each step distinguishes a different failure, in order:
 
-| # | Command (persona, VPN up) | Before the statement applies | After statement, before grant | After both |
+| # | Command (persona, VPN up) | Before the policy is applied | After the policy, before the grant | After both |
 |---|---|---|---|---|
 | 1 | `aws s3control list-caller-access-grants --account-id <sandbox-account-id> --profile awsds-scientist-sandbox` | `AccessDenied` | empty list | the grant's row |
 | 2 | `uv run examples/demo.py --profile awsds-scientist-sandbox` | fails at discovery | fails: "No grants found" | full read/write/list cycle |
@@ -101,7 +104,7 @@ One more first-run reading, owed back to `identity/sso`: **which branch of
 `sourceIPAddress`/`vpcEndpointId` — a gateway-endpoint id means the `aws:SourceVpce` carve-out
 (the Stage 5 pass-4d split, the likely answer, since `s3-control.<region>` resolves inside the
 S3 ranges the gateway route captures); the VPN EIP means the `aws:SourceIp` branch — and
-replace the hedged comment beside `VendProjectStorageCredentials` with the reading.
+replace the hedged paragraph in `foundation/persona-vending.tf` with the reading.
 
 ## Usage
 
@@ -138,8 +141,10 @@ credential renewal (vend again when the session expires).
 - **Vended credentials are bearer tokens** for their lifetime (default 3600 s, min 900): once
   issued they work off-VPN too, the same accepted shape as the remote-IDE sessions (open
   question 14). Prefer short durations.
-- **Sandbox only today.** The persona statement names only Sandbox's Access Grants instance;
-  Development joins when its first project (and therefore its instance) exists.
+- **Both member accounts, one object each.** Each copy of the policy names its **own** account's
+  Access Grants instance, so nothing here is Sandbox-specific. Development's instance does not
+  exist until that account's first project is born — until then the policy is simply inert
+  there (an IAM policy may name a resource that does not exist).
 - **One grant = one project × one persona role.** The grain is the persona role (every data
   scientist), which is this estate's declared entitlement grain — per-user attribution was
   declined by design (`docs/GOVERNANCE.md`, "the grain rule"). Note what this collapses:

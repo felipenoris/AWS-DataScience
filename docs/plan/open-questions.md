@@ -527,6 +527,36 @@ length, under item numbers 10-12 that collided with the live items above; the du
     permission, so the share is not what stands between a caller and either API. Whatever answers 20
     will be an IAM statement, not a sharing one.
 
+### Raised while sizing the persona set, 2026-08-23
+
+22. **Nothing in this repository notices when AWS revises a managed policy this design leans on — and
+    three of them are load-bearing for the SMUS surface.** Measured 2026-08-23 in Sandbox, on the
+    project role `datazone_usr_role_…`: `SageMakerStudioProjectUserRolePolicy` **v74** (AWS's last
+    revision 2026-08-11), `SageMakerStudioProjectRoleMachineLearningPolicy` **v42** (2026-08-11),
+    `SageMakerStudioBedrockKnowledgeBaseServiceRolePolicy` v9 (2026-02-12). Those are the documents
+    carrying `DomainS3BucketPermissions` (the project's own path inside `awsds-<env>-smus-projects`,
+    reached by principal-tag substitution), `DomainS3BucketKmsPermissions` (the project CMK) and the
+    `S3AG*` / `ConsumerS3AGPermission` block (S3 Access Grants) — so what a project role, and any
+    credential vended from it, may do is **AWS's text, revised on AWS's schedule**.
+    `SageMakerStudioProjectProvisioningRolePolicy` **v81** is a fourth:
+    `terraform-modules/sagemaker-prereqs/s3.tf`'s "the bucket NAME is free" argument rests on it.
+    **This is Lesson 11 one layer past where that lesson was written.** D26 handed role authorship to a
+    blueprint, and the policies the blueprint attaches are not even the blueprint's — they are AWS's,
+    and they move. Two claims here are written against a version number **in prose** (`s3.tf:15`, and
+    Stage 6's `S3Location` row) and nothing re-reads either.
+    **Why it is a question and not a task.** AWS emits **no CloudTrail event** when it revises a managed
+    policy — the edit happens outside the account, so there is nothing to react to. The only mechanism
+    is *pull*: `iam get-policy` returns `DefaultVersionId` and `UpdateDate`, `get-policy-version` the
+    document. So any answer has the same shape — a stored (version, document-hash) pair and an
+    instrument that **fails when the pair moves**, not because a revision is wrong but to force somebody
+    to read the diff. What is undecided: which policies are in scope (the four above, or every
+    AWS-managed policy any principal in the estate carries); where the pair is stored (`docs/AWS_STATE.md`
+    is the candidate); whether the check belongs in `./aws/studio.py` beside `US-8` or is its own; and
+    what a failure means **procedurally**, given the revision is AWS's and cannot be refused.
+    **Raised while implementing the laptop→project-storage vending path** (`s3-read-write/`, 2026-08-23):
+    that path's authorization *is* the S3 + KMS + Access Grants statements of the first two policies
+    above. It is **not created by that change**, which attaches no AWS-managed policy and removes none.
+
 ---
 
 *Plan core: [GENERAL_PLAN.md](../GENERAL_PLAN.md) · Decisions: [docs/plan/decisions/INDEX.md](decisions/INDEX.md) · Stages: [docs/plan/stages/INDEX.md](stages/INDEX.md)*
