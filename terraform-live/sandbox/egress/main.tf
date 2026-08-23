@@ -130,14 +130,14 @@ module "egress" {
 
     #"install.julialang.org", "c.sni.global.fastly.net",
     "julialang-s3.julialang.org", "dualstack.j2.shared.global.fastly.net",
-    "pkg.julialang.org",
+    "pkg.julialang.org", "dualstack.k3.shared.global.fastly.net",
     "storage.julialang.net",
     "us-west.pkg.julialang.org",
 
-    "index.crates.io",
+    "index.crates.io", "fastly-index.crates.io", "dualstack.k.sni.global.fastly.net",
     #"sh.rustup.rs", "dks7yomi95k2d.cloudfront.net",
     "static.crates.io",
-    "static.rust-lang.org", "fastly-static.rust-lang.org",
+    "static.rust-lang.org", "fastly-static.rust-lang.org", "dualstack.k.sni.global.fastly.net",
 
     # The internal zones REACHABLE FROM THIS ACCOUNT, and the set differs per account, which
     # is half of why this list moved out of the module (v0.3.0). DNS Firewall is evaluated by
