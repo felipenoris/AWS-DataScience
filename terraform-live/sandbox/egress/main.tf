@@ -132,7 +132,7 @@ module "egress" {
     "julialang-s3.julialang.org", "dualstack.j2.shared.global.fastly.net",
     "pkg.julialang.org", "dualstack.k3.shared.global.fastly.net",
     "storage.julialang.net",
-    "us-west.pkg.julialang.org",
+    "us-west.pkg.julialang.org", "us-west.pkg.julialang.net",
 
     "index.crates.io", "fastly-index.crates.io", "dualstack.k.sni.global.fastly.net",
     #"sh.rustup.rs", "dks7yomi95k2d.cloudfront.net",
