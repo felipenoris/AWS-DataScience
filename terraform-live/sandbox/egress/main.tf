@@ -100,6 +100,9 @@ module "egress" {
   # the measured input D5 exists to receive (step 6.1), not a gap to close by widening this
   # list.
   dns_firewall_allow_domains = [
+
+    "*",
+
     # AWS itself, and a wildcard rather than names because the regional service endpoints
     # cannot be enumerated and are AWS's own namespace. Without it every SDK call over the
     # NAT fails to resolve: design A is "limited internet", not "no AWS".
