@@ -133,6 +133,10 @@ module "egress" {
     "pypi.org",
     "files.pythonhosted.org", "dualstack.python.map.fastly.net",
 
+    # conda
+    "conda.anaconda.org",
+    "repo.anaconda.com",
+
     # julia
     #"install.julialang.org", "c.sni.global.fastly.net", # bypassed: manual install from s3
     "julialang-s3.julialang.org", "dualstack.j2.shared.global.fastly.net",
@@ -145,6 +149,9 @@ module "egress" {
     #"sh.rustup.rs", "dks7yomi95k2d.cloudfront.net", # bypassed: `sudo apt install rustup`
     "static.crates.io", "fastly-static.crates.io", "dualstack.k.sni.global.fastly.net",
     "static.rust-lang.org", "fastly-static.rust-lang.org", "dualstack.k.sni.global.fastly.net",
+
+    # github
+    "github.com",
 
     # The internal zones REACHABLE FROM THIS ACCOUNT, and the set differs per account, which
     # is half of why this list moved out of the module (v0.3.0). DNS Firewall is evaluated by
