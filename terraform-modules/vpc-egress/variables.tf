@@ -65,8 +65,37 @@ variable "dns_firewall" {
   default     = false
 }
 
+variable "firewall_domain_redirection_action" {
+  description = "How the ALLOW rule treats a CNAME/DNAME chain. INSPECT_REDIRECTION_DOMAIN (the API default, and this module's) evaluates EVERY domain in the chain, so a hop that is not listed blocks the lookup. TRUST_REDIRECTION_DOMAIN evaluates the QUERIED name only and trusts the chain beneath it. Declared by the caller, like the list it governs."
+  type        = string
+  default     = "INSPECT_REDIRECTION_DOMAIN"
+
+  # THE DEFAULT IS THE STRICTER READING, AND THAT IS THE POLICY - the same argument the empty
+  # allow-list above is built on. A caller who never thought about this field gets the
+  # behaviour where nothing resolves unless the whole chain was reasoned about; a caller who
+  # wants the chain trusted has to say so, in its own slice, where the reach of that account
+  # is decided. It is deliberately NOT the setting this estate's two Interactive slices use.
+  #
+  # WHY IT IS A VARIABLE AT ALL, since one value looks obviously better: the two are not
+  # ranked, they answer different questions. INSPECT asks "does every name this lookup
+  # touches belong to a set I enumerated" - the right question for a slice reaching a small
+  # number of first-party hosts, and the only one that survives a listed name whose owner is
+  # compromised. TRUST asks "did my tool ask for a name I approve of", which is what an
+  # allow-list of hostnames means to the person writing it, and the only workable question
+  # once artifact hosts are involved (see the list's comment). An account gets to answer the
+  # one that matches what it reaches.
+  #
+  # AND THE FIELD IS PER RULE, not per rule group: dns-firewall.tf puts it on the ALLOW rule
+  # only. The catch-all `*` matches at the first domain of every query and never has a chain
+  # left to inspect, so there is nothing there for this to mean.
+  validation {
+    condition     = contains(["INSPECT_REDIRECTION_DOMAIN", "TRUST_REDIRECTION_DOMAIN"], var.firewall_domain_redirection_action)
+    error_message = "firewall_domain_redirection_action is INSPECT_REDIRECTION_DOMAIN or TRUST_REDIRECTION_DOMAIN - the two values the Route 53 Resolver API defines, nothing else."
+  }
+}
+
 variable "dns_firewall_allow_domains" {
-  description = "The allow-list, declared BY THE CALLER. Empty by default, and an empty list means the firewall creates no ALLOW rule at all - every lookup in the VPC returns NXDOMAIN. Read the note in dns-firewall.tf before adding a name: the whole resolution chain is evaluated, so a name is not allowed by being listed if its CNAME target is not."
+  description = "The allow-list, declared BY THE CALLER. Empty by default, and an empty list means the firewall creates no ALLOW rule at all - every lookup in the VPC returns NXDOMAIN. Since v0.4.0 the ALLOW rule trusts the redirection chain, so an entry is THE NAME A TOOL QUERIES and never a CNAME target - listing a hop is a widening, not a safety net."
   type        = list(string)
 
   # EMPTY BY DESIGN, AND THE DEFAULT IS THE POLICY (v0.3.0, 2026-08-23). Until v0.2.1 this
@@ -79,42 +108,44 @@ variable "dns_firewall_allow_domains" {
   # mechanical compares them. That is the cost side, recorded so it is not discovered.
   #
   # WHAT A CALLER MUST SATISFY BEFORE ADDING A NAME - the reason this comment is here rather
-  # than beside each list: dns-firewall.tf's header carries the mechanism (the whole
-  # resolution chain is evaluated, so a CNAME to an unlisted target is blocked and the log
-  # blames the original name). The operational form of it is one command per candidate,
-  # BEFORE it goes on a list:
+  # than beside each list: dns-firewall.tf's header carries the mechanism. Since v0.4.0 the
+  # ALLOW rule is set to TRUST_REDIRECTION_DOMAIN, so the firewall inspects THE NAME THAT WAS
+  # QUERIED and trusts whatever chain it resolves through. The rule that follows is one line:
+  #
+  #     LIST THE NAME YOUR TOOLS ASK FOR. NEVER LIST A REDIRECTION TARGET.
+  #
+  # A hop on this list is not harmless redundancy. The trust is scoped to a single query
+  # transaction, so a redirection target is unreachable on its own - unless somebody lists
+  # it, which is exactly what makes `dualstack.j2.shared.global.fastly.net` resolvable for
+  # anything that cares to ask. Every hop removed from a list is a narrowing.
+  #
+  # WHAT TO CHECK BEFORE ADDING A NAME, NOW THAT THE CHAIN NO LONGER DECIDES: only that the
+  # name answers at all, and that you meant to reach its owner.
   #
   #     dig +noall +answer <name>     # +short hides the record TYPE, and the type is the answer
   #
-  # READ THE CHAIN, NEVER THE PROVIDER. Three shapes, and only the third is unusable:
+  # A CNAME row is no longer a disqualification - it is information about who you are trusting.
+  # The three shapes this comment used to sort names into (flat / same-namespace CNAME /
+  # CNAME into a shared CDN) all resolve now, and only the third is worth a second thought:
+  # `fastly.net`, `cloudfront.net`, `cdn.cloudflare.net`, `fastlydns.net` and
+  # `awsglobalaccelerator.com` are multi-tenant, so the bytes come from a host shared with
+  # everyone. That is an argument about WHO SERVES the artifact, not about whether the name
+  # can be listed, and it is D5's argument (step 6.1) rather than this variable's.
   #
-  #   1. A records under the name that was asked for  -> listable; one name in the chain.
-  #   2. CNAME staying inside the project's own namespace -> listable, but LIST EVERY HOP.
-  #      us-west.pkg.julialang.ORG hops to us-west.pkg.julialang.NET, which is why both are
-  #      on the Interactive lists - the second is load-bearing, not decoration.
-  #   3. CNAME into a shared multi-tenant namespace (fastly.net, cloudfront.net,
-  #      cdn.cloudflare.net, fastlydns.net, awsglobalaccelerator.com) -> NOT listable, and
-  #      listing the tail is not the fix: those namespaces are self-service, so allowing one
-  #      ends the control this firewall is. Widening the list is not the answer to shape 3;
-  #      D5 is (step 6.1).
+  # WHAT THE LIST NO LONGER PROTECTS AGAINST, so nobody re-derives it from the code: the
+  # control now rests on the OWNER of each listed name keeping its DNS honest. That was
+  # always true of an A record and is now true of the whole chain. And it never covered the
+  # two bypasses - a raw address asks no resolver, and a query sent to `1.1.1.1` or over DoH
+  # is not answered by the VPC resolver, so this firewall never sees it. Closing those needs
+  # an SNI/Host control (Network Firewall, or a proxy); neither is built.
   #
-  # "DOES IT GO THROUGH A CDN" IS THE WRONG QUESTION, and it is wrong in the direction that
-  # flatters the list (measured 2026-08-23, `dig` + `whois` on the answer address + response
-  # headers). Of the nine external names the two Interactive slices carry, EIGHT are
-  # CDN-fronted: datazone.<region>.api.aws is CloudFront, pypi.org is Fastly, and
-  # conda.anaconda.org, repo.anaconda.com, storage.julialang.net, releases.astral.sh,
-  # extensions.duckdb.org and blobs.duckdb.org are Cloudflare. Exactly one -
-  # us-west.pkg.julialang.net - is a host of its own. They work anyway because the
-  # authoritative side FLATTENS the CDN behind an A record served under the queried name, so
-  # the chain never leaves the list. What this firewall matches is the SHAPE OF THE DNS
-  # ANSWER; whether a CDN serves the bytes afterwards is not its business.
-  #
-  # WHICH MAKES EVERY ONE OF THOSE EIGHT A DEPENDENCY ON A THIRD PARTY'S DNS CONFIGURATION.
-  # Flattening is a switch its owner can turn off without announcing it; the day one does,
-  # that name starts answering with a CNAME, the chain leaves the list, and the notebook
-  # breaks in a way that looks like this estate's fault. It is a live failure mode, not a
-  # hypothetical - docs/AWS_STATE.md EXC-05 carries the symptom and the triage, and
-  # ./aws/dns-allowlist.py is that dig re-run over both lists, on demand and with no AWS
-  # session needed.
+  # HISTORY, kept because a reader will meet it in the stage log and in EXC-05: until v0.4.0
+  # this module took the API default, INSPECT_REDIRECTION_DOMAIN, and every hop had to be
+  # listed. Under that default eight of the nine external names the two Interactive slices
+  # carried resolved only because their authoritative side FLATTENS the CDN behind an A record
+  # served under the queried name (measured 2026-08-23: `dig`, `whois` on the answer address,
+  # response headers) - a switch a third party could turn off without announcing it. That
+  # dependency is what v0.4.0 removes. ./aws/dns-allowlist.py still re-resolves both lists,
+  # and DN-2 now asks the question this rule made important: is anything on a list a hop.
   default = []
 }

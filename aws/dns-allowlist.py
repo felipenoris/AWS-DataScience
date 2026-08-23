@@ -1,6 +1,7 @@
 #!/usr/bin/env -S uv run --quiet
 # dns-allowlist.py - re-resolve every name on the Interactive egress allow-lists and report
-# which ones still have their whole resolution chain inside the list they sit on.
+# what each one answers with, which entries are redundant hops, and which reach their address
+# only because the ALLOW rule trusts the redirection chain.
 #
 #   needs:    NOTHING, in the default mode - no SSO session, no profile, no AWS call. It
 #             reads this repository's own .tf and asks a resolver. `dig` must be on PATH.
@@ -18,17 +19,25 @@
 #             route53resolver:ListFirewallDomainLists and ListFirewallDomains. This script
 #             never creates, updates or deletes anything.
 #
-# WHY THIS EXISTS. docs/AWS_STATE.md EXC-05: DNS Firewall evaluates the WHOLE resolution
-# chain, so a name is allowed only if every hop it takes is also on the list. Eight of the
-# nine external names these lists carry are CDN-fronted and resolve only because their
-# authoritative side FLATTENS the CDN behind an A record served under the queried name - the
-# chain never leaves the list, so the firewall matches. Flattening is a switch its owner can
-# turn off without announcing it. The day one does, that name starts answering with a CNAME
-# into a shared namespace, the chain leaves the list, and the lookup is blocked - and the
-# Resolver query log reports the block against the ORIGINAL name, which reads exactly like
-# "that name was never on the allow-list" and is not. That misattribution has already cost
-# one correct hypothesis in this project (the 2026-08-23 log entry). This script is the
-# cheap standing instrument that catches the flip before a notebook does.
+# WHY THIS EXISTS, AND WHY ITS MAIN QUESTION INVERTED ON 2026-08-23. It was written that
+# morning for docs/AWS_STATE.md EXC-05: DNS Firewall inspected the WHOLE resolution chain, so
+# a name was allowed only while every hop it took was also on the list, and eight of nine
+# external names resolved only because their authoritative side FLATTENED the CDN behind an A
+# record served under the queried name - a switch a third party could turn off unannounced,
+# after which the Resolver log blamed the ORIGINAL name and the block read like "that name was
+# never on the allow-list". That misattribution cost one correct hypothesis (the 2026-08-23
+# log entry).
+#
+# vpc-egress-v0.4.0 MADE `firewall_domain_redirection_action` A MODULE INPUT - default
+# INSPECT, and both Interactive slices pass `TRUST_REDIRECTION_DOMAIN` on their ALLOW rule, so
+# in those two VPCs the firewall inspects the QUERIED name and trusts the chain beneath it.
+# THIS SCRIPT ASSUMES THAT SETTING, because it reads only the two lists that carry it; a slice
+# left on the default is not in SLICES and would need DN-2 and DN-4 read the other way round. EXC-05's failure mode is closed and DN-2 no longer asks whether a chain stays inside its
+# list - it asks the question the new rule makes load-bearing: IS ANYTHING ON A LIST A HOP OF
+# SOMETHING ELSE ON THE SAME LIST. A listed hop is not redundancy, it is a widening: the trust
+# is scoped to one query transaction, so a redirection target is unreachable on its own until
+# somebody lists it. DN-4 keeps the old measurement as information rather than as a verdict -
+# which names would stop resolving if the module were ever reverted to the API default.
 #
 # It also closes the one gap terraform-modules/vpc-egress/variables.tf admits and nothing
 # mechanical was checking: since v0.3.0 each Interactive slice owns its own list, so the two
@@ -265,12 +274,19 @@ def owner_of(addr: str) -> str:
 
 
 def verdict(ans: Answer, patterns: list[str]) -> tuple[str, list[str]]:
+    """Three outcomes, and none of them is a block since vpc-egress v0.4.0.
+
+    The queried name is an entry on the list by construction, and the ALLOW rule trusts
+    whatever it redirects through - so the only thing worth separating is HOW the address
+    was reached. `uncovered` is the hops no entry matches: under the old default those were
+    the block, and now they are the part of the answer that rests on the trust setting.
+    """
     if ans.error:
         return "no-answer", []
-    uncovered = [h for h in ans.chain if not any(covers(p, h) for p in patterns)]
-    if uncovered:
-        return "BROKEN", uncovered
-    return ("ok-chain" if ans.hops else "ok-flat"), []
+    uncovered = [h for h in ans.hops if not any(covers(p, h) for p in patterns)]
+    if not ans.hops:
+        return "ok-flat", []
+    return ("ok-trusted" if uncovered else "ok-listed"), uncovered
 
 
 # --------------------------------------------------------------------------- main
@@ -338,9 +354,11 @@ source    : {source_note}
 resolver  : {resolver or "the system resolver of this machine"}
 owners    : {"whois, per terminal address" if do_whois else "not measured (--whois)"}
 
-EXC-05 is what this measures. The firewall evaluates the WHOLE chain, so a name is allowed
-only while every hop it takes is also listed. A BROKEN row means a hop left the list - it is
-the finding, and it is almost always someone else's DNS change rather than ours.
+Both Interactive slices pass firewall_domain_redirection_action = TRUST_REDIRECTION_DOMAIN
+(vpc-egress v0.4.0, whose own default is INSPECT): the firewall inspects the name that was
+QUERIED and trusts the chain under it. So a chain leaving its list is no longer a
+block (that was EXC-05, closed) - the finding to act on is a HOP that somebody left ON a list,
+because listing one is what makes that redirection target resolvable on its own.
 """)
 
         # ---------------------------------------------------------------- 1
@@ -363,14 +381,17 @@ the finding, and it is almost always someone else's DNS change rather than ours.
             rep.tabulate(["WRITTEN\t\tREAD AS"] + subs)
 
         # ---------------------------------------------------------------- 2
-        rep.h1("2. Resolution, per list - the chain check")
+        rep.h1("2. Resolution, per list - what each name answers with")
         rep.text(
-            "CHAIN is every name the firewall evaluates for that lookup: the name asked for,\n"
-            "then each CNAME target in order. UNCOVERED names are the ones no entry on that\n"
-            "list matches, and one of them is enough to block the lookup.\n"
+            "CHAIN is the name asked for, then each CNAME target in order. Three verdicts:\n"
+            "  ok-flat     an A record under the queried name - no redirection at all\n"
+            "  ok-listed   it redirects, and every hop happens to be on the list as well\n"
+            "  ok-trusted  it redirects off the list, and reaches its address because the\n"
+            "              ALLOW rule trusts the chain. Normal since v0.4.0, and the count\n"
+            "              DN-4 reports - these are the rows that would break on a revert.\n"
         )
         answers: dict[str, dict[str, Answer]] = {}
-        broken: list[str] = []
+        trusted: list[str] = []  # rows reaching their address through an unlisted hop
         unanswered: list[str] = []
         for env, names in lists.items():
             answers[env] = {}
@@ -382,27 +403,48 @@ the finding, and it is almost always someone else's DNS change rather than ours.
                 ans = resolve(n, resolver)
                 answers[env][n] = ans
                 v, unc = verdict(ans, names)
-                if v == "BROKEN":
-                    broken.append(f"{env}: {n} -> {' -> '.join(unc)}")
-                    detail = "UNCOVERED: " + " ".join(unc)
-                elif v == "no-answer":
+                if v == "no-answer":
                     unanswered.append(f"{env}: {n} ({ans.error})")
                     detail = ans.error
                 else:
+                    if unc:
+                        trusted.append(f"{env}: {n} -> {' -> '.join(unc)}")
                     detail = " -> ".join(ans.chain)
                 rows.append(f"{n}\t{v}\t{len(ans.hops)}\t{detail}")
             rep.tabulate(rows)
 
         # ---------------------------------------------------------------- 3
-        rep.h1("3. What is behind each name - the flattening exposure")
+        rep.h1("3. Entries that are really hops - the v0.4.0 finding")
         rep.text(
-            "An `ok-flat` verdict says the chain never leaves the list. It does NOT say the\n"
-            "name is served from its own infrastructure: most of these are CDN-fronted and\n"
-            "work only because the authoritative side flattens the CDN behind an A record\n"
-            "served under the queried name. Each one of those is a dependency on a switch a\n"
-            "third party owns. That is the EXC-05 exposure, and this is where it is counted.\n"
+            "An entry that appears in ANOTHER entry's chain, on the same list, is a hop that\n"
+            "was left behind. Before v0.4.0 listing it was mandatory; now it is a widening -\n"
+            "the trust is scoped to one query transaction, so a redirection target cannot be\n"
+            "reached on its own UNLESS it is listed, and listing it is what grants that. This\n"
+            "is measured from the chains in section 2, not from a list of known CDN suffixes.\n"
         )
-        exposed = 0
+        hops_listed: list[str] = []
+        for env in lists:
+            rep.h2(env)
+            reached_by: dict[str, list[str]] = {}
+            for n, ans in answers[env].items():
+                for h in ans.hops:
+                    reached_by.setdefault(h.rstrip(".").lower(), []).append(n)
+            rows = ["ENTRY\tALSO A HOP OF"]
+            for n in answers[env]:
+                via = reached_by.get(n.rstrip(".").lower(), [])
+                if via:
+                    hops_listed.append(f"{env}: {n} (hop of {', '.join(via)})")
+                rows.append(f"{n}\t{', '.join(via) if via else '-'}")
+            rep.tabulate(rows)
+
+        # ---------------------------------------------------------------- 3b
+        rep.h1("3b. What is behind each name")
+        rep.text(
+            "Who actually serves the bytes. This stopped being a control question at v0.4.0 -\n"
+            "a CDN-fronted name is listable like any other - and stayed a useful one: the\n"
+            "chain is trusted wherever the owner of the listed name points it, so this is the\n"
+            "party each entry extends trust to.\n"
+        )
         counted = False
         for env in lists:
             rep.h2(env)
@@ -410,8 +452,6 @@ the finding, and it is almost always someone else's DNS change rather than ours.
             for n, ans in answers[env].items():
                 v, _ = verdict(ans, lists[env])
                 addr = ans.addrs[0] if ans.addrs else "-"
-                if v == "ok-flat":
-                    exposed += 1
                 if do_whois and ans.addrs:
                     owner = owner_of(ans.addrs[0])
                     counted = True
@@ -450,17 +490,17 @@ the finding, and it is almost always someone else's DNS change rather than ours.
                 "every queryable name answers",
                 f"{sum(len(v) for v in answers.values())} names, all with an address",
             )
-        if broken:
+        if hops_listed:
             checks.fail(
                 "DN-2",
-                "every chain stays inside its own list",
-                f"{len(broken)} left it: " + "; ".join(broken),
+                "no entry is a redirection target of another entry",
+                f"{len(hops_listed)} is/are: " + "; ".join(hops_listed),
             )
         else:
             checks.ok(
                 "DN-2",
-                "every chain stays inside its own list",
-                "no hop is unmatched - EXC-05 has not fired",
+                "no entry is a redirection target of another entry",
+                "no list carries a hop of its own - nothing is widened by leftovers",
             )
         if only_a or only_b:
             checks.fail(
@@ -475,25 +515,31 @@ the finding, and it is almost always someone else's DNS change rather than ours.
                 f"{len(ext[a])} entries, identical",
             )
         attribution = (
-            "the owner column in section 3 says which of them are a third party's CDN"
+            "the owner column in section 3b says whose infrastructure each one lands on"
             if counted
             else "WHOSE they are is not measured - re-run with --whois to attribute them"
         )
         checks.note(
             "DN-4",
-            "flattening exposure",
-            f"{exposed} name(s) resolve flat, so each depends on its owner keeping it "
-            f"that way (EXC-05); {attribution}",
+            "names reaching their address through an unlisted hop",
+            f"{len(trusted)} name(s) resolve only because their slice passes "
+            f"TRUST_REDIRECTION_DOMAIN - these are what dropping back to the module default "
+            f"would break: {'; '.join(trusted) if trusted else 'none'}; {attribution}",
         )
         rep.checks_table(checks)
         rep.text("""
-A `fail` on DN-2 is the one to act on, and the action is NOT to add the uncovered name:
-if it is a shared CDN namespace, listing it ends the control this firewall is (see
-terraform-modules/vpc-egress/variables.tf, shape 3). The repairs are a host that still
-answers flat, a mirror inside the estate, or design B - D5 at Stage 6 step 6.1.
+A `fail` on DN-2 is the one to act on, and the action is to REMOVE the entry, not to keep
+it: a slice passing TRUST_REDIRECTION_DOMAIN needs no hop listed, and the listing is what
+makes that redirection target resolvable on its own. On a slice left at the module default
+the finding reverses - there the hop is REQUIRED, and this check does not apply to it. Check first that nothing queries the name
+directly - a hop of one entry can still be a name a different tool asks for by itself, and
+then it is an entry in its own right rather than a leftover.
 
-A clean run here is a screen, not a proof: this resolver is not the VPC's. Confirm a
-BROKEN row, and any surprise, from inside the VPC.
+DN-4 is information, not a warning. A large count is the expected shape of a list written
+against TRUST; it becomes a work item only if a slice drops back to the module default.
+
+A clean run here is a screen, not a proof: this resolver is not the VPC's, and a CDN can
+steer a chain by geography. Confirm anything surprising from inside the VPC.
 """)
 
         rep.h1("6. Calls that failed")

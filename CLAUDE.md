@@ -209,6 +209,17 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   DISK comes down only by `-replace`**, because EBS refuses a shrinking `ModifyVolume` and strands the
   slice one `~ volume_size` short of its own code. Detail: `AWS_STATE.md`'s VPN row, `vpn.md` §S6. The
   probe slices stay Graviton — not the VPN.
+- **THE CDN WALL WAS AN API DEFAULT, NOT THE SERVICE (2026-08-23, same day 4.3 measured it; Lesson 30 on
+  a default, `EXC-05` CLOSED, NOT APPLIED YET).** Chain evaluation is the **per-rule**
+  `FirewallDomainRedirectionAction` — the module had never set it, so it took
+  `INSPECT_REDIRECTION_DOMAIN`. **`v0.4.0` makes it a module INPUT (default INSPECT) and both Interactive
+  slices pass `TRUST_REDIRECTION_DOMAIN`** — per slice, beside the list, like `v0.3.0` did to the list:
+  inspect the QUERIED name, trust the chain. **It does not open the CDN** — the trust is ONE query
+  transaction, so a redirection target asked for directly matches nothing and is BLOCKED. So
+  pip/cargo/apt/ECR-Public **do** have a path under A. **12 hop entries off Sandbox (10 distinct), 1 off
+  Development**: a listed hop is now a WIDENING, and `DN-2` inverted to say so. **Two bypasses stay open,
+  neither DNS-closable** — a raw address, and a query to `1.1.1.1`/DoH the VPC resolver never sees. The L7
+  answers are `architecture.md` §4.3a, **not built**.
 - **Stage 5 DONE, every pass (2026-08-18/20) — the governed lake exists, is granted, shared and
   consumed.** `docs/GOVERNANCE.md` is the one copy of the ontology + grant rules; **one data CMK per
   account** (`alias/awsds-<env>-data`). **Producer:** 5 `awsds-data-*` buckets, `raw`+`curated`
@@ -333,7 +344,7 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   **US-8 said the opposite first and the instrument was wrong** (Lesson 30): `iam list-roles` OMITS
   `PermissionsBoundary` by documented contract (`GetRole`-only, with `Tags`) — fixed to `get-role`
   per role, re-run `pass`. **What St.6 still owes: the fallback-(i)-or-acceptance decision (the 1.7
-  bullet), the off-VPN probe's teardown confirmed, then passes 3-5 + 5.1 (less 4.1 and 4.3, RUN 2026-08-23: **DNS Firewall evaluates the whole CNAME chain**, so every CDN-backed artifact host is unreachable and pip/cargo/rustup/CRAN/apt/ECR-Public have NO path under design A — `vpc-egress-v0.3.0`, module default now EMPTY, each slice owns its list; `EXC-04`)** — pass 3 stands on a
+  bullet), the off-VPN probe's teardown confirmed, then passes 3-5 + 5.1 (less 4.1 and 4.3, RUN 2026-08-23; `vpc-egress-v0.3.0` moved the list OUT of the module — each slice owns its own, default EMPTY; `EXC-04`)** — pass 3 stands on a
   measured create path. **5.0 is DONE** (`default-v0.1.0`
   pushed to both repos 2026-08-22, one buildbox session). Decisions 1 (EMR-S vs Glue) and 6 (prefix
   shape) stay in-stage; **2 is delivered** (TIP `false`, non-editable, both profiles).
