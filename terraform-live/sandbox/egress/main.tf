@@ -140,8 +140,8 @@ module "egress" {
     "files.pythonhosted.org",
 
     # conda
-    "conda.anaconda.org",
-    "repo.anaconda.com",
+    #"conda.anaconda.org",
+    #"repo.anaconda.com",
 
     # julia. us-west.pkg.julialang.ORG hops to the .NET spelling and the hop is no longer
     # listed - Pkg queries the .org name (JULIA_PKG_SERVER), which is the one that belongs
