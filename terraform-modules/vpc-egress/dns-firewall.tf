@@ -44,21 +44,59 @@ locals {
 # a whole leftmost label: `*prod.example.com` is rejected. A wildcard never crosses into a
 # sibling registrable domain.
 #
-# AND THE RULE THAT ACTUALLY GOVERNS WHAT BELONGS ON A LIST, MEASURED 2026-08-23 (Stage 6
-# step 4.3): DNS FIREWALL EVALUATES THE WHOLE RESOLUTION CHAIN, NOT THE QUERIED NAME. If a
-# listed name is a CNAME to a target that is not also listed, the lookup is blocked - and the
-# log reports the block against the ORIGINAL name with the catch-all list id, which reads
-# exactly like "that name was not on the allow-list" and is not. The proof is a pair measured
-# under the same wildcard shape: `blobs.duckdb.org` (A records) resolved while
-# `index.crates.io` (CNAME to Fastly) did not.
+# THE RULE THAT USED TO GOVERN WHAT BELONGS ON A LIST, MEASURED 2026-08-23 (Stage 6 step
+# 4.3): DNS FIREWALL EVALUATES THE WHOLE RESOLUTION CHAIN, NOT THE QUERIED NAME. If a listed
+# name is a CNAME to a target that is not also listed, the lookup is blocked - and the log
+# reports the block against the ORIGINAL name with the catch-all list id, which reads exactly
+# like "that name was not on the allow-list" and is not. The proof is a pair measured under
+# the same wildcard shape: `blobs.duckdb.org` (A records) resolved while `index.crates.io`
+# (CNAME to Fastly) did not.
 #
-# THE CONSEQUENCE FOR THIS ESTATE IS NOT SMALL: every package ecosystem serves its ARTIFACTS
-# from a shared CDN, so an allow-list can carry the index and still have no working download
-# path - and the only way to change that is to allow `*.fastly.net`, `*.cloudfront.net`,
-# `*.cdn.cloudflare.net` and friends, which are self-service namespaces anyone can publish
-# into. Allowing them ends this control. A caller therefore lists names it has MEASURED to
-# resolve with their whole chain inside its own list, and does not add a name on the strength
-# of what it is called.
+# THE CONSEQUENCE WAS NOT SMALL, and for one day it was read as design A's ceiling: every
+# package ecosystem serves its ARTIFACTS from a shared CDN, so an allow-list could carry
+# every index and still have no download path, and the only apparent repair was to allow
+# `*.fastly.net`, `*.cloudfront.net`, `*.cdn.cloudflare.net` and friends - self-service
+# namespaces anyone can publish into, so allowing them ends this control.
+#
+# THAT CEILING WAS THE DEFAULT, NOT THE MECHANISM (v0.4.0). `firewall_domain_redirection_action`
+# on the ALLOW rule below is a per-rule setting with two values, and this module had never set
+# it, so it took the API default:
+#
+#   INSPECT_REDIRECTION_DOMAIN   the default - evaluate EVERY domain in the chain
+#   TRUST_REDIRECTION_DOMAIN     evaluate the FIRST domain only, trust the rest of the chain
+#
+# SINCE v0.4.0 IT IS AN INPUT, and the module's default stays INSPECT - the caller decides,
+# in the slice where that account's reach is decided, exactly as it decides the list itself.
+# What the second value buys is what an allow-list of hostnames means to the person writing
+# it: `julialang-s3.julialang.org` is listed, its CNAME into Fastly is not, and does not need
+# to be. Everything below describes the TRUST reading, because that is what both Interactive
+# slices pass; under the default nothing changed and the paragraph above is still the rule.
+#
+# AND IT IS NOT "ALLOWING THE CDN", which is the reading to check before trusting this: the
+# trust holds inside ONE query transaction. A process that queries the redirection target
+# ITSELF - `dualstack.j2.shared.global.fastly.net` - is evaluated as an independent query with
+# no trust carried over, matches nothing on the allow-list, falls to the catch-all below and
+# is BLOCKED. So the estate gains the artifact hosts without gaining the namespace they sit
+# in, which is the whole reason widening the list was never an acceptable repair.
+#
+# WHAT A CALLER TRADES FOR IT, stated because it is the real cost and it is not zero: the
+# control now rests entirely on WHO OWNS THE LISTED NAME. If the authoritative side of a
+# listed name is hostile or compromised, it can point the chain anywhere and the firewall
+# will follow. That was already true of an A record - a listed name could always answer with
+# any address - so the delta is narrower than it first reads, but it is a delta.
+#
+# WHAT THIS DOES NOT REPAIR, so it is not mistaken for a perimeter: the two bypasses of a
+# name-based control are untouched. A process that already knows an ADDRESS never asks the
+# resolver, and a process that asks a resolver OTHER than the VPC's - `1.1.1.1:53` over the
+# NAT, or DoH on 443 - is not inspected here at all, because this firewall only sees what
+# the VPC resolver answers. Both need an L7 control (SNI/Host) to close, which is Network
+# Firewall or a proxy, and neither is built. Design A remains a control against ACCIDENT.
+#
+# THE LIST RULE THAT FOLLOWS FROM ALL OF THIS, for a caller that passes TRUST, and it is
+# shorter than the one it replaces: list THE NAME YOUR TOOLS QUERY, and never a redirection
+# target. A hop on such a list is not merely redundant - it is a widening, because it is what
+# makes the CDN name resolvable on its own. A caller left on the default keeps the old rule,
+# where every hop has to be listed and the whole chain is the unit.
 resource "aws_route53_resolver_firewall_domain_list" "allow" {
   count = local.dns_firewall_allow_enabled ? 1 : 0
 
@@ -102,6 +140,14 @@ resource "aws_route53_resolver_firewall_rule" "allow" {
   firewall_domain_list_id = aws_route53_resolver_firewall_domain_list.allow[0].id
   firewall_rule_group_id  = aws_route53_resolver_firewall_rule_group.this[0].id
   priority                = 100
+
+  # v0.4.0 - the header's argument, in one field, and the VALUE IS THE CALLER'S (variables.tf).
+  # The module defaults to INSPECT_REDIRECTION_DOMAIN, which is the API's own default and the
+  # stricter reading; both Interactive slices pass TRUST_REDIRECTION_DOMAIN. It goes on THIS
+  # rule and not on the catch-all below, and the asymmetry is not an oversight: `*` matches at
+  # the first domain of every query, so the block rule never has a chain left to inspect, and
+  # giving it a redirection setting would describe a path evaluation cannot take.
+  firewall_domain_redirection_action = var.firewall_domain_redirection_action
 }
 
 # NXDOMAIN rather than NODATA, and the choice is about the failure MODE a person sees: a
