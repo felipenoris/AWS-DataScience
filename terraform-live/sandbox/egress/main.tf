@@ -147,7 +147,7 @@ module "egress" {
     # listed - Pkg queries the .org name (JULIA_PKG_SERVER), which is the one that belongs
     # here. install.julialang.org is listable again under v0.4.0 if the manual-from-S3
     # install is ever not wanted; it stays out because nothing needs it today.
-    #"install.julialang.org", # bypassed: manual install from s3
+    "install.julialang.org",
     "julialang-s3.julialang.org",
     "pkg.julialang.org",
     "storage.julialang.net",
@@ -155,7 +155,7 @@ module "egress" {
 
     # rust. Same note as Julia: sh.rustup.rs is a single listable name now, kept out because
     # `sudo apt install rustup` is the path in use.
-    #"sh.rustup.rs", # bypassed: `sudo apt install rustup`
+    "sh.rustup.rs",
     "index.crates.io",
     "static.crates.io",
     "static.rust-lang.org",
