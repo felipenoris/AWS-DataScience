@@ -2497,3 +2497,126 @@ reason as before: no write happens over a state the writer has not seen.
 
 Owed after this sitting: unchanged — the INT-16 decision (user; its premise and cost now measured by
 the entry above), the probe project's teardown confirmation, passes 3-5 + 5.1.
+
+## 2026-08-22 — The DNS Firewall allow-list: six domains it was missing, the wildcard rule measured, and the diff that will never converge
+
+*Both hands. The eighteen hostnames are the **user's**, brought back from a working session and taken
+as given; the coverage reading, the wildcard measurement, the release and the apply are Claude's, on the
+user's request ("revise a whitelist em vpc-egress variables acrescentando os domínios desses sites") and
+its explicit authorisation of the commits, the push, the PR and the apply. The user reported the Sandbox
+up before the apply. No identifiers to redact.*
+
+### What opened it, and the one thing it did not establish
+
+A JupyterLab session in SMUS had no internet, and the question was which parameter in this repository
+imposes that. The chain was read out of the code, not measured — the SSO token had expired at that point
+(`Token for awsds does not exist`), so nothing in the account was queried:
+
+- `sagemakerDomainNetworkType = VpcOnly`, `is_editable = false` (the governance slice's `locals.tf`) puts
+  the app's ENIs inside the account's VPC instead of the AWS-managed network;
+- Tooling's regional parameters hand it the **private** subnets only (`sagemaker-prereqs/blueprints.tf`);
+- the private tier's `0.0.0.0/0` lives in the `[E]` `egress/` slice under `egress_mode = "A"`, never in
+  `foundation/`, so it does not exist while that slice is down;
+- and where the route does exist, `block-everything-else` (`*` → NXDOMAIN, priority 200) is what makes it
+  *limited* internet rather than internet.
+
+**Which of the last two was actually biting was never established, and this entry does not pick one.**
+The two earlier entries of this day record `egress/` as `[E]` and down; the user then reported the
+Sandbox up, and `make status` in the same sitting read `egress` **UP, 25 resources**, the firewall among
+them. What was handed over instead was the distinguishing symptom — a hang is a missing route, an
+immediate *could not resolve host* is the firewall — and the instrument, `/awsds/sandbox/dns-firewall`,
+which carries the rule action beside the name.
+
+### The coverage reading — eleven of the eighteen were already reachable
+
+| Already covered by | The user's names |
+|---|---|
+| `*.ubuntu.com` | `archive.ubuntu.com`, `security.ubuntu.com` |
+| `*.pythonhosted.org` | `files.pythonhosted.org` |
+| `*.crates.io` | `index.crates.io`, `static.crates.io` |
+| `*.julialang.org` | `install.`, `pkg.`, `julialang-s3.`, `us-west.pkg.` |
+| an exact entry | `pypi.org` |
+
+Six registrable domains were genuinely missing, and each is on the list for a reason the names do not
+carry: `public.ecr.aws` (**not** under `amazonaws.com` — the `aws` TLD, and the entry every reading of
+*"`*.amazonaws.com` covers AWS"* misses), `astral.sh` (uv bootstraps from `releases.astral.sh`, not from
+an index), `rustup.rs` and `rust-lang.org` (the same shape for Rust — the installer host and the
+toolchain, neither of them the index), `julialang.net` (`storage.julialang.net`), and `duckdb.org`
+(extensions fetched at first query, from inside the notebook process and long after any install step).
+
+### Why the wildcard was measured instead of assumed
+
+`us-west.pkg.julialang.org` sits three labels under `*.julialang.org`, and the whole coverage table above
+turns on whether that reaches. The domain-list syntax was re-read rather than recalled: the `*` must
+replace an **entire leftmost label** (`*prod.example.com` and `prod*.example.com` are both rejected), and
+it matches that label **and every subdomain beneath it at any depth** — but never the apex, which is what
+makes the file's pair-every-entry convention correct rather than superstitious. Recorded in
+`REFERENCES.md` and beside the pairing rule in `dns-firewall.tf`.
+
+**The name a wildcard does not save is `storage.julialang.net`.** Julia's package server is
+`julialang.`**`org`** and its storage server is `julialang.`**`net`**: depth is crossed, a sibling TLD is
+not. So an ecosystem is not "on the list" because one of its names is — the trap is now written above the
+list, with this as its case.
+
+### The release — Recipe B, and the hook arriving exactly where the runbook says
+
+1. **Commit 1, the module alone** (`e863b7b`).
+2. **`vpc-egress-v0.2.1` tagged and pushed with `--tags`**, then asked of origin: `git ls-remote` returned
+   the one-line success shape at the same hash `git rev-parse` gives locally.
+3. **Commit 2, both Interactive callers — refused by the `terraform validate` hook**: *"The source
+   address was changed since this module was installed"*, §7's block. `terraform init` re-run on both
+   slices (each then recording `vpc-egress-v0.2.1` in `.terraform/modules/modules.json`), the commit
+   re-run, all hooks passed (`89676eb`).
+4. **PR #33**, unmerged at the close of the sitting.
+
+`production/egress/` is untouched on `v0.1.0`: it never sets `dns_firewall`, whose default is `false`, so
+the list is not consulted there at all.
+
+### The apply, and the hazard that made the plans worth reading
+
+`make up ENV=sandbox` applies **three** `[E]` slices, not one, and `buildbox` takes its AMI from an SSM
+public parameter — a newer AL2023 image would have **replaced the running build host, whose volume dies
+with it**. All three were planned first: `egress` **`0 to add, 2 to change, 0 to destroy`**, `buildbox`
+and `probes` both **`No changes`**. The hazard did not materialise; the reading is what says so.
+
+Then `make up ENV=sandbox AUTO=1`, and the result read back **from the API rather than from the apply's
+own output**: `list-firewall-domains` on `rslvr-fdl-7a0eaf765a5b4333` returns **38 names** — nineteen
+pairs, the six new ones present in both forms. Burn unchanged at **USD 0.3500/h**.
+
+### Two findings the apply exposed
+
+**The plan on this slice will never be clean, and that costs a check this project relies on.** Re-planning
+immediately after the successful apply reads `0 to add, 2 to change, 0 to destroy` again. The Route 53
+Resolver API **canonicalises every entry with a trailing dot** — it returns `pypi.org.`,
+`*.amazonaws.com.`, and the catch-all list reads `["*."]` — while the code writes them without one, so the
+provider compares two spellings of the same list and issues an `UpdateFirewallDomains` on every apply.
+Pre-existing rather than introduced here. What it costs is specific: *"re-plan reads `No changes`"* is the
+closing check for every change in this repository, and it is **unavailable on both Interactive `egress/`
+slices** — a future reader sees all 38 names churn and cannot tell an edit from the noise. The fix is a
+**hypothesis and not a reading** (write the defaults in the dotted FQDN form) and needs one apply cycle,
+because it could normalise the other way and produce the mirror diff.
+
+**This list binds the whole VPC, `buildbox` included.** The rule group associates to the **VPC id**, not
+to a route table, so the isolated tier's build host is filtered by it too — even though its egress leaves
+through the WireGuard NAT instance and never touches this slice's NAT. Its security-group comment names
+what it pulls (`public.ecr.aws`, PyPI, conda-forge, julialang, `static.rust-lang.org`) and **defers the
+naming to here; two of those five were not on the list.** Never exercised — no build has run while
+`egress/` was up. Written into `variables.tf` beside the list, because nothing else names the coupling.
+
+One state observation, and not a finding of this work: `make status` reads `buildbox` **and** `probes`
+both UP. `layers.py` records the two as a **conflict** rather than a dependency — the perimeter probe
+measures the isolated tier's *absence* of a default route and the buildbox's whole mechanism is adding
+one — and the exclusion is enforced by `./scripts/buildbox.py`, which `make up` does not call. Both were
+already up before this sitting's apply.
+
+### Files
+
+Six plus this log: `terraform-modules/vpc-egress/variables.tf` (the six pairs, the reasons block re-cut
+around them, and the two notes above), `dns-firewall.tf` (the wildcard semantics beside the pairing rule
+they explain), `docs/REFERENCES.md` (the domain-list syntax reading),
+`terraform-live/{sandbox,development}/egress/main.tf` (the ref bump), this log and its index cell. One
+tag, `vpc-egress-v0.2.1`.
+
+Owed after this sitting: unchanged — the INT-16 decision, the probe project's teardown confirmation,
+passes 3-5 + 5.1. Plus one new and small: **`development/egress/` carries the bump in code and not in the
+account.** It is down, and picks `v0.2.1` up on its next `make up`.
