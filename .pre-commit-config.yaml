@@ -125,6 +125,19 @@ repos:
         pass_filenames: false
         files: ^terraform-live/identity/org-policies/(policies/.*\.json|POLICIES\.md)$
 
+      # 2026-08-23 - docs/NETWORK.md is the ONE picture of the whole network, written to be read
+      # INSTEAD of opening six slices, which is exactly what makes a stale copy expensive: a
+      # reader who trusts it does not go and check. The `files` filter names EVERY slice and not
+      # only the network ones on purpose - the failure this defends against is a NEW slice
+      # (Stage 7's GitLab, Stage 9's targets, Stage 13's web tier) putting a host on the wire
+      # with nothing saying the picture is now incomplete.
+      - id: check-network-doc
+        name: docs/NETWORK.md still describes the network the code builds
+        entry: ./scripts/check-network-doc.py
+        language: system
+        pass_filenames: false
+        files: ^(terraform-live/[^/]+/[^/]+/.*\.tf|terraform-modules/(vpc|vpc-egress|wireguard)/.*\.tf|scripts/tfhygiene/backend\.py|docs/NETWORK\.md)$
+
       # 2026-08-17 - no account id and no e-mail address in a tracked file (CLAUDE.md's upkeep
       # table, aws/INDEX.md rule 1). It carries NO `files` filter on purpose: the rule is about
       # what reaches git, and restricting it to the paths that leaked last time is how the next

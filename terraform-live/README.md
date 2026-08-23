@@ -11,6 +11,11 @@ is a broken caller.
 > first. **This README explains how the tree is organised and what is in it today.** When the two disagree,
 > conventions §6 wins and this file is the one that was not updated.
 
+> **And what the network slices actually build — the addresses, the routes, both egress paths, the
+> security groups — is [`docs/NETWORK.md`](../docs/NETWORK.md), also not repeated here.** This file says how the
+> tree is organised; that one says what is on the wire, and `./scripts/check-network-doc.py` fails when a
+> slice creating a network object is not named in it.
+
 ## What is here today
 
 **Twenty-five slices across five account folders: seventeen `[P]`, one `[D]`, seven `[E]`.** That is a summary,

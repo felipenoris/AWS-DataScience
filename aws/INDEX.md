@@ -478,6 +478,12 @@ readings**: the stage's behavioural proofs — `dnf` through the endpoint, `NXDO
 reaching GitLab's port — belong to the stage's throwaway probe instances, and no describe call substitutes
 for them (Lesson 20's rule: configuration for configuration questions, probes for behaviour).
 
+**What both of them are readings OF is [`docs/NETWORK.md`](../docs/NETWORK.md)** — the network as built, in one
+picture: the address plan, every element holding an internal address, the routes, both egress paths, the
+VPN, DNS and its firewall, the security groups. Read it first when the question is *what is this supposed to
+look like*; run these two when the question is *what does AWS report today*. The same split `docs/AWS_STATE.md`
+draws, applied to one subsystem — and a `[P]` fact that moves is re-measured here and then written there.
+
 ## Finding an answer in `output/vpn.txt`
 
 | Question | Section |

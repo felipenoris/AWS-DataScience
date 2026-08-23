@@ -32,6 +32,9 @@ Blueprint for using AWS as a Data Science infrastructure provider.
 - `docs/ORGANIZATION.md` — the account map (one section per account, and the axis each sits on), **the two
   families of IAM role**, and the entitlement plane above them: the SSO users, the seven permission sets,
   the five groups, and the assignment triples binding them to accounts.
+- `docs/NETWORK.md` — the network topology as built: the address plan, every element that holds an internal
+  address, the route tables, both egress paths, the VPN, DNS and its firewall, the security groups — and the
+  two questions it answers with diagrams: how a SageMaker app sees the internet, and what can reach one.
 - `docs/PRICING.md` — per-unit AWS rates for `sa-east-1` and `us-west-2`, read from the AWS Price List bulk API.
   Unlike the cost figures in `docs/plan/cost-model.md`, which are order-of-magnitude estimates, these are
   measured; the cost model says what is consumed, `docs/PRICING.md` says what a unit of it costs.

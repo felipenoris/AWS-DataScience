@@ -27,6 +27,7 @@ Staged plan to build the AWS Data Science environment described in `CLAUDE.md`.
 | Steps to build something | the stage file in [`docs/plan/stages/`](plan/stages/INDEX.md) |
 | A naming, layout, Terraform or IAM rule | [`docs/plan/conventions.md`](plan/conventions.md) |
 | A cross-account thing that must be proven | a new `INT-nn` row in [`docs/plan/integrations.md`](plan/integrations.md) |
+| **A network fact** — a VPC, subnet, route, peering, endpoint, security group, egress path or DNS change | the slice that builds it **and** [`docs/NETWORK.md`](NETWORK.md), in the same sitting — `./scripts/check-network-doc.py` is the mechanical half |
 | A mistake worth not repeating | [`docs/plan/lessons.md`](plan/lessons.md) + its recognition key in `CLAUDE.md` |
 | A procedure to follow when something is on fire | a file in [`docs/plan/runbooks/`](plan/runbooks/) |
 | What happened | [`docs/plan/history.md`](plan/history.md) — never a `docs/log/log-stage-NN-*.md`, which is the user's |
@@ -181,6 +182,10 @@ than nice to have).
   Claude's to write and to keep current — that index is the one file under `docs/log/` Claude maintains.
 - `CLAUDE.md` → `Claude LOG`: updated at the end of each stage, referencing the stage number from this plan.
 - `docs/REFERENCES.md`: every link used as a reference.
+- [`docs/NETWORK.md`](NETWORK.md): the network as built — updated in the sitting that changes a
+  network-bearing slice or module, and **re-measured** with the `aws/` instruments when a `[P]` fact
+  moves. It is the one file that answers *how does an app reach the internet, and what can reach it*
+  without opening six slices, which is what makes a stale copy expensive.
 - `README.md`: kept in sync with the real resource structure and repository layout.
 - `docs/GENERAL_PLAN.md`: revised whenever a decision changes or a stage is re-scoped.
 - The **Well-Architected Machine Learning Lens** is the per-stage checklist: when a stage is built, walk

@@ -80,6 +80,12 @@ apply is additive rather than a rewrite of what pass 1 created.
 
 ## The topology
 
+> **This section is the target as PLANNED at this stage, and it is kept for that.** What the network
+> looks like **now** — measured, with every account's addresses, the two egress paths and the
+> blueprint-provisioned pieces this stage could not foresee — is
+> [`docs/NETWORK.md`](../../NETWORK.md), which is the file that gets updated when the network changes.
+> When the two disagree, that one is current and this one is history.
+
 Three views of the same target, none of which exists yet. Layers are `docs/plan/conventions.md` §5.1.
 
 *View 1 — what crosses an account boundary.* The two solid peerings are the only VPC-level paths between

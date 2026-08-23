@@ -9,7 +9,7 @@ Four files answer four different questions. Keeping them apart is what keeps any
 
 | Question | Where |
 |---|---|
-| What should exist, and why | [`docs/GENERAL_PLAN.md`](GENERAL_PLAN.md), `docs/plan/`, [`docs/ORGANIZATION.md`](ORGANIZATION.md) |
+| What should exist, and why | [`docs/GENERAL_PLAN.md`](GENERAL_PLAN.md), `docs/plan/`, [`docs/ORGANIZATION.md`](ORGANIZATION.md) — and, for the network, [`docs/NETWORK.md`](NETWORK.md) |
 | What was typed by hand, and when | [`docs/log/`](log/INDEX.md) |
 | What AWS reports right now | `aws/output/` — regenerate it, see [`aws/INDEX.md`](../aws/INDEX.md) |
 | **Whether the difference between those is expected** | **this file** |

@@ -101,6 +101,7 @@ check:
 	         "./scripts/slices.py check" \
 	         "./scripts/check-tfvars-shape.py" \
 	         "./scripts/check-index.py" \
+	         "./scripts/check-network-doc.py" \
 	         "./scripts/check-identifiers.py" \
 	         "./scripts/check-provider-locks.py"; do \
 	  printf '\n\033[1m--- %s\033[0m\n' "$$c"; \

@@ -4,6 +4,9 @@ The `amd64` build host of [Stage 6 step 5.0](../stages/stage-06-unified-studio.m
 account. Slice: [`terraform-live/sandbox/buildbox/`](../../../terraform-live/sandbox/buildbox/README.md).
 Layer **`[E]`** — created for a build session, destroyed at the end of it.
 
+**The estate-wide picture — every VPC, route and address, and where this host's one route sits in
+them — is [`docs/NETWORK.md`](../../NETWORK.md).** This file stays the procedure.
+
 ## D. What it is
 
 One EC2 instance (`t3.xlarge`, 64 GiB gp3, both selectable in the tracked

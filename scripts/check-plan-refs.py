@@ -36,6 +36,7 @@ PROSE_FIXED = [
     "docs/GLOSSARY.md",
     "docs/PRICING.md",
     "docs/AWS_STATE.md",
+    "docs/NETWORK.md",
     "aws/INDEX.md",
 ]
 
