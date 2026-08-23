@@ -135,9 +135,9 @@ module "egress" {
     "us-west.pkg.julialang.org",
 
     "index.crates.io",
-    "sh.rustup.rs",
+    #"sh.rustup.rs", "dks7yomi95k2d.cloudfront.net",
     "static.crates.io",
-    "static.rust-lang.org",
+    "static.rust-lang.org", "fastly-static.rust-lang.org",
 
     # The internal zones REACHABLE FROM THIS ACCOUNT, and the set differs per account, which
     # is half of why this list moved out of the module (v0.3.0). DNS Firewall is evaluated by
