@@ -66,79 +66,29 @@ variable "dns_firewall" {
 }
 
 variable "dns_firewall_allow_domains" {
-  description = "The allow-list, and THE ONE COPY OF IT (Lesson 33): both Interactive slices enable the firewall and neither carries a list, so the two cannot drift. Read the note in dns-firewall.tf before editing."
+  description = "The allow-list, declared BY THE CALLER. Empty by default, and an empty list means the firewall creates no ALLOW rule at all - every lookup in the VPC returns NXDOMAIN. Read the note in dns-firewall.tf before adding a name: the whole resolution chain is evaluated, so a name is not allowed by being listed if its CNAME target is not."
   type        = list(string)
 
-  # WHAT IS ON THE LIST, BY REASON RATHER THAN BY NAME - the names go stale, the reasons do
-  # not, and Stage 6 step 4.1 says in as many words to read the ACTUAL names at the time.
+  # EMPTY BY DESIGN, AND THE DEFAULT IS THE POLICY (v0.3.0, 2026-08-23). Until v0.2.1 this
+  # variable carried the estate's actual allow-list, on a "one copy so two callers cannot
+  # drift" argument. That argument was worth less than it looked: the list is not a property
+  # of the MECHANISM, it is a property of what a particular account is allowed to reach, and
+  # keeping it here meant a module tag bump to change one account's reach and a silent
+  # inheritance for any caller that never thought about it. The trade is deliberate and is
+  # not free - two Interactive slices now each carry a list and CAN diverge, and nothing
+  # mechanical compares them. That is the cost side, recorded so it is not discovered.
   #
-  #   AWS itself      without it every SDK call over the NAT fails to resolve, including the
-  #                   ones this design WANTS to leave the VPC. Design A is "limited
-  #                   internet", not "no AWS".
-  #   ECR Public      public.ecr.aws is NOT under amazonaws.com - a different registrable
-  #                   domain on the `aws` TLD, and the one entry every reading of
-  #                   "*.amazonaws.com covers AWS" silently misses. It is the ancestor of the
-  #                   BYOI image (docs/SMUS.md, Custom images), so anything rebasing on
-  #                   sagemaker-distribution resolves this name or does nothing.
-  #   the package     PyPI, conda, CRAN, the Julia package server, crates.io - the ecosystems
-  #   indexes         docs/plan/architecture.md 4.3 names. Under design B these are replaced
-  #                   by CodeArtifact and this list is not consulted at all.
-  #   the toolchain   rustup.rs, rust-lang.org, astral.sh. Rust and uv BOOTSTRAP from an
-  #   installers      installer host, not from an index, so allow-listing the index alone
-  #                   leaves the install itself failing on a name nobody listed.
-  #   runtime         duckdb.org. DuckDB fetches an extension the FIRST TIME A QUERY NEEDS IT,
-  #   extension       from inside the notebook process and long after any install step - so
-  #   fetches         the failure surfaces as a broken query rather than a broken install.
-  #   distro mirrors  the SageMaker Distribution image is Debian-based; an apt-get in a
-  #                   notebook is a normal thing to do and a silent NXDOMAIN on it is an
-  #                   afternoon.
-  #   the internal    prod.internal / pages.internal / sandbox.internal. DNS Firewall is
-  #   zones           evaluated by the VPC resolver, which is also what answers a private
-  #                   hosted zone - so an unlisted internal name is blocked exactly like an
-  #                   internet one, and GitLab stops resolving at Stage 7.
+  # WHAT A CALLER MUST SATISFY BEFORE ADDING A NAME - the reason this comment is here rather
+  # than beside each list: dns-firewall.tf's header carries the mechanism (the whole
+  # resolution chain is evaluated, so a CNAME to an unlisted target is blocked and the log
+  # blames the original name). The operational form of it is one command per candidate,
+  # BEFORE it goes on a list:
   #
-  # TWO REGISTRABLE DOMAINS FOR ONE ECOSYSTEM IS THE TRAP THIS LIST WALKS INTO (2026-08-22):
-  # Julia's package server is *.julialang.ORG and its storage server is storage.julialang.NET.
-  # A wildcard covers DEPTH, never a sibling TLD - `*.julialang.org` matches
-  # us-west.pkg.julialang.org at any nesting and matches julialang.net at none. So an ecosystem
-  # is not "on the list" because one of its names is: read the hostnames a client actually
-  # resolves (step 4.3's query log), never the project's home page.
+  #     dig +short <name>          # any line ending in a dot is a CNAME hop
   #
-  # THIS LIST BINDS THE WHOLE VPC, buildbox included. The rule group associates to the VPC id
-  # (dns-firewall.tf), not to a route table, so the isolated tier's build host is filtered by
-  # it too - even though its egress leaves through the WireGuard NAT instance rather than
-  # through this slice's NAT. The buildbox pulls public.ecr.aws, PyPI, conda-forge, julialang
-  # and static.rust-lang.org (its security-group comment says so and defers the naming to
-  # here); every one of those is on the list above. That coupling has never been exercised,
-  # because no build has yet run while `egress/` was up.
-  #
-  # ONE FAMILY IS KEPT OFF THIS LIST ON PURPOSE, and the instruction is the point rather than
-  # the omission (Stage 6 decision 3, 2026-08-19): Athena Spark's session hosting domains.
-  # Default-deny already excludes them, so nothing is being ADDED here - what is being added
-  # is the instruction NOT to add them when somebody debugging a blocked lookup works down
-  # this list. The reasoning is in Stage 6 step 1.6 and in the `extra_services` comment of
-  # both Interactive egress slices: Spark's executors run outside this VPC, so a notebook on
-  # them sits outside every control the perimeter is made of. The SQL path does not touch
-  # these names.
-  default = [
-    "amazonaws.com", "*.amazonaws.com",
-    "public.ecr.aws", "*.public.ecr.aws",
-    "pypi.org", "*.pypi.org",
-    "pythonhosted.org", "*.pythonhosted.org",
-    "astral.sh", "*.astral.sh",
-    "anaconda.com", "*.anaconda.com",
-    "anaconda.org", "*.anaconda.org",
-    "r-project.org", "*.r-project.org",
-    "julialang.org", "*.julialang.org",
-    "julialang.net", "*.julialang.net",
-    "crates.io", "*.crates.io",
-    "rustup.rs", "*.rustup.rs",
-    "rust-lang.org", "*.rust-lang.org",
-    "duckdb.org", "*.duckdb.org",
-    "debian.org", "*.debian.org",
-    "ubuntu.com", "*.ubuntu.com",
-    "prod.internal", "*.prod.internal",
-    "pages.internal", "*.pages.internal",
-    "sandbox.internal", "*.sandbox.internal",
-  ]
+  # A name that answers with A records only is listable. A name that hops to a shared CDN
+  # (fastly.net, cloudfront.net, cdn.cloudflare.net, fastlydns.net, awsglobalaccelerator.com)
+  # is NOT made to work by listing it, and the CDN namespace is not the fix - it is
+  # self-service, so allowing it ends the control this firewall is.
+  default = []
 }
