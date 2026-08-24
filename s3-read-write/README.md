@@ -107,9 +107,13 @@ first half by failing on it: `sts:GetCallerIdentity` — which this library call
 account id `s3control` requires — takes the VPC's **`sts` interface endpoint**, so it presents a
 VPC key rather than the Elastic IP. `DenyControlPlaneOffVpn` listed only *gateway* endpoint ids
 at the time and denied it explicitly, **with the tunnel up**; the fix swapped that branch to
-`aws:SourceVpc`. `s3control`, by contrast, has **no endpoint in this VPC**, so the vending calls
-leave by the IGW on the Elastic IP. That second half is **derived from the endpoint lists, not
-yet read** — the confirming CloudTrail event is named in `foundation/persona-vending.tf`.
+`aws:SourceVpc`. `s3control`, by contrast, has no *interface* endpoint here — which does **not** put it on the
+IGW: it takes the **S3 gateway** endpoint, because `s3-control.<region>.amazonaws.com` resolves
+inside the ranges the `pl-s3` prefix-list route captures. **Both halves are now read in
+CloudTrail** (first full run): `GetDataAccess` carries the WireGuard host's private address with
+a **gateway** endpoint id, `GetCallerIdentity` the same address with the **STS interface**
+endpoint id. Two doors, one session, and neither is the Elastic IP — so only `sts` ever needed
+the fix, and a library that did not call STS would have run on the unchanged policy.
 
 ## Usage
 

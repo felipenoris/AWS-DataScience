@@ -52,15 +52,20 @@
 #     requires, takes the VPC's `sts` INTERFACE endpoint (private DNS through the client's own
 #     resolver) and is admitted by `aws:SourceVpc`. Before that branch existed the whole path
 #     was explicitly denied here - the defect this estate found the hard way, with the tunnel up.
-#   - `s3control` has NO endpoint in this VPC (`vpc-egress`'s core + extra lists), so
-#     `ListCallerAccessGrants` and `GetDataAccess` resolve publicly, leave by the IGW and are
-#     admitted by `aws:SourceIp` - the Elastic IP.
-# The second bullet is DERIVED FROM THE ENDPOINT LISTS, not yet read: the confirming event is
-# `GetDataAccess` in CloudTrail, which should carry `sourceIPAddress = the Elastic IP` and NO
-# `vpcEndpointId`, while `GetCallerIdentity` carries a private address and one. Replace this
-# with that reading when it is taken (Lesson 33: the split is measured, never assumed) - and
-# note the prediction is falsifiable in a useful direction, since an `s3control` endpoint
-# appearing in `extra_services` later would move the call to the other branch silently.
+#   - `s3control` has no INTERFACE endpoint here, and that does NOT put it on the IGW: it takes
+#     the S3 GATEWAY endpoint, because `s3-control.<region>.amazonaws.com` resolves inside the
+#     ranges the `pl-s3` prefix-list route captures - the 4d mechanism exactly. So the vending
+#     calls were admitted by the old `aws:SourceVpce` list all along, and are admitted by
+#     `aws:SourceVpc` now.
+# BOTH BULLETS ARE NOW READ, IN CLOUDTRAIL, FROM THE FIRST FULL RUN (2026-08-24T02:28Z):
+# `GetDataAccess` carries `sourceIPAddress 10.20.160.87` - the WireGuard host's PRIVATE address -
+# with `vpcEndpointId vpce-0cc3e139c1167ca83`, a GATEWAY id; `GetCallerIdentity` from the same
+# session carries the same private address with `vpce-0b3231af86fbedd72`, the STS INTERFACE
+# endpoint. Two doors, one session, and neither is the Elastic IP.
+# THE SENTENCE THIS REPLACES PREDICTED THE ELASTIC IP AND WAS WRONG - derived from "no interface
+# endpoint" while forgetting that the gateway route captures a PREFIX LIST, not a hostname. The
+# consequence worth keeping: only `sts` ever needed the `aws:SourceVpc` swap, and a library that
+# did not call STS would have run on the old policy untouched.
 #
 # AND THE CREDENTIALS THIS VENDS ARE BEARER FOR THEIR DURATION once issued - they keep working
 # off the tunnel until they expire. That is the OQ-14 shape (remote-IDE sessions), accepted there

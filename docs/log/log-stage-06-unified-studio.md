@@ -3203,3 +3203,63 @@ Owed after this sitting: **the CloudTrail confirmation** of the s3control half, 
 infrastructure session; and the user's own `f4734dd` — a `"*"` added to the DNS Firewall allow-list while
 debugging this, which did not bear on the fault and, if applied, makes design A's allow-list decorative.
 Raised twice in the sitting, not acted on: it is the user's to keep or revert.
+
+## 2026-08-24 — The CloudTrail reading, and the derivation it refuted
+
+*Sixth sitting, minutes after the fifth: the user logged the infrastructure user back in and said the tunnel
+was down, which made the reading possible (`InfrastructureAccess` is the one set carrying no VPN pin) and
+handed the day an unplanned negative control. The reading and the correction are Claude's; **no write was
+made**. Redacted as elsewhere.*
+
+### What was owed, and what it said
+
+The previous entry left one half of the tunnel question derived rather than read: that `s3control`, holding
+no interface endpoint in this VPC, would leave by the IGW and be admitted by `aws:SourceIp` — the Elastic
+IP. The event, from the first full run:
+
+```
+GetDataAccess       s3.amazonaws.com   sourceIPAddress 10.20.160.87   vpcEndpointId vpce-0cc3e139c1167ca83
+GetCallerIdentity   (same session)     sourceIPAddress 10.20.160.87   vpcEndpointId vpce-0b3231af86fbedd72
+```
+
+**The derivation was wrong.** `GetDataAccess` presents the WireGuard host's **private** address and a
+**GATEWAY** endpoint id — one of the two the old `aws:SourceVpce` list carried. `s3-control.<region>
+.amazonaws.com` resolves inside the ranges the `pl-s3` prefix-list route captures, so it takes the S3
+gateway exactly as an S3 call does; "no interface endpoint" says nothing about the IGW, because the gateway
+route matches a **prefix list, not a hostname**. The first hedge this repository wrote — before the
+derivation replaced it — had said so.
+
+`GetCallerIdentity` from the same session carries the same private address with a **different** id,
+`vpce-0b3231af86fbedd72`, the STS interface endpoint. **Two doors, one session, and neither is the Elastic
+IP.**
+
+### The consequence that outlives the correction
+
+**Only `sts` ever needed the swap.** The vending calls were admitted by the old list all along, so a client
+that never called STS would have run on the unchanged policy. What made the path fail was a convenience —
+the library asking STS for the account id `s3control` requires — and that is now memoised for exactly this
+reason, written down one sitting before it was justified by the reading.
+
+### An unplanned negative control, and it is a better one than a designed one
+
+The same query shows this session's own calls: `Infra … 177.12.8.141 … (no vpcEndpointId)` — the same API,
+off the tunnel, from a home address, carrying no endpoint key at all. Three paths in one listing: interface
+endpoint, gateway endpoint, and plain internet. That is the whole of `DenyControlPlaneOffVpn`'s condition
+space, read from one command.
+
+### One trap for the next reader of this trail
+
+`GetDataAccess` is an event NAME shared by two services. The same lookup returned rows from
+`lakeformation.amazonaws.com` (2026-08-20, sourced `athena.amazonaws.com` and `glue.amazonaws.com` — the
+LF vending call behind a query) beside the `s3.amazonaws.com` one that belongs to Access Grants. Filter on
+`eventSource`, or read two unrelated mechanisms as one.
+
+### Files
+
+Three plus this log, all of them corrections of a sentence written hours earlier:
+`terraform-live/{sandbox,development}/foundation/persona-vending.tf` (the second bullet now reads the
+measurement and says plainly that the prediction it replaces was wrong), `s3-read-write/README.md`.
+
+Owed after this sitting: nothing from this thread — the tunnel question is closed in both halves. What
+remains is the estate's: passes 3/5 + 5.1, 4.2's measurement half, 4.3's friction reading, open question
+22, and the user's `f4734dd`.
