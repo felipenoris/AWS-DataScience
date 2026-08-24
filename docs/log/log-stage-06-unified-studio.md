@@ -2891,3 +2891,152 @@ Owed after this sitting: unchanged from the morning — passes 3 and 5 plus 5.1,
 **4.3's friction reading**, and the INT-16 decision. Available and not taken, because it is the user's
 call: a `make check-dns` target in the `check-ou` family, since the script needs the network and
 `make check` is offline by contract.
+
+## 2026-08-23 — The laptop reaches the project's S3 path, and the persona set hit its ceiling doing it
+
+*Third sitting of the day. **The requirement is the user's**, as are the three candidate strategies it
+arrived with, the choice of 1-A over them, the choice of option A when the first shape did not fit, every
+authorisation to commit, push and open the PR, and **all three applies, run by the user's own hand**. The
+investigation, the library, the Terraform, the adversarial review and the documentation are Claude's. No
+AWS write was made by Claude in this sitting. No identifiers to redact.*
+
+### What opened it, and the answer that was measured dead
+
+The user asked for a `boto3`-based library letting a data scientist **on their laptop**, outside Studio,
+read, write and list the S3 storage their SMUS project shows — and proposed three ways it might be done:
+(1) it may already work, (2) statements on the projects bucket, (3) a separate bucket mapped into the
+project. The user also named the doubt that turned out to be the whole thing: *"acredito que ao ler/escrever
+os arquivos via interface do SageMaker o aplicativo utilize uma role do SageMaker de forma independente do
+usuário sso"*.
+
+That doubt is correct and it is the design. With TIP `false` (decision 2, non-editable), Studio acts as the
+**project role**; the persona's own set was read and holds **no allow on `awsds-sandbox-smus-projects` and
+none on the project CMK**. So (1) as stated is dead, and the reason kills (2) and (3) together: neither a
+bucket policy nor a key policy can see *project membership* or an *SSO group* — both would have to
+enumerate project ids that exist in no Terraform state, producing a second permission surface over objects
+the SMUS machinery already governs.
+
+### What the investigation found parked in the account
+
+Four readings, all read-only, and the third is the one the strategy is built on:
+
+- the project role reaches `…/<domain>/<project>/*` by **principal-tag substitution** in AWS's managed
+  policies (`${aws:PrincipalTag/DomainBucketName}` and friends) — the `*/dzd*/<project>/` path claim in
+  `sagemaker-prereqs/s3.tf` confirmed as a mechanism rather than a literal;
+- its trust admits **no human principal** — DataZone, thirteen service principals and the provisioning
+  role — so `sts:AssumeRole` from a laptop is impossible whatever the identity policy says;
+- **SMUS had already provisioned an S3 Access Grants instance** (`default`, created at first project
+  provisioning) with **one location per project**, `LocationScope` = the project prefix and the location's
+  IAM role = **the project role**, `enableS3AccessGrantsForTools = true` on the environment — and **zero
+  grants**. The vending machinery for exactly this requirement was in the account, unused;
+- `GetEnvironmentCredentials`, the obvious DataZone path, is **deprecated inside AWS's own SDK**:
+  `sagemaker-studio` 1.1.31 marks its wrapper *"uses GetEnvironmentCredentials which is being removed"* and
+  delegates to `GetConnection(withSecret=True)`.
+
+**The user chose 1-A**: vend through S3 Access Grants, so the laptop borrows the project role scoped to the
+granted prefix — the same identity Studio uses, and no second surface over the bucket or the CMK.
+
+### The library
+
+`s3-read-write/`, an independent `uv` project with **`boto3` as the only runtime dependency**, conventions
+taken from the user's `benes3` (session-first functions, a pagination helper, `py.typed`). Two modules on
+one seam: `vending.py` holds every SMUS-specific fact and returns a scoped `boto3.Session`; `s3.py` is
+ordinary read/write/list that knows nothing about SMUS. AWS's own `sagemaker-studio` SDK was deliberately
+not used — no public repository, ~10 database drivers, and it sets `AWS_DATA_PATH` process-wide at import.
+
+### The wall, and the instrument that had been reporting it all along
+
+The statement was written inline in `DataScientistAccess`, and **the slice's own precondition refused it**:
+`terraform output inline_policy_bytes` reads **10217** against `var.inline_policy_max_bytes` of **10240** —
+23 characters of headroom against the ~251 the statement costs.
+
+That ceiling is not a house preference: a permission set **becomes an IAM role** in every account it is
+provisioned into, where the inline limit is 10240, so raising the threshold only moves the failure to
+provisioning time, per account, silently. `identity/sso/README.md` had prescribed the answer before anyone
+needed it — *"the answer is a customer-managed policy, not a larger threshold"* — and the output exists,
+in its own words, to let somebody *"see the margin shrinking before it does"*. It did. **The user chose
+option A**, the prescribed one.
+
+### What option A turned out to be worth beyond fitting
+
+Two things that were not the reason for choosing it:
+
+- **the per-account form is better than the inline one was.** One document serving N accounts had to pin a
+  single account's Access Grants instance, so the statement was **Sandbox-only by construction**. Each
+  account's policy now names its **own** instance, read from the caller. Development's does not exist yet
+  and the policy is simply inert there — an IAM policy may name a resource that does not exist;
+- **decision 4's stated blocker had expired.** Its reason — *"no governed account has a `foundation/` slice
+  yet"* — stopped being true at Stage 3, and this change demonstrated the whole mechanism end to end. The
+  README now says so. The boundary stays deferred **on its own merits**; what is gone is the sentence
+  underneath it, which would otherwise have been inherited as a live blocker.
+
+The name is generated, not typed: `PERSONA_VENDING_POLICY_NAME` in `scripts/tfhygiene/backend.py`, emitted
+into three slices' tfvars, because a customer-managed policy is referenced **by name** and one reference
+must resolve in both member accounts. It carries the `org` token for that same reason — an `<env>` token
+would make the two objects' names differ.
+
+### The apply, and the read-back that is the actual proof
+
+Three slices, **members before `identity/sso`** — applied in that order by the user. Plans read `1 to add`
+in each `foundation` (Sandbox also carried **one pre-existing in-place change**: a stale ingress
+description from `e3885a7`'s devbox → buildbox rename, never applied) and `1 to add` in `identity/sso`,
+where the size precondition passed with the headroom restored.
+
+**The verification did not come from the provisioning-status API**, which returned no useful rows. It came
+from the roles, which is where the effect lands: `AWSReservedSSO_DataScientistAccess_*` in **both** member
+accounts lists `awsds-org-project-storage-vending` beside `CloudWatchLogsReadOnlyAccess`. The two policy
+objects read back `v1`, each naming its own account's `access-grants/default`, and the two accounts are
+distinct — which is the per-account claim above, measured rather than asserted. **Grants remain zero.**
+
+### The price nobody publishes
+
+S3 Access Grants requests cost **USD 0.03 per 1,000** (both Regions; deletes free). The S3 pricing page,
+the user guide and the FAQ were all read and **none of them mentions a charge** — the meter is written only
+in the Price List offer file. A reasoned answer would have been *"no separate charge"*, and it would have
+been wrong. Lesson 6, on a service whose documentation invites the mistake.
+
+### The review, and the three findings worth carrying
+
+Three lenses (AWS mechanics, repo conventions, security), every finding adversarially verified: **7
+confirmed and applied, 3 refuted**.
+
+- **the no-delete promise was false.** Access Grants' `READWRITE` includes `s3:DeleteObject` and the service
+  has **no put-without-delete level**, so the library's missing delete helper is an API-surface convention,
+  never a control (Lesson 5). Three files said otherwise; all three now say what is true.
+- **grants are membership-blind.** Access Grants never consults SMUS project membership, so once a project
+  holds a grant, **every** `DataScientistAccess` holder vends for it, member or not — strictly coarser than
+  Studio's own gate. Accepted with the decision, and now written where a reader meets it rather than left
+  to be discovered.
+- **the on-VPN branch is unmeasured.** `DenyControlPlaneOffVpn` denies off-tunnel whichever branch is
+  asked — that half is invariant — but **which** branch admits the vending call on-tunnel is a routing fact
+  nobody has read. `aws:SourceVpce` via the gateway is the expectation (the pass-4d split). The paragraph
+  in `persona-vending.tf` is hedged on purpose and the first `GetDataAccess` CloudTrail event replaces it.
+
+### What this sitting raised and did not answer — open question 22
+
+Asked by the user while deciding option A: *if we manage our own policy, what happens when AWS revises a
+managed one, and can we monitor it?* Answering it exposed that **nothing in this repository notices such a
+revision**, and that the exposure is not where the question assumed. The persona's permissions were already
+ours; what is AWS's, and load-bearing, sits on the **project role**:
+`SageMakerStudioProjectUserRolePolicy` **v74** and `SageMakerStudioProjectRoleMachineLearningPolicy`
+**v42**, both revised **2026-08-11**, carrying the S3, KMS and Access Grants statements this strategy
+vends through — plus `SageMakerStudioProjectProvisioningRolePolicy` **v81**, which a bucket-naming argument
+rests on. Two claims here are written against a version number **in prose** and nothing re-reads them.
+AWS emits **no CloudTrail event** for its own revisions, so any answer is a stored (version, hash) pair and
+an instrument that fails when it moves. **Registered rather than built, on the user's instruction.**
+
+### Files
+
+Fifteen plus this log, across three commits. New: `s3-read-write/` (the library, its README, the demo),
+`terraform-live/{sandbox,development}/foundation/persona-vending.tf`. Changed:
+`scripts/tfhygiene/backend.py` (the generated name), `identity/sso/` (`permission-sets.tf`,
+`policies-data-scientists.tf`, `locals.tf`, `variables.tf`, `README.md`), both members' `variables.tf`.
+Docs: `docs/SMUS.md` (S3 relationship **1a**), `docs/AWS_STATE.md` (the row), `docs/PRICING.md` (§5),
+`docs/REFERENCES.md`, `docs/plan/conventions.md` (§6, both member `foundation/` lines),
+`docs/plan/open-questions.md` (**22**).
+
+Owed after this sitting: **the per-project grant**, which is the only object that opens a path and is a
+write the user authorizes per occurrence; then the first-run probe as the persona, which settles the last
+unknown (SSE-KMS end to end through a vended, scope-reduced session) and yields the CloudTrail reading the
+hedged paragraph is waiting for. Stage 6's own ledger is unchanged by this sitting: passes 3 and 5 plus
+5.1, 4.2's measurement half, 4.3's friction reading, and the INT-16 decision.
