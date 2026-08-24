@@ -108,6 +108,9 @@ module "egress" {
   # is built - D5 at step 6.1 is where that is argued.
   dns_firewall_allow_domains = [
 
+    # allow all
+    "*",
+
     # AWS itself, and a wildcard rather than names because the regional service endpoints
     # cannot be enumerated and are AWS's own namespace. Without it every SDK call over the
     # NAT fails to resolve: design A is "limited internet", not "no AWS".
