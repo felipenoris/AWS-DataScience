@@ -175,25 +175,36 @@ locals {
     "${remote.outputs.wireguard_eip_public_ip}/32"
   ])
 
-  # THE SAME HOMES, BY THEIR GATEWAY ENDPOINTS - the half 4d measured missing (Lesson 33;
-  # stage 5 log, the 2026-08-19 controls entry). Tunnel traffic SPLITS BY DESTINATION in the
-  # home's public subnet: S3 and DynamoDB leave through the [P] gateway endpoints - whose
-  # prefix-list routes are more specific than 0.0.0.0/0 -> IGW - and arrive carrying the
-  # HOST'S PRIVATE ADDRESS plus aws:SourceVpce, never the Elastic IP. So the aws:SourceIp pin
-  # alone explicitly denied every direct S3 call a persona made from INSIDE the perimeter.
+  # THE SAME HOMES, BY THE VPC THEY EXIT THROUGH - and this local replaced a list of GATEWAY
+  # ENDPOINT ids on 2026-08-23, because that list was the right fix measured one case short.
   #
-  # THESE ARE THE VPN HOMES' ENDPOINTS, DELIBERATELY NOT THE CONSUMERS' (the locals below):
-  # the home is the tunnel's exit whatever account the persona works in, so "who consumes the
-  # lake" is the wrong axis - the two lists coincide today only because the single home also
-  # consumes (Lessons 10, 29). Both gateway services ride one mechanism, so both ids are here:
-  # any service with a gateway endpoint on the home's route table takes this path, and today
-  # that is S3 and DynamoDB (INT-05's [P] anchors, exported by every foundation/).
-  vpn_egress_vpce_ids = sort(flatten([
-    for home, remote in data.terraform_remote_state.vpn_home : [
-      remote.outputs.s3_gateway_endpoint_id,
-      remote.outputs.dynamodb_gateway_endpoint_id,
-    ]
-  ]))
+  # THE 4d HALF, WHICH STANDS: tunnel traffic SPLITS BY DESTINATION. S3 and DynamoDB leave
+  # through the home's [P] gateway endpoints - prefix-list routes beating the IGW default - and
+  # arrive carrying the host's PRIVATE address plus a vpce id, never the Elastic IP. So the
+  # aws:SourceIp pin alone explicitly denied every direct S3 call a persona made from inside
+  # the perimeter (Lesson 33; stage 5 log, 4d).
+  #
+  # THE HALF IT MISSED, MEASURED 2026-08-23 WITH A NEGATIVE CONTROL: while `egress/` is up, the
+  # laptop's DNS goes to the VPC resolver (the client config's own `DNS = 10.20.0.2`) and every
+  # service holding an INTERFACE endpoint resolves to a PRIVATE address - `dig sts.us-west-2
+  # .amazonaws.com` answered 10.20.12.229, while `dig s3.us-west-2.amazonaws.com` answered
+  # public addresses, the gateway doing no private DNS. Those calls therefore present the
+  # INTERFACE endpoint's id, which this list did not carry and MAY NOT carry: interface
+  # endpoints are [E], with new ids on every `make up` (Lesson 3). The persona was explicitly
+  # denied `sts:GetCallerIdentity` with the tunnel up and `curl checkip` reading the EIP -
+  # two true readings of two different paths.
+  #
+  # SO THE ANCHOR IS THE VPC, WHICH IS WHAT LESSON 3 PRESCRIBES ("anchor on the [P] gateway
+  # endpoint, OR on aws:SourceVpc"). It is [P], it survives every `make up`, and it SUBSUMES
+  # the gateway ids this local used to hold - a request through any endpoint in that VPC
+  # carries both keys, so nothing that passed before stops passing. What it widens is exactly
+  # the intent of the control: the persona works from inside the perimeter. It does not admit
+  # in-VPC workloads wearing this identity - a persona role is reachable only through the IdC
+  # sign-in, never by an instance profile.
+  vpn_egress_vpc_ids = sort([
+    for home, remote in data.terraform_remote_state.vpn_home :
+    remote.outputs.vpc_id
+  ])
 
   # ------------------------------------------------- the lake's consumer-side ARNs - pass 4c
   #

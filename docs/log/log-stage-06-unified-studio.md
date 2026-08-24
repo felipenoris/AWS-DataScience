@@ -3040,3 +3040,99 @@ write the user authorizes per occurrence; then the first-run probe as the person
 unknown (SSE-KMS end to end through a vended, scope-reduced session) and yields the CloudTrail reading the
 hedged paragraph is waiting for. Stage 6's own ledger is unchanged by this sitting: passes 3 and 5 plus
 5.1, 4.2's measurement half, 4.3's friction reading, and the INT-16 decision.
+
+## 2026-08-23 — The VPN pin was correct in the case it was measured in, and the estate's own endpoints were the case it missed
+
+*Fourth sitting of the day, continuous with the third: the vending path was applied and the first run of the
+probe failed. **Every AWS call in it is the user's** — the persona login, the three client checks and the two
+`dig`s that settled it; Claude held no session for most of it (`aws sso logout` had cleared the infrastructure
+token, which is the documented remedy for the token-slot trap and takes every session with it). The reading,
+the diagnosis and the fix are Claude's. **The fix is written and NOT applied.** Account ids and the persona's
+address appear in the user's pasted errors and are redacted here as `<the Sandbox account>` and
+`<the data scientist user>`.*
+
+### Two true readings that could not both be true
+
+The persona signed in, and `aws sts get-caller-identity --profile awsds-scientist-sandbox` came back:
+
+```
+AccessDenied … User: arn:aws:sts::<the Sandbox account>:assumed-role/
+  AWSReservedSSO_DataScientistAccess_37932702010107f8/<the data scientist user>
+  is not authorized to perform: sts:GetCallerIdentity on resource: Resource
+  with an explicit deny in an identity-based policy
+```
+
+The wording attributes itself: an SCP says *service control policy*, a boundary says *permissions boundary*,
+and of the denies these six documents carry only `DenyControlPlaneOffVpn` reaches `sts:`. So the tunnel was
+the suspect — except the tunnel was up, and the check that proves it is the one the pin depends on:
+
+```
+curl -s https://checkip.amazonaws.com
+52.89.212.1
+```
+
+That is the address the deny compares against. A request from it cannot satisfy `NotIpAddress`, so the deny
+should not have fired. **Both readings were true, and they were reading different paths.**
+
+### What the estate does to its own operator while `egress/` is up
+
+Three facts already in the repository, which had never been put in one sentence:
+
+- the client config points DNS at the **VPC resolver** (`10.20.0.2`) — §C's five values, by design;
+- `vpc-egress` creates interface endpoints with **`private_dns_enabled = true`**, and `sts` is in
+  `core_services` beside `logs`, `kms`, `ecr.*`, `athena`, `glue`, `lakeformation`;
+- the deny's third branch listed the home's two **gateway** endpoint ids, deliberately — interface endpoint
+  ids are `[E]`, new on every `make up`, and Lesson 3 forbids anchoring on them.
+
+So with `egress/` up, `sts.us-west-2.amazonaws.com` resolves **inside** the VPC, the call takes the interface
+endpoint, and it arrives carrying that endpoint's id — which the list did not carry and may never carry. All
+three conditions hold at once and the deny fires. `checkip` keeps reading the EIP because nothing fronts it:
+that one really does leave by the IGW.
+
+### The measurement, with the negative control that makes it one
+
+```
+dig +short sts.us-west-2.amazonaws.com   →  10.20.12.229          (private: the interface endpoint)
+dig +short s3.us-west-2.amazonaws.com    →  3.5.81.24, 16.15.…    (public: the gateway does no private DNS)
+```
+
+The second line is what turns the first from a plausible story into a reading (Lesson 13): the two services
+differ in exactly the way the hypothesis requires, and S3 — the case 4d measured and fixed — still behaves as
+4d described. **The earlier fix was not wrong. It was complete for the path it was measured on.**
+
+### The fix: a swap, not a fourth condition
+
+`aws:SourceVpce` → **`aws:SourceVpc`**, on the VPN home's VPC id, read from the same `vpn_home` remote state
+the Elastic IP already comes from. Three reasons it is a swap:
+
+- **it subsumes** what it replaces — a request through *any* endpoint in that VPC carries both keys, so the S3
+  gateway path that 4d fixed keeps passing untouched;
+- **the anchor is `[P]`** — a VPC id survives every `make up`, which is precisely what Lesson 3 prescribes in
+  its own words: *"anchor on the `[P]` S3 gateway endpoint, or on `aws:SourceVpc`"*;
+- **it is smaller**, and that mattered: the `data_scientist` document had **23 characters of headroom** hours
+  earlier, and one VPC id costs less than two vpce ids. A fourth condition would have re-hit the ceiling the
+  same day the ceiling was first paid for.
+
+What it widens is what the control means: the persona works from inside the perimeter. It admits no in-VPC
+workload wearing that identity — a persona role is reachable through the IdC sign-in and by no instance
+profile. The plan-time guard beside it swapped with it (`vpce-` → `vpc-` shape), keeping its diagnostic.
+
+### What this says about the control, beyond the bug
+
+The pin has now been wrong twice in the same direction, and both times the same way: **it was written against
+the path somebody had just measured, and the estate had another path**. 4d found the gateway split; today
+found the interface one; the durable form is the one that names the *network* rather than the *doors in it*.
+Worth carrying: `curl checkip` proves the tunnel is full — it does **not** prove that the call you are about
+to make will leave the same way, and while `egress/` is up most AWS API calls will not.
+
+### Files
+
+Four plus this log. `terraform-live/identity/sso/`: `locals.tf` (the local swapped, both halves of the
+measurement beside the values), `policies-shared.tf` (the condition and the branch's comment),
+`permission-sets.tf` (the guard). Docs: `docs/AWS_STATE.md` (the row, with the superseded form kept as
+history), `docs/NETWORK.md` (§the tunnel's path — the split is three-way).
+
+Owed after this sitting: **the apply**, which re-provisions all six persona sets and is the user's; then the
+probe run this sitting interrupted — the per-project grant, `examples/demo.py`, and the CloudTrail reading
+the `persona-vending.tf` paragraph is still hedged against. That reading is now half-answered in advance:
+the vending call will present a vpce id, not the Elastic IP.

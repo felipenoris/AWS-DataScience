@@ -218,7 +218,12 @@ data "aws_iam_policy_document" "shared_denies" {
 #                               deliberate: a request context missing the key must not be read
 #                               as `false` by accident.
 #
-#   StringNotEqualsIfExists aws:SourceVpce    added 2026-08-20, and it CORRECTS A MEASURED
+#   StringNotEqualsIfExists aws:SourceVpc     added 2026-08-20 as aws:SourceVpce and WIDENED TO
+#                               THE VPC ON 2026-08-23, when the endpoint-shaped form was
+#                               measured one case short. Both halves below; the second is why
+#                               the key changed, and locals.tf carries the same argument beside
+#                               the values.
+#                               THE ORIGINAL HALF CORRECTED A MEASURED
 #                               DEFECT rather than extending the design (Lesson 33; stage 5
 #                               log, 4d's controls entry). Tunnel traffic SPLITS BY
 #                               DESTINATION in the VPN home's public subnet: S3 and DynamoDB
@@ -232,10 +237,25 @@ data "aws_iam_policy_document" "shared_denies" {
 #                               made from INSIDE the perimeter - the scientist ran the query
 #                               and could not fetch the CSV. The values are the VPN HOMES'
 #                               endpoints (locals.tf), deliberately not the consumers'.
-#                               IfExists holds the polarity: off-VPN traffic carries no vpce
-#                               key, the test passes, the deny still fires. What it widens:
-#                               anything inside the home's own VPC reaching those endpoints -
-#                               today, only the WireGuard host itself.
+#                               IfExists holds the polarity: off-VPN traffic carries no such
+#                               key, the test passes, the deny still fires.
+#                               THE CASE IT MISSED, MEASURED 2026-08-23 WITH A NEGATIVE
+#                               CONTROL: while `egress/` is up, every service holding an
+#                               INTERFACE endpoint resolves - through the VPC resolver the
+#                               client config points at - to a PRIVATE address, so the call
+#                               takes that endpoint and presents ITS id. `dig sts...` answered
+#                               10.20.12.229 while `dig s3...` answered public addresses (the
+#                               gateway does no private DNS), and the persona was explicitly
+#                               denied sts:GetCallerIdentity with the tunnel up and `curl
+#                               checkip` reading the EIP - two true readings of two paths. An
+#                               interface endpoint id CANNOT be listed here: they are [E], new
+#                               on every `make up` (Lesson 3). So the key became aws:SourceVpc,
+#                               which is [P] and SUBSUMES the gateway ids the branch used to
+#                               carry - a request through any endpoint in the VPC presents
+#                               both keys, so nothing that passed before stops passing.
+#                               What it widens: anything inside the home's own VPC that wears
+#                               a persona identity - and a persona role is reachable only
+#                               through the IdC sign-in, never by an instance profile.
 #                               APPLIED AND PROVEN 2026-08-20, and the proof shape matters to
 #                               anyone re-touching this: the document changing is NOT the
 #                               evidence. The statement is shared, so it was read back off BOTH
@@ -253,9 +273,8 @@ data "aws_iam_policy_document" "shared_denies" {
 # wrong on a persona costs a data-scientist session; getting it wrong on the credential every
 # Terraform apply in the organization runs as costs break-glass (D16). The seventh set gains
 # the statement in a separate, deliberate diff, after the recorded control-plane pair - and
-# note what the statement pins: a single Elastic IP and, since 2026-08-20, the home's two
-# gateway endpoints - all [P], allocated in foundation/ where `make down` cannot reach them
-# (step 2.1; INT-05).
+# note what the statement pins: a single Elastic IP and, since 2026-08-23, the home's VPC -
+# both [P], allocated in foundation/ where `make down` cannot reach them (step 2.1; INT-05).
 #
 # WHAT IT DOES NOT PROTECT, said here rather than discovered later (8.4, INT-16): the Unified
 # Studio portal is entered by an IdC SIGN-IN, not by an IAM call, and this statement does not
@@ -284,8 +303,8 @@ data "aws_iam_policy_document" "control_plane_vpn" {
 
     condition {
       test     = "StringNotEqualsIfExists"
-      variable = "aws:SourceVpce"
-      values   = local.vpn_egress_vpce_ids
+      variable = "aws:SourceVpc"
+      values   = local.vpn_egress_vpc_ids
     }
 
     condition {

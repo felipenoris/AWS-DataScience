@@ -120,10 +120,10 @@ resource "aws_ssoadmin_permission_set_inline_policy" "persona" {
     # failure naming the value.
     precondition {
       condition = alltrue([
-        for id in local.vpn_egress_vpce_ids :
-        can(regex("^vpce-[0-9a-f]+$", id))
+        for id in local.vpn_egress_vpc_ids :
+        can(regex("^vpc-[0-9a-f]+$", id))
       ])
-      error_message = "A VPN home's gateway endpoint did not read back as a vpce id: ${jsonencode(local.vpn_egress_vpce_ids)}. DenyControlPlaneOffVpn's aws:SourceVpce branch would go quiet and the tunnel's S3 path would be explicitly denied again (the 4d defect). Check that each vpn_homes account's foundation/ still exports s3_gateway_endpoint_id and dynamodb_gateway_endpoint_id (Stage 3 step 1; INT-05)."
+      error_message = "A VPN home did not read back as a vpc id: ${jsonencode(local.vpn_egress_vpc_ids)}. DenyControlPlaneOffVpn's aws:SourceVpc branch would go quiet and every call a persona makes THROUGH A VPC ENDPOINT from the tunnel would be explicitly denied - the 4d defect for S3, and the 2026-08-23 one for every service holding an interface endpoint. Check that each vpn_homes account's foundation/ still exports vpc_id (Stage 3 step 1)."
     }
   }
 }
