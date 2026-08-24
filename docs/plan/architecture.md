@@ -412,6 +412,20 @@ more than this file used to say**, and **the saving above is now the NAT alone**
 of it. Three cents an hour decides nothing — the comparison below is settled by friction, which is what
 D5 said it wanted to measure.
 
+**A second correction, 2026-08-24 — and this one is a hard limit of (B), not a cost.** AWS's own
+network-isolation page, re-read while attributing the on-VPN portal break, carries a *Public internet
+access* table beside its required-endpoints one: **the SMUS portal requires the public internet** —
+client assets, client APIs (`agent.datazone.<region>.api.aws` among them), the IdC sign-in endpoints —
+*"for client operations that do not handle customer data"*, in the page's own words. So a VPC with no
+public egress can host the **apps** and cannot host the **portal experience**, by the vendor's design.
+And (B) makes the mechanism worse rather than better: every interface endpoint it adds installs a private
+zone that is **authoritative for the whole subtree** of its service name (Lesson 40; `NETWORK.md` §5
+carries the measured case — the `datazone` zone shadowing exactly the `agent.datazone…` name the portal
+needs). Under (B) the portal therefore lives **outside** the isolated VPC — on the operator's own network,
+off the VPC resolver — or it does not live at all; whichever is chosen, the sentence *"there is no egress
+path"* stops describing the surface the data scientist actually looks at. This is D5-input of the first
+order, and it was invisible to every cost row above.
+
 **The user's reservation about (B), recorded as a real constraint, not an objection to be argued away:**
 this environment must support **Python, Julia, Rust and R**, and CodeArtifact does not cover all of them.
 Concretely:

@@ -617,13 +617,20 @@ reached *from*, not where it runs — open question 12, Stage 6 step 1.6).
 
 **The consequences of choosing it:**
 
-- Apps have **no internet**, so every AWS service they reach needs a **VPC interface endpoint** in
-  the account — the admin guide's required list is `athena`, `datazone` + `datazone-fips`, `ec2`,
-  `ec2messages`, `q`, `s3`, `sagemaker.api`, `sagemaker.runtime`, `glue`, `kms`, `secretsmanager`,
-  `sts`, `ssm`, `ssmmessages` (re-read 2026-08-19; `REFERENCES.md` — Stage 6 step 4.2 points here
-  rather than carrying a second copy), plus per-blueprint optional ones. Each costs
+- **Under the admin guide's own premise — no public egress from the VPC, its "network isolation",
+  which is design B and NOT a property of `VpcOnly`** (the scope corrected 2026-08-24; under design A
+  the NAT + allow-list serves, measured: six of the fifteen names have never had an endpoint here and
+  the create path closed end to end) — every AWS service an app reaches needs a **VPC interface
+  endpoint** in the account. The guide's required list is `athena`, `datazone` + `datazone-fips`,
+  `ec2`, `ec2messages`, `q`, `s3`, `sagemaker.api`, `sagemaker.runtime`, `glue`, `kms`,
+  `secretsmanager`, `sts`, `ssm`, `ssmmessages` (re-read 2026-08-19; `REFERENCES.md` — Stage 6 step
+  4.2 points here rather than carrying a second copy), plus per-blueprint optional ones. Each costs
   **USD 0.010/h** (~USD 7/month) per account, continuously — the hidden fixed cost a new blueprint
-  can carry.
+  can carry. **And the same page's third table caps the direction (read 2026-08-24): the PORTAL
+  requires the public internet** — client assets, client APIs (`agent.datazone.<region>.api.aws`
+  among them), the IdC sign-in endpoints — while an interface endpoint's private zone shadows exactly
+  such subdomains (`NETWORK.md` §5, the measured break). A no-egress VPC can host the *apps*; it
+  cannot host the *portal experience*, by AWS's own documentation.
 - One required entry cannot be satisfied in-Region: the `q` row pairs with
   `com.amazonaws.us-east-1.codewhisperer`, *available only in `us-east-1`* — a `us-west-2` VPC
   cannot reach it through an interface endpoint at all (Stage 6 step 4.2 records what that breaks).

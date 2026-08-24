@@ -66,6 +66,12 @@ Blueprint for using AWS as a Data Science infrastructure provider.
   owns what goes in them. Built **by hand exactly once**, at Stage 6 step 5.0, and replaced by Stage 8's
   pipeline building the same files from a GitLab repository the data scientist writes to. `images/README.md`
   carries that seam and the three constraints that shape both files.
+- `s3-read-write/` — an independent Python library (`uv`, boto3 the only runtime dependency): a data
+  scientist's **laptop**, on the VPN, reading, writing and listing the S3 storage of its SMUS project by
+  **vending the project role** through S3 Access Grants — the surface SMUS itself provisions (merged
+  2026-08-24). Its README carries the mechanism, the two prerequisites administered outside the library
+  (the vending policy, the per-project grant) and the accepted grain; the applied state is
+  `docs/AWS_STATE.md`'s vending row.
 - `.pre-commit-config.yaml` and `.tflint.hcl` — the repository's Terraform gates (Stage 2 step 6):
   `terraform fmt`, `terraform validate`, `tflint` and `checkov` as a *required* check, since a policy gate
   that can be skipped is a policy suggestion.

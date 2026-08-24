@@ -348,6 +348,27 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   measured create path. **5.0 is DONE** (`default-v0.1.0`
   pushed to both repos 2026-08-22, one buildbox session). Decisions 1 (EMR-S vs Glue) and 6 (prefix
   shape) stay in-stage; **2 is delivered** (TIP `false`, non-editable, both profiles).
+- **s3-read-write MERGED 2026-08-24 — the laptop reads/writes/lists its SMUS project's S3 path by
+  vending the PROJECT ROLE through S3 Access Grants** (strategy 1-A, the user's; consumer
+  `s3-read-write/`, an independent uv project). `awsds-org-project-storage-vending` is the estate's
+  **first customer-managed policy** (both members' `foundation/`, referenced by name from
+  `DataScientistAccess` — decision 4's mechanism demonstrated, its expired blocker corrected in the sso
+  README). The handshake opens nothing; **one hand-made grant per project × persona role** does —
+  membership-blind, accepted with the decision. Instance facts 2026-08-24: Sandbox's is **SMUS-born**
+  (2026-08-22), carries **no IdC association** (directory grantees unavailable — OQ 13's mapped option);
+  **Development has none until its first project** (the policy inert there by design). Full inventory:
+  `AWS_STATE.md`'s vending row. OQ 22 (managed-policy revision watch) is the user's to schedule.
+- **THE PORTAL BROKE *ON* THE VPN WHILE `sandbox/egress/` WAS UP — measured 2026-08-24, and the cause is
+  DNS, not the deny** (Lessons 40-42): the `datazone` endpoint's private zone is authoritative for its
+  subtree, so `agent.datazone.us-west-2.api.aws` — which AWS's network-isolation page lists as
+  **public-internet-required** (its THIRD table, unread until now) — is NXDOMAIN for every VPC-resolver
+  client; 60/61 portal front-end names fine; zero CloudTrail arrivals (never-arrived, not denied). The
+  4.2 comment's "REQUIRED under VpcOnly" was a misread — the page's premise is its own no-internet
+  design, and 6 of the 15 "required" endpoints never existed here. **PENDING, the user's: removing
+  `datazone` from both `extra_services`** (prediction to measure at apply: the app's calls move to the
+  NAT — today CloudTrail shows them on the endpoint). Meanwhile **`EXC-06`**: the user's deliberate `*`
+  on Sandbox's allow-list (portal sign-in fix; cannot fix shadowing; `DN-3` fails on the divergence).
+  Design-B input, first-order: **the SMUS portal cannot run without public egress** (architecture.md §4.3a note).
 - **Standing St.6 mechanics:** a blueprint configuration is applied **from the MEMBER account** (the
   Put takes no account param); `awscc`'s carries **`environment_role_permission_boundary`** and the
   `aws` resource does not (INT-15's mechanism, Lesson 8); **an EXISTING configuration is IMMUTABLE
@@ -449,3 +470,9 @@ the reasoning that makes it *usable* is in the file. Recognising one is the sign
 39. **What a console wizard fills and the authoring API does not require is still required — the validator
     is the deploy AND the teardown, so an incomplete object pins its dependents in both directions; and
     the strict validator arrives one act late.**
+40. **The door a call takes is decided by resolution and routing, never by the endpoint roster — and a
+    private zone answers for its whole subtree.**
+41. **A vendor "required" travels without its premise — and the same page can carry the table that
+    contradicts it.**
+42. **A permission failure is a response; a network failure is the absence of one — CloudTrail separates
+    "denied" from "never arrived".**

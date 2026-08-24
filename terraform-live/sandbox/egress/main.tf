@@ -41,9 +41,19 @@ module "egress" {
   # Step 8.3, the Sandbox row: the three SageMaker endpoints (sagemaker.studio is what lets
   # JupyterLab/Code Editor apps START in a VPC-only domain). elasticfilesystem sat here
   # until 2026-08-17, when the NFS requirement was withdrawn (D24 with it).
-  # `datazone` JOINED THE LIST AT STAGE 6 STEP 4.2 (2026-08-21): the SMUS network-isolation
-  # page marks it REQUIRED under VpcOnly, so an app cannot reach the domain without it. It is
-  # the ONLY entry added from that page on faith. The rest of the required table
+  # `datazone` JOINED THE LIST AT STAGE 6 STEP 4.2 (2026-08-21) ON A MISREAD, measured
+  # 2026-08-24. The sentence here used to claim the network-isolation page marks it "REQUIRED
+  # under VpcOnly, so an app cannot reach the domain without it" - three errors in one clause:
+  # the page's required table is scoped by its OWN premise ("access to the public internet is
+  # denied from the VPC" - design B, never VpcOnly); under design A the app reaches DataZone
+  # through the NAT (datazone.<region>.api.aws is on the list below); and the entry is not
+  # free - its private DNS zone is AUTHORITATIVE FOR THE WHOLE SUBTREE, so
+  # agent.datazone.<region>.api.aws, which the SAME page's public-internet table says the
+  # portal front-end needs, is NXDOMAIN for every client of the VPC resolver, the full-tunnel
+  # laptop included: the portal broke ON the VPN while this slice was up (Lessons 40-42).
+  # REMOVAL IS RECOMMENDED AND PENDING the user's authorization - today the app's calls ride
+  # this endpoint (CloudTrail), so the removal's prediction, that they move to the NAT, is
+  # measured at the apply rather than assumed. The rest of the required table
   # (docs/SMUS.md §VpcOnly is the one copy - fifteen names) is added by MEASUREMENT and not by
   # copying: verification (viii) reads the flow logs of a working session and only what is
   # exercised gets an endpoint, at +USD 0.010/h each, per account, for the whole session.

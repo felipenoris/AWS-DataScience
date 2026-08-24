@@ -229,6 +229,16 @@ started. **The first one is load-bearing against principle 4.**
     SQL/query-path only; the one documented notebook-side fine-grained route is an EMR-S **compute
     connection** in `project.spark.fineGrained` mode — whether an IdC-domain notebook can actually use it
     is Stage 6 decision 1's second in-stage reading.
+    **A second mapped option arrived 2026-08-24, on the S3 surface, while the laptop-vending feature
+    chose the persona-role grain:** S3 Access Grants takes grantees of `DIRECTORY_USER`/`DIRECTORY_GROUP`
+    (the CLI's own model, not prose), which would make a project-storage grant per-person or per-IdC-group
+    and CloudTrail attribution per-human — the TIP *outcome* on the S3 surface without the Tooling
+    parameter, which reaches only the SQL/query path and stays locked `"false"`. What is missing is
+    measured: the Sandbox instance carries **no Identity Center association** (none of the three
+    `IdentityCenter*` fields its API models — a reading, not a silent instrument), so
+    `associate-access-grants-identity-center` would have to run first — a new IdC↔Access-Grants crossing
+    that deserves its own decision rather than arriving as a side effect. Parked with this item's other
+    mapped options; the state is `AWS_STATE.md`'s vending row.
 14. **The remote-IDE path is a file-transfer channel to a laptop.** `sagemaker:StartSession` plus the AWS
     Toolkit lets a local VS Code attach to a running space — an [`objectives.md`](objectives.md) objective, so it is not
     something to deny. It also bypasses whatever a browser IDE could be made to restrict, which makes it
