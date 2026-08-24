@@ -897,6 +897,72 @@ lesson can be *recognised* without opening this file; the reasoning that makes e
    the authoring act lands on a *destructive or irreversible* act, so the defect is discovered exactly
    where it is most expensive to hold — a system that cannot deploy AND cannot tear down.
 
+40. **The door a call takes is a fact of resolution and routing — the service's endpoint roster
+   predicts nothing, and an endpoint's private zone answers for its whole subtree.** One sitting
+   measured three doors and a no-door, all from one laptop on the tunnel (2026-08-23/24). `sts` left
+   through the **interface** endpoint — private DNS had hijacked its name, so a deny keyed on gateway
+   endpoint ids denied a call that was *on* the VPN. `s3control` left through the S3 **gateway** — it has
+   no interface endpoint here, which a derivation turned into "so it rides the IGW", and CloudTrail
+   refuted: a gateway route matches a **prefix list**, `s3-control.<region>` resolves inside `pl-s3`'s
+   ranges, and "has no interface endpoint" says nothing about the IGW. And
+   `agent.datazone.<region>.api.aws` left through **nothing**: the `datazone` endpoint's private hosted
+   zone is **authoritative for the entire subtree** of the name it serves, holds only the apex, and
+   answers NXDOMAIN for every subdomain that exists only in public DNS — no fallback, for every client
+   of the VPC resolver, the full-tunnel laptop included.
+   **The roster is a list of what AWS sells; resolution is what this VPC does — and only the second is a
+   fact here.** Both are measurable for a cent: `dig` from inside, `vpcEndpointId` in CloudTrail. The
+   subtree half is the sharp edge: `PrivateDnsEnabled` reads as *"this name now resolves privately"* and
+   means *"this subtree now resolves ONLY here"* — the blast radius is every name under the service
+   name, including ones the vendor's own front-ends need (the SMUS portal's `agent.datazone…`,
+   documented public-internet-required, went NXDOMAIN and broke the portal ON the VPN). No allow-list
+   sees it: the DNS Firewall filters queries, and these queries were *answered* — authoritatively, with
+   nothing. **Distinct from Lesson 3**, which is about policy conditions anchored on `[E]` endpoint ids;
+   this is the *path itself* being mispredicted from the roster. The design-B corollary: a design that
+   multiplies interface endpoints multiplies authoritative private zones, each shadowing a subtree — a
+   cost no endpoint price list carries.
+
+41. **A vendor "required" travels without its premise — and the page that says required can carry, lower
+   down, the table that contradicts it for your design.** `datazone` entered both Interactive endpoint
+   lists on one comment: *"the SMUS network-isolation page marks it REQUIRED under VpcOnly, so an app
+   cannot reach the domain without it."* Three errors in one sentence, all checkable from the page
+   itself (2026-08-24). The premise is swapped — the page never says `VpcOnly`; its required table is
+   scoped by the page's **own** isolation definition, *"access to the public internet is denied from the
+   Amazon VPC"*, which is design B. The consequence is refuted by the page (*"network calls … route over
+   the public internet when that network path is available"* — design A has that path, with
+   `datazone.<region>.api.aws` allow-listed), by this estate's own history (**six of the fifteen
+   "required" endpoints have never existed here** and the create path closed end to end), and by the
+   page's own troubleshooting table (*"Private with NAT + Private with NAT: Works as expected. No action
+   needed"*). And the same page carries a **third table** two prior readings never recorded — *Public
+   internet access*: the portal's client assets, its client APIs (`agent.datazone.<region>.api.aws`
+   among them) and the IdC sign-in endpoints **require the public internet** — so one page instructs the
+   endpoint and requires a name that endpoint's private zone shadows. Where the tables collide, **the
+   browser-facing one wins**: a portal is a web client, and no interface endpoint serves a web client's
+   edge.
+   **"Required" is always required-under-a-premise, and the premise is what falls off in transit** — the
+   word survives the copy, the condition does not: Lesson 38's failure for names, applied to a
+   requirement's scope. The comment even declared itself — *"the ONLY entry added from that page on
+   faith"* — and the self-award of an exception is not a discharge: **an entry marked "on faith" is a
+   scheduled defect**, and of the whole list it was the one that broke. The repair for the class: when
+   copying a "required" row, copy the sentence that scopes the table — and read the whole page, because
+   the contradicting table sat three scrolls down the same URL this repository had already cited twice.
+
+42. **A permission failure is a response; a network failure is the absence of one — and CloudTrail
+   separates "denied" from "never arrived".** The on-VPN portal break arrived with a plausible cause
+   attached: the same week had re-keyed `DenyControlPlaneOffVpn`, so the deny was the suspect. The
+   symptom had already ruled it out. An IAM deny is an **answer** — HTTP 403 with a body, a console
+   naming the policy family, a CloudTrail event carrying `errorCode` — because the request reached the
+   service and was evaluated. The browser's *"Failed to fetch"* is the opposite shape: `fetch()`
+   rejecting before any HTTP exists (DNS, TCP, TLS, CORS), which no policy can produce. And the
+   discriminator costs one query: CloudTrail held **45 events from the home address and zero from the
+   tunnel** — same portal, same minutes. Zero events is not a deny; a deny leaves an event. The
+   suspected policy was never evaluated, because nothing arrived to be evaluated.
+   **Classify the failure by what came back — a body, a refusal, or silence — before opening any policy
+   document**, and let CloudTrail's presence/absence split the last two. The suspect here also failed
+   the *sign* test: the re-keying was **permissive** for the suspected path, so even its direction was
+   wrong. This is Lesson 24's channel discipline pointed at a different pair — not benign-vs-serious
+   wordings of one denial, but denial-vs-no-arrival, which no wording can distinguish because one of the
+   two has no words.
+
 ---
 
 *Plan core: [GENERAL_PLAN.md](../GENERAL_PLAN.md) · Decisions: [docs/plan/decisions/INDEX.md](decisions/INDEX.md) · Stages: [docs/plan/stages/INDEX.md](stages/INDEX.md)*
