@@ -3136,3 +3136,70 @@ Owed after this sitting: **the apply**, which re-provisions all six persona sets
 probe run this sitting interrupted — the per-project grant, `examples/demo.py`, and the CloudTrail reading
 the `persona-vending.tf` paragraph is still hedged against. That reading is now half-answered in advance:
 the vending call will present a vpce id, not the Elastic IP.
+
+## 2026-08-23 — The path runs end to end, and the tunnel question was two questions
+
+*Fifth sitting of the day, closing the third and fourth. **The user applied the pin fix, created the
+per-project grant and ran the probe**; Claude read the plan, held the apply's authorisation from the user,
+and took the readings. Account ids and the persona's address appear in pasted output and are redacted.*
+
+### What the run proved, in one line each
+
+```
+Grants available to this identity: 1
+  READWRITE s3://awsds-sandbox-smus-projects/dzd-…/avhvbqn37ty7m8/shared/*
+Vended identity: …assumed-role/datazone_usr_role_avhvbqn37ty7m8_…/access-grants-<uuid>
+Wrote …/shared/s3-read-write-demo/hello.txt
+Objects under …/shared/: 5   (.libs.json, README.md, getting_started.ipynb, the demo object)
+Read back OK
+```
+
+- **The laptop is the project role.** The vended ARN is `datazone_usr_role_…`, in a session the vend names
+  `access-grants-<uuid>` — attributable as a vend rather than as an assume, which is worth knowing before
+  anyone reads a trail.
+- **The grant's scope composed correctly** — `…/avhvbqn37ty7m8/shared/*`, the location scope's trailing
+  slash plus `S3SubPrefix='shared/*'`, the concatenation AWS documents and does not validate.
+- **SSE-KMS passes through a vended, scope-reduced session.** That was the one thing the strategy analysis
+  could not settle by reading, and the write settled it: the persona holds nothing on the bucket and
+  nothing on the project CMK, and the object landed anyway, because the credentials are the project
+  role's.
+- **What the listing shows is the Studio file browser's own content** — `getting_started.ipynb`,
+  `README.md`, `.libs.json`. The requirement was "the S3 storage visible in their project", and that is
+  literally what came back.
+
+### The tunnel question, decomposed rather than answered
+
+The hedged paragraph asked which branch of `DenyControlPlaneOffVpn` admits the vending call. The run shows
+the path needs **both**, for different reasons:
+
+- **`sts:GetCallerIdentity`** — which the library calls to learn the account id `s3control` demands — takes
+  the VPC's **`sts` interface endpoint** and is admitted by `aws:SourceVpc`. This is measured, and it is
+  measured by the failure: before that branch existed, this was the call that was explicitly denied with
+  the tunnel up.
+- **`s3control`** has **no endpoint in this VPC** — the `vpc-egress` core list is `sts, logs, kms,
+  ecr.api, ecr.dkr, athena, glue, lakeformation` and Sandbox's extras are `sagemaker.*, datazone` — so
+  `ListCallerAccessGrants` and `GetDataAccess` resolve publicly, leave by the IGW and are admitted by
+  `aws:SourceIp`.
+
+**The second bullet is derived from the endpoint lists, not read**, and the paragraph now says so along
+with the event that would confirm it (`GetDataAccess` carrying the Elastic IP and no `vpcEndpointId`). It
+is left falsifiable on purpose: an `s3control` endpoint added to `extra_services` later would move that
+call to the other branch with nothing announcing it.
+
+### One change to the library, motivated by the day rather than by taste
+
+`_account_id` is now memoised per session (a `WeakKeyDictionary`). The reason is not the round trip: STS
+and s3control turned out to travel **different paths from the same laptop**, so an STS call the work does
+not need is one more independent way to fail. Three STS calls per run became one.
+
+### Files
+
+Five plus this log. `s3-read-write/`: `vending.py` (the memo), `README.md` (the first-run reading, and the
+tunnel question decomposed). `terraform-live/{sandbox,development}/foundation/persona-vending.tf` (the
+hedged paragraph replaced by the two-branch account). `docs/AWS_STATE.md` (the vending row: one grant, and
+the end-to-end proof).
+
+Owed after this sitting: **the CloudTrail confirmation** of the s3control half, which needs an
+infrastructure session; and the user's own `f4734dd` — a `"*"` added to the DNS Firewall allow-list while
+debugging this, which did not bear on the fault and, if applied, makes design A's allow-list decorative.
+Raised twice in the sitting, not acted on: it is the user's to keep or revert.
