@@ -545,7 +545,7 @@ per-project, user-authorized **grant** to the `DataScientistAccess` role lets a 
 vend prefix-scoped **project-role** credentials (`s3control GetDataAccess`) — the same identity
 Studio uses, so no second permission surface appears over the projects bucket or the project CMK.
 The persona's half is a **customer-managed policy**, `awsds-org-project-storage-vending`, created by
-each member's `foundation/` slice and referenced by name from `DataScientistAccess` — one object per
+each member's `foundation/` slice and referenced by name from `DataScientistAccess` (**applied 2026-08-23**) — one object per
 member account, each naming its **own** account's instance (Development's does not exist until that
 account's first project, and a policy may name a resource that does not exist); the consumer is
 **`s3-read-write/`**,
