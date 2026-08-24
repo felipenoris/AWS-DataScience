@@ -47,6 +47,7 @@ boto3 concepts used here
   came from.
 """
 
+import weakref
 from typing import Any
 
 import boto3
@@ -60,6 +61,9 @@ __all__ = [
 ]
 
 
+_ACCOUNT_IDS: "weakref.WeakKeyDictionary[boto3.Session, str]" = weakref.WeakKeyDictionary()
+
+
 def _account_id(session: boto3.Session) -> str:
     """Return the account id of the session's identity, via STS.
 
@@ -68,8 +72,20 @@ def _account_id(session: boto3.Session) -> str:
     the caller's own account (the persona and the projects bucket live in
     the same account), so the id is derived from the session instead of
     being passed around — and never hard-coded.
+
+    The answer is memoised per session, and the reason is not speed: STS
+    is a **second network dependency on a different path** from the
+    s3control calls it serves. Measured 2026-08-23 in this estate — where
+    the VPC holds an interface endpoint for ``sts`` and none for
+    ``s3control`` — a laptop on the tunnel reaches the two through
+    different doors, so every avoidable STS call is one more chance to
+    fail somewhere the actual work does not depend on.
     """
-    return session.client("sts").get_caller_identity()["Account"]
+    cached = _ACCOUNT_IDS.get(session)
+    if cached is None:
+        cached = session.client("sts").get_caller_identity()["Account"]
+        _ACCOUNT_IDS[session] = cached
+    return cached
 
 
 def list_caller_grants(session: boto3.Session, prefix: str | None = None) -> list[dict[str, Any]]:

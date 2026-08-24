@@ -43,16 +43,24 @@
 # name a resource that does not exist, and it simply matches nothing until SMUS creates one with
 # that account's first project.
 #
-# ON-VPN ONLY, BY THE PERSONA'S OWN PIN - AND ONLY THE INVARIANT HALF IS MEASURED. The set's
-# `DenyControlPlaneOffVpn` denies `*` off the tunnel, and these calls carry neither the VPN
-# Elastic IP nor a home gateway-endpoint id when the tunnel is down, so the deny fires whichever
-# branch is asked. WHICH branch admits them when it is up is a routing fact nobody has measured:
-# `s3-control.<region>` resolves inside the S3 public ranges the home's pl-s3 gateway route
-# captures, so the call most likely arrives as `aws:SourceVpce` - the Stage 5 pass-4d split -
-# rather than as the Elastic IP. The first real run settles it (`s3-read-write/README.md`'s probe
-# sequence names the CloudTrail read: GetDataAccess's sourceIPAddress / vpcEndpointId), and this
-# paragraph is then replaced by the reading rather than left hedged (Lesson 33: the split is
-# measured, never assumed).
+# ON-VPN ONLY, BY THE PERSONA'S OWN PIN - AND THE FIRST RUN (2026-08-23) SPLIT THE QUESTION IN
+# TWO RATHER THAN ANSWERING IT ONCE. The set's `DenyControlPlaneOffVpn` denies `*` off the
+# tunnel, and these calls carry none of its keys when the tunnel is down, so that half is
+# invariant. On the tunnel, the vending path needs BOTH of the deny's admitting branches, for
+# two different reasons, and the run proved the first by failing on it:
+#   - `sts:GetCallerIdentity`, which the library calls to learn the account id s3control
+#     requires, takes the VPC's `sts` INTERFACE endpoint (private DNS through the client's own
+#     resolver) and is admitted by `aws:SourceVpc`. Before that branch existed the whole path
+#     was explicitly denied here - the defect this estate found the hard way, with the tunnel up.
+#   - `s3control` has NO endpoint in this VPC (`vpc-egress`'s core + extra lists), so
+#     `ListCallerAccessGrants` and `GetDataAccess` resolve publicly, leave by the IGW and are
+#     admitted by `aws:SourceIp` - the Elastic IP.
+# The second bullet is DERIVED FROM THE ENDPOINT LISTS, not yet read: the confirming event is
+# `GetDataAccess` in CloudTrail, which should carry `sourceIPAddress = the Elastic IP` and NO
+# `vpcEndpointId`, while `GetCallerIdentity` carries a private address and one. Replace this
+# with that reading when it is taken (Lesson 33: the split is measured, never assumed) - and
+# note the prediction is falsifiable in a useful direction, since an `s3control` endpoint
+# appearing in `extra_services` later would move the call to the other branch silently.
 #
 # AND THE CREDENTIALS THIS VENDS ARE BEARER FOR THEIR DURATION once issued - they keep working
 # off the tunnel until they expire. That is the OQ-14 shape (remote-IDE sessions), accepted there

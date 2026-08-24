@@ -95,16 +95,21 @@ Each step distinguishes a different failure, in order:
 | 1 | `aws s3control list-caller-access-grants --account-id <sandbox-account-id> --profile awsds-scientist-sandbox` | `AccessDenied` | empty list | the grant's row |
 | 2 | `uv run examples/demo.py --profile awsds-scientist-sandbox` | fails at discovery | fails: "No grants found" | full read/write/list cycle |
 
-The demo prints the vended identity — expect `assumed-role/datazone_usr_role_...`. It also
-answers, by its write/read-back cycle, the one unknown left open by the strategy analysis:
-that the vended, prefix-scoped session passes SSE-KMS under the project CMK end to end.
+The demo prints the vended identity — expect `assumed-role/datazone_usr_role_...`. **First full
+run, 2026-08-23:** the identity came back as
+`assumed-role/datazone_usr_role_<project>_<env>/access-grants-<uuid>`, and the write/list/read-back
+cycle passed — which **answers the one unknown the strategy analysis left open**: SSE-KMS under
+the project CMK works through a vended, scope-reduced session, with nothing granted to the
+persona on either the bucket or the key.
 
-One more first-run reading, owed back to `identity/sso`: **which branch of
-`DenyControlPlaneOffVpn` the vending call rides**. Read the `GetDataAccess` CloudTrail event's
-`sourceIPAddress`/`vpcEndpointId` — a gateway-endpoint id means the `aws:SourceVpce` carve-out
-(the Stage 5 pass-4d split, the likely answer, since `s3-control.<region>` resolves inside the
-S3 ranges the gateway route captures); the VPN EIP means the `aws:SourceIp` branch — and
-replace the hedged paragraph in `foundation/persona-vending.tf` with the reading.
+**The tunnel question split in two rather than resolving once**, and the first run proved the
+first half by failing on it: `sts:GetCallerIdentity` — which this library calls to learn the
+account id `s3control` requires — takes the VPC's **`sts` interface endpoint**, so it presents a
+VPC key rather than the Elastic IP. `DenyControlPlaneOffVpn` listed only *gateway* endpoint ids
+at the time and denied it explicitly, **with the tunnel up**; the fix swapped that branch to
+`aws:SourceVpc`. `s3control`, by contrast, has **no endpoint in this VPC**, so the vending calls
+leave by the IGW on the Elastic IP. That second half is **derived from the endpoint lists, not
+yet read** — the confirming CloudTrail event is named in `foundation/persona-vending.tf`.
 
 ## Usage
 
