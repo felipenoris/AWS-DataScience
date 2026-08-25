@@ -3,8 +3,9 @@
 # flagged), DNS attributes, subnets anchored on zone IDs, route tables and routes, internet
 # gateways, the S3/DynamoDB GATEWAY endpoints (the INT-05 anchor), VPC peerings seen from
 # both sides, the private hosted zones with their associations and pending authorizations,
-# flow logs, NACLs and security groups. The preflight for Stage 3, and the standing
-# regression after each of its passes.
+# flow logs, NACLs and security groups - plus one REGIONAL reading, the endpoint-service
+# catalog against the SMUS portal's surfaces (section 10, NT-9). The preflight for Stage 3,
+# and the standing regression after each of its passes.
 #
 #   needs:    a live SSO session - the ONLY prerequisite:
 #
@@ -15,7 +16,8 @@
 #             python3 aws/networking.py -                # CloudShell, ambient credentials
 #   writes:   aws/output/networking.txt   (untracked - see .gitignore)
 #   reads:    ec2:DescribeVpcs, DescribeVpcAttribute, DescribeSubnets, DescribeRouteTables,
-#             DescribeInternetGateways, DescribeVpcEndpoints, DescribeVpcPeeringConnections,
+#             DescribeInternetGateways, DescribeVpcEndpoints, DescribeVpcEndpointServices,
+#             DescribeVpcPeeringConnections,
 #             DescribeFlowLogs, DescribeNetworkAcls, DescribeSecurityGroups,
 #             route53:ListHostedZones, GetHostedZone, ListVPCAssociationAuthorizations,
 #             logs:DescribeLogGroups, sts:GetCallerIdentity.
@@ -88,6 +90,33 @@ WIREGUARD_CIDR = "10.90.0.0/24"
 # IGW, a flow log at 90 days). The project's own address plan is 10.0.0.0/8-based (step
 # 1.2), so a VPC in this range is a vend artifact, never one of ours.
 AF_CIDR = "172.31.0.0/16"
+
+# NT-9 / section 10: the endpoint-service catalog families whose MEMBERSHIP is a recorded
+# architectural premise (measured 2026-08-24). The load-bearing fact is an ABSENCE: among
+# the region's ~569 services, NO entry serves the SMUS portal's BROWSER surfaces - the
+# on.aws portal itself, its CloudFront assets, agent.datazone.<region>.api.aws,
+# sagemaker-unified-studio.<region>.api.aws - so no endpoint set reaches the portal
+# privately and public egress stays REQUIRED for it (architecture.md §4.3a's design-B
+# input). An absence cannot be listed, so the check pins the families the missing door
+# would appear IN: if AWS ships one the way it shipped Console Private Access (the
+# console/signin rows of section 10), the membership moves and NT-9 goes red - the signal
+# to re-read the premise, never a network failure.
+PORTAL_FAMILY_BASELINE = {
+    "datazone": {"datazone", "datazone-fips"},
+    "sagemaker-unified-studio": {"sagemaker-unified-studio-mcp"},
+}
+
+# Section 10's display filter - the families the 2026-08-24 hand query grepped for,
+# mechanised so the next reader gets the rows beside the interpretation.
+CATALOG_SURFACES = ("datazone", "sagemaker", "sqlworkbench", "console", "signin")
+
+
+def catalog_family(token: str) -> str | None:
+    """The PORTAL_FAMILY_BASELINE family a com.amazonaws.<region>.<token> belongs to."""
+    for family in PORTAL_FAMILY_BASELINE:
+        if token == family or token.startswith(family + "-") or token.startswith(family + "."):
+            return family
+    return None
 
 
 def internet_exit_default(dest: str, target: str) -> bool:
@@ -327,6 +356,33 @@ def main(argv: list) -> int:
             for rid in res.stdout.split():
                 if rid:
                     flows.add((p, rid))
+
+    # The endpoint-service CATALOG - regional, not per-account: one call from the first
+    # live profile answers for everyone. egress.py section 7 reads the SAME API for a
+    # DIFFERENT question - which services support an endpoint POLICY, feeding EG-1, an
+    # [E]-session concern - while this read is a standing premise of the egress design
+    # itself: which doors EXIST for this estate's surfaces. Two files, one API, two
+    # questions - kept apart deliberately (Lesson 33), each beside the checks it feeds.
+    svc_catalog: list = []  # (service name, service type, private dns name)
+    catalog_read = False
+    if live:
+        res = cli_for(live[0]).run(
+            "ec2",
+            "describe-vpc-endpoint-services",
+            "--query",
+            "ServiceDetails[].[ServiceName,ServiceType[0].ServiceType,PrivateDnsName || `-`]",
+            "--output",
+            "text",
+            log=False,
+        )
+        if not res.ok:
+            logerr(live[0], "ec2 describe-vpc-endpoint-services", res.stderr)
+        else:
+            catalog_read = True
+            for line in res.stdout.splitlines():
+                f = line.split("\t")
+                if len(f) >= 3 and f[0]:
+                    svc_catalog.append((f[0], f[1], f[2]))
 
     # ------------------------------------------------------------------------------- checks
     nondef = sum(1 for v in vpcs if v[3] == "False")
@@ -569,6 +625,43 @@ def main(argv: list) -> int:
             "NT-8", "zone sandbox.internal", "not created yet - expected before Stage 3 step 4."
         )
 
+    # NT-9: the private-door premise of 2026-08-24 (PORTAL_FAMILY_BASELINE). A membership
+    # change in EITHER direction is a recorded premise moving, so it FAILS loudly rather
+    # than noting quietly - red is the signal to re-read, never a network to fix.
+    if catalog_read:
+        prefix = f"com.amazonaws.{context.REGION}."
+        for family, baseline in sorted(PORTAL_FAMILY_BASELINE.items()):
+            measured = {
+                name[len(prefix) :]
+                for name, _stype, _dns in svc_catalog
+                if name.startswith(prefix) and catalog_family(name[len(prefix) :]) == family
+            }
+            if measured == baseline:
+                checks.ok(
+                    "NT-9",
+                    f"catalog family '{family}'",
+                    f"exactly {sorted(measured)} - still NO private door for the SMUS "
+                    "portal's browser surfaces (section 10); the portal needs public "
+                    "egress under every endpoint set.",
+                )
+            else:
+                checks.fail(
+                    "NT-9",
+                    f"catalog family '{family}'",
+                    f"membership MOVED: measured {sorted(measured)}, recorded "
+                    f"{sorted(baseline)} - a browser-surface door may have appeared, or "
+                    "one was withdrawn. Re-read section 10's premise and architecture.md "
+                    "§4.3a before trusting any sentence that leans on the 2026-08-24 "
+                    "absence, then move this baseline WITH the re-reading, never alone.",
+                )
+    else:
+        checks.note(
+            "NT-9",
+            "endpoint-service catalog",
+            "unreadable this run (no live profile, or the call failed - section 13): the "
+            "private-door premise is UNMEASURED, not confirmed (Lesson 13).",
+        )
+
     # --------------------------------------------------------------------------- the report
     with open(out_path, "w", encoding="utf-8") as stream:
         rep = Report(stream)
@@ -589,15 +682,16 @@ SECTIONS
   7. Private hosted zones, associations, pending authorizations
   8. Flow logs, and their retention
   9. NACLs and security groups
-  10. CHECKS
-  11. The accounts nothing here is measuring
-  12. Calls that failed
+  10. The endpoint-service catalog - the doors that EXIST for these surfaces
+  11. CHECKS
+  12. The accounts nothing here is measuring
+  13. Calls that failed
 
 HOW TO READ THIS FILE
   - "NO VPC" IS THE EXPECTED ANSWER UNTIL STAGE 3 PASS 1 HAS RUN - except the
     ACCOUNT FACTORY vend artifact, which section 2 and check NT-1 expose and
     which step 0 (settled 2026-08-16) removes via its StackSet on Management.
-  - A MISSING ACCOUNT IS NOT A PASSING ACCOUNT. Section 11 names the ones nothing
+  - A MISSING ACCOUNT IS NOT A PASSING ACCOUNT. Section 12 names the ones nothing
     reached - Staging above all, which is UNVENDED and therefore silent.
   - THIS IS A CONTROL-PLANE READING. The behavioural proofs of the stage (dnf
     through the endpoint, NXDOMAIN, the probe reaching GitLab) need the throwaway
@@ -915,12 +1009,68 @@ block exists to make visible (step 6.4: never 0.0.0.0/0 on a peering path).
             )
 
         # ==============================================================================
-        rep.h1("10. CHECKS")
+        rep.h1("10. The endpoint-service catalog - the doors that EXIST for these surfaces")
+
+        rep.text("""ONE REGIONAL CALL, not a per-account fact: every service AWS offers as an
+INTERFACE endpoint here - the OFFER, never the choice. Which door a slice
+actually opens is that slice's own list (egress/'s extra_services, the module's
+core_services), deliberately not restated here (Lesson 14). egress.py section 7
+reads the same API for a different question - which deployed endpoints can
+carry a policy (EG-1).
+
+WHERE AN ENTRY BELOW FITS IN A VPC CONFIGURATION. An interface endpoint is the
+[E] door egress/ instantiates: under design A it is OPTIONAL beside the NAT,
+bought for the trusted-network axis (the org-conditioned endpoint policy, and
+aws:SourceVpc in the policies that key on it); under design B it would be the
+ONLY path. Its private DNS also OVERRIDES the service's public names for every
+VPC-resolver client - the PRIVATE DNS NAME column shows the primary one, and a
+deployed endpoint's DnsEntries can seize MORE (datazone also takes
+datazone.<region>.api.aws) - authoritatively, for the WHOLE SUBTREE: an
+unlisted SUBDOMAIN of a seized name is NXDOMAIN inside the VPC while the
+endpoint is up (measured 2026-08-24: agent.datazone.<region>.api.aws, a name
+AWS's own network-isolation page lists as PUBLIC-INTERNET-required for the
+portal web client).
+
+THE LOAD-BEARING READING IS AN ABSENCE. No entry below - or anywhere in the
+catalog - serves the SMUS portal's BROWSER surfaces: the on.aws portal itself,
+its CloudFront assets, agent.datazone.<region>.api.aws,
+sagemaker-unified-studio.<region>.api.aws. So NO endpoint set reaches the
+portal privately, and public egress stays required for it whatever the VPC
+configuration (architecture.md §4.3a - the design-B input). The console /
+console-static / signin rows are the PRECEDENT, not a dependency: AWS builds
+private doors for browser surfaces one at a time (Console Private Access), the
+SMUS portal has none yet, and NT-9 pins the families such a door would appear
+in so its arrival is a red check, not a surprise.
+
+A row appearing or vanishing here across a make down / make up diff is AWS's
+catalog moving, never [P] instability - read it with NT-9, not with the
+stability deliverable.
+
+""")
+
+        if catalog_read:
+            shown = [
+                (name, stype, dns)
+                for name, stype, dns in sorted(svc_catalog)
+                if any(t in name for t in CATALOG_SURFACES)
+            ]
+            rep.line(
+                f"{len(shown)} of {len(svc_catalog)} services match {'|'.join(CATALOG_SURFACES)}:"
+            )
+            rep.line()
+            rep.tabulate(
+                ["SERVICE NAME\tTYPE\tPRIVATE DNS NAME"] + ["\t".join(row) for row in shown]
+            )
+        else:
+            rep.line("(catalog unreadable this run - see section 13; NT-9 is a note, not a pass)")
+
+        # ==============================================================================
+        rep.h1("11. CHECKS")
 
         if nondef == 0:
             rep.text("""NO NON-DEFAULT VPC WAS MEASURED, so most checks below are vacuous rather than
 passing (Lesson 13). Before Stage 3 pass 1 that is the expected state, and the
-value of this run is section 2 (are there default VPCs?) and section 11.
+value of this run is section 2 (are there default VPCs?) and section 12.
 """)
 
         rep.checks_table(checks)
@@ -941,12 +1091,15 @@ What the checks are, and where each comes from:
         172.31.0.0/16 vend artifacts counted once, not pairwise
   NT-6  no peering touching the Staging range (D20, step 6.6)
   NT-7  a flow log on every non-default VPC (step 5)
-  NT-8  the four cross-account zone associations of step 4.4""")
+  NT-8  the four cross-account zone associations of step 4.4
+  NT-9  the endpoint-service catalog still offers NO private door for the
+        SMUS portal's browser surfaces - family membership vs the 2026-08-24
+        baseline (section 10)""")
 
         # ==============================================================================
-        rep.h1("11. The accounts nothing here is measuring")
+        rep.h1("12. The accounts nothing here is measuring")
 
-        rep.text("""Read this BEFORE reading section 10 as a pass.
+        rep.text("""Read this BEFORE reading section 11 as a pass.
 
   - `Staging` has no profile because the account is UNVENDED, held on the account
     cap (Stage 1a). Two Stage 3 deliverables are therefore not runnable from here
@@ -960,7 +1113,7 @@ What the checks are, and where each comes from:
     account where an empty section 2 is the passing answer.""")
 
         # ==============================================================================
-        rep.h1("12. Calls that failed")
+        rep.h1("13. Calls that failed")
 
         if errors:
             rep.text("""Each entry is a call whose output is missing above. An empty block anywhere else
@@ -978,10 +1131,10 @@ in this file means the call succeeded and returned nothing.
     n_fail = checks.n_fail()
     note("")
     if errors:
-        note(f"wrote {out_label} (some calls FAILED - see section 12)")
+        note(f"wrote {out_label} (some calls FAILED - see section 13)")
         return 1
     if n_fail > 0:
-        note(f"wrote {out_label} ({n_fail} CHECK(S) FAILED - see section 10)")
+        note(f"wrote {out_label} ({n_fail} CHECK(S) FAILED - see section 11)")
         return 2
     note(f"wrote {out_label} (all checks passed)")
     return 0
