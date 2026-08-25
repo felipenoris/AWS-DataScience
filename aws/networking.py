@@ -3,9 +3,10 @@
 # flagged), DNS attributes, subnets anchored on zone IDs, route tables and routes, internet
 # gateways, the S3/DynamoDB GATEWAY endpoints (the INT-05 anchor), VPC peerings seen from
 # both sides, the private hosted zones with their associations and pending authorizations,
-# flow logs, NACLs and security groups - plus one REGIONAL reading, the endpoint-service
-# catalog against the SMUS portal's surfaces (sections 10-11, NT-9/NT-10). The preflight
-# for Stage 3, and the standing regression after each of its passes.
+# flow logs, NACLs and security groups - plus the REGIONAL endpoint-service catalog
+# (section 10, NT-9) and the [E] endpoints instantiated from it with the DNS names each
+# has SEIZED (section 11, NT-10). The preflight for Stage 3, and the standing regression
+# after each of its passes.
 #
 #   needs:    a live SSO session - the ONLY prerequisite:
 #
@@ -47,8 +48,21 @@
 #
 # THE [P]-STABILITY DELIVERABLE IS A DIFF OF TWO RUNS OF THIS FILE. Stage 3's lifecycle
 # deliverable wants every foundation/ ID byte-identical across a make down / make up.
-# Run this, copy aws/output/networking.txt aside, cycle, run again, diff: the only lines
-# that may change are the timestamp and the [E] resources this file deliberately omits.
+# Run this, copy aws/output/networking.txt aside, cycle, run again, diff:
+#
+#   cut() { awk '/^# 11\./{s=1} /^# 12\./{s=0} !s' "$1"; }
+#   diff <(cut before.txt) <(cut after.txt)
+#
+# and the only line left that may change is the timestamp. SECTION 11 IS EXCLUDED BECAUSE
+# IT IS THE ONE [E] SECTION IN A [P] FILE, and it is not an oversight - it is a deliberate
+# exception added 2026-08-25 so the seized-DNS-name reading sits beside section 10's
+# catalog rather than in egress.py. It MOVES BY DESIGN: empty while egress/ is down, one
+# row per interface endpoint while it is up, with a NEW vpce-* id on every make up. Read
+# it moving as egress/ being up or down; a foundation/ id moving is the finding.
+#
+# Sections 10 and 11 answer opposite halves of one question and behave oppositely here:
+# 10 is REGIONAL (AWS's offer, identical whether egress/ is up, down, or never applied -
+# only AWS changes it, which is NT-9's job), 11 is this account's instantiation of it.
 #
 # WHAT IT CANNOT SEE, stated because an empty listing and a missing account look alike:
 #   - Staging is UNVENDED (held on the account cap) and has no profile: the deliverable
@@ -813,7 +827,10 @@ HOW TO READ THIS FILE
     through the endpoint, NXDOMAIN, the probe reaching GitLab) need the throwaway
     probe instances the stage describes; no describe call substitutes for them.
   - THE [P]-STABILITY DELIVERABLE IS A DIFF OF TWO RUNS: copy this file aside,
-    make down + make up, re-run, diff. Only the timestamp may change.
+    make down + make up, re-run, diff with SECTION 11 EXCLUDED - it is the one
+    [E] section here and moves by design (empty while egress/ is down, new
+    vpce-* ids on every make up). With it out, only the timestamp may change.
+    Section 10 is regional and does not move with egress/ at all.
 
 THIS FILE IS NOT VERSIONED (aws/output/ is in .gitignore) AND CONTAINS ACCOUNT IDS.
 Do not copy one into a tracked file.""")
