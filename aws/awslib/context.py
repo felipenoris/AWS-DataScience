@@ -83,3 +83,20 @@ def subprocess_env() -> dict:
     env = dict(os.environ)
     env["AWS_PAGER"] = ""
     return env
+
+
+def short_svc(svc: str) -> str:
+    """``com.amazonaws.us-west-2.ecr.api`` -> ``ecr.api``; ``aws.sagemaker.us-west-2.studio``
+    -> ``aws.sagemaker.studio``.
+
+    Lives here rather than in a script because it is a pure function of a service name and
+    ``REGION``, which this module owns, and because two scripts now need it: ``egress.py``
+    labels its endpoint checks with it, and ``networking.py`` (NT-10) labels the collisions
+    between a deployed endpoint's seized DNS names and the portal's public-required ones.
+    Moved out of ``egress.py`` on 2026-08-25 rather than copied - one intent enforced in two
+    places diverges (Lesson 33).
+    """
+    out = svc.replace(f".{REGION}", "")
+    if out.startswith("com.amazonaws."):
+        out = out[len("com.amazonaws.") :]
+    return out

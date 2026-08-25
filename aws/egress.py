@@ -70,6 +70,7 @@ import sys
 
 from awslib import context, profiles
 from awslib.awscli import AwsCli, ErrorLog, head2
+from awslib.context import short_svc
 from awslib.report import Checks, Report, note
 
 OUT_NAME = "egress.txt"
@@ -78,15 +79,6 @@ OUT_NAME = "egress.txt"
 # Lesson 6; re-measure THERE if these look stale). The NAT figure includes its public IPv4.
 RATE_IFEP = 0.010
 RATE_NAT = 0.050
-
-
-def short_svc(svc: str) -> str:
-    """com.amazonaws.us-west-2.ecr.api -> ecr.api ; aws.sagemaker.us-west-2.studio ->
-    aws.sagemaker.studio"""
-    out = svc.replace(f".{context.REGION}", "")
-    if out.startswith("com.amazonaws."):
-        out = out[len("com.amazonaws.") :]
-    return out
 
 
 def main(argv: list) -> int:

@@ -4,8 +4,8 @@
 # gateways, the S3/DynamoDB GATEWAY endpoints (the INT-05 anchor), VPC peerings seen from
 # both sides, the private hosted zones with their associations and pending authorizations,
 # flow logs, NACLs and security groups - plus one REGIONAL reading, the endpoint-service
-# catalog against the SMUS portal's surfaces (section 10, NT-9). The preflight for Stage 3,
-# and the standing regression after each of its passes.
+# catalog against the SMUS portal's surfaces (sections 10-11, NT-9/NT-10). The preflight
+# for Stage 3, and the standing regression after each of its passes.
 #
 #   needs:    a live SSO session - the ONLY prerequisite:
 #
@@ -69,6 +69,7 @@ from itertools import combinations
 
 from awslib import cidr, context, profiles
 from awslib.awscli import AwsCli, ErrorLog, head2
+from awslib.context import short_svc
 from awslib.report import Checks, Report, note
 
 OUT_NAME = "networking.txt"
@@ -109,6 +110,46 @@ PORTAL_FAMILY_BASELINE = {
 # Section 10's display filter - the families the 2026-08-24 hand query grepped for,
 # mechanised so the next reader gets the rows beside the interpretation.
 CATALOG_SURFACES = ("datazone", "sagemaker", "sqlworkbench", "console", "signin")
+
+# NT-10 / section 11: the names AWS's own SMUS network-isolation page lists under PUBLIC
+# INTERNET ACCESS - its THIRD table, the one unread until 2026-08-24, which is what makes
+# this a check rather than an opinion. The page requires these of the portal WEB CLIENT
+# while the same page's first table tells you to create the datazone endpoint; the two
+# collide, and the collision is what broke the portal on the tunnel.
+#
+# Only the CONCRETE names are here. The page's wildcard rows (*.sagemaker.aws,
+# *.execute-api.<region>.amazonaws.com, *.console.api.aws, *.console.aws.a2z.com,
+# *.sagemaker.aws.dev and the CDN ones) are deliberately NOT mechanised: a wildcard
+# required-name cannot be tested for shadowing without deciding what it stands for, and a
+# check that needs a judgement is one that reports the judgement rather than the fact
+# (Lesson 13). Section 11's prose names them so the gap is visible instead of silent.
+PORTAL_PUBLIC_NAMES = (
+    f"agent.datazone.{context.REGION}.api.aws",
+    f"sagemaker-unified-studio.{context.REGION}.api.aws",
+    f"monitoring.{context.REGION}.amazonaws.com",
+)
+
+
+def shadow_verdict(required: str, seized: str) -> str | None:
+    """How a deployed endpoint's seized name interferes with a public-required name.
+
+    An interface endpoint's private DNS installs a hosted zone that is authoritative for
+    the WHOLE SUBTREE of each name it seizes - there is no fall-through to public DNS. So
+    two distinct breakages, and naming which one matters when reading the fix:
+
+      SEIZED   the required name IS the seized name: it answers privately, and a browser
+               outside the VPC path never sees the public service at all.
+      SHADOWED the required name is a strict SUBDOMAIN of a seized name. If the seizure
+               carries no wildcard the answer is NXDOMAIN (measured 2026-08-24:
+               agent.datazone.<region>.api.aws); with a wildcard it resolves to the
+               endpoint, which is the wrong target rather than no target.
+    """
+    zone = seized[2:] if seized.startswith("*.") else seized
+    if required == zone:
+        return "SEIZED"
+    if required.endswith("." + zone):
+        return "SHADOWED"
+    return None
 
 
 def catalog_family(token: str) -> str | None:
@@ -155,6 +196,7 @@ def main(argv: list) -> int:
     vpcs: list = []  # (p, vpc, cidr, default, dnssup, dnshost)
     routes: list = []  # (p, rtb, vpc, dest, target, state)
     gweps: list = []  # (p, vpce, service, vpc)
+    ifeps: list = []  # (p, vpce, service, state, private dns, vpc, [seized names])
     peers: list = []  # (p, pcx, status, req vpc, req cidr, acc vpc, acc cidr)
     zones: list = []  # (p, zone id, zone name)
     zonevpcs: list = []  # (p, zone name, vpc, region)
@@ -278,6 +320,37 @@ def main(argv: list) -> int:
                 f = line.split("\t")
                 if len(f) >= 3 and f[0]:
                     gweps.append((p, f[0], f[1], f[2]))
+
+        # Interface endpoints - the [E] doors terraform-modules/vpc-egress/endpoints.tf
+        # instantiates, one per name of core_services + extra_services. egress.py owns the
+        # [E] AUDIT of these (one AZ per D9, the org condition, the burn); what is read
+        # HERE is the field neither script read until 2026-08-25 and which section 11
+        # exists for: DnsEntries - the public names each deployed endpoint SEIZES in this
+        # VPC's resolver. That is a namespace fact about the VPC, it pairs with section
+        # 10's catalog, and it is the mechanism behind the portal breakage of 2026-08-24.
+        res = cli.run(
+            "ec2",
+            "describe-vpc-endpoints",
+            "--filters",
+            "Name=vpc-endpoint-type,Values=Interface",
+            "--query",
+            "VpcEndpoints[].[VpcEndpointId,ServiceName,State,PrivateDnsEnabled,VpcId,"
+            "join(`,`, DnsEntries[].DnsName)]",
+            "--output",
+            "text",
+            log=False,
+        )
+        if not res.ok:
+            logerr(p, "ec2 describe-vpc-endpoints (interface)", res.stderr)
+        else:
+            for line in res.stdout.splitlines():
+                f = line.split("\t")
+                if len(f) >= 5 and f[0]:
+                    names = f[5] if len(f) > 5 else ""
+                    # A vpce-*-prefixed entry is endpoint-specific and seizes no public
+                    # name; only the rest override what the VPC resolver answers.
+                    seized = sorted(n for n in names.split(",") if n and not n.startswith("vpce-"))
+                    ifeps.append((p, f[0], f[1], f[2], f[3], f[4], seized))
 
         # Peerings - the API answers from both sides, so the same pcx-* appears under both
         # profiles.
@@ -658,9 +731,51 @@ def main(argv: list) -> int:
         checks.note(
             "NT-9",
             "endpoint-service catalog",
-            "unreadable this run (no live profile, or the call failed - section 13): the "
+            "unreadable this run (no live profile, or the call failed - section 14): the "
             "private-door premise is UNMEASURED, not confirmed (Lesson 13).",
         )
+
+    # NT-10: does any DEPLOYED interface endpoint's private DNS take over a name AWS's own
+    # network-isolation page requires of the portal over the PUBLIC internet? This is the
+    # 2026-08-24 breakage as a check - the one thing that reading left behind that a
+    # describe call CAN answer, so it never has to be rediscovered from a browser error.
+    if not ifeps:
+        checks.note(
+            "NT-10",
+            "portal public names vs deployed endpoints",
+            "no interface endpoint is deployed in any measured account - egress/ is [E] "
+            "and down, so this check is VACUOUS rather than passing (Lesson 13). It "
+            "becomes a real reading only while egress/ is up.",
+        )
+    else:
+        collisions = [
+            (p, ep, svc, required, seized, verdict)
+            for p, ep, svc, _state, privdns, _vpc, seized_names in ifeps
+            if privdns == "True"
+            for required in PORTAL_PUBLIC_NAMES
+            for seized in seized_names
+            if (verdict := shadow_verdict(required, seized))
+        ]
+        for p, ep, svc, required, seized, verdict in collisions:
+            checks.fail(
+                "NT-10",
+                f"{required} vs {ep} ({short_svc(svc)}, {p})",
+                f"{verdict} by the endpoint's seizure of '{seized}' - AWS's SMUS "
+                "network-isolation page lists this name under PUBLIC INTERNET ACCESS for "
+                "the portal web client, and this endpoint's private DNS is authoritative "
+                "for its subtree. Every VPC-resolver client is affected, the tunnelled "
+                "laptop included. The fix is the ENDPOINT (drop it, or accept the portal "
+                "is unusable from inside), never the DNS firewall allow-list, which "
+                "cannot reach a private zone.",
+            )
+        if not collisions:
+            checks.ok(
+                "NT-10",
+                "portal public names vs deployed endpoints",
+                f"{len(PORTAL_PUBLIC_NAMES)} concrete public-required name(s) checked "
+                f"against {len(ifeps)} deployed endpoint(s) - none seized or shadowed. "
+                "The page's WILDCARD rows are not mechanised (section 11).",
+            )
 
     # --------------------------------------------------------------------------- the report
     with open(out_path, "w", encoding="utf-8") as stream:
@@ -683,15 +798,16 @@ SECTIONS
   8. Flow logs, and their retention
   9. NACLs and security groups
   10. The endpoint-service catalog - the doors that EXIST for these surfaces
-  11. CHECKS
-  12. The accounts nothing here is measuring
-  13. Calls that failed
+  11. Interface endpoints - which doors this estate actually opened
+  12. CHECKS
+  13. The accounts nothing here is measuring
+  14. Calls that failed
 
 HOW TO READ THIS FILE
   - "NO VPC" IS THE EXPECTED ANSWER UNTIL STAGE 3 PASS 1 HAS RUN - except the
     ACCOUNT FACTORY vend artifact, which section 2 and check NT-1 expose and
     which step 0 (settled 2026-08-16) removes via its StackSet on Management.
-  - A MISSING ACCOUNT IS NOT A PASSING ACCOUNT. Section 12 names the ones nothing
+  - A MISSING ACCOUNT IS NOT A PASSING ACCOUNT. Section 13 names the ones nothing
     reached - Staging above all, which is UNVENDED and therefore silent.
   - THIS IS A CONTROL-PLANE READING. The behavioural proofs of the stage (dnf
     through the endpoint, NXDOMAIN, the probe reaching GitLab) need the throwaway
@@ -1065,12 +1181,69 @@ stability deliverable.
             rep.line("(catalog unreadable this run - see section 13; NT-9 is a note, not a pass)")
 
         # ==============================================================================
-        rep.h1("11. CHECKS")
+        rep.h1("11. Interface endpoints - which doors this estate actually opened")
+
+        rep.text("""SECTION 10 IS THE OFFER; THIS IS THE CHOICE. Every row below is one
+aws_vpc_endpoint from terraform-modules/vpc-egress/endpoints.tf, which for_eachs
+over concat(core_services, extra_services) with private_dns_enabled = true - the
+module's core list plus whatever that account's egress/ slice declares for its own
+role. A row here and no matching name in that slice means somebody created an
+endpoint by hand.
+
+THESE IDS ANCHOR NOTHING (Lesson 3, INT-05). They are [E]: destroyed by make down
+and NEW on every make up, so no policy may name one. Section 5's GATEWAY ids are
+the ones that may. A row appearing or vanishing across the [P]-stability diff is
+egress/ being up or down, not foundation/ moving.
+
+WHAT THIS SECTION READS THAT egress.py DOES NOT - and the reason it is here rather
+than there. egress.py owns the [E] AUDIT of these endpoints: one AZ per D9 (EG-2),
+private DNS on (EG-3), the org condition on each policy (EG-1), and the hourly burn.
+The column below that neither script carried until 2026-08-25 is SEIZED DNS NAMES -
+the public service names each deployed endpoint has taken over IN THIS VPC'S
+RESOLVER, read from DnsEntries. That is a fact about the VPC's namespace rather than
+about the endpoint's configuration, it is what section 10's PRIVATE DNS NAME column
+becomes once instantiated, and it is the mechanism behind the 2026-08-24 portal
+breakage. Endpoint-specific vpce-*-prefixed entries are dropped: they seize nothing.
+
+HOW TO READ A SEIZED NAME. The private hosted zone behind it is authoritative for
+the WHOLE SUBTREE, with no fall-through to public DNS. So an unlisted SUBDOMAIN of
+a seized name is NXDOMAIN for every VPC-resolver client - including a full-tunnel
+laptop, whose DNS is the VPC's. NT-10 tests exactly that against the concrete names
+AWS's SMUS network-isolation page lists under PUBLIC INTERNET ACCESS. The page's
+WILDCARD rows are NOT mechanised (*.sagemaker.aws, *.execute-api.<region>.
+amazonaws.com, *.console.api.aws, *.console.aws.a2z.com, *.sagemaker.aws.dev, the
+CDN ones) - testing one needs a judgement about what it stands for, so the gap is
+named here instead of hidden inside a check.
+
+""")
+
+        if ifeps:
+            rep.tabulate(
+                ["PROFILE\tENDPOINT\tSERVICE\tSTATE\tPRIV DNS\tSEIZED DNS NAMES"]
+                + sorted(
+                    "\t".join([p, ep, short_svc(svc), state, privdns, ", ".join(seized) or "-"])
+                    for p, ep, svc, state, privdns, _vpc, seized in ifeps
+                )
+            )
+        else:
+            rep.text("""(none in any measured account)
+
+THAT IS THE EXPECTED READING WHILE egress/ IS DOWN, and it is not a passing state -
+it is an ABSENT one. NT-10 says so rather than going green: with no endpoint
+deployed there is no seizure to collide with anything. It also means the SageMaker
+apps in this VPC have no private door and, with no NAT either, no egress at all -
+the shape whose symptom is the portal's "Network issue detected ... may be using a
+public subnet" banner, which names the wrong cause (measured 2026-08-24: the
+subnets are private; what is missing is any exit).
+""")
+
+        # ==============================================================================
+        rep.h1("12. CHECKS")
 
         if nondef == 0:
             rep.text("""NO NON-DEFAULT VPC WAS MEASURED, so most checks below are vacuous rather than
 passing (Lesson 13). Before Stage 3 pass 1 that is the expected state, and the
-value of this run is section 2 (are there default VPCs?) and section 12.
+value of this run is section 2 (are there default VPCs?) and section 13.
 """)
 
         rep.checks_table(checks)
@@ -1094,12 +1267,15 @@ What the checks are, and where each comes from:
   NT-8  the four cross-account zone associations of step 4.4
   NT-9  the endpoint-service catalog still offers NO private door for the
         SMUS portal's browser surfaces - family membership vs the 2026-08-24
-        baseline (section 10)""")
+        baseline (section 10)
+  NT-10 no DEPLOYED interface endpoint seizes or shadows a name AWS's SMUS
+        network-isolation page requires over the PUBLIC internet (section 11);
+        vacuous while egress/ is down""")
 
         # ==============================================================================
-        rep.h1("12. The accounts nothing here is measuring")
+        rep.h1("13. The accounts nothing here is measuring")
 
-        rep.text("""Read this BEFORE reading section 11 as a pass.
+        rep.text("""Read this BEFORE reading section 12 as a pass.
 
   - `Staging` has no profile because the account is UNVENDED, held on the account
     cap (Stage 1a). Two Stage 3 deliverables are therefore not runnable from here
@@ -1113,7 +1289,7 @@ What the checks are, and where each comes from:
     account where an empty section 2 is the passing answer.""")
 
         # ==============================================================================
-        rep.h1("13. Calls that failed")
+        rep.h1("14. Calls that failed")
 
         if errors:
             rep.text("""Each entry is a call whose output is missing above. An empty block anywhere else
@@ -1131,10 +1307,10 @@ in this file means the call succeeded and returned nothing.
     n_fail = checks.n_fail()
     note("")
     if errors:
-        note(f"wrote {out_label} (some calls FAILED - see section 13)")
+        note(f"wrote {out_label} (some calls FAILED - see section 14)")
         return 1
     if n_fail > 0:
-        note(f"wrote {out_label} ({n_fail} CHECK(S) FAILED - see section 11)")
+        note(f"wrote {out_label} ({n_fail} CHECK(S) FAILED - see section 12)")
         return 2
     note(f"wrote {out_label} (all checks passed)")
     return 0
