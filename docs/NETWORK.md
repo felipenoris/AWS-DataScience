@@ -489,7 +489,7 @@ flowchart LR
 
 | Script | Reads | Checks |
 |---|---|---|
-| `./aws/networking.py` | the `[P]` half, side by side per account: VPCs, subnets with zone ids, route tables, IGWs, gateway endpoint ids, peerings from both sides, the zones and their associations, flow logs, NACLs, SGs | `NT-1`–`NT-8`; run at every vend and either side of a `make down`/`make up` (the diff is the `[P]`-stability proof) |
+| `./aws/networking.py` | the `[P]` half, side by side per account: VPCs, subnets with zone ids, route tables, IGWs, gateway endpoint ids, peerings from both sides, the zones and their associations, flow logs, NACLs, SGs — plus the regional endpoint-service catalog: which SMUS surfaces have a private door, and that the **portal** has none (measured 2026-08-24) | `NT-1`–`NT-9`; run at every vend and either side of a `make down`/`make up` (the diff is the `[P]`-stability proof) |
 | `./aws/egress.py` | the `[E]` half: interface endpoints, NATs, addresses, every endpoint policy, the service × account matrix, the endpoint service catalog | `EG-1`–`EG-5`; run at both ends of a session — `EG-5` is the forgotten-egress meter (D12 has no alert) |
 | `./aws/vpn.py` | the host, the Elastic IP, the world-open rule, the log and alarm, which permission sets carry `DenyControlPlaneOffVpn`; `--on-host` (off by default, a write API) asks the running `wg0` which peers it holds | `VP-1`–`VP-9` |
 | `./aws/dns-allowlist.py` | both Interactive allow-lists, re-resolved from the laptop — no AWS session | `DN-1`–`DN-4`; the `EXC-05` instrument, and the only thing that compares the two lists |
