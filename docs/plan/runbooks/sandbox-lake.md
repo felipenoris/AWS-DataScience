@@ -80,18 +80,28 @@ infrastructure user's; the third is done in the portal, by a project member or t
 
 ## T. The two tests — each proving a different claim
 
-**Never yet exercised — Stage 16 steps 4.4 and 5.1 are this section's first runs.**
+**First exercised 2026-08-26 (Stage 16 steps 4.4 and 5.1) — with one amendment the exercise itself
+forced, below.**
 
 - **In the project** (proves the *wiring*): from JupyterLab, write a file through the mounted location,
-  list, read it back. Then the two refusals that make the pass meaningful: list **above** the prefix,
-  and repeat the read from a project holding no grant. Working-and-refusing together is the pass; either
-  alone is not (Lesson 13).
+  list, read it back. Then the refusal that makes the pass meaningful: a vend for a scope the project
+  holds no grant over (another group's prefix, or anything above the wired one) must come back
+  `AccessDenied` **in the grant register's wording** — *"You do not have … permissions to the requested
+  S3 Prefix"*. Working-and-refusing together is the pass; either alone is not (Lesson 13).
+  **What this test can NOT include, measured 2026-08-26: a "direct un-vended" refusal.** The SMUS
+  JupyterLab image ships **`aws_s3_access_grants_boto3_plugin`**, which intercepts every boto3 S3 call
+  and vends underneath it (caching the credentials, so most calls show no fresh `GetDataAccess` in the
+  trail) — a plain `list_objects_v2`/`get_object` from the notebook **succeeds by design**, and reading
+  that 200 as a hole is Lesson 30's mistake. The direct-refusal control lives in the laptop half alone.
+  The third refusal the first draft named — the same read from a *second* project holding no grant —
+  stays unexercised until a second project exists.
 - **From the laptop, no project in the path** (proves the *persona* path): on the VPN, as the group's SSO
   user, the `s3-read-write` sequence unchanged — discover (`ListCallerAccessGrants`), vend
   (`GetDataAccess` on `s3://awsds-sandbox-lake/<sso-group>/*`), write, list, read back. The vended
   session's ARN names **the access role** (the project-path vend names the project role — the difference
   is the diagnostic if a vend surprises). The persona's *direct* `aws s3` call on the bucket must still
-  refuse — vended-only is the design, and this is its negative control.
+  refuse — vended-only is the design, this is its negative control, and **the laptop is the only place
+  it is runnable**: no plugin sits in that path.
 
 ## R. Revoke — when a project dies
 
