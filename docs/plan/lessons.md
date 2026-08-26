@@ -963,6 +963,37 @@ lesson can be *recognised* without opening this file; the reasoning that makes e
    wordings of one denial, but denial-vs-no-arrival, which no wording can distinguish because one of the
    two has no words.
 
+43. **A browser is a term in the reach question, and its policy is one no AWS instrument can read — so
+   every gate in the estate stays green through a total outage.** Removing the `datazone` endpoint
+   discharged the NXDOMAIN shadowing of 2026-08-24, and the portal on the tunnel then failed with the
+   **identical words**: `TypeError: Failed to fetch`, on the catalog tab and on the JupyterLab space. The
+   surviving endpoints' private zones were answering *correctly* — the whole `*.studio.<region>.sagemaker.aws`
+   subtree, `glue`, `lakeformation`, `athena`, all to `10.20.x.x`, which is the design working as
+   intended. But the portal is a **public** origin, and a browser gates a public page's request to a
+   private address behind a permission (Chrome's **Local Network Access**); ungranted, `fetch()` rejects
+   before any HTTP exists. `curl` from the same laptop, the same minute, reached every one of those
+   addresses — it implements no such policy. **Everything this repository owns read clean throughout:**
+   `DN-1` 43/43, the DNS Firewall allowing, CloudTrail silent, `dig` answering, `terraform plan` empty.
+   The only instrument that could see it was a person clicking a permission.
+   **CloudTrail could still attribute it afterwards, and that is the reusable move**: the calls that
+   *succeeded* after the grant name what was failing before it — the catalog tab resolved to Glue at the
+   `glue` endpoint, the JupyterLab launch to the SageMaker API at `sagemaker.api`, both arriving from the
+   VPN host's **private** address — while the ~25 minutes of the outage held **zero arrivals**. The trail
+   cannot see a browser-side refusal, but the *shape* of the recovery identifies it: read the first
+   successful minute to learn what the silent minutes were trying to do.
+   **Lesson 28 said reach is an intersection; the intersection does not stop at AWS.** When a control
+   plane's client is a browser, its terms join the product — origin classification, CORS, private-network
+   gating, mixed content, cookie partitioning — and they share a shape: they are properties of the
+   *requesting document's* context, so they are invisible to the account, invariant under IAM, and
+   untestable by any harness that speaks HTTP without being a browser. Two corollaries, both structural.
+   **A full-tunnel client resolving through a VPC that holds interface endpoints has been moved into
+   those endpoints' address space without anyone deciding to** — every public web console for those
+   services inherits the gate, as a side effect of a DNS setting made for the compute plane. And the
+   fixable case was the exception: `datazone` could be deleted, `sagemaker.studio` cannot, so **the class
+   whose first instance was repaired by removing an endpoint is in general repairable only by moving the
+   client off the resolver** (open question 23). A per-origin browser grant is the interim, and it is not
+   infrastructure: no gate asserts it, no state file holds it, and it dies with a browser profile.
+
 ---
 
 *Plan core: [GENERAL_PLAN.md](../GENERAL_PLAN.md) · Decisions: [docs/plan/decisions/INDEX.md](decisions/INDEX.md) · Stages: [docs/plan/stages/INDEX.md](stages/INDEX.md)*
