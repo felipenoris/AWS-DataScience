@@ -412,8 +412,11 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   vend = the ACCESS role (project path vends the PROJECT role — the recorded difference), **KMS half
   CLOSED by head-object naming the data CMK** (`aws:kms`, bucket key on). **Verification (ix): YES — with
   2 grants the lake lists FIRST, so `grants[0]` silently switches buckets; README caveat added** (match
-  `grant_scope`, never position). **Still owed: passes 4 and 6**; the **3 `SmusProject*` trust shapes are
-  DOCUMENTATION**: `wired_projects` is EMPTY until 4.1.
+  `grant_scope`, never position). **4.1 RAN: first project WIRED** (trust entry applied +
+  grant `18229b9a-…`; `sandboxlake.py` 12/12; `wired_projects` takes the role NAME — an ARN in that
+  tracked table would carry the account id). The 3 `SmusProject*` shapes are now **applied but
+  unmeasured** — 4.2-4.4 (the portal connection, the user's act) answers (ii)-(vi). **Still owed:
+  4.2-4.4 and pass 6.**
 - **Standing St.6 mechanics:** a blueprint configuration is applied **from the MEMBER account** (the
   Put takes no account param); `awscc`'s carries **`environment_role_permission_boundary`** and the
   `aws` resource does not (INT-15's mechanism, Lesson 8); **an EXISTING configuration is IMMUTABLE

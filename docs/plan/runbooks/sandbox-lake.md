@@ -60,11 +60,13 @@ infrastructure user's; the third is done in the portal, by a project member or t
    aws s3control create-access-grant --account-id "$(aws sts get-caller-identity --query Account --output text --profile awsds-infra-sandbox-1)" --access-grants-location-id <location-id> --access-grants-location-configuration 'S3SubPrefix=<sso-group>/*' --grantee 'GranteeType=IAM,GranteeIdentifier=<the project user role ARN>' --permission READWRITE --profile awsds-infra-sandbox-1
    ```
 
-3. **Add the pair to the access-role trust** — append (role ARN, project id) to `sandbox/lake/`'s
-   project variable and `terraform apply` (Recipe A); the entry expands to the three documented
-   project-side statements (`sts:ExternalId` = the project id, `sts:SetSourceIdentity`,
-   `sts:TagSession` — Stage 16 step 2.1). The trust is enumerated by design; a wildcard there is
-   `SL-2`'s finding.
+3. **Add the pair to the access-role trust** — append (role **NAME**, project id) to
+   `var.wired_projects` in `sandbox/lake/variables.tf` and `terraform apply` (Recipe A); the entry
+   expands to the three documented project-side statements (`sts:ExternalId` = the project id,
+   `sts:SetSourceIdentity`, `sts:TagSession` — Stage 16 step 2.1). **The NAME, never the ARN** — the
+   table lives in a tracked file and the ARN carries the account id (`aws/INDEX.md` rule 1); the slice
+   builds the ARN itself, and a second validation holds name and project id consistent. The trust is
+   enumerated by design; a wildcard there is `SL-2`'s finding.
 
 4. **Create the connection, in the portal** — observed as the Data area's *Add S3 location*, documented
    as **Connections → Create connection → Amazon S3** (whether they are one form is Stage 16 step 4.2's

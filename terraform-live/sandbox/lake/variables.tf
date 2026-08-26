@@ -86,16 +86,30 @@ variable "tenants" {
 # auditable at all.
 
 variable "wired_projects" {
-  description = "SMUS projects with an S3 connection into this bucket: a free-form key => { project_role_arn, project_id }. Empty until step 4.1. Appended by runbooks/sandbox-lake.md §W and REMOVED by §R - an entry outliving its project is the finding, not the record."
+  description = "SMUS projects with an S3 connection into this bucket: a free-form key => { project_role_name, project_id }. Empty until step 4.1. Appended by runbooks/sandbox-lake.md W and REMOVED by R - an entry outliving its project is the finding, not the record. The role arrives as a NAME, never an ARN: the ARN carries the account id, this table lives in a TRACKED file, and aws/INDEX.md rule 1 forbids the copy - iam.tf builds the ARN from the account this slice already reads."
   type = map(object({
-    project_role_arn = string
-    project_id       = string
+    project_role_name = string
+    project_id        = string
   }))
-  default = {}
+
+  default = {
+    # Stage 16 step 4.1, wired 2026-08-26: the Stage 6 test project - the same project the
+    # 2026-08-24 s3-read-write work vended (its own SMUS-born location is the OTHER register
+    # entry). The name embeds the project id; the validation below holds the pair consistent.
+    "avhvbqn37ty7m8" = {
+      project_role_name = "datazone_usr_role_avhvbqn37ty7m8_5hkjdsy3umpi1c"
+      project_id        = "avhvbqn37ty7m8"
+    }
+  }
 
   validation {
-    condition     = alltrue([for p in values(var.wired_projects) : can(regex("^arn:[a-z-]+:iam::[0-9]{12}:role/datazone_usr_role_", p.project_role_arn))])
-    error_message = "project_role_arn must be a datazone_usr_role_* role ARN - the project USER role the portal shows on the project overview page."
+    condition     = alltrue([for p in values(var.wired_projects) : startswith(p.project_role_name, "datazone_usr_role_")])
+    error_message = "project_role_name must be a datazone_usr_role_* role NAME (not an ARN) - the project USER role the portal shows on the project overview page."
+  }
+
+  validation {
+    condition     = alltrue([for p in values(var.wired_projects) : strcontains(p.project_role_name, p.project_id)])
+    error_message = "the role name must embed the project id (datazone_usr_role_<project>_<suffix>) - a mismatched pair is a copy error from the portal page."
   }
 }
 
