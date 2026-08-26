@@ -158,6 +158,7 @@ its **Consumes** row names; that is the whole reading list.
 | [13 — Public web tier](plan/stages/stage-13-public-web-tier.md) | The public-facing experiment in front of a private backend — **and the only stage with public DNS** (D15 phase 2) | not started |
 | [14 — Sandbox vending](plan/stages/stage-14-sandbox-vending.md) | A business unit's `Sandbox` account from one name (D35) | not started |
 | [15 — GuardDuty org-wide](plan/stages/stage-15-guardduty.md) | Threat detection over the whole organization — delegation to Audit, auto-enable `ALL`, every optional plan switched off (they arrive ON), findings routed to a human for the first time | not started — created 2026-08-18 by splitting Stage 4's pass 4 out whole; nothing blocks it, and it gates Stage 11 step 4 (a month of billing) and Stage 5 step 13.2's ingestion |
+| [16 — Sandbox lake](plan/stages/stage-16-sandbox-lake.md) | The fourth Sandbox bucket, `awsds-sandbox-lake` — **permanent** per-SSO-group artifacts, mounted into SMUS projects via the portal's S3 connection, vended to laptops via S3 Access Grants; a compensated shadow lake, its trade argued in the institutional-delta row | **pass 0 DONE 2026-08-26, passes 1-2 written and NOT applied** — the slice is on disk (26 slices), `make check` OK; the one user input outstanding is the `objectives.md` note (step 0.1). Created the same day at the user's request; pre-instrumented by `./aws/sandboxlake.py` |
 
 ---
 

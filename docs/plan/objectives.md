@@ -32,6 +32,7 @@ The goal is to achieve the following:
   - the user of vscode instances built in SageMaker Unified Studio: users can instantiate as many vscode web instances they wish, with possibility of remote connecting their local computer vscode to a remote session.
   - the use of data catalog and explorer, issuing SQL statements, built in SageMaker Unified Studio.
   - use of S3 buckets for storage, built in SageMaker Unified Studio user interface.
+  - connect to user's `sso-group` S3 bucket using SageMaker to read-write data to group's `sandbox-lake`.
   - use of sagemaker's workflows and Visual ETL feature built in SageMaker Unified Studio.
   - use of IA models built in SageMaker Unified Studio
 

@@ -24,7 +24,10 @@ locals {
 
 module "consumer_data" {
   # checkov:skip=CKV_TF_1:pinned by git TAG by convention (conventions §6, Stage 3 step 1.1a) - a repository-internal tag only the repo owner can move
-  source = "git::git@github.com:felipenoris/AWS-DataScience.git//terraform-modules/consumer-data?ref=consumer-data-v0.2.0"
+  # v0.3.0 (2026-08-26) adds additional_data_key_policy_statements, default EMPTY. THIS SLICE
+  # PASSES NOTHING, and its plan after the bump must read `No changes` - that empty plan is the
+  # proof the default protected it, and it is a step of Stage 16 (2.2) rather than a hope.
+  source = "git::git@github.com:felipenoris/AWS-DataScience.git//terraform-modules/consumer-data?ref=consumer-data-v0.3.0"
 
   env    = var.env
   region = var.region
