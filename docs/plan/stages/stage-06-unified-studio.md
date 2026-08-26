@@ -895,9 +895,14 @@ recorded — *Public internet access*: the portal's client assets, its client AP
 (**`agent.datazone.<region>.api.aws`**) and the IdC sign-in endpoints require the public internet — a name
 the `datazone` endpoint's own private zone **shadows** (authoritative for the subtree, NXDOMAIN for the
 subdomain), breaking the portal for every VPC-resolver client: measured 2026-08-24, the full-tunnel
-laptop, 60/61 portal names fine, zero CloudTrail arrivals. **Removing `datazone` from both
-`extra_services` is recommended and pending the user**; the apply's measurement is the app's DataZone
-calls moving from the endpoint (where CloudTrail reads them today) to the NAT. Mechanism:
+laptop, 60/61 portal names fine, zero CloudTrail arrivals. **`datazone` LEFT both `extra_services` on
+2026-08-25 (issue #39)** — code-only, with `egress/` down, so
+the break above stays the last measurement and the next `make up` is where the prediction is tested: the
+app's DataZone calls moving from the endpoint (where CloudTrail read them on 2026-08-24) to the NAT, and
+`agent.datazone…` resolving for the tunnelled laptop. **The rule that outlives the entry**: no endpoint
+whose private zone shadows a name the *client* plane requires may live in the VPC the client resolves
+through — so design B, which must re-add this endpoint (no NAT, no other path to DataZone), has to move
+the portal off that resolver instead. Per-account cost drops 0.170 → 0.160/h. Mechanism:
 [`docs/NETWORK.md`](../../NETWORK.md) §5; Lessons 40-42; `EXC-06` is the user's temporary `*` beside it.
 
 **One entry of that list is a measurement, not a provisioning decision — `s3`.** What the measurement is,
@@ -986,7 +991,7 @@ Manager needs none, and the *"VPN-only"* requirement was **withdrawn by the user
 measurement showed the rule it rested on gated nothing anybody used), and reaching the internet **only**
 through the WireGuard host, which
 `wireguard-v0.4.0` turns into a NAT instance for exactly that tier. **No NAT gateway is involved**, so
-`egress/` need never come up for a build (0.170 USD/h not spent). `./scripts/buildbox.py up|sync|ssm|down`
+`egress/` need never come up for a build (0.160 USD/h not spent). `./scripts/buildbox.py up|sync|ssm|down`
 drives it; its README carries the design and the refusals.
 
 **What that host deliberately cannot do is push**, so the two acts split **by identity and not by

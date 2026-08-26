@@ -33,23 +33,35 @@ module "egress" {
 
   # Step 8.3, the Development row: the three SageMaker endpoints - the same list as Sandbox
   # since 2026-08-17, when the NFS requirement was withdrawn (D24 with it).
-  # `datazone` JOINED THE LIST AT STAGE 6 STEP 4.2 (2026-08-21) ON A MISREAD, measured
-  # 2026-08-24. The sentence here used to claim the network-isolation page marks it "REQUIRED
-  # under VpcOnly, so an app cannot reach the domain without it" - three errors in one clause:
-  # the page's required table is scoped by its OWN premise ("access to the public internet is
-  # denied from the VPC" - design B, never VpcOnly); under design A the app reaches DataZone
-  # through the NAT (datazone.<region>.api.aws is on the list below); and the entry is not
-  # free - its private DNS zone is AUTHORITATIVE FOR THE WHOLE SUBTREE, so
+  #
+  # `datazone` JOINED AT STAGE 6 STEP 4.2 (2026-08-21) ON A MISREAD AND LEFT ON 2026-08-25
+  # (issue #39). The clause that put it here said the network-isolation page marks it
+  # "REQUIRED under VpcOnly, so an app cannot reach the domain without it" - three errors in
+  # one: the page's required table is scoped by its OWN premise ("access to the public
+  # internet is denied from the VPC" - design B, never VpcOnly); under design A the app
+  # reaches DataZone through the NAT (datazone.<region>.api.aws is on the list below); and
+  # the entry was not free - its private DNS zone is AUTHORITATIVE FOR THE WHOLE SUBTREE, so
   # agent.datazone.<region>.api.aws, which the SAME page's public-internet table says the
-  # portal front-end needs, is NXDOMAIN for every client of the VPC resolver, the full-tunnel
-  # laptop included: the portal broke ON the VPN while Sandbox's twin of this slice was up
-  # (Lessons 40-42; this account's zone does the same the day this slice is up). REMOVAL IS
-  # RECOMMENDED AND PENDING the user's authorization - the removal's prediction, that the
-  # app's calls move to the NAT, is measured at the apply rather than assumed.
-  # The rest of the required table
-  # (docs/SMUS.md §VpcOnly is the one copy - fifteen names) is added by MEASUREMENT and not by
-  # copying: verification (viii) reads the flow logs of a working session and only what is
-  # exercised gets an endpoint, at +USD 0.010/h each, per account, for the whole session.
+  # portal front-end needs, was NXDOMAIN for every client of the VPC resolver. THE MEASURED
+  # BREAK WAS SANDBOX'S (2026-08-24, Lessons 40-42) - this account's zone had never been up
+  # with a tunnelled browser behind it, so the entry left here on the RULE rather than on a
+  # second measurement, which is the honest form of it.
+  #
+  # THE RULE OUTLIVES THE ENTRY: no endpoint whose private zone SHADOWS a name the CLIENT
+  # plane requires may live in the VPC the client resolves through - and the 2026-08-25
+  # objectives clarification puts the full-tunnel laptop on a VPC resolver BY REQUIREMENT
+  # (D5 re-scoped to the compute plane). It is not a rule about `datazone`: any future
+  # endpoint seizing an `api.aws` spelling inherits it.
+  #
+  # UNDER DESIGN B THE ENTRY COMES BACK, and must: with no NAT there is no other path from
+  # the app to DataZone. The shadowing comes back with it, so B also has to move the portal
+  # off the resolver - architecture.md §4.3's second correction argues that, and it is the
+  # same rule rather than an exception to it.
+  #
+  # The rest of the required table (docs/SMUS.md §VpcOnly is the one copy - fifteen names) is
+  # added by MEASUREMENT and not by copying: verification (viii) reads the flow logs of a
+  # working session and only what is exercised gets an endpoint, at +USD 0.010/h each, per
+  # account, for the whole session.
   #
   # TWO ENTRIES OF THAT TABLE CANNOT BE SETTLED BY ADDING THEM HERE, and both are recorded so
   # nobody "fixes" them:
@@ -61,7 +73,7 @@ module "egress" {
   #   q    the doc pairs it with com.amazonaws.US-EAST-1.codewhisperer, and an interface
   #        endpoint is regional - so under design B the Amazon Q surface has no private path
   #        from us-west-2 at all. Record what breaks at 4.3 rather than assuming either way.
-  extra_services = ["sagemaker.api", "sagemaker.runtime", "sagemaker.studio", "datazone"]
+  extra_services = ["sagemaker.api", "sagemaker.runtime", "sagemaker.studio"]
 
   # DESIGN A's CONTROL (Stage 6 step 4.1) - the allow-list that makes the NAT "limited
   # internet" instead of internet. The module refuses to enable itself under

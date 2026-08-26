@@ -379,6 +379,23 @@ onwards the file records how the environment changed, not just the plan.
   public-name families in the same sitting (the user's `*` kept first, deliberately, so removing it
   becomes an experiment instead of a breakage — `EXC-06`'s exit path).
 
+- **2026-08-25 — `datazone` left both Interactive `extra_services` (issue #39), and the rule it leaves
+  behind is bigger than the entry.** It joined at Stage 6 step 4.2 on 2026-08-21, on a misread of the
+  network-isolation page's required table (scoped by that page's own no-public-egress premise, never by
+  `VpcOnly` — Lesson 41), and was provisioned on the applies of 2026-08-21/24. What it cost was measured
+  on 2026-08-24: its private zone is authoritative for the whole `datazone.<region>.api.aws` subtree, so
+  `agent.datazone.<region>.api.aws` — a name the portal's browser needs, per the same page's
+  public-internet table — was NXDOMAIN for every client of the VPC resolver, the full-tunnel laptop
+  included, and the portal broke *on* the VPN. The removal is **code-only**: `egress/` was down when it
+  landed, so nothing was destroyed and the prediction — the app's DataZone calls moving from the endpoint
+  to the NAT, `agent.datazone…` resolving again — is tested at the next `make up`, not asserted here.
+  Counts and rates moved with it: **12 → 11** interface endpoints per Interactive account, **0.170 →
+  0.160/h**, a forgotten day back to **USD 3.84** (`egress.py`'s two copies of that figure had diverged
+  again and were converged in the same commit). **The general rule now recorded in both slices**: no
+  endpoint whose private zone shadows a name the *client* plane requires may live in the VPC the client
+  resolves through — which is why design B, where this endpoint must come back because there is no NAT,
+  has to move the portal off that resolver instead of dropping the endpoint.
+
 ---
 
 *Plan core: [GENERAL_PLAN.md](../GENERAL_PLAN.md) · Decisions: [docs/plan/decisions/INDEX.md](decisions/INDEX.md) · Stages: [docs/plan/stages/INDEX.md](stages/INDEX.md)*

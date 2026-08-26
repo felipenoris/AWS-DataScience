@@ -76,7 +76,7 @@ Two cost levers worth applying rather than discovering later:
 | WireGuard EC2 `t3.nano` | ~0.005 (`t4g.nano` at ~0.004 until the amd64 move of 2026-08-20; a `t3.medium` session is ~0.042) |
 | Sandbox ↔ Production **and** Development ↔ Production VPC peering (two of them, D21) | free within an AZ; USD 0.01/GB each way across AZs — see `docs/plan/open-questions.md` item 3 |
 | **Staging `egress/` during a promotion run** (D20) | ~0.140/h, but measured in *minutes* per promotion, not hours — `make up ENV=staging` is a pipeline step, and the pipeline tears it down. Budget ~USD 0.03 per promotion, not a standing hourly cost |
-| **Development `egress/` + Studio apps** (D21) | ~0.170/h under design A, ~0.140 under B, plus ~0.05/h per running app — but only while pipeline-engineering work is happening. A session is either exploratory (Sandbox up) or engineering (Development up), so the *typical* hourly burn does not double even though the worst case does |
+| **Development `egress/` + Studio apps** (D21) | ~0.160/h under design A (0.170 until the 2026-08-25 `datazone` removal), ~0.140 under B — which must re-add that endpoint, plus ~0.05/h per running app — but only while pipeline-engineering work is happening. A session is either exploratory (Sandbox up) or engineering (Development up), so the *typical* hourly burn does not double even though the worst case does |
 | Athena, Glue | usage-based; negligible at lab scale |
 
 **Two corrections to this table, applied 2026-08-08, and both moved the numbers up.**
@@ -85,8 +85,10 @@ Two cost levers worth applying rather than discovering later:
   account. Under design A the NAT hid it; under design B, with no NAT anywhere, it meant the design could
   not run a query at all — D13 routes every tabular read through an LF-aware engine. They are now in the
   **common core of both designs**, which is why both got more expensive: a Sandbox hour goes from ~0.14
-  to ~0.170 under A and from ~0.11 to ~0.140 under B — the lists as then counted; since 2026-08-17
-  (`elasticfilesystem` out, D24 withdrawn; `datazone` in, Stage 6 step 4.2) those end-states read 0.170 and 0.140.
+  to ~0.170 under A and from ~0.11 to ~0.140 under B — the lists as then counted. The A figure has moved
+  twice since: `elasticfilesystem` out on 2026-08-17 (D24 withdrawn), `datazone` in on 2026-08-21 (Stage 6
+  step 4.2) and **out again on 2026-08-25** (issue #39), so **A reads 0.160 today**. B stays 0.140: the
+  endpoint A just dropped is one B has to keep, having no NAT to reach DataZone through.
 - **The gap between the designs survived the correction, and now rests on the right thing.** B is cheaper
   by exactly ~USD 0.030/h — the NAT and its address (0.050) less the two CodeArtifact endpoints (0.020) —
   in every account, for every list. The older claim that B trades the NAT for two endpoints and comes out
@@ -102,7 +104,7 @@ number, not the bottom** — it leaves roughly USD 7 of headroom, and the items 
 floor row eat into it. Staging and Data Governance cost almost nothing precisely because neither ever has
 standing compute; the number to watch is whether Sandbox and Development sessions actually stay disjoint,
 which is what keeps the hourly line from doubling.
-The single fastest way to breach the ceiling is a session that leaves `egress/` up: at ~USD 0.170/h that is
+The single fastest way to breach the ceiling is a session that leaves `egress/` up: at ~USD 0.160/h that is
 USD 3.84 for a forgotten day, and two of them cancel the entire headroom. **This used to say that the budget
 alerts and Cost Anomaly Detection of Stage 1a step 2 are the primary control here; both were skipped by
 decision on 2026-08-09, so there is no automatic control over it at all** — the exposure is carried by the

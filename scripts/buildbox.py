@@ -3,8 +3,8 @@
 # it, open a shell, tear it down.
 #
 # WHY IT IS A SCRIPT OF ITS OWN AND NOT `make up ENV=sandbox`. That target acts on EVERY [E]
-# slice in an account, which for Sandbox means egress/ (a NAT gateway and twelve interface
-# endpoints, 0.170 USD/h) and probes/ (Stage 3's instruments). A build session needs neither -
+# slice in an account, which for Sandbox means egress/ (a NAT gateway and eleven interface
+# endpoints, 0.160 USD/h) and probes/ (Stage 3's instruments). A build session needs neither -
 # it reaches the internet through the WireGuard host - and one of them, probes/, must NOT be
 # up at the same time. `scripts/slices.py` has no per-slice targeting and giving it some would
 # weaken the refusals it exists for, so this file drives one slice deliberately.

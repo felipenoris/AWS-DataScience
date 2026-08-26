@@ -137,7 +137,7 @@ RANKS = {
     #            error. `up` ascends rank, so the [D] hook starts the tunnel first.
     #   egress   is NOT one, and the absence is the design rather than an accident: the build
     #            reaches the internet through the VPN host, so no NAT gateway is involved and
-    #            `egress/` need never come up for a build session (0.170 USD/h not spent).
+    #            `egress/` need never come up for a build session (0.160 USD/h not spent).
     #            The rank sits above it anyway - nothing is ordered wrongly by that, and it
     #            keeps the reading "everything ephemeral in this account is at or above 50".
     #   probes   is a CONFLICT, not a dependency, and it is the reason this row's slice
@@ -206,13 +206,13 @@ SLICES = [
     Slice("production", "foundation", PERSISTENT, "VPC 3x2, gw endpoints, prod+pages.internal"),
     # Stage 3 pass 3 (2026-08-16). The endpoint counts are step 8.3's per-role lists:
     # core 8 + the account's extras; every row includes a mode-A NAT (0.050 = 0.045 + IPv4).
-    Slice("sandbox", "egress", EPHEMERAL, "NAT + 12 interface endpoints (8.3 + St.6 4.2)", 0.170),
+    Slice("sandbox", "egress", EPHEMERAL, "NAT + 11 interface endpoints (8.3)", 0.160),
     Slice(
         "development",
         "egress",
         EPHEMERAL,
-        "NAT + 12 interface endpoints (8.3 + St.6 4.2)",
-        0.170,
+        "NAT + 11 interface endpoints (8.3)",
+        0.160,
     ),
     Slice("production", "egress", EPHEMERAL, "NAT + 10 interface endpoints (8.3)", 0.150),
     # Stage 3's Deliverables, as slices rather than as a script (2026-08-16). These are

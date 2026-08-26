@@ -46,7 +46,7 @@
 #        WireGuard security group ADMITS those ranges inbound, or the packet is dropped on
 #        arrival - which is what happened, and it read as a broken package mirror.
 #        NO NAT GATEWAY IS INVOLVED - egress/ is not a prerequisite of this slice and does not
-#        have to be up, which is 0.170 USD/h not spent to run a build.
+#        have to be up, which is 0.160 USD/h not spent to run a build.
 #
 # THE TIER IS THE ISOLATED ONE, AND THAT IS A CHOICE WITH A CO-TENANT. The private tier's
 # default route belongs to egress/ under egress_mode=A, and two slices writing 0.0.0.0/0 into

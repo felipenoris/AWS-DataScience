@@ -269,9 +269,9 @@ one Stage 12 step 5 measures against the real bill — this is arithmetic over l
 |---|---|---|---|
 | NAT Gateway (1) | 0.093 + 0.093/GB | 0.045 + 0.045/GB | 2.07 |
 | Interface VPC endpoint (each, per AZ) | 0.021 + 0.01/GB | 0.010 + 0.01/GB | 2.10 |
-| — Sandbox, 12 endpoints, single AZ (D9), design A (12 until 2026-08-17 when `elasticfilesystem` left with the NFS requirement, 11 until 2026-08-21 when `datazone` joined at Stage 6 step 4.2) | 0.252 | 0.120 | 2.10 |
-| — Sandbox, 14 endpoints, design B (**parenthetical corrected 2026-08-25** — it said `datazone` is "required under `VpcOnly` in either design": the required table is scoped by the page's own no-egress premise, never by `VpcOnly` (Lesson 41), the `datazone` removal is pending, and the portal names belong to the client plane) | 0.294 | 0.140 | (design B needs CodeArtifact — see §9) |
-| — Development 12 / Staging 9 / Production 10-12 | 0.252 / 0.189 / 0.210-0.252 | 0.120 / 0.090 / 0.100-0.120 | 2.10 |
+| — Sandbox, **11** endpoints, single AZ (D9), design A (12 until 2026-08-17 when `elasticfilesystem` left with the NFS requirement; 11 until 2026-08-21 when `datazone` joined at Stage 6 step 4.2; **11 again since 2026-08-25, when it left — issue #39**) | 0.231 | 0.110 | 2.10 |
+| — Sandbox, 14 endpoints, design B — **11 + the two CodeArtifact + `datazone` back**, which is the one entry design B must re-add: with no NAT the app has no other path to DataZone (the 2026-08-25 removal is design A's, issue #39). It is required by B's own premise, **never by `VpcOnly`** (Lesson 41), and the portal names it shadows belong to the client plane | 0.294 | 0.140 | (design B needs CodeArtifact — see §9) |
+| — Development **11** / Staging 9 / Production 10-12 | 0.231 / 0.189 / 0.210-0.252 | 0.110 / 0.090 / 0.100-0.120 | 2.10 |
 | GitLab EC2 `t4g.large` | 0.1072 | 0.0672 | 1.60 |
 | — `t3.large`, the x86 equivalent | 0.1344 | 0.0832 | 1.62 |
 | Stage 6 build host `t3.xlarge` (`sandbox/buildbox/`, `[E]`) | 0.2688 | **0.1664** | 1.62 |
@@ -619,7 +619,7 @@ favour: **technically yes except for CodeArtifact, but it no longer fits under t
 data-plane endpoints are counted.** Interface endpoints carry the sharpest premium in this file (2.10x) and
 the correction added three of them to every account, so São Paulo absorbed the change roughly twice over.
 The first overrun there would be a session that leaves a design-A Sandbox `egress/` up for a full day:
-24 h × 0.345 = **USD 8.28** in `sa-east-1` against 24 h × 0.170 = USD 4.08 in `us-west-2`.
+24 h × 0.345 = **USD 8.28** in `sa-east-1` against 24 h × 0.160 = USD 3.84 in `us-west-2` (0.345/0.170 and USD 8.28/4.08 while `datazone` was on the list, 2026-08-21 to 08-25 — the ratio is what this paragraph turns on, and it does not move).
 
 ---
 

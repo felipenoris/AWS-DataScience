@@ -364,9 +364,12 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   **public-internet-required** (its THIRD table, unread until now) — is NXDOMAIN for every VPC-resolver
   client; 60/61 portal front-end names fine; zero CloudTrail arrivals (never-arrived, not denied). The
   4.2 comment's "REQUIRED under VpcOnly" was a misread — the page's premise is its own no-internet
-  design, and 6 of the 15 "required" endpoints never existed here. **PENDING, the user's: removing
-  `datazone` from both `extra_services`** (prediction to measure at apply: the app's calls move to the
-  NAT — today CloudTrail shows them on the endpoint). Meanwhile **`EXC-06`**: the user's deliberate `*`
+  design, and 6 of the 15 "required" endpoints never existed here. **REMOVED 2026-08-25 from both
+  `extra_services`** (issue #39; code-only, `egress/` down — prediction to measure at the next `make up`:
+  the app's calls move to the NAT and `agent.datazone…` resolves). Endpoints per Interactive account
+  **12 → 11**, 0.170 → 0.160/h. **The rule outlives the entry**: no endpoint whose private zone shadows a
+  CLIENT-plane name may live in the VPC the client resolves through — design B must re-add `datazone`
+  (no NAT, no other path), so B moves the portal off that resolver instead. Meanwhile **`EXC-06`**: the user's deliberate `*`
   on Sandbox's allow-list (portal sign-in fix; cannot fix shadowing; `DN-3` fails on the divergence).
   Design-B input RE-SCOPED 2026-08-25 (D5/D6 + objectives): the portal's public egress is the CLIENT
   plane's — B constrains COMPUTE only; A-vs-B = short whitelist vs empty, both behind the St.11 proxy (OQ 23).
