@@ -10,13 +10,24 @@
 #   3. Two permission-set roles, BY PATTERN        -> the data lake administrator and the
 #                                                     persona the share is re-granted to
 #
-# THIS ACCOUNT'S OWN identity and partition are deliberately NOT read here: every ARN this
-# slice builds is built inside the module, which reads them itself. A data source declared for
-# symmetry and never referenced is what tflint's unused-declaration rule is for.
+#   4. THIS ACCOUNT'S OWN identity and partition -> added 2026-08-26, and the sentence they
+#                                                   replaced said they never would be. It was
+#                                                   true while every ARN this slice built was
+#                                                   built inside the module; the key-policy
+#                                                   statement in main.tf is the first one built
+#                                                   HERE, so the premise expired rather than
+#                                                   the rule. Development's copy of this slice
+#                                                   passes no such statement and therefore
+#                                                   declares neither - which is why they are in
+#                                                   the Sandbox file and not in a shared one
 
 data "aws_caller_identity" "lake" {
   provider = aws.lake
 }
+
+data "aws_caller_identity" "current" {}
+
+data "aws_partition" "current" {}
 
 # ------------------------------------------------------------------ the lake's own state
 #

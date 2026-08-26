@@ -128,6 +128,23 @@ RANKS = {
     # has for the peerings, and the cross-account exception note above covers it.
     "sagemaker": 46,
     "governance": 47,
+    # STAGE 16'S SANDBOX LAKE (2026-08-26). AFTER `data` (45), and that is the only one of the
+    # three ranks below it that is a real dependency: the bucket encrypts under
+    # alias/awsds-<env>-data, which the `data` slice's consumer-data module creates. It sits
+    # above sagemaker/governance for no dependency reason at all - nothing here reads the
+    # domain - and the number simply had to go somewhere below egress.
+    #
+    # THE FIRST APPLY IS THREE ACTS OVER TWO SLICES, and the rank cannot say so, which is why
+    # this comment does (the sagemaker/governance pair above has the same shape for the same
+    # reason - both ends are [P], so `up`/`down` refuse them and no target ever acts on the
+    # order):
+    #
+    #   1. data/   already applied - it owns the CMK this bucket names
+    #   2. lake/   the bucket, the access role, the location, the per-group grants
+    #   3. data/   AGAIN - one key-policy statement admitting the access role. It is second
+    #              because KMS validates a key policy's principals: a statement naming a role
+    #              that does not exist yet is rejected, so the role has to precede it
+    "lake": 48,
     "egress": 50,
     # STAGE 6 STEP 5.0's BUILD HOST (2026-08-21). ABOVE `vpn` (40) and BELOW `probes` (60),
     # and only one of those two neighbours is a dependency:
@@ -322,6 +339,14 @@ SLICES = [
     Slice(
         "data-governance", "governance", PERSISTENT, "the DataZone V2 domain + 2 project profiles"
     ),
+    # Stage 16 - the sandbox lake. [P] and FREE at rest in the only sense this column measures:
+    # nothing in it is metered by the HOUR. Storage is metered by the GB-month and grows without
+    # bound by design (there is no expiry rule - that is the requirement), so this row's 0.0 is
+    # true and incomplete at once, and the bill this slice does generate is docs/PRICING.md's
+    # and the stage's Cost section rather than `make status`'s. Sandbox only today: Development
+    # has no S3 Access Grants instance, so the same slice there would have nothing to register
+    # a location against.
+    Slice("sandbox", "lake", PERSISTENT, "permanent per-group artifacts + their AG grants"),
 ]
 
 

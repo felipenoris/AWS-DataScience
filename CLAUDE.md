@@ -177,6 +177,7 @@ its `Consumes` row lists.
 | **Anything VPN** — what the pieces are and what the NAT is *not* part of, starting/stopping the host, connecting a device, a tunnel that will not come up, a key event (loss, revocation, rotation), or a shell on the VPN host | [`docs/plan/runbooks/vpn.md`](docs/plan/runbooks/vpn.md) — one runbook, three parts (unified 2026-08-19). **§S** the system: components, the measured topology, host start/stop (`InsufficientInstanceCapacity` is retried, never redesigned around). **§C** the client, no AWS call in it: the five config values, the three checks that prove three different claims, the silent-by-design failure modes. **§K** the keys — loss is recovery from the `[P]` secret, never rotation — and **§K0a is the SSM session** and where `--target` comes from |
 | **The NETWORK as built** — VPCs, subnets, routes, peerings, egress, VPN, DNS, security groups, every internal address; **how a SageMaker app sees the internet, and what can reach one** | [`docs/NETWORK.md`](docs/NETWORK.md) — code plus measurement, with diagrams. The runbooks stay the procedures, `AWS_STATE.md` stays what is *expected* |
 | **Anything BUILDBOX** — the `[E]` `amd64` build host of St.6 5.0, its route, or why the VPN host is also a NAT instance | [`docs/plan/runbooks/buildbox.md`](docs/plan/runbooks/buildbox.md) — seven short sections: what it is, why it exists (**the images are `amd64`, the laptop is `arm64`**), the components (**the route is the reach; `vpc_nat_cidrs` is the capability**), `up`, **§S space** (the 64 GiB root against two images that share layers — prune before recreating), **§P push** (**build and push are ONE session** — the volume dies with the host; the identity arrives as an ECR **token**, never as a permission), `down`. It **must not coexist with `sandbox/probes/`** and a **stopped VPN host makes its route a blackhole, not an error** |
+| **Anything SANDBOX LAKE** — the ungoverned fourth Sandbox bucket (`awsds-sandbox-lake`, St.16), a per-group prefix, wiring or unwiring a project's S3 connection, either read/write test | [`docs/plan/runbooks/sandbox-lake.md`](docs/plan/runbooks/sandbox-lake.md) — five short sections, **drafted 2026-08-26, UNEXERCISED until St.16 passes 4-6**: what it is and is not (**not the governed lake**), **§G** the prefix contract, **§W** wire a project (a grant + a trust entry + the portal form), **§T** the two tests, **§R** revoke — an orphaned grant is `SL-4`'s finding |
 | **A policy is about to be attached, or was amended** | [`docs/plan/runbooks/scp-battery.md`](docs/plan/runbooks/scp-battery.md) — the probes, and the two distinguishable outcomes of each. **Running them is `./aws/probes/scp-battery.py`** ([`aws/probes/README.md`](aws/probes/README.md)); amending the ceiling means editing `probes.py` |
 | Explaining the design to someone | [`README.md`](README.md) — the argument for the account split and the three distinctions |
 | How the plan got here | [`docs/plan/history.md`](docs/plan/history.md) — almost never |
@@ -378,6 +379,25 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   on Sandbox's allow-list (portal sign-in fix; cannot fix shadowing; `DN-3` fails on the divergence).
   Design-B input RE-SCOPED 2026-08-25 (D5/D6 + objectives): the portal's public egress is the CLIENT
   plane's — B constrains COMPUTE only; A-vs-B = short whitelist vs empty, both behind the St.11 proxy (OQ 23).
+- **Stage 16 CREATED 2026-08-26 (user request): the SANDBOX LAKE.** `awsds-sandbox-lake`, PERMANENT
+  per-SSO-group prefixes, mounted into projects via the portal's **S3 connection** (documented: it
+  registers an AG **location**; the "access role ARN" is that location's role) and vended to laptops via
+  `s3-read-write` unchanged — a compensated SHADOW LAKE, five compensations in the stage file; St.11's
+  Macie + data-event scope amended the same sitting (Lesson 34). Pre-instrumented
+  `./aws/sandboxlake.py` (`SL-1`–`SL-5`); runbook `sandbox-lake.md` DRAFTED, UNEXERCISED. **Sandbox
+  only** (Development has no AG instance); bucket name a D35 singleton (OQ 10's sixth token).
+- **St.16 PASS 0 DONE, PASSES 1-2 WRITTEN AND NOT APPLIED (2026-08-26; §"What ran" is the one record).**
+  **The account data CMK has NO delegate-to-IAM statement** — root holds the admin actions and no
+  cryptographic one — so 2.2's statement is the ONLY way the access role is admitted, and 2.3's negative
+  control should name **KMS**, not S3. The D13 boundary names no lake bucket, and its ViaService deny
+  covers the LAKE account's key alone. `sandbox/lake/` on disk (26th slice): bucket (no expiry, no bucket
+  policy), `awsds-sandbox-lake-access` (**one role = AG location role AND connection access role**), AG
+  location + **3** grants; `consumer-data-v0.3.0` adds `additional_data_key_policy_statements` (default
+  `[]`, Development re-plans `No changes`). **Order is data → lake → data** — KMS validates key-policy
+  principals. **The AG instance has NO data source in aws v6.61** (only the managed resource, which must
+  not be declared): the trust's `aws:SourceArn` is BUILT. **The 3 `SmusProject*` trust statements are
+  documentation-only until 4.2** — `wired_projects` is EMPTY. Roster measured: three tenant groups,
+  `sso-group-infrastructure` is the OPERATOR and takes no prefix.
 - **Standing St.6 mechanics:** a blueprint configuration is applied **from the MEMBER account** (the
   Put takes no account param); `awscc`'s carries **`environment_role_permission_boundary`** and the
   `aws` resource does not (INT-15's mechanism, Lesson 8); **an EXISTING configuration is IMMUTABLE

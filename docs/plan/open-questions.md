@@ -115,6 +115,9 @@ what is genuinely still unanswered:
     bill gives for free, and the alternative would have meant editing an organization policy at every vend
     with an `AccessDenied` in a brand-new account as the cost of forgetting. **The group token stays open**,
     as do the `<env>` token, the `terraform-live/` tree and `ENV=sandbox`; decide those with N=2 in hand.
+    **A sixth token arrived 2026-08-26 (Stage 16): the bucket name `awsds-sandbox-lake`** — bucket names
+    are **global**, so a second unit's lake cannot reuse it; unlike `Environment`, no shared-value option
+    exists for this one, and the answer becomes an input of Stage 14's `sandbox-unit` module.
 11. ~~**What `AWSOrganizationsFullAccess` reaches from inside a vended account.**~~ — **measured
     2026-08-15, in Stage 2 rather than in the 1c step that had been carrying it, and it came back as two
     answers rather than one.** Assumed as `AWS Control Tower Admin` through that permission set, in two
@@ -238,7 +241,10 @@ started. **The first one is load-bearing against principle 4.**
     `IdentityCenter*` fields its API models — a reading, not a silent instrument), so
     `associate-access-grants-identity-center` would have to run first — a new IdC↔Access-Grants crossing
     that deserves its own decision rather than arriving as a side effect. Parked with this item's other
-    mapped options; the state is `AWS_STATE.md`'s vending row.
+    mapped options; the state is `AWS_STATE.md`'s vending row. **Stage 16 became a consumer of this
+    option on 2026-08-26**: its decision 2 recommends the IAM grain for the per-group lake grants and
+    defers directory grantees to this item — choosing them there requires the association first,
+    measured, never as a side effect.
 14. **The remote-IDE path is a file-transfer channel to a laptop.** `sagemaker:StartSession` plus the AWS
     Toolkit lets a local VS Code attach to a running space — an [`objectives.md`](objectives.md) objective, so it is not
     something to deny. It also bypasses whatever a browser IDE could be made to restrict, which makes it

@@ -184,6 +184,16 @@ terraform-live/
 │   │                     #     resource links + local re-grants to the Data Governance
 │   │                     #     share (D22). ONE MODULE, consumer-data, shared with
 │   │                     #     development/data/. The lake itself is NOT here
+│   ├── lake/             # [P] the SANDBOX LAKE (Stage 16; ON DISK 2026-08-26, NOT APPLIED):
+│   │                     #     awsds-sandbox-lake, PERMANENT artifacts, one prefix per SSO
+│   │                     #     group, mounted into SMUS projects via S3 connections and
+│   │                     #     vended to laptops via S3 Access Grants. Deliberately neither
+│   │                     #     the GOVERNED lake (no catalog object, no LF-Tag - D13's
+│   │                     #     non-registered class) nor the derived zone (nothing expires
+│   │                     #     here); the compensations are Stage 16's. Holds the bucket,
+│   │                     #     the access role awsds-sandbox-lake-access and (its decision
+│   │                     #     3) the Access Grants location + per-group grants; per-PROJECT
+│   │                     #     grants are hand-made: runbooks/sandbox-lake.md
 │   ├── egress/           # [E] NAT gateway, interface VPC endpoints - the metered network.
 │   │                     #     Two variants behind a switch: D5(A) with NAT, D5(B) without
 │   ├── probes/           # [E] Stage 3's measurement instruments (perimeter + peering),

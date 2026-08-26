@@ -18,7 +18,7 @@ is a broken caller.
 
 ## What is here today
 
-**Twenty-five slices across five account folders: seventeen `[P]`, one `[D]`, seven `[E]`.** That is a summary,
+**Twenty-six slices across five account folders: eighteen `[P]`, one `[D]`, seven `[E]`.** That is a summary,
 not an authority — `make slices` prints the live table, and a slice that reaches disk without a row in it
 fails `make check`.
 

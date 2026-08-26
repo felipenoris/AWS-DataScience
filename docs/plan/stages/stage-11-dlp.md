@@ -118,7 +118,9 @@ discount, not a measurement window).
 - **1.3 — [user] Run one one-time discovery job from Audit**, every wizard field decided in advance
   (Lesson 16): scope = the lake buckets (`awsds-data-raw`, `awsds-data-curated`, the drop-box) **plus the
   derived buckets** — every `awsds-<env>-derived` that exists at run time (D19 practice iv — the map of
-  decision 3, from `GOVERNANCE.md` §Derived zone's pre-declared scope); **sampling
+  decision 3, from `GOVERNANCE.md` §Derived zone's pre-declared scope) **plus `awsds-sandbox-lake`**
+  (on decision 3's map since 2026-08-26 — Stage 16's permanent per-group store, the highest-value
+  discovery target precisely because nothing in it expires); **sampling
   depth** per decision 1 (the cost lever: GB inspected × USD 1.00); **managed data identifiers** = the
   recommended default set, no custom identifiers; job type **one-time** — re-run deliberately, never
   scheduled. **The wizard's discovery-results repository prompt is decision 2** — answer it from the log,
@@ -332,7 +334,9 @@ are free) with the rule's `MatchedEvents` metric — no CloudWatch Logs ingestio
   `data-governance/data/` and every `consumer-data` caller that exists by then (`sandbox/data/`,
   `development/data/`, `production/data/` after Stage 9): **advanced event selectors only** —
   `resources.type = AWS::S3::Object`, `resources.ARN` starts-with the account's monitored buckets (the
-  decision 3 map: lake + drop-box in Data Governance; the derived bucket in each consumer account) —
+  decision 3 map: lake + drop-box in Data Governance; the derived bucket in each consumer account;
+  **`awsds-sandbox-lake` in Sandbox** since 2026-08-26 — its reads are the exfiltration signal for the
+  one store where artifacts persist) —
   **no management-event selector**, reads and writes both, log file validation on. Delivery: all three
   cross-account into **`awsds-data-logs`** under `AWSLogs/<account>/` (decision 7), with the bucket-policy
   statements for `cloudtrail.amazonaws.com` conditioned on `aws:SourceAccount` ∈ the three account ids —
@@ -456,6 +460,9 @@ decision-maker.
    that exists at run time** — the derived-zone prefixes are pre-declared Macie + data-event scope
    ([`GOVERNANCE.md`](../../GOVERNANCE.md) §Derived zone, one of the zone's five controls), consumed here
    rather than re-decided, so Production's joins the map the day Stage 9 creates it;
+   **`awsds-sandbox-lake` is on the map since 2026-08-26** (Stage 16, added in the sitting that created
+   that stage, Lesson 34 — the permanent per-group store names this scope as one of its compensations,
+   and for 2.1.3's analyzer it is one more enumerated bucket ARN at the same per-resource price);
    **`awsds-prod-outputs` joins when Stage 9's producer path first carries real data** — the one
    genuinely open addition. One map, one variable, consumed by all three (Lesson 14).
 4. **The step 4 unblock path** (4.3) — Stage 15 settled the carve-out question (no administration role
