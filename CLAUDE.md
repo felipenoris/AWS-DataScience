@@ -420,7 +420,14 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   lookup index misses service assumes, Lesson 13) measured BOTH doors**: direct assume (ExternalId +
   session tags → `Assume`+`TagSession` EXERCISED, `SetSourceIdentity` attached-not-exercised) and the
   `GetDataAccess` vend. Every bucket session = the ACCESS role. (ii)-(vi) answered; (iv)'s object-level
-  half waits on St.11 data events. **Still owed: 4.4's two in-project REFUSALS and pass 6.**
+  half waits on St.11 data events. **4.4's in-project readings RAN the same evening — PASS 4 DONE**:
+  out-of-scope vend refused BOTH channels (the one refused `GetDataAccess` is the one with no service
+  assume; answered vends ↔ assumes 1:1); the "direct" probe is a FINDING — **the SMUS JupyterLab image
+  ships `aws_s3_access_grants_boto3_plugin` (1.3.0), auto-vending every S3 call with credential
+  caching**, so the in-image direct-refusal test is UNRUNNABLE (Lesson 30's shape); proof = the KMS
+  discriminator (plaintext through a key no identity policy can decrypt) + the project role reading back
+  ZERO policies naming the lake. Vended-only holds; the direct refusal's proof stays the LAPTOP's (2.3;
+  runbook §T amended). **Still owed: pass 6.**
 - **Standing St.6 mechanics:** a blueprint configuration is applied **from the MEMBER account** (the
   Put takes no account param); `awscc`'s carries **`environment_role_permission_boundary`** and the
   `aws` resource does not (INT-15's mechanism, Lesson 8); **an EXISTING configuration is IMMUTABLE
