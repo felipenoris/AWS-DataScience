@@ -414,9 +414,13 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   2 grants the lake lists FIRST, so `grants[0]` silently switches buckets; README caveat added** (match
   `grant_scope`, never position). **4.1 RAN: first project WIRED** (trust entry applied +
   grant `18229b9a-…`; `sandboxlake.py` 12/12; `wired_projects` takes the role NAME — an ARN in that
-  tracked table would carry the account id). The 3 `SmusProject*` shapes are now **applied but
-  unmeasured** — 4.2-4.4 (the portal connection, the user's act) answers (ii)-(vi). **Still owed:
-  4.2-4.4 and pass 6.**
+  tracked table would carry the account id). **4.2-4.4 RAN: the connection
+  (`sandbox-lake`) worked FIRST TRY** — 4 fields, no extra, no `S3AG*` complaint (the 2.1 omission is
+  measured sufficient); location REUSED, no SMUS-born grant. **CloudTrail (full JSON — the ResourceName
+  lookup index misses service assumes, Lesson 13) measured BOTH doors**: direct assume (ExternalId +
+  session tags → `Assume`+`TagSession` EXERCISED, `SetSourceIdentity` attached-not-exercised) and the
+  `GetDataAccess` vend. Every bucket session = the ACCESS role. (ii)-(vi) answered; (iv)'s object-level
+  half waits on St.11 data events. **Still owed: 4.4's two in-project REFUSALS and pass 6.**
 - **Standing St.6 mechanics:** a blueprint configuration is applied **from the MEMBER account** (the
   Put takes no account param); `awscc`'s carries **`environment_role_permission_boundary`** and the
   `aws` resource does not (INT-15's mechanism, Lesson 8); **an EXISTING configuration is IMMUTABLE
