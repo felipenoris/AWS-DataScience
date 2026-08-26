@@ -358,18 +358,23 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   (2026-08-22), carries **no IdC association** (directory grantees unavailable — OQ 13's mapped option);
   **Development has none until its first project** (the policy inert there by design). Full inventory:
   `AWS_STATE.md`'s vending row. OQ 22 (managed-policy revision watch) is the user's to schedule.
-- **THE PORTAL BROKE *ON* THE VPN WHILE `sandbox/egress/` WAS UP — measured 2026-08-24, and the cause is
-  DNS, not the deny** (Lessons 40-42): the `datazone` endpoint's private zone is authoritative for its
-  subtree, so `agent.datazone.us-west-2.api.aws` — which AWS's network-isolation page lists as
-  **public-internet-required** (its THIRD table, unread until now) — is NXDOMAIN for every VPC-resolver
-  client; 60/61 portal front-end names fine; zero CloudTrail arrivals (never-arrived, not denied). The
-  4.2 comment's "REQUIRED under VpcOnly" was a misread — the page's premise is its own no-internet
-  design, and 6 of the 15 "required" endpoints never existed here. **REMOVED 2026-08-25 from both
-  `extra_services`** (issue #39; code-only, `egress/` down — prediction to measure at the next `make up`:
-  the app's calls move to the NAT and `agent.datazone…` resolves). Endpoints per Interactive account
-  **12 → 11**, 0.170 → 0.160/h. **The rule outlives the entry**: no endpoint whose private zone shadows a
-  CLIENT-plane name may live in the VPC the client resolves through — design B must re-add `datazone`
-  (no NAT, no other path), so B moves the portal off that resolver instead. Meanwhile **`EXC-06`**: the user's deliberate `*`
+- **THE PORTAL ON THE VPN BROKE IN TWO LAYERS; BOTH ARE NOW MEASURED CLOSED.** **(1) DNS, 2026-08-24**
+  (Lessons 40-42): `datazone`'s private zone is authoritative for its subtree, so `agent.datazone…` —
+  which AWS's network-isolation page lists **public-internet-required** (its THIRD table) — was NXDOMAIN
+  for every VPC-resolver client, zero CloudTrail arrivals; 4.2's "REQUIRED under VpcOnly" was a misread of
+  a design-B-scoped table (6 of the 15 never existed here). **REMOVED from both `extra_services`
+  (issue #39); APPLIED + MEASURED 2026-08-26, both halves** — the name resolves publicly, and DataZone
+  events carry NO `vpcEndpointId`, splitting by plane (app → NAT, browser → VPN EIP). **12 → 11**
+  endpoints per Interactive account, 0.170 → 0.160/h.
+  **(2) THE BROWSER, 2026-08-26 (Lesson 43):** the portal then broke with the SAME words — surviving zones
+  answer client-plane names with **private** addresses, and a **public** origin needs Chrome's **Local
+  Network Access** grant to reach one. Granting it restored JupyterLab + catalog (CloudTrail: catalog =
+  Glue, JupyterLab = SageMaker API, from the VPN host's PRIVATE address, across ~25 min of ZERO arrivals).
+  Every `aws/` instrument, `dig` and `curl` read clean throughout — **no gate here can see it.**
+  **The rule over both**: no endpoint whose private zone shadows a CLIENT-plane name may live in the VPC
+  the client resolves through. `datazone` could leave; `sagemaker.studio` cannot — so **OQ 23 (client
+  plane off this resolver) is the only structural repair**, the grant is the interim, and design B must
+  re-add `datazone` and move the portal instead. Meanwhile **`EXC-06`**: the user's deliberate `*`
   on Sandbox's allow-list (portal sign-in fix; cannot fix shadowing; `DN-3` fails on the divergence).
   Design-B input RE-SCOPED 2026-08-25 (D5/D6 + objectives): the portal's public egress is the CLIENT
   plane's — B constrains COMPUTE only; A-vs-B = short whitelist vs empty, both behind the St.11 proxy (OQ 23).
@@ -480,3 +485,4 @@ the reasoning that makes it *usable* is in the file. Recognising one is the sign
     contradicts it.**
 42. **A permission failure is a response; a network failure is the absence of one — CloudTrail separates
     "denied" from "never arrived".**
+43. **A browser is a term in the reach question, and its policy is one no AWS instrument can read.**

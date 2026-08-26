@@ -150,8 +150,11 @@ module "egress" {
     # blocked whether or not a zone would have answered it - the same rule the .internal
     # entries at the bottom of this list obey. What the endpoint decides is only WHERE an
     # allowed query goes: it was the interface endpoint until 2026-08-25, and is public DNS
-    # and the NAT since the removal above (issue #39) - a prediction until the next `make up`,
-    # since that removal landed with the slice down.
+    # and the NAT since the removal above (issue #39) - MEASURED 2026-08-26 in SANDBOX, whose
+    # slice is the one the tunnelled laptop resolves through; the name returns the same public
+    # addresses a public resolver does, so the shadowing is gone. This account's own reading is
+    # owed the day something resolves through THIS VPC (Lesson 31: a measurement inherits the
+    # account it was taken in). docs/NETWORK.md section 5 carries both halves.
     "datazone.${var.region}.api.aws",
 
     # PyPI's INDEX, and only the index - still a half path, but for a different reason since

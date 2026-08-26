@@ -590,6 +590,22 @@ length, under item numbers 10-12 that collided with the live items above; the du
     the design pass that answers it should produce a decision file. Until then, `D5`'s two-plane scope
     and the two-filter model are the recorded target and nothing in the tree builds the proxy.
 
+    **Input added 2026-08-26, and it changes this question's standing from optimisation to repair.** The
+    interim shape is not merely inelegant, it is **broken by construction for the client plane**: a
+    full-tunnel laptop resolving through an Interactive VPC inherits every interface endpoint's private
+    zone, so client-plane names answer with **private** addresses, and the SMUS portal — a **public**
+    origin — cannot reach them without the browser's Local Network Access grant (Lesson 43; measured
+    outage and repair the same day, `NETWORK.md` §5). The `datazone` removal fixed the one instance that
+    could be fixed by removing an endpoint; `sagemaker.studio`, `glue`, `lakeformation` and `athena`
+    cannot leave, because they are the compute plane's own perimeter. **So "where the client plane
+    resolves" is now a required output of this question, alongside where the proxy lives** — and the two
+    are related: an egress/inspection VPC that the client plane resolves through must *not* carry the
+    compute plane's interface endpoints, or it reproduces this break at the new address. The three
+    shapes worth pricing when it is answered: give the client plane its own resolver (no endpoint zones),
+    keep the endpoints but add a Route 53 Resolver **FORWARD** rule for the client-plane names (an
+    outbound endpoint is 2 ENIs, ~USD 0.25/h — measured against this estate's whole endpoint bill), or
+    accept a managed-browser policy as the control (`institutional-delta.md`'s device-trust row).
+
 ---
 
 *Plan core: [GENERAL_PLAN.md](../GENERAL_PLAN.md) · Decisions: [docs/plan/decisions/INDEX.md](decisions/INDEX.md) · Stages: [docs/plan/stages/INDEX.md](stages/INDEX.md)*

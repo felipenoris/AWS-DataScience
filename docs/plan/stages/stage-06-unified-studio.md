@@ -904,14 +904,35 @@ recorded — *Public internet access*: the portal's client assets, its client AP
 the `datazone` endpoint's own private zone **shadows** (authoritative for the subtree, NXDOMAIN for the
 subdomain), breaking the portal for every VPC-resolver client: measured 2026-08-24, the full-tunnel
 laptop, 60/61 portal names fine, zero CloudTrail arrivals. **`datazone` LEFT both `extra_services` on
-2026-08-25 (issue #39)** — code-only, with `egress/` down, so
-the break above stays the last measurement and the next `make up` is where the prediction is tested: the
-app's DataZone calls moving from the endpoint (where CloudTrail read them on 2026-08-24) to the NAT, and
-`agent.datazone…` resolving for the tunnelled laptop. **The rule that outlives the entry**: no endpoint
+2026-08-25 (issue #39), and the removal was applied and MEASURED 2026-08-26**: with the slice up and the
+tunnel up, `agent.datazone…` resolves through the VPC resolver to the same public addresses a public
+resolver returns. The shadowing is gone. **The trail half closed the same evening**: DataZone events now carry no
+`vpcEndpointId` at all and split by plane — the app's from the NAT's address, the browser's from the VPN
+Elastic IP — where 2026-08-24 read them on the endpoint.
+**The rule that outlives the entry**: no endpoint
 whose private zone shadows a name the *client* plane requires may live in the VPC the client resolves
 through — so design B, which must re-add this endpoint (no NAT, no other path to DataZone), has to move
 the portal off that resolver instead. Per-account cost drops 0.170 → 0.160/h. Mechanism:
 [`docs/NETWORK.md`](../../NETWORK.md) §5; Lessons 40-42; `EXC-06` is the user's temporary `*` beside it.
+
+**And the fix uncovered the layer beneath it — measured the same day, 2026-08-26, and this one no
+`extra_services` edit can reach.** With the shadowing gone the portal loaded and still broke: *"Failed to
+fetch"* on the catalog tab and on the JupyterLab space. The *remaining* endpoints' private zones answer
+**correctly**, with **private** addresses — `*.studio.<region>.sagemaker.aws` for the whole subtree (a
+wildcard record), `glue`, `lakeformation`, `athena` — and the portal is a **public** origin, so the
+browser's **Local Network Access** permission gates every one of those requests and rejects them with
+exactly `TypeError: Failed to fetch`. Granting the permission restored both features. **CloudTrail
+attributed which calls they were**, standing in for the browser's network panel: the catalog tab is
+**Glue** (`GetCatalogs`/`GetConnections`/`ListConnectionTypes`) at the `glue` endpoint, and the JupyterLab
+launch is the **SageMaker API** (`DescribeSpace`/`DescribeApp`/`CreatePresignedDomainUrl`) at the
+`sagemaker.api` endpoint — both arriving from the WireGuard host's own private address, with **~25 minutes
+of the broken window holding zero arrivals** (Lesson 42's silence, one layer lower). `lakeformation` and
+`athena` resolve privately too but were not called in that session — they are exposure, not yet symptom.
+**What this costs
+the stage:** nothing to build, but the on-VPN acceptance of this stage now depends on a **browser** grant
+that no gate here can assert and no `aws/` instrument can see — record it wherever the stage claims the
+portal works on the tunnel, and read it as the strongest input yet to **open question 23**, since
+`sagemaker.studio` and the lake's three endpoints cannot leave the way `datazone` did (Lesson 43).
 
 **One entry of that list is a measurement, not a provisioning decision — `s3`.** What the measurement is,
 and why Stage 5 pass 4d made it one, is the `s3` bullet of the same section this step already reads (added

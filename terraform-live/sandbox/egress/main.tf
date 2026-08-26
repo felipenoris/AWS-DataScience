@@ -163,8 +163,13 @@ module "egress" {
     # blocked whether or not a zone would have answered it - the same rule the .internal
     # entries at the bottom of this list obey. What the endpoint decides is only WHERE an
     # allowed query goes: it was the interface endpoint until 2026-08-25, and is public DNS
-    # and the NAT since the removal above (issue #39) - a prediction until the next `make up`,
-    # since that removal landed with the slice down.
+    # and the NAT since the removal above (issue #39) - MEASURED 2026-08-26 with this slice UP:
+    # the name resolves through the VPC resolver to the same public addresses a public resolver
+    # returns, so the shadowing is gone. CloudTrail confirms the other half the same evening: the
+    # DataZone events carry NO vpcEndpointId and split by plane - the app's from this slice's NAT,
+    # the browser's from the VPN Elastic IP. What that did NOT buy is a working portal - the names
+    # which resolve PRIVATELY are gated by the browser's own Local Network Access permission
+    # (docs/NETWORK.md section 5, third bullet), a layer no entry in this list can reach.
     "datazone.${var.region}.api.aws",
 
     "public.ecr.aws",
