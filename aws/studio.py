@@ -384,10 +384,33 @@ def main(argv: list) -> int:
                 sm_images[p] = r.stdout.split()
 
     # ---------------- the project roles and their boundary (INT-15's mechanical half)
-    # Blueprint-provisioned roles carry 'datazone' in the name; the reading is which of
-    # them hold a permissions boundary, and whether it is the D13 one from the sagemaker/
-    # prerequisite slice.
-    role_rows: dict = {}  # profile -> [(role name, boundary name or '-')]
+    # WHICH ROLES ARE "BLUEPRINT-PROVISIONED" IS READ FROM THE TAG, NOT FROM THE NAME
+    # (2026-08-26). Until then this block matched 'datazone' in the role name, and the
+    # first real project showed what that misses: the Tooling stack created THREE roles
+    # in Sandbox - datazone_usr_role_<project>_<env> and two AmazonBedrock*Role-<project>-
+    # <env> - and the name filter saw one of them. All three happened to carry the
+    # boundary, so the check read `pass` about a third of its own subject. The sharp edge
+    # is ahead of us rather than behind: AWS's own Tooling template gives its two
+    # conditional EMR roles NO permissions boundary (recorded at the 2026-08-22 template
+    # reading), and those are named EMR-something - so the day `createEmrResourceInTooling`
+    # turns true, the name filter would report `pass` beside two unbounded roles. Lesson 31:
+    # a check inherits the scope it was written in and keeps reporting `pass` about that one.
+    #
+    # THE TAG IS THE SERVICE'S OWN STAMP: every role the blueprint provisions carries
+    # AmazonDataZoneDomain / AmazonDataZoneProject / AmazonDataZoneBlueprint (measured on
+    # all three roles, 2026-08-26). The name match is kept as an OR so an untagged role
+    # named datazone* is still reported rather than silently dropped.
+    #
+    # ListRoles returns neither Tags nor PermissionsBoundary - a documented API omission
+    # (both are GetRole-only, with RoleLastUsed), which is the same contract that produced
+    # this check's 2026-08-22 defect (Lesson 30). So the candidate set is enumerated and
+    # every candidate is read with GetRole, which returns both in one call.
+    #
+    # The candidate set excludes two IAM PATHS, and a path is not a name: /aws-service-role/
+    # holds service-linked roles, which a service creates for itself and a blueprint cannot
+    # provision, and /aws-reserved/ holds Identity Center's. Everything a blueprint could
+    # have made is at '/', so this costs ~14 GetRole calls per account rather than ~33.
+    role_rows: dict = {}  # profile -> [(role name, boundary name or '-', how it was found)]
     for p in INTERACTIVE_PROFILES:
         if p not in live:
             continue
@@ -396,7 +419,8 @@ def main(argv: list) -> int:
             "iam",
             "list-roles",
             "--query",
-            "Roles[?contains(RoleName, 'datazone') || contains(RoleName, 'DataZone')].RoleName",
+            "Roles[?!starts_with(Path, '/aws-service-role/') "
+            "&& !starts_with(Path, '/aws-reserved/')].RoleName",
             "--output",
             "json",
             log=False,
@@ -405,27 +429,28 @@ def main(argv: list) -> int:
             logerr(p, "iam list-roles", res.stderr)
             continue
         rows = []
-        # ListRoles NEVER returns PermissionsBoundary - a documented API omission (it,
-        # Tags and RoleLastUsed are GetRole-only), so reading the boundary through it
-        # is null for every role that has one. Measured 2026-08-22 on the FIRST real
-        # project role: list-roles said none, get-role said awsds-sandbox-project-
-        # boundary. One GetRole per role is the only honest reading (Lesson 30).
         for name in json.loads(res.stdout or "[]"):
             rr = cli.run(
                 "iam",
                 "get-role",
                 "--role-name",
                 name,
-                "--query",
-                "Role.PermissionsBoundary.PermissionsBoundaryArn",
                 "--output",
-                "text",
+                "json",
                 log=False,
             )
-            barn = rr.stdout.strip() if rr.ok else ""
-            if barn in ("", "None"):
-                barn = "-"
-            rows.append((name, barn.split("/")[-1]))
+            if not rr.ok:
+                logerr(p, f"iam get-role {name}", rr.stderr)
+                continue
+            role = json.loads(rr.stdout or "{}").get("Role", {})
+            tags = {t["Key"]: t.get("Value", "") for t in role.get("Tags", [])}
+            by_tag = "AmazonDataZoneDomain" in tags
+            by_name = "datazone" in name.lower()
+            if not (by_tag or by_name):
+                continue
+            barn = (role.get("PermissionsBoundary") or {}).get("PermissionsBoundaryArn") or "-"
+            found = "tag" if by_tag else "name"
+            rows.append((name, barn.split("/")[-1], found))
         role_rows[p] = rows
 
     # ------------------- the step 3 deny, read back from Identity Center (like vpn.py)
@@ -737,14 +762,14 @@ def main(argv: list) -> int:
                 "no blueprint-provisioned role exists yet - the check is unexercised here.",
             )
             continue
-        unbounded = [n for n, b in rows if b == "-"]
-        wrong = [n for n, b in rows if b != "-" and BOUNDARY_NAME_FRAGMENT not in b]
+        unbounded = [n for n, b, _ in rows if b == "-"]
+        wrong = [n for n, b, _ in rows if b != "-" and BOUNDARY_NAME_FRAGMENT not in b]
         if unbounded:
             checks.fail(
                 "US-8",
                 f"project-role boundary in {p}",
-                f"{len(unbounded)} datazone role(s) with NO permissions boundary "
-                f"({', '.join(unbounded[:3])}...) - INT-15's mechanism is absent.",
+                f"{len(unbounded)} blueprint-provisioned role(s) with NO permissions "
+                f"boundary ({', '.join(unbounded[:3])}...) - INT-15's mechanism is absent.",
             )
         elif wrong:
             checks.note(
@@ -753,10 +778,11 @@ def main(argv: list) -> int:
                 f"boundary present but not '{BOUNDARY_NAME_FRAGMENT}': {', '.join(wrong[:3])}",
             )
         else:
+            by_tag = sum(1 for _, _, f in rows if f == "tag")
             checks.ok(
                 "US-8",
                 f"project-role boundary in {p}",
-                f"all {len(rows)} datazone role(s) bounded",
+                f"all {len(rows)} blueprint-provisioned role(s) bounded ({by_tag} found by tag)",
             )
 
     # US-9: the step 3 deny Sids in the persona sets - together or not at all
@@ -953,18 +979,28 @@ equivalent) shows up here - and Stage 8 step 1's pipeline is written against it.
         # ==============================================================================
         rep.h1("6. The project roles and their permissions boundary (INT-15)")
         if not role_rows:
-            rep.line("No datazone-named role in any Interactive account (or not measured).")
+            rep.line("No blueprint-provisioned role in any Interactive account (or not measured).")
         else:
             for p, rows_ in role_rows.items():
                 rep.h2(p)
                 if rows_:
-                    rep.tabulate(["ROLE\tPERMISSIONS BOUNDARY"] + [f"{n}\t{b}" for n, b in rows_])
+                    rep.tabulate(
+                        ["ROLE\tPERMISSIONS BOUNDARY\tFOUND BY"]
+                        + [f"{n}\t{b}\t{f}" for n, b, f in rows_]
+                    )
                 else:
                     rep.line("(none)")
         rep.text("""
 Presence, never survival: whether the boundary outlives a blueprint
 reconciliation is INT-15's behavioural half - provision, wait, re-run this file
-and diff section 6.""")
+and diff section 6.
+
+FOUND BY says how the role entered this table. `tag` is the service's own stamp
+(AmazonDataZoneDomain), which is what makes the reading independent of what AWS
+decides to call a role: the Tooling stack creates AmazonBedrock*Role-<project>-
+<env> beside datazone_usr_role_*, and its two conditional EMR roles - which AWS's
+template leaves with NO boundary - would be named after neither. `name` is the
+legacy datazone* match, kept so an untagged role is reported rather than dropped.""")
 
         # ==============================================================================
         rep.h1("7. The step 3 deny, per permission set")

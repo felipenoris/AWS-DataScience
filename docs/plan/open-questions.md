@@ -543,6 +543,37 @@ length, under item numbers 10-12 that collided with the live items above; the du
     permission, so the share is not what stands between a caller and either API. Whatever answers 20
     will be an IAM statement, not a sharing one.
 
+    **THE MEASUREMENT IS TAKEN — 2026-08-26, read-only, Sandbox 1, and it removes the blanket deny from
+    the menu entirely.** Every policy on every role the Tooling stack provisioned, plus the two service
+    roles the `sagemaker/` slice owns: **five roles, eleven AWS-managed documents**, all AWS-authored
+    (not one inline policy anywhere — so "AWS's own policy authorship" is the whole of it, exactly as
+    this question predicted). Of the four verbs:
+
+    | Verb | In AWS's authorship? | What that means for a deny |
+    |---|---|---|
+    | `AddPolicyGrant` | **absent** | but already off the menu since 2026-08-22 — **our own** `grants.tf` calls it from inside each member |
+    | `RemovePolicyGrant` | **absent** | idem, on `terraform destroy` |
+    | `DeleteEnvironmentBlueprintConfiguration` | **absent** | but a `sagemaker/` slice's own destroy calls it as `InfrastructureAccess` — the product break this question reserved for it is **ours**, not AWS's |
+    | `GetDomainExecutionRoleCredentials` | **PRESENT** | `SageMakerStudioProjectUserRolePolicy` v74, `Sid` `DataZoneUserPermissions`, on the project user role — scoped to `arn:aws:datazone:*:*:domain/${aws:PrincipalTag/AmazonDataZoneDomain}`. **Every project role holds it**, so a blanket deny breaks every project |
+
+    **So all four are "recorded ceiling, no blanket deny", and outcome (b) of the menu is the answer** —
+    but by two different mechanisms, and the distinction is what a future reader needs: three are used by
+    **this estate's own Terraform**, and the fourth by **the product**. A deny is still expressible with a
+    principal condition (`ArnNotLike` over `AWSReservedSSO_InfrastructureAccess_*` **and**
+    `datazone_usr_role_*`), and what it would then reach is nothing: the persona sets carry no `datazone:`
+    action at all outside `policies-approvers.tf`, so the deny would be attached and never exercised —
+    [Lesson 20](lessons.md) squarely. **The decision is the user's**, and the recommendation on record is
+    to write the ceiling down and attach nothing.
+    **Two riders the same reading produced, neither of which changes the answer.**
+    `SageMakerStudioProjectRoleMachineLearningPolicy` grants `datazone:*Compute*`, `CreateAsset*`,
+    `List*` and `Search*` on `Resource: "*"` — unscoped by domain, unlike the user-role policy beside it;
+    that is the widest `datazone:` reach in the account and it belongs in the ceiling record. And the
+    project role's S3 reach is **principal-tag-shaped**, not path-shaped:
+    `arn:aws:s3:::${aws:PrincipalTag/DomainBucketName}/${aws:PrincipalTag/AmazonDataZoneDomain}/${aws:PrincipalTag/AmazonDataZoneProject}/*`
+    — which is *why* the bucket name is free (Stage 6's v0.3.2 finding, whose `*/dzd*/<project>/`
+    shorthand is the **provisioning** policy's `GetS3GenAI` statement, a different document; the
+    conclusion is unaffected and was proven behaviourally anyway).
+
 ### Raised while sizing the persona set, 2026-08-23
 
 22. **Nothing in this repository notices when AWS revises a managed policy this design leans on — and
@@ -572,6 +603,20 @@ length, under item numbers 10-12 that collided with the live items above; the du
     **Raised while implementing the laptop→project-storage vending path** (`s3-read-write/`, 2026-08-23):
     that path's authorization *is* the S3 + KMS + Access Grants statements of the first two policies
     above. It is **not created by that change**, which attaches no AWS-managed policy and removes none.
+    **AND IT HAPPENED — three days later, 2026-08-26, caught by hand rather than by an instrument, which
+    is the argument for the instrument.** Re-reading the same four documents for question 21:
+    `SageMakerStudioProjectProvisioningRolePolicy` is at **v82**, not the v81 this question and
+    `s3.tf` name; the other three are unmoved (v74, v42, v9). The diff is **two hunks, both widenings,
+    neither reaching the claim that rests on it**: `cloudformation:UntagResource` joins
+    `CreateStack`/`TagResource` on `stack/DataZone*`, and the `SMAppDelete` statement becomes `SMApp` —
+    gaining `sagemaker:CreateApp` and `AddTags`, with the resource widened from four literal app-type
+    ARNs (`codeeditor`, `CodeEditor`, `jupyterlab`, `JupyterLab`) to `arn:aws:sagemaker:*:*:app/*` and
+    the `AmazonDataZoneProject` tag condition kept. `GetS3GenAI` is byte-identical, so `s3.tf`'s
+    argument stands — **this time**. What the occurrence settles is the question's own premise rather
+    than its scope: a revision landed inside four days, the estate learned about it only because a
+    human happened to read the document for an unrelated reason, and the prose version number in
+    `s3.tf:15` was stale for an unknown part of that window. **Scope, storage and procedure are still
+    the user's to decide**; the frequency argument is no longer hypothetical.
 
 ### Raised by the 2026-08-25 objectives clarification
 
