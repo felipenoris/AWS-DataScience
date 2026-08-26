@@ -35,15 +35,16 @@
 #   HANGS, which no error message will ever attribute to an endpoint policy.
 #
 #   AT make down - AND WHENEVER IN DOUBT: section 6 is the burn meter. A forgotten egress/
-#   costs ~USD 4.08/day and, by decision D12, NO BUDGET ALERT EXISTS to catch it; this
+#   costs ~USD 3.84/day and, by decision D12, NO BUDGET ALERT EXISTS to catch it; this
 #   section is the manual instrument that risk gets. Zero everywhere is the correct
 #   between-sessions answer (D11).
 #
-#   THE 4.08 IS RE-DERIVED, NOT COPIED (2026-08-21): 12 interface endpoints x 0.010 plus
-#   the NAT and its IPv4 at 0.050 = 0.170/h = 4.08/day, at the Sandbox list. It read 4.08
-#   here and 3.84 in section 6's own text for four days - the 2026-08-17 commit that
-#   removed elasticfilesystem decremented one and not the other - and `datazone` joining
-#   at Stage 6 step 4.2 has now made the stale figure accidentally right. Both are stated
+#   THE FIGURE IS RE-DERIVED, NOT COPIED (2026-08-21; re-derived again 2026-08-25): 11
+#   interface endpoints x 0.010 plus the NAT and its IPv4 at 0.050 = 0.160/h = 3.84/day, at
+#   the Sandbox list. It read 4.08 here and 3.84 in section 6's own text for four days - the
+#   2026-08-17 commit that removed elasticfilesystem decremented one and not the other -
+#   then `datazone` joining at Stage 6 step 4.2 made the stale 4.08 accidentally right, and
+#   its removal on 2026-08-25 (issue #39) has put the list back at 3.84. Both are stated
 #   from the same arithmetic so the next change moves them together (docs/PRICING.md 3).
 #
 # ONE MORE PREFLIGHT IT CARRIES, before anything is paid for: section 7 lists the region's
@@ -546,7 +547,7 @@ that cannot execute a single query (8.2).
         rep.h1("6. The burn meter - what metered egress costs right now")
 
         rep.text(f"""THE ONE SECTION TO READ AT THE END OF A SESSION. A forgotten egress/ costs ~USD
-4.08/day at the Sandbox list, and BY DECISION no budget alert exists to catch it
+3.84/day at the Sandbox list, and BY DECISION no budget alert exists to catch it
 (D12) - this reading is the instrument that risk gets. Rates: interface endpoint
 USD {RATE_IFEP:.3f}/h, NAT (with its IPv4) USD {RATE_NAT:.3f}/h; data-processing charges are on top and
 not visible here.

@@ -21,7 +21,7 @@ while a build is running. The build code itself is [`images/`](../../../images/R
 | | |
 |---|---|
 | **in** | **Nothing. There is no ingress rule at all.** No public address, a tier with no internet gateway, and a security group with an empty ingress list. The only way to a shell is **Session Manager**, which needs no inbound rule because the agent holds the channel open *outbound* — measured: the host registers `Online` with the group admitting nothing |
-| **out** | **Through the WireGuard host**, the single public egress of this design — unchanged, and the requirement that stayed. **Three things in three slices, all three needed** (Lesson 28): the **route** here, the **masquerade rules** in `sandbox/vpn/`, and the WireGuard **security group** in `sandbox/foundation/` admitting them inbound. **No NAT gateway is involved** — `egress/` need never come up, which is 0.170 USD/h not spent |
+| **out** | **Through the WireGuard host**, the single public egress of this design — unchanged, and the requirement that stayed. **Three things in three slices, all three needed** (Lesson 28): the **route** here, the **masquerade rules** in `sandbox/vpn/`, and the WireGuard **security group** in `sandbox/foundation/` admitting them inbound. **No NAT gateway is involved** — `egress/` need never come up, which is 0.160 USD/h not spent |
 
 **Why the ingress rule went, and it is worth one paragraph because it looked like a control.** It admitted
 the WireGuard client range on every port, to deliver *"reachable only with the tunnel up"*. Two things were

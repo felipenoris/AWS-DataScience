@@ -50,7 +50,7 @@ for the six persona sets the VPN still does; for `InfrastructureAccess` it does 
 option (a). A port served during a build is reached with SSM **port forwarding**, not with an ingress rule.
 
 **Out:** through the WireGuard host, the single public egress of this design. **No NAT gateway is
-involved**, so `egress/` need never be up for a build — 0.170 USD/h not spent. **That is true of the
+involved**, so `egress/` need never be up for a build — 0.160 USD/h not spent. **That is true of the
 route and not of the names** — see the last coupling below.
 
 **Three couplings worth holding in mind:**
