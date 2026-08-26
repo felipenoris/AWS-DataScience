@@ -149,8 +149,9 @@ module "egress" {
     # evaluated BY THE VPC RESOLVER, ahead of any private zone, so an unlisted name is
     # blocked whether or not a zone would have answered it - the same rule the .internal
     # entries at the bottom of this list obey. What the endpoint decides is only WHERE an
-    # allowed query goes: the interface endpoint while it exists, public DNS and the NAT
-    # once it is removed (the pending extra_services change above).
+    # allowed query goes: it was the interface endpoint until 2026-08-25, and is public DNS
+    # and the NAT since the removal above (issue #39) - a prediction until the next `make up`,
+    # since that removal landed with the slice down.
     "datazone.${var.region}.api.aws",
 
     # PyPI's INDEX, and only the index - still a half path, but for a different reason since
