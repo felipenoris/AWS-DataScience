@@ -403,9 +403,13 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   nobody granted, `note` on the SMUS pair. **OQ 24** keeps the governance half: whether a SMUS role *should*
   administer LF (it can grant itself anything in the LOCAL catalog, resource links to `raw`/`curated`
   included) — St.6's residue; the seats cannot just be revoked (the create path was measured AFTER them).
-- **St.16 still owes 2.3 and passes 4-6.** **2.3's temporal window is GONE** (both of them), so it is now the
-  CONTRAST pair — direct access refused, another group's prefix refused — blocked only on a persona SSO token
-  + the tunnel. The **3 `SmusProject*` trust shapes are DOCUMENTATION**: `wired_projects` is EMPTY until 4.1.
+- **St.16: 2.3 RAN 2026-08-26 (contrast form; the temporal windows had closed). THREE refusals, THREE
+  layers, attributed by wording alone**: direct-as-persona = *"no identity-based policy"* (implicit;
+  SL-5 proven behaviourally), other-group vend = the GRANT REGISTER's own shape (names prefix+permission,
+  no policy vocabulary), vended-session-out-of-scope = *"no session policy"* (the scope-down). Own-prefix
+  vend SUCCEEDED, identity = `awsds-sandbox-lake-access/access-grants-…` — the ONE role. **KMS half
+  deliberately unproven — pass 5's first real write.** **Still owed: passes 4-6**; the **3 `SmusProject*`
+  trust shapes are DOCUMENTATION**: `wired_projects` is EMPTY until 4.1.
 - **Standing St.6 mechanics:** a blueprint configuration is applied **from the MEMBER account** (the
   Put takes no account param); `awscc`'s carries **`environment_role_permission_boundary`** and the
   `aws` resource does not (INT-15's mechanism, Lesson 8); **an EXISTING configuration is IMMUTABLE
