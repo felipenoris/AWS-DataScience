@@ -51,3 +51,9 @@ variable "derived_expiration_days" {
   type        = number
   default     = 30
 }
+
+variable "additional_data_key_policy_statements" {
+  description = "Extra statements appended to the account data CMK's policy - KMS holds ONE policy per key, so a second reader can only arrive through the module (the same constraint s3-bucket's additional_policy_statements answers for buckets). Empty by default, which is what keeps a consumer that adds nothing byte-identical across the tag bump. Type `any`, deliberately: IAM statements are heterogeneous objects and the module only ever concat()s and jsonencode()s them. The first caller is Stage 16's sandbox lake, admitting its access role; anything passed here is a WIDENING of D31's read control and belongs in the calling slice's README row."
+  type        = any
+  default     = []
+}
