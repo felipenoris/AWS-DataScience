@@ -270,7 +270,7 @@ one Stage 12 step 5 measures against the real bill — this is arithmetic over l
 | NAT Gateway (1) | 0.093 + 0.093/GB | 0.045 + 0.045/GB | 2.07 |
 | Interface VPC endpoint (each, per AZ) | 0.021 + 0.01/GB | 0.010 + 0.01/GB | 2.10 |
 | — Sandbox, 12 endpoints, single AZ (D9), design A (12 until 2026-08-17 when `elasticfilesystem` left with the NFS requirement, 11 until 2026-08-21 when `datazone` joined at Stage 6 step 4.2) | 0.252 | 0.120 | 2.10 |
-| — Sandbox, 14 endpoints, design B (`datazone` is required under `VpcOnly` in either design) | 0.294 | 0.140 | (design B needs CodeArtifact — see §9) |
+| — Sandbox, 14 endpoints, design B (**parenthetical corrected 2026-08-25** — it said `datazone` is "required under `VpcOnly` in either design": the required table is scoped by the page's own no-egress premise, never by `VpcOnly` (Lesson 41), the `datazone` removal is pending, and the portal names belong to the client plane) | 0.294 | 0.140 | (design B needs CodeArtifact — see §9) |
 | — Development 12 / Staging 9 / Production 10-12 | 0.252 / 0.189 / 0.210-0.252 | 0.120 / 0.090 / 0.100-0.120 | 2.10 |
 | GitLab EC2 `t4g.large` | 0.1072 | 0.0672 | 1.60 |
 | — `t3.large`, the x86 equivalent | 0.1344 | 0.0832 | 1.62 |

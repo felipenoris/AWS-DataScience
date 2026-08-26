@@ -567,6 +567,29 @@ length, under item numbers 10-12 that collided with the live items above; the du
     that path's authorization *is* the S3 + KMS + Access Grants statements of the first two policies
     above. It is **not created by that change**, which attaches no AWS-managed policy and removes none.
 
+### Raised by the 2026-08-25 objectives clarification
+
+23. **How the single-egress + proxy topology lands on an estate built with per-account NATs.** The
+    clarification (`objectives.md`; D5/D6 revised the same day) states the target: **one internet egress
+    point for the whole cloud, one HTTP/HTTPS proxy**, crossed by the client plane (the VPN laptop's
+    whole internet) and by every allowed compute connection alike — two filters, the institutional
+    proxy's and SageMaker's stricter one. The lab today has the opposite interim shape: a NAT per
+    Interactive account (`egress/`, `[E]`), plus the WireGuard host doubling as NAT for the VPN clients
+    and the isolated tier. What is undecided, in rough dependency order: **where the proxy lives**
+    (which account owns the egress VPC — a new `Network` platform account, Production, or the VPN home —
+    and on which axis, given Lesson 10's registry-vs-runtime question); **how traffic reaches it**
+    (Transit Gateway is the institutional answer and its standing cost is against D12 — peering is
+    O(n²) but N is small here; `institutional-delta.md`'s Networking row already prices this direction);
+    **what the proxy is** (§4.3a's two shapes — the Squid `CONNECT` proxy is the cheap one, and its two
+    catches become design inputs: every tool needs `http_proxy`/`https_proxy`, and the proxy must
+    resolve outside the DNS Firewall); **what happens to the per-account NATs and DNS firewalls**
+    (they become the interim, or survive as the compute's *second* filter — the clarification says two
+    filters, so the per-account layer may be exactly where SageMaker's stricter list keeps living); and
+    **which stage builds it** — Stage 11's egress-control leg owns the requirement, but the topology
+    change touches Stage 3's slices and the VPN runbook. Owner: the user (it is an architecture choice);
+    the design pass that answers it should produce a decision file. Until then, `D5`'s two-plane scope
+    and the two-filter model are the recorded target and nothing in the tree builds the proxy.
+
 ---
 
 *Plan core: [GENERAL_PLAN.md](../GENERAL_PLAN.md) · Decisions: [docs/plan/decisions/INDEX.md](decisions/INDEX.md) · Stages: [docs/plan/stages/INDEX.md](stages/INDEX.md)*

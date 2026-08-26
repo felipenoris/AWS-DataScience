@@ -18,6 +18,17 @@ list as a map keyed by consumer (Stage 5's rule), so unit 2 is a row, not a rewr
 **Objective:** the data-specific detection layer, built on top of a working environment rather than before
 it — and the honest ledger of what has no control at all.
 
+**Widened 2026-08-25 (the objectives clarification; D5/D6 revised the same day): this stage also owns the
+client plane's egress control.** The requirement now states that a VPN-connected client's *whole* internet
+runs through the cloud's single egress behind an institutional **HTTP/HTTPS proxy** — the monitoring half
+of DLP's egress-control leg, beside the compute half D5 already covers (two filters: the proxy's, then
+SageMaker's stricter list). No step below builds it yet: the topology — where the proxy lives, how
+accounts reach it, what happens to the per-account NATs — is **open question 23**, whose answer should
+arrive as a decision file before this stage is planned in detail. What the clarification settles today is
+scope (the proxy is this stage's deliverable class, not Stage 3's) and the closed circuit it belongs to:
+VPN-only access + endpoint DLP on institution laptops + the proxied egress
+(`docs/plan/institutional-delta.md`, the device-trust row).
+
 **What is no longer in this stage:** the data perimeter (`docs/plan/architecture.md` §4.2) moved to Stage 1;
 the detective services moved to the stage that first gave each one something to observe (principle 9):
 Access Analyzer's free external half to 1b step 8.2, **GuardDuty to Stage 15** (Stage 4 step 10 until the

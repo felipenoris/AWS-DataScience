@@ -178,6 +178,12 @@ proven, and the third was measured NOT to hold (item 3 below):
    real institution the VPN stands in for *device trust*, the data-leakage controls living on the
    managed endpoint (see [`docs/plan/institutional-delta.md`](docs/plan/institutional-delta.md)), so
    item 3's gap is an unmanaged laptop reaching the surface those controls exist to bound.
+   **The requirement half moved on 2026-08-25**: `docs/plan/objectives.md` now states, as requirement,
+   that the client reaches the organization's cloud infrastructure only through the VPN — and that once
+   connected, *all* of the client's internet (the portal's public names included) runs through the
+   cloud's own egress behind an institutional HTTP/HTTPS proxy (Stage 11). The measurement above is
+   unchanged; the pending choice is unchanged and still the user's — but "recorded acceptance" would now
+   record a deviation from a stated objective, not a silent gap.
 
 **The procedure is [`docs/plan/runbooks/vpn.md`](docs/plan/runbooks/vpn.md) Part C and it is not
 repeated here** — the five values a config needs, where each comes from, the three checks that prove

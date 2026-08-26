@@ -176,6 +176,62 @@ module "egress" {
     # github
     "github.com",
 
+    # THE PORTAL AND CONSOLE PUBLIC NAMES (added 2026-08-25) - EXC-06's exit path. The "*"
+    # above is the user's, kept FIRST deliberately: with these entries in place, removing
+    # that one line becomes an experiment instead of a breakage. The set is AWS's own
+    # public-internet-access section of the SMUS network-isolation page (read 2026-08-25;
+    # REFERENCES.md): the portal web client's two tables, the IdC sign-in table, and the
+    # console web client tables - the names a browser ON the VPN queries through this VPC's
+    # resolver to use the SMUS portal, IdC sign-in and the AWS console. Names the page lists
+    # under *.amazonaws.com (monitoring, oidc, portal.sso, sso-portal, execute-api, ccs,
+    # unifiedsearch, cdn.*.as2) are ALREADY covered by the wildcard near the top and are
+    # deliberately not repeated. A leading "*." entry matches subdomains and never the apex,
+    # which is why some names appear in both spellings.
+    #
+    # SMUS portal - asset delivery and client APIs. The portal URL is
+    # <domain-id>.sagemaker.<region>.on.aws, hence the wildcard.
+    "*.sagemaker.${var.region}.on.aws",
+    "*.cdn.console.awsstatic.com",
+    "*.cdn.uis.awsstatic.com",
+    "*.shortbread.aws.dev",
+    "public.lotus.awt.aws.a2z.com",
+    "*.console.api.aws",
+    "*.console.aws.a2z.com",
+    "*.sagemaker.aws",
+    "*.sagemaker.aws.dev",
+    "agent.datazone.${var.region}.api.aws",
+    "sagemaker-unified-studio.${var.region}.api.aws",
+
+    # IdC sign-in (the portal's and the console's front door). The cloudfront name is the
+    # page's own pinned IdC asset distribution, listed exactly. *.awsapps.com is one of the
+    # block's TWO wide multi-tenant entries (every AWS customer's IdC portal lives under
+    # it): it stands in for this domain's own d-... host, which is estate-specific and has
+    # no business in a tracked file.
+    "d35uxhjf90umnp.cloudfront.net",
+    "*.awsapps.com",
+    "${var.region}.signin.aws",
+
+    # AWS console web client. The page's Amazon-Q-console host
+    # (conversational-experience-worker.widget...) rides *.console.aws.amazon.com below -
+    # a leading *. matches subdomains at ANY depth. *.cloudfront.net is the block's other
+    # WIDE multi-tenant entry - kept because the page says console assets ride one unnamed
+    # CloudFront distribution per Region; if that name is ever measured, pin it like the IdC
+    # one above and drop the wildcard. account.*.api.aws has a middle wildcard DNS Firewall
+    # cannot express - and the region substitution was MEASURED, not assumed: only the
+    # us-east-1 host answers (Lesson 38).
+    "console.aws.amazon.com",
+    "*.console.aws.amazon.com",
+    "*.console-api.aws.amazon.com",
+    "signin.aws.amazon.com",
+    "*.signin.aws.amazon.com",
+    "*.cloudfront.net",
+    "health.aws.amazon.com",
+    "phd.aws.amazon.com",
+    "*.ctrl.prod.os.notifications.aws.dev",
+    "uxc.us-east-1.api.aws",      # region:aws-pinned "Endpoint is in us-east-1 only" - AWS's pin, not ours
+    "account.us-east-1.api.aws",  # region:aws-pinned MEASURED 2026-08-25: the page writes account.*.api.aws, but the us-west-2 spelling is NXDOMAIN - only the us-east-1 host exists
+    "freetier.us-east-1.api.aws", # region:aws-pinned same note - the page pins it for every Region's console
+
     # The internal zones REACHABLE FROM THIS ACCOUNT, and the set differs per account, which
     # is half of why this list moved out of the module (v0.3.0). DNS Firewall is evaluated by
     # the VPC resolver, which is also what answers a private hosted zone - so an unlisted

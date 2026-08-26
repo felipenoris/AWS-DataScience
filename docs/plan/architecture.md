@@ -346,6 +346,19 @@ a theme — they answer the "SageMaker should have access to the internet" requi
 opposite ways, and the point of building both is to find out what the strict one actually costs in
 day-to-day friction.
 
+**Whose internet this is about — the 2026-08-25 re-scope, from the user's clarification
+(`docs/plan/objectives.md` carries the requirement text).** Both designs constrain the **SageMaker-managed
+compute** and nothing else. The **client plane** — the laptop on the VPN — has its own egress: all of its
+internet runs through the cloud's single egress point behind an institutional **HTTP/HTTPS proxy**
+(monitored, broad; D6's territory, Stage 11's build, open question 23's topology), and that is the plane
+that serves the SMUS portal's public-internet requirements. Three sentences follow from it. The (A)/(B)
+gap is smaller than the names suggest: with a whitelist as the mechanism, (B) is the empty list and (A) a
+short one, and under both designs the compute reaches the *intranet* (GitLab included) identically. Every allowed
+compute connection still crosses the institutional proxy — two filters, the proxy's and then SageMaker's
+stricter one, so the compute's effective reach is the intersection. And the lab's per-account NATs are the
+**interim** shape of an egress that converges on one point; the comparison below measures the designs, not
+the interim topology.
+
 **(A) Limited internet — NAT plus allowlist.** The SageMaker private subnets route to the NAT gateway;
 Route 53 Resolver DNS Firewall permits an explicit list of domains and blocks the rest, optionally with a
 Squid proxy for HTTP-layer control. **The list itself is not written here and is not in the module
@@ -394,7 +407,15 @@ shapes exist and neither is built; they are recorded so a future session does no
 | **Explicit HTTP `CONNECT` proxy** (Squid) | the `CONNECT` line, which is plaintext to the proxy — so it survives **ECH**, which will eventually blind SNI matching | ~USD **0.008–0.017/h** (`t4g.nano`/`micro`) | an EC2 to run and patch; every tool needs `http_proxy`/`https_proxy` (pip, cargo, `Pkg`, R, apt, the container runtime); and the proxy must resolve **outside** the DNS Firewall, so it needs its own resolver or a VPC without the rule-group association |
 
 Neither is a Stage 6 deliverable. They are the answer to *"the requirement is SNI, not name"* — a different
-requirement from the one design A was built for, and one nothing in `docs/plan/objectives.md` states today.
+requirement from the one design A was built for. **Until 2026-08-25 this paragraph ended "and one nothing
+in `docs/plan/objectives.md` states today"; that sentence is now false by clarification**: the objectives
+state an institutional **HTTP/HTTPS proxy** between the VPN-connected client and the cloud's single
+egress, which every compute connection also crosses. So the explicit-proxy row above stopped being the
+answer to a requirement nobody stated and became a **candidate shape for a stated one** — the objectives
+name only "an HTTP/HTTPS proxy", so which shape is built (this row, or Network Firewall's) is open
+question 23's to settle; the build belongs to Stage 11's egress-control leg, and the row's two catches
+(every tool needs `http_proxy`/`https_proxy`; the proxy resolves outside the DNS Firewall) are now design
+inputs rather than reasons not to build it.
 
 **(B) No internet — proxied artifacts only.** The SageMaker subnets have no route to a NAT gateway at all.
 Packages arrive through **CodeArtifact** repositories configured with an upstream to the public registry
@@ -412,19 +433,22 @@ more than this file used to say**, and **the saving above is now the NAT alone**
 of it. Three cents an hour decides nothing — the comparison below is settled by friction, which is what
 D5 said it wanted to measure.
 
-**A second correction, 2026-08-24 — and this one is a hard limit of (B), not a cost.** AWS's own
-network-isolation page, re-read while attributing the on-VPN portal break, carries a *Public internet
-access* table beside its required-endpoints one: **the SMUS portal requires the public internet** —
-client assets, client APIs (`agent.datazone.<region>.api.aws` among them), the IdC sign-in endpoints —
-*"for client operations that do not handle customer data"*, in the page's own words. So a VPC with no
-public egress can host the **apps** and cannot host the **portal experience**, by the vendor's design.
-And (B) makes the mechanism worse rather than better: every interface endpoint it adds installs a private
-zone that is **authoritative for the whole subtree** of its service name (Lesson 40; `NETWORK.md` §5
-carries the measured case — the `datazone` zone shadowing exactly the `agent.datazone…` name the portal
-needs). Under (B) the portal therefore lives **outside** the isolated VPC — on the operator's own network,
-off the VPC resolver — or it does not live at all; whichever is chosen, the sentence *"there is no egress
-path"* stops describing the surface the data scientist actually looks at. This is D5-input of the first
-order, and it was invisible to every cost row above.
+**A second correction, 2026-08-24 — re-scoped 2026-08-25: real, but it lands on the client plane, not on
+(B).** AWS's own network-isolation page, re-read while attributing the on-VPN portal break, carries a
+*Public internet access* table beside its required-endpoints one: **the SMUS portal requires the public
+internet** — client assets, client APIs (`agent.datazone.<region>.api.aws` among them), the IdC sign-in
+endpoints — *"for client operations that do not handle customer data"*, in the page's own words. For one
+day this file called that "a hard limit of (B)". **The limit was real and the plane was wrong** (the
+user's clarification, 2026-08-25): the portal is loaded by the *client's browser*, and the client plane
+has its own monitored egress — VPN → institutional proxy → the cloud's single egress — which is where
+those public names are served. (B) constrains the compute VPC, which never needed to host the portal
+experience. What survives of the correction, and it is still load-bearing: **the client's DNS path must
+not be shadowed by the compute's endpoints** — an interface endpoint installs a private zone
+**authoritative for the whole subtree** of its service name (Lesson 40; `NETWORK.md` §5 carries the
+measured case, the `datazone` zone shadowing exactly the `agent.datazone…` name the portal needs), and
+the full-tunnel laptop shares the VPC resolver by requirement. So the constraint on (B) — and on (A)
+equally — is about which endpoints may exist in a VPC whose resolver the *client* also uses, not about
+whether the portal can live at all.
 
 **The user's reservation about (B), recorded as a real constraint, not an objection to be argued away:**
 this environment must support **Python, Julia, Rust and R**, and CodeArtifact does not cover all of them.
