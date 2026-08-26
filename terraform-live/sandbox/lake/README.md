@@ -34,7 +34,7 @@ access role cannot be written before the role exists.
 |---|---|---|
 | 1 | `sandbox/data/` | already applied — it owns `alias/awsds-sandbox-data`, the CMK this bucket names |
 | 2 | `sandbox/lake/` | **this slice** — the bucket, the access role, the Access Grants location, the per-group grants |
-| 3 | `sandbox/data/` | **again** — the one key-policy statement admitting the access role (`consumer-data-v0.3.0`'s input). **Its first plan carried a second change nobody asked for** and stopped: SMUS had made itself a Lake Formation administrator in this account, and `admins` is replaced wholesale. `v0.4.0` adopts the two seats, after which the plan reduced to the key alone |
+| 3 | `sandbox/data/` | **again** — the one key-policy statement admitting the access role (`consumer-data-v0.3.0`'s input). **Its first plan carried a second change nobody asked for** and stopped: SMUS had made itself a Lake Formation administrator in this account, and `admins` is replaced wholesale. `v0.4.0` adopted the two seats — and `v0.5.0`, the same day, replaced adoption with ownership (`ignore_changes` over the list; `DL-13` is its defence) — after which the plan reduced to the key alone |
 
 `scripts/tfhygiene/layers.py`'s `lake` rank comment carries the same order; the rank itself cannot
 express it, because both slices are `[P]` and no `up`/`down` target ever acts on them.
@@ -48,7 +48,7 @@ Nothing in this file, on its own, lets any object in `awsds-sandbox-lake` be rea
 |---|---|---|
 | the Access **Grant** | `grants.tf` (here) | who may *ask* for a session, and over which sub-prefix |
 | the access role's **identity policy** | `iam.tf` (here) | what that session may do at all — one bucket, one key |
-| the **key policy** | `sandbox/data/`, via `consumer-data` (`v0.3.0`'s input, pinned `v0.4.0`) | whether S3 may decrypt for it — **`AllowSandboxLakeAccessRoleViaS3`, applied and read back 2026-08-26** |
+| the **key policy** | `sandbox/data/`, via `consumer-data` (`v0.3.0`'s input, pinned `v0.5.0`) | whether S3 may decrypt for it — **`AllowSandboxLakeAccessRoleViaS3`, applied and read back 2026-08-26** |
 
 This is [Lesson 28](../../../docs/plan/lessons.md) in one slice: **no single file in this repository
 answers "what can this group do"**. The estate passed through the state where two of the three were in

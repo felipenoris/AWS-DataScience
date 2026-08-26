@@ -52,6 +52,7 @@
 from __future__ import annotations
 
 import json
+import re
 import sys
 
 from awslib import context, profiles
@@ -348,6 +349,12 @@ def main(argv: list) -> int:
                 "params": cs.get("Parameters", {}) or {},
                 "db_defaults": json.dumps(cs.get("CreateDatabaseDefaultPermissions", [])),
                 "tbl_defaults": json.dumps(cs.get("CreateTableDefaultPermissions", [])),
+                # The full ARN list, not just the count above: DL-13 classifies every seat,
+                # and a count cannot tell "the required seat plus one stranger" from "the
+                # required seat plus the two known SMUS seats".
+                "admins": [
+                    a.get("DataLakePrincipalIdentifier", "?") for a in cs.get("DataLakeAdmins", [])
+                ],
             }
 
     # ----------------------------------------------------- Athena workgroups, consumer side
@@ -707,6 +714,66 @@ def main(argv: list) -> int:
                 "DL-5",
                 f"DataLakeSettings.Parameters ({prof})",
                 f"CROSS_ACCOUNT_VERSION={ver}, SET_CONTEXT={setctx}",
+            )
+
+    # DL-13: THE ADMIN LIST, PER ACCOUNT - the check that replaced a plan diff (2026-08-26,
+    # Stage 16's finding; consumer-data v0.5.0). `admins` is service-shared territory: SMUS
+    # appoints its own two service roles when an account's first project is created, so the
+    # module stopped declaring the list (`ignore_changes`) - and from that day NO PLAN defends
+    # it. This check is the replacement, and it separates three things a plan never could:
+    #
+    #   the REQUIRED seat   this account's AWSReservedSSO_InfrastructureAccess_* role. Its
+    #                       loss is a FAIL: an account with no administrator sees an EMPTY
+    #                       catalog while its shares sit ACTIVE in RAM (measured 2026-08-19),
+    #                       and with ignore_changes even a plan would stay silent about it.
+    #   the KNOWN seats     awsds-<env>-smus-manage-access / awsds-<env>-smus-provisioning,
+    #                       service-appointed at the first project (Sandbox, 2026-08-22).
+    #                       A `note`, never a `pass`: whether they SHOULD hold the seat is
+    #                       open question 24, and a note is what keeps the question visible
+    #                       without failing on a state the user chose to leave standing.
+    #   anything else       a FAIL by definition - "a fourth administrator is a principal
+    #                       nobody granted" (AWS_STATE.md's invariant for this list).
+    # The EXACT name shape, not an endswith: awsds-<env>-smus-manage-access is the
+    # sagemaker-prereqs contract, and a lookalike suffix on a stranger's role must land in
+    # the strangers branch, not this one.
+    smus_seat_re = re.compile(r":role/awsds-[a-z0-9]+(-[0-9]+)?-smus-(manage-access|provisioning)$")
+    admin_lists = {DATA_PROFILE: lf_admins} if lf_read else {}
+    for prof, cs in sorted(lf_consumer_settings.items()):
+        admin_lists[prof] = cs.get("admins", [])
+    for prof, arns in sorted(admin_lists.items()):
+        required = [a for a in arns if "AWSReservedSSO_InfrastructureAccess_" in a]
+        smus_seats = [a for a in arns if smus_seat_re.search(a)]
+        strangers = [a for a in arns if a not in required and a not in smus_seats]
+        if not required:
+            checks.fail(
+                "DL-13",
+                f"data lake administrators ({prof})",
+                "the InfrastructureAccess seat is ABSENT - this account sees an empty "
+                "catalog (measured 2026-08-19), and since consumer-data v0.5.0 no plan "
+                "watches this list. Restore it via the module's create-time admins.",
+            )
+        elif strangers:
+            checks.fail(
+                "DL-13",
+                f"data lake administrators ({prof})",
+                f"{len(strangers)} seat(s) nobody granted: "
+                + ", ".join(a.rsplit("/", 1)[-1] for a in strangers)
+                + " - an administrator can grant itself anything in the local catalog.",
+            )
+        elif smus_seats:
+            checks.note(
+                "DL-13",
+                f"data lake administrators ({prof})",
+                f"required seat + {len(smus_seats)} SMUS seat(s) "
+                f"({', '.join(a.rsplit('/', 1)[-1] for a in smus_seats)}) - "
+                "service-appointed, standing by the user's 2026-08-26 decision; open "
+                "question 24 owns whether they stay.",
+            )
+        else:
+            checks.ok(
+                "DL-13",
+                f"data lake administrators ({prof})",
+                "the InfrastructureAccess seat alone - the create-time list, unchanged",
             )
 
     # DL-6: the IAM-fallback defaults, once the catalog exists (step 5.2).
@@ -1185,7 +1252,14 @@ What the checks are, and where each comes from:
   DL-12  the persona's IDENTITY half of the drop-box write, read off the
          PROVISIONED role in each consumer account (pass 4c). DL-2 measures the
          resource half; a cross-account permission is the AND of the two, and
-         for three passes only one of them existed (Lesson 28, amended)""")
+         for three passes only one of them existed (Lesson 28, amended)
+  DL-13  the data lake administrator LIST, per account (2026-08-26 - the check
+         that replaced a plan diff: consumer-data v0.5.0 put ignore_changes on
+         `admins`, so no plan defends the list any more). FAILS on the required
+         InfrastructureAccess seat missing, FAILS on any seat that is neither
+         that nor a SMUS service role, NOTES the SMUS seats (open question 24
+         owns whether they stay). "A fourth administrator is a principal nobody
+         granted" - AWS_STATE.md's invariant, measured here""")
 
         # ==============================================================================
         rep.h1("13. The accounts nothing here is measuring")
