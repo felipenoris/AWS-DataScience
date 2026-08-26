@@ -120,10 +120,25 @@ module "egress" {
     "amazonaws.com", "*.amazonaws.com",
 
     # SageMaker Unified Studio's own control plane, and it is NOT under amazonaws.com - it
-    # sits on the `aws` TLD, which the wildcard above does not reach, and the `datazone`
-    # interface endpoint does not cover it either (its private DNS is the amazonaws.com
-    # spelling). Measured BLOCKED 52 times in one session before it was added: the estate's
-    # own workbench refused by the estate's own firewall.
+    # sits on the `aws` TLD, which the wildcard above does not reach. Measured BLOCKED 52
+    # times in one session before it was added: the estate's own workbench refused by the
+    # estate's own firewall.
+    #
+    # THIS LINE CARRIED A REFUTED PARENTHETICAL UNTIL 2026-08-25 - "the `datazone` interface
+    # endpoint does not cover it either (its private DNS is the amazonaws.com spelling)" -
+    # and the 2026-08-24 measurement says the opposite (`./aws/networking.py` section 11):
+    # the DEPLOYED endpoint seizes BOTH spellings, its DnsEntries holding
+    # datazone.<region>.amazonaws.com AND datazone.<region>.api.aws, which is the very name
+    # on the line below. What advertises only the amazonaws.com form is the CATALOG's
+    # PrivateDnsName column (section 10) - and taking a deployed object's behaviour from the
+    # catalog's advertisement is Lesson 38, which is how the clause came to be written.
+    #
+    # THE ENTRY STAYS, AND ITS REASON NEVER DEPENDED ON THE ENDPOINT: the DNS Firewall is
+    # evaluated BY THE VPC RESOLVER, ahead of any private zone, so an unlisted name is
+    # blocked whether or not a zone would have answered it - the same rule the .internal
+    # entries at the bottom of this list obey. What the endpoint decides is only WHERE an
+    # allowed query goes: the interface endpoint while it exists, public DNS and the NAT
+    # once it is removed (the pending extra_services change above).
     "datazone.${var.region}.api.aws",
 
     # PyPI's INDEX, and only the index - still a half path, but for a different reason since
