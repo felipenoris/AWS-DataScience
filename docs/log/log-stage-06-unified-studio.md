@@ -3263,3 +3263,156 @@ measurement and says plainly that the prediction it replaces was wrong), `s3-rea
 Owed after this sitting: nothing from this thread — the tunnel question is closed in both halves. What
 remains is the estate's: passes 3/5 + 5.1, 4.2's measurement half, 4.3's friction reading, open question
 22, and the user's `f4734dd`.
+
+---
+
+## 2026-08-26 — The stage read back against the live account: OQ 21 answered, US-8 caught reading a third of its subject, and two of Claude's own sentences corrected
+
+*Provenance: **this entry is Claude's**, written on the user's request at the end of the sitting. **Every
+AWS call was a READ** — `./aws/studio.py`, `iam get-role`/`list-attached-role-policies`/`get-policy-version`
+under `awsds-infra-sandbox-1`, one `s3api list-objects-v2`, and `./scripts/down-studio-apps.py --dry-run`,
+which writes nothing in that mode. Nothing was applied, attached, provisioned or deleted. The user signed
+in as the infrastructure user at the start and authorized, in one sentence, "do what does not depend on
+me"; the SCP decision this sitting sets up is explicitly **not** taken here. Redacted as elsewhere.*
+
+### Why the sitting happened
+
+Three questions, each one narrower than the last: what `awsds-sandbox-derived` is for, whether anything is
+using it, and then — after the answers — an analysis of where the plan stands and what Stage 6 still owes.
+The third produced a work list, the user authorized the half of it that needs no browser, and the rest of
+this entry is that half.
+
+### The opening reading, and it is Stage 5's object rather than this stage's
+
+`awsds-sandbox-derived` holds **8 objects, ~800 bytes, all under `results/`** — four CSVs and four
+`.metadata`, timestamped 2026-08-20T00:42–01:20Z. That is exactly what Stage 5 pass 4d's log recorded, one
+listing later and from a different hand, so the inventory reproduces. `derived/${aws:userid}/` and
+`scratch/` have **never held an object**. It is logged here rather than in the Stage 5 file because it is
+this sitting's act, and because the sentence it settles is a Stage 6 one: **the SMUS project path is a
+different bucket** (`awsds-sandbox-smus-projects`), so nothing pass 3 built writes into the derived zone,
+and the zone's only producer remains the enforced Athena workgroup.
+
+### The status reading: `./aws/studio.py`, 0 FAILED, and one row that closes an owed item
+
+| Reading | What it says |
+|---|---|
+| the domain | one, V2, in Data Governance; owned nowhere else, seen by both members |
+| blueprint configurations | 11 per member, all inside decision 5's category 1; **none** in the domain account |
+| project profiles | both `ENABLED` |
+| runtime | one SageMaker AI domain, Sandbox only: `VpcOnly`, idle `ENABLED/60min` |
+| **running apps** | **zero** |
+| projects | one, `eighth-experimentation`, `ACTIVE` |
+
+**The zero closes the owed table's off-VPN-probe teardown row**: nothing meters hourly, which is what that
+row was waiting to confirm. And the reading carries a negative that matters more than the passes —
+**`engineering` has never been provisioned in Development**, so `US-8` reads `note` there and pass 3 is
+half-done rather than pending.
+
+### OQ 21, measured: three of the four verbs are ours, the fourth is the product's
+
+The question prescribed the reading at 1.5 and could not take it there — no blueprint-authored role existed
+until 2026-08-22. Taken now, against everything the Tooling stack left behind: **five roles, eleven
+AWS-managed documents, and not one inline policy anywhere**, so *"AWS's own policy authorship"* is the whole
+of the surface, exactly as the question predicted.
+
+| Verb | In AWS's authorship? | Why a blanket deny is off the table anyway |
+|---|---|---|
+| `AddPolicyGrant` | absent | our own `grants.tf` calls it from inside each member (known since 2026-08-22) |
+| `RemovePolicyGrant` | absent | idem, on `terraform destroy` |
+| `DeleteEnvironmentBlueprintConfiguration` | absent | a `sagemaker/` slice's own destroy calls it — the product break is **ours** |
+| `GetDomainExecutionRoleCredentials` | **PRESENT** | `SageMakerStudioProjectUserRolePolicy` v74, `Sid` `DataZoneUserPermissions`, scoped to `arn:aws:datazone:*:*:domain/${aws:PrincipalTag/AmazonDataZoneDomain}` — **every project role holds it** |
+
+**So all four are "recorded ceiling, no blanket deny" — outcome (b) of the question's own menu**, but by
+two mechanisms worth keeping apart, because they fail differently: three break *this estate*, one breaks
+*the product*. A principal-conditioned deny stays expressible and would reach nothing — the persona sets
+carry no `datazone:` action outside `policies-approvers.tf`, so it would be attached and never exercised
+([Lesson 20](../plan/lessons.md)). **The decision is the user's and is left open**; the recommendation on
+record is to write the ceiling down and attach nothing.
+
+Two riders the same reading produced, neither of which moves the answer. The **widest `datazone:` reach in
+the account** is not on the user role at all: `SageMakerStudioProjectRoleMachineLearningPolicy` grants
+`datazone:*Compute*`, `CreateAsset*`, `List*` and `Search*` on `Resource: "*"` — unscoped by domain, unlike
+the statement beside it. And the project role's S3 reach is **principal-tag-shaped**, not path-shaped:
+`${aws:PrincipalTag/DomainBucketName}/${aws:PrincipalTag/AmazonDataZoneDomain}/${aws:PrincipalTag/AmazonDataZoneProject}/*`
+— which is *why* the bucket name is free. The `*/dzd*/<project>/` shorthand this repository wrote on
+2026-08-22 belongs to the **provisioning** policy's `GetS3GenAI` statement, a different document; the
+conclusion it supported is unaffected, and was proven behaviourally anyway.
+
+### US-8 was reading one of the stack's three roles
+
+The check discovered its subject by **name** — `datazone` — and the stack provisions three roles per
+project: `datazone_usr_role_<project>_<env>` and two `AmazonBedrock*Role-<project>-<env>`. All three carry
+`awsds-sandbox-project-boundary`, so the check reported `pass` about a third of its own subject and nothing
+looked wrong.
+
+**The sharp edge is ahead rather than behind**, which is why this is worth the fix and not just the note:
+AWS's Tooling template leaves its two conditional **EMR** roles with **no** permissions boundary — recorded
+on 2026-08-22 as a qualification — and those match neither name pattern. The day
+`createEmrResourceInTooling` turns true, the old filter would have said `pass` beside two unbounded roles.
+
+Discovery now uses **the service's own stamp**: the tag `AmazonDataZoneDomain`, measured present on all
+three. The name match is kept as an OR so an untagged `datazone*` role is still reported rather than
+dropped, and the candidate set is bounded by IAM **path** — `/aws-service-role/` and `/aws-reserved/`
+excluded, which is not a name filter in disguise: a service-linked role is created by a service for itself
+and a blueprint cannot provision one. Cost: ~14 `GetRole` calls per account instead of ~33. Reads
+`all 3 blueprint-provisioned role(s) bounded (3 found by tag)`; section 6 gains a `FOUND BY` column.
+Battery re-run **0 FAILED**.
+
+**This is the second instrument defect this one check has produced** — [Lesson 30](../plan/lessons.md) on
+2026-08-22 (`iam list-roles` omits `PermissionsBoundary` by documented contract), [Lesson
+31](../plan/lessons.md) today (a check inherits the scope it was written in). Both were invisible while no
+project existed, and both surfaced only because something else was being read.
+
+### OQ 22 happened, four days after it was raised
+
+Re-reading the four documents that question names: `SageMakerStudioProjectProvisioningRolePolicy` is at
+**v82**, not the **v81** written into OQ 22 and into `terraform-modules/sagemaker-prereqs/s3.tf:15`. The
+other three are unmoved (v74, v42, v9). The diff is two hunks, both widenings:
+`+cloudformation:UntagResource` beside `CreateStack`/`TagResource` on `stack/DataZone*`, and `SMAppDelete`
+becoming `SMApp` — gaining `sagemaker:CreateApp` and `AddTags`, resource widened from four literal app-type
+ARNs to `arn:aws:sagemaker:*:*:app/*`, the `AmazonDataZoneProject` tag condition kept. `GetS3GenAI` is
+byte-identical, so the claim resting on it stands **this time**.
+
+What the occurrence settles is the question's premise rather than its scope: **a revision landed inside
+four days, and the estate learned about it because a human opened the document for an unrelated reason.**
+Scope, storage and procedure are still the user's to decide; the frequency argument is no longer
+hypothetical.
+
+### Step 8.2 was done and the stage file did not know
+
+`scripts/down-studio-apps.py` has had its body since `83fc126` (2026-08-21) — it landed in the pass 0/1/2a
+commit, not in pass 5, and the step still read as owed. Exercised read-only here:
+`./scripts/down-studio-apps.py sandbox --dry-run` discovers `d-p6gthxc82ckg` and reports `no running app`,
+exit 0; with `--spaces` it adds the line it would then act on. **The discovery half is proven against a
+real domain; the delete path needs a running app and stays 8.4's**, in the same portal sitting as pass 3.
+
+### Two things Claude told the user in this sitting that were wrong
+
+Recorded because the log is where a correction survives, and because both are the same shape — a summary
+built from the plan's prose rather than from the repository.
+
+1. **Step 8.2 was listed as pending work** in the analysis handed to the user an hour earlier. It had been
+   done for five days. The stage file said so nowhere, and the analysis inherited the stage file.
+2. **The stage map said "7-15 not started"** and there is a **Stage 16**, whose passes 0-3 were applied
+   **the same day**, before this sitting. It was missed because the index was read with a truncating
+   filter — an instrument error inside an analysis about instrument errors. Stage 16 also leaves a
+   **Stage 6 residue** this stage now owes a reading of: SMUS made itself a Lake Formation administrator in
+   Sandbox, the seats were adopted in `consumer-data-v0.5.0`, and *whether a provisioning role should
+   administer Lake Formation* is nobody's question yet.
+
+### Files
+
+Three plus this log: `aws/studio.py` (the US-8 discovery, the section 6 column and the reasoning beside
+both), `docs/plan/open-questions.md` (OQ 21's measurement and OQ 22's first occurrence),
+`docs/plan/stages/stage-06-unified-studio.md` (the owed table's two rows, verification (v)'s widening,
+step 8.2 marked done). Branch `claude/oq21-governance-verbs-us8-tag-discovery`, PR
+[#45](https://github.com/felipenoris/AWS-DataScience/pull/45) — **the user merges**.
+
+### Owed after this sitting
+
+Unchanged by it, except where a row above closed one: pass 3's browser half (the `engineering` project, the
+boundary's survival, and the governance-manager sign-in that verifications (xii), (xiii) and (xvii) share),
+2.6 and decision 6 — which wait on 2.4's path measurement and were deliberately **not** written blind —
+4.2's measurement half, 4.3's friction reading, design B entire, and the user's two open choices: INT-16's
+fallback (i) versus recorded acceptance, and OQ 21's SCP. `EXC-06` — the `"*"` on Sandbox's DNS allow-list
+— is still standing and still the user's.
