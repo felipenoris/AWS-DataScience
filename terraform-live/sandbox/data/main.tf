@@ -30,31 +30,11 @@ locals {
   # statement that admits nobody. That is also why the apply ORDER is lake/ first (layers.py's
   # `lake` rank comment: data -> lake -> data, three acts over two slices).
   lake_access_role_arn = "arn:${data.aws_partition.current.partition}:iam::${data.aws_caller_identity.current.account_id}:role/awsds-${var.env}-lake-access"
-
-  # THE TWO SMUS SERVICE ROLES, ADOPTED 2026-08-26 (the user's decision, taken on the finding
-  # below). They are Lake Formation data lake administrators in THIS account and nobody in this
-  # repository made them so: the service added itself when the first project was created here
-  # (2026-08-22). Development has no project and its plan reads `No changes`, which is what
-  # attributes the cause; nothing in the estate reported it, because DL-5 measures `parameters`
-  # and not `admins`.
-  #
-  # ADOPTION RATHER THAN REMOVAL, and the two halves of the reason: the Stage 6 create path was
-  # measured AFTER these existed, so stripping them risks the one path this account's SMUS work
-  # stands on; and removing them from the code would not remove them from AWS - it would only
-  # make every future plan fight the service that put them there.
-  #
-  # NAMES, NOT PASTED ARNS: both are contracts of terraform-modules/sagemaker-prereqs, built the
-  # same way every other name in this tree is. A drift between the two spellings fails the apply
-  # by name - Lake Formation rejects an administrator that does not exist.
-  smus_admin_role_arns = [
-    for name in ["smus-manage-access", "smus-provisioning"] :
-    "arn:${data.aws_partition.current.partition}:iam::${data.aws_caller_identity.current.account_id}:role/awsds-${var.env}-${name}"
-  ]
 }
 
 module "consumer_data" {
   # checkov:skip=CKV_TF_1:pinned by git TAG by convention (conventions §6, Stage 3 step 1.1a) - a repository-internal tag only the repo owner can move
-  source = "git::git@github.com:felipenoris/AWS-DataScience.git//terraform-modules/consumer-data?ref=consumer-data-v0.4.0"
+  source = "git::git@github.com:felipenoris/AWS-DataScience.git//terraform-modules/consumer-data?ref=consumer-data-v0.5.0"
 
   env    = var.env
   region = var.region
@@ -65,13 +45,6 @@ module "consumer_data" {
   data_lake_admin_role_arn = local.infrastructure_access_role_arn
   data_scientist_role_arn  = local.data_scientist_role_arn
 
-  # ------------------------------------------------------- what SMUS made of this account (v0.4.0)
-  #
-  # Both values are READ BACK from the account, never chosen here - see the local above. They are
-  # in this slice and not in the module because `development/data/` has neither, and its plan
-  # reading `No changes` across both bumps is what keeps the difference honest.
-  additional_data_lake_admin_role_arns  = local.smus_admin_role_arns
-  allow_full_table_external_data_access = true
 
   # ---------------------------------------------------- the lake's reader (Stage 16 pass 2.2)
   #

@@ -637,12 +637,18 @@ length, under item numbers 10-12 that collided with the live items above; the du
     acceptance or a narrower mechanism if AWS offers one. **Where it belongs:** Stage 6, whose act created
     them, not Stage 16, which only made a plan that noticed.
 
-    **One thing to fix regardless of the answer, and it is small:** `DL-5` reads
-    `DataLakeSettings.Parameters` and not `admins`, so **no gate in this repository can see this class of
-    drift at all** — it surfaced only because a plan ran for another reason (Lesson 31's neighbour: a
-    check keeps reading `pass` about the scope it was written for while the design spreads past it). An
-    `admins` reading belongs beside `DL-5`; `AWS_STATE.md`'s section C now says a fourth administrator is
-    a principal nobody granted, which is the invariant such a check would enforce.
+    **Amended the same day - the adoption was replaced and the gate exists.** The user asked whether
+    v0.4.0 was pulling into Terraform something SMUS manages, and it was, one step removed: adoption froze
+    the list, so a seat the service adds later is deleted by the next apply. `consumer-data-v0.5.0`
+    declares one create-time admin and `ignore_changes` over the list (the `catalog.tf` Iceberg shape,
+    Lesson 23) - measured: three admins live, one declared, plan `No changes`. And the gap that let this
+    go unseen is closed: **`./aws/datalake.py` `DL-13`** reads the list per account - FAIL on the required
+    `InfrastructureAccess` seat missing (an account with no administrator sees an empty catalog), FAIL on
+    any seat that is neither that nor a SMUS service role, **`note`** on the SMUS seats so this question
+    stays visible without failing on a state the user chose to leave standing. First run 2026-08-26:
+    producer `pass`, Development `pass`, Sandbox `note` naming both seats. **What remains open is only the
+    governance half above** - whether the seats should exist - and its instrument is now the trail reading
+    this entry already describes.
 
 ---
 

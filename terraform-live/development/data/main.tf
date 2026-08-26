@@ -24,14 +24,15 @@ locals {
 
 module "consumer_data" {
   # checkov:skip=CKV_TF_1:pinned by git TAG by convention (conventions §6, Stage 3 step 1.1a) - a repository-internal tag only the repo owner can move
-  # v0.3.0 (2026-08-26) added additional_data_key_policy_statements; v0.4.0, the same day, added
-  # additional_data_lake_admin_role_arns and allow_full_table_external_data_access. ALL THREE
-  # DEFAULT TO EMPTY OR NULL AND THIS SLICE PASSES NONE OF THEM, so its plan after each bump must
-  # read `No changes` - an empty plan is the proof the defaults protected it, and it is a step of
-  # Stage 16 (2.2) rather than a hope. It is also, for v0.4.0, the reading that ATTRIBUTES the
-  # drift the input exists for: Sandbox has a SMUS project and this account does not, and only
-  # Sandbox's Lake Formation administrators grew on their own.
-  source = "git::git@github.com:felipenoris/AWS-DataScience.git//terraform-modules/consumer-data?ref=consumer-data-v0.4.0"
+  # v0.3.0 (2026-08-26) added additional_data_key_policy_statements, default EMPTY - this slice
+  # passes nothing, and its plan across the bump read `No changes`: the proof the default
+  # protected it (Stage 16 step 2.2), and the reading that ATTRIBUTED the same day's finding
+  # (only Sandbox, the account with a SMUS project, had grown Lake Formation administrators on
+  # its own). v0.4.0 briefly ADOPTED those seats as inputs; v0.5.0 - the same day - replaced
+  # adoption with ownership: the module now declares ONE create-time admin and ignore_changes
+  # over the list, so the service's own seats are neither copied here nor fought. This slice's
+  # plan must read `No changes` across every one of these bumps.
+  source = "git::git@github.com:felipenoris/AWS-DataScience.git//terraform-modules/consumer-data?ref=consumer-data-v0.5.0"
 
   env    = var.env
   region = var.region

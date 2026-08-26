@@ -392,15 +392,17 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   standing `READWRITE` grants on `<sso-group>/*`. `12 added`, re-plan `No changes`, `sandboxlake.py`
   **11/11 pass**. The CMK now carries a 3rd Sid (`consumer-data-v0.3.0`'s input); **Development re-planned
   `No changes` across BOTH bumps** — 2.2's proof and the finding's attribution.
-- **THE APPLY FOUND SMUS AS A LAKE FORMATION ADMIN, AND NO GATE HERE CAN SEE IT (2026-08-26).**
-  `sandbox/data/`'s plan would have **stripped 2 admins** the service made for itself at the first project
-  (2026-08-22) + reset `allow_full_table_external_data_access`. **`DL-5` reads `parameters`, NOT `admins`** —
-  it surfaced only from an unrelated plan (Lesson 17 + Lesson 31's neighbour). **ADOPTED** by the user:
-  `consumer-data-v0.4.0`, two inputs defaulting empty/null. **A FOURTH admin is a principal nobody granted.**
-  **OQ 24** (NOT settled): whether a SMUS role *should* administer LF — it can grant itself anything in the
-  LOCAL catalog, and that catalog holds the resource links to `raw`/`curated`. **St.6's, not St.16's**, and
-  the seats cannot just be revoked (St.6's create path was measured AFTER they existed). Fix regardless:
-  **no gate here reads `admins`**.
+- **THE APPLY FOUND SMUS AS A LAKE FORMATION ADMIN IN SANDBOX (2026-08-26; 2 service roles, self-appointed
+  at the first project).** Surfaced only from an unrelated plan — `DL-5` reads `parameters`, not `admins`
+  (Lessons 17 + 31). Settled in TWO steps the same day: v0.4.0 ADOPTED the seats (froze the list — wrong,
+  the user's question caught it), **`consumer-data-v0.5.0` is the answer: ONE create-time admin +
+  `ignore_changes = [admins, allow_full_table_external_data_access]`** (the catalog.tf Iceberg shape,
+  Lesson 23). **MEASURED: 3 admins live, 1 declared, plan `No changes`** — and `-refresh=false` is the one
+  defeat, forbidden on that slice. **The plan's defence is REPLACED by `DL-13`** (datalake.py; first run:
+  producer+dev `pass`, sandbox `note` naming both seats): FAIL on the required seat missing, FAIL on a seat
+  nobody granted, `note` on the SMUS pair. **OQ 24** keeps the governance half: whether a SMUS role *should*
+  administer LF (it can grant itself anything in the LOCAL catalog, resource links to `raw`/`curated`
+  included) — St.6's residue; the seats cannot just be revoked (the create path was measured AFTER them).
 - **St.16 still owes 2.3 and passes 4-6.** **2.3's temporal window is GONE** (both of them), so it is now the
   CONTRAST pair — direct access refused, another group's prefix refused — blocked only on a persona SSO token
   + the tunnel. The **3 `SmusProject*` trust shapes are DOCUMENTATION**: `wired_projects` is EMPTY until 4.1.
