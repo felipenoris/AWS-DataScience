@@ -283,7 +283,7 @@ def main(argv: list) -> int:
         )
     else:
         problems = []
-        n_projects = 0
+        project_roles: set = set()
         trust_stmts = role.get("Role", {}).get("AssumeRolePolicyDocument", {}).get("Statement", [])
         trust_stmts = [trust_stmts] if isinstance(trust_stmts, dict) else trust_stmts
         for st in trust_stmts:
@@ -309,7 +309,11 @@ def main(argv: list) -> int:
             arns = [arns] if isinstance(arns, str) else arns
             for arn in arns:
                 if PROJECT_ROLE_PREFIX in arn:
-                    n_projects += 1
+                    # DISTINCT roles, not statements: each wired project contributes THREE
+                    # statements (Assume / SetSourceIdentity / TagSession) naming one role,
+                    # and a statement count read as a role count says "3 projects" where
+                    # one is wired (found on the first wiring, 2026-08-26).
+                    project_roles.add(arn.split("/")[-1])
                 else:
                     problems.append(f"unexpected AWS principal {arn.split('/')[-1]}")
         if problems:
@@ -323,7 +327,7 @@ def main(argv: list) -> int:
             checks.ok(
                 "SL-2",
                 f"trust of {ACCESS_ROLE}",
-                f"the Access Grants service plus {n_projects} enumerated project role(s)",
+                f"the Access Grants service plus {len(project_roles)} enumerated project role(s)",
             )
 
     # SL-3: the location - the bucket registered against the access role, once.

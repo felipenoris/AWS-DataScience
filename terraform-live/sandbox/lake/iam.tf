@@ -96,7 +96,7 @@ data "aws_iam_policy_document" "lake_access_trust" {
 
       principals {
         type        = "AWS"
-        identifiers = [statement.value.project_role_arn]
+        identifiers = ["arn:${data.aws_partition.current.partition}:iam::${data.aws_caller_identity.current.account_id}:role/${statement.value.project_role_name}"]
       }
 
       condition {
@@ -117,7 +117,7 @@ data "aws_iam_policy_document" "lake_access_trust" {
 
       principals {
         type        = "AWS"
-        identifiers = [statement.value.project_role_arn]
+        identifiers = ["arn:${data.aws_partition.current.partition}:iam::${data.aws_caller_identity.current.account_id}:role/${statement.value.project_role_name}"]
       }
 
       condition {
@@ -138,7 +138,7 @@ data "aws_iam_policy_document" "lake_access_trust" {
 
       principals {
         type        = "AWS"
-        identifiers = [statement.value.project_role_arn]
+        identifiers = ["arn:${data.aws_partition.current.partition}:iam::${data.aws_caller_identity.current.account_id}:role/${statement.value.project_role_name}"]
       }
 
       condition {

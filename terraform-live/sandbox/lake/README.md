@@ -81,7 +81,7 @@ portal form). One principal to name in the key policy, one session identity in e
 | `Sid` | Who, and under what condition |
 |---|---|
 | `AccessGrantsServiceVending` | `access-grants.s3.amazonaws.com` — `sts:AssumeRole` + `sts:SetSourceIdentity`, pinned by `aws:SourceAccount` **and** `aws:SourceArn` = this account's Access Grants **instance** ARN. The instance is **SMUS-born (2026-08-22) and stays service-owned** ([Lesson 17](../../../docs/plan/lessons.md)); its ARN is *built*, not read, because the provider has **no data source** for it — **and that is not a version lag**: checked 2026-08-26 against the provider's docs tree on `main` (ahead of the v6.61.0 release, carrying the unreleased 6.62.0), `website/docs/r/` has all three `s3control_access_grants_*` resources and `website/docs/d/` has none. Revision trigger: a `d/` page appearing |
-| `SmusProjectAssume<key>` | **per wired project**, from `var.wired_projects` — the project user role, `sts:AssumeRole` under `sts:ExternalId` = the project id |
+| `SmusProjectAssume<key>` | **per wired project**, from `var.wired_projects` — the project user role (entered by **NAME**, the ARN carries the account id and the table is tracked; the slice builds the ARN), `sts:AssumeRole` under `sts:ExternalId` = the project id |
 | `SmusProjectSourceIdentity<key>` | idem — `sts:SetSourceIdentity` matched to the caller's own `datazone:userId` principal tag |
 | `SmusProjectTagSession<key>` | idem — `sts:TagSession` with `aws:RequestTag/AmazonDataZoneProject` pinned to the project id |
 
@@ -89,8 +89,8 @@ portal form). One principal to name in the key policy, one session identity in e
 `sts:AssumeRole` alone **rejects** an assume that also sets tags or a source identity.
 
 **They are documentation-derived and unmeasured** until step 4.2 answers verification (ii) — AWS's
-connection documentation, read 2026-08-26. `var.wired_projects` starts **empty**, so nothing unmeasured
-is applied today; the first entry is written by the first wiring (§W). **Never a wildcard principal** —
+connection documentation, read 2026-08-26. The first entry was written 2026-08-26 (step 4.1, the Stage 6
+test project); wiring and unwiring are §W's and §R's. **Never a wildcard principal** —
 `SL-2` fails on one, and the enumeration *is* the register that makes §R's second half auditable.
 
 **Deliberately absent:** `sts:SetContext` — the directory-grantee path, which decision 2 declined so
