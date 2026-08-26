@@ -184,7 +184,7 @@ terraform-live/
 │   │                     #     resource links + local re-grants to the Data Governance
 │   │                     #     share (D22). ONE MODULE, consumer-data, shared with
 │   │                     #     development/data/. The lake itself is NOT here
-│   ├── lake/             # [P] the SANDBOX LAKE (Stage 16; ON DISK 2026-08-26, NOT APPLIED):
+│   ├── lake/             # [P] the SANDBOX LAKE (Stage 16, APPLIED 2026-08-26):
 │   │                     #     awsds-sandbox-lake, PERMANENT artifacts, one prefix per SSO
 │   │                     #     group, mounted into SMUS projects via S3 connections and
 │   │                     #     vended to laptops via S3 Access Grants. Deliberately neither

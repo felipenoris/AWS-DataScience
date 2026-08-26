@@ -5,9 +5,11 @@ The [Stage 16](../../../docs/plan/stages/stage-16-sandbox-lake.md) slice; the op
 `./aws/sandboxlake.py` (`SL-1`–`SL-5`) is what reads the result back. Applied as `awsds-infra-sandbox-1`
 — SSO user the **infrastructure user**, account **Sandbox**, permission set **`InfrastructureAccess`**.
 
-**WRITTEN 2026-08-26, NOT YET APPLIED.** Every row below describes what the code *declares*. The
-baseline reading of the same day says the bucket, the role, the location and the grants do not exist
-(`SL-1`–`SL-4` all `note`), and no sentence here may move into the perfect tense before an apply
+**APPLIED 2026-08-26** — `12 added, 0 changed, 0 destroyed`, re-plan `No changes`, `./aws/sandboxlake.py`
+**11/11 `pass`, 0 FAILED**. The bucket, the access role, the location `3b7613eb-…` and the three standing
+grants exist and read back. **What is still only declared is the per-project half**: `var.wired_projects`
+is empty, so the three `SmusProject*` trust statements below are documentation until step 4.2 measures or
+amends them, and no sentence about them may move into the perfect tense before it
 ([Lesson 37](../../../docs/plan/lessons.md)).
 
 ## What this bucket is, and what it is not
@@ -32,7 +34,7 @@ access role cannot be written before the role exists.
 |---|---|---|
 | 1 | `sandbox/data/` | already applied — it owns `alias/awsds-sandbox-data`, the CMK this bucket names |
 | 2 | `sandbox/lake/` | **this slice** — the bucket, the access role, the Access Grants location, the per-group grants |
-| 3 | `sandbox/data/` | **again** — the one key-policy statement admitting the access role (`consumer-data-v0.3.0`) |
+| 3 | `sandbox/data/` | **again** — the one key-policy statement admitting the access role (`consumer-data-v0.3.0`'s input). **Its first plan carried a second change nobody asked for** and stopped: SMUS had made itself a Lake Formation administrator in this account, and `admins` is replaced wholesale. `v0.4.0` adopts the two seats, after which the plan reduced to the key alone |
 
 `scripts/tfhygiene/layers.py`'s `lake` rank comment carries the same order; the rank itself cannot
 express it, because both slices are `[P]` and no `up`/`down` target ever acts on them.
@@ -46,11 +48,14 @@ Nothing in this file, on its own, lets any object in `awsds-sandbox-lake` be rea
 |---|---|---|
 | the Access **Grant** | `grants.tf` (here) | who may *ask* for a session, and over which sub-prefix |
 | the access role's **identity policy** | `iam.tf` (here) | what that session may do at all — one bucket, one key |
-| the **key policy** | `sandbox/data/`, via `consumer-data` `v0.3.0` | whether S3 may decrypt for it |
+| the **key policy** | `sandbox/data/`, via `consumer-data` (`v0.3.0`'s input, pinned `v0.4.0`) | whether S3 may decrypt for it — **`AllowSandboxLakeAccessRoleViaS3`, applied and read back 2026-08-26** |
 
 This is [Lesson 28](../../../docs/plan/lessons.md) in one slice: **no single file in this repository
-answers "what can this group do"**, and step 2.3's negative control exists to record the middle state
-where two of the three are in place and nothing works yet.
+answers "what can this group do"**. The estate passed through the state where two of the three were in
+place and nothing worked, on 2026-08-26, between the two applies — **unmeasured**, because the persona
+held no SSO token and the tunnel was down, and a probe off VPN would have been denied by
+`DenyControlPlaneOffVpn` instead (Lesson 24). Step 2.3 is therefore owed as a **contrast** rather than a
+temporal reading: direct access refused, another group's prefix refused.
 
 ## `main.tf` — the bucket
 
@@ -75,7 +80,7 @@ portal form). One principal to name in the key policy, one session identity in e
 
 | `Sid` | Who, and under what condition |
 |---|---|
-| `AccessGrantsServiceVending` | `access-grants.s3.amazonaws.com` — `sts:AssumeRole` + `sts:SetSourceIdentity`, pinned by `aws:SourceAccount` **and** `aws:SourceArn` = this account's Access Grants **instance** ARN. The instance is **SMUS-born (2026-08-22) and stays service-owned** ([Lesson 17](../../../docs/plan/lessons.md)); its ARN is *built*, not read, because `hashicorp/aws` v6.61.0 has **no data source** for it — measured, `terraform validate` names the absence |
+| `AccessGrantsServiceVending` | `access-grants.s3.amazonaws.com` — `sts:AssumeRole` + `sts:SetSourceIdentity`, pinned by `aws:SourceAccount` **and** `aws:SourceArn` = this account's Access Grants **instance** ARN. The instance is **SMUS-born (2026-08-22) and stays service-owned** ([Lesson 17](../../../docs/plan/lessons.md)); its ARN is *built*, not read, because the provider has **no data source** for it — **and that is not a version lag**: checked 2026-08-26 against the provider's docs tree on `main` (ahead of the v6.61.0 release, carrying the unreleased 6.62.0), `website/docs/r/` has all three `s3control_access_grants_*` resources and `website/docs/d/` has none. Revision trigger: a `d/` page appearing |
 | `SmusProjectAssume<key>` | **per wired project**, from `var.wired_projects` — the project user role, `sts:AssumeRole` under `sts:ExternalId` = the project id |
 | `SmusProjectSourceIdentity<key>` | idem — `sts:SetSourceIdentity` matched to the caller's own `datazone:userId` principal tag |
 | `SmusProjectTagSession<key>` | idem — `sts:TagSession` with `aws:RequestTag/AmazonDataZoneProject` pinned to the project id |
