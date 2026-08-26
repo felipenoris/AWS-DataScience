@@ -44,7 +44,7 @@ module "data_key" {
   # DataScientistAccess, and to nobody else.
   policy = jsonencode({
     Version = "2012-10-17"
-    Statement = [
+    Statement = concat([
       {
         # ADMINISTRATION ONLY - THE CRYPTOGRAPHIC ACTIONS ARE DELIBERATELY ABSENT, and this is
         # the difference between D31 being a control and being a comment.
@@ -111,6 +111,21 @@ module "data_key" {
           StringEquals = { "kms:ViaService" = "s3.${var.region}.amazonaws.com" }
         }
       },
-    ]
+      ],
+      # THE EXTENSION POINT THE STATEMENT ABOVE ASKED FOR, delivered on 2026-08-26 by the first
+      # caller that needed it (Stage 16 pass 2.2). Its comment predicted the shape - "a second
+      # element in the Principal list" - and the shape that actually arrived is a second
+      # STATEMENT, because the new reader is not the persona: it is an account-local service
+      # role whose ViaService pin and whose action set are its own, and folding it into the
+      # persona's Principal list would have made one statement mean two things.
+      #
+      # STRUCTURE IN THE MODULE, VALUES IN THE SLICE - the split vpc-egress-v0.3.0 made for the
+      # DNS allow-list, for the same reason: every consumer shares the shape of this key policy
+      # and none of them shares its extra readers. The default is EMPTY, so a consumer that adds
+      # nothing is byte-identical to what it had before the input existed, and its plan after
+      # the tag bump reads `No changes` - which is the proof the default protected it, not a
+      # hope about it.
+      var.additional_data_key_policy_statements,
+    )
   })
 }
