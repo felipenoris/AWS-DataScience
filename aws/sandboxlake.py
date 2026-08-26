@@ -72,6 +72,20 @@ DATA_KEY_ALIAS = "alias/awsds-sandbox-data"  # Stage 16 decision 1(a), GOVERNANC
 GROUP_PREFIX = "sso-group-"  # every lake prefix is one SSO group's folder
 PROJECT_ROLE_PREFIX = "datazone_usr_role_"  # SMUS project user roles
 PERSONA_MARK = "AWSReservedSSO_"  # reserved roles = permission-set principals
+
+# The checker's copy of var.tenants (terraform-live/sandbox/lake/variables.tf) - the group
+# name IS the prefix, and the pairing is the whole standing-grant contract. A checker
+# necessarily restates what it checks, and this divergence is LOUD by construction: a tenant
+# added to the slice without a mirror row here makes SL-4 FAIL on the new legitimate grant,
+# which is the direction that gets a human to read both files. What the pre-2026-08-26 shape
+# got wrong (found by step 6.1's sacrificial grant, the detector's first live anomaly): ANY
+# AWSReservedSSO_* grantee classified as standing - the operator's own role included - and
+# the detail printed '<group>/*' whatever the real sub-prefix was.
+TENANTS = {
+    "sso-group-data-scientists": "DataScientistAccess",
+    "sso-group-deployment-managers": "DeploymentManagerAccess",
+    "sso-group-dev-env-stewards": "DevEnvStewardAccess",
+}
 PERSONA_SET = "DataScientistAccess"  # SL-5: the set that must NOT allow the bucket directly
 
 ABSENT = (
@@ -394,7 +408,17 @@ def main(argv: list) -> int:
                 "admits group folders only.",
             )
         elif PERSONA_MARK in gname:
-            checks.ok("SL-4", f"grant {gid}", f"standing: {top}/* to {gname.split('_')[1]}")
+            pset = gname.split("_")[1] if "_" in gname else gname
+            if TENANTS.get(top) != pset or rel != f"{top}/*":
+                checks.fail(
+                    "SL-4",
+                    f"grant {gid}",
+                    f"'{rel}' to {pset} matches no tenant row - a standing grant is exactly "
+                    f"'<group>/*' to that group's own permission set (var.tenants); a reserved "
+                    "role outside the tenant table (the operator included) holds no prefix.",
+                )
+            else:
+                checks.ok("SL-4", f"grant {gid}", f"standing: {rel} to {pset}")
         elif gname.startswith(PROJECT_ROLE_PREFIX):
             if not roster_read:
                 checks.note(

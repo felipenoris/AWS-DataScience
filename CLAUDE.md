@@ -379,19 +379,22 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   on Sandbox's allow-list (portal sign-in fix; cannot fix shadowing; `DN-3` fails on the divergence).
   Design-B input RE-SCOPED 2026-08-25 (D5/D6 + objectives): the portal's public egress is the CLIENT
   plane's — B constrains COMPUTE only; A-vs-B = short whitelist vs empty, both behind the St.11 proxy (OQ 23).
-- **Stage 16 CREATED 2026-08-26 (user request): the SANDBOX LAKE.** `awsds-sandbox-lake`, PERMANENT
-  per-SSO-group prefixes, mounted into projects via the portal's **S3 connection** (documented: it
-  registers an AG **location**; the "access role ARN" is that location's role) and vended to laptops via
-  `s3-read-write` unchanged — a compensated SHADOW LAKE, five compensations in the stage file; St.11's
-  Macie + data-event scope amended the same sitting (Lesson 34). Pre-instrumented
-  `./aws/sandboxlake.py` (`SL-1`–`SL-5`); runbook `sandbox-lake.md` DRAFTED, UNEXERCISED. **Sandbox
-  only** (Development has no AG instance); bucket name a D35 singleton (OQ 10's sixth token).
-- **ST.16 PASSES 0-3 APPLIED 2026-08-26 (§"What ran" is the one record).** `awsds-sandbox-lake` exists:
-  26th slice, bucket (**no current-object expiry** — the only one), `awsds-sandbox-lake-access` (**ONE role =
-  AG location role AND connection access role**, boundary null by decision), location `3b7613eb-…`, **3**
-  standing `READWRITE` grants on `<sso-group>/*`. `12 added`, re-plan `No changes`, `sandboxlake.py`
-  **11/11 pass**. The CMK now carries a 3rd Sid (`consumer-data-v0.3.0`'s input); **Development re-planned
-  `No changes` across BOTH bumps** — 2.2's proof and the finding's attribution.
+- **STAGE 16 DONE 2026-08-26 — the SANDBOX LAKE: created, applied, exercised, closed and LOGGED in ONE
+  day** (stage file §"What ran" = the record; `docs/log/log-stage-16-sandbox-lake.md` written by Claude
+  on request, 6.3). **The standing state — bucket, ONE access role, location, 3+1 grants, wired project
+  `avhvbqn37ty7m8`, connection `sandbox-lake`, invariants — is `AWS_STATE.md`'s sandbox-lake row, not
+  here.** Facts that OUTLIVE the stage: **(1) the SMUS JupyterLab image ships
+  `aws_s3_access_grants_boto3_plugin` (1.3.0)** — every "direct" S3 call auto-vends, credential cache
+  included, so an in-image direct-refusal test is UNRUNNABLE and the laptop is that control's only home
+  (§T). **(2) Revocation timing (§R, measured on a sacrificial grant)**: the vend door closes between
+  **+1 s and +19 s** of the delete — a fresh 900 s bearer was minted INSIDE the window — and issued
+  credentials survive revocation to their own expiry (horizon = delete+propagation+duration). §R's
+  trust half UNEXERCISED (waits a real project death); (iv)'s object half waits St.11 data events.
+  **(3) `SL-4` hardened by its FIRST LIVE ANOMALY**: the old classifier took any `AWSReservedSSO_*`
+  grantee for a tenant; now: tenant table + exact `<group>/*` shape. **(4) A sacrificial-revoke
+  grantee must hold NO standing grant** — with a tenant grantee the standing `<group>/*` grant answers
+  every post-delete vend and the refusal is unmeasurable. Verification (ix): match `grant_scope`,
+  never `grants[0]` (the lake lists first).
 - **THE APPLY FOUND SMUS AS A LAKE FORMATION ADMIN IN SANDBOX (2026-08-26; 2 service roles, self-appointed
   at the first project).** Surfaced only from an unrelated plan — `DL-5` reads `parameters`, not `admins`
   (Lessons 17 + 31). Settled in TWO steps the same day: v0.4.0 ADOPTED the seats (froze the list — wrong,
@@ -403,31 +406,6 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   nobody granted, `note` on the SMUS pair. **OQ 24** keeps the governance half: whether a SMUS role *should*
   administer LF (it can grant itself anything in the LOCAL catalog, resource links to `raw`/`curated`
   included) — St.6's residue; the seats cannot just be revoked (the create path was measured AFTER them).
-- **St.16: 2.3 RAN 2026-08-26 (contrast form; the temporal windows had closed). THREE refusals, THREE
-  layers, attributed by wording alone**: direct-as-persona = *"no identity-based policy"* (implicit;
-  SL-5 proven behaviourally), other-group vend = the GRANT REGISTER's own shape (names prefix+permission,
-  no policy vocabulary), vended-session-out-of-scope = *"no session policy"* (the scope-down). Own-prefix
-  vend SUCCEEDED, identity = `awsds-sandbox-lake-access/access-grants-…` — the ONE role. **Pass 5 RAN the same sitting**: `s3-read-write`
-  UNCHANGED, write/list/read-back clean on `sso-group-data-scientists/` (the bucket's first object, kept),
-  vend = the ACCESS role (project path vends the PROJECT role — the recorded difference), **KMS half
-  CLOSED by head-object naming the data CMK** (`aws:kms`, bucket key on). **Verification (ix): YES — with
-  2 grants the lake lists FIRST, so `grants[0]` silently switches buckets; README caveat added** (match
-  `grant_scope`, never position). **4.1 RAN: first project WIRED** (trust entry applied +
-  grant `18229b9a-…`; `sandboxlake.py` 12/12; `wired_projects` takes the role NAME — an ARN in that
-  tracked table would carry the account id). **4.2-4.4 RAN: the connection
-  (`sandbox-lake`) worked FIRST TRY** — 4 fields, no extra, no `S3AG*` complaint (the 2.1 omission is
-  measured sufficient); location REUSED, no SMUS-born grant. **CloudTrail (full JSON — the ResourceName
-  lookup index misses service assumes, Lesson 13) measured BOTH doors**: direct assume (ExternalId +
-  session tags → `Assume`+`TagSession` EXERCISED, `SetSourceIdentity` attached-not-exercised) and the
-  `GetDataAccess` vend. Every bucket session = the ACCESS role. (ii)-(vi) answered; (iv)'s object-level
-  half waits on St.11 data events. **4.4's in-project readings RAN the same evening — PASS 4 DONE**:
-  out-of-scope vend refused BOTH channels (the one refused `GetDataAccess` is the one with no service
-  assume; answered vends ↔ assumes 1:1); the "direct" probe is a FINDING — **the SMUS JupyterLab image
-  ships `aws_s3_access_grants_boto3_plugin` (1.3.0), auto-vending every S3 call with credential
-  caching**, so the in-image direct-refusal test is UNRUNNABLE (Lesson 30's shape); proof = the KMS
-  discriminator (plaintext through a key no identity policy can decrypt) + the project role reading back
-  ZERO policies naming the lake. Vended-only holds; the direct refusal's proof stays the LAPTOP's (2.3;
-  runbook §T amended). **Still owed: pass 6.**
 - **Standing St.6 mechanics:** a blueprint configuration is applied **from the MEMBER account** (the
   Put takes no account param); `awscc`'s carries **`environment_role_permission_boundary`** and the
   `aws` resource does not (INT-15's mechanism, Lesson 8); **an EXISTING configuration is IMMUTABLE
