@@ -76,6 +76,38 @@ exists once something is written under it):
 | `derived/${aws:userid}/` | materialised copies of query results | **per principal** — `PutObject` carries the policy variable, so a copy can only land under its author's prefix | **persona-wide** (`GetObject` on `derived/*`, decision 6's grain) — the prefix governs where a copy lands, not who may read it; other personas are kept out by the account data CMK | nobody — the 30-day expiry is the only deleter |
 | `scratch/` | the notebook's working files — a downloaded CSV, an intermediate feature, a model checkpoint | the persona | the persona | the persona — the **only** prefix with `s3:DeleteObject`. `DeleteObjectVersion` is not granted, so versioning keeps the truth under every delete marker |
 
+### The projects bucket — the third family, and the one with no expiry
+
+**`awsds-<env>-smus-projects`, one per Interactive member account** (Stage 6, `sagemaker-prereqs`
+v0.3.2). It is listed here because the 2026-08-26 reading made it a **designed destination for derived
+data** rather than a scratch area for a service: the Tooling blueprint gives each project its own Athena
+workgroup with `EnforceWorkGroupConfiguration = true` and an output location **inside this bucket** —
+`<domain-id>/<project-id>/dev/sys/athena/` — so query results computed over governed lake data land
+here, not in the derived zone. Stage 6 decision 6's fourth-destination branch, pre-declared and now
+fired.
+
+Where it stands against the derived zone's four differences:
+
+- the CMK is the account's **project** key, `alias/awsds-<env>-project`, not its data key — the
+  deliberate exception §Encryption names, confirmed by measurement 2026-08-26;
+- **nothing expires.** The house module gives it versioning, a 90-day *noncurrent* expiry and MPU abort;
+  no rule touches a current object. This is the one difference that is a **gap rather than a design** —
+  the derived zone sheds at 30 days precisely so a copy is not permanent, and this bucket holds the same
+  class of data forever. **Owed: an expiry, decided against the project lifecycle rather than copied from
+  the 30 days** (a project's working storage is not a query result) — **open question 25**, whose second
+  half is who reaps an orphaned prefix at all;
+- **deleting a project does not delete its prefix.** Measured 2026-08-26: five project prefixes stood
+  against one live project — four orphans, one carrying a complete `.git` tree and a notebook. So a data
+  scientist's work outlives the project that governed it, with no principal designated to remove it and
+  no rule that ages it out. Combined with the previous point, the accumulation is unbounded;
+- **nothing here is LF-registered**, same as the derived zone: plain IAM, the key policy, and — since
+  2026-08-23 — S3 Access Grants over the project prefix (`docs/SMUS.md` §S3 item 1a).
+
+**Stage 11 inherits both points**: this bucket belongs in the Macie scan scope and the data-event trail
+map, and it is written into that stage's step 1 and step 5 because Stage 11 cannot discover a
+destination nothing points at — the same reason `consumer-data/buckets.tf` declares its own scope in
+code.
+
 ## Encryption — one data CMK per account
 
 **Every data bucket encrypts SSE-KMS under the data CMK of the account it lives in** — decided
