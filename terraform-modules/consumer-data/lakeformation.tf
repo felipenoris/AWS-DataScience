@@ -48,29 +48,55 @@
 #      neighbour). Development, which has no project yet, still re-plans `No changes` - which is
 #      what attributes the cause.
 #
-#      THE ANSWER IS ADOPTION, NOT REMOVAL, taken by the user 2026-08-26. Applying the narrow
-#      list would strip live administrators from the service whose create path Stage 6 measured
-#      AFTER they existed; and removing them from the code does not remove them from AWS, it
-#      only makes every future plan fight the service. So both are inputs below, and the
-#      account that has a project declares them.
+#      THE ANSWER IS THE lifecycle BLOCK BELOW, AND IT IS THE SECOND ANSWER THIS QUESTION GOT
+#      (v0.5.0, 2026-08-26, the same day). v0.4.0 ADOPTED the two seats as inputs, which stopped
+#      the deletion and was still wrong in the way that matters: it froze the list as it stood,
+#      so a seat the service adds TOMORROW is deleted by the next apply of this slice - the same
+#      failure one seat further out. Adoption answered "which values", when the question was
+#      "whose attribute". So the inputs are gone again and the ownership is declared instead.
 #
-#      WHAT ADOPTION DOES NOT SETTLE, said here rather than implied: whether a SMUS provisioning
-#      role SHOULD be a Lake Formation administrator is a governance question - an administrator
-#      can grant itself anything in the local catalog, the resource links to the governed lake
-#      included. That is a Stage 6 residue and an open question, not something this module
-#      decides by carrying a variable.
+#      WHAT THE lifecycle BLOCK COSTS, said plainly because it is not nothing: Terraform stops
+#      DEFENDING the list. An administrator nobody granted no longer appears as a plan diff -
+#      which is where it never appeared anyway, DL-5 reading `parameters` and not `admins` - and,
+#      more seriously, the loss of var.data_lake_admin_role_arn ITSELF would go unnoticed here,
+#      and that seat is load-bearing (measured 2026-08-19: an account with no administrator sees
+#      an EMPTY catalog while holding its shares). So the plan's defence is REPLACED, not
+#      dropped: ./aws/datalake.py DL-13 reads the list, fails on the required seat's absence and
+#      reports every other one. A check is the better instrument regardless - a plan diff only
+#      appears when somebody happens to plan this slice.
+#
+#      WHAT NONE OF THIS SETTLES, said here rather than implied: whether a SMUS provisioning role
+#      SHOULD be a Lake Formation administrator - an administrator can grant itself anything in
+#      the local catalog, the resource links to the governed lake included. That is open question
+#      24, filed against Stage 6, whose act created them.
 
 resource "aws_lakeformation_data_lake_settings" "this" {
-  admins = concat([var.data_lake_admin_role_arn], var.additional_data_lake_admin_role_arns)
-
-  # NULL LEAVES IT UNDECLARED, which is this resource's own default and what every consumer
-  # without a SMUS project wants. It is an input rather than a constant because the value is
-  # not ours: it is read back from the account that has one.
-  allow_full_table_external_data_access = var.allow_full_table_external_data_access
+  # THE CREATE-TIME LIST, and only that. One administrator is what a consumer account needs to
+  # become a Lake Formation account at all; whatever the services in it add afterwards is
+  # theirs, per the lifecycle block below.
+  admins = [var.data_lake_admin_role_arn]
 
   parameters = {
     CROSS_ACCOUNT_VERSION = "4"
     SET_CONTEXT           = "TRUE"
+  }
+
+  # THE SAME SHAPE data-governance/data/catalog.tf USES FOR ICEBERG'S COLUMN MIRROR, and the
+  # same sentence with two words changed: Terraform keeps this resource's EXISTENCE, its
+  # `parameters` and its cleared create-defaults; the ADMIN LIST goes through the service.
+  # Hazard 3 above is the whole argument.
+  #
+  # WHY IGNORING IS SAFE ON A RESOURCE THAT WRITES THE WHOLE STRUCTURE: an ignored attribute is
+  # planned from PRIOR STATE, which refresh has just filled from AWS - so an update triggered by
+  # some other attribute writes the list BACK as it found it, rather than as this file imagines
+  # it. The one way to defeat that is `apply -refresh=false`, which would send a stale list; do
+  # not use it on this slice.
+  #
+  # MEASURED, NOT BELIEVED (2026-08-26): with Sandbox holding THREE administrators live and this
+  # config declaring ONE, the plan reads `No changes`. That reading is the property itself, and
+  # it is the reason the two v0.4.0 inputs could be removed rather than merely stopped being used.
+  lifecycle {
+    ignore_changes = [admins, allow_full_table_external_data_access]
   }
 }
 
