@@ -39,7 +39,7 @@ serving path.
 
 ## W. Wire a project — as projects appear
 
-**Never yet exercised — Stage 16 step 4.1/4.2 is this section's first run.**
+**First exercised 2026-08-26 (Stage 16 steps 4.1-4.2): steps 1-5 all ran, the connection worked first try with the four fields, and CloudTrail showed the trust's direct-assume door (ExternalId + session tags) AND the vend door both in use.** §R remains unexercised.
 
 A project's access is three acts: a grant, a trust entry, a connection. The first two are the
 infrastructure user's; the third is done in the portal, by a project member or the operator with them.
@@ -68,11 +68,12 @@ infrastructure user's; the third is done in the portal, by a project member or t
    builds the ARN itself, and a second validation holds name and project id consistent. The trust is
    enumerated by design; a wildcard there is `SL-2`'s finding.
 
-4. **Create the connection, in the portal** — observed as the Data area's *Add S3 location*, documented
-   as **Connections → Create connection → Amazon S3** (whether they are one form is Stage 16 step 4.2's
-   reading): **Name**, URI `s3://awsds-sandbox-lake/<sso-group>/`, Region `us-west-2`, and the access
-   role picked from the dropdown (`awsds-sandbox-lake-access`). Any field the form demands beyond those
-   four is recorded (Lesson 39).
+4. **Create the connection, in the portal**: **Name**, URI `s3://awsds-sandbox-lake/<sso-group>/`,
+   Region `us-west-2`, and the access role picked from the dropdown (`awsds-sandbox-lake-access`).
+   **Measured 2026-08-26 (first run): those four fields are the whole form** — nothing extra was
+   demanded, and creation raised no `S3AG*`/`iam:PassRole` complaint, so the access role's deliberate
+   omission of the location-management statements stands measured. A future field beyond these four is
+   recorded (Lesson 39).
 
 5. **Register the pair** in `docs/AWS_STATE.md` (the vending discipline: a grant nobody registered reads
    as drift), and re-run `./aws/sandboxlake.py` — the only acceptable ending is `SL-1`–`SL-5` pass.
