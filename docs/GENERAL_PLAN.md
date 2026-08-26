@@ -95,7 +95,12 @@ These come from `CLAUDE.md` and constrain every stage:
    measured): the VPN is the only entry to the private network and the AWS control plane; the Unified
    Studio portal's user ingress was measured reachable off-VPN** (`README.md` item 3 carries the full
    statement; the closing choice — fallback (i) on the domain execution role versus recorded acceptance —
-   is the user's, deferred, and presumed nowhere).
+   is the user's, deferred, and presumed nowhere). **Re-grounded 2026-08-25: the requirement side is now
+   explicit in `docs/plan/objectives.md`** — the client reaches the organization's cloud infrastructure
+   only through the VPN, and once connected, *all* of the client's internet (the portal's public names
+   included) runs through the cloud's own egress behind an institutional HTTP/HTTPS proxy (D5/D6 revised;
+   Stage 11; open question 23 owns the topology). The measured off-VPN gap is unchanged; what changed is
+   that accepting it would now be recording a deviation from a stated objective.
 5. **Incremental.** Each stage must leave the environment in a working, verifiable state.
 6. **Cost is a first-class constraint.** This is a personal account. Every stage lists its recurring cost and,
    where relevant, a cheaper alternative.
@@ -148,7 +153,7 @@ its **Consumes** row names; that is the whole reading list.
 | [8 — CI/CD pipelines](plan/stages/stage-08-cicd-pipelines.md) | The three pipeline types and the promotion gate | not started |
 | [9 — Deployment targets](plan/stages/stage-09-deployment-targets.md) | Staging and Production platforms, Model Registry, the producer path | not started |
 | [10 — Orchestration](plan/stages/stage-10-orchestration-promotion.md) | Both orchestrators (D7) built and compared, end-to-end promotion | not started |
-| [11 — DLP](plan/stages/stage-11-dlp.md) | Macie, the LF data cells filters, the Access Analyzer collection, data-event trails and exfiltration alarms, GuardDuty's paid features — and the threat model, `docs/plan/threat-model.md` | not started — **revised 2026-08-17** into the action-checklist format, pre-instrumented by `./aws/dlp.py` |
+| [11 — DLP](plan/stages/stage-11-dlp.md) | Macie, the LF data cells filters, the Access Analyzer collection, data-event trails and exfiltration alarms, GuardDuty's paid features — and the threat model, `docs/plan/threat-model.md`. **Since 2026-08-25 also the client plane's egress control**: the single-egress HTTP/HTTPS proxy of the objectives clarification (open question 23 owns its topology) | not started — **revised 2026-08-17** into the action-checklist format, pre-instrumented by `./aws/dlp.py` |
 | [12 — Observability and FinOps](plan/stages/stage-12-observability-finops.md) | Dashboards, alarms, cost attribution against the real bill | not started |
 | [13 — Public web tier](plan/stages/stage-13-public-web-tier.md) | The public-facing experiment in front of a private backend — **and the only stage with public DNS** (D15 phase 2) | not started |
 | [14 — Sandbox vending](plan/stages/stage-14-sandbox-vending.md) | A business unit's `Sandbox` account from one name (D35) | not started |

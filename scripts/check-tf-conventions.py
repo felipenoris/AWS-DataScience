@@ -83,12 +83,22 @@ def main(argv: list) -> int:
         fail = 1
         print(f"  FAIL  {text}")
 
-    def report(pattern: str, remedy: str) -> None:
-        hits = [f"  {path}:{n}: {line}" for path, n, line in scan_code_lines(files, pattern)]
+    def report(pattern: str, remedy: str, allow_marker: str | None = None) -> None:
+        hits, allowed = [], []
+        for path, n, line in scan_code_lines(files, pattern):
+            if allow_marker and allow_marker in line:
+                allowed.append(f"  allow {path}:{n}: {line.strip()}")
+            else:
+                hits.append(f"  {path}:{n}: {line}")
+        # Allowed lines are PRINTED, never silently skipped - the same discipline as
+        # check-iam-wildcards.py: an exception that disappears from the output is an
+        # exception nobody re-reads.
+        if allowed:
+            print("\n".join(allowed))
         if hits:
             print("\n".join(hits))
             bad(remedy)
-        else:
+        elif not allowed:
             say("  none")
 
     say(f"== scanning {len(files)} .tf file(s) under: {' '.join(targets)} ==")
@@ -101,7 +111,18 @@ def main(argv: list) -> int:
 
     say()
     say("== A. region and AZ literals ==")
-    report(REGION_RE, "use var.region; the one allowed literal is backend.hcl (step 2.5)")
+    # The ONE sanctioned inline exception, and it is a marker with a reason, not a skip:
+    # a code line may carry `# region:aws-pinned <why>` when the literal is AWS's OWN
+    # single-Region pin (the page says "available only in us-east-1") - a fact var.region
+    # cannot express and D1's portability rule was never about. First users: the console's
+    # uxc/freetier endpoints and the measured account.us-east-1 host, on the Sandbox DNS
+    # allow-list (2026-08-25). The line is still
+    # printed, as `allow`, so the exception stays visible on every run.
+    report(
+        REGION_RE,
+        "use var.region; the one allowed literal is backend.hcl (step 2.5)",
+        allow_marker="region:aws-pinned",
+    )
 
     say()
     say("== B. availability zone selected by index ==")

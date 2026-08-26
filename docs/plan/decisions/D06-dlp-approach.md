@@ -1,6 +1,7 @@
 # D6 — DLP approach
 
-**Status:** Decided (2026-08-07): **native AWS combination**, on top of a data perimeter
+**Status:** Decided (2026-08-07): **native AWS combination**, on top of a data perimeter — **egress-control
+leg widened 2026-08-25 to the two-plane model** (see the last section)
 
 **In one line:** DLP is four problems with four native controls on top of the data perimeter, and IAM Access Analyzer is the one component that checks the others instead of adding to them.
 
@@ -29,6 +30,21 @@ verification half of two of the four problems, and of the perimeter beneath them
 | **External access** | Which resources are reachable from outside the organization — the perimeter's trusted-identities axis (`docs/plan/architecture.md` §4.2), **including the resource types no RCP covers**, where it is not a check on the perimeter but the only control there is | Free, org-wide from Audit — **Stage 1b step 8.2** |
 | **Internal access** | Which principals *inside* the organization can reach a named bucket — i.e. **D13**'s claim that execution roles hold no direct S3 path to Lake Formation-registered prefixes, and the containment **D19** asserts around the derived zone | Paid per resource-month — **evaluated in Stage 11** |
 | **Unused access** | Permissions granted to roles and permission sets and never exercised, against least privilege | Paid per principal-month — **Stage 12** |
+
+**Revised 2026-08-25 — the egress-control leg covers two planes, and the user's clarification closed the
+circuit the third one had left open** (`docs/plan/objectives.md` carries the requirement text; D5 carries
+the compute half). Egress control was written above as "D5 plus the SageMaker VPC-only domain", which is
+one plane: the **compute's**. The clarification adds the **client plane** — the laptop reaches the
+organization's cloud infrastructure only through the VPN, and once connected, *all* of its internet runs
+through the cloud's single egress behind an institutional **HTTP/HTTPS proxy** (Stage 11; topology is
+open question 23). What makes this DLP rather than networking is the circuit it closes: in the modelled
+institution only institution-owned laptops hold a VPN peer, and those laptops carry their own endpoint
+DLP (a Microsoft 365 service) — so data pulled out of SageMaker *by any means, file download to the
+laptop included*, still sits inside a monitored perimeter: SageMaker's own filter (D5), then the
+institutional proxy, then the endpoint DLP on the only devices that can connect.
+`docs/plan/institutional-delta.md`'s device-trust row is the sentence about what the lab's VPN does and
+does not stand in for here — the lab has no managed endpoint, so its VPN is the *observation* and the
+endpoint controls remain the institution's half.
 
 **Two boundaries, because both are easy to get wrong.** First, Access Analyzer reports **reachability, never
 movement**: a finding says a path exists, not that a byte travelled — so it does not shorten the exfiltration-

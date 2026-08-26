@@ -363,6 +363,22 @@ onwards the file records how the environment changed, not just the plan.
   still names nothing, and that the answer deliberately waits for pass 4d's first behavioural persona
   queries — nothing was changed about the account or the chain.
 
+- **2026-08-25 — D5 and D6 re-scoped by the user's clarification: two egress planes, one proxy.**
+  `objectives.md` gained the requirement in the user's words (client internet through the cloud's
+  egress once on the VPN; an institutional HTTP/HTTPS proxy; a single egress point for the whole
+  cloud; the compute-vs-client scope of the SageMaker restriction; Microsoft 365 endpoint DLP on the
+  institution laptops that alone can hold a VPN peer). Consequences propagated the same sitting:
+  D5 now governs the **SageMaker-managed compute only** — (A) a short whitelist versus (B) an empty
+  one, both ultimately behind the proxy (two filters); D6's egress-control leg covers both planes;
+  `architecture.md` §4.3's 2026-08-24 "hard limit of (B)" was re-scoped (the portal's public-internet
+  need is the client plane's — the limit was real, the plane was wrong), and §4.3a's "a requirement
+  nothing in objectives.md states" is false as of this date — an HTTP/HTTPS proxy is the stated
+  target (its shape and topology are open question 23's, its build Stage 11's). Provisioned things this
+  touches: the two Interactive `egress/` slices (their NATs become the recorded *interim* of the
+  single-egress target; nothing was applied), and the Sandbox DNS allow-list gained the portal/console
+  public-name families in the same sitting (the user's `*` kept first, deliberately, so removing it
+  becomes an experiment instead of a breakage — `EXC-06`'s exit path).
+
 ---
 
 *Plan core: [GENERAL_PLAN.md](../GENERAL_PLAN.md) · Decisions: [docs/plan/decisions/INDEX.md](decisions/INDEX.md) · Stages: [docs/plan/stages/INDEX.md](stages/INDEX.md)*

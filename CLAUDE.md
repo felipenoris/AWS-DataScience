@@ -368,7 +368,8 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   `datazone` from both `extra_services`** (prediction to measure at apply: the app's calls move to the
   NAT — today CloudTrail shows them on the endpoint). Meanwhile **`EXC-06`**: the user's deliberate `*`
   on Sandbox's allow-list (portal sign-in fix; cannot fix shadowing; `DN-3` fails on the divergence).
-  Design-B input, first-order: **the SMUS portal cannot run without public egress** (architecture.md §4.3a note).
+  Design-B input RE-SCOPED 2026-08-25 (D5/D6 + objectives): the portal's public egress is the CLIENT
+  plane's — B constrains COMPUTE only; A-vs-B = short whitelist vs empty, both behind the St.11 proxy (OQ 23).
 - **Standing St.6 mechanics:** a blueprint configuration is applied **from the MEMBER account** (the
   Put takes no account param); `awscc`'s carries **`environment_role_permission_boundary`** and the
   `aws` resource does not (INT-15's mechanism, Lesson 8); **an EXISTING configuration is IMMUTABLE
@@ -394,7 +395,7 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
 - **Deferred by decision — do not offer to close:** the USD 50 budget notifies nobody (D12); open
   question 10 waits for N=2; Config recorder left alone, Management unrecorded (Stage 12 hooks).
   **Every governed account sits under `us-west-2`.**
-- **All 37 decisions closed** (D30 as a revert). **Still needed from the user: the domain name**
+- **All 37 decisions closed** (D30 as a revert; **D5/D6 re-scoped 2026-08-25** — two egress planes, one proxy). **Still needed from the user: the domain name**
   (blocks Stage 13). **Settle earliest:** INT-13 (INT-11's vending half closed at 4d, 2026-08-19).
 - **The repository is not documentation-only:** read-only `aws/` scripts, both Terraform trees, `scripts/`,
   the `Makefile`, the `pre-commit`/`tflint`/`checkov`/`ruff` gates. **Every script is Python 3 on `uv`** —

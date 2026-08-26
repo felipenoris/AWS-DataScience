@@ -1047,6 +1047,12 @@ core endpoint list (its verification (ii)). Both from the flow logs of a working
 the app-hours), what breaks in a normal session, how long the "I need package X right now" loop takes
 under each (design B's loop includes the Stage 8 gate once it exists), and what a deliberate exfiltration
 attempt achieves (DNS-name filtering is bypassable by raw IP under A; B has no path to misuse).
+**Re-framed 2026-08-25 (D5 re-scoped by the user's clarification):** the comparison is about the
+**compute plane only** — the portal experience is the client plane's, served through the VPN's egress
+(the institutional proxy once built — open question 23), and is *out of scope of this verdict*; (A) versus (B) is a short whitelist versus an empty one on
+the same mechanism; and both designs' allowed traffic will ultimately cross the institutional HTTP/HTTPS
+proxy (open question 23), so the friction being measured here is SageMaker's *additional* filter, not the
+whole path.
 
 **6.2 — Write the verdict into `docs/plan/architecture.md` §4.3 and close D5** — **mark the rebuild-loop
 number provisional**: it is measured against a hand-built image here and re-measured against the Stage 8

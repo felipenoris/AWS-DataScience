@@ -12,6 +12,18 @@ The goal is to achieve the following:
 
 - All user access to the cloud infrastructure will be performed through a VPN.
 
+- Once connected to the VPN, all of the client's internet access will go through an egress inside the
+  AWS cloud *(added 2026-08-25)*. This has two implications, both tied to the DLP objective (Stage 11):
+  (1) the client can reach the organization's cloud infrastructure only while connected to the VPN;
+  (2) all internet access will be monitored — there will be an HTTP/HTTPS proxy between the
+  VPN-connected client and the cloud's internet egress. Once on the VPN, the user can therefore use the
+  browser to reach the internet, which includes the SageMaker portal and the public links that are usage
+  requirements of SageMaker (the network-isolation guide's public-internet-access section). In the
+  real-world institution this models, only institution-owned laptops can connect to the VPN, and those
+  laptops carry their own endpoint DLP (a Microsoft 365 service) — so requiring the VPN closes the
+  circuit: nothing extracted through SageMaker, even by downloading files to the laptop, leaves the
+  institution unmonitored.
+
 - Use SageMaker Unified Studio as a development tool for Data Scientists.
 
 - The main features Data Scientists can use inside SageMaker Unified Studio to develop data-science products are:
@@ -34,6 +46,18 @@ The goal is to achieve the following:
 	- exfiltration detection: detect and alert on abnormal data access or data movement.
 
 - SageMaker should have access to the internet. We'll explore implementing some restrictions, keeping the possibility of software updates, installing packages, and accessing a few websites.
+
+  *Clarified 2026-08-25 — scope and mechanism:* the restriction is on the **SageMaker-managed compute**,
+  never on the user's (client's) machine — the client, on the VPN, has monitored internet through the
+  institutional proxy (see the VPN bullet above). The compute's restriction is stricter: under D5's
+  design (A) only a few sites are allowed, for downloading programming-language packages and perhaps
+  data from providers associated with data-science work; under design (B) the compute's internet access
+  is fully blocked, packages arriving through the image and CodeArtifact as D5 already describes. The
+  difference between (B) and (A) is small: with an internet whitelist, (B) is the empty list and (A) a
+  short one. The SageMaker compute also has access to "intranet" resources, which includes this lab's
+  GitLab instance. And the whole cloud will have a **single internet egress point and a single
+  HTTP/HTTPS proxy**: even a site on SageMaker's whitelist is reached through that proxy — two filters,
+  the institutional proxy's and SageMaker's stricter one on top.
 
 - Use GitLab hosted on AWS for source-code control, accessible only through intranet (VPN), not facing public internet.
 

@@ -630,7 +630,12 @@ reached *from*, not where it runs — open question 12, Stage 6 step 1.6).
   requires the public internet** — client assets, client APIs (`agent.datazone.<region>.api.aws`
   among them), the IdC sign-in endpoints — while an interface endpoint's private zone shadows exactly
   such subdomains (`NETWORK.md` §5, the measured break). A no-egress VPC can host the *apps*; it
-  cannot host the *portal experience*, by AWS's own documentation.
+  cannot host the *portal experience*, by AWS's own documentation — **and since 2026-08-25 the portal
+  experience is assigned to the CLIENT plane by requirement** (the objectives clarification; D5
+  re-scoped): the user's browser is to reach those public names through the VPN's egress — monitored by
+  the institutional HTTP/HTTPS proxy once Stage 11 builds it (today the plain masquerade; nothing
+  monitored is built) — never through the compute VPC's — what the compute
+  VPC owes the portal is only that its endpoints not shadow the client's DNS.
 - One required entry cannot be satisfied in-Region: the `q` row pairs with
   `com.amazonaws.us-east-1.codewhisperer`, *available only in `us-east-1`* — a `us-west-2` VPC
   cannot reach it through an interface endpoint at all (Stage 6 step 4.2 records what that breaks).

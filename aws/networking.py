@@ -111,11 +111,12 @@ AF_CIDR = "172.31.0.0/16"
 # the region's ~569 services, NO entry serves the SMUS portal's BROWSER surfaces - the
 # on.aws portal itself, its CloudFront assets, agent.datazone.<region>.api.aws,
 # sagemaker-unified-studio.<region>.api.aws - so no endpoint set reaches the portal
-# privately and public egress stays REQUIRED for it (architecture.md §4.3a's design-B
-# input). An absence cannot be listed, so the check pins the families the missing door
-# would appear IN: if AWS ships one the way it shipped Console Private Access (the
-# console/signin rows of section 10), the membership moves and NT-9 goes red - the signal
-# to re-read the premise, never a network failure.
+# privately and public egress stays REQUIRED for it - served by the CLIENT plane's
+# proxied egress under the 2026-08-25 re-scope (architecture.md §4.3; OQ 23), never by
+# either D5 compute design. An absence cannot be listed, so the check pins the families
+# the missing door would appear IN: if AWS ships one the way it shipped Console Private
+# Access (the console/signin rows of section 10), the membership moves and NT-9 goes red
+# - the signal to re-read the CLIENT-plane design (OQ 23), never a network failure.
 PORTAL_FAMILY_BASELINE = {
     "datazone": {"datazone", "datazone-fips"},
     "sagemaker-unified-studio": {"sagemaker-unified-studio-mcp"},
@@ -1169,7 +1170,8 @@ catalog - serves the SMUS portal's BROWSER surfaces: the on.aws portal itself,
 its CloudFront assets, agent.datazone.<region>.api.aws,
 sagemaker-unified-studio.<region>.api.aws. So NO endpoint set reaches the
 portal privately, and public egress stays required for it whatever the VPC
-configuration (architecture.md §4.3a - the design-B input). The console /
+configuration - the CLIENT plane's egress serves it under the 2026-08-25
+re-scope (architecture.md §4.3; OQ 23), never either D5 compute design. The console /
 console-static / signin rows are the PRECEDENT, not a dependency: AWS builds
 private doors for browser surfaces one at a time (Console Private Access), the
 SMUS portal has none yet, and NT-9 pins the families such a door would appear

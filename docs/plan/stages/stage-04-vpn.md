@@ -71,8 +71,11 @@ flowchart LR
 negative INT-16 is not an argument against the VPN — roles 1 and 2 stand, and role 2 was re-proven the
 same day by a console call refused *in an identity-based policy* in the very sitting the portal opened
 — it is an instruction to restate the objective with precision ("through the VPN" holds for the private
-network and the control plane, not the portal), which is exactly fallback (ii) of that row. `README.md`
-now says so in those terms.
+network and the control plane, not the portal), which is exactly fallback (ii) of that row — **overtaken
+2026-08-25 by the objectives clarification**: client access to the cloud infrastructure, the portal
+included, is now *stated* as VPN-only, so the precise restatement is no longer (ii)'s acceptance;
+INT-16's revised row and `README.md` item 3 carry the current form (acceptance would record a deviation
+from a stated objective), and the choice is still open and the user's.
 
 ## Who executes each action
 
