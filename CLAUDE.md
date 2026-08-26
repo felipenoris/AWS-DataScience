@@ -397,8 +397,10 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   (2026-08-22) + reset `allow_full_table_external_data_access`. **`DL-5` reads `parameters`, NOT `admins`** —
   it surfaced only from an unrelated plan (Lesson 17 + Lesson 31's neighbour). **ADOPTED** by the user:
   `consumer-data-v0.4.0`, two inputs defaulting empty/null. **A FOURTH admin is a principal nobody granted.**
-  Open residue, NOT settled: whether a SMUS provisioning role *should* administer LF (it can grant itself
-  anything in the local catalog, resource links included) — St.6's, not St.16's.
+  **OQ 24** (NOT settled): whether a SMUS role *should* administer LF — it can grant itself anything in the
+  LOCAL catalog, and that catalog holds the resource links to `raw`/`curated`. **St.6's, not St.16's**, and
+  the seats cannot just be revoked (St.6's create path was measured AFTER they existed). Fix regardless:
+  **no gate here reads `admins`**.
 - **St.16 still owes 2.3 and passes 4-6.** **2.3's temporal window is GONE** (both of them), so it is now the
   CONTRAST pair — direct access refused, another group's prefix refused — blocked only on a persona SSO token
   + the tunnel. The **3 `SmusProject*` trust shapes are DOCUMENTATION**: `wired_projects` is EMPTY until 4.1.

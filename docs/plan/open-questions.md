@@ -612,6 +612,38 @@ length, under item numbers 10-12 that collided with the live items above; the du
     outbound endpoint is 2 ENIs, ~USD 0.25/h — measured against this estate's whole endpoint bill), or
     accept a managed-browser policy as the control (`institutional-delta.md`'s device-trust row).
 
+24. **Should a SageMaker Unified Studio service role be a Lake Formation data lake administrator?**
+    Nobody decided that it should be, and in Sandbox two of them are. Found 2026-08-26, while Stage 16
+    planned an unrelated key-policy statement: `awsds-sandbox-smus-manage-access` and
+    `awsds-sandbox-smus-provisioning` sit in `DataLakeSettings.DataLakeAdmins` beside
+    `InfrastructureAccess`, with `allow_full_table_external_data_access = true` beside them. The service
+    put them there when the first project in the account was created (2026-08-22) — Lesson 17, a service
+    that sets itself up creates principals nobody chose.
+
+    **Two things make this a question rather than a defect to close.** First, an LF data lake
+    administrator can grant itself anything in the LOCAL catalog, and this account's local catalog holds
+    the resource links to `raw` and `curated` — so the seats reach the governed lake's shared objects
+    through a door D13's model never described. Second, they cannot simply be revoked: the Stage 6
+    create path was measured END TO END **after** they existed, so removing them is a change to a path
+    this estate's whole SMUS surface stands on, and the measurement would have to be redone.
+
+    **What was done instead, 2026-08-26 (the user's decision): ADOPTION.** `consumer-data-v0.4.0` carries
+    both as inputs defaulting to empty and null, `sandbox/data/` declares them, and a plan no longer
+    proposes to strip them. That stops Terraform fighting the service; it settles nothing about whether
+    the seats should exist.
+
+    **What answering it needs:** a reading of what those two roles actually DO with the seat (the trail,
+    over a project's lifecycle — provisioning, manage-access, a subscription), and then either a recorded
+    acceptance or a narrower mechanism if AWS offers one. **Where it belongs:** Stage 6, whose act created
+    them, not Stage 16, which only made a plan that noticed.
+
+    **One thing to fix regardless of the answer, and it is small:** `DL-5` reads
+    `DataLakeSettings.Parameters` and not `admins`, so **no gate in this repository can see this class of
+    drift at all** — it surfaced only because a plan ran for another reason (Lesson 31's neighbour: a
+    check keeps reading `pass` about the scope it was written for while the design spreads past it). An
+    `admins` reading belongs beside `DL-5`; `AWS_STATE.md`'s section C now says a fourth administrator is
+    a principal nobody granted, which is the invariant such a check would enforce.
+
 ---
 
 *Plan core: [GENERAL_PLAN.md](../GENERAL_PLAN.md) · Decisions: [docs/plan/decisions/INDEX.md](decisions/INDEX.md) · Stages: [docs/plan/stages/INDEX.md](stages/INDEX.md)*
