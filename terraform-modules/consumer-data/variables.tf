@@ -57,3 +57,15 @@ variable "additional_data_key_policy_statements" {
   type        = any
   default     = []
 }
+
+variable "additional_data_lake_admin_role_arns" {
+  description = "Data lake administrators BESIDES var.data_lake_admin_role_arn - concat()ed into `admins`, which this resource replaces wholesale. Empty by default. It exists because SageMaker Unified Studio adds its own two service roles when the first project in an account is created (found 2026-08-26, Sandbox; Development has no project and still re-plans `No changes`), and a narrow list would strip them on the next apply. ADOPTION, not endorsement: whether a SMUS provisioning role should administer Lake Formation is a Stage 6 governance question this variable does not answer."
+  type        = list(string)
+  default     = []
+}
+
+variable "allow_full_table_external_data_access" {
+  description = "The DataLakeSettings flag of the same name. NULL - the default - leaves it undeclared, which is what a consumer with no SMUS project wants. Sandbox reads back `true`, set by the service alongside the two administrators above; the value is adopted rather than chosen, and it is an input because it is read from the account, not decided here."
+  type        = bool
+  default     = null
+}

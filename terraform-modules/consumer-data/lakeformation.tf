@@ -36,8 +36,37 @@
 #      Pass 1 measured that omission clears, in this provider version. That reading did not
 #      retire the split (Lesson 27) and does not retire it here either.
 
+#   3. A THIRD HAZARD, FOUND 2026-08-26 AND OF A DIFFERENT KIND - the two above are about what
+#      this resource OMITS, this one is about what it DISPLACES. `admins` is a list, replaced
+#      wholesale like `parameters`, and SageMaker Unified Studio ADDS ITSELF to it: the first
+#      project created in Sandbox (2026-08-22) left awsds-sandbox-smus-manage-access and
+#      awsds-sandbox-smus-provisioning standing as data lake administrators, and set
+#      allow_full_table_external_data_access to true beside them. Nobody in this repository
+#      asked for either (Lesson 17 - a service that sets itself up creates principals nobody
+#      chose), and NO GATE HERE COULD SEE IT: DL-5 reads `parameters` and not `admins`, so the
+#      drift surfaced only because Stage 16 ran a plan for an unrelated reason (Lesson 31's
+#      neighbour). Development, which has no project yet, still re-plans `No changes` - which is
+#      what attributes the cause.
+#
+#      THE ANSWER IS ADOPTION, NOT REMOVAL, taken by the user 2026-08-26. Applying the narrow
+#      list would strip live administrators from the service whose create path Stage 6 measured
+#      AFTER they existed; and removing them from the code does not remove them from AWS, it
+#      only makes every future plan fight the service. So both are inputs below, and the
+#      account that has a project declares them.
+#
+#      WHAT ADOPTION DOES NOT SETTLE, said here rather than implied: whether a SMUS provisioning
+#      role SHOULD be a Lake Formation administrator is a governance question - an administrator
+#      can grant itself anything in the local catalog, the resource links to the governed lake
+#      included. That is a Stage 6 residue and an open question, not something this module
+#      decides by carrying a variable.
+
 resource "aws_lakeformation_data_lake_settings" "this" {
-  admins = [var.data_lake_admin_role_arn]
+  admins = concat([var.data_lake_admin_role_arn], var.additional_data_lake_admin_role_arns)
+
+  # NULL LEAVES IT UNDECLARED, which is this resource's own default and what every consumer
+  # without a SMUS project wants. It is an input rather than a constant because the value is
+  # not ours: it is read back from the account that has one.
+  allow_full_table_external_data_access = var.allow_full_table_external_data_access
 
   parameters = {
     CROSS_ACCOUNT_VERSION = "4"
