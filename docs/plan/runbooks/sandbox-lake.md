@@ -3,10 +3,10 @@
 | | |
 |---|---|
 | **Scope** | The fourth Sandbox bucket, `awsds-sandbox-lake` — permanent per-SSO-group artifacts — and every recurring act its life needs: the prefix contract, wiring a SageMaker Unified Studio project to a prefix (the portal's **S3 connection**), the two read/write tests, and revocation when a project dies. The build itself is [Stage 16](../stages/stage-16-sandbox-lake.md)'s, once; this file is what runs *per project*, forever |
-| **Operator** | §W and §R: the **infrastructure user** — account **Sandbox**, permission set **`InfrastructureAccess`**, profile `awsds-infra-sandbox-1`; every write is authorized per occurrence. §T's in-project half: a **data-scientist persona, in the portal**, no CLI. §T's out-of-project half: a Sandbox SSO user through [`s3-read-write/`](../../../s3-read-write/README.md), profile `awsds-scientist-sandbox`, on the VPN |
+| **Operator** | §W and §R: the **infrastructure user** — account **Sandbox**, permission set **`InfrastructureAccess`**, profile `awsds-infra-sandbox-1`; every write is authorized per occurrence. §T's in-project half: a **data-scientist persona, in the portal**, no CLI. §T's out-of-project half: a Sandbox SSO user through [`s3-read-write/`](../../../s3-read-write/README.md), profile `awsds-scientist-sandbox`, on the VPN. §P: the tenant's own code — a wired project's notebook, or the laptop as the group's SSO user on the VPN |
 | **The two rules** | **This is not the governed lake**: nothing here is catalogued, LF-tagged or granted through Lake Formation — the governed lake's questions belong to [`data-governance/data/README.md`](../../../terraform-live/data-governance/data/README.md), and moving data between the two is a deliberate act (§G), never a mount. **A project's access is a pair of registered objects** — a grant and a trust entry — so it dies with the project or §R is owed; an orphaned grant is `SL-4`'s finding and the orphaned trust half surfaces under `SL-2`, neither of them housekeeping |
 | **The picture around it** | Why the bucket exists and what its existence costs: the stage file's own argument. What is *expected* on the instance at any moment: [`docs/AWS_STATE.md`](../../AWS_STATE.md)'s lake-bucket and vending rows. The instrument: `./aws/sandboxlake.py` (`SL-1`–`SL-5`), the first thing to run when anything here surprises |
-| **Written** | 2026-08-26, **at Stage 16 planning — every command below is a design read from AWS's documentation (the 2026-08-26 rows of [`docs/REFERENCES.md`](../../REFERENCES.md)) and NONE has been exercised.** Stage 16 passes 4-6 are what turn each section from design into procedure; the markers below fall as the dates arrive (Lesson 37) |
+| **Written** | 2026-08-26, at Stage 16 planning, as designs read from AWS's documentation (the 2026-08-26 rows of [`docs/REFERENCES.md`](../../REFERENCES.md)) — and **exercised the same day**: §W (steps 4.1-4.2), §T's both halves (4.4 and 5.1, with the in-image amendment the exercise forced), §R's **grant half** (6.1, sacrificial; the **trust half** waits a real project's death), §P added after the readings at the user's request. Each section's own marker carries its date and its limits (Lesson 37) |
 
 ---
 
@@ -39,7 +39,7 @@ serving path.
 
 ## W. Wire a project — as projects appear
 
-**First exercised 2026-08-26 (Stage 16 steps 4.1-4.2): steps 1-5 all ran, the connection worked first try with the four fields, and CloudTrail showed the trust's direct-assume door (ExternalId + session tags) AND the vend door both in use.** §R remains unexercised.
+**First exercised 2026-08-26 (Stage 16 steps 4.1-4.2): steps 1-5 all ran, the connection worked first try with the four fields, and CloudTrail showed the trust's direct-assume door (ExternalId + session tags) AND the vend door both in use.** §R's grant half followed the same day (6.1); its trust half waits a real project's death.
 
 A project's access is three acts: a grant, a trust entry, a connection. The first two are the
 infrastructure user's; the third is done in the portal, by a project member or the operator with them.
@@ -102,6 +102,94 @@ forced, below.**
   is the diagnostic if a vend surprises). The persona's *direct* `aws s3` call on the bucket must still
   refuse — vended-only is the design, this is its negative control, and **the laptop is the only place
   it is runnable**: no plugin sits in that path.
+
+## P. Python — list, read, write
+
+*For the tenant's own code — a notebook cell or a laptop script. Added 2026-08-26 at the user's
+request, after the stage's readings; every claim below carries the measurement it rides on.*
+
+**Two contexts, opposite rules, both measured 2026-08-26.** Inside a SMUS JupyterLab, the image ships
+`aws_s3_access_grants_boto3_plugin`, which calls `GetDataAccess` underneath every plain boto3 S3 call —
+so plain code is the whole answer and an explicit vend is unnecessary. On the laptop no plugin exists:
+the explicit vend is the **only** door, because a direct call is refused (§T's negative control). Both
+paths end in the same place — a session of `awsds-sandbox-lake-access`, scoped down to the grant's
+prefix, expiring.
+
+### In a SMUS notebook — plain boto3; the plugin vends underneath
+
+Works where the project is wired (§W): the plugin rides the **project role's** grant.
+
+```python
+import boto3
+
+BUCKET = "awsds-sandbox-lake"
+PREFIX = "sso-group-data-scientists/"  # your group's folder (§G), trailing slash included
+
+s3 = boto3.client("s3")
+
+# write
+s3.put_object(Bucket=BUCKET, Key=PREFIX + "demo/hello.txt", Body=b"hello")
+
+# list (paginate - list_objects_v2 pages at 1000 keys)
+for page in s3.get_paginator("list_objects_v2").paginate(Bucket=BUCKET, Prefix=PREFIX):
+    for obj in page.get("Contents", []):
+        print(obj["Key"], obj["Size"])
+
+# read
+body = s3.get_object(Bucket=BUCKET, Key=PREFIX + "demo/hello.txt")["Body"].read()
+```
+
+Asking outside the granted prefix raises `AccessDenied` **in the grant register's wording** — *"You do
+not have READWRITE permissions to the requested S3 Prefix"* — not a policy's; that is the vend being
+refused, relayed. The plugin caches credentials, so most calls show no fresh `GetDataAccess` in the
+trail (step 4.4's reading).
+
+### On the laptop — the explicit vend is the only door
+
+Preconditions: **VPN up**, signed in as the group's SSO user — for `sso-group-data-scientists`, profile
+`awsds-scientist-sandbox` (account **Sandbox**, permission set **`DataScientistAccess`** — today the
+only set carrying the vending policy, §G).
+
+```python
+import boto3
+
+BUCKET = "awsds-sandbox-lake"
+GROUP = "sso-group-data-scientists"  # your group (§G)
+
+sess = boto3.Session(profile_name="awsds-scientist-sandbox")
+acct = sess.client("sts").get_caller_identity()["Account"]
+
+c = sess.client("s3control").get_data_access(
+    AccountId=acct,
+    Target=f"s3://{BUCKET}/{GROUP}/*",
+    Permission="READWRITE",  # or READ - request only what the task needs
+    Privilege="Default",
+)["Credentials"]  # dies at c["Expiration"] (~1 h default); nothing renews it - re-vend
+
+lake = boto3.Session(
+    aws_access_key_id=c["AccessKeyId"],
+    aws_secret_access_key=c["SecretAccessKey"],
+    aws_session_token=c["SessionToken"],
+).client("s3")
+
+lake.put_object(Bucket=BUCKET, Key=f"{GROUP}/demo/hello.txt", Body=b"hello")
+print(lake.list_objects_v2(Bucket=BUCKET, Prefix=f"{GROUP}/")["KeyCount"])
+print(lake.get_object(Bucket=BUCKET, Key=f"{GROUP}/demo/hello.txt")["Body"].read())
+```
+
+Four facts to code against, each measured at Stage 16:
+
+- **The vend is not optional here.** The persona session's direct S3 call on this bucket is refused —
+  *"no identity-based policy allows"* (2.3) — and that refusal is the design, not a misconfiguration.
+- **The session is the access role**, `awsds-sandbox-lake-access/access-grants-…`, scoped to the
+  grant: a call outside the prefix fails *"no session policy allows"* (2.3, reading 8).
+- **Expiry is the only end.** Credentials die at `c["Expiration"]` and at nothing else — 6.1 measured
+  them surviving even the grant's revocation until that instant — so long jobs re-vend; nothing
+  refreshes a bearer.
+- **The maintained form of this flow is [`s3-read-write/`](../../../s3-read-write/README.md)**
+  (discover → vend → demo). If you discover with `ListCallerAccessGrants` instead of naming the
+  target, match `grant_scope` — never take `grants[0]`: with two grants discoverable, the lake lists
+  first and the positional default silently switches buckets (verification (ix)).
 
 ## R. Revoke — when a project dies
 
