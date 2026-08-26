@@ -123,9 +123,10 @@ from s3_read_write import s3, vending
 
 persona = boto3.Session(profile_name="awsds-scientist-sandbox")
 
-# Which project prefixes can I reach? (no ids needed up front)
+# Which prefixes can I reach? (no ids needed up front)
 grants = vending.list_caller_grants(persona)
-target = grants[0]["grant_scope"]  # s3://awsds-sandbox-smus-projects/dzd-.../<project>/shared/*
+target = grants[0]["grant_scope"]  # fine with ONE grant - read the caveat below
+
 
 # Trade the persona session for a prefix-scoped project-role session.
 project = vending.scoped_session(persona, target)
@@ -137,6 +138,16 @@ s3.read_object_bytes(project, bucket, f"{prefix}hello.txt")
 s3.upload_file(project, "local.csv", bucket, f"{prefix}local.csv")
 s3.download_file(project, bucket, f"{prefix}local.csv", "roundtrip.csv")
 ```
+
+**`grants[0]` stopped being a safe default on 2026-08-26.** Discovery now returns more than one
+grant for a data scientist in Sandbox — the per-group *sandbox lake* prefix
+(`s3://awsds-sandbox-lake/<sso-group>/*`, Stage 16) is listed **beside** the project-storage one, and
+the two vend **different identities** (the lake's dedicated access role versus the project role) into
+**different buckets** under different rules. Taking the first element silently picks whichever the
+service happens to list first — measured 2026-08-26: the lake grant came first, so code written when
+one grant existed would have started writing to a different bucket without a single line changing.
+**Pick the target by matching `grant_scope`**, never by position; `examples/demo.py --target` is the
+same rule on the command line.
 
 Conventions follow the reference project [`benes3`](https://github.com/felipenoris/benes3):
 every public function takes a pre-authenticated `boto3.Session` as its first parameter —

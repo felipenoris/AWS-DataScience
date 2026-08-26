@@ -407,9 +407,13 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   layers, attributed by wording alone**: direct-as-persona = *"no identity-based policy"* (implicit;
   SL-5 proven behaviourally), other-group vend = the GRANT REGISTER's own shape (names prefix+permission,
   no policy vocabulary), vended-session-out-of-scope = *"no session policy"* (the scope-down). Own-prefix
-  vend SUCCEEDED, identity = `awsds-sandbox-lake-access/access-grants-…` — the ONE role. **KMS half
-  deliberately unproven — pass 5's first real write.** **Still owed: passes 4-6**; the **3 `SmusProject*`
-  trust shapes are DOCUMENTATION**: `wired_projects` is EMPTY until 4.1.
+  vend SUCCEEDED, identity = `awsds-sandbox-lake-access/access-grants-…` — the ONE role. **Pass 5 RAN the same sitting**: `s3-read-write`
+  UNCHANGED, write/list/read-back clean on `sso-group-data-scientists/` (the bucket's first object, kept),
+  vend = the ACCESS role (project path vends the PROJECT role — the recorded difference), **KMS half
+  CLOSED by head-object naming the data CMK** (`aws:kms`, bucket key on). **Verification (ix): YES — with
+  2 grants the lake lists FIRST, so `grants[0]` silently switches buckets; README caveat added** (match
+  `grant_scope`, never position). **Still owed: passes 4 and 6**; the **3 `SmusProject*` trust shapes are
+  DOCUMENTATION**: `wired_projects` is EMPTY until 4.1.
 - **Standing St.6 mechanics:** a blueprint configuration is applied **from the MEMBER account** (the
   Put takes no account param); `awscc`'s carries **`environment_role_permission_boundary`** and the
   `aws` resource does not (INT-15's mechanism, Lesson 8); **an EXISTING configuration is IMMUTABLE
