@@ -105,7 +105,17 @@ forced, below.**
 
 ## R. Revoke — when a project dies
 
-**Never yet exercised — Stage 16 step 6.1 is this section's first run, against a sacrificial grant.**
+**The grant half was first exercised 2026-08-26 (Stage 16 step 6.1), against a sacrificial grant — the
+trust half stays unexercised until a real project dies** (the sacrificial grantee had no trust entry to
+remove). Three timings from that run, measured, not believed: **the vend door does not close with the
+delete** — a re-vend still answered at **+1 s** (minting a fresh 900 s bearer *after* the deletion) and
+refused at **+19 s**, so the propagation window is under twenty seconds and more than one; and
+**already-vended credentials survive revocation entirely** — forty seconds after the delete they
+listed, read and **deleted** an object, dying only at their own expiry. The residual horizon is
+therefore `delete + propagation + duration`, not the credentials outstanding at the delete.
+One shape note: a sacrificial grant for this exercise must use a grantee holding **no standing grant**
+(the run used the operator's own reserved role) — with a tenant grantee, the standing `<group>/*` grant
+answers every post-delete re-vend and the refusal is unmeasurable.
 
 The reverse of §W, in the same order it can be read — and **both halves, always**: a grant deleted with
 its trust entry left behind is a half-executed §R no check reads (`SL-2` sees a live role's entry as

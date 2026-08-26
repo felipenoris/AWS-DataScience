@@ -48,6 +48,7 @@ column below exists so that no stage ever requires reading another stage's log.
 | Stage 13 — Public-facing web tier | — | *no entries yet* |
 | Stage 14 — Per-business-unit Sandbox vending | — | *no entries yet* |
 | Stage 15 — GuardDuty org-wide | — | *no entries yet* |
+| Stage 16 — The sandbox lake | [log-stage-16-sandbox-lake.md](log-stage-16-sandbox-lake.md) | **One dated section, 2026-08-26 — the whole stage in one day, four sittings, written by Claude at pass 6's close on the user's request**: the three applies and the Lake Formation admin-seat finding (`v0.4.0` adoption → `v0.5.0` ownership), the contrast pair and the laptop test, the project wiring with the connection form's four fields and the CloudTrail both-doors reading, the notebook readings verbatim (the auto-vend plugin finding), and the revoke exercise — `SL-4`'s defect found and fixed against the live anomaly, the ≤19 s vend-door window, the bearer residual exercised through expiry |
 
 ## How an entry gets written — two modes, both requested
 
