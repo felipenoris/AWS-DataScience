@@ -120,11 +120,37 @@ discount, not a measurement window).
   derived buckets** — every `awsds-<env>-derived` that exists at run time (D19 practice iv — the map of
   decision 3, from `GOVERNANCE.md` §Derived zone's pre-declared scope) **plus `awsds-sandbox-lake`**
   (on decision 3's map since 2026-08-26 — Stage 16's permanent per-group store, the highest-value
-  discovery target precisely because nothing in it expires); **sampling
+  discovery target precisely because nothing in it expires) **plus each
+  `awsds-<env>-smus-projects`** (added 2026-08-26 by Stage 6 step 2.4's reading — see the callout after
+  this step); **sampling
   depth** per decision 1 (the cost lever: GB inspected × USD 1.00); **managed data identifiers** = the
   recommended default set, no custom identifiers; job type **one-time** — re-run deliberately, never
   scheduled. **The wizard's discovery-results repository prompt is decision 2** — answer it from the log,
   not at the keyboard.
+
+> **THE PROJECTS BUCKET JOINED THIS SCOPE ON 2026-08-26, FROM A STAGE 6 READING, AND IT IS THE HARDEST
+> TARGET ON THE LIST.** `awsds-<env>-smus-projects` (one per Interactive member) was believed to be a
+> service's working area. It is not: the Tooling blueprint gives each project an **enforced** Athena
+> workgroup whose output location is `<domain-id>/<project-id>/dev/sys/athena/` **inside this bucket**,
+> so query results computed over governed lake data land here — a fourth designed destination
+> (`docs/GOVERNANCE.md` §Persistence's third family). Two properties make it worse than the derived zone
+> for discovery, and both are measured rather than feared:
+>
+> - **Nothing expires.** Versioning, a 90-day noncurrent expiry, MPU abort — and no rule on current
+>   objects. The derived zone sheds at 30 days; this one accumulates.
+> - **Deleting a project does not delete its prefix.** Five project prefixes stood against **one** live
+>   project, one orphan carrying a whole `.git` tree and a notebook. So the scan target includes the work
+>   of projects that no longer exist and that no console lists — the exact shape this stage cannot
+>   discover for itself, which is why it is written down here.
+>
+> Both are **open question 25** (the expiry, and who reaps an orphan). If it is settled before this stage
+> runs, re-read the scope: an expiry short enough would change what a discovery job over this bucket is
+> even scanning.
+>
+> Consequence for **1.3**: the job scope names the bucket, not a prefix — an orphan prefix is invisible to
+> any scope written from the live project list. Consequence for **step 5**: it belongs on the
+> monitored-bucket map with the derived buckets, and it is the one whose data events will not thin out
+> over time.
 - **1.4 — [user] Route the findings**: in Macie's settings, turn on publication of **sensitive-data
   findings to Security Hub** (policy findings publish automatically once both services are on), and extend
   Audit's Stage 15 step 4 EventBridge→SNS rule to Macie findings — console-built, like the rule it
@@ -336,7 +362,10 @@ are free) with the rule's `MatchedEvents` metric — no CloudWatch Logs ingestio
   `resources.type = AWS::S3::Object`, `resources.ARN` starts-with the account's monitored buckets (the
   decision 3 map: lake + drop-box in Data Governance; the derived bucket in each consumer account;
   **`awsds-sandbox-lake` in Sandbox** since 2026-08-26 — its reads are the exfiltration signal for the
-  one store where artifacts persist) —
+  one store where artifacts persist; **`awsds-<env>-smus-projects` in each Interactive member** since the
+  same date — Stage 6 step 2.4's reading made it a designed destination for query results over governed
+  data, and it is the only monitored bucket whose contents never expire, orphaned project prefixes
+  included) —
   **no management-event selector**, reads and writes both, log file validation on. Delivery: all three
   cross-account into **`awsds-data-logs`** under `AWSLogs/<account>/` (decision 7), with the bucket-policy
   statements for `cloudtrail.amazonaws.com` conditioned on `aws:SourceAccount` ∈ the three account ids —
