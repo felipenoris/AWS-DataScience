@@ -386,18 +386,22 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   Macie + data-event scope amended the same sitting (Lesson 34). Pre-instrumented
   `./aws/sandboxlake.py` (`SL-1`–`SL-5`); runbook `sandbox-lake.md` DRAFTED, UNEXERCISED. **Sandbox
   only** (Development has no AG instance); bucket name a D35 singleton (OQ 10's sixth token).
-- **St.16 PASS 0 DONE, PASSES 1-2 WRITTEN AND NOT APPLIED (2026-08-26; §"What ran" is the one record).**
-  **The account data CMK has NO delegate-to-IAM statement** — root holds the admin actions and no
-  cryptographic one — so 2.2's statement is the ONLY way the access role is admitted, and 2.3's negative
-  control should name **KMS**, not S3. The D13 boundary names no lake bucket, and its ViaService deny
-  covers the LAKE account's key alone. `sandbox/lake/` on disk (26th slice): bucket (no expiry, no bucket
-  policy), `awsds-sandbox-lake-access` (**one role = AG location role AND connection access role**), AG
-  location + **3** grants; `consumer-data-v0.3.0` adds `additional_data_key_policy_statements` (default
-  `[]`, Development re-plans `No changes`). **Order is data → lake → data** — KMS validates key-policy
-  principals. **The AG instance has NO data source in aws v6.61** (only the managed resource, which must
-  not be declared): the trust's `aws:SourceArn` is BUILT. **The 3 `SmusProject*` trust statements are
-  documentation-only until 4.2** — `wired_projects` is EMPTY. Roster measured: three tenant groups,
-  `sso-group-infrastructure` is the OPERATOR and takes no prefix.
+- **ST.16 PASSES 0-3 APPLIED 2026-08-26 (§"What ran" is the one record).** `awsds-sandbox-lake` exists:
+  26th slice, bucket (**no current-object expiry** — the only one), `awsds-sandbox-lake-access` (**ONE role =
+  AG location role AND connection access role**, boundary null by decision), location `3b7613eb-…`, **3**
+  standing `READWRITE` grants on `<sso-group>/*`. `12 added`, re-plan `No changes`, `sandboxlake.py`
+  **11/11 pass**. The CMK now carries a 3rd Sid (`consumer-data-v0.3.0`'s input); **Development re-planned
+  `No changes` across BOTH bumps** — 2.2's proof and the finding's attribution.
+- **THE APPLY FOUND SMUS AS A LAKE FORMATION ADMIN, AND NO GATE HERE CAN SEE IT (2026-08-26).**
+  `sandbox/data/`'s plan would have **stripped 2 admins** the service made for itself at the first project
+  (2026-08-22) + reset `allow_full_table_external_data_access`. **`DL-5` reads `parameters`, NOT `admins`** —
+  it surfaced only from an unrelated plan (Lesson 17 + Lesson 31's neighbour). **ADOPTED** by the user:
+  `consumer-data-v0.4.0`, two inputs defaulting empty/null. **A FOURTH admin is a principal nobody granted.**
+  Open residue, NOT settled: whether a SMUS provisioning role *should* administer LF (it can grant itself
+  anything in the local catalog, resource links included) — St.6's, not St.16's.
+- **St.16 still owes 2.3 and passes 4-6.** **2.3's temporal window is GONE** (both of them), so it is now the
+  CONTRAST pair — direct access refused, another group's prefix refused — blocked only on a persona SSO token
+  + the tunnel. The **3 `SmusProject*` trust shapes are DOCUMENTATION**: `wired_projects` is EMPTY until 4.1.
 - **Standing St.6 mechanics:** a blueprint configuration is applied **from the MEMBER account** (the
   Put takes no account param); `awscc`'s carries **`environment_role_permission_boundary`** and the
   `aws` resource does not (INT-15's mechanism, Lesson 8); **an EXISTING configuration is IMMUTABLE
