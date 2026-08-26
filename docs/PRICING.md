@@ -285,8 +285,10 @@ one Stage 12 step 5 measures against the real bill — this is arithmetic over l
 | Inter-region transfer to the other region | 0.16/GB out of São Paulo | 0.02/GB into São Paulo | asymmetric |
 
 **Typical Sandbox hour** (its endpoints + one Studio app + WireGuard, plus the NAT under design A):
-design A `sa-east-1` **≈ 0.46/h**, `us-west-2` **≈ 0.23/h**; design B **≈ 0.40** and **≈ 0.20**
-(each up by one endpoint since 2026-08-21 — `datazone`, Stage 6 step 4.2).
+design A `sa-east-1` **≈ 0.44/h**, `us-west-2` **≈ 0.22/h**; design B **≈ 0.40** and **≈ 0.20**
+(both were up one endpoint — `datazone`, Stage 6 step 4.2 — from 2026-08-21; **design A came back down on
+2026-08-25** when it was removed, by exactly one endpoint at the rate above. **Design B keeps it**: with no
+NAT there is no other path to DataZone, so B's figures do not move).
 
 **Full-stack hour** (a design-A Sandbox + GitLab + its ALB + Production's NAT **and its endpoints**):
 `sa-east-1` **≈ 0.91/h**, `us-west-2` **≈ 0.47/h**.

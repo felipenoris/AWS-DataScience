@@ -579,7 +579,7 @@ its data plane needs (under design B, a missing `athena`/`glue` means no query e
 
   | Candidate | Account | Trigger |
   |---|---|---|
-  | `datazone` | Interactive | if VPC-only project apps call the domain for project context. **Verify at Stage 6** and add it there |
+  | `datazone` | Interactive | ~~if VPC-only project apps call the domain for project context. **Verify at Stage 6** and add it there~~ — **VERIFIED AND ANSWERED NO for design A** (added 2026-08-21, removed 2026-08-25, issue #39): under A the apps reach the domain through the NAT, and the endpoint's private zone shadows the portal name the client needs. **Design B must add it** — it has no NAT |
   | `ssm` + `ssmmessages` + `ec2messages` | Production | the first time you need into the GitLab host outside a build window (its NAT is `[E]`). +0.030/h |
   | `secretsmanager` | Production | `gitlab-secrets.json` (Stage 7 step 1), same NAT caveat |
   | `monitoring` | any | if the CloudWatch agent on a private-subnet host cannot push metrics |

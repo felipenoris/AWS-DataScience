@@ -41,8 +41,8 @@ count, and this is the thing that makes it scale — **three KMS CMKs** at ~USD 
 D31 account data key, and the project CMK `alias/awsds-<env>-project` that the unit's `sagemaker/` slice
 creates — a unit's Sandbox is an Interactive account, so it is both a data consumer and a host for SMUS
 projects), and, on the hourly side and
-dominating everything else, **one full set of interface VPC endpoints**: 12 under design A, 14 under B, at
-~USD 0.010/h each, so ~USD 0.12-0.14 per hour that unit is working. So a unit is roughly **+USD 3.5-5.5 on the floor** and **+~USD 0.16
+dominating everything else, **one full set of interface VPC endpoints**: 11 under design A, 14 under B, at
+~USD 0.010/h each, so ~USD 0.11-0.14 per hour that unit is working. So a unit is roughly **+USD 3.5-5.5 on the floor** and **+~USD 0.16
 per active hour** — against a USD 50 ceiling whose planning number already has about USD 7 of headroom, which
 means the **second** unit is affordable and the third is a budget decision, not a formality.
 
@@ -68,7 +68,7 @@ Two cost levers worth applying rather than discovering later:
 | Item | Approx. USD/h |
 |---|---|
 | NAT Gateway (1) + its public IPv4 | ~0.050 + 0.045/GB processed — **zero under egress design B** (`docs/plan/architecture.md` §4.3) |
-| **Interface VPC endpoints — per account, single AZ (D9)** | ~0.010 each. The list is per account role, not one list (Stage 3 step 8): **Sandbox** 12 (14 under design B; 11/13 between 2026-08-17, when `elasticfilesystem` left with the NFS requirement, and 2026-08-21, when `datazone` joined at Stage 6 step 4.2), **Development** 12 (14), **Staging** 9, **Production** 10-12. Double if spread across 2 AZs. **The Sandbox line is per business unit (D35)** — this is the term that multiplies |
+| **Interface VPC endpoints — per account, single AZ (D9)** | ~0.010 each. The list is per account role, not one list (Stage 3 step 8): **Sandbox** **11** (14 under design B — the one entry B keeps and A dropped; 12 between 2026-08-21, when `datazone` joined at Stage 6 step 4.2, and 2026-08-25, when it left; 11 before that, since `elasticfilesystem` went with the NFS requirement on 2026-08-17), **Development** **11** (14), **Staging** 9, **Production** 10-12. Double if spread across 2 AZs. **The Sandbox line is per business unit (D35)** — this is the term that multiplies |
 | GitLab EC2 `t4g.large` | ~0.067 (`t3.large` would be ~0.083) |
 | Internal ALB in front of GitLab/Pages (only while GitLab is up) | ~0.023 + LCU usage |
 | **Production `egress/`** (only while runner builds or orchestration need it) | NAT ~0.050 + **endpoints ~0.100-0.120** — the endpoint half was missing from every earlier version of this table |
