@@ -4,19 +4,26 @@ The Stage 5 pass 4 module ([stage file](../../docs/plan/stages/stage-05-data-fou
 model's one copy is [`docs/GOVERNANCE.md`](../../docs/GOVERNANCE.md)). Called by
 [`terraform-live/sandbox/data/`](../../terraform-live/sandbox/data/) and
 [`terraform-live/development/data/`](../../terraform-live/development/data/) — both thin, both `[P]`, both
-pinning `consumer-data-v0.2.0` **by git tag** — and by every further business unit's Sandbox once D35's N
+pinning the module **by git tag** — and by every further business unit's Sandbox once D35's N
 passes 1. **The design lives here once; a slice says which account, never what.** That is also why this
 index is in the module and not in the slices: two copies of one design drift on the first divergence.
+
+> **`v0.6.0` (2026-08-26) REMOVED the derived zone and the enforced workgroup** —
+> [D19 revised](../../docs/plan/decisions/D19-derived-zone.md): the zone is re-homed onto the SMUS
+> project path (`awsds-<env>-smus-projects`, `terraform-modules/sagemaker-prereqs/`'s bucket), and the
+> persona's direct Athena path left `identity/sso/` in the same revision. The struck sections below are
+> kept as the record of what the module built from v0.1.0 to v0.5.0; `git log` and the tags carry the
+> code. `DL-8`/`DL-9` now measure the ABSENCE of what they used to verify.
 
 What lands in **each** consumer account when this module applies:
 
 | Object | Name |
 |---|---|
-| the account's data CMK | `alias/awsds-<env>-data` |
-| the derived zone | `awsds-<env>-derived`, 30-day expiry, three prefix families |
-| the enforced query path | workgroup `awsds-<env>-athena`, 10 GiB scan cap, output into `results/` |
+| the account's data CMK | `alias/awsds-<env>-data` — since v0.6.0 with **no persona statement**: its consumers arrive only through `additional_data_key_policy_statements` (today: the sandbox lake's access role, in Sandbox alone; Development's key is held empty, dated) |
 | the account's own Lake Formation seat | `aws_lakeformation_data_lake_settings` — admins, `parameters`, the cleared create-defaults |
 | the shared lake, made addressable | 2 resource links (`raw`, `curated`) + 4 re-grants |
+| ~~the derived zone~~ | ~~`awsds-<env>-derived`~~ — **removed at v0.6.0** |
+| ~~the enforced query path~~ | ~~workgroup `awsds-<env>-athena`~~ — **removed at v0.6.0**; the query surface is the SMUS project workgroup |
 
 ## The apply is two steps here as well, per account
 
@@ -62,16 +69,16 @@ of IAM, so no single file answers "what can this persona do":
 | the **Lake Formation** permission | the producer's `shares.tf` (to the account) **and** this module's re-grants (to the principal) | what the call **returns** |
 | the **resource** policy | this module's key and bucket policies, and — for the drop-box — the lake's, in a third account | whether the object may be read or written |
 
-Since pass 4c the trap has a second edge, and the seven identity-side statements split by *which* state they
-read. Five name **this** module's objects — `RunQueriesInTheEnforcedWorkgroups`, `UseDerivedZoneBuckets`,
-`ReadDerivedZoneObjects`, `WriteDerivedZonePrefixes`, `DeleteScratchObjects` — enumerated from this slice's
-outputs rather than wildcarded, so an object renamed here silently narrows a policy written in Identity. The
-other two, `WriteIngestionDropBox` and `UseLakeDataKeyViaS3`, name the **lake's** drop-box prefix and
-data key, read from `data-governance/data/`'s state — which is why the trap spans three accounts rather
-than two. [Lesson 28](../../docs/plan/lessons.md), as amended by 4c: **verify the pair, and remember the
-two halves are in different accounts.** `./aws/datalake.py` measures both sides — `DL-12` the identity half
-of the drop-box write, `DL-5`/`DL-6`/`DL-7` the Lake Formation half, `DL-8`/`DL-9` the workgroup and the
-derived zone.
+Since pass 4c the trap had a second edge: seven identity-side statements split by *which* state they
+read. **Five of the seven left on 2026-08-26 with the derived zone** (`RunQueriesInTheEnforcedWorkgroups`,
+`UseDerivedZoneBuckets`, `ReadDerivedZoneObjects`, `WriteDerivedZonePrefixes`, `DeleteScratchObjects` —
+they enumerated this module's removed objects, and `identity/sso/` stopped reading this state with them).
+The two that stand, `WriteIngestionDropBox` and `UseLakeDataKeyViaS3`, name the **lake's** drop-box
+prefix and data key, read from `data-governance/data/`'s state — the ingestion path, untouched by the
+revision. [Lesson 28](../../docs/plan/lessons.md): **verify the pair, and remember the two halves are in
+different accounts.** `./aws/datalake.py` measures both sides — `DL-12` the identity half of the drop-box
+write, `DL-5`/`DL-6`/`DL-7` the Lake Formation half, `DL-8`/`DL-9` the **absence** of the workgroup and
+the derived bucket.
 
 **Measured 2026-08-20, and the table above is now confirmed *and* undercounted.** The drop-box
 `PutObject` ran for the first time and needed all three rows at once — the identity statement here, the
@@ -97,56 +104,24 @@ key would put Production's job role over this account's materialised `restricted
 | `Sid` | What it allows, and to whom |
 |---|---|
 | `EnableKeyAdministrationInThisAccount` | The account root, **administration only** — `Create*`, `Delete*`, `Put*`, `Describe*`, `Get*`, `List*`, `Enable*`/`Disable*`, `Revoke*`, `Tag`/`Untag`, `ScheduleKeyDeletion`, `CancelKeyDeletion`, `Update*` — and **no cryptographic action**: no `Encrypt`, `Decrypt`, `GenerateDataKey*`, `ReEncrypt*`. This is the difference between D31 being a control and being a comment: the module's default (and the lake key's first statement) grants root `kms:*`, which delegates *use* to whatever IAM policy happens to exist. The anti-lockout guarantee is intact and Terraform can still create, tag, re-policy and schedule deletion. What it does not close, stated rather than implied ([Lesson 18](../../docs/plan/lessons.md)): the administrator can call `kms:PutKeyPolicy` — the point is that widening becomes an **edit with a diff**, not a side effect of some other grant |
-| `AllowDataScientistUseViaS3` | `DataScientistAccess` (resolved **by pattern** in the caller — the `AWSReservedSSO_*` suffix is minted per account): `Decrypt`, `GenerateDataKey`, `DescribeKey`, scoped `kms:ViaService = s3.<region>.amazonaws.com`. SSE-KMS needs `GenerateDataKey` to write and `Decrypt` to read, and Athena needs both under the **caller's own** identity — it writes results through a forward access session, so there is no separate service grant to make. **Deliberately absent and named so** ([Lesson 5](../../docs/plan/lessons.md)): `DeploymentManagerAccess` and `GovernanceManagerAccess`, because an approver does not read the data it approves on (D31); Stage 6's project execution roles, which do not exist yet (INT-15) and join as a **second element of `Principal`** — the extension point step 9.3 asks for |
+| ~~`AllowDataScientistUseViaS3`~~ | **Removed at `v0.6.0` (2026-08-26), and the removal is a TIGHTENING**: the statement granted the persona `Decrypt`/`GenerateDataKey` via S3 because the derived zone encrypted here and the persona read it (D31). With the zone re-homed onto the SMUS project path, the only bucket left under this key is the sandbox lake — reached **only** through vended, prefix-scoped access-role credentials — and keeping the persona statement would have granted a KMS-layer path around that vending door. Stage 5 step 9.3's "second element of `Principal`" extension point died unconsumed with it: a project role never needed this key |
 | *(caller-supplied)* `var.additional_data_key_policy_statements` | **`v0.3.0`, 2026-08-26 — the extension point above, delivered by the first caller that needed one.** KMS holds **one** policy per key, so a second reader can only arrive through the module; the input is `any`, defaults **empty**, and is `concat`ed after the two statements above. **Structure in the module, values in the slice** — the split `vpc-egress-v0.3.0` made for the DNS allow-list. The shape that arrived is a second **statement**, not the predicted second `Principal` element, because the new reader is not a human persona. **Anything passed here is a widening of D31 and belongs in the calling slice's own row.** Today exactly one caller passes anything: `sandbox/data/` adds `AllowSandboxLakeAccessRoleViaS3` — `awsds-sandbox-lake-access` with `Decrypt`/`GenerateDataKey`/`DescribeKey` under the same `kms:ViaService` pin, for [Stage 16](../../docs/plan/stages/stage-16-sandbox-lake.md)'s bucket. `development/data/` passes nothing and its plan across the bump must read **`No changes`** — that empty plan is the proof the default protected it |
 
-## `buckets.tf` — the derived zone, `awsds-<env>-derived`
+## ~~`buckets.tf` — the derived zone~~ · ~~`athena.tf` — the enforced workgroup~~ — REMOVED at `v0.6.0`
 
-One designed destination per consumer account, **not two**: D13's own wording makes `scratch` a *class* of
-non-registered prefix rather than a named bucket, and a second bucket would need either a third CMK the cost
-model does not carry or a key shared for no reason (settled 2026-08-19, with the user).
+**Both files left the module on 2026-08-26** ([D19 revised](../../docs/plan/decisions/D19-derived-zone.md)
+— the user's decision, on the same day Stage 6 step 2.4 measured the Tooling blueprint already building
+an enforced results location and a mounted working folder **per project**). What they built, for the
+record — `awsds-<env>-derived` (one bucket, three prefix families: `results/` enforced output,
+`derived/${aws:userid}/` per-principal write, `scratch/` the one delete), 30-day expiry, the
+`DenyStalePresignedUrls` branch, and `awsds-<env>-athena` with `EnforceWorkGroupConfiguration = true`
+and a 10 GiB scan cap — is in the tags up to `consumer-data-v0.5.0` and in D19's history; the surviving
+zone's contracts are [`docs/GOVERNANCE.md`](../../docs/GOVERNANCE.md) §"Derived zone".
 
-| `Sid` | What it denies |
-|---|---|
-| `DenyInsecureTransport` | `s3:*` where `aws:SecureTransport = false`. The `s3-bucket` module's own statement, on every bucket in both trees — S3 holds exactly **one** policy per bucket, so the caller's statements are appended through `additional_policy_statements` rather than attached as a second policy |
-| `DenyStalePresignedUrls` | `s3:*` where `s3:signatureAge > 900000` ms. The one branch of the lake's perimeter worth copying onto a bucket holding **copies**: a presigned link is a bearer credential and 15 minutes bounds how long a leaked one works. The preventive counterpart of Stage 11's presigned-URL detection |
-
-The bucket's other properties come from `s3-bucket` v0.3.0 and are not restated here: all four public-access
-blocks on, versioning, SSE-KMS under the account data key with Bucket Keys, abort-incomplete-multipart at 7 days,
-noncurrent-version expiry — plus `expiration_days = 30`, which is **v0.3.0's reason for existing**: expiring
-noncurrent versions reaches nothing that was never overwritten, and D19 practice (iii) is about the current
-object. `DL-9` checks the rule exists, never the number.
-
-### The three prefix families — three different contracts
-
-**The prefixes are not created here, and that is not an omission**: S3 has no directories, so a prefix exists
-when an object is written under it. What makes them real is the identity-side statement in `identity/sso/`
-that scopes `s3:PutObject` to them and to nothing else — which is why these names are a **contract between
-two slices in two accounts**, written out in one place a human reads.
-
-| Prefix | Grain, and what enforces it |
-|---|---|
-| `results/` | The workgroup's **enforced** output location. **Per-persona, not per-person** — an enforced workgroup has exactly one result location, and that is the ceiling on the whole design ([`docs/GOVERNANCE.md`](../../docs/GOVERNANCE.md), "The grain"): the system's real grain is min(SQL grain, derived-zone grain) |
-| `derived/${aws:userid}/` | **Per principal on the WRITE** (D19 practice ii) — the one genuinely per-user control in the design, and it governs the **copy** rather than the source ([Lesson 1](../../docs/plan/lessons.md)'s shape). **The read is persona-wide** since pass 4c: `ReadDerivedZoneObjects` names `derived/*` with no `${aws:userid}` segment, so the per-principal split is on the write alone — what keeps *another persona* out of a materialised result is the account data CMK above (D31), never the prefix |
-| `scratch/` | The notebook's working files — a downloaded CSV, an intermediate feature, a checkpoint. Non-registered by definition, so plain IAM, which is exactly what D13 says about this class. **The only prefix where the persona may delete** (`DeleteScratchObjects`) |
-
-**Stage 11 scope, declared here because Stage 11 cannot discover it**: this bucket is in Macie's scan scope
-and carries CloudTrail data events (D19 practice iv). It is where sensitive data actually accumulates, and it
-sits **outside** the account Macie primarily watches.
-
-## `athena.tf` — the enforced workgroup, `awsds-<env>-athena`
-
-| Setting | What it does once applied |
-|---|---|
-| `enforce_workgroup_configuration = true` | **The control, and everything else on this resource is ordinary.** The console calls it "override client-side settings"; without it the result location is whatever the client asks for, which makes the derived zone a suggestion and D19 practice (i) a comment |
-| `result_configuration.output_location` | `s3://awsds-<env>-derived/results/` — **into the derived zone**, not into a results bucket of its own: query output lands under the lifecycle, the CMK and the Macie scope designed for it, instead of in a second, undesigned copy zone |
-| `result_configuration.encryption_configuration` | `SSE_KMS` under the account's data key, **stated rather than inherited** from the bucket default: the workgroup writes the object, so the encryption choice is visible where somebody reads it. Same key, so the two cannot disagree |
-| `bytes_scanned_cutoff_per_query` | 10 GiB by default. Athena bills USD 5/TB ([`docs/PRICING.md`](../../docs/PRICING.md)), so this is the guard on a query nobody meant to run: over the limit the query is **cancelled**, which bounds what a runaway can bill rather than zeroing it — the bytes scanned up to the cancellation are billed — and raising it is a deliberate act with a number attached |
-| `publish_cloudwatch_metrics_enabled = false` | Workgroup metrics are CloudWatch **custom** metrics and billed as such; nothing reads them yet. Stage 12 turns this on with a consumer in hand |
-| `state = "ENABLED"`, no `force_destroy` | `[P]` by D11: a workgroup costs nothing at rest, and destroying it would orphan the query history that explains what was run |
-| — (absent) the `primary` workgroup | **Deliberately left alone** ([Lesson 5](../../docs/plan/lessons.md)). Athena creates it in every account and it enforces nothing; what keeps a persona out of it is not a setting there but `RunQueriesInTheEnforcedWorkgroups` in `identity/sso/`, which scopes `athena:StartQueryExecution` to **this** workgroup's ARN and to no other. Adopting an object this module did not create, in every account, for a defence the identity plane already provides, is the trade declined |
-
-`DL-8` reads the enforcement flag, the limit and the output location per account.
+Two absences that were design remain worth knowing after the removal: the **`primary` workgroup was
+never adopted** (Lesson 5 — what kept a persona out of it was the identity-side scoping, which left with
+the run family), and the presigned-URL cap now exists only on the lake's own buckets — the projects
+bucket's equivalent is `sagemaker-prereqs`' to decide, not this module's.
 
 ## `lakeformation.tf` — the settings, the links, the re-grants
 
@@ -193,10 +168,10 @@ passing on; a resource shared with an account may be granted only to principals 
 
 Everything that differs between the two callers is in `variables.tf` and nothing else is (Lesson 14) — the
 descriptions there are the one copy. What matters to a reader outside this module is the other direction:
-`outputs.tf` republishes the derived bucket's name and ARN, the data key's ARN and alias, the workgroup's name
-and ARN, and the resource-link names — and **`terraform-live/identity/sso/` reads them through
-`terraform_remote_state` at pass 4c**, which is why the persona statements name resources exactly instead of
-wildcarding, and why `identity/sso/` applies *after* both `data/` slices.
+`outputs.tf` republishes the data key's ARN and alias and the resource-link names. **Nothing reads them
+through remote state any more**: `identity/sso/`'s pass-4c lookup left on 2026-08-26 with the statements
+that consumed it, so the old apply-ordering constraint (sso after both `data/` slices) survives only in
+reverse — the REMOVAL applies sso first, then the slices (Stage 6 step 2.6's choreography).
 
 ---
 

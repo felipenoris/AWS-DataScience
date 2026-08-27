@@ -1,8 +1,8 @@
 # D19 — The derived zone — what Lake Formation does *not* do (extends D13)
 
-**Status:** Decided (2026-08-07): **the copy is not prevented; the destination is managed and the perimeter contains it**
+**Status:** Decided (2026-08-07); **revised 2026-08-26 by the user — the zone is RE-HOMED onto the SMUS project path** (`awsds-<env>-smus-projects`, per-project folders, managed by the service). The principle stands: **the copy is not prevented; the destination is managed and the perimeter contains it** — what moved is which destination, and whose hand manages it
 
-**In one line:** The derived copy is not prevented; the destination is managed and the perimeter contains it. Its CMK is the read control (D31).
+**In one line:** The derived copy is not prevented; the destination is managed and the perimeter contains it. Since 2026-08-26 the destination is the SMUS project path, its CMK is the project CMK, and `awsds-<env>-derived` is removed.
 
 **Related decisions:** [D5](D05-sagemaker-egress.md), [D6](D06-dlp-approach.md), [D13](D13-lake-formation-enforcement.md), [D18](D18-data-scientist-access.md), [D24](D24-shared-filesystem.md), [D31](D31-approver-read.md)
 
@@ -70,6 +70,66 @@ administration to root while withholding every cryptographic action.
 managed, and the six practices above all stand. What is corrected is a claim about *who does the
 containing*: for the derived zone in S3 it is the perimeter, exactly as written; for the routes derived
 bytes can be moved *onto*, it is one named SCP and — where none exists — an accepted risk with a name.
+
+---
+
+## Revised 2026-08-26 — the zone re-homed onto the SMUS project path (the user's decision)
+
+**What was measured, the same day, before the choice** (Stage 6 step 2.4's reading): the Tooling
+blueprint gives every project an **enforced** Athena workgroup writing into
+`awsds-<env>-smus-projects` under `<domain-id>/<project-id>/dev/sys/athena/`, and a `shared/` scope
+mounted as the working folder in JupyterLab. That is, per project, the results-and-scratch shape this
+decision had built per account — **two designed destinations for the same class of data**, which is
+exactly the "second, undesigned copy zone" the enforced-location argument exists to prevent, except
+both were designed. One had to go, and the user chose to keep the service's: **the SMUS project path IS
+the derived zone**, organised by project folder, managed by SMUS.
+
+**What is removed** (consumer-data `v0.6.0` + the same-day `identity/sso/` edit): the
+`awsds-<env>-derived` bucket in both Interactive accounts, the enforced `awsds-<env>-athena`
+workgroup, and the persona's whole direct query path — `DataScientistAccess` carries **no `athena:`
+action at all** now; a data scientist queries through a SMUS project, as the project role, into the
+project path. The account data CMK (`alias/awsds-<env>-data`) **survives with a different consumer**:
+the sandbox lake encrypts under it (Stage 16), so the key stays and only the persona's statement
+leaves its policy — in Development it stands empty, held for the account's next data bucket, the
+explicit no-consumer branch dated rather than drifting. Stage 5 step 9.3's extension point (the
+data-key `Decrypt` second principal for project roles) **dies unconsumed** — a project role never
+needed the data key, because its results never land under it.
+
+**The six practices, re-read against the new home:**
+
+- **(i) enforced output location** — HOLDS, per project now: the project workgroup carries
+  `EnforceWorkGroupConfiguration = true` (measured 2026-08-26), and the write scoping is the managed
+  provisioning policy's path shape plus S3 Access Grants, both project-grained.
+- **(ii) per-principal prefixes** — WITHDRAWN. The project path has **no person grain** (measured:
+  `shared/` is project-wide); the containment grain moves from the person to the **project**, which is
+  Stage 5 decision 6's grain applied one level up. Attribution of who wrote a copy moves to Stage 11's
+  CloudTrail data events, which carry the principal per object write.
+- **(iii) lifecycle expiry** — **OPEN, and currently ABSENT**: the projects bucket has no rule on
+  current objects, and a deleted project keeps its prefix (both measured 2026-08-26). **Open question
+  25 is now this decision's expiry question** — the bucket is Terraform's (`sagemaker-prereqs`), so a
+  lifecycle rule is addable without touching anything SMUS manages; the number is the user's.
+- **(iv) Macie + data events** — MOVED with the zone: Stage 11's scope and trail map now name
+  `awsds-<env>-smus-projects` (and no longer the removed buckets); `./aws/dlp.py` `DP-4` re-aimed.
+- **(v) classification inheritance** — UNCHANGED: a policy statement either way, enforced by nobody.
+- **(vi) the CMK read control (D31)** — RE-HOMED onto the **project CMK** (`alias/awsds-<env>-project`),
+  whose policy names the service principals, the domain execution role and the project roles — not the
+  persona, not the approver. The approver-side half of D31 survives untouched: `DeploymentManagerAccess`
+  still carries its explicit `kms:Decrypt` deny.
+
+**What this deliberately gives up, so it is chosen rather than discovered**: the persona-direct lake
+query (the Stage 5 pandas-pair surface — future share proofs run inside a project); the per-person
+write attribution at the prefix grain; and the 30-day shedding, until OQ 25 lands. **What it buys**:
+one destination instead of two, no contract between our prefix families and the service's tree, and a
+zone whose management cost is the service's.
+
+**Production is not covered by this revision.** It has no SMUS (D28), so where Stage 9's job results
+land is that stage's to re-decide at its revision — the module no longer provides a derived zone, and
+`aws/deploytargets.py` carries the dated note.
+
+**The persona's LF re-grants stay** (the lake-consumption machinery — settings, resource links,
+re-grants — is what SMUS subscriptions ride and what catalog visibility needs); whether the persona's
+own `SELECT` re-grants retire now that no persona engine exists is re-read at Stage 9/14, not decided
+here.
 
 ---
 

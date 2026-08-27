@@ -277,7 +277,7 @@ def main(argv: list) -> int:
                 "SL-1",
                 "lifecycle",
                 f"{len(current_expiry)} rule(s) expire CURRENT objects - permanence is the design; "
-                "expiry belongs to the derived zone, not here (Stage 16's objective).",
+                "expiry is the derived zone's contract, not this bucket's (Stage 16's objective; since D19's 2026-08-26 revision the zone is the SMUS project path - OQ 25 owns ITS expiry).",
             )
         else:
             noncurrent = any(

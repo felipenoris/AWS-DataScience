@@ -64,8 +64,8 @@ RANKS = {
     # THE ONE ROW WHOSE RANK IS NOT ITS DEPENDENCY, and it is said out loud here rather than
     # left to be re-derived: identity/sso/ READS slices that rank below it. Since Stage 4 step
     # 8.1 it reads each VPN home's foundation/ (rank 20) for the Elastic IP, and since Stage 5
-    # pass 4c the three data/ states (rank 45) for the workgroup, derived-bucket and drop-box
-    # ARNs. The rank is NOT moved: every slice on both ends is [P], so `up`/`down` refuse them
+    # pass 4c the lake's data/ state (rank 45) for the drop-box ARNs (the two consumer data/
+    # reads left 2026-08-26 with the derived zone - D19 revised). The rank is NOT moved: every slice on both ends is [P], so `up`/`down` refuse them
     # all and no ordering ever acts on the inversion; moving `sso` to 46 would change only the
     # `make slices` display and would falsely suggest a teardown ordering exists. The real
     # order is enforced by the apply failing BY NAME on an unapplied remote state. What the
@@ -303,7 +303,7 @@ SLICES = [
         "sandbox",
         "data",
         PERSISTENT,
-        "consumer side: account data CMK, derived zone, workgroup, links",
+        "consumer side: account data CMK, links, DataLakeSettings (derived zone removed 2026-08-26)",
     ),
     Slice(
         "development",

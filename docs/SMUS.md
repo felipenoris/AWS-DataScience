@@ -536,7 +536,10 @@ reaches content by the PATH shape (`*/dzd*/<project>/…`), never by bucket name
 was MEASURED 2026-08-26** — Stage 6 step 2.4, verification (xviii)'s remaining third, read-only:
 `<bucket>/<domain-id>/<project-id>/<scope>/`, exactly the documented structure, with **two** scopes live,
 `shared/` and `dev/`, and **no per-person grain anywhere** — the project id is the finest division the
-path has. Two things the reading found that the documentation does not say:
+path has. **And since the same evening this path IS the estate's derived zone** ([D19 revised
+2026-08-26](plan/decisions/D19-derived-zone.md), the user's decision on this reading:
+`awsds-<env>-derived` and the enforced workgroups removed, the persona's Athena path with them —
+`docs/GOVERNANCE.md` §"Derived zone" carries the surviving contracts). Two things the reading found that the documentation does not say:
 
 - **Deleting a project does not delete its path.** Five project prefixes stood under the domain id
   against **one** live project — four orphans of deleted projects, one carrying a whole `.git` tree and a

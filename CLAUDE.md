@@ -431,6 +431,21 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
 - **Deferred by decision — do not offer to close:** the USD 50 budget notifies nobody (D12); open
   question 10 waits for N=2; Config recorder left alone, Management unrecorded (Stage 12 hooks).
   **Every governed account sits under `us-west-2`.**
+- **THE DERIVED ZONE IS RE-HOMED ONTO THE SMUS PROJECT PATH (2026-08-26 evening, the user's decision;
+  D19 revised — the one copy).** Trigger: 2.4's reading answered (xviii) — the path is
+  `<domain>/<project>/<scope>/`, no person grain; the project's OWN enforced workgroup writes to
+  `dev/sys/athena/`; a deleted project KEEPS its prefix; the projects bucket has NO current-object
+  expiry (OQ 25, now the derived zone's expiry question). **`awsds-<env>-derived` + `awsds-<env>-athena`
+  + the persona's whole Athena/derived family are REMOVED** — `DataScientistAccess` carries no
+  `athena:` action; SMUS is the only query surface in member accounts. The data CMK SURVIVES (Sandbox:
+  the sandbox lake's key; Dev: held empty, dated); its persona statement removed (would have been a
+  KMS-layer path around the lake's vending door). Stage 6 decision 6 DISSOLVED; 2.6 re-cut to the
+  removal choreography; (xix) re-homed to the projects bucket; Stage 5 step 9.3's extension point died
+  unconsumed. `DL-8`/`DL-9` flipped to ABSENCE checks (FAIL until the destroys apply — deliberate);
+  `DP-4` re-aimed at `*-smus-projects`. **Code written (`consumer-data-v0.6.0`, slice bumps, sso edit),
+  APPLIES OWED to the user in 2.6's order: empty both buckets by hand (versioned!), sso FIRST, then the
+  two data slices.** Production is NOT covered (no SMUS there) — Stage 9 re-decides its results home.
+  After the applies: AWS_STATE + this file's Stage 5 bullet need their state rows updated.
 - **All 37 decisions closed** (D30 as a revert; **D5/D6 re-scoped 2026-08-25** — two egress planes, one proxy). **Still needed from the user: the domain name**
   (blocks Stage 13). **Settle earliest:** INT-13 (INT-11's vending half closed at 4d, 2026-08-19).
 - **The repository is not documentation-only:** read-only `aws/` scripts, both Terraform trees, `scripts/`,

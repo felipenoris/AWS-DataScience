@@ -1,34 +1,19 @@
-# Outputs - what the slice republishes, and what Stage 6 will read through
+# Outputs - what the slice republishes, and what other slices read through
 # terraform_remote_state rather than paste.
-
-output "derived_bucket_name" {
-  description = "The derived zone. Stage 11 scopes Macie and CloudTrail data events on it; Stage 6 grants the project execution roles into its prefixes."
-  value       = module.derived.bucket_name
-}
-
-output "derived_bucket_arn" {
-  description = "The derived zone's ARN - the prefix scoping in identity/sso/ is written against this shape."
-  value       = module.derived.bucket_arn
-}
+#
+# FOUR OUTPUTS LEFT ON 2026-08-26 with the derived zone (derived_bucket_name/arn,
+# athena_workgroup_name/arn) - D19 as revised: the zone is the SMUS project path now, owned by
+# terraform-modules/sagemaker-prereqs/, and identity/sso/ stopped reading this state in the
+# same revision (its consumer_data lookup left with the statements that consumed it).
 
 output "data_key_arn" {
-  description = "The account's data CMK. D31's read control: Stage 6 adds the project execution roles to its policy as a second Principal, which is the extension point step 9.3 asks for."
+  description = "The account's data CMK - today the sandbox lake's key in Sandbox (Stage 16), held empty in Development."
   value       = module.data_key.key_arn
 }
 
 output "data_key_alias" {
   description = "alias/awsds-<env>-data - one data CMK per account, same pattern as the lake's."
   value       = module.data_key.alias_name
-}
-
-output "athena_workgroup_name" {
-  description = "The enforced workgroup - identity/sso/ scopes athena:StartQueryExecution to it by ARN."
-  value       = aws_athena_workgroup.this.name
-}
-
-output "athena_workgroup_arn" {
-  description = "The workgroup ARN, so the persona grant names a resource instead of a wildcard."
-  value       = aws_athena_workgroup.this.arn
 }
 
 output "resource_link_names" {

@@ -4,7 +4,7 @@
 # this account, InfrastructureAccess included. Slow down exactly where it feels routine.
 #
 # DELIBERATELY NOT CREATED (step 1.5): an athena-results bucket. Query output lands in each
-# consumer's own derived zone, behind its enforced workgroup - a results bucket here would be
+# consumer's own derived zone (the SMUS project path since 2026-08-26, D19 revised) - a results bucket here would be
 # an undesigned copy zone inside the governed account.
 
 # ------------------------------------------------------- the perimeter (step 1.3, INT-05)

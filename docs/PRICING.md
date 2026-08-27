@@ -252,7 +252,7 @@ per day.
 **Two corrections applied on 2026-08-08, in opposite directions.** The "Staging, Development, Data
 Governance at rest" row charged a Config recorder and a KMS key for those accounts a second time —
 the Config row already covers every governed account — so ~USD 3 came out. The KMS row said "(3)" and
-predated D20-D22; there is one customer-managed key per Terraform-managed account plus the D31 derived-zone
+predated D20-D22; there is one customer-managed key per Terraform-managed account plus the D31 data
 keys, so ~USD 3 went back in.
 
 **And a third correction, on the same date: the `us-west-2` floor was restated from ~USD 24-30 to

@@ -16,7 +16,7 @@ One `[P]` bucket in Sandbox, `awsds-sandbox-lake` (`sandbox/lake/`), SSE-KMS und
 `alias/awsds-sandbox-data` (Stage 16 decision 1(a), the recommendation), versioned, TLS-only, BPA on,
 **no expiry on current objects** — the one S3
 surface in this estate where artifacts are *meant* to outlive both the session and the project. It is not
-the governed lake (no catalog object, no LF-Tag — D13's non-registered class), not the derived zone
+the governed lake (no catalog object, no LF-Tag — D13's non-registered class), not the derived zone — which since D19's 2026-08-26 revision is the SMUS project path —
 (nothing expires), and not the project path (nothing here is keyed by a project id). Access is **only** by
 vended, prefix-scoped, expiring credentials from the account's S3 Access Grants instance — no persona and
 no project role carries a standing identity statement on this bucket, which is what makes the entitlement

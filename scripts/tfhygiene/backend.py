@@ -134,13 +134,12 @@ VPN_HOMES = ["sandbox"]
 # `vpn_homes` and `producers` to data-governance/data, where each row becomes a
 # terraform_remote_state read (the [P] gateway-endpoint ids, the WireGuard EIPs) or an
 # aliased-provider identity read (the account ids the drop-box statements are built from,
-# which aws/INDEX.md rule 1 keeps out of tracked files); the `lake` map to each consumer's
-# OWN data/ slice (pass 4); and `data_consumers` to identity/sso (pass 4c, where each row
-# becomes the workgroup and derived-bucket ARNs the persona statements name). Adding a row
-# therefore re-plans three slices, identity/sso among them - so a consumer that is NOT an
-# Interactive persona account must not reach that third emission, which is why Stage 9 step 1.4
-# SPLITS this list before adding Production rather than appending to it. Production joins the
-# lake-consumer half at Stage 9; a vended Sandbox unit joins the whole list at Stage 14.
+# which aws/INDEX.md rule 1 keeps out of tracked files); and the `lake` map to each
+# consumer's OWN data/ slice (pass 4). A THIRD emission - `data_consumers` to identity/sso,
+# pass 4c's workgroup and derived-bucket ARNs - left on 2026-08-26 with the derived zone
+# itself (D19 revised), which also retired the reason Stage 9 step 1.4 had to SPLIT this list
+# before adding Production: no emission reaches identity/sso from here any more. Production
+# joins at Stage 9; a vended Sandbox unit at Stage 14.
 DATA_CONSUMERS = ["sandbox", "development"]
 DATA_PRODUCERS = ["production"]
 
@@ -479,14 +478,11 @@ def tfvars_values(account: str, slice_name: str) -> dict:
         values["vpn_homes"] = {
             acct: {"profile": PROFILES[acct], "env": ENV_TOKENS[acct]} for acct in VPN_HOMES
         }
-        # Stage 5 pass 4c: the persona grants are scoped to ARNs read from the consumer
-        # slices' state (the workgroup, the derived bucket) and from the lake's (the drop-box
-        # and its key) - the enumerated form the 4c sequencing bought. Same three-way rule as
-        # everywhere else: the CONSUMERS list is the decision, the profile may not sit in a
-        # .tf file, and the env token builds the state-bucket name no slice may re-derive.
-        values["data_consumers"] = {
-            acct: {"profile": PROFILES[acct], "env": ENV_TOKENS[acct]} for acct in DATA_CONSUMERS
-        }
+        # Stage 5 pass 4c put TWO cross-account reads here; ONE left on 2026-08-26. The
+        # `data_consumers` map (each consumer's workgroup + derived-bucket ARNs) left with the
+        # derived zone itself (D19 revised - the zone re-homed onto the SMUS project path, the
+        # persona's Athena and derived statements removed). The lake map stays: the drop-box
+        # write and its key are the INGESTION path, untouched by the revision.
         values["lake"] = {
             acct: {"profile": PROFILES[acct], "env": ENV_TOKENS[acct]} for acct in DATA_LAKE
         }
