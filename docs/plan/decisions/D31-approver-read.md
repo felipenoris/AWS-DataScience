@@ -1,8 +1,8 @@
 # D31 — What a release approver may read
 
-**Status:** Decided (2026-08-08): **a bespoke `DeploymentManagerAccess` replaces `ReadOnlyAccess`, and the derived zone gets its own CMK whose key policy is the structural control**
+**Status:** Decided (2026-08-08): **a bespoke `DeploymentManagerAccess` replaces `ReadOnlyAccess`, and the derived zone gets its own CMK whose key policy is the structural control.** *Second change re-homed 2026-08-26 (D19 revised): the derived zone is the SMUS project path now, so the CMK that carries "who may read the copy" is the **project CMK** (`alias/awsds-<env>-project`) — its policy names the service principals and the project roles, not the persona and not the approver. The account data CMK the change created survives with a different consumer (the sandbox lake, Stage 16). The first change — the bespoke set and its explicit `kms:Decrypt` deny — is untouched and is the approver-side half that survives.*
 
-**In one line:** A bespoke `DeploymentManagerAccess` replaces `ReadOnlyAccess`, and the derived zone gets its own CMK.
+**In one line:** A bespoke `DeploymentManagerAccess` replaces `ReadOnlyAccess`; the "who may read the copy" key policy lives on the project CMK since 2026-08-26 (D19 revised).
 
 **Related decisions:** [D18](D18-data-scientist-access.md), [D19](D19-derived-zone.md)
 

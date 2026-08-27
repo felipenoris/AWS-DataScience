@@ -536,8 +536,9 @@ strict superset of all four**, everywhere it holds administrator.
   `lakeformation:DeregisterResource`; it does not deny granting.
 - In `Production` it can `ecr:PutImage`, and in Sandbox and Development `sagemaker:CreateImageVersion` — the
   exact actions `DevEnvStewardAccess` denies so that the `dev-env` gate is not theatre.
-- The derived zone's own CMK is what stops a release approver reading query output (D19 as revised by
-  [D31](plan/decisions/D31-approver-read.md)). An administrator of the account holding the key rewrites the
+- The derived zone's CMK is what stops a release approver reading query output (D19 as revised by
+  [D31](plan/decisions/D31-approver-read.md); since D19's 2026-08-26 revision that key is the **project
+  CMK** — the zone is the SMUS project path). An administrator of the account holding the key rewrites the
   key policy — and, one level worse, **this user is the author of that key policy**, because it is the
   identity Terraform runs as. A policy never constrains the principal that writes it (Lesson 18).
 
@@ -673,8 +674,9 @@ given in to — Identity Center will not warn, and no policy can detect it.
   be. The rule stated below for the governance manager — *an approver who can already read everything is not
   exercising a control* — is symmetric, and the plan was applying it to one of the two approvers: the
   AWS-managed `ReadOnlyAccess` includes `s3:Get*` and `athena:GetQueryResults`, so across those accounts this
-  persona could read the D19 derived zones and other people's query output. The derived zones are where the
-  result of a query over `restricted` data lands and, by D19's own classification rule, *is* `restricted`.
+  persona could read the D19 derived zone and other people's query output. The derived zone is where the
+  result of a query over `restricted` data lands and, by D19's own classification rule, *is* `restricted`
+  (since 2026-08-26 the zone is the SMUS project path — the argument is unchanged, the address moved).
 
   What the persona actually needs is **diagnosis**, not reading: why did the promotion fail, is this build
   safe to release. So the set grants CloudWatch Logs read including Logs Insights, SageMaker job / pipeline
@@ -686,9 +688,10 @@ given in to — Identity Center will not warn, and no policy can detect it.
   **The approval itself loses nothing**, because it never consumed an AWS permission — it happens in
   GitLab, driven by group membership.
 
-  **And the backstop is not in this set at all**, which is the part worth remembering: the derived zone has
-  its own KMS key whose policy names who may decrypt (D19 as revised by D31). A permission set is a list
-  someone has to maintain; the key policy is default-deny and covers prefixes nobody thought to enumerate.
+  **And the backstop is not in this set at all**, which is the part worth remembering: the derived zone
+  sits under a KMS key whose policy names who may decrypt (D19 as revised by D31 — the **project CMK**
+  since D19's 2026-08-26 revision). A permission set is a list someone has to maintain; the key policy is
+  default-deny and covers prefixes nobody thought to enumerate.
 
 ### Governance Manager user
 
@@ -844,7 +847,7 @@ Terraform: unlike a user or a membership, no amount of hiring adds one.
 | Permission set | Group behind it | What it is for, in one line | How it comes into existence | Design of record |
 |---|---|---|---|---|
 | `InfrastructureAccess` | `sso-group-infrastructure` | The builder — the identity `terraform apply` runs as. The **one named exception** to "nothing gets `AdministratorAccess`" | **By hand**, Stage 1b step 3 — then **imported** at Stage 2 step 5 | 3.1 |
-| `DataScientistAccess` | `sso-group-data-scientists` | Studio use, scratch/derived read-write, Athena, ECR pull. **Not** `PowerUserAccess`, **not** `AmazonSageMakerFullAccess` | **Written** in Terraform, Stage 2 step 5 — never typed into a console | 3.4 |
+| `DataScientistAccess` | `sso-group-data-scientists` | Studio use through SMUS projects, drop-box write, ECR pull (Athena and the derived-zone families left 2026-08-26 — D19 revised). **Not** `PowerUserAccess`, **not** `AmazonSageMakerFullAccess` | **Written** in Terraform, Stage 2 step 5 — never typed into a console | 3.4 |
 | `DataScientistStagingAccess` | `sso-group-data-scientists` | Read-only on Staging, no write of any kind, not even a drop-box | **Written**, Stage 2 step 5 | 3.6 |
 | `DataScientistProdAccess` | `sso-group-data-scientists` | Production data plane read: no compute, no control plane | **Written**, Stage 2 step 5 | 3.6 |
 | `DeploymentManagerAccess` | `sso-group-deployment-managers` | **Diagnosis, not reading** — why a promotion failed. Nothing on Data Governance | **Written**, Stage 2 step 5 | 3.5 |

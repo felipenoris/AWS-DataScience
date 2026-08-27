@@ -196,16 +196,17 @@ than a rewrite.
    - **and the unit's own consumer slice is already a module — `terraform-modules/consumer-data/`,
      applied 2026-08-19** (Stage 5 pass 4; v0.2.0 since the same-day revision). `sandbox-unit` composes a
      *call* to it with one changed input,
-     not a copy of it: the settings, the `alias/awsds-<env>-data` CMK, the derived zone, the workgroup,
+     not a copy of it: the settings, the `alias/awsds-<env>-data` CMK (**no derived zone or workgroup since `consumer-data-v0.6.0`, 2026-08-26** — D19 revised),
      the resource links and the local re-grants all come with it. **The re-grant is a pair** — `DESCRIBE`
      on each resource link *and* the permission on the target — and a vend that lands only the second half
      produces a unit whose scientists see no database at all;
    - **and two machinery edits, neither of them a policy edit.** The unit joins `DATA_CONSUMERS` in
-     `scripts/tfhygiene/backend.py` — which emits the `lake` map to its own `data/` slice *and* the
-     `data_consumers` map to `identity/sso/` — and then **`identity/sso/` is re-applied**, because
-     Stage 5 pass 4c scoped the persona's Athena workgroups and derived-bucket ARNs to an enumeration read
-     from each consumer's state (`locals.tf`, `athena_workgroup_arns`/`derived_bucket_arns`). Never widen
-     the permission set with a wildcard instead: the enumeration is the whole point of 4c's sequencing.
+     `scripts/tfhygiene/backend.py` — which emits the `lake` map to its own `data/` slice. **The second
+     emission this sentence used to name is GONE (2026-08-26, D19 revised)**: `data_consumers` to
+     `identity/sso/` left with the persona's Athena/derived statements, so a new unit no longer re-plans
+     `identity/sso/` at all — one fewer coupling than this step was written against. If a future set
+     ever enumerates per-consumer resources again, the 4c rule returns with it: enumeration from state,
+     never a wildcard.
 6. **The teardown half, which is what makes a unit disposable.** `make down ENV=<bu>` must work against a
    generated Sandbox exactly as it does against the hand-built one, and closing a unit must be a documented
    procedure with the ~90-day slot and e-mail retention stated up front (D34's headroom item).

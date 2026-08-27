@@ -25,8 +25,8 @@
 #
 # WHY THIS IS MULTI-PROFILE, which aws/INDEX.md admits only for a reason. The stage's
 # whole subject is detection ACROSS accounts: the lake and drop-box live in Data
-# Governance while the derived zones - where governed data actually re-surfaces (D19) -
-# live in the Interactive accounts, so "is the monitored map covered" is only readable
+# Governance while the derived zone - where governed data actually re-surfaces (D19; the
+# SMUS project path since 2026-08-26) - lives in the Interactive accounts, so "is the monitored map covered" is only readable
 # with the columns side by side; and the GuardDuty features are org-wide state, where one
 # account silently uncovered is exactly the finding (the same argument as ./aws/guardduty.py).
 #
@@ -64,7 +64,8 @@ IDENTITY_PROFILE = "awsds-infra-identity"
 
 
 # The DLP-scoped accounts (decision 3's map at N=1): the lake account plus the two
-# Interactive accounts whose derived zones D19 puts in scope. Production joins when
+# Interactive accounts whose projects buckets D19 (as revised 2026-08-26) puts in
+# scope. Production joins when
 # decision 3 adds awsds-prod-outputs; every sandbox ordinal is in scope (D35).
 def env_token(profile: str) -> str | None:
     if profile.startswith("awsds-infra-sandbox"):
@@ -171,7 +172,7 @@ def main(argv: list) -> int:
     # -------------------------------------------------- the trails, selectors and delivery
     # (profile, trail name, logging, validation, s3 bucket, data-only, monitored ARN count)
     trail_rows: list = []
-    derived_gap: list = []  # (profile, derived bucket) - bucket exists, no selector names it
+    derived_gap: list = []  # (profile, projects bucket) - exists, no selector names it
     for p in scoped:
         env = env_token(p)
         cli = cli_for(p)
@@ -248,7 +249,11 @@ def main(argv: list) -> int:
                 (p, name, logging, str(validation), bucket, data_only, str(arn_count))
             )
 
-            # D19's 9.2 promise: the derived bucket of each Interactive account is in scope.
+            # D19's promise, re-homed 2026-08-26: the derived zone is the SMUS project
+            # path now (awsds-<env>-smus-projects), so THAT bucket is the one each
+            # Interactive account's trail must select - orphaned project prefixes
+            # included, which is exactly what a scope written from the live project
+            # list would miss (stage-11's callout).
             if env in ("sandbox", "dev") and selector_blob:
                 r2 = cli.run(
                     "s3api",
@@ -260,7 +265,9 @@ def main(argv: list) -> int:
                     log=False,
                 )
                 if r2.ok:
-                    derived = [b for b in json.loads(r2.stdout or "[]") if b.endswith("-derived")]
+                    derived = [
+                        b for b in json.loads(r2.stdout or "[]") if b.endswith("-smus-projects")
+                    ]
                     for b in derived:
                         if b not in selector_blob:
                             derived_gap.append((p, b))
@@ -487,17 +494,19 @@ def main(argv: list) -> int:
             else:
                 checks.ok("DP-3", f"trail {name} in {p}", f"logging, validated, {arns} ARN(s)")
 
-    # DP-4: the D19 promise - a derived bucket outside its own account's trail scope.
+    # DP-4: the D19 promise, re-homed 2026-08-26 - the derived zone is the SMUS project
+    # path, so the projects bucket outside its own account's trail scope is the gap.
     if built:
         for p, b in derived_gap:
             checks.fail(
                 "DP-4",
-                f"derived bucket in {p}'s trail scope",
-                f"{b} exists and no selector names it - Stage 5 step 9.2 promised the "
-                "derived zone to this stage's scope; the map (decision 3) is missing a row.",
+                f"projects bucket in {p}'s trail scope",
+                f"{b} exists and no selector names it - the derived zone (D19 as revised "
+                "2026-08-26) lives in it, orphaned project prefixes included; the map "
+                "(decision 3) is missing a row.",
             )
         if not derived_gap:
-            checks.ok("DP-4", "derived buckets in trail scope", "every derived bucket selected")
+            checks.ok("DP-4", "projects buckets in trail scope", "every projects bucket selected")
 
     # DP-5: rules, alarms and topic per scoped account - together, or not at all.
     if built:

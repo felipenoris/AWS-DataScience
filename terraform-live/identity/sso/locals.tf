@@ -120,7 +120,7 @@ locals {
   persona_sets = {
     data_scientist = {
       name        = "DataScientistAccess"
-      description = "Studio use, scratch and derived read-write, Athena, ECR pull. Not PowerUser, not SageMakerFullAccess (1b 3.4, D21)"
+      description = "Studio use through SMUS projects, drop-box write, ECR pull. Not PowerUser, not SageMakerFullAccess (1b 3.4, D21; Athena and the derived zone left 2026-08-26, D19 revised)"
     }
     data_scientist_staging = {
       name        = "DataScientistStagingAccess"
@@ -212,15 +212,9 @@ locals {
   # sequencing (policies-data-scientists.tf carries the argument). `sort()` for the same
   # reason as above: these lists feed policy JSON whose textual value is what a plan compares,
   # and the day a consumer is added must not also be a reordering.
-  athena_workgroup_arns = sort([
-    for consumer, remote in data.terraform_remote_state.consumer_data :
-    remote.outputs.athena_workgroup_arn
-  ])
-
-  derived_bucket_arns = sort([
-    for consumer, remote in data.terraform_remote_state.consumer_data :
-    remote.outputs.derived_bucket_arn
-  ])
+  # athena_workgroup_arns and derived_bucket_arns LEFT 2026-08-26 with the six statements that
+  # consumed them (D19 revised - the derived zone re-homed onto the SMUS project path). The
+  # consumer_data remote-state read left data.tf with them.
 
   # The lake singleton's three values (D22; the variable validates length == 1). `one()` with
   # the same diagnosis as instance_arn above: null on empty, loud on many.

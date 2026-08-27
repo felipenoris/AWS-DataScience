@@ -87,9 +87,11 @@ alone: the `[E]` slices are destroyed and the tree bills **USD 0.0000/h** betwee
 `development/data/` (pass 4, 2026-08-19).** Those two are the tree's first slices that are **one module
 applied twice**: `terraform-modules/consumer-data/`, so the design lives once and each slice says only
 which account. Each holds the account's own `DataLakeSettings`, its `alias/awsds-<env>-data` CMK (one
-data CMK per account — the 2026-08-19 revision that withdrew the `security-zone` dimension), the
-`awsds-<env>-derived` bucket under it, the enforced `awsds-<env>-athena` workgroup, the two resource links
-to the lake, and the local re-grants without which a held share cannot be used by anybody. All `[P]`.
+data CMK per account — the 2026-08-19 revision that withdrew the `security-zone` dimension; **since
+2026-08-26 the sandbox lake's key in Sandbox and held empty in Development** — D19 revised: the derived
+bucket and the enforced workgroup **left the module at `consumer-data-v0.6.0`**, the derived zone being
+the SMUS project path now), the two resource links to the lake, and the local re-grants without which a
+held share cannot be used by anybody. All `[P]`.
 Back to the lake itself: All `[P]`, and nothing in it is ever torn down:
 the account data CMK (`alias/awsds-data-data`), the five `awsds-data-*` buckets under it, the Glue databases and
 the Iceberg sample table, the `awsds-data-catalog-maintenance` role with its two unscheduled crawlers, the
@@ -197,10 +199,11 @@ and groups are **not** here and never will be — that is the identity seam. Two
 a group is resolved by **display name**, and the assignments are **enumerated** while the policy floor is
 discovered (D34). It reads data sources it does not own: `aws_organizations_organization`, for the single
 purpose of turning an authored account **name** into the id an assignment requires — the same shape
-`attachments.json` uses from the other side — and **three cross-account `terraform_remote_state` data
-sources, four state reads at today's two consumers: the VPN home's `foundation/` (Stage 4 step 8.1) and,
-since Stage 5 pass 4c, the two consumers' `data/` slices and the lake's**, for the workgroup, derived-bucket, drop-box and CMK ARNs the persona statements name exactly
-instead of wildcarding. **So `identity/sso/` applies AFTER those slices, despite ranking above them** —
+`attachments.json` uses from the other side — and **two cross-account `terraform_remote_state` data
+sources: the VPN home's `foundation/` (Stage 4 step 8.1) and the lake's `data/`** (Stage 5 pass 4c), for
+the drop-box and lake-CMK ARNs the persona statements name exactly instead of wildcarding — pass 4c's
+third read, the two consumers' `data/` slices, **left 2026-08-26 with the derived zone** (D19 revised).
+**So `identity/sso/` applies AFTER those slices, despite ranking above them** —
 `scripts/tfhygiene/layers.py`'s `RANKS` comment owns the inversion and says why the rank is not moved.
 
 The one older exception is [`identity/org-policies/`](identity/org-policies/README.md), which holds the organization's
@@ -309,7 +312,7 @@ created there, the account has stopped being what it is for.
 | What the policy documents are and what each may not become | [`identity/org-policies/README.md`](identity/org-policies/README.md) |
 | **What every policy statement does, and why it exists** — all four types | [`identity/org-policies/POLICIES.md`](identity/org-policies/POLICIES.md) |
 | **What governs the lake** — bucket-policy branches, the key policy, tag assignments, LF grants | [`data-governance/data/README.md`](data-governance/data/README.md) — the same one-row-each discipline, for the lake's own controls |
-| **What governs the lake's CONSUMER side** — the per-account CMK policy, the derived zone's statements, the account's `DataLakeSettings`, the enforced workgroup, the four re-grants | [`terraform-modules/consumer-data/README.md`](../terraform-modules/consumer-data/README.md) — one README for the module both `data/` slices call, because the design lives once and is applied twice; the persona's identity-side half is `identity/sso/`'s |
+| **What governs the lake's CONSUMER side** — the per-account CMK policy, the account's `DataLakeSettings`, the four re-grants (the derived zone and workgroup left 2026-08-26 — D19 revised) | [`terraform-modules/consumer-data/README.md`](../terraform-modules/consumer-data/README.md) — one README for the module both `data/` slices call, because the design lives once and is applied twice; the persona's identity-side half is `identity/sso/`'s |
 | Which stage builds a given slice | [`docs/plan/stages/INDEX.md`](../docs/plan/stages/INDEX.md) |
 | What is deployed right now | [`aws/INDEX.md`](../aws/INDEX.md) and [`docs/AWS_STATE.md`](../docs/AWS_STATE.md) |
 

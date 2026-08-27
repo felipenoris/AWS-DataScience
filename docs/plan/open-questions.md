@@ -698,7 +698,11 @@ length, under item numbers 10-12 that collided with the live items above; the du
 ### Raised by Stage 6 step 2.4's reading, 2026-08-26
 
 25. **What expires in `awsds-<env>-smus-projects`, and who removes the storage of a project that no
-    longer exists?** The reading that answered verification (xviii) found the bucket has **no expiry on
+    longer exists?** *(Reweighted the same evening it was raised: D19's 2026-08-26 revision made this
+    bucket THE derived zone — `awsds-<env>-derived` and its 30-day shedding are removed — so this is no
+    longer a side bucket's hygiene question but the derived zone's own expiry, D19 practice (iii)'s only
+    open mechanism. The bucket is Terraform's (`sagemaker-prereqs`), so a lifecycle rule is addable
+    without touching the tree SMUS manages.)* The reading that answered verification (xviii) found the bucket has **no expiry on
     current objects** (versioning, a 90-day noncurrent rule and MPU abort are all the house module gives
     it) and that **deleting a project leaves its whole prefix behind** — five project prefixes stood
     against one live project, one orphan carrying a complete `.git` tree and a notebook. Neither is a

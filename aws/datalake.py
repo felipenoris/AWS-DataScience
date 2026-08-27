@@ -3,7 +3,8 @@
 # perimeter policies, the KMS aliases, the Glue catalog (databases, resource links,
 # crawlers), the catalog-maintenance role and its trust, the Lake Formation settings WITH
 # THE PARAMETERS READING THAT DEFENDS INT-11, the RAM shares and any pending invitation,
-# the consumer Athena workgroups, the derived zone, the EFS reading (absence expected,
+# the consumer Athena workgroups and the derived zone (BOTH removed 2026-08-26, D19
+# revised - absence is the pass, DL-8/DL-9), the EFS reading (absence expected,
 # save the home filesystem a Studio domain creates for itself - the NFS requirement was
 # withdrawn 2026-08-17), and the Security Hub state. The preflight for Stage 5, and the standing regression after it.
 #
@@ -865,39 +866,46 @@ def main(argv: list) -> int:
     elif data_live and lf_registered:
         checks.note("DL-7", "cross-account shares", "none yet - expected before Stage 5 step 7.")
 
-    # DL-8: the workgroup boundary (step 8, D19).
+    # DL-8: the estate's own consumer workgroup is REMOVED (2026-08-26, D19 revised - the
+    # derived zone re-homed onto the SMUS project path). This check measured its enforcement;
+    # it now measures its ABSENCE, the DL-10 pattern: an awsds-* workgroup re-appearing in a
+    # consumer account is a regression to the removed design, not a feature arriving. The SMUS
+    # project workgroups (workgroup-<project>-<env>, sagemaker-studio-spark-workgroup-*) are
+    # service-named, service-owned, and deliberately NOT this check's subject - studio.py owns
+    # that surface.
+    for p, wg, enforce, out, limit in workgroups:
+        checks.fail(
+            "DL-8",
+            f"workgroup {wg} ({p})",
+            "an awsds-* workgroup exists in a consumer account - the enforced-workgroup "
+            "design was removed 2026-08-26 (D19 revised); the query surface is the SMUS "
+            "project workgroup. FAIL is expected until the v0.6.0 destroy applies.",
+        )
     if not workgroups and any(p in live for p in CONSUMER_PROFILES):
-        checks.note(
+        checks.ok(
             "DL-8",
             "consumer Athena workgroups",
-            "no awsds-* workgroup - expected before Stage 5 step 8.",
+            "no awsds-* workgroup - the removed design staying removed (D19, 2026-08-26)",
         )
-    for p, wg, enforce, out, limit in workgroups:
-        problems = []
-        if enforce != "True":
-            problems.append(
-                "EnforceWorkGroupConfiguration off - the result location is "
-                "whatever the client asks for (D19)"
-            )
-        if out == "-":
-            problems.append("no result location")
-        if limit == "-":
-            problems.append("no per-query scan limit")
-        if problems:
-            checks.fail("DL-8", f"workgroup {wg} ({p})", "; ".join(problems))
-        else:
-            checks.ok("DL-8", f"workgroup {wg} ({p})", f"enforced, limit {limit}, -> {out}")
 
-    # DL-9: the derived zone's lifecycle expiry (step 9.2).
+    # DL-9: the derived zone's bucket is REMOVED (same revision). Absence is the pass;
+    # a *-derived bucket is the regression - and if one exists, its expiry is still read,
+    # so a transitional FAIL names what is standing rather than just that something is.
     for p, b, expiry in derived:
-        if expiry == "yes":
-            checks.ok("DL-9", f"derived-zone expiry on {b} ({p})", "lifecycle expiry present")
-        else:
-            checks.fail(
-                "DL-9",
-                f"derived-zone expiry on {b} ({p})",
-                "no expiry rule - the shadow lake silently becomes permanent (D19, step 9.2).",
-            )
+        checks.fail(
+            "DL-9",
+            f"derived bucket {b} ({p})",
+            f"a *-derived bucket exists (lifecycle expiry: {expiry}) - the derived zone was "
+            "re-homed onto the SMUS project path 2026-08-26 (D19 revised). FAIL is expected "
+            "until the v0.6.0 destroy applies.",
+        )
+    if not derived and any(p in live for p in CONSUMER_PROFILES):
+        checks.ok(
+            "DL-9",
+            "derived buckets",
+            "no *-derived bucket on any consumer - the removed zone staying removed "
+            "(D19, 2026-08-26); the projects bucket is studio.py's surface",
+        )
 
     # DL-12: the identity half of the drop-box write (pass 4c; Lesson 28 amended). A
     # cross-account permission is the AND of two policies, and DL-2 only ever measured the
@@ -1067,9 +1075,11 @@ branch), via (aws:ViaAWSService), sigage (s3:signatureAge). Presence only.""")
             rep.tabulate(["PROFILE\tALIAS"] + [f"{p}\t{a}" for p, a in sorted(aliases)])
             rep.text("""
 Expected once the stage closes: the domain keys in Data Governance (step 1.1,
-decision 2), the drop-box key (decision 3), and one *-derived key per
-Interactive account (step 9.2, D31) - the derived key SEPARATE from the account
-key is the control, not a convention.""")
+decision 2), the drop-box key (decision 3), and one *-data key per Interactive
+account (step 9.2, D31) - kept SEPARATE from the account's tfstate key on
+purpose. Since 2026-08-26 (D19 revised) that key no longer serves a derived
+zone: in Sandbox its consumer is the sandbox lake (Stage 16), in Development
+it is held empty for the account's next data bucket.""")
         else:
             rep.line("No awsds-* alias in any measured account.")
 
@@ -1174,13 +1184,13 @@ visible there, so a zero in the admins table explains the emptiness by itself.""
             rep.line("No awsds-* workgroup on any consumer.")
 
         # ==============================================================================
-        rep.h1("9. The derived zone")
+        rep.h1("9. The derived zone (REMOVED 2026-08-26 - D19 revised; empty is the design)")
         if derived:
             rep.tabulate(
                 ["PROFILE\tBUCKET\tLIFECYCLE EXPIRY"] + [f"{p}\t{b}\t{e}" for p, b, e in derived]
             )
         else:
-            rep.line("No *-derived bucket on any consumer.")
+            rep.line("No *-derived bucket on any consumer - the removed zone staying removed.")
 
         # ==============================================================================
         rep.h1("10. EFS (expected: none, or a Studio domain's own home)")
@@ -1241,8 +1251,11 @@ What the checks are, and where each comes from:
          resource link, which is the only moment it can still be acted on
   DL-7   shares out AND HELD by every consumer, resource links resolved, NO
          pending invitation (steps 7, 8)
-  DL-8   workgroups enforce their configuration, with a scan limit (step 8, D19)
-  DL-9   derived buckets carry a lifecycle expiry (step 9.2, D19)
+  DL-8   NO awsds-* workgroup in any consumer account (removed 2026-08-26, D19
+         revised - the query surface is the SMUS project workgroup; presence is
+         the regression, the DL-10 pattern)
+  DL-9   NO *-derived bucket on any consumer (same revision - the derived zone
+         is the SMUS project path; presence is the regression)
   DL-10  no EFS in the VPN home beyond a Studio domain's own tagged home
          (conventions 5.1 rule 2) - the plan itself creates none (the NFS
          requirement was withdrawn 2026-08-17, D24 with it)
