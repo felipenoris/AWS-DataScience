@@ -35,9 +35,10 @@ locals {
 module "consumer_data" {
   # checkov:skip=CKV_TF_1:pinned by git TAG by convention (conventions §6, Stage 3 step 1.1a) - a repository-internal tag only the repo owner can move
   # v0.6.0 (2026-08-26): the derived zone LEFT the module - D19 revised, the zone re-homed
-  # onto the SMUS project path. This slice's plan destroys awsds-sandbox-derived and the
-  # enforced workgroup; the data CMK stays (the sandbox lake encrypts under it) minus its
-  # persona statement. The `region` input left with the statement that consumed it.
+  # onto the SMUS project path. APPLIED 2026-08-26/27: awsds-sandbox-derived and the enforced
+  # workgroup are destroyed (the workgroup needed --recursive-delete-option - query HISTORY
+  # counts as contents, and force_destroy leaves with the resource); the data CMK stays (the
+  # sandbox lake encrypts under it) minus its persona statement. The `region` input left with the statement that consumed it.
   source = "git::git@github.com:felipenoris/AWS-DataScience.git//terraform-modules/consumer-data?ref=consumer-data-v0.6.0"
 
   env = var.env

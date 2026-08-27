@@ -704,6 +704,14 @@ database carrying an `IAMAllowedPrincipals` grant. **`DL-7` already reads the co
 `sandbox/data/` and `development/data/`, both `[P]`, both at rank `data`. What follows describes what it
 builds.
 
+> **Two of the objects below no longer exist (2026-08-26/27).** The enforced workgroup
+> (`awsds-<env>-athena`) and the derived bucket (`awsds-<env>-derived`) were **destroyed** when the user
+> re-homed the derived zone onto the SMUS project path ([D19 revised](../decisions/D19-derived-zone.md),
+> executed as Stage 6 step 2.6); `consumer-data` **v0.6.0** creates neither, and `DL-8`/`DL-9` are absence
+> checks now. **The text stays as the record of what this stage built** — it was true when it was applied,
+> and step 9's reasoning is what the revision was argued against. What survives of this slice: the account
+> data CMK, the `DataLakeSettings`, the two resource links and the four re-grants.
+
 Then, per account: the **Athena workgroup** (`awsds-<env>-athena`) — result location local to the account,
 per-query scan limit (**10 GiB applied**, ≈ USD 0.05 at Athena's USD 5/TB), and
 **`EnforceWorkGroupConfiguration = true`** (the setting the console calls
@@ -1054,7 +1062,10 @@ own:
   call from the persona in both accounts now returns *"because no identity-based policy allows the
   `s3:ListBucket` action"* — the **implicit** deny, absence of grant, which is the mechanism D13 argues
   from. Taken with a **contrast pair** rather than alone: `GetBucketLocation` succeeds on the account's
-  own `awsds-<env>-derived` and implicit-denies on `awsds-data-curated`, one action and one session, so
+  own `awsds-<env>-derived` — **a pair no longer reproducible as written, that bucket having been
+  destroyed 2026-08-26/27; a re-run needs some other bucket the account owns and Lake Formation does not
+  govern, `awsds-sandbox-lake` being the one that exists** — and implicit-denies on `awsds-data-curated`,
+  one action and one session, so
   *"the network refuses S3"* and *"this bucket is not granted"* stop being the same reading — which is
   exactly what they were while the explicit deny sat on top. `GetBucketLocation` was used deliberately
   over `ListObjectsV2`: it is a **management** event, so CloudTrail carries it.

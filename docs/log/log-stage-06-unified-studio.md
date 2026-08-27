@@ -3577,6 +3577,39 @@ user's hand), then both `data/` slices applied — the aborted run had stopped *
   measure the absence they were written for, which is the only proof that the inversion was real work and
   not a comment.
 
+### A sweep after the merge, and it caught the same defect three more times
+
+Asked whether anything left on the stage's owed list was *executable* rather than *decidable*, Claude ran
+`make check-ou` — **OK**, the one gate that needs a live session — and then swept every tracked file for
+prose still describing the removed objects as live. Four places, and three of them were this sitting's own
+work:
+
+- **`docs/SMUS.md`'s working-storage table** still listed both destroyed objects as present, and its
+  closing paragraph still posed decision 6's question — *"a project workgroup writes into the project path
+  … unless Stage 6 step 2.4/2.6 measures that the location can be repointed"* — ending **"Record that
+  answer here when it returns."** The answer had returned the same evening, from the same sitting that
+  left the sentence standing. The two rows are struck as record, the answer is written where the file
+  asked for it, and two claims retire with their subject: the pass-4c scoping of the persona's Athena
+  family (there is no persona Athena family), and *"whether the two query paths stay parallel or
+  converge"* (there is one path).
+- **Stage 11 in two places** — the internal-access analyzer's resource map (2.1.3) and the
+  monitored-resource decision (item 3) — still named `awsds-<env>-derived`, both missed while the *same*
+  PR updated that stage's Macie scope and trail map. **Lesson 14 for the third time in one sitting**,
+  after the Staging note and OQ 25's stale bullet.
+- **This stage's own Status row** still read *"applies owed to the user"* an hour after they were applied,
+  and **step 2.6 described `awsds-dev-derived` as "(never written)"** — an unmeasured claim written into a
+  procedure and contradicted by the reading taken before the delete (**4 versions, not none**: the same
+  verification queried from Development too). Both corrected; 2.6 now carries the fourth act and the
+  `force_destroy` finding at the point of use.
+- **Stage 5's step 9** describes two objects that no longer exist. Its text stays as the record of what
+  that stage built, under a dated marker, and its `GetBucketLocation` contrast pair is flagged as **no
+  longer reproducible as written** — the account-owned, LF-ungoverned bucket it leaned on is gone, and
+  `awsds-sandbox-lake` is the one that could replace it.
+
+The pattern is worth naming because it is the third distinct instance in one day: **a revision updates
+the files it is thinking about, and misses the ones that merely mention its subject** — and the miss
+survives review precisely because those files still read as fluent, current prose.
+
 ### Files
 
 `docs/plan/decisions/D19-derived-zone.md` (the revision, the one copy) and `D31-approver-read.md`;
@@ -3588,7 +3621,11 @@ user's hand), then both `data/` slices applied — the aborted run had stopped *
 `scripts/tfhygiene/{backend,layers}.py`; `conventions.md` §6, `architecture.md`, `ORGANIZATION.md`,
 `institutional-delta.md`, `cost-model.md`, `PRICING.md`, `aws/INDEX.md`, `terraform-live/README.md`,
 `README.md`, `CLAUDE.md`. Branch `claude/derived-zone-rehomed-to-smus`, PR
-[#47](https://github.com/felipenoris/AWS-DataScience/pull/47) — **the user merges**.
+[#47](https://github.com/felipenoris/AWS-DataScience/pull/47) — **merged 2026-08-27**. The post-merge
+sweep above adds `docs/SMUS.md` (the working-storage table), `docs/plan/stages/stage-11-dlp.md` (2.1.3 and
+item 3), `docs/plan/stages/stage-05-data-foundation.md` (step 9's marker and the contrast-pair note), this
+stage file (the Status row, 2.6's head, its step 1 and its closing note) and both `data/` slice comments,
+on branch `claude/stale-prose-after-the-removal`.
 
 ### Owed after this sitting
 
