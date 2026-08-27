@@ -722,10 +722,15 @@ length, under item numbers 10-12 that collided with the live items above; the du
       added, which nothing in SMUS offers and D11's `make down` does not cover (it stops apps; it has
       never touched project storage). If the answer is "the expiry alone", say so, because it means an
       orphan survives for exactly that long with no principal accountable for it.
-    - **Whether the project workgroup's output location is ours to re-point.** If it is, the result half
-      could move into the derived zone and inherit its 30 days, and the question shrinks to the working
-      files. It is blueprint-created, so this is verification (vi)'s reconciliation question one resource
-      over — a reading, not a preference.
+    - **Whether the project workgroup's output location is ours to re-point.** *(Written before the
+      same evening's revision, and half of it died with `awsds-<env>-derived`: there is no other
+      destination to re-point INTO any more, so "inherit the derived zone's 30 days" is gone.)* What
+      survives is the mechanism half, and it bites: an S3 lifecycle filter matches a **literal**
+      prefix — no wildcard — so **no single rule can select `<domain-id>/*/dev/sys/athena/` across
+      projects**. A per-scope expiry is therefore one rule per project (writable — the project list is
+      ours) or a re-point into a prefix that IS expressible, and the shape is verified against the API
+      when the rule is written. It is blueprint-created either way, so this stays verification (vi)'s
+      reconciliation question one resource over — a reading, not a preference.
 
     **Owner:** the user for the numbers, Stage 6 for the proposal (it is that stage's act that created
     the destination). **Instruments:** the S3 reading above, and Stage 11's data-event trail once the
@@ -733,6 +738,70 @@ length, under item numbers 10-12 that collided with the live items above; the du
     re-read and which only accumulate. **Related:** the `scratch` prefix reasoning in
     [D19](decisions/D19-derived-zone.md), and Stage 16's `awsds-sandbox-lake`, the *other* store this
     estate deliberately lets persist — there the persistence is the point, here it is unexamined.
+
+### Raised by the user, 2026-08-26 — the promotion half of the re-homing
+
+26. **How does work produced in the derived zone reach Production, and what in SMUS carries it?**
+    The re-homing made the SMUS project path the derived zone ([D19](decisions/D19-derived-zone.md)
+    revised), so a scientist's output now lives in `dev/sys/athena/` (where the project's enforced
+    workgroup writes) and `shared/` (the folder JupyterLab mounts). **The promotion contract on the
+    other side did not move**: D28 makes the project's **git repository** the vehicle and lists six
+    artifact classes; D17 lists the four things that cross the boundary and, citing D21, says Sandbox
+    work enters the chain only by graduating into a Development repository through git. Between an S3
+    project folder and a git tag, **no step names a mechanism** — and nothing forced the issue while
+    the destination was ours, because the gap read as a bucket question.
+
+    **What the profile says, measured 2026-08-26** (`get-project-profile`, the `Tooling`
+    configuration's `resolvedParameters`; both profiles identical):
+
+    | parameter | value | editable |
+    |---|---|---|
+    | `gitConnectionArn` | `""` | **false** |
+    | `gitFullRepositoryId` | `""` | true |
+    | `gitBranchName` | `""` | true |
+    | `isNewGitRepository` | `""` | true |
+    | `enableProjectRepositoryAutoSync` | `"false"` | true |
+
+    So the tooling this question is looking for **exists, and is off**: a project repository, with an
+    auto-sync flag between the folder and that repository. Two things follow, neither of them this
+    project's choice — the editability is the blueprint template's. **The binding field is
+    `gitConnectionArn` and it is not editable per project**, so a project cannot bring its own
+    connection and the profile must carry one; ours carries none, which means **no project in this
+    domain can have a project repository today** and the three editable fields beside it are moot until
+    that changes. And the connection itself is **Stage 7's** surface (GitLab, INT-09/INT-13) — the
+    field and the thing that would fill it live in different stages, on a profile whose service-locked
+    parts are `createOnly`.
+
+    **What has to be decided, and why none of it is obvious:**
+
+    - **Whether the project repository is turned on at all.** On, the scientist's folder becomes a
+      working tree synced to a GitLab repository — the shortest path from `shared/` to a Development
+      repository, and simultaneously **an egress channel whose properties nothing here has read**:
+      *whose* identity performs the sync (the project role, or the person) decides whether the trail
+      names a human, and that is unmeasured. Off, promotion is a hand-run `git` inside JupyterLab —
+      which **already happens**: an orphaned project prefix carries a complete `.git` tree, put there
+      from inside the notebook by no mechanism this plan designed (Stage 6 step 2.4's reading). The
+      choice is between a designed door and an undesigned one that is already open.
+    - **Which of D28's six classes a project can produce at all.** Application code and a workflow
+      definition, yes. **A model version, not without deciding who registers it** — D28 item 6 gives
+      registration and approval to the *pipeline*, so a model trained interactively has no stated path
+      into the Production registry except a pipeline that re-trains it, and nothing has ever said which
+      is intended. One step over, the same seam: a dependency installed in a running JupyterLab is not
+      in the image, and D17's *"promote only the code"* holds only if the runtime is identical by
+      construction.
+    - **Whether the derived zone is deliberately a dead end.** D19's containment argument is that the
+      copy is tolerable because the destination is managed and the perimeter contains it. If nothing
+      promotable ever leaves the project path except through a repository CI reads, that is a
+      **property worth stating** rather than an accident — and it makes the auto-sync flag the single
+      hole to reason about, instead of a convenience nobody weighed.
+
+    **Owner:** the user for the first bullet (an egress decision as much as a workflow one);
+    **Stage 7** for the connection, **Stage 8** for what CI reads, **Stage 10** for the promotion
+    proof. **Instruments:** `aws datazone get-project-profile` — the five fields above are the state;
+    `ListConnections` at project scope is **denied to `InfrastructureAccess`** (measured the same day),
+    so enumerating a live project's connections needs a project-member identity. **Related:** D28, D17,
+    D21, [`docs/SMUS.md`](../SMUS.md) §S3 item 2 (rewritten from this reading), open question 25 (what
+    expires in that same path) and open question 13 (the identity that folder cannot propagate).
 
 ---
 
