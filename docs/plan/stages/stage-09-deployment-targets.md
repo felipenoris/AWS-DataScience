@@ -24,7 +24,7 @@ the data platform, the SageMaker runtime and the sharing model.
 |---|---|---|
 | `production/sagemaker/` (new) | Model Registry: package groups + **resource policies** (D28 item 6); `awsds-prod-job-exec`; the `awsds-prod-debug` escape hatch + its alarm | `[P]` |
 | `data-governance/data/` (amended) | the Production share: LF read **+ governed write**, granted *with grant option* to the Production account (INT-03's last third) | `[P]` |
-| `production/data/` (new) | the `consumer-data` call — derived zone + enforced `awsds-prod-athena` workgroup, LF resource links + local regrants, the account's LF settings, the account data CMK — plus the outputs bucket written beside it | `[P]` |
+| `production/data/` (new) | the `consumer-data` call — LF resource links + local regrants, the account's LF settings, the account data CMK — plus the outputs bucket written beside it. **NOTE 2026-08-26: `consumer-data-v0.6.0` no longer provides a derived zone or a workgroup** (D19 revised — the Interactive zone re-homed onto the SMUS project path; Production has NO SMUS, D28). Where THIS account's query results land — a stage-authored results bucket + workgroup beside the call, or nothing — is **this stage's to re-decide at its revision**; `aws/deploytargets.py` carries the same dated note | `[P]` |
 | `staging/data/`, `staging/sagemaker/` (new, **at the vend**) | the catalog mirror with sampled/synthetic content; job execution roles and nothing else | `[P]` |
 | `identity/sso/` (amended) | `DataScientistProdAccess`'s owed allows: the workgroup, the named prefixes, the debug-role assumption | `[P]` |
 | `scripts/` | `backend.py`/`layers.py` rows for the four new slices (all `[P]` — `make up`/`down` never touch them) | — |

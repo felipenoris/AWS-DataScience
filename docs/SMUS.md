@@ -532,8 +532,30 @@ module's house `s3-bucket` call — not by the service; the `amazon-datazone-*` 
 wizard would have defaulted to), handed to Tooling as the `S3Location` regional parameter, and encrypted
 under the **project CMK** — a key this project chose, the deliberate exception `docs/GOVERNANCE.md`
 §Encryption names beside the data-CMK rule. The name is FREE because the managed provisioning policy
-reaches content by the PATH shape (`*/dzd*/<project>/…`), never by bucket name. What Stage 6 step 2.4
-still records is the project **path shape** inside it — verification (xviii)'s remaining third.
+reaches content by the PATH shape (`*/dzd*/<project>/…`), never by bucket name. **The path shape itself
+was MEASURED 2026-08-26** — Stage 6 step 2.4, verification (xviii)'s remaining third, read-only:
+`<bucket>/<domain-id>/<project-id>/<scope>/`, exactly the documented structure, with **two** scopes live,
+`shared/` and `dev/`, and **no per-person grain anywhere** — the project id is the finest division the
+path has. **And since the same evening this path IS the estate's derived zone** ([D19 revised
+2026-08-26](plan/decisions/D19-derived-zone.md), the user's decision on this reading:
+`awsds-<env>-derived` and the enforced workgroups removed, the persona's Athena path with them —
+`docs/GOVERNANCE.md` §"Derived zone" carries the surviving contracts). Two things the reading found that the documentation does not say:
+
+- **Deleting a project does not delete its path.** Five project prefixes stood under the domain id
+  against **one** live project — four orphans of deleted projects, one carrying a whole `.git` tree and a
+  notebook. The house `s3-bucket` module gives the bucket versioning, a 90-day **noncurrent** expiry and
+  MPU abort; **no rule expires a current version**, so nothing reaps an orphan. This bucket is therefore
+  a place where a data scientist's work outlives the project that governed it.
+- **The project's own Athena workgroup writes here, and it is enforced.**
+  `workgroup-<project-id>-<environment-id>` — the suffix is the **Tooling environment's** id, confirmed
+  against `list-environments` rather than inferred from the shape (it is the same suffix the provisioned
+  roles carry: `datazone_usr_role_<project-id>_<environment-id>`, underscores there and hyphens here) —
+  carries `EnforceWorkGroupConfiguration = true` and an output location of `…/<project-id>/dev/sys/athena/`
+  — so the doc's "Athena Workgroup output" tenant is *this* path and **not** the derived zone, which is
+  the premise Stage 6 decision 6 rests on, now measured rather than argued. The Spark workgroup the same
+  blueprint provisions (`sagemaker-studio-spark-workgroup-<project>`) exists and has **no** output
+  location: what makes it inert is Stage 6 step 1.6's SCP, never the absence of the object — read its
+  existence as expected, not as the SCP having failed.
 
 **1a. The vending surface under that same path — S3 Access Grants (measured 2026-08-23).** At first
 project provisioning in a member account, SMUS also creates the account×Region **S3 Access Grants**

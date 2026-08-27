@@ -116,15 +116,41 @@ discount, not a measurement window).
   `awsds-prod-derived` exists** (Stage 9's `consumer-data` call; the pre-declared scope of
   `GOVERNANCE.md` §Derived zone), and `awsds-prod-outputs` joins when decision 3 adds it.
 - **1.3 — [user] Run one one-time discovery job from Audit**, every wizard field decided in advance
-  (Lesson 16): scope = the lake buckets (`awsds-data-raw`, `awsds-data-curated`, the drop-box) **plus the
-  derived buckets** — every `awsds-<env>-derived` that exists at run time (D19 practice iv — the map of
-  decision 3, from `GOVERNANCE.md` §Derived zone's pre-declared scope) **plus `awsds-sandbox-lake`**
+  (Lesson 16): scope = the lake buckets (`awsds-data-raw`, `awsds-data-curated`, the drop-box) ~~plus the
+  derived buckets~~ (**REMOVED 2026-08-26 — D19 revised: no `awsds-<env>-derived` exists; the derived
+  zone is the projects bucket, next clause**) **plus `awsds-sandbox-lake`**
   (on decision 3's map since 2026-08-26 — Stage 16's permanent per-group store, the highest-value
-  discovery target precisely because nothing in it expires); **sampling
+  discovery target precisely because nothing in it expires) **plus each
+  `awsds-<env>-smus-projects`** (added 2026-08-26 by Stage 6 step 2.4's reading; **since the same
+  evening's D19 revision it IS the derived zone**, so this is D19 practice (iv)'s carrier, not an
+  extra — see the callout after this step); **sampling
   depth** per decision 1 (the cost lever: GB inspected × USD 1.00); **managed data identifiers** = the
   recommended default set, no custom identifiers; job type **one-time** — re-run deliberately, never
   scheduled. **The wizard's discovery-results repository prompt is decision 2** — answer it from the log,
   not at the keyboard.
+
+> **THE PROJECTS BUCKET JOINED THIS SCOPE ON 2026-08-26, FROM A STAGE 6 READING — AND BY THE SAME
+> EVENING IT WAS THE DERIVED ZONE ITSELF** (D19 revised: `awsds-<env>-derived` removed, the SMUS project
+> path kept as the one designed destination). The Tooling blueprint gives each project an **enforced**
+> Athena workgroup whose output location is `<domain-id>/<project-id>/dev/sys/athena/` **inside this
+> bucket**, so query results computed over governed lake data land here. Two properties make it harder
+> for discovery than the removed zone was, and both are measured rather than feared:
+>
+> - **Nothing expires.** Versioning, a 90-day noncurrent expiry, MPU abort — and no rule on current
+>   objects. The removed zone shed at 30 days; this one accumulates (open question 25).
+> - **Deleting a project does not delete its prefix.** Five project prefixes stood against **one** live
+>   project, one orphan carrying a whole `.git` tree and a notebook. So the scan target includes the work
+>   of projects that no longer exist and that no console lists — the exact shape this stage cannot
+>   discover for itself, which is why it is written down here.
+>
+> Both are **open question 25** (the expiry, and who reaps an orphan). If it is settled before this stage
+> runs, re-read the scope: an expiry short enough would change what a discovery job over this bucket is
+> even scanning.
+>
+> Consequence for **1.3**: the job scope names the bucket, not a prefix — an orphan prefix is invisible to
+> any scope written from the live project list. Consequence for **step 5**: it belongs on the
+> monitored-bucket map with the derived buckets, and it is the one whose data events will not thin out
+> over time.
 - **1.4 — [user] Route the findings**: in Macie's settings, turn on publication of **sensitive-data
   findings to Security Hub** (policy findings publish automatically once both services are on), and extend
   Audit's Stage 15 step 4 EventBridge→SNS rule to Macie findings — console-built, like the rule it
@@ -334,9 +360,12 @@ are free) with the rule's `MatchedEvents` metric — no CloudWatch Logs ingestio
   `data-governance/data/` and every `consumer-data` caller that exists by then (`sandbox/data/`,
   `development/data/`, `production/data/` after Stage 9): **advanced event selectors only** —
   `resources.type = AWS::S3::Object`, `resources.ARN` starts-with the account's monitored buckets (the
-  decision 3 map: lake + drop-box in Data Governance; the derived bucket in each consumer account;
+  decision 3 map: lake + drop-box in Data Governance; ~~the derived bucket in each consumer account~~
+  — removed 2026-08-26, D19 revised;
   **`awsds-sandbox-lake` in Sandbox** since 2026-08-26 — its reads are the exfiltration signal for the
-  one store where artifacts persist) —
+  one store where artifacts persist; **`awsds-<env>-smus-projects` in each Interactive member** since the
+  same date — **the derived zone itself since D19's same-evening revision**, and the only monitored
+  bucket whose contents never expire, orphaned project prefixes included) —
   **no management-event selector**, reads and writes both, log file validation on. Delivery: all three
   cross-account into **`awsds-data-logs`** under `AWSLogs/<account>/` (decision 7), with the bucket-policy
   statements for `cloudtrail.amazonaws.com` conditioned on `aws:SourceAccount` ∈ the three account ids —

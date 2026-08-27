@@ -176,21 +176,22 @@ terraform-live/
 │   │                     #     entitlement plane references BY NAME, so it lives in a [P]
 │   │                     #     slice: a missing one fails PROVISIONING of the permission
 │   │                     #     set in this account (2026-08-23, persona-vending.tf)
-│   ├── data/             # [P] the derived zone (ONE bucket, three prefix families:
-│   │                     #     results/, derived/${aws:userid}/, scratch/ - D19, and
-│   │                     #     `scratch` is a PREFIX, per D13's own wording), its
-│   │                     #     alias/awsds-<env>-data CMK (D31), the enforced Athena
-│   │                     #     workgroup, this account's own DataLakeSettings, and the LF
+│   ├── data/             # [P] the lake's consumer side (consumer-data, shared with
+│   │                     #     development/data/): this account's DataLakeSettings, the LF
 │   │                     #     resource links + local re-grants to the Data Governance
-│   │                     #     share (D22). ONE MODULE, consumer-data, shared with
-│   │                     #     development/data/. The lake itself is NOT here
+│   │                     #     share (D22), and the alias/awsds-<env>-data CMK - since
+│   │                     #     2026-08-26 the sandbox lake's key, NOT a derived zone's
+│   │                     #     (D19 revised: the zone is the SMUS project path under
+│   │                     #     sagemaker/; the derived bucket + enforced workgroup left
+│   │                     #     at consumer-data-v0.6.0). The lake itself is NOT here
 │   ├── lake/             # [P] the SANDBOX LAKE (Stage 16, APPLIED 2026-08-26):
 │   │                     #     awsds-sandbox-lake, PERMANENT artifacts, one prefix per SSO
 │   │                     #     group, mounted into SMUS projects via S3 connections and
 │   │                     #     vended to laptops via S3 Access Grants. Deliberately neither
 │   │                     #     the GOVERNED lake (no catalog object, no LF-Tag - D13's
-│   │                     #     non-registered class) nor the derived zone (nothing expires
-│   │                     #     here); the compensations are Stage 16's. Holds the bucket,
+│   │                     #     non-registered class) nor the derived zone - which since
+│   │                     #     2026-08-26 is the SMUS project path (D19 revised); the
+│   │                     #     compensations are Stage 16's. Holds the bucket,
 │   │                     #     the access role awsds-sandbox-lake-access and (its decision
 │   │                     #     3) the Access Grants location + per-group grants; per-PROJECT
 │   │                     #     grants are hand-made: runbooks/sandbox-lake.md
@@ -247,7 +248,9 @@ terraform-live/
 │   │                     #     the same persona vending policy as sandbox/foundation/,
 │   │                     #     byte for byte: one NAME, one object per member account
 │   ├── data/             # [P] the same consumer-data module as sandbox/data/, byte for
-│   │                     #     byte: derived zone + its CMK + workgroup + settings + links
+│   │                     #     byte: settings + links + the account data CMK (held EMPTY
+│   │                     #     here since 2026-08-26 - D19 revised, the derived zone and
+│   │                     #     workgroup removed at consumer-data-v0.6.0)
 │   ├── egress/           # [E] NAT + endpoints, same D5 switch as sandbox
 │   ├── probes/           # [E] Stage 3's instruments here: INT-09 reachability + the DNS half
 │   ├── dev-env/          # [P] same slice, same module, same pipeline, applied through

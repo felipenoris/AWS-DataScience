@@ -54,7 +54,9 @@ designed bucket per consumer account with three prefix families** (`results/`, `
 date](plan/decisions/D19-derived-zone.md) removed it**: Stage 6 step 2.4's reading found the Tooling
 blueprint already builds, per project, an enforced results location and a mounted working folder — two
 designed destinations for the same class of data — and the user kept the service's. The old zone's
-who-does-what table is D19's and the module history's; what stands is below.
+who-does-what table is D19's and the module history's; what stands is below. *(The same morning's
+reading had entered the projects bucket here as a "third family" beside the old zone's two tables —
+the evening's re-homing made it the only one, and that section folded into this one.)*
 
 **The derived zone is `awsds-<env>-smus-projects`** — one bucket per Interactive member account
 (Stage 6, `sagemaker-prereqs` v0.3.2), the tree inside it managed by SMUS as

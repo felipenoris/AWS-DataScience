@@ -59,9 +59,9 @@ AWS Organization (Management account - console only)                        [P]
 │   │       │     environments are provisioned here by the domain in
 │   │       │     Data Governance (SageMaker AI apps VPC-only,
 │   │       │     restricted egress). Slice is [P]; running apps are      [P/E]
-│   │       ├── derived zone: ONE bucket, prefixes results/ +              [P]
-│   │       │     derived/${aws:userid}/ + scratch/ (D19; `scratch` is a
-│   │       │     PREFIX per D13, not a bucket), own account data CMK (D31)
+│   │       ├── derived zone = the SMUS project path (D19 rev. 2026-08-26): [P]
+│   │       │     awsds-sandbox-smus-projects/<domain>/<project>/<scope>/,
+│   │       │     project CMK (D31's carrier); data CMK = the sandbox lake's
 │   │       ├── WireGuard EC2 <- the only human entry point (see below)     [D]
 │   │       └── NAT Gateway + interface VPC endpoints                       [E]
 │   │
@@ -71,7 +71,8 @@ AWS Organization (Management account - console only)                        [P]
 │       ├── blueprint target (D26): the engineering project's
 │       │     environments are provisioned here by the domain in
 │       │     Data Governance. Slice is [P]; running apps are            [P/E]
-│       ├── derived zone: same consumer-data module as Sandbox          [P]
+│       ├── derived zone = the SMUS project path, idem (data CMK held      [P]
+│       │     empty - D19 rev. 2026-08-26)
 │       └── NAT + interface VPC endpoints                                   [E]
 │
 ├── OU Data                  <- one SCP set: no USER compute (two named
@@ -564,7 +565,7 @@ contradicts some part of it.
   group, model package group — carried by the project's git repository, linted against domain-scoped
   references.
 - **D18** gives the data scientist read-only permission sets on Staging and Production (data plane, no
-  compute); **D19** keeps the derived zones (now per Interactive account) designed rather than left over.
+  compute); **D19** keeps the derived zone designed rather than left over — since 2026-08-26 it is the SMUS project path, per project, the service's hand.
 - **Two access paths, not one.** "The VPN is the only entry point" is true because the tunnel is *full*,
   not because it routes into every VPC. Only Sandbox and Production are reachable at the VPC level;
   Development and Staging are used entirely through AWS API endpoints exited via the WireGuard Elastic IP

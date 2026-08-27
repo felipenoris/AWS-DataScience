@@ -695,6 +695,45 @@ length, under item numbers 10-12 that collided with the live items above; the du
     governance half above** - whether the seats should exist - and its instrument is now the trail reading
     this entry already describes.
 
+### Raised by Stage 6 step 2.4's reading, 2026-08-26
+
+25. **What expires in `awsds-<env>-smus-projects`, and who removes the storage of a project that no
+    longer exists?** *(Reweighted the same evening it was raised: D19's 2026-08-26 revision made this
+    bucket THE derived zone — `awsds-<env>-derived` and its 30-day shedding are removed — so this is no
+    longer a side bucket's hygiene question but the derived zone's own expiry, D19 practice (iii)'s only
+    open mechanism. The bucket is Terraform's (`sagemaker-prereqs`), so a lifecycle rule is addable
+    without touching the tree SMUS manages.)* The reading that answered verification (xviii) found the bucket has **no expiry on
+    current objects** (versioning, a 90-day noncurrent rule and MPU abort are all the house module gives
+    it) and that **deleting a project leaves its whole prefix behind** — five project prefixes stood
+    against one live project, one orphan carrying a complete `.git` tree and a notebook. Neither is a
+    defect in anything: no step ever decided this bucket's lifecycle, because until the same reading it
+    was believed to be a service's working area rather than a **designed destination for query results
+    over governed data** (the project's own enforced Athena workgroup writes into it —
+    `GOVERNANCE.md` §Persistence's third family). What has to be decided, and the reason each is not
+    obvious:
+
+    - **The expiry itself.** The derived zone's 30 days cannot simply be copied: that number is written
+      against *query results*, and this bucket also holds a project's working files and the `shared/`
+      folder mounted in JupyterLab — data a person expects to find next week. An expiry short enough to
+      bound accumulation and long enough not to eat live work is a different number, and it may have to
+      be **per scope** (`dev/sys/athena/` is a result location; `shared/` is not).
+    - **Who reaps an orphan.** A prefix whose project is gone is invisible to any rule written from the
+      live project list, so an expiry is the only mechanism that reaches it — unless a deletion hook is
+      added, which nothing in SMUS offers and D11's `make down` does not cover (it stops apps; it has
+      never touched project storage). If the answer is "the expiry alone", say so, because it means an
+      orphan survives for exactly that long with no principal accountable for it.
+    - **Whether the project workgroup's output location is ours to re-point.** If it is, the result half
+      could move into the derived zone and inherit its 30 days, and the question shrinks to the working
+      files. It is blueprint-created, so this is verification (vi)'s reconciliation question one resource
+      over — a reading, not a preference.
+
+    **Owner:** the user for the numbers, Stage 6 for the proposal (it is that stage's act that created
+    the destination). **Instruments:** the S3 reading above, and Stage 11's data-event trail once the
+    bucket joins its monitored map — where a real access pattern would say which scopes are actually
+    re-read and which only accumulate. **Related:** the `scratch` prefix reasoning in
+    [D19](decisions/D19-derived-zone.md), and Stage 16's `awsds-sandbox-lake`, the *other* store this
+    estate deliberately lets persist — there the persistence is the point, here it is unexamined.
+
 ---
 
 *Plan core: [GENERAL_PLAN.md](../GENERAL_PLAN.md) · Decisions: [docs/plan/decisions/INDEX.md](decisions/INDEX.md) · Stages: [docs/plan/stages/INDEX.md](stages/INDEX.md)*

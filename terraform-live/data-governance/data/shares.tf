@@ -124,7 +124,8 @@ resource "aws_lakeformation_permissions" "share_tables" {
 
   # SELECT is the read; DESCRIBE is what makes the table enumerable. No INSERT, DELETE, ALTER
   # or DROP anywhere: the consumer side of this design writes through the drop-box and its own
-  # derived zone, never into raw or curated (D18, D19). The governed WRITE is Stage 9's, in
+  # derived zone (the SMUS project path since 2026-08-26, D19 revised), never into raw or
+  # curated (D18, D19). The governed WRITE is Stage 9's, in
   # Production, and it is a different grant to a different principal.
   permissions                   = ["SELECT", "DESCRIBE"]
   permissions_with_grant_option = ["SELECT", "DESCRIBE"]
