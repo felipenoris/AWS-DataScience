@@ -604,24 +604,31 @@ catalog as an **S3 Object Collection** asset — a curated, versioned *metadata*
 subscription rules. No stage uses it: this lake's path into the catalog is tables on the LF
 substrate, not object collections.
 
-Three things in a member account all answer to "working storage" — **two buckets and a workgroup**, and
-the third row read as a bucket until 2026-08-20, which is the error that made the destination question
-below easy to miss:
+Three things in a member account all answered to "working storage" — **two buckets and a workgroup** —
+and the third row read as a bucket until 2026-08-20, which is the error that made the destination question
+below easy to miss. **Since 2026-08-26/27 there is ONE**: the other two were destroyed with D19's revision,
+and the rows that described them are kept struck, as the record of what the account used to hold.
 
 | Object | Created by | Holds |
 |---|---|---|
 | `awsds-<env>-smus-projects`, a **bucket** (the project path lives inside it) | **Terraform** — the member's `sagemaker-prereqs` slice (v0.3.2), consumed by Tooling's `S3Location`; settled 2026-08-22 | `shared/` files, the blueprint workgroup's Athena output, workflow temp, the consumer Glue database location |
-| `awsds-<env>-derived`, a **bucket** | `consumer-data` (Stage 5 pass 4a) | the persona's derived zone — per-user write, persona-grain read, the `scratch/` prefix |
-| `awsds-<env>-athena`, **a workgroup, not a bucket** | `consumer-data` (Stage 5 pass 4a) | nothing of its own. The module creates exactly **one** bucket (`buckets.tf`); this is the *enforced* workgroup (`athena.tf`), and its results are forced into `s3://awsds-<env>-derived/results/` under a 10 GiB cap. **So the enforced results already live inside the derived zone** — they are not a third place |
+| ~~`awsds-<env>-derived`, a **bucket**~~ | ~~`consumer-data` (Stage 5 pass 4a)~~ | **DESTROYED 2026-08-26/27.** Held the persona's derived zone — per-user write, persona-grain read, the `scratch/` prefix |
+| ~~`awsds-<env>-athena`, **a workgroup, not a bucket**~~ | ~~`consumer-data` (Stage 5 pass 4a)~~ | **DELETED 2026-08-26/27, and not quietly**: `DeleteWorkGroup` counts query *history* as contents, so it took `RecursiveDeleteOption` after refusing the plain destroy. It was the *enforced* workgroup, forcing results into `s3://awsds-<env>-derived/results/` under a 10 GiB cap |
 
-The last row is a boundary worth stating: pass 4c scoped the persona's Athena run family to the two
-*enforced* workgroup ARNs, and a blueprint-provisioned project workgroup is a third workgroup
-outside that scope — exercised by project roles, not by the persona. **And the first row is where its
-output lands**, which is the fact Stage 6's decision 6 must point at rather than assume: a project
-workgroup writes into the *project path*, not into `awsds-<env>-derived`, unless Stage 6 step 2.4/2.6
-measures that the location can be repointed and enforced. Record that answer **here** when it returns. Whether the two query paths
-stay parallel or converge (TIP — Stage 6 decision 2) is Stage 6's to measure, not this file's to
-assert.
+**This section told its reader to come back and record an answer, and the answer arrived.** It used to
+end: *a project workgroup writes into the project path, not into `awsds-<env>-derived`, unless Stage 6 step
+2.4/2.6 measures that the location can be repointed and enforced.* Step 2.4 measured it on **2026-08-26**
+— the project's own workgroup is enforced into `…/<project-id>/dev/sys/athena/` — and the user's answer was
+not to repoint anything but to **keep the service's destination and delete ours** ([D19
+revised](plan/decisions/D19-derived-zone.md)).
+
+Two things that used to be true here died with the objects. The boundary the old last row stated — pass 4c
+scoping the persona's Athena family to the two *enforced* workgroup ARNs, with a blueprint-provisioned
+project workgroup as **a third workgroup outside that scope** — has no subject left: `DataScientistAccess`
+carries **no `athena:` action at all**, so the project workgroup is not a third one, it is the only one, and
+it is exercised by project roles because there is no other kind of caller. And *"whether the two query paths
+stay parallel or converge"* (TIP — Stage 6 decision 2) is moot from the same date for the same reason:
+there is one path. TIP itself was delivered `false` and non-editable in both project profiles.
 
 ## SageMaker configuration
 

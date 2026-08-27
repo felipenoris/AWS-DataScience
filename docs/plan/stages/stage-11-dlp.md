@@ -253,8 +253,12 @@ enumerated-ARN instrument: created, read, recorded, deleted inside one month.
   trust **Entire organization** (Audit is already the Access Analyzer delegated administrator; **only one
   org-level internal analyzer can exist per organization**). Resources by **exact bucket ARN** (account id
   + ARN pairs; prefixes are not supported): the map of decision 3 — recommended minimum: the two
-  registered lake buckets and every `awsds-<env>-derived` (three once Stage 9 has run — at USD 9 per
-  resource-month that is USD 45 for the month). No new principals arrive:
+  registered lake buckets and **every derived zone that exists at run time — since 2026-08-26 that is
+  `awsds-<env>-smus-projects`, not `awsds-<env>-derived`** ([D19 revised](../decisions/D19-derived-zone.md):
+  the Interactive derived buckets were destroyed, and neither deployment target has a named results home
+  until Stage 9 re-decides), plus `awsds-sandbox-lake` if item 3's map keeps it. At USD 9 per
+  resource-month the recommended minimum is **five resources, USD 45 for the month** — the same total the
+  old sentence quoted, arrived at from a different list. No new principals arrive:
   `AWSServiceRoleForAccessAnalyzer` exists org-wide since 1b (Lesson 17, checked not assumed).
 - **2.1.4 — [Claude] Amend the instruments in the same sitting**: `audit-iam-analyser.sh` expects the
   second analyzer (type `ORGANIZATION_INTERNAL_ACCESS`) while it lives; restate **INV-10** in
@@ -485,10 +489,13 @@ decision-maker.
    long-term results, or results expire in 90 days. Recommended: **skip it at lab scale** — findings
    (the durable part) live in Security Hub and the threat model; record the 90-day acceptance.
 3. **The monitored-resource map** (1.3, 2.1.3, 5.1) — which buckets Macie scans, the analyzer monitors
-   and the trails select. Recommended: lake (`raw`, `curated`, drop-box) + **every `awsds-<env>-derived`
-   that exists at run time** — the derived-zone prefixes are pre-declared Macie + data-event scope
-   ([`GOVERNANCE.md`](../../GOVERNANCE.md) §Derived zone, one of the zone's five controls), consumed here
-   rather than re-decided, so Production's joins the map the day Stage 9 creates it;
+   and the trails select. Recommended: lake (`raw`, `curated`, drop-box) + **every derived zone that
+   exists at run time, which since 2026-08-26 means `awsds-<env>-smus-projects`**
+   ([D19 revised](../decisions/D19-derived-zone.md): `awsds-<env>-derived` was destroyed and the SMUS
+   project path took its place) — the derived zone's Macie and data-event scope is pre-declared
+   ([`GOVERNANCE.md`](../../GOVERNANCE.md) §Derived zone, practice (iv) of six), consumed here rather than
+   re-decided. **Production's and Staging's join the map the day Stage 9 decides where their results
+   land, which is no longer automatic**: neither account has SMUS, so neither inherits the new zone;
    **`awsds-sandbox-lake` is on the map since 2026-08-26** (Stage 16, added in the sitting that created
    that stage, Lesson 34 — the permanent per-group store names this scope as one of its compensations,
    and for 2.1.3's analyzer it is one more enumerated bucket ARN at the same per-resource price);
