@@ -3416,3 +3416,185 @@ boundary's survival, and the governance-manager sign-in that verifications (xii)
 4.2's measurement half, 4.3's friction reading, design B entire, and the user's two open choices: INT-16's
 fallback (i) versus recorded acceptance, and OQ 21's SCP. `EXC-06` — the `"*"` on Sandbox's DNS allow-list
 — is still standing and still the user's.
+
+## 2026-08-26 (evening) — Decision 6 asked where the prefixes go, the path reading answered something else, and the derived zone left the estate
+
+**Whose hand:** the readings and every file in this entry are Claude's, on the user's authorization; the
+**decision** is the user's, taken in chat after the reading; the **applies were run by the user** (the
+session's tooling refused `terraform apply` to Claude), and the two failure outputs below are the user's
+paste, verbatim.
+
+### Why the sitting happened
+
+Decision 6 — the derived zone's per-project prefix shape, project-first against family-first — had been
+waiting since 2026-08-19 on one input: **what the SMUS project's S3 path actually looks like**
+(verification (xviii)). Step 2.6 had been deliberately not written blind. The sitting opened to take that
+reading and settle the decision, and closed with the decision **dissolved** and its subject removed from
+the estate.
+
+### The reading decision 6 was waiting for, and the three things beside it
+
+Read read-only as `awsds-infra-sandbox-1` and `awsds-infra-data`. The path is
+`<domain-id>/<project-id>/<scope>/` — **no person grain anywhere**, `shared/` and `dev/` the scopes. The
+bucket held **73 objects / 494,825 B**, `shared/` 68 of them, `dev/` five empty prefix markers.
+Encryption `aws:kms` under `alias/awsds-sandbox-project`, `BucketKeyEnabled: true`, SSE-C blocked.
+
+Three findings the step had not asked for, and each one changed something:
+
+1. **A deleted project keeps its prefix, and nothing expires a current object.** Five project prefixes
+   stood against **one** live project (`avhvbqn37ty7m8`); one orphan carried a complete `.git` tree (40
+   objects) and an `Untitled.ipynb`. The house module gives the bucket versioning, a 90-day *noncurrent*
+   rule and MPU abort — nothing touches a current object. **Open question 25** was raised for it.
+2. **The project's own Athena workgroup is a fourth designed destination** —
+   `workgroup-<project-id>-<environment-id>`, `EnforceWorkGroupConfiguration = true`, output
+   `…/<project-id>/dev/sys/athena/`. The environment id was confirmed as the **Tooling** environment's
+   through `datazone list-environments`, so the name shape is a reading rather than a guess. Decision 6's
+   own pre-declared fourth-destination branch, fired by its own input.
+3. **The Spark workgroup exists by design** and 1.6's SCP is the only thing making it inert.
+
+### The user's revision: the SMUS project path IS the derived zone
+
+The reading put **two designed destinations for the same class of data** in front of the user — ours per
+account, the service's per project — which is exactly the second copy zone the enforced-location argument
+exists to prevent, except both were designed. The user kept the service's: `awsds-<env>-derived` and
+`awsds-<env>-athena` are **removed**, the project path is the derived zone, and **decision 6 is dissolved**
+(its subject no longer exists). [D19](../plan/decisions/D19-derived-zone.md) carries the revision — the one
+copy — with the six practices re-read against the new home: (ii) per-principal prefixes **withdrawn** (no
+person grain; attribution moves to Stage 11's data events), (iii) expiry **open and currently absent**
+(OQ 25 is now this decision's expiry question), (vi) the CMK read control **re-homed onto the project CMK**.
+
+**One thing was measured before it was assumed, and it changed the shape of the removal**: the account data
+CMK does **not** die with the bucket — `awsds-sandbox-lake` (Stage 16, the same day) encrypts under it. So
+the key stays, in Development standing empty and dated, and what leaves it is the **persona statement**:
+with the derived zone gone, the only bucket under that key is the sandbox lake, which the persona reaches
+only through vended, prefix-scoped credentials. Keeping `AllowDataScientistUseViaS3` would have left a
+KMS-layer path around that vending door. The removal is a **tightening**, not a leftover.
+
+### What was written
+
+`consumer-data-v0.6.0` (`buckets.tf` and `athena.tf` deleted, the persona statement out of `kms.tf`, four
+outputs and three variables gone), both slice bumps under Recipe B's two-commit order, and **six statements
+out of `DataScientistAccess`** — the set carries **no `athena:` action at all** now, and its rendered inline
+policy went **10,151 → 7,573 bytes**. `DL-8`/`DL-9` were **inverted into absence checks** (FAIL until the
+destroys land, deliberately), `DP-4` re-aimed at `*-smus-projects`. Roughly thirty files;
+PR [#47](https://github.com/felipenoris/AWS-DataScience/pull/47), which **contains** PR #46's reading.
+
+### The rebase, and a tag the runbook had already ruled on
+
+#46 merged while #47 was open, so #47 was rebased onto `origin/main`. Git skipped #46's own commit as
+already applied; the single conflict (this stage file's Status row) was resolved back to the validated merge
+tree, and `git diff` of the pre-rebase tip against the new one came out **empty** — the check that a rebase
+dropped nothing. `consumer-data-v0.6.0` then read `orphaned`, which
+[`terraform-changes.md`](../plan/runbooks/terraform-changes.md) had already declared the **normal** outcome
+of a rebase merge: do nothing, verify the *content* instead. Both tree hashes for
+`terraform-modules/consumer-data` matched.
+
+### The note covered Production and not Staging
+
+The user asked why Production was excluded, having understood — correctly — that Production carries a
+SageMaker runtime. It does (D17); what it does not carry is the **domain** (D28), so the re-homed *project*
+path does not exist there and there was nothing to move into. The question then exposed a defect in what had
+been written an hour earlier: the dated note sat on Stage 9's `production/data/` row **only**, and Staging is
+in the same position — and is the worse half, because step 4.2 writes `awsds-staging-athena` as **enforced**
+with *"results local"* and that location was never named anywhere, even before v0.6.0 removed the supply.
+Lesson 14 in its classic form. D19 now says *the deployment targets*, and states why the argument that
+settled the Interactive accounts does not carry: where the service builds nothing, ours is not a duplicate
+destination but the only one.
+
+### Open question 26: the promotion door exists in the blueprint, and it is empty
+
+The user asked how work produced in the re-homed zone reaches Production, and said the SMUS tooling for it
+was not clear. It was not clear because **nothing had read it**: `docs/SMUS.md` said *"S3 or Git"* from the
+documentation and promised the console's real offer when step 1.5 ran, and 1.5 never recorded it. Read from
+**both** project profiles (`get-project-profile`, the `Tooling` configuration's `resolvedParameters`):
+
+| parameter | value | editable |
+|---|---|---|
+| `gitConnectionArn` | `""` | **false** |
+| `gitFullRepositoryId` | `""` | true |
+| `gitBranchName` | `""` | true |
+| `isNewGitRepository` | `""` | true |
+| `enableProjectRepositoryAutoSync` | `"false"` | true |
+
+So the product **does** carry a project repository with an auto-sync flag, it is off, and the binding field
+is not editable per project — a project cannot bring its own connection, the profile must carry one, and
+ours carries none: **no project in this domain can have a project repository today**. It is also not an
+either/or — the S3 path is full while every git field is empty. `docs/SMUS.md` §S3 item 2 was rewritten from
+the reading (the 1.5 promise discharged there), and **open question 26** carries what it opens. Beside it,
+`ListConnections` at project scope is **denied to `InfrastructureAccess`**.
+
+### The applies: two landed, two refused, and the refusal is a finding
+
+Planned by Claude, read, saved, and applied by the user in step 2.6's order. Each plan was **7 delete + 1
+update** per member, symmetric, touching no Lake Formation resource, no resource link and no
+`DataLakeSettings` — and `prevent_destroy` did not block, because the `derived` sub-module left the
+configuration and its `lifecycle` block went with it.
+
+**Landed:** `identity/sso` (`0 add, 2 change, 0 destroy`; re-plan **`No changes`**), and **both derived
+buckets are gone** — emptied first by hand, 8 versions in Sandbox and 4 in Development, every one an Athena
+result CSV or `.metadata` sidecar from the 2026-08-19/20 verification, nothing authored by a person.
+
+**Refused, both accounts, identically** (the user's paste):
+
+```
+│ Error: deleting Athena WorkGroup (awsds-sandbox-athena): operation error Athena: DeleteWorkGroup, https response error StatusCode: 400, RequestID: dd26bbea-f190-4bbf-9537-9d0d500b9532, InvalidRequestException: WorkGroup awsds-sandbox-athena is not empty
+```
+
+```
+│ Error: deleting Athena WorkGroup (awsds-dev-athena): operation error Athena: DeleteWorkGroup, https response error StatusCode: 400, RequestID: c76477e9-637d-40a6-bfb4-88c26877bcfd, InvalidRequestException: WorkGroup awsds-dev-athena is not empty
+```
+
+**"Not empty" was measured rather than assumed, and it is not what the phrase suggests.** Named queries: **0
+and 0**. Prepared statements: **0 and 0**. Query executions: **4 and 2** — the Stage 5 verification's own
+`SELECT 1` and `SELECT * FROM curated.sample_trades LIMIT 10`, from 2026-08-19/20, the same queries that
+wrote the CSVs deleted an hour earlier. So **`DeleteWorkGroup` counts query *history* as contents**, and
+unlike a named query there is **no API that deletes a query execution**: the history ages out on Athena's own
+45-day clock and cannot be emptied by hand. The only door is `RecursiveDeleteOption`.
+
+**And that door cannot be reached from here, which is the reusable half.** Terraform exposes it as
+`force_destroy` on `aws_athena_workgroup` — a *configuration* argument, and the resource left the
+configuration in `v0.6.0`. A destroy runs from the attributes in **state**, where the flag is `false`. So
+**a destroy-time flag has to be set in the configuration before the resource is removed from it**: deleting
+the block and the flag in the same version leaves the destroy unarmed, and the failure surfaces only at
+apply, after the resources beside it are already gone. This is lesson-shaped and is **not** yet in
+`docs/plan/lessons.md`.
+
+**Closed in a second act, the same night.** Both workgroups deleted with `--recursive-delete-option` (the
+user's hand), then both `data/` slices applied — the aborted run had stopped **before** the KMS update, so
+`AllowDataScientistUseViaS3` was still live on both key policies until this one landed. Read back after it:
+
+- **Workgroups**: `awsds-sandbox-athena` and `awsds-dev-athena` gone. Sandbox keeps `primary` and the two
+  SMUS project workgroups — the enforced `workgroup-<project>-<environment>` that is now the derived zone's
+  writer, and the Spark one 1.6's SCP makes inert. Development keeps `primary` alone.
+- **Key policies**: `AllowDataScientistUseViaS3` is gone from both. Sandbox's `alias/awsds-sandbox-data`
+  carries `EnableKeyAdministrationInThisAccount` + `AllowSandboxLakeAccessRoleViaS3` — the sandbox lake, the
+  measured reason the key survived. Development's carries the administration statement **alone**: the
+  no-consumer branch, standing empty and dated rather than deleted.
+- **Buckets**: both gone. **Re-plan**: `No changes` on all three slices — `sandbox/data`, `development/data`
+  and `identity/sso`.
+- **`./aws/datalake.py`**: `DL-8` *"no `awsds-*` workgroup — the removed design staying removed"* and `DL-9`
+  *"no `*-derived` bucket on any consumer"* both **`pass`**. The absence checks written the same day now
+  measure the absence they were written for, which is the only proof that the inversion was real work and
+  not a comment.
+
+### Files
+
+`docs/plan/decisions/D19-derived-zone.md` (the revision, the one copy) and `D31-approver-read.md`;
+`docs/GOVERNANCE.md`; `docs/SMUS.md`; this stage file (Status, step 2.6 re-cut, decision 6 dissolved,
+(xviii) answered, (xix) re-homed); `stage-09` (both deployment-target rows and step 4.2), `stage-11`,
+`stage-14`; `docs/plan/open-questions.md` (OQ 25 raised then corrected, **OQ 26** added);
+`terraform-modules/consumer-data/` (`v0.6.0`) and its README; `terraform-live/identity/sso/` and both
+`data/` slices; `aws/datalake.py`, `aws/dlp.py`, `aws/deploytargets.py`, `aws/sandboxlake.py`;
+`scripts/tfhygiene/{backend,layers}.py`; `conventions.md` §6, `architecture.md`, `ORGANIZATION.md`,
+`institutional-delta.md`, `cost-model.md`, `PRICING.md`, `aws/INDEX.md`, `terraform-live/README.md`,
+`README.md`, `CLAUDE.md`. Branch `claude/derived-zone-rehomed-to-smus`, PR
+[#47](https://github.com/felipenoris/AWS-DataScience/pull/47) — **the user merges**.
+
+### Owed after this sitting
+
+**Nothing from the removal itself** — it closed the same night, and `docs/AWS_STATE.md` and `CLAUDE.md`'s
+two rows were brought to the measurement rather than left describing the old shape. One question survives
+it: whether the `force_destroy` finding becomes **Lesson 44**, which is the user's to say. Unchanged by this sitting: pass 3's browser
+half, 4.2's measurement half, 4.3's friction reading, design B entire, INT-16's fallback (i) versus recorded
+acceptance, OQ 21's SCP, OQ 24, and `EXC-06`. New and the user's: **OQ 25**'s numbers and **OQ 26**'s first
+bullet.
