@@ -34,10 +34,13 @@ locals {
 
 module "consumer_data" {
   # checkov:skip=CKV_TF_1:pinned by git TAG by convention (conventions §6, Stage 3 step 1.1a) - a repository-internal tag only the repo owner can move
-  source = "git::git@github.com:felipenoris/AWS-DataScience.git//terraform-modules/consumer-data?ref=consumer-data-v0.5.0"
+  # v0.6.0 (2026-08-26): the derived zone LEFT the module - D19 revised, the zone re-homed
+  # onto the SMUS project path. This slice's plan destroys awsds-sandbox-derived and the
+  # enforced workgroup; the data CMK stays (the sandbox lake encrypts under it) minus its
+  # persona statement. The `region` input left with the statement that consumed it.
+  source = "git::git@github.com:felipenoris/AWS-DataScience.git//terraform-modules/consumer-data?ref=consumer-data-v0.6.0"
 
-  env    = var.env
-  region = var.region
+  env = var.env
 
   lake_catalog_id = data.aws_caller_identity.lake.account_id
   lake_databases  = data.terraform_remote_state.lake.outputs.database_names
@@ -64,7 +67,9 @@ module "consumer_data" {
   # keeps it inside the decision rather than beside it is that the role is not a human's: it is
   # a vending role with one bucket in its identity policy, assumable only by S3 Access Grants
   # (and, from pass 4, by named project roles), and every session it issues is scope-reduced to
-  # one grant's prefix. The ViaService pin below is the same one the persona statement carries.
+  # one grant's prefix. Since 2026-08-26 this is the ONLY cryptographic statement on the key:
+  # the persona's left with the derived zone (D19 revision), so the vending door is the one
+  # path to anything encrypted here.
   additional_data_key_policy_statements = [
     {
       Sid       = "AllowSandboxLakeAccessRoleViaS3"

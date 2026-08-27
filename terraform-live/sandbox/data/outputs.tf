@@ -1,29 +1,12 @@
-# Outputs - what other slices read through terraform_remote_state (never pasted). Stage 6 is the
-# first consumer: the blueprint-provisioned project roles need the derived prefixes and the key.
-
-output "derived_bucket_name" {
-  description = "The derived zone in this account - Stage 11's Macie and CloudTrail data-event scope."
-  value       = module.consumer_data.derived_bucket_name
-}
-
-output "derived_bucket_arn" {
-  description = "The derived zone's ARN."
-  value       = module.consumer_data.derived_bucket_arn
-}
+# Outputs - what other slices read through terraform_remote_state (never pasted).
+#
+# FOUR OUTPUTS LEFT 2026-08-26 with the derived zone (derived bucket + workgroup, name and
+# ARN each) - D19 revised: the zone is the SMUS project path, and identity/sso/ stopped
+# reading this state in the same revision.
 
 output "data_key_arn" {
-  description = "This account's data CMK - D31's read control, and Stage 6's extension point for the project execution roles."
+  description = "This account's data CMK - the sandbox lake's key in Sandbox (Stage 16), held empty in Development (D19 as revised 2026-08-26)."
   value       = module.consumer_data.data_key_arn
-}
-
-output "athena_workgroup_name" {
-  description = "The enforced workgroup (D19 practice i)."
-  value       = module.consumer_data.athena_workgroup_name
-}
-
-output "athena_workgroup_arn" {
-  description = "The workgroup ARN - identity/sso/ scopes athena:StartQueryExecution to it."
-  value       = module.consumer_data.athena_workgroup_arn
 }
 
 output "resource_link_names" {

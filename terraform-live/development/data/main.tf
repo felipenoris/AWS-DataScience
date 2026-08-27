@@ -32,10 +32,13 @@ module "consumer_data" {
   # adoption with ownership: the module now declares ONE create-time admin and ignore_changes
   # over the list, so the service's own seats are neither copied here nor fought. This slice's
   # plan must read `No changes` across every one of these bumps.
-  source = "git::git@github.com:felipenoris/AWS-DataScience.git//terraform-modules/consumer-data?ref=consumer-data-v0.5.0"
+  # v0.6.0 (2026-08-26): the derived zone LEFT the module - D19 revised, the zone re-homed
+  # onto the SMUS project path. This slice's plan destroys awsds-dev-derived and the enforced
+  # workgroup; the data CMK stays EMPTY, held for this account's next data bucket (the
+  # explicit no-consumer branch, dated - Stage 6 verification (xx)'s discipline).
+  source = "git::git@github.com:felipenoris/AWS-DataScience.git//terraform-modules/consumer-data?ref=consumer-data-v0.6.0"
 
-  env    = var.env
-  region = var.region
+  env = var.env
 
   lake_catalog_id = data.aws_caller_identity.lake.account_id
   lake_databases  = data.terraform_remote_state.lake.outputs.database_names
