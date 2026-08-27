@@ -576,11 +576,19 @@ grants are **membership-blind** (the grantee grain is the persona role — every
 every granted project), and the vended credentials are **bearer** for their duration (the OQ-14
 shape). Requests are metered: USD 0.03 per 1,000 non-delete AG calls (`PRICING.md` §5).
 
-**2. Project files storage — S3 or Git.** A project-profile field. The terminology page still says a
-default CodeCommit git connection is provided; the 2025-09 announcement makes S3 the default, born
-of CodeCommit's deprecation. Two spellings of one object (Lesson 32) — what the console actually
-offers is recorded when step 1.5 runs, and the GitLab connection is Stage 7's surface
-(INT-09/INT-13).
+**2. Project files storage — S3, and a git repository BESIDE it, not instead of it (measured
+2026-08-26).** This item used to read *"S3 or Git"* from the documentation and promised the console's
+real offer at step 1.5; **the profile answers it directly**, so the promise is discharged here. The
+`Tooling` configuration carries five parameters — `gitConnectionArn`, `gitFullRepositoryId`,
+`gitBranchName`, `isNewGitRepository`, `enableProjectRepositoryAutoSync` — and in **both** profiles
+every one is empty or `false`. So it is not an either/or: the S3 project path is the storage
+regardless (the live project's is full — item 1 above), and the repository is an **additional**,
+currently unconfigured binding carrying an **auto-sync** flag. **`gitConnectionArn` is
+`isEditable = false`** — the blueprint template's own doing, not a lock this project wrote — so a
+project cannot bring its own connection and the profile must carry one: **no project in this domain
+can have a project repository today.** Whether enabling it *syncs* the folder or *replaces* it is
+unmeasured. The connection is Stage 7's surface (INT-09/INT-13), and **open question 26** carries the
+promotion question all of this opens.
 
 **3. The lake — reached through the catalog, never mounted.** Governed data enters a project by
 publish/subscribe on the SageMaker Catalog, fulfilled on the Lake Formation substrate Stage 5 built
