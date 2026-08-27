@@ -122,9 +122,20 @@ write attribution at the prefix grain; and the 30-day shedding, until OQ 25 land
 one destination instead of two, no contract between our prefix families and the service's tree, and a
 zone whose management cost is the service's.
 
-**Production is not covered by this revision.** It has no SMUS (D28), so where Stage 9's job results
-land is that stage's to re-decide at its revision — the module no longer provides a derived zone, and
-`aws/deploytargets.py` carries the dated note.
+**The deployment targets are not covered by this revision — Production and Staging both.** They do
+carry the **SageMaker runtime** (D17: training and processing jobs, Pipelines, the registry, endpoints
+— submitted to by a pipeline, never by a person); what they do not carry is the **domain** (D28: no
+domain, no portal, no blueprint ever touches a deployment target). The re-homed zone is a *project*
+path — `<domain-id>/<project-id>/<scope>/` in a bucket the Tooling blueprint fills, reached by a
+project role, under the project CMK — so it does not exist in either account and there is nothing
+there to move into. **What this revision leaves them is a supply question, not a containment one**:
+`consumer-data` no longer provides a derived zone or an enforced workgroup to any caller, and Stage 9
+planned both accounts on that supply — its `production/data/` row, and step 4.2's
+`awsds-staging-athena`, whose result location was never named anywhere. Where each account's results
+land is **that stage's to re-decide at its revision**, and **the argument that settled the Interactive
+accounts does not carry there**: here the choice was between two designed destinations and the
+service's won; in a deployment target the service builds nothing, so ours is not a duplicate but the
+only one. `aws/deploytargets.py` and the two Stage 9 rows carry the dated note.
 
 **The persona's LF re-grants stay** (the lake-consumption machinery — settings, resource links,
 re-grants — is what SMUS subscriptions ride and what catalog visibility needs); whether the persona's
