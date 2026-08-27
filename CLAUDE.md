@@ -225,9 +225,10 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   consumed.** `docs/GOVERNANCE.md` is the one copy of the ontology + grant rules; **one data CMK per
   account** (`alias/awsds-<env>-data`). **Producer:** 5 `awsds-data-*` buckets, `raw`+`curated`
   registered, 2 LF-Tag keys, `curated.sample_trades` (12 synthetic rows), 2 **never-run** crawlers, 2 TBAC
-  shares (**INT-11 closed**). **Consumer, per account:** own CMK, `awsds-<env>-derived`, enforced
-  `awsds-<env>-athena`, own `DataLakeSettings`, 2 links, 4 re-grants. **Persona:** 7 statements in
-  `DataScientistAccess`; **`scratch` is a PREFIX**. **Full inventory: `AWS_STATE.md`'s lake row + the two
+  shares (**INT-11 closed**). **Consumer, per account:** own CMK, own `DataLakeSettings`, 2 links, 4
+  re-grants — the derived bucket and the enforced workgroup **DESTROYED 2026-08-26/27** (D19 revised).
+  **Persona:** `DataScientistAccess` is **7 statements** since that day, six of the query/derived family
+  gone — no `athena:`, no derived, no scratch. **Full inventory: `AWS_STATE.md`'s lake row + the two
   slice READMEs, not here.** Register **13 rows / 24 triples**.
 - **Pass 6 RAN 2026-08-20 — Stage 5 has no unrun pass left.** Security Hub **CSPM**, never the **v2**
   beside it (both on hands the Config recorder to a service-linked one, so `DL-11` fails on v2's
@@ -442,10 +443,13 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   KMS-layer path around the lake's vending door). Stage 6 decision 6 DISSOLVED; 2.6 re-cut to the
   removal choreography; (xix) re-homed to the projects bucket; Stage 5 step 9.3's extension point died
   unconsumed. `DL-8`/`DL-9` flipped to ABSENCE checks (FAIL until the destroys apply — deliberate);
-  `DP-4` re-aimed at `*-smus-projects`. **Code written (`consumer-data-v0.6.0`, slice bumps, sso edit),
-  APPLIES OWED to the user in 2.6's order: empty both buckets by hand (versioned!), sso FIRST, then the
-  two data slices.** Production is NOT covered (no SMUS there) — Stage 9 re-decides its results home.
-  After the applies: AWS_STATE + this file's Stage 5 bullet need their state rows updated.
+  `DP-4` re-aimed at `*-smus-projects`. **APPLIED 2026-08-26/27** (`consumer-data-v0.6.0`): buckets emptied by
+  hand then destroyed, both workgroups deleted, both key policies tightened; three slices re-plan `No
+  changes`, `DL-8`/`DL-9` `pass`. **`DeleteWorkGroup` REFUSED both workgroups first — query HISTORY is
+  "contents" (4 and 2 executions, 0 named queries), no API deletes an execution, and `force_destroy` was
+  unreachable because the resource had left the configuration carrying the flag: A DESTROY-TIME FLAG IS
+  SET BEFORE THE RESOURCE IS REMOVED, never in the same version.** Production and Staging NOT covered
+  (no SMUS in either) — Stage 9 re-decides where its results land.
 - **All 37 decisions closed** (D30 as a revert; **D5/D6 re-scoped 2026-08-25** — two egress planes, one proxy). **Still needed from the user: the domain name**
   (blocks Stage 13). **Settle earliest:** INT-13 (INT-11's vending half closed at 4d, 2026-08-19).
 - **The repository is not documentation-only:** read-only `aws/` scripts, both Terraform trees, `scripts/`,
