@@ -1,5 +1,10 @@
 # The account data CMK (Stage 5 pass 4, 2026-08-19; revised the same day - the security-zone
-# dimension withdrawn, encryption is per ACCOUNT).
+# dimension withdrawn, encryption is per ACCOUNT. RE-SCOPED 2026-08-26: the derived zone it was
+# created for is REMOVED - D19 as revised, the zone re-homed onto the SMUS project path - and
+# the key SURVIVES because it picked up a second consumer before the first one died: the
+# sandbox lake (Stage 16) encrypts under it, admitted through the additional-statements input
+# below. In Development the key stands EMPTY, held for the account's next data bucket - the
+# explicit no-consumer branch verification (xx) of Stage 6 asks for, dated here.)
 #
 # ONE DATA CMK PER ACCOUNT (docs/GOVERNANCE.md "Encryption"): this account's data buckets
 # encrypt under this account's key. The alias is alias/awsds-<env>-data, the same pattern as
@@ -36,7 +41,7 @@ module "data_key" {
   source = "git::git@github.com:felipenoris/AWS-DataScience.git//terraform-modules/kms-key?ref=kms-key-v0.1.0"
 
   alias_name  = "awsds-${var.env}-data"
-  description = "Account data CMK - SSE-KMS for the derived zone (query results, materialised copies, notebook scratch)"
+  description = "Account data CMK - SSE-KMS for this account's data buckets (today: the sandbox lake in Sandbox; held empty in Development)"
 
   # THE POLICY IS PASSED, AND ITS SHAPE IS THE WHOLE OF D31. A permission set enumerates; a key
   # policy is default-deny, which is what makes it survive somebody forgetting to update a
@@ -87,31 +92,14 @@ module "data_key" {
         ]
         Resource = "*"
       },
-      {
-        # THE READ CONTROL. SSE-KMS needs GenerateDataKey to write and Decrypt to read, and
-        # Athena needs both under the caller's own identity - it writes results through a
-        # forward access session carrying the querying principal, so there is no separate
-        # service grant to make here.
-        #
-        # kms:ViaService pins both to S3: the persona cannot use this key to decrypt anything
-        # that is not an S3 object, which keeps the key from becoming general-purpose the first
-        # time somebody wants to encrypt something else with "the account's key".
-        #
-        # DELIBERATELY ABSENT AND NAMED SO (Lesson 5): DeploymentManagerAccess and
-        # GovernanceManagerAccess - D31 is the decision that an approver does not read the data
-        # it approves on. The project execution roles of Stage 6 are absent because they do not
-        # exist yet (INT-15); step 9.3 asks for an extension point rather than a redesign, and
-        # this statement is it - a second element in the Principal list.
-        Sid       = "AllowDataScientistUseViaS3"
-        Effect    = "Allow"
-        Principal = { AWS = var.data_scientist_role_arn }
-        Action    = ["kms:Decrypt", "kms:GenerateDataKey", "kms:DescribeKey"]
-        Resource  = "*"
-        Condition = {
-          StringEquals = { "kms:ViaService" = "s3.${var.region}.amazonaws.com" }
-        }
-      },
       ],
+      # THE PERSONA STATEMENT (AllowDataScientistUseViaS3) LEFT THIS POLICY ON 2026-08-26, and
+      # its absence is now the control rather than the leftover. It granted the persona
+      # Decrypt/GenerateDataKey via S3 because the derived zone encrypted here and the persona
+      # read it (D31). With the zone re-homed onto the SMUS project path (D19 revision), the
+      # only bucket left under this key is the sandbox lake - which the persona reaches ONLY
+      # through vended, prefix-scoped access-role credentials (Stage 16 SS-G). Keeping the
+      # statement would have granted the persona a KMS-layer path around that vending door.
       # THE EXTENSION POINT THE STATEMENT ABOVE ASKED FOR, delivered on 2026-08-26 by the first
       # caller that needed it (Stage 16 pass 2.2). Its comment predicted the shape - "a second
       # element in the Principal list" - and the shape that actually arrived is a second

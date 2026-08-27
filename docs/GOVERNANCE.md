@@ -21,8 +21,9 @@ registered in [`docs/AWS_STATE.md`](AWS_STATE.md) §"Lake Formation grant regist
 
 Two bucket families, split by the account line — and "who may read" is expressed by a different
 mechanism on each side: in the lake it is Lake Formation and the bucket policies; in the consumer
-accounts it is the account data CMK's key policy (D31). Both tables carry a delete column deliberately:
-in a governed store, who may *remove* data is as designed a fact as who may write it.
+accounts it is a CMK's key policy (D31 — the **project CMK** since D19's 2026-08-26 revision, the
+account data CMK before it). Both tables carry a delete column deliberately: in a governed store, who
+may *remove* data is as designed a fact as who may write it.
 
 ### The lake — Data Governance account
 
@@ -45,45 +46,53 @@ exactly two points, both in the table and one of them still Stage 9's.
 `dropbox`, `artifacts` and `logs` are **not registered**: plain IAM/bucket-policy control (D13's
 non-registered class).
 
-### The derived zone — one bucket per consumer account
+### The derived zone — the SMUS project path (re-homed 2026-08-26)
 
-The lake's exit side, seen as persistence (§"Derived zone" owns the five controls and the reasoning;
-this is the who-does-what view). One designed destination per consumer account —
-`awsds-sandbox-derived` and `awsds-dev-derived` today, applied at Stage 5 pass 4 through the
-`consumer-data` module ([its README](../terraform-modules/consumer-data/README.md) is the
-per-statement index); Production's equivalent arrives when Stage 9 makes it a consumer. The baseline
-matches the lake — SSE-KMS, versioned, public access blocked, TLS-only, the same presigned-URL cap —
-and the four differences are the design:
+The lake's exit side, seen as persistence. **Until 2026-08-26 this was `awsds-<env>-derived`, one
+designed bucket per consumer account with three prefix families** (`results/`, `derived/${aws:userid}/`,
+`scratch/`), applied at Stage 5 pass 4 through the `consumer-data` module. **[D19's revision of that
+date](plan/decisions/D19-derived-zone.md) removed it**: Stage 6 step 2.4's reading found the Tooling
+blueprint already builds, per project, an enforced results location and a mounted working folder — two
+designed destinations for the same class of data — and the user kept the service's. The old zone's
+who-does-what table is D19's and the module history's; what stands is below.
 
-- the CMK is **that account's data key**, `alias/awsds-<env>-data` (one data CMK per account,
-  §Encryption), and its key policy is where *who may read the copies* is expressed (D31):
-  `DataScientistAccess` today, the project execution roles from Stage 6;
-- current objects **expire at 30 days** (D19 practice iii) — the lake keeps data, this bucket sheds
-  it;
-- **nothing here is LF-registered**: the whole bucket is D13's non-registered class — plain IAM plus
-  the key policy, with no catalog object an LF-Tag could attach to;
-- permanence is Terraform's `prevent_destroy` alone — the lake's `s3:DeleteBucket` SCP is a
-  `Data`-OU document and does not reach these accounts. Tolerable exactly because the contents
-  expire by design.
+**The derived zone is `awsds-<env>-smus-projects`** — one bucket per Interactive member account
+(Stage 6, `sagemaker-prereqs` v0.3.2), the tree inside it managed by SMUS as
+`<domain-id>/<project-id>/<scope>/`:
 
-The grain that matters here is the **prefix family**, not the bucket — three families, three
-contracts, made real by the persona statements in `identity/sso/` (S3 has no directories; a prefix
-exists once something is written under it):
-
-| Prefix family | What it holds | Who writes | Who reads | Who deletes |
+| Scope | What it holds | Who writes | Who reads | Who deletes |
 |---|---|---|---|---|
-| `results/` | the Athena workgroup's **enforced** output location (`EnforceWorkGroupConfiguration = true` — the client cannot choose another destination) | the persona — in practice Athena, which stages results with the caller's own credentials, so the write grant is the engine's contract rather than a convenience | the persona (`GetQueryResults` reads the result object from S3 with the caller's credentials) | nobody — the 30-day expiry is the only deleter |
-| `derived/${aws:userid}/` | materialised copies of query results | **per principal** — `PutObject` carries the policy variable, so a copy can only land under its author's prefix | **persona-wide** (`GetObject` on `derived/*`, decision 6's grain) — the prefix governs where a copy lands, not who may read it; other personas are kept out by the account data CMK | nobody — the 30-day expiry is the only deleter |
-| `scratch/` | the notebook's working files — a downloaded CSV, an intermediate feature, a model checkpoint | the persona | the persona | the persona — the **only** prefix with `s3:DeleteObject`. `DeleteObjectVersion` is not granted, so versioning keeps the truth under every delete marker |
+| `<project>/dev/` | the project's system outputs — its **enforced** Athena workgroup writes query results to `dev/sys/athena/` (`EnforceWorkGroupConfiguration = true`, measured 2026-08-26), connectors beside it | the project role (Athena stages results with the querying session's credentials — always the project role in SMUS) | project members, through the project role; the laptop via a per-project S3 Access Grant (`docs/SMUS.md` §S3 item 1a) | nobody today — **no lifecycle rule reaps a current object, and a deleted project keeps its prefix** (measured; open question 25) |
+| `<project>/shared/` | the project's working files — mounted as the shared folder in JupyterLab and Code Editor (the old `scratch/` role, at project grain) | the project role | idem | the project role (ordinary working-folder semantics, SMUS's) |
+
+Where it stands against the removed zone's four design differences:
+
+- the CMK is the **project CMK**, `alias/awsds-<env>-project` — the deliberate §Encryption exception,
+  and since the re-homing also **D31's carrier**: its policy names the datazone service principals, the
+  domain execution role and the project roles — not the persona, not the approver (whose own
+  `kms:Decrypt` deny is D31's surviving half);
+- **nothing expires** — the one difference that is a gap rather than a design, and it is **open
+  question 25**: the removed zone shed at 30 days precisely so a copy was never permanent; this bucket
+  holds the same class of data indefinitely, orphaned project prefixes included. The bucket is
+  Terraform's, so a rule is addable without touching what SMUS manages;
+- the write/containment grain is the **project**, not the person — Stage 5 decision 6's grain one level
+  up; per-write attribution is Stage 11's data events;
+- **nothing here is LF-registered**: plain IAM, the managed policies' path shape
+  (`*/dzd*/<project>/…`), the project CMK, and S3 Access Grants over the project prefix.
+
+**Stage 11 inherits the bucket by name** (Macie scan scope, data-event trail map — `./aws/dlp.py`
+`DP-4` reads it), because Stage 11 cannot discover a destination nothing points at, and an orphaned
+prefix is invisible to any scope written from the live project list.
 
 ## Encryption — one data CMK per account
 
 **Every data bucket encrypts SSE-KMS under the data CMK of the account it lives in** — decided
 2026-08-19, by the user, replacing the `security-zone` dimension (the withdrawal note closes this
 section). One uniform alias pattern, `alias/awsds-<env>-data`: the lake's five buckets under
-`alias/awsds-data-data` in Data Governance, each consumer's derived zone under
-`alias/awsds-sandbox-data` and `alias/awsds-dev-data`; Production's arrives with Stage 9
-(`alias/awsds-prod-data`). The `tfstate` keys (Stage 2), the PKI key (D36) **and each Interactive
+`alias/awsds-data-data` in Data Governance; `alias/awsds-sandbox-data` carries the **sandbox lake**
+(Stage 16) — and carried the derived zone until D19's 2026-08-26 revision removed it —
+`alias/awsds-dev-data` is **held empty** for that account's next data bucket (the explicit no-consumer
+branch, dated); Production's arrives with Stage 9 (`alias/awsds-prod-data`, that stage's re-read). The `tfstate` keys (Stage 2), the PKI key (D36) **and each Interactive
 account's PROJECT CMK (`alias/awsds-<env>-project`, Stage 6 — the SMUS projects bucket
 `awsds-<env>-smus-projects` and the blueprint-provisioned volumes sit under it, deliberately, since
 2026-08-22; its key policy carries the documented SMUS statement set and is
@@ -397,40 +406,33 @@ to leave the first wrong.
 ## Derived zone
 
 Query results are the copy the design *manages* rather than forbids — saving results is the job
-(Lesson 1). Each consumer account gets a designed destination — `awsds-<env>-derived`, applied at
-Stage 5 pass 4 — with five controls:
+(Lesson 1). **Re-homed 2026-08-26 ([D19 revised](plan/decisions/D19-derived-zone.md), the user's
+decision): the designed destination is the SMUS project path** —
+`awsds-<env>-smus-projects/<domain-id>/<project-id>/<scope>/`, one folder per project, the tree managed
+by the service. Until that date it was `awsds-<env>-derived` with three prefix families; Stage 6 step
+2.4's reading found the Tooling blueprint already provisions, per project, an **enforced** Athena
+workgroup (results to `dev/sys/athena/`) and a mounted `shared/` folder — the same shape, one per
+project, by the service's hand — and two designed destinations for the same class of data is exactly
+what the enforced-location argument forbids. The user kept the service's.
 
-- the Athena workgroup **forces** results there (`EnforceWorkGroupConfiguration = true` — the client
-  cannot choose another destination);
-- prefixes **per principal on WRITE** (`…/derived/${aws:userid}/`) — a copy can only land under its
-  author's prefix. **The read is persona-wide** (applied 2026-08-19 at Stage 5 pass 4c:
-  `ReadDerivedZoneObjects` grants `s3:GetObject` on `derived/*`), because the persona is the
-  entitlement grain (decision 6) — so a colleague reading a colleague's copy crosses no line the SQL
-  path had drawn. The prefix governs where a copy *lands*, not who may read it; what keeps other
-  personas out is the account data CMK's key policy (D31);
-- **lifecycle expiry** (30 days) — the shadow lake never silently becomes permanent;
-- a **dedicated CMK** per consumer account whose key policy says who may read the copies (D31) —
-  `alias/awsds-<env>-data`, that account's data key (§Encryption);
-- the prefixes are pre-declared **Macie + CloudTrail data-event scope** for Stage 11.
+The six practices, as they stand on the new home (the re-reading is D19's revision, one copy):
 
-**Three prefix families in one bucket, and `scratch` is one of them rather than a bucket of its own**
-(settled 2026-08-19, at the authoring). `results/` is the Athena workgroup's enforced output location —
-per-persona, because an enforced workgroup has exactly one; `derived/${aws:userid}/` holds materialised
-copies per principal; `scratch/` holds the notebook's working files. **The plan said "scratch bucket" in
-three places and "scratch prefixes" in five, and the prefix reading is the origin**: D13's own sentence
-is *"non-registered prefixes (scratch, artifacts, model outputs) keep ordinary IAM access"* — `scratch`
-names the CLASS of everything Lake Formation does not govern, beside `artifacts` and `model outputs`,
-and D19 (which the bucket wording credits) never mentions it at all. What makes the families real is the
-`s3:PutObject` scoping on the permission set, not an S3 object, since a prefix exists only once
-something is written under it. The who-writes / who-reads / who-deletes view, per family, is the
-second table of §"Persistence — the buckets".
+- **the output location is not the user's choice** — per project now: the project workgroup enforces
+  its configuration, and the write scoping is the managed provisioning policy's path shape plus S3
+  Access Grants, both project-grained;
+- **per-principal prefixes — withdrawn**: the path has no person grain; the containment grain is the
+  **project**, and per-write attribution is Stage 11's CloudTrail data events;
+- **lifecycle expiry — currently absent, open question 25**: no rule reaps a current object and a
+  deleted project keeps its prefix (both measured 2026-08-26);
+- **Macie scan scope + data events** (Stage 11) — the projects bucket, by name;
+- **classification inherits** — the output of a query over `restricted` data is `restricted`: a written
+  norm for people, not something AWS executes (§Data lineage);
+- **the CMK is the read control (D31)** — the **project CMK**, whose policy names the service
+  principals and project roles, with the approver set's explicit `kms:Decrypt` deny as the surviving
+  approver-side half.
 
-**And one rule that is policy, not mechanism: the output of a query over `restricted` data is
-`restricted`.** "Declared as policy" means: a written norm for people to follow — treat that file as
-restricted, do not move it somewhere broader, do not share it — not something AWS executes. Nothing in
-the system watches a query touch a restricted column and seal the output accordingly (that would be
-lineage-based propagation, which does not exist as enforcement — §Data lineage). The perimeter contains
-the copy either way: wherever it lands inside the organization, it cannot leave it.
+The perimeter contains the copy either way: wherever it lands inside the organization, it cannot
+leave it.
 
 ## Data lineage
 

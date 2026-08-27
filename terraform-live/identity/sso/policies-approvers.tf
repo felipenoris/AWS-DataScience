@@ -19,7 +19,7 @@
 # ============================================================================================
 #
 # WHAT THIS SET REPLACED, because the replacement is the decision. It used to be the AWS-managed
-# `ReadOnlyAccess`, which on the lifecycle accounts reaches the D19 derived zones - where the
+# `ReadOnlyAccess`, which on the lifecycle accounts reaches the D19 derived zone - where the
 # output of a query over `restricted` data lives and, by D19's own classification rule, IS
 # `restricted` - and reaches athena:GetQueryResults, which returns other people's query output.
 #
@@ -118,9 +118,12 @@ data "aws_iam_policy_document" "deployment_manager" {
   #   athena:*                   both ORIGINATING a query over the lake and reading somebody
   #                              else's results. The whole service, because GetQueryResults is
   #                              reachable with nothing but a query execution id.
-  #   kms:Decrypt                the derived zone's CMK is the read control (D19 practice vi,
-  #                              added by D31). This is what makes that control apply to a
-  #                              principal who might otherwise be handed s3:GetObject later.
+  #   kms:Decrypt                a CMK's key policy is where "who may read the copy" lives
+  #                              (D31; since D19's 2026-08-26 revision the derived zone is the
+  #                              SMUS project path under the PROJECT CMK - this deny is the
+  #                              approver-side half that survives the re-homing, and it makes
+  #                              the control apply to a principal who might otherwise be
+  #                              handed s3:GetObject later).
   #   secretsmanager:GetSecretValue,
   #   ssm:GetParameter*          a promotion's secrets are not diagnostic material, and both
   #                              are the standard route from "read-only" to "credentialed".

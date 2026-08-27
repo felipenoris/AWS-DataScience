@@ -141,35 +141,14 @@ data "terraform_remote_state" "vpn_home" {
   }
 }
 
-# --------------------------------------------------- the lake's consumer side and the lake
+# ------------------------------------------------------------------------------ the lake
 #
-# THE FIFTH AND SIXTH LOOKUPS - Stage 5 pass 4c, and they exist for the reason 4c was
-# sequenced AFTER the consumer slices rather than with them: a permission set is one document
-# provisioned into many accounts, so before sandbox/data/ and development/data/ existed the
-# workgroup and derived-bucket ARNs could only have been account-wildcards - the form the
-# CKV_AWS_356 note in policies-data-scientists.tf refuses. Now they are read from the two
-# slices' state and enumerated exactly. Same mechanics as vpn_home above: cross-account, so
-# the profile rides in the generated tfvars, one sign-in covers every profile on the `awsds`
-# sso-session, and a consumer whose data/ has not been applied fails BY NAME here.
-data "terraform_remote_state" "consumer_data" {
-  for_each = var.data_consumers
-
-  backend = "s3"
-
-  config = {
-    bucket  = "awsds-${each.value.env}-tfstate"
-    key     = "${each.key}/data/terraform.tfstate"
-    region  = var.region
-    profile = each.value.profile
-  }
-}
-
-# The lake's own data/ slice: the drop-box bucket ARN + write prefix, and the data-key ARN.
-# The drop-box write is the one CROSS-ACCOUNT S3 permission any persona holds, and
-# cross-account evaluation needs BOTH halves - the bucket policy in Data Governance (pass 1's
-# AllowInteractiveWriterPutOnly) AND an identity-side allow naming the bucket; the KMS pair
-# (AllowDropBoxWritersViaS3) delegates through the account roots the same way. The key ARN
-# carries the lake's account id, which is exactly why it is read from state and not written.
+# THE FIFTH LOOKUP - Stage 5 pass 4c. A SIXTH (consumer_data, each consumer's data/ state)
+# LIVED HERE FROM PASS 4c UNTIL 2026-08-26 and left with the six statements that consumed its
+# outputs - the workgroup and derived-bucket ARNs (D19 revised: the derived zone re-homed onto
+# the SMUS project path; the persona's query surface is a SMUS project now). Same mechanics as
+# vpn_home above: cross-account, the profile rides in the generated tfvars, one sign-in covers
+# every profile on the `awsds` sso-session.
 data "terraform_remote_state" "lake_data" {
   for_each = var.lake
 

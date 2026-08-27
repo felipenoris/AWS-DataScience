@@ -138,135 +138,27 @@ data "aws_iam_policy_document" "data_scientist" {
     resources = ["*"]
   }
 
-  # DISCOVERY HERE, EXECUTION BELOW - and the split is D19's. Discovery is service-scoped and
-  # was granted from Stage 2; the run family waited until the workgroup existed, because the
-  # workgroup is what pins the result location - granting the query before it would have put
-  # the output location in the user's hands, the one thing D19 practice (i) refuses. The
-  # workgroups exist since Stage 5 pass 4b, so the run family follows, scoped to exactly them.
-  statement {
-    sid    = "DiscoverAthenaWorkgroupsAndTables"
-    effect = "Allow"
-
-    actions = [
-      "athena:GetDataCatalog",
-      "athena:GetTableMetadata",
-      "athena:GetWorkGroup",
-      "athena:ListDataCatalogs",
-      "athena:ListDatabases",
-      "athena:ListTableMetadata",
-      "athena:ListWorkGroups",
-    ]
-
-    resources = ["*"]
-  }
-
-  # THE RUN FAMILY, SCOPED TO THE TWO ENFORCED WORKGROUPS AND NOTHING ELSE - Stage 5 pass 4c.
-  # The ARNs are read from the consumer slices' state (data.tf): an enumeration of workgroups
-  # somebody built, never a pattern a future workgroup could wander into. What the scoping
-  # buys: a query in an unscoped workgroup chooses its own result location, and these two
-  # carry EnforceWorkGroupConfiguration = true, so output lands in results/ of the derived
-  # bucket below - under the account's data CMK, inside Stage 11's Macie scope (D19 practice
-  # i). The
-  # `primary` workgroup is absent from this list, and that absence is what denies it.
-  #
-  # Two of the eight earn their line: GetQueryResults fetches through Athena but ALSO reads
-  # the result object from S3 with the caller's own credentials - the read statement below is
-  # part of what makes a query return rows, not a convenience; GetQueryRuntimeStatistics is
-  # what the console's statistics pane calls, and denying it buys a mystery error, not a
-  # control.
-  statement {
-    sid    = "RunQueriesInTheEnforcedWorkgroups"
-    effect = "Allow"
-
-    actions = [
-      "athena:BatchGetQueryExecution",
-      "athena:GetQueryExecution",
-      "athena:GetQueryResults",
-      "athena:GetQueryResultsStream",
-      "athena:GetQueryRuntimeStatistics",
-      "athena:ListQueryExecutions",
-      "athena:StartQueryExecution",
-      "athena:StopQueryExecution",
-    ]
-
-    resources = local.athena_workgroup_arns
-  }
-
   # ------------------------------------------------------------------------------------------
-  # THE DERIVED ZONE (D19, D31) - Stage 5 pass 4c, the s3 scoping step 9.2 says makes the
-  # prefix families real. One bucket per consumer account, three families, and the grain
-  # decision 6 settled: WRITE to derived/ is per-principal (the policy variable), READ is
-  # persona-wide - the persona is the entitlement grain, so a colleague reading a colleague's
-  # materialised result crosses no line SQL had not already erased between them. What keeps
-  # OTHER personas out is not this document: it is the account's data CMK, whose key policy
-  # names this role and nobody else (D31). Same-account, so the key policy alone decides -
-  # which is why no kms statement for the derived zone appears here.
+  # SIX STATEMENTS LEFT THIS DOCUMENT ON 2026-08-26, AND THE ABSENCE IS THE DESIGN (D19 as
+  # revised that day - the derived zone re-homed onto the SMUS project path, awsds-<env>-derived
+  # and the enforced workgroups REMOVED):
   #
-  # WHY results/ IS WRITABLE by a human who never chooses to write there: Athena stages query
-  # results WITH THE CALLER'S CREDENTIALS into the workgroup's enforced location. No PutObject
-  # on results/ means no output means no queries - the grant is the engine's contract, not a
-  # user convenience. The multipart trio is the same contract for anything over the part-size
-  # threshold.
-  statement {
-    sid    = "UseDerivedZoneBuckets"
-    effect = "Allow"
-
-    actions = [
-      "s3:GetBucketLocation",
-      "s3:ListBucket",
-      "s3:ListBucketMultipartUploads",
-    ]
-
-    resources = local.derived_bucket_arns
-  }
-
-  statement {
-    sid    = "ReadDerivedZoneObjects"
-    effect = "Allow"
-
-    actions = ["s3:GetObject"]
-
-    resources = flatten([
-      for arn in local.derived_bucket_arns : [
-        "${arn}/results/*",
-        "${arn}/derived/*",
-        "${arn}/scratch/*",
-      ]
-    ])
-  }
-
-  statement {
-    sid    = "WriteDerivedZonePrefixes"
-    effect = "Allow"
-
-    actions = [
-      "s3:AbortMultipartUpload",
-      "s3:ListMultipartUploadParts",
-      "s3:PutObject",
-    ]
-
-    resources = flatten([
-      for arn in local.derived_bucket_arns : [
-        "${arn}/results/*",
-        "${arn}/derived/$${aws:userid}/*",
-        "${arn}/scratch/*",
-      ]
-    ])
-  }
-
-  # DELETE EXISTS IN scratch/ AND NOWHERE ELSE. D13's words for the non-registered class are
-  # "ordinary IAM access", and ordinary access includes removing your own mistake. results/
-  # is the query record and derived/ is Stage 11's Macie and data-event scope - in both, the
-  # 30-day lifecycle is the only deleter. Versioning is on and DeleteObjectVersion is NOT
-  # granted, so even here a delete is a marker the bucket keeps the truth under.
-  statement {
-    sid    = "DeleteScratchObjects"
-    effect = "Allow"
-
-    actions = ["s3:DeleteObject"]
-
-    resources = [for arn in local.derived_bucket_arns : "${arn}/scratch/*"]
-  }
+  #   DiscoverAthenaWorkgroupsAndTables, RunQueriesInTheEnforcedWorkgroups - the persona's
+  #   direct Athena path. Its result home was the derived zone; with the zone gone the grant
+  #   would pin output nowhere, which is the one thing D19 practice (i) refused. A data
+  #   scientist queries through a SMUS project now - the project's own enforced workgroup,
+  #   under the PROJECT role, into the project path - so the query surface moved from the
+  #   persona to the project, and this document carries no athena: action at all.
+  #
+  #   UseDerivedZoneBuckets, ReadDerivedZoneObjects, WriteDerivedZonePrefixes,
+  #   DeleteScratchObjects - the three prefix families of the removed bucket. The working-file
+  #   role of scratch/ is the project path's shared/ scope (mounted in JupyterLab); the
+  #   results role is dev/sys/athena/ under the project workgroup; per-principal write has no
+  #   analog there (the path has no person grain - attribution is Stage 11's data events).
+  #
+  # WHAT STAYED, because it is the INGESTION path and not the query path: the drop-box write
+  # below and its lake-key KMS half. The LF read (ReadThroughLakeFormation above) also stays -
+  # it is what a SMUS subscription rides and what catalog visibility needs.
 
   # ------------------------------------------------------------------------------------------
   # THE DROP-BOX WRITE - THE IDENTITY HALF OF A CROSS-ACCOUNT PERMISSION (D18, D25; Stage 5

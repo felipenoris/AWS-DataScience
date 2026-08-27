@@ -73,6 +73,10 @@ PROD_WG = "awsds-prod-athena"
 STAGING_WG = "awsds-staging-athena"
 STAGING_JOB_ROLE = "awsds-staging-job-exec"
 OUT_BUCKET = "awsds-prod-outputs"
+# NOTE 2026-08-26: consumer-data v0.6.0 REMOVED the derived bucket + enforced workgroup
+# from the module (D19 revised - the Interactive derived zone re-homed onto the SMUS project
+# path). Production has NO SMUS (D28), so where ITS results land is Stage 9's to re-decide at
+# revision - this expectation stands as the stage file wrote it and is re-read there, not here.
 RESULTS_BUCKET = "awsds-prod-derived"  # results/ is a prefix family in it, never a bucket
 MPG_PREFIX = "awsds-prod-model-"
 PROD_CMK_ALIAS = "alias/awsds-prod-data"  # renamed 2026-08-19 (twice): one data CMK per account
