@@ -51,7 +51,7 @@ data "aws_iam_roles" "infrastructure_access" {
 
 # ------------------------------------------------------------------- the persona (D18)
 #
-# The principal the share is re-granted to and the only principal the derived-zone key admits
+# The principal the share is re-granted to (the LF re-grants in the consumer-data module)
 # (D31). Provisioned in BOTH Interactive accounts by identity/sso/'s DataScientistAccess
 # assignment (D21).
 
