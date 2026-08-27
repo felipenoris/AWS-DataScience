@@ -25,7 +25,7 @@ the data platform, the SageMaker runtime and the sharing model.
 | `production/sagemaker/` (new) | Model Registry: package groups + **resource policies** (D28 item 6); `awsds-prod-job-exec`; the `awsds-prod-debug` escape hatch + its alarm | `[P]` |
 | `data-governance/data/` (amended) | the Production share: LF read **+ governed write**, granted *with grant option* to the Production account (INT-03's last third) | `[P]` |
 | `production/data/` (new) | the `consumer-data` call — LF resource links + local regrants, the account's LF settings, the account data CMK — plus the outputs bucket written beside it. **NOTE 2026-08-26: `consumer-data-v0.6.0` no longer provides a derived zone or a workgroup** (D19 revised — the Interactive zone re-homed onto the SMUS project path; Production has NO SMUS, D28). Where THIS account's query results land — a stage-authored results bucket + workgroup beside the call, or nothing — is **this stage's to re-decide at its revision**; `aws/deploytargets.py` carries the same dated note | `[P]` |
-| `staging/data/`, `staging/sagemaker/` (new, **at the vend**) | the catalog mirror with sampled/synthetic content; job execution roles and nothing else | `[P]` |
+| `staging/data/`, `staging/sagemaker/` (new, **at the vend**) | the catalog mirror with sampled/synthetic content; job execution roles and nothing else. **NOTE 2026-08-26, the same one the `production/data/` row carries**: Staging has no SMUS either (D17/D28 — the runtime without the domain), so the re-homed zone does not exist here, and step 4.2's enforced workgroup has had **no supplier and no named result location** since `consumer-data-v0.6.0`. One re-decision covers both deployment targets | `[P]` |
 | `identity/sso/` (amended) | `DataScientistProdAccess`'s owed allows: the workgroup, the named prefixes, the debug-role assumption | `[P]` |
 | `scripts/` | `backend.py`/`layers.py` rows for the four new slices (all `[P]` — `make up`/`down` never touch them) | — |
 
@@ -337,7 +337,11 @@ behind the approval gate.
 - **4.2 — [Claude] Write the workgroup `awsds-staging-athena`**: enforced, results local, scan limit —
   **for the integration tests and the deployed application, not for people**:
   `DataScientistStagingAccess` carries no Athena at all (Stage 2 wrote it that way — a query writes its
-  result somewhere, and this set writes nothing).
+  result somewhere, and this set writes nothing). **"results local" names no bucket, and since
+  2026-08-26 nothing supplies one** (`consumer-data-v0.6.0` removed the derived zone and the workgroup
+  from the module — [D19 revised](../decisions/D19-derived-zone.md)). An enforced workgroup cannot exist
+  without an output location, so **this step's destination is part of the same re-decision as the
+  `production/data/` row's**, and it is the half that was never written down even before the removal.
 - **4.3 — [Claude] Write `staging/sagemaker/`**: `awsds-staging-job-exec`, same trust shape as 3.1, no
   registry, no domain — the approved model version is read from Production's registry.
 - **4.4 — [Claude] Write the sample-data seed**: a job in the `app-etl` repository generating the
