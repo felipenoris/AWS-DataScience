@@ -153,6 +153,8 @@
 
 - AWS PrivateLink / VPC endpoints: <https://docs.aws.amazon.com/vpc/latest/privatelink/what-is-privatelink.html>.
 
+- **Building a Scalable and Secure Multi-VPC AWS Network Infrastructure (whitepaper)**: <https://docs.aws.amazon.com/whitepapers/latest/building-scalable-secure-multi-vpc-network-infrastructure/welcome.html>. **Added 2026-08-29 as a reading recommendation and NOT yet read against this design** - so nothing here rests on it, and the sentence stays in that tense until it does. It is the closest published statement of the questions D5 and D6 answer for this estate: when a Transit Gateway earns its cost against peering, where centralised egress and centralised interface endpoints belong, and how DNS is made to resolve across accounts that share them - the last of which is the family Lessons 40-43 live in. Read it as vocabulary rather than as a target: it is written for an estate larger than this one.
+
 - Route 53 Resolver DNS Firewall: <https://docs.aws.amazon.com/Route53/latest/DeveloperGuide/resolver-dns-firewall.html>. **Domain-list syntax re-read 2026-08-22**, to settle whether the allow-list's `*.name` entries reach a nested hostname (`us-west.pkg.julialang.org` under `*.julialang.org`) before adding names on the strength of a guess: the `*` must replace the **entire leftmost label** (`*prod.example.com` and `prod*.example.com` are both rejected), and it matches that label **and every subdomain beneath it** at any nesting depth — but not the apex, which is why every entry in `terraform-modules/vpc-egress/variables.tf` is written twice. <https://docs.aws.amazon.com/Route53/latest/DeveloperGuide/resolver-dns-firewall-user-managed-domain-lists.html> and <https://docs.aws.amazon.com/Route53/latest/DeveloperGuide/DomainNameFormat.html>. **The depth half was later confirmed BEHAVIOURALLY** (2026-08-22): `*.julialang.net` matched `us-west.pkg.julialang.net`, two labels deep, from inside the VPC. **And the reading was incomplete in the half that mattered, measured 2026-08-23 (Stage 6 step 4.3):** neither page states that DNS Firewall evaluates the **whole resolution chain**, so a listed name whose CNAME target is unlisted is blocked — and the Resolver query log reports that block against the **queried** name with the catch-all list id, naming an object that did not match. Nothing here is wrong; what it cost was a day of believing the syntax was the whole question (Lesson 38's 2026-08-23 occurrence). The behaviour was established by paired probe, not by a page.
 - **Route 53 Resolver DNS Firewall — the domain redirection setting, and the page that closes the day above**: <https://docs.aws.amazon.com/Route53/latest/DeveloperGuide/resolver-dns-firewall-rule-settings.html> (read 2026-08-23). Chain evaluation is a **per-rule setting with a default**, not the service's behaviour: `INSPECT_REDIRECTION_DOMAIN` (the default this module had been taking) against `TRUST_REDIRECTION_DOMAIN`, which "verifies only the initial domain". The announcement is <https://aws.amazon.com/about-aws/whats-new/2024/05/amazon-route-53-resolver-dns-firewall-domain-redirection/> (**2024-05** — the capability predates every line of this project). **The sentence the repair rests on is on the same page and is easy to read past:** the trust "only applies within a single DNS query transaction", and a client that queries a redirection target directly is evaluated "as an independent query with no trust context" — which is why trusting the chain does not make the CDN reachable. Mechanism half: <https://docs.aws.amazon.com/Route53/latest/DeveloperGuide/resolver-dns-firewall-overview.html>; API field: <https://docs.aws.amazon.com/botocore/latest/reference/services/route53resolver/client/create_firewall_rule.html>.
 - **AWS Network Firewall — stateful domain list rule groups**, read 2026-08-23 as the L7 alternative priced in `docs/plan/architecture.md` §4.3a and *not built*: <https://docs.aws.amazon.com/network-firewall/latest/developerguide/stateful-rule-groups-domain-names.html>. The reason it answers a question DNS cannot: it matches the **TLS SNI** for HTTPS and the **HTTP Host header** for HTTP, so it never consults DNS and a CNAME chain is irrelevant to it. `TLS_SNI`, `HTTP_HOST` or both, per rule group; a leading `.` is its wildcard.
@@ -925,3 +927,55 @@
   binary was measured and not used** — `uv-x86_64-unknown-linux-gnu.tar.gz` at
   `sha256:68a509da24b06b4223a1c0175fb5eb5bc79342b76cbeff0cfe51ac3f5b17b6b2`, recorded here so the
   rejected branch stays legible rather than looking unexamined.
+
+## Books
+
+**Added 2026-08-29, at the user's request, as a reading list — not as authorities.** None of these has
+been read against this design; none of them is cited by a decision, a stage or an invariant, and where a
+book and a measurement disagree the measurement wins (Lesson 30). They are recorded here so the same
+search is not run twice, and so the titles that were *rejected* stay legible. Kindle availability was
+checked on the date above.
+
+- **AWS Certified Advanced Networking Study Guide: Specialty (ANS-C01), 2nd ed.** — Todd Montgomery
+  (Sybex/Wiley, 2023), Kindle:
+  <https://www.amazon.com/Certified-Advanced-Networking-Study-Guide-ebook/dp/B0CJZZ9BK5>. The broadest
+  single-volume coverage of the layer this project builds on — VPC, subnets against AZs, route tables,
+  security groups against NACLs, gateway *and* interface endpoints, PrivateLink, Transit Gateway,
+  peering, Route 53 including Resolver and private hosted zones. It is an exam book, so it is thin on
+  *why*; it is the most recent one that covers everything `docs/NETWORK.md` describes.
+
+- **AWS Advanced Networking Exam Guide: ANS-C01** — Kam Agahian et al. (independently published, 2022),
+  Kindle: <https://www.amazon.com/AWS-Advanced-Networking-Exam-Guide-ebook/dp/B0BC6T8FKR>. Written by
+  career network engineers (several CCIE/CCDE contributors) and it reads that way: reference
+  architectures and topology reasoning rather than exam recall. Complement to the Sybex, and older.
+
+- **AWS Networking Fundamentals: A Practical Guide to Understand How to Build a Virtual Datacenter into
+  the AWS Cloud** — Toni Pasanen (independently published, 2021), Kindle:
+  <https://www.amazon.com/AWS-Networking-Fundamentals-Understand-Datacenter-ebook/dp/B09PKMWSQ7>, also
+  on Leanpub: <https://leanpub.com/aws-networking-fundamentals>. The practical one: it builds a virtual
+  datacenter piece by piece and follows a packet through it, which is the mental model the two egress
+  paths and the VPN host's NAT role need. **Self-published and unedited** — reviews report wrong figure
+  captions, so read the diagrams against the text.
+
+- **AWS Cookbook: Recipes for Success on AWS** — John Culkin and Mike Zazon (O'Reilly, 2021), Kindle:
+  <https://www.amazon.com/AWS-Cookbook-John-Culkin-ebook/dp/B09N5P9BXJ>; publisher:
+  <https://www.oreilly.com/library/view/aws-cookbook/9781492092599/>. Short runnable recipes; the
+  networking chapter covers endpoints, peering and Transit Gateway. Ageing — treat a recipe as a shape,
+  not as current syntax.
+
+- **Amazon Web Services in Action, 3rd ed.** — Andreas and Michael Wittig (Manning, 2023), Kindle:
+  <https://www.amazon.com/Amazon-Services-Action-Third-depth-ebook/dp/B0C1ZYCMPV>; publisher:
+  <https://www.manning.com/books/amazon-web-services-in-action-third-edition>. Not a networking book,
+  but its VPC chapter is the best didactic first pass — the register `CLAUDE.md`'s "Expertise" section
+  asks for.
+
+- **Mastering AWS Security, 2nd ed.** — Laurent Mathieu (Packt, 2024):
+  <https://www.packtpub.com/en-us/product/mastering-aws-security-9781805125440>. Network isolation, IAM,
+  KMS, data protection. The nearest published treatment of what this project calls the perimeter; it
+  does **not** reach the SCP/RCP construction the data-perimeter whitepaper above carries.
+
+**Rejected, so the search is not repeated.** *Practical AWS Networking* (Mitesh Soni, Packt 2017) and
+*AWS Networking Cookbook* (Das and Modi, Packt 2017) predate Transit Gateway and most of PrivateLink —
+the titles match what one would search for, and the content does not. A crop of 2025 Kindle titles with
+generic names (*AWS Certified Advanced Networking – Specialty 2025*; *Mastering AWS VPC*) are
+self-published with no editorial track record; check the sample before buying.
