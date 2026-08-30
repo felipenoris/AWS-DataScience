@@ -75,7 +75,21 @@ IDENTITY_PROFILE = "awsds-infra-identity"
 # The contracts (see header).
 NAME_TAG_PATTERN = "awsds-*-vpn"
 DENY_SID = "DenyControlPlaneOffVpn"
-VPCE_CONDITION_KEY = "aws:SourceVpce"
+# The deny's THIRD condition, and it has had two spellings. Until 2026-08-23 it was
+# aws:SourceVpce over the VPN home's two GATEWAY endpoint ids - the right fix measured one
+# case short: with egress/ up, every service holding an INTERFACE endpoint resolves to a
+# private address through the VPC resolver and the call presents THAT endpoint's id, which
+# the list did not carry and may never carry ([E], new on every make up - Lesson 3). It was
+# widened to aws:SourceVpc, which is [P] and SUBSUMES the two gateway ids (AWS_STATE.md).
+# This file went on grepping for the retired key and reported the six CORRECT sets as
+# "present and wrong" for a week (Lesson 30 - a tool's failure written down as a property of
+# the world); it is read again here as the RETIRED form, so the narrower predecessor is
+# named rather than lumped in with the address-only defect.
+# Both are matched QUOTED: "aws:SourceVpc" is a prefix of "aws:SourceVpce", so a bare
+# substring test cannot tell the current form from the retired one - which is the entire
+# distinction the check has to make.
+VPC_CONDITION_KEY = "aws:SourceVpc"
+RETIRED_VPCE_CONDITION_KEY = "aws:SourceVpce"
 HOST_KEY_SECRET_SUFFIX = "-vpn-host-key"
 HOST_KEY_DENY_SID = "DenyValueReadExceptHostAndInfrastructure"
 
@@ -546,13 +560,16 @@ def main(argv: list) -> int:
                     # three days while this check reported "all six carry it" (Lesson
                     # 31 - a check inheriting the scope it was written in). Tunnel
                     # traffic splits by destination, so an aws:SourceIp-only test denies
-                    # every direct S3 call made from INSIDE the perimeter. The vpce
+                    # every direct S3 call made from INSIDE the perimeter. The third
                     # condition is therefore read as well; the grep stays a grep, but it
-                    # now greps for the thing that was actually wrong.
+                    # greps for the thing that was actually wrong - and, since 2026-08-23,
+                    # for the SPELLING that is current (see VPC_CONDITION_KEY).
                     if DENY_SID not in r.stdout:
                         set_rows.append((name, "no"))
-                    elif VPCE_CONDITION_KEY in r.stdout:
+                    elif f'"{VPC_CONDITION_KEY}"' in r.stdout:
                         set_rows.append((name, "yes"))
+                    elif f'"{RETIRED_VPCE_CONDITION_KEY}"' in r.stdout:
+                        set_rows.append((name, "yes, vpce only"))
                     else:
                         set_rows.append((name, "yes, IP only"))
 
@@ -725,6 +742,7 @@ def main(argv: list) -> int:
         carrying = [n for n, v in persona.items() if v.startswith("yes")]
         missing = [n for n in PERSONA_SETS if not persona.get(n, "").startswith("yes")]
         ip_only = sorted(n for n, v in persona.items() if v == "yes, IP only")
+        vpce_only = sorted(n for n, v in persona.items() if v == "yes, vpce only")
         if not carrying:
             checks.note(
                 "VP-7",
@@ -742,22 +760,35 @@ def main(argv: list) -> int:
         elif ip_only:
             checks.fail(
                 "VP-7",
-                f"{DENY_SID} tests {VPCE_CONDITION_KEY}",
+                f"{DENY_SID} tests {VPC_CONDITION_KEY}",
                 f"MISSING from: {', '.join(ip_only)} - the statement is present and "
                 "wrong, which is the Stage 5 pass 4d defect (Lesson 33). Tunnel traffic "
                 "SPLITS BY DESTINATION: S3 and DynamoDB leave through the VPN home's [P] "
-                "gateway endpoints and arrive with the host's PRIVATE address plus "
-                "aws:SourceVpce, never the Elastic IP - so an address-only test denies "
+                "gateway endpoints and arrive with the host's PRIVATE address plus a "
+                "vpcEndpointId, never the Elastic IP - so an address-only test denies "
                 "every direct S3 call a persona makes from INSIDE the perimeter (the "
                 "scientist runs the query and cannot fetch the CSV). The fix is a third "
-                "condition, StringNotEqualsIfExists over the HOME's endpoint ids, not the "
-                "consumers' - see terraform-live/identity/sso/policies-shared.tf.",
+                "condition, StringNotEqualsIfExists over the HOME's VPC - see "
+                "terraform-live/identity/sso/policies-shared.tf.",
+            )
+        elif vpce_only:
+            checks.fail(
+                "VP-7",
+                f"{DENY_SID} tests {VPC_CONDITION_KEY}",
+                f"{', '.join(vpce_only)} still test {RETIRED_VPCE_CONDITION_KEY}, the "
+                "spelling retired 2026-08-23. A list of the HOME's two GATEWAY endpoint "
+                "ids cannot carry the INTERFACE endpoint a call presents while egress/ is "
+                "up - those ids are [E], new on every make up (Lesson 3) - so a persona is "
+                "denied sts:GetCallerIdentity with the tunnel UP and curl reading the "
+                "Elastic IP. aws:SourceVpc is [P] and SUBSUMES both gateways, so nothing "
+                "that passed before stops passing - see "
+                "terraform-live/identity/sso/policies-shared.tf.",
             )
         else:
             checks.ok(
                 "VP-7",
                 f"{DENY_SID} in the persona sets",
-                f"all six carry it, each testing {VPCE_CONDITION_KEY} as well as the address",
+                f"all six carry it, each testing {VPC_CONDITION_KEY} as well as the address",
             )
         infra = dict(set_rows).get(INFRA_SET, "")
         if infra.startswith("yes"):
@@ -981,10 +1012,12 @@ then the handshake log calls it `peer=unknown`.""")
         # ==============================================================================
         rep.h1("5. The control-plane deny (step 8), per permission set")
         rep.text(f"""The reading greps each set's inline policy for the Sid `{DENY_SID}` and for the
-condition key `{VPCE_CONDITION_KEY}` inside it. Presence of the Sid alone was the
+condition key `{VPC_CONDITION_KEY}` inside it. Presence of the Sid alone was the
 reading until 2026-08-20, and it reported "all six carry it" for three days over a
 statement that denied every direct S3 call a persona made from inside the perimeter
-(Stage 5 pass 4d; Lesson 33). `yes, IP only` is that defect. It is still not
+(Stage 5 pass 4d; Lesson 33). `yes, IP only` is that defect. `yes, vpce only` is its
+NARROWER SUCCESSOR, retired 2026-08-23: {RETIRED_VPCE_CONDITION_KEY} over the home's two
+gateway ids, which no interface endpoint can ever appear in. It is still not
 sufficiency - the values in the lists, and aws:ViaAWSService, are proven by the
 stage's deny pair and by a behavioural probe, not by this file.
 
@@ -1017,7 +1050,8 @@ What the checks are, and where each comes from:
   VP-4  IMDSv2 required on the host
   VP-5  the handshake log group exists, with retention (step 7)
   VP-6  the health alarm exists (step 7)
-  VP-7  the persona sets carry the step 8 deny together, or not at all (8.2);
+  VP-7  the persona sets carry the step 8 deny together, or not at all (8.2), each
+        testing aws:SourceVpc as well as the address (the 2026-08-23 spelling);
         InfrastructureAccess must NOT carry it (open question 17, option a)
   VP-8  RETIRED 2026-08-18 - the GuardDuty reading moved to ./aws/guardduty.py
         (GD-1..GD-3) when GuardDuty left Stage 4 for Stage 15; the id is kept
