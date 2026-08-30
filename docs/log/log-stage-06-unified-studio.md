@@ -3635,3 +3635,129 @@ it: whether the `force_destroy` finding becomes **Lesson 44**, which is the user
 half, 4.2's measurement half, 4.3's friction reading, design B entire, INT-16's fallback (i) versus recorded
 acceptance, OQ 21's SCP, OQ 24, and `EXC-06`. New and the user's: **OQ 25**'s numbers and **OQ 26**'s first
 bullet.
+
+## 2026-08-29 — Read back for what the stage still owes: everything reproduces, one instrument reads past the control it was written for, and one conclusion in the stage file has been superseded in code
+
+*Provenance: **this entry is Claude's**, written on the user's request in the same sitting. **Every AWS call
+was a READ** — `./aws/studio.py`, `make status` (a `terraform show -json` per `[E]` slice plus one
+`ec2 describe-instances`), one `s3api list-objects-v2`, two `ecr describe-images` and one
+`sagemaker describe-domain`. Nothing was applied, provisioned, attached or deleted. The user signed in as
+the infrastructure user and asked what Stage 6 still owes; the answer was assembled from the plan files
+first and then measured against the account, and this entry is the measured half. Redacted as elsewhere.*
+
+### What reproduces, three days on and with no apply in between
+
+`./aws/studio.py` — **0 FAILED**. The domain, 11 blueprint configurations per member and none in the domain
+account, both project profiles `ENABLED`, one runtime (`d-p6gthxc82ckg`, `VpcOnly`), **zero running apps**,
+one project (`eighth-experimentation`, `ACTIVE`), and `US-8` `all 3 blueprint-provisioned role(s) bounded
+(3 found by tag)` — the 2026-08-26 discovery fix reproducing on the same three roles. In Development `US-8`
+is still `note` and section 4 is still `(none)`: **no SageMaker AI domain, no blueprint-provisioned role, no
+project there**, so pass 3's second half is absent from the account rather than merely unrecorded.
+
+### Four readings that are about the owed list rather than about the checks
+
+| Reading | What it settles |
+|---|---|
+| `registered SageMaker images: (none)` in **both** members | 5.1 / INT-17 is at zero, measured. The `*/dev-env/` slices do not exist and `RANKS["dev-env"]` does not exist — and now neither does any registration some other mechanism could have produced |
+| `make status`: every `[E]` slice `down`, VPN host `stopped`, **0.0000 USD/h** | nothing is burning — and no DNS Firewall exists in either Interactive account at this moment, which the last section turns into a finding |
+| `ecr describe-images` on both Production repositories | `default-v0.1.0` in each, pushed 2026-08-22: 5.0's artifact survives and 5.1 has something to register |
+| five project prefixes under the domain id against one live project | **four orphans**, the same count as 2026-08-26 and including the `.git`-carrying `ddjgwl1ebyhcb4` that entry named — OQ 25's magnitude is not growing, because nothing has been created or deleted since |
+
+### 8.1 is delivered end to end, and the instrument written to say so reads past the control
+
+`describe-domain` on the provisioned domain returns the whole block, not the two fields the check quotes:
+
+    LifecycleManagement       ENABLED
+    IdleTimeoutInMinutes      60
+    MinIdleTimeoutInMinutes   60
+    MaxIdleTimeoutInMinutes   120
+
+**The ceiling is on the runtime and it is the declared one** (`max_idle_timeout_minutes`, default 120), so
+1.5's non-editable Tooling parameters reach the provisioned domain with the ceiling intact. Step 8.1's
+enforcement half is therefore done *and measured*; what step 8 still owes is whether the shutdown **fires**
+(verification (x)) and 8.4's lifecycle proof.
+
+**`US-7` reads none of that.** It composes its detail from `LifecycleManagement` and `IdleTimeoutInMinutes`
+alone and reports `ENABLED/60min` — the DEFAULT, which a project member may change — while
+`MaxIdleTimeoutInMinutes`, the field step 8.1 names as *"the admin ceiling the user cannot raise"*, sits in
+the same API response and is never looked at. The check would read `pass` on a domain whose ceiling had
+been raised to a day, or removed. **This is the third instrument defect this stage has produced** — after
+`US-8`'s documented `list-roles` boundary omission and `US-8`'s name-scoped role discovery — and it is the
+same shape both times: `pass` reported about a subset of the check's own subject. **Not fixed in this
+sitting**: the request was for the record, and the edit is named here so it is not rediscovered.
+
+### The one thing that is not a reproduction, and the stage file is what does not know
+
+`vpc-egress-v0.4.0` — `firewall_domain_redirection_action` as a module input, both Interactive slices
+passing `TRUST_REDIRECTION_DOMAIN` — is pinned by `sandbox/egress/main.tf` and `development/egress/main.tf`,
+argued at length in the module's own `dns-firewall.tf` comments and carried by `AWS_STATE.md`'s `EXC-05`,
+and appears **nowhere in this log and nowhere in the stage file**. Both slices are down, so it has **no
+deployed instance**: the flip is code, and no session has met it.
+
+What that costs is not the tag, it is the sentence the tag supersedes. Step 4.1 records, as 4.3's result and
+as *"a measured input for step 6.1"*, that **"under design A there is no path for pip downloads, cargo,
+rustup, CRAN, apt or ECR Public"**, and the Status row repeats it. That describes `v0.3.0`. Under the pinned
+code it is expected false — `EXC-05` says so in the other direction — so an executor planning 4.3's
+friction reading or 6.1's comparison out of the stage file would weigh design A against a ceiling the code
+has already removed and nobody has yet observed. **The repair is a stage-file edit and waits for the user
+like any other**; what is recorded here is that the divergence exists, and which side is stale.
+
+One second-order note from the same reading, because it is the same tense error a level down: `EXC-05`'s
+closure and `EXC-06`'s wildcard both describe a **Sandbox allow-list that does not exist right now** — the
+slice is `[E]` and it is down. Neither entry is wrong about what the code says; both are written in a tense
+the `[E]` lifecycle does not hold.
+
+## 2026-08-30 — Both repairs the previous entry named were authorized and made, and a third staleness turned up inside the second
+
+*Provenance: **this entry is Claude's**, written on the user's request in the same sitting, and it amends
+the entry above rather than adding a finding: that entry closes with "not fixed in this sitting" and "the
+repair waits for the user like any other", and both sentences stopped being true here. The user authorized
+the fixes in one line ("pode corrigir os erros que você encontrou"). **The only AWS call was one READ** —
+`./aws/studio.py`, re-run to prove the first repair. Nothing was applied, provisioned or deleted. Nothing
+is committed. Redacted as elsewhere.*
+
+### `US-7` reads the ceiling — and the shape of the fix is the part worth keeping
+
+`aws/studio.py` now takes `MaxIdleTimeoutInMinutes` out of the same `describe-domain` response it was
+already parsing, as its own value rather than folded into a display string, and `US-7` gained a **second
+failure branch**: shutdown not `ENABLED` fails as before, and **`ENABLED` with no ceiling** fails too —
+the case that read `pass` for a week. Section 4's `IDLE SETTINGS` column carries the number, so a raised
+ceiling shows in the diff two runs make, which is how INT-15 is already measured.
+
+**The number is reported and never asserted, and that was a choice.** A threshold hard-coded here would be
+a second copy of `max_idle_timeout_minutes`, which is declared once in
+`data-governance/governance/variables.tf` — [Lesson 33](../plan/lessons.md) exactly. What the check owns is
+that the control **exists**; what its value should be is the profile's, in the slice where it is set.
+
+**Re-run against the account, same sitting: `US-7` `pass — ENABLED/60min ceiling=120min`, 0 FAILED, and
+nothing else moved** (the same domain, the same 11 configurations per member, the same three bounded roles,
+zero apps, Development still `note`). So the ceiling was there all along and the instrument now says so —
+the defect was never in the estate.
+
+### The stage file: the CDN conclusion marked superseded, in place
+
+Step 4.1's header stopped claiming Sandbox carries the firewall (**both** slices are down, **both** pin
+`v0.4.0`, and what the accounts last held is not what the code declares), and a block under the
+consequence paragraph records the supersession without deleting what it supersedes: chain evaluation was
+the **API default**, `v0.4.0` makes it a module input, both Interactive slices pass
+`TRUST_REDIRECTION_DOMAIN`, the CDN namespace stays shut because the trust is one query transaction, a
+listed hop becomes a **widening**, and the six ecosystems are **expected** to have a path.
+
+**Expected, written down before the apply so the apply can contradict it** — the shape 4.2's `datazone`
+removal used. Two consequences are written where the executor meets them: 4.3's friction reading is owed
+*under* `v0.4.0`, and its 2026-08-23 sitting is the record of the **mechanism**, not the standing answer to
+what a data scientist can install.
+
+### The third one, found while editing the second
+
+The Status row's `datazone` clause still read *"code-only, the prediction owed at the next `make up`"* —
+**four days after that `make up` happened and both halves were measured** (2026-08-26; the step body has
+carried the record since). Corrected, along with *"4.1 is applied in Sandbox and revised twice"*, which is
+now three revisions and a slice that is down.
+
+**All three are one defect with one address: the Status row summarising step bodies that moved without
+it.** Two of the three were found only because something else was being edited nearby — the same way the
+Lake Formation admin seats surfaced from an unrelated plan ([Lesson 31](../plan/lessons.md)'s neighbour).
+The row is long, it is read first by anyone planning a pass, and nothing mechanical checks it against the
+bodies it summarises. Recorded here rather than turned into a rule: the gate that would catch it does not
+exist, and inventing one on the strength of three occurrences is a bigger claim than the evidence carries.

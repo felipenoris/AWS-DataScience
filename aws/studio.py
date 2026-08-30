@@ -317,7 +317,7 @@ def main(argv: list) -> int:
 
     # ------------------------- SageMaker domains: the runtimes, and the negative reading
     sm_domains: dict = {}  # profile -> [(id, name, status, network, subnets)]
-    sm_details: dict = {}  # profile -> [(id, VpcOnly?, idle summary)]
+    sm_details: dict = {}  # profile -> [(id, VpcOnly?, idle summary, subnets, ceiling)]
     sm_apps: dict = {}  # profile -> [(app name, type, status, instance type)]
     sm_images: dict = {}  # profile -> [image names]
     for p in live:
@@ -354,10 +354,25 @@ def main(argv: list) -> int:
                 .get("AppLifecycleManagement", {})
                 .get("IdleSettings", {})
             )
+            # THE CEILING IS READ SEPARATELY BECAUSE IT IS THE CONTROL, and this file
+            # reported `pass` for a week without it (2026-08-29). `IdleTimeoutInMinutes` is the
+            # DEFAULT, which a project member may change; `MaxIdleTimeoutInMinutes` is the most
+            # they may raise it to, and step 8.1 names THAT one - "the admin ceiling the user
+            # cannot raise". Both arrive in the same describe-domain response and only the first
+            # was ever looked at, so a domain whose ceiling had been raised to a day, or removed,
+            # read exactly like a compliant one.
+            #
+            # THE VALUE IS REPORTED AND NEVER ASSERTED. It is declared once, in
+            # data-governance/governance/variables.tf, and a threshold copied here is the
+            # divergence Lesson 33 describes. What US-7 asserts is that the control EXISTS -
+            # the half no other file holds - and the number rides in the table, where a change
+            # shows up in the diff two runs make.
+            ceiling = lcm.get("MaxIdleTimeoutInMinutes")
             idle = f"{lcm.get('LifecycleManagement', 'absent')}" + (
                 f"/{lcm.get('IdleTimeoutInMinutes')}min" if lcm.get("IdleTimeoutInMinutes") else ""
             )
-            details.append((did, net, idle, " ".join(d.get("SubnetIds", []) or ["-"])))
+            idle += f" ceiling={ceiling}min" if ceiling else " ceiling=ABSENT"
+            details.append((did, net, idle, " ".join(d.get("SubnetIds", []) or ["-"]), ceiling))
         sm_details[p] = details
         if sm_domains[p]:
             r = cli.run(
@@ -714,7 +729,7 @@ def main(argv: list) -> int:
     # US-5: every blueprint-provisioned SageMaker AI domain in the Interactive accounts is
     # VpcOnly. PublicInternetOnly is the whole VPC design bypassed at the app layer.
     for p in INTERACTIVE_PROFILES:
-        for did, net, _idle, _subnets in sm_details.get(p, []):
+        for did, net, _idle, _subnets, _ceiling in sm_details.get(p, []):
             if net == "VpcOnly":
                 checks.ok("US-5", f"{p} domain {did}", "AppNetworkAccessType=VpcOnly")
             else:
@@ -734,18 +749,28 @@ def main(argv: list) -> int:
                 "deployment targets are never associated and never carry a domain (D28).",
             )
 
-    # US-7: idle shutdown configured on every Interactive domain (step 8).
+    # US-7: idle shutdown configured on every Interactive domain (step 8) - and the ADMIN
+    # CEILING beside it, because either half alone is a suggestion.
     for p in INTERACTIVE_PROFILES:
-        for did, _net, idle, _subnets in sm_details.get(p, []):
-            if idle.startswith("ENABLED"):
-                checks.ok("US-7", f"idle shutdown on {p} {did}", idle)
-            else:
+        for did, _net, idle, _subnets, ceiling in sm_details.get(p, []):
+            if not idle.startswith("ENABLED"):
                 checks.fail(
                     "US-7",
                     f"idle shutdown on {p} {did}",
                     f"IdleSettings {idle} - the mandatory cost control of step 8; without "
                     "it D11 depends on the user's habits.",
                 )
+            elif ceiling is None:
+                checks.fail(
+                    "US-7",
+                    f"idle ceiling on {p} {did}",
+                    f"IdleSettings {idle} - shutdown is ENABLED, but nothing bounds what a "
+                    "project member may raise the timeout to, so the default is a suggestion "
+                    "(step 8.1's maxIdleTimeoutInMinutes, locked non-editable in the project "
+                    "profile). An app left at the raised timeout bills the whole way.",
+                )
+            else:
+                checks.ok("US-7", f"idle shutdown on {p} {did}", idle)
 
     # US-8: every blueprint-provisioned project role carries a permissions boundary,
     # and it is the D13 one (INT-15). Roles with no boundary are the INT-15 failure
@@ -948,13 +973,19 @@ awsds-infra-data are a US-3 FAILURE, not a success: D22 puts no compute there.""
             elif not doms:
                 rows.append(f"{p}\t(none)\t-\t-\t-")
             else:
-                for did, net, idle, subnets in details:
+                for did, net, idle, subnets, _ceiling in details:
                     rows.append(f"{p}\t{did}\t{net}\t{idle}\t{subnets}")
         rep.tabulate(rows)
         rep.text("""
 Domains belong ONLY in the Interactive columns (the blueprint targets). One in
 Data Governance breaks the registry premise (US-2); one in Production or Staging
-breaks D28 (US-6). VpcOnly and an ENABLED idle setting are steps 1 and 8.""")
+breaks D28 (US-6). VpcOnly and an ENABLED idle setting are steps 1 and 8.
+
+IDLE SETTINGS carries TWO numbers and step 8.1 rests on the second: the timeout
+is the default a project member may change, `ceiling` is the most they may raise
+it to. `ceiling=ABSENT` is a US-7 failure even with shutdown ENABLED. The value
+itself is declared in the project profile, never asserted here - it is printed so
+a change shows up in the diff two runs make.""")
 
         # ==============================================================================
         rep.h1("5. Running apps and registered images (the burn, and INT-17's mechanical half)")
@@ -1039,7 +1070,8 @@ What the checks are, and where each comes from:
   US-5   every Interactive SageMaker AI domain is VpcOnly (step 1)
   US-6   the deployment targets stay headless (D28): no SageMaker domain there,
          and datazone reads denied by the Workloads ceiling read as the control
-  US-7   idle shutdown ENABLED on every Interactive domain (step 8)
+  US-7   idle shutdown ENABLED on every Interactive domain, WITH the admin
+         ceiling that bounds what a member may raise the timeout to (step 8.1)
   US-8   every blueprint-provisioned project role carries the D13 boundary
          (step 2, INT-15 - presence half only)
   US-9   the step 3 deny Sids reach all six persona sets together (Lesson 14)
