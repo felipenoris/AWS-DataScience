@@ -703,6 +703,12 @@ reached *from*, not where it runs — open question 12, Stage 6 step 1.6).
 - One required entry cannot be satisfied in-Region: the `q` row pairs with
   `com.amazonaws.us-east-1.codewhisperer`, *available only in `us-east-1`* — a `us-west-2` VPC
   cannot reach it through an interface endpoint at all (Stage 6 step 4.2 records what that breaks).
+- **`sagemaker.runtime` carries an AZ affinity the rest of the list does not** (SageMaker AI developer
+  guide, read 2026-09-05): *"you must ensure that the VPC interface endpoint is activated in the
+  Availability Zone of your client in order for private DNS resolution to work. Otherwise, you may see DNS
+  failures when attempting to resolve the URL."* This collides with D9's single-AZ rule for metered
+  resources whenever an app lands in the other AZ, and it fails as a **resolution error**, not as the
+  cross-AZ data charge D9 weighed. Stage 6c step 5 carries the three ways out and the recommendation.
 - **The `s3` entry in that list is the one to verify rather than provision on faith, and Stage 5 pass
   4d is why.** Each account already carries a `[P]` **gateway** endpoint for S3, whose prefix-list
   route is more specific than any default — so where that route is on an app subnet's route table,
