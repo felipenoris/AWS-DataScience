@@ -109,9 +109,18 @@ account. Revisit only when a second business unit makes the endpoint bill domina
 `objectives.md` requires two filters: the institutional proxy's, and SageMaker's stricter one on top. Under
 an explicit proxy the compute never resolves an internet name — Squid does, in the hub — so a per-VPC DNS
 firewall can no longer filter the internet. Both filters therefore live in Squid, as **source-scoped**
-allow-lists: one list per plane (the tunnel range, Sandbox, SharedServices, Workloads), with a
-private-destination deny in front of all of them so the proxy cannot become an L7 bridge between VPCs that
-peering deliberately keeps apart.
+allow-lists, one per plane, with a private-destination deny in front of all of them so the proxy cannot
+become an L7 bridge between VPCs that peering deliberately keeps apart:
+
+- **The tunnel range is the institutional web filter** (decided 2026-09-05, user). What a person on a
+  company laptop may reach is a list on this proxy and nowhere else — there is no second place a browsing
+  decision is enforced, and no path from a laptop to the internet that avoids it.
+- **The Sandbox range is SageMaker's stricter list**, the second filter the objectives name. It is the
+  current DNS Firewall allow-list moved verbatim, minus its wildcard and minus the portal families, which
+  are the browser's and belong to the tunnel list.
+
+One list per source is what keeps the two filters two: a name a person may reach is not thereby reachable
+from a notebook.
 
 The DNS firewall survives in every compute VPC with a different job: an allow-list of AWS and intranet
 names plus the blocking rule, which closes the recursive resolver as an exfiltration channel — the classic
@@ -120,6 +129,26 @@ residual of a VPC with no NAT. `VPC-Networking` carries none, because the proxy 
 The proxy terminates CONNECT without decrypting, so it sees the requested hostname (which survives
 Encrypted Client Hello, unlike SNI inspection) and the byte counts, and never the content. Domain fronting
 through an allowed CDN host stays an accepted residual, recorded in Stage 11's threat model.
+
+### 6b. Why two peerings the intuition expects are absent
+
+`VPC-SharedServices` is not peered to Staging or to `VPC-Workloads`, and the reason is worth stating
+because the category name suggests otherwise. **Deployment is an API act**: the runner assumes a role
+across the account boundary and calls SageMaker, CloudFormation and S3, while artifacts travel as ECR
+images, CodeArtifact packages and S3 objects — each reached through an endpoint in the target's own VPC.
+Nothing in a deployment target clones a repository, because the image carries the code (D28); a runtime
+`git clone` there is a contract violation to catch, not a path to provide.
+
+What keeping them absent costs is one later change, generated from the same peering map as the rest. What
+building them costs is standing L3 reach from the host that executes repository-supplied build code into
+both deployment targets — the blast radius D14 accepted, widened.
+
+**The trigger, so it is recognised rather than rediscovered:** a peering to a deployment target is added
+when a shared service is consumed **at runtime** rather than at deploy time. Candidates, none of which
+exists today: a package mirror or registry proxy on an instance, a metrics or log collector that is not
+CloudWatch, an internal secrets or configuration service, a certificate-status endpoint. The internal CA
+is not one — D36 issues no CRL and runs no OCSP responder. When one appears, prefer a regional service or
+an endpoint to a peering.
 
 ### 7. What this does not decide
 
