@@ -17,7 +17,7 @@
 ### 1. What the mechanism forces, before anything is chosen
 
 AWS documents that a peered VPC cannot use its neighbour's internet gateway, NAT device or gateway
-endpoint, that peering is not transitive, and that a peering route may carry only the peer's CIDR. Three
+endpoint, that peering is not transitive, and that a peering route may carry only the peer's CIDR. Four
 consequences follow and none of them is a preference:
 
 - A **shared NAT gateway does not exist**. What a spoke can reach through a peering is an *address* inside
@@ -29,13 +29,24 @@ consequences follow and none of them is a preference:
 - Each VPC keeps its **own** S3 and DynamoDB gateway endpoints, and its own interface endpoints. They are
   free (gateway) or per-VPC metered (interface) either way, and centralizing the interface set in the hub
   is ruled out below.
+- A sixth limitation from the same page decides §5's other half: **"You cannot connect to or query the
+  Amazon DNS server in a peer VPC."** A spoke resolves at its own `.2` and nowhere else, so a private zone
+  reaches a spoke only by being **associated with that spoke's VPC**. That is why INT-22's matrix is the
+  design rather than a listing, and why a missing association fails as NXDOMAIN rather than as a referral.
 
 **Zero NAT gateways are built.** One would serve only the VPC it sits in, and at USD 0.045/h plus 0.005/h
 for its address it is roughly USD 36.50/month standing against a USD 50 ceiling (D12). It stays priced and
 unbuilt as the named contingency: if a service needs the internet and cannot be told about a proxy, a NAT
-gateway is created **in that service's own VPC**, with a cost row and a removal trigger. The first
-candidate is MWAA Serverless, whose workers expose no proxy setting — Stage 10 gives them private routing
-with interface endpoints first.
+gateway is created **in that service's own VPC**, with a cost row and a removal trigger.
+
+**Amended 2026-09-05 (the same day, on the documentation):** MWAA Serverless was named here as the first
+candidate. It is not one. The MWAA Serverless networking guide documents **two** VPC shapes, and the
+private one requires the opposite of a NAT: its subnets *"must not have a route table to a NAT device
+(gateway or instance), nor an internet gateway"*, and it is served by interface endpoints for `logs`,
+`monitoring` and `kms` with a self-referencing security group. The requirements list that demands two NAT
+gateways belongs to the **public-routing** shape on the same page — Lesson 41 at a new address. Stage 10
+builds the private shape; **no candidate for the contingency is named today**, and the contingency stays
+priced and unbuilt.
 
 ### 2. Where the hub lives, and what that costs
 
@@ -64,8 +75,10 @@ separate `[P]` Elastic IPs, so a compromise of one is not a compromise of the ot
 address is USD 3.65/month.
 
 The **WireGuard host's** Elastic IP is *transferred* from Sandbox rather than reallocated (AWS supports
-this within a Region, at no charge, with a seven-day acceptance window and the address disassociated at
-accept time), so every client keeps its `Endpoint` line. The **proxy's** address is new, and it becomes the
+this within a Region, at no charge, with a seven-day acceptance window; the source account must
+**disassociate the address before the recipient accepts**, or the accept fails with
+`InvalidTransfer.AddressAssociated`, and the transfer **resets every tag**), so every client keeps its
+`Endpoint` line. The **proxy's** address is new, and it becomes the
 anchor of every VPN-only condition.
 
 ### 4. The client plane is not special
@@ -75,12 +88,20 @@ crosses the proxy like every other client, and the enforcement lives on the Wire
 cannot revert it: tunnel packets are forwarded to RFC1918 destinations only and everything else is dropped.
 A laptop with no proxy configured reaches the intranet and nothing else.
 
-Two consequences worth stating because they are easy to get backwards:
+Three consequences worth stating because they are easy to get backwards:
 
 - **The anchor moves to the proxy's address.** A laptop's control-plane call exits through Squid, so
   `DenyControlPlaneOffVpn`'s `aws:SourceIp` is the proxy's EIP; `aws:SourceVpc` is `VPC-Networking`; and
   the lake's `aws:SourceVpce` branch gains the hub's S3 gateway endpoint, because S3 from the proxy still
   leaves through it.
+- **AWS's own VPC-only policy cannot be copied verbatim here.** The SMUS network-isolation guide's
+  `DenyUserAccessFromUnauthorizedVPCs` keys on `StringNotEquals` over `aws:SourceVpc`, which **matches
+  whenever the key is absent** — every browser-origin call. Under this design the hub holds no interface
+  endpoint, so a portal user's calls carry the proxy's public address and no `aws:SourceVpc` at all, and
+  the documented policy would deny the portal outright. INT-16's fallback (i) is therefore authored in
+  `policies-shared.tf`'s existing shape: `NotIpAddress` on `aws:SourceIp` **and**
+  `StringNotEqualsIfExists` on `aws:SourceVpc`, keeping AWS's `aws:userid` `*:user-*` and
+  `aws:ViaAWSService` carve-outs (Stage 6c step 6.6).
 - **Per-device attribution is preserved by routing, not by logging.** Inside `VPC-Networking` the proxy's
   subnet carries a route for `10.90.0.0/24` to the WireGuard host's ENI and the host does not masquerade
   traffic bound for the proxy, so the access log records `10.90.0.<device>`. That range appears in no other

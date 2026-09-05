@@ -427,6 +427,37 @@ onwards the file records how the environment changed, not just the plan.
   both NAT gateways and of `development/{sagemaker,data,egress}/`, the Elastic IP transfer, and the
   re-keying of every VPN-only condition onto the proxy's address.
 
+- **2026-09-05 (same day, second sitting) — the three new stage files were reviewed for consistency,
+  ordering and feasibility, rewritten in the action-checklist format, and corrected against the AWS
+  documentation.** The format is Stage 4's and Stage 16's: an **Action / Why / Explanation** header per
+  step, numbered sub-steps that open with the action, and a `[Claude]` / `[Claude⚡]` / `[user]` marker on
+  each. **Ordering:** 6b now runs **before** 6c by argument rather than by accident — 6c then writes the
+  peering map and the `awsds-<env>-vpc` peer lookup once, against the final name. **Six corrections came
+  from reading the vendor pages rather than the drafts.** (i) Three VPCs in one account is a **hard
+  conflict**, not a tagging preference: the `vpc` module's flow-log **log group** and the slice's flow-log
+  **IAM role** are account-unique. (ii) `VPN_HOMES` rows resolve `foundation/`, and the hub's Elastic IP
+  lives in `networking/` — the row needs a slice field or the re-keying reads an empty state and denies
+  every persona. (iii) **MWAA Serverless is not D38's NAT contingency candidate**: AWS documents a
+  private-routing shape whose subnets *"must not have a route table to a NAT device … nor an internet
+  gateway"*, so the requirements list demanding two NAT gateways belongs to the public shape on the same
+  page — **Lesson 41's second instance**, and D7, D38 §1 and Stage 10 were amended. (iv) INT-16's fallback
+  (i) **cannot** copy AWS's `DenyUserAccessFromUnauthorizedVPCs`: its `StringNotEquals` on `aws:SourceVpc`
+  matches when the key is **absent**, which is every browser-origin call, so it is authored in
+  `policies-shared.tf`'s `NotIpAddress` + `StringNotEqualsIfExists` shape. (v) The proxy allow-list is
+  **seeded from the network-isolation guide's own portal, IdC and console tables** instead of by trial, and
+  the guide's **optional** endpoint table was transcribed in full into `REFERENCES.md` because design B
+  turns it into a costed decision. (vi) `NO_PROXY` is generated **per VPC from that VPC's endpoint list**,
+  so an endpoint-less AWS service fails as a proxy **403** rather than as a timeout (Lesson 42). Three
+  smaller ones: `CIDRS["staging"]` is re-pointed to 10.50.0.0/16 **in 6b, before** the token flip, or the
+  folder rename proposes a VPC replacement; the SSO assignment keys are renamed behind `moved {}` blocks
+  after the account is; and the allow-list reaches the running proxy through an **SSM State Manager
+  association** rather than a host replacement or a new write API. **Two instruments were added to the
+  plan**: `./aws/eip-transfer.py` (a read-only preflight for the four documented transfer refusals, which
+  prints the two write commands) and `./aws/proxy.py` `PX-1`..`PX-5`; `./aws/dns-allowlist.py` is re-aimed
+  at the Squid lists, and `EXC-05`'s redirection-chain failure mode retires with them, because Squid matches
+  the requested hostname rather than the resolution chain. **Provisioned things this touches:** none — the
+  whole sitting is plan, prose and decisions.
+
 ---
 
 *Plan core: [GENERAL_PLAN.md](../GENERAL_PLAN.md) · Decisions: [docs/plan/decisions/INDEX.md](decisions/INDEX.md) · Stages: [docs/plan/stages/INDEX.md](stages/INDEX.md)*

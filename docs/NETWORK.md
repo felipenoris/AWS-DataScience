@@ -39,6 +39,11 @@ and a peering route may carry only the peer's CIDR. So a `0.0.0.0/0` pointed at 
 silently, a shared NAT does not exist, and **the only thing a spoke can reach in the hub is an ENI** — which
 is why the single egress is an *explicit* proxy and every spoke loses its default route.
 
+The same page carries the limitation that makes T9's association matrix load-bearing rather than tidy:
+**"You cannot connect to or query the Amazon DNS server in a peer VPC."** A spoke resolves at its own `.2`
+and nowhere else, so a private zone reaches a spoke only by being *associated with that spoke's VPC* — and
+a missing association is indistinguishable from a name that does not exist.
+
 ### T3. The target address plan
 
 | VPC | CIDR | Account | What it holds |
@@ -208,7 +213,17 @@ shipped to CloudWatch and exported to Log Archive, is Stage 11's egress evidence
 compute no longer resolves it. It still governs the names the compute resolves **directly** — AWS service
 names and `.awsds.internal` — and its blocking rule closes the VPC's recursive resolver as an exfiltration
 channel, which is the classic residual of a subnet with no NAT. It lives in every compute VPC and in none
-of `VPC-Networking`, because the proxy has to resolve.
+of `VPC-Networking`, because the proxy has to resolve. **One failure mode retires with the move**:
+`EXC-05`'s redirection-chain problem — a CDN that stops flattening its chain turning an allow-listed name
+into a block that blames the wrong entry — cannot recur, because Squid matches the *requested hostname*
+rather than the resolution chain.
+
+**`NO_PROXY` is generated per VPC, from that VPC's own endpoint list** — never a blanket
+`.us-west-2.amazonaws.com`. The blanket form tells the client to reach every AWS service directly, and a
+service with no endpoint then has no route at all: a timeout with no message (Lesson 42). Generated from
+the list the `egress/` slice already declares, the same call is a proxy **403 naming the host** — a finding
+instead of a hang. The generated list also carries `169.254.169.254`, `169.254.170.2`, `localhost`,
+`.awsds.internal` and the RFC1918 ranges.
 
 ### T7. Why the portal works again, without a browser grant
 

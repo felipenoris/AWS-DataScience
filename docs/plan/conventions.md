@@ -324,10 +324,13 @@ terraform-live/
     │                     #     service-name private zone: the VPN client resolves here, and
     │                     #     that is the repair of Lessons 40-43
     ├── vpn/              # [D] the WireGuard host (D4 amended: the home moved here at 6c).
-    │                     #     Forwards tunnel packets to RFC1918 destinations only
-    ├── proxy/            # [D] the Squid host - the estate's single egress. Its EIP is the
-    │                     #     anchor of every VPN-only condition; its access log is Stage
-    │                     #     11's egress evidence
+    │                     #     THE INSTANCE ONLY - same rule as proxy/ below. Forwards tunnel
+    │                     #     packets to RFC1918 destinations only
+    ├── proxy/            # [D] the Squid host - the estate's single egress. THE INSTANCE ONLY:
+    │                     #     its Elastic IP, security group and allow-list parameter are
+    │                     #     networking/'s [P] anchors, so a `make down` cannot release the
+    │                     #     address every VPN-only condition is keyed on. Its access log
+    │                     #     is Stage 11's egress evidence
     ├── workloads/        # [P] VPC-Workloads (10.32.0.0/16, created at 6c): the production
     │                     #     SageMaker runtime, MWAA Serverless workers, production jobs.
     │                     #     No IGW route in any table

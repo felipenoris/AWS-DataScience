@@ -945,6 +945,16 @@ lesson can be *recognised* without opening this file; the reasoning that makes e
    scheduled defect**, and of the whole list it was the one that broke. The repair for the class: when
    copying a "required" row, copy the sentence that scopes the table — and read the whole page, because
    the contradicting table sat three scrolls down the same URL this repository had already cited twice.
+   **Second instance, 2026-09-05 (the 6b-6d review), and it nearly bought a NAT gateway.** The MWAA
+   Serverless networking page states that a workflow's subnets *"must have a route table to a NAT device
+   (gateway or instance)"* — read alone, that makes orchestration D38's first named exception and puts a
+   ~USD 36.50/month standing line into a USD 50 estate. The premise is the **section heading**: that list
+   scopes *"Public routing over the internet"*, and the next section, *"Private routing without internet
+   access"*, requires the exact opposite — *"must not have a route table to a NAT device … nor an internet
+   gateway"* — with three interface endpoints and a self-referencing security group instead. **When a
+   vendor page offers two topologies, the requirements list you hit first belongs to whichever one it is
+   under**; the tell is the same as the first instance, a "required" whose premise names a network shape
+   nobody checked against ours.
 
 42. **A permission failure is a response; a network failure is the absence of one — and CloudTrail
    separates "denied" from "never arrived".** The on-VPN portal break arrived with a plausible cause

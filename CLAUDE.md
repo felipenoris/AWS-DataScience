@@ -192,13 +192,18 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
 
 ### Current position
 
-- **RE-SCOPED 2026-09-05 on three user inputs** — the account-quota increase was **refused**, SageMaker
-  showed no need for a second interactive environment, and the client-plane DNS break exposed a network
-  too thin for the estate. **Stage 6 split into four**: `06a` (record of what ran), `06b` (`Development` →
-  `Staging`), `06c` (the network), `06d` (the remainder). Log moved to `log-stage-06a-*`. **Order: 6b →
-  6c → 6d → 7.** New: **D38** (single egress hub), **Lesson 44**, **INT-21/INT-22**; **D21 superseded**
-  by its own larger branch; D4/5/6/7/9/11/12/14/15/17/18/19/20/22/23/26/35/36 amended in place; **OQ 23
-  closed**; Stage 14 **blocked on the quota**; Stage 15 deliberately **not** pulled forward (declined).
+- **RE-SCOPED 2026-09-05** (quota refused, one interactive environment is enough, the network too thin).
+  **Stage 6 split into four**: `06a` (record), `06b` (`Development` → `Staging`), `06c` (the network),
+  `06d` (the remainder); log at `log-stage-06a-*`. **Order: 6b → 6c → 6d → 7.** New: **D38**, **Lesson 44**,
+  **INT-21/INT-22**; **D21 superseded**; D4/5/6/7/9/11/12/14/15/17/18/19/20/22/23/26/35/36 amended; **OQ 23
+  closed**; Stage 14 **blocked on the quota**; Stage 15 **not** pulled forward (declined).
+- **6b/6c/6d re-reviewed the same day** into the action-checklist format; **6b runs before 6c**. The six
+  documentation corrections are in 6c's own "What the documentation changed" table; four bite outside it:
+  three VPCs in one account collide on the flow-log **log group and IAM role**; `VPN_HOMES` rows read
+  `foundation/` while the hub's EIP is in `networking/`; AWS's `DenyUserAccessFromUnauthorizedVPCs`
+  **cannot be copied** (`StringNotEquals` on an **absent** `aws:SourceVpc` matches every browser call);
+  `NO_PROXY` is **per VPC**, so a missing endpoint is a 403, not a timeout. Planned: `./aws/eip-transfer.py`,
+  `./aws/proxy.py`.
 - **The chain is `Sandbox → Staging → Production`** (`objectives.md` edited by the user). Interactive
   compute exists in **Sandbox only**; Staging and Production carry the SageMaker **runtime**, which needs
   no domain object. `DataScientistStagingAccess` exists, unassigned, and is 6b's target.
@@ -208,24 +213,26 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   `VPC-Workloads` = 10.32/16; Staging keeps **10.50/16**; 10.40 freed; 10.60 reserved for a future
   `shared` account. **Five peerings** (Networking×4 + SharedServices×Sandbox) — the absent ones are the
   isolation control. WireGuard and Squid are **two `[D]` hosts**; the WireGuard **EIP transfers** between
-  accounts (documented, free, 7-day accept, must be disassociated), so no client `.conf` changes its
-  `Endpoint`. **The VPN client is a private-network client**: its whole internet, AWS APIs included,
+  accounts (free, 7-day accept, must be disassociated first, **tags reset**), so no client `.conf` changes
+  its `Endpoint`. **The VPN client is a private-network client**: its whole internet, AWS APIs included,
   crosses the proxy — so the anchor of every VPN-only condition becomes the **proxy's** EIP, and the host
   drops every tunnel packet not bound for RFC1918. **The hub carries no interface endpoint with private
-  DNS and no service-name zone** — that is the repair of Lessons 40-43, and it is why endpoints are never
-  centralized. DNS Firewall survives in compute VPCs with an intranet-only list (closing DNS exfiltration,
-  not the internet). `awsds.internal` apex + `sandbox|staging|prod.` children + `awsds-pages.internal`,
-  with the INT-22 association matrix (private zones do **not** delegate; a matching zone with no record
-  answers NXDOMAIN, not publicly).
+  DNS and no service-name zone** — the repair of Lessons 40-43, and why endpoints are never centralized.
+  DNS Firewall survives in compute VPCs with an intranet-only list. `awsds.internal` apex +
+  `sandbox|staging|prod.` children + `awsds-pages.internal`, with the INT-22 matrix (private zones do
+  **not** delegate, a VPC cannot query a peer's resolver, and a matching zone with no record answers
+  NXDOMAIN).
 - **The SMUS CI/CD tool is `aws-smus-cicd-cli` and deploys only into EXISTING SMUS projects** — so it is
   an **exporter** on the Sandbox side; the pipeline stays the deployer (D26/D28). Using it as the
   promotion path would need domain associations in Workloads and a `datazone:*` carve-out.
 - **Orchestration is MWAA Serverless only** (USD 0.088/task-hour, no standing fee; `awscc_mwaaserverless_workflow`,
   awscc ≥ 1.69; the `aws` provider has none). Design B is INT-14's documented-not-built terminal fallback;
   a root-SCP `airflow:CreateEnvironment` deny replaces the prose. **Workers accept no proxy** —
-  `NetworkConfiguration` always set, private routing with endpoints: the first named exception to the
-  single egress, and one with no internet path. **`terraform-reference` has NO Airflow configuration** —
-  six `airflow:*` IAM actions in the SMUS provisioning role, nothing else.
+  `NetworkConfiguration` always set on AWS's **documented private-routing shape** (subnets with no NAT and
+  no IGW route; `logs`/`monitoring`/`kms` endpoints; self-referencing SG; **two AZs — a priced D9
+  exception**): an exception to the single egress with no internet path, and **not** D38's NAT contingency
+  candidate, which today has none. **`terraform-reference` has NO Airflow configuration** — six `airflow:*`
+  IAM actions in the SMUS provisioning role, nothing else.
 - **Landing zone closed — Stages 0-1d DONE (2026-08-15).** Battery **100** (4 `note` by design, `EXC-03`).
   **Stage 2 DONE**; a state bucket per Terraform-managed account; delegation narrowed and hand-applied
   (`INV-15`). **Gates:** `make check` (offline), `check-ou` (session), `check-docs` (red on pre-St.2
