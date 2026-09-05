@@ -45,8 +45,19 @@ private one requires the opposite of a NAT: its subnets *"must not have a route 
 (gateway or instance), nor an internet gateway"*, and it is served by interface endpoints for `logs`,
 `monitoring` and `kms` with a self-referencing security group. The requirements list that demands two NAT
 gateways belongs to the **public-routing** shape on the same page — Lesson 41 at a new address. Stage 10
-builds the private shape; **no candidate for the contingency is named today**, and the contingency stays
-priced and unbuilt.
+builds the private shape.
+
+**Amended again 2026-09-05 (the plan-wide review): the contingency now has a candidate, and it is ECR's
+pull-through cache.** Amazon ECR documents that the **first** pull through a cache rule *"may require a
+route to the internet"*, and its own remedy is a public subnet with an internet gateway and a route from
+the private tier — a **route**, which this design removes; an explicit proxy is not one. Unauthenticated
+upstream pulls are *"initiated by AWS IP addresses"*, so the requirement is conditional rather than
+universal. [Stage 7](../stages/stage-07-gitlab-runners-ecr.md) step 5.2 **measures it**, and ranks two
+cheaper fallbacks ahead of a NAT gateway — prime the cache from `VPC-Networking`'s public tier, which has
+the route; or drop the cache and bake the two or three public images into `base`. Only a failure of both
+promotes `VPC-SharedServices` to this estate's first NAT gateway, with a cost row and a removal trigger.
+**The contingency therefore has a named candidate and no instance**, which is a different state from having
+neither.
 
 ### 2. Where the hub lives, and what that costs
 
@@ -73,6 +84,25 @@ The WireGuard host parses untrusted UDP from the internet; the proxy parses untr
 internet. They are separate `[D]` instances in the same public tier, with separate security groups and
 separate `[P]` Elastic IPs, so a compromise of one is not a compromise of the other. The cost of the second
 address is USD 3.65/month.
+
+**The address budget, in full, because nothing else states it in one place** (added 2026-09-05, when the
+question was asked directly). Rates are the measured `us-west-2` ones in `PRICING.md`: a public IPv4 address
+costs **USD 0.005/h ≈ 3.65/month whether it is in use or idle**, and a NAT gateway costs **0.045/h plus its
+own address**, i.e. 0.050/h ≈ **36.50/month** standing.
+
+| | Elastic IPs | NAT gateways |
+|---|---|---|
+| **Today, in code, with every `egress/` slice up** | **4** — one `[P]` for WireGuard in `sandbox/foundation/`, plus one `[E]` per NAT in `sandbox`, `development` and `production` | **3** — all three `egress/` slices carry `egress_mode = "A"` |
+| **Target, after Stage 6c** | **2**, both `[P]`, both in `production/networking/`: the WireGuard host's (**transferred**, not reallocated) and the Squid proxy's (new) | **0** |
+| **During the 6c cut-over, at peak** | **3** in Production for one sitting — the proxy's, the transferred one, and Production's own NAT address until pass 5 destroys it. Sandbox goes 1 → 0 | 3 → 0 |
+| **Stage 13's public ALB** | **0** — an internet-facing *Application* Load Balancer takes AWS-managed addresses; only a Network Load Balancer can be given Elastic IPs | 0 |
+| **Per additional Sandbox (D35)** | **0** — a vended unit peers to the hub and reaches the internet through the same proxy | 0 |
+
+**So the estate's steady state is two public addresses and no NAT gateway, and it does not grow with N.**
+The default Elastic IP quota is five per Region, which leaves headroom for the cut-over peak and for one
+contingency; Stage 12 step 9.1 alarms it. Both addresses are `[P]` **anchors in `networking/`, never in the
+`[D]` slice** — a `make down` that released either would invalidate every client `.conf` (the WireGuard one)
+or every VPN-only IAM condition (the proxy's).
 
 The **WireGuard host's** Elastic IP is *transferred* from Sandbox rather than reallocated (AWS supports
 this within a Region, at no charge, with a seven-day acceptance window; the source account must
@@ -171,6 +201,20 @@ CloudWatch, an internal secrets or configuration service, a certificate-status e
 is not one — D36 issues no CRL and runs no OCSP responder. When one appears, prefer a regional service or
 an endpoint to a peering.
 
+### 6c. Where each VPC's endpoints live, and why one account needs two slices
+
+An endpoint slice reads exactly one `foundation/` — its VPC id, its subnets, its route tables. Production
+now has three VPCs, so the `[E]` endpoint layer is **`production/egress/` for `VPC-SharedServices` and
+`production/workloads-egress/` for `VPC-Workloads`**, with **none at all** for `VPC-Networking` (§5). Two
+consequences, both nearly missed in the first draft:
+
+- **`terraform-modules/vpc-egress` carries account-unique names too**, not just `vpc`: its DNS-firewall
+  CloudWatch log group `/awsds/<env>/dns-firewall` collides outright, and its rule group, its two domain
+  lists and its query-log config collide by `Name`. It takes the same `name_suffix`, in the same version
+  bump that removes the NAT half.
+- **There are three NAT gateways to destroy, not two.** `production/egress/` is `egress_mode = "A"` today,
+  so `VPC-SharedServices` has one as well.
+
 ### 7. What this does not decide
 
 The proxy's allow-list contents (Stage 6c writes the first version, Stage 11 owns the policy), TLS
@@ -185,7 +229,8 @@ hand).
 - An account slot frees or the quota is raised → move `VPC-Networking` and `VPC-SharedServices` to a
   `shared` platform account (§2).
 - A service is found that needs the internet and cannot use a proxy → a NAT gateway **in that service's
-  VPC**, priced and dated (§1).
+  VPC**, priced and dated (§1). **The first candidate is ECR's pull-through cache**, measured at Stage 7
+  step 5.2 with two cheaper fallbacks ranked ahead of it.
 - The endpoint bill becomes the dominant line at N > 1 Sandboxes → re-open centralization, against §5's
   constraint (§5).
 - The proxy's access log stops being sufficient evidence for Stage 11's egress leg → TLS interception is

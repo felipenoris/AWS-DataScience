@@ -1025,6 +1025,27 @@ lesson can be *recognised* without opening this file; the reasoning that makes e
     should sting: it was known, it was tested, and it was still designed around, because it lives in a
     stage file nobody re-opens while drawing a new topology.
 
+45. **A default that reaches the internet is a dependency nobody declared — and removing the route is what
+    turns it from invisible into fatal.** *(2026-09-05, reviewing Stages 7-15 against the single-egress
+    design.)* Three of one stage's six documentation corrections turned out to be the same shape. GitLab
+    Omnibus enables **Let's Encrypt automatically whenever `external_url` is HTTPS**, and retries it on
+    every `reconfigure` — on a `.internal` name behind a proxy that is a failing reconfigure, for ever,
+    and the failure names ACME rather than naming the design. ECR's pull-through cache documents that the
+    **first** pull *"may require a route to the internet"*, and offers as its own remedy a public subnet
+    with an internet gateway — the exact thing the design removed. A `PythonOperator` in a workflow whose
+    workers AWS documents as having *"no route table to a NAT device… nor an internet gateway"* has no
+    path to PyPI at all. **The general form: a managed component's convenience defaults were written for
+    an estate with egress, so every one of them is a latent outbound call, and a design that removes the
+    route converts a silent success into an unexplained failure at the worst moment.** What makes it
+    expensive is *when* it surfaces: the proxied estate works for everything anyone thinks to test, and
+    the defaults fire on the paths nobody drives by hand — a renewal, a first pull, a cold start. **Three
+    habits, and only the third is cheap:** read a product's *defaults* page, not only its configuration
+    page, before putting it behind a proxy; make the refusal legible on purpose (an explicit proxy answers
+    **403 naming the host**, which is a finding, where a missing route answers with a timeout, which is
+    not — Lesson 42 at a new address); and prefer a **lint** over a runtime discovery wherever the
+    dependency is expressible in the artifact, which is why the workflow lint rejects an operator rather
+    than the network rejecting a packet.
+
 ---
 
 *Plan core: [GENERAL_PLAN.md](../GENERAL_PLAN.md) · Decisions: [docs/plan/decisions/INDEX.md](decisions/INDEX.md) · Stages: [docs/plan/stages/INDEX.md](stages/INDEX.md)*

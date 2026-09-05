@@ -333,7 +333,15 @@ terraform-live/
     │                     #     is Stage 11's egress evidence
     ├── workloads/        # [P] VPC-Workloads (10.32.0.0/16, created at 6c): the production
     │                     #     SageMaker runtime, MWAA Serverless workers, production jobs.
-    │                     #     No IGW route in any table
+    │                     #     No IGW route in any table. TWO private subnets in TWO AZs -
+    │                     #     the one D9 exception in the estate, required by MWAA
+    │                     #     Serverless's documented private-routing shape (Stage 10 1.2)
+    ├── workloads-egress/ # [E] the interface endpoints and DNS firewall for VPC-Workloads.
+    │                     #     A SECOND endpoint slice in one account, because an egress-
+    │                     #     shaped slice reads exactly ONE foundation/: egress/ below
+    │                     #     serves VPC-SharedServices and cannot also serve this one.
+    │                     #     Rank 51, just above egress (50). Created at 6c step 1.3a,
+    │                     #     populated by Stages 9 and 10
     ├── pki/              # [P] the internal root CA (D36). OWN state file and OWN KMS key,
     │                     #     deliberately not foundation/'s: foundation is opened to change
     │                     #     a CIDR or accept a peering, and every such edit would otherwise
@@ -365,14 +373,20 @@ terraform-live/
     │                     #     THE 5.a HALF IS APPLIED (2026-08-21, 14 resources)
     ├── sagemaker/        # [P] Model Registry (model package groups) + the execution role
     │                     #     pipeline-submitted jobs assume. No domain, no user profiles (D17)
-    ├── egress/           # [E] interface endpoints per VPC - NO NAT anywhere (D38) - and
-    │                     #     the internal ALB for GitLab/Pages ONLY
-    │                     #     if Stage 7 decision 1 picks it over nginx-on-instance (an
-    │                     #     ALB cannot stop, so if it exists it is [E])
+    ├── egress/           # [E] VPC-SharedServices' interface endpoints - NO NAT anywhere
+    │                     #     (D38; egress_mode flips A -> B at 6c step 5.1, which is where
+    │                     #     the THIRD NAT gateway dies) - and the internal ALB for
+    │                     #     GitLab/Pages ONLY if Stage 7 decision 1 picks it over
+    │                     #     nginx-on-instance (an ALB cannot stop, so it is [E])
     ├── probes/           # [E] Stage 3's instrument here: the peering target
     ├── tooling/          # [D] GitLab EC2 + EBS (D8, D14) - TLS terminates on its own
-    │                     #     nginx, or on the egress/ ALB (Stage 7 decision 1)
-    ├── runners/          # [E] GitLab Runners (D14)
+    │                     #     nginx, or on the egress/ ALB (Stage 7 decision 1).
+    │                     #     letsencrypt['enable'] = false is mandatory: Omnibus turns it
+    │                     #     ON whenever external_url is https and retries every
+    │                     #     reconfigure (Stage 7 step 1.3)
+    ├── runners/          # [E] GitLab Runners (D14) - amd64, and since 2026-09-05 also the
+    │                     #     BUILDBOX's successor: sandbox/buildbox/ dies at 6c step 5.8
+    │                     #     and its job lands here (Stage 7 step 6)
     ├── orchestration/    # [E] MWAA SERVERLESS ONLY (D7 amended 2026-09-05):
     │                     #     awscc_mwaaserverless_workflow per app, YAML in S3, a
     │                     #     per-workflow role and log group (D28), NetworkConfiguration

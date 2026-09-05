@@ -197,42 +197,44 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   `06d` (the remainder); log at `log-stage-06a-*`. **Order: 6b → 6c → 6d → 7.** New: **D38**, **Lesson 44**,
   **INT-21/INT-22**; **D21 superseded**; D4/5/6/7/9/11/12/14/15/17/18/19/20/22/23/26/35/36 amended; **OQ 23
   closed**; Stage 14 **blocked on the quota**; Stage 15 **not** pulled forward (declined).
-- **6b/6c/6d re-reviewed the same day** into the action-checklist format; **6b runs before 6c**. The six
-  documentation corrections are in 6c's own "What the documentation changed" table; four bite outside it:
-  three VPCs in one account collide on the flow-log **log group and IAM role**; `VPN_HOMES` rows read
-  `foundation/` while the hub's EIP is in `networking/`; AWS's `DenyUserAccessFromUnauthorizedVPCs`
-  **cannot be copied** (`StringNotEquals` on an **absent** `aws:SourceVpc` matches every browser call);
-  `NO_PROXY` is **per VPC**, so a missing endpoint is a 403, not a timeout. Planned: `./aws/eip-transfer.py`,
-  `./aws/proxy.py`.
+- **6b/6c/6d re-reviewed the same day** into the action-checklist format; **6b runs before 6c**. Corrections
+  outside 6c's own table: three VPCs collide on the flow-log **log group and IAM role**; `VPN_HOMES` rows
+  read `foundation/` while the hub's EIP is in `networking/`; AWS's `DenyUserAccessFromUnauthorizedVPCs`
+  **cannot be copied** (`StringNotEquals` on an **absent** `aws:SourceVpc` matches every browser call).
+  Planned: `./aws/eip-transfer.py`, `./aws/proxy.py`.
+- **Stages 7-15 reviewed the same day (third sitting)** — each had a re-scoped Status row over a stale body.
+  **Stage 10 contradicted itself** (it still built design B and ran a comparison D7 had settled): now one
+  design in **two** accounts, Staging first; step 4 is the fallback ladder; provisioned MWAA replaced by
+  `DenyProvisionedMwaa` and `OR-6` flipped to an absence check. **Stage 7 rewritten whole** (seven
+  documentation corrections in its own table); 12 and 13 rewritten into the action-checklist format;
+  **Stage 9 gained the steps its Status row had only announced** — 3.5-3.7 move the off-VPC deny onto the
+  job **roles** as a boundary (`get-role`, never `list-roles`) and deny serverless inference by SCP;
+  Stage 8 lost its vend gate and owns the D28 lint; Stage 14's VPN question closed without N.
+  **Back into 6c**: three NAT gateways not two; `vpc-egress` needs `vpc`'s `name_suffix`;
+  `production/workloads-egress/` (rank 51) added. **New: Lesson 45.** D38 gains a NAT-contingency candidate
+  (ECR's pull-through cache, measured at Stage 7 5.2); INT-19 is **four** surfaces; INT-04 retired into
+  INT-07.
 - **The chain is `Sandbox → Staging → Production`** (`objectives.md` edited by the user). Interactive
   compute exists in **Sandbox only**; Staging and Production carry the SageMaker **runtime**, which needs
   no domain object. `DataScientistStagingAccess` exists, unassigned, and is 6b's target.
 - **D38 in one paragraph:** peering shares an **address, never a path** (Lesson 44), so the single egress
-  is an **explicit Squid proxy** in `VPC-Networking` (Production, 10.31/16), **zero NAT gateways**, and no
-  spoke has a default route. `VPC-SharedServices` = the existing 10.30/16 (GitLab, runners, buildbox);
-  `VPC-Workloads` = 10.32/16; Staging keeps **10.50/16**; 10.40 freed; 10.60 reserved for a future
-  `shared` account. **Five peerings** (Networking×4 + SharedServices×Sandbox) — the absent ones are the
-  isolation control. WireGuard and Squid are **two `[D]` hosts**; the WireGuard **EIP transfers** between
-  accounts (free, 7-day accept, must be disassociated first, **tags reset**), so no client `.conf` changes
-  its `Endpoint`. **The VPN client is a private-network client**: its whole internet, AWS APIs included,
-  crosses the proxy — so the anchor of every VPN-only condition becomes the **proxy's** EIP, and the host
-  drops every tunnel packet not bound for RFC1918. **The hub carries no interface endpoint with private
-  DNS and no service-name zone** — the repair of Lessons 40-43, and why endpoints are never centralized.
-  DNS Firewall survives in compute VPCs with an intranet-only list. `awsds.internal` apex +
-  `sandbox|staging|prod.` children + `awsds-pages.internal`, with the INT-22 matrix (private zones do
-  **not** delegate, a VPC cannot query a peer's resolver, and a matching zone with no record answers
-  NXDOMAIN).
-- **The SMUS CI/CD tool is `aws-smus-cicd-cli` and deploys only into EXISTING SMUS projects** — so it is
-  an **exporter** on the Sandbox side; the pipeline stays the deployer (D26/D28). Using it as the
-  promotion path would need domain associations in Workloads and a `datazone:*` carve-out.
-- **Orchestration is MWAA Serverless only** (USD 0.088/task-hour, no standing fee; `awscc_mwaaserverless_workflow`,
-  awscc ≥ 1.69; the `aws` provider has none). Design B is INT-14's documented-not-built terminal fallback;
-  a root-SCP `airflow:CreateEnvironment` deny replaces the prose. **Workers accept no proxy** —
-  `NetworkConfiguration` always set on AWS's **documented private-routing shape** (subnets with no NAT and
-  no IGW route; `logs`/`monitoring`/`kms` endpoints; self-referencing SG; **two AZs — a priced D9
-  exception**): an exception to the single egress with no internet path, and **not** D38's NAT contingency
-  candidate, which today has none. **`terraform-reference` has NO Airflow configuration** — six `airflow:*`
-  IAM actions in the SMUS provisioning role, nothing else.
+  is an **explicit Squid proxy** in `VPC-Networking` (Production, 10.31/16), **zero NAT gateways** (three
+  destroyed), and no spoke has a default route. `VPC-SharedServices` = 10.30/16; `VPC-Workloads` = 10.32/16
+  (+ its own `workloads-egress/` `[E]` slice); Staging keeps **10.50/16**; 10.40 free; 10.60 reserved.
+  **Five peerings** — the absent ones are the isolation control. WireGuard and Squid are **two `[D]` hosts**;
+  the WireGuard **EIP transfers** (free, 7-day accept, disassociate first, **tags reset**), so no client
+  `.conf` changes. **The VPN client is a private-network client**: its whole internet crosses the proxy, so
+  every VPN-only condition re-keys onto the **proxy's** EIP. **The hub carries no interface endpoint with
+  private DNS** — the repair of Lessons 40-43, and why endpoints are never centralized. `awsds.internal`
+  apex + `sandbox|staging|prod.` children + `awsds-pages.internal`, with the INT-22 matrix.
+- **The SMUS CI/CD tool is `aws-smus-cicd-cli` and deploys only into EXISTING SMUS projects** — an
+  **exporter** on the Sandbox side; the pipeline stays the deployer (D26/D28).
+- **Orchestration is MWAA Serverless only** (USD 0.088/task-hour, no standing fee;
+  `awscc_mwaaserverless_workflow`; the `aws` provider has none). Design B is INT-14's documented-not-built
+  terminal fallback; a root-SCP `airflow:CreateEnvironment` deny replaces the prose. **Workers accept no
+  proxy** — `NetworkConfiguration` always set on AWS's **documented private-routing shape** (no NAT, no IGW
+  route; `logs`/`monitoring`/`kms` endpoints; self-referencing SG; **two AZs — a priced D9 exception**):
+  D38's first named exception, with **no** internet path at all.
 - **Landing zone closed — Stages 0-1d DONE (2026-08-15).** Battery **100** (4 `note` by design, `EXC-03`).
   **Stage 2 DONE**; a state bucket per Terraform-managed account; delegation narrowed and hand-applied
   (`INV-15`). **Gates:** `make check` (offline), `check-ou` (session), `check-docs` (red on pre-St.2
@@ -246,10 +248,9 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
 - **Three things Stage 5 leaves standing:** no principal can start the crawlers (**OQ 19**), so D18/D25
   ingestion is broken at one end; `EXC-02`'s uncollectable object; and no Athena in Data Governance.
 - **Standing SMUS mechanics:** a blueprint configuration is applied **from the member account**; an
-  existing one is **immutable via `awscc`** (a field change is a full-object Put or a replace); the D13
-  boundary field is **write-only**, so drift never shows in a plan (`US-8` is the sentinel, and
-  `list-roles` omits the boundary — use `get-role`); an incomplete configuration pins its projects in
-  **both** directions; `athena:UpdateSession` is in no API model.
+  existing one is **immutable via `awscc`**; the D13 boundary field is **write-only**, so drift never shows
+  in a plan (`US-8` is the sentinel, and **`list-roles` omits any permissions boundary — always `get-role`**,
+  which Stage 9's `DT-9` now inherits); an incomplete configuration pins its projects in **both** directions.
 - **SMUS is a Lake Formation admin in Sandbox** (2 service roles, self-appointed at the first project).
   `consumer-data-v0.5.0` declares ONE create-time admin with `ignore_changes` over the list; the defence
   is `./aws/datalake.py` `DL-13`, not a plan. `-refresh=false` is forbidden on that slice. **OQ 24** keeps
@@ -270,7 +271,8 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
 - **Deferred by decision — do not offer to close:** the USD 50 budget notifies nobody (D12); OQ 10 waits
   for N=2; the Config recorder is left alone and Management deliberately unrecorded (Stage 12 hooks).
   **Every governed account sits under `us-west-2`.**
-- **All 38 decisions closed.** Still needed from the user: **the domain name** (blocks Stage 13).
+- **All 38 decisions closed.** Still needed from the user: **the domain name** (blocks Stage 13 — the only
+  blocking input left in the plan).
 - **The repository is not documentation-only:** read-only `aws/` scripts, both Terraform trees, `scripts/`,
   the `Makefile`, the `pre-commit`/`tflint`/`checkov`/`ruff` gates. **Every script is Python 3 on `uv`** —
   shared code in `aws/awslib`, `scripts/repohygiene`, `scripts/tfhygiene`. **Exception:
@@ -354,3 +356,5 @@ the reasoning that makes it *usable* is in the file. Recognising one is the sign
 43. **A browser is a term in the reach question, and its policy is one no AWS instrument can read.**
 44. **What peering shares is an address, never a path — and a topology drawn as boxes and lines hides
     exactly that; the constraint that breaks the drawing is also what enforces the isolation for free.**
+45. **A default that reaches the internet is a dependency nobody declared — and removing the route is what
+    turns it from invisible into fatal.**
