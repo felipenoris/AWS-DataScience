@@ -310,6 +310,18 @@ proxy's allow-list the single filter it is supposed to be.
   cannot happen now — and gains `ec2`, `ec2messages`, `secretsmanager`, `ssm`, `ssmmessages` and `q`.
   Measure rather than copy: six of those names have never existed here, and `codewhisperer` is
   `us-east-1`-only.
+- **Deciding the `sagemaker.runtime` AZ question, which D9's single-AZ rule collides with — Claude
+  reads, user decides:** the SageMaker AI guide is explicit — *"you must ensure that the VPC interface
+  endpoint is activated in the Availability Zone of your client in order for private DNS resolution to
+  work. Otherwise, you may see DNS failures"* — and it says it of the **runtime** endpoint by name. Our
+  metered endpoints live in **one** AZ (D9) while a project's apps may land in **either** of the two
+  private subnets, so an app in `usw2-az2` invoking a model endpoint is the case that fails, and it fails
+  as a *resolution* error rather than as the cross-AZ cent-per-gigabyte D9 accepted. Three ways out, in
+  order of preference: pin the SMUS app subnets to the endpoint's AZ (free, and the blueprint takes a
+  subnet list); put **only** `sagemaker.runtime` in both AZs (+USD 0.010/h); or accept it and let the
+  first invocation from `az2` be the measurement. **Recommended: pin the subnets**, and measure it at
+  [6d](stage-06d-unified-studio-remainder.md) step 3 either way — this is a documented caveat, not a
+  prediction.
 - **Giving every instance-bearing spoke its SSM path — Claude:** `ssm`, `ssmmessages` and `ec2messages`
   endpoints in Sandbox, `VPC-SharedServices` and `VPC-Workloads`. Session Manager does not work through an
   HTTPS proxy listener, and the shell that reads the proxy's own log must not depend on the proxy
