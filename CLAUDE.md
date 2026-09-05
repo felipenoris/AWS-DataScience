@@ -57,6 +57,10 @@ write anything into it. Claude can read the files in this folder to gather infor
 
 - never run `terraform apply` (or scripts that perform infrastructure changes), unless explicitly authorized. You are free to run *read-only* operations.
 
+## reference terraform
+
+The folder `terraform-reference` is in `.gitignore` and contains an alternative implementation of this project. Never edit files in this folder unless requested by the user. You're free to read this folder and compare it to what is implemented in this project.
+
 ## aws cli
 
 - you are free to run read-only operations using aws client.
