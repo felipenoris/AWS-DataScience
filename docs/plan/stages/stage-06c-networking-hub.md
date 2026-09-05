@@ -60,7 +60,7 @@ and everything else is dropped. A laptop with no proxy configured reaches the in
 | `awsds.internal` + three child zones | Production `foundation/`, and each spoke | `[P]` | With an explicit association matrix (INT-22) |
 | Five peerings | requester side per spoke, accepter side in Production | `[P]` | Networking × 4, SharedServices × Sandbox |
 | Interface endpoints | every VPC **except** `VPC-Networking` | `[E]` | Single AZ (D9), private DNS on |
-| DNS Firewall | every compute VPC | `[E]` | Re-cut to an intranet-and-AWS list; its job is now closing DNS exfiltration, not filtering the internet |
+| DNS Firewall | every compute VPC | `[E]` | Re-cut to an intranet-and-AWS list. **It no longer filters the compute's internet** — an explicit-proxy client never resolves an internet name, so that filter moved to the proxy's Sandbox ACL. It keeps the names the compute resolves *directly* and closes the recursive resolver as an exfiltration channel |
 | **Zero** NAT gateways | — | — | Priced in §Cost as the contingency |
 
 ## Ordering, and what it depends on
@@ -190,8 +190,24 @@ needed" spends it. Deploys are AWS API calls and need no L3 path into a target V
   | Sandbox | `VPC-SharedServices` | `git clone` from a notebook (INT-09 re-homed), the laptop to GitLab and Pages |
 
   **Not built, and the omission is the control:** Sandbox ↔ Staging, Sandbox ↔ `VPC-Workloads`,
-  `VPC-SharedServices` ↔ Staging, `VPC-SharedServices` ↔ `VPC-Workloads`. Each may be added later against
-  a *named* consumer, which is D20's own test.
+  `VPC-SharedServices` ↔ Staging, `VPC-SharedServices` ↔ `VPC-Workloads`.
+- **Writing down why the last two are absent, because the intuition says otherwise — Claude, in this file
+  and in D38:** *deployment is an API act.* The runner in `VPC-SharedServices` assumes a role across the
+  account boundary and calls SageMaker, CloudFormation and S3; the artifacts travel as ECR images,
+  CodeArtifact packages and S3 objects, every one reached through an endpoint in the target's own VPC.
+  **Nothing in a deployment target clones a repository** — the image carries the code (D28), so a runtime
+  `git clone` there is a contract violation to catch rather than a path to provide. What it costs to keep
+  them absent is one later change; what building them costs is standing L3 reach from the host that
+  executes repository-supplied build code into both deployment targets, which is exactly the blast radius
+  D14 accepted and Lesson 2 warns about.
+- **Naming the trigger, so it is recognised rather than rediscovered — Claude:** a peering to a deployment
+  target is added when a **shared service is consumed at runtime** rather than at deploy time. The
+  candidates, none of which exists today: a package mirror or registry proxy on an instance (as opposed to
+  ECR and CodeArtifact, which are endpoints), a metrics or log collector that is not CloudWatch, an
+  internal secrets or configuration service, or a certificate-status endpoint. **The internal CA is not
+  one** — D36 issues no CRL and runs no OCSP responder, by decision. When one does appear, prefer a
+  regional service or an endpoint over a peering; the peering is the last resort, and it is generated from
+  the same map as the rest (one edit, both sides).
 - **Generating both sides — Claude writes, user applies:** the accepter side stays in Production
   (`foundation/` for SharedServices, `networking/` for the hub), subnet-scoped routes on **both** sides,
   applied accepter-last as the existing pattern does.
@@ -252,10 +268,15 @@ is what keeps every client's `Endpoint` line unchanged.
     VPCs that peering deliberately keeps apart. `dst` (not `dstdomain`) also catches a public name that
     resolves to a private address.
   - `SSL_ports 443`, `Safe_ports 80 443`, `http_access deny CONNECT !SSL_ports`.
-  - Source-scoped allow-lists, one per plane: the tunnel range `10.90.0.0/24` (the portal, console and
-    Identity Center families, plus the AWS API endpoints the laptop calls), the Sandbox CIDR (the compute
-    list that lives in the DNS Firewall today, minus its `*` and minus the portal block), the
-    SharedServices CIDR (package hosts for builds), the Workloads CIDR (empty by default).
+  - Source-scoped allow-lists, one per plane — **and this is where BOTH of the objectives' two filters
+    now live**, because an explicit-proxy client never resolves an internet name and a per-VPC DNS
+    firewall therefore cannot see one. The tunnel range `10.90.0.0/24` carries **the institutional web
+    filter**: the list of what a person on a company laptop may reach, starting with the SMUS portal,
+    console and Identity Center families and the AWS API endpoints the laptop calls. The Sandbox CIDR
+    carries **SageMaker's stricter list** — today's DNS Firewall allow-list moved here verbatim, minus its
+    wildcard and minus the portal families, which belong to the tunnel. The SharedServices CIDR carries
+    the build hosts' package sources; the Workloads CIDR is empty by default. One list per source, so a
+    name allowed for a person is not thereby allowed for a notebook.
   - `http_access deny all` last.
 - **Keeping the configuration out of the host — Claude:** the allow-lists are `[P]` data (an SSM parameter
   or a Secrets Manager secret rendered at boot), never state that exists only on a `[D]` disk (Lesson 4).
