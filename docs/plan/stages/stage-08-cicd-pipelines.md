@@ -2,18 +2,19 @@
 
 | | |
 |---|---|
-| **Status** | **RE-SCOPED 2026-09-05.** (1) **The chain is `Sandbox → Staging → Production`** — every "Development → Staging" sentence here is stale, and the *engineering* apply of step 2.4 (`app-etl` against real data, by hand) loses its home: it moves to a new `sandbox/app/app-etl/` slice applied **by hand** as `awsds-infra-sandbox-1`, and CI never applies into Sandbox — which is the answer to D21's surviving objection. (2) **`awsds-deploy-devenv-dev` and the Development image-parity half die** with the second Interactive account; `CI-6` prints `note` ("N=1, parity trivially true") rather than `pass` until Stage 14 vends a second unit. (3) **The runners have no NAT** — see Stage 7's note (3): every build step is an explicit-proxy client, and the promotion lint runs on the runner in `VPC-SharedServices`. (4) **The workflow lint grows four rules** (from [6d](stage-06d-unified-studio-remainder.md) step 4): reject project-scoped references, rewrite `start_date` at deploy time, enforce MWAA Serverless's operator allow-list and the 3600 s task cap, and pin `DefinitionS3Location.VersionId`; artifact class **(2b) operator code package** is added to D28. (5) **The SageMaker Unified Studio CI/CD CLI is an exporter, never a deployer**: it deploys only into existing SMUS *projects*, which a Workload account will not have — so `bundle` may produce the artifact on the Sandbox side and this stage's pipeline remains what applies into Staging and Production. — *earlier:* not started — **revised 2026-08-16 into the pass/verification format, against the official GitLab and AWS documentation read the same day**; pre-instrumented by `./aws/cicd.py`. Corrections folded in: the dev-env chain is reordered **push before scan** (ECR scan-on-push fires on arrival — the old order gated on findings that could not exist yet, and an image is re-scannable only once per 24 h, so the gate *reads* the push's scan and never triggers another); **GitLab Dependency Scanning is Ultimate** (Lesson 12 again), so the dependency gate is `pip-audit` in an ordinary job, with the Free Secret Detection template beside it; a CE manual job **blocks only when `when: manual` sits under `rules:`** (outside it, `allow_failure` defaults true and the "gate" waves through); the deploy-role scope was wrong — the promotion pipeline applies Staging's **`egress/`** too, so "app slices only" now reads "`egress/` + `app/*`"; the dev-env registration fan-out is **N + 1 targets from the D35 map**, not "Sandbox and Development"; INT-17's attachment point is now documented and the pipeline is written against **Stage 6 step 5.1's recorded mechanism**; job containers reach the instance profile because the declarative policy already defaults **IMDSv2 hop limit 2** org-wide; and the RCP was read before step 6 — `sts:AssumeRoleWithWebIdentity` is outside its deny, so GitHub OIDC is *possible* and still declined (decision 3) |
-| **Prerequisites** | Stage 7 — the build runner, the registries with immutable tags, the protected-tag shapes (3.5), **the recorded edition answer (3.3)** that fixes both gates' CE form, and the mirror answer (7.1). Stage 6 — **step 5.1's recorded INT-17 mechanism** and the hand-built image digest step 1.6 replaces. **The `Staging` vend gates pass 4 alone** (quota ticket open): passes 0-3 and 5 run without it |
+| **Status** | not started — **re-scoped and re-reviewed 2026-09-05**, against [6b](stage-06b-development-becomes-staging.md)/[6c](stage-06c-networking-hub.md)/[D38](../decisions/D38-single-egress-hub.md) and [Stage 7](stage-07-gitlab-runners-ecr.md)'s own review. **Nothing here waits on a vend any more**: 6b makes `Staging` by renaming, so pass 4 is gated by 6b like every other pass rather than by a support ticket. (1) **The chain is `Sandbox → Staging → Production`**: the *engineering* apply of step 2.4 moves to a new `sandbox/app/app-etl/` slice applied **by hand**, and CI never applies into Sandbox — the answer to D21's surviving objection, now with a `layers.py` refusal behind it. (2) **`awsds-deploy-devenv-dev` is not written** and image parity is `note` at N = 1. (3) **The runners have no NAT** — see Stage 7's note (3): every build step is an explicit-proxy client, and the promotion lint runs on the runner in `VPC-SharedServices`. (4) **The workflow lint grows four rules** (from [6d](stage-06d-unified-studio-remainder.md) step 4): reject project-scoped references, rewrite `start_date` at deploy time, enforce MWAA Serverless's operator allow-list and the 3600 s task cap, and pin `DefinitionS3Location.VersionId`; artifact class **(2b) operator code package** is added to D28. (5) **The SageMaker Unified Studio CI/CD CLI is an exporter, never a deployer**: it deploys only into existing SMUS *projects*, which a Workload account will not have — so `bundle` may produce the artifact on the Sandbox side and this stage's pipeline remains what applies into Staging and Production. — *earlier (2026-08-16, against the GitLab and AWS documentation):* push **before** scan (scan-on-push fires on arrival, and an image is re-scannable only once per 24 h); Dependency Scanning is **Ultimate**, so the dependency gate is `pip-audit`; a CE manual job blocks only under `rules:`; the deploy-role scope is `egress/` **plus** `app/*`; job containers reach the instance profile because the declarative policy already defaults IMDSv2 hop limit 2; and `sts:AssumeRoleWithWebIdentity` sits outside the RCP's deny, so GitHub OIDC is *possible* and still declined (decision 3) |
+| **Prerequisites** | Stage 7 — the build runner, the registries with immutable tags, the protected-tag shapes (3.5), **the recorded edition answer (3.3)** that fixes both gates' CE form, and the mirror answer (7.1). Stage 6 — **step 5.1's recorded INT-17 mechanism** and the hand-built image digest step 1.6 replaces. **6b** — `Staging` exists, its tree is `terraform-live/staging/` on its own state bucket. **6c** — every runner job is an explicit-proxy client and there is no NAT to bring up. Nothing here waits on a quota |
 | **Consumes** | [D5](../decisions/D05-sagemaker-egress.md), [D8](../decisions/D08-gitlab-hosting.md), [D14](../decisions/D14-supply-chain-account.md), [D17](../decisions/D17-interactive-vs-runtime.md), [D20](../decisions/D20-staging-account.md), [D21](../decisions/D21-development-account.md), [D35](../decisions/D35-sandbox-cardinality.md) |
 | **Proves** | [INT-07](../integrations.md) (Staging pulling the application image under the pipeline's role), [INT-08](../integrations.md) (the two deploy roles, distinguishable in CloudTrail), [INT-18](../integrations.md) (the dev-env deploy roles reaching from Production into the Interactive accounts). **Exercises INT-17's automated half** — the mechanism itself is recorded at Stage 6 step 5.1; what this stage adds is the pipeline making the same registration |
 
 *Read with [`docs/plan/conventions.md`](../conventions.md) (naming, layout, `[P]`/`[D]`/`[E]`, IAM rules).*
 
-**Forward constraint from D35:** step 1's registration writes into **N + 1 accounts** (every unit's
-Sandbox plus Development). The target list, the per-target roles and the trust-policy ARNs are all
-enumerated **from the authored map in `scripts/tfhygiene/backend.py`** (Stage 7's forward-constraint
-pattern) — a vend adds one map entry and Lesson 14 never gets a chance. **The promotion chain is untouched
-by N** (D21/D35): whatever the Sandbox count, there is one Development, one tag, one Staging leg, one gate.
+**Forward constraint from D35:** step 1's registration writes into **N accounts — every unit's Sandbox,
+N = 1 today**. The target list, the per-target roles and the trust-policy ARNs are enumerated **from the
+authored map in `scripts/tfhygiene/backend.py`** (Stage 7's forward-constraint pattern), so a vend adds one
+map entry and Lesson 14 never gets a chance. **The promotion chain is untouched by N** (D21/D35): whatever
+the Sandbox count, there is one tag, one Staging leg, one gate. `CI-6`'s image-parity check prints `note`
+("N = 1, parity trivially true") until [Stage 14](stage-14-sandbox-vending.md) vends a second unit.
 
 ---
 
@@ -28,10 +29,10 @@ the container image (ECR), the model version (Model Registry, from Stage 9), the
 |---|---|---|
 | `production/foundation/` (amended) | `awsds-deploy-prod` (INT-08) + the deploy-role misuse alarm | `[P]` |
 | `staging/foundation/` (amended, **after 6b**) | `awsds-deploy-staging` (INT-08) + the same alarm | `[P]` |
-| `sandbox/foundation/`, `development/foundation/` (amended) | the dev-env deploy roles (INT-18), one per target | `[P]` |
+| `sandbox/foundation/` (amended, one per unit) | the dev-env deploy roles (INT-18), one per target | `[P]` |
 | `production/registry/` (amended) | the **app-repository** pull grant for Staging (INT-07) — deliberately not the D35 Interactive map | `[P]` |
 | `production/runners/` (amended) | the **deploy runner** — protected, project-locked, its role only assumes the four deploy roles | `[E]` |
-| `development/app/app-etl/` (new), `staging/`, `production/` idem | the application slices — Development applied by hand (step 2), the other two by the pipeline (step 3) | `[E]` |
+| `sandbox/app/app-etl/` (new), `staging/`, `production/` idem | the application slices — **Sandbox applied by hand** (2.4), the other two by the pipeline (step 3). **CI never applies into Sandbox**, which is the answer to D21's surviving objection | `[E]` |
 | GitLab, by hand | the three `.gitlab-ci.yml`s, repository roles, protected release tags, the deploy runner's registration, CI variables | — |
 | GitHub | the infrastructure repository's offline-gates workflow (step 6) | — |
 | `scripts/` | `layers.py`: `app/app-etl` rank, the `[E]` rows, **refusal 5**; `backend.py`: the dev-env target map, the app-consumer entry; the `make` `PROFILE` override | — |
@@ -48,8 +49,8 @@ flowchart LR
     end
     GL --> BR -->|"build · smoke · push"| ECR
     GL --> DR
-    DR -->|"awsds-deploy-devenv-* · INT-18"| REG["dev-env/ slices<br/>Sandbox ×N + Development (D35)"]
-    DR -->|"awsds-deploy-staging · INT-07/08"| STG["staging/ egress+app [E]<br/>deploy · test · destroy"]
+    DR -->|"awsds-deploy-devenv-sandbox-* · INT-18"| REG["dev-env/ slices<br/>Sandbox ×N (D35)"]
+    DR -->|"awsds-deploy-staging · INT-07/08"| STG["staging/ egress+app [E]<br/>endpoints only, no NAT<br/>deploy · test · destroy"]
     DR -->|"awsds-deploy-prod · INT-08"| PAPP
     STG -->|"tests pass + 3.5 approval"| PAPP
 ```
@@ -63,10 +64,10 @@ flowchart LR
 | **[user]** | everything inside GitLab's UI (roles, protected tags, runner registration, CI variables, running manual jobs), git pushes and tags, GitHub settings, and every log entry |
 | **[pipeline]** | a job that runs by itself once its trigger fires — written by Claude, triggered by the user's push or tag, credentialed by step 4 |
 
-Hand applies in this stage run as the **infrastructure user**: `awsds-infra-prod` (Production),
-`awsds-infra-sandbox-1` and `awsds-infra-dev` (the Interactive foundations), `awsds-infra-staging`
-(Staging, once vended). The pipelines themselves run under the **deploy runner's instance profile** and
-the step 4 roles — never an SSO profile, never a stored key.
+Hand applies run as the **infrastructure user**: `awsds-infra-prod` (Production), `awsds-infra-sandbox-1`
+(the one Interactive foundation) and `awsds-infra-staging` (Staging, which 6b created). The pipelines run
+under the **deploy runner's instance profile** and the step 4 roles — never an SSO profile, never a stored
+key.
 
 ## Step numbers are identifiers, not an order
 
@@ -82,7 +83,7 @@ not change. The sequence to work in is **six passes**:
 | **1** | 4 | the deploy credential layer: roles, the deploy runner, the misuse alarm | Stage 7 pass 3 |
 | **2** | 2, 5 | the application build pipeline, with the gates written once | pass 1 (runner) |
 | **3** | 1 | the dev-env chain, ending in the INT-18 registration | passes 1-2; St.6 5.1 |
-| **4** | 3 | the promotion chain Development → Staging → Production | **the `Staging` vend**; passes 1-2 |
+| **4** | 3 | the promotion chain: tag → Staging → Production | passes 1-2 (**6b**, not a vend) |
 | **5** | 6 | the infrastructure repository's own pipeline; validation | pass 0 (7.1's answer) |
 
 **On ordering:** this stage builds the promotion *machinery* — the chain, the gates, the deploy roles. The
@@ -94,7 +95,7 @@ are ambiguous.
 
 ## To execute
 
-### 1. Development-environment pipeline — the runtime release chain (D17, INT-17, INT-18)
+### 1. The dev-env pipeline — the runtime release chain (D17, INT-17, INT-18)
 
 **Action:** build the release process for the images every notebook and Studio app runs on — `base` and
 `dev-env` — from a data-scientist-writable repository to a steward-gated registration in every Interactive
@@ -165,15 +166,17 @@ re-prices the D5 comparison (1.7).
   reality, per 3.3's answer: the manual job is a deliberate pause and the *authorization* is 1.0's
   protected tag — who could start this pipeline at all.
 - **1.6 — [pipeline] Register the approved version in every target (INT-17, INT-18)**: the job assumes
-  each target's `awsds-deploy-devenv-*` role (4.2) and applies that account's `dev-env/` slice —
-  `sandbox/dev-env/`, `development/dev-env/` — **with the approved digest as its only input**, targets
-  enumerated from the D35 map. The registration calls are **whatever Stage 6 step 5.1 recorded** (the
+  each target's `awsds-deploy-devenv-sandbox-<unit>` role (4.2) and applies that account's `dev-env/`
+  slice — `sandbox/dev-env/`, one per unit — **with the approved digest as its only input**, targets
+  enumerated from the D35 map. **There is no second Interactive account to fan out to**, so with N = 1 the
+  fan-out is one target and the parity check of verification (viii) is trivially true; it becomes a real
+  check at Stage 14. The registration calls are **whatever Stage 6 step 5.1 recorded** (the
   documented shape: image + image version + app image config, then the SageMaker AI domain's
   `CustomImages`; the pull path is INT-01's — direct cross-account or the replication fallback, as
   recorded). **If 5.1 recorded that no automated path survives blueprint reconciliation, the pipeline
   stops at 1.5 and the steward applies the slices by hand** — the approval, which is the control, is
-  unaffected; what is lost is automation. **The first pipeline run replaces Stage 6 5.0's hand-built
-  digest** — record the changeover in the log.
+  unaffected; what is lost is automation. **The first pipeline run replaces the hand-built digest** — 6a step 5.0's `default-v0.1.0`, or Stage 7
+  step 2.6's `default-v0.2.0` if that has landed. Record the changeover in the log.
 - **1.7 — [user] Re-measure the D5(B) loop**: time one "I need package X" round — MR → tag → chain → gate
   → registered — and write the number into `docs/plan/architecture.md` §4.3, replacing Stage 6 6.2's
   provisional figure.
@@ -184,8 +187,8 @@ re-prices the D5 comparison (1.7).
 **Why:** it is the objectives' build pipeline, and it exercises the runner, the registry and the step 5
 gates before any deploy credential exists — failures here are cheap and unambiguous. **Explanation:** the
 repository follows conventions §6's `app-etl` template; its `terraform/` is the *source* of a slice, and
-what is applied is `terraform-live/<env>/app/app-etl/`. The Development apply is engineering, not
-promotion — the chain starts at the tag (D21) and its first target is Staging.
+what is applied is `terraform-live/<env>/app/app-etl/`. **The Sandbox apply is engineering, not
+promotion** — the chain starts at the tag (D21) and its first target is Staging.
 
 - **2.1 — [user] Create `app-etl` from the template** (Stage 7 step 3.5 named it; this step fixes the
   fields): `data-scientists` **Developer**, `deployment-managers` **Maintainer**, release tag pattern
@@ -205,19 +208,24 @@ promotion — the chain starts at the tag (D21) and its first target is Staging.
   the pipeline, because the governed account cannot run them (`DenyUserCompute`) — a named placeholder,
   not a job this stage builds.
 - **2.3 — [user] Run it**: a branch push runs tests only; the tag lands the image and the docs serve at
-  `https://app-etl.pages.internal` — two pipeline deliverables in one push.
-- **2.4 — [Claude] Write `development/app/app-etl/` and the machinery rows**, then **[Claude⚡] apply as
-  `awsds-infra-dev`**: the application running against Development's own data, applied **by hand** while
-  it is being engineered. Machinery, same sitting: `RANKS["app/app-etl"]` (after `egress`, so `down`
-  destroys the app before its NAT), the three `[E]` rows (`development` now, `staging`/`production` at
-  3.0), and **refusal 5 in `layers.py`: `make up` never applies an `app/` slice** — the pipeline (or this
-  hand apply) is the applier, since the slice needs a pinned tag `make up` does not have; `make down`
-  destroys them normally.
+  `https://app-etl.awsds-pages.internal` — two pipeline deliverables in one push.
+- **2.4 — [Claude] Write `sandbox/app/app-etl/` and the machinery rows**, then **[Claude⚡] apply as
+  `awsds-infra-sandbox-1`**: the application running against Sandbox's own data, applied **by hand** while
+  it is being engineered. **This is the engineering apply that lost its home when `Development` became
+  `Staging`, and moving it to Sandbox rather than to Staging is deliberate** — Staging is written only by
+  the pipeline (D20), so an engineer's iterate-and-re-apply loop has nowhere else to live, and putting it
+  in Sandbox keeps CI out of the one account a human runs code in (D21's surviving objection). Machinery,
+  same sitting: `RANKS["app/app-etl"]` (after `egress`, so `down` destroys the app before the endpoints it
+  reaches AWS through), the three `[E]` rows (`sandbox` now, `staging`/`production` at 3.0), and
+  **refusal 5 in `layers.py`: `make up` never applies an `app/` slice** — the pipeline (or this hand apply)
+  is the applier, since the slice needs a pinned tag `make up` does not have; `make down` destroys them
+  normally. **Refusal 6, in the same commit: no pipeline profile may apply a `sandbox/` slice at all** —
+  the machine half of the sentence above.
 
-### 3. Promotion pipeline — Development → Staging → Production (D20, D21, INT-07, INT-08)
+### 3. Promotion pipeline — tag → Staging → Production (D20, D21, INT-07, INT-08)
 
-**Action:** the chain from a tag on a Development repository to a running artifact in Production, with the
-integration-tested Staging leg and one human gate in between. **Why:** D20 — there is a real account
+**Action:** the chain from a release tag on the GitLab application repository to a running artifact in
+Production, with the integration-tested Staging leg and one human gate in between. **Why:** D20 — there is a real account
 between the tag and Production, so the pipeline is a chain with a gate in the middle, not a deploy with an
 approval bolted on; a stand-in sharing Production's account could catch a schema error and never a
 permission error (Lesson 2). Sandbox work enters only by graduating into the repository through git (D21) —
@@ -226,24 +234,26 @@ not one** — `awsds-deploy-staging` for 3.1-3.4, `awsds-deploy-prod` for 3.6 �
 so a CloudTrail audit can tell which one ran (INT-08). A failure at 3.3 stops the chain and Production is
 never touched.
 
-- **3.0 — [Claude⚡ + user] Close the vend preconditions, once `Staging` exists**: the deferred Stage 2/3
-  pickups (bootstrap, `foundation/`, `egress/`, assignments — their own stages' steps), the
-  `backend.py` `PROFILES`/`layers.py` rows, and two amendments of this stage's own: **the app-repository
-  pull grant for Staging in `production/registry/`** (INT-07's enabling half — `app-*` repositories only,
-  a separate authored entry, deliberately **not** the D35 Interactive consumer map, whose `SC-7` note
-  stays true) and `staging/foundation/` gaining `awsds-deploy-staging` (4.1's module). Apply as
-  `awsds-infra-prod` and `awsds-infra-staging`.
+- **3.0 — [Claude⚡] Add the two Staging preconditions this stage owns** — 6b already delivered the
+  account, its tree, its state bucket and its `backend.py`/`layers.py` rows, so nothing is deferred here
+  any more: **the app-repository pull grant for Staging in `production/registry/`** (INT-07's enabling
+  half — `app-*` repositories only, a separate authored entry, deliberately **not** the D35 Interactive
+  consumer map, whose `SC-7` note stays true) and `staging/foundation/` gaining `awsds-deploy-staging`
+  (4.1's module). Apply as `awsds-infra-prod` and `awsds-infra-staging`.
 - **3.1 — [pipeline] Bring Staging up**: `make up ENV=staging PROFILE=awsds-deploy-staging` — the `[E]`
-  `egress/` slice (NAT, endpoints), which exists only for the duration of this run. `ENV=staging` is the
-  one environment whose expected caller is the pipeline (conventions §6) — 3.8 proves the by-hand path
-  still works.
+  `egress/` slice, which since 6c is **interface endpoints only, with no NAT gateway and no default
+  route**, and exists only for the duration of this run. `ENV=staging` is the one environment whose
+  expected caller is the pipeline (conventions §6) — 3.8 proves the by-hand path still works. **The hub
+  must be up**: `make up` refuses with the stopped host named if it is not (6c step 7.2), so a promotion
+  that starts against a stopped proxy fails at the first line rather than three jobs later.
 - **3.2 — [pipeline] Deploy to Staging**: `terraform apply` of `staging/app/app-etl/` pinned to the
   application tag, the image pulled from the Production ECR **under the Staging role — INT-07 proven
   here**.
 - **3.3 — [pipeline] Run the integration tests against Staging** — the step that justifies the account:
   not step 2's unit tests, but the deployed artifact against a real catalog, real IAM and a real network.
 - **3.4 — [pipeline] Tear Staging down**: `make down ENV=staging PROFILE=awsds-deploy-staging`, in
-  `after_script`/always so a failed run cannot leave the NAT burning. Metered cost: minutes.
+  `after_script`/always so a failed run cannot leave the endpoints burning. The line is smaller than it was
+  — 6c removed the NAT gateway, which was two thirds of it — but an endpoint set left up is still a bill.
 - **3.5 — [user] Run the production gate**: a **blocking manual job** (`when: manual` under `rules:`) with
   the Staging test results and the Production `terraform plan` in its artifacts, `resource_group:
   production` serializing deployments. Premium form: a deployment approval assigned to
@@ -283,8 +293,10 @@ the approval, and 4.6's alarm.
   `iam:PassRole` scoped by `iam:PassedToService`. Each role **carries a boundary itself** — INT-14 later
   has to apply `awscc` resources under it (Stage 10), which is where the boundary's shape gets its real
   test.
-- **4.2 — [Claude] Write the dev-env deploy roles** (INT-18): `awsds-deploy-devenv-sandbox` (each unit's
-  `foundation/` — one per map entry) and `awsds-deploy-devenv-dev`. Scope: the `dev-env/` slice's state
+- **4.2 — [Claude] Write the dev-env deploy roles** (INT-18): `awsds-deploy-devenv-sandbox-<unit>`, one
+  per map entry, in each unit's `foundation/`. **`awsds-deploy-devenv-dev` is not written** — it died with
+  the second Interactive account (6b), and a role for an account that no longer exists is the kind of
+  leftover the next reader treats as a requirement. Scope: the `dev-env/` slice's state
   prefix and the SageMaker image-registration calls on the named resources, per 5.1's recorded mechanism —
   **never a general deploy role reused**: this is the one flow where the supply chain writes *into* the
   accounts where people work, and its narrowness is the design.
@@ -293,8 +305,10 @@ the approval, and 4.6's alarm.
   still matches), `[E]`, registered **Protected** (runs only jobs on protected branches/tags — a Free-tier
   runner attribute) and **locked to the `dev-env/` and application projects**. Instance role:
   `sts:AssumeRole` on **exactly the four deploy-role ARNs** (from the map), ECR auth/pull for job images
-  (through the pull-through cache — `public.ecr.aws/hashicorp/terraform` is the job image), the CA root
-  parameter — and nothing else; no push, no direct deploy permissions. Jobs inside containers reach the
+  (`public.ecr.aws/hashicorp/terraform` through the pull-through cache — **which Stage 7 step 5.2 must have
+  measured as working first**; if that reading forced a fallback, the job image is whatever that fallback
+  produced and this step consumes the answer rather than assuming the cache), the CA root parameter — and
+  nothing else; no push, no direct deploy permissions. Jobs inside containers reach the
   instance profile because the **declarative policy already defaults IMDSv2 hop limit 2** org-wide
   (verification (ii)).
 - **4.4 — [Claude] Write the runner's AWS config and the `make` override**: profiles `awsds-deploy-*`
@@ -302,8 +316,8 @@ the approval, and 4.6's alarm.
   (rendered from the same map) — the named-profile discipline holds and **nothing is ever exported into a
   shell** (Lesson 25); `make up`/`down` gain an explicit `PROFILE=` override for the pipeline path, the
   laptop default staying `backend.py`'s.
-- **4.5 — [Claude⚡] Apply** `production/runners/` (and the Interactive `foundation/` amendments of 4.2) as
-  `awsds-infra-prod`, `awsds-infra-sandbox-1`, `awsds-infra-dev`. **[user]** Create the runner in GitLab
+- **4.5 — [Claude⚡] Apply** `production/runners/` (and the Sandbox `foundation/` amendments of 4.2) as
+  `awsds-infra-prod` and `awsds-infra-sandbox-1`. **[user]** Create the runner in GitLab
   (UI → authentication token `glrt-…`, Stage 7's flow), mark it **Protected**, lock it to the projects,
   and put the token in the git-ignored tfvars.
 - **4.6 — [Claude] Write the misuse alarm — the D14 compensation**: in Staging and Production, an
@@ -327,13 +341,30 @@ Python dependencies, and the two compose rather than substitute.
 - **5.1 — [Claude] Write the `checkov` job** for every Terraform directory a pipeline touches (the
   repository's own tool since Stage 0), blocking on its failures.
 - **5.2 — [Claude] Write the `pip-audit` job**: `uv export --format requirements-txt | pip-audit -r -` —
-  blocking per decision 1's severity set; it reaches OSV over the session NAT (the runner's one legitimate
-  internet path, Stage 7 step 6.2).
+  blocking per decision 1's severity set. **It reaches OSV through the proxy**, so `osv.dev` has to be on
+  the SharedServices source list (6c step 4.9) or the job fails as a **403 naming the host**. Add the name
+  in the same commit as the job; `./aws/proxy.py` `PX-3` is what keeps the running list and the committed
+  one the same.
 - **5.3 — [Claude] Include the Secret Detection template** (`Jobs/Secret-Detection.gitlab-ci.yml`, Free) —
   findings as artifacts; the richer dashboards are Ultimate and are not pretended.
 - **5.4 — [Claude] Extract 1.4's ECR scan gate as the shared job** both image pipelines include.
 - **5.5 — [user] Decide and record the blocking severity set** — decision 1, written into the gate file
   and the log, not left to each pipeline's author.
+- **5.6 — [Claude] Write the D28 workflow lint, with the four rules [6d](stage-06d-unified-studio-remainder.md)
+  step 4 supplies**: a job that refuses a workflow definition which (a) carries a **project-scoped
+  reference** — a connection, a path or an id that exists only in the authoring Sandbox project and would
+  resolve to nothing in Staging or Production; (b) hard-codes a `start_date`, which is **rewritten at deploy
+  time** rather than promoted; (c) uses an operator outside **MWAA Serverless's Amazon-provider allow-list**
+  or a task that could exceed its **3600 s** cap; (d) references a definition object without a pinned
+  `DefinitionS3Location.VersionId`. **Artifact class (2b), the operator code package, joins D28's list** in
+  the same commit — a workflow that ships its own operator code is a fifth promotable artifact, and D28
+  named four.
+- **5.7 — [Claude] Record what the SMUS CI/CD CLI is, so nobody re-derives it**: `aws-smus-cicd-cli`
+  deploys **only into existing SMUS projects**, and a Workload account has none. It is therefore an
+  **exporter on the Sandbox side** — `bundle` may produce the artifact this pipeline promotes — and **this
+  stage's pipeline stays the deployer** (D26/D28). Using it as the promotion path would mean associating
+  deployment targets to the domain and carving `datazone:*` out of the `Workloads` SCP, which is the
+  isolation 6b just bought.
 
 ### 6. The infrastructure repository's own pipeline (conventions §6, Stage 7 step 7)
 
@@ -377,19 +408,23 @@ behavioural proofs are the stage's own (Lesson 20):
 - **The gate pair:** a build with a known-vulnerable dependency is stopped by 5.2; an image with a
   blocking-severity OS finding is stopped by 1.4.
 - **The dev-env release:** a steward-approved tag ends as the **same digest registered in every Interactive
-  account** (D17 by construction — verification (viii)); the first pipeline digest replaces Stage 6 5.0's
-  hand-built one, recorded.
+  account** (D17 by construction — verification (viii); with N = 1 that is one account, and the check is
+  `note` rather than `pass` until Stage 14); the first pipeline digest replaces the hand-built one,
+  recorded.
 - **The credential negatives:** a job on a non-protected branch never schedules onto the deploy runner;
-  CloudTrail names which deploy role ran each leg (INT-08).
+  CloudTrail names which deploy role ran each leg (INT-08); and **no pipeline profile can apply a
+  `sandbox/` slice** (2.4's refusal 6, proved once by attempting it).
+- **The proxy negative:** a gate job with its proxy variables removed fails, and an unlisted host returns
+  the proxy's **403 naming the host** — the failure mode 6c chose deliberately over a timeout.
 - **The D5 number:** 1.7's re-measured loop, written into `docs/plan/architecture.md` §4.3.
 
 ## Validation
 
 1. Run `./aws/cicd.py` — all `CI-*` pass; diff two runs across a promotion (only scan timestamps and
    event rows may change).
-2. Run `./aws/egress.py` §6 after every pipeline session — zero burn everywhere; a Staging NAT left up by
-   a half-failed promotion is this stage's likeliest leak (3.4's `after_script` is the control, this the
-   instrument).
+2. Run `./aws/egress.py` §6 after every pipeline session — zero burn everywhere, and **no NAT gateway in
+   any account**; a Staging endpoint set left up by a half-failed promotion is this stage's likeliest leak
+   (3.4's `after_script` is the control, this the instrument).
 3. Prove 3.8's by-hand parity once.
 4. Read every denial by its wording, never its exit code (standing rule since 1c).
 
@@ -400,7 +435,7 @@ Measured (`docs/PRICING.md`), us-west-2:
 | Item | Cost | Layer |
 |---|---|---|
 | Deploy runner `t4g.small` while up | 0.0168/h | `[E]` |
-| Staging `egress/` during a promotion | ~0.150/h × minutes | `[E]`, pipeline-scoped |
+| Staging `egress/` during a promotion | endpoints only since 6c — 0.010/h each × minutes, no NAT line | `[E]`, pipeline-scoped |
 | EventBridge rules + SNS notifications (4.6) | free tier at this volume | `[P]` |
 | GitHub Actions (public runners, this volume) | free tier | — |
 | Everything else | existing floors (ECR storage, GitLab `[D]`) | — |
@@ -436,11 +471,13 @@ Record every answer, including the ones that come out fine.
 | v | Does Staging pull the application image from the Production ECR under `awsds-deploy-staging` (INT-07)? | 3.2 |
 | vi | Do CloudTrail's `AssumeRole` events name the two roles distinguishably across one full promotion (INT-08)? | 3.6 |
 | vii | Does 1.6's registration land from the pipeline, and does it survive the next blueprint reconciliation (INT-17's open half — diff of two `./aws/cicd.py`/`./aws/studio.py` runs)? | 1.6 |
-| viii | Is the registered dev-env digest identical across all N+1 targets (D17 by construction)? | 1.6 |
+| viii | Is the registered dev-env digest identical across all N targets (D17 by construction — `note` at N = 1)? | 1.6 |
 | ix | Does a deliberately broken version stop at 3.3 with Production untouched? | 3.3 |
 | x | Does 5.2 stop a known-vulnerable dependency (pin one deliberately, once)? | 5.2 |
 | xi | Does the by-hand `make up ENV=staging` path produce the same result as the pipeline's (3.8)? | 3.8 |
 | xii | Is the Staging burn zero after a failed promotion — does 3.4's `after_script` hold? | 3.4 |
+| xiii | Does every gate job carry the proxy variables, and does an unlisted host fail as a 403 rather than a hang? | 5.2 |
+| xiv | Does the workflow lint reject each of its four rule violations, one deliberate example each? | 5.6 |
 
 ## Risks
 
@@ -458,6 +495,9 @@ Record every answer, including the ones that come out fine.
   diff is the instrument; the fallback chain is INT-17's row.
 - **A stale infrastructure mirror deploys yesterday's slice** — the printed SHA (6.1) makes it visible in
   the pipeline evidence; the dual-push sits in the same sitting as the change.
+- **A missing proxy allow-list entry stops a pipeline mid-promotion.** It fails as a named 403, which is
+  readable — but the list lives in another stage's slice, so the discipline is: a new outbound host and its
+  allow-list entry land in the same commit (5.2).
 - **A half-failed promotion leaves Staging burning** — 3.4 runs in `after_script`; `./aws/egress.py` §6 at
   session end is the instrument (D12 skipped the alerts).
 - **Nothing prevents an infrastructure-profile bypass of the whole chain** (Lesson 18: the builder is not

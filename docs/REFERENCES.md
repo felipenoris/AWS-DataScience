@@ -452,7 +452,20 @@
 
 - Amazon ECR: <https://docs.aws.amazon.com/AmazonECR/latest/userguide/what-is-ecr.html>.
 
-- Amazon ECR pull-through cache (egress design B, §4.3): <https://docs.aws.amazon.com/AmazonECR/latest/userguide/pull-through-cache.html>.
+- **Amazon ECR pull-through cache** — re-read 2026-09-05 in the plan-wide review, because under
+  [D38](plan/decisions/D38-single-egress-hub.md) the estate has no route to the internet at all and the page's
+  own considerations decide whether the cache is usable. Four sentences carry the plan: *"When an image is
+  pulled using the pull through cache rule for the first time **a route to the internet may be required**…
+  if you've configured Amazon ECR to use an interface VPC endpoint using AWS PrivateLink then you need to
+  ensure the first pull has a route to the internet. One way to do this is to create a public subnet in the
+  same VPC, with an internet gateway"* — **a route, which an explicit proxy is not**, which is why Stage 7
+  step 5.2 measures it and why the cache became D38's first named NAT-contingency candidate. Against it:
+  *"For upstream repositories that do not require authentication… the image pulls are **initiated by AWS IP
+  addresses**"*, so the requirement is conditional. Also *"Turning on image tag immutability for
+  repositories using a pull through cache rule will prevent Amazon ECR from updating images using the same
+  tag"*, and — correcting an earlier claim in this repository that no such mechanism existed — **repository
+  creation templates do exist** and can set tag immutability, encryption, policies and lifecycle on the
+  repositories ECR creates on your behalf: <https://docs.aws.amazon.com/AmazonECR/latest/userguide/pull-through-cache.html>.
 
 - Amazon ECR image scanning: <https://docs.aws.amazon.com/AmazonECR/latest/userguide/image-scanning.html>.
 
@@ -463,6 +476,43 @@
 - **ECR lifecycle policy properties** — read 2026-08-22, while choosing the image tag convention ([`SMUS.md`](SMUS.md) §Custom images), because the ordering argument rested on how a rule selects tags and that is a mechanism, not a preference. `tagPrefixList` matches a **prefix** only (*"if your images are tagged as `prod`, `prod1`, `prod2` … you would use the tag prefix `prod`"*); `tagPatternList` takes patterns with up to **four** `*` wildcards each, so it can match a suffix, and the page calls it *"best practice"*. The two are **mutually exclusive** in one rule — each is required only when the other is absent and `tagStatus` is `tagged` — and for both, *"if you specify multiple tags, only the images with all specified tags are selected"*, an **AND** where a list reads like an OR: <https://docs.aws.amazon.com/AmazonECR/latest/userguide/lifecycle_policy_parameters.html>.
 
 - GitLab SAML SSO for self-managed instances (login works in CE; SAML group sync is a paid-tier feature): <https://docs.gitlab.com/ee/integration/saml.html>.
+
+- **GitLab Linux package (Omnibus) — SSL configuration** — read 2026-09-05, and it changed Stage 7 step 1.3
+  twice. *"Let's Encrypt is enabled by default if `external_url` is set with the HTTPS protocol and no other
+  certificates are configured"*, and *"GitLab attempts to renew any Let's Encrypt certificate with every
+  reconfigure"* — so on a `.internal` name behind a proxy, `letsencrypt['enable'] = false` is **mandatory**
+  or every reconfigure fails against an unreachable ACME server. The certificate pair is **hostname-named**
+  (`/etc/gitlab/ssl/<host>.crt` at 644, `.key` at 600), and a custom CA root is trusted by dropping `.crt`
+  files into **`/etc/gitlab/trusted-certs/`** followed by `gitlab-ctl reconfigure` — which is INT-19's
+  **fourth** client surface: <https://docs.gitlab.com/omnibus/settings/ssl/>.
+
+- **GitLab Linux package — environment variables (the proxy)** — read 2026-09-05. The proxy is configured
+  **per component**: `gitlab_rails['env']`, `gitaly['env']`, `gitlab_workhorse['env']`, `gitlab_pages['env']`
+  and `registry['env']`, each taking `http_proxy`/`https_proxy`. `no_proxy` takes wildcard syntax for an
+  internal domain and the page is explicit that you must **not specify a port** — a port there breaks DNS
+  resolution during repository mirroring: <https://docs.gitlab.com/omnibus/settings/environment-variables/>.
+
+- **GitLab Runner behind an HTTP proxy** — read 2026-09-05, and it is the reason Stage 7 step 6.2 has four
+  sub-items rather than one: the runner service needs its own systemd drop-in
+  (`/etc/systemd/system/gitlab-runner.service.d/http-proxy.conf`), the **docker daemon needs a second one**,
+  and build containers are handed the values through `config.toml`'s `environment` — in **both** cases,
+  because *"certain programs expect `HTTP_PROXY` and others `http_proxy`"*. The constraint that propagates
+  furthest: **`NO_PROXY` wildcards work only as suffixes — not as prefixes, and not as CIDR notation**, so
+  an RFC1918 block written there is silently ignored (this corrected 6c step 5.6):
+  <https://docs.gitlab.com/runner/configuration/proxy/>.
+
+- **GitLab Pages administration** — read 2026-09-05, settling two Stage 7 questions. For a **wildcard**
+  Pages domain served through the Omnibus nginx proxy, **no secondary IP address is required** (a second
+  address is needed only for custom domains); the Pages domain must **not** be a subdomain of
+  `external_url`, which is D36's two-apex rule confirmed; and **access control is available in the Free
+  tier** (`gitlab_pages['access_control'] = true`): <https://docs.gitlab.com/administration/pages/>.
+
+- **AWS CodeArtifact — external connections** — read 2026-09-05, and it is what makes design B work for
+  packages at all: the **service** fetches from the public repository, so a client with no internet still
+  resolves a package that has never been cached. **Each repository can have only one external connection**,
+  which is why `pypi` (`public:pypi`) and `crates` (`public:crates-io`) are two repositories rather than
+  one; the supported set is enumerated on the page:
+  <https://docs.aws.amazon.com/codeartifact/latest/ug/external-connection.html>.
 
 - AWS CodeArtifact (package proxy for egress design B; check the supported formats page for Cargo, and note that Julia and CRAN are not covered): <https://docs.aws.amazon.com/codeartifact/latest/ug/welcome.html>.
 

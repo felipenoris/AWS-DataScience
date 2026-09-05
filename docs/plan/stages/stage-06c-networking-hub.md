@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Status** | not started — **created 2026-09-05** with [6b](stage-06b-development-becomes-staging.md), revised the same day into the action-checklist format and against the AWS documentation (the corrections are listed under "What the documentation changed in this plan"). It builds [D38](../decisions/D38-single-egress-hub.md): a `VPC-Networking` hub in Production carrying the estate's only internet gateway, an explicit HTTP/HTTPS proxy and the VPN endpoint; `VPC-SharedServices` for GitLab, Pages and the runners; `VPC-Workloads` for the production runtime. It also repairs, structurally, the client-plane DNS shadowing of Lessons 40-43 |
+| **Status** | not started — **created 2026-09-05** with [6b](stage-06b-development-becomes-staging.md), revised the same day into the action-checklist format and against the AWS documentation, then **corrected again in the plan-wide review of the same date** (three rows added to "What the documentation changed in this plan": there are **three** NAT gateways to destroy rather than two, `vpc-egress` needs the same `name_suffix` as `vpc`, and `VPC-Workloads` gets its own `production/workloads-egress/` `[E]` slice). It builds [D38](../decisions/D38-single-egress-hub.md): a `VPC-Networking` hub in Production carrying the estate's only internet gateway, an explicit HTTP/HTTPS proxy and the VPN endpoint; `VPC-SharedServices` for GitLab, Pages and the runners; `VPC-Workloads` for the production runtime. It also repairs, structurally, the client-plane DNS shadowing of Lessons 40-43 |
 | **Prerequisites** | [Stage 3](stage-03-networking.md) (the `vpc` and `vpc-egress` modules, the peering pattern in `production/foundation/peers.tf`, the `[P]`/`[E]` split), [Stage 4](stage-04-vpn.md) (the `wireguard` module and its `[P]` anchors), [6a](stage-06a-unified-studio.md) (the endpoint lists and what a Studio app needs), **[6b](stage-06b-development-becomes-staging.md)** (the account is already `staging`, and step 4.1 there freed `10.40.0.0/16` and re-pointed `CIDRS`) |
 | **Consumes** | [D4](../decisions/D04-vpn-wireguard.md), [D5](../decisions/D05-sagemaker-egress.md), [D6](../decisions/D06-dlp-approach.md), [D9](../decisions/D09-az-count.md), [D11](../decisions/D11-lab-lifecycle.md), [D12](../decisions/D12-budget-ceiling.md), [D14](../decisions/D14-supply-chain-account.md), [D15](../decisions/D15-tls-internal.md), [D35](../decisions/D35-sandbox-cardinality.md), [D36](../decisions/D36-internal-pki.md), **[D38](../decisions/D38-single-egress-hub.md)** (written 2026-09-05 — this stage builds it, it does not author it) |
 | **Proves** | [INT-05](../integrations.md) and [INT-06](../integrations.md) re-keyed on the hub; [INT-16](../integrations.md)'s closing choice becomes takeable because this stage owns the address it is keyed on; **INT-21** (every account's compute reaching a Production-owned proxy over peering) and **INT-22** (the `awsds.internal` zone × VPC association matrix) |
@@ -63,7 +63,7 @@ proxy configured reaches the intranet and nothing beyond it.
 | Squid host | `production/proxy/` (new) | `[D]` | Instance only. The estate's single egress |
 | `awsds.internal` + three child zones + `awsds-pages.internal` | `production/foundation/` and each spoke | `[P]` | With the explicit association matrix (INT-22) |
 | Five peerings | requester per spoke, accepter in Production | `[P]` | Networking × 4, SharedServices × Sandbox |
-| Interface endpoints | every VPC **except** `VPC-Networking` | `[E]` | Single AZ (D9), private DNS on |
+| Interface endpoints | every VPC **except** `VPC-Networking` | `[E]` | Single AZ (D9), private DNS on. **One `egress/`-shaped slice per VPC**: `sandbox/egress/`, `staging/egress/`, `production/egress/` (SharedServices) and the **new `production/workloads-egress/`** — a second Production VPC needing endpoints needs a second slice, because a slice reads one `foundation/` |
 | DNS Firewall | every compute VPC | `[E]` | Re-cut to an intranet-and-AWS list |
 | **Zero** NAT gateways | — | — | Priced in §Cost as the contingency |
 
@@ -82,6 +82,8 @@ Read before executing; each is a correction to what the 2026-09-05 draft assumed
 | MWAA Serverless is the first NAT contingency candidate | AWS documents a **private-routing** MWAA Serverless VPC with *"no route table to a NAT device… nor an internet gateway"*, three interface endpoints (`logs`, `monitoring`, `kms`) and a self-referencing SG. The requirements list that demands a NAT is the **public-routing** shape (Lesson 41 again) | 5.7, and D7/Stage 10 |
 | INT-16 fallback (i) is AWS's policy keyed on an address | AWS's `DenyUserAccessFromUnauthorizedVPCs` uses `StringNotEquals` on `aws:SourceVpc`, which **matches when the key is absent** — every browser-origin call. Verbatim, it denies the portal outright | 6.6 |
 | The proxy's allow-list is discovered by trial | The SMUS network-isolation guide **enumerates** the portal, IdC and console names that need public internet | 4.7 |
+| `production/egress/` is the last NAT to destroy after Sandbox's | **There are three**, not two: `terraform-live/production/egress/main.tf` carries `egress_mode = "A"` today, so `VPC-SharedServices` has a NAT gateway and a default route as well | 5.1 |
+| Only the `vpc` module has account-unique names | **`vpc-egress` does too**: its DNS-firewall CloudWatch log group `/awsds/<env>/dns-firewall` is account-unique, and its rule group, two domain lists and query-log config all collide by `Name` when two VPCs in one account both run a firewall. It takes the same `name_suffix` in the same version bump | 0.4, 5.1 |
 | `NO_PROXY` is `.us-west-2.amazonaws.com` | A blanket suffix sends every endpoint-less AWS service to a route that does not exist — a **timeout** (Lesson 42). Generated per VPC from that VPC's endpoint list, the same call is a proxy **403** | 5.6 |
 
 ## Who executes each action
@@ -129,7 +131,9 @@ one of the four (0.4) is a hard create-time conflict rather than a naming prefer
   and stays unallocated; `10.60.0.0/16` is reserved for the `shared` account D38's trigger names;
   `10.16.0.0/13` stays the Sandbox supernet and `10.90.0.0/24` the WireGuard client range.
 - **0.3 — [Claude] Add the slice ranks before any folder exists**: `RANKS` in `scripts/tfhygiene/layers.py`
-  gains `networking` (21), `workloads` (23) and `proxy` (41). Rank first, folder second, same commit
+  gains `networking` (21), `workloads` (23), `proxy` (41) and **`workloads-egress` (51)** — the `[E]`
+  endpoint slice for the second Production VPC, ranked just above `egress` (50) so both come up after the
+  proxy and go down before it. Rank first, folder second, same commit
   (Recipe C). The order is load-bearing: `up` ascends and `down` descends, so `proxy` at 41 comes up before
   any `egress` (50) and goes down after it — which is what makes a spoke's package path exist for the whole
   life of an `[E]` session.
@@ -141,6 +145,12 @@ one of the four (0.4) is a hard create-time conflict rather than a naming prefer
   well (`awsds-prod-shared-*`, `awsds-prod-networking-*`, `awsds-prod-workloads-*`). Two commits, one tag
   (the runbook's order). **Note in the plan review that the existing VPC's tags change in place while its
   security groups are replaced.**
+- **0.4a — [Claude] Bump `terraform-modules/vpc-egress` in the same sitting, for the same reason**: it
+  carries account-unique names too — the DNS-firewall log group **`/awsds/<env>/dns-firewall`** (a hard
+  conflict) plus the rule group, its two domain lists and the query-log config, all named
+  `awsds-<env>-egress`. Two Production VPCs both running a firewall collide, and `./aws/egress.py` reads
+  these by name. The suffix rides along with the **v0.5.0** bump 5.1 makes for the NAT removal, so there is
+  one version bump rather than two.
 - **0.5 — [Claude] Give `VPN_HOMES` a slice field**: each row is consumed by `identity/sso/` and
   `data-governance/data/` as a `terraform_remote_state` read of that account's **`foundation/`**. The hub's
   Elastic IP, VPC id and gateway-endpoint id live in `production/networking/`, so the row becomes
@@ -170,7 +180,13 @@ point at it.
   DynamoDB gateway endpoints on every route table, flow logs on.
 - **1.3 — [Claude⚡] Create `production/workloads/`**: VPC 10.32.0.0/16, same shape, **no IGW route in any
   route table**. The module still creates the gateway (free, unused); the absence of the route is what
-  makes the tier private.
+  makes the tier private. **Two private subnets in two AZs** — Stage 10's MWAA Serverless workers land
+  here and AWS's private-routing shape requires it, which is why this one VPC's endpoint set is the
+  estate's single D9 exception (Stage 10 decision 3 bounds how far the duplication goes).
+- **1.3a — [Claude] Write `production/workloads-egress/` beside it, empty of endpoints until Stage 9/10
+  names them**: the `[E]` slice that gives `VPC-Workloads` its interface endpoints and its DNS firewall.
+  It exists now rather than later because rank, `SLICES` row and folder land in one commit (Recipe C), and
+  because `make down ENV=prod` must know about it the first time something is applied into that VPC.
 - **1.4 — [Claude] Enumerate the ingress tier**: write into `docs/AWS_STATE.md` the invariant
   *"internet-originated traffic terminates only in `VPC-Networking`'s public tier, and every listener there
   is enumerated"* — today the WireGuard host's UDP/51820; Stage 13's public ALB becomes the second row. A
@@ -377,16 +393,19 @@ address transfer is what keeps every client's `Endpoint` line unchanged.
 
 ### 5. Turn the spokes into design B — no NAT, no default route, and a DNS firewall with a new job
 
-**Action:** destroy both NAT gateways, complete each VPC's endpoint set, and re-purpose the DNS firewall.
-**Why:** with the proxy reachable, the per-account NAT gateways are the last transparent path and the only
+**Action:** destroy all three NAT gateways, complete each VPC's endpoint set, and re-purpose the DNS
+firewall. **Why:** with the proxy reachable, the per-account NAT gateways are the last transparent path and the only
 metered thing in the egress slices the design no longer wants. **Explanation:** removing them is also what
 makes the proxy's allow-list the single filter it is supposed to be — and it is what makes the SMUS
 network-isolation page's required endpoint list finally apply, because its premise (no public egress)
 becomes true.
 
-- **5.1 — [Claude⚡] Destroy both NAT gateways**: `egress_mode = "B"` in Sandbox and Staging; the private
-  route tables lose their `0.0.0.0/0` entirely. `vpc-egress` **v0.5.0** drops the NAT half (and its
-  `nat_public_subnet_id` input) rather than keeping dead code.
+- **5.1 — [Claude⚡] Destroy all THREE NAT gateways**: `egress_mode = "B"` in **Sandbox, Staging and
+  Production** — `terraform-live/production/egress/main.tf` carries `egress_mode = "A"` today, so
+  `VPC-SharedServices` has one as well and "both NAT gateways" undercounted. Every private route table
+  loses its `0.0.0.0/0` entirely. `vpc-egress` **v0.5.0** drops the NAT half (and its
+  `nat_public_subnet_id` input) rather than keeping dead code, and carries 0.4a's `name_suffix` in the same
+  version.
 - **5.2 — [Claude⚡] Complete the required endpoint set**: Sandbox re-adds **`datazone`** — removed on
   2026-08-25 only because its private zone shadowed a client-plane name, which cannot happen now — and
   gains `ec2`, `ec2messages`, `secretsmanager`, `ssm`, `ssmmessages` and `q`. **Measure rather than copy**:
@@ -426,7 +445,12 @@ becomes true.
   service with no endpoint then has no route at all — a timeout with no message (Lesson 42). Generated from
   the list the `egress/` slice already declares, the same call is a proxy **403 naming the host**, which is
   a finding rather than a hang. The generated list also carries `169.254.169.254`, `169.254.170.2`,
-  `localhost`, `.awsds.internal` and the RFC1918 ranges (S3 and DynamoDB ride the gateway prefix lists).
+  `localhost`, `127.0.0.1`, `.awsds.internal` and `.awsds-pages.internal` (S3 and DynamoDB ride the gateway
+  prefix lists). **It carries no CIDR block and no leading wildcard**: GitLab documents that `NO_PROXY`
+  wildcards work only as **suffixes** — not prefixes, not CIDR — so `10.0.0.0/8` in that variable is
+  silently ignored by the clients that matter, and an entry must never carry a port, which GitLab
+  documents as breaking DNS resolution for repository mirroring. Intranet reach is expressed as name
+  suffixes, and any literal address that must bypass the proxy is listed literally.
   **Never an `ENV HTTP_PROXY` in `images/base`** — every application image inherits from it and runs as a
   Production job behind endpoints, where a wrong `NO_PROXY` would send S3 and STS out through the proxy as
   a public address. Build time is a BuildKit `--build-arg`; runtime in a Studio space is
@@ -455,7 +479,12 @@ becomes true.
   device… nor an internet gateway"*, with interface endpoints for `logs`, `monitoring` and `kms`, a
   self-referencing security group and two private subnets in two AZs. The requirements list that demands
   two NAT gateways is the **public-routing** shape of the same page (Lesson 41). Stage 10 builds the
-  private one; **no candidate for the contingency is named today**, and that is the honest state.
+  private one. **One candidate is named, and it is not MWAA**: ECR documents that the **first** pull
+  through a pull-through cache rule *"may require a route to the internet"*, with a public subnet and an
+  IGW route as its own remedy — a route, which this design removes. [Stage 7](stage-07-gitlab-runners-ecr.md)
+  step 5.2 **measures** it, and only a failure there promotes `VPC-SharedServices` to an actual NAT
+  gateway, with a cost row and a removal trigger. Two cheaper fallbacks are ranked ahead of it in that
+  step, and the honest state is: the contingency has a candidate and no instance.
 
 ### 6. Measure the whole thing — the readings that close the stage
 
@@ -548,8 +577,14 @@ estate-wide (INT-21's availability cost).
 
 ## Cost
 
-Measured rates, `us-west-2` (PRICING §7/§8 after 7.4's additions): the design **removes two NAT gateways**
-(−0.100/h while a session runs, plus their per-GB processing) and **adds one Elastic IP** (the proxy's) and
+**The address and gateway count, which nothing else states in one place** ([D38](../decisions/D38-single-egress-hub.md) §3
+carries the full table): this stage takes the estate from **4 Elastic IPs and 3 NAT gateways** (one `[P]`
+WireGuard address plus one `[E]` NAT address per `egress/` slice) to **2 Elastic IPs and 0 NAT gateways** —
+both addresses `[P]` in `production/networking/`, one of them transferred rather than allocated. Peak during
+the cut-over is **3** addresses in Production for one sitting, against a default quota of five.
+
+Measured rates, `us-west-2` (PRICING §7/§8 after 7.4's additions): the design **removes three NAT gateways**
+(−0.150/h while a session runs, plus their per-GB processing — 0.045 each plus 0.005 for each one's address) and **adds one Elastic IP** (the proxy's, +0.005/h ≈ 3.65/month) and
 one to two private hosted zones. The two `[D]` hosts bill only while running. Interface endpoints stay
 per-VPC, single AZ — `VPC-Networking` carries none. Peering is free within an AZ and charged each way
 across one, so pinning both hosts and the endpoint sets to `usw2-az1` keeps the common path free. **A

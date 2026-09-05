@@ -28,8 +28,8 @@ step 2 points at `Sandboxes` and the account needs no policy attachment of its o
 > governed** — an enabled control is per OU and is not inherited as an enablement, only the statements it
 > emits are. Read `Interactive` when asking what applies to a Sandbox account.
 
-**Scope, which is narrower than it first looks (D35).** Only `Sandbox` multiplies. `Development`, `Staging`
-and `Production` are structural and singular, so **the promotion chain is untouched by this stage** — one set
+**Scope, which is narrower than it first looks (D35).** Only `Sandbox` multiplies. `Staging`, `Production`
+and `Data Governance` are structural and singular, so **the promotion chain is untouched by this stage** — one set
 of pipelines, one deploy role pair, one approval gate, however many units exist. The multiplication is
 entirely upstream of the graduation boundary, which is the cheapest place for it to be, and it is why this
 stage can be built without reopening Stages 8 to 10.
@@ -40,24 +40,29 @@ parameterises — `foundation/`, `egress/`, the identity assignment, the domain 
 has been applied by Stages 3 to 6. **What this stage adds is not new infrastructure, it is the substitution
 of a name for a hardcoded account.**
 
-**The central open question, deliberately unsettled until here (D35): where the VPN terminates.** Stage 4
-lands the tunnel in *the* Sandbox account, points the client resolver at that VPC and carries one
-Sandbox↔Production peering to reach GitLab — and the VPN lives on the multiplied side, so all of it is
-per-unit. Three shapes are live, and the choice depends on N and on whether units may reach one another at
-all:
+**The central question this stage was holding is CLOSED, and it was closed without N** (2026-09-05,
+[D38](../decisions/D38-single-egress-hub.md)). Stage 4 landed the tunnel in *the* Sandbox account, which put
+the VPN on the multiplied side and made it a per-unit problem. **6c moved it**: the tunnel and the estate's
+only egress now terminate in **`VPC-Networking`, a hub in Production**, and every spoke peers to it. That is
+one of the three shapes this stage listed — *a designated hub* — taken early and deliberately, because the
+client-plane DNS break of 2026-08-26 forced the topology before N did.
 
-- **A designated hub** — one account keeps the VPN and every unit VPC peers to it. Cheapest to build, and it
-  makes one Sandbox structural, which is a wart worth naming rather than discovering.
+The two shapes not taken, kept because the trigger to revisit them is real:
+
 - **A shared network account with Transit Gateway** — the institutional answer
-  (`docs/plan/institutional-delta.md`), a new structural account, and a real hourly cost per attachment. Peering
-  here is O(n) rather than O(n²), so TGW starts paying at the point where the route tables stop fitting in
-  one head, not at the point where the arithmetic says so.
-- **Per-unit VPN endpoints** — each unit's Sandbox terminates its own tunnel. The strongest isolation, no
-  shared network path at all, and the largest per-unit cost.
+  (`docs/plan/institutional-delta.md`), a new structural account, and a real hourly cost per attachment.
+  Peering is O(n) here rather than O(n²), so TGW starts paying when the route tables stop fitting in one
+  head, not when the arithmetic says so. **This is where the hub goes when a slot frees** — D38 §2's
+  revision trigger, with `10.60.0.0/16` already reserved.
+- **Per-unit VPN endpoints** — the strongest isolation, no shared path, the largest per-unit cost. Ruled
+  out by the same argument that ruled out per-account NAT: one internet-facing host per unit is N hosts to
+  patch and N addresses to key every condition on.
 
-**Decide it here with N in hand, not now.** What Stage 4 owes this stage is only that it names the VPN home
-as a *role an account plays* rather than as "the Sandbox account", so the topology is a substitution rather
-than a rewrite.
+**What this stage still owes the topology at each vend:** a CIDR drawn from `10.16.0.0/13`, **two** peering
+pairs (to `VPC-Networking` for the proxy and the tunnel, to `VPC-SharedServices` for GitLab), one more child
+zone in the `awsds.internal` family with its association authorization **toward** Production (INT-22's
+reversed choreography), and one more source block in the proxy's allow-list. All four are generated from
+the same peering map 6c step 3.1 wrote — a vend adds a row, not a design.
 
 **To execute:**
 
@@ -89,8 +94,9 @@ than a rewrite.
    *To verify before writing it:* the product name and the exact parameter keys, which are the kind of detail
    that changes between landing-zone versions.
 3. **Identity per unit (D35).** A `sso-group-data-scientists-<bu>` group, assigned `DataScientistAccess` on that unit's
-   Sandbox and nothing else. The Development assignment stays as it is — one shared engineering account, one
-   group — and the approver groups stay institutional and single. Generated from the same unit name as
+   Sandbox and nothing else. **There is no second Interactive account to assign into since 6b** — the
+   approver groups stay institutional and single, and `DataScientistStagingAccess` is a read-only seat on a
+   Workload account, not a per-unit one. Generated from the same unit name as
    everything else: a group whose membership is right and whose *assignment* was typed by hand is the failure
    mode here.
    **The group and the assignment are on opposite sides of the identity seam, and the module has to respect
@@ -214,10 +220,22 @@ than a rewrite.
    built by hand and is being adopted; the proof is a *second* one, created from nothing but a name, whose
    `terraform plan` on every shared slice comes back empty afterwards.
 
+**The mechanical half this stage does not have, and should get before the first vend:** every other stage
+since 2 is pre-instrumented and this one is not, which matters more here than elsewhere because a vend's
+failure mode is *an account that is 90 % configured*. **`./aws/vending.py`** is the missing script, and its
+checks are the same list eight `aws/` scripts already run, parameterised by unit: `VN-1` the account is in
+`Sandboxes` with no policy attachment of its own (D37); `VN-2` its CIDR is inside `10.16.0.0/13` and
+overlaps nothing in `backend.CIDRS`; `VN-3` **both** peerings exist with routes on both sides (`NT-11`'s
+rule, per unit); `VN-4` its child zone is associated into `VPC-Networking` and its authorization still
+exists (INT-22); `VN-5` its source block is in the proxy's allow-list (`PX-3`'s rule, per unit); `VN-6` its
+SSO group has exactly one assignment. **Write it against the hand-built unit first**, where every answer is
+already known — a check that has only ever run against the thing it was written from is not a check.
+
 **Deliverables:** a business unit's Sandbox account, its VPC, its identity assignment and its
 domain association all produced from one name in a merge request; a second unit created without editing any
-module; the VPN topology decision recorded together with the number of units it was made for; and the quota
-headroom restated in units rather than in accounts — **one slot per business unit**.
+module; **two peering pairs, one child zone and one proxy source block generated from the same map** rather
+than authored; and the quota headroom restated in units rather than in accounts — **one slot per business
+unit**. The VPN-topology decision this stage used to owe is D38's, taken on 2026-09-05 at N = 1.
 
 **Cost:** measured into [`docs/PRICING.md`](../../PRICING.md) per unit before the first vended one, not after
 (Lesson 6). The dominant term is not the account — it is **one set of interface VPC endpoints per unit**,

@@ -458,6 +458,44 @@ onwards the file records how the environment changed, not just the plan.
   the requested hostname rather than the resolution chain. **Provisioned things this touches:** none — the
   whole sitting is plan, prose and decisions.
 
+- **2026-09-05 (same day, third sitting) — the review was carried past 6d: Stages 7-15 were checked for
+  consistency, ordering and feasibility against the new network, corrected against the vendor
+  documentation, and rewritten where they were still in an older format.** The trigger was that every stage
+  from 7 on carried a `RE-SCOPED` **Status row** while its **body** still described the old estate — and in
+  one case the two contradicted each other outright. **The worst of it was Stage 10**, whose Status row said
+  "MWAA Serverless only, design B is not built" while the body still built design B, carried an
+  `orchestrator = both` switch, and ran a comparison pass to decide something D7 had already decided. It is
+  now one design in **two** accounts (Staging gets its own slice, because a serverless workflow bills nothing
+  at rest), applied **Staging first**, with step 4 turned from *the provisioned fallback* into **the fallback
+  ladder that records why the provisioned rung left** — replaced by a `DenyProvisionedMwaa` SCP and an `OR-6`
+  that flipped from a teardown check to an **absence** check. **Stage 7 was rewritten whole** and carries a
+  "What the documentation changed in this plan" table of seven rows, three of which are the same shape and
+  became **Lesson 45**: GitLab Omnibus turns **Let's Encrypt on by default** whenever `external_url` is HTTPS
+  and retries it on every `reconfigure`; ECR's pull-through cache documents that the **first** pull *"may
+  require a route to the internet"* with a public subnet as its own remedy; and MWAA Serverless's workers
+  have no internet path at all. The other four: the CA root has a **fourth** surface — GitLab itself, through
+  `/etc/gitlab/trusted-certs/` (INT-19 amended); Omnibus takes the proxy **per component** and `no_proxy`
+  must carry no port; **`NO_PROXY` wildcards work only as suffixes — no CIDR**, which corrected 6c step 5.6's
+  generated list; and a wildcard Pages domain needs **no secondary IP**, with access control in the Free
+  tier. **Three corrections landed back in 6c**, all found by reading the code rather than the drafts: there
+  are **three** NAT gateways to destroy, not two (`production/egress/` is `egress_mode = "A"`);
+  **`vpc-egress` needs the same `name_suffix` as `vpc`**, because its DNS-firewall log group is
+  account-unique; and **`VPC-Workloads` had no `[E]` endpoint slice at all** — an endpoint slice reads
+  exactly one `foundation/`, so `production/workloads-egress/` was added with its rank. **Stage 9 gained the
+  steps its own Status row had announced and never written**: 3.5-3.7 move the off-VPC job deny from the six
+  persona sets onto the job-execution **roles** as a permissions boundary, read back with `get-role` because
+  `list-roles` omits it, and settle serverless inference — which takes no `VpcConfig` at all — as an SCP deny
+  rather than an exception. **Stage 8** lost its vend gate, moved the engineering apply to
+  `sandbox/app/app-etl/` behind a `layers.py` refusal that keeps CI out of Sandbox, and became the one
+  author of the D28 workflow lint. **Stages 12 and 13 were rewritten from numbered prose into the
+  action-checklist format** — 12 because its dashboards still had NAT panels and its budget alarm still
+  deferred D12, 13 because the ALB is now the **second enumerated listener** in the estate's only ingress
+  tier, which is what first tests 6c's gate. **Stage 14's central question was closed without N**: where the
+  VPN terminates is D38's designated hub, one of the three shapes that stage was holding. **D38 gained a
+  named NAT-contingency candidate** (the pull-through cache, measured at Stage 7 step 5.2 with two cheaper
+  fallbacks ranked ahead of it) and a §6c on where each VPC's endpoints live. **Provisioned things this
+  touches:** none — the whole sitting is plan, prose and decisions.
+
 ---
 
 *Plan core: [GENERAL_PLAN.md](../GENERAL_PLAN.md) · Decisions: [docs/plan/decisions/INDEX.md](decisions/INDEX.md) · Stages: [docs/plan/stages/INDEX.md](stages/INDEX.md)*
