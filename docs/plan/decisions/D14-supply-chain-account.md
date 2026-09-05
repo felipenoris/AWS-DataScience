@@ -3,11 +3,13 @@
 **Status:** Decided (2026-08-07): **the Production account**. **Revised 2026-08-09** — the decision stands,
 its cost basis does not: see *What changed on 2026-08-09*.
 
+**AMENDED 2026-09-05:** the placement stands and **widens** — Production now also carries the estate's network platform, as three VPCs: `VPC-SharedServices` (GitLab, Pages, runners, the build host), `VPC-Networking` (the only internet gateway, the proxy, the VPN endpoint) and `VPC-Workloads` (the production runtime). This is a quota-forced compromise, not a pattern: a VPC is not an isolation boundary (Lesson 2), and [D38](D38-single-egress-hub.md) carries the trigger that moves the first two into a `shared` platform account when a slot frees. What the split buys back immediately is trigger (c)'s substance — an Interactive account no longer reaches the runtime VPC.
+
 **In one line:** GitLab, Runners, ECR and CodeArtifact live in Production, not next to the people the gate gates.
 
 **Related decisions:** [D21](D21-development-account.md), [D20](D20-staging-account.md), [D23](D23-ou-structure.md), [D34](D34-account-vending.md)
 
-**Referenced by stages:** [Stage 1a](../stages/stage-01a-landing-zone.md), [Stage 1b](../stages/stage-01b-identity-and-controls.md), [Stage 3](../stages/stage-03-networking.md), [Stage 6](../stages/stage-06-unified-studio.md), [Stage 7](../stages/stage-07-gitlab-runners-ecr.md), [Stage 8](../stages/stage-08-cicd-pipelines.md), [Stage 9](../stages/stage-09-deployment-targets.md)
+**Referenced by stages:** [Stage 1a](../stages/stage-01a-landing-zone.md), [Stage 1b](../stages/stage-01b-identity-and-controls.md), [Stage 3](../stages/stage-03-networking.md), [Stage 6](../stages/stage-06a-unified-studio.md), [Stage 7](../stages/stage-07-gitlab-runners-ecr.md), [Stage 8](../stages/stage-08-cicd-pipelines.md), [Stage 9](../stages/stage-09-deployment-targets.md)
 
 ---
 

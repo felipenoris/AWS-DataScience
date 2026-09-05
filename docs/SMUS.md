@@ -6,8 +6,23 @@ terminology page and the project-profile admin pages (their links: [`REFERENCES.
 beside the 2026-08-16 documentation-pass block). Prices quoted are the measured ones from
 [`PRICING.md`](PRICING.md) (Lesson 6 — a cell without a number means *not measured yet*, never
 *free*). **The blueprint categories below were decided by the user on 2026-08-19 — Stage 6
-decisions 4 and 5, recorded in [the stage log](log/log-stage-06-unified-studio.md)**;
+decisions 4 and 5, recorded in [the stage log](log/log-stage-06a-unified-studio.md)**;
 `./aws/studio.py`'s `US-3` measures them.
+
+
+> **RE-SCOPED 2026-09-05 — read this before using the numbers below.** The domain has **one** associated
+> account, not two: `Development` becomes the headless `Staging` at
+> [Stage 6b](plan/stages/stage-06b-development-becomes-staging.md), so its eleven blueprint configurations,
+> its eleven authorization grants and the `engineering` project profile are all unwound, and the
+> associated-account count is **N Sandboxes** rather than N + 1 (D26 amended). Two more corrections that
+> touch this file's subject: **the SageMaker Unified Studio CI/CD feature is the open-source
+> `aws-smus-cicd-cli`, and it deploys only into projects that already exist** — a deployment target has
+> none, so it is an *exporter* on the Sandbox side and the pipeline stays the deployer (D28); and the
+> `Workflows` surface is **MWAA Serverless only** (D7 amended), which moves the provisioned `Workflows`
+> blueprint out of category 2 — its cost trigger no longer exists. Whether a Studio-authored workflow
+> produces a promotable definition is measured at
+> [6d](plan/stages/stage-06d-unified-studio-remainder.md) step 4, and this file's roster claim about the
+> serverless surface being separate from the eleven configurations is that measurement's first question.
 
 ## The object model — domain, project, and the profiles between them
 

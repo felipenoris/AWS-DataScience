@@ -3,6 +3,8 @@
 **Status:** Decided (2026-08-07); **revised 2026-08-09 — split into two phases, and no public domain
 exists before Stage 13.**
 
+**AMENDED 2026-09-05:** phase 1's names become the `awsds.internal` family — an apex zone plus `sandbox.`, `staging.` and `prod.awsds.internal`, each a separate private zone with an explicit association matrix (private zones do not delegate, and a VPC associated with a matching zone that holds no record gets NXDOMAIN rather than a public answer). GitLab Pages keeps a **second apex**, `awsds-pages.internal`, for the cookie-scope reason D36 chose a separate name for. Phase 2 (the public domain at Stage 13) is untouched.
+
 **In one line:** Internal endpoints are named in **private hosted zones (`*.internal`)** and certified by a
 **self-signed internal CA** whose root is distributed to the client surfaces; the public domain, the public
 hosted zone and public ACM certificates arrive only at **Stage 13**, with the public web tier.

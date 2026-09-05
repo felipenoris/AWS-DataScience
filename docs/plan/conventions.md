@@ -241,32 +241,10 @@ terraform-live/
 │                         #     account, which is why an associated account is what enables
 │                         #     blueprints against a shared domain. The flag is
 │                         #     backend.SMUS_ASSOCIATED, whose rows are measurements
-├── development/          # DEVELOPMENT (D21): the unit of work is a pipeline
-│   ├── bootstrap/        # [P] state bucket for the Development account
-│   ├── foundation/       # [P] VPC (own CIDR), KMS, IAM roles, peering requester to
-│   │                     #     Production - Studio here must reach GitLab (INT-09) - and
-│   │                     #     the same persona vending policy as sandbox/foundation/,
-│   │                     #     byte for byte: one NAME, one object per member account
-│   ├── data/             # [P] the same consumer-data module as sandbox/data/, byte for
-│   │                     #     byte: settings + links + the account data CMK (held EMPTY
-│   │                     #     here since 2026-08-26 - D19 revised, the derived zone and
-│   │                     #     workgroup removed at consumer-data-v0.6.0)
-│   ├── egress/           # [E] NAT + endpoints, same D5 switch as sandbox
-│   ├── probes/           # [E] Stage 3's instruments here: INT-09 reachability + the DNS half
-│   ├── dev-env/          # [P] same slice, same module, same pipeline, applied through
-│   │                     #     awsds-deploy-devenv-dev - the image is identical in both
-│   │                     #     Interactive accounts by construction (D17, Stage 8 step 1)
-│   ├── sagemaker/        # [P] blueprint target (D26): the engineering project's
-│   │                     #     environments land here, provisioned by the domain in
-│   │                     #     data-governance/. No domain of its own. Workflows are
-│   │                     #     authored and test-run here before promotion.
-│   │                     #     Same Terraform/DataZone split as sandbox/sagemaker/:
-│   │                     #     prerequisites here, environments owned by the blueprint
-│   └── app/
-│       └── app-etl/      # [E] the application running against Development's own data, applied
-│                         #     by hand while it is being engineered (Stage 8 step 2). It is NOT
-│                         #     part of the promotion chain - that starts at a git tag and its
-│                         #     first target is Staging
+├── (development/)        # RETIRED 2026-09-05 by Stage 6b: the account is renamed to
+│                         #     Staging and the folder migrates to staging/ on a new state
+│                         #     bucket (Recipe E). Of its six slices, bootstrap/ foundation/
+│                         #     and probes/ move; sagemaker/ data/ and egress/ are destroyed
 ├── data-governance/      # THE OWNERSHIP AXIS (D22, D26): state and governance,
 │   │                     # never compute. Renamed from data-management/ on 2026-08-08
 │   ├── bootstrap/        # [P] state bucket for the Data Governance account
@@ -295,20 +273,38 @@ terraform-live/
 │                         #     accounts, never into this one. No foundation/ slice: no
 │                         #     VPC, no user compute, nothing standing - which is also why
 │                         #     INT-13 has no host
-├── staging/              # deployment target (D20): no Studio domain, no Model
-│   │                     # Registry of its own, no GitLab
-│   ├── bootstrap/        # [P] state bucket for the Staging account
-│   ├── foundation/       # [P] VPC, subnets, KMS, IAM roles. No peering, by decision
-│   ├── data/             # [P] S3 + Glue catalog mirroring production's schema,
-│   │                     #     holding sampled or synthetic data only
-│   ├── sagemaker/        # [P] job execution roles only
-│   ├── egress/           # [E] NAT + endpoints, applied and destroyed by the
-│   │                     #     promotion pipeline - up for minutes, not hours
+├── staging/              # DEPLOYMENT TARGET (D20, D17): the renamed Development
+│   │                     # account since Stage 6b. SageMaker RUNTIME only - no domain,
+│   │                     # no space, no blueprint, no Model Registry of its own, no
+│   │                     # GitLab, no lake share (revoked at 6b). CIDR stays 10.50.0.0/16
+│   ├── bootstrap/        # [P] awsds-staging-tfstate + its key. Created at 6b step 4
+│   │                     #     BEFORE any slice migrates into it
+│   ├── foundation/       # [P] VPC, subnets, KMS, IAM roles - migrated from
+│   │                     #     development/foundation/ with its VPC and its [P] gateway
+│   │                     #     endpoint ids intact (the INT-05 anchors). Peering requester
+│   │                     #     to VPC-Networking ONLY (D20 amended at 6c): the proxy is
+│   │                     #     this account's whole internet, and there is no default route
+│   ├── probes/           # [E] migrated; re-aimed at the proxy path and the peering
+│   ├── data/             # [P] S3 + Glue catalog mirroring production's schema, sampled or
+│   │                     #     synthetic data only, under alias/awsds-staging-data - a NEW
+│   │                     #     key created at Stage 9, never the dev-named one 6b destroys
+│   ├── sagemaker/        # [P] job execution roles only (Pipelines, training, processing,
+│   │                     #     batch transform, the Model Registry CONSUMER side)
+│   ├── orchestration/    # [E] MWAA Serverless workflows for the staging leg (D7 amended:
+│   │                     #     a serverless workflow bills nothing at rest, so the reason
+│   │                     #     orchestration was Production-only is gone)
+│   ├── egress/           # [E] interface endpoints only - NO NAT, no default route
+│   │                     #     (egress_mode B, fixed by D38)
 │   └── app/
 │       └── app-etl/      # [E] deployed by the pipeline, torn down after the tests
 └── production/
     ├── bootstrap/        # [P]
-    ├── foundation/       # [P] VPC etc. + peering accepters for Sandbox AND Development.
+    ├── foundation/       # [P] VPC-SharedServices (10.30.0.0/16 - the VPC built at Stage 3,
+    │                     #     re-labelled at 6c): GitLab, Pages, the runners and the build
+    │                     #     host. Peering accepters, and the awsds.internal APEX zone
+    │                     #     plus awsds-pages.internal (D15/D36 amended - the old
+    │                     #     prod.internal/pages.internal zones are retired at 6c).
+    │                     #     Originally: VPC etc. + peering accepters for Sandbox AND Development.
     │                     #     Built in Stage 3, because Stage 7 (GitLab) depends on it (D14).
     │                     #     ALSO the prod.internal and pages.internal private zones and
     │                     #     their cross-account associations (D15 as revised 2026-08-09),
@@ -318,6 +314,23 @@ terraform-live/
     │                     #     same argument that put the WireGuard EIP in Sandbox's
     │                     #     foundation. NO public zone, NO registered domain: those are
     │                     #     Stage 13, and NOT the CA - see pki/ below
+    ├── networking/       # [P] VPC-Networking (10.31.0.0/16, created at 6c - D38): the
+    │                     #     estate's ONLY internet gateway and its only internet-facing
+    │                     #     tier, the peering accepter for every spoke, and the [P]
+    │                     #     anchors of both hub hosts (two Elastic IPs - one TRANSFERRED
+    │                     #     from Sandbox with the WireGuard host - two security groups,
+    │                     #     the host-key secret, the proxy allow-list parameter).
+    │                     #     Carries NO interface endpoint with private DNS and NO
+    │                     #     service-name private zone: the VPN client resolves here, and
+    │                     #     that is the repair of Lessons 40-43
+    ├── vpn/              # [D] the WireGuard host (D4 amended: the home moved here at 6c).
+    │                     #     Forwards tunnel packets to RFC1918 destinations only
+    ├── proxy/            # [D] the Squid host - the estate's single egress. Its EIP is the
+    │                     #     anchor of every VPN-only condition; its access log is Stage
+    │                     #     11's egress evidence
+    ├── workloads/        # [P] VPC-Workloads (10.32.0.0/16, created at 6c): the production
+    │                     #     SageMaker runtime, MWAA Serverless workers, production jobs.
+    │                     #     No IGW route in any table
     ├── pki/              # [P] the internal root CA (D36). OWN state file and OWN KMS key,
     │                     #     deliberately not foundation/'s: foundation is opened to change
     │                     #     a CIDR or accept a peering, and every such edit would otherwise
@@ -349,20 +362,20 @@ terraform-live/
     │                     #     THE 5.a HALF IS APPLIED (2026-08-21, 14 resources)
     ├── sagemaker/        # [P] Model Registry (model package groups) + the execution role
     │                     #     pipeline-submitted jobs assume. No domain, no user profiles (D17)
-    ├── egress/           # [E] NAT, endpoints - and the internal ALB for GitLab/Pages ONLY
+    ├── egress/           # [E] interface endpoints per VPC - NO NAT anywhere (D38) - and
+    │                     #     the internal ALB for GitLab/Pages ONLY
     │                     #     if Stage 7 decision 1 picks it over nginx-on-instance (an
     │                     #     ALB cannot stop, so if it exists it is [E])
     ├── probes/           # [E] Stage 3's instrument here: the peering target
     ├── tooling/          # [D] GitLab EC2 + EBS (D8, D14) - TLS terminates on its own
     │                     #     nginx, or on the egress/ ALB (Stage 7 decision 1)
     ├── runners/          # [E] GitLab Runners (D14)
-    ├── orchestration/    # [E] D7 builds two, behind a switch like D5's egress designs:
-    │                     #     (A) mwaa-serverless/ - awscc_mwaaserverless_workflow per
-    │                     #         app, YAML in S3, per-workflow role + log group (D28)
-    │                     #     (B) native/ - aws_scheduler_schedule + aws_sfn_state_machine
-    │                     #         + Lambda/Fargate, same log-group discipline
-    │                     #     The 20-30-min-create / metadata-DB caveat applies only to
-    │                     #     the provisioned-MWAA fallback (INT-14)
+    ├── orchestration/    # [E] MWAA SERVERLESS ONLY (D7 amended 2026-09-05):
+    │                     #     awscc_mwaaserverless_workflow per app, YAML in S3, a
+    │                     #     per-workflow role and log group (D28), NetworkConfiguration
+    │                     #     always set on VPC-Workloads' private subnets. Design B
+    │                     #     (Scheduler + Step Functions) is documented-not-built, as
+    │                     #     INT-14's terminal fallback; the provisioned-MWAA rung is gone
     └── app/
         └── app-etl/      # [E]
 

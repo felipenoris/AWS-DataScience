@@ -6,7 +6,7 @@
 
 **Related decisions:** —
 
-**Referenced by stages:** [Stage 5](../stages/stage-05-data-foundation.md), [Stage 6](../stages/stage-06-unified-studio.md), [Stage 11](../stages/stage-11-dlp.md)
+**Referenced by stages:** [Stage 5](../stages/stage-05-data-foundation.md), [Stage 6](../stages/stage-06a-unified-studio.md), [Stage 11](../stages/stage-11-dlp.md)
 
 ---
 

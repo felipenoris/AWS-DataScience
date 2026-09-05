@@ -2,6 +2,8 @@
 
 **Status:** Decided (2026-08-07): **self-managed WireGuard**
 
+**AMENDED 2026-09-05 (the 6b/6c re-scope):** the technology is unchanged and the **home moves** — the host leaves Sandbox for `VPC-Networking` in Production, its Elastic IP is *transferred* rather than reallocated (so no client `.conf` changes its `Endpoint`), and its second job as a NAT instance for the isolated tier **ends** with the buildbox's move. The host now forwards tunnel packets to RFC1918 destinations only and drops the rest: a VPN client is a client of the private network and reaches the internet through the proxy like every other one ([D38](D38-single-egress-hub.md), [Stage 6c](../stages/stage-06c-networking-hub.md)).
+
 **In one line:** Self-managed WireGuard on the smallest burstable instance, layer `[D]`; Client VPN documented as the managed alternative. *(`t4g.nano` as decided; **`t3.nano` since the amd64 move of 2026-08-20** — the shape is the decision, the architecture is not.)*
 
 **Related decisions:** —

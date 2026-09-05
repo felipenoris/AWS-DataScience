@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Status** | not started |
+| **Status** | not started — **RE-SCOPED 2026-09-05**: the public tier lands in **`VPC-Networking`'s public tier**, which [D38](../decisions/D38-single-egress-hub.md) makes the estate's only internet-facing tier, with IP targets reaching the backend in `VPC-Workloads` over the peering. The ALB becomes the **second enumerated listener** there (the WireGuard endpoint is the first), and `docs/AWS_STATE.md` carries that enumeration — a world-open rule anywhere else is a finding. The public DNS half (D15 phase 2, the registered domain and public ACM) is unchanged and still needs the domain name from the user. |
 | **Prerequisites** | Stages 3, 9. **The domain name from the user** (D15 phase 2) — this is the only stage that needs it. |
 | **Consumes** | [D15](../decisions/D15-tls-internal.md) |
 | **Proves** | — |

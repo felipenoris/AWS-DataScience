@@ -2,6 +2,8 @@
 
 **Status:** Decided (2026-08-07): **resources are ephemeral, accounts are not**
 
+**AMENDED 2026-09-05:** the three layers are unchanged; the hub adds a **cross-account** bring-up dependency the per-ENV `make up`/`down` cannot express. `production/networking/` is `[P]` (nothing to start), the WireGuard and Squid hosts are `[D]` with their own `make hub-up`/`hub-down` target, and a spoke's `make up` refuses while either is stopped — turning what would be a blackhole into an error ([Stage 6c](../stages/stage-06c-networking-hub.md) pass 7).
+
 **In one line:** Resources are ephemeral, accounts are not: pay nothing while idle, in three layers.
 
 **Related decisions:** —

@@ -3,7 +3,7 @@
 *Manual actions performed in AWS, by hand. Written cooperatively by the user and Claude — **Claude
 only when the user asks, never on its own initiative** ([`INDEX.md`](INDEX.md), which also carries the
 provenance rule). **An entry carrying no provenance note of its own is the user's.**
-Stage: [`docs/plan/stages/stage-06-unified-studio.md`](../plan/stages/stage-06-unified-studio.md).*
+Stage: [`docs/plan/stages/stage-06a-unified-studio.md`](../plan/stages/stage-06a-unified-studio.md).*
 
 *Provenance is named by SUBJECT rather than by ordinal — the convention
 [Stage 3's log](log-stage-03-networking.md) adopted and every stage since has kept. Identifiers are
@@ -152,7 +152,7 @@ control path. It travels into `POLICIES.md` with the statement.
 
 [`docs/REFERENCES.md`](../REFERENCES.md) (the network-isolation entry corrected; a new entry for the
 PrivateLink release with its two documentation pages, written as *why it does not retire decision 3*),
-[`stage-06-unified-studio.md`](../plan/stages/stage-06-unified-studio.md) (steps 1.6, 1.7, 4.1, 4.2,
+[`stage-06a-unified-studio.md`](../plan/stages/stage-06a-unified-studio.md) (steps 1.6, 1.7, 4.1, 4.2,
 decisions 1 and 3, the Status row), [`open-questions.md`](../plan/open-questions.md) item 12,
 [`integrations.md`](../plan/integrations.md) INT-16, both Interactive `egress/main.tf` files, `CLAUDE.md`,
 and this file. **`make check` green throughout; `make check-docs` red only on its pre-existing pre-Stage-2
@@ -223,7 +223,7 @@ the 1c fence around who can call `datazone` at all.
 
 ### Files touched in this sitting
 
-[`stage-06-unified-studio.md`](../plan/stages/stage-06-unified-studio.md) (step 1.4's enabled set
+[`stage-06a-unified-studio.md`](../plan/stages/stage-06a-unified-studio.md) (step 1.4's enabled set
 rewritten against the categories; decision rows 4 and 5), [`docs/SMUS.md`](../SMUS.md) (created, then
 corrected for the inversion), [`aws/studio.py`](../../aws/studio.py) (`US-3` tightened from
 Redshift-absence to the category-1 allow-list, `AmazonBedrock*` prefix rule for the seven
@@ -342,7 +342,7 @@ all, since Glue arrives as a project connection.
 
 ### Files touched in this sitting
 
-[`stage-06-unified-studio.md`](../plan/stages/stage-06-unified-studio.md) (decision 1's row and the Status
+[`stage-06a-unified-studio.md`](../plan/stages/stage-06a-unified-studio.md) (decision 1's row and the Status
 row), [`stages/INDEX.md`](../plan/stages/INDEX.md), [`docs/SMUS.md`](../SMUS.md) (the `EMRServerless` row —
 the corrected number, the FGAC note, and *"pre-initialized capacity not used"* rewritten: the service keeps
 a kernel worker regardless), [`open-questions.md`](../plan/open-questions.md) item 13,
@@ -684,7 +684,7 @@ afterwards. The three commands that decide it:
 
 ```
 git log --all --oneline -S "Pulled forward and applied before this stage" \
-    -- docs/plan/stages/stage-06-unified-studio.md
+    -- docs/plan/stages/stage-06a-unified-studio.md
 f44559f review stage 6. proceding stage 3.
 
 git show --stat f44559f
@@ -749,7 +749,7 @@ Decided by asking, per piece, *who consumes it before Stage 7 ends*:
 
 ### Files changed in this sitting
 
-`docs/plan/stages/stage-06-unified-studio.md`, `…/stage-07-gitlab-runners-ecr.md`,
+`docs/plan/stages/stage-06a-unified-studio.md`, `…/stage-07-gitlab-runners-ecr.md`,
 `…/stage-08-cicd-pipelines.md` (step 1.1's `Dockerfile` requirement list), `…/stage-03-networking.md`
 (step 8.4's CodeArtifact domain), `…/stages/INDEX.md`, `docs/plan/decisions/D36-internal-pki.md` (§3 and
 the Status line), `docs/plan/decisions/INDEX.md`, `docs/plan/conventions.md` (both slice comments),
@@ -1721,7 +1721,7 @@ sentinel — a grant removed by hand comes back as `1 to add`.
 
 Touched: `docs/plan/runbooks/buildbox.md` (§P, new), `images/README.md`, `docs/SMUS.md` (the
 installed-profiles table gains a fourth column, plus the new subsection the user asked for),
-`docs/plan/stages/stage-06-unified-studio.md` (findings 12-13, step 2.4's prerequisite, step 5.0, the
+`docs/plan/stages/stage-06a-unified-studio.md` (findings 12-13, step 2.4's prerequisite, step 5.0, the
 owed table, two pass rows), `docs/plan/integrations.md` (INT-16 answered), `docs/REFERENCES.md`,
 `CLAUDE.md`, and the governance slice — `grants.tf` (new), `locals.tf`, `data.tf`, `providers.tf`,
 `variables.tf`, `outputs.tf`, plus `scripts/tfhygiene/backend.py`.
@@ -2066,7 +2066,7 @@ intact.
 ### What this closes
 
 **Step 1.7 is fully attributed; nothing measurable is left in it.** Written up in
-`stage-06-unified-studio.md` (finding 12 and the owed table), `integrations.md` (INT-16), `README.md`
+`stage-06a-unified-studio.md` (finding 12 and the owed table), `integrations.md` (INT-16), `README.md`
 (the third role of the VPN, which stopped saying *unverified*), `CLAUDE.md`, the `policies-shared.tf`
 comment that had refused to overclaim — and `stage-04-vpn.md`, whose `Proves` row, `UNVERIFIED` diagram
 label and the paragraph written *for* a negative INT-16 now describe one.
@@ -2106,7 +2106,7 @@ falsified — one was an **unrecorded answer**, and **two were decisions** that 
 | 7 | Stage 7 step 2.6 named no tag; the lifecycle trigger had no receiving end | both given one |
 
 **Item 1 is the interesting one and it is not about ECR.** Two hands were editing
-`stage-06-unified-studio.md` in the same minutes: the first edit was refused with *"File has been
+`stage-06a-unified-studio.md` in the same minutes: the first edit was refused with *"File has been
 modified since read"*, and the re-read showed the row already corrected plus a new owed row that had
 not existed a moment earlier. Nothing was lost, and the reason nothing was lost is that the tool
 refuses to write over a file it has not seen — the same guarantee the two-commit module rule buys for
@@ -2154,7 +2154,7 @@ reaches the hand that writes the gate.
 
 ### Files, and what is owed
 
-Touched: `docs/plan/stages/stage-06-unified-studio.md` (the two 5.0 rows, the Status row, verification
+Touched: `docs/plan/stages/stage-06a-unified-studio.md` (the two 5.0 rows, the Status row, verification
 (x)), `docs/plan/stages/stage-07-gitlab-runners-ecr.md` (2.6's tag, decision 2 re-framed),
 `docs/plan/stages/stage-08-cicd-pipelines.md` (1.0's pattern, 1.1's tag, 2.1's deliberate difference,
 1.4's correction), `docs/SMUS.md` (the hand-off table), `docs/plan/institutional-delta.md` (the new
@@ -2229,7 +2229,7 @@ US-10 notes the running Tooling apps as the burn they are).
 
 ### Files, and what is owed
 
-Touched this closing sitting: `aws/studio.py` (the US-8 fix), `docs/plan/stages/stage-06-unified-studio.md`
+Touched this closing sitting: `aws/studio.py` (the US-8 fix), `docs/plan/stages/stage-06a-unified-studio.md`
 (the owed table's retry row), `CLAUDE.md`, this log and its index cell, and PR #32's body. The seven
 rounds' own files — `sagemaker-prereqs` v0.3.0→v0.3.3, both member slices, the governance slice, and
 their records — are the branch's earlier commits.
@@ -3404,7 +3404,7 @@ built from the plan's prose rather than from the repository.
 
 Three plus this log: `aws/studio.py` (the US-8 discovery, the section 6 column and the reasoning beside
 both), `docs/plan/open-questions.md` (OQ 21's measurement and OQ 22's first occurrence),
-`docs/plan/stages/stage-06-unified-studio.md` (the owed table's two rows, verification (v)'s widening,
+`docs/plan/stages/stage-06a-unified-studio.md` (the owed table's two rows, verification (v)'s widening,
 step 8.2 marked done). Branch `claude/oq21-governance-verbs-us8-tag-discovery`, PR
 [#45](https://github.com/felipenoris/AWS-DataScience/pull/45) — **the user merges**.
 

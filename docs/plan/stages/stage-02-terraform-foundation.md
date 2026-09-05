@@ -371,7 +371,10 @@ they are independent, so the order is a convenience: `development`, `data-govern
 (`awsds-infra-dev`, `awsds-infra-data`, `awsds-infra-prod`, `awsds-infra-identity`), and `AWS_PROFILE` is set
 on every command rather than exported once — **Lesson 25**, a borrowed session outlives the command that
 needed it and every later error names the wrong account. `./aws/tf-backends.py` is the read-back, and its
-section 5 already states the expected shape: **five state buckets, six once `Staging` is vended.**
+section 5 already states the expected shape: **five state buckets** — and it stays five after
+[Stage 6b](stage-06b-development-becomes-staging.md), which creates `awsds-staging-tfstate`, migrates
+every surviving slice into it and destroys `awsds-dev-tfstate`. *(This sentence read "six once `Staging`
+is vended" until 2026-09-05; the account is renamed, not vended.)*
 
 ### 4. Backends for every other slice
 

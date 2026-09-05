@@ -47,20 +47,18 @@ This is the **write** map. The **read** map — which file answers which questio
 | Audit | Security | platform | Security guardian: GuardDuty, Security Hub, Macie, Access Analyzer |
 | Identity | **Identity** | platform | Identity Center **delegated administration** (D10) — as sensitive as Management. Its own OU because Control Tower would not vend it into the foundational `Security` OU (D23, 2026-08-09) |
 | Policy Canary | Policy Test | platform | Deliberately empty. The disposable account a candidate SCP is exercised against (D29) |
-| Sandbox | Interactive → **Sandboxes** | lifecycle (before the chain) | **Experimentation** — the unit of work is a notebook. VPN terminates here. One per business unit (D35), grouped in a nested OU that carries no policy set of its own and is not meant to (D37) |
-| Development | Interactive | lifecycle | **Engineering** — the unit of work is a pipeline. The promotion chain starts here (D21) |
+| Sandbox | Interactive → **Sandboxes** | lifecycle (the chain's origin since 2026-09-05) | **Experimentation** — the unit of work is a notebook, and the **only** account where a human runs code (D17 sharpened). The VPN terminated here until Stage 6c moves it to Production's `VPC-Networking`. One per business unit (D35), grouped in a nested OU that carries no policy set of its own and is not meant to (D37) |
 | Data Governance | Data | **ownership** | The governed lake + the Unified Studio domain (D22, D26). No VPC, no user compute, no interactive sign-in |
-| Staging | Workloads | lifecycle | Deployment target, written only by the pipeline; sampled or synthetic data (D20) |
-| Production | Workloads | lifecycle | Deployment target **plus** the supply chain: GitLab, runners, ECR, CodeArtifact, Model Registry, orchestration (D14) |
+| Staging | Workloads | lifecycle | Deployment target, written only by the pipeline; sampled or synthetic data (D20). **It is the renamed `Development` account since [Stage 6b](plan/stages/stage-06b-development-becomes-staging.md)** — the quota refused a vend, and the interactive environment it used to be was found unnecessary (D21 superseded by its own larger branch) |
+| Production | Workloads | lifecycle | Deployment target **plus** the supply chain (GitLab, runners, ECR, CodeArtifact, Model Registry, orchestration — D14) **plus, since [Stage 6c](plan/stages/stage-06c-networking-hub.md), the network platform**: three VPCs, the estate's only internet gateway, the proxy and the VPN endpoint (D38, a quota-forced compromise with a trigger to move it out) |
 
-Three groups, not one sequence: the **lifecycle** axis (Sandbox before the chain, then
-Development → Staging → Production), the **ownership** axis (Data Governance alone), and the **platform**
+Three groups, not one sequence: the **lifecycle** axis (Sandbox → Staging → Production), the **ownership** axis (Data Governance alone), and the **platform**
 accounts on neither. *An account off the lifecycle axis is not "a production account"* — Data Governance
 and Identity are **high blast radius**, which is a different property.
 
 **And one property that cuts across all three: cardinality (D35).** Every account above is **structural** —
 exactly one, forever — **except `Sandbox`, which is one per business unit** (N is 1 today). The chain reads
-**N Sandboxes → one Development → one Staging → one Production**, so the cardinality boundary is exactly
+**N Sandboxes → one Staging → one Production**, so the cardinality boundary is exactly
 D21's graduation boundary: experimentation multiplies, the engineering chain that follows it does not — which
 is why the promotion chain is untouched by N. That decides where vending is automated: the structural
 accounts keep the console flow (D34), the Sandbox gets [Stage 14](plan/stages/stage-14-sandbox-vending.md).
@@ -95,7 +93,10 @@ These come from `CLAUDE.md` and constrain every stage:
    measured): the VPN is the only entry to the private network and the AWS control plane; the Unified
    Studio portal's user ingress was measured reachable off-VPN** (`README.md` item 3 carries the full
    statement; the closing choice — fallback (i) on the domain execution role versus recorded acceptance —
-   is the user's, deferred, and presumed nowhere). **Re-grounded 2026-08-25: the requirement side is now
+   is the user's, deferred, and presumed nowhere). **Built by [Stage 6c](plan/stages/stage-06c-networking-hub.md) under D38 (2026-09-05): the client is a
+   private-network client, so its whole internet — the AWS control plane included — crosses the
+   institutional proxy, and the WireGuard host drops every tunnel packet that is not bound for an RFC1918
+   address. Re-grounded 2026-08-25: the requirement side is
    explicit in `docs/plan/objectives.md`** — the client reaches the organization's cloud infrastructure
    only through the VPN, and once connected, *all* of the client's internet (the portal's public names
    included) runs through the cloud's own egress behind an institutional HTTP/HTTPS proxy (D5/D6 revised;
@@ -140,7 +141,7 @@ its **Consumes** row names; that is the whole reading list.
 | Stage | What it builds | Status |
 |---|---|---|
 | [0 — Baseline](plan/stages/stage-00-baseline.md) | Management account by hand, local tooling, the documentation set | **DONE** |
-| [1a — Landing zone](plan/stages/stage-01a-landing-zone.md) | Control Tower, the accounts and OUs, root secured, budget — slow and hard to undo | **done except the `Staging` vend** |
+| [1a — Landing zone](plan/stages/stage-01a-landing-zone.md) | Control Tower, the accounts and OUs, root secured, budget — slow and hard to undo | **DONE.** *(It read "done except the `Staging` vend" until 2026-09-05: the quota increase was refused and [Stage 6b](plan/stages/stage-06b-development-becomes-staging.md) makes `Staging` by renaming `Development`, so there is no vend left to wait for.)* |
 | [1b — Identity Center and the alarm](plan/stages/stage-01b-identity-and-controls.md) | The alarm first, then delegation, users and groups, the administrator permission set, SSO profiles, retiring the direct assignments, AZ mapping, Access Analyzer (steps 8.3, 1-6, 5.1, 8.2) | **DONE** (2026-08-12) |
 | [1c — Preventive policies](plan/stages/stage-01c-preventive-policies.md) | SCP, RCP, tag and declarative policies, the managed controls (step 7) — the one irreversible-from-inside sitting | **DONE** (2026-08-14) — ten documents, four policy types, battery 93/93 |
 | [1d — Audit trail and org-wide enablement](plan/stages/stage-01d-org-wide-enablement.md) | Object Lock, the AWS Config decision, org-wide RAM + the Lake Formation cross-account version, **and the Region ceiling on `Security`** (steps 9-12, independent of each other) | **DONE 2026-08-15 — this closes the landing zone.** Object Lock is on at `COMPLIANCE`/90 days, written past `CTS3PV8` as `AWSControlTowerExecution`; the Config recorder is left alone (measured ~USD 0.5/month) and Management is deliberately unrecorded; RAM org-wide sharing is on; the Region ceiling is on `Security` |
@@ -148,7 +149,10 @@ its **Consumes** row names; that is the whole reading list.
 | [3 — Networking](plan/stages/stage-03-networking.md) | One VPC per account that has one, split `foundation/` + `egress/` — **plus the first reusable modules**, moved here from Stage 2 step 7 | **DONE** (2026-08-16) — applied, measured and torn down to USD 0.0000/h; D11 proven twice (`foundation/` byte-identical on the second `up`, every `[E]` id new); the perimeter, both peerings and the flow logs probed |
 | [4 — VPN](plan/stages/stage-04-vpn.md) | WireGuard over the Stage 3 network, the only entry point (to the private network and the control plane — the portal qualification of 2026-08-22 is principle 4's) | **DONE 2026-08-18 — closed by the GuardDuty split**: passes 1-3 executed and measured; pass 4 left the stage whole for Stage 15, prepared. Decision 4 (third review) moved the host private key into a `[P]` Secrets Manager secret, with [`docs/plan/runbooks/vpn.md`](plan/runbooks/vpn.md) Part K owning every key event; `sandbox/vpn/` is the tree's first `[D]` slice; the close-out log entry is the user's |
 | [5 — Data foundation](plan/stages/stage-05-data-foundation.md) | Lake, Glue, Iceberg, Lake Formation + the three cross-account shares; Security Hub on | **DONE — every pass, 2026-08-18/20** — the governed lake, the governance manager's grants, both cross-account TBAC shares, the consumer side (one `consumer-data` module in two slices — v0.2.0 since the 2026-08-19 revision that withdrew `security-zone`), 4c's persona grants, **4d's behavioural proofs, 4e's `DenyUserCompute` amendment, and pass 6** (Security Hub CSPM org-wide by central configuration on the root, 2026-08-20 — `INV-09` to nine/four). **The one thing left is step 13.3's triage**, which needs a first FSBP report that did not exist when the stage closed. Revised **revised 2026-08-17 after the data-governance review** (the `zone` tag dimension; classification-scoped LF-TBAC grants, `restricted` by explicit grant only); **the NFS requirement withdrawn later the same day — no `nfs/` slice (D24 withdrawn)** |
-| [6 — Unified Studio](plan/stages/stage-06-unified-studio.md) | The DataZone V2 domain, project profiles, and the two egress designs compared | **passes 0, 1 and 2a APPLIED 2026-08-21** — the `production/registry/` prerequisite, the two `sagemaker/` prerequisite slices, the step 3 deny fragment across all six persona sets, 1.6's Athena Spark SCP amendment, and the domain itself (`awsds-studio`, V2, in Data Governance). **Then everything the old clause called open, closed 2026-08-21/22**: the three owed measurements delivered (0.1a's canary replay hit the explicit SCP deny; 1.6's battery 25/0/7; 5.0's `default-v0.1.0` pushed from one buildbox session), the association, the 11 configurations per member with the complete wizard-field set, both profiles, BOTH authorization layers granted, and **the create path measured end to end on 2026-08-22** (project ACTIVE, stack `CREATE_COMPLETE`) — plus the off-VPN reading in its strong form (the INT-16 choice is the user's, deferred). **Still not closed**: passes 3-5 and 5.1. Earlier: **its cross-stage prerequisite was re-cut 2026-08-21** after an audit found the "pulled forward and applied" clause had never been executed: `production/registry/`'s **5.a** half is now this stage's **pass 0** (Stage 6 step 5.0 pushes into it), and `production/pki/` left the stage entirely |
+| [6a — Unified Studio (executed)](plan/stages/stage-06a-unified-studio.md) | The record of what ran: the domain, both associations, 11 blueprint configurations and 22 grants per member, both project profiles, the create path end to end, `default-v0.1.0`, and the dated readings of passes 4-5 | **CLOSED as a record 2026-09-05** |
+| [6b — `Development` becomes `Staging`](plan/stages/stage-06b-development-becomes-staging.md) | One account changes role: the SMUS surface unwound inside `Interactive`, the lake share and the read-write persona revoked, the rename and the OU move, the tree migrated to `staging/` | not started |
+| [6c — Networking: the single egress hub](plan/stages/stage-06c-networking-hub.md) | Three VPCs in Production, five peerings, the `awsds.internal` family, WireGuard and Squid as two `[D]` hosts, **zero NAT gateways**, no default route in any spoke — and the client plane moved off the compute plane's resolver. Writes **D38** | not started |
+| [6d — Unified Studio: the remainder](plan/stages/stage-06d-unified-studio-remainder.md) | The deny pair exercised, the house image selectable, a session measured under the proxy, the workflow surface measured, the lifecycle proven | not started |
 | [7 — GitLab, Runners, ECR](plan/stages/stage-07-gitlab-runners-ecr.md) | GitLab CE on EC2, runners, registries, internal names and TLS from the internal CA | not started — **pass 0 shrank to `registry/`'s 5.a on 2026-08-21**: the CA came back to pass 1 with its leaves (D36 §3 amended — nothing serves a `.internal` name before this stage), and a new step 2.6 rebuilds the `dev-env` image with the root |
 | [8 — CI/CD pipelines](plan/stages/stage-08-cicd-pipelines.md) | The three pipeline types and the promotion gate | not started |
 | [9 — Deployment targets](plan/stages/stage-09-deployment-targets.md) | Staging and Production platforms, Model Registry, the producer path | not started |
@@ -170,8 +174,9 @@ what was tried. One file each, with its reasoning, consequences and revision tri
 all that is needed.
 
 The load-bearing few, for orientation: **D11** (pay nothing while idle — three layers), **D13** (Lake
-Formation is only real if execution roles hold no S3 on registered prefixes), **D17/D21** (interactive
-compute only in the Interactive OU; the chain starts in Development), **D22** (the lake is on the
+Formation is only real if execution roles hold no S3 on registered prefixes), **D17** (interactive
+compute only in Sandbox; **D21 superseded** by its own larger branch, 2026-09-05), **D38** (one egress,
+an explicit proxy, and where the client plane resolves), **D22** (the lake is on the
 ownership axis), **D26** (one unified domain, a registry and never a runtime), **D16** (the recovery path
 — **the only one**, since D30 was reverted, which is what makes D29's policy canary load-bearing rather
 than nice to have).

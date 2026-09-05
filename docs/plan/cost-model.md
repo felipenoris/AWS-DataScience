@@ -74,12 +74,34 @@ Two cost levers worth applying rather than discovering later:
 | **Production `egress/`** (only while runner builds or orchestration need it) | NAT ~0.050 + **endpoints ~0.100-0.120** — the endpoint half was missing from every earlier version of this table |
 | SageMaker Studio `ml.t3.medium` (per running app) | ~0.050 |
 | WireGuard EC2 `t3.nano` | ~0.005 (`t4g.nano` at ~0.004 until the amd64 move of 2026-08-20; a `t3.medium` session is ~0.042) |
-| Sandbox ↔ Production **and** Development ↔ Production VPC peering (two of them, D21) | free within an AZ; USD 0.01/GB each way across AZs — see `docs/plan/open-questions.md` item 3 |
+| VPC peering — **five of them after [Stage 6c](stages/stage-06c-networking-hub.md)**, hub-and-spoke (was two) | free within an AZ; USD 0.01/GB each way across AZs — **`PRICING.md` §7 carries the same clause since 2026-09-05, and the two files agreed on it that day**; with the hub hosts and every endpoint set pinned to `usw2-az1` the common path is free — see `docs/plan/open-questions.md` item 3 |
 | **Staging `egress/` during a promotion run** (D20) | ~0.140/h, but measured in *minutes* per promotion, not hours — `make up ENV=staging` is a pipeline step, and the pipeline tears it down. Budget ~USD 0.03 per promotion, not a standing hourly cost |
 | **Development `egress/` + Studio apps** (D21) | ~0.160/h under design A (0.170 until the 2026-08-25 `datazone` removal), ~0.140 under B — which must re-add that endpoint, plus ~0.05/h per running app — but only while pipeline-engineering work is happening. A session is either exploratory (Sandbox up) or engineering (Development up), so the *typical* hourly burn does not double even though the worst case does |
 | Athena, Glue | usage-based; negligible at lab scale |
 
-**Two corrections to this table, applied 2026-08-08, and both moved the numbers up.**
+**REPRICED 2026-09-05 for the [D38](decisions/D38-single-egress-hub.md) topology, and the direction is
+down.** Three rows above are obsolete the moment [Stage 6c](stages/stage-06c-networking-hub.md) applies,
+and they are the rows that carried the NAT:
+
+| Row | After 6c |
+|---|---|
+| `NAT Gateway (1) + its public IPv4` | **gone from every account.** Zero NAT gateways exist; a spoke has no default route, and the internet is reached by addressing the proxy |
+| `Development egress/ + Studio apps ~0.160/h` | **gone with the account's interactive life** (6b). Sandbox's own hour falls to the endpoint set alone: ~0.110-0.140/h depending on how many of the SMUS required list a design-B start actually needs |
+| `Staging egress/ during a promotion ~0.140/h` | ~**0.090/h** — endpoints only |
+| — | **new:** the Squid host, `[D]`, **0.0052/h** (`t3.nano`) or **0.0104/h** (`t3.micro`), plus **+USD 3.65/month** for its `[P]` Elastic IP and **+USD 0.50-1.00/month** for the extra private zones. The WireGuard host's own address is *transferred*, not added |
+| — | **new:** two more `[E]` endpoint sets in Production — `VPC-Workloads` (~0.090-0.100/h, up only while jobs or workflows run) and `VPC-SharedServices` (~0.070-0.090/h, up with GitLab). **`VPC-Networking` carries none**, by the invariant that keeps the client plane resolving publicly |
+
+**Net, derived over `PRICING.md`'s measured rates and not itself a measurement:** the floor moves by about
+**+USD 4.65/month** (one address, one or two zones) and by about **−USD 2/month** as 6b destroys two KMS
+keys; every *session* hour falls, because the two NAT gateways that were 0.050/h each are gone and the
+account that carried the second Interactive endpoint set is now a headless Workload. **A standing NAT
+gateway would be ≈ USD 36.50/month** — three quarters of the ceiling — which is the number that makes
+"zero, with a per-VPC contingency" the design rather than a preference. **Re-sum this table from
+`PRICING.md` §3 at 6c step 7, and read the first month's invoice at Stage 12 step 5**; the figures here are
+arithmetic over measured rates, which is not the same thing as a bill.
+
+*Earlier, and kept because the reasoning still explains the endpoint half:* **two corrections applied
+2026-08-08, both of which moved the numbers up.**
 
 - **The data plane had no endpoints.** `athena`, `glue` and `lakeformation` were missing from every
   account. Under design A the NAT hid it; under design B, with no NAT anywhere, it meant the design could
@@ -103,7 +125,9 @@ endpoints, and one Interactive environment all at once) + a handful of promotion
 number, not the bottom** — it leaves roughly USD 7 of headroom, and the items listed as missing from the
 floor row eat into it. Staging and Data Governance cost almost nothing precisely because neither ever has
 standing compute; the number to watch is whether Sandbox and Development sessions actually stay disjoint,
-which is what keeps the hourly line from doubling.
+which is what keeps the hourly line from doubling. **After the 2026-09-05 repricing the projection is
+roughly USD 28-43** — the same shape, with the NAT rows removed and the hub's two lines added, and the
+~USD 7 of headroom survives only because no NAT gateway stands.
 The single fastest way to breach the ceiling is a session that leaves `egress/` up: at ~USD 0.160/h that is
 USD 3.84 for a forgotten day, and two of them cancel the entire headroom. **This used to say that the budget
 alerts and Cost Anomaly Detection of Stage 1a step 2 are the primary control here; both were skipped by

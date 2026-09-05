@@ -5,6 +5,8 @@ KMS key; no revocation path, and the compensating controls are detective** — *
 slice is no longer pulled forward ahead of Stage 6; it is built at Stage 7 pass 1 with the leaves, and the
 `dev-env` image takes the root at Stage 7 step 2.6. Custody (§1, §2) is untouched.**
 
+**AMENDED 2026-09-05:** the naming section changes with [D15](D15-tls-internal.md) — the leaves are issued for `gitlab.awsds.internal`, `*.awsds-pages.internal` and the `<env>.awsds.internal` children. Custody, the slice, the key and the detective controls are untouched.
+
 **In one line:** The internal CA root gets a slice, a state file and a KMS key of its own — so "who can mint
 a certificate for any internal name" is an isolable question rather than a subset of "who administers the
 VPC" — and because it cannot be revoked, what watches it is written down here rather than assumed.

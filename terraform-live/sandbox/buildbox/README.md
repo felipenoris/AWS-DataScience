@@ -9,7 +9,7 @@ leaves as an image in ECR or does not leave at all.
 The images this estate runs on are **`linux/amd64`** — SageMaker instance types are x86 and the
 `sagemaker-distribution` base publishes `-cpu`/`-gpu` tags with **no `arm64` variant at all**
 (measured 2026-08-21 from the public registry's tag list). The laptop this repository is driven
-from is `arm64` and has no docker installed. So [Stage 6 step 5.0](../../../docs/plan/stages/stage-06-unified-studio.md)'s
+from is `arm64` and has no docker installed. So [Stage 6 step 5.0](../../../docs/plan/stages/stage-06a-unified-studio.md)'s
 hand build moves to a machine of the right architecture, inside the perimeter, that exists only
 while a build is running. The build code itself is [`images/`](../../../images/README.md).
 

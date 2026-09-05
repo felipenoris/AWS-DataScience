@@ -994,6 +994,27 @@ lesson can be *recognised* without opening this file; the reasoning that makes e
    client off the resolver** (open question 23). A per-origin browser grant is the interim, and it is not
    infrastructure: no gate asserts it, no state file holds it, and it dies with a browser profile.
 
+44. **What peering shares is an address, never a path — and a topology drawn as boxes and lines hides
+    exactly that.** *(2026-09-05, while the single-egress hub was being designed.)* The request was
+    ordinary and, drawn on a whiteboard, correct: one internet gateway in a hub VPC, one NAT gateway
+    behind it, every other VPC reaching the internet "through" it. AWS forbids all three legs of that
+    sentence in one paragraph — a peered VPC cannot use its neighbour's internet gateway, NAT device or
+    gateway endpoint, peering is not transitive, and a peering route may carry only the peer's CIDR — so
+    the drawing describes a path that silently blackholes rather than erroring. **The general form: a
+    connectivity primitive advertises what it joins, not what it forwards, and every "shared" gateway
+    behind it is an assumption nobody wrote down.** The tell is a design in which one VPC's resource
+    appears in another VPC's route table as a *destination of last resort*: `0.0.0.0/0` toward a peering,
+    a shared NAT, a gateway endpoint "for the estate". What survives the constraint is anything with an
+    **address** — an instance, an interface endpoint, a load balancer — which is why the single egress
+    became an explicit proxy and every spoke lost its default route. Two second-order effects arrived with
+    it, and both are worth expecting rather than discovering: the constraint **enforces** an isolation
+    rule for free (two VPCs with no direct peering have no path, whatever the hub does), and it moves the
+    whole filtering problem up a layer, where a proxy that will happily `CONNECT` to a private address is
+    a bridge between the very VPCs the topology was keeping apart. **The repository already held the
+    rule** — Stage 3 step 6.5 wrote it down in 2026-08-16 and `NT-4` measures it — which is the part that
+    should sting: it was known, it was tested, and it was still designed around, because it lives in a
+    stage file nobody re-opens while drawing a new topology.
+
 ---
 
 *Plan core: [GENERAL_PLAN.md](../GENERAL_PLAN.md) · Decisions: [docs/plan/decisions/INDEX.md](decisions/INDEX.md) · Stages: [docs/plan/stages/INDEX.md](stages/INDEX.md)*

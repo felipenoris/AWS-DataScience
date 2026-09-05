@@ -2,6 +2,18 @@
 
 | | |
 |---|---|
+> **THE HOME MOVES AT [STAGE 6c](../stages/stage-06c-networking-hub.md) — 2026-09-05.** Everything below
+> is the procedure for the host **as it stands in Sandbox**, and it stays correct until that stage applies.
+> What changes then, in one list, so that no procedure below is followed against the wrong account:
+> the host moves to `VPC-Networking` in **Production** (profile `awsds-infra-prod`); its **Elastic IP is
+> transferred**, so §C0's `Endpoint` line does **not** change and only `DNS =` does (to the hub's `.2`);
+> the host-key secret's *value* is copied by hand into a new Production secret, so §K's recovery path
+> gains one step and loses none; the host stops being a NAT instance (`vpc_nat_cidrs` goes, with the
+> buildbox's move) and starts **dropping every tunnel packet not bound for an RFC1918 address**, which is
+> what makes the proxy the only way out; and a **second** `[D]` host — Squid — appears beside it, whose
+> address becomes the anchor of `DenyControlPlaneOffVpn`. §C gains a fourth check: `curl https://1.1.1.1`
+> from the tunnel must time out.
+
 | **Scope** | The whole VPN surface, in three parts. **Part S — the system**: what the pieces are, which slice owns each, how a packet actually travels, what the VPN is *not* (the NAT), how the host is started and stopped, and how its size is switched (§S6). **Part C — the client**: one enrolled device's side of the tunnel — writing its `.conf`, bringing it up, proving it, taking it down. **Part K — the server**: the shell on the host (§K0a), the two kinds of key pair, and the four procedures — recovery, revocation, host rotation, device rotation (the last also being how a device is *added*) |
 | **Operator** | Parts S and K: the **infrastructure user**, profile `awsds-infra-sandbox-1` (`InfrastructureAccess` in `Sandbox`) — plus `awsds-infra-identity` for §K6's fragment toggles. Part C: the **device's owner, on the device** — no AWS profile and no SSO session: nothing in that part calls an AWS API |
 | **The two rules** | **Loss is answered by recovery, never by rotation** (Part K): a new host key forces an instance replacement and breaks every client config at once — each one pins the server's public key. Rotate for *compromise* (§K3), recover for *loss* (§K1); the mechanised violation is Secrets Manager's own rotation feature, off forever (§K5, `VP-9`). **Full tunnel, never split** (Part C): `AllowedIPs = 0.0.0.0/0, ::/0`, both families — `DenyControlPlaneOffVpn`'s `aws:SourceIp` can only match traffic that actually exits through the Elastic IP, so a split tunnel is a lockout with the tunnel up |

@@ -10,6 +10,27 @@
 
 ---
 
+## The topology this file describes is scheduled to be replaced — read this first
+
+**Everything below is *as built* on 2026-08-26 and stays true until [Stage 6c](plan/stages/stage-06c-networking-hub.md)
+applies.** That stage, under [D38](plan/decisions/D38-single-egress-hub.md), changes six of the facts this
+file is organised around, and the change is written here rather than folded in, because a network fact is
+**re-measured, never re-imagined** (`CLAUDE.md`'s upkeep rule). What will move:
+
+| Today | After 6c |
+|---|---|
+| Three VPCs, one per account | **Five**: Sandbox, Staging (the renamed Development, keeping 10.50.0.0/16), and **three in Production** — `VPC-SharedServices` (the existing 10.30.0.0/16), `VPC-Networking` (10.31.0.0/16) and `VPC-Workloads` (10.32.0.0/16) |
+| A NAT gateway per Interactive account, `[E]`, the private tier's default route | **None.** No spoke has a default route at all; the internet is reached by addressing the Squid proxy in `VPC-Networking` — peering shares an address, never a path (Lesson 44) |
+| The WireGuard host in Sandbox's public tier, also a NAT instance, with EIP `52.89.212.1` | Two `[D]` hosts in `VPC-Networking`'s public tier: WireGuard (**the same address, transferred**) forwarding tunnel packets to RFC1918 destinations only, and Squid with its own `[P]` EIP |
+| Two peerings | **Five**, hub-and-spoke, with `Sandbox ↔ VPC-SharedServices` as the one spoke-to-spoke pair |
+| `sandbox.internal`, `prod.internal`, `pages.internal` | The `awsds.internal` family (apex + three children) plus `awsds-pages.internal`, with the association matrix of INT-22 |
+| The DNS Firewall as the internet filter, and the client resolving through Sandbox | The filter moves into the proxy's source-scoped ACLs; the firewall keeps an intranet-only list and closes the recursive resolver; **the client resolves through `VPC-Networking`, which carries no compute-plane endpoint** — the structural repair of Lessons 40-43 |
+
+**Until that apply, none of the above is in this document's tables**, and `./scripts/check-network-doc.py`
+measures the tree as it stands.
+
+---
+
 ## 0. Four rules for reading the picture
 
 1. **Layers decide what exists right now.** `[P]` persistent — the VPC, subnets, route tables, gateway endpoints, the Elastic IP, the private zones, the security groups: always there. `[D]` dormant — the WireGuard host: stopped between sessions, same address. `[E]` ephemeral — the NAT gateway, the interface endpoints, the DNS Firewall, the private tier's default route, the buildbox and its route, the probes: **destroyed at the end of a session and rebuilt with new ids** (D11). A diagram below that shows an `[E]` element shows a *session*.

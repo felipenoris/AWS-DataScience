@@ -23,6 +23,15 @@ not an authority — `make slices` prints the live table, and a slice that reach
 fails `make check`.
 
 **Five `bootstrap/` slices, and they are one slice copied five times — Stage 2 steps 1, 2 and 3, 2026-08-15.**
+
+**RE-SCOPED 2026-09-05.** `development/` becomes `staging/` on a new state bucket
+([Stage 6b](../docs/plan/stages/stage-06b-development-becomes-staging.md), Recipe E), losing
+`sagemaker/`, `data/` and `egress/` on the way; `production/` grows `networking/`, `workloads/`, `vpn/`
+and `proxy/`, and its existing `foundation/` VPC becomes **VPC-SharedServices**
+([Stage 6c](../docs/plan/stages/stage-06c-networking-hub.md)). **The authoritative slice-by-slice layout
+is `docs/plan/conventions.md` §6**, which was rewritten in the same sitting; this file describes the tree
+that is on disk today.
+
 `sandbox/`, `development/`, `data-governance/`, `production/` and `identity/` each carry the same
 `main.tf`, `variables.tf`, `outputs.tf`, `providers.tf`, `versions.tf` and `.terraform.lock.hcl` — **the state
 bucket and the KMS key that encrypts it, and nothing else**. **All five have applied and hold their own

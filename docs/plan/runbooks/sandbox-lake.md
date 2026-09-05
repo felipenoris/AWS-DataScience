@@ -1,5 +1,12 @@
 # Runbook — the sandbox lake
 
+> **Re-measured, not re-designed, at [Stage 6c](../stages/stage-06c-networking-hub.md) — 2026-09-05.**
+> The bucket, the grants, the access role and every procedure below are unchanged. What moves is the
+> *address* the laptop presents: after the hub is built, `s3control:GetDataAccess` leaves through the
+> Squid proxy and the S3 calls through `VPC-Networking`'s gateway endpoint, so §T's laptop half and
+> `s3-read-write` are re-run in that stage's pass 6 as the proof that the VPN-only conditions were
+> re-keyed completely.
+
 | | |
 |---|---|
 | **Scope** | The fourth Sandbox bucket, `awsds-sandbox-lake` — permanent per-SSO-group artifacts — and every recurring act its life needs: the prefix contract, wiring a SageMaker Unified Studio project to a prefix (the portal's **S3 connection**), the two read/write tests, and revocation when a project dies. The build itself is [Stage 16](../stages/stage-16-sandbox-lake.md)'s, once; this file is what runs *per project*, forever |

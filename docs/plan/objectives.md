@@ -36,7 +36,7 @@ The goal is to achieve the following:
   - use of sagemaker's workflows and Visual ETL feature built in SageMaker Unified Studio.
   - use of IA models built in SageMaker Unified Studio
 
-- The data scientist can promote Artifacts built in SageMaker (dev-env, ML models, workflows) to production (Sandbox -> Development -> Staging -> Production), making use of CI/CD pipelines (see below).
+- The data scientist can promote Artifacts built in SageMaker (dev-env, ML models, workflows) to production (Sandbox -> Staging -> Production), making use of CI/CD pipelines (see below).
 
 - Protect data against leakage (DLP), mainly targeting SageMaker. There is no single AWS product that does
   this, so the requirement is broken into the four problems it has to solve:
