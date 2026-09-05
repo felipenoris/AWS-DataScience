@@ -310,6 +310,22 @@ proxy's allow-list the single filter it is supposed to be.
   cannot happen now — and gains `ec2`, `ec2messages`, `secretsmanager`, `ssm`, `ssmmessages` and `q`.
   Measure rather than copy: six of those names have never existed here, and `codewhisperer` is
   `us-east-1`-only.
+- **Closing the gap between the required table and the ENABLED blueprints — Claude writes, user decides
+  the trade:** the required list is only half of what the network-isolation page asks for. Its **optional**
+  table is keyed to *"projects that include blueprints using the services listed below"*, and this estate
+  enables two of them in category 1: the six `AmazonBedrock*` blueprints (`bedrock-agent`,
+  `bedrock-agent-runtime`, `bedrock-runtime`) and `EmrServerless` (`emr-serverless`,
+  `emr-serverless-services.livy`, `emr-serverless-services.sessions`, plus the dashboard and
+  `elasticmapreduce` names). Under design A the NAT covered this silently; **with no default route, a
+  project that uses either blueprint has no path at all**. That is roughly **+0.10/h** while those
+  endpoints are up — real money against D12 — so it is a decision rather than a list edit, and the three
+  shapes are: (a) add them and let them come up with the rest of `egress/`; (b) add them and gate them on
+  a per-session flag, since a Bedrock or Spark session is not every session; (c) move the blueprints out
+  of category 1, which is the honest answer if nobody uses them — an enabled blueprint whose endpoints are
+  missing is a feature that exists in the portal and fails on first use. **Recommended: (c) for `EmrServerless`
+  until a workload asks for Spark, (b) for Bedrock.** Whatever is chosen, the enabled-blueprint list and the
+  endpoint list move in the same commit; `US-3` reads the first and `./aws/egress.py` the second, and
+  nothing today compares them — a check that does is this step's other deliverable.
 - **Deciding the `sagemaker.runtime` AZ question, which D9's single-AZ rule collides with — Claude
   reads, user decides:** the SageMaker AI guide is explicit — *"you must ensure that the VPC interface
   endpoint is activated in the Availability Zone of your client in order for private DNS resolution to

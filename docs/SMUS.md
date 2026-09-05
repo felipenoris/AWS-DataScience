@@ -703,6 +703,15 @@ reached *from*, not where it runs — open question 12, Stage 6 step 1.6).
 - One required entry cannot be satisfied in-Region: the `q` row pairs with
   `com.amazonaws.us-east-1.codewhisperer`, *available only in `us-east-1`* — a `us-west-2` VPC
   cannot reach it through an interface endpoint at all (Stage 6 step 4.2 records what that breaks).
+- **The page's OPTIONAL table is not optional once a blueprint is enabled**, and this is the half that
+  design A hid. It is introduced with *"Create these Amazon VPC endpoints if you plan to deploy Amazon
+  SageMaker Unified Studio projects that include blueprints using the services listed below"* — so it is
+  keyed to the **enabled blueprint list**, not to taste. This estate's category 1 contains the six
+  `AmazonBedrock*` blueprints and `EmrServerless`, whose rows are `bedrock-agent`, `bedrock-agent-runtime`,
+  `bedrock-runtime` and the `emr-serverless`/`elasticmapreduce` family. With a NAT their absence was
+  invisible; with **no default route** a project using either blueprint fails on first use. **The rule to
+  carry: the enabled-blueprint list and the endpoint list are one decision** — enabling a blueprint has an
+  hourly price that is not the blueprint's own (Stage 6c step 5).
 - **`sagemaker.runtime` carries an AZ affinity the rest of the list does not** (SageMaker AI developer
   guide, read 2026-09-05): *"you must ensure that the VPC interface endpoint is activated in the
   Availability Zone of your client in order for private DNS resolution to work. Otherwise, you may see DNS
