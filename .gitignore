@@ -1,6 +1,7 @@
 secrets
 **/.DS_Store
 aws/output/
+terraform-reference
 
 # ---------------------------------------------------------------- Python (uv)
 #
