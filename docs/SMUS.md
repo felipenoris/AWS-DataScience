@@ -688,6 +688,18 @@ reached *from*, not where it runs — open question 12, Stage 6 step 1.6).
   the institutional HTTP/HTTPS proxy once Stage 11 builds it (today the plain masquerade; nothing
   monitored is built) — never through the compute VPC's — what the compute
   VPC owes the portal is only that its endpoints not shadow the client's DNS.
+- **The required table's own framing carries a premise this design does not meet, and reading it without
+  the premise is what cost the estate a working portal in August (Lesson 41).** The page introduces the
+  list with *"The Amazon SageMaker Unified Studio portal calls the following AWS services"*, and its
+  `DenyUserAccessFromUnauthorizedVPCs` example is written for *"portal calls to AWS service APIs from
+  outside the allowed Amazon VPC"* — so AWS is describing an estate in which **the user's browser resolves
+  and routes through the same VPC as the compute**. Ours does not, by decision: the client plane resolves
+  through `VPC-Networking` and leaves through the institutional proxy (D38), while the compute plane keeps
+  its own endpoints. The consequence is practical rather than academic: **the compute needs only the
+  subset of that list that its own calls use**, and chasing the rest buys nothing — every name in the
+  page's *public internet* tables is the browser's, which the page states three times
+  (*"These endpoints are used by the Amazon SageMaker Unified Studio portal"*, and once
+  *"...by the AWS console"*).
 - One required entry cannot be satisfied in-Region: the `q` row pairs with
   `com.amazonaws.us-east-1.codewhisperer`, *available only in `us-east-1`* — a `us-west-2` VPC
   cannot reach it through an interface endpoint at all (Stage 6 step 4.2 records what that breaks).

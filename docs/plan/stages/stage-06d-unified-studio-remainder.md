@@ -72,6 +72,13 @@ will actually have.
 - **Measuring the SMUS components — Claude:** whether the DataZone agent, the S3 Access Grants plugin and
   Amazon Q honour `HTTP_PROXY` is **undocumented**. The reading is what settles it; anything that does not
   is either given an endpoint or written down as an accepted loss.
+- **Deciding the one compute-side name with no private path — user, on Claude's reading:** Amazon Q
+  Developer's second endpoint is `com.amazonaws.us-east-1.codewhisperer`, *available only in `us-east-1`*,
+  and a `us-west-2` VPC cannot consume it. So the in-space Q features either cross the **proxy** (add the
+  name to the Sandbox allow-list, which is an AWS-owned destination and a small widening) or they do not
+  work. **Recommended: leave it out of the list** until somebody asks for the feature — an allow-list entry
+  nobody uses is reach nobody needed. Record whichever way it goes; do not let it be discovered as a
+  breakage.
 - **Answering the two Stage 3 questions — Claude:** whether anything misses the AL2023 mirror path, and
   whether `lakeformation` leaves the core endpoint list (verification (ix)).
 
