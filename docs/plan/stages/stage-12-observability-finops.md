@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Status** | not started |
+| **Status** | not started **Amended 2026-09-05:** two new lines to read against the first real invoice — the **DNS Firewall's per-query charge** in each compute VPC, now that its allow-list is intranet-only and its job is closing DNS exfiltration rather than filtering the internet (if the query bill outweighs what it catches, retiring it is a decision this stage's reading informs), and the **peering bytes**, which the hub makes a real line for the first time. |
 | **Prerequisites** | any stage that created resources. |
 | **Consumes** | — |
 | **Proves** | — |
