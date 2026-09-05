@@ -2,6 +2,8 @@
 
 **Status:** Decided: **2 for subnets, 1 for metered endpoints**
 
+**AMENDED 2026-09-05:** the rule is unchanged and now applies to five VPCs rather than three — two AZs of free subnet plumbing everywhere, one AZ for metered interface endpoints, and both hub hosts plus every endpoint set pinned to `usw2-az1` so peering traffic stays same-AZ and free ([D38](D38-single-egress-hub.md)).
+
 **In one line:** Two AZs for free subnet plumbing, one AZ for metered interface endpoints.
 
 **Related decisions:** —

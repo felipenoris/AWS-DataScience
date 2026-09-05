@@ -2,11 +2,13 @@
 
 **Status:** Decided (2026-08-09): **`Sandbox` is one *per business unit*; every other account in the map, `Development` included, is structural and stays singular. The multiplied one gets an automated, Terraform-driven vending flow ([Stage 14](../stages/stage-14-sandbox-vending.md)); the structural ones keep the console flow of D34. N is 1 today**
 
+**AMENDED 2026-09-05:** the chain reads **N Sandboxes → one Staging → one Production**, and the VPN bullet this file left open is **settled in the direction it named**: a designated hub, `VPC-Networking` in Production, so the tunnel does not multiply with the Sandboxes ([D38](D38-single-egress-hub.md)).
+
 **In one line:** The account population has a cardinality property the map did not have, and its boundary is exactly D21's graduation boundary — experimentation multiplies per business unit, the engineering chain that follows it does not.
 
 **Related decisions:** [D17](D17-interactive-vs-runtime.md), [D18](D18-data-scientist-access.md), [D20](D20-staging-account.md), [D21](D21-development-account.md), [D23](D23-ou-structure.md), [D24](D24-shared-filesystem.md), [D26](D26-unified-studio.md), [D34](D34-account-vending.md)
 
-**Referenced by stages:** [Stage 1b](../stages/stage-01b-identity-and-controls.md), [Stage 1c](../stages/stage-01c-preventive-policies.md), [Stage 1d](../stages/stage-01d-org-wide-enablement.md), [Stage 2](../stages/stage-02-terraform-foundation.md), [Stage 3](../stages/stage-03-networking.md), [Stage 4](../stages/stage-04-vpn.md), [Stage 6](../stages/stage-06-unified-studio.md), [Stage 14](../stages/stage-14-sandbox-vending.md)
+**Referenced by stages:** [Stage 1b](../stages/stage-01b-identity-and-controls.md), [Stage 1c](../stages/stage-01c-preventive-policies.md), [Stage 1d](../stages/stage-01d-org-wide-enablement.md), [Stage 2](../stages/stage-02-terraform-foundation.md), [Stage 3](../stages/stage-03-networking.md), [Stage 4](../stages/stage-04-vpn.md), [Stage 6](../stages/stage-06a-unified-studio.md), [Stage 14](../stages/stage-14-sandbox-vending.md)
 
 ---
 

@@ -2,6 +2,8 @@
 
 **Status:** Decided (2026-08-08): **four OUs, each defined by the policy set it carries: Security, Interactive, Data, Workloads. Revised the same day by D29: a fifth, `Policy Test`, holding the throwaway `Policy Canary` account. Revised again on 2026-08-09 against what execution produced: a sixth, `Identity`, because Control Tower would not vend into the foundational `Security` OU, and a nested `Sandboxes` under `Interactive`**
 
+**AMENDED 2026-09-05:** `Interactive` keeps its nested `Sandboxes` child and now has nothing else beneath it. The collapse its own one-file-folder test invites is **declined**: collapsing moves SCP attachments *and* Control Tower enabled controls, and the deny measured inside a Sandbox account names `Interactive`'s document (D37). Revisit when the quota lapses and Stage 14 vends a second unit.
+
 **In one line:** Six OUs plus one nested, each named for the policy set it carries or for the class of account it groups; the account isolates, the OU attaches policy.
 
 **Related decisions:** [D10](D10-identity-center-delegation.md), [D20](D20-staging-account.md), [D26](D26-unified-studio.md), [D27](D27-catalog-maintenance.md), [D29](D29-policy-canary.md), [D35](D35-sandbox-cardinality.md)

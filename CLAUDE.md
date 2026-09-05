@@ -179,7 +179,8 @@ its `Consumes` row lists.
 | "What would an institution do?" | [`docs/plan/institutional-delta.md`](docs/plan/institutional-delta.md) — so a lab compromise is not learned as a pattern |
 | Root is needed, or its alarm chain is being changed | [`docs/plan/runbooks/break-glass.md`](docs/plan/runbooks/break-glass.md) |
 | **Anything VPN** — what the pieces are and what the NAT is *not* part of, starting/stopping the host, connecting a device, a tunnel that will not come up, a key event (loss, revocation, rotation), or a shell on the VPN host | [`docs/plan/runbooks/vpn.md`](docs/plan/runbooks/vpn.md) — one runbook, three parts (unified 2026-08-19). **§S** the system: components, the measured topology, host start/stop (`InsufficientInstanceCapacity` is retried, never redesigned around). **§C** the client, no AWS call in it: the five config values, the three checks that prove three different claims, the silent-by-design failure modes. **§K** the keys — loss is recovery from the `[P]` secret, never rotation — and **§K0a is the SSM session** and where `--target` comes from |
-| **The NETWORK as built** — VPCs, subnets, routes, peerings, egress, VPN, DNS, security groups, every internal address; **how a SageMaker app sees the internet, and what can reach one** | [`docs/NETWORK.md`](docs/NETWORK.md) — code plus measurement, with diagrams. The runbooks stay the procedures, `AWS_STATE.md` stays what is *expected* |
+| **Anything EGRESS, PROXY or the hub topology** — where the internet is reached, which VPC a thing belongs in, why there is no NAT gateway | [`docs/plan/decisions/D38-single-egress-hub.md`](docs/plan/decisions/D38-single-egress-hub.md) (the decision, closing OQ 23) + [`docs/plan/stages/stage-06c-networking-hub.md`](docs/plan/stages/stage-06c-networking-hub.md) (the build). **Peering shares an address, never a path** (Lesson 44): no spoke has a default route, the single egress is an **explicit proxy**, and the hub carries no interface endpoint with private DNS |
+| **The NETWORK as built** — VPCs, subnets, routes, peerings, egress, VPN, DNS, security groups, every internal address; **how a SageMaker app sees the internet, and what can reach one** | [`docs/NETWORK.md`](docs/NETWORK.md) — code plus measurement, with diagrams. **Its first section now names the six facts Stage 6c replaces**; until that apply the tables below it are current, and they are **re-measured** then, never edited ahead. The runbooks stay the procedures, `AWS_STATE.md` stays what is *expected* |
 | **Anything BUILDBOX** — the `[E]` `amd64` build host of St.6 5.0, its route, or why the VPN host is also a NAT instance | [`docs/plan/runbooks/buildbox.md`](docs/plan/runbooks/buildbox.md) — seven short sections: what it is, why it exists (**the images are `amd64`, the laptop is `arm64`**), the components (**the route is the reach; `vpc_nat_cidrs` is the capability**), `up`, **§S space** (the 64 GiB root against two images that share layers — prune before recreating), **§P push** (**build and push are ONE session** — the volume dies with the host; the identity arrives as an ECR **token**, never as a permission), `down`. It **must not coexist with `sandbox/probes/`** and a **stopped VPN host makes its route a blackhole, not an error** |
 | **Anything SANDBOX LAKE** — the ungoverned fourth Sandbox bucket (`awsds-sandbox-lake`, St.16), a per-group prefix, wiring or unwiring a project's S3 connection, either read/write test, or **code that lists/reads/writes it** | [`docs/plan/runbooks/sandbox-lake.md`](docs/plan/runbooks/sandbox-lake.md) — six short sections, **exercised 2026-08-26** (except §R's trust half — a real project's death): what it is and is not (**not the governed lake**), **§G** the prefix contract, **§W** wire a project (a grant + a trust entry + the portal form), **§T** the two tests (the in-image direct-refusal test is UNRUNNABLE — the laptop is that control's home), **§P** the Python examples (notebook = plain boto3, the plugin vends; laptop = explicit vend, the only door), **§R** revoke — an orphaned grant is `SL-4`'s finding |
 | **A policy is about to be attached, or was amended** | [`docs/plan/runbooks/scp-battery.md`](docs/plan/runbooks/scp-battery.md) — the probes, and the two distinguishable outcomes of each. **Running them is `./aws/probes/scp-battery.py`** ([`aws/probes/README.md`](aws/probes/README.md)); amending the ceiling means editing `probes.py` |
@@ -191,271 +192,78 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
 
 ### Current position
 
-- **Landing zone closed — Stages 0-1d DONE (2026-08-15)**, except the `Staging` vend: held on the
-  account cap, open ticket (`aws/cloudshell/management-quotas.sh` re-asks). Battery **100** (4 `note`).
-- **Stage 2 DONE (2026-08-16), all nine verifications answered.** A state bucket per Terraform-managed
-  account (`prod` carries D36's 2nd key); `identity/sso/` and `identity/org-policies/` (**adopted, none
-  created**). Delegation narrowed to `InfrastructureAccess`, hand-applied, **out of Terraform**
-  (`INV-15`). D11: `scripts/tfhygiene/layers.py` + `make up`/`down`/`status`/`slices`; the
-  **`ENV` list is `slices.py envs` alone** — `make help` and the missing-ENV guard read it (2026-08-23).
-- **Gates, no CI:** `make check` (offline), `make check-ou` (session), `make check-docs` — red on
-  pre-St.2 prose, outside the commit gate. `check-identifiers.py` in both: **no account id or e-mail in a
-  tracked file**; redact to `<The Account Name>`/`<that user's role>`, declared once per entry.
-- **Stage 3 DONE 2026-08-16 — applied, measured, torn down; 0.0000 USD/h** (detail: its Status row).
-  `egress_mode=A`; **a NAT does not bypass the S3 allow-list**; INT-05 names the gateway endpoints, never
-  `egress/` ids. CIDR/`zone_ids`/peers: `scripts/tfhygiene/backend.py`.
-- **NFS/EFS requirement withdrawn (2026-08-17; user edit to `objectives.md`, D24 withdrawn):** no `nfs/`
-  slice anywhere, `DL-10` measures EFS *absence*. Detail: `docs/plan/history.md`.
-- **Stage 4 DONE 2026-08-18 — closed by the GuardDuty split**; **Stage 15** created the same day carries
-  the whole GuardDuty scope, prepared (`aws/guardduty.py`, `GD-1`–`GD-3`).
-- **The VPN host is amd64 and back at BASELINE (`t3.nano`, 8 GiB gp3, 2026-08-21; `wireguard-v0.3.0`, D4
-  amended).** `VP-1`–`VP-9` pass, 0 FAILED, no cost table understates anything. Two standing facts: a shape
-  change is a **REPLACEMENT** — the `[P]` EIP and host key survive, so no client `.conf` moves — and **the
-  DISK comes down only by `-replace`**, because EBS refuses a shrinking `ModifyVolume` and strands the
-  slice one `~ volume_size` short of its own code. Detail: `AWS_STATE.md`'s VPN row, `vpn.md` §S6. The
-  probe slices stay Graviton — not the VPN.
-- **THE CDN WALL WAS AN API DEFAULT, NOT THE SERVICE (2026-08-23, same day 4.3 measured it; Lesson 30 on
-  a default, `EXC-05` CLOSED, NOT APPLIED YET).** Chain evaluation is the **per-rule**
-  `FirewallDomainRedirectionAction` — the module had never set it, so it took
-  `INSPECT_REDIRECTION_DOMAIN`. **`v0.4.0` makes it a module INPUT (default INSPECT) and both Interactive
-  slices pass `TRUST_REDIRECTION_DOMAIN`** — per slice, beside the list, like `v0.3.0` did to the list:
-  inspect the QUERIED name, trust the chain. **It does not open the CDN** — the trust is ONE query
-  transaction, so a redirection target asked for directly matches nothing and is BLOCKED. So
-  pip/cargo/apt/ECR-Public **do** have a path under A. **12 hop entries off Sandbox (10 distinct), 1 off
-  Development**: a listed hop is now a WIDENING, and `DN-2` inverted to say so. **Two bypasses stay open,
-  neither DNS-closable** — a raw address, and a query to `1.1.1.1`/DoH the VPC resolver never sees. The L7
-  answers are `architecture.md` §4.3a, **not built**.
-- **Stage 5 DONE, every pass (2026-08-18/20) — the governed lake exists, is granted, shared and
-  consumed.** `docs/GOVERNANCE.md` is the one copy of the ontology + grant rules; **one data CMK per
-  account** (`alias/awsds-<env>-data`). **Producer:** 5 `awsds-data-*` buckets, `raw`+`curated`
-  registered, 2 LF-Tag keys, `curated.sample_trades` (12 synthetic rows), 2 **never-run** crawlers, 2 TBAC
-  shares (**INT-11 closed**). **Consumer, per account:** own CMK, own `DataLakeSettings`, 2 links, 4
-  re-grants — the derived bucket and the enforced workgroup **DESTROYED 2026-08-26/27** (D19 revised).
-  **Persona:** `DataScientistAccess` is **7 statements** since that day, six of the query/derived family
-  gone — no `athena:`, no derived, no scratch. **Full inventory: `AWS_STATE.md`'s lake row + the two
-  slice READMEs, not here.** Register **13 rows / 24 triples**.
-- **Pass 6 RAN 2026-08-20 — Stage 5 has no unrun pass left.** Security Hub **CSPM**, never the **v2**
-  beside it (both on hands the Config recorder to a service-linked one, so `DL-11` fails on v2's
-  **ARRIVAL**); org-wide by **central configuration on the root** (`awsds-fsbp-only`), never auto-enable;
-  Management **`SELF_MANAGED`**, so **nothing records it before St.12** (this also killed St.1d decision
-  8's trigger). **16/18 `SUCCESS`** — the 2 left are the suspended `Sandbox` **and the `ROOT` above it**,
-  so *"every row `SUCCESS`"* is unavailable here (`EXC-01`). `INV-09` → **nine/four**. **Left: 13.3's
-  triage**, and a disable there turns the policy custom.
-- **Three things Stage 5 leaves standing — read the owner before calling any of them a gap:**
-  (1) **no principal can start the crawlers** (trust admits `glue.amazonaws.com` alone, `Schedule` null;
-  Lesson 22; **OQ 19**), **so D18/D25 ingestion is broken at ONE end**: files land and nothing catalogues
-  them. (2) **`EXC-02`**, one uncollectable object in the drop-box — do not grant a delete to tidy it.
-  (3) since 4e, **no Athena in Data Governance at all**, `InfrastructureAccess` included.
-- **A denied call does not always name the policy** (Athena, 2026-08-20/21): attribution moves to a
-  **CONTRAST PROBE** — the same call from an OU the deny misses. `probes.py` 93→96→**100**; 4 rows read
-  `note` forever by design (`EXC-03`).
-- **A cached SSO token is keyed by `sso-session` name, NEVER by user** (2026-08-20): the wrong identity
-  fills the right one's slot and `aws sso login` then succeeds doing nothing — **remedy is `aws sso
-  logout` + portal sign-out**; wording is `ForbiddenException`/`GetRoleCredentials`. **That same wording
-  was a real ceiling breach on 2026-08-14**, so the battery separates them by asking **IdC what the token
-  is assigned** (STS never touches that path). Never suppress it by text alone — Lesson 24, in reverse.
-- **Stage 6 OPEN — passes 0 THROUGH 2 APPLIED 2026-08-21, three sittings; the stage file's §"What ran" is the one record.**
-  Four new slices (24 total): `production/registry/`, `{sandbox,development}/sagemaker/`,
-  `data-governance/governance/` (**`awsds-studio`, V2, `AVAILABLE`**, domain `dzd-d8yrvx1ko7im6o`), plus
-  step 3's deny pair in **all six** persona sets and **1.6's `DenyAthenaSparkStartSession`**.
-  **`pki/` is St.7 pass 1** (D36 §3 amended, D36 off the Consumes row), so **5.0's image carries NO CA
-  root** — it takes one at St.7 2.6.
-- **St.6's two pre-apply measurements are clean (2026-08-21).** Verification (i) answered both ways —
-  domain created from `Data`; the canary replay hit `awsds-org-scp-baseline`'s **explicit SCP deny** —
-  so INT-12's fallback is closed, and the 2026-08-20 wall was the **missing `--service-role`** (Lesson
-  24). Battery `--phase ou` **25/0/7**; `StartSession` denied in dev+sandbox, allowed in prod,
-  `StartQueryExecution` intact (D13) — and `StartSession` **authorizes before it validates**.
-- **1.3 DONE 2026-08-21 — the association AUTO-ACCEPTS: no invitation, no 7-day clock** (org-scoped
-  RAM share). Permission: `…DatazoneDomainExtendedServiceAccess` (152 actions, the +41 = the V2
-  workbench) — a **ceiling**, not access. `US-2` reads the owner from the **ARN** (it first FAILED by
-  working — visibility is not ownership).
-- **1.4/1.5 DONE 2026-08-21: 11 blueprint configurations per member (all carrying the D13 boundary),
-  two project profiles** (`experimentation`→Sandbox, `engineering`→Development; `Tooling` sole base,
-  `ON_CREATE`; five locked params read back non-editable; **TIP `false` — decision 2 DELIVERED**);
-  battery **0 FAILED**. **The `awscc` configuration takes the blueprint NAME, the `aws` resource the id**
-  (Lesson 32; the first apply failed 12/12 — `v0.2.2` fixes it; **`v0.2.1` is a STILLBORN tag nothing may
-  reference**). **The boundary field is WRITE-ONLY — drift never surfaces in a plan; `US-8` is the
-  sentinel** (verification v). **`ToolingLite` is a BASE variant** (the service demands `ON_CREATE` when
-  it is bundled) — **re-cut to category 3 by the user** (`v0.2.3`, 12→11). `DataLakeSettings` untouched
-  by enablement (xiv's seat question is subscription-time). **The member-before-`governance/` order rule
-  survives for the next member (St.14).**
-- **THE ROSTER IS MEASURED, THE PLAN'S NAMES WERE NOT (2026-08-21; Lesson 38):** the API says
-  `EmrServerless`/`EmrOnEc2`/`QuickSight`, and **`AmazonBedrockGenerativeAI` is a CONSOLE GROUPING
-  with no API identifier** — 23 by API, 13 in the console. **Decision 5 closed 12/5/6, re-cut SAME DAY
-  to 11/5/7** (`ToolingLite` → cat 3, finding 9). **The Bedrock family is SPLIT** (`KnowledgeBase` cat
-  2 — its vector store bills while it exists); **`LakehouseAdmin` is cat 2** (an account-wide
-  ingest-and-catalog TEMPLATE, not LF's *data lake administrator*). The list lives in **three** places
-  (`locals.tf`, the module default, `US-3`) — one commit moves all three, a module TAG BUMP each time.
-- **1.7 DONE AND FULLY ATTRIBUTED 2026-08-22 — INT-16 ANSWERED, fallback (ii): the permission-set
-  `aws:SourceIp` deny does NOT reach the portal.** It opened with the tunnel down and enumerated both
-  profiles for a `DataScientistAccess` identity; identical with it up (EIP confirmed). **The
-  same-sitting console contrast closed the attribution**: off VPN the console refused
-  `logs:DescribeLogGroups` **`with an explicit deny in an identity-based policy`** — no SCP or boundary
-  produces that wording and no other deny those six documents carry reaches `logs:` — clean with the
-  tunnel up. **The message named the persona role and `us-west-2` itself**, so identity and the
-  wrong-Region trap were ruled out from inside the reading, not from the operator's report. **VPN-only
-  APIs and console, not a VPN-only portal**; `README.md` now carries the qualification. **The off-VPN reading
-  (same day, evening) delivered the choice's missing input in the STRONG form: all three rungs —
-  create, space, JupyterLab — pass IDENTICALLY on and off VPN.** `VpcOnly` governs the app's ENIs and
-  egress, never the user's ingress (the Studio front-end under the portal session). `README.md` item 3
-  states the full reach; **the ripe decision — the user's — is fallback (i)
-  (`DenyUserAccessFromUnauthorizedVPCs` on the domain execution role, re-keyed on the EIP, AWS's
-  `*:user-*` third condition kept) versus recorded acceptance; recommendation on record: (i).**
-- **CREATING IS AUTHORIZED IN TWO LAYERS, AND BOTH STARTED AT ZERO (measured 2026-08-22, one per
-  sitting).** Layer 1, the PROFILE: `CREATE_PROJECT_FROM_PROJECT_PROFILE` on the root domain unit —
-  governance `grants.tf` **APPLIED 2026-08-22**: `experimentation`→`sso-group-data-scientists`
-  (standing), `engineering`→`sso-group-deployment-managers` (**D21's open half**; removal is the
-  expected outcome if it closes). Layer 2, the BLUEPRINT: the first real project then got past
-  `CreateProject` and **rolled back on `Caller is not authorized to create environment using
-  blueprintId`** — `CREATE_ENVIRONMENT_FROM_BLUEPRINT` sits on each blueprint CONFIGURATION, and all
-  22 had ZERO grants (the console's "Authorized domain units" emits it; the Put API does not).
-  **The entity id is the undocumented `<member-account>:<blueprint-id>`** — the configuration's OWNER,
-  and every other spelling is rejected; principal copied from `aws-samples`' SMUS-IaC sample
-  (root-unit projects, `CONTRIBUTOR` — a measurement where ours would be a guess); the detail is a
-  JSON-string `"{}"` in awscc. `sagemaker-prereqs` **`v0.3.0`** adds the 11 grants per member
-  (`for_each` the configurations) + `root_domain_unit_id`; both member slices bump the ref —
-  **APPLIED 2026-08-22, both members: `11 added`, re-plan `No changes`, 22/22 read back** (the member
-  MAY AddPolicyGrant on its own configuration — the cross-account risk was empty). Every grant field
-  **`createOnly`**, both layers.
-- **THE WIZARD-FIELD LADDER (2026-08-22, one sitting): what the console's Enable-Tooling wizard
-  fills and the Put API does not require is validated at DEPLOY *and* TEARDOWN** — an incomplete
-  configuration pins its projects in both directions (a stuck project cannot even be deleted).
-  Three rungs measured: the `CREATE_ENVIRONMENT_FROM_BLUEPRINT` grants (v0.3.0), `manageAccessRoleArn`
-  (v0.3.1), and `S3Location`+`KmsKeyArn` regional parameters (v0.3.2 — `awsds-<env>-smus-projects`
-  per member via the house s3-bucket module; the **project CMK found its consumer**; bucket name is
-  FREE, the managed policy reaches content by `*/dzd*/<project>/` path). Each config fix = apply
-  (predicted `NotUpdatableException`) + user-authorized Put + re-plan `No changes`. Tooling's set is
-  believed complete — it now matches every wizard field. **Rounds 5-6 (same day, v0.3.3) were NOT
-  wizard fields but two independent defects: both service-role TRUSTS pinned the MEMBER account
-  where the documented `AmazonSageMakerProvisioning-<domainAccountId>` trust demands
-  `aws:SourceAccount = the DOMAIN account` (the service could never assume them; invisible in the
-  member trail — cross-account service denials leave no event, attribution came from the doc), and
-  the project CMK's delegate-to-IAM policy reached no service principal (the validator's
-  `DescribeKey` is `datazone.amazonaws.com` + the domain execution role; the key now carries the
-  documented SMUS statement set minus Redshift/Airflow, category 2). `3 changed` per member,
-  in-place, no Put. Round 7 (governance slice, no tag): the profile locked `lifecycleManagement =
-  "true"` against the template's `ENABLED`/`DISABLED` enum — CreateProjectProfile validates nothing
-  against the template, and the CFN 400 that caught it was the FIRST in-account failure (the trust
-  fix proven; the three stuck projects all deleted). UpdateProjectProfile then validated what Create
-  did not: required blueprint params without defaults must be declared — exactly two across all 11
-  (`S3Bucket.bucketName`, `S3TableCatalog.catalogName`, both literal `Ref` → per-project names),
-  now editable placeholders in both profiles. Templates are downloadable via the blueprint's
-  `templateUrl` by an associated account — check locked values against them, not against prose.**
-- **THE CREATE PATH CLOSED 2026-08-22 — the FIFTH attempt created a project END TO END** (`ACTIVE`,
-  Tooling stack `CREATE_COMPLETE`, ~4.5 min): the behavioural proof of all seven findings, and the
-  three stuck projects deleted cleanly. **Verification (v)'s first real reading: the D13 boundary IS
-  on the provisioned role — delivered via the stack TEMPLATE** (the write-only configuration field is
-  injected as the `ToolingUserRole`'s `PermissionsBoundary`; **the template's two conditional EMR
-  roles carry NONE** — AWS's template, noted for the day `createEmrResourceInTooling` turns true).
-  **US-8 said the opposite first and the instrument was wrong** (Lesson 30): `iam list-roles` OMITS
-  `PermissionsBoundary` by documented contract (`GetRole`-only, with `Tags`) — fixed to `get-role`
-  per role, re-run `pass`. **What St.6 still owes: the fallback-(i)-or-acceptance decision (the 1.7
-  bullet), the off-VPN probe's teardown confirmed, then passes 3-5 + 5.1 (less 4.1 and 4.3, RUN 2026-08-23; `vpc-egress-v0.3.0` moved the list OUT of the module — each slice owns its own, default EMPTY; `EXC-04`)** — pass 3 stands on a
-  measured create path. **5.0 is DONE** (`default-v0.1.0`
-  pushed to both repos 2026-08-22, one buildbox session). Decisions 1 (EMR-S vs Glue) and 6 (prefix
-  shape) stay in-stage; **2 is delivered** (TIP `false`, non-editable, both profiles).
-- **s3-read-write MERGED 2026-08-24 — the laptop reads/writes/lists its SMUS project's S3 path by
-  vending the PROJECT ROLE through S3 Access Grants** (strategy 1-A, the user's; consumer
-  `s3-read-write/`, an independent uv project). `awsds-org-project-storage-vending` is the estate's
-  **first customer-managed policy** (both members' `foundation/`, referenced by name from
-  `DataScientistAccess` — decision 4's mechanism demonstrated, its expired blocker corrected in the sso
-  README). The handshake opens nothing; **one hand-made grant per project × persona role** does —
-  membership-blind, accepted with the decision. Instance facts 2026-08-24: Sandbox's is **SMUS-born**
-  (2026-08-22), carries **no IdC association** (directory grantees unavailable — OQ 13's mapped option);
-  **Development has none until its first project** (the policy inert there by design). Full inventory:
-  `AWS_STATE.md`'s vending row. OQ 22 (managed-policy revision watch) is the user's to schedule.
-- **THE PORTAL ON THE VPN BROKE IN TWO LAYERS; BOTH ARE NOW MEASURED CLOSED.** **(1) DNS, 2026-08-24**
-  (Lessons 40-42): `datazone`'s private zone is authoritative for its subtree, so `agent.datazone…` —
-  which AWS's network-isolation page lists **public-internet-required** (its THIRD table) — was NXDOMAIN
-  for every VPC-resolver client, zero CloudTrail arrivals; 4.2's "REQUIRED under VpcOnly" was a misread of
-  a design-B-scoped table (6 of the 15 never existed here). **REMOVED from both `extra_services`
-  (issue #39); APPLIED + MEASURED 2026-08-26, both halves** — the name resolves publicly, and DataZone
-  events carry NO `vpcEndpointId`, splitting by plane (app → NAT, browser → VPN EIP). **12 → 11**
-  endpoints per Interactive account, 0.170 → 0.160/h.
-  **(2) THE BROWSER, 2026-08-26 (Lesson 43):** the portal then broke with the SAME words — surviving zones
-  answer client-plane names with **private** addresses, and a **public** origin needs Chrome's **Local
-  Network Access** grant to reach one. Granting it restored JupyterLab + catalog (CloudTrail: catalog =
-  Glue, JupyterLab = SageMaker API, from the VPN host's PRIVATE address, across ~25 min of ZERO arrivals).
-  Every `aws/` instrument, `dig` and `curl` read clean throughout — **no gate here can see it.**
-  **The rule over both**: no endpoint whose private zone shadows a CLIENT-plane name may live in the VPC
-  the client resolves through. `datazone` could leave; `sagemaker.studio` cannot — so **OQ 23 (client
-  plane off this resolver) is the only structural repair**, the grant is the interim, and design B must
-  re-add `datazone` and move the portal instead. Meanwhile **`EXC-06`**: the user's deliberate `*`
-  on Sandbox's allow-list (portal sign-in fix; cannot fix shadowing; `DN-3` fails on the divergence).
-  Design-B input RE-SCOPED 2026-08-25 (D5/D6 + objectives): the portal's public egress is the CLIENT
-  plane's — B constrains COMPUTE only; A-vs-B = short whitelist vs empty, both behind the St.11 proxy (OQ 23).
-- **STAGE 16 DONE 2026-08-26 — the SANDBOX LAKE: created, applied, exercised, closed and LOGGED in ONE
-  day** (stage file §"What ran" = the record; `docs/log/log-stage-16-sandbox-lake.md` written by Claude
-  on request, 6.3). **The standing state — bucket, ONE access role, location, 3+1 grants, wired project
-  `avhvbqn37ty7m8`, connection `sandbox-lake`, invariants — is `AWS_STATE.md`'s sandbox-lake row, not
-  here.** Facts that OUTLIVE the stage: **(1) the SMUS JupyterLab image ships
-  `aws_s3_access_grants_boto3_plugin` (1.3.0)** — every "direct" S3 call auto-vends, credential cache
-  included, so an in-image direct-refusal test is UNRUNNABLE and the laptop is that control's only home
-  (§T). **(2) Revocation timing (§R, measured on a sacrificial grant)**: the vend door closes between
-  **+1 s and +19 s** of the delete — a fresh 900 s bearer was minted INSIDE the window — and issued
-  credentials survive revocation to their own expiry (horizon = delete+propagation+duration). §R's
-  trust half UNEXERCISED (waits a real project death); (iv)'s object half waits St.11 data events.
-  **(3) `SL-4` hardened by its FIRST LIVE ANOMALY**: the old classifier took any `AWSReservedSSO_*`
-  grantee for a tenant; now: tenant table + exact `<group>/*` shape. **(4) A sacrificial-revoke
-  grantee must hold NO standing grant** — with a tenant grantee the standing `<group>/*` grant answers
-  every post-delete vend and the refusal is unmeasurable. Verification (ix): match `grant_scope`,
-  never `grants[0]` (the lake lists first).
-- **THE APPLY FOUND SMUS AS A LAKE FORMATION ADMIN IN SANDBOX (2026-08-26; 2 service roles, self-appointed
-  at the first project).** Surfaced only from an unrelated plan — `DL-5` reads `parameters`, not `admins`
-  (Lessons 17 + 31). Settled in TWO steps the same day: v0.4.0 ADOPTED the seats (froze the list — wrong,
-  the user's question caught it), **`consumer-data-v0.5.0` is the answer: ONE create-time admin +
-  `ignore_changes = [admins, allow_full_table_external_data_access]`** (the catalog.tf Iceberg shape,
-  Lesson 23). **MEASURED: 3 admins live, 1 declared, plan `No changes`** — and `-refresh=false` is the one
-  defeat, forbidden on that slice. **The plan's defence is REPLACED by `DL-13`** (datalake.py; first run:
-  producer+dev `pass`, sandbox `note` naming both seats): FAIL on the required seat missing, FAIL on a seat
-  nobody granted, `note` on the SMUS pair. **OQ 24** keeps the governance half: whether a SMUS role *should*
-  administer LF (it can grant itself anything in the LOCAL catalog, resource links to `raw`/`curated`
-  included) — St.6's residue; the seats cannot just be revoked (the create path was measured AFTER them).
-- **Standing St.6 mechanics:** a blueprint configuration is applied **from the MEMBER account** (the
-  Put takes no account param); `awscc`'s carries **`environment_role_permission_boundary`** and the
-  `aws` resource does not (INT-15's mechanism, Lesson 8); **an EXISTING configuration is IMMUTABLE
-  via `awscc`** (createOnly+write-only ids break every update patch — `NotUpdatableException`): a
-  field change is a full-object `put-environment-blueprint-configuration` matching the committed
-  code (user-authorized per occurrence; Tooling manage-access 2026-08-22 was the first) or a
-  replace, never an update — and **an incomplete configuration pins its projects in BOTH directions**
-  (deploy AND delete validate it); **`athena:UpdateSession` is in no API model**
-  — shipped anyway from AWS's own sample, `StartCalculationExecution` beside it.
-- **Stages 5-11 revised, pre-instrumented (2026-08-16/17):**
-  `aws/{vpn,datalake,studio,supplychain,cicd,deploytargets,orchestration,dlp}.py` — `DL-5`/`DT-5` guard
-  the LF `Parameters` (INT-11). **St.8 pass 4, St.9 passes 4-5, St.10's Staging leg wait on the vend;
-  St.11's step 4 gates on St.15 + a month of billing** and flips `GD-3`/`DP-6`.
+- **RE-SCOPED 2026-09-05 on three user inputs** — the account-quota increase was **refused**, SageMaker
+  showed no need for a second interactive environment, and the client-plane DNS break exposed a network
+  too thin for the estate. **Stage 6 split into four**: `06a` (record of what ran), `06b` (`Development` →
+  `Staging`), `06c` (the network), `06d` (the remainder). Log moved to `log-stage-06a-*`. **Order: 6b →
+  6c → 6d → 7.** New: **D38** (single egress hub), **Lesson 44**, **INT-21/INT-22**; **D21 superseded**
+  by its own larger branch; D4/5/6/7/9/11/12/14/15/17/18/19/20/22/23/26/35/36 amended in place; **OQ 23
+  closed**; Stage 14 **blocked on the quota**; Stage 15 deliberately **not** pulled forward (declined).
+- **The chain is `Sandbox → Staging → Production`** (`objectives.md` edited by the user). Interactive
+  compute exists in **Sandbox only**; Staging and Production carry the SageMaker **runtime**, which needs
+  no domain object. `DataScientistStagingAccess` exists, unassigned, and is 6b's target.
+- **D38 in one paragraph:** peering shares an **address, never a path** (Lesson 44), so the single egress
+  is an **explicit Squid proxy** in `VPC-Networking` (Production, 10.31/16), **zero NAT gateways**, and no
+  spoke has a default route. `VPC-SharedServices` = the existing 10.30/16 (GitLab, runners, buildbox);
+  `VPC-Workloads` = 10.32/16; Staging keeps **10.50/16**; 10.40 freed; 10.60 reserved for a future
+  `shared` account. **Five peerings** (Networking×4 + SharedServices×Sandbox) — the absent ones are the
+  isolation control. WireGuard and Squid are **two `[D]` hosts**; the WireGuard **EIP transfers** between
+  accounts (documented, free, 7-day accept, must be disassociated), so no client `.conf` changes its
+  `Endpoint`. **The VPN client is a private-network client**: its whole internet, AWS APIs included,
+  crosses the proxy — so the anchor of every VPN-only condition becomes the **proxy's** EIP, and the host
+  drops every tunnel packet not bound for RFC1918. **The hub carries no interface endpoint with private
+  DNS and no service-name zone** — that is the repair of Lessons 40-43, and it is why endpoints are never
+  centralized. DNS Firewall survives in compute VPCs with an intranet-only list (closing DNS exfiltration,
+  not the internet). `awsds.internal` apex + `sandbox|staging|prod.` children + `awsds-pages.internal`,
+  with the INT-22 association matrix (private zones do **not** delegate; a matching zone with no record
+  answers NXDOMAIN, not publicly).
+- **The SMUS CI/CD tool is `aws-smus-cicd-cli` and deploys only into EXISTING SMUS projects** — so it is
+  an **exporter** on the Sandbox side; the pipeline stays the deployer (D26/D28). Using it as the
+  promotion path would need domain associations in Workloads and a `datazone:*` carve-out.
+- **Orchestration is MWAA Serverless only** (USD 0.088/task-hour, no standing fee; `awscc_mwaaserverless_workflow`,
+  awscc ≥ 1.69; the `aws` provider has none). Design B is INT-14's documented-not-built terminal fallback;
+  a root-SCP `airflow:CreateEnvironment` deny replaces the prose. **Workers accept no proxy** —
+  `NetworkConfiguration` always set, private routing with endpoints: the first named exception to the
+  single egress, and one with no internet path. **`terraform-reference` has NO Airflow configuration** —
+  six `airflow:*` IAM actions in the SMUS provisioning role, nothing else.
+- **Landing zone closed — Stages 0-1d DONE (2026-08-15).** Battery **100** (4 `note` by design, `EXC-03`).
+  **Stage 2 DONE**; a state bucket per Terraform-managed account; delegation narrowed and hand-applied
+  (`INV-15`). **Gates:** `make check` (offline), `check-ou` (session), `check-docs` (red on pre-St.2
+  prose); `check-identifiers.py` forbids any account id or e-mail in a tracked file.
+- **Stage 3 DONE 2026-08-16** — applied, measured, torn down to 0.0000 USD/h. **Stage 4 DONE 2026-08-18**;
+  the VPN host is amd64 `t3.nano` at BASELINE; a shape change is a REPLACEMENT and the disk comes down
+  only by `-replace`. **Stage 5 DONE, every pass** — the governed lake exists, is granted, shared and
+  consumed; `GOVERNANCE.md` is the one copy of the ontology; register **13 rows / 24 triples**; the
+  derived zone was **removed** 2026-08-26/27 (D19 revised) and `DataScientistAccess` carries no `athena:`.
+  **Stage 16 DONE 2026-08-26** — the sandbox lake, created, exercised and logged in one day.
+- **Three things Stage 5 leaves standing:** no principal can start the crawlers (**OQ 19**), so D18/D25
+  ingestion is broken at one end; `EXC-02`'s uncollectable object; and no Athena in Data Governance.
+- **Standing SMUS mechanics:** a blueprint configuration is applied **from the member account**; an
+  existing one is **immutable via `awscc`** (a field change is a full-object Put or a replace); the D13
+  boundary field is **write-only**, so drift never shows in a plan (`US-8` is the sentinel, and
+  `list-roles` omits the boundary — use `get-role`); an incomplete configuration pins its projects in
+  **both** directions; `athena:UpdateSession` is in no API model.
+- **SMUS is a Lake Formation admin in Sandbox** (2 service roles, self-appointed at the first project).
+  `consumer-data-v0.5.0` declares ONE create-time admin with `ignore_changes` over the list; the defence
+  is `./aws/datalake.py` `DL-13`, not a plan. `-refresh=false` is forbidden on that slice. **OQ 24** keeps
+  the governance half.
+- **A cached SSO token is keyed by `sso-session` name, NEVER by user** — the wrong identity fills the
+  right one's slot and `aws sso login` then succeeds doing nothing; remedy is `aws sso logout` + portal
+  sign-out. The battery separates that from a real ceiling breach by asking **IdC** what the token holds.
+- **A denied call does not always name the policy** — attribution moves to a **contrast probe**: the same
+  call from an OU the deny misses.
 - **Standing rules that outlive their stages:** never add an `sts:` action to the RCP without reading
-  `CT.STS.PV.1`'s exclusion note; 1d step 9 is the **only** sanctioned by-hand use of
-  `AWSControlTowerExecution`; **resolve an account by name only with the exact vended name** — every one
-  carries an ` Account` suffix and a **SUSPENDED `Sandbox`** sits in the roster: filter on `ACTIVE`,
-  fail loudly; subnets anchor on AZ `zone_id` (`./aws/AZs.py` after every vend); check the SSO token
-  before each probe block and read the denial *wording*, never the exit code; account-level BPA is
-  hand-managed. **Log Archive and Audit hold no CLI profile.**
-- **Before reporting a gap, read the file that owns it:** unexercised denies → `POLICIES.md`;
-  "expected" readings → `docs/AWS_STATE.md`; SMUS findings → open questions 12-15 and **21**.
-- **Deferred by decision — do not offer to close:** the USD 50 budget notifies nobody (D12); open
-  question 10 waits for N=2; Config recorder left alone, Management unrecorded (Stage 12 hooks).
+  `CT.STS.PV.1`'s exclusion note; **resolve an account by name only with the exact vended name** (every
+  one carries an ` Account` suffix and a SUSPENDED `Sandbox` sits in the roster — filter on `ACTIVE`);
+  subnets anchor on AZ `zone_id`; check the SSO token before each probe block and read the denial
+  **wording**, never the exit code; account-level BPA is hand-managed; **Log Archive and Audit hold no CLI
+  profile**; 1d step 9 is the only sanctioned by-hand use of `AWSControlTowerExecution`.
+- **Before reporting a gap, read the file that owns it:** unexercised denies → `POLICIES.md`; "expected"
+  readings → `docs/AWS_STATE.md`; SMUS findings → open questions 12-15, 20, 21.
+- **Deferred by decision — do not offer to close:** the USD 50 budget notifies nobody (D12); OQ 10 waits
+  for N=2; the Config recorder is left alone and Management deliberately unrecorded (Stage 12 hooks).
   **Every governed account sits under `us-west-2`.**
-- **THE DERIVED ZONE IS RE-HOMED ONTO THE SMUS PROJECT PATH (2026-08-26 evening, the user's decision;
-  D19 revised — the one copy).** Trigger: 2.4's reading answered (xviii) — the path is
-  `<domain>/<project>/<scope>/`, no person grain; the project's OWN enforced workgroup writes to
-  `dev/sys/athena/`; a deleted project KEEPS its prefix; the projects bucket has NO current-object
-  expiry (OQ 25, now the derived zone's expiry question). **`awsds-<env>-derived` + `awsds-<env>-athena`
-  + the persona's whole Athena/derived family are REMOVED** — `DataScientistAccess` carries no
-  `athena:` action; SMUS is the only query surface in member accounts. The data CMK SURVIVES (Sandbox:
-  the sandbox lake's key; Dev: held empty, dated); its persona statement removed (would have been a
-  KMS-layer path around the lake's vending door). Stage 6 decision 6 DISSOLVED; 2.6 re-cut to the
-  removal choreography; (xix) re-homed to the projects bucket; Stage 5 step 9.3's extension point died
-  unconsumed. `DL-8`/`DL-9` flipped to ABSENCE checks (FAIL until the destroys apply — deliberate);
-  `DP-4` re-aimed at `*-smus-projects`. **APPLIED 2026-08-26/27** (`consumer-data-v0.6.0`): buckets emptied by
-  hand then destroyed, both workgroups deleted, both key policies tightened; three slices re-plan `No
-  changes`, `DL-8`/`DL-9` `pass`. **`DeleteWorkGroup` REFUSED both workgroups first — query HISTORY is
-  "contents" (4 and 2 executions, 0 named queries), no API deletes an execution, and `force_destroy` was
-  unreachable because the resource had left the configuration carrying the flag: A DESTROY-TIME FLAG IS
-  SET BEFORE THE RESOURCE IS REMOVED, never in the same version.** Production and Staging NOT covered
-  (no SMUS in either) — Stage 9 re-decides where its results land.
-- **All 37 decisions closed** (D30 as a revert; **D5/D6 re-scoped 2026-08-25** — two egress planes, one proxy). **Still needed from the user: the domain name**
-  (blocks Stage 13). **Settle earliest:** INT-13 (INT-11's vending half closed at 4d, 2026-08-19).
+- **All 38 decisions closed.** Still needed from the user: **the domain name** (blocks Stage 13).
 - **The repository is not documentation-only:** read-only `aws/` scripts, both Terraform trees, `scripts/`,
   the `Makefile`, the `pre-commit`/`tflint`/`checkov`/`ruff` gates. **Every script is Python 3 on `uv`** —
   shared code in `aws/awslib`, `scripts/repohygiene`, `scripts/tfhygiene`. **Exception:
@@ -537,3 +345,5 @@ the reasoning that makes it *usable* is in the file. Recognising one is the sign
 42. **A permission failure is a response; a network failure is the absence of one — CloudTrail separates
     "denied" from "never arrived".**
 43. **A browser is a term in the reach question, and its policy is one no AWS instrument can read.**
+44. **What peering shares is an address, never a path — and a topology drawn as boxes and lines hides
+    exactly that; the constraint that breaks the drawing is also what enforces the isolation for free.**

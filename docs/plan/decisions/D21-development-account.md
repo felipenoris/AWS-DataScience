@@ -2,11 +2,13 @@
 
 **Status:** Decided (2026-08-08): **a dedicated Development account; Sandbox becomes pure experimentation; the promotion chain starts in Development.** **Re-examined 2026-08-13 and held unchanged** — what came out of that review is a named test and a revision trigger, recorded below, not an amendment.
 
+**SUPERSEDED BY ITS OWN LARGER BRANCH, 2026-09-05 (user).** The branch this file wrote out on 2026-08-13 — Development leaves the chain, Sandbox graduates straight to Staging — is taken: the trigger fired on experience (no work was found that needs a person next to Development's data) rather than on the quota, which merely removed the alternative. The chain is **N Sandboxes → one Staging → one Production**; `objectives.md` was edited by the user in the same sitting. Its stated precondition is now Stage 7's to deliver (one shared GitLab group namespace), and its surviving objection is answered: CI applies into Staging and never into Sandbox, so the by-hand engineering apply lives in `sandbox/app/`. The file and its number are kept — the record of what was tried is the point.
+
 **In one line:** A Development account: Sandbox becomes pure experimentation and the promotion chain starts in Development.
 
 **Related decisions:** [D17](D17-interactive-vs-runtime.md), [D18](D18-data-scientist-access.md), [D19](D19-derived-zone.md), [D22](D22-data-governance-account.md), [D23](D23-ou-structure.md), [D26](D26-unified-studio.md), [D35](D35-sandbox-cardinality.md)
 
-**Referenced by stages:** [Stage 1a](../stages/stage-01a-landing-zone.md), [Stage 1b](../stages/stage-01b-identity-and-controls.md), [Stage 1c](../stages/stage-01c-preventive-policies.md), [Stage 3](../stages/stage-03-networking.md), [Stage 6](../stages/stage-06-unified-studio.md), [Stage 8](../stages/stage-08-cicd-pipelines.md), [Stage 10](../stages/stage-10-orchestration-promotion.md)
+**Referenced by stages:** [Stage 1a](../stages/stage-01a-landing-zone.md), [Stage 1b](../stages/stage-01b-identity-and-controls.md), [Stage 1c](../stages/stage-01c-preventive-policies.md), [Stage 3](../stages/stage-03-networking.md), [Stage 6](../stages/stage-06a-unified-studio.md), [Stage 8](../stages/stage-08-cicd-pipelines.md), [Stage 10](../stages/stage-10-orchestration-promotion.md)
 
 ---
 
@@ -119,7 +121,7 @@ Studio is a separate claim.
 
 | Where | What depends on it |
 |---|---|
-| [Stage 6](../stages/stage-06-unified-studio.md) | the `engineering` project profile, whose **Tooling** blueprint provisions a SageMaker AI domain **into** Development (there is no "ML experience" blueprint — D26's 2026-08-19 revision; the enabled set's one copy is [`docs/SMUS.md`](../../SMUS.md)) |
+| [Stage 6](../stages/stage-06a-unified-studio.md) | the `engineering` project profile, whose **Tooling** blueprint provisions a SageMaker AI domain **into** Development (there is no "ML experience" blueprint — D26's 2026-08-19 revision; the enabled set's one copy is [`docs/SMUS.md`](../../SMUS.md)) |
 | [D18](D18-data-scientist-access.md) | "Sandbox and Development — read-write, interactive, the D19 derived zones; this is where the person works" |
 | [D19](D19-derived-zone.md) | a per-principal derived zone, with its own CMK, in **each** Interactive account |
 | [Stage 8](../stages/stage-08-cicd-pipelines.md) | `awsds-deploy-devenv-dev` — half of INT-18 exists to deliver the `dev-env` image to Development's Studio |

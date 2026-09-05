@@ -972,7 +972,7 @@ documentation prose — the names in these documents are the names the service p
 **The residual, stated rather than closed:** if Stage 6 ever provisions a project *into* Data Governance,
 this deny is what stops it — five stages from here, with an `AccessDenied` naming the OU policy. That is
 the intended direction (D26 says projects do not land there), and
-[Stage 6 step 0](stage-06-unified-studio.md) is already the place where this and the
+[Stage 6 step 0](stage-06a-unified-studio.md) is already the place where this and the
 `datazone:CreateDomain` carve-out are exercised together, before the domain is created.
 
 **Four things were added or narrowed while writing, each with its reason:**

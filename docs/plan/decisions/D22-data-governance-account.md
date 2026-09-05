@@ -2,6 +2,8 @@
 
 **Status:** Decided (2026-08-08): **the governed lake moves out of the environment accounts into a dedicated Data Governance account; every environment reaches it through Lake Formation cross-account shares**
 
+**AMENDED 2026-09-05:** the consumer list drops to Sandbox — the second consumer's share is revoked at [6b](../stages/stage-06b-development-becomes-staging.md). Data Governance still holds no VPC, which is why [INT-13](../integrations.md) stays on the manual-push path rather than a CodeConnections host.
+
 **In one line:** The governed lake moves to a dedicated Data Governance account; every environment reaches it through Lake Formation shares.
 
 **Related decisions:** [D13](D13-lake-formation-enforcement.md), [D18](D18-data-scientist-access.md), [D20](D20-staging-account.md)

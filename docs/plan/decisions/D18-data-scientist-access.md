@@ -2,6 +2,8 @@
 
 **Status:** Decided (2026-08-07, restated 2026-08-08 for the nine-account layout): **data plane read, no compute, no control plane; writes only to enumerated prefixes**
 
+**AMENDED 2026-09-05:** the Development row becomes the Staging row and is applied for the first time — `DataScientistStagingAccess` (read-only, no `athena:`), `DeploymentManagerAccess`, and **no** `DevEnvStewardAccess`. The lake share, the resource links, the re-grants and the vending policy the account inherited from its interactive life are all removed at [6b](../stages/stage-06b-development-becomes-staging.md) step 2.
+
 **In one line:** Outside the Interactive OU the data scientist gets the data plane, no compute, no control plane; writes only to enumerated prefixes.
 
 **Related decisions:** [D19](D19-derived-zone.md), [D22](D22-data-governance-account.md)

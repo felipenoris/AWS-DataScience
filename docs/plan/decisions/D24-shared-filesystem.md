@@ -6,7 +6,7 @@
 
 **Related decisions:** [D21](D21-development-account.md)
 
-**Referenced by stages:** — (the stages that used to consume it no longer do: [Stage 3](../stages/stage-03-networking.md), [Stage 5](../stages/stage-05-data-foundation.md), [Stage 6](../stages/stage-06-unified-studio.md), [Stage 11](../stages/stage-11-dlp.md), [Stage 14](../stages/stage-14-sandbox-vending.md))
+**Referenced by stages:** — (the stages that used to consume it no longer do: [Stage 3](../stages/stage-03-networking.md), [Stage 5](../stages/stage-05-data-foundation.md), [Stage 6](../stages/stage-06a-unified-studio.md), [Stage 11](../stages/stage-11-dlp.md), [Stage 14](../stages/stage-14-sandbox-vending.md))
 
 ---
 

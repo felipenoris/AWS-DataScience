@@ -2,6 +2,8 @@
 
 **Status:** Decided (2026-08-07); **revised 2026-08-26 by the user — the zone is RE-HOMED onto the SMUS project path** (`awsds-<env>-smus-projects`, per-project folders, managed by the service). The principle stands: **the copy is not prevented; the destination is managed and the perimeter contains it** — what moved is which destination, and whose hand manages it
 
+**AMENDED 2026-09-05:** scope narrows to Sandbox — the second Interactive account is gone, and the SMUS project path exists only where projects do.
+
 **In one line:** The derived copy is not prevented; the destination is managed and the perimeter contains it. Since 2026-08-26 the destination is the SMUS project path, its CMK is the project CMK, and `awsds-<env>-derived` is removed.
 
 **Related decisions:** [D5](D05-sagemaker-egress.md), [D6](D06-dlp-approach.md), [D13](D13-lake-formation-enforcement.md), [D18](D18-data-scientist-access.md), [D24](D24-shared-filesystem.md), [D31](D31-approver-read.md)

@@ -1,6 +1,15 @@
 # Runbook — the buildbox
 
-The `amd64` build host of [Stage 6 step 5.0](../stages/stage-06-unified-studio.md), in the Sandbox
+> **THIS HOST IS RETIRED AT [STAGE 6c](../stages/stage-06c-networking-hub.md) — 2026-09-05.** Its only
+> egress is the `[E]` route `0.0.0.0/0 → the WireGuard host's ENI`, and a route target cannot live in
+> another VPC — so when the VPN host moves to Production this host has no way out. It moves to
+> `VPC-SharedServices` beside the runners, configured as an **explicit-proxy client** (docker daemon,
+> SSM agent, BuildKit `--build-arg`), and Stage 7's build runner absorbs it: same `amd64` shape, same
+> 64 GiB, pushing with its instance profile instead of §P's token dance. `vpc_nat_cidrs`, the
+> isolated-tier security-group rule and the *must not coexist with `probes/`* rule die in the same commit.
+> **Until that stage applies, everything below is the live procedure.**
+
+The `amd64` build host of [Stage 6 step 5.0](../stages/stage-06a-unified-studio.md), in the Sandbox
 account. Slice: [`terraform-live/sandbox/buildbox/`](../../../terraform-live/sandbox/buildbox/README.md).
 Layer **`[E]`** — created for a build session, destroyed at the end of it.
 

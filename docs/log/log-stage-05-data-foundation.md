@@ -763,7 +763,7 @@ verifications i / ii / v, and 6.1's decided form marked superseded), `AWS_STATE.
 creator ambiguity, with its settling mechanism), `CLAUDE.md` and this file's `INDEX.md`.
 
 **Not committed by Claude.** The working tree also carries the user's own uncommitted edits to
-[Stage 6's file](../plan/stages/stage-06-unified-studio.md) — the two 2026-08-19 decisions about the
+[Stage 6's file](../plan/stages/stage-06a-unified-studio.md) — the two 2026-08-19 decisions about the
 permissions boundary and about not pulling the Athena Spark amendment into Stage 5's phase-4b sitting —
 so **the commit is the user's**, and this line is what a later reader needs to know that the mixture was
 deliberate rather than accidental.
@@ -849,7 +849,7 @@ disabled, provisions on Redshift-managed storage and none of this reaches it.
 
 **Records:** [Stage 5](../plan/stages/stage-05-data-foundation.md) (the pass-4 debt list, 4.1's
 empty-table callout, step 8's instrument note, verifications iii / x, the classification-pair
-deliverable), [Stage 6](../plan/stages/stage-06-unified-studio.md) (1.4's callout, prerequisites,
+deliverable), [Stage 6](../plan/stages/stage-06a-unified-studio.md) (1.4's callout, prerequisites,
 verifications xiv-xvi), [Stage 9](../plan/stages/stage-09-deployment-targets.md) (status, pass ordering,
 1.3, 2.1, 2.2, 4.1, risks, verifications ii / xiv), [Stage 11](../plan/stages/stage-11-dlp.md)
 (prerequisites, 2.3, verification iii), [Stage 14](../plan/stages/stage-14-sandbox-vending.md) (item 5),

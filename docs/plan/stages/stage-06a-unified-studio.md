@@ -1,30 +1,21 @@
-# Stage 6 — SageMaker Unified Studio
+# Stage 6a — SageMaker Unified Studio (what was executed)
 
 | | |
 |---|---|
-| **Status** | **REVISED 2026-08-26 (evening), BY THE USER'S DECISION, ON THE SAME DAY'S 2.4 READING: THE DERIVED ZONE IS RE-HOMED ONTO THE SMUS PROJECT PATH AND `awsds-<env>-derived` IS REMOVED** ([D19 revised](../decisions/D19-derived-zone.md) — one copy of the reasoning). What it changes in THIS file: **decision 6 is DISSOLVED** (its subject — project prefixes in the derived bucket — no longer exists), **step 2.6 is RE-CUT to the removal** (the data-key second-`Decrypt` and the scoped `PutObject` both die unconsumed; Stage 5 step 9.3's extension point with them), **verification (xix)'s derived-bucket half is re-homed onto the projects bucket**, and the persona's whole direct Athena path leaves `identity/sso/` — `DataScientistAccess` carries no `athena:` action; a data scientist queries through a SMUS project. Code: `consumer-data-v0.6.0` + both slice bumps + the sso edit, **written 2026-08-26 and APPLIED 2026-08-26/27 in 2.6's order** — in **two acts**, the second forced by `DeleteWorkGroup` refusing a workgroup whose query *history* counts as contents (2.6 carries the finding). `DL-8`/`DL-9`, flipped to absence checks, now read **`pass`** on the absence they were inverted to measure. — **Earlier: PASSES 0 THROUGH 2 EXECUTED 2026-08-21, across three sittings — the registry, the blueprint prerequisites, the step 3 deny fragment, 1.6's SCP amendment, the domain, the two associations, the blueprint configurations (11 per member after the same-day ToolingLite re-cut) and the TWO PROJECT PROFILES are applied** — **and pass 1 CLOSED a day later, on 2026-08-22, when step 5.0 built and pushed `default-v0.1.0`** into both repositories from one buildbox session, the same day `grants.tf` was applied. **So passes 0-2 span two dates and four sittings**, and nothing in them is owed. Detail: §"What ran on 2026-08-21" below, which is the only place the results are written. **The stage is NOT closed** — passes 3-5 are open, **0.1a AND 1.6's probes BOTH RAN the same day and both came out clean** — verification (i) is answered in both directions and the battery reads 25/0/7. **Both items that clause used to name closed on 2026-08-22**: step 5.0's push ran in one buildbox session (`default-v0.1.0` read back live in **both** `awsds-prod-ecr-base` and `awsds-prod-ecr-dev-env`), and step 1.7's console contrast closed INT-16's attribution. **What is left owed is passes 3-5 plus 5.1 — less most of pass 4, which ran out of order on 2026-08-22/23**: 4.1 was applied in Sandbox (2026-08-22/23) and has been revised **three** times — `vpc-egress-v0.3.0` moved the list out of the module (the default is EMPTY, each Interactive slice declares its own) and `v0.4.0` moved the chain-evaluation setting out with it; **neither slice is up today**, so what the accounts last held is not what the code declares, and **4.3 RAN**, delivering the finding the whole design turns on: DNS Firewall evaluates the whole resolution chain, so an allow-list carries indexes and no CDN-backed artifact host, and pip downloads, cargo, rustup, CRAN, apt and ECR Public have no path under design A — **a conclusion SUPERSEDED IN CODE the same week and recorded here only on 2026-08-30**: chain evaluation was the API default, `vpc-egress-v0.4.0` makes it a module input and both Interactive slices pass `TRUST_REDIRECTION_DOMAIN`, so those six **are expected to have a path**, a listed hop becomes a WIDENING, and the CDN namespace stays shut (the trust is one query transaction). **`v0.4.0` is applied nowhere** — both `egress/` slices measured `down` on 2026-08-29 — so 4.1's block carries the prediction and the first `make up` is the first measurement. What pass 4 still owes is 4.2's measurement half, **the first apply of `vpc-egress-v0.4.0`** — and 4.3's friction reading, which is owed *under that apply* and not under what 2026-08-23 measured. **4.2's amendment of 2026-08-24 is CLOSED and this row said otherwise until 2026-08-30**: the `datazone` entry entered on a misread and its private zone broke the portal on-VPN; REMOVED 2026-08-25 (issue #39), then **applied and MEASURED 2026-08-26, both halves** — the name resolves publicly through the VPC resolver and DataZone events carry no `vpcEndpointId` (the step body is the record; Lessons 40-42). The clause this replaces still read *"code-only, the prediction owed at the next `make up`"*, four days after that `make up` happened — the association's gate is fully consumed (2b/2c/2d), the create path is measured end to end (the owed table's project-retry row, 2026-08-22) and the off-VPN reading is DONE in its strong form (the owed table's off-VPN row) — plus two residues that are not steps: **the fallback-(i)-versus-recorded-acceptance choice INT-16 now feeds, deferred by the user to another session** (stated, never presumed), and the off-VPN probe project's teardown, **confirmed clear 2026-08-26** (`US-10`: zero running apps everywhere). **Pass 3 is no longer untouched: verification (xviii) was READ 2026-08-26**, read-only, delivering decision 6's last missing input (recommendation unchanged, the choice still the user's) and three findings the step had not asked for — a deleted project keeps its S3 prefix, the project's own enforced Athena workgroup is a **fourth designed destination** (encryption row already existed; expiry and Stage 11 scope newly owed, both booked the same day, **open question 25**), and the Spark workgroup exists by design with 1.6's SCP as the only thing making it inert. The owed table's `(xviii)` row and step 2.4's callout are the record. — **Earlier: RE-CUT 2026-08-21 (second sitting that day), after the pull-forward clause was audited and found to have never been executed.** The audit is the finding: `git log -S` puts the clause in one docs-only commit of 2026-08-16, and `git log --diff-filter=ADR` over `terraform-live/production/pki*` and `…/registry*` is empty across every ref — the two slices were never added, never removed, never attempted, and no file anywhere records a reason, because there was no event to record. **What changed here:** `production/registry/` is re-cut to the half this stage actually consumes (Stage 7 step **5.a**) and becomes **this stage's pass 0**, with a row in the build table, a row in the pass table and a sentence in the ordering paragraph — the three places an executor reads, none of which had ever mentioned it; `production/pki/` **leaves this stage entirely** for Stage 7 pass 1, D36 §3 amended, D36 dropped from the Consumes row, and step 5.0's image loses the CA root and keeps the empty layer that will take it at Stage 7 step 2.6; the pull-through cache and the per-application ECR repositories stay Stage 7's (5.b). **Also recorded, because a previous sitting pre-declared the trigger:** this is the **third** occurrence of *prose describing state, written from the intention rather than from a reading* — after the `CLAUDE.md` VPN bullet (Stage 4's log) and this file's own "step 0 is now runnable" (2026-08-21, first sitting) — and the first of the three that survived five days and two reviews. **Earlier: REVISED 2026-08-20 against Stage 5 as CLOSED, and against the live organization** (multi-agent sweep: 23 candidate defects, 9 survived adversarial verification, 14 refuted; the refutations are in that sitting's log entry so they are not re-raised). What changed: **the pass table filed 1.6 under `data-governance/governance/`/`awsds-infra-data`, which cannot update an Organizations document at all** — 1.6's own body says `awsds-org-scp-ou-interactive` through battery phase 4b, so it is now its own row on `identity/org-policies/`/`awsds-infra-identity` (`INV-15`; Lesson 35, the trap 4e hit); **2.6 prescribed widening `data_scientist_role_arn`, which is the single-string `principal` of three `aws_lakeformation_permissions`** — either a plan-time failure or a silent fan-out of the persona's re-grants, now a NEW list input; **decision 6's argument rested on a false premise** (that a project's own workgroup writes into the derived zone) whose unsound half hid a **fourth** designed destination outside the CMK rule, the expiry and Stage 11's declared scope; **4.2's `s3` entry is a measurement, not a provisioning choice**, and flow logs cannot answer it — two new verification rows, (xviii) and (xix), and two conditional slice amendments now budgeted in the build table; the Prerequisites row stops asserting a clean inheritance (**open question 19 — the crawler demander — is read before 2.1**); and **step 0 was made runnable, RUN the same day, and did not close**: the four live pre-checks stand, but no CLI shape — real role, the conventional name, trust with and without `aws:SourceAccount`, V2 and V1 — clears `CreateDomain` validation in either account (`Cross-account pass role is not allowed`, byte-identical, both directions), so **the carve-out probe now rides step 1.2's creation act with a CloudTrail-shaped canary replay (0.1a)**, and 1.2's plan B is console-create + `terraform import`, the Stage 2 adopted-none-created precedent. 0.2 had also moved off Development onto `Policy Canary`, which the `safety` rule required all along. `docs/SMUS.md` was corrected in the same sitting (its three-bucket table listed a *workgroup* as a bucket). **Earlier: revised 2026-08-16 into the pass/verification format, against the official documentation and the `aws-ia` module re-read the same day.** Corrections folded in: the **Proves** row loses INT-09 and INT-13 (both need GitLab, which is Stage 7 — the old row contradicted the old body) and gains INT-02's consumer half; the two `sagemaker/` prerequisite slices, until now only *named* by `docs/plan/conventions.md` §6, get an owning step (2.1); steps 4-5 become amendments to Stage 3's parameterised `egress/` (its step 10) rather than fresh builds; the teardown debt is paid (the `layers.py` rows and the body Stage 2 step 8.6 left owing in `scripts/down-studio-apps.py`); and six doc facts replace beliefs — **`VpcOnly` is the default** (the control is a non-editable parameter, not a switch to find), the blueprint names (there is no "ML experience"; the per-project SageMaker AI domain comes from **Tooling**), disabling Athena **Spark** without killing Athena SQL is an SCP on `athena:StartSession`, idle shutdown is a Tooling-blueprint parameter with an admin-enforceable ceiling, the account association has **no public API**, and the required-endpoint list gained `datazone`. **Revised 2026-08-17: the user withdrew the NFS requirement from `objectives.md` (D24 withdrawn) — step 7 is removed, and pass 5 is steps 8-9.** **Revised again 2026-08-19, after re-reading the network-isolation page and the 2026-04 Athena Spark PrivateLink release ahead of decision 3** (sources in `docs/REFERENCES.md`): 1.6 rewritten — the three controls re-characterised (the Tooling flag is **non-retroactive** as well as blunt; the doc's third control is *grant*-shaped on blueprint-authored policies, so 2.1's boundary is a **deviation to record**), a fourth free network-layer lever named, and the announcement's scope written down so the question is not re-opened by its title; 1.7 gains the **third** condition the earlier reading missed (`aws:userid` `*:user-*` — the on-behalf carve-out is already in AWS's shape); 4.2 gains the **full** required-endpoint table and the `us-east-1`-only Q endpoint that design B cannot reach; **decision 1 reopened** on an endpoint-count cost the compute comparison never saw. **Three of the five execute-time decisions are CLOSED pre-stage (2026-08-19, the log's first two entries): 3 (Athena Spark off by SCP, at 1.6), 4 (`DataLake` alone — the re-read found `LakehouseCatalog` RMS-backed) and 5 (the blueprint allow-list in three categories, `docs/SMUS.md`)**; decision 1 is reopened — **its number corrected and an FGAC counter-axis added later the same day: settled in-stage by two readings (decision 1's own row)** — decision 2 (TIP) waits for execution. **A sixth execute-time decision ADDED 2026-08-19 (chat discussion with the user): the derived zone's per-project prefix shape — project-first against family-first; recommendation family-first, settled at 2.6 and only after INT-15's measurement (its row below)** |
-| **Prerequisites** | Stage 3 (the per-role endpoint lists and the `egress_mode` switch of its step 10), Stage 4 (the tunnel; INT-16's portal half deliberately open), Stage 5 (the lake, the two shares proven by the pandas pair, **decision 6 — the grain — already taken**, and the 9.3 extension point in the consumer data-key policy). **Stage 5 pass 4 is a hard predecessor and was not one until 2026-08-19**: each member account needs its own `DataLakeSettings` — a data lake administrator, or the share stays invisible there, and the create-defaults cleared *before* any blueprint creates a catalog object in that account (1.4's callout). **SATISFIED 2026-08-19 for both member accounts** — pass 4a/4b applied the settings under Recipe D and `DL-6` reads clear in Sandbox and Development, so verification (xv) below now has a *measured* precondition rather than an assumed one. **4c was DELIVERED 2026-08-19** — the seven persona statements are applied in `identity/sso/` (the Athena run family on the two workgroup ARNs, the derived zone's three prefix families, the drop-box write's identity half and the lake-key KMS pair). **4d AND 4e are DELIVERED (2026-08-20)** — every behavioural proof ran, the pandas pair included, and 4.3's `athena:StartQueryExecution` amendment is applied into `DenyUserCompute`, which **1.6 below rides on and may now assume**. So the "two shares proven by the pandas pair" clause above **is true**, measured, and this stage may read it as satisfied — *the sentence this replaces said the opposite and was correct until that date.* **Stage 5 is closed entirely**, pass 6 included (Security Hub CSPM, 2026-08-20). **Two things outlive it, and only one of them is inherited here.** Its step 13.3 triage touches nothing this stage consumes. The crawler residue does: **open question 19 — the demander** — an input owed by the user, with Stage 5's verification (iv) (the compute-free trigger shape) as its measured half. **Read it before 2.1 hands a notebook the drop-box write**: the write itself is measured working, and *nothing catalogues what lands there* until that question is settled. **THE PULL-FORWARD, RE-CUT 2026-08-21 AFTER IT WAS AUDITED — the sentence this replaces claimed both slices were "pulled forward and applied", and nothing was ever behind it:** the clause entered on 2026-08-16 in a docs-only commit, and `git log --diff-filter=ADR` over both paths is **empty across every ref** — neither slice has ever existed in version control. Re-cut by consumer: **`production/registry/` IS a prerequisite, and is now THIS stage's pass 0** — the ECR `base`/`dev-env` repositories, CodeArtifact and the consumer-facing policies, authored under **Stage 7 step 5.a** and applied here, because step 5.0 pushes into them and design B reads packages from them (INT-01, INT-02's consumer half). **`production/pki/` is NOT a prerequisite and has gone back to Stage 7 pass 1** (D36 §3 amended the same day): the CA root's only Stage-6-time consumer was the image build, and what that image would trust with it — `gitlab.prod.internal`, `*.pages.internal` — does not exist until Stage 7, whose own step 2.4 defers the leaves for exactly that reason. **So 5.0's image carries no CA root**; it takes one at Stage 7 step 2.6, in the sitting that first has something to clone (INT-09, already deferred there) |
-| **Consumes** | [D5](../decisions/D05-sagemaker-egress.md), [D12](../decisions/D12-budget-ceiling.md), [D13](../decisions/D13-lake-formation-enforcement.md), [D14](../decisions/D14-supply-chain-account.md), [D21](../decisions/D21-development-account.md), [D26](../decisions/D26-unified-studio.md), [D28](../decisions/D28-workflow-contract.md), [D35](../decisions/D35-sandbox-cardinality.md). **[D36](../decisions/D36-internal-pki.md) was dropped here on 2026-08-21**, and the drop is the readable half of the move: with the CA root out of 5.0's image this stage consumes nothing D36 decides, which is why D36's own *Referenced by stages* row — which never listed Stage 6 — becomes correct rather than stale |
-| **Proves** | [INT-01](../integrations.md), [INT-02](../integrations.md) (the consumer half; the domain policy is **Stage 7 step 5.a's, applied at this stage's pass 0** — reworded 2026-08-21 from "applied early", which read as a thing already done), [INT-12](../integrations.md), [INT-15](../integrations.md), [INT-16](../integrations.md) (the portal half, provisional since Stage 4), [INT-17](../integrations.md). **Deferred to Stage 7 with the surface that needs it:** INT-09 (the `git clone` inside the `engineering` project) and INT-13 (CodeConnections) — GitLab does not exist before Stage 7 step 1 |
+| **Status** | **CLOSED AS A RECORD 2026-09-05.** This file is the past tense of the old Stage 6: the passes that ran, the measurements they produced, and the six execute-time decisions, all of them settled. **Nothing here is an instruction** — an executor planning work opens [6b](stage-06b-development-becomes-staging.md), [6c](stage-06c-networking-hub.md) or [6d](stage-06d-unified-studio-remainder.md) instead. What ran: passes 0, 1 and 2 (2026-08-21/22, four sittings) — `production/registry/`, the two `sagemaker/` prerequisite slices, the step 3 deny fragment in all six persona sets, 1.6's Athena Spark SCP amendment, the domain `awsds-studio` (V2, Data Governance), both member associations, 11 blueprint configurations and 22 authorization grants per member, both project profiles, and **the create path measured end to end on 2026-08-22**; step 5.0's `default-v0.1.0` pushed to both ECR repositories from one buildbox session; 2.6's derived-zone removal applied 2026-08-26/27; and the dated readings of passes 4-5 (4.1's chain-evaluation finding, 4.2's `datazone` removal and its two-sided measurement, 4.3's friction session, 8.1/8.2's idle-shutdown and teardown machinery, 9.1's log groups). **The Development-account half of everything above is unwound by 6b** and the design-A half of pass 4 is superseded by 6c — this file is not edited to match either; it records what was true when it ran |
+| **Prerequisites** | — (a record) |
+| **Consumes** | [D5](../decisions/D05-sagemaker-egress.md), [D12](../decisions/D12-budget-ceiling.md), [D13](../decisions/D13-lake-formation-enforcement.md), [D14](../decisions/D14-supply-chain-account.md), [D21](../decisions/D21-development-account.md), [D26](../decisions/D26-unified-studio.md), [D28](../decisions/D28-workflow-contract.md), [D35](../decisions/D35-sandbox-cardinality.md) |
+| **Proves** | [INT-01](../integrations.md), [INT-02](../integrations.md) (consumer half), [INT-12](../integrations.md), [INT-15](../integrations.md), [INT-16](../integrations.md) (portal half), [INT-17](../integrations.md) |
 
-*Read with [`docs/plan/conventions.md`](../conventions.md) (naming, layout, `[P]`/`[D]`/`[E]`, IAM rules).*
-
-**Forward constraint from D35:** the associated set is **N + 1** accounts (every unit's Sandbox plus
-Development), each with its own blueprint configuration against the same single domain — write the
-association and blueprint lists as maps keyed by consumer, never literals for unit 1. AWS's
-**account pools** (`datazone create-account-pool`, CLI-only) are the native mechanism for account-agnostic
-profiles; note it for [Stage 14](stage-14-sandbox-vending.md) and do not adopt it at N=1.
-
-**Who does what, stated once:** **Claude** writes every slice, module and policy fragment, runs
-`terraform fmt`/`validate`/`plan` and the read-only `aws/` scripts (`./aws/studio.py` is this stage's), and
-drafts every console step with **every required field named** (Lesson 16). **The user** runs every
-`terraform apply`, the 0.1a probe pair — the creation act and the canary replay; step 0's standalone CLI probes died 2026-08-20 — the console association flow, the portal sign-ins, and
-the docker build/push of 5.0. Steps below are tagged only where the split is not obvious from this rule.
+*Read with [`docs/plan/conventions.md`](../conventions.md). The hand-written record of the same work is
+[`log-stage-06a-unified-studio.md`](../../log/log-stage-06a-unified-studio.md).*
 
 ---
 
-**Objective:** the data scientist's working environment — one SageMaker unified domain (DataZone V2) with
-projects (D26), hardened to the data perimeter, plus the D5 egress comparison it exists to host.
+**Objective (as it stood):** the data scientist's working environment — one SageMaker unified domain
+(DataZone V2) with projects (D26), hardened to the data perimeter, plus the D5 egress comparison it existed
+to host. **The comparison's verdict is no longer this stage's**: 6c settles it by construction, since a
+spoke with no default route reaches the internet only through the institutional proxy.
 
 ## What this stage builds, and in which accounts
 
@@ -264,7 +255,11 @@ depend on a decision of mine"), each one planned to a file, applied from that fi
     `grants.tf` joins the slice that owns the profiles — **every field `createOnly`**, so a
     re-association is a destroy-and-create rather than an edit.
 
-### What is owed, and by whom
+### What was owed on 2026-08-21, and how each one closed
+
+*Every row is struck through: the table is kept because the strike-throughs are the record of how each
+obligation was discharged. What the stage still owed when it was split on 2026-09-05 is in
+[6d](stage-06d-unified-studio-remainder.md), not here.*
 
 | # | Owed | Whose |
 |---|---|---|
@@ -288,7 +283,10 @@ depend on a decision of mine"), each one planned to a file, applied from that fi
 
 ---
 
-## To execute
+## The passes that ran, step by step
+
+*Past tense throughout: every step below is a record. The one clause that is still an instruction is 3.3,
+and it has moved to [6d](stage-06d-unified-studio-remainder.md).*
 
 ### 0. Preflight — prove the SCP lets this account through, before Terraform meets it
 
@@ -888,14 +886,16 @@ own space. Record the residual for Stage 11's threat model: remote sessions auth
 credentials even in IdC domains and persist up to 12 h after portal logout**, and the kill-switch, if ever
 needed, is the `sagemaker:RemoteAccess` condition key on `CreateSpace`/`UpdateSpace`.
 
-**3.3 — Prove the deny pair** — **user**, from a data-scientist session: a job submitted with no VPC
-config fails naming the policy; the same job inside the VPC with an allowed instance type runs. Read the
-wording, not the exit code.
+**3.3 — Prove the deny pair — NOT RUN; moved to [6d](stage-06d-unified-studio-remainder.md) step 1.1.**
 
-### 4. Egress design A — allowlist on the NAT path (D5, `docs/plan/architecture.md` §4.3)
 
-*Why: half of the comparison D5 exists to settle. Stage 3 already built the NAT behind `egress_mode=A`;
-what this step adds is the control that makes it "limited internet" instead of internet.*
+---
+
+## The dated readings of passes 4 and 5
+
+**These are records, not steps.** Each block below ran on the date it names; the half that was still owed
+when this file was cut has moved — the egress work to [6c](stage-06c-networking-hub.md), the Studio-side
+work to [6d](stage-06d-unified-studio-remainder.md) — and is not repeated here.
 
 **4.1 — Add the Route 53 Resolver DNS Firewall to the two Interactive `egress/` slices** — Claude writes,
 **user** applies: a rule group with an explicit domain allowlist, default-deny, the block action logged.
@@ -1074,8 +1074,6 @@ pip, cargo, rustup, CRAN, apt and ECR Public a path (4.1's block), so a friction
 `v0.3.0` behaviour this sitting measured would price a wall the code has already removed. Apply first,
 then read.
 
-### 5. Egress design B — no NAT at all (D5, INT-02)
-
 **5.0 — Build and push the first `base`/`dev-env` images by hand** — **user**, ~~laptop~~ the **buildbox** (the body's own 2026-08-21 measurement: the distribution is `amd64`-only), pass 1. The one
 place in the plan where an artifact reaches an account without a pipeline: acceptable exactly once, at
 bootstrap, replaced by Stage 8's pipeline building the same `Dockerfile`s. **It pushes into pass 0's
@@ -1157,59 +1155,11 @@ that on `prod-us-west-2-starport-layer-bucket` and no `PutObject`. So the bytes 
 `IMMUTABLE`), and the first one written is the convention Stage 8's pipeline inherits, so it is chosen
 rather than typed.
 
-**5.1 — Make the image selectable in the throwaway project — INT-17, before the comparison starts.** The
-attachment point (read 2026-08-16) is the **Tooling-provisioned SageMaker AI domain** in the member
-account: image + image version + app image config, then the domain's `CustomImages` — the
-`sandbox/dev-env/` and `development/dev-env/` slices of conventions §6, applied here for the first time.
-Two things only execution can answer — verification (vi): whether the update **survives a blueprint
-reconciliation** (INT-15's question, one resource over), and whether the image pulls **cross-account from
-the Production ECR at all** — same-Region is documented as required and cross-account is documented only
-for RStudio, so expect INT-01's fallback (an ECR replication rule into each Interactive account, not a
-pipeline) to be the real path. Record the working mechanism — Stage 8 step 1 is written against it.
-Machinery, same sitting: `RANKS["dev-env"]` and the two `[P]` rows in `scripts/tfhygiene/layers.py` —
-a slice with no row fails `make check` (added 2026-08-16, by the Stage 8 revision: this step applies the
-slices first, so the rows are its to add).
 
-**5.2 — Flip the switch: `egress_mode=B` in the two Interactive accounts** — **user** applies: no NAT
-route at all; the CodeArtifact endpoints from Stage 3 step 8.4; packages from CodeArtifact (cross-account
-from Production — **INT-02's consumer half proven here**), images per 5.1. Julia, R and Rust arrive
-pre-installed in the dev-env image (`docs/plan/architecture.md` §4.3) — confirm Cargo against CodeArtifact
-(open question 5).
+---
 
-**5.3 — Answer the two questions Stage 3 deferred here** — Claude reads, user provokes: whether the AL2023
-mirror-list path matters under B at all (no EC2 lives in the Interactive private subnets; record where the
-answer lands), and whether `lakeformation` is ever called from the VPC in these flows or leaves Stage 3's
-core endpoint list (its verification (ii)). Both from the flow logs of a working session.
+## The machinery of passes 5 and 6 that landed (idle shutdown, teardown, log groups)
 
-### 6. The comparison, and the verdict that closes D5
-
-**6.1 — Measure both designs on the same working session**: hourly cost (from `./aws/egress.py` §6 plus
-the app-hours), what breaks in a normal session, how long the "I need package X right now" loop takes
-under each (design B's loop includes the Stage 8 gate once it exists), and what a deliberate exfiltration
-attempt achieves (DNS-name filtering is bypassable by raw IP under A; B has no path to misuse).
-**Re-framed 2026-08-25 (D5 re-scoped by the user's clarification):** the comparison is about the
-**compute plane only** — the portal experience is the client plane's, served through the VPN's egress
-(the institutional proxy once built — open question 23), and is *out of scope of this verdict*; (A) versus (B) is a short whitelist versus an empty one on
-the same mechanism; and both designs' allowed traffic will ultimately cross the institutional HTTP/HTTPS
-proxy (open question 23), so the friction being measured here is SageMaker's *additional* filter, not the
-whole path.
-
-**6.2 — Write the verdict into `docs/plan/architecture.md` §4.3 and close D5** — **mark the rebuild-loop
-number provisional**: it is measured against a hand-built image here and re-measured against the Stage 8
-pipeline. The choice is made here; the number behind it is confirmed there.
-
-### 7. Removed (2026-08-17) — the shared-filesystem answer
-
-*This step verified whether SMUS could attach D24's EFS at all — the documentation said no, and
-three fallbacks were queued. The question dissolved before it was asked: the NFS requirement was
-withdrawn from `docs/plan/objectives.md` and [D24](../decisions/D24-shared-filesystem.md) with it.
-File exchange is S3 and git — the paths SMUS project storage already documents. The step number
-stays retired.*
-
-### 8. Idle shutdown and the teardown machinery (D11, open question 15)
-
-*Why: "as many spaces as they like" is billed by the hour, and D11 is a property of the design, not of the
-user's habits. Two halves: the product's own idle shutdown, and this repository's `make down`.*
 
 **8.1 — Enforce idle shutdown through the Tooling parameters, non-Editable** (with 1.5):
 `lifecycleManagement` on, `idleTimeoutInMinutes` (60 is a reasonable start), **`maxIdleTimeoutInMinutes` as
@@ -1229,19 +1179,6 @@ passing through it. **Exercised read-only 2026-08-26**: `./scripts/down-studio-a
 discovers `d-p6gthxc82ckg` and reports `no running app`, exit 0 — the discovery half proven against a real
 domain. **What is still owed is the delete path itself, and it needs a running app**: that is 8.4's, and
 it belongs to the same portal sitting as pass 3.
-
-**8.3 — State the layers, and what `make down` touches:** the DataZone domain, the profiles, the
-`sagemaker/` prerequisites and the per-project SageMaker AI domains are **`[P]`** (metadata-priced or free
-at rest; destroying them would orphan home storage and churn every ID); **only running apps are `[E]`**,
-deleted by 8.2 through SageMaker, never through DataZone, which owns no compute. Project home directories
-are **scratch by policy** — notebooks live in git, data in S3. State this
-to users explicitly.
-
-**8.4 — Prove the lifecycle** — **user**: `make down ENV=sandbox` deletes the running apps and touches
-nothing `[P]`; `make up` restores the session; `./aws/studio.py` diffed across the cycle shows only
-timestamps and app rows changed.
-
-### 9. Observability
 
 **9.1 — Create the log groups deliberately** — Claude writes, **user** applies: `/awsds/<env>/studio` at
 30-day retention (matching Stage 3's flow-log decision) and confirm app/space logs land in named groups
@@ -1296,7 +1233,7 @@ persona sets, images, apps. The behavioural proofs are the stage's own (Lesson 2
 ## Decisions due while executing
 
 **Blocking questions for the user: none.** Each is decided during the stage — or, for 3-5, was settled
-ahead of it (Status row) — and written into `docs/log/log-stage-06-unified-studio.md` (Lesson 16).
+ahead of it (Status row) — and written into `docs/log/log-stage-06a-unified-studio.md` (Lesson 16).
 Recommendations stated so the keyboard is not the decision-maker.
 
 1. **The notebook Spark runtime replacing Athena Spark** (1.4, open question 12) — EMR Serverless or Glue
@@ -1480,10 +1417,13 @@ Recommendations stated so the keyboard is not the decision-maker.
    project storage paths of its own, and what a blueprint-authored role will carry is INT-15's
    question — writing the prefixes earlier is guessing at an interface, the mistake
    `policies-data-scientists.tf`'s own header names.
+## Verifications — the answers this stage produced
 
-## Verifications to answer while executing
-
-Record every answer, including the ones that come out fine.
+*Answered here: i, ii, iv, v, x (the 5.0 half), xii-xiii (Stage 5's pair, read in the same session),
+xviii, xx. **Still open when the stage was split**, and carried forward with their subjects re-cut:
+iii, vi, viii, ix, xi, xiv, xv, xvi, xvii, xix → [6d](stage-06d-unified-studio-remainder.md); vii's
+closing choice (INT-16 fallback (i) versus recorded acceptance) → [6c](stage-06c-networking-hub.md),
+which owns the address it is keyed on.*
 
 | # | Question | Step |
 |---|---|---|
@@ -1507,7 +1447,6 @@ Record every answer, including the ones that come out fine.
 | xviii | **Where does the project S3 path land, which hand creates it, and under which key?** The fields [`docs/SMUS.md`](../../SMUS.md) §S3 item 1 books on this step by name, **plus the bucket's default encryption key**, which that list does not carry: a service-created bucket outside the account's data CMK is a scope Stage 11 inherits, not a finding to close here (`docs/GOVERNANCE.md` §Encryption owns the rule). Decision 6's prefix shape is written against this answer. **ANSWERED 2026-08-26, all three parts, read-only** — the path is `s3://awsds-sandbox-smus-projects/<domain-id>/<project-id>/<scope>/` with two live scopes (`shared/`, `dev/`) and **no per-person grain**; the hand is **ours** for the bucket (Terraform, v0.3.2) and the **service's** for the tree inside it; the key is `alias/awsds-sandbox-project`, the project CMK, with `BucketKeyEnabled` and `SSE-C` blocked — so the exception `docs/GOVERNANCE.md` §Encryption already names is confirmed by measurement rather than by the code that declared it. The three findings the same reading produced are at step 2.4 | 2.4 |
 | xx | **Does any blueprint regional parameter, or any Tooling parameter, accept the project CMK?** `alias/awsds-<env>-project` is created by `terraform-modules/sagemaker-prereqs/` for the resources a blueprint provisions, and pass 1's premise died at v0.3.2 — **ANSWERED 2026-08-22: Tooling's `KmsKeyArn` regional parameter accepts it** (the wizard-field ladder's third rung), the resources under it are the `awsds-<env>-smus-projects` bucket's contents and the blueprint-provisioned volumes, and the first provisioned role's `KmsKeyId` tag read it back. The no-consumer branch is closed — that overlaps (xviii), which reads the project S3 path's own default encryption key at 2.4. **If none does, the two keys have no consumer and the branch is explicit rather than drifting**: delete them, or keep them with a named future consumer and a date. One key-month per account either way | 1.4, 1.5, 2.4 |
 | xix | **Which `aws:SourceVpce` does an S3 call from a project subnet actually present** — the account's `[P]` gateway endpoint, or the interface endpoint 4.2 creates — and do `trusted_vpce_ids` and (since 2026-08-26, the derived buckets removed) the **projects bucket's** condition carry it? The measurement [`docs/SMUS.md`](../../SMUS.md) §VpcOnly assigns to 4.2 by name after Stage 5 pass 4d (Lesson 33). Distinct from (viii), which asks only which entries are exercised, and **unanswerable from flow logs** — the field is CloudTrail's `vpcEndpointId`. **Sharpened 2026-08-27 by an attempt to answer it from what is already recorded, which failed and named its own remedy**: the trail's S3 events in Sandbox are all `AWSReservedSSO_InfrastructureAccess_*` from the laptop, carrying **no** `vpcEndpointId`, and `s3-control` (the Access Grants vend the notebook actually makes) returns **nothing at all** from `lookup-events`. So the app plane's S3 traffic — object reads, writes and vends — leaves **no management event to read**, and Stage 11's data events do not exist yet. **The remedy is to choose the call rather than the moment**: from inside a project notebook, run a **management**-classified S3 call — `GetBucketLocation` on the projects bucket, the same instrument Stage 5 step 4e chose for exactly this reason — and read its `vpcEndpointId`. One call, one row, no new infrastructure; it needs a JupyterLab session, so it is the **user's** hand | 4.2 |
-
 ## Risks
 
 - **Pass 0 is the risk that already fired once, silently** (2026-08-21): a prerequisite in another

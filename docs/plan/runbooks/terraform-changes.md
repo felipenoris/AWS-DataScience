@@ -182,6 +182,56 @@ new version at the merge commit plus a caller bump, never a moved tag.
 3. Then Recipe A from step 3. The state bucket already exists (`bootstrap/` made it), so the first
    init just works.
 
+## 4b. Recipe E — moving a slice between folders (or accounts)
+
+*Written 2026-09-05 for [Stage 6b](../stages/stage-06b-development-becomes-staging.md), which moves six
+slices from `development/` to `staging/`. Until then the tree had exactly one documented state migration —
+the bootstrap's local→S3 hop — and §8 forbids improvised `state mv`.*
+
+**Why it needs a recipe at all.** The backend key is `<folder>/<slice>/terraform.tfstate` and the bucket
+name carries the `<env>` token, so a folder rename moves **every** state object; and the same commit
+usually wants to change the token, which renames physical resources. Doing both at once produces a plan
+nobody can read, in which a migration failure and an intended replacement look identical.
+
+**So the rule is: migrate first, prove it with an empty plan, and only then flip the token.**
+
+1. **Initialise with the OLD backend**, in the old folder, so the state is cached locally and you have
+   something to migrate from.
+2. **Create the destination's `bootstrap/` first** if the bucket is new — it is an ordinary Recipe C
+   slice, and it must exist before any `-migrate-state` names it.
+3. **`git mv` the folder** and regenerate the backend configuration for the new bucket and key, **leaving
+   the tfvars alone** — same `env`, same `environment_tag`, same everything the resources are named from.
+4. **`terraform init -migrate-state`.** Answer `yes` to copying the existing state.
+5. **`terraform plan` must return `No changes`.** That empty plan is the proof of the migration and the
+   gate for everything after it. Anything else means the state did not arrive intact: stop, do not apply.
+6. **Then, as a separate commit, flip the token** and read the plan as a *replacement* list. Expect names
+   that are inputs to be replaced (security groups, log groups) and ids that are not to change in place
+   (a VPC, its subnets, its gateway endpoints — which is what preserves any policy that names them,
+   Lesson 3). An unexpected replacement stops the step.
+7. **Retire the old bucket last**, and only after every slice's step 5 has passed: migrate `bootstrap/`'s
+   own state, lift `prevent_destroy` in one commit, empty the versioned bucket by hand (object versions
+   **and** delete markers), and destroy it in the next — the two-commit rule of §3, applied to a bucket.
+8. **Keep the old vocabulary rows alive until then** (`ENV_TOKENS`, `PROFILES`, `layers.py`): the
+   generator still has to be able to emit the old backend while any slice is mid-move.
+
+## 4c. Recipe F — a staged DESTROY, when one resource type must go before another
+
+*Written 2026-09-05 for Stage 6b's SMUS unwind. It is the mirror of Recipe D and the **only** other
+sanctioned use of `-target`.*
+
+Reach for it when a single slice holds two resource types with an ordering dependency the provider does not
+express — the case that motivated it: eleven `awscc` blueprint configurations and eleven authorization
+grants keyed to them, where a configuration with a grant still attached has never been destroyed in this
+estate and the API's behaviour is unknown.
+
+1. **Plan the whole destroy first** and read the order the provider chose. If it already destroys the
+   dependent type first, apply it and stop — no `-target` is needed.
+2. **Otherwise destroy the dependent type alone**: `terraform apply -destroy -target=<the grants>`.
+3. **Read the API back** — not the state file — to confirm they are gone.
+4. **Then the rest of the slice**, with no `-target`.
+5. **Re-plan to `No changes`.** As with Recipe D, the split exists so that a step can be *verified*
+   between halves; a `-target` used to skip a failing resource is the thing §8 forbids.
+
 ## 5. Recipe D — the staged apply, when a value must be READ before the rest is built
 
 `-target` is forbidden everywhere else (§8) and this is the exception that forbidding it protects:

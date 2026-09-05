@@ -2,11 +2,13 @@
 
 **Status:** Decided (2026-08-07): **USD 50/month**
 
+**AMENDED 2026-09-05:** the ceiling is unchanged and is what rules the hub's shape — **zero NAT gateways** (a standing one is ≈ USD 36.50/month, three quarters of the ceiling) and Transit Gateway rejected with a number (USD 0.05 per attachment-hour). The floor moves by roughly +USD 4.65/month (a second Elastic IP and one or two private zones) and every session hour falls, since the two per-account NAT gateways are destroyed.
+
 **In one line:** USD 50/month ceiling; it is what rules out always-on GitLab and forces stop/start.
 
 **Related decisions:** [D20](D20-staging-account.md), [D21](D21-development-account.md), [D22](D22-data-governance-account.md)
 
-**Referenced by stages:** [Stage 1a](../stages/stage-01a-landing-zone.md), [Stage 1d](../stages/stage-01d-org-wide-enablement.md), [Stage 6](../stages/stage-06-unified-studio.md), [Stage 7](../stages/stage-07-gitlab-runners-ecr.md)
+**Referenced by stages:** [Stage 1a](../stages/stage-01a-landing-zone.md), [Stage 1d](../stages/stage-01d-org-wide-enablement.md), [Stage 6](../stages/stage-06a-unified-studio.md), [Stage 7](../stages/stage-07-gitlab-runners-ecr.md)
 
 ---
 

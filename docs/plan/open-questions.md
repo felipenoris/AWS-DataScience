@@ -620,44 +620,24 @@ length, under item numbers 10-12 that collided with the live items above; the du
 
 ### Raised by the 2026-08-25 objectives clarification
 
-23. **How the single-egress + proxy topology lands on an estate built with per-account NATs.** The
-    clarification (`objectives.md`; D5/D6 revised the same day) states the target: **one internet egress
-    point for the whole cloud, one HTTP/HTTPS proxy**, crossed by the client plane (the VPN laptop's
-    whole internet) and by every allowed compute connection alike — two filters, the institutional
-    proxy's and SageMaker's stricter one. The lab today has the opposite interim shape: a NAT per
-    Interactive account (`egress/`, `[E]`), plus the WireGuard host doubling as NAT for the VPN clients
-    and the isolated tier. What is undecided, in rough dependency order: **where the proxy lives**
-    (which account owns the egress VPC — a new `Network` platform account, Production, or the VPN home —
-    and on which axis, given Lesson 10's registry-vs-runtime question); **how traffic reaches it**
-    (Transit Gateway is the institutional answer and its standing cost is against D12 — peering is
-    O(n²) but N is small here; `institutional-delta.md`'s Networking row already prices this direction);
-    **what the proxy is** (§4.3a's two shapes — the Squid `CONNECT` proxy is the cheap one, and its two
-    catches become design inputs: every tool needs `http_proxy`/`https_proxy`, and the proxy must
-    resolve outside the DNS Firewall); **what happens to the per-account NATs and DNS firewalls**
-    (they become the interim, or survive as the compute's *second* filter — the clarification says two
-    filters, so the per-account layer may be exactly where SageMaker's stricter list keeps living); and
-    **which stage builds it** — Stage 11's egress-control leg owns the requirement, but the topology
-    change touches Stage 3's slices and the VPN runbook. Owner: the user (it is an architecture choice);
-    the design pass that answers it should produce a decision file. Until then, `D5`'s two-plane scope
-    and the two-filter model are the recorded target and nothing in the tree builds the proxy.
-
-    **Input added 2026-08-26, and it changes this question's standing from optimisation to repair.** The
-    interim shape is not merely inelegant, it is **broken by construction for the client plane**: a
-    full-tunnel laptop resolving through an Interactive VPC inherits every interface endpoint's private
-    zone, so client-plane names answer with **private** addresses, and the SMUS portal — a **public**
-    origin — cannot reach them without the browser's Local Network Access grant (Lesson 43; measured
-    outage and repair the same day, `NETWORK.md` §5). The `datazone` removal fixed the one instance that
-    could be fixed by removing an endpoint; `sagemaker.studio`, `glue`, `lakeformation` and `athena`
-    cannot leave, because they are the compute plane's own perimeter. **So "where the client plane
-    resolves" is now a required output of this question, alongside where the proxy lives** — and the two
-    are related: an egress/inspection VPC that the client plane resolves through must *not* carry the
-    compute plane's interface endpoints, or it reproduces this break at the new address. The three
-    shapes worth pricing when it is answered: give the client plane its own resolver (no endpoint zones),
-    keep the endpoints but add a Route 53 Resolver **FORWARD** rule for the client-plane names (an
-    outbound endpoint is 2 ENIs, ~USD 0.25/h — measured against this estate's whole endpoint bill), or
-    accept a managed-browser policy as the control (`institutional-delta.md`'s device-trust row).
+23. **~~How the single-egress + proxy topology lands on an estate built with per-account NATs.~~
+    CLOSED 2026-09-05 by [D38](decisions/D38-single-egress-hub.md), and built by
+    [Stage 6c](stages/stage-06c-networking-hub.md).** All five parts answered: the hub is
+    `VPC-Networking` **inside Production**, a quota-forced compromise with a written trigger to move it to
+    a `shared` platform account; traffic reaches it by **VPC peering**, which is what forces the answer to
+    the next part — peering shares an address and never a path, so a shared NAT gateway does not exist and
+    the single egress is an **explicit Squid proxy** (Lesson 44); the per-account NAT gateways are
+    **destroyed** and the DNS firewalls **survive with a different job** (closing the recursive resolver,
+    not filtering the internet, which an explicit-proxy client never resolves); the two filters the
+    objectives require both become source-scoped allow-lists on the proxy; and the client plane gets the
+    **free** one of this question's three priced shapes — the VPN host moves into a VPC that carries no
+    compute-plane endpoint, so the client resolves there and Lessons 40-43's shadowing has no address to
+    reappear at. The two options this question priced and did not take are recorded in D38: a Route 53
+    Resolver outbound endpoint (2 ENIs at USD 0.125/h ≈ USD 182/month) and centralizing the interface
+    endpoints in the hub (which would put the compute plane's private zones back on the client's resolver).
 
 24. **Should a SageMaker Unified Studio service role be a Lake Formation data lake administrator?**
+    *(Scope narrowed 2026-09-05: Sandbox only — the second Interactive account is gone.)*
     Nobody decided that it should be, and in Sandbox two of them are. Found 2026-08-26, while Stage 16
     planned an unrelated key-policy statement: `awsds-sandbox-smus-manage-access` and
     `awsds-sandbox-smus-provisioning` sit in `DataLakeSettings.DataLakeAdmins` beside
@@ -697,7 +677,7 @@ length, under item numbers 10-12 that collided with the live items above; the du
 
 ### Raised by Stage 6 step 2.4's reading, 2026-08-26
 
-25. **What expires in `awsds-<env>-smus-projects`, and who removes the storage of a project that no
+25. *(Scope narrowed 2026-09-05: Sandbox only.)* **What expires in `awsds-<env>-smus-projects`, and who removes the storage of a project that no
     longer exists?** *(Reweighted the same evening it was raised: D19's 2026-08-26 revision made this
     bucket THE derived zone — `awsds-<env>-derived` and its 30-day shedding are removed — so this is no
     longer a side bucket's hygiene question but the derived zone's own expiry, D19 practice (iii)'s only
@@ -742,6 +722,7 @@ length, under item numbers 10-12 that collided with the live items above; the du
 ### Raised by the user, 2026-08-26 — the promotion half of the re-homing
 
 26. **How does work produced in the derived zone reach Production, and what in SMUS carries it?**
+    *(Amended 2026-09-05: half of this is answered — the SageMaker Unified Studio CI/CD CLI is what carries a project's content, and it is an **exporter** here, because it deploys only into existing SMUS projects and a deployment target has none (D26/D28 amended). The `gitConnectionArn`-is-createOnly half stays open.)*
     The re-homing made the SMUS project path the derived zone ([D19](decisions/D19-derived-zone.md)
     revised), so a scientist's output now lives in `dev/sys/athena/` (where the project's enforced
     workgroup writes) and `shared/` (the folder JupyterLab mounts). **The promotion contract on the

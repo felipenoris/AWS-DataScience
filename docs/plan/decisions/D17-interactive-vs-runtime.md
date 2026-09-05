@@ -2,6 +2,8 @@
 
 **Status:** Decided (2026-08-07), revised (2026-08-08, D21): **interactive compute exists only in the Interactive OU (Sandbox and Development); the deployment targets carry the SageMaker runtime, but only pipelines submit to it**
 
+**AMENDED 2026-09-05 (user):** sharpened to **humans run code in Sandbox and nowhere else**. With `Development` converted to `Staging` ([6b](../stages/stage-06b-development-becomes-staging.md)) the Interactive OU holds the Sandboxes alone; Staging and Production carry the SageMaker **runtime** only — jobs, Pipelines, batch transform, the Model Registry and endpoints, none of which needs a domain object — and the `Workloads` OU denies the interactive surface and `datazone:*` outright.
+
 **In one line:** Interactive compute exists only in the Interactive OU; deployment targets carry the runtime, and only pipelines submit to it.
 
 **Related decisions:** [D14](D14-supply-chain-account.md), [D20](D20-staging-account.md), [D21](D21-development-account.md)

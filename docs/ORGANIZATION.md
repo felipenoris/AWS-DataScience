@@ -5,6 +5,15 @@ The accounts below, grouped into organizational units. The account is the isolat
 policy boundary, so each OU is named for the policy set it carries rather than for its contents
 ([D23](plan/decisions/D23-ou-structure.md)).
 
+
+> **SCHEDULED CHANGE, 2026-09-05 — the roster below is current and one row of it is about to move.**
+> [Stage 6b](plan/stages/stage-06b-development-becomes-staging.md) renames `Development Account` to
+> `Staging Account` and moves it from `Interactive` to `Workloads`, with a new persona set
+> (`InfrastructureAccess`, `DataScientistStagingAccess`, `DeploymentManagerAccess` — and no
+> `DevEnvStewardAccess`). The account is not vended: the quota increase was refused, and the interactive
+> environment it used to be was found unnecessary. Nothing here is edited ahead of the console act; the
+> tables below stay as measured until that sitting, which is the same rule every other roster fact follows.
+
 **Four OUs carry a document of this project's — `Workloads`, `Data`, `Identity` and `Interactive`, one each
 ([Stage 1c step 7.6](plan/stages/stage-01c-preventive-policies.md)). Of the three that carry none,
 `Security` holds Control Tower's own guardrails by being foundational, and the other two hold no policy set

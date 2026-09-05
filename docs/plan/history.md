@@ -396,6 +396,37 @@ onwards the file records how the environment changed, not just the plan.
   resolves through — which is why design B, where this endpoint must come back because there is no NAT,
   has to move the portal off that resolver instead of dropping the endpoint.
 
+- **2026-09-05 — the plan was re-scoped on three inputs from the user, and Stage 6 was split into four.**
+  The inputs: AWS refused the account-quota increase, so no account can be vended; the SageMaker
+  experience showed no need for a *second* interactive environment; and the client-plane DNS break of
+  2026-08-26 showed the network was too thin to carry the estate. What changed. **Stage 6 became 6a
+  (the record of what ran), 6b (the rename), 6c (the network) and 6d (the remainder)**, and the stage log
+  moved to `log-stage-06a-unified-studio.md` with its index rows. **`Development` becomes `Staging`**: a
+  Workload account with the SageMaker runtime only, which is [D21](decisions/D21-development-account.md)'s
+  own larger branch of 2026-08-13 taken on experience rather than on the quota — the chain is now
+  `Sandbox → Staging → Production` and the user edited `objectives.md` in the same sitting.
+  **[D38](decisions/D38-single-egress-hub.md) was written**, closing open question 23: three VPCs in
+  Production, an explicit Squid proxy as the estate's single egress, **zero NAT gateways**, no default
+  route in any spoke, the WireGuard host re-homed with its Elastic IP *transferred*, and the VPN client
+  moved onto a resolver that carries no compute-plane endpoint — which is the structural repair Lessons
+  40-43 named and `NETWORK.md` §5 had been carrying as a browser grant. **[D7](decisions/D07-orchestration.md)
+  became MWAA Serverless only** (measured USD 0.088 per task-hour against USD 0.29/h for the smallest
+  provisioned environment); design B stays as INT-14's terminal fallback and the provisioned rung leaves
+  the plan, with an `airflow:CreateEnvironment` deny replacing the prose. **The SageMaker Unified Studio
+  CI/CD CLI was read rather than assumed**: it deploys only into existing SMUS *projects*, so it is an
+  exporter on the Sandbox side and the pipeline stays the deployer (D26/D28 amended) — the alternative
+  would have meant associating deployment targets and carving `datazone:*` out of the `Workloads` SCP.
+  **Lesson 44 was written** from the design's central correction: peering shares an address, never a path,
+  which is why "one NAT gateway behind the proxy" does not exist and why the isolation rule between
+  Interactive and Workloads is enforced for free. Amended in place, each with a dated line: D4, D5, D6,
+  D9, D11, D12, D14, D15, D17, D18, D19, D20, D22, D23, D26, D35, D36; D21 superseded; INT-04 closed into
+  INT-07, INT-09 re-homed, INT-21 and INT-22 added; open question 23 closed and 24-26 narrowed; Stage 14
+  marked blocked on the quota, and Stage 15 deliberately **not** pulled forward (offered and declined).
+  **Provisioned things this touches:** nothing yet — every act above is plan and code. What it *schedules*
+  against provisioned state is in `AWS_STATE.md` §C: the account's rename and OU move, the destruction of
+  both NAT gateways and of `development/{sagemaker,data,egress}/`, the Elastic IP transfer, and the
+  re-keying of every VPN-only condition onto the proxy's address.
+
 ---
 
 *Plan core: [GENERAL_PLAN.md](../GENERAL_PLAN.md) · Decisions: [docs/plan/decisions/INDEX.md](decisions/INDEX.md) · Stages: [docs/plan/stages/INDEX.md](stages/INDEX.md)*

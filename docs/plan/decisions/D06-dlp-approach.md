@@ -3,6 +3,8 @@
 **Status:** Decided (2026-08-07): **native AWS combination**, on top of a data perimeter — **egress-control
 leg widened 2026-08-25 to the two-plane model** (see the last section)
 
+**AMENDED 2026-09-05:** the egress-control leg's topology is decided — [D38](D38-single-egress-hub.md), built at [Stage 6c](../stages/stage-06c-networking-hub.md). Stage 11 keeps the policy and the detection, and inherits a built proxy with an access log rather than a design.
+
 **In one line:** DLP is four problems with four native controls on top of the data perimeter, and IAM Access Analyzer is the one component that checks the others instead of adding to them.
 
 **Related decisions:** [D5](D05-sagemaker-egress.md), [D13](D13-lake-formation-enforcement.md), [D19](D19-derived-zone.md)

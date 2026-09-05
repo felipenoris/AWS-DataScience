@@ -6,7 +6,7 @@
 
 **Related decisions:** [D7](D07-orchestration.md), [D14](D14-supply-chain-account.md), [D17](D17-interactive-vs-runtime.md), [D22](D22-data-governance-account.md), [D25](D25-drop-box-consumer.md), [D26](D26-unified-studio.md)
 
-**Referenced by stages:** [Stage 6](../stages/stage-06-unified-studio.md), [Stage 9](../stages/stage-09-deployment-targets.md), [Stage 10](../stages/stage-10-orchestration-promotion.md)
+**Referenced by stages:** [Stage 6](../stages/stage-06a-unified-studio.md), [Stage 9](../stages/stage-09-deployment-targets.md), [Stage 10](../stages/stage-10-orchestration-promotion.md)
 
 ---
 

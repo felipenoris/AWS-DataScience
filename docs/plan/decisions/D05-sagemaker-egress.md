@@ -3,11 +3,13 @@
 **Status:** Decided (2026-08-07): **build BOTH and compare, in Stage 6** — **re-scoped 2026-08-25 by the
 user's clarification: D5 governs the egress of the SageMaker-MANAGED COMPUTE, never the client's machine**
 
+**AMENDED 2026-09-05:** the *comparison* is withdrawn — [D38](D38-single-egress-hub.md) settles it by construction. A spoke has no default route at all (design B's shape), so the compute reaches the internet only by addressing the institutional proxy, and "design A versus design B" reduces to the length of that compute's source-scoped allow-list on the proxy. Stage 6's steps 4-6 are records in [6a](../stages/stage-06a-unified-studio.md); the build is [6c](../stages/stage-06c-networking-hub.md).
+
 **In one line:** Two egress designs for the SageMaker compute, behind a switch and compared: (A) NAT plus a small allowlist, (B) internet fully blocked — and whatever either allows still crosses the institution's single HTTP/HTTPS proxy.
 
 **Related decisions:** [D6](D06-dlp-approach.md) (the client plane's egress is its territory)
 
-**Referenced by stages:** [Stage 3](../stages/stage-03-networking.md), [Stage 6](../stages/stage-06-unified-studio.md), [Stage 8](../stages/stage-08-cicd-pipelines.md), [Stage 11](../stages/stage-11-dlp.md)
+**Referenced by stages:** [Stage 3](../stages/stage-03-networking.md), [Stage 6](../stages/stage-06a-unified-studio.md), [Stage 8](../stages/stage-08-cicd-pipelines.md), [Stage 11](../stages/stage-11-dlp.md)
 
 ---
 

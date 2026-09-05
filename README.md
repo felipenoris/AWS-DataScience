@@ -316,6 +316,21 @@ Artifacts cross in one direction only, through the pipeline, and they pass throu
 - workflow definitions and application code (a Git tag),
 - the Terraform that instantiates them.
 
+
+> **RE-SCOPED 2026-09-05 — three sentences below are superseded, and they are the ones that matter most.**
+> **(1) The promotion chain is `Sandbox → Staging → Production`.** The `Development` account is renamed to
+> `Staging` and loses its interactive surface ([Stage 6b](docs/plan/stages/stage-06b-development-becomes-staging.md));
+> the account cap refused a vend, and the experience of using SageMaker showed a second interactive
+> environment was not needed. Humans run code in **Sandbox only** (D17 sharpened, D21 superseded by its own
+> larger branch). **(2) The network becomes a hub**: three VPCs in Production — `VPC-Networking` (the
+> estate's only internet gateway, an explicit Squid proxy and the VPN endpoint), `VPC-SharedServices`
+> (GitLab, Pages, runners) and `VPC-Workloads` (the production runtime) — with five peerings, **zero NAT
+> gateways** and no default route in any spoke ([D38](docs/plan/decisions/D38-single-egress-hub.md),
+> [Stage 6c](docs/plan/stages/stage-06c-networking-hub.md)). **(3) The VPN client is a private-network
+> client**: its whole internet, the AWS control plane included, crosses that proxy, which also fixes the
+> portal-over-VPN break this file's item 3 describes — the client stops resolving through a VPC that holds
+> the compute plane's endpoints.
+
 The chain is **Development → Staging → Production**. Staging receives the built artifact, runs the
 integration tests against a sampled or synthetic dataset, and is torn down again; only then does the
 **Deployment Manager**'s approval release the same artifact to Production. A failure in Staging stops the

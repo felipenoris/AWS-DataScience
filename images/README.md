@@ -11,7 +11,7 @@ owns the ECR repositories these push into, and this directory owns what goes in 
 
 ## Who builds them, and when that stops being true
 
-**Once, by hand, at [Stage 6](../docs/plan/stages/stage-06-unified-studio.md) step 5.0** — the single
+**Once, by hand, at [Stage 6](../docs/plan/stages/stage-06a-unified-studio.md) step 5.0** — the single
 place in this plan where an artifact reaches an AWS account without a pipeline. It is acceptable
 exactly once, at bootstrap, and it is **replaced by [Stage 8](../docs/plan/stages/stage-08-cicd-pipelines.md)
 step 1**, whose pipeline builds these same files from a GitLab repository the data scientist can write

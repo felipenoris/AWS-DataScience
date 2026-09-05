@@ -514,7 +514,10 @@ monitor.
 | Interface VPC endpoint data (USD/GB, up to 1 PB) | 0.01 | 0.01 | **1.00** |
 | Gateway VPC endpoint (S3, DynamoDB) | free | free | — |
 | Public IPv4 address, in use or idle (USD/h) | 0.005 | 0.005 | **1.00** |
-| VPC peering, in and out (USD/GB each way) | 0.01 | 0.01 | **1.00** |
+| VPC peering, in and out (USD/GB each way) — **charged only when the traffic crosses an Availability Zone; same-AZ peering traffic is free** (VPC pricing page, and the 2021 announcement that made it so) | 0.01 | 0.01 | **1.00** |
+| **Transit Gateway — VPC attachment (USD/h per attachment)** | 0.05 | 0.05 | **1.00** |
+| **Transit Gateway — data processed (USD/GB)** | 0.02 | 0.02 | **1.00** |
+| **Route 53 Resolver endpoint (USD/h per ENI; an inbound or outbound endpoint needs at least two)** | 0.125 | 0.125 | **1.00** |
 | Application Load Balancer (USD/h) | 0.034 | 0.0225 | 1.51 |
 | ALB capacity unit (USD/LCU-h) | 0.011 | 0.008 | 1.38 |
 | Client VPN endpoint association (USD/h) | 0.15 | 0.10 | 1.50 |
@@ -535,6 +538,15 @@ older per-service `AmazonEC2` offer still carries a São Paulo tier of 0.25 USD/
 of 0.090 matches what `docs/plan/architecture.md` §4.3 already assumed, which is a point in favour of the unified
 offer being the live one, but this is the one row in this file to verify against a real invoice before
 relying on it. The first 100 GB/month out of AWS is free organization-wide and is not modelled here.
+
+**The three rows added on 2026-09-05 exist to give two rejections a number** (Lesson 7 — a rejected-on-cost
+option goes stale in the direction that flatters the rejection). **Transit Gateway**: the hub-and-spoke
+this estate builds is five attachments, so 5 × 0.05 × 730 ≈ **USD 182/month standing**, before a byte —
+against VPC peering's zero per hour and a per-GB charge that only applies across an AZ. **A Route 53
+Resolver outbound endpoint** — the shape open question 23 priced for moving the client plane's resolution
+without moving the client — is two ENIs, ≈ **USD 182/month standing**; D38 takes the free shape instead
+(the client resolves in a VPC that carries no compute-plane endpoint). Both figures are from the
+`AmazonVPC` and `AmazonRoute53` offer files for `us-west-2`, read 2026-09-05.
 
 Interface VPC endpoints at 0.021 USD/h are the sharpest single difference for this project's operating
 model: the plan already calls them "the largest hourly item" and keeps the list minimal and single-AZ, and

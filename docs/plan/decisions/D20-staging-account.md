@@ -2,6 +2,8 @@
 
 **Status:** Decided (2026-08-08): **a seventh account, `Staging`, in a new `Workloads` OU alongside Production**
 
+**AMENDED 2026-09-05 (user):** the account is no longer vended — it is the renamed `Development` ([6b](../stages/stage-06b-development-becomes-staging.md)), so it keeps **10.50.0.0/16** and the 10.40 reservation is freed. Two clauses change with it: *no peering* becomes **peering with `VPC-Networking` only** (the proxy is the account's only internet path, and "something concrete" is what D20 asked for), and the inherited lake share is revoked rather than never granted. Everything else — a deployment target, written only by the pipeline, sampled or synthetic data, no domain, no registry of its own — is unchanged and now enforced by the `Workloads` OU.
+
 **In one line:** A Staging account in a `Workloads` OU: a deployment target with sampled data, no domain, no registry of its own.
 
 **Related decisions:** [D12](D12-budget-ceiling.md), [D14](D14-supply-chain-account.md), [D17](D17-interactive-vs-runtime.md), [D18](D18-data-scientist-access.md), [D21](D21-development-account.md), [D22](D22-data-governance-account.md)

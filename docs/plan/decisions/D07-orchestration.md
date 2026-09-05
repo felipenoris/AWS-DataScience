@@ -2,6 +2,8 @@
 
 **Status:** Decided (2026-08-08): **build BOTH and compare, in Stage 10**
 
+**AMENDED 2026-09-05 (user):** **MWAA Serverless only.** The provisioned-environment rung is removed from the plan — Stage 10's step 4, INT-14's last fallback and D28's third rung with it — on the measured price (USD 0.088 per task-hour with no standing fee, against USD 0.29/h for the smallest provisioned environment). Design **B** (EventBridge Scheduler + Step Functions) is **not** built and stays as INT-14's terminal fallback, documented; and "no provisioned MWAA" becomes a control rather than prose — an `airflow:CreateEnvironment` deny on the root SCP with a battery probe, because the SMUS provisioning role's AWS-managed policy grants it.
+
 **In one line:** Two orchestrators built and compared: (A) MWAA Serverless, (B) EventBridge Scheduler + Step Functions.
 
 **Related decisions:** [D5](D05-sagemaker-egress.md), [D17](D17-interactive-vs-runtime.md), [D26](D26-unified-studio.md), [D28](D28-workflow-contract.md)
