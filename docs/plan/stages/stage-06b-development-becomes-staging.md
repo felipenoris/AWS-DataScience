@@ -494,8 +494,14 @@ account by the exact string `Development Account` behind a precondition that fai
   `terraform-live/identity/sso/locals.tf` change the **value** `development = "Development Account"` to
   `"Staging Account"` (not the key), and update `aws/import-ids.py`. Re-plan `identity/sso/` and expect the
   precondition to pass again with **`No changes`** to the assignments.
-- **3.4 — the account IS in `Workloads`, measured two independent ways on 2026-09-06 — but WHICH PATH
-  was taken is not a thing this side can read, and that is the open half.** The two readings:
+- **3.4 — DONE 2026-09-06 by the user, "via console AWS", and the account IS in `Workloads`.** Which
+  console is the half that still matters and it is **not** a question anyone should answer from memory —
+  **3.5's read-back settles it**, and 3.5 is the same act either way: Control Tower *Update account* is
+  both the reading and, if the move went through the Organizations console, the repair. **One
+  consequence to expect rather than discover**: that act is precisely the account update Stage 1b
+  verification (vi) watches for, so a direct `AWSAdministratorAccess` assignment reappearing afterwards
+  is **expected** and gets restated, not reported as a finding. **The account IS in `Workloads`, measured
+  two independent ways on 2026-09-06.** The two readings:
   `./aws/rename-check.py` `RC-2 pass` from `organizations list-parents`, and — the stronger one, because
   it is the ceiling answering rather than the directory — the battery's `region` phase attributes the
   us-east-1 deny in this account to **`p-i0ney7mx`, the same policy id Production returns**, where
@@ -659,6 +665,18 @@ followed here, not authored.
   `staging` slice rows go into `scripts/tfhygiene/layers.py`, whose `staging joins at vend` comment is
   stale prose to correct in the same commit. **Keep the `development` rows alive** until the old bucket is gone — the
   generator still has to emit the old backend.
+- **4.3 — Recipe E step 1 DONE 2026-09-06; steps 3-5 wait on 4.2's apply.** `development/foundation/`
+  initialised against the OLD backend (`awsds-dev-tfstate`, key `development/foundation/…`) and planned:
+  **`No changes`**. That is the baseline the whole recipe rests on and it is worth taking *before* the
+  move rather than after: with it, a non-empty plan on the far side is the **migration**; without it, a
+  non-empty plan is ambiguous between the migration and drift that was already there. The state is now
+  cached locally, which is what Recipe E step 1 exists to produce.
+  - **The generated `peers` map already carries BOTH keys** — `development` and `staging`, both resolving
+    to `awsds-infra-staging` — because 4.2 added the `staging` PROFILES row while `staging` was still in
+    `CIDRS`. It is **inert**: `production/foundation/peers.tf` builds `local.peer_vpc_ids` as a
+    hand-written two-row map and never iterates `var.peers`, so an extra key creates no peering. Checked
+    rather than assumed, because the opposite would have been a third VPC peering proposed by a plan
+    nobody was reading for that.
 - **4.3 — [Claude⚡] Migrate with Recipe E — and only ONE slice actually needs it** *(measured
   2026-09-06)*. `foundation/` is the only surviving slice carrying resources; **`egress/` and `probes/` are
   `[E]` and their states are EMPTY — zero resources each**, because D11 leaves them torn down between
