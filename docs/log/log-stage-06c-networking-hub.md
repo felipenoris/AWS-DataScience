@@ -1012,10 +1012,19 @@ thing to actually run. They are written up individually because three of them ar
 - **[Claude] 18 interface endpoints, and the three `layers.py` rates were COUNTED rather than
   computed** — `terraform plan | grep -c aws_vpc_endpoint.interface` per slice, at the measured
   0.010/h. Sandbox **0.160 → 0.180**, Staging **→ 0.110**, Production **→ 0.100**.
-- **[Claude] SANDBOX WENT UP, AND THE LOG SAYS SO RATHER THAN AVERAGING IT AWAY.** Design B does not
-  save money on this slice: it trades 0.050/h of NAT for 0.080/h of endpoints, because 5.2 has to
-  **enumerate** what the NAT covered in silence. What D38 buys is one auditable exit instead of
-  three unenumerated ones. A stage that claimed a saving here would be measuring the wrong thing.
+- **[Claude] SANDBOX'S IDLE FLOOR WENT UP, AND THE FIRST VERSION OF THIS BULLET OVERSTATED WHAT THAT
+  MEANS.** It said *"design B does not save money on this slice"*, trading 0.050/h of NAT for 0.080/h
+  of endpoints because 5.2 has to **enumerate** what the NAT covered in silence. **That compares only
+  the idle hourly rate and drops the per-GB axis, which is where the two shapes actually differ:** NAT
+  **0.045/h + 0.045/GB** against an endpoint's **0.010/h + 0.010/GB** (measured, `docs/PRICING.md` §8).
+  So B costs **+0.020/h fixed** here and saves **0.035 per gigabyte** — break-even
+  **≈ 0.57 GB/h**, which one container pull passes in minutes. **Design B is cheaper on this slice too,
+  at any real usage**, and estate-wide the fixed rate falls as well (0.470 → 0.390/h), because Staging
+  and Production lost a NAT without gaining endpoints. The narrow true statement is: *Sandbox's idle
+  floor rose 0.020/h* — and an idle floor is what an `[E]` slice spends least time paying.
+  **Corrected because the user asked, and because the original would have been read as an argument
+  against the design rather than as a note about one number.** What D38 buys remains one auditable
+  exit instead of three unenumerated ones; it just does not have to be paid for.
 - **[Claude] The rates deliberately exclude 5.3's optional groups.** `bedrock` adds 0.040 and `emr`
   0.070 only for an apply that names them; a static rate that assumed them would over-report every
   session that does not. `make status` quotes this column, and the flag's own cost is in `make help`.

@@ -274,10 +274,13 @@ SLICES = [
     # (`terraform plan | grep -c aws_vpc_endpoint.interface`), at the measured 0.010/h per
     # endpoint of docs/PRICING.md 8.
     #
-    # SANDBOX WENT **UP**, and that is worth seeing rather than glossing: 0.160 -> 0.180. Design B
-    # does not save money on this slice - it trades 0.050/h of NAT for 0.080/h of endpoints, since
-    # 5.2 has to enumerate what the NAT used to cover silently. What D38 buys is one auditable
-    # exit instead of three unenumerated ones, not a smaller bill here.
+    # SANDBOX'S IDLE FLOOR WENT **UP**, 0.160 -> 0.180, because 5.2 has to enumerate what the NAT
+    # used to cover silently - AND THAT IS THE ONLY AXIS ON WHICH IT RISES, which an earlier version
+    # of this comment got wrong by comparing hourly rates alone. Per GIGABYTE a NAT is 0.045 against
+    # an interface endpoint's 0.010 (both measured, docs/PRICING.md 8), so design B costs +0.020/h
+    # fixed here and saves 0.035 per GB: break-even ~0.57 GB/h, which one container pull passes in
+    # minutes. Estate-wide the fixed rate falls as well, 0.470 -> 0.390/h. **This column is hourly
+    # only** - it cannot show the axis that decides the comparison, which is why the sentence is here.
     #
     # AND NONE OF THE THREE INCLUDES 5.3's OPTIONAL GROUPS, deliberately: `bedrock` adds 0.040 and
     # `emr` 0.070 only for an apply that names them, and a static rate that assumed them would
