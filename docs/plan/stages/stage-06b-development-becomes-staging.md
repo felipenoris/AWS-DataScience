@@ -328,6 +328,12 @@ because an error and an empty list are different outcomes and only the empty lis
   Still list it rather than assuming: the bucket is versioned, so **delete markers and non-current versions
   are a separate listing** (`list-object-versions`) and they are what a destroy actually trips on. The project CMK
   `alias/awsds-dev-project` enters its deletion window — **record the scheduled date in the log**.
+- **1.8 — DONE 2026-09-06, and it closes pass 1.** `./aws/studio.py`: **`0 check(s) FAILED`**, one
+  associated account, `US-4` `pass` at one project profile, and every row about this account naming the
+  **retirement** rather than a pending association. `US-8`'s note lost the word *"yet"* in the same
+  sitting — with the two service roles and the boundary destroyed at 1.7, no blueprint-provisioned role
+  will ever appear here, and a note saying one has not appeared *yet* is a check pointing at a future that
+  is not coming.
 - **1.8 — [Claude] Re-read the estate**: `./aws/studio.py` shows one associated account, one project
   profile, and no Development row anywhere. `US-6` ("datazone reads denied in Workloads") is checked again
   at step 3.6, after the move.
