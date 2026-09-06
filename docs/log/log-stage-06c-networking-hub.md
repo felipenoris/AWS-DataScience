@@ -339,3 +339,31 @@ stays verbatim. The stage file is
   - **The hub is identified by its CIDR, not by a hard-coded id or a tag** — 10.31.0.0/16 is what
     `VPC_CIDRS` allocates to `(production, networking)`, and `NT-5` already fails if any other VPC
     answers to it, so a mis-identification here is a failure there first.
+
+## 2026-09-06 — pass 3 closes: the INT-09 fold, by address change and not by rebuild
+
+- **[Claude] The last hand-written peering joined the matrix, and the plan is the evidence it was an
+  ADDRESS change**: **`0 to add, 2 to change, 0 to destroy`** — both connections updated **in place**,
+  and the only attribute that moved was a `Name` tag (`awsds-sandbox-to-prod` → `awsds-sandbox-to-shared`,
+  which is what the peer is now called). Without the `moved {}` blocks Terraform reads a singleton
+  becoming one row of a `for_each` as a **different resource**: destroy and re-create. **A peering
+  re-created comes back `pending-acceptance`, with every route on both sides pointing at an id that no
+  longer exists** — on the connection INT-09 rides.
+- **[Claude] One assertion was added rather than an assumption.** A provider cannot be iterated, so one
+  alias serves every requested row — correct only while all peers live in one account.
+  `one(distinct([...peer_profile]))` is that assertion written down: the day a spoke peers into a second
+  account it raises **at plan time** instead of silently using the wrong credentials. The same expression
+  raised for a good reason one commit earlier, which is what put it there.
+- **[Claude] Pass 3 is closed. All five peerings come from the matrix; none is hand-written.**
+  `production/foundation` re-plans `No changes`, `make check` is OK, `./aws/networking.py` reads
+  `0 check(s) FAILED` over 5 VPCs.
+  - **One reading nuance worth recording rather than chasing**: `NT-6` says *"6 distinct peering(s)
+    read"* while five are active. AWS keeps a deleted peering visible for a while, and the check counts
+    what it read. For a check whose question is *"does any peering touch 10.40?"* that is the
+    conservative direction — it would rather examine a corpse than miss a live one — so it is left alone.
+- **[Claude] And `peers` was SUPERSEDED, not trimmed** — the tflint hook is what surfaced it. That map
+  answered *"which VPC-bearing accounts are there, and how do I reach one"*; `peerings` now answers it
+  precisely, per row, with the role and the far end resolved. The spokes moved onto `peerings` the moment
+  their peering files became generated, so the only consumers left are Production's two slices, whose
+  **aliased providers** need a profile per peer account — and providers cannot be iterated. **When that
+  constraint is gone, so is this map.** Both spokes re-plan `No changes` after the removal.
