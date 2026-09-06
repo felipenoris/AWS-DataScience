@@ -603,6 +603,18 @@ makes the proxy's allow-list the single filter it is supposed to be — and it i
 network-isolation page's required endpoint list finally apply, because its premise (no public egress)
 becomes true.
 
+- **5.1 — DONE 2026-09-06 AS CODE, AND IT WAS NEVER A DESTROY.** Measured first: **zero NAT gateways,
+  zero default routes and zero interface endpoints in all three accounts** — the `egress/` slices are
+  `[E]` and were all down, so there was nothing to destroy. The act is a code change so that the next
+  `make up` never creates one. `vpc-egress-v0.6.0` deletes `nat.tf` and **`egress_mode`,
+  `nat_public_subnet_id` and `private_route_table_ids` with it** (nothing else read the route tables),
+  carries 0.4a's `name_suffix` through one `name_prefix` local, and **removes the
+  `&& var.egress_mode == "A"` clause from `dns_firewall_enabled` in the same commit** — without that,
+  this step would have silently disabled the firewall 5.7 keeps. All four callers rewired; the two
+  NAT outputs deleted from each after checking nothing anywhere consumed them. **Proven by plan:**
+  zero NAT resources in any of the four, and the DNS Firewall's six resources still present in
+  Sandbox. `production/workloads-egress` reads *no infrastructure changes* — outputs only.
+  *The original step follows:*
 - **5.1 — [Claude⚡] Destroy all THREE NAT gateways**: `egress_mode = "B"` in **Sandbox, Staging and
   Production** — `terraform-live/production/egress/main.tf` carries `egress_mode = "A"` today, so
   `VPC-SharedServices` has one as well and "both NAT gateways" undercounted. Every private route table
