@@ -94,7 +94,13 @@ BLUEPRINT_ALLOWLIST = (
     "AmazonBedrockGuardrail",
     "AmazonBedrockPrompt",
 )
-PROJECT_PROFILE_NAMES = ("experimentation", "engineering")
+# ONE PROFILE SINCE STAGE 6b STEP 1.1 (2026-09-06). It was two - `experimentation` into
+# Sandbox and `engineering` into Development - and the second went with the account's role:
+# Development becomes the headless `Staging`, so nothing provisions a Studio project there.
+# `engineering` REAPPEARING is now the finding, which is why the retired name is kept here
+# rather than deleted: a check that only knows what it expects cannot report what it found.
+PROJECT_PROFILE_NAMES = ("experimentation",)
+RETIRED_PROFILE_NAMES = ("engineering",)
 STEP3_SIDS = ("DenySageMakerJobsOffVpc", "DenySageMakerInstanceCeiling")
 BOUNDARY_NAME_FRAGMENT = "project-boundary"
 
@@ -710,21 +716,31 @@ def main(argv: list) -> int:
                     "all inside decision 5's category 1",
                 )
 
-    # US-4: the two project profiles, by their contracted names.
+    # US-4: the project profiles, by their contracted names - and the retired one by its.
     if data_live and domain_id:
         have = {n for n, _i, _s in project_profiles}
         missing = [n for n in PROJECT_PROFILE_NAMES if n not in have]
+        retired = [n for n in RETIRED_PROFILE_NAMES if n in have]
         if not project_profiles:
             checks.note("US-4", "project profiles", "none - expected before Stage 6 step 1.")
         elif missing:
             checks.fail(
                 "US-4",
                 "project profiles",
-                f"missing {', '.join(missing)} - the two-profile shape (experimentation -> "
-                "Sandbox, engineering -> Development) is step 1's contract.",
+                f"missing {', '.join(missing)} - `experimentation` provisions into Sandbox and "
+                "is the one profile this domain is contracted to carry (Stage 6a step 1.5, "
+                "narrowed to one by Stage 6b step 1.1).",
+            )
+        elif retired:
+            checks.fail(
+                "US-4",
+                "project profiles",
+                f"{', '.join(retired)} is back - it was destroyed by Stage 6b step 1.1 because "
+                "its member account became the headless `Staging`. A project created from it "
+                "would provision into an account with no interactive surface.",
             )
         else:
-            checks.ok("US-4", "project profiles", "experimentation and engineering exist")
+            checks.ok("US-4", "project profiles", f"{', '.join(sorted(have))} - one, as contracted")
 
     # US-5: every blueprint-provisioned SageMaker AI domain in the Interactive accounts is
     # VpcOnly. PublicInternetOnly is the whole VPC design bypassed at the app layer.
@@ -1066,7 +1082,8 @@ What the checks are, and where each comes from:
          directions: NONE in the domain account (D22 - one there is a finding),
          and in each member account none Redshift-backed and none outside
          decision 5's category 1 (step 1.4; D12/D26, docs/SMUS.md)
-  US-4   the experimentation and engineering project profiles exist (step 1)
+  US-4   the `experimentation` project profile exists and is the ONLY one -
+         `engineering` was retired by Stage 6b step 1.1 and its return is a failure
   US-5   every Interactive SageMaker AI domain is VpcOnly (step 1)
   US-6   the deployment targets stay headless (D28): no SageMaker domain there,
          and datazone reads denied by the Workloads ceiling read as the control

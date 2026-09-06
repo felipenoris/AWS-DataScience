@@ -183,3 +183,40 @@ are `aws/output/{org-policies,tf-backends,networking}.txt` — untracked, regene
   on"*. Only **(vi)** — that one is about this account's assignment. 1d (iv) waits on an update to **Log
   Archive** and 1d (xiv) on the **Security** OU's accounts; an update to a member in `Interactive`
   re-baselines neither.
+
+---
+
+## 2026-09-06 — pass 1 begins: step 1.1, the `engineering` project profile
+
+*Provenance: the authorization is the user's, given in chat for this specific apply; the edits, the plan,
+the apply and the read-backs are Claude's. Applied as the **infrastructure user**, account **Data
+Governance**, permission set **`InfrastructureAccess`** (profile `awsds-infra-data`). Recipe A throughout —
+branch, edit, generate, init, plan to a file outside the repository, apply exactly that file, re-plan.*
+
+- **[Claude]** Removed the four sites the step names: the `engineering` key in `local.project_profiles`,
+  the `development` row of `local.member_account_ids`, `data.aws_caller_identity.development`, and the
+  `aws.development` provider alias.
+- **[Claude] Plan: `0 to add, 0 to change, 2 to destroy`** — exactly the two the step predicted, read out
+  of the saved plan before applying:
+
+  ```
+  delete     awscc_datazone_policy_grant.create_project_from_profile["engineering"]
+  delete     awscc_datazone_project_profile.this["engineering"]
+  ```
+
+- **[user]** Authorized the apply. **[Claude]** Applied the saved plan; **re-plan returns
+  `No changes`**.
+- **[Claude] Read back from the domain**, not from the state: `list-project-profiles` returns
+  **`experimentation` / `ENABLED`, alone**, and `list-policy-grants` for
+  `CREATE_PROJECT_FROM_PROJECT_PROFILE` on the root domain unit returns **one** grant — that profile, to
+  the data-scientists group.
+- **[Claude] Three comments the removal invalidated, corrected in the same commit**: `providers.tf`'s
+  *"TWO ALIASES"*, `data.tf`'s *"member accounts"* plural, and `locals.tf`'s *"WHY THESE TWO GROUPS"* —
+  which had itself predicted this removal as *"the expected outcome, not a regression"*, and now records
+  that the open half of D21 closed against the interactive surface.
+- **[Claude] `./aws/studio.py` `US-4` went RED the moment the apply landed**, asserting the two-profile
+  shape: `missing engineering`. Re-scoped in the same sitting — `experimentation` alone is the contract,
+  and `engineering` moved to a `RETIRED_PROFILE_NAMES` list so that its **return** is the failure. A check
+  that only knows what it expects cannot report what it found. **`0 check(s) FAILED`** afterwards.
+  This is the third instrument pass 5 would have re-scoped four passes too late, and the stage now says so
+  at the head of that pass.

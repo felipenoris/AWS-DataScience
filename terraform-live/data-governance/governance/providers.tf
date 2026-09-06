@@ -28,8 +28,10 @@ provider "awscc" {
 
 # --------------------------------------------------- the read-only member providers
 #
-# TWO ALIASES, EACH FOR EXACTLY ONE data.aws_caller_identity READ - the idiom
-# data-governance/data/providers.tf established. They create nothing, carry no default_tags,
+# ONE ALIAS, FOR EXACTLY ONE data.aws_caller_identity READ - the idiom
+# data-governance/data/providers.tf established. It was TWO until Stage 6b step 1.1
+# (2026-09-06): the `development` alias went with the `engineering` project profile, because
+# an alias exists here only to resolve the account a profile provisions into. They create nothing, carry no default_tags,
 # and their profiles arrive from the generated tfvars (SMUS_MEMBERS in
 # scripts/tfhygiene/backend.py), never as literals here.
 #
@@ -48,11 +50,6 @@ provider "aws" {
   profile = var.members["sandbox"].profile
 }
 
-provider "aws" {
-  alias   = "development"
-  region  = var.region
-  profile = var.members["development"].profile
-}
 
 # ------------------------------------------------------- the read-only directory provider
 #
