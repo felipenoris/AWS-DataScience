@@ -290,13 +290,19 @@ def main(argv: list) -> int:
     if PRODUCER_PROFILE in live and acct_id:
         cli = cli_for(PRODUCER_PROFILE)
         note(f"reading the lake's grants as {PRODUCER_PROFILE} ...")
+        # THE PRINCIPAL IS A FILTER HERE, NOT A PARAMETER, AND THE FIRST RUN IS WHY
+        # (2026-09-05, Stage 6b step 0.4). `list-permissions --principal <account>` without
+        # `--resource` is refused outright - "Resource is mandatory if Principal is set in
+        # the input" - so this check could never have answered: it returned `(call failed)`
+        # in the BEFORE state and would have returned it identically in the AFTER one, which
+        # is Lesson 13's shape. The catalog is listed whole instead and the account matched
+        # client-side; the estate holds tens of permissions, not thousands.
         r = cli.run(
             "lakeformation",
             "list-permissions",
-            "--principal",
-            f"DataLakePrincipalIdentifier={acct_id}",
             "--query",
-            "length(PrincipalResourcePermissions)",
+            "length(PrincipalResourcePermissions[?Principal.DataLakePrincipalIdentifier=="
+            f"'{acct_id}'])",
             "--output",
             "text",
             log=False,
@@ -373,7 +379,12 @@ def main(argv: list) -> int:
     else:
         checks.note("RC-3", "the SMUS surface", f"{blueprints} - step 1 has not run")
 
-    # RC-4: the RAM share the association rides on.
+    # RC-4: the RAM share the association rides on - and it is NOT the only share this
+    # account holds (measured 2026-09-05, first run: three, from two different steps). The
+    # `DataZone-*` share is the association's and goes at step 1; the two `LakeFormation-V4-*`
+    # shares are the lake's and go at step 2.3. Reporting them as one number would say
+    # "step 1 has not run" for two months after step 1 ran, which is the failure mode this
+    # whole file exists to catch in the estate rather than commit in its own output.
     if ram_shares == "(not read)":
         checks.note("RC-4", "the domain's RAM share", "no member profile authenticated")
     elif ram_shares == "(none)":
@@ -381,13 +392,35 @@ def main(argv: list) -> int:
     elif ram_shares.startswith("("):
         checks.note("RC-4", "the domain's RAM share", ram_shares)
     else:
-        checks.note(
-            "RC-4",
-            "the domain's RAM share",
-            f"{ram_shares} - the console disassociation (step 1) has not run, or the share "
-            "outlived it. The documentation does not say the share is deleted, so read this "
-            "row rather than assuming either way.",
-        )
+        names = [n.strip() for n in ram_shares.split(",")]
+        datazone = [n for n in names if n.startswith("DataZone")]
+        lake = [n for n in names if n.startswith("LakeFormation")]
+        other = [n for n in names if n not in datazone and n not in lake]
+        if datazone:
+            checks.note(
+                "RC-4",
+                "the domain's RAM share",
+                f"{', '.join(datazone)} - the console disassociation (step 1) has not run, or "
+                "the share outlived it. The documentation does not say the share is deleted, "
+                "so read this row rather than assuming either way.",
+            )
+        else:
+            checks.ok(
+                "RC-4",
+                "the domain's RAM share",
+                "no DataZone share held - the disassociation (step 1) has landed",
+            )
+        if lake:
+            checks.note(
+                "RC-4b",
+                "the lake's RAM shares",
+                f"{', '.join(lake)} - step 2.3's revocation has not run. These are the "
+                "producer's TBAC shares and they are EXPECTED to survive step 1.",
+            )
+        else:
+            checks.ok("RC-4b", "the lake's RAM shares", "none held - step 2.3 has landed")
+        if other:
+            checks.note("RC-4c", "other RAM shares held", ", ".join(other))
 
     # RC-5: the persona set, against D18's row.
     if not sets_on_account:
@@ -398,13 +431,29 @@ def main(argv: list) -> int:
         held = set(sets_on_account)
         wrong = sorted(held & FORBIDDEN_SETS)
         missing = sorted(STAGING_SETS - held)
-        if wrong:
+        # BEFORE IS NOT MIXED, AND THIS BRANCH WAS MISSING UNTIL THE FIRST RUN (2026-09-05).
+        # The two forbidden sets are the account's STARTING state - the header above promises
+        # that everything notes before the stage runs, and RC-5 was failing on the untouched
+        # estate, which is a check crying wolf at its own baseline. What makes the same
+        # reading a FINDING is the account having already been renamed or moved while still
+        # holding them: that is the mixed state, and it is what the fail branch now says.
+        converted = acct_name == NEW_NAME or acct_ou == NEW_OU
+        if wrong and not converted:
+            checks.note(
+                "RC-5",
+                "the permission sets",
+                f"{', '.join(wrong)} still provisioned - step 2 has not run. The account is "
+                f"still {acct_name} in {acct_ou}, so this is the BEFORE state and not a "
+                "half-done conversion.",
+            )
+        elif wrong:
             checks.fail(
                 "RC-5",
                 "the permission sets",
-                f"{', '.join(wrong)} still provisioned - D18 says Staging is read-only and "
-                "nothing else, and the assignment must be removed BEFORE the customer-managed "
-                "vending policy it references (Stage 6b step 2).",
+                f"{', '.join(wrong)} still provisioned on an account that is already "
+                f"{acct_name} in {acct_ou} - D18 says Staging is read-only and nothing else, "
+                "and the assignment must be removed BEFORE the customer-managed vending "
+                "policy it references (Stage 6b step 2).",
             )
         elif missing:
             checks.note(
@@ -503,7 +552,9 @@ What the checks are:
   RC-3  the SMUS surface is gone, or still deletable. FAILS when the account is
         in Workloads and configurations are still visible: the OU denies
         datazone:* and only the member can delete them (step 1's order)
-  RC-4  no RAM share from another account survives the disassociation (step 1)
+  RC-4  no DataZone RAM share survives the disassociation (step 1); RC-4b is the
+        lake's two LakeFormation-V4-* shares, which go at step 2.3 instead, and
+        RC-4c is anything else the account is shared into
   RC-5  the persona set is D18's row, with no read-write and no image steward
         (step 2, assignment before the policy object)
   RC-6  no Lake Formation grant names the account (step 2)""")
