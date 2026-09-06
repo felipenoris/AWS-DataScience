@@ -264,15 +264,14 @@ PERSONA_VENDING_POLICY_NAME = "awsds-org-project-storage-vending"
 # THIS LIST FOLLOWS THE ASSIGNMENTS, not the members - the symptom of getting it wrong is a
 # provisioning error in the account that was left out, not a plan failure here.
 #
-# AND THAT SENTENCE IS BEING CASHED IN RIGHT NOW (Stage 6b, 2026-09-06). Step 1.2 took
-# `development` out of SMUS_MEMBERS, but `DataScientistAccess` stays assigned to that account
-# until step 2.1 - so the two lists diverge for one pass, and the rule above says this one
-# follows the ASSIGNMENTS. Hence the literal below instead of the derivation: the object must
-# keep being declared while a permission set still references it by name. Step 2.2 restores
-# `list(SMUS_MEMBERS)` once the assignment is gone, and destroys the object in the commit after.
-# Deriving it here instead would leave development/foundation/ carrying a destroy blocked by
-# `prevent_destroy` for a whole pass - loud rather than dangerous, and avoidable.
-PERSONA_VENDING_ACCOUNTS = ["sandbox", "development"]
+# THAT SENTENCE WAS CASHED IN FOR ONE PASS AND THE DERIVATION IS BACK (Stage 6b, 2026-09-06).
+# Step 1.2 took `development` out of SMUS_MEMBERS while `DataScientistAccess` was still assigned
+# to that account until 2.1 - the two lists diverged, and the rule above says this one follows
+# the ASSIGNMENTS, so it was the literal ["sandbox", "development"] for exactly that window.
+# Step 2.1 removed the assignment and 2.2 removed the object, so the divergence is closed and
+# the derivation is correct again. The literal is worth remembering rather than the fix: the
+# next account to leave will re-open the same window between its 1.2 and its 2.1.
+PERSONA_VENDING_ACCOUNTS = list(SMUS_MEMBERS)
 
 # Subnets anchor on ZONE IDS, never on AZ names and never on list position (Stage 3 step 1.5,
 # settled by 1b step 6; ./aws/AZs.py is the measurement). Authored per account because a
