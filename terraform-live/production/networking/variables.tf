@@ -113,3 +113,16 @@ variable "peerings" {
   }))
   nullable = false
 }
+
+# Stage 6c step 4.1 - the WireGuard client range, generated from scripts/tfhygiene/backend.py's
+# WIREGUARD_PEER_CIDR, which is where every address literal in this project lives (Stage 3
+# decision 1). It arrives here and not only at the vpn/ slice because D38 puts the tunnel
+# endpoint and the proxy in ONE VPC: step 4.7 stops masquerading packets bound for the proxy, so
+# this range becomes a source the proxy's security group must admit and a destination the hub's
+# public route table must send at the WireGuard host. Emitted on VPN_HOST_SLICE, which is
+# deliberately not VPN_HOMES - see that tuple's comment.
+variable "wireguard_peer_cidr" {
+  description = "The WireGuard client range. Generated - never authored here."
+  type        = string
+  nullable    = false
+}
