@@ -305,12 +305,6 @@ SLICES = [
         PERSISTENT,
         "consumer side: account data CMK, links, DataLakeSettings (derived zone removed 2026-08-26)",
     ),
-    Slice(
-        "development",
-        "data",
-        PERSISTENT,
-        "consumer side: same module as sandbox/data (Stage 5)",
-    ),
     # Stage 6 pass 0 (2026-08-21) - Stage 7 step 5.a, applied one stage early because Stage 6
     # step 5.0 pushes the first dev-env image into it. [P] and floor-priced at rest: one CMK
     # (key-month, docs/PRICING.md 2), two ECR repositories and a CodeArtifact domain with two
