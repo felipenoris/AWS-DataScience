@@ -719,12 +719,52 @@ followed here, not authored.
   gate is that
   `terraform plan` returns **`No changes`** after `init -migrate-state`; nothing proceeds past a slice that
   does not.
+- **4.4 — PLANNED AND READ 2026-09-06, apply pending.** `8 to add, 16 to change, 8 to destroy`, and
+  the shape is the predicted one: **the VPC, all six subnets, both gateway endpoints, all four route
+  tables, the IGW and `aws_vpc_peering_connection.to_production` are IN-PLACE tag changes** — every id
+  survives, which is what INT-05's anchors and the peering depend on.
+  - **The step named five replacements and there are EIGHT, all of one class.** Predicted: the four
+    security groups (`endpoints` + the three tiers) and the flow-log **log group**. Also replaced, and
+    unlisted: **`module.flow_log_role.aws_iam_role.this`** (its name is `awsds-dev-vpc-flow-logs`, an
+    input built from the env token — exactly the class the step describes), **its inline policy**, and
+    **`aws_flow_log.this`**, which binds the two and cannot outlive either. So the rule the step states is
+    right and its enumeration was short; the reading is *"every resource whose NAME is built from the env
+    token, plus whatever binds them"*, which is a rule rather than a list.
+  - **Nothing outside the account is replaced, and that was checked rather than assumed**: the lake's
+    `trusted_vpce_ids` stopped naming this account at 2.3, and the gateway endpoints keep their ids
+    anyway; the two `[E]` slices that read this state are torn down. **What DOES break the moment this
+    applies is `production/foundation/`**, whose data sources look the VPC up by the tag `awsds-dev-vpc`
+    — which is 4.5, and why the two applies are back to back.
 - **4.4 — [Claude⚡] Flip the token**: set `env = "staging"` and `environment_tag = "staging"` and read the
   plan carefully. The VPC, its subnets and the `[P]` S3 and DynamoDB **gateway endpoints keep their ids**
   (in-place tag changes only — INT-05's anchors; **not** the lake's `trusted_vpce_ids`, which stopped
   naming this account at 2.3),
   while the security groups and the flow-log group **are replaced**. Anything else in the replacement list
   is a surprise and stops the step.
+- **4.5 — READ BEFORE WRITING, 2026-09-06, and it is BIGGER than this step says: without `moved {}`
+  blocks it DESTROYS THE PEERING.** The step describes an edit to the accepter side and four provider
+  aliases. What it does not say is that `development` is a **`for_each` key**, not just a name, in
+  `production/foundation/peers.tf` — so renaming it is an address change, and Terraform's answer to an
+  address change is destroy-and-create:
+  - **`aws_vpc_peering_connection_accepter.peer["development"]`** — the load-bearing one. Destroying an
+    accepter deletes the peering connection. **One `moved {}` block, literal key.**
+  - **`aws_route53_vpc_association_authorization.peer["prod.development"]` and `["pages.development"]`** —
+    two literal keys, two blocks.
+  - **`aws_route53_zone_association.development`** and **`aws_route.development_forward`** — resource
+    *names*, not keys (both `for_each` over keys that carry no token), so **one block each** covers every
+    instance.
+  - **`aws_route.return`** is the exception and it is taken deliberately. Its keys are
+    `"<route-table>|development-private-<subnet-id>"`, so a `moved {}` would have to name `[P]` subnet
+    ids in a tracked file — precisely what this file's own header forbids (*"the peer's facts are READ,
+    NEVER PASTED"*, Lesson 3). **Those routes are re-created instead**: the destination CIDRs are
+    unchanged, a route is idempotent and cheap, and the far end is `[E]` and torn down. The cost is a
+    handful of seconds on a path nothing is using; the alternative is a stale id in the tree forever.
+  - **`production/registry/` is the fourth alias and it is the easy half**: the provider alias,
+    `data.aws_caller_identity.development` and one `locals` reference. Data sources hold no address the
+    apply defends, and the account id behind them is unchanged, so its policies do not move.
+  - **`REGISTRY_CONSUMERS` keeps the row**, renamed — Staging pulls images and packages like any deploy
+    target; it is `DATA_CONSUMERS` that lost it (2.4). The two lists answering different questions is
+    exactly what that table's comment predicted would matter one day.
 - **4.5 — [Claude] Re-point the peer lookup in the same commit**: `production/foundation/peers.tf` finds a
   peer by the tag `awsds-<env>-vpc`, which 4.4 renames to `awsds-staging-vpc`. Edit the accepter side and
   the four literal provider aliases (`production/foundation/peers.tf`,

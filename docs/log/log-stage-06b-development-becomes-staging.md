@@ -674,3 +674,41 @@ such; every reading is Claude's, as the infrastructure user.*
   slice it still has; `terraform-live/README.md`'s account table had `development/` pointing at a profile
   that no longer exists and `staging/` described as *"none yet — the account is unvended"*, and its
   opening line still said **five** bootstrap slices. Only the first of those four was caught by a gate.
+
+## 2026-09-06 — step 4.4 planned and read, and step 4.5 turns out to be bigger than its own text
+
+*Claude, as the infrastructure user. No apply in this entry: every `terraform apply` in this session is
+refused by the tooling, so the plan is read and saved and the apply is handed over.*
+
+- **[Claude] Step 4.4 planned: `8 to add, 16 to change, 8 to destroy`**, and the shape is the predicted
+  one. **The VPC, all six subnets, both gateway endpoints, all four route tables, the internet gateway
+  and `aws_vpc_peering_connection.to_production` are IN-PLACE tag changes** — every id survives, which is
+  what INT-05's anchors and the peering rest on.
+  - **The step named five replacements; there are eight, and all eight are one class.** Predicted: the
+    four security groups and the flow-log **log group**. Unlisted and also replaced: the flow-log **IAM
+    role** (its name is `awsds-dev-vpc-flow-logs` — an input built from the env token, exactly the class
+    the step describes), **its inline policy**, and **the flow log itself**, which binds role and group
+    and cannot outlive either. The rule the step states is right; its enumeration was short. The usable
+    form is *"every resource whose NAME is built from the env token, plus whatever binds them"*.
+  - **Checked rather than assumed: nothing outside the account is replaced.** The lake's
+    `trusted_vpce_ids` stopped naming this account at 2.3 and the gateway endpoints keep their ids
+    regardless; the two `[E]` slices that read this state are torn down.
+
+- **[Claude] Step 4.5 read before being written, and it does not do what its own text implies.** The
+  step describes an edit to the accepter side and four provider aliases. What it omits is that
+  `development` is a **`for_each` key** in `production/foundation/peers.tf`, not merely a name — and an
+  address change is a destroy-and-create. **Applied as written, it would delete the peering
+  connection**, because destroying an `aws_vpc_peering_connection_accepter` destroys the peering with it.
+  - Four addresses need `moved {}` blocks and they are all cheap: the accepter's literal key, the two
+    Route 53 authorization keys (`prod.development`, `pages.development`), and two resources whose
+    *names* carry the token while their `for_each` keys do not — one block each covers every instance
+    there.
+  - **`aws_route.return` is the deliberate exception.** Its keys embed a `[P]` subnet id
+    (`"<route-table>|development-private-<subnet-id>"`), so a `moved {}` block would have to paste those
+    ids into a tracked file — which is precisely what `peers.tf`'s own header forbids: *"the peer's facts
+    are READ, NEVER PASTED"* (Lesson 3). **Those routes are re-created instead.** The destination CIDRs
+    do not change, a route is idempotent and cheap to rebuild, and the far end is `[E]` and torn down —
+    so the cost is seconds on a path nothing is using, against a stale id living in the tree forever.
+  - **This is the second time in this stage that a step's *rule* was right and its *list* was short**
+    (4.4's replacements were the first, hours earlier). Both were caught by reading the plan instead of
+    running it, which is the only reason Recipe A step 5 says to save the plan to a file and read it.
