@@ -332,7 +332,23 @@ VPN_HOST_SLICE = ("production", "networking")
 # would make identity/sso read an EMPTY state, and `DenyControlPlaneOffVpn` would then deny every
 # call from every network - the failure permission-sets.tf's precondition already has an error
 # message for. So this commit changes the shape and not one generated value.
-VPN_HOMES = [("sandbox", "foundation")]
+# TWO ROWS SINCE 6c step 4.12's FIRST HALF (2026-09-06), and the second row is the UNION the
+# step demands rather than the cut-over it warns against: "a single cut-over apply is one typo
+# away from locking out all six personas."
+#
+# WHY A UNION IS POSSIBLE AT ALL, which was misjudged once before being measured. The union
+# looked blocked because Sandbox's `wireguard_eip_public_ip` is about to be removed - but that
+# output is only ONE of the three things a row yields. The other two, `vpc_id` and
+# `s3_gateway_endpoint_id`, are the slice's ordinary outputs and do not move with the address.
+# And because the address itself TRANSFERRED, both rows resolve to the SAME `52.89.212.1`, which
+# `sort()`/`distinct()` collapse. So the union changes nothing on the `aws:SourceIp` axis and is
+# purely ADDITIVE on the other two: both VPCs and both gateway endpoints are trusted, so nothing
+# that passed before stops passing.
+#
+# THE TRIM IS PASS 6's, after the readings, and it is what makes this a union rather than a
+# permanent widening. Removing the Sandbox row is also what unblocks `removed {}` on
+# `sandbox/foundation`'s Elastic IP - the two are one act, in that order.
+VPN_HOMES = [("sandbox", "foundation"), ("production", "networking")]
 
 # THE LAKE'S CONSUMERS AND ITS PICKUP PRODUCER (Stage 5 pass 1, 2026-08-18) - the seventh
 # vocabulary, authored like VPN_HOMES and for the same reason: which accounts consume the
