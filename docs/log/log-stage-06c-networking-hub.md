@@ -830,3 +830,27 @@ thing to actually run. They are written up individually because three of them ar
   a terminated instance. Nothing in this repository looks for a `terraform` process older than an
   hour, a `.tflock` with no live owner, or a poll outliving its subject — and in both cases the
   detector was a person reading a task list.
+
+## 2026-09-06 — 4.12's second half: the proxy's address on the perimeter, and pass 4 closes
+
+- **[Claude⚡] The proxy's Elastic IP joined `aws:SourceIp` on both perimeters** — `identity/sso/`
+  `0 to add, 6 to change` and `data-governance/data/` `0 to add, 5 to change`. Enumerated key by key
+  again: **the only change is an addition**, `184.33.8.126/32` beside the tunnel's `52.89.212.1/32`,
+  on eleven documents.
+- **[Claude] Why the PROXY's address is the one that matters now, and the tunnel's is the one that
+  stays for safety.** Under D38 a VPN client is a private-network client: its whole internet crosses
+  Squid, so a persona's control-plane call leaves the estate wearing the **proxy's** address and
+  never the tunnel endpoint's. The WireGuard address stays because the tunnel host still originates
+  traffic of its own — and because pass 4's rule is **union first, trim after the readings**.
+- **[Claude] `try(..., null)` rather than a direct read, and it is a shape rather than a guard.** A
+  VPN home is not required to hold a proxy: Sandbox exports no such output and is still a home while
+  the union stands. A missing output there is legitimate, so `compact()` drops the nulls.
+- **[Claude] `./aws/vpn.py`: `0 check(s) FAILED`** from the new home, `VP-1` through `VP-9`, and the
+  health alarm has moved `INSUFFICIENT_DATA` → **`OK`** now that the host has reported for long
+  enough. `VP-7` reads both halves: all six persona sets carry the deny, `InfrastructureAccess` does
+  not (open question 17's recovery path, unchanged by the move).
+- **[Claude] WHAT PASS 4 HAS LEFT, and both are deliberately pass 6's:** the **trim** — removing the
+  Sandbox row from `VPN_HOMES` — and, one act later and only in that order, the `removed {}` on
+  `sandbox/foundation`'s Elastic IP that the trim unblocks. Until then that slice plans **`1 to add`**
+  and must not be applied, and the estate carries **two world-open rules**, one of them guarding
+  nothing.
