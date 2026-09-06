@@ -72,7 +72,7 @@ exist today. What is enforced now is the property that matters, by
 [`scripts/check-provider-locks.py`](../scripts/check-provider-locks.py): the `required_version` and the
 `hashicorp/aws` constraint must equal `sandbox/foundation`'s, **a second provider block is explicitly
 permitted**, and every committed `.terraform.lock.hcl` must carry Stage 2 step 6.3's three platforms. **Three slices deviate since Stage 6 (2026-08-21), and each says so in its own file**:
-`sandbox/sagemaker/`, `development/sagemaker/` and `data-governance/governance/` add a **second** provider,
+`sandbox/sagemaker/` and `data-governance/governance/` add a **second** provider,
 `awscc`. The `aws` block is unchanged — what the drift rule is about — and the second one is there because
 three resources exist in no other provider at all: the V2 project profile, the blueprint configuration's
 `environment_role_permission_boundary` — which is how the D13 boundary reaches roles **DataZone authors**
@@ -236,8 +236,10 @@ what*, which is D26's whole argument made concrete:
   `sagemaker:Create*` is denied in this account by the `Data` OU document, a deny that stays free precisely
   because no blueprint is enabled here, and Stage 6 step 0.4 reads the slice's own plan for any
   `aws_sagemaker_*` resource before every apply.
-- **`sandbox/sagemaker/` and `development/sagemaker/` `[P]` — the runtime's prerequisites**, one module
-  (`terraform-modules/sagemaker-prereqs/`) applied twice, so the two accounts cannot drift. The blueprint
+- **`sandbox/sagemaker/` `[P]` — the runtime's prerequisites**, one module
+  (`terraform-modules/sagemaker-prereqs/`). It was applied **twice** until 2026-09-06, in Sandbox and in
+  Development, so the two could not drift; **Stage 6b step 1.7 destroyed the Development copy and deleted
+  the slice** — that account is becoming the headless `Staging` and provisions no Studio project. The blueprint
   provisioning and manage-access roles, the account's project CMK, the `/awsds/<env>/studio` log group,
   the **D13 permissions boundary** the blueprint imposes on every project role it authors — and, since
   v0.3.x (2026-08-22), the projects bucket `awsds-<env>-smus-projects` (SSE under the project CMK) and the

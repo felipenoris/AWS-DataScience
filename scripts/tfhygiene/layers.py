@@ -331,7 +331,6 @@ SLICES = [
     # the running apps are the [E] half, deleted by scripts/down-studio-apps.py rather than
     # by terraform destroy (conventions 6; Stage 6 step 8.3).
     Slice("sandbox", "sagemaker", PERSISTENT, "blueprint prereqs: 2 roles, D13 boundary, CMK"),
-    Slice("development", "sagemaker", PERSISTENT, "same module as sandbox/sagemaker (Stage 6)"),
     # Stage 6 pass 2 - the registry, and it is a registry (D26): the DataZone V2 domain, its
     # two IAM roles and the two project profiles. [P] and metadata-priced (~USD 0.50/month,
     # docs/PRICING.md 5). NO COMPUTE LIVES HERE and none ever may - US-2 measures exactly
