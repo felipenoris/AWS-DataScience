@@ -363,3 +363,14 @@ the reasoning that makes it *usable* is in the file. Recognising one is the sign
     it a discriminator, write it at the pass that makes it true, or name the gap as a dated exception.**
 51. **Two intents sharing one list stay identical until they must differ — then a change made for one
     silently makes it for the other. Lesson 33's mirror, and the more dangerous half.**
+52. **A wait whose only exit is SUCCESS waits forever once its subject is gone — silence is
+    indistinguishable from patience.**
+53. **Two systems expressing one intent in the same-looking syntax are not translatable by
+    transcription — and they agree on the easy cases.**
+54. **A program that has never been run is a claim: `validate`, `render` and `run` are three
+    different verdicts.**
+
+**[`lessons.md`](docs/plan/lessons.md) also carries a second list — "What AWS does that its
+documentation does not say"** — platform behaviours that cost a measurement to learn, each with its
+date and its reading. Consult it before designing around an AWS behaviour nobody here has measured;
+add to it when a vendor page turns out not to say the thing that mattered.

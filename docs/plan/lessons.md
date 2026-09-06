@@ -1160,6 +1160,129 @@ lesson can be *recognised* without opening this file; the reasoning that makes e
     nothing here looks for a `terraform` process older than an hour, a `.tflock` with no live owner,
     or a poll loop outliving its subject — and two incidents in one session is the evidence for it.
 
+53. **Two systems that express the same intent in the same-looking syntax are not translatable by
+    transcription — and the failure is a refusal that reads exactly like a missing entry.** Stage 6c
+    step 4.9 moved an allow-list from Route 53 DNS Firewall to Squid. Both take domain names; both use a
+    leading token for "and subdomains"; the meanings do not line up. In DNS Firewall `example.com` is the
+    **apex only** and `*.example.com` is **subdomains and not the apex**, so covering a name needs *both*.
+    In Squid `example.com` is that **exact host** and `.example.com` is the domain **and** every subdomain,
+    so `.example.com` alone is the whole answer — **and listing both is FATAL**. Transcribing the
+    asterisks would have produced entries matching nothing; transcribing the pairs took the proxy's first
+    boot down to an empty allow-list. **The tell is that the two syntaxes agree on the easy cases** —
+    a bare hostname works in both — so a spot check of five entries passes and the sixth is the one that
+    differs. **Translate by asking what each side means by "covered", entry by entry, and put a gate on
+    the collision the target rejects**; a list that came from another system carries its grammar in, and
+    every future addition copied from that side carries it in again.
+
+54. **A program that has never been run is a claim, and `validate`, `render` and `run` are three different
+    verdicts — passing the first two says nothing about the third.** Stage 6c pass 4 wrote a module, two
+    slices and three templates. `terraform validate`, `tflint`, `checkov` and a careful re-read were all
+    green on every one of them, and **seven defects were still there**. Three fell out the moment the
+    templates were *rendered* — `+` is arithmetic and not concatenation in HCL; `%{` is `templatefile`'s
+    directive marker and collides with Squid's own `strftime` escape, **and then with the comment written
+    to explain the first collision**; a "revert" path that deleted the new file while the old one was
+    already overwritten. Four more needed the thing to actually *run* on a host: an allow-list that would
+    not parse, an error the script swallowed, a State Manager association that raced `dnf`, and an
+    instance size that fit the steady state and not the build. **None of these is exotic** — they are the
+    ordinary distance between "the syntax is well-formed", "the output is what I meant" and "the world
+    accepts it". **Render every template with real values before applying** (a throwaway `templatefile`
+    in a scratch directory costs one minute), and treat the first successful *boot* — not the first
+    successful *apply* — as the moment a `[D]` slice is evidence rather than intent.
+
+---
+
+## What AWS does that its documentation does not say
+
+**A second list, and a different kind of thing from the lessons above.** Those are habits; these are
+*facts about the platform* that cost a measurement to learn and that no amount of re-reading the plan or
+the vendor's pages gives back. Each entry says what was measured, when, and where the reading lives —
+because a behaviour recorded without its evidence is indistinguishable from a belief (Lesson 37).
+
+**The rule for adding here: it must be a behaviour the documentation does not state, or states somewhere
+that the person who needed it would not have been reading.** A documented gotcha we merely forgot belongs
+in the file that owns it — `conventions.md`, a runbook, a stage — not here.
+
+### Elastic IP transfers
+
+- **The allocation id does NOT survive a transfer** — measured 2026-09-06 (6c step 4.5):
+  `eipalloc-04397bfae0295333d` in the source became `eipalloc-07edec7a52dc0820a` in the destination.
+  AWS documents it neither way. **The address is preserved and the id is not**, so an allocation id is a
+  *per-account fact about* an address rather than a property *of* it — and anything that had pinned the
+  old id now points at nothing. This is the concrete case behind reading `[P]` ids through remote state
+  instead of pasting them, and it is why an `import` block's id must be **read after** the accept.
+  `log-stage-06c-networking-hub.md`, the 4.3-4.6 entry.
+- **Two of the four documented refusals fire at ACCEPT time, in the DESTINATION account, not at enable
+  time.** `enable-address-transfer` succeeds on an address that is still **associated**, and on a
+  destination that is at its Elastic IP quota; the failure arrives at `accept-address-transfer` as
+  `InvalidTransfer.AddressAssociated` / `AddressLimitExceeded`, **with the transfer already pending and a
+  seven-day clock running that AWS notifies nobody about**. So the eligibility reading has to be taken
+  across two accounts before the first write, which is the whole reason `./aws/eip-transfer.py` exists.
+
+### Systems Manager
+
+- **`ApplyOnlyAtCronInterval` is rejected on `rate()` schedules** — `InvalidSchedule:
+  ApplyOnlyAtCronInterval is not supported for Rate Schedule associations`, measured 2026-09-06 (6c step
+  4.8). The flag is the only thing that stops a State Manager association firing at **creation** time, so
+  the schedule *form* is decided by the flag rather than by preference: an association that must not race
+  a first boot has to be `cron(...)`.
+- **A State Manager association fires seconds after `RunInstances`** when that flag is absent — while the
+  user data is still in `dnf install`. On a fresh host the immediate run is not a diagnostic, it is a
+  guaranteed `exit 127`, and it leaves a `Failed` association as a working host's first impression.
+- **The SSM agent reports `Online` before the user data has finished** — the agent ships in the AMI and
+  registers early. **Agent registration is not a readiness signal**, and a check that treats it as one
+  reads a half-built host as a built one (measured twice on 2026-09-06, on both hub hosts).
+- **Parameter Store reserves every name beginning with `aws` or `ssm`, case-insensitively** —
+  `PutParameter` answers `AccessDeniedException: No access to reserved parameter name`, **a message that
+  reads like a policy problem and is a naming one**. Measured at Stage 2's Validation, 2026-08-16; the
+  rule and this project's `/datascience/<env>/…` answer live in `conventions.md`. Listed here because the
+  *error text* is the undocumented half.
+
+### Route 53
+
+- **DNS Firewall needs BOTH `example.com` and `*.example.com` to cover a domain and its subdomains** —
+  the apex form does not imply the wildcard and vice versa. Harmless there, and the reason the same list
+  is fatal when transcribed into a system whose wildcard already covers the apex (Lesson 53).
+- **The VPC resolver at `.2` answers only requests sourced from within the VPC's own address range** — so
+  a forwarded packet carrying a tunnel address is not "from within the VPC" as far as it is concerned.
+  This is why 6c step 4.7 exempts the hub's **public subnets** from the masquerade and never the VPC
+  CIDR: the tidy version of that rule takes the tunnel's DNS down, with a symptom pointing anywhere but
+  at a masquerade rule.
+
+### Control Tower and Organizations
+
+- **A Control Tower *Update account* renders `Display Name` and `Account Email` read-only**, so an
+  account renamed out of band can never be made to match its provisioned product. **Permanent divergence,
+  not drift** — measured in Stage 6b. The same update **re-asserts** D32's direct
+  `AWSAdministratorAccess` assignment, so its absence on other accounts is not a control.
+- **A cached SSO token is keyed by the `sso-session` NAME, never by the user** — so signing in as a
+  second identity silently reuses the first one's token. The remedy is `aws sso logout` plus a portal
+  sign-out, and the failure mode is a command that succeeds as the wrong person (`aws/INDEX.md`).
+- **An `AWSReservedSSO_*` trust policy permits only `sts:AssumeRoleWithSAML` and `sts:TagSession`** — so
+  an RCP denying those actions locks every SSO user out of every member account. Measured the hard way at
+  Stage 1c step 7.8; AWS's own `CT.STS.PV.1` carries the exclusion note, which is why no `sts:` action is
+  added to that document without reading it first.
+
+### Lake Formation and SageMaker Unified Studio
+
+- **SMUS appoints ITSELF a Lake Formation administrator** when the first project is created — two service
+  roles nobody chose, in an account whose `admins` list a later `aws_lakeformation_data_lake_settings`
+  would silently reset. Found 2026-08-26 because an unrelated plan was run, not because a gate saw it:
+  `DL-5` measures `parameters` and not `admins`.
+- **`CROSS_ACCOUNT_VERSION: 4` and `SET_CONTEXT: TRUE` are already set in accounts nobody configured**,
+  including consumers — so the hazard is symmetric, and `aws_lakeformation_data_lake_settings` replaces
+  the whole `Parameters` structure in **any** account that gains the resource.
+
+### EC2
+
+- **`associate_public_ip_address` read-back fights an `aws_eip_association` forever.** With an Elastic IP
+  attached, the refresh reports the attribute from the instance's *current* public address, so the next
+  plan wants to destroy and recreate the instance on a ForceNew diff that nothing changed. Measured on
+  the first VPN apply, 2026-08-17; the fix is `ignore_changes` on the read-back while the argument stays
+  load-bearing at launch.
+- **Changing `instance_type` is a stop/modify/start, and user data does NOT re-run on it** — so a size
+  change that was made *because the build ran out of memory* leaves the bigger host still unbuilt. Only a
+  replacement re-runs a first boot.
+
 ---
 
 *Plan core: [GENERAL_PLAN.md](../GENERAL_PLAN.md) · Decisions: [docs/plan/decisions/INDEX.md](decisions/INDEX.md) · Stages: [docs/plan/stages/INDEX.md](stages/INDEX.md)*
