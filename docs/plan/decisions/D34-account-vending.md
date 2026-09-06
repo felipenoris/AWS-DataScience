@@ -141,6 +141,22 @@ resolves itself: on the day it fires, AFT looks expensive — probably correctly
 | 2. **The middle** | `aws_servicecatalog_provisioned_product` against the **Account Factory product**, with `AccountEmail`, `AccountName`, `ManagedOrganizationalUnit` and the SSO fields as provisioning parameters | one slice; a principal with Service Catalog rights **in Management**, which reopens the ownership question above; and `prevent_destroy`, because terminating that resource **closes an account** |
 | 3. **AFT** | the full product: its own management account, pipelines, per-account customization repositories | a dedicated account slot plus metered services |
 
+> **A rung the ladder never had, and the premise that kept it off is now measured false** (2026-09-06,
+> Stage 6b step 0.5b). Every rung above creates the account **through Account Factory**, because an account
+> created any other way was not enrolled — that is why `aws_organizations_account` appears under "declared
+> nowhere" and not as an option. **The landing zone has `remediationTypes: INHERITANCE_DRIFT` set, i.e.
+> account auto-enrollment ON**, which means an account created with `organizations:CreateAccount` and
+> placed in a **registered OU** receives that OU's baseline and controls on its own, eventually consistent
+> within minutes to hours. So a rung between 1 and 2 exists: **one `aws_organizations_account` resource, no
+> Service Catalog, and no Service Catalog rights in Management** — which is the ownership problem rung 2
+> reopens. **What it costs is real and is the reason this is a note rather than a re-decision:** no
+> provisioned product is ever created, so the console's *Update account* flow has nothing to update, the
+> OU move and the account closure become Organizations operations, and Stage 6b step 3.5's "read the
+> parameters back" has no analogue. **Nothing is re-decided here** — Stage 14 is blocked on the account
+> quota and this decision's revision trigger is frequency, not mechanism. It is written down so the next
+> reading of this ladder starts from the measurement instead of from the premise (Lesson 7: a
+> rejected-on-cost option goes stale in the direction that flatters the rejection).
+
 Rung 2 keeps the account being created **by Account Factory**, so Control Tower enrolment, guardrails and
 baseline are untouched — it only moves who fills in the form. *To verify before writing it:* the product name
 and the exact parameter keys, which change between landing-zone versions. **This is the rung

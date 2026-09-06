@@ -287,6 +287,13 @@ uses it is destroyed.
   `writer_role_patterns` in `terraform-live/data-governance/data/`; apply as `awsds-infra-data`. Annotate
   the two triples in `docs/AWS_STATE.md`'s grant register as **revoked, with the date** — never delete a
   register row.
+  - **This apply is not only grants: it rewrites the lake's BUCKET POLICIES** (read 2026-09-06).
+    `local.consumer_vpce_ids` is built by iterating `data.terraform_remote_state.consumer_foundation`,
+    which is keyed by `consumer_accounts` — so dropping the row also drops **this account's S3 gateway
+    endpoint id** out of `local.trusted_vpce_ids`, which is INT-05's `aws:SourceVpce` allow-list in
+    `buckets.tf`. Expect bucket-policy updates in the plan and read them: the perimeter narrowing is
+    correct and intended, but it is a **different kind of change** from a grant revocation and it is the
+    one that could lock out a principal nobody was thinking about.
 - **2.4 — [Claude⚡] Destroy the consumer slice**: `terraform-live/development/data/`. It cannot be
   converted — its `data.tf` resolves `AWSReservedSSO_DataScientistAccess_*` with `one()`, which fails at
   plan time the moment 2.1 lands. The account data CMK `alias/awsds-dev-data` goes with it; **Stage 9
@@ -355,6 +362,15 @@ account by the exact string `Development Account` behind a precondition that fai
   **loses** `DenyAthenaSparkStartSession` (that Sid exists only in the `Interactive` document) and **gains**
   `DenyInteractiveSageMakerSurface` and `DenyDataZoneEntirely`; and `Sandbox Account 1` becomes the only
   Interactive sample the battery has.
+  - **The delta, measured 2026-09-06 rather than predicted** (`./aws/org-policies.py` §2, both accounts
+    read side by side): the account sits at **25 statements in force** today and Production — a Workloads
+    account — sits at **25 as well**, so the count is not the check; the composition is. It **loses two**
+    Interactive Sids, not one: `DenyClassicNotebookInstances` **and** `DenyAthenaSparkStartSession`. The
+    first is **fully absorbed** — `DenyInteractiveSageMakerSurface` denies `sagemaker:CreateNotebookInstance`
+    and `CreatePresignedNotebookInstanceUrl`, exactly the two actions it carried — so **only the Athena one
+    is a gap**, which is what 3.8 closes. Everything else is unchanged: both OUs carry a Control Tower
+    guardrail, the Region ceiling (`CTMULTISERVICEPV1`) and the root controls, and the three root documents
+    apply either way.
   - **The token edit belongs HERE, not at 5.1** *(corrected 2026-09-05 — 5.1 scheduled it a pass late, and
     a battery run against a `dev` token that no longer resolves is not a measurement)*. It is **two files,
     not one**: `scp-battery.py`'s `PROFILES` map — the single place a probe's account token becomes a CLI
@@ -371,9 +387,13 @@ account by the exact string `Development Account` behind a precondition that fai
   `awsds-org-scp-ou-workloads`. The SMUS network-isolation guide states that *"Amazon Athena for Apache
   Spark does not currently support Amazon VPC"* and gives the SCP denying `athena:StartSession` **and**
   `athena:UpdateSession` as the control — so a Workload account that can start a session has an unproxied
-  path out of the account that will hold deploy credentials. Keep both actions even though
-  `UpdateSession` appears in no API model this project could read: the deny costs nothing and AWS's own
-  example carries it. Review
+  path out of the account that will hold deploy credentials. Keep `UpdateSession` even though it appears in
+  no API model this project could read: the deny costs nothing and AWS's own example carries it.
+  - **Copy the Sid as it stands — it is THREE actions and it is workgroup-scoped** (read 2026-09-06; this
+    step named two actions and no resource). The applied statement denies `athena:StartSession`,
+    `athena:UpdateSession` **and `athena:StartCalculationExecution`** on
+    **`arn:aws:athena:*:*:workgroup/*`**, not on `*`. `POLICIES.md` records all three; only this step was
+    short, and the missing one is the action that actually runs the calculation. Review
   [`terraform-live/identity/org-policies/POLICIES.md`](../../../terraform-live/identity/org-policies/POLICIES.md)
   in the **same sitting**, and move `EXC-03`'s Athena contrast probe to `Policy Canary`.
 
@@ -391,8 +411,15 @@ followed here, not authored.
   generated `vpc_cidr` would change and the plan would propose **replacing the VPC**. Set
   `CIDRS["staging"] = "10.50.0.0/16"`, delete the `development` row, and **free `10.40.0.0/16`** — 6c step 0
   consumes the freed block; it does not perform this edit. The account keeps 10.50 because a VPC CIDR is
-  immutable and a rebuild would invalidate the `[P]` gateway-endpoint ids the lake's bucket policy names
-  (Lesson 3).
+  immutable and a rebuild would replace every subnet, route table, endpoint and the peering with it.
+  - **The reason this step used to give expires two passes earlier, and that is worth saying rather than
+    leaving to be re-derived** *(2026-09-06)*: it said a rebuild "would invalidate the `[P]`
+    gateway-endpoint ids **the lake's bucket policy names**" — but **step 2.3 already removes this
+    account's endpoint from `trusted_vpce_ids`**, so by pass 4 the lake names none of them. The
+    conclusion is unchanged and now rests where it should: a VPC replacement rebuilds the whole
+    `foundation/` slice and forces 6c to re-cut a peering it has not built yet. **Second instance of the
+    same shape in this stage** — step 3.4's Config-rule clause was the first — and both are Lesson 3 read
+    backwards: a fact that moved invalidates the sentence that cited it, even when the conclusion holds.
 - **4.2 — [Claude⚡] Create the new state home**: `terraform-live/staging/bootstrap/`, producing
   `awsds-staging-tfstate` and `alias/awsds-staging-tfstate` from the existing bootstrap module. **`PROFILES`
   is the only table missing a `staging` row** — `ENV_TOKENS`, `ENVIRONMENT_TAGS` and `ZONE_IDS` already
@@ -409,7 +436,8 @@ followed here, not authored.
   does not.
 - **4.4 — [Claude⚡] Flip the token**: set `env = "staging"` and `environment_tag = "staging"` and read the
   plan carefully. The VPC, its subnets and the `[P]` S3 and DynamoDB **gateway endpoints keep their ids**
-  (in-place tag changes only — this is what preserves INT-05's anchors and the lake's `trusted_vpce_ids`),
+  (in-place tag changes only — INT-05's anchors; **not** the lake's `trusted_vpce_ids`, which stopped
+  naming this account at 2.3),
   while the security groups and the flow-log group **are replaced**. Anything else in the replacement list
   is a surprise and stops the step.
 - **4.5 — [Claude] Re-point the peer lookup in the same commit**: `production/foundation/peers.tf` finds a
@@ -424,7 +452,11 @@ followed here, not authored.
   destroys and re-creates each assignment; with them the plan reads `0 to add, 0 to change, 0 to destroy`.
 - **4.7 — [Claude⚡] Retire the old bucket, last**: migrate `development/bootstrap/`'s own state to the new
   bucket, lift `prevent_destroy` in one commit, empty the versioned bucket by hand (object versions **and**
-  delete markers), destroy it in the next commit. Only then remove the `development` rows from
+  delete markers), destroy it in the next commit. **Measured 2026-09-06 (`./aws/tf-backends.py` §2):
+  `awsds-dev-tfstate` is versioned, BPA 4/4, TLS-only, two lifecycle rules — and `OBJ LOCK` is `off`.**
+  That last field is the one worth having read: Object Lock on this bucket would have made the by-hand
+  emptying impossible and the step unexecutable, and it is on in exactly one bucket in this estate
+  (`INV-14`'s CloudTrail bucket), so the shape is not hypothetical. Only then remove the `development` rows from
   `backend.py` and `layers.py`.
 - **4.8 — [Claude] Swap the parity gate**, in the `git mv` commit: `scripts/check-bootstrap-parity.py`
   makes `development` REQUIRED and `staging` OPTIONAL — the two swap.
