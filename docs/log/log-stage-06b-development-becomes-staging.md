@@ -95,10 +95,40 @@ the branch are Claude's. Readings carry the report's own UTC stamp, which had cr
   `member.org.stacksets.cloudformation`, `ram`, `securityhub`, `sso` — and Account Management is not one
   of them. **Step 3.1 is therefore a real step, not a conditional one**: without it the rename cannot be
   issued against a member at all.
-- **0.5b — not yet run.** It is the user's: CloudShell in **Management** as the **`AWS Control Tower
-  Admin`** user, permission set **`AWSAdministratorAccess`**, running
-  `./aws/cloudshell/management-landing-zone-drift.sh`, whose section 2 now answers the auto-enrollment
-  question.
+- **[user] 0.5b — ran 2026-09-06T03:03:15Z**, CloudShell in **Management**, permission set
+  **`AWSAdministratorAccess`**, `./aws/cloudshell/management-landing-zone-drift.sh`. Report pasted by the
+  user; the load-bearing rows, verbatim:
+
+  ```
+  landing zone             arn:aws:controltower:us-west-2:<ACCOUNT>:landingzone/4I3ACTXON4Q7CJ8H
+  status                   ACTIVE
+  deployed version         4.0
+  latest available         4.0
+  DRIFT STATUS             IN_SYNC
+  remediation types        INHERITANCE_DRIFT
+  account auto-enrollment  on
+  ```
+
+  Section 4: **one operation ever** — `CREATE` / `SUCCEEDED`. Section 5: resource policy **PRESENT**, the
+  `PrincipalArn` condition on exactly **two** statements. Section 7: no call failed.
+- **[Claude] What that reading cost, and it is the reason the step exists.** **The stage predicted the
+  opposite** — 0.5b said *"absent — the default, and the expected reading here"*. **The value had been in
+  the repository since 2026-08-16**: `INV-17` records `remediationTypes: INHERITANCE_DRIFT` in the same
+  sentence as the drift flag, and nobody had named it a switch, so the prediction was written without
+  reading the file whose job is exactly that (`CLAUDE.md`: read `docs/AWS_STATE.md` whenever a snapshot is
+  read). `INV-17` now carries the interpretation as well as the value.
+- **[Claude] One of step 3.4's two reasons is struck.** It said the Organizations move path *"raises
+  `ACCOUNT_MOVED_BETWEEN_OUS` drift and, **without auto-enrollment**, leaves the old OU's Config-rule
+  controls attached"*. With the switch ON that second clause is false. **The conclusion survives**: the
+  Control Tower `Update account` path is still the one, because auto-enrollment never touches the Account
+  Factory **provisioned product** and does not prevent `Moved member account` drift between two OUs that
+  differ — which `Interactive` and `Workloads` do.
+- **[Claude] And verification 3 became unanswerable, which is the honest outcome.** *"Does the OU move
+  through Control Tower re-baseline by itself, or does it depend on auto-enrollment?"* — with the switch
+  ON both paths re-baseline, and producing the failing case would take an `update-landing-zone`, a write
+  nobody should issue as a measurement (Lesson 22). What stays measurable at 3.4/3.5 is narrower and more
+  useful: whether the account comes out carrying **only** the `Workloads` baseline, and whether the
+  provisioned product's parameters follow the rename.
 
 ### What the sitting left in the repository
 

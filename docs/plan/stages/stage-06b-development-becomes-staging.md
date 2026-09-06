@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Status** | **pass 0 DONE 2026-09-05** (0.5b outstanding — it is a CloudShell act in Management); nothing else started. **Created 2026-09-05**, revised the same day into the action-checklist format, then corrected against the code and against pass 0's own readings in the preparation sitting — the corrections are marked in place and the sitting is [logged](../../log/log-stage-06b-development-becomes-staging.md). One account changes role: `Development` (an Interactive member of the SageMaker Unified Studio domain, with a Lake Formation share and a read-write persona) becomes `Staging` (a **Workload** deployment target written only by the pipeline). It is [D21](../decisions/D21-development-account.md)'s own larger branch, pre-written 2026-08-13 and now taken |
+| **Status** | **PASS 0 COMPLETE — 0.1-0.5a 2026-09-05, 0.5b 2026-09-06**; nothing else started. Pass 0's last reading found **account auto-enrollment ON**, against this file's own prediction, and struck one of step 3.4's two reasons. **Created 2026-09-05**, revised the same day into the action-checklist format, then corrected against the code and against pass 0's own readings in the preparation sitting — the corrections are marked in place and the sitting is [logged](../../log/log-stage-06b-development-becomes-staging.md). One account changes role: `Development` (an Interactive member of the SageMaker Unified Studio domain, with a Lake Formation share and a read-write persona) becomes `Staging` (a **Workload** deployment target written only by the pipeline). It is [D21](../decisions/D21-development-account.md)'s own larger branch, pre-written 2026-08-13 and now taken |
 | **Prerequisites** | [6a](stage-06a-unified-studio.md) — what is being unwound was built there. **6c is not a prerequisite, but this stage runs FIRST**: see "Why this stage precedes 6c" below |
 | **Consumes** | [D17](../decisions/D17-interactive-vs-runtime.md), [D18](../decisions/D18-data-scientist-access.md), [D20](../decisions/D20-staging-account.md), [D21](../decisions/D21-development-account.md), [D22](../decisions/D22-data-governance-account.md), [D26](../decisions/D26-unified-studio.md), [D32](../decisions/D32-account-factory-sso-user.md), [D35](../decisions/D35-sandbox-cardinality.md) |
 | **Proves** | Nothing new crosses an account boundary. What it **retires**: [INT-04](../integrations.md) (merged into INT-07), the Development halves of INT-01/02/12/15/17/18/19, INT-03's third consumer, and [INT-09](../integrations.md)'s premise (a Studio project cloning GitLab), whose peering 6c re-purposes |
@@ -65,7 +65,7 @@ pins its dependents in **both** directions (Lesson 39).
 
 | Pass | What | Slices touched | Applied as |
 |---|---|---|---|
-| **0** | preflight readings — **DONE 2026-09-05 except 0.5b** | none | read-only |
+| **0** | preflight readings — **DONE** (0.1-0.5a 2026-09-05, 0.5b 2026-09-06) | none | read-only |
 | **1** | the SMUS unwind — **inside `Interactive`** | `data-governance/governance/`, `development/sagemaker/` — **and `scripts/tfhygiene/backend.py`**, whose vocabulary edit is what flips the flag (1.2/1.6) | `awsds-infra-data`, `awsds-infra-dev` |
 | **2** | persona swap and lake revocation | `identity/sso/`, `data-governance/data/`, `development/{foundation,data}/` | `awsds-infra-identity`, `awsds-infra-data`, `awsds-infra-dev` |
 | **3** | the rename and the OU move | `identity/sso/` (value only), `identity/org-policies/` (3.8's new Sid), `aws/probes/` (3.7's token) | console + `awsds-infra-identity` |
@@ -83,10 +83,10 @@ quoted from a snapshot, and a count that disagrees is the difference between a c
 stranded object. **Explanation:** a reading that contradicts this file stops the stage rather than
 adjusting it — the disagreement is the finding.
 
-> **PASS 0 RAN ON 2026-09-05** (report stamps 2026-09-06 UTC), as the infrastructure user through
-> `InfrastructureAccess`. Every reading below now carries what it *measured*, so the numbers in passes 1-4
-> are dated evidence rather than expectations. **0.5b alone is outstanding** — it is a CloudShell act in
-> Management. The readings are in
+> **PASS 0 IS COMPLETE** — 0.1-0.5a on 2026-09-05 as the infrastructure user through
+> `InfrastructureAccess`, 0.5b on 2026-09-06 from CloudShell in Management. Every reading below now carries
+> what it *measured*, so the numbers in passes 1-4 are dated evidence rather than expectations, and **two
+> of the readings contradicted this file** (0.3's count, 0.5b's switch). The readings are in
 > [`log-stage-06b-development-becomes-staging.md`](../../log/log-stage-06b-development-becomes-staging.md);
 > what follows is only what each one *decides*.
 
@@ -154,14 +154,25 @@ adjusting it — the disagreement is the finding.
     `AWSAdministratorAccess` (the `awsds-ctadmin-orgfull-*` profiles do not reach Management). Its
     section 2 has printed `remediationTypes` since its first run; since 2026-09-05 it also says what the
     value decides. `INHERITANCE_DRIFT` present = Control Tower re-baselines an account moved with the
-    Organizations API; absent — the default, and the expected reading here — = a hand move leaves the
-    **source** OU's baseline and controls attached and raises inheritance drift. The feature needs landing
-    zone 3.1 or later; this one is 4.0.
-  - **What neither reading changes: step 3.4.** Auto-enrollment does **not** create, modify or terminate
-    the Account Factory **provisioned product**, and does **not** prevent `Moved member account` drift when
-    the two OUs differ in configuration — which `Interactive` and `Workloads` do. So the Control Tower
-    `Update account` path is the supported one whether the switch is on or off; 0.5b is read so that the
-    reason for taking it is a measurement rather than a memory.
+    Organizations API; absent = a hand move leaves the **source** OU's baseline and controls attached and
+    raises inheritance drift. The feature needs landing zone 3.1 or later; this one is 4.0.
+    **MEASURED 2026-09-06, from CloudShell in Management: `remediationTypes: INHERITANCE_DRIFT` —
+    AUTO-ENROLLMENT IS ON**, and this step predicted the opposite ("absent — the default, and the expected
+    reading here"). **The value was already in the repository**: `INV-17` has carried it since 2026-08-16,
+    unread as a switch because nothing had named it one. That is what `docs/AWS_STATE.md` exists to
+    prevent, and the prediction was written without consulting it — the reading cost nothing, the
+    prediction would have cost step 3.4's reasoning.
+    The same run re-confirmed the rest of `INV-17` unchanged: `ACTIVE`, 4.0 = latest, `IN_SYNC`, and
+    **one operation ever — `CREATE`/`SUCCEEDED`**, so the landing zone still has not re-run since the
+    Stage 2 delegation, and section 5 still reads the resource policy `PRESENT` with its condition on two
+    statements.
+  - **What neither reading changes: step 3.4 — but one of its two reasons is now void.** Auto-enrollment
+    does **not** create, modify or terminate the Account Factory **provisioned product**, and does **not**
+    prevent `Moved member account` drift when the two OUs differ in configuration — which `Interactive` and
+    `Workloads` do. Those two still make the Control Tower `Update account` path the supported one. What
+    the measurement **removes** is 3.4's second clause: with the switch ON, an Organizations move would no
+    longer strand the source OU's Config-rule controls. The conclusion survives its own justification
+    shrinking, which is the only reason it is worth writing down.
 - **0.6 — [user] Paste the five readings into the stage log's first entry**, so every count below is
   measured rather than quoted.
 
@@ -326,8 +337,11 @@ account by the exact string `Development Account` behind a precondition that fai
 - **3.4 — [user] Move the OU**, Control Tower console: *Organization → the account → **Update account** →
   registered OU = `Workloads`*, or the Service Catalog update of the provisioned product with
   `ManagedOrganizationalUnit = Workloads`. **Never `aws organizations move-account`** — that path raises
-  `ACCOUNT_MOVED_BETWEEN_OUS` drift and, without auto-enrollment, leaves the old OU's Config-rule controls
-  attached.
+  `ACCOUNT_MOVED_BETWEEN_OUS` drift and leaves the Account Factory **provisioned product** pointing at the
+  old OU under the old name, which auto-enrollment explicitly does not fix. *This step used to carry a
+  third reason — "without auto-enrollment it leaves the old OU's Config-rule controls attached" — and
+  **0.5b measured the switch ON on 2026-09-06**, so that clause is struck rather than left to be
+  re-derived by whoever reads it next.*
 - **3.5 — [user] Update the provisioned product's parameters, same sitting**: re-enter `AccountName` as
   `Staging Account` alongside the new OU, then **read the parameters back**. Control Tower documents the
   e-mail field as *not* following an out-of-band change; whether `AccountName` does is not documented. If
@@ -504,11 +518,13 @@ bucket is cents; the old bucket's storage disappears with it.
 2. Does `list-environment-blueprint-configurations` fail rather than return empty after disassociation?
    (1.5 — 6a step 1.3's proof in reverse.)
 3. Does the OU move through Control Tower re-baseline the account by itself, or does it depend on account
-   auto-enrollment? (0.5 + 3.4.) **Narrowed by documentation on 2026-09-05, not closed**: auto-enrollment
-   governs moves made with the *Organizations* API, and the Control Tower `Update account` path this stage
-   takes is documented to re-baseline regardless. What is still unmeasured is whether the account comes out
-   the far side carrying **only** the `Workloads` baseline — the `Interactive` Config-rule controls gone,
-   not merely superseded.
+   auto-enrollment? (0.5 + 3.4.) **Narrowed by documentation on 2026-09-05 and then made UNANSWERABLE by
+   measurement on 2026-09-06**, which is the honest outcome rather than a gap: auto-enrollment is **ON** in
+   this landing zone, so both paths re-baseline and the estate can no longer show what the other one would
+   have done (Lesson 22 — the failing case cannot be produced without an `update-landing-zone`, which is a
+   write nobody should take as a measurement). **What stays measurable at 3.4/3.5 is the narrower question
+   that actually matters here**: does the account come out carrying **only** the `Workloads` baseline, and
+   do the provisioned product's parameters follow?
 4. Does the direct `AWSAdministratorAccess` assignment return after the account update? (3.6, D32.)
    **The negative baseline is measured (2026-09-05): the account carries no such assignment today**, so a
    return is detectable rather than arguable — which is what 1b verification (vi) has been waiting for.
