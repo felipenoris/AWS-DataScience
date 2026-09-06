@@ -132,3 +132,38 @@ stays verbatim. The stage file is
   reading taken too early. **The one thing to carry into it** is that `production/workloads-egress/` now
   exists with **both** service lists empty — 6d step 4.6's *"carry the network shape forward to Stage
   10"* is about that slice, and the MWAA endpoint set (`logs`, `monitoring`, `kms`) is what fills it.
+
+## 2026-09-06 — pass 2 begins, and step 1.1 turns out to have broken both spokes
+
+- **[Claude] THE FINDING OF THE SITTING, and 1.1's own gate could not have caught it.** Step 1.1 renamed
+  Production's VPC `Name` tag from `awsds-prod-vpc` to `awsds-prod-shared-vpc`. **Both spoke slices
+  resolve the accepter's VPC BY THAT TAG** — `data "aws_vpc" "production"` in
+  `sandbox/foundation/peering.tf` and `staging/foundation/peering.tf` — so from the moment 1.1 applied,
+  **neither spoke could apply at all**: `Error: no matching EC2 VPC found`.
+  - **The VPC id never changed**, which is exactly why 1.1's gate — *"any id in the replacement list stops
+    the step"* — was blind to it. What moved was a **name another account resolves by**, and no id-shaped
+    check sees that. This is Lesson 3 from the far side: a fact that moved invalidates the sentence that
+    cited it, and the citation lived in a different account.
+  - **It also says my deferral of 0.6 was wrong.** 0.6 sits in pass 0 for this reason; I moved it to 3.1
+    because the peering *list* belongs with 3.1's matrix. **The list can wait for the matrix; the peer
+    LOOKUP cannot wait past the rename that breaks it.** The smallest half of 0.6 — a `name_suffix` field
+    on the `peers` map, and a lookup that builds the tag from it — was pulled forward and applied.
+  - **How long it was broken, and how it surfaced:** the whole window between 1.1's apply and this fix.
+    It surfaced because a *later* apply failed, not because anything checked — and it nearly did not
+    surface at all: the first attempt ran `apply … >/dev/null 2>&1`, which swallowed the error and left
+    two zones silently uncreated. **Third time this session that redirecting or piping output hid a
+    failure**, and the previous two cost a burned git tag.
+- **[Claude] 2.1 and 2.3 applied**: `awsds.internal` and `awsds-pages.internal`, both owned by
+  `production/foundation/`, `2 to add`, re-plan `No changes`. **Pages keeps its own apex by decision** —
+  a `pages.awsds.internal` child would put user-published content under the same registrable parent as
+  the platform's names, and a cookie scoped to that parent would be readable by it. That separation is
+  the entire reason D36 gave Pages an apex; the rename keeps the project prefix without weakening it.
+- **[Claude] 2.2 applied**: `sandbox.awsds.internal`, `staging.awsds.internal` and `prod.awsds.internal`,
+  each in the account that owns it, one `to add` each. **All five carry `ignore_changes = [vpc]` from the
+  first apply**, which is load-bearing rather than tidy: 2.5 reverses the direction so the *zone owner*
+  authorizes and Production associates `VPC-Networking`, and without it every later plan in the owning
+  account would try to remove what Production added.
+- **[Claude] Read back: eight zones across three accounts** — the five new ones plus `prod.internal`,
+  `pages.internal` and `sandbox.internal`, which **2.6 retires after pass 6 measures the new ones**.
+  Zones cannot be renamed, so the two families coexist by construction — the window 2.4's `NT-12` was
+  corrected in advance to tolerate. Both peerings still `active`.

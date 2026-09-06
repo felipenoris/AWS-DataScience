@@ -59,3 +59,10 @@ output "tier_security_group_ids" {
   description = "Baseline tier SGs."
   value       = module.vpc.tier_security_group_ids
 }
+
+# Stage 6c step 2.5 reads this from Production, to associate VPC-Networking after this account
+# has authorized it. The authorization is written here; the association is not.
+output "staging_awsds_internal_zone_id" {
+  description = "staging.awsds.internal - associated with this VPC and with VPC-Networking (INT-22)."
+  value       = aws_route53_zone.staging_awsds_internal.zone_id
+}

@@ -508,8 +508,23 @@ def tfvars_values(account: str, slice_name: str) -> dict:
             # no peers.tf yet would declare a variable nothing consumes, which tflint rejects
             # and which would train the reader to ignore an unused input.
             if slice_name == "foundation":
+                # THE `name_suffix` FIELD ARRIVED ON 2026-09-06 AND IT IS 0.6's SMALLEST HALF,
+                # PULLED FORWARD BY AN OUTAGE STEP 1.1 CAUSED. A requester finds the accepter's
+                # VPC by the tag `awsds-<env>-vpc`; 1.1 re-labelled Production's to
+                # `awsds-prod-shared-vpc`, and BOTH spokes stopped being able to apply -
+                # `data.aws_vpc.production` returned "no matching EC2 VPC found". The VPC id
+                # never changed, so 1.1's own gate ("any id in the replacement list stops the
+                # step") could not see it: what moved was a NAME another account resolves by.
+                #
+                # This is why 0.6 sits in pass 0 rather than in pass 3, and deferring it to 3.1
+                # was the wrong call - the peering LIST can wait for the matrix, but the peer
+                # LOOKUP cannot wait past the rename that breaks it.
                 values["peers"] = {
-                    acct: {"profile": PROFILES[acct], "env": ENV_TOKENS[acct]}
+                    acct: {
+                        "profile": PROFILES[acct],
+                        "env": ENV_TOKENS[acct],
+                        "name_suffix": vpc_name_suffix_of(acct, "foundation"),
+                    }
                     for acct in vpc_bearing_accounts()
                     if acct in PROFILES
                 }
@@ -688,7 +703,8 @@ def render_tfvars(account: str, slice_name: str) -> str:
         out += f"peer_cidrs      = [{cidr_list}]\n"
     if "peers" in v:
         rows = "".join(
-            f'  {acct} = {{ profile = "{p["profile"]}", env = "{p["env"]}" }}\n'
+            f'  {acct} = {{ profile = "{p["profile"]}", env = "{p["env"]}", '
+            f'name_suffix = "{p["name_suffix"]}" }}\n'
             for acct, p in v["peers"].items()
         )
         out += f"peers = {{\n{rows}}}\n"

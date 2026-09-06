@@ -26,7 +26,7 @@ data "aws_vpc" "production" {
 
   filter {
     name   = "tag:Name"
-    values = ["awsds-${var.peers["production"].env}-vpc"]
+    values = [var.peers["production"].name_suffix == "" ? "awsds-${var.peers["production"].env}-vpc" : "awsds-${var.peers["production"].env}-${var.peers["production"].name_suffix}-vpc"]
   }
 }
 
