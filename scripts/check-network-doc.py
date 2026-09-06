@@ -179,23 +179,33 @@ def main() -> int:
         bad += 1
         print(f"MISSING {what}: {needle}")
 
-    print("== the address allocation (backend.CIDRS + the WireGuard client range) ==")
-    for account, cidr in sorted(backend.CIDRS.items()):
-        require(cidr, f"{account}'s VPC CIDR")
+    # PER (ACCOUNT, SLICE) SINCE 6c step 0.7, because Production holds three VPCs from D38 and
+    # "the account's CIDR" stopped being a thing to ask for. Rule A is unchanged in intent: every
+    # /16 the address plan allocates has to be findable in the document.
+    print("== the address allocation (backend.VPC_CIDRS + the WireGuard client range) ==")
+    for (account, slice_name), cidr in sorted(backend.VPC_CIDRS.items()):
+        require(cidr, f"{account}/{slice_name}'s VPC CIDR")
     require(backend.WIREGUARD_PEER_CIDR, "the WireGuard client range")
     require(backend.SANDBOX_SUPERNET, "the Sandbox supernet")
-    print(f"  {len(backend.CIDRS)} allocation(s) + the client range and the supernet")
+    print(f"  {len(backend.VPC_CIDRS)} allocation(s) + the client range and the supernet")
 
     print()
     print("== the per-tier subnets, recomputed from terraform-modules/vpc/main.tf ==")
-    for account, cidr in sorted(backend.CIDRS.items()):
-        if not (LIVE / account / "foundation").is_dir():
-            print(f"  {account}: no foundation/ slice - its subnets do not exist, rule A only")
+    for (account, slice_name), cidr in sorted(backend.VPC_CIDRS.items()):
+        # A slice whose folder does not exist yet is checked by rule A alone - its subnets are
+        # not cut anywhere, so requiring them in the document would demand prose about a network
+        # nobody has built. 6c's `networking` and `workloads` rows are here BEFORE their folders
+        # (0.2 authors the plan ahead), and Stage 14 puts a vended Sandbox unit in the same state.
+        if not (LIVE / account / slice_name).is_dir():
+            print(
+                f"  {account}/{slice_name}: no slice on disk - its subnets do not exist, rule A only"
+            )
             continue
         for tier, cidrs in subnets_of(cidr, cuts).items():
             for sub in cidrs:
-                require(sub, f"{account}'s {tier} subnet")
-        print(f"  {account}: {sum(len(v) for v in subnets_of(cidr, cuts).values())} subnet(s)")
+                require(sub, f"{account}/{slice_name}'s {tier} subnet")
+        n = sum(len(v) for v in subnets_of(cidr, cuts).values())
+        print(f"  {account}/{slice_name}: {n} subnet(s)")
 
     print()
     print("== every network-bearing slice is named ==")

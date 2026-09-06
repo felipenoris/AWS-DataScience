@@ -131,13 +131,22 @@ one of the four (0.4) is a hard create-time conflict rather than a naming prefer
   been copied into six files in one day, two of them instruments.** All corrected before any 6c code was
   written; the consequence is that `networking.py`'s `NT-3`/`NT-5`/`NT-6` **stop having an expiry date**,
   because nothing will ever allocate the range they watch.
-  - **One design question is open and it changes 0.6 and 0.7 with it.** This step says the per-(account,
-    VPC) table sits **beside** the per-account `CIDRS`. Two tables carrying the same numbers is Lesson 33
-    exactly — one intent in two places diverges — and `CIDRS` cannot answer *"which /16 does Production
-    have"* once Production has three. The alternative is **one authored table keyed by (account, slice)**
-    with every per-account reader deriving from it. It is not a free choice: `CIDRS`'s key set is what
-    builds the `peers` map that `production/foundation/peers.tf` consumes **today**, so whichever shape is
-    taken, 0.2 and 0.6 land in one commit.
+  - **DONE 2026-09-06, and the table REPLACES `CIDRS` rather than sitting beside it.** This step asked for
+    two tables; the deviation was settled by measuring the call sites rather than by preference. **Every
+    reader of `CIDRS` was asking a per-VPC question** and read per-account only because each account had
+    one VPC: `vpc_cidr` wants the slice's own range, the D22 guard wants *"does this slice have an
+    allocation"*, `peer_cidrs` wants a peer VPC's range, and the doc gate iterates the values. **None
+    needs an account-level answer**, and `CIDRS["production"]` has none to give once Production holds
+    three. Two tables carrying the same numbers with no reader for one of them is Lesson 33 with nothing
+    bought. Stage 14's human reader still works: *"the lowest free /16 in the supernet"* is a question
+    about the values.
+  - **The gate for this step is that NOTHING generated changed**, and it holds: `sandbox/foundation`,
+    `production/foundation` and `staging/foundation` all re-plan **`No changes`** after the swap. The
+    `peers` map is deliberately still keyed by ACCOUNT — **that seam is 0.6's**, and the comment says so
+    where the derivation lives: today every peering joins two accounts with one `foundation/` VPC each, so
+    an account key names a VPC unambiguously; the moment Production holds three it stops doing so.
+  - **`NETWORK_SLICES` gained the four 6c slices and a subset, `VPC_SLICES`** — the ones that *create* a
+    VPC rather than living inside one. `foundation` was the whole answer while every account had one.
 - **0.2 — [Claude] Extend the address vocabulary**: `scripts/tfhygiene/backend.py` gains a
   per-**(account, VPC)** table — `production-shared` 10.30.0.0/16, `production-networking` 10.31.0.0/16,
   `production-workloads` 10.32.0.0/16 — beside the per-account `CIDRS` that already carries
@@ -179,7 +188,11 @@ one of the four (0.4) is a hard create-time conflict rather than a naming prefer
 - **0.6 — [Claude] Teach the peering pattern about three VPCs**: `production/foundation/peers.tf` finds a
   peer by the single tag `awsds-<env>-vpc`; that lookup becomes per-VPC and the peering map moves into
   `backend.py`, so both sides of every peering are generated from one list (Lesson 14).
-- **0.7 — one of its two halves done 2026-09-06.** The gate's own header carried a stale parenthetical —
+- **0.7 — DONE 2026-09-06.** Rules A and B both read `VPC_CIDRS` per (account, slice). Rule B's
+  "no slice on disk" branch now has **two live examples** — `production/networking` and
+  `production/workloads`, whose rows are authored before their folders — where before it had none, and
+  `docs/NETWORK.md` already names 10.31 and 10.32 in its §T target tables, so rule A passes without a
+  documentation edit. That is the address plan having been written down before the code, working. Its second half was the header's stale parenthetical. The gate's own header carried a stale parenthetical —
   *"an account with an allocation and no `foundation/` (Staging today)"* — which described the **unvended**
   Staging, whose 10.40 row had no VPC behind it. 6b renamed `Development` into Staging, so all three
   allocated accounts carry a `foundation/` and that branch now has **no example**; it is kept because
