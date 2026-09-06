@@ -21,6 +21,16 @@
       "Effect": "Deny",
       "Action": "datazone:*",
       "Resource": "*"
+    },
+    {
+      "Sid": "DenyAthenaSparkStartSession",
+      "Effect": "Deny",
+      "Action": [
+        "athena:StartSession",
+        "athena:UpdateSession",
+        "athena:StartCalculationExecution"
+      ],
+      "Resource": "arn:aws:athena:*:*:workgroup/*"
     }
   ]
 }

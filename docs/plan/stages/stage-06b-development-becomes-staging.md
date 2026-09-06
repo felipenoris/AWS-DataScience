@@ -450,6 +450,11 @@ account by the exact string `Development Account` behind a precondition that fai
 `aws/import-ids.py` maps the same string. **Explanation:** between the rename and the code edit the
 `identity/sso` plan is **expected** to fail — which is why both happen in one sitting.
 
+- **3.1 — DONE 2026-09-06 by the user**, CloudShell in Management; the call produced no output, which is
+  its success. **Read back the same day**: `./aws/org-trusted-access-services.py` section 1 now reports
+  *"PRESENT — `account.amazonaws.com` holds trusted access"*, so `put-account-name --account-id` is
+  available and **step 3.2 is unblocked**. `INV-09` restated: **ten** principals, not nine; `account` is
+  the fourth this project turned on, it holds no delegation, and the delegated count stays **four**.
 - **3.1 — [user] Enable trusted access — 0.5a measured it ABSENT on 2026-09-05, so this runs**,
   Management, CloudShell as `AWS Control Tower Admin` / `AWSAdministratorAccess`:
 
@@ -517,6 +522,22 @@ account by the exact string `Development Account` behind a precondition that fai
   - **Left deliberately undone:** `development` stays an allowed value in `awsds-org-tag-policy` even
     though nothing carries it after 4.4. Removing a value is a policy change with its own `POLICIES.md`
     row and its own battery run, and it is not this stage's.
+- **3.8 — DONE 2026-09-06, and taken BEFORE the OU move rather than after it.** The step is listed after
+  3.4 but does not depend on it, and the order matters in one direction only: applied first, the account
+  **never spends a moment in `Workloads` without the deny it had in `Interactive`**; applied after, that
+  window is real. Applied as `awsds-infra-identity`, **`0 added, 1 changed, 0 destroyed`**, re-plan
+  `No changes`, and the document read back from Organizations carries three Sids.
+  - **The Sid was copied verbatim** — three actions, workgroup-scoped — because the two OUs deny the same
+    thing for the same reason and a paraphrase is a second spelling to keep in step (Lesson 33).
+  - **`EXC-03` named this event in advance and it arrived**: *"the row to watch is the contrast one — if it
+    ever turns into a denial too, the pair stops attributing"*. Production **was** the contrast precisely
+    because its OU document carried no athena action; now it inherits the deny. The contrast moved to
+    **`Policy Canary`** (`Policy Test` carries no project SCP), and the battery was re-run the same day:
+    **25 as expected, 0 unexpected** — `prod` and both Interactive rows `DENY-NOT-SCP`, the canary
+    `ALLOWED / reached-authorization`, and 1.6's negative probe still reading
+    *"athena:StartQueryExecution STILL WORKS"*, so **SQL and D13's query path are untouched**.
+  - `POLICIES.md` reviewed in the same sitting (`./scripts/check-index.py` clean), and `EXC-03` rewritten
+    with the move.
 - **3.8 — [Claude⚡] Close the Athena Spark gap**: add `DenyAthenaSparkStartSession` to
   `awsds-org-scp-ou-workloads`. The SMUS network-isolation guide states that *"Amazon Athena for Apache
   Spark does not currently support Amazon VPC"* and gives the SCP denying `athena:StartSession` **and**

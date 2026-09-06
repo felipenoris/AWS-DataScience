@@ -417,3 +417,35 @@ edit, plan, apply and read-back below is Claude's. Applied as the **infrastructu
   **2 resource links** (from 4); `rename-check.py` turns **RC-5 and RC-6 to `pass`** — six permission sets,
   no Lake Formation grant naming the account — leaving **only RC-1 and RC-2**, the rename and the OU move.
   **Pass 2 is complete, and everything that does not depend on the user is done.**
+
+---
+
+## 2026-09-06 — steps 3.1 and 3.8: the switch is on, and the Workloads ceiling gains the deny early
+
+*Provenance: **step 3.1 is the user's** — `enable-aws-service-access --service-principal
+account.amazonaws.com`, run in CloudShell on Management, no output, which is its success. Everything else
+is Claude's, applied as the **infrastructure user**, account **Identity**, permission set
+**`InfrastructureAccess`**.*
+
+- **[Claude] 3.1 read back**: `./aws/org-trusted-access-services.py` section 1 now reports **PRESENT** for
+  `account.amazonaws.com`, so `put-account-name --account-id` is available and **3.2 is unblocked**.
+  `INV-09` restated — **ten** principals, not nine; `account` is the fourth this project turned on, holds
+  no delegation, and the delegated count stays four.
+- **[Claude] 3.8 taken BEFORE the OU move, deliberately.** The step is listed after 3.4 and does not depend
+  on it, and the order matters in one direction only: applied first, the account **never spends a moment in
+  `Workloads` without the deny it carried in `Interactive`**; applied after, that window is real. Applied
+  **`0 added, 1 changed, 0 destroyed`**, re-plan `No changes`, and the document read back from
+  Organizations carries three Sids. The statement was **copied verbatim** — three actions,
+  `arn:aws:athena:*:*:workgroup/*` — not paraphrased.
+- **[Claude] `EXC-03` named this event in advance, and it arrived.** That row says *"the row to watch is
+  the contrast one — if it ever turns into a denial too, the pair stops attributing"*. Production **was**
+  the contrast precisely because its OU document carried no athena action at all; the amendment ends that.
+  The contrast moved to **`Policy Canary`**, whose `Policy Test` OU carries no project SCP.
+- **[Claude] The battery re-run the same day, `--phase ou`: `25 as expected, 0 unexpected, 8 not
+  measured`.** `prod` now reads `deny / DENY-NOT-SCP` beside the two Interactive rows; the canary reads
+  `allow / ALLOWED / reached-authorization`, so the trio still attributes. **1.6's negative probe still
+  passes** — *"interactive: athena:StartQueryExecution STILL WORKS"* — which is the one that matters: the
+  amendment denies **Spark**, not SQL, and D13's query path is untouched. The eight not measured are the
+  standing `no subnet in us-west-2` rows in Data and Identity, unrelated.
+- **[Claude]** `POLICIES.md` gained its row and `./scripts/check-index.py` is clean; `EXC-03` rewritten
+  with the move and its date.
