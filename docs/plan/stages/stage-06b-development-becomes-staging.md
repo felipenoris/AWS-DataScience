@@ -210,6 +210,13 @@ because an error and an empty list are different outcomes and only the empty lis
   `sso-group-deployment-managers`; the two removals above are a data source and a provider, which have no
   plan line of their own. **This precedes 1.2's vocabulary edit**, which is what removes the `members` map
   row those sites read.
+- **1.2 — DONE 2026-09-06.** Applied as `awsds-infra-dev`: **`0 to add, 1 to change, 22 to destroy`** —
+  the count this step was corrected to predict, and the composition read out of the saved plan before
+  applying: **11 × `awscc_datazone_environment_blueprint_configuration`** and **11 ×
+  `awscc_datazone_policy_grant`** deleted, **1 × `aws_kms_key` updated**, namely
+  `module.sagemaker_prereqs.module.project_key.aws_kms_key.this`. One apply, in one plan — **Recipe F was
+  not needed**, which answers this stage's verification 1: the provider orders the grant before its
+  configuration by itself. Re-plan **`No changes`**.
 - **1.2 — [Claude⚡] Destroy the eleven configurations and their grants — and the edit that does it is
   1.6's, taken here.** *Corrected 2026-09-05 while preparing the stage; this step used to read "set
   `blueprints_enabled = false` in `terraform-live/development/sagemaker/`", which names a value **nothing
@@ -229,8 +236,17 @@ because an error and an empty list are different outcomes and only the empty lis
   - If the provider orders grant and configuration wrongly, fall back to **Recipe F** (staged destroy, one
     `-target` per resource type, `plan` between them) — a destroy of a blueprint configuration with a grant
     attached has never been exercised in this estate.
+- **1.3 — DONE 2026-09-06, and this step asked the second call for an answer it cannot give.**
+  `list-environment-blueprint-configurations` from `awsds-infra-dev` returns **0 items** — empty, and
+  *succeeding*, which is the association still being in place. But `list-policy-grants` on the grant's own
+  entity (`ENVIRONMENT_BLUEPRINT_CONFIGURATION`, identified `<account>:<blueprintId>`) **cannot return
+  empty**: with the configuration destroyed it raises
+  `ValidationException: Environment Blueprint Configuration with id: … does not exist in account: …`.
+  An error and an empty list are different outcomes and only one of them was available here — the grants
+  `for_each` rides the configurations, so the entity the grant hangs off is gone with it. **Read the
+  error, not an empty list**; the empty list belongs to the *first* call only.
 - **1.3 — [Claude] Read the member back**: `aws datazone list-environment-blueprint-configurations` and
-  `list-policy-grants` from `awsds-infra-dev` must both return **empty**.
+  `list-policy-grants` from `awsds-infra-dev`.
 - **1.4 — [user] Disassociate the account**, console, in the **Data Governance** account: *SageMaker Unified
   Studio → domain `awsds-studio` → Account associations → select the member → Disassociate*, typing
   `disassociate` to confirm. There is no API for this, and the documentation lists no prerequisite — which
@@ -245,15 +261,20 @@ because an error and an empty list are different outcomes and only the empty lis
 - **1.6 — [Claude] The vocabulary edit, and the proof it cost nothing else. PERFORMED AT 1.2** (the
   numbers are identifiers, not an order): remove `development` from **both** `SMUS_MEMBERS` and
   `SMUS_ASSOCIATED` in `scripts/tfhygiene/backend.py`, regenerate the tfvars, and re-plan
-  `data-governance/governance/` to **`No changes`**. `profiles_enabled` is
+  `data-governance/governance/` to **`No changes`**. **DONE 2026-09-06 — the governance re-plan is
+  `No changes`, so `profiles_enabled` did not flip and `experimentation` survived.** `profiles_enabled` is
   `set(SMUS_MEMBERS) <= set(SMUS_ASSOCIATED)`, so editing one list alone flips it false and destroys the
   **`experimentation`** profile too; the empty plan is the proof that it did not. What is left at *this*
   point in the pass is that re-plan, taken after 1.5.
   - **Two side effects of the same edit, both by design and neither obvious from the diff.**
-    (i) `PERSONA_VENDING_ACCOUNTS = list(SMUS_MEMBERS)`, so `persona_vending_policy_name` leaves
-    `development/foundation/`'s tfvars at the same moment: from 1.2 until step 2.2 that slice carries a
-    **destroy blocked by `prevent_destroy`**, and an apply of it in that window *errors*. That is the safe
-    failure and the reason the guard is there — it is not a state to be improvised past.
+    (i) **AVOIDED, on the vocabulary's own instruction (2026-09-06).** `PERSONA_VENDING_ACCOUNTS` is
+    derived as `list(SMUS_MEMBERS)`, so this edit would have dropped `persona_vending_policy_name` from
+    `development/foundation/`'s tfvars and left that slice carrying a **destroy blocked by
+    `prevent_destroy`** for a whole pass. But the comment above that constant already says what to do when
+    the two lists diverge — *"THIS LIST FOLLOWS THE ASSIGNMENTS, not the members"* — and they diverge
+    exactly here, because `DataScientistAccess` stays assigned until 2.1. So the derivation was replaced by
+    the literal `["sandbox", "development"]` for the window, with the reason and its expiry in the comment.
+    **Measured: `development/foundation/` re-plans `No changes`.** Step 2.2 restores the derivation.
     (ii) `SMUS_ASSOCIATED` briefly disagrees with AWS: the console association still exists until 1.4. The
     list's operative meaning is *"this member should carry blueprint configurations"*, and 6b is the one
     pass where that separates from *"is associated"* — necessarily, since the configurations must go
@@ -293,9 +314,11 @@ uses it is destroyed.
   - **Both permission sets survive the stage**: `DataScientistAccess` stays on Sandbox,
     `DevEnvStewardAccess` on Sandbox and Production. What is deleted here is two *assignments*, never a
     set — which is also why nothing in `identity/sso/`'s permission-set half changes.
-- **2.2 — [Claude⚡] Retire the vending policy, two commits.** `PERSONA_VENDING_ACCOUNTS` needs no edit
-  here — it is `list(SMUS_MEMBERS)` and shrank at 1.2, which is why this slice has been carrying a blocked
-  destroy since then. What is left is the guard: lift `prevent_destroy` on
+- **2.2 — [Claude⚡] Retire the vending policy, two commits.** **Restore the derivation first**:
+  `PERSONA_VENDING_ACCOUNTS` is the literal `["sandbox", "development"]` since 1.2 (see 1.6's side effect
+  (i)), and it goes back to `list(SMUS_MEMBERS)` here — after 2.1 has removed the assignment that made the
+  literal necessary. That edit is what drops `persona_vending_policy_name` from the slice's tfvars, so it
+  and the guard belong in the same pass: lift `prevent_destroy` on
   `awsds-org-project-storage-vending` in `terraform-live/development/foundation/persona-vending.tf` in one
   commit and destroy it in the next (the runbook's two-commit rule). The object is referenced **by name**
   by the permission set, so it goes after 2.1 and never before.
