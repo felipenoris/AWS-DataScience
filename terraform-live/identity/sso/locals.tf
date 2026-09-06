@@ -44,7 +44,7 @@ locals {
   # orphan).
   accounts = {
     sandbox           = "Sandbox Account 1"
-    development       = "Staging Account"
+    staging           = "Staging Account"
     "data-governance" = "Data Governance Account"
     production        = "Production Account"
     identity          = "Identity Account"
@@ -82,24 +82,30 @@ locals {
   #   - sso-group-dev-env-stewards on Staging, Data Governance, Identity, Audit, Log Archive,
   #     Policy Canary                                     - it judges a container image
   #   - EVERY persona on Identity, Audit, Log Archive, Policy Canary, and Management
-  #   - every Staging cell                                - the account is unvended
+  #
+  # THE LAST LINE OF THAT LIST WENT ON 2026-09-06. It read "every Staging cell - the account is
+  # unvended", and the account exists now: Stage 6b renamed `Development` into it, because the
+  # quota refused the vend. Staging carries exactly two personas - DataScientistStagingAccess
+  # (D18, read-only) and DeploymentManagerAccess - and the steward's absence above is still an
+  # absence, for its own reason rather than for the vend's.
   assignments = {
-    # DataScientistAccess - Sandbox AND Development (D21). One set, two accounts (1b 3.3):
-    # the two are policy-identical at this level, which is what putting them in one OU asserts.
+    # DataScientistAccess - Sandbox ONLY since Stage 6b step 2.1. D21 said "one set, two
+    # accounts, policy-identical because they share an OU"; the accounts no longer share an OU
+    # and are no longer policy-identical, which is why the row below is a different set.
     "data-scientist@sandbox" = { set = "data_scientist", group = "data_scientists", account = "sandbox" }
-    # SWAPPED BY STAGE 6b STEP 2.1 (2026-09-06), and the KEY is deliberately unchanged: the
-    # account is still named `development` here until step 4.6 renames the key behind moved {}
-    # blocks. Renaming it now would change the resource address and destroy/recreate the
-    # assignment for nothing. D18: Staging is read-only and nothing else.
-    "data-scientist@development" = { set = "data_scientist_staging", group = "data_scientists", account = "development" }
+    # SWAPPED BY STAGE 6b STEP 2.1 and RE-KEYED BY STEP 4.6 (both 2026-09-06). The two halves
+    # were deliberately separate: 2.1 changed which permission set the account gets, 4.6 changes
+    # the ADDRESS - and an address change is a destroy-and-create unless a moved {} block says
+    # otherwise, which is what moved.tf carries. D18: Staging is read-only and nothing else.
+    "data-scientist-staging@staging" = { set = "data_scientist_staging", group = "data_scientists", account = "staging" }
 
     # DataScientistProdAccess - Production only (D18). A different SHAPE, not a weaker copy.
     "data-scientist-prod@production" = { set = "data_scientist_prod", group = "data_scientists", account = "production" }
 
     # DeploymentManagerAccess (D31) - diagnosis, not reading. Nothing on Data Governance.
-    "deployment-manager@sandbox"     = { set = "deployment_manager", group = "deployment_managers", account = "sandbox" }
-    "deployment-manager@development" = { set = "deployment_manager", group = "deployment_managers", account = "development" }
-    "deployment-manager@production"  = { set = "deployment_manager", group = "deployment_managers", account = "production" }
+    "deployment-manager@sandbox"    = { set = "deployment_manager", group = "deployment_managers", account = "sandbox" }
+    "deployment-manager@staging"    = { set = "deployment_manager", group = "deployment_managers", account = "staging" }
+    "deployment-manager@production" = { set = "deployment_manager", group = "deployment_managers", account = "production" }
 
     # GovernanceManagerAccess - Data Governance ONLY, and it is the mirror image of the row
     # above: the one account the deployment manager cannot enter is the only one this one can.

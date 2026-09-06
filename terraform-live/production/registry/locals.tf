@@ -13,7 +13,7 @@
 locals {
   consumer_account_ids = [
     data.aws_caller_identity.sandbox.account_id,
-    data.aws_caller_identity.development.account_id,
+    data.aws_caller_identity.staging.account_id,
   ]
 
   consumer_account_arns = [

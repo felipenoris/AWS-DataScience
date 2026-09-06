@@ -719,7 +719,12 @@ followed here, not authored.
   gate is that
   `terraform plan` returns **`No changes`** after `init -migrate-state`; nothing proceeds past a slice that
   does not.
-- **4.4 — PLANNED AND READ 2026-09-06, apply pending.** `8 to add, 16 to change, 8 to destroy`, and
+- **4.4 — DONE 2026-09-06** (the user ran the apply). **Re-plan `No changes`.** The outputs are the
+  verification and they are the load-bearing ones: **`s3_gateway_endpoint_id = vpce-0a222aef0c577abbb`
+  and `dynamodb_gateway_endpoint_id = vpce-0d70ec5dc14566c45` — byte-identical to the pre-move
+  baseline**, so INT-05's anchors survived a folder rename, a state migration and a token flip. The
+  private route tables kept their ids too. **All four security groups came back new**, as planned.
+- **4.4 — PLANNED AND READ 2026-09-06.** `8 to add, 16 to change, 8 to destroy`, and
   the shape is the predicted one: **the VPC, all six subnets, both gateway endpoints, all four route
   tables, the IGW and `aws_vpc_peering_connection.to_production` are IN-PLACE tag changes** — every id
   survives, which is what INT-05's anchors and the peering depend on.
@@ -741,6 +746,14 @@ followed here, not authored.
   naming this account at 2.3),
   while the security groups and the flow-log group **are replaced**. Anything else in the replacement list
   is a surprise and stops the step.
+- **4.5 — DONE 2026-09-06, planned and read; the apply is the user's.**
+  **`production/foundation`: `4 to add, 1 to change, 4 to destroy`** — and the one change is
+  **`aws_vpc_peering_connection_accepter.peer["staging"]` UPDATED IN PLACE**, which is the whole point
+  of the five `moved {}` blocks: eight addresses moved in state and the peering was never touched. The
+  four adds and four destroys are `aws_route.return`, the deliberate exception, with unchanged
+  destination CIDRs.
+  **`production/registry`: `No changes`** — as predicted, because the account id behind the renamed
+  alias is the same account, so none of the four policies moved.
 - **4.5 — READ BEFORE WRITING, 2026-09-06, and it is BIGGER than this step says: without `moved {}`
   blocks it DESTROYS THE PEERING.** The step describes an edit to the accepter side and four provider
   aliases. What it does not say is that `development` is a **`for_each` key**, not just a name, in
@@ -771,6 +784,18 @@ followed here, not authored.
   `production/registry/providers.tf`, `data-governance/data/providers.tf`,
   `data-governance/governance/providers.tf`) together — provider aliases cannot be iterated, so all four
   are hand-written and all four move in one commit with the `backend.py` lists (Lesson 14).
+- **4.6 — DONE 2026-09-06, planned to `0 to add, 0 to change, 0 to destroy` exactly as this step
+  predicts; the apply is the user's.** Three `moved {}` blocks, in `identity/sso/moved.tf`.
+  - **THE STEP NAMES TWO AND THERE ARE THREE, AND THE THIRD IS THE DANGEROUS ONE.** It lists the two
+    `local.assignments` keys and the `accounts` map key. What it does not say is that
+    **`aws_ssoadmin_account_assignment.infrastructure` `for_each`es over `local.accounts` itself** — so
+    renaming that map key moves a third address. Without a block for it the plan read **`1 to add, 0 to
+    change, 1 to destroy`: `InfrastructureAccess` revoked on the account and re-granted**, which is the
+    assignment whoever runs the apply is signed in through. **The plan found it; reading the step did
+    not.** Third time in this stage a step's rule was right and its list was short (4.4's replacements,
+    4.5's `for_each` keys, now this), and every one was caught by saving the plan and reading it.
+  - `aws/import-ids.py` closed its seam in the same commit — the row that deliberately read
+    `"Staging Account" → "development"` across passes 3 and 4 now reads `→ "staging"`.
 - **4.6 — [Claude⚡] Rename the assignment keys behind `moved {}` blocks**: `data-scientist@development` →
   `data-scientist-staging@staging` and `deployment-manager@development` → `…@staging`, plus the
   `accounts` map key `development` → `staging`. Without `moved {}` these are address changes and Terraform
