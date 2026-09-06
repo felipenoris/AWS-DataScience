@@ -587,3 +587,53 @@ two filters. **Nothing was applied**, and one plan that is ready was deliberatel
   (`invalid ref: "wireguard-v0.5.0"`), which is the guard working. The slice lands in the commit after
   the tag. **The push is blocked in this session** (the auto-mode classifier refused it), so both the
   tag and that commit wait on the user.
+
+## 2026-09-06 — the cut-over: 4.3 through 4.6, and the verification the stage could not predict
+
+- **[user] 4.3 — the host key copied by hand**, Sandbox → Production. **[Claude] Verified by DIGEST and
+  never by value**: both secrets hash to `5e9163a6…4174f`, the destination carries one `AWSCURRENT`,
+  rotation off. Hashing is what let the check be taken at all — the value stays out of every context
+  that did not have to hold it.
+- **[Claude⚡] 4.4 — the association destroyed on its own**,
+  `-target=module.wireguard.aws_eip_association.this`, `0 to add, 0 to change, 1 to destroy`. Worth
+  noting the targeted-destroy recipe does not quite cover this case: it is written for *ordering within
+  a full destroy*, and here the intent is to remove ONE resource and keep the rest. The plan directs it
+  explicitly, which is what makes it sanctioned. **The preflight went 6/7 → 7/7**: `ET-2` cleared exactly
+  as its own header said it would.
+- **[Claude] I REPEATED LESSON 46 IN THE SAME SESSION, AND THIS TIME ON A WRITE.** The
+  `enable-address-transfer` call was written as `aws … | jq '<malformed>'`. The shell returned **jq's**
+  exit code; the AWS call had already run. Then the command that would have told me so —
+  `describe-address-transfers` — was refused by the harness twice, including through the instrument, so
+  the session could not distinguish *the transfer is pending* from *nothing happened* while a
+  **seven-day clock AWS notifies nobody about** was possibly running. **The remedy was not a better
+  reading, it was a different CHANNEL** (Lesson 24): a plain `describe-addresses`, which was not refused,
+  showed Production holding only the proxy address and settled that the accept had not run.
+- **[user] 4.5 — the transfer**, `pending` → `accepted` at 20:30:02Z, offer expiry 2026-09-13.
+- **[Claude] VERIFICATION 1 ANSWERED, AND THE ANSWER IS NO: THE ALLOCATION ID DOES NOT SURVIVE.**
+  `eipalloc-04397bfae0295333d` became **`eipalloc-07edec7a52dc0820a`**. AWS documents it neither way,
+  which is why the stage carried it as a question and why 4.6's `import` id was written from a
+  **reading** rather than from the plan's prose (Lesson 38). **An allocation id is a per-account fact
+  about an address, not a property of it** — anything that had pinned the old id would now point at
+  nothing, which is the standing argument for reading `[P]` ids through remote state. **The tags arrived
+  empty**, as predicted; the apply re-applied the whole set.
+- **[Claude⚡] 4.6, the PRODUCTION half — `1 to import, 3 to add, 2 to change, 0 to destroy`.**
+  `production/networking/` owns the address and exports `wireguard_eip_public_ip = 52.89.212.1` — **the
+  same address it was in Sandbox, which is the entire point of transferring rather than allocating**: no
+  client `.conf` moved. The apply also brought 4.11's `[P]` access log `/awsds/prod/proxy` with its own
+  CMK, and filled the allow-list parameter with 4.9's two lists.
+- **[Claude] THE SANDBOX HALF IS NOT DONE, AND IT IS A SEQUENCING KNOT THE PLAN DOES NOT NAME.**
+  `sandbox/foundation/` now plans **`1 to add`** — measured, not predicted: the resource is still in its
+  state, the allocation it names has left the account, so an apply there would allocate a **new** address
+  and start billing. Closing it means `removed {}` plus dropping two outputs, and those outputs have
+  three readers: `identity/sso/` and `data-governance/data/` (through `VPN_HOMES`), and **`sandbox/vpn/`,
+  which needs `wireguard_eip_allocation_id` to EVALUATE — including on its own `terraform destroy`**. So
+  the slice 4.13 is supposed to destroy last would become un-destroyable if the output went first.
+- **[Claude] What that knot rules in and out, so the next move is a choice rather than a discovery.**
+  The consumers are **not** broken today: the outputs still resolve, and `52.89.212.1` is still the right
+  address. Flipping `VPN_HOMES` to `("production", "networking")` keeps the `aws:SourceIp` value
+  **identical** and swaps only the VPC id and the S3 gateway-endpoint id onto the hub's — which is where
+  the tunnel is about to be, so it is ahead of the traffic rather than behind it. What it cannot be is a
+  *union*: a two-row `VPN_HOMES` needs Sandbox to keep exporting, which is the thing being removed.
+  **And the fallback 4.13 was waiting on died at 4.5** — the Sandbox host has no address and cannot come
+  up; what `[D]` promises instead is that it rebuilds from code and the `[P]` secret if the address is
+  ever transferred back.

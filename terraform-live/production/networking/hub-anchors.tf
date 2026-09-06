@@ -139,6 +139,44 @@ resource "aws_eip" "proxy" {
   })
 }
 
+# ---------------------------------------------------------- the WireGuard address, IMPORTED
+#
+# NOT ALLOCATED - TRANSFERRED, and that is the whole reason this stage can move the tunnel
+# between two AWS accounts without a single client editing a `.conf` file. `52.89.212.1` is the
+# address every device pins as `Endpoint =`, and it is the same address it was in Sandbox.
+#
+# THE ALLOCATION ID DID **NOT** SURVIVE THE TRANSFER - measured 2026-09-06, and this closes the
+# stage's verification 1, which AWS does not document either way:
+#
+#   in Sandbox     eipalloc-04397bfae0295333d
+#   in Production  eipalloc-07edec7a52dc0820a
+#
+# So an id is a per-account fact about an address, not a property of it. Anything that had
+# pinned the OLD id would now be pointing at nothing - which is why `[P]` outputs in this
+# repository are read through remote state and never pasted, and why the import block below had
+# to be written from a READING rather than from the plan's prose (Lesson 38).
+#
+# THE TAGS ARRIVED EMPTY. A transfer resets them, so the first apply after the import re-applies
+# the whole project tag set - a `~ tags` on a resource nobody edited is the expected reading
+# here exactly once.
+resource "aws_eip" "wireguard" {
+  # checkov:skip=CKV2_AWS_19:the association is DELIBERATELY in another slice - this address is [P] so that a [D] instance rebuild cannot change it, and aws_eip_association lives in production/vpn/ where the instance does. The check cannot see across two state files
+  domain = "vpc"
+
+  tags = merge(local.hub_anchor_tags, {
+    Name = "awsds-${var.env}-vpn"
+  })
+}
+
+# THE IMPORT BLOCK IS ONE-SHOT AND IS DELETED ONCE IT HAS RUN - that is the lifecycle of an
+# `import {}`, not an oversight when it disappears from a later diff. It is a block rather than
+# a `terraform import` command line so that the act is in the DIFF, reviewable, and so that the
+# plan can be read before anything touches state.
+import {
+  to = aws_eip.wireguard
+  id = "eipalloc-07edec7a52dc0820a"
+}
+
 # ------------------------------------------------------------- the WireGuard host key
 #
 # THE CONTAINER IS TERRAFORM'S, THE VALUE NEVER IS (decision 4, third design review): no
