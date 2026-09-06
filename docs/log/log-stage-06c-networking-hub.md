@@ -937,3 +937,51 @@ thing to actually run. They are written up individually because three of them ar
   empty default, and the two things an operator would otherwise learn by surprise: **running `make up`
   again without the flag destroys the optional endpoints** (that is the flag working, not drift), and
   the wiring is `sandbox/egress` only.
+
+## 2026-09-06 — 5.1: the NAT half removed as code, because there was nothing to destroy
+
+- **[Claude] MEASURED BEFORE ACTING, AND THE MEASUREMENT CHANGED THE VERB.** The step says *destroy
+  all three NAT gateways*; the reading was **zero NAT gateways, zero default routes and zero
+  interface endpoints in all three accounts**. The `egress/` slices are `[E]` and were all down, so
+  5.1 is a **code change** — the next `make up` never creates one — not a destroy. Worth stating
+  because a step whose verb does not match the state is how somebody ends up looking for something
+  to delete.
+- **[Claude] `vpc-egress-v0.6.0`, three changes in one commit and the third is the reason for the
+  pairing.** `nat.tf` deleted, and `egress_mode`, `nat_public_subnet_id` and
+  `private_route_table_ids` deleted with it — **not defaulted to `"B"`**: a switch whose other
+  position no longer exists is dead code that reads like a choice. The route tables went because
+  `aws_route.private_default` was their only consumer. 0.4a's `name_suffix` arrives, routed through
+  one `name_prefix` local built exactly the way the `vpc` module builds its own. And the
+  `&& var.egress_mode == "A"` clause came off `dns_firewall_enabled` — **the coupling found while
+  writing v0.5.0, which would have made 5.1 and 5.7 undo each other while both read correct.**
+- **[Claude] The capability is not gone and the comment says so at length, deliberately.** 5.9 keeps
+  a NAT as a **contingency** — for a named service that cannot be told about a proxy, in that
+  service's own VPC, with its own cost row and a removal trigger. Re-adding the resources for one
+  caller is the friction that contingency wants; a flag would not have been.
+- **[Claude] A STALE CLAIM IN A VARIABLE DESCRIPTION, and it is the dangerous kind.** `dns_firewall`
+  said the firewall was design A's allow-list, that mode B made it pointless, and that
+  *"dns-firewall.tf enforces the second half itself, so a caller cannot half-enable it"*. All three
+  went false at v0.6.0, and the last one matters: **this flag is now the only gate**. Rewritten
+  rather than trimmed, because what the firewall is FOR also changed (5.7) — not filtering the
+  internet, which is the proxy's job now, but closing the recursive resolver as an exfiltration
+  channel, which is a job that exists with or without a default route.
+- **[Claude] Four callers rewired to v0.6.0**, including `production/egress` and `workloads-egress`
+  jumping from **v0.1.0**. Their two NAT outputs were deleted after checking, across
+  `terraform-live/`, `aws/`, `scripts/` and `docs/`, that **nothing consumed either** — which is
+  what made it a deletion rather than a migration. `name_suffix` is `shared` and `workloads` in
+  Production, matching pass 1's VPC names; the two single-VPC accounts pass nothing.
+- **[Claude] Proven by plan rather than asserted:** zero NAT resources in all four; the DNS
+  Firewall's **six** resources still in Sandbox's plan (the coupling fix, working);
+  `production/workloads-egress` reads *"without changing any real infrastructure"* — outputs only.
+  Sandbox drops from 25 to **21** planned resources.
+- **[Claude] A STRAY `errored.tfstate` FOUND IN `sandbox/egress/`, dated 2026-08-26 — eleven days
+  unnoticed.** That file is Terraform's last-resort dump when it cannot write state back to the
+  backend after an apply, and it held 14 resources including the NAT. **Verified stale before
+  touching it**: the remote state lists **zero** resources and AWS holds none, so the destroy and
+  its state write both completed and this was a transient failure's residue. Removed.
+- **[Claude] The right guard for that is a CHECK, not a `make clean` addition, and the distinction
+  matters.** `errored.tfstate` is recovery evidence: after a genuine state-write failure it is the
+  only record of what was built, and a `clean` that swept it would destroy exactly the thing
+  somebody needs at the worst moment. What is missing is something that **notices** one exists —
+  it is gitignored, so no gate sees it, and it sat for eleven days beside a slice nobody planned.
+  Recorded rather than built mid-pass, beside the other two watchdogs this session has asked for.
