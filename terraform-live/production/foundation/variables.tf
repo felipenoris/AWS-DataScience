@@ -67,3 +67,13 @@ variable "cost_center" {
   type        = string
   default     = "stage-03"
 }
+
+# Stage 6c step 0.4 - which VPC inside the account this slice builds. Empty for an account with
+# one VPC (every account but Production); generated per (account, slice) by
+# scripts/tfhygiene/backend.py, never authored here.
+variable "name_suffix" {
+  description = "Distinguishes VPCs inside one account: names become awsds-<env>-<suffix>-*. Empty for a single-VPC account."
+  type        = string
+  default     = ""
+  nullable    = false
+}
