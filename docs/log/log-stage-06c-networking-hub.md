@@ -884,3 +884,56 @@ thing to actually run. They are written up individually because three of them ar
   an AWS behaviour had no way to know the estate had already measured it three stages ago, short of
   re-reading 16k lines. That is the gap this section closes, and it is the same gap `POLICIES.md` and the
   lake READMEs close for their own subjects.
+
+## 2026-09-06 — 5.3 and 5.4 taken, and 5.3's answer is a shape the step did not offer
+
+- **[user] 5.3 — BOTH FAMILIES STAY ENABLED; the ENDPOINTS become the variable.** The step offered
+  three shapes (always up / per-session / disable the blueprint) and the user took a fourth: nothing
+  leaves the portal, and `make up ENV=<x> GROUPS=bedrock,emr` decides whether the endpoints exist for
+  that apply. **Empty by default**, so a family nobody uses that day costs nothing.
+- **[user] 5.4 — pin the SMUS app subnets to the endpoint's AZ.** Free, D9's single-AZ rule intact,
+  and it makes the resolution failure stop existing rather than be paid for.
+- **[Claude] `bedrock` IS FOUR ENDPOINTS AND THE STEP LISTS THREE.** The six enabled blueprints both
+  AUTHOR Bedrock objects and INVOKE them, and those are different services: `bedrock` is the control
+  plane `AmazonBedrockGuardrail` (`CreateGuardrail`) and `AmazonBedrockEvaluation`
+  (`CreateEvaluationJob`) call, `bedrock-agent` is the control plane for agents, flows and prompts,
+  and the two `-runtime` names are the invocation path. **Stated as reasoning from the API split, not
+  as a measurement of the blueprint's calls** — 6d trims it. Every name in both groups came from
+  `describe-vpc-endpoint-services` **in the Region**, which is what 5.2's own *"measure rather than
+  copy"* asks for; every `*-fips` sibling and `emr-containers` (EMR-on-EKS, category 3) are excluded
+  by name so nobody adds them by resemblance.
+- **[Claude] THE MEASUREMENT CAUGHT THE STEP'S OWN REQUIRED LIST: there is no `q` endpoint service in
+  `us-west-2`.** 5.2 asks Sandbox to gain `ec2`, `ec2messages`, `secretsmanager`, `ssm`, `ssmmessages`
+  **and `q`**; the Region's catalog carries `qapps` and the `quicksight*` family and nothing named
+  `q`. **The failure the step warns about, inside the step.** Struck from the plan.
+- **[Claude] AND ONE ENABLED BLUEPRINT HAD NO PATH AT ALL, WHICH NOBODY HAD NAMED.** `S3TableCatalog`
+  is one of category 1's **eleven** — the count cross-checks exactly — and `s3tables` is its own
+  service name in the catalog. **The S3 GATEWAY endpoint does not cover it**: a gateway carries `s3`
+  and `dynamodb`, nothing else. Under design B that project would fail on first use for exactly 5.3's
+  reason, in a family 5.3 never considered. **The user put it in the always-on set**, not behind a
+  flag: one endpoint, and the blueprint is enabled.
+- **[Claude] THE FLAG IS AN ENVIRONMENT VARIABLE AND NOT A TRACKED TFVARS, which is a departure from
+  this repository's usual answer for a per-apply knob.** The VPN host's size lives in a tracked file
+  because it describes a STANDING shape somebody should review in git history. This describes ONE
+  apply — and a tracked file would have to be edited back, which is precisely the *flag left on*
+  failure the empty default exists to avoid. `slices.py` merges `env_extra` into `os.environ`, so
+  `TF_VAR_optional_service_groups` simply arrives.
+- **[Claude] The closed-list validation exists because the failure of a typo is SILENT.**
+  `GROUPS=bedrok` would contribute no endpoints, the apply would succeed, and the blueprint would fail
+  on first use exactly as with no flag at all. **Proven, not asserted**: the plan errors with
+  *"admits only: bedrock, emr, mwaa"*.
+- **[Claude] Measured end to end rather than reasoned:** `make up … DRY=1` prints the expansion
+  `["bedrock","emr"]`; a plan with no flag builds **12** interface endpoints (8 core + 3 SageMaker +
+  `s3tables`) and with `bedrock,emr` builds **23** — the eleven optional names, and no others.
+- **[Claude] A COUPLING FOUND WHILE WRITING v0.5.0 THAT 5.1 MUST HANDLE, and it would have been
+  silent.** `dns-firewall.tf` reads `dns_firewall_enabled = var.dns_firewall && var.egress_mode ==
+  "A"`. **Deleting mode A — which is 5.1 — therefore disables the DNS Firewall that 5.7 wants kept in
+  every compute VPC.** One condition, two intents ([Lesson 51](../plan/lessons.md)); the clause has to
+  go in the same commit as the NAT, or the two steps undo each other while both read correct.
+  **This is also why v0.5.0 is the flag alone and 5.1 now cuts v0.6.0** — *"one bump rather than two"*
+  was an optimisation, not a constraint, and dragging the coupling into a feature release would have
+  hidden it.
+- **[Claude] `make help` documents the flag**, its closed value list with per-group hourly cost, the
+  empty default, and the two things an operator would otherwise learn by surprise: **running `make up`
+  again without the flag destroys the optional endpoints** (that is the flag working, not drift), and
+  the wiring is `sandbox/egress` only.

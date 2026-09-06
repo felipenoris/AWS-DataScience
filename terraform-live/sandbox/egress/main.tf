@@ -22,7 +22,7 @@ data "terraform_remote_state" "foundation" {
 
 module "egress" {
   # checkov:skip=CKV_TF_1:pinned by git TAG by convention (conventions §6, Stage 3 step 1.1a) - a repository-internal tag only the repo owner can move
-  source = "git::git@github.com:felipenoris/AWS-DataScience.git//terraform-modules/vpc-egress?ref=vpc-egress-v0.4.0"
+  source = "git::git@github.com:felipenoris/AWS-DataScience.git//terraform-modules/vpc-egress?ref=vpc-egress-v0.5.0"
 
   env    = var.env
   vpc_id = data.terraform_remote_state.foundation.outputs.vpc_id
@@ -86,7 +86,21 @@ module "egress" {
   #   q    the doc pairs it with com.amazonaws.US-EAST-1.codewhisperer, and an interface
   #        endpoint is regional - so under design B the Amazon Q surface has no private path
   #        from us-west-2 at all. Record what breaks at 4.3 rather than assuming either way.
-  extra_services = ["sagemaker.api", "sagemaker.runtime", "sagemaker.studio"]
+  # `s3tables` IS ALWAYS ON, not a flag value (user decision, 2026-09-06) - one endpoint at
+  # ~USD 0.010/h against a blueprint that is ENABLED. `S3TableCatalog` is one of category 1's
+  # eleven, and **the S3 GATEWAY endpoint does not cover it**: a gateway carries `s3` and
+  # `dynamodb` and nothing else, while `s3tables` is its own service name in the Region's catalog
+  # (measured 2026-09-06). Under design B a project using that blueprint would have no path at
+  # all - the same failure 5.3 describes for Bedrock and EMR, in a blueprint nobody had named.
+  extra_services = ["sagemaker.api", "sagemaker.runtime", "sagemaker.studio", "s3tables"]
+
+  # THE OPTIONAL FAMILIES, EMPTY UNLESS `make up ENV=sandbox GROUPS=...` NAMES ONE. Wired HERE
+  # and in no other egress slice, deliberately: the blueprints these serve are SMUS blueprints and
+  # the SMUS surface lives in this account alone - 6b removed it from Staging, and Production is a
+  # deployment target. Declaring the capability where nothing can use it would be an input that
+  # reads like a feature. When a Production workload asks for Bedrock, that slice gets the same
+  # two lines and the module already knows the answer.
+  optional_service_groups = var.optional_service_groups
 
   # DESIGN A's CONTROL (Stage 6 step 4.1) - the allow-list that makes the NAT "limited
   # internet" instead of internet. The module refuses to enable itself under

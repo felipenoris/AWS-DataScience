@@ -85,9 +85,35 @@ help:
 	@printf '  check-all   all of the above\n'
 	@printf '  slices      the D11 layer table - which slice is [P], [D] or [E]\n'
 	@printf '  up   ENV=x  start the [D] slices and apply the [E] ones of one account folder\n'
+	@printf '             GROUPS=a,b  optional endpoint families for THIS apply (see below)\n'
 	@printf '  down ENV=x  delete Studio apps, destroy the [E] slices, stop the [D] ones\n'
 	@printf '  status      what is up and the estimated hourly burn (static rates, PRICING 3)\n'
 	@printf '  clean       remove the volatile artifacts (aws/output, .venv, caches) - never secrets/\n'
+	@printf '\n'
+	@printf '\033[1mGROUPS\033[0m - optional interface endpoints, per apply (6c step 5.3)\n'
+	@printf '  Both optional blueprint families stay ENABLED in the portal; what this flag\n'
+	@printf '  decides is whether their endpoints EXIST. Under design B there is no default\n'
+	@printf '  route anywhere, so a blueprint whose endpoints are missing does not fall back\n'
+	@printf '  to a slower path - it has no path at all, and fails on first use.\n'
+	@printf '\n'
+	@printf '  values (closed list - an unknown name is a plan error, never a silent no-op):\n'
+	@printf '    bedrock   4 endpoints, ~0.040 USD/h - the six AmazonBedrock* blueprints\n'
+	@printf '    emr       7 endpoints, ~0.070 USD/h - EmrServerless\n'
+	@printf '    mwaa      RESERVED AND EMPTY - names nothing until Stage 10 settles whether\n'
+	@printf '              orchestration is MWAA Serverless or the provisioned shape\n'
+	@printf '\n'
+	@printf '  DEFAULT IS NONE. `make up ENV=sandbox` creates no optional endpoint - a family\n'
+	@printf '  nobody uses that day costs nothing. There is no way to leave one on by accident:\n'
+	@printf '  the flag lives in the environment, not in a file, so it lasts exactly one apply.\n'
+	@printf '\n'
+	@printf '    make up ENV=sandbox GROUPS=bedrock\n'
+	@printf '    make up ENV=sandbox GROUPS=bedrock,emr\n'
+	@printf '\n'
+	@printf '  Running `make up` again WITHOUT the flag destroys the optional endpoints - that\n'
+	@printf '  is the flag working, not drift. Endpoint ids change on every up either way\n'
+	@printf '  (they are [E]), so nothing may name one.\n'
+	@printf '  Wired in sandbox/egress only: the blueprints it serves are SMUS blueprints and\n'
+	@printf '  the SMUS surface lives in that account alone.\n'
 	@printf '\n'
 	@./scripts/slices.py envs
 
@@ -137,9 +163,24 @@ guard-env:
 slices:
 	@./scripts/slices.py list $(ENV)
 
+# GROUPS -> TF_VAR_optional_service_groups, and the conversion is here rather than in the script
+# because it is a Terraform input, not a slice-lifecycle concept: `slices.py` passes the whole
+# environment through to every `terraform` it runs (it merges env_extra into os.environ), so the
+# variable simply arrives. UNSET IS THE DEFAULT AND IT MEANS EMPTY - Terraform falls back to the
+# variable's own `[]`, which is what makes "no groups named" the zero-cost case.
+#
+# THE ECHO IS NOT DECORATION. A flag that silently changes what an apply builds is the thing this
+# repository keeps writing lessons about, so the expansion is printed before the apply runs and
+# the operator sees the JSON list Terraform will receive.
 up:
 	@$(MAKE) --no-print-directory guard-env TARGET=up
-	@./scripts/slices.py up --env $(ENV) $(if $(AUTO),--auto-approve,) $(if $(DRY),--dry-run,)
+	@if [ -n "$(GROUPS)" ]; then \
+	  groups="[$$(printf '%s' '$(GROUPS)' | sed 's/[^,][^,]*/"&"/g')]"; \
+	  printf '\033[1moptional endpoint groups\033[0m: %s\n' "$$groups"; \
+	  TF_VAR_optional_service_groups="$$groups" ./scripts/slices.py up --env $(ENV) $(if $(AUTO),--auto-approve,) $(if $(DRY),--dry-run,); \
+	else \
+	  ./scripts/slices.py up --env $(ENV) $(if $(AUTO),--auto-approve,) $(if $(DRY),--dry-run,); \
+	fi
 
 down:
 	@$(MAKE) --no-print-directory guard-env TARGET=down

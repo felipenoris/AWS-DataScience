@@ -606,14 +606,42 @@ becomes true.
 - **5.1 — [Claude⚡] Destroy all THREE NAT gateways**: `egress_mode = "B"` in **Sandbox, Staging and
   Production** — `terraform-live/production/egress/main.tf` carries `egress_mode = "A"` today, so
   `VPC-SharedServices` has one as well and "both NAT gateways" undercounted. Every private route table
-  loses its `0.0.0.0/0` entirely. `vpc-egress` **v0.5.0** drops the NAT half (and its
-  `nat_public_subnet_id` input) rather than keeping dead code, and carries 0.4a's `name_suffix` in the same
-  version.
+  loses its `0.0.0.0/0` entirely. `vpc-egress` drops the NAT half (and its `nat_public_subnet_id` input) rather than keeping dead code, and
+  carries 0.4a's `name_suffix` in the same version. **THAT VERSION IS NOW v0.6.0, NOT v0.5.0** — v0.5.0
+  was spent on 5.3's `optional_service_groups` (2026-09-06), and the *one bump rather than two* line was
+  an optimisation rather than a constraint. **AND IT CARRIES A COUPLING THIS STEP MUST HANDLE EXPLICITLY,
+  found while writing v0.5.0:** `dns-firewall.tf` reads `dns_firewall_enabled = var.dns_firewall &&
+  var.egress_mode == "A"`, so **deleting mode A silently disables the DNS Firewall** that 5.7 wants kept
+  in every compute VPC. One condition, two intents ([Lesson 51](../lessons.md)) — the clause goes in the
+  same commit as the NAT, or 5.1 and 5.7 undo each other without either plan reading wrong.
 - **5.2 — [Claude⚡] Complete the required endpoint set**: Sandbox re-adds **`datazone`** — removed on
   2026-08-25 only because its private zone shadowed a client-plane name, which cannot happen now — and
-  gains `ec2`, `ec2messages`, `secretsmanager`, `ssm`, `ssmmessages` and `q`. **Measure rather than copy**:
-  six of those names have never existed here, and `codewhisperer` is `us-east-1`-only, so it is not an
-  endpoint this Region can hold at all ([6d](stage-06d-unified-studio-remainder.md) step 3.5 decides it).
+  gains `ec2`, `ec2messages`, `secretsmanager`, `ssm`, `ssmmessages` and ~~`q`~~. **Measure rather than
+  copy** — and the measurement caught this step's own list on 2026-09-06: **there is NO `q` endpoint
+  service in `us-west-2`.** The Region's catalog carries `qapps` and the `quicksight*` family and
+  nothing named `q`, so that entry is struck. `codewhisperer` is `us-east-1`-only for the same reason
+  ([6d](stage-06d-unified-studio-remainder.md) step 3.5 decides it).
+  **AND ONE NAME THIS STEP MISSED IS NOW ALWAYS-ON: `s3tables`** (user decision, 2026-09-06).
+  `S3TableCatalog` is one of category 1's **eleven** — enabled — and the S3 **gateway** endpoint does
+  not cover it: a gateway carries `s3` and `dynamodb`, while `s3tables` is its own service name. Under
+  design B a project using that blueprint had no path at all, which is 5.3's failure in a blueprint
+  nobody had named. Applied in `sandbox/egress`'s `extra_services`, not behind a flag.
+- **5.3 — TAKEN 2026-09-06, AND IT IS NONE OF THE THREE SHAPES THIS STEP OFFERED.** The user kept **both
+  families enabled** and made the ENDPOINTS the variable: `vpc-egress` **v0.5.0** takes
+  `optional_service_groups`, **empty by default**, threaded by `make up ENV=<x> GROUPS=bedrock,emr`.
+  So a family nobody uses that day costs nothing, and nothing is removed from the portal. **The group
+  map lives in the module** (three hand-kept copies would diverge on the first addition) with a
+  **closed-list validation**, because an unknown group name fails *silently* — it contributes nothing,
+  the apply succeeds, and the blueprint fails on first use exactly as with no flag. Wired in
+  `sandbox/egress` alone: these are SMUS blueprints and the SMUS surface is in that account only.
+  **`bedrock` IS FOUR ENDPOINTS AND NOT THE THREE BELOW** — the six enabled blueprints both AUTHOR
+  Bedrock objects and INVOKE them, and `bedrock` (the control plane `CreateGuardrail` and
+  `CreateEvaluationJob` call) is a different service from `bedrock-agent`. `mwaa` is **reserved and
+  empty**: `Workflows` is category 2 and the estate's decision is *MWAA Serverless only*, while the
+  catalog splits `airflow-serverless` from the provisioned trio — filling it in now would settle a
+  Stage 10 question by accident. Measured end to end: **12** interface endpoints with no flag, **23**
+  with `bedrock,emr`. *The step's original text follows, because the shapes it weighed are why the
+  answer is a fourth one:*
 - **5.3 — [Claude reads, user decides] Close the gap between the required table and the ENABLED
   blueprints**: the guide's **optional** table is keyed to *"projects that include blueprints using the
   services listed below"*, and this estate enables two of them in category 1 — the six `AmazonBedrock*`
@@ -629,6 +657,10 @@ becomes true.
   for Spark, (b) for Bedrock.** Whatever is chosen, the enabled-blueprint list and the endpoint list move
   in the same commit, and the check that compares them (`US-3` reads the first, `./aws/egress.py` the
   second, nothing compares them today) is this step's other deliverable.
+- **5.4 — TAKEN 2026-09-06: PIN THE SUBNETS**, the free option and the recommended one. The blueprint
+  takes a subnet list, so a project's apps are handed only the AZ that holds the endpoints — D9's
+  single-AZ rule stays intact and the resolution failure stops existing rather than being paid for.
+  Measured at [6d](stage-06d-unified-studio-remainder.md) step 3 either way. *The reading follows:*
 - **5.4 — [Claude reads, user decides] Settle the `sagemaker.runtime` AZ question, which D9's single-AZ
   rule collides with**: the SageMaker AI guide is explicit that the interface endpoint *"must be activated
   in the Availability Zone of your client… Otherwise, you may see DNS failures"*, and says it of the
@@ -660,7 +692,9 @@ becomes true.
   `ContainerEnvironmentVariables` on the app image configuration, or a JupyterLab lifecycle configuration —
   which for SMUS domains **must be attached in the console**, the CLI path being documented as not
   supported.
-- **5.7 — THIS STEP OWNS A QUESTION 6b DEFERRED TO IT** (2026-09-06). 6b step 5.1 wanted
+- **5.6a — THIS STEP OWNS A QUESTION 6b DEFERRED TO IT** (2026-09-06). *(Numbered `5.7` when written,
+  beside the DNS-Firewall re-cut that already had that number — corrected 2026-09-06, the same defect
+  4.7 carried. Step numbers are identifiers in this plan.)* 6b step 5.1 wanted
   `./aws/dns-allowlist.py` to drop the Staging slice, reasoning that a headless deployment target resolves
   whatever its pipeline resolves. **The row was retargeted instead, not dropped**, because
   `terraform-live/staging/egress/main.tf` still declares `dns_firewall = true` with an allow-list — a
@@ -813,10 +847,10 @@ in the cost model.
 
 ## Decisions due while executing
 
-1. **The optional-endpoint trade for the two enabled blueprint families** (5.3) — (a) always up, (b) per
-   session, or (c) disable the blueprint. Recommended (c) for `EmrServerless`, (b) for Bedrock.
-2. **The `sagemaker.runtime` AZ answer** (5.4) — pin the subnets, duplicate one endpoint, or accept.
-   Recommended: pin.
+1. ~~**The optional-endpoint trade for the two enabled blueprint families** (5.3)~~ — **TAKEN 2026-09-06,
+   as a fourth shape**: both stay enabled, the ENDPOINTS become a per-apply flag (`GROUPS=bedrock,emr`),
+   empty by default. `s3tables` is always-on rather than optional. `make help` documents it.
+2. ~~**The `sagemaker.runtime` AZ answer** (5.4)~~ — **TAKEN 2026-09-06: pin the subnets** (free; D9 intact).
 3. **INT-16's closing choice** (6.6) — fallback (i) in this estate's condition shape, or recorded
    acceptance.
 4. **How the proxy's access log reaches Log Archive** (4.11, opened 2026-09-06 when the rest of 4.11 was
