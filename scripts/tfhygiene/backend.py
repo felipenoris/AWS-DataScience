@@ -489,6 +489,18 @@ def tfvars_values(account: str, slice_name: str) -> dict:
                 )
             values["vpc_cidr"] = own
             values["name_suffix"] = vpc_name_suffix_of(account, slice_name)
+            # A VPC SLICE NEEDS THE FOLDER ONLY IF IT HAS A SIBLING TO READ, and the condition
+            # is the point rather than a nicety (2026-09-06). Until 6c a `foundation` had nothing
+            # in its own account to read, so this was emitted to the non-foundation network
+            # slices alone. Now production/{foundation,networking,workloads} read each other's
+            # zone ids through terraform_remote_state, and the state KEY is built from the
+            # account FOLDER - which no .tf file may re-derive from the env token (Lesson 14).
+            #
+            # EMITTING IT TO A SINGLE-VPC ACCOUNT WOULD DECLARE AN INPUT NOTHING CONSUMES, which
+            # tflint rejects - measured, not predicted: the first version of this line put it in
+            # both spokes and the hook said so.
+            if len([a for a, _s in VPC_CIDRS if a == account]) > 1:
+                values["account_folder"] = account
             # Stage 3 pass 2: the peers map - every VPC-bearing account that has a profile,
             # DERIVED rather than authored a third time (Lesson 14). The slice's aliased
             # providers read a peer's [P] facts (VPC, subnets, route tables) live instead of
@@ -502,12 +514,18 @@ def tfvars_values(account: str, slice_name: str) -> dict:
             # three, the key stops naming a VPC - which is why 0.6 moves the peering LIST here
             # and generates both sides from it. Until then this derivation is deliberately the
             # old one, so 0.2 changes the table without changing a single generated file.
-            # EMITTED TO `foundation` ONLY, and 3.1 is what widens it. The hub accepts four
-            # peerings and will need a map of its own, but that map is the 3.1 MATRIX rather
-            # than "every VPC-bearing account" - so emitting this shape into a slice that has
-            # no peers.tf yet would declare a variable nothing consumes, which tflint rejects
-            # and which would train the reader to ignore an unused input.
-            if slice_name == "foundation":
+            # EMITTED TO `foundation` AND `networking`, AND THIS INPUT'S SCOPE MOVED TWICE IN
+            # ONE DAY - worth saying rather than hiding. At 1.2 it was narrowed to `foundation`,
+            # because the hub had no peers.tf and a declared input nothing consumes is what
+            # tflint rejects. At 2.5 the hub acquired a real consumer: the REVERSED zone
+            # authorizations. Each spoke owns a child zone and must authorize VPC-Networking on
+            # it, and the cheapest correct shape is the one peers.tf already uses - the hub acts
+            # AS each spoke through an aliased provider, so both halves of a cross-account
+            # handshake are one apply. That needs a profile per account, which is this map.
+            #
+            # 3.1 REPLACES THE SHAPE, not the fact: the peering MATRIX supersedes "every
+            # VPC-bearing account" as the thing this is derived from. The row survives that.
+            if slice_name in ("foundation", "networking"):
                 # THE `name_suffix` FIELD ARRIVED ON 2026-09-06 AND IT IS 0.6's SMALLEST HALF,
                 # PULLED FORWARD BY AN OUTAGE STEP 1.1 CAUSED. A requester finds the accepter's
                 # VPC by the tag `awsds-<env>-vpc`; 1.1 re-labelled Production's to

@@ -186,12 +186,24 @@ locals {
     staging = data.aws_vpc.staging.id
   }
 
+  # THE APEX JOINED THIS MAP AT 6c STEP 2.5 (2026-09-06), and adding one row is the whole change:
+  # the setproduct below turns it into one authorization per (zone, peer) and the two association
+  # resources for_each the same map, so `awsds.internal` reaches Sandbox and Staging through the
+  # machinery `prod.internal` and `pages.internal` already used. INT-22's matrix asks for the apex
+  # in ALL FIVE VPCs; three are same-account and land in zone-associations.tf, and these are the
+  # two that cross an account boundary.
+  #
+  # `awsds-pages.internal` is deliberately NOT here. Its matrix row is VPC-SharedServices and
+  # VPC-Networking only - both in this account - because Pages is reached from the tunnel and from
+  # the runners, never from a spoke's compute. The old `pages` row below stays until 2.6 retires
+  # the zone it names.
   zones = {
     prod  = aws_route53_zone.prod_internal.zone_id
     pages = aws_route53_zone.pages_internal.zone_id
+    apex  = aws_route53_zone.awsds_internal.zone_id
   }
 
-  # zone x peer - the four authorizations of 4.4's table.
+  # zone x peer - the four authorizations of 4.4's table, six since the apex joined.
   zone_peer = {
     for pair in setproduct(keys(local.zones), keys(local.peer_vpc_ids)) :
     "${pair[0]}.${pair[1]}" => {

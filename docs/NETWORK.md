@@ -331,6 +331,39 @@ distinguishable outcomes:
 | `sandbox/probes/` · `staging/probes/` · `production/probes/` | `[E]` | the throwaway hosts that measure what a `describe` cannot — the perimeter, both peerings, the flow-log pair — plus Production's second ENI and the two `probe*.prod.internal` records |
 | `sandbox/sagemaker/` | `[P]` | **no network object of its own** — it hands the blueprint the VPC id, the private subnets and their zone ids, which is what makes every project app land where §5 and §6 describe. Named here because the check cannot see that relationship and a reader must |
 
+### The `awsds.internal` family, and which VPC resolves which zone (INT-22)
+
+**Measured 2026-09-06, from `route53 get-hosted-zone` in each owning account** — not from the code that
+built it. A private zone answers for its **whole subtree**, and a VPC associated with a matching zone that
+holds **no record** gets **NXDOMAIN** rather than a public answer: a missing association and a missing name
+are indistinguishable to whoever is debugging, which is why this table is written down and not derived.
+
+| Zone | Owner | Associated with | Measured |
+|---|---|---|---|
+| `awsds.internal` | `production/foundation/` | **all five VPCs** — the shared names (`gitlab`, and `proxy`/`vpn` from pass 4) | **5** |
+| `sandbox.awsds.internal` | Sandbox | Sandbox, `VPC-Networking` | **2** |
+| `staging.awsds.internal` | Staging | Staging, `VPC-Networking` | **2** |
+| `prod.awsds.internal` | `production/workloads/` | `VPC-Workloads`, `VPC-SharedServices`, `VPC-Networking` | **3** |
+| `awsds-pages.internal` | `production/foundation/` | `VPC-SharedServices`, `VPC-Networking` | **2** |
+
+- **`VPC-Networking` is in every row, and it is the one asymmetry.** It is the VPC the VPN client resolves
+  through, so a zone it is not associated with is a name the laptop cannot reach at all. Every other VPC
+  is associated only with what its own workloads need — Staging resolves no Sandbox name, and neither
+  resolves the other's, by **omission** rather than by a rule.
+- **Pages keeps a separate registrable parent** (D36): a `pages.awsds.internal` child would put
+  user-published content under the same parent as the platform's names, and a cookie scoped to that parent
+  would be readable by it.
+- **Two directions of handshake live here.** For `awsds.internal` Production owns the zone and the spokes'
+  VPCs are associated into it — the original direction. For the two child zones the **spoke owns the zone**
+  and `VPC-Networking` is associated into it, which reverses it: the zone owner runs
+  `create-vpc-association-authorization` (one per VPC, no console path) and the VPC owner runs
+  `associate-vpc-with-hosted-zone`. Both halves sit in `production/networking/` through aliased providers,
+  the same trick `peers.tf` uses for the peering accepters. **AWS recommends deleting the authorization
+  afterwards; this project keeps it in state** so the destroy order stays expressible.
+- **The OLD family is still standing** — `prod.internal`, `pages.internal`, `sandbox.internal` — and goes
+  at 6c step 2.6, after pass 6 measures the new one. Zones cannot be renamed, so the two coexist by
+  construction.
+
 **Not network-bearing, and the absence is the design**: `*/bootstrap/`, `identity/sso/`, `identity/org-policies/`, `*/data/`, `data-governance/governance/` and `production/registry/` create nothing that holds an address — Data Governance and Identity have no VPC at all (D22, D29).
 
 ---

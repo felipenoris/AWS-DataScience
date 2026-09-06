@@ -44,10 +44,17 @@ variable "zone_ids" {
   nullable    = false
 }
 
-# NO `peers` VARIABLE YET, AND THAT IS STEP 3.1's (Stage 6c step 1.2). The hub accepts four
-# peerings, but the map it needs is the 3.1 MATRIX rather than "every VPC-bearing account" -
-# and a declared input nothing consumes is what tflint rejects and what teaches a reader to
-# skim past inputs.
+# THE `peers` MAP - and at 1.2 this slice deliberately had none, because nothing consumed it.
+# Step 2.5 gave it a consumer: the REVERSED zone authorizations. Each spoke owns a child zone
+# under the estate apex and must authorize this VPC on it, and the shape peers.tf already uses -
+# the hub acting AS each spoke through an aliased provider - makes both halves of a cross-account
+# handshake one apply. That needs a profile per account, which is what this carries. 3.1 replaces
+# the shape with the peering matrix; the need survives.
+variable "peers" {
+  description = "Profile, env token and VPC name suffix per VPC-bearing account. Generated in scripts/tfhygiene/backend.py; consumed here by the aliased providers of step 2.5's reversed zone authorizations."
+  type        = map(object({ profile = string, env = string, name_suffix = string }))
+  nullable    = false
+}
 
 
 variable "project" {
@@ -75,5 +82,13 @@ variable "name_suffix" {
   description = "Distinguishes VPCs inside one account: names become awsds-<env>-<suffix>-*. Empty for a single-VPC account."
   type        = string
   default     = ""
+  nullable    = false
+}
+
+# Stage 6c pass 2 - the three Production VPC slices read each other's zone ids and VPC ids, so
+# every one of them needs the folder its state keys are built from (backend.py backend_values).
+variable "account_folder" {
+  description = "This slice's terraform-live/ folder name - the first path segment of every state key."
+  type        = string
   nullable    = false
 }
