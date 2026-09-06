@@ -34,19 +34,24 @@ data "terraform_remote_state" "workloads" {
 
 module "egress" {
   # checkov:skip=CKV_TF_1:pinned by git TAG by convention (conventions §6, Stage 3 step 1.1a) - a repository-internal tag only the repo owner can move
-  source = "git::git@github.com:felipenoris/AWS-DataScience.git//terraform-modules/vpc-egress?ref=vpc-egress-v0.1.0"
+  source = "git::git@github.com:felipenoris/AWS-DataScience.git//terraform-modules/vpc-egress?ref=vpc-egress-v0.6.0"
 
   env    = var.env
   vpc_id = data.terraform_remote_state.workloads.outputs.vpc_id
 
   # D38: no NAT gateway anywhere in the estate. See the header.
-  egress_mode = "B"
 
   # Mode B creates no NAT, so this subnet is never used - the variable is still required by the
   # module, and passing the public tier's first subnet is the honest value rather than a
   # placeholder that would read as a mistake.
-  nat_public_subnet_id       = data.terraform_remote_state.workloads.outputs.public_subnet_ids[var.zone_ids[0]]
-  private_route_table_ids    = data.terraform_remote_state.workloads.outputs.private_route_table_ids
+  name_suffix = "workloads"
+
+  # THE THREE ARGUMENTS THAT STOOD HERE WENT WITH THE NAT AT `vpc-egress-v0.6.0` (6c step 5.1,
+  # 2026-09-06): `egress_mode`, `nat_public_subnet_id` and `private_route_table_ids`. Under D38 the
+  # estate has ONE internet exit - an explicit proxy in the hub - and no VPC anywhere carries a
+  # default route, so there is no design A to select and no route table for this slice to write to.
+  # Nothing here needs replacing: what this slice builds now is endpoints and, where it applies, the
+  # DNS Firewall.
   endpoint_subnet_id         = data.terraform_remote_state.workloads.outputs.private_subnet_ids[var.zone_ids[0]]
   endpoint_security_group_id = data.terraform_remote_state.workloads.outputs.endpoints_security_group_id
 
