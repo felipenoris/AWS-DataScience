@@ -128,6 +128,6 @@ resource "aws_vpc_endpoint" "interface" {
   policy              = local.endpoint_policy
 
   tags = {
-    Name = "awsds-${var.env}-${each.key}"
+    Name = "${local.name_prefix}-${each.key}"
   }
 }

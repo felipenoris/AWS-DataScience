@@ -8,12 +8,7 @@ output "interface_endpoint_ids" {
   value       = { for s, ep in aws_vpc_endpoint.interface : s => ep.id }
 }
 
-output "nat_gateway_id" {
-  description = "The NAT's id under design A, null under B - same [E] warning as above."
-  value       = var.egress_mode == "A" ? aws_nat_gateway.this[0].id : null
-}
-
-output "nat_public_ip" {
-  description = "The NAT's public address - what the internet sees while design A egress exists. Recorded for reading, never for a rule: it is released with the slice."
-  value       = var.egress_mode == "A" ? aws_eip.nat[0].public_ip : null
-}
+# `nat_gateway_id` AND `nat_public_ip` STOOD HERE UNTIL v0.6.0 AND ARE GONE WITH THE NAT (5.1).
+# The address the internet now sees for this estate is the PROXY's, which is a [P] output of
+# `production/networking/` - and that is the difference D38 bought: an egress address that survives
+# `make down` and can therefore be named by a condition, which neither of these ever could.
