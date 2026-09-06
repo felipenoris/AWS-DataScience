@@ -184,10 +184,16 @@ locals {
   # `sort()` FOR A STABLE DIFF. A map iterates in key order already, but the list feeds a policy
   # JSON whose textual value is what `terraform plan` compares - and once N > 1 the day a home
   # is added is a day nobody should also be reading a reordering.
-  vpn_egress_cidrs = sort([
+  # `distinct()` ARRIVED 2026-09-06 AND THE REASON IS NOT TIDINESS. Until 6c step 4.12 one home
+  # meant one address, so a duplicate could not occur. The union of that step has TWO homes
+  # sharing ONE address - the Elastic IP was TRANSFERRED between accounts rather than
+  # reallocated, so `sandbox/foundation` and `production/networking` both answer `52.89.212.1` -
+  # and without this the policy document carries the same /32 twice. Harmless to IAM, and
+  # exactly the kind of noise a later reader has to stop and explain.
+  vpn_egress_cidrs = sort(distinct([
     for home, remote in data.terraform_remote_state.vpn_home :
     "${remote.outputs.wireguard_eip_public_ip}/32"
-  ])
+  ]))
 
   # THE SAME HOMES, BY THE VPC THEY EXIT THROUGH - and this local replaced a list of GATEWAY
   # ENDPOINT ids on 2026-08-23, because that list was the right fix measured one case short.
@@ -215,10 +221,12 @@ locals {
   # the intent of the control: the persona works from inside the perimeter. It does not admit
   # in-VPC workloads wearing this identity - a persona role is reachable only through the IdC
   # sign-in, never by an instance profile.
-  vpn_egress_vpc_ids = sort([
+  # `distinct()` here for the mirror reason: two homes cannot share a VPC today, but the guard
+  # costs nothing and the two locals should fail the same way if they ever can.
+  vpn_egress_vpc_ids = sort(distinct([
     for home, remote in data.terraform_remote_state.vpn_home :
     remote.outputs.vpc_id
-  ])
+  ]))
 
   # ------------------------------------------------- the lake's consumer-side ARNs - pass 4c
   #
