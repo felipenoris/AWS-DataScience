@@ -1,7 +1,7 @@
 # ROUTE 53 RESOLVER DNS FIREWALL - design A's control, and the thing that makes "limited
 # internet" different from "internet" (Stage 6 step 4.1, D5(A), architecture.md 4.3).
 #
-# WHAT IT IS FOR. Under egress_mode = "A" a private subnet has a default route to a NAT
+# WHAT IT IS FOR. Until v0.6.0 a private subnet had a default route to a NAT
 # gateway, and a NAT is not a filter: anything in the subnet can reach any address on the
 # internet. The endpoint policies do not see that traffic (it is not going to an endpoint),
 # the bucket policies do not see it (it is not going to S3), and the flow logs record it after
@@ -22,7 +22,18 @@
 # findings during the session, not after it.
 
 locals {
-  dns_firewall_enabled = var.dns_firewall && var.egress_mode == "A"
+  # THE `&& var.egress_mode == "A"` CLAUSE CAME OFF HERE AT v0.6.0, IN THE SAME COMMIT AS THE NAT,
+  # AND THAT PAIRING IS THE WHOLE POINT (6c step 5.1). One condition was serving two intents
+  # (Lesson 51): *the firewall only matters where a default route exists* AND *the firewall is on*.
+  # Deleting mode A without touching this line would have made the first clause permanently false
+  # and **silently disabled the DNS Firewall in every VPC** - which is exactly what step 5.7 says
+  # must stay. Neither step would have read wrong; the two would simply have undone each other.
+  #
+  # AND THE FIRST INTENT IS NOW FALSE ANYWAY, which is why it is deleted rather than rewritten. The
+  # firewall's job stopped being *filter the internet* the moment the internet became the proxy's
+  # allow-list: what it does here is close the recursive resolver as an exfiltration channel, and
+  # that channel exists with or without a default route.
+  dns_firewall_enabled = var.dns_firewall
 
   # AN EMPTY ALLOW-LIST IS A VALID AND MEANINGFUL CONFIGURATION - it is this module's
   # DEFAULT since v0.3.0 - so the allow half is gated on the list having content rather
@@ -100,10 +111,10 @@ locals {
 resource "aws_route53_resolver_firewall_domain_list" "allow" {
   count = local.dns_firewall_allow_enabled ? 1 : 0
 
-  name    = "awsds-${var.env}-egress-allow"
+  name    = "${local.name_prefix}-egress-allow"
   domains = var.dns_firewall_allow_domains
 
-  tags = { Name = "awsds-${var.env}-egress-allow" }
+  tags = { Name = "${local.name_prefix}-egress-allow" }
 }
 
 # The catch-all. `*` matches every name, which is what turns the rule group into a
@@ -112,18 +123,18 @@ resource "aws_route53_resolver_firewall_domain_list" "allow" {
 resource "aws_route53_resolver_firewall_domain_list" "everything" {
   count = local.dns_firewall_enabled ? 1 : 0
 
-  name    = "awsds-${var.env}-egress-everything"
+  name    = "${local.name_prefix}-egress-everything"
   domains = ["*"]
 
-  tags = { Name = "awsds-${var.env}-egress-everything" }
+  tags = { Name = "${local.name_prefix}-egress-everything" }
 }
 
 resource "aws_route53_resolver_firewall_rule_group" "this" {
   count = local.dns_firewall_enabled ? 1 : 0
 
-  name = "awsds-${var.env}-egress"
+  name = "${local.name_prefix}-egress"
 
-  tags = { Name = "awsds-${var.env}-egress" }
+  tags = { Name = "${local.name_prefix}-egress" }
 }
 
 # PRIORITY IS EVALUATION ORDER, ASCENDING, AND THE TWO NUMBERS ARE THE WHOLE DESIGN: the
@@ -167,12 +178,12 @@ resource "aws_route53_resolver_firewall_rule" "block_everything_else" {
 resource "aws_route53_resolver_firewall_rule_group_association" "this" {
   count = local.dns_firewall_enabled ? 1 : 0
 
-  name                   = "awsds-${var.env}-egress"
+  name                   = "${local.name_prefix}-egress"
   firewall_rule_group_id = aws_route53_resolver_firewall_rule_group.this[0].id
   vpc_id                 = var.vpc_id
   priority               = 101
 
-  tags = { Name = "awsds-${var.env}-egress" }
+  tags = { Name = "${local.name_prefix}-egress" }
 }
 
 # ----------------------------------------------------------------- the block, made readable
@@ -194,10 +205,10 @@ resource "aws_cloudwatch_log_group" "dns_firewall" {
 resource "aws_route53_resolver_query_log_config" "this" {
   count = local.dns_firewall_enabled ? 1 : 0
 
-  name            = "awsds-${var.env}-egress"
+  name            = "${local.name_prefix}-egress"
   destination_arn = aws_cloudwatch_log_group.dns_firewall[0].arn
 
-  tags = { Name = "awsds-${var.env}-egress" }
+  tags = { Name = "${local.name_prefix}-egress" }
 }
 
 resource "aws_route53_resolver_query_log_config_association" "this" {
