@@ -29,9 +29,9 @@ provider "aws" {
 }
 
 provider "aws" {
-  alias   = "development"
+  alias   = "staging"
   region  = var.region
-  profile = var.peers["development"].profile
+  profile = var.peers["staging"].profile
 }
 
 # ------------------------------------------------------------------ the peers' [P] facts
@@ -45,18 +45,18 @@ data "aws_vpc" "sandbox" {
   }
 }
 
-data "aws_vpc" "development" {
-  provider = aws.development
+data "aws_vpc" "staging" {
+  provider = aws.staging
 
   filter {
     name   = "tag:Name"
-    values = ["awsds-${var.peers["development"].env}-vpc"]
+    values = ["awsds-${var.peers["staging"].env}-vpc"]
   }
 }
 
 # Sandbox sources, per 6.3's table: the PUBLIC tier (the WireGuard instance SNATs the
 # laptop there - omit it and the tunnel comes up while GitLab stays unreachable) and the
-# PRIVATE tier (Studio apps). Development contributes only its private tier (INT-09).
+# PRIVATE tier (Studio apps). Staging contributes only its private tier (INT-09).
 data "aws_subnets" "sandbox_public" {
   provider = aws.sandbox
 
@@ -83,12 +83,12 @@ data "aws_subnets" "sandbox_private" {
   }
 }
 
-data "aws_subnets" "development_private" {
-  provider = aws.development
+data "aws_subnets" "staging_private" {
+  provider = aws.staging
 
   filter {
     name   = "vpc-id"
-    values = [data.aws_vpc.development.id]
+    values = [data.aws_vpc.staging.id]
   }
   filter {
     name   = "tag:Tier"
@@ -108,9 +108,9 @@ data "aws_subnet" "sandbox_private" {
   id       = each.value
 }
 
-data "aws_subnet" "development_private" {
-  provider = aws.development
-  for_each = toset(data.aws_subnets.development_private.ids)
+data "aws_subnet" "staging_private" {
+  provider = aws.staging
+  for_each = toset(data.aws_subnets.staging_private.ids)
   id       = each.value
 }
 
@@ -138,16 +138,16 @@ data "aws_route_tables" "sandbox_private" {
   }
 }
 
-data "aws_route_tables" "development_private" {
-  provider = aws.development
+data "aws_route_tables" "staging_private" {
+  provider = aws.staging
 
   filter {
     name   = "vpc-id"
-    values = [data.aws_vpc.development.id]
+    values = [data.aws_vpc.staging.id]
   }
   filter {
     name   = "tag:Name"
-    values = ["awsds-${var.peers["development"].env}-private-*"]
+    values = ["awsds-${var.peers["staging"].env}-private-*"]
   }
 }
 
@@ -182,8 +182,8 @@ data "aws_subnet" "own_private" {
 
 locals {
   peer_vpc_ids = {
-    sandbox     = data.aws_vpc.sandbox.id
-    development = data.aws_vpc.development.id
+    sandbox = data.aws_vpc.sandbox.id
+    staging = data.aws_vpc.staging.id
   }
 
   zones = {
@@ -209,8 +209,8 @@ locals {
     "sandbox-public-${id}" => { cidr = s.cidr_block, peer = "sandbox" } },
     { for id, s in data.aws_subnet.sandbox_private :
     "sandbox-private-${id}" => { cidr = s.cidr_block, peer = "sandbox" } },
-    { for id, s in data.aws_subnet.development_private :
-    "development-private-${id}" => { cidr = s.cidr_block, peer = "development" } },
+    { for id, s in data.aws_subnet.staging_private :
+    "staging-private-${id}" => { cidr = s.cidr_block, peer = "staging" } },
   )
 
   return_routes = {
@@ -235,8 +235,8 @@ locals {
     }
   }
 
-  development_forward = {
-    for pair in setproduct(data.aws_route_tables.development_private.ids, keys(local.own_private_cidrs)) :
+  staging_forward = {
+    for pair in setproduct(data.aws_route_tables.staging_private.ids, keys(local.own_private_cidrs)) :
     "${pair[0]}|${pair[1]}" => {
       route_table_id = pair[0]
       cidr           = local.own_private_cidrs[pair[1]]
@@ -270,12 +270,12 @@ resource "aws_route53_zone_association" "sandbox" {
   depends_on = [aws_route53_vpc_association_authorization.peer]
 }
 
-resource "aws_route53_zone_association" "development" {
-  provider = aws.development
+resource "aws_route53_zone_association" "staging" {
+  provider = aws.staging
   for_each = local.zones
 
   zone_id = each.value
-  vpc_id  = data.aws_vpc.development.id
+  vpc_id  = data.aws_vpc.staging.id
 
   depends_on = [aws_route53_vpc_association_authorization.peer]
 }
@@ -314,17 +314,64 @@ resource "aws_route" "sandbox_forward" {
   vpc_peering_connection_id = aws_vpc_peering_connection_accepter.peer["sandbox"].id
 }
 
-resource "aws_route" "development_forward" {
-  provider = aws.development
-  for_each = local.development_forward
+resource "aws_route" "staging_forward" {
+  provider = aws.staging
+  for_each = local.staging_forward
 
   route_table_id            = each.value.route_table_id
   destination_cidr_block    = each.value.cidr
-  vpc_peering_connection_id = aws_vpc_peering_connection_accepter.peer["development"].id
+  vpc_peering_connection_id = aws_vpc_peering_connection_accepter.peer["staging"].id
 }
 
-# WHAT IS DELIBERATELY NOT HERE. No peering to Staging (6.6, D20 - a decision, not an
-# omission). No route anywhere touching 10.90.0.0/24 (6.5 - peering does no edge-to-edge
-# routing; NT-4 fails on any). No security-group rule yet: ingress arrives with the
-# workloads (6.4, Stage 7's GitLab SG references the peer SGs or these subnet CIDRs -
+# WHAT IS DELIBERATELY NOT HERE. No route anywhere touching 10.90.0.0/24 (6.5 - peering does
+# no edge-to-edge routing; NT-4 fails on any). No security-group rule yet: ingress arrives with
+# the workloads (6.4, Stage 7's GitLab SG references the peer SGs or these subnet CIDRs -
 # never 0.0.0.0/0, never a whole VPC).
+#
+# THIS LIST USED TO OPEN WITH "No peering to Staging (6.6, D20 - a decision, not an omission)",
+# AND THAT SENTENCE DIED ON 2026-09-06 (Stage 6b step 4.5). D20 reasoned about a Staging account
+# this project never vended; the quota refused it, and Stage 6b made Staging by RENAMING the
+# Development account - the one this file has peered to since Stage 3. So the peering above IS
+# the peering to Staging. Nothing about the topology changed; what changed is which name the
+# same VPC answers to, which is exactly the shape Lesson 3 warns about from the other side.
+
+# ---------------------------------------------------------------- 6b 4.5: the rename, in state
+#
+# WHY THESE EXIST AT ALL. `staging` is a for_each KEY here, not merely a name, and Terraform
+# reads an address change as destroy-and-create. Without the first block below, renaming the key
+# would DESTROY THE ACCEPTER - and destroying an aws_vpc_peering_connection_accepter destroys the
+# peering connection with it. The rest follow the same rule one step down.
+#
+# WHAT IS NOT HERE, AND IT IS A CHOICE RATHER THAN AN OVERSIGHT: aws_route.return. Its keys are
+# "<route-table-id>|staging-private-<subnet-id>", so a moved block would have to name [P] subnet
+# ids in a tracked file - which this file's own header forbids in the sentence that matters most
+# in it: the peer's facts are READ, NEVER PASTED (Lesson 3). Those routes are re-created instead.
+# The destination CIDRs are unchanged, a route is idempotent and cheap, and the far end is [E]
+# and torn down - seconds on a path nothing is using, against a stale id living here forever.
+
+moved {
+  from = aws_vpc_peering_connection_accepter.peer["development"]
+  to   = aws_vpc_peering_connection_accepter.peer["staging"]
+}
+
+moved {
+  from = aws_route53_vpc_association_authorization.peer["prod.development"]
+  to   = aws_route53_vpc_association_authorization.peer["prod.staging"]
+}
+
+moved {
+  from = aws_route53_vpc_association_authorization.peer["pages.development"]
+  to   = aws_route53_vpc_association_authorization.peer["pages.staging"]
+}
+
+# These two carry the token in the resource NAME while their for_each keys do not, so one block
+# each covers every instance.
+moved {
+  from = aws_route53_zone_association.development
+  to   = aws_route53_zone_association.staging
+}
+
+moved {
+  from = aws_route.development_forward
+  to   = aws_route.staging_forward
+}

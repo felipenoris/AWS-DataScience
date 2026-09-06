@@ -712,3 +712,54 @@ refused by the tooling, so the plan is read and saved and the apply is handed ov
   - **This is the second time in this stage that a step's *rule* was right and its *list* was short**
     (4.4's replacements were the first, hours earlier). Both were caught by reading the plan instead of
     running it, which is the only reason Recipe A step 5 says to save the plan to a file and read it.
+
+## 2026-09-06 — steps 4.4, 4.5 and 4.6: the token flips, and three `moved {}` blocks keep it boring
+
+*The 4.4 apply is the user's; the planning, the code and the readings are Claude's. 4.5 and 4.6 are
+planned and saved, not applied — every `terraform apply` in this session is refused by the tooling.*
+
+- **[user] Step 4.4 applied. [Claude] Re-plan `No changes`, and the outputs are the verification.**
+  **`s3_gateway_endpoint_id = vpce-0a222aef0c577abbb` and
+  `dynamodb_gateway_endpoint_id = vpce-0d70ec5dc14566c45` — byte-identical to the pre-move baseline.**
+  INT-05's anchors survived a folder rename, a state migration and a token flip in one day, which is
+  what step 4.1 was protecting when it moved `CIDRS["staging"]` to 10.50. The two private route tables
+  kept their ids as well; **all four security groups came back new**, as planned.
+
+- **[Claude] Step 4.5 planned: `4 to add, 1 to change, 4 to destroy` on `production/foundation`.** The
+  one change is **`aws_vpc_peering_connection_accepter.peer["staging"]` updated IN PLACE** — a tag,
+  nothing more. That is the entire point of the five `moved {}` blocks: **eight addresses moved in
+  state and the peering was never touched.** Without them this plan would have destroyed the accepter,
+  and destroying an accepter destroys the peering connection.
+  - The four adds and four destroys are `aws_route.return`, the exception taken deliberately, with
+    **unchanged destination CIDRs** — Production's private route tables lose four routes and get four
+    back under keys that say `staging`.
+  - **`production/registry`: `No changes`.** Predicted, and worth having confirmed rather than assumed:
+    the renamed provider alias reaches the same account, so the id behind it is unchanged and none of
+    the four policies that enumerate consumers moved a byte.
+  - The file's own "WHAT IS DELIBERATELY NOT HERE" list opened with *"No peering to Staging (6.6, D20 —
+    a decision, not an omission)"*. **That sentence died today.** D20 reasoned about a Staging account
+    this project never vended; the account called Staging is the one this file has peered to since
+    Stage 3. The topology did not change — the name the same VPC answers to did.
+
+- **[Claude] Step 4.6 planned: `0 to add, 0 to change, 0 to destroy`, which is exactly what the step
+  predicts. Three `moved {}` blocks, and the step names two.**
+  - **The third is the dangerous one and the plan is what found it.** The step lists the two
+    `local.assignments` keys and the `accounts` map key. It does not say that
+    **`aws_ssoadmin_account_assignment.infrastructure` `for_each`es over `local.accounts` itself** — so
+    renaming that map key moves a third address. Without a block the plan read **`1 to add, 0 to change,
+    1 to destroy`: `InfrastructureAccess` REVOKED on the account and re-granted.** That is the
+    assignment whoever runs the apply is signed in through, and the two halves are separate
+    asynchronous API calls, so the window is real and its length is not ours to choose.
+  - **Third time in this stage that a step's RULE was right and its LIST was short** — 4.4's
+    replacements, 4.5's `for_each` keys, now this — and all three were caught the same way: by saving
+    the plan to a file and reading it rather than running it. That is the only reason Recipe A step 5
+    is written the way it is.
+  - `aws/import-ids.py` closed its seam in the same commit: the row that deliberately read
+    `"Staging Account" → "development"` for one day now reads `→ "staging"`.
+
+- **[Claude] `CIDRS` lost its `development` row and 10.40.0.0/16 is FREE from this commit** — 4.1's
+  second half, held back one commit precisely because `production/foundation/peers.tf` read
+  `var.peers["development"]` by literal. **6c step 0 can spend 10.40 now.** `REGISTRY_CONSUMERS` kept
+  its row, renamed: a deployment target pulls images and packages like anything else, even though the
+  same account stopped being a *lake* consumer at step 2.4. That table's comment predicted the two
+  lists would diverge one day; this is the day.

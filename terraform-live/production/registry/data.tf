@@ -13,6 +13,6 @@ data "aws_caller_identity" "sandbox" {
   provider = aws.sandbox
 }
 
-data "aws_caller_identity" "development" {
-  provider = aws.development
+data "aws_caller_identity" "staging" {
+  provider = aws.staging
 }

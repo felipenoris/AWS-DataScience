@@ -89,14 +89,13 @@ POLICY_TYPES = [
 # Canary hold no assignment this repository manages, and an unmapped name emits
 # <UNMAPPED:...> so the line is unrunnable rather than plausible.
 #
-# THE VALUE IS THE FOLDER AND THE KEY IS THE AWS NAME, WHICH IS WHY THEY DISAGREE TODAY
-# (2026-09-06). Stage 6b step 3.2 renamed the account to `Staging Account` while the folder
-# is still terraform-live/development/ and the sso/ assignment key is still `development`.
-# Step 4.6 renames both behind `moved {}` blocks; until then this row reads across the
-# seam on purpose, and matching it to the slice is the whole reason the row exists.
+# THE VALUE IS THE FOLDER AND THE KEY IS THE AWS NAME. They disagreed for one day - step 3.2
+# renamed the account while the folder was still terraform-live/development/ - and step 4.6
+# closed the seam on 2026-09-06 by renaming the folder, the sso/ assignment key and this row
+# together, behind `moved {}` blocks so no assignment was destroyed on the way.
 ACCOUNT_FOLDER_BY_NAME = {
     "Sandbox Account 1": "sandbox",
-    "Staging Account": "development",
+    "Staging Account": "staging",
     "Data Governance Account": "data-governance",
     "Production Account": "production",
     "Identity Account": "identity",

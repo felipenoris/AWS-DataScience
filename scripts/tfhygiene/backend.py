@@ -111,15 +111,14 @@ SANDBOX_SUPERNET = "10.16.0.0/13"  # room for 8 business units; avoids 10.30/10.
 # account was made by RENAMING `Development`, which has held 10.50.0.0/16 since Stage 3. A VPC
 # CIDR is IMMUTABLE, so leaving this row at 10.40 would make the folder rename propose replacing
 # the VPC - and with it every subnet, route table, endpoint and the peering Production accepts.
-# The `development` row outlives the folder deliberately: `production/foundation/peers.tf` reads
-# `var.peers["development"]` by literal, and that map is built from this table's KEYS. Both go in
-# one commit at 4.5, with the four hand-written provider aliases. 10.40 is FREE from that commit
-# and 6c step 0 spends it.
+# THE `development` ROW WENT AT 4.5 (2026-09-06) AND 10.40.0.0/16 IS FREE FROM HERE. It had
+# outlived its folder for exactly one commit, because `production/foundation/peers.tf` read
+# `var.peers["development"]` by literal and that map is built from this table's KEYS - so the row
+# and the four hand-written provider aliases had to move together. 6c step 0 spends 10.40.
 CIDRS = {
     "sandbox": "10.20.0.0/16",  # unit 1 - the literal Stage 4 and the stage's views use
     "production": "10.30.0.0/16",
-    "staging": "10.50.0.0/16",
-    "development": "10.50.0.0/16",  # same account, two keys - closes at 4.5
+    "staging": "10.50.0.0/16",  # the renamed Development account - a CIDR is immutable (4.1)
 }
 
 # Outside every VPC range and never seen inside AWS - the WireGuard instance SNATs (Stage 3
@@ -193,7 +192,11 @@ DATA_LAKE = ["data-governance"]
 # different questions: who reads the governed LAKE, and who pulls IMAGES AND PACKAGES. Stage 9
 # adds production to the first and must not add it to the second (the registry lives there),
 # which is exactly the split Stage 9 step 1.4 already anticipates for the lake list.
-REGISTRY_CONSUMERS = ["sandbox", "development"]
+# `development` became `staging` on 2026-09-06 (Stage 6b step 4.5) and the ROW SURVIVED, which is
+# the half worth noticing: a deployment target pulls images and packages like anything else, so
+# the account stays a registry consumer even though it stopped being a lake consumer at step 2.4.
+# That is the split the paragraph above predicted would matter one day, arriving.
+REGISTRY_CONSUMERS = ["sandbox", "staging"]
 
 # THE UNIFIED DOMAIN AND ITS MEMBER ACCOUNTS (Stage 6, D26/D35) - the ninth and tenth
 # vocabularies, and the second one is a MEASUREMENT rather than a decision, which is why it

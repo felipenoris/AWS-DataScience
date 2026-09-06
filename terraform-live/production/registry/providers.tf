@@ -49,7 +49,7 @@ provider "aws" {
 }
 
 provider "aws" {
-  alias   = "development"
+  alias   = "staging"
   region  = var.region
-  profile = var.consumers["development"].profile
+  profile = var.consumers["staging"].profile
 }
