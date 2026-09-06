@@ -222,21 +222,148 @@ resource "aws_secretsmanager_secret_policy" "wireguard_host_key" {
 # EMPTY IS THE SAFE DEFAULT AND THE HONEST ONE. Squid's last line is `http_access deny all`, so
 # an empty allow-list denies everything by name rather than by timeout. 4.9 fills these; until
 # it does, this parameter says exactly what the estate has decided so far, which is nothing.
+# ---------------------------------------------------------------- 4.9, THE TWO FILTERS
+#
+# THE OBJECTIVES ASK FOR TWO DIFFERENT FILTERS AND THIS IS WHERE BOTH NOW LIVE. Until D38 they
+# sat in two places and one of them has stopped working: a per-VPC DNS firewall inspects the
+# names a client RESOLVES, and an explicit-proxy client resolves nothing - it hands Squid a name
+# and Squid resolves it. So the DNS firewall can no longer see a laptop's browsing at all, and
+# both filters move here, as SOURCE-SCOPED lists.
+#
+# THE TRANSLATION IS NOT A COPY, and this is the part that would be wrong if it had been treated
+# as one. Route 53 DNS Firewall and Squid `dstdomain` spell subdomains DIFFERENTLY:
+#
+#   DNS Firewall   `example.com` is the APEX ONLY; `*.example.com` is subdomains and NOT the apex
+#   Squid          `example.com` is that EXACT host; `.example.com` is the domain AND every
+#                  subdomain of it
+#
+# So a DNS-firewall pair (`amazonaws.com`, `*.amazonaws.com`) collapses to ONE Squid entry
+# (`.amazonaws.com`), and a lone DNS-firewall apex stays a lone Squid host. Transcribing the
+# asterisks would have produced entries matching nothing, and the symptom would have been a
+# refusal that looks exactly like a missing entry.
+#
+# THE WILDCARD IS GONE. The DNS firewall's list opens with a literal `"*"` - it was the
+# permissive baseline of an earlier stage, and every entry after it is decoration while it
+# stands. It is not carried across: this list is the first time the estate's egress is actually
+# enumerated.
 locals {
+  # (i) THE INSTITUTIONAL WEB FILTER - what a PERSON on a company laptop may reach. Its source is
+  # the tunnel range, and the reason a person gets a different list from a notebook is the whole
+  # point of splitting them: a name somebody may browse to is not thereby a name a training job
+  # may exfiltrate to.
+  #
+  # Seeded from the SMUS network-isolation guide's own families rather than by trial, plus the
+  # console and sign-in families the DNS firewall had already measured.
+  proxy_allow_tunnel = [
+    # The AWS control plane. A laptop's `aws` CLI now exits through here (4.12), so without this
+    # every persona is denied every API call - which is the failure mode 4.12's union-then-trim
+    # exists to keep out of one apply.
+    ".amazonaws.com",
+    # The SageMaker Unified Studio portal: its client APIs, its agent, and the domain the portal
+    # itself is served from.
+    "datazone.${var.region}.api.aws",
+    "agent.datazone.${var.region}.api.aws",
+    "sagemaker-unified-studio.${var.region}.api.aws",
+    ".sagemaker.${var.region}.on.aws",
+    ".sagemaker.aws",
+    ".sagemaker.aws.dev",
+    ".awsapps.com",
+    # IAM Identity Center sign-in.
+    "${var.region}.signin.aws",
+    "signin.aws.amazon.com",
+    ".signin.aws.amazon.com",
+    # The console families, including the two static-asset hosts and the consent widget.
+    "console.aws.amazon.com",
+    ".console.aws.amazon.com",
+    ".console-api.aws.amazon.com",
+    ".console.api.aws",
+    ".console.aws.a2z.com",
+    ".cdn.console.awsstatic.com",
+    ".cdn.uis.awsstatic.com",
+    ".shortbread.aws.dev",
+    "public.lotus.awt.aws.a2z.com",
+    # Health and notifications.
+    "health.aws.amazon.com",
+    "phd.aws.amazon.com",
+    ".ctrl.prod.os.notifications.aws.dev",
+    "uxc.us-east-1.api.aws", # region:aws-pinned AWS serves this endpoint from one Region only - its pin, not ours (the marker must be INLINE: the gate reads the line, not the paragraph)
+    # THE BROADEST ENTRY IN EITHER LIST, AND IT IS DELIBERATELY ONLY HERE. `.cloudfront.net` is
+    # every CloudFront distribution in the world, which is what the console's asset delivery
+    # needs and what a notebook must never have. Under the old DNS firewall both planes shared
+    # one list and both got it; splitting the filters is what makes narrowing it possible, and
+    # this comment is the record that it was narrowed rather than forgotten.
+    ".cloudfront.net",
+    "d35uxhjf90umnp.cloudfront.net",
+  ]
+
+  # (ii) SAGEMAKER'S STRICTER LIST - what a NOTEBOOK may reach. Today's DNS Firewall allow-list
+  # moved across, minus the wildcard and minus every portal family above: a notebook does not
+  # open the console, and a name it cannot reach is a name a job cannot post data to.
+  proxy_allow_sandbox = [
+    ".amazonaws.com",
+    "public.ecr.aws",
+    # OS packages.
+    "archive.ubuntu.com",
+    "security.ubuntu.com",
+    # Python.
+    "astral.sh",
+    "releases.astral.sh",
+    "pypi.org",
+    "files.pythonhosted.org",
+    # DuckDB.
+    "blobs.duckdb.org",
+    "extensions.duckdb.org",
+    # Julia.
+    "install.julialang.org",
+    "julialang-s3.julialang.org",
+    "pkg.julialang.org",
+    "storage.julialang.net",
+    "us-west.pkg.julialang.org",
+    # Rust.
+    "sh.rustup.rs",
+    "index.crates.io",
+    "static.crates.io",
+    "static.rust-lang.org",
+    # Source.
+    "github.com",
+  ]
+
+  # (iii) THE BUILD HOSTS' PACKAGE SOURCES. SharedServices is where the buildbox lands when 5.8
+  # moves it, and a build host needs what an image needs - which is the notebook list minus the
+  # AWS control plane it does not call. Derived rather than retyped: the day somebody adds a
+  # package source for notebooks, a build of that image needs it too, and two hand-kept copies
+  # would part company on exactly that day (Lesson 33).
+  proxy_allow_shared = [for d in local.proxy_allow_sandbox : d if d != ".amazonaws.com"]
+
+  # THE PLANES, BY THE KEY THE MATRIX GENERATES. A key here that is not a plane below is a typo
+  # that would otherwise be silently dropped by the merge - the precondition on the resource is
+  # what turns it into a plan-time failure.
+  proxy_allow_by_plane = {
+    tunnel                  = local.proxy_allow_tunnel
+    "sandbox-foundation"    = local.proxy_allow_sandbox
+    "production-foundation" = local.proxy_allow_shared
+    # EMPTY, AND EMPTY IS A DECISION RATHER THAN AN OMISSION. `production-workloads` is the
+    # production runtime: everything it needs is an AWS API reached through an endpoint or the
+    # proxy's own AWS entry, and nothing has yet named a public dependency for it. Staging is the
+    # plane step 4.9 forgot entirely (it enumerated four sources and Staging is a fifth) - it is
+    # here, empty, so that adding to it is an edit rather than a discovery.
+    "production-workloads" = []
+    "staging-foundation"   = []
+  }
+
   proxy_allowlist = merge(
     {
-      # The institutional web filter - what a person on a company laptop may reach. Its source
-      # is the tunnel range, which reaches Squid UN-MASQUERADED (4.7) so the access log carries
-      # a per-device address.
+      # The institutional filter's source is the tunnel range, which reaches Squid UN-MASQUERADED
+      # (4.7) so the access log carries a per-device address.
       tunnel = {
         sources = [var.wireguard_peer_cidr]
-        allow   = []
+        allow   = local.proxy_allow_by_plane["tunnel"]
       }
     },
     {
       for p in var.peerings : "${p.peer_account}-${p.peer_slice}" => {
         sources = [p.peer_cidr]
-        allow   = []
+        allow   = lookup(local.proxy_allow_by_plane, "${p.peer_account}-${p.peer_slice}", [])
       }
     },
   )
@@ -264,7 +391,99 @@ resource "aws_ssm_parameter" "proxy_allowlist" {
 
   value = jsonencode(local.proxy_allowlist)
 
+  lifecycle {
+    # A PLANE AUTHORED FOR A SPOKE THAT IS NOT PEERED IS A TYPO THE MERGE WOULD SWALLOW. The
+    # planes come from `var.peerings`; the LISTS are authored by hand and keyed by the same
+    # string. Misspell one - `staging` for `staging-foundation` - and the merge simply never
+    # looks it up: the parameter applies clean, the spoke gets an empty list, and the symptom is
+    # a refusal that reads exactly like a name nobody added. This turns it into a plan failure.
+    precondition {
+      condition     = length(setsubtract(keys(local.proxy_allow_by_plane), keys(local.proxy_allowlist))) == 0
+      error_message = "proxy_allow_by_plane names a plane that no peering generates: ${join(", ", setsubtract(keys(local.proxy_allow_by_plane), keys(local.proxy_allowlist)))}. The plane keys are `tunnel` plus one `<peer_account>-<peer_slice>` per row of PEERINGS."
+    }
+
+    # THE 4 KB STANDARD-TIER CEILING, CHECKED AT PLAN TIME RATHER THAN MET AT APPLY TIME. Past it
+    # the answer is a parameter per plane (which a per-plane review would want anyway), never
+    # Advanced tier at USD 0.05/parameter-month for a list of domain names. 3800 leaves room for
+    # the entries added between one reading of this line and the next.
+    precondition {
+      condition     = length(jsonencode(local.proxy_allowlist)) < 3800
+      error_message = "the rendered allow-list is ${length(jsonencode(local.proxy_allowlist))} bytes, against Parameter Store's 4 KB Standard-tier ceiling. Split it per plane rather than paying for Advanced."
+    }
+  }
+
   tags = merge(local.hub_anchor_tags, {
     Name = "awsds-${var.env}-proxy-allowlist"
+  })
+}
+
+# --------------------------------------------------------- the proxy's access log, and its key
+#
+# [P] AND NOT IN THE PROXY SLICE, WHICH IS THE WHOLE POINT (Stage 6c step 4.11). This log is the
+# estate's record of what left it - Stage 11's egress evidence - and evidence that dies with the
+# host it describes is not evidence. The [D] slice writes into this group; it does not own it,
+# and `make down` does not take it.
+#
+# A CMK HERE, WHERE THE FLOW LOGS AND THE HANDSHAKE LOG BOTH DECLINED ONE, and the difference is
+# the one their own comments draw: those are DEBUGGING logs, and this is an audit trail. The
+# rate is measured, not estimated (docs/PRICING.md; Lesson 6) - ~USD 1.00/key-month, which the
+# stage's cost table now carries as its one line that is neither an address nor a gateway.
+module "proxy_log_key" {
+  # checkov:skip=CKV_TF_1:pinned by git TAG by convention (conventions §6, Stage 3 step 1.1a) - a repository-internal tag only the repo owner can move
+  source = "git::git@github.com:felipenoris/AWS-DataScience.git//terraform-modules/kms-key?ref=kms-key-v0.1.0"
+
+  alias_name  = "awsds-${var.env}-proxy-log"
+  description = "Squid access log - the estate's egress evidence (Stage 6c step 4.11, read by Stage 11)"
+
+  # CloudWatch Logs encrypts and decrypts on this account's behalf, so the service principal
+  # needs the key - scoped by `kms:EncryptionContext:aws:logs:arn` to THIS log group and no
+  # other, which is the condition AWS's own documentation specifies and the reason the grant is
+  # not "logs may use this key for anything in the account".
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid       = "AllowAccountIAM"
+        Effect    = "Allow"
+        Principal = { AWS = "arn:${data.aws_partition.current.partition}:iam::${data.aws_caller_identity.current.account_id}:root" }
+        Action    = "kms:*"
+        Resource  = "*"
+      },
+      {
+        Sid       = "AllowCloudWatchLogsForThisGroupOnly"
+        Effect    = "Allow"
+        Principal = { Service = "logs.${data.aws_region.current.region}.amazonaws.com" }
+        Action = [
+          "kms:Encrypt*",
+          "kms:Decrypt*",
+          "kms:ReEncrypt*",
+          "kms:GenerateDataKey*",
+          "kms:Describe*",
+        ]
+        Resource = "*"
+        Condition = {
+          ArnEquals = {
+            "kms:EncryptionContext:aws:logs:arn" = "arn:${data.aws_partition.current.partition}:logs:${data.aws_region.current.region}:${data.aws_caller_identity.current.account_id}:log-group:/awsds/${var.env}/proxy"
+          }
+        }
+      },
+    ]
+  })
+}
+
+# RETENTION IS 365 DAYS AND STEP 4.11 DID NOT NAME ONE - said here rather than left implicit.
+# Every other log group in this repository is 30 days by decision, because every other one is a
+# DIAGNOSTIC. This is the answer to "what left the estate, from which device, and when", which is
+# a question asked after the fact and rarely within a month. Storage is USD 0.03/GB-month and a
+# handful of people browsing produce megabytes, so the retention is chosen against the question
+# rather than against the bill - but Stage 11 is where it is reviewed against a real volume.
+resource "aws_cloudwatch_log_group" "proxy_access" {
+  # checkov:skip=CKV_AWS_338:365 days IS the deliberate value - see the paragraph above; the one-year default this check wants is what is written
+  name              = "/awsds/${var.env}/proxy"
+  retention_in_days = 365
+  kms_key_id        = module.proxy_log_key.key_arn
+
+  tags = merge(local.hub_anchor_tags, {
+    Name = "awsds-${var.env}-proxy-access-log"
   })
 }

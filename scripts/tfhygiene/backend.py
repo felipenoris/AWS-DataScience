@@ -264,6 +264,23 @@ def vpc_bearing_accounts() -> list[str]:
 # at the WireGuard host's ENI. So it is emitted to VPN_HOST_SLICE as well.
 WIREGUARD_PEER_CIDR = "10.90.0.0/24"
 
+# THE PRIVATE ADDRESS SPACE - a STANDARD constant, not one of this project's allocations, and
+# the distinction is why it sits apart from VPC_CIDRS above (6c steps 4.7/4.8, 2026-09-06).
+#
+# WHY IT IS CENTRAL RATHER THAN WRITTEN TWICE. Pass 4 puts the same list in two places with
+# OPPOSITE polarity: the WireGuard host FORWARDS tunnel packets only to these ranges (a private
+# network client has no business reaching a public address directly - the proxy is the door),
+# and Squid DENIES these ranges as destinations (without that, an explicit proxy is an L7 bridge
+# between VPCs that peering deliberately keeps apart - D38's own hole). A range added to one and
+# missed in the other is not a cosmetic drift: it is a spoke reachable through the proxy that
+# the topology says is unreachable.
+#
+# WHAT IS *NOT* SHARED, and Lesson 51 is why it is spelled out here rather than assumed: Squid's
+# deny list is this list PLUS `169.254.0.0/16` and `100.64.0.0/10`, which are link-local and
+# CGNAT and are not RFC1918. Those two are the proxy's own and are authored in the proxy slice.
+# The shared half is the concept both really mean; the extras are one caller's.
+RFC1918_CIDRS = ["10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16"]
+
 # WHERE THE TUNNEL IS BUILT - and this is NOT the question VPN_HOMES below answers, which is
 # why it is a second name rather than a second consumer of the first (6c step 4.1, 2026-09-06).
 #
@@ -682,6 +699,14 @@ def tfvars_values(account: str, slice_name: str) -> dict:
             # .tf file may re-derive from the env token: the reverse map would be a
             # second copy of ENV_TOKENS (Lesson 14). So the folder name rides along.
             values["account_folder"] = account
+            # THE PRIVATE ADDRESS SPACE, TO THE TWO HUB [D] SLICES THAT ENFORCE IT (6c 4.7/4.8).
+            # Scoped to Production explicitly rather than to the slice NAME alone, because
+            # `sandbox/vpn/` is a `vpn` slice too and declares no such variable - an emission it
+            # cannot consume is a warning on every plan of a slice that is about to be destroyed.
+            # When a second business unit terminates its own tunnel (D35), this becomes the set
+            # VPN_HOST_SLICE becomes a list.
+            if account == "production" and slice_name in ("vpn", "proxy"):
+                values["rfc1918_cidrs"] = RFC1918_CIDRS
             if slice_name == "vpn":
                 # Stage 4 step 4.2 - the WireGuard client range, which is NOT chosen in the
                 # slice. It is the one address literal in this table that never appears
@@ -851,6 +876,9 @@ def render_tfvars(account: str, slice_name: str) -> str:
     # different things called `peer_cidr` in one tfvars is the ambiguity worth a longer name.
     if "wireguard_peer_cidr" in v:
         out += f'wireguard_peer_cidr = "{v["wireguard_peer_cidr"]}"\n'
+    if "rfc1918_cidrs" in v:
+        cidr_list = ", ".join(f'"{c}"' for c in v["rfc1918_cidrs"])
+        out += f"rfc1918_cidrs   = [{cidr_list}]\n"
     if "peer_cidrs" in v:
         cidr_list = ", ".join(f'"{c}"' for c in v["peer_cidrs"])
         out += f"peer_cidrs      = [{cidr_list}]\n"

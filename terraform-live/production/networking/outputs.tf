@@ -104,3 +104,13 @@ output "proxy_allowlist_parameter_name" {
   description = "The SSM parameter holding Squid's source-scoped allow-lists (4.9/4.10). production/proxy/ renders it at boot; ./aws/proxy.py diffs running against committed."
   value       = aws_ssm_parameter.proxy_allowlist.name
 }
+
+output "proxy_access_log_group_name" {
+  description = "The [P] Squid access log (4.11) - Stage 11's egress evidence. The [D] proxy WRITES here and does not own it: a record that dies with the host it describes is not a record."
+  value       = aws_cloudwatch_log_group.proxy_access.name
+}
+
+output "proxy_access_log_group_arn" {
+  description = "The same group's ARN - the proxy's role is scoped to exactly this one, with no delete."
+  value       = aws_cloudwatch_log_group.proxy_access.arn
+}

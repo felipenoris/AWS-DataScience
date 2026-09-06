@@ -525,6 +525,18 @@ address transfer is what keeps every client's `Endpoint` line unchanged.
   proxy so Squid sees `10.90.0.x`. Add `10.90.0.0/24 → the WireGuard host's ENI` to the hub's public-tier
   route table — the single exception 3.6 names, in the same VPC, which is what gives the access log a
   per-device address without any logging change.
+- **4.7-4.11 AUTHORED 2026-09-06, NOTHING APPLIED.** `wireguard-v0.5.0` (untagged as yet),
+  `terraform-live/production/vpn/` and `terraform-live/production/proxy/` with its `squid.conf` and render
+  templates, the `[P]` access log and its key in `networking/`, and both allow-lists filled. Every gate is
+  green — `terraform validate`, `tflint` 0, `checkov` 0 failed, `./scripts/slices.py check` 29/29,
+  `make check` OK — and both templates were **rendered**, not merely validated, which is what caught three
+  defects a reading would not have: `+` in HCL is arithmetic and not concatenation; `%{` is `templatefile`'s
+  directive marker and collides with Squid's own `strftime` escape (**and with a comment describing the
+  collision**); and the first render script's "revert" deleted the new file while the old one was already
+  gone. **What is deliberately NOT authored is 4.11's second half** — the export to Log Archive. The
+  mechanism is a real choice (a subscription filter into a Firehose in Log Archive, against a scheduled
+  `CreateExportTask` to S3) with different cost shapes, and picking one silently would be an estimate
+  standing in for a measurement (Lesson 6). It is a decision due below.
 - **4.8 — [Claude⚡] Build the proxy**: `production/proxy/` `[D]`, a second host in the same public tier.
   Squid is in the Amazon Linux 2023 repositories (`dnf install -y squid`) and needs no third-party repo.
   The configuration, **in this order**:
@@ -788,7 +800,11 @@ are torn down. The figure that mattered was never the peak but the destination q
 
 Measured rates, `us-west-2` (PRICING §7/§8 after 7.4's additions): the design **removes three NAT gateways**
 (−0.150/h while a session runs, plus their per-GB processing — 0.045 each plus 0.005 for each one's address) and **adds one Elastic IP** (the proxy's, +0.005/h ≈ 3.65/month) and
-one to two private hosted zones. The two `[D]` hosts bill only while running. Interface endpoints stay
+one to two private hosted zones, **and one CMK — `alias/awsds-prod-proxy-log`, USD 1.00/key-month
+measured (`docs/PRICING.md`), the stage's one line that is neither an address nor a gateway.** It is
+the first key in this estate created for a LOG, and the reason is the distinction every other log group
+here recorded when it DECLINED one: those are diagnostics, this is the record of what left the estate.
+The two `[D]` hosts bill only while running. Interface endpoints stay
 per-VPC, single AZ — `VPC-Networking` carries none. Peering is free within an AZ and charged each way
 across one, so pinning both hosts and the endpoint sets to `usw2-az1` keeps the common path free. **A
 standing NAT gateway is the largest single line the design avoids**, which is why it is a contingency and
@@ -803,6 +819,13 @@ in the cost model.
    Recommended: pin.
 3. **INT-16's closing choice** (6.6) — fallback (i) in this estate's condition shape, or recorded
    acceptance.
+4. **How the proxy's access log reaches Log Archive** (4.11, opened 2026-09-06 when the rest of 4.11 was
+   authored). The requirement is Lesson 18's — the author of the allow-list must not own its record — and
+   the group plus its CMK are built; only the *export* is open. Candidates: (a) a CloudWatch Logs
+   **subscription filter** into a Kinesis Data Firehose owned by Log Archive, which is continuous and
+   carries a per-GB Firehose rate; (b) a scheduled **`CreateExportTask`** to a Log Archive bucket, which is
+   cheap and batchy and needs something to schedule it; (c) accept the 365-day in-account retention until
+   Stage 11 and record that. **Both rates are measured before the choice, never estimated** (Lesson 6).
 
 ## Verifications to answer while executing
 

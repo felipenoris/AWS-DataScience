@@ -95,14 +95,21 @@ say "(3) key in hand (base64 length $${#HOST_KEY})"
 # misdiagnosing. The value is the client template's own, for the reason in variables.tf: the
 # floor trades against no path. What this does NOT cover is the client-to-host direction,
 # which remains the client's line to carry.
-# THE TWO PostUp/PostDown LINES BELOW CARRY A SECOND, OPTIONAL HALF - ${vpc_nat_post_up != "" ? "ACTIVE on this host" : "empty on this host"}.
-# vpc_nat_cidrs (main.tf builds the string) appends one MASQUERADE and two FORWARD rules per
-# VPC range this host is asked to be a NAT instance for. They ride wg0's PostUp rather than
-# this script for one reason worth stating where somebody debugging will read it: THIS SCRIPT
-# RUNS AT FIRST BOOT ONLY. The host is [D] - stopped and started between sessions - so a rule
-# written here directly would be gone after the first stop, while wg-quick re-runs PostUp on
-# every boot. If VPC-side NAT is ever mysteriously dead, `iptables -t nat -L POSTROUTING -n`
-# and `systemctl status wg-quick@wg0` are the two readings, in that order.
+# THE PostUp/PostDown LINES BELOW ARE ASSEMBLED IN main.tf, not written here, and on THIS host
+# they read: masquerade ${length(regexall("RETURN", masquerade_post_up)) > 0 ? "WITH ${length(regexall("RETURN", masquerade_post_up))} exemption(s) - some destinations see the client address" : "for every destination - v0.4.0 behaviour"};
+# forwarding ${length(regexall("REJECT", forward_post_up)) > 0 ? "RESTRICTED to named destinations, the rest rejected" : "unrestricted - v0.4.0 behaviour"}.
+#
+# THEY RIDE wg0's PostUp RATHER THAN THIS SCRIPT for one reason worth stating where somebody
+# debugging will read it: THIS SCRIPT RUNS AT FIRST BOOT ONLY. The host is [D] - stopped and
+# started between sessions - so a rule written here directly would be gone after the first stop,
+# while wg-quick re-runs PostUp on every boot. It is the only re-entrant hook this host has.
+#
+# THE THREE READINGS, IN THIS ORDER, when something on the tunnel is mysteriously dead:
+#   iptables -t nat -L POSTROUTING -n -v    is the client address being preserved, or masqueraded?
+#   iptables -L FORWARD -n -v               is the destination one this tunnel may reach at all?
+#   systemctl status wg-quick@wg0           did PostUp run to completion this boot?
+# A packet that vanishes with NO counter moving in either table is neither: it is the ENI's
+# source/destination check, which is main.tf's `source_dest_check`, not a rule on this host.
 say "(4) writing /etc/wireguard/wg0.conf for ${peer_count} peer(s)"
 umask 077
 mkdir -p /etc/wireguard
@@ -112,8 +119,8 @@ Address = ${server_address}
 ListenPort = ${listen_port}
 MTU = ${mtu}
 PrivateKey = $HOST_KEY
-PostUp = iptables -t nat -A POSTROUTING -s ${peer_cidr} -o $UPLINK -j MASQUERADE; iptables -A FORWARD -i %i -j ACCEPT; iptables -A FORWARD -o %i -j ACCEPT${vpc_nat_post_up}
-PostDown = iptables -t nat -D POSTROUTING -s ${peer_cidr} -o $UPLINK -j MASQUERADE; iptables -D FORWARD -i %i -j ACCEPT; iptables -D FORWARD -o %i -j ACCEPT${vpc_nat_post_down}
+PostUp = ${masquerade_post_up}; ${forward_post_up}
+PostDown = ${masquerade_post_down}; ${forward_post_down}
 %{ for name, peer in peers ~}
 
 # ${name}
