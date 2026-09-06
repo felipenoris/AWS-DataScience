@@ -347,6 +347,12 @@ nothing else" and D20 says Staging is never on the lake share; the account holds
 it references by name, and the share is revoked from the **producer** side before the consumer slice that
 uses it is destroyed.
 
+- **2.1 — DONE 2026-09-06.** Applied as `awsds-infra-identity`: **`1 added, 0 changed, 2 destroyed`** —
+  `data-scientist@development` **replaced** (the permission-set ARN is a forced replacement; the map key,
+  and therefore the resource address, is untouched) and `dev-env-steward@development` deleted. Re-plan
+  `No changes`. **The account now carries exactly six permission sets** — `DataScientistStagingAccess`,
+  `DeploymentManagerAccess`, `InfrastructureAccess`, beside the landing zone's three — which is the count
+  0.3 corrected this stage to expect.
 - **2.1 — [Claude] Swap the permission set WITHOUT renaming the key**: in
   `terraform-live/identity/sso/locals.tf`, leave the assignment key `data-scientist@development` and the
   `account = "development"` field alone, and change only `set = "data_scientist"` →
