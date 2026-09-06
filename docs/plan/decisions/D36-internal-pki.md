@@ -5,6 +5,14 @@ KMS key; no revocation path, and the compensating controls are detective** — *
 slice is no longer pulled forward ahead of Stage 6; it is built at Stage 7 pass 1 with the leaves, and the
 `dev-env` image takes the root at Stage 7 step 2.6. Custody (§1, §2) is untouched.**
 
+**APPLIED 2026-09-06 (Stage 6c pass 2), and the Pages apex survived the consolidation as a SEPARATE
+registrable parent.** The estate's other private names moved under one apex, `awsds.internal`, with a
+child zone per account; **Pages did not**, and the reason is this decision's own: a
+`pages.awsds.internal` child would put user-published content under the same registrable parent as the
+platform's names, and a cookie scoped to that parent would be readable by it. The zone is
+**`awsds-pages.internal`** — the project prefix without the shared parent. `pages.internal` stands until
+6c step 2.6 retires it; zones cannot be renamed, so the two coexist by construction.
+
 **AMENDED 2026-09-05:** the naming section changes with [D15](D15-tls-internal.md) — the leaves are issued for `gitlab.awsds.internal`, `*.awsds-pages.internal` and the `<env>.awsds.internal` children. Custody, the slice, the key and the detective controls are untouched.
 
 **In one line:** The internal CA root gets a slice, a state file and a KMS key of its own — so "who can mint
