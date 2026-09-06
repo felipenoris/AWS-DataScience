@@ -1046,6 +1046,80 @@ lesson can be *recognised* without opening this file; the reasoning that makes e
     dependency is expressible in the artifact, which is why the workflow lint rejects an operator rather
     than the network rejecting a packet.
 
+46. **A command whose output you redirect or pipe hands you the exit code of the pipe, not of the
+    command — and the next step then runs on a failure you never saw.** Three times in one session
+    (2026-09-06, Stage 6b/6c): a `git commit … | grep` swallowed a hook failure and the `git tag` that
+    followed landed on the **wrong commit**, burning a published tag that a runbook forbids moving; a
+    pair of `terraform apply … >/dev/null 2>&1` left **two hosted zones silently uncreated**, discovered
+    only because a later listing was short; and a `git commit && echo pushed` reported success while the
+    commit had been rejected. **The shape is always the same and it is not carelessness about the
+    command — it is carelessness about the SHELL**: `cmd | grep` exits with `grep`'s status, `cmd
+    >/dev/null 2>&1` throws away the sentence that says what happened, and `&&` then chains off a truth
+    that is not the one you meant. **The habit that costs nothing: never chain a consequential act
+    (`tag`, `push`, a second `apply`) onto a command whose output you filtered.** Run it, read it, then
+    act — and where a loop must summarise many commands, have it print the exit code beside each line
+    rather than the output it matched. The expensive half is not the failed command; it is that the
+    failure is discovered *later*, attributed to something else, and the intermediate state has already
+    been published.
+
+47. **A process waiting on stdin looks exactly like a slow one, and the lock it holds makes the symptom
+    appear somewhere else entirely.** A `terraform plan` was backgrounded with one generated variable
+    missing; with no terminal to prompt at, it **waited eleven minutes**, holding the S3 state lock — and
+    every reading of the problem came from *other* commands, in *other* slices, failing with
+    `Error acquiring the state lock` and naming a lock id, a host and a timestamp that explained nothing.
+    **The diagnosis had to run backwards**: find the lock, find the process, discover it is not slow but
+    blocked, and only then find the missing input. **`-input=false` is the whole fix** — it converts an
+    unanswerable prompt into an immediate, self-describing error — and it belongs on every non-interactive
+    plan and apply, not just the backgrounded ones. **The general form: any tool that can ask a question
+    must be told it may not, before it is run somewhere it cannot be answered.** The second habit is
+    cheaper still: when a lock error names a timestamp, look for a live process *before* force-unlocking,
+    because the two cases — orphaned lock and running command — have identical error text and opposite
+    correct actions (Lesson 13, at the level of an operator rather than a check).
+
+48. **A name that another account resolves by is a cross-account contract, and no id-shaped gate can see
+    it move.** Stage 6c step 1.1 re-labelled a VPC's `Name` tag; its own gate was *"any id in the
+    replacement list stops the step"*, and **every id was unchanged**, so the step passed. Two other
+    accounts looked that VPC up **by tag** — `data "aws_vpc"` with a `tag:Name` filter — and from that
+    apply until somebody happened to run a plan in one of them, both were broken with `no matching EC2
+    VPC found`. **The failure surfaced through an unrelated command in a different account, hours later.**
+    Lesson 3 says a resource moved across a boundary invalidates every condition that referenced it; this
+    is its quieter half — **a resource that did not move at all, whose *name* did**, with the citation
+    living somewhere the change's own review never opens. **The recognisable trigger is a rename of
+    anything selected by tag, name, alias or path, rather than by id.** Before applying one, grep the
+    whole tree for the old string — the cheap version of the discovery — and treat every hit in another
+    account's slice as part of the same commit.
+
+49. **A comment saying a knob is never turned is a claim about the callers that existed when it was
+    written.** `vpc-egress`'s `core_services` reads *"Overridden never — the per-role differences go in
+    `extra_services`"*, and it was right: every caller served a VPC people work in, where those eight
+    endpoints are what a notebook cannot function without under design B. Then a VPC arrived with **no
+    workload at all**, and obeying the comment would have billed **0.080/h of interface endpoints for a
+    network nothing runs in**. **The comment was not wrong and did not become wrong — its premise
+    silently stopped applying**, which is the same shape as a vendor "required" travelling without its
+    premise (Lesson 41) and a rejected-on-cost option going stale in the direction that flatters the
+    rejection (Lesson 7). **What to do with one:** an absolute in a module is read as a constraint and is
+    only ever a default with an argument behind it, so the argument is the thing to re-read — and when it
+    does not apply, override it **with the exception written where the override is**, not where the
+    comment is. A module that meant it would have made the value a `local`.
+
+50. **A check written to a stage's FINAL expectation is red for every pass until that stage ends — and a
+    check that is red for four passes is a check nobody reads on the fifth.** Four instances in two days
+    (2026-09-05/06): `deploytargets.py`'s `DT-8` compared a Staging mirror against the lake and reported
+    `DIVERGES` because **Stage 9 has not built the mirror** — it had never been green, only *skipped*,
+    and the moment a profile made it runnable it went red and would have stayed so through four stages.
+    Stage 6c's `1.5` would fail on three internet-gateway routes that pass 5 removes; its `NT-12` would
+    fail on a zone family step 2.6 retires; its `NT-11` would fail between the two steps that create a
+    peering and route it. **The general form: a stage is a sequence, so "the expectation" is a moving
+    target, and a check asserts a single value.** Three ways out, in order of preference: give the check
+    a **discriminator** that separates *"not built yet"* from *"built wrong"* — `deploytargets.py`'s
+    `built` flag is the pattern, and the signal is usually the presence of any object the later stage
+    creates; **write the check at the pass that makes it true**, which costs nothing but the discipline
+    to leave a gap in the plan; or name the intermediate state as a **dated, expected exception** that a
+    named step removes. **What is never acceptable is the fourth option, which is what happens by
+    default**: ship it red and rely on a human to remember why. The two outcomes — *"the thing is missing"*
+    and *"the thing is wrong"* — are opposite findings, and a check that gives them one verdict has
+    stopped being a check (Lesson 13, over time rather than over outcomes).
+
 ---
 
 *Plan core: [GENERAL_PLAN.md](../GENERAL_PLAN.md) · Decisions: [docs/plan/decisions/INDEX.md](decisions/INDEX.md) · Stages: [docs/plan/stages/INDEX.md](stages/INDEX.md)*

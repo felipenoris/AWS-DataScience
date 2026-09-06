@@ -192,94 +192,76 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
 
 ### Current position
 
-- **STAGE 6b DONE 2026-09-06, every pass in one day.** `Development Account` → **`Staging Account`** in
-  `Workloads`: SMUS surface unwound *inside* `Interactive` first (11 configs + 11 grants + the
-  `engineering` profile + the association), lake share and both re-grants revoked, persona swapped to
-  `DataScientistStagingAccess`, vending policy removed, `terraform-live/development/` migrated to
-  `staging/` on **`awsds-staging-tfstate`**, old bucket destroyed. **Order: 6c → 6d → 7.**
-- **What SURVIVED is the load-bearing half:** the VPC keeps **10.50.0.0/16** (CIDR immutable), **both `[P]`
-  gateway-endpoint ids** survived folder rename + state migration + token flip, and Production's peering
-  kept its **`pcx-` id** through a `for_each` rename. **`10.40.0.0/16` is FREE and STAYS unallocated** — 6c step 0.2 builds the hub from 10.30 (re-labelled), 10.31, 10.32; 10.60 is D38's reservation. 6b step 4.1's "6c consumes it" was wrong and is corrected.
-- **STAGE 6b IS COMPLETE — 3.5 done 2026-09-06, nothing owed.** Two answers came out of it.
-  **(a) The provisioned product does NOT follow an out-of-band rename and CANNOT be made to** — Control
-  Tower renders `Display Name` and `Account Email` read-only, so it disagrees with Organizations on both
-  fields, permanently. Not drift.
-  **(b) Stage 1b verification (vi) CLOSED, affirmative:** a Control Tower *Update account* **re-asserts**
-  D32's direct `AWSAdministratorAccess` → infrastructure user `(USER)` assignment. **Do not delete it
-  again** (1b step 5.1's own instruction for this branch). **The absence of that assignment on the other
-  four vended accounts is NOT a control** — it survives only until each account's next update, so never
-  write a gate that assumes it. `Policy Canary`'s is now the only one permanent *by design*.
-- **Three times a stage step's RULE was right and its LIST was short**, each caught by saving the plan to a
-  file and reading it: 4.4 named 5 replacements (8, all one class — the flow-log **IAM role** too); 4.5
-  omitted that `development` is a **`for_each` key**, so as written it would have **deleted the peering**;
-  4.6 named 2 `moved {}` blocks (3 — the third, `aws_ssoadmin_account_assignment.infrastructure`, would
-  have **revoked the access the apply was running through**).
-- **Twice an instruction was REPLACED rather than followed, both recorded:** 4.7's *empty the bucket by
-  hand* (163 versions + 98 markers) became a `force_destroy` line — a reviewable diff instead of a
-  delete-objects loop; 5.1's *remove the DNS slice from `dns-allowlist.py`* was **refused** because
-  `staging/egress/` still declares `dns_firewall` (Lesson 31 — 6c settles the design).
-- **Twice a two-commit teardown had NO committable intermediate state** (1.7 and 4.7): a slice with
-  `prevent_destroy` lifted stops being a bootstrap copy and fails the parity gate; dropping it from the
-  lists fails the other way. **A teardown commits its END state.**
-- **Recipe E in this tree: never regenerate the tfvars during a migration** — they are generated from the
-  folder key, so regenerating IS the token flip. `slices.py` is unusable for that step (its `prepare()`
-  regenerates before every `init`); call `terraform` directly.
+- **STAGE 6c IN PROGRESS — passes 0, 1 and 2 DONE, pass 3 built (2026-09-06)**;
+  [log](docs/log/log-stage-06c-networking-hub.md). **Three VPCs in Production**: `foundation/` re-labelled
+  **VPC-SharedServices** (10.30), **VPC-Networking** (10.31, D38's hub, the estate's only IGW route) and
+  **VPC-Workloads** (10.32, private by the ABSENCE of that route). `workloads-egress/` exists and applies
+  **nothing**. **Five zones** (`awsds.internal` + three children + `awsds-pages.internal`) with the INT-22
+  matrix measured 5/2/2/3/2; the OLD family (`prod.internal`, `pages.internal`, `sandbox.internal`) stands
+  until 2.6. **Six peerings active** — the matrix's five plus `awsds-prod-from-staging`, which 3.1 retires.
+- **Still owed in 6c:** retire that peering, fold INT-09's into the generated shape behind `moved {}`
+  (the connection is live), `NT-11`/`NT-4` (3.6-3.7), then passes 4-7.
+- **`10.40.0.0/16` is FREE and STAYS unallocated** — 6c step 0.2. 6b step 4.1's "6c consumes it" was
+  wrong and is corrected in six files. `NT-3`/`NT-5`/`NT-6` measure it and need no expiry date.
+- **Module tags: `vpc-v0.3.1`.** `vpc-v0.3.0` is **ABANDONED** on origin (tagged onto the wrong commit —
+  Lesson 46). `vpc-egress`'s `name_suffix` is deferred to 6c 5.1, with the NAT removal, so there is one
+  bump rather than two.
+- **`-input=false` ON EVERY plan AND apply** (Lesson 47) and **never chain a tag/push onto a piped
+  command** (Lesson 46). Both cost this session real time.
+- **The vocabulary is per-(account, slice) now**: `VPC_CIDRS` replaced `CIDRS`, `VPC_NAME_SUFFIXES` names
+  each VPC, `PEERINGS` is the matrix both sides generate from, `VPN_HOMES` rows carry a slice, and
+  `account_folder` is emitted only to multi-VPC accounts.
+- **STAGE 6b DONE 2026-09-06, every pass.** `Development Account` → **`Staging Account`** in `Workloads`;
+  SMUS surface, lake share, persona and vending policy gone; tree migrated to `staging/` on
+  `awsds-staging-tfstate`, old bucket destroyed. **The VPC kept 10.50/16 and both `[P]` gateway-endpoint
+  ids survived** a folder rename, a state migration and a token flip.
+- **The provisioned product does NOT follow an out-of-band rename and CANNOT be made to** — Control Tower
+  renders `Display Name` and `Account Email` read-only. Permanent divergence, not drift.
+- **Stage 1b verification (vi) CLOSED, affirmative:** a Control Tower *Update account* **re-asserts** D32's
+  direct `AWSAdministratorAccess` → infrastructure user `(USER)` assignment. **Do not delete it again.**
+  **Its absence on the other four vended accounts is NOT a control** — it survives only until each
+  account's next update, so never write a gate that assumes it.
 - **The chain is `Sandbox → Staging → Production`** — no Development account, ever. Interactive compute is
-  **Sandbox only**; Staging/Production carry the SageMaker **runtime**, which needs no domain object.
-  Nothing sits directly in `Interactive` any more, so that document's permissive half is measured through
-  `Sandbox Account 1`'s **inheritance**.
+  **Sandbox only**; nothing sits directly in `Interactive`, so that document's permissive half is measured
+  through `Sandbox Account 1`'s **inheritance**.
 - **D38 in one paragraph:** peering shares an **address, never a path** (Lesson 44), so the single egress
-  is an **explicit Squid proxy** in `VPC-Networking` (Production, 10.31/16), **zero NAT gateways**, and no
-  spoke has a default route. `VPC-SharedServices` = 10.30/16; `VPC-Workloads` = 10.32/16; Staging keeps
-  **10.50/16**; 10.40 free; 10.60 reserved. **Five peerings** — the absent ones are the isolation control.
-  WireGuard and Squid are **two `[D]` hosts**; the WireGuard **EIP transfers** (free, 7-day accept,
-  disassociate first, **tags reset**). **The VPN client is a private-network client**: its whole internet
-  crosses the proxy, so every VPN-only condition re-keys onto the **proxy's** EIP. **The hub carries no
-  interface endpoint with private DNS** (Lessons 40-43). `awsds.internal` apex + `sandbox|staging|prod.`
-  children + `awsds-pages.internal`, with the INT-22 matrix.
-- **Orchestration is MWAA Serverless only** (USD 0.088/task-hour, no standing fee;
-  `awscc_mwaaserverless_workflow`). Design B is INT-14's documented-not-built fallback; a root-SCP
-  `airflow:CreateEnvironment` deny replaces the prose. **Workers accept no proxy** — `NetworkConfiguration`
-  always on AWS's documented private-routing shape (no NAT, no IGW route; `logs`/`monitoring`/`kms`
-  endpoints; self-referencing SG; **two AZs — a priced D9 exception**): D38's first named exception.
+  is an **explicit Squid proxy** in `VPC-Networking`, **zero NAT gateways**, and no spoke has a default
+  route. Staging keeps 10.50; 10.60 reserved. **Five peerings** — the absent ones are the isolation
+  control. WireGuard and Squid are **two `[D]` hosts**; the WireGuard **EIP transfers**. **The VPN client
+  is a private-network client**: its whole internet crosses the proxy, so every VPN-only condition re-keys
+  onto the **proxy's** EIP. **The hub carries no interface endpoint with private DNS** (Lessons 40-43).
+- **Orchestration is MWAA Serverless only** (USD 0.088/task-hour; `awscc_mwaaserverless_workflow`).
+  **Workers accept no proxy** — AWS's documented private-routing shape, **two AZs, a priced D9 exception**.
 - **The SMUS CI/CD tool is `aws-smus-cicd-cli` and deploys only into EXISTING SMUS projects** — an
   **exporter** on the Sandbox side; the pipeline stays the deployer (D26/D28).
-- **Landing zone closed — Stages 0-1d DONE.** Battery **100** (4 `note` by design). **Stage 2 DONE**; a
-  state bucket per Terraform-managed account. **Gates:** `make check` (offline), `check-ou` (session);
-  `check-identifiers.py` forbids any account id or e-mail in a tracked file.
-- **Stage 3 DONE**; **Stage 4 DONE** (VPN host amd64 `t3.nano`; a shape change is a REPLACEMENT).
-  **Stage 5 DONE, every pass** — the governed lake exists, granted, shared, consumed; register **13 rows /
-  24 triples**, six annotated REVOKED 2026-09-06; derived zone **removed** (D19 revised). **Stage 16
-  DONE** — the sandbox lake. **Stage 6a DONE.**
+- **Landing zone closed — Stages 0-1d DONE.** Battery **100**. **Stage 2 DONE**. **Gates:** `make check`,
+  `check-ou`; `check-identifiers.py` forbids any account id or e-mail in a tracked file.
+- **Stage 3 DONE**; **Stage 4 DONE** (VPN host amd64 `t3.nano`). **Stage 5 DONE, every pass** — register
+  **13 rows / 24 triples**, six annotated REVOKED. **Stage 16 DONE.** **Stage 6a DONE.**
 - **Three things Stage 5 leaves standing:** no principal can start the crawlers (**OQ 19**); `EXC-02`'s
   uncollectable object; no Athena in Data Governance.
 - **Standing SMUS mechanics:** a blueprint configuration is applied **from the member account**; an
-  existing one is **immutable via `awscc`**; the D13 boundary field is **write-only** (`US-8` is the
-  sentinel; **`list-roles` omits any permissions boundary — always `get-role`**); an incomplete
-  configuration pins its projects in **both** directions.
-- **SMUS is a Lake Formation admin in Sandbox** (2 service roles, self-appointed). `consumer-data-v0.5.0`
-  declares ONE create-time admin with `ignore_changes`; the defence is `./aws/datalake.py` `DL-13`.
-  `-refresh=false` is forbidden on that slice. **OQ 24** keeps the governance half.
-- **Account auto-enrollment is ON** (`remediationTypes: INHERITANCE_DRIFT`) — it re-baselines an account
-  moved between registered OUs but does **not** touch the Account Factory provisioned product.
-  `account.amazonaws.com` trusted access is **PRESENT** since 3.1; `INV-09` is **ten** principals.
+  existing one is **immutable via `awscc`**; the D13 boundary field is **write-only** (**always
+  `get-role`, never `list-roles`**); an incomplete configuration pins its projects in **both** directions.
+- **SMUS is a Lake Formation admin in Sandbox** (2 service roles, self-appointed). The defence is
+  `./aws/datalake.py` `DL-13`, not a plan. `-refresh=false` is forbidden on that slice. **OQ 24** open.
+- **Account auto-enrollment is ON** (`remediationTypes: INHERITANCE_DRIFT`); it does **not** touch the
+  Account Factory provisioned product. `account.amazonaws.com` trusted access is **PRESENT**; `INV-09` is
+  **ten** principals.
 - **A cached SSO token is keyed by `sso-session` name, NEVER by user** — remedy is `aws sso logout` +
-  portal sign-out. **A denied call does not always name the policy** — attribution moves to a **contrast
-  probe**; `EXC-03`'s Athena contrast is **`Policy Canary`** since 3.8.
-- **Standing rules that outlive their stages:** never add an `sts:` action to the RCP without reading
-  `CT.STS.PV.1`'s exclusion note; **resolve an account by name only with the exact vended name** (every
-  one carries an ` Account` suffix; filter on `ACTIVE`); subnets anchor on AZ `zone_id`; check the SSO
-  token before each probe block and read the denial **wording**, never the exit code; account-level BPA is
+  portal sign-out. **A denied call does not always name the policy** — attribution is a **contrast probe**;
+  `EXC-03`'s Athena contrast is **`Policy Canary`**.
+- **Standing rules:** never add an `sts:` action to the RCP without reading `CT.STS.PV.1`'s exclusion note;
+  **resolve an account by exact vended name** (every one has an ` Account` suffix; filter on `ACTIVE`);
+  subnets anchor on AZ `zone_id`; read the denial **wording**, never the exit code; account-level BPA is
   hand-managed; **Log Archive and Audit hold no CLI profile**.
 - **Before reporting a gap, read the file that owns it:** unexercised denies → `POLICIES.md`; "expected"
   readings → `docs/AWS_STATE.md`; SMUS findings → open questions 12-15, 20, 21.
 - **Deferred by decision — do not offer to close:** the USD 50 budget notifies nobody (D12); OQ 10 waits
-  for N=2; the Config recorder is left alone and Management deliberately unrecorded.
-  **Every governed account sits under `us-west-2`.**
-- **All 38 decisions closed.** Still needed from the user: **the domain name** (blocks Stage 13 — the only
-  blocking input left in the plan).
+  for N=2; the Config recorder is left alone. **Every governed account sits under `us-west-2`.**
+- **All 38 decisions closed.** Still needed from the user: **the domain name** (blocks Stage 13).
 - **The repository is not documentation-only:** read-only `aws/` scripts, both Terraform trees, `scripts/`,
-  the `Makefile`, the `pre-commit`/`tflint`/`checkov`/`ruff` gates. **Every script is Python 3 on `uv`**.
+  the `Makefile`, the `pre-commit`/`tflint`/`checkov`/`ruff` gates. **Every script is Python 3 on `uv`.**
   **Exception: `aws/cloudshell/` is shell, standalone, for the no-profile accounts.**
 
 **Budget: ~8 KB** (raised from 4 KB by the user, 2026-08-19). State, not reasoning — **a bullet here that explains *why*, or that a stage file should
@@ -362,3 +344,13 @@ the reasoning that makes it *usable* is in the file. Recognising one is the sign
     exactly that; the constraint that breaks the drawing is also what enforces the isolation for free.**
 45. **A default that reaches the internet is a dependency nobody declared — and removing the route is what
     turns it from invisible into fatal.**
+46. **A redirected or piped command hands you the pipe's exit code, not the command's — and the next
+    step runs on a failure nobody saw.**
+47. **A process waiting on stdin looks exactly like a slow one, and the lock it holds makes the symptom
+    appear somewhere else entirely — `-input=false` is the whole fix.**
+48. **A name another account resolves by is a cross-account contract, and no id-shaped gate can see it
+    move.**
+49. **A comment saying a knob is never turned is a claim about the callers that existed when it was
+    written.**
+50. **A check written to a stage's FINAL expectation is red for every pass until that stage ends — give
+    it a discriminator, write it at the pass that makes it true, or name the gap as a dated exception.**

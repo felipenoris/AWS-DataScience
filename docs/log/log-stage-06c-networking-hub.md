@@ -270,3 +270,37 @@ stays verbatim. The stage file is
   peerings and **carried nothing**. That is the reference implementation's defect, self-inflicted. Eight
   subnet-scoped routes per spoke closed it — to the hub's **private and public** tiers, because the proxy
   and the WireGuard host live in the public one; the hub's **isolated** tier is never a destination.
+
+## 2026-09-06 — the documentation reviewed against what this session cost
+
+*Claude, at the user's request. No AWS act in this entry.*
+
+- **[Claude] Five lessons added (46-50), and every one of them is a habit rather than an insight** —
+  which is what makes them worth the file. Four were paid for in this session, in wall-clock time and in
+  one abandoned git tag:
+  - **46 — a redirected or piped command hands you the PIPE's exit code.** Three instances: a
+    `git commit … | grep` swallowed a hook failure and the `git tag` on the same line burned a published
+    version; `apply … >/dev/null 2>&1` lost two hosted zones silently; `commit && echo pushed` reported a
+    success that had not happened. **The habit: never chain a consequential act onto a filtered command.**
+  - **47 — a process waiting on stdin looks exactly like a slow one, and the lock it holds moves the
+    symptom somewhere else.** Eleven minutes, diagnosed backwards from `Error acquiring the state lock` in
+    an unrelated slice. **`-input=false` is the whole fix** and now sits in the runbook's Recipe A, on
+    both `plan` and `apply`.
+  - **48 — a name another account resolves by is a cross-account contract, and no id-shaped gate sees it
+    move.** Step 1.1's gate was *"any id in the replacement list stops the step"*; every id was unchanged
+    and two accounts broke anyway. **The trigger to recognise: a rename of anything selected by tag, name,
+    alias or path.**
+  - **49 — a comment saying a knob is never turned is a claim about the callers that existed when it was
+    written.** `core_services`' *"Overridden never"* was true of every VPC people work in and stopped
+    being true when a VPC with no workload arrived. Its premise expired; the comment never changed.
+  - **50 — a check written to a stage's FINAL expectation is red for every pass until that stage ends.**
+    **Four instances in two days** — `DT-8`, and 6c's `1.5`, `NT-12` and `NT-11`, the last three caught
+    *before* being written. Three acceptable exits (a discriminator, writing it at the pass that makes it
+    true, or a dated exception) and one that happens by default: ship it red and hope somebody remembers.
+- **[Claude] The Terraform runbook gained three things**, each with the date and the incident: `-input=false`
+  on Recipe A's plan and apply, the lock-recovery order (**look for a live process before force-unlocking**
+  — orphaned and running produce identical text and opposite correct actions), and a guard in Recipe B
+  step 3 requiring `git log --oneline -1` between the commit and the tag.
+- **[Claude] `CLAUDE.md`'s Current position rewritten** to 6c's real state, under the 8 KB budget: three
+  VPCs, five zones with the measured matrix, six peerings, the module tag situation, and the two habits
+  (46 and 47) that cost this session time.
