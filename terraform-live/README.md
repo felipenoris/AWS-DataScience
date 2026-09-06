@@ -27,8 +27,8 @@ fails `make check`.
 **DONE 2026-09-06.** `development/` became `staging/` on a new state bucket
 ([Stage 6b](../docs/plan/stages/stage-06b-development-becomes-staging.md), Recipe E), losing
 `sagemaker/` and `data/` on the way (destroyed, steps 1.7 and 2.4) and carrying `foundation/`,
-`egress/` and `probes/` across (step 4.3); `production/` grows `networking/`, `workloads/`, `vpn/`
-and `proxy/`, and its existing `foundation/` VPC becomes **VPC-SharedServices**
+`egress/` and `probes/` across (step 4.3); `production/` grew `networking/`, `workloads/` and `workloads-egress/` on 2026-09-06, and its
+existing `foundation/` VPC became **VPC-SharedServices**; `vpn/` and `proxy/` arrive at 6c pass 4
 ([Stage 6c](../docs/plan/stages/stage-06c-networking-hub.md)). **The authoritative slice-by-slice layout
 is `docs/plan/conventions.md` §6**, which was rewritten in the same sitting; this file describes the tree
 that is on disk today.
@@ -286,7 +286,7 @@ created; it is also the answer to "who runs `terraform apply` here".
 | `sandbox/` | Sandbox Account 1 | `Sandboxes` | `awsds-infra-sandbox-1` — **one such folder per business unit** (D35), N is 1 today |
 | `data-governance/` | Data Governance | `Data` | `awsds-infra-data` |
 | `staging/` | Staging Account | `Workloads` | `awsds-infra-staging` — **the renamed `Development`, not a vend**: the quota refused that (2026-09-05), so Stage 6b converted the account instead |
-| `production/` | Production | `Workloads` | `awsds-infra-prod` |
+| `production/` | Production | `Workloads` | `awsds-infra-prod` — **the only account with more than one VPC** (three since 2026-09-06), which is why `VPC_CIDRS` and `VPC_NAME_SUFFIXES` are keyed by **(account, slice)** rather than by account |
 
 **No folder for Management, Log Archive, Audit or Policy Canary, and each absence is a rule.** Management is
 bootstrap-only and never Terraform (principle 1); Log Archive and Audit are Control Tower's, and editing

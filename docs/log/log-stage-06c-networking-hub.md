@@ -367,3 +367,37 @@ stays verbatim. The stage file is
   their peering files became generated, so the only consumers left are Production's two slices, whose
   **aliased providers** need a profile per peer account — and providers cannot be iterated. **When that
   constraint is gone, so is this map.** Both spokes re-plan `No changes` after the removal.
+
+## 2026-09-06 — session audit: what the log was missing, and what the plan owed
+
+*Claude, at the user's request: re-read the whole sitting against the record.*
+
+- **[Claude] One event had not reached this file: `account_folder`.** A VPC slice needs the folder its
+  state keys are built from **only if it has a sibling in the same account to read**, and until 6c a
+  `foundation` never did. The first version emitted it to all five VPC slices; **tflint said
+  `declared but not used` in both spokes**, which is the same "declared but not consumed" rule that
+  removed `peers` from those slices two commits later, arriving from the other direction. The emission is
+  now conditional on the account holding more than one VPC — a condition, not a list, so Stage 14's vend
+  needs no edit.
+- **[Claude] Five documents lagged the build and were brought up, which is the half of "review the plan"
+  that is not about the plan at all:**
+  - **`docs/AWS_STATE.md`** said *"Exactly three VPCs exist"*. **Five do.** The row now carries the
+    measured IGW-route reading — `networking-public` **1**, `workloads-public` **0** — and states plainly
+    that *"the estate's only internet gateway"* is the **target**, because the spokes keep Stage 3's until
+    pass 5.
+  - **`docs/plan/cost-model.md`** priced **three** private zones. **Eight stand**, five permanently:
+    +USD 2.50/month steady, +4.00 during the window step 2.6 closes. **Held back from the Floor range**,
+    which that row's own standing instruction requires — recompute the whole range at Stage 12 step 5,
+    from the invoice, never one row at a time.
+  - **`docs/plan/integrations.md`** — INT-09's re-homing is **done** (and the connection it now rides was
+    folded into the matrix without being re-created); INT-21 is **half built** (the peerings exist, the
+    proxy does not, and the distinction is Lesson 44's); INT-22 is **built and measured**.
+  - **`D36`** — the Pages apex survived the consolidation as a separate registrable parent, and the
+    amendment records *why* rather than only *that*.
+  - **`terraform-live/README.md`** — Production is now **the only account with more than one VPC**, which
+    is the reason two vocabularies became keyed by (account, slice).
+- **[Claude] `docs/plan/conventions.md` §6 needed NOTHING**, and that is worth recording as the one place
+  the plan was ahead of the code: the 2026-09-05 re-scope authored `networking/`, `workloads/`, `proxy/`
+  and `workloads-egress/` into the slice tree before any of them existed. **Every document that had to be
+  corrected describes the estate as DEPLOYED; the one that describes it as DESIGNED was already right.**
+  That is the split those files are for, working.
