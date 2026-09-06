@@ -21,11 +21,20 @@ data "aws_caller_identity" "current" {}
 # identity that authors boundaries (Lesson 18). The role name and the log-group name are one
 # contract: the vpc module creates "awsds-<env>-vpc-flow-logs" and this policy is scoped to
 # exactly that group.
+# THE NAME PREFIX, DERIVED ONCE (Stage 6c step 0.4, 2026-09-06). It mirrors the vpc module's own
+# local so the flow-log ROLE and the LOG GROUP keep the single contract the comment above states:
+# the module creates "<prefix>-vpc-flow-logs" and this policy is scoped to exactly that group.
+# Empty suffix reproduces the pre-6c names byte for byte, which is what makes this slice's plan
+# read `No changes` on the version bump alone.
+locals {
+  name_prefix = var.name_suffix == "" ? "awsds-${var.env}" : "awsds-${var.env}-${var.name_suffix}"
+}
+
 module "flow_log_role" {
   # checkov:skip=CKV_TF_1:pinned by git TAG by convention (conventions §6, Stage 3 step 1.1a) - a repository-internal tag only the repo owner can move
   source = "git::git@github.com:felipenoris/AWS-DataScience.git//terraform-modules/iam-role?ref=iam-role-v0.1.0"
 
-  name        = "awsds-${var.env}-vpc-flow-logs"
+  name        = "${local.name_prefix}-vpc-flow-logs"
   description = "VPC Flow Logs delivery to CloudWatch Logs (Stage 3 step 5)"
 
   permissions_boundary = null
@@ -59,7 +68,7 @@ module "flow_log_role" {
             "logs:DescribeLogGroups",
             "logs:DescribeLogStreams",
           ]
-          Resource = "arn:${data.aws_partition.current.partition}:logs:${data.aws_region.current.region}:${data.aws_caller_identity.current.account_id}:log-group:awsds-${var.env}-vpc-flow-logs:*"
+          Resource = "arn:${data.aws_partition.current.partition}:logs:${data.aws_region.current.region}:${data.aws_caller_identity.current.account_id}:log-group:${local.name_prefix}-vpc-flow-logs:*"
         }
       ]
     })
@@ -68,9 +77,10 @@ module "flow_log_role" {
 
 module "vpc" {
   # checkov:skip=CKV_TF_1:pinned by git TAG by convention (conventions §6, Stage 3 step 1.1a) - a repository-internal tag only the repo owner can move
-  source = "git::git@github.com:felipenoris/AWS-DataScience.git//terraform-modules/vpc?ref=vpc-v0.1.0"
+  source = "git::git@github.com:felipenoris/AWS-DataScience.git//terraform-modules/vpc?ref=vpc-v0.2.0"
 
   env               = var.env
+  name_suffix       = var.name_suffix
   vpc_cidr          = var.vpc_cidr
   zone_ids          = var.zone_ids
   flow_log_role_arn = module.flow_log_role.role_arn

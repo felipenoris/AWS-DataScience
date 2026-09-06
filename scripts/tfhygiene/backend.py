@@ -135,6 +135,28 @@ VPC_CIDRS = {
 }
 
 
+# WHICH VPC INSIDE THE ACCOUNT, BY NAME - a second table keyed identically to VPC_CIDRS, and the
+# reason it is separate rather than a field is that it answers a different question: that one is
+# the ADDRESS plan, this one is the NAMING plan, and they change for different reasons. Sharing
+# the key is what keeps them from drifting apart on the part that matters.
+#
+# ABSENT MEANS EMPTY, and empty reproduces the pre-6c names byte for byte - which is why
+# `sandbox/foundation` and `staging/foundation` are not here and their plans read `No changes`
+# across the vpc-v0.2.0 bump. `foundation` maps to `shared` rather than to itself because the
+# folder name is a lifecycle word and the VPC is VPC-SharedServices (D38); the other two are
+# their slice names, which is what makes the pair readable in a console.
+VPC_NAME_SUFFIXES = {
+    ("production", "foundation"): "shared",
+    ("production", "networking"): "networking",
+    ("production", "workloads"): "workloads",
+}
+
+
+def vpc_name_suffix_of(account: str, slice_name: str) -> str:
+    """The VPC's name suffix inside its account - empty when the account holds only one."""
+    return VPC_NAME_SUFFIXES.get((account, slice_name), "")
+
+
 def vpc_cidr_of(account: str, slice_name: str) -> str | None:
     """The /16 of one slice's VPC, or None when that slice has no allocation."""
     return VPC_CIDRS.get((account, slice_name))
@@ -455,6 +477,7 @@ def tfvars_values(account: str, slice_name: str) -> dict:
                     "this is a missing row rather than a missing decision."
                 )
             values["vpc_cidr"] = own
+            values["name_suffix"] = vpc_name_suffix_of(account, slice_name)
             # Stage 3 pass 2: the peers map - every VPC-bearing account that has a profile,
             # DERIVED rather than authored a third time (Lesson 14). The slice's aliased
             # providers read a peer's [P] facts (VPC, subnets, route tables) live instead of
@@ -629,6 +652,11 @@ def render_tfvars(account: str, slice_name: str) -> str:
     )
     if "vpc_cidr" in v:
         out += f'vpc_cidr        = "{v["vpc_cidr"]}"\n'
+    # EMITTED ONLY WHEN NON-EMPTY (6c step 0.4). The variable defaults to "" in every caller, so
+    # a single-VPC account's file is byte-identical to its pre-6c one - which is the whole gate on
+    # the vpc-v0.2.0 bump: the three foundation slices re-plan `No changes` on the version alone.
+    if v.get("name_suffix"):
+        out += f'name_suffix     = "{v["name_suffix"]}"\n'
     if "zone_ids" in v:
         zone_list = ", ".join(f'"{z}"' for z in v["zone_ids"])
         out += f"zone_ids        = [{zone_list}]\n"
