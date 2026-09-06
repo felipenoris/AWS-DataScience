@@ -23,6 +23,22 @@ variable "name_suffix" {
   nullable    = false
 }
 
+# STAGE 6c step 1.3 (2026-09-06) - and this input exists because that step needs a VPC whose
+# public tier reaches nothing. Under D38 exactly ONE VPC in the estate routes to an internet
+# gateway; every other one is private BY THE ABSENCE OF THIS ROUTE, not by lacking a gateway.
+#
+# WHY THE GATEWAY IS STILL CREATED WHEN THIS IS FALSE. A module that varied its resource SET per
+# caller would make "is this VPC private?" a question about which code path ran, answerable only
+# by reading the module. Keeping the gateway and dropping the route makes it a question about a
+# ROUTE TABLE - which `./aws/networking.py` reads, which a console shows, and which is the same
+# object the answer is enforced in. An unattached internet gateway is free.
+variable "public_internet_route" {
+  description = "Whether the public tier carries 0.0.0.0/0 -> igw. False makes the VPC private without removing the gateway, which is how D38's spokes differ from its hub."
+  type        = bool
+  default     = true
+  nullable    = false
+}
+
 variable "vpc_cidr" {
   description = "The /16 from the allocation table in scripts/tfhygiene/backend.py (Stage 3 decision 1) - arrives through the generated terraform.auto.tfvars, never a literal in a .tf file."
   type        = string
