@@ -427,3 +427,71 @@ stays verbatim. The stage file is
   are **habits about the tools** — the shell, the lock, the tag, the comment, the check's timing — rather
   than facts about AWS. This session's expensive moments were nearly all self-inflicted and cheap to
   prevent, which is exactly the class of thing a lessons file exists to stop repeating.
+
+## 2026-09-06 — pass 4 opens: the hub's `[P]` anchors, and the preflight for an address that may not change
+
+- **[Claude⚡] Step 4.1 applied — `production/networking/hub-anchors.tf`, `6 to add, 0 to change, 0 to
+  destroy`** as the infrastructure user on `Production Account` through `InfrastructureAccess`. What now
+  exists: the WireGuard security group `awsds-prod-vpn` (UDP/51820 world-open and **nothing else** — no
+  `vpc_nat_cidrs` rule, since the isolated-tier NAT job dies with the buildbox at 5.8), the proxy group
+  `awsds-prod-proxy` (TCP/3128 from the four spoke ranges plus the tunnel, and no other source), the
+  **empty** host-key container `awsds-prod-vpn-host-key` with the same value-read deny the Sandbox one
+  carries, the proxy's `[P]` Elastic IP, and the allow-list parameter. `tflint` clean, `checkov`
+  **0 failed / 11 skipped**, `make check` OK.
+- **[Claude] The apply FAILED the first time, on a naming rule this repository has carried since
+  2026-08-16.** `PutParameter` on `/awsds/prod/proxy/allowlist` answered `AccessDeniedException: No
+  access to reserved parameter name` — Parameter Store reserves every name beginning with `aws` or `ssm`,
+  case-insensitive, and `awsds` begins with `aws`. **`conventions.md` already documents this exact
+  collision and already prescribes `/datascience/<env>/…`**; the failure was not consulting it. Five of
+  the six resources had already been created, so the correction was a one-resource re-plan.
+  **What the fix cost, and why it is written here rather than shrugged off:** nothing but a minute — and
+  that is precisely what makes it worth recording. The rule was measured once, written down in the file
+  the routing table names for "a naming, layout, Terraform or IAM rule", and then not read at the moment
+  it applied. **The mitigation is a comment at the only site in the repository that writes an SSM
+  parameter**, so the next one does not rediscover it, plus the constraint named in step 4.10 itself.
+- **[Claude] `VPN_HOST_SLICE` added to the vocabulary, and it is Lesson 51 arriving on schedule.** The
+  hub needs the tunnel range `10.90.0.0/24` — the proxy's group must admit it, and 4.7's route must send
+  it at the WireGuard host — and an address literal may sit in no `.tf` file (Stage 3 decision 1). The
+  tidy-looking move was to flip `VPN_HOMES` to `("production", "networking")` and read the range from
+  there. **That would have been a total lockout**: `identity/sso/` and `data-governance/data/` turn each
+  `VPN_HOMES` row into a `terraform_remote_state` read of the home's Elastic IP, which does not exist in
+  the hub until 4.6, so `DenyControlPlaneOffVpn` would have denied every call from every network. The two
+  questions — *whose address does the deny pin to* and *which slice builds the tunnel* — were one list
+  for three stages because they named the same slice, and **pass 4 is the sitting in which they must
+  differ**. They are now two names; `VPN_HOMES` moves at 4.12, on its own schedule.
+- **[Claude] Two things the step's own text got wrong, corrected in the plan rather than worked around.**
+  4.1 lists `wireguard_eip_public_ip` among the outputs it applies — it cannot: the address is
+  *transferred*, so the resource behind that output arrives with 4.6's `import {}`, and declaring it here
+  would mean allocating a second address (the risk table's fallback, not the plan). And the step ordering
+  carried **two steps numbered 4.7**; in a plan whose own heading says step numbers are identifiers, that
+  is the identifier failing at its only job. The collision note is now **4.6a**.
+- **[Claude] Step 4.2 written and run: `./aws/eip-transfer.py`, read-only, both accounts.** Registered in
+  `aws/INDEX.md`. **Six of seven checks pass; `ET-2` fails because the Sandbox host still holds the
+  address — the expected reading before 4.4**, stated in the file's own header so exit 2 is not read as a
+  defect (Lesson 50). The four documented refusals are all measured: `PublicIpv4Pool=amazon` (not BYOIP,
+  IPAM or CoIP), `PtrRecord` unset, border group `us-west-2`, and **4 of 5 Elastic IP slots free in the
+  destination**.
+- **[Claude] Why that file exists at all, in one sentence:** two of the four refusals are raised **in the
+  destination account at ACCEPT time**, after `enable-address-transfer` has already succeeded — so the
+  failure mode is not *the call errored* but *the call succeeded and the wrong thing is now pending in
+  another account*, with a **seven-day** clock AWS notifies nobody about.
+- **[Claude] Two measurements that correct the stage's own cost paragraph.** Production held **zero**
+  Elastic IPs before this apply, so the cut-over peak is **2**, not the projected 3 — the projection
+  counted an `[E]` NAT address per `egress/` slice, and those slices are torn down. And the figure that
+  actually matters was never the peak but the **destination quota**, which `AddressLimitExceeded`
+  enforces at accept time; `ET-6` is where it is read.
+- **[Claude] The blackout is smaller than the plan assumes, measured rather than hoped.** The Sandbox VPN
+  host has been **stopped since 2026-08-26** with the address still associated — which is exactly what
+  `runbooks/vpn.md` §S says `make down` leaves behind. So the tunnel is already down: pass 4 interrupts
+  nothing that is currently running, and the "one sitting with a blackout" constraint is about the
+  *transfer's* seven-day window, not about a live outage.
+- **[Claude] A third plane the allow-list forgot.** Step 4.9 enumerates four sources — tunnel, Sandbox,
+  SharedServices, Workloads — and **omits Staging**, a peered spoke with a runtime of its own. The
+  parameter therefore derives its planes **from the peering matrix** instead of transcribing that
+  paragraph, so a spoke the security group admits can never be one the allow-list has never heard of.
+  Every plane starts empty, which is the safe default: Squid's last line is `http_access deny all`, so an
+  empty list denies by name rather than by timeout.
+- **[user] Step 4.3 is the next act and it is yours alone** — copying the host key from the Sandbox
+  container into the Production one. It is the one act in pass 4 that cannot be undone by re-running
+  anything: the key is what keeps every client's `PublicKey =` line valid, and a fresh key is a silent
+  re-issue of every peer on top of an account move.

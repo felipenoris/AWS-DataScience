@@ -63,3 +63,44 @@ output "tier_security_group_ids" {
 # NO ZONE OUTPUTS, AND THE ABSENCE IS THE DESIGN (Stage 6c step 1.2). production/foundation/
 # owns prod.internal and pages.internal; this VPC is ASSOCIATED into zones it does not own,
 # which is the opposite direction (step 2.5) and produces nothing for a caller to read.
+
+# ------------------------------------------------- Stage 6c step 4.1, the hub's [P] anchors
+#
+# The same output NAMES sandbox/foundation/ exports for the VPN, so that flipping VPN_HOMES at
+# 4.12 is a change of address and not a change of shape - identity/sso/ and
+# data-governance/data/ read a home's slice by key and must find the same keys here.
+#
+# ONE OF THAT SET IS MISSING ON PURPOSE UNTIL 4.6: `wireguard_eip_public_ip`. The address is
+# transferred from Sandbox rather than allocated (4.5), so the resource that backs that output
+# arrives with the `import {}` block of 4.6, not with this file. Declaring the output first
+# would mean allocating a second address, which is the fallback in the stage's risk table.
+
+output "wireguard_security_group_id" {
+  description = "The [P] WireGuard security group - production/vpn/ attaches it to the [D] host."
+  value       = aws_security_group.wireguard.id
+}
+
+output "wireguard_host_key_secret_arn" {
+  description = "The [P] host-key container. production/vpn/ passes it into the wireguard module, which grants its instance role GetSecretValue on exactly this ARN. The VALUE is copied in by the user at 4.3 and never crosses Terraform."
+  value       = aws_secretsmanager_secret.wireguard_host_key.arn
+}
+
+output "proxy_eip_public_ip" {
+  description = "THE ADDRESS 4.12 RE-KEYS THE WHOLE CONTROL PLANE ONTO. A VPN client's internet now crosses Squid, so every VPN-only condition that named the WireGuard EIP names this instead. Read through terraform_remote_state, never pasted."
+  value       = aws_eip.proxy.public_ip
+}
+
+output "proxy_eip_allocation_id" {
+  description = "The [P] proxy allocation - production/proxy/ associates it with the [D] host."
+  value       = aws_eip.proxy.allocation_id
+}
+
+output "proxy_security_group_id" {
+  description = "The [P] proxy security group. Admits TCP/3128 from every peered spoke and the tunnel; the policy that decides what those sources may REACH is the allow-list, not this group."
+  value       = aws_security_group.proxy.id
+}
+
+output "proxy_allowlist_parameter_name" {
+  description = "The SSM parameter holding Squid's source-scoped allow-lists (4.9/4.10). production/proxy/ renders it at boot; ./aws/proxy.py diffs running against committed."
+  value       = aws_ssm_parameter.proxy_allowlist.name
+}
