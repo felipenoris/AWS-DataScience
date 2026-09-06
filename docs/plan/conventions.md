@@ -176,8 +176,9 @@ terraform-live/
 │   │                     #     entitlement plane references BY NAME, so it lives in a [P]
 │   │                     #     slice: a missing one fails PROVISIONING of the permission
 │   │                     #     set in this account (2026-08-23, persona-vending.tf)
-│   ├── data/             # [P] the lake's consumer side (consumer-data, shared with
-│   │                     #     development/data/): this account's DataLakeSettings, the LF
+│   ├── data/             # [P] the lake's consumer side (consumer-data - the ONLY caller
+│   │                     #     since 2026-09-06; development/data/ was destroyed at Stage 6b
+│   │                     #     step 2.4): this account's DataLakeSettings, the LF
 │   │                     #     resource links + local re-grants to the Data Governance
 │   │                     #     share (D22), and the alias/awsds-<env>-data CMK - since
 │   │                     #     2026-08-26 the sandbox lake's key, NOT a derived zone's
@@ -243,14 +244,22 @@ terraform-live/
 │                         #     backend.SMUS_ASSOCIATED, whose rows are measurements
 ├── (development/)        # RETIRED 2026-09-05 by Stage 6b: the account is renamed to
 │                         #     Staging and the folder migrates to staging/ on a new state
-│                         #     bucket (Recipe E). Of its six slices, bootstrap/ foundation/
-│                         #     and probes/ move; sagemaker/ data/ and egress/ are destroyed
+│                         #     bucket. Of its six slices: sagemaker/ and data/ are DESTROYED
+│                         #     (done 2026-09-06, steps 1.7 and 2.4); bootstrap/ and
+│                         #     foundation/ carry real state and migrate with Recipe E;
+│                         #     egress/ and probes/ are [E] and were MEASURED EMPTY on
+│                         #     2026-09-06 - zero resources each - so their folders move and
+│                         #     their state is created fresh at the next `up`. This entry
+│                         #     used to say egress/ was destroyed while the stage said it
+│                         #     migrated; the measurement is what settles it, and neither
+│                         #     word was quite right
 ├── data-governance/      # THE OWNERSHIP AXIS (D22, D26): state and governance,
 │   │                     # never compute. Renamed from data-management/ on 2026-08-08
 │   ├── bootstrap/        # [P] state bucket for the Data Governance account
 │   ├── data/             # [P] raw/curated S3 (Iceberg), Glue Data Catalog, Lake Formation
 │   │                     #     registrations + LF-Tags (D13), ingestion drop-box (D18),
-│   │                     #     cross-account shares to sandbox/development/production,
+│   │                     #     cross-account shares to sandbox (+ production at Stage 9;
+│   │                     #     development's was revoked 2026-09-06, Stage 6b step 2.3),
 │   │                     #     Glue Crawlers on raw + drop-box under the D27 exception
 │   │                     #     (config is free at rest; runs are metered, event-driven)
 │   └── governance/       # [P] the SageMaker unified domain (DataZone V2, D26) - APPLIED

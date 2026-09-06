@@ -449,3 +449,13 @@ is Claude's, applied as the **infrastructure user**, account **Identity**, permi
   standing `no subnet in us-west-2` rows in Data and Identity, unrelated.
 - **[Claude]** `POLICIES.md` gained its row and `./scripts/check-index.py` is clean; `EXC-03` rewritten
   with the move and its date.
+
+- **[Claude] A contradiction between the stage and its own authority, settled by measurement.**
+  `docs/plan/conventions.md` §6 — the authoritative slice tree — said `development/egress/` would be
+  **destroyed**; step 4.3 said it would **migrate**, arguing that a slice left in the old folder is a slice
+  on the old state bucket. **Both `[E]` slices were read instead: `egress/` and `probes/` hold ZERO
+  resources**, because D11 leaves them torn down between sittings. So neither word was right: there is
+  nothing to destroy and nothing to migrate. Their folders move with a `git mv` and their state is created
+  fresh at the next `up`; **`foundation/` is the only surviving slice that actually needs Recipe E.** Both
+  files now say that, and the two other `conventions.md` §6 lines that had gone false — the consumer-side
+  `data/` caller and the lake's share list — were corrected with them.
