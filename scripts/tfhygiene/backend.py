@@ -35,7 +35,6 @@ REGION = "us-west-2"
 # `awsds-development-tfstate`, the same failure spelled differently.
 ENV_TOKENS = {
     "sandbox": "sandbox",
-    "development": "dev",
     "data-governance": "data",
     "staging": "staging",
     "production": "prod",
@@ -47,7 +46,6 @@ ENV_TOKENS = {
 # that derived one from the other would be a rule with three exceptions.
 ENVIRONMENT_TAGS = {
     "sandbox": "sandbox",
-    "development": "development",
     "data-governance": "data",
     "staging": "staging",
     "production": "production",
@@ -72,16 +70,13 @@ ENVIRONMENT_TAGS = {
 # name" - the quota refused that vend, and Stage 6b made the account by RENAMING `Development`
 # instead (2026-09-06).
 #
-# WHICH IS WHY TWO KEYS NAME ONE PROFILE TODAY, AND IT IS A WINDOW, NOT A DESIGN. `staging` and
-# `development` are the same AWS account for the length of Stage 6b pass 4: the folder rename
-# (4.3) and the token flip (4.4) move the slices one at a time, and `development/bootstrap/` is
-# LAST (4.7) because it owns the bucket every other migration reads from. The profile itself was
-# renamed `awsds-infra-dev` -> `awsds-infra-staging` in ~/.aws/config at 5.0, so the old spelling
-# resolves to nothing and a stale row here would fail as "profile not found" rather than
-# silently reaching the wrong account. The `development` row goes when 4.7 destroys the bucket.
+# THE WINDOW CLOSED ON 2026-09-06. For the length of Stage 6b pass 4, `development` and `staging`
+# were two keys naming one AWS account, because the slices moved one at a time and
+# `development/bootstrap/` had to go LAST - it owned the bucket every other migration read FROM.
+# Step 4.7 destroyed that bucket, so the row is gone from here, from ENV_TOKENS and from
+# ENVIRONMENT_TAGS, and `terraform-live/development/` no longer exists.
 PROFILES = {
     "sandbox": "awsds-infra-sandbox-1",
-    "development": "awsds-infra-staging",
     "staging": "awsds-infra-staging",
     "data-governance": "awsds-infra-data",
     "production": "awsds-infra-prod",
