@@ -199,7 +199,7 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   `staging/` on **`awsds-staging-tfstate`**, old bucket destroyed. **Order: 6c → 6d → 7.**
 - **What SURVIVED is the load-bearing half:** the VPC keeps **10.50.0.0/16** (CIDR immutable), **both `[P]`
   gateway-endpoint ids** survived folder rename + state migration + token flip, and Production's peering
-  kept its **`pcx-` id** through a `for_each` rename. **`10.40.0.0/16` is FREE — 6c step 0 spends it.**
+  kept its **`pcx-` id** through a `for_each` rename. **`10.40.0.0/16` is FREE and STAYS unallocated** — 6c step 0.2 builds the hub from 10.30 (re-labelled), 10.31, 10.32; 10.60 is D38's reservation. 6b step 4.1's "6c consumes it" was wrong and is corrected.
 - **STAGE 6b IS COMPLETE — 3.5 done 2026-09-06, nothing owed.** Two answers came out of it.
   **(a) The provisioned product does NOT follow an out-of-band rename and CANNOT be made to** — Control
   Tower renders `Display Name` and `Account Email` read-only, so it disagrees with Organizations on both

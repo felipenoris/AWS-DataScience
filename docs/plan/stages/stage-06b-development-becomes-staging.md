@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Status** | **DONE 2026-09-06 — every pass, in one day.** The account is `Staging Account` in `Workloads`; the SMUS surface, the lake share, the persona and the vending policy are gone; `terraform-live/development/` migrated to `staging/` on `awsds-staging-tfstate` and the old bucket is destroyed; every instrument and eleven documents are re-scoped. **What was PRESERVED is the harder half**: the VPC keeps `10.50.0.0/16` (a CIDR is immutable), both `[P]` gateway-endpoint ids survived a folder rename, a state migration and a token flip, and Production's peering kept its `pcx-` id through a `for_each` key rename that would otherwise have destroyed it. **`10.40.0.0/16` is free** — 6c step 0 spends it. **Three times a step's rule was right and its list was short** (4.4's replacements, 4.5's `for_each` keys, 4.6's third assignment); each was caught by saving the plan to a file and reading it, and 4.6's would have revoked the access the apply was running through. **Two steps had their instructions replaced rather than followed**: 4.7's by-hand bucket emptying became a `force_destroy` line in a diff, and 5.1's *remove the DNS slice* was refused because the code still declares the firewall. **One thing is still owed and it is not this stage's to take**: step 3.5, the Account Factory provisioned product's parameters, readable only from Management — which is also what would close Stage 1b verification (vi). Created 2026-09-05, revised the same day, and [logged](../../log/log-stage-06b-development-becomes-staging.md) throughout |
+| **Status** | **DONE 2026-09-06 — every pass, in one day.** The account is `Staging Account` in `Workloads`; the SMUS surface, the lake share, the persona and the vending policy are gone; `terraform-live/development/` migrated to `staging/` on `awsds-staging-tfstate` and the old bucket is destroyed; every instrument and eleven documents are re-scoped. **What was PRESERVED is the harder half**: the VPC keeps `10.50.0.0/16` (a CIDR is immutable), both `[P]` gateway-endpoint ids survived a folder rename, a state migration and a token flip, and Production's peering kept its `pcx-` id through a `for_each` key rename that would otherwise have destroyed it. **`10.40.0.0/16` is free** and **stays** unallocated (6c step 0.2). **Three times a step's rule was right and its list was short** (4.4's replacements, 4.5's `for_each` keys, 4.6's third assignment); each was caught by saving the plan to a file and reading it, and 4.6's would have revoked the access the apply was running through. **Two steps had their instructions replaced rather than followed**: 4.7's by-hand bucket emptying became a `force_destroy` line in a diff, and 5.1's *remove the DNS slice* was refused because the code still declares the firewall. **One thing is still owed and it is not this stage's to take**: step 3.5, the Account Factory provisioned product's parameters, readable only from Management — which is also what would close Stage 1b verification (vi). Created 2026-09-05, revised the same day, and [logged](../../log/log-stage-06b-development-becomes-staging.md) throughout |
 | **Prerequisites** | [6a](stage-06a-unified-studio.md) — what is being unwound was built there. **6c is not a prerequisite, but this stage runs FIRST**: see "Why this stage precedes 6c" below |
 | **Consumes** | [D17](../decisions/D17-interactive-vs-runtime.md), [D18](../decisions/D18-data-scientist-access.md), [D20](../decisions/D20-staging-account.md), [D21](../decisions/D21-development-account.md), [D22](../decisions/D22-data-governance-account.md), [D26](../decisions/D26-unified-studio.md), [D32](../decisions/D32-account-factory-sso-user.md), [D35](../decisions/D35-sandbox-cardinality.md) |
 | **Proves** | Nothing new crosses an account boundary. What it **retires**: [INT-04](../integrations.md) (merged into INT-07), the Development halves of INT-01/02/12/15/17/18/19, INT-03's third consumer, and [INT-09](../integrations.md)'s premise (a Studio project cloning GitLab), whose peering 6c re-purposes |
@@ -680,13 +680,18 @@ followed here, not authored.
   by literal, and that map is built from this table's KEYS, so deleting the row breaks Production's slice
   until 4.5 re-points the four hand-written provider aliases. Both go in that one commit — Recipe E step
   8's rule (*keep the old vocabulary rows alive*) applied to the one table that is read by another
-  account. **6c step 0 must not consume 10.40 until then.**
+  account. **6c step 0 does not consume 10.40 at all** — step 0.2 keeps it unallocated; this sentence assumed
+    otherwise, from the same wrong clause at 4.1.
 - **4.1 — [Claude] Fix the address table BEFORE the token flip — the hazard that would replace the VPC**:
   in `scripts/tfhygiene/backend.py`, `CIDRS` is keyed by **account folder** and today reads
   `staging = 10.40.0.0/16`, `development = 10.50.0.0/16`. The moment the folder becomes `staging/`, the
   generated `vpc_cidr` would change and the plan would propose **replacing the VPC**. Set
   `CIDRS["staging"] = "10.50.0.0/16"`, delete the `development` row, and **free `10.40.0.0/16`** — 6c step 0
-  consumes the freed block; it does not perform this edit. The account keeps 10.50 because a VPC CIDR is
+  consumes the freed block; it does not perform this edit. *(**That clause is WRONG and was corrected
+  2026-09-06 before any 6c code was written**: 6c step 0.2 says 10.40 "is free and **stays
+  unallocated**", and the hub is built from 10.30 re-labelled plus 10.31 and 10.32. This sentence had
+  already been copied into five other files — two instruments among them — which is why it is corrected
+  in place rather than deleted.)* The account keeps 10.50 because a VPC CIDR is
   immutable and a rebuild would replace every subnet, route table, endpoint and the peering with it.
   - **The reason this step used to give expires two passes earlier, and that is worth saying rather than
     leaving to be re-derived** *(2026-09-06)*: it said a rebuild "would invalidate the `[P]`
@@ -971,7 +976,8 @@ Interactive Development keeps reporting `pass` about an account that no longer e
   resource link, no vending policy.
 - `terraform-live/staging/{bootstrap,foundation,egress,probes}/` on `awsds-staging-tfstate`, with
   `terraform-live/development/` gone and the old bucket destroyed.
-- `CIDRS` holding `staging = 10.50.0.0/16` and **`10.40.0.0/16` free** for 6c.
+- `CIDRS` holding `staging = 10.50.0.0/16` and **`10.40.0.0/16` free** — and **staying** free: 6c
+  step 0.2 builds the hub from 10.30, 10.31 and 10.32, and reserves 10.60.
 - `DenyAthenaSparkStartSession` on the `Workloads` document, with its `POLICIES.md` row.
 - Every instrument re-scoped to one Interactive account — and **no new CloudShell script**: the two
   switches of 0.5 are read by `org-trusted-access-services.py` and `management-landing-zone-drift.sh`,

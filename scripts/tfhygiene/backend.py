@@ -109,7 +109,9 @@ SANDBOX_SUPERNET = "10.16.0.0/13"  # room for 8 business units; avoids 10.30/10.
 # THE `development` ROW WENT AT 4.5 (2026-09-06) AND 10.40.0.0/16 IS FREE FROM HERE. It had
 # outlived its folder for exactly one commit, because `production/foundation/peers.tf` read
 # `var.peers["development"]` by literal and that map is built from this table's KEYS - so the row
-# and the four hand-written provider aliases had to move together. 6c step 0 spends 10.40.
+# and the four hand-written provider aliases had to move together. **10.40 STAYS FREE** - 6b's
+# step 4.1 said 6c would consume it and 6c step 0.2 says it "is free and stays unallocated";
+# the hub is 10.30 (this VPC, re-labelled), 10.31 and 10.32. Corrected 2026-09-06.
 CIDRS = {
     "sandbox": "10.20.0.0/16",  # unit 1 - the literal Stage 4 and the stage's views use
     "production": "10.30.0.0/16",
