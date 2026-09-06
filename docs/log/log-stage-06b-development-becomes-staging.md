@@ -459,3 +459,90 @@ is Claude's, applied as the **infrastructure user**, account **Identity**, permi
   fresh at the next `up`; **`foundation/` is the only surviving slice that actually needs Recipe E.** Both
   files now say that, and the two other `conventions.md` §6 lines that had gone false — the consumer-side
   `data/` caller and the lake's share list — were corrected with them.
+
+## 2026-09-06 — steps 3.2 to 3.7: the account is renamed, it is in `Workloads`, and the battery follows it
+
+*Written by Claude at the user's request, same day. The console acts are the user's and are named as
+such; every reading is Claude's, as the infrastructure user.*
+
+- **[user] Step 3.2 — the account is `Staging Account`**, and the **root e-mail was changed in the same
+  sitting**, which the step did not ask for. Recording it because it is a fact about the account that no
+  later reading explains: the vended-name pattern and the root address now agree.
+- **[Claude] Read back with `./aws/rename-check.py` the same day. `0 check(s) FAILED`, and it is the
+  first time this file has read the AFTER column**: `RC-1 pass — Staging Account` (exact match against
+  the ACTIVE roster, never a prefix), `RC-2 pass — Workloads`, `RC-3 pass`, `RC-4 pass — no share held`,
+  `RC-5 pass`, `RC-6 pass — no grant names the account`. **No propagation delay was observed** between
+  the console act and the read, which the step had flagged as undocumented.
+  - **`RC-3` answered from the other side of the cut, and that is the reading the file was written for.**
+    It no longer says *"no blueprint configurations"*; it says **`datazone` is denied in this account —
+    the Workloads ceiling is in force**. The MIXED case this instrument exists to catch — an account
+    already in `Workloads` still holding DataZone objects it can no longer delete — did not happen,
+    because pass 1 emptied the surface while the account was still in `Interactive`. **The step order
+    was the control, and this is its evidence.**
+
+- **[Claude] Step 3.3 — the two name-keyed sites re-pointed, and the gate is an empty plan.** The
+  **values** changed in `terraform-live/identity/sso/locals.tf` and `aws/import-ids.py`; the **keys** did
+  not (`development` stays the for_each key until 4.6 moves it behind a `moved {}` block). Re-planned
+  `identity/sso/` as `awsds-infra-identity`: **`No changes`**. The precondition that fails the plan when
+  the name does not resolve now resolves it, and not one assignment moved.
+  - A third site was corrected in the same commit and it is **prose, not code**: `import-ids.py`'s header
+    said *"`Staging` arrives at the vend"* — the vend the quota refused, which is the reason this stage
+    exists. It now states why the key and the value disagree between 3.2 and 4.6.
+
+- **[user] Step 3.4 — the account is in `Workloads`. [Claude] Measured two independent ways, and the
+  path it took is still unread.** `RC-2` reads it from `organizations list-parents`. The stronger
+  reading is the battery's, because it is the **ceiling answering rather than the directory**: the
+  us-east-1 deny in this account is attributed to **`p-i0ney7mx`, the same policy id Production
+  returns**, where `Sandbox Account 1` returns a different one. Same id, same OU, said by a denial.
+  - **What this side cannot distinguish is Control Tower *Update account* from
+    `organizations move-account`**, and the difference is not cosmetic — the second strands the Account
+    Factory provisioned product on the old OU under the old name and raises `Moved member account` drift
+    when the two OUs differ, which auto-enrollment re-baselines but does not un-drift. Both are visible
+    only from Management, which holds **no CLI profile**. **The user reports Service Catalog still
+    showing the old provisioned product**, which is consistent with either path — the provisioned
+    product's *name* is fixed at vend time and never follows a rename. **The parameters are the reading
+    that settles it, and it is owed from that console.**
+
+- **[Claude] Step 3.6 — D32's trigger did NOT fire, and the caveat is half the answer.**
+  `./aws/list-identities.py` §5.2: `Staging Account` carries **six** assignments — the three landing-zone
+  group ones and this repository's three (`InfrastructureAccess`, `DeploymentManagerAccess`,
+  `DataScientistStagingAccess`). **No direct `USER` assignment and no `AWSAdministratorAccess`**, so
+  `INV-05` and the roster row stand unedited and `Policy Canary`'s remains the only direct D32 assignment
+  in the organization.
+  - **This does not yet close Stage 1b verification (vi).** That verification watches for the direct
+    assignment returning *when an account update runs*; whether one ran is exactly what 3.4 cannot read
+    from here. A reading that looks identical on *"it did not fire"* and *"it was never triggered"* is
+    not a verification (Lesson 13), so the row stays open pending the Management console reading.
+
+- **[Claude] Step 3.7 — the battery follows the account, and the `ou` phase was a re-composition rather
+  than a retarget.** Token `dev` → `staging` in **both** files (`scp-battery.py`'s `PROFILES`, where a
+  missing token stops the run, and `probes.py`, where it is every probe's second argument); no `dev`
+  string survives under `aws/probes/`. **Full battery, every phase: `89 as expected, 0 unexpected, 10 not
+  measured`** — all ten notes the by-design ones.
+  - **The step's own first sentence was wrong, and 3.8 is why.** It predicted the account would **lose**
+    `DenyAthenaSparkStartSession` because that Sid *"exists only in the Interactive document"*. It did
+    not: 3.8 had put the Sid into the Workloads document hours earlier, deliberately before the move, so
+    the account **crossed carrying the deny instead of into a gap**. The rest held exactly — it lost
+    `DenyClassicNotebookInstances` (fully absorbed by `DenyInteractiveSageMakerSurface`) and gained that
+    Sid and `DenyDataZoneEntirely`.
+  - **A pure token flip would have made the battery lie by duplication.** Three of the five `dev` `ou`
+    rows asked questions `prod` and `sandbox1` already ask; flipping them would have produced a third
+    copy of each, and a probe count that no longer means a question count is what this file's own
+    comments warn against. So: **two `allow` rows moved to `sandbox1`** (`sagemaker:CreateSpace`,
+    `datazone:ListDomains` — the block's entire point is that decision 1 costs no feature, and deleting
+    them would have left the Interactive document with **no permissive evidence at all**); **three rows
+    deleted**; **one new row added for `staging`**.
+  - **The Interactive sample is now an inherited one, and it is not weaker.** Nothing sits directly in
+    `Interactive` any more and no account can restore that. But an SCP can only **deny**, and `Sandboxes`
+    carries no document of its own — the probe directly below those two rows is that evidence — so an
+    `allow` observed under Interactive+Sandboxes is at least as strong as one observed under Interactive
+    alone. Both passed.
+  - **The one row added asks something none of the others do**: not *is the Workloads document in force*
+    but *did the account this stage moved actually acquire it* — a question about a membership rather
+    than a policy, and worth keeping permanently because this is the account that will hold deploy
+    credentials. It came back **`DENY-SCP p-83t232f4`, the same id Production's three rows return**.
+  - **The silent half of the flip was the tag values, and it is the half that would have gone
+    unreported.** Two probes hard-coded `Environment=development` in their `--tag-specifications`. The
+    tag policy allows all six values org-wide, so neither would have **failed** after the flip — they
+    would have quietly asserted a value nothing carries, which is worse than a failure. Both now read
+    `staging`, confirmed an allowed value in `awsds-org-tag-policy.json`.
