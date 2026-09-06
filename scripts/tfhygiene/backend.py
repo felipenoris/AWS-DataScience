@@ -101,22 +101,54 @@ PROFILES = {
 # to compare.
 SANDBOX_SUPERNET = "10.16.0.0/13"  # room for 8 business units; avoids 10.30/10.40/10.50
 
-# STAGING IS 10.50 AND NOT 10.40, AND THE SWAP IS THE POINT (Stage 6b step 4.1, 2026-09-06).
-# 10.40 was reserved for a `Staging` this project never vended - the quota refused it, and the
-# account was made by RENAMING `Development`, which has held 10.50.0.0/16 since Stage 3. A VPC
-# CIDR is IMMUTABLE, so leaving this row at 10.40 would make the folder rename propose replacing
-# the VPC - and with it every subnet, route table, endpoint and the peering Production accepts.
-# THE `development` ROW WENT AT 4.5 (2026-09-06) AND 10.40.0.0/16 IS FREE FROM HERE. It had
-# outlived its folder for exactly one commit, because `production/foundation/peers.tf` read
-# `var.peers["development"]` by literal and that map is built from this table's KEYS - so the row
-# and the four hand-written provider aliases had to move together. **10.40 STAYS FREE** - 6b's
-# step 4.1 said 6c would consume it and 6c step 0.2 says it "is free and stays unallocated";
-# the hub is 10.30 (this VPC, re-labelled), 10.31 and 10.32. Corrected 2026-09-06.
-CIDRS = {
-    "sandbox": "10.20.0.0/16",  # unit 1 - the literal Stage 4 and the stage's views use
-    "production": "10.30.0.0/16",
-    "staging": "10.50.0.0/16",  # the renamed Development account - a CIDR is immutable (4.1)
+# KEYED BY (ACCOUNT, SLICE), NOT BY ACCOUNT - and Stage 6c step 0.2 asked for this table to sit
+# BESIDE a per-account `CIDRS` rather than to replace it. It replaces it, and the reason is that
+# `CIDRS` turned out to have NO reader that actually asks an account-level question (measured
+# 2026-09-06, every call site): `vpc_cidr` wants the slice's own VPC, the D22 guard wants "does
+# this slice have an allocation", `peer_cidrs` wants a peer VPC's range, and the doc gate
+# iterates the values. Each of those read per-ACCOUNT only because every account had exactly one
+# VPC. The moment Production has three (D38), the per-account shape stops being expressible -
+# `CIDRS["production"]` has no single answer - and two tables carrying the same numbers is
+# Lesson 33 with nothing bought.
+#
+# STAGE 14 IS THE ONE HUMAN READER and it still works: "the LOWEST FREE /16 in 10.16.0.0/13" is a
+# question about the VALUES, and they are all still here. So unit 2 is 10.16.0.0/16, not 10.21.
+#
+# ENTRIES ARE AUTHORED, NEVER COMPUTED - a CIDR computed at vend time is a [P] value that can
+# move on a rebuild, in an account somebody is working in (Stage 3 step 1.3). The `sandbox` key
+# is an ALLOCATION, NOT A FINAL NAME (D35, open question 10).
+#
+# 10.40.0.0/16 IS DELIBERATELY ABSENT AND STAYS THAT WAY. It was reserved for a `Staging` vend
+# the account cap refused; Stage 6b renamed `Development` instead, so Staging is 10.50 and 10.40
+# belongs to nobody. `./aws/networking.py`'s NT-3/NT-5/NT-6 are what measure that AWS agrees.
+# 10.60.0.0/16 is D38's reservation for the day an account slot frees.
+#
+# THE TWO PRODUCTION ROWS WITH NO FOLDER YET are here under the same rule as `layers.py`'s ranks:
+# declared before the slice arrives, because the address plan is the part that gets got wrong
+# once. `networking` is D38's hub (the estate's only IGW); `workloads` is the production runtime.
+VPC_CIDRS = {
+    ("sandbox", "foundation"): "10.20.0.0/16",  # unit 1 - the literal Stage 4 and the views use
+    ("production", "foundation"): "10.30.0.0/16",  # VPC-SharedServices after 6c step 1.1
+    ("production", "networking"): "10.31.0.0/16",  # VPC-Networking, D38's hub (6c step 1.2)
+    ("production", "workloads"): "10.32.0.0/16",  # VPC-Workloads (6c step 1.3)
+    ("staging", "foundation"): "10.50.0.0/16",  # the renamed Development - a CIDR is immutable
 }
+
+
+def vpc_cidr_of(account: str, slice_name: str) -> str | None:
+    """The /16 of one slice's VPC, or None when that slice has no allocation."""
+    return VPC_CIDRS.get((account, slice_name))
+
+
+def account_cidrs(account: str) -> list[str]:
+    """Every /16 an account holds, in table order. Production holds three since 6c."""
+    return [c for (a, _s), c in VPC_CIDRS.items() if a == account]
+
+
+def vpc_bearing_accounts() -> list[str]:
+    """The accounts with at least one VPC, sorted - what the `peers` map is keyed on today."""
+    return sorted({a for a, _s in VPC_CIDRS})
+
 
 # Outside every VPC range and never seen inside AWS - the WireGuard instance SNATs (Stage 3
 # step 6.5, Stage 4 step 4.2). Recorded here because this table is where address literals
@@ -313,7 +345,26 @@ ZONE_IDS = {
 # The slices whose generated tfvars carry the allocation. bootstrap/ deliberately does not:
 # it has no subnet, and an unused zone list would send the next reader hunting for the
 # resource that consumes it (gen-tfvars.py's original argument, now scoped instead of total).
-NETWORK_SLICES = {"foundation", "egress", "vpn", "probes", "buildbox"}
+NETWORK_SLICES = {
+    "foundation",
+    "egress",
+    "vpn",
+    "probes",
+    "buildbox",
+    # 6c step 0.3's slices, declared here with their ranks (2026-09-06). `networking` and
+    # `workloads` are VPC-BEARING; `proxy` and `workloads-egress` ride inside one and read its
+    # state, exactly as `egress` and `vpn` do.
+    "networking",
+    "workloads",
+    "proxy",
+    "workloads-egress",
+}
+
+# THE SUBSET THAT CREATES A VPC RATHER THAN LIVING INSIDE ONE, and it needed a name the day
+# Production got three (6c step 0.2). `foundation` was the whole answer while every account had
+# one VPC; now `vpc_cidr` is emitted to whichever slice OWNS a VPC, and every other network slice
+# reads its host VPC's [P] facts through terraform_remote_state instead.
+VPC_SLICES = {"foundation", "networking", "workloads"}
 
 # Stage 3's reachability probes: which accounts each side has to admit or reach. Every side's
 # security group names the OTHER side's VPC range, and the pairing is authored here rather
@@ -386,23 +437,40 @@ def tfvars_values(account: str, slice_name: str) -> dict:
         "environment_tag": ENVIRONMENT_TAGS[account],
     }
     if slice_name in NETWORK_SLICES:
-        if account not in CIDRS:
+        # THE GUARD IS PER (ACCOUNT, SLICE) SINCE 6c step 0.2, and the difference is not cosmetic:
+        # Production carries three VPCs, so "does this ACCOUNT have an allocation" stopped being
+        # the question. A network slice with no row fails here rather than applying with a hole.
+        if not any(a == account for a, _s in VPC_CIDRS):
             raise UnknownAccountFolder(
-                f"{account}: network slice '{slice_name}' but no CIDR allocation - "
-                "D22 accounts hold no VPC; a new account is added to CIDRS deliberately"
+                f"{account}: network slice '{slice_name}' but no CIDR allocation anywhere - "
+                "D22 accounts hold no VPC; a new account is added to VPC_CIDRS deliberately"
             )
         values["zone_ids"] = ZONE_IDS[account]
-        if slice_name == "foundation":
-            values["vpc_cidr"] = CIDRS[account]
+        if slice_name in VPC_SLICES:
+            own = vpc_cidr_of(account, slice_name)
+            if own is None:
+                raise UnknownAccountFolder(
+                    f"{account}/{slice_name}: a VPC-bearing slice with no row in VPC_CIDRS. "
+                    "The address plan is authored before the folder exists (6c step 0.2), so "
+                    "this is a missing row rather than a missing decision."
+                )
+            values["vpc_cidr"] = own
             # Stage 3 pass 2: the peers map - every VPC-bearing account that has a profile,
-            # DERIVED from the two tables above rather than authored a third time (Lesson 14).
-            # The slice's aliased providers read a peer's [P] facts (VPC, subnets, route
-            # tables) live instead of copying them here: an id in a tfvars would be a stale
-            # copy of another slice's state. Staging is absent because PROFILES has no row
-            # until the vend; the self-row is emitted too and simply unused.
+            # DERIVED rather than authored a third time (Lesson 14). The slice's aliased
+            # providers read a peer's [P] facts (VPC, subnets, route tables) live instead of
+            # copying them here: an id in a tfvars would be a stale copy of another slice's
+            # state. The self-row is emitted too and simply unused.
+            #
+            # STILL KEYED BY ACCOUNT, AND THAT IS A SEAM 6c step 0.6 CLOSES. Today every peering
+            # in the estate joins two accounts that have one `foundation/` VPC each, so an
+            # account key names a VPC unambiguously and `production/foundation/peers.tf` reads
+            # `var.peers["sandbox"]` and `["staging"]` by literal. The moment Production holds
+            # three, the key stops naming a VPC - which is why 0.6 moves the peering LIST here
+            # and generates both sides from it. Until then this derivation is deliberately the
+            # old one, so 0.2 changes the table without changing a single generated file.
             values["peers"] = {
                 acct: {"profile": PROFILES[acct], "env": ENV_TOKENS[acct]}
-                for acct in sorted(CIDRS)
+                for acct in vpc_bearing_accounts()
                 if acct in PROFILES
             }
         else:
@@ -436,7 +504,12 @@ def tfvars_values(account: str, slice_name: str) -> dict:
                         f"{account}: 'probes' is the Sandbox-Production pair of Stage 3's "
                         "Deliverables - another account joins PROBE_PEERS deliberately"
                     )
-                values["peer_cidrs"] = [CIDRS[p] for p in PROBE_PEERS[account]]
+                # A PROBE PEER IS AN ACCOUNT TODAY AND BECOMES A VPC AT 6c (step 0.6): every
+                # peer named here has exactly one `foundation/` VPC, so its account's single
+                # allocation IS its range. account_cidrs() returns a list for that reason -
+                # Production's three would arrive as three, which is the reading that will force
+                # PROBE_PEERS to name slices rather than accounts.
+                values["peer_cidrs"] = [c for p in PROBE_PEERS[account] for c in account_cidrs(p)]
 
     # THE FIRST NON-NETWORK EMISSION, and the repository's first CROSS-ACCOUNT remote-state
     # read (Stage 4 step 8.1) - Stage 5's maps below follow the same shape.
