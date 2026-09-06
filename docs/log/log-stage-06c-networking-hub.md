@@ -752,3 +752,61 @@ two filters. **Nothing was applied**, and one plan that is ready was deliberatel
 - **[Claude] VERIFICATION 2, HALF ANSWERED AND UNPROMPTED.** The SSM agent registered `Online` from
   the hub's public tier **with no interface endpoint anywhere in `VPC-Networking`** — Session
   Manager reaches this host through the IGW. The proxy is the other half, at 4.8.
+
+## 2026-09-06 — 4.8: the single egress is up, after four defects the apply found and reading did not
+
+`production/proxy/` applied — 9 resources — and then corrected four times. Every one of the four
+was invisible to `terraform validate`, `tflint`, `checkov` and a careful re-read; each needed the
+thing to actually run. They are written up individually because three of them are reusable.
+
+- **(i) THE ALLOW-LIST DID NOT PARSE, AND THE REASON IS THE TRANSLATION AGAIN.** The first boot
+  logged `the rendered allow-list does not parse - reverting` and the proxy came up with an
+  **empty** list — safe, and useless. `squid -k parse` on the rendered file named it exactly:
+  ```
+  ERROR: '.signin.aws.amazon.com' is a subdomain of 'signin.aws.amazon.com'
+  FATAL: Bungled ... line 10
+  ```
+  **The distinction is fine and it is the whole finding:** a *deeper* name under a wildcard
+  (`d35uxhjf90umnp.cloudfront.net` under `.cloudfront.net`) is only a **WARNING** — measured, in
+  isolation, before concluding — while **the apex beside its own wildcard is FATAL**. Route 53 DNS
+  Firewall *required* both forms to mean what Squid's `.x` means alone, so every pair copied from
+  that side carries the defect in. Three collisions existed; a scan of all five planes found them
+  all in the tunnel plane, and two were fatal.
+- **(ii) A PLAN-TIME GUARD FOR THAT CLASS, because it will come back every time somebody adds a
+  domain.** A precondition on the parameter now fails the plan when any plane lists `x` beside
+  `.x`, naming the offending pairs. The warning-level overlap is deliberately **not** failed - it
+  is redundant rather than wrong, and a gate that refuses both would refuse a list that works.
+- **(iii) THE RENDER SCRIPT SWALLOWED THE ERROR IT EXISTED TO REPORT.** `squid -k parse >/dev/null
+  2>&1` — so the only evidence was "does not parse", and finding out *why* took a hand-run through
+  SSM. Squid names the ACL and the entry; that sentence is exactly what a person needs, and State
+  Manager surfaces stderr in the association's own failure report. It is printed now.
+- **(iv) THE ASSOCIATION RACED THE BOOT, and the argument that put it there was reasoned rather
+  than measured.** `apply_only_at_cron_interval = false` was justified in the code as *"the first
+  boot already rendered the list, so an immediate run is a no-op, and a no-op that FAILS says the
+  association is misconfigured"*. What actually happens: State Manager fires seconds after
+  `RunInstances`, while the user data is ~50 seconds into `dnf install`, and the run dies with
+  **exit 127, no such file** — not a diagnostic, a certainty, leaving a `Failed` association as a
+  working proxy's first impression. **And the fix exposed a second constraint the API only
+  volunteers when you try it**: `ApplyOnlyAtCronInterval is not supported for Rate Schedule
+  associations`. So the schedule form is decided by the flag — `cron(0/30 * * * ? *)`, the same
+  half-hourly cadence at predictable times — and a `validation` block now says so.
+- **(v) `t3.nano` IS NOT TOO SMALL FOR THE PROXY, IT IS MARGINAL — WHICH IS WORSE.** The second
+  host's `dnf install squid jq amazon-cloudwatch-agent` was **OOM-killed**, with the kernel naming
+  it: `Out of memory: Killed process 1941 (dnf)`, on a host reporting **415 MiB** usable. The
+  *first* host had installed the same three packages fine. Steady state is irrelevant here — a
+  proxy that relays CONNECT and caches nothing would run on a nano forever; **the BUILD is what
+  does not fit**, and a coin-flip boot is the wrong property for the estate's single internet exit.
+  Moved to **`t3.micro`** at a measured **0.0104 USD/h** (`docs/PRICING.md` §8 — the rate already
+  existed, so no new measurement; Lesson 6). `layers.py` carries the new figure.
+- **[Claude] One thing that behaved exactly as designed, and it is worth saying because it is the
+  reason (v) was recoverable:** changing `instance_type` is a stop/modify/start, and **user data
+  does not re-run on that**. The bigger host still had no Squid. `-replace` on the instance is what
+  re-runs a first boot — the same act `runbooks/vpn.md` §S6 documents for the tunnel host.
+- **[Claude] FINAL STATE, measured inside the host through SSM:** `squid active`, listening on
+  `*:3128`, **three** `http_access allow` lines and all six ACLs rendered
+  (`src_/dst_production_foundation`, `src_/dst_sandbox_foundation`, `src_/dst_tunnel`), cloud-init
+  `status: done`, **zero** OOM kills, 913 MiB total. All three hub slices re-plan **`No changes`**.
+- **[Claude] VERIFICATION 2 IS NOW FULLY ANSWERED.** Both hub hosts registered with Session Manager
+  from the public tier **with no interface endpoint anywhere in `VPC-Networking`** — the reach is
+  the IGW, which is what D38 predicted and what Lessons 40-43 made worth checking rather than
+  assuming.

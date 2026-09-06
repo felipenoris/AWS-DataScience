@@ -61,9 +61,9 @@ variable "zone_index" {
 }
 
 variable "instance_type" {
-  description = "The proxy's size. t3.nano is the baseline and the measured rate the cost tables are written against (docs/PRICING.md 3, in this project's Region; Lesson 6 - the rate is measured, never reasoned). A forward proxy terminates TLS for nobody - it relays CONNECT - so it is a socket pump, and the shape that carries the tunnel carries this too. EVERY ADMITTED VALUE IS x86_64 because main.tf pins the AL2023 x86_64 AMI, and an AMI is specific to its architecture: a t4g is not a same-shape alternative, EC2 refuses the request. Unlike the VPN host this slice has no tracked size file, deliberately - nobody works ON the proxy, so there is no reason to switch it up for a session."
+  description = "The proxy's size. t3.micro (1 GiB) at a measured 0.0104 USD/h (docs/PRICING.md 8; Lesson 6 - the rate is measured, never reasoned). THE SIZE IS DECIDED BY THE BUILD, NOT BY THE STEADY STATE: a forward proxy that relays CONNECT and caches nothing is a socket pump and would run on a nano forever - but `dnf install squid jq amazon-cloudwatch-agent` will not FIT on one. Measured 2026-09-06, twice and with opposite outcomes: the first proxy host installed fine, the second was OOM-killed mid-resolve with the kernel naming it (`Out of memory: Killed process (dnf)`) on a host reporting 415 MiB usable. So the nano is not too small, it is MARGINAL - which is worse, because it boots most of the time and the estate's single internet exit is the wrong place to keep a coin-flip. EVERY ADMITTED VALUE IS x86_64 because main.tf pins the AL2023 x86_64 AMI, and an AMI is specific to its architecture: a t4g is not a same-shape alternative, EC2 refuses the request. Unlike the VPN host this slice has no tracked size file, deliberately - nobody works ON the proxy, so there is no reason to switch it up for a session."
   type        = string
-  default     = "t3.nano"
+  default     = "t3.micro"
 
   validation {
     condition     = contains(["t3.nano", "t3.micro", "t3.small"], var.instance_type)
@@ -71,10 +71,22 @@ variable "instance_type" {
   }
 }
 
+# A `cron()` EXPRESSION AND NOT `rate(30 minutes)`, AND THE REASON IS A HARD API CONSTRAINT rather
+# than a preference (measured 2026-09-06): `ApplyOnlyAtCronInterval is not supported for Rate
+# Schedule associations`. That flag is what keeps the association from firing at CREATION time,
+# seconds after RunInstances, onto a host still running `dnf install` - a run that cannot succeed
+# and leaves a `Failed` association as a working proxy's first impression. So the schedule form is
+# decided by the flag, not the other way round. `0/30` is the same half-hourly cadence, at
+# predictable wall-clock times.
 variable "reconfigure_schedule" {
-  description = "How often State Manager re-renders the allow-lists onto the running host (step 4.10). rate(30 minutes) is the trade the step names: an allow-list edit is an apply plus at most one interval, against no write API from the laptop, no host replacement and no estate-wide outage. Shorter buys little - a list changes rarely; longer makes an urgent removal feel broken."
+  description = "How often State Manager re-renders the allow-lists onto the running host (step 4.10). Half-hourly is the trade the step names: an allow-list edit is an apply plus at most one interval, against no write API from the laptop, no host replacement and no estate-wide outage. MUST be a cron() expression: apply_only_at_cron_interval, which is what stops the boot race, is rejected by the API on a rate() schedule."
   type        = string
-  default     = "rate(30 minutes)"
+  default     = "cron(0/30 * * * ? *)"
+
+  validation {
+    condition     = startswith(var.reconfigure_schedule, "cron(")
+    error_message = "must be a cron() expression - the API rejects apply_only_at_cron_interval on a rate() schedule, and without that flag the association fires at creation onto a host that has not finished booting."
+  }
 }
 
 variable "project" {
