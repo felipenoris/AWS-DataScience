@@ -59,6 +59,39 @@ variable "extra_services" {
 
 # ------------------------------------------------ design A's control (Stage 6 step 4.1)
 
+# ------------------------------------------------- the optional groups (6c step 5.3, user decision)
+#
+# WHY THIS EXISTS. Under design A the NAT gateway covered every service silently, so an enabled
+# blueprint always had a path. With no default route anywhere, **a project that uses a blueprint
+# whose endpoints are missing has no path at all** - the feature exists in the portal and fails on
+# first use. The estate keeps both optional blueprint families ENABLED (user decision, 2026-09-06)
+# and controls their endpoints here instead.
+#
+# EMPTY IS THE DEFAULT AND IT IS THE DECISION, not an oversight: `make up` with no groups creates
+# no optional endpoint, so the cost of a family nobody is using that day is zero. `make up
+# ENV=<x> GROUPS=bedrock` turns one on for that apply.
+#
+# IT IS PER APPLY OF ONE ACCOUNT'S egress/ SLICE, not per project and not per person - while a
+# group is on, it is on for everyone in that account. And **nothing turns it off**: the guard is
+# that this slice is [E] and comes down with the session, not that anybody remembers.
+#
+# THE MAP LIVES IN THE MODULE AND NOT IN THE THREE CALLERS, deliberately (Lesson 33): three
+# hand-kept copies of "which endpoints does Bedrock need" would diverge on the first addition,
+# and the failure mode is an account where a blueprint half-works.
+variable "optional_service_groups" {
+  description = "Which optional endpoint families to create, by group name. EMPTY BY DEFAULT - no optional endpoint exists unless a group is named. Threaded from `make up ENV=<x> GROUPS=a,b` through TF_VAR_optional_service_groups. Each group is ~USD 0.010/h per endpoint for the whole session (docs/PRICING.md 8)."
+  type        = list(string)
+  default     = []
+
+  validation {
+    # A CLOSED LIST, because the failure of an unknown name is SILENT: a group nobody defined
+    # contributes no endpoints, the apply succeeds, and the blueprint fails on first use exactly
+    # as it would have with no flag at all. `make up GROUPS=bedrok` must be a plan error.
+    condition     = alltrue([for g in var.optional_service_groups : contains(["bedrock", "emr", "mwaa"], g)])
+    error_message = "optional_service_groups admits only: bedrock, emr, mwaa. An unknown name would contribute nothing and fail silently at first use."
+  }
+}
+
 variable "dns_firewall" {
   description = "Attach the Route 53 Resolver DNS Firewall to this VPC - design A's allow-list. false everywhere it does not apply: the deployment targets have no interactive user to constrain, and under egress_mode = B there is no default route for a name to be useful on (dns-firewall.tf enforces the second half itself, so a caller cannot half-enable it)."
   type        = bool
