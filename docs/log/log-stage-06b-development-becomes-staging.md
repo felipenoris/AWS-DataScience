@@ -894,3 +894,20 @@ Claude's, as the infrastructure user.*
 - **[Claude] `docs/GENERAL_PLAN.md` needed nothing.** The 2026-09-05 re-scope had already brought its
   account map and stage index to the post-conversion shape — the one document in the set that was written
   after the decision instead of before it.
+
+## 2026-09-06 — the stage closes
+
+- **[Claude] Status row, `docs/log/INDEX.md`, `docs/GENERAL_PLAN.md`'s stage index — all three brought to
+  what the stage actually did.** The index cell says what is *inside* this file, which is what that index
+  is for: fifteen sections, provenance named per subject, and the failure modes worth re-reading rather
+  than the steps.
+- **[Claude] What the stage preserved is the harder half of what it did, and it is worth stating once in
+  one place.** The VPC keeps `10.50.0.0/16` because a CIDR is immutable; **both `[P]` gateway-endpoint ids
+  survived a folder rename, a state migration and a token flip**; and Production's peering kept its `pcx-`
+  id through a `for_each` key rename that would otherwise have destroyed it. None of that was luck — each
+  is a step that existed only to protect it (4.1's allocation swap, Recipe E's split, 4.5's `moved {}`
+  blocks).
+- **[Claude] Still owed, and not this stage's to take: step 3.5.** The Account Factory provisioned
+  product's parameters are readable only from Management, which holds no CLI profile. That reading is also
+  what would close **Stage 1b verification (vi)** — it decides whether "the direct assignment did not come
+  back" means the trigger fired and produced nothing, or never fired at all.
