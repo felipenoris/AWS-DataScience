@@ -67,11 +67,22 @@ ENVIRONMENT_TAGS = {
 # not "the sandbox profile". Open question 10's per-unit token is deferred to N=2, and this row
 # moves with it.
 #
-# TWO ACCOUNTS ARE ABSENT ON PURPOSE. `staging` is unvended (step 3.2), so it has no profile to
-# name; Log Archive and Audit hold no CLI profile at all and no Terraform slice either.
+# TWO ACCOUNTS ARE ABSENT ON PURPOSE. Log Archive and Audit hold no CLI profile at all and no
+# Terraform slice either. `staging` used to be the third, "unvended, so it has no profile to
+# name" - the quota refused that vend, and Stage 6b made the account by RENAMING `Development`
+# instead (2026-09-06).
+#
+# WHICH IS WHY TWO KEYS NAME ONE PROFILE TODAY, AND IT IS A WINDOW, NOT A DESIGN. `staging` and
+# `development` are the same AWS account for the length of Stage 6b pass 4: the folder rename
+# (4.3) and the token flip (4.4) move the slices one at a time, and `development/bootstrap/` is
+# LAST (4.7) because it owns the bucket every other migration reads from. The profile itself was
+# renamed `awsds-infra-dev` -> `awsds-infra-staging` in ~/.aws/config at 5.0, so the old spelling
+# resolves to nothing and a stale row here would fail as "profile not found" rather than
+# silently reaching the wrong account. The `development` row goes when 4.7 destroys the bucket.
 PROFILES = {
     "sandbox": "awsds-infra-sandbox-1",
-    "development": "awsds-infra-dev",
+    "development": "awsds-infra-staging",
+    "staging": "awsds-infra-staging",
     "data-governance": "awsds-infra-data",
     "production": "awsds-infra-prod",
     "identity": "awsds-infra-identity",
