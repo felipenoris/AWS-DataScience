@@ -86,8 +86,12 @@ locals {
   assignments = {
     # DataScientistAccess - Sandbox AND Development (D21). One set, two accounts (1b 3.3):
     # the two are policy-identical at this level, which is what putting them in one OU asserts.
-    "data-scientist@sandbox"     = { set = "data_scientist", group = "data_scientists", account = "sandbox" }
-    "data-scientist@development" = { set = "data_scientist", group = "data_scientists", account = "development" }
+    "data-scientist@sandbox" = { set = "data_scientist", group = "data_scientists", account = "sandbox" }
+    # SWAPPED BY STAGE 6b STEP 2.1 (2026-09-06), and the KEY is deliberately unchanged: the
+    # account is still named `development` here until step 4.6 renames the key behind moved {}
+    # blocks. Renaming it now would change the resource address and destroy/recreate the
+    # assignment for nothing. D18: Staging is read-only and nothing else.
+    "data-scientist@development" = { set = "data_scientist_staging", group = "data_scientists", account = "development" }
 
     # DataScientistProdAccess - Production only (D18). A different SHAPE, not a weaker copy.
     "data-scientist-prod@production" = { set = "data_scientist_prod", group = "data_scientists", account = "production" }
@@ -105,9 +109,13 @@ locals {
     # everywhere by construction, so "read-only on Sandbox and Development" is a property of
     # the policy rather than of the assignment (1b 3.3: one set object is one policy, however
     # many accounts it reaches).
-    "dev-env-steward@production"  = { set = "dev_env_steward", group = "dev_env_stewards", account = "production" }
-    "dev-env-steward@sandbox"     = { set = "dev_env_steward", group = "dev_env_stewards", account = "sandbox" }
-    "dev-env-steward@development" = { set = "dev_env_steward", group = "dev_env_stewards", account = "development" }
+    # REMOVED FROM THIS ACCOUNT BY STAGE 6b STEP 2.1 (2026-09-06) - and not because "a Workload
+    # account has no image steward", which the estate contradicts: Production is a Workload
+    # account and holds the seat. The reason is D14's - the steward curates IMAGES, the registry
+    # is ECR in Production, and Staging has no registry to steward. The SET survives; two
+    # assignments are what leave.
+    "dev-env-steward@production" = { set = "dev_env_steward", group = "dev_env_stewards", account = "production" }
+    "dev-env-steward@sandbox"    = { set = "dev_env_steward", group = "dev_env_stewards", account = "sandbox" }
   }
 
   # ------------------------------------------------------------------- the six written sets

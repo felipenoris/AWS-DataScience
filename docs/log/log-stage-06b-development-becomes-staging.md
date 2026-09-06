@@ -342,3 +342,24 @@ Claude's. Applied as the **infrastructure user**, account **Development**, permi
   sitting: with the two service roles and the boundary destroyed at 1.7, no blueprint-provisioned role
   will ever appear here, and a note saying one has not appeared *yet* points at a future that is not
   coming. **Pass 1 is complete.**
+
+---
+
+## 2026-09-06 — pass 2 begins: step 2.1, the persona swap
+
+*Provenance: the user authorized the remaining Claude-only steps of the plan in one instruction; every
+edit, plan, apply and read-back below is Claude's. Applied as the **infrastructure user**, account
+**Identity**, permission set **`InfrastructureAccess`** (profile `awsds-infra-identity`).*
+
+- **[Claude] Applied: `1 added, 0 changed, 2 destroyed`.** `data-scientist@development` is a **replacement**
+  — the permission-set ARN is a forced-replacement field, and because the map KEY was deliberately left
+  alone the resource address did not move. `dev-env-steward@development` is a plain delete. Re-plan
+  `No changes`.
+- **[Claude] Read back from Identity Center, not from state**: the account carries **six** permission
+  sets — `DataScientistStagingAccess`, `DeploymentManagerAccess`, `InfrastructureAccess`, beside the
+  landing zone's `AWSOrganizationsFullAccess`, `AWSPowerUserAccess` and `AWSReadOnlyAccess`. That is the
+  count step 0.3 corrected the stage to expect; the old prose said "three permission sets" and would have
+  read this as wrong.
+- **[Claude] Two comments went in with the edit**, both recording a *reason* the estate had contradicted:
+  the map key stays `@development` until 4.6's `moved {}` blocks, and the steward seat leaves for D14's
+  reason (the registry is ECR in Production) rather than for the false one this step used to give.
