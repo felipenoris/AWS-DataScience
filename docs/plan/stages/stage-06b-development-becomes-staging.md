@@ -520,11 +520,42 @@ account by the exact string `Development Account` behind a precondition that fai
   third reason — "without auto-enrollment it leaves the old OU's Config-rule controls attached" — and
   **0.5b measured the switch ON on 2026-09-06**, so that clause is struck rather than left to be
   re-derived by whoever reads it next.*
+- **3.5 — DONE 2026-09-06 by the user, and it answered its own question in the STRONGEST form: the
+  provisioned product does not follow an out-of-band rename, AND IT CANNOT BE MADE TO.** On Control
+  Tower's *Update account* screen, **`Display Name` and `Account Email` are rendered READ-ONLY**, still
+  holding `Development Account` and the old root address — while the OU tree beside them already reads
+  `Staging Account`. This step asked *"whether `AccountName` follows is not documented"*; the answer is no,
+  and there is no field through which to correct it. **It is a permanent divergence of the provisioned
+  product**, exactly the treatment D32 gives the direct assignment.
+  - **The e-mail half is the sharper one.** The user changed the account's root address out of band in the
+    same sitting as the rename; AWS documents the e-mail as *not* following such a change, and the screen
+    confirms it. So the provisioned product now disagrees with Organizations on **two** fields, and a
+    future reader comparing them will see what looks like drift and is not.
+  - **The editable fields — OU and access configuration — already held the right values**, and the update
+    was run anyway: it is the supported reconciliation, it clears any `Moved member account` drift left by
+    an out-of-band move, and it is the only controlled way to fire the event Stage 1b verification (vi)
+    had been waiting on for 25 days.
+  - **Nothing that mattered changed**: `RC-1` still reads `Staging Account`, `RC-2` still `Workloads`,
+    `0 check(s) FAILED`. The read-only fields did not submit, which is what a disabled field means.
 - **3.5 — [user] Update the provisioned product's parameters, same sitting**: re-enter `AccountName` as
   `Staging Account` alongside the new OU, then **read the parameters back**. Control Tower documents the
   e-mail field as *not* following an out-of-band change; whether `AccountName` does is not documented. If
   it refuses, record the divergence as a permanent property of the provisioned product — the treatment D32
   gives the direct assignment.
+- **3.6 — RE-READ 2026-09-06 AFTER 3.5, and the trigger DID fire.** The morning's reading — six
+  assignments, no direct `USER` one — was taken **before** any account update had run, which is exactly the
+  ambiguity it recorded. After the *Update account*, `./aws/list-identities.py` §5.2 reads **seven**, the
+  new row being **`AWSAdministratorAccess` → the infrastructure user `(USER)`**. **Stage 1b verification
+  (vi) closes in the affirmative**, 25 days after 5.1 removed it: a Control Tower account update
+  **re-asserts** the direct assignment. 1b step 5.1's own instruction for this branch is followed — it is
+  recorded as permanent in `D32` and `docs/AWS_STATE.md`, and **not deleted again**.
+  - **The consequence is a rule rather than a row.** The absence of that assignment on the other four
+    vended accounts is **not a control** — it survives only until each account's next update, and no gate
+    may be written assuming otherwise.
+  - **`rename-check.py`'s `RC-5` passed while listing it**, and that is correct scoping rather than a
+    miss: it checks D18's persona row (no read-write, no image steward), and the landing zone's sets are
+    not its subject. Worth knowing before someone reads a `pass` there as "the assignment list is as
+    designed".
 - **3.6 — DONE 2026-09-06, and the trigger did NOT fire — with a caveat that is the honest half of the
   answer.** `./aws/list-identities.py` §5.2: `Staging Account` carries **six** assignments — the three
   landing-zone group ones (`AWSOrganizationsFullAccess`, `AWSPowerUserAccess`, `AWSReadOnlyAccess`) and

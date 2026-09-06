@@ -8,6 +8,22 @@
 
 **Referenced by stages:** [Stage 1a](../stages/stage-01a-landing-zone.md), [Stage 1b](../stages/stage-01b-identity-and-controls.md)
 
+**AMENDED 2026-09-06 — the direct assignment is PERMANENT, and this is measured rather than reasoned.**
+Stage 1b step 5.1 removed the Account Factory `AWSAdministratorAccess` assignment from every vended account
+on 2026-08-12 and opened verification (vi): *does the removal stick, or does Control Tower re-create it?*
+The answer arrived when [Stage 6b](../stages/stage-06b-development-becomes-staging.md) step 3.5 ran a
+Control Tower *Update account* against the renamed `Staging Account` — `./aws/list-identities.py` read
+**seven** assignments where it had read six that morning, the new one being
+`AWSAdministratorAccess → the infrastructure user (USER)`. **An account update re-asserts it.** 1b step
+5.1's own instruction for this branch is followed: it is recorded here and **not deleted again**.
+
+**What this changes is a rule, not a row.** The absence of the direct assignment on the other four vended
+accounts is not a control — it is a state that survives only until each account's next update, and no gate
+may be written that assumes otherwise. What is unchanged is this decision's argument: the assignment is the
+**infrastructure user's**, so it is still one administrator, one MFA device, one credential. The thing to
+keep watching is that **no `awsds-*` profile is ever pointed at it** — every profile reaches an account
+through `InfrastructureAccess`, and an admin path that exists is not the same as one that is used.
+
 ---
 
 ## Rationale and consequences
