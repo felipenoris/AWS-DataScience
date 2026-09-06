@@ -1,14 +1,23 @@
-# development/foundation/ - Development's [P] network (Stage 3 pass 1). One vpc-module
-# instance plus its flow-log delivery role. NO private zone, by decision (step 4.2): nothing
-# in Development is addressed by a private name. Pass 2 (the peering requester toward
-# Production, INT-09, and the two zone associations of 4.4) lands here in its own sitting,
-# additively.
+# production/workloads/ - VPC-Workloads, the production runtime's network (Stage 6c step 1.3,
+# 2026-09-06).
 #
-# MODULES ARRIVE BY GIT TAG, NEVER BY BRANCH (docs/plan/conventions.md §6; Stage 3 step
-# 1.1a). The host the first callers pin is GITHUB, over SSH - the transport the operator's
-# remote already uses - and moving to GitLab (D8, Stage 7) is every caller's init changing
-# with it, recorded there. `terraform init` fetches these over the user's own git
-# credentials: a failure there is auth, not Terraform.
+# PRIVATE BY THE ABSENCE OF ONE ROUTE, which is the whole of what distinguishes it from the hub
+# next door. `public_internet_route = false` below leaves the internet gateway created and
+# unattached to any path: "is this VPC private?" is then a question about a ROUTE TABLE - the
+# object the answer is enforced in, which ./aws/networking.py reads and a console shows - rather
+# than a question about which branch of a module ran.
+#
+# WHAT LANDS HERE, AND WHY THE ISOLATED TIER IS NOT IT. Stage 9's SageMaker runtime and Stage
+# 10's MWAA Serverless workers take the PRIVATE tier, in TWO AZs. That two-AZ requirement is
+# AWS's documented private-routing shape for MWAA Serverless and it is this estate's single D9
+# exception - Stage 10 decision 3 bounds how far the duplication is allowed to go, and this
+# comment exists so the exception is met as a decision rather than discovered as a bill.
+#
+# ITS INTERFACE ENDPOINTS ARE NOT HERE EITHER: they belong to the [E] slice
+# production/workloads-egress/ (step 1.3a), which is torn down between sittings like every other
+# egress slice. A VPC and its endpoints have different lifecycles, and D11 is that split.
+#
+# MODULES ARRIVE BY GIT TAG, NEVER BY BRANCH (docs/plan/conventions.md 6).
 
 data "aws_partition" "current" {}
 
@@ -79,8 +88,15 @@ module "vpc" {
   # checkov:skip=CKV_TF_1:pinned by git TAG by convention (conventions §6, Stage 3 step 1.1a) - a repository-internal tag only the repo owner can move
   source = "git::git@github.com:felipenoris/AWS-DataScience.git//terraform-modules/vpc?ref=vpc-v0.3.1"
 
-  env               = var.env
-  name_suffix       = var.name_suffix
+  env         = var.env
+  name_suffix = var.name_suffix
+
+  # THE LINE THAT MAKES THIS VPC PRIVATE, and it is a literal on purpose. Every other value this
+  # slice takes is generated because it varies per environment; this one does not vary - being
+  # unreachable from the internet is what VPC-Workloads IS (D38), permanently, in every region
+  # this design is ever rebuilt in. A generated input would make it look like a setting.
+  public_internet_route = false
+
   vpc_cidr          = var.vpc_cidr
   zone_ids          = var.zone_ids
   flow_log_role_arn = module.flow_log_role.role_arn

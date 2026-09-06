@@ -261,6 +261,11 @@ SLICES = [
     Slice(
         "production", "networking", PERSISTENT, "VPC-Networking 3x2: the estate's only IGW route"
     ),
+    # Stage 6c step 1.3 (2026-09-06) - the production runtime's VPC, private by the ABSENCE of
+    # the IGW route rather than by lacking a gateway. Its interface endpoints are the [E] slice
+    # production/workloads-egress/ (rank 51), never here: a VPC and its endpoints have different
+    # lifecycles, and D11 is that split.
+    Slice("production", "workloads", PERSISTENT, "VPC-Workloads 3x2: private, no IGW route"),
     # Stage 3 pass 3 (2026-08-16). The endpoint counts are step 8.3's per-role lists:
     # core 8 + the account's extras; every row includes a mode-A NAT (0.050 = 0.045 + IPv4).
     Slice("sandbox", "egress", EPHEMERAL, "NAT + 11 interface endpoints (8.3)", 0.160),
@@ -272,6 +277,17 @@ SLICES = [
         0.160,
     ),
     Slice("production", "egress", EPHEMERAL, "NAT + 10 interface endpoints (8.3)", 0.150),
+    # Stage 6c step 1.3a (2026-09-06) - VPC-Workloads' endpoint slice, written EMPTY and
+    # egress_mode "B" from birth: zero NAT (D38) and no endpoint until Stage 9/10 names one, so
+    # usd_per_hour is 0.0 and true rather than 0.0 and pending. It exists now because an [E]
+    # slice that arrives AFTER the teardown target was last read is how a bill starts.
+    Slice(
+        "production",
+        "workloads-egress",
+        EPHEMERAL,
+        "VPC-Workloads endpoints - empty until St.9/10",
+        0.0,
+    ),
     # Stage 3's Deliverables, as slices rather than as a script (2026-08-16). These are
     # INSTRUMENTS: created, read from the serial console, destroyed in the same sitting -
     # `make down` is the whole reason they are here and not in aws/probes/, whose declared

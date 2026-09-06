@@ -250,17 +250,52 @@ that is the estate's only internet-facing tier, and nothing can be peered to a V
 always planned in 10.30's private tier, both peering accepters live there, and the four zone associations
 point at it.
 
+- **1.1 — DONE 2026-09-06.** `8 to add, 13 to change, 8 to destroy`, re-plan `No changes`, and the two
+  readings that decide it came back right: **`s3_gateway_endpoint_id` is the pre-apply value** and both
+  peerings are still `active` under the **same `pcx-` ids**. The VPC tags as `awsds-prod-shared-vpc`.
+  The eight replacements are the same class 6b step 4.4 measured on Staging.
 - **1.1 — [Claude⚡] Re-label the existing VPC as `VPC-SharedServices`**: apply the `name_suffix` to
   `production/foundation/` and read the plan — tags in place, security groups replaced, **VPC and gateway
   endpoint ids unchanged**. Any id in the replacement list stops the step.
+- **1.2 — DONE 2026-09-06.** `30 to add, 0 to change, 0 to destroy`, re-plan `No changes`. Free at rest:
+  no NAT, no interface endpoint, no Elastic IP. The slice is `foundation`'s module with
+  `name_suffix = "networking"` and **no zones, no peering and no `peers` input** — that last one was
+  dropped from its `variables.tf` because 3.1's matrix is the map it will need, and a declared input
+  nothing consumes is what tflint rejects.
+  - **Its "the estate's ONLY IGW route" is the TARGET, not today's reading.** Measured after the apply:
+    **four** IGW routes exist — Production 2, Sandbox 1, Staging 1. The spokes still carry Stage 3's, and
+    **pass 5 is what removes them**. Worth stating before step 1.5 writes a check that would otherwise be
+    red for four passes — the failure this stage's own pass-5 discipline exists to catch.
 - **1.2 — [Claude⚡] Create `production/networking/`**: VPC 10.31.0.0/16 from the same module, both AZs by
   `zone_id` (D9), IGW attached, the public tier carrying the estate's only `0.0.0.0/0 → igw` route, S3 and
   DynamoDB gateway endpoints on every route table, flow logs on.
+- **1.3 — DONE 2026-09-06, and it needed a module capability 0.4 did not add.**
+  `aws_route.public_internet` was **unconditional**, so every VPC the module builds reached an internet
+  gateway. `vpc-v0.3.1` adds `public_internet_route`; the gateway is still created when it is false,
+  because that makes *"is this VPC private?"* a question about a **route table** — the object the answer
+  is enforced in — rather than about which branch of a module ran.
+  - **`29 to add` against the hub's 30, and the difference is exactly the missing route.** Read back from
+    AWS rather than from state: `awsds-prod-workloads-public` returns **0** IGW routes,
+    `awsds-prod-networking-public` returns **1**.
+  - **A tag was burned getting here.** The `git commit` failed its hooks, the failure was swallowed by a
+    `| grep` on the same command line, and `git tag` ran anyway — so `vpc-v0.3.0` is on origin pointing at
+    the wrong commit. The runbook forbids force-moving a pushed tag, so v0.3.0 is **abandoned** and the
+    release is **v0.3.1**. Second time this session that piping a command into `grep` hid its exit code.
 - **1.3 — [Claude⚡] Create `production/workloads/`**: VPC 10.32.0.0/16, same shape, **no IGW route in any
   route table**. The module still creates the gateway (free, unused); the absence of the route is what
   makes the tier private. **Two private subnets in two AZs** — Stage 10's MWAA Serverless workers land
   here and AWS's private-routing shape requires it, which is why this one VPC's endpoint set is the
   estate's single D9 exception (Stage 10 decision 3 bounds how far the duplication goes).
+- **1.3a — DONE 2026-09-06, and "empty" took an override the module says never happens.**
+  `extra_services = []` alone left **eight interface endpoints** — the module's `core_services` default,
+  0.010/h each, **0.080/h for a VPC nothing runs in**. That variable's description reads *"Overridden
+  never"*, and it was written when every egress slice served a VPC people work in, where the core eight
+  are what a notebook cannot function without under design B. **This slice is the case that comment did
+  not anticipate**, so it empties both lists — and the plan then reads *"apply this plan to save these
+  new output values… without changing any real infrastructure"*, which is what makes `usd_per_hour = 0.0`
+  honest rather than aspirational. Stage 9/10 decides what comes back, and deciding is the point:
+  restoring the core eight wholesale would inherit a list chosen for a different kind of VPC.
+  - `egress_mode = "B"` from birth — this slice never passes through the shape 5.1 converts away from.
 - **1.3a — [Claude] Write `production/workloads-egress/` beside it, empty of endpoints until Stage 9/10
   names them**: the `[E]` slice that gives `VPC-Workloads` its interface endpoints and its DNS firewall.
   It exists now rather than later because rank, `SLICES` row and folder land in one commit (Recipe C), and
