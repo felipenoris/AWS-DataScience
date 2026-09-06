@@ -405,6 +405,29 @@ uses it is destroyed.
     `buckets.tf`. Expect bucket-policy updates in the plan and read them: the perimeter narrowing is
     correct and intended, but it is a **different kind of change** from a grant revocation and it is the
     one that could lock out a principal nobody was thinking about.
+- **2.4 — DONE 2026-09-06.** **`0 added, 0 changed, 5 destroyed`**, state empty afterwards, folder and
+  `layers.py` row removed. Three things measured rather than assumed:
+  - **The blocker was the missing VARIABLE, not the missing role.** This step said the slice "cannot be
+    converted — its `data.tf` resolves `AWSReservedSSO_DataScientistAccess_*` with `one()`, which fails at
+    plan time the moment 2.1 lands". **`one()` returns null on an empty collection** and errors only on two
+    or more, so 2.1 would have produced a silent null, not a failure. What actually stops the slice is 2.3
+    dropping the account from `DATA_CONSUMERS`: the `lake` variable is `nullable = false` with no default
+    and stops being emitted, so Terraform cannot **load** the slice. The configuration was stripped, as at
+    1.7.
+  - **The four Lake Formation re-grants were gone before the apply reached them** — the plan carried
+    5 deletes, not 9, and `list-permissions` in the account reads **0** afterwards. They went with the
+    resource-link databases and the share, not by a separate revocation. *A first reading of the plan
+    guessed an orphan; the measurement says there is none.*
+  - **Destroying `aws_lakeformation_data_lake_settings` is a RESET, not a deletion.** The account came back
+    with `CROSS_ACCOUNT_VERSION=1` and an **empty administrator list**, which read as `DL-5` and `DL-13`
+    failing until `datalake.py` was re-scoped (below). `DL-6` did **not** revert — no `IAMAllowedPrincipals`
+    default returned.
+- **2.5 — DONE 2026-09-06.** `./aws/datalake.py` **`0 check(s) FAILED`** with `DL-7` at **2 resource
+  links** (from 4, both survivors Sandbox's); `./aws/rename-check.py` turns **RC-5 and RC-6 to `pass`** —
+  the six permission sets and **no** Lake Formation grant naming the account — leaving only RC-1 and RC-2,
+  which are pass 3's console acts. **`datalake.py` was the fifth instrument to need its scope moved at the
+  step that moved it** rather than at 5.1: `CONSUMER_PROFILES` is now one profile, with the reset above
+  written into the comment so the next reader does not re-diagnose it as drift.
 - **2.4 — [Claude⚡] Destroy the consumer slice**: `terraform-live/development/data/`. It cannot be
   converted — its `data.tf` resolves `AWSReservedSSO_DataScientistAccess_*` with `one()`, which fails at
   plan time the moment 2.1 lands. The account data CMK `alias/awsds-dev-data` goes with it; **Stage 9

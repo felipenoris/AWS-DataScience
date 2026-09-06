@@ -390,3 +390,30 @@ edit, plan, apply and read-back below is Claude's. Applied as the **infrastructu
 - **[Claude]** `lakeformation list-permissions` filtered on that account: **2 → 0**. Six rows of the grant
   register in `docs/AWS_STATE.md` annotated **REVOKED 2026-09-06** — struck through, dated, **none
   deleted**, as the register's own rule requires.
+
+- **[Claude] Step 2.4, applied as `awsds-infra-dev`: `0 added, 0 changed, 5 destroyed`** — two Glue
+  resource-link databases, the account's `aws_lakeformation_data_lake_settings`, and the account data CMK
+  with its alias. State empty afterwards; the folder and its `layers.py` row removed in the same commit,
+  on 1.7's finding that a whole-slice teardown commits the end state.
+- **[Claude] The stage named the wrong blocker, and the correction matters for the next consumer.** It said
+  the slice "cannot be converted — its `data.tf` resolves `AWSReservedSSO_DataScientistAccess_*` with
+  `one()`, which fails at plan time the moment 2.1 lands". **`one()` returns null on an empty collection**
+  and errors only on two or more, so 2.1 would have fed a silent null into the module. What actually stops
+  the slice is step **2.3**: dropping the account from `DATA_CONSUMERS` stops emitting the `lake` variable,
+  which is `nullable = false` with no default, so Terraform cannot **load** the slice at all. The
+  configuration was stripped, exactly as at 1.7.
+- **[Claude] A prediction of mine that the measurement refuted.** Reading the plan's 5 deletes against the
+  state's 11 entries, I took the four `aws_lakeformation_permissions` for orphans that Terraform could no
+  longer see — a grant naming a role deleted at 2.1. **`list-permissions` in the account reads `0` after
+  the apply**: they went with the resource links and the share. No orphan, and the state came back empty.
+- **[Claude] `aws_lakeformation_data_lake_settings` "destroy" is a RESET.** The account came back with
+  `CROSS_ACCOUNT_VERSION=1` and an **empty administrator list** — AWS defaults, not an absence. Read as a
+  consumer that is exactly `DL-5` and `DL-13` failing; read as what the account now is — no share, no
+  resource link, no catalog object — it is the resting state. **`DL-6` did not revert**: no
+  `IAMAllowedPrincipals` default came back, which is the one that would have mattered.
+- **[Claude] Step 2.5, and the fifth instrument to be re-scoped at the step that moved it.**
+  `datalake.py`'s `CONSUMER_PROFILES` is now one profile, with the reset above written into the comment so
+  the next reader does not re-diagnose it as drift. Then: `datalake.py` **`0 check(s) FAILED`**, `DL-7` at
+  **2 resource links** (from 4); `rename-check.py` turns **RC-5 and RC-6 to `pass`** — six permission sets,
+  no Lake Formation grant naming the account — leaving **only RC-1 and RC-2**, the rename and the OU move.
+  **Pass 2 is complete, and everything that does not depend on the user is done.**

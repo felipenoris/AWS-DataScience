@@ -66,7 +66,18 @@ DATA_PROFILE = "awsds-infra-data"
 IDENTITY_PROFILE = "awsds-infra-identity"
 # The consumer side is PER BUSINESS UNIT (D35): unit 1's Sandbox plus Development today;
 # Production joins at Stage 9. Add each vended unit's profile here as Stage 14 vends it.
-CONSUMER_PROFILES = ("awsds-infra-sandbox-1", "awsds-infra-dev")
+# ONE CONSUMER SINCE STAGE 6b STEP 2.4 (2026-09-06). It was two; `awsds-infra-dev` left with
+# the share itself - that account becomes the headless `Staging`, and D20 keeps a deployment
+# target off the lake entirely.
+#
+# AND LEAVING IT HERE WAS NOT NEUTRAL, WHICH IS WHY THIS COMMENT EXISTS. Destroying the
+# consumer slice destroys `aws_lakeformation_data_lake_settings`, and that resource's "destroy"
+# is a RESET to AWS defaults, not a deletion: the account came back with
+# `CROSS_ACCOUNT_VERSION=1` and an EMPTY administrator list. Read as a consumer, those are
+# DL-5 and DL-13 failing. Read as what the account now is - no share, no resource link, no
+# catalog object, nothing to administer - they are the resting state. A check inherits the
+# scope of the account it was written for (Lesson 31), and this is that scope moving.
+CONSUMER_PROFILES = ("awsds-infra-sandbox-1",)
 
 # Contracts named in the stage file, so a rename fails loudly rather than silently.
 MAINT_ROLE = "awsds-data-catalog-maintenance"  # Stage 5 step 3.2, the SCP contract
