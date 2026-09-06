@@ -7,7 +7,7 @@
 #                 aws sso login --sso-session awsds
 #
 #   run:      ./aws/org-trusted-access-services.py                   # awsds-infra-identity
-#             ./aws/org-trusted-access-services.py awsds-infra-dev   # a different profile
+#             ./aws/org-trusted-access-services.py awsds-infra-staging   # a different profile
 #             ./aws/org-trusted-access-services.py -                 # no --profile: run it
 #                                                                    # inside CloudShell
 #             (CloudShell has no uv: run `python3 aws/org-trusted-access-services.py -`

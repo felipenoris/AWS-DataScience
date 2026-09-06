@@ -92,11 +92,22 @@ OUT_NAME = "networking.txt"
 # convention aws/INDEX.md documents; if one is renamed, the check reports "cannot resolve"
 # rather than failing wrongly.
 SBX_PROFILE = "awsds-infra-sandbox-1"
-DEV_PROFILE = "awsds-infra-dev"
+STAGING_PROFILE = "awsds-infra-staging"
 DATA_PROFILE = "awsds-infra-data"
 CANARY_PROFILE = "awsds-policy-canary"
 
 # The two ranges the route checks are about (Stage 3 validation 2 and step 6.5).
+#
+# NT-5 AND NT-6 STILL MEASURE SOMETHING TRUE AND WILL SOON SAY SOMETHING FALSE, WHICH IS THE
+# WORSE OF THE TWO FAILURES (flagged 2026-09-06, Stage 6b). 10.40.0.0/16 was the allocation
+# reserved for an unvended `Staging`, and both checks print "Staging is deliberately unpeered
+# (D20)" while asserting that nothing routes to it. That vend never happened: Stage 6b renames
+# `Development` instead, so the account called Staging lives at **10.50.0.0/16** and IS peered
+# to Production. Step 4.1 frees 10.40 outright and 6c step 0 spends it.
+# The assertion survives the change - nothing should route to an unallocated range either - but
+# the SENTENCE has to stop naming Staging. Rewritten at 6b pass 5, once 4.1 has landed and
+# there is a measured allocation to name; flagged here rather than half-fixed, because a check
+# whose message and whose assertion disagree is read by whoever is debugging at the time.
 STAGING_CIDR = "10.40.0.0/16"
 WIREGUARD_CIDR = "10.90.0.0/24"
 
@@ -680,7 +691,7 @@ def main(argv: list) -> int:
         if zone not in zone_names:
             checks.note("NT-8", f"zone {zone}", "not created yet - expected before Stage 3 step 4.")
             continue
-        for tp in (SBX_PROFILE, DEV_PROFILE):
+        for tp in (SBX_PROFILE, STAGING_PROFILE):
             candidates = [
                 vpc for p, vpc, _c, is_default, _s, _h in vpcs if p == tp and is_default == "False"
             ]

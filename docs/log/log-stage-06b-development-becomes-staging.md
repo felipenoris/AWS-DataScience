@@ -546,3 +546,57 @@ such; every reading is Claude's, as the infrastructure user.*
     tag policy allows all six values org-wide, so neither would have **failed** after the flip — they
     would have quietly asserted a value nothing carries, which is worse than a failure. Both now read
     `staging`, confirmed an allowed value in `awsds-org-tag-policy.json`.
+
+## 2026-09-06 — step 4.2, and the instruments that broke the moment the profile was renamed
+
+*Written by Claude, same day. Every reading is Claude's, as the infrastructure user.*
+
+- **[Claude] Step 4.2 — `terraform-live/staging/bootstrap/` written, planned, NOT applied.** It is the
+  sixth bootstrap slice and Recipe E step 2's precondition: the destination bucket must exist before any
+  `-migrate-state` can name it. The parity check accepts it — byte-identical to the reference, with
+  `backend.tf` in the **sanctioned phase-1 commented form**, which is the one legitimate difference the
+  check is built to tolerate. A first attempt added three lines of prose explaining the phase and the
+  check failed it: parity compares the file **with the comment markers removed**, so explanatory prose
+  inside that file is content, not commentary. The header already carries the explanation.
+  **Plan: `8 to add, 0 to change, 0 to destroy`** → `awsds-staging-tfstate` and
+  `alias/awsds-staging-tfstate`. **The apply was refused by this session's own tooling**, not by AWS and
+  not by the user, and the saved plan is what the apply will consume unchanged.
+- **[Claude] `PROFILES["development"]` was re-pointed rather than left alone, and that is the finding.**
+  Step 5.0 renamed `awsds-infra-dev` → `awsds-infra-staging` in `~/.aws/config`, so **the old spelling
+  now resolves to nothing**. Two folder keys naming one profile is a **window, not a design**: it closes
+  at 4.7, when `development/bootstrap/` goes with the bucket every other migration reads from.
+- **[Claude] A hazard found while reading Recipe E against this repository, and it is worth writing
+  down before pass 4 runs it.** Recipe E step 3 says to `git mv` the folder and **regenerate the backend
+  configuration, leaving the tfvars alone** — that is what makes step 5's `No changes` meaningful. In
+  this tree the tfvars are **generated from the folder key**, so regenerating them *is* the token flip.
+  The two are separable only because `terraform.auto.tfvars` is untracked and moves with the directory:
+  **the migration must run `gen-backend-hcl.py` alone and never `gen-tfvars.py`.** Which makes
+  `./scripts/slices.py` unusable for that one step — its `prepare()` regenerates the tfvars before every
+  `init`, so `slices.py up` would flip the token silently, inside the very step whose gate is that
+  nothing changed. `terraform` is called directly for 4.3, deliberately.
+
+- **[Claude] Six instruments stopped resolving the moment 5.0 ran, and they were fixed now rather than
+  at pass 5.** The stage's own pass-5 header is the reason: *"a check that is red for four passes is a
+  check nobody reads on the fifth."* Every one of these named the profile, and a profile that does not
+  exist produces a failed call rather than a finding.
+  - `studio.py` — dropped from `INTERACTIVE_PROFILES`; `RETIRED_MEMBER_PROFILES` is **empty again** and
+    kept rather than deleted, because that third state is not hypothetical: it was invented at 1.5 and
+    held one row for the few hours between the disassociation and the OU move. **`HEADLESS_PROFILES`
+    already carried `awsds-infra-staging`** as a promise; it is now an account, and the run says so —
+    **`US-6 pass — datazone reads denied in awsds-infra-staging`**, which is D28's headless control
+    holding, measured from the account rather than inferred from the OU.
+  - `cicd.py` — the row was **deleted, not retargeted**. It named a dev-env *registration* home beside
+    Sandbox; the account is a **deploy target** now, and it already appears one row up as
+    `awsds-deploy-staging`, a different role for a different job. Interactive compute is Sandbox-only
+    since the 2026-09-05 re-scope, so that map has one dev-env home **by design rather than by attrition**.
+  - `supplychain.py`, `dlp.py`, `networking.py` and six usage-example comments — retargeted.
+  - **`rename-check.py` keeps BOTH spellings on purpose** and the comment now says why it keeps a row
+    that no longer resolves: the config edit and the AWS-side rename do not happen in the same second,
+    and this is the file that has to keep reading across that gap.
+  - **One thing was flagged instead of fixed, and the choice is the point.** `networking.py`'s `NT-5` and
+    `NT-6` assert that nothing routes or peers into `10.40.0.0/16` and print *"Staging is deliberately
+    unpeered (D20)"*. The assertion stays true; **the sentence is about to become false** — that vend
+    never happened, the account called Staging lives at **10.50** and IS peered to Production, and 4.1
+    frees 10.40 for 6c to spend. A check whose message and whose assertion disagree is read by whoever is
+    debugging at the time, so the file now carries the dated warning and the rewrite waits for 4.1 to
+    land and give it a measured allocation to name.

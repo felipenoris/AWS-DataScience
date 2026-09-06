@@ -9,7 +9,7 @@
 #             sso-session name, not by profile or account (see aws/INDEX.md).
 #
 #   run:      ./aws/account-bpa.py                       every awsds-* profile
-#             ./aws/account-bpa.py awsds-infra-dev ...   only the profiles named
+#             ./aws/account-bpa.py awsds-infra-staging ...   only the profiles named
 #             python3 aws/account-bpa.py -              no --profile: CloudShell (which has
 #                                                       no uv), for the three accounts that
 #                                                       have none

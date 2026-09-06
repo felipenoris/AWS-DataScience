@@ -7,7 +7,7 @@
 #                 aws sso login --sso-session awsds
 #
 #   run:      ./aws/declarative-ec2.py                       every awsds-* profile
-#             ./aws/declarative-ec2.py awsds-infra-dev ...   only the profiles named
+#             ./aws/declarative-ec2.py awsds-infra-staging ...   only the profiles named
 #             python3 aws/declarative-ec2.py -              no --profile: CloudShell (no uv
 #                                                           there; bring the aws/ folder),
 #                                                           for the three accounts with none
