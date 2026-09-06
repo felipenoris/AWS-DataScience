@@ -854,3 +854,33 @@ thing to actually run. They are written up individually because three of them ar
   `sandbox/foundation`'s Elastic IP that the trim unblocks. Until then that slice plans **`1 to add`**
   and must not be applied, and the estate carries **two world-open rules**, one of them guarding
   nothing.
+
+## 2026-09-06 — the undocumented-AWS section, swept across every stage log
+
+- **[Claude] Lessons 53 and 54 written** — the DNS-Firewall-to-Squid translation, and *validate / render
+  / run are three different verdicts*. Both come from pass 4 and neither was recoverable from the plan.
+- **[Claude] A second list added to `lessons.md`: "What AWS does that its documentation does not say".**
+  It is a different KIND of thing from the lessons and the file says so — lessons are habits, these are
+  platform facts that cost a measurement. **Each entry carries what was measured, when, and where the
+  reading lives**, because a behaviour recorded without its evidence is indistinguishable from a belief
+  (Lesson 37).
+- **[Claude] Then swept every stage log — 0 through 6c, ~16k lines — rather than only this session's.**
+  Not read linearly: searched for the SIGNATURES this class of finding leaves behind — an error naming
+  the wrong cause, a call that answers differently before and after some other act, a field that writes
+  and never reads, a bill starting at a state nobody named. **Seven entries came back from earlier
+  stages**, the oldest from Stage 1c: `describe-effective-policy` answering `{}` instead of raising;
+  a rename with a **measured absence** of propagation delay; `EnvironmentRolePermissionBoundary` being
+  write-only; an associated DataZone domain listing from member accounts under the *owner's* ARN; an
+  empty `{"items": []}` that is a **success** signal rather than an absence; the three billing states of
+  the `Workflows` blueprint; and `DeleteWorkGroup` counting query **history** as contents with no API to
+  clear it.
+- **[Claude] Two candidates were EXCLUDED and the file names them**, because an admission rule nobody
+  can see applied is not a rule: `iam list-roles` omitting `PermissionsBoundary` is a **documented**
+  contract, and ECR's `tagPatternList` wildcards are on the page — what was wrong there was *our* claim,
+  not the vendor's. Both belong to the files that own them.
+- **[Claude] What the sweep says about this project's own record-keeping, and it is the useful part:**
+  every one of the seven was already written down, in the log of the stage that hit it, correctly and
+  with its evidence. **What was missing was not the finding but the INDEX** — a reader designing around
+  an AWS behaviour had no way to know the estate had already measured it three stages ago, short of
+  re-reading 16k lines. That is the gap this section closes, and it is the same gap `POLICIES.md` and the
+  lake READMEs close for their own subjects.

@@ -1200,7 +1200,15 @@ because a behaviour recorded without its evidence is indistinguishable from a be
 
 **The rule for adding here: it must be a behaviour the documentation does not state, or states somewhere
 that the person who needed it would not have been reading.** A documented gotcha we merely forgot belongs
-in the file that owns it — `conventions.md`, a runbook, a stage — not here.
+in the file that owns it — `conventions.md`, a runbook, a stage — not here. Two things were **excluded by
+that rule** on the first sweep, and naming them keeps it honest: `iam list-roles` omitting
+`PermissionsBoundary` (documented contract) and ECR's `tagPatternList` accepting wildcards (the page says
+so — what was wrong there was *our* claim, not the vendor's).
+
+**Seeded 2026-09-06 from Stage 6c pass 4, then swept across every stage log** — 0 through 6c, ~16k lines —
+for the signatures these findings leave behind: an error message that names the wrong cause, a call that
+answers differently before and after some other act, a field that writes and never reads, and a bill that
+starts at a state nobody named. Entries below carry the stage that found them.
 
 ### Elastic IP transfers
 
@@ -1261,6 +1269,16 @@ in the file that owns it — `conventions.md`, a runbook, a stage — not here.
   an RCP denying those actions locks every SSO user out of every member account. Measured the hard way at
   Stage 1c step 7.8; AWS's own `CT.STS.PV.1` carries the exclusion note, which is why no `sts:` action is
   added to that document without reading it first.
+- **`describe-effective-policy` answers `{}` rather than raising, when the policy type is ENABLED and
+  nothing is attached** — measured in passing at Stage 1c *"because the documentation does not say and the
+  two halves look alike"*. `EffectivePolicyNotFoundException` is what a reader expects and is **not** what
+  arrives, so *"no policy in force"* and *"an empty policy in force"* are one reading unless something else
+  separates them. Any check written against this call needs a second signal.
+- **An out-of-band account rename propagates with NO observable delay** — measured at Stage 6b step 3.2,
+  where the step itself had flagged the timing as undocumented: the console act and the
+  `organizations list-accounts` read agreed in the same sitting. Worth recording as a *measured absence*,
+  because a delay nobody sees is indistinguishable from a delay that is merely short, and the next person
+  would otherwise build a wait into a procedure that does not need one.
 
 ### Lake Formation and SageMaker Unified Studio
 
@@ -1271,6 +1289,36 @@ in the file that owns it — `conventions.md`, a runbook, a stage — not here.
 - **`CROSS_ACCOUNT_VERSION: 4` and `SET_CONTEXT: TRUE` are already set in accounts nobody configured**,
   including consumers — so the hazard is symmetric, and `aws_lakeformation_data_lake_settings` replaces
   the whole `Parameters` structure in **any** account that gains the resource.
+- **`EnvironmentRolePermissionBoundary` is WRITE-ONLY on a blueprint configuration** — the schema accepts
+  it and no read returns it (Stage 6a, 2026-08-22). **So boundary drift can never appear in a
+  `terraform plan`**, and the only door is `iam get-role` per role — `list-roles` omits
+  `PermissionsBoundary` by documented contract, which closes the cheap path. A control that cannot be
+  read back needs a sentinel, which is what `US-8` is.
+- **An ASSOCIATED DataZone domain lists from every member account, with an ARN naming the OWNING
+  account.** So *"there is a domain in this account"* reads **true** where there is none — a check that
+  counts domains per account reports a finding that is the association working. Measured when
+  `./aws/studio.py` failed *because the step succeeded*; the tell was the failure arriving from the act
+  that was supposed to work.
+- **`list-environment-blueprint-configurations` cannot succeed from a member account at all until the
+  association exists** — after it, the same call returns `{"items": []}`. **The empty list is the
+  SUCCESS signal**, not an absence, and the two are indistinguishable to anything that only checks the
+  contents.
+- **A blueprint configuration is applied FROM the member account**, an existing one is **immutable
+  through `awscc`**, and an **incomplete** one pins its projects in **both** directions — it can neither
+  deploy nor be torn down. None of the three is on the authoring API's page; each cost a sitting.
+- **The `Workflows` blueprint has THREE states and the bill starts at the third.** Enabling it provides
+  the CloudFormation template; the fee-bearing MWAA environment is born when a **project first uses** the
+  blueprint. *"Enabled"* is therefore not *"billing"*, and neither is *"a project exists"*.
+
+### Athena
+
+- **`DeleteWorkGroup` counts query HISTORY as contents, and no API deletes a query execution.** A
+  workgroup with zero named queries and zero prepared statements still refuses to delete while old
+  executions remain, and those age out on Athena's own **45-day** clock — there is no way to empty them by
+  hand. The only door is `RecursiveDeleteOption`. **The Terraform corollary is the expensive half**: that
+  door is a *configuration* argument (`force_destroy`), a destroy runs from the attributes in **state**,
+  so the flag has to be set in the configuration **before** the resource is removed from it. Deleting the
+  block and the flag in one version leaves the destroy unarmed, and it surfaces only at destroy time.
 
 ### EC2
 
