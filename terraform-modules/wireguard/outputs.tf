@@ -30,6 +30,6 @@ output "instance_role_arn" {
 }
 
 output "primary_network_interface_id" {
-  description = "THE ROUTE TARGET, and the reason it is an output rather than a lookup: a route that sends a private tier's default through this host has to name an ENI, and an ENI belongs to an instance that may be REPLACED (a shape change, a user-data change). Reading it through terraform_remote_state means the consumer re-plans onto the new interface instead of pointing at a deleted one - which is a route that blackholes rather than an error. Paired with vpc_nat_cidrs: without the masquerade rules this id routes traffic into a host that drops it."
+  description = "THE ROUTE TARGET, and the reason it is an output rather than a lookup: a route that sends a private tier's default through this host has to name an ENI, and an ENI belongs to an instance that may be REPLACED (a shape change, a user-data change). Reading it through terraform_remote_state means the consumer re-plans onto the new interface instead of pointing at a deleted one - which is a route that blackholes rather than an error. Paired with the PostUp chain: a route that names this id sends traffic into a host that drops it unless `forward_destinations` admits the destination and `no_masquerade_cidrs` (or the default masquerade) makes the return leg legitimate. Under 6c the consumer is the hub's public route table, which sends the TUNNEL range here so the proxy can see a per-device source."
   value       = aws_instance.this.primary_network_interface_id
 }

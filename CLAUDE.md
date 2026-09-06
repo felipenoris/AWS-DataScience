@@ -192,29 +192,36 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
 
 ### Current position
 
-- **STAGE 6c IN PROGRESS — passes 0, 1 and 2 DONE, pass 3 built (2026-09-06)**;
-  [log](docs/log/log-stage-06c-networking-hub.md). **Three VPCs in Production**: `foundation/` re-labelled
-  **VPC-SharedServices** (10.30), **VPC-Networking** (10.31, D38's hub, the estate's only IGW route) and
-  **VPC-Workloads** (10.32, private by the ABSENCE of that route). `workloads-egress/` exists and applies
-  **nothing**. **Five zones** (`awsds.internal` + three children + `awsds-pages.internal`) with the INT-22
-  matrix measured 5/2/2/3/2; the OLD family (`prod.internal`, `pages.internal`, `sandbox.internal`) stands
-  until 2.6. **Six peerings active** — the matrix's five plus `awsds-prod-from-staging`, which 3.1 retires.
-- **Still owed in 6c:** retire that peering, fold INT-09's into the generated shape behind `moved {}`
-  (the connection is live), `NT-11`/`NT-4` (3.6-3.7), then passes 4-7.
-- **`10.40.0.0/16` is FREE and STAYS unallocated** — 6c step 0.2. 6b step 4.1's "6c consumes it" was
-  wrong and is corrected in six files. `NT-3`/`NT-5`/`NT-6` measure it and need no expiry date.
-- **Module tags: `vpc-v0.3.1`.** `vpc-v0.3.0` is **ABANDONED** on origin (tagged onto the wrong commit —
-  Lesson 46). `vpc-egress`'s `name_suffix` is deferred to 6c 5.1, with the NAT removal, so there is one
-  bump rather than two.
-- **`-input=false` ON EVERY plan AND apply** (Lesson 47) and **never chain a tag/push onto a piped
-  command** (Lesson 46). Both cost this session real time.
-- **The vocabulary is per-(account, slice) now**: `VPC_CIDRS` replaced `CIDRS`, `VPC_NAME_SUFFIXES` names
-  each VPC, `PEERINGS` is the matrix both sides generate from, `VPN_HOMES` rows carry a slice, and
-  `account_folder` is emitted only to multi-VPC accounts.
-- **STAGE 6b DONE 2026-09-06, every pass.** `Development Account` → **`Staging Account`** in `Workloads`;
-  SMUS surface, lake share, persona and vending policy gone; tree migrated to `staging/` on
-  `awsds-staging-tfstate`, old bucket destroyed. **The VPC kept 10.50/16 and both `[P]` gateway-endpoint
-  ids survived** a folder rename, a state migration and a token flip.
+- **STAGE 6c IN PROGRESS — passes 0-3 DONE; pass 4 OPEN: 4.1/4.2 applied, 4.7-4.11 AUTHORED and
+  unapplied (2026-09-06)**. The hub's `[P]` anchors exist (`awsds-prod-vpn` + `awsds-prod-proxy` groups,
+  the proxy EIP, the **empty** host-key container, `/datascience/prod/proxy/allowlist` — `/awsds/…` is a
+  name **Parameter Store refuses**). `./aws/eip-transfer.py` is the 4.2 preflight: **ET-2 red before 4.4 is
+  the expected reading**. **`VPN_HOST_SLICE` is NOT `VPN_HOMES`** — the second moves only at 4.12, and
+  flipping it early denies every call from every network. **TWO world-open rules until 4.13**, one per
+  account, and the group NAME is the discriminator. **`./aws/vpn.py` still reads Sandbox** (hard-coded
+  `VPN_HOME_PROFILE`); 4.7 re-homes it. **The blackout is smaller than planned**: the VPN host has been
+  stopped since 2026-08-26. **Next act is the user's — 4.3, the host key by hand.**
+- **Authored, gates green, nothing applied:** `wireguard-v0.5.0` (untagged), `production/vpn/`,
+  `production/proxy/` (whole `squid.conf` owned, not a `conf.d` drop-in), the `[P]` access log + its CMK,
+  both allow-lists. **Templates are RENDERED, never only validated** — that caught `+` being arithmetic in
+  HCL and `%{` being `templatefile`'s directive marker. **Do not exempt the VPC CIDR from the masquerade**:
+  the resolver sits inside it and the tunnel's DNS dies. `production/networking/` has a ready, unapplied
+  plan: `3 to add, 1 to change`.
+- **Built in 0-3** ([log](docs/log/log-stage-06c-networking-hub.md)): **three VPCs in Production** —
+  `foundation/` re-labelled **VPC-SharedServices** (10.30), **VPC-Networking** (10.31, D38's hub, the
+  estate's only IGW route), **VPC-Workloads** (10.32, private by the ABSENCE of that route);
+  `workloads-egress/` applies **nothing**; **five zones** with the INT-22 matrix measured 5/2/2/3/2 (the
+  OLD family stands until 2.6); **five peerings**, INT-09 folded in by `moved {}`.
+- **Still owed in 6c:** `NT-11`/`NT-4` (3.6-3.7), then 4.3 onward and passes 5-7.
+- **`10.40.0.0/16` is FREE and STAYS unallocated** (6c 0.2; 6b 4.1 was wrong, corrected in six files).
+- **Module tags: `vpc-v0.3.1`**; `vpc-v0.3.0` **ABANDONED** on origin (wrong commit — Lesson 46).
+  `vpc-egress`'s `name_suffix` waits for 5.1, with the NAT removal — one bump, not two.
+- **`-input=false` ON EVERY plan AND apply** (Lesson 47); **never chain a tag/push onto a piped command**
+  (Lesson 46). **The vocabulary is per-(account, slice)**: `VPC_CIDRS`, `VPC_NAME_SUFFIXES`, `PEERINGS`,
+  `VPN_HOMES` rows carry a slice, `account_folder` only to multi-VPC accounts.
+- **STAGE 6b DONE 2026-09-06.** `Development Account` → **`Staging Account`** in `Workloads`; SMUS surface,
+  lake share, persona and vending policy gone; tree migrated to `staging/`, old bucket destroyed. **The VPC
+  kept 10.50/16 and both `[P]` gateway-endpoint ids survived** the rename, migration and token flip.
 - **The provisioned product does NOT follow an out-of-band rename and CANNOT be made to** — Control Tower
   renders `Display Name` and `Account Email` read-only. Permanent divergence, not drift.
 - **Stage 1b verification (vi) CLOSED, affirmative:** a Control Tower *Update account* **re-asserts** D32's

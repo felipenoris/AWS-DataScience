@@ -1,0 +1,56 @@
+#!/bin/bash
+# The Squid proxy's first boot - Stage 6c step 4.8. Everything here runs ONCE: this is a [D]
+# host, so anything that must survive a stop/start belongs in a systemd unit or in the State
+# Manager association, not in this file.
+#
+# WHAT IS DELIBERATELY NOT HERE: the ALLOW-LISTS. They are [P] data in SSM (step 4.10), fetched
+# by the render script below at the end of this boot and re-fetched every half hour after it. A
+# list baked into this file would make every allow-list edit a host replacement, which is a
+# 30-second outage of the whole estate's internet to add one domain (Lesson 4).
+#
+# EVERY PACKAGE COMES FROM THE AL2023 REPOSITORIES BY NAME - squid, jq and the CloudWatch agent
+# are all in them - so this script downloads no binary of its own and needs no allow-list entry
+# of its own to build itself.
+set -euxo pipefail
+
+say() { echo "=== awsds-proxy: $*"; }
+
+say "(1) packages"
+dnf install -y squid jq amazon-cloudwatch-agent
+
+say "(2) the configuration - written whole, not dropped into conf.d"
+install -d -m 0755 /etc/squid/conf.d
+cat > /etc/squid/squid.conf <<'SQUIDEOF'
+${squid_conf}
+SQUIDEOF
+
+# THE INCLUDED FILE MUST EXIST BEFORE SQUID PARSES ANYTHING - `include` of a missing file is a
+# fatal error, and at this moment the render script has not run yet. An EMPTY file is also the
+# correct starting state: nothing is allowed until the [P] parameter says so, and squid.conf's
+# backstop turns that into a named 403 rather than a hang.
+touch /etc/squid/conf.d/awsds-planes.conf
+
+say "(3) the render script - the only thing that reads the [P] allow-lists"
+cat > /usr/local/sbin/awsds-render-squid <<'RENDEREOF'
+${render_script}
+RENDEREOF
+chmod 0755 /usr/local/sbin/awsds-render-squid
+
+say "(4) first render - squid is not running yet, so the reconfigure inside is a no-op"
+# NOT FATAL AT FIRST BOOT, and this is the one place that is true: if SSM is briefly unreachable
+# while the Elastic IP is still being associated, the proxy still comes up - with an empty
+# allow-list, which refuses everything by name. The State Manager association fills it within one
+# interval, and `./aws/proxy.py` is what says whether it did.
+/usr/local/sbin/awsds-render-squid || say "(4) first render FAILED - starting with an empty allow-list; State Manager will retry"
+
+say "(5) squid"
+systemctl enable --now squid
+
+say "(6) the CloudWatch agent - the access log is the estate's egress evidence (step 4.11)"
+cat > /opt/aws/amazon-cloudwatch-agent/etc/awsds-agent.json <<'AGENTEOF'
+${agent_config}
+AGENTEOF
+/opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl \
+  -a fetch-config -m ec2 -s -c file:/opt/aws/amazon-cloudwatch-agent/etc/awsds-agent.json
+
+say "done - the proxy is up. What it will actually ALLOW is whatever the [P] parameter says."
