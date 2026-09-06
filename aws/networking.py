@@ -123,6 +123,12 @@ CANARY_PROFILE = "awsds-policy-canary"
 # else in the estate measures that at all. They only ever need re-pointing if a later stage
 # allocates 10.40 - and no stage currently plans to.
 UNALLOCATED_CIDR = "10.40.0.0/16"
+
+# D38's hub, and the one VPC allowed to hold a route to the WireGuard client range (NT-4, re-cut
+# at 6c step 3.6). Kept beside the other address literals for the reason they are all here: an
+# address in a .tf file is a copy, and an address in an instrument is a claim about the
+# allocation table, which scripts/tfhygiene/backend.py's VPC_CIDRS owns.
+HUB_CIDR = "10.31.0.0/16"
 WIREGUARD_CIDR = "10.90.0.0/24"
 
 # The range Control Tower's ACCOUNT FACTORY VPC occupies (measured 2026-08-15: every vended
@@ -602,25 +608,57 @@ def main(argv: list) -> int:
             f"{len(routes)} routes read across {n_accounts} account(s)",
         )
 
-    # NT-4: 10.90.0.0/24 in no route table anywhere (step 6.5) - peering does no
-    # edge-to-edge routing, so a route to the WireGuard client range is a route that can
-    # never work, and its presence means somebody is about to lose an evening to it. The
-    # internet-exit default route is excluded here for the same reason as in NT-3.
+    # NT-4: 10.90.0.0/24 in no route table OUTSIDE VPC-Networking (Stage 3 step 6.5, re-cut at
+    # 6c step 3.6 on 2026-09-06). Peering does no edge-to-edge routing, so a route to the
+    # WireGuard client range in a SPOKE is a route that can never work, and its presence means
+    # somebody is about to lose an evening to it.
+    #
+    # THE ONE EXCEPTION IS INSIDE THE HUB, and it is the point of the re-cut. Step 4.7 adds
+    # `10.90.0.0/24 -> the WireGuard host's ENI` to VPC-Networking's PUBLIC route table: the
+    # tunnel terminates there, and that route is what stops the host masquerading traffic bound
+    # for the proxy - which is what gives the proxy's access log a per-device address without any
+    # logging change. Same VPC, so no edge-to-edge routing is involved and the original argument
+    # does not apply.
+    #
+    # RE-CUT BEFORE 4.7 RATHER THAN WITH IT, deliberately: this widens what is allowed, so it
+    # stays green either way, and a check that has to be edited in the same sitting as the change
+    # it would have failed on is a check nobody trusts afterwards (Lesson 50, the other direction
+    # - written EARLY it is safe, written LATE it is a rubber stamp).
+    # WHICH VPC IS THE HUB, resolved from a reading rather than from a hard-coded id - and the
+    # signal is its CIDR, because that is the one fact in the `vpcs` rows that names the VPC
+    # rather than describing it. `scripts/tfhygiene/backend.py`'s VPC_CIDRS allocates
+    # 10.31.0.0/16 to (production, networking) and nothing else may hold it: NT-5 is what
+    # measures that no two VPCs overlap, so a second VPC answering to this range is already a
+    # failure there rather than a silent mis-identification here.
+    hub_vpc_ids = {v for _p, v, c, _d, _s, _h in vpcs if c == HUB_CIDR}
+
     nt4 = 0
-    for p, rtb, _vpc, dest, target, state in routes:
+    for p, rtb, vpc, dest, target, state in routes:
         if internet_exit_default(dest, target):
             continue
-        if cidr.overlap(dest, WIREGUARD_CIDR):
-            checks.fail(
+        if not cidr.overlap(dest, WIREGUARD_CIDR):
+            continue
+        if vpc in hub_vpc_ids:
+            checks.ok(
                 "NT-4",
-                "route touching the WireGuard client range",
-                f"{p} {rtb}: {dest} -> {target} ({state}) overlaps "
-                f"{WIREGUARD_CIDR} - that range is SNATed by the WireGuard "
-                "instance and appears in no route table by design (step 6.5).",
+                f"the one {WIREGUARD_CIDR} route, inside the hub",
+                f"{p} {rtb}: {dest} -> {target} ({state}) - VPC-Networking's own, step 4.7's "
+                "exception, which is what gives the proxy log a per-device address",
             )
-            nt4 += 1
+            continue
+        checks.fail(
+            "NT-4",
+            "route touching the WireGuard client range",
+            f"{p} {rtb}: {dest} -> {target} ({state}) overlaps "
+            f"{WIREGUARD_CIDR} OUTSIDE VPC-Networking - that range is SNATed by the "
+            "WireGuard instance and reaches no spoke by design (step 6.5); peering does "
+            "no edge-to-edge routing, so this route can never carry a packet.",
+        )
+        nt4 += 1
     if nt4 == 0 and routes:
-        checks.ok("NT-4", f"no route overlaps {WIREGUARD_CIDR}", "same read as NT-3")
+        checks.ok(
+            "NT-4", f"no route overlaps {WIREGUARD_CIDR} outside the hub", "same read as NT-3"
+        )
 
     # NT-5: pairwise CIDR overlap among project VPCs, across every measured account (1.2:
     # ranges are non-overlapping even between accounts that will never peer). Default and
