@@ -354,3 +354,5 @@ the reasoning that makes it *usable* is in the file. Recognising one is the sign
     written.**
 50. **A check written to a stage's FINAL expectation is red for every pass until that stage ends — give
     it a discriminator, write it at the pass that makes it true, or name the gap as a dated exception.**
+51. **Two intents sharing one list stay identical until they must differ — then a change made for one
+    silently makes it for the other. Lesson 33's mirror, and the more dangerous half.**

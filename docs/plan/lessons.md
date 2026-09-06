@@ -81,6 +81,12 @@ lesson can be *recognised* without opening this file; the reasoning that makes e
    detection-side twin of Lesson 5: an intention is not a control, and a command that cannot fail is not a
    check. Before writing a deliverable, ask what its output looks like when the thing is *broken*.
 
+    **ITS QUIETER HALF, MEASURED 2026-09-06 AND WRITTEN OUT AS LESSON 48**: the resource
+    need not move at all — its **name** moving is enough, when another account resolves it by
+    tag, alias or path rather than by id. Stage 6c step 1.1 re-labelled a VPC, every id was
+    unchanged, its gate passed, and two other accounts broke until somebody happened to run a
+    plan in one of them.
+
 14. **A condition that has to appear in N places by hand is a control that will be missing from one of
    them.** The case that produced this was D30's blanket carve-out — a principal exempt from every custom
    `Deny`, which meant the *same condition* had to appear in every statement, and a set where three
@@ -1119,6 +1125,22 @@ lesson can be *recognised* without opening this file; the reasoning that makes e
     default**: ship it red and rely on a human to remember why. The two outcomes — *"the thing is missing"*
     and *"the thing is wrong"* — are opposite findings, and a check that gives them one verdict has
     stopped being a check (Lesson 13, over time rather than over outcomes).
+
+51. **Two intents sharing one list stay identical until the day they must differ — and then a change made
+    for one silently makes it for the other.** This is Lesson 33's mirror, and it is the more dangerous
+    half. 33 warns that one intent enforced in *two* places diverges; this is *two* intents enforced in
+    *one* place, which never diverges and is wrong in a different way: it **cannot express a difference
+    the design later requires**, so the first change that needs one takes it from both. Stage 6c step 3.1
+    retired a peering, and the same `local.peer_vpc_ids` that named who a VPC **peers with** also named
+    whose VPC its DNS zones are **associated into**. Those were the same set for three stages. Splitting
+    them was not a refactor — **left conflated, the retirement plan would have destroyed a zone
+    association nobody was thinking about, inside a plan whose headline was peerings**, and it would have
+    read as correct in review because every line in it was about a peering. **The tell is a list whose
+    name answers one question while a second reader asks it another** (`peer_vpc_ids` consumed by a
+    `zone_peer` local is the shape, spelled out). **The test that finds it in seconds: name each consumer
+    and ask whether a row could ever be true for one and false for the other.** If yes, the list is two
+    lists whether or not it has diverged yet — and *"a DNS association is not a path"* is the sentence
+    that made this one obvious once asked.
 
 ---
 
