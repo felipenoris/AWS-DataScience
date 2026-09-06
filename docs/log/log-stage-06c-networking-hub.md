@@ -810,3 +810,23 @@ thing to actually run. They are written up individually because three of them ar
   from the public tier **with no interface endpoint anywhere in `VPC-Networking`** — the reach is
   the IGW, which is what D38 predicted and what Lessons 40-43 made worth checking rather than
   assuming.
+
+## 2026-09-06 — the second hung process of the session, and it was mine
+
+- **[user] Two background loops had been spinning since 18:16 and 18:18** — the user noticed, again,
+  not a gate. Both were `until` loops I wrote during 4.8 to wait for a cloud-init line on instance
+  `i-0b047210cbd810913`; **step 4.8's own `-replace` then terminated that instance**, so they were
+  asking a corpse for its console output every 15 and 20 seconds, forever. Confirmed before killing:
+  the polled instance reads `terminated`, and the proxy's live host is `i-098d91f80fa424ac2`.
+- **[Claude] Lesson 52 written, and it is the SHAPE that is wrong rather than the accident.** An
+  `until <success>; do sleep; done` has no branch for *the world changed underneath me*, so every
+  failure mode — the object gone, the command erroring, the condition unreachable — collapses into
+  "not yet". The `Monitor` tool documents the same trap for event filters (*"if this process crashed
+  right now, would my filter emit anything?"*); an `until` loop is that question with the answer
+  fixed at no. The fix is a second exit and a subject re-read each round rather than an id pasted at
+  the top.
+- **[Claude] Two hung processes in one session, with UNRELATED causes, is the argument for the guard
+  neither incident had.** The first was blocked on stdin for 3h33m (Lesson 47); this one was polling
+  a terminated instance. Nothing in this repository looks for a `terraform` process older than an
+  hour, a `.tflock` with no live owner, or a poll outliving its subject — and in both cases the
+  detector was a person reading a task list.
