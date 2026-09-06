@@ -86,7 +86,7 @@ locals {
     {
       Sid       = "AllowInteractiveWriterPutOnly"
       Effect    = "Allow"
-      Principal = { AWS = [local.sandbox_root, local.development_root] }
+      Principal = { AWS = [local.sandbox_root] }
       Action    = "s3:PutObject"
       Resource  = "${local.bucket_arns["dropbox"]}/${local.dropbox_prefix}/*"
       Condition = { ArnLike = { "aws:PrincipalArn" = local.writer_role_patterns } }

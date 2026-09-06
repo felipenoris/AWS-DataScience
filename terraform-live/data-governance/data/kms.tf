@@ -49,7 +49,7 @@ module "data_key" {
       {
         Sid       = "AllowDropBoxWritersViaS3"
         Effect    = "Allow"
-        Principal = { AWS = [local.sandbox_root, local.development_root] }
+        Principal = { AWS = [local.sandbox_root] }
         Action    = ["kms:GenerateDataKey", "kms:Decrypt"]
         Resource  = "*"
         Condition = {
