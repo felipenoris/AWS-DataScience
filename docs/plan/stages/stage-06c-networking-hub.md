@@ -165,6 +165,26 @@ one of the four (0.4) is a hard create-time conflict rather than a naming prefer
   (Recipe C). The order is load-bearing: `up` ascends and `down` descends, so `proxy` at 41 comes up before
   any `egress` (50) and goes down after it — which is what makes a spoke's package path exist for the whole
   life of an `[E]` session.
+- **0.4 — DONE 2026-09-06, `vpc-v0.2.0` released and the callers bumped.** Sixteen name sites in the
+  module now read one `local.name_prefix`; the calling slices mirror it so the flow-log **role** and the
+  **log group** keep the single contract their comment already stated. The suffix is generated per
+  (account, slice) from a new `VPC_NAME_SUFFIXES` table keyed identically to `VPC_CIDRS` — one is the
+  address plan, the other the naming plan, and sharing the key is what stops them drifting on the part
+  that matters — and it is **emitted only when non-empty**.
+  - **The default being harmless is proven, not assumed.** Recipe B step 1's source override was used:
+    `sandbox/foundation` planned against the local module **before** the tag existed and read
+    `No changes`; the override was reverted and re-initialised. After the bump, `sandbox/foundation` and
+    `staging/foundation` both re-plan `No changes` on the version alone.
+  - **The tag was confirmed by asking origin, not by trusting the push** (Recipe B step 5):
+    `git ls-remote --tags origin vpc-v0.2.0` returns one line whose hash is the commit tagged.
+  - **This step's note about the plan is now a measurement**: `production/foundation` plans
+    **`8 to add, 13 to change, 8 to destroy`** — and it is the **same eight** 6b step 4.4 measured on
+    Staging, one class: four security groups, the flow-log group, its IAM role, that role's inline policy,
+    and the flow log binding them, all replaced because their *names* are inputs. The VPC, all six
+    subnets, four route tables and the IGW change **in place**. **The gateway endpoints do not appear in
+    the plan at all** — they carry no `Name` tag — so 1.1's *"endpoint ids unchanged"* gate passes by
+    construction rather than by luck. **Not applied**: that is step 1.1, and 6c carries no apply
+    authorization yet.
 - **0.4 — [Claude] Bump `terraform-modules/vpc` to v0.2.0 with a `name_suffix`**, and carry it into the two
   names that are **account-unique, not VPC-unique**: `aws_cloudwatch_log_group.flow_logs`
   (`awsds-<env>-vpc-flow-logs`) and, in the calling slice, the flow-log IAM role of the same name whose
@@ -173,12 +193,32 @@ one of the four (0.4) is a hard create-time conflict rather than a naming prefer
   well (`awsds-prod-shared-*`, `awsds-prod-networking-*`, `awsds-prod-workloads-*`). Two commits, one tag
   (the runbook's order). **Note in the plan review that the existing VPC's tags change in place while its
   security groups are replaced.**
+- **0.4a — DEFERRED TO 5.1, BECAUSE THIS STEP CONTRADICTS ITSELF** *(read 2026-09-06)*. Its first
+  sentence says to bump `vpc-egress` **in the same sitting**; its last says the suffix *"rides along with
+  the **v0.5.0** bump 5.1 makes for the NAT removal, so there is one version bump rather than two"*. Doing
+  it now produces exactly the two bumps that sentence exists to avoid. **The last sentence wins**, and the
+  deferral was checked rather than assumed:
+  - **`production/egress/` does not set `dns_firewall`** — measured — so none of the module's
+    firewall-shaped account-unique names (`awsds-<env>-egress*`, `/awsds/<env>/dns-firewall`) exists in
+    Production today. What *would* collide is the **NAT pair** (`awsds-prod-nat`, gateway and EIP) and the
+    interface endpoints' `Name` tags, which `./aws/egress.py` reads.
+  - **5.1 removes the NAT outright** (D38: zero NAT gateways), so half that collision is deleted rather
+    than renamed, and the other half cannot arrive before `production/workloads-egress/` is applied **with
+    endpoints** — Stage 9/10, after 5.1. The window in which a bump is needed and has not happened is
+    therefore empty.
 - **0.4a — [Claude] Bump `terraform-modules/vpc-egress` in the same sitting, for the same reason**: it
   carries account-unique names too — the DNS-firewall log group **`/awsds/<env>/dns-firewall`** (a hard
   conflict) plus the rule group, its two domain lists and the query-log config, all named
   `awsds-<env>-egress`. Two Production VPCs both running a firewall collide, and `./aws/egress.py` reads
   these by name. The suffix rides along with the **v0.5.0** bump 5.1 makes for the NAT removal, so there is
   one version bump rather than two.
+- **0.5 — DONE 2026-09-06, shape only — the VALUE is 4.9's.** Each row is `(account, slice)`, both
+  consumers' `vpn_homes` variables carry the third field, and both `terraform_remote_state` keys read
+  `${each.value.slice}` where they hard-coded `foundation`. **The row still points at
+  `("sandbox", "foundation")` deliberately**: flipping it now would make `identity/sso` read an *empty*
+  state, and `DenyControlPlaneOffVpn` would then deny every call from every network — the failure
+  `permission-sets.tf`'s precondition already has an error message for. **Gate: `identity/sso` and
+  `data-governance/data` both re-plan `No changes`.**
 - **0.5 — [Claude] Give `VPN_HOMES` a slice field**: each row is consumed by `identity/sso/` and
   `data-governance/data/` as a `terraform_remote_state` read of that account's **`foundation/`**. The hub's
   Elastic IP, VPC id and gateway-endpoint id live in `production/networking/`, so the row becomes

@@ -47,8 +47,13 @@ data "terraform_remote_state" "vpn_home" {
   backend = "s3"
 
   config = {
-    bucket  = "awsds-${each.value.env}-tfstate"
-    key     = "${each.key}/foundation/terraform.tfstate"
+    bucket = "awsds-${each.value.env}-tfstate"
+    # THE SLICE COMES FROM THE ROW, NOT FROM A LITERAL (Stage 6c step 0.5). It read
+    # `foundation` until 2026-09-06, which was true while every VPN home was an account with one
+    # VPC. D38 moves the tunnel into VPC-Networking, whose Elastic IP lives in
+    # production/networking/ - so the slice stopped being derivable from the account, and a
+    # hard-coded one would read an EMPTY state and silently produce an allow-list of nothing.
+    key     = "${each.key}/${each.value.slice}/terraform.tfstate"
     region  = var.region
     profile = each.value.profile
   }
