@@ -45,8 +45,8 @@ variable "zone_ids" {
 }
 
 variable "peers" {
-  description = "Profile + env token per VPC-bearing account (Stage 3 pass 2), derived in scripts/tfhygiene/backend.py from the same tables as everything else - never authored here. Consumed by the aliased providers of the cross-account handshake; the self-row is emitted and unused."
-  type        = map(object({ profile = string, env = string }))
+  description = "Profile, env token and VPC name suffix per VPC-bearing account (Stage 3 pass 2; the suffix arrived at 6c step 0.6). Derived in scripts/tfhygiene/backend.py from the same tables as everything else - never authored here. The suffix is how a requester builds the accepter's VPC Name tag: 6c step 1.1 re-labelled Production's to awsds-prod-shared-vpc, and a lookup that assumed awsds-<env>-vpc stopped resolving."
+  type        = map(object({ profile = string, env = string, name_suffix = string }))
   nullable    = false
 }
 

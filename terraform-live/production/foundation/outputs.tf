@@ -69,3 +69,15 @@ output "pages_internal_zone_id" {
   description = "The pages.internal hosted zone id - same handshake (pass 2)."
   value       = aws_route53_zone.pages_internal.zone_id
 }
+
+# Stage 6c pass 2 - read by every slice that associates a VPC into them, and by 2.5's
+# authorizations. The old two above stay until step 2.6 retires their zones.
+output "awsds_internal_zone_id" {
+  description = "The awsds.internal apex - the shared names, associated into all five VPCs (INT-22)."
+  value       = aws_route53_zone.awsds_internal.zone_id
+}
+
+output "awsds_pages_internal_zone_id" {
+  description = "The awsds-pages.internal apex - a separate registrable parent, by decision (D36)."
+  value       = aws_route53_zone.awsds_pages_internal.zone_id
+}

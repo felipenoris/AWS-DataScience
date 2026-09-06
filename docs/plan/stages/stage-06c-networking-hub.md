@@ -325,6 +325,20 @@ no record gets **NXDOMAIN** rather than a public answer. **Explanation:** a miss
 produces a failure indistinguishable from a name that does not exist — which is why the matrix is written
 down (INT-22) and read by a check, since nothing derives it.
 
+- **2.1 / 2.2 / 2.3 — DONE 2026-09-06.** Five zones: `awsds.internal` and `awsds-pages.internal` in
+  `production/foundation/`, `prod.awsds.internal` in `production/workloads/`, `sandbox.awsds.internal` and
+  `staging.awsds.internal` in the accounts that own them. **All five carry `ignore_changes = [vpc]` from
+  the first apply** — 2.5 reverses the direction, so without it every later plan in an owning account
+  would try to remove the association Production made. **Eight zones stand across three accounts**; the
+  old three go at 2.6.
+- **STEP 1.1 HAD BROKEN BOTH SPOKES, AND THIS PASS IS HOW IT SURFACED.** Renaming Production's VPC `Name`
+  tag to `awsds-prod-shared-vpc` broke `data "aws_vpc" "production"` in **both** spokes' `peering.tf`:
+  `Error: no matching EC2 VPC found`, on every plan and apply, from 1.1's apply until this fix. **The VPC
+  id never changed**, so 1.1's gate — *"any id in the replacement list stops the step"* — could not see
+  it. What moved was a **name another account resolves by**. **0.6's smallest half was pulled forward**:
+  the `peers` map gains `name_suffix` and the lookup builds the tag from it. **The peering LIST can wait
+  for 3.1's matrix; the peer LOOKUP cannot wait past the rename that breaks it**, which is why 0.6 is in
+  pass 0 and moving it was the wrong call.
 - **2.1 — [Claude⚡] Create the apex** `awsds.internal`, owned by `production/foundation/` (the services
   named directly under it live there). Records: `gitlab.awsds.internal`; `proxy.awsds.internal` and
   `vpn.awsds.internal` are written by pass 4 from the two hosts' **private** addresses.

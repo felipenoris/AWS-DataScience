@@ -1,19 +1,6 @@
-# sandbox.internal - one per business unit (Stage 3 step 4.2), associated with its own VPC
-# at creation: no cross-account handshake for this zone (4.4's table touches the two
-# Production zones, not this one). ~USD 0.50/month, already in the cost-model floor.
-
-resource "aws_route53_zone" "sandbox_internal" {
-  name    = "sandbox.internal"
-  comment = "Private names of this sandbox unit (Stage 3 step 4.2; .internal per D36/ICANN)"
-
-  vpc {
-    vpc_id = module.vpc.vpc_id
-  }
-}
-
 # ---------------------------------------------------------- Stage 6c pass 2: the child zone
 #
-# `sandbox.awsds.internal` - this account's half of the `awsds.internal` family (step 2.2). PRIVATE ZONES DO
+# `staging.awsds.internal` - this account's half of the `awsds.internal` family (step 2.2). PRIVATE ZONES DO
 # NOT DELEGATE: a VPC does not reach this zone through the apex, it reaches it by being
 # ASSOCIATED with this zone as well, and overlapping zones resolve by most-specific match. So
 # the apex/child split here is a naming convention that keeps each account's names in a zone that
@@ -23,9 +10,9 @@ resource "aws_route53_zone" "sandbox_internal" {
 # associated into this zone by PRODUCTION (step 2.5 reverses the old direction: the zone owner
 # authorizes, the VPC owner associates). Without this, every later plan here would try to remove
 # an association another account made.
-resource "aws_route53_zone" "sandbox_awsds_internal" {
-  name    = "sandbox.awsds.internal"
-  comment = "This sandbox unit's private names, under the estate apex (Stage 6c step 2.2)"
+resource "aws_route53_zone" "staging_awsds_internal" {
+  name    = "staging.awsds.internal"
+  comment = "Staging's private names, under the estate apex (Stage 6c step 2.2)"
 
   vpc {
     vpc_id = module.vpc.vpc_id

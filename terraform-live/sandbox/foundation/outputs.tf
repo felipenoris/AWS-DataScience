@@ -92,3 +92,10 @@ output "wireguard_host_key_secret_arn" {
   description = "The [P] host-key secret container (step 2.2a; decision 4, third review). sandbox/vpn/ passes it into the module, which grants its instance role GetSecretValue on exactly this ARN and hands it to the boot fetch. The VALUE never crosses Terraform: written by the user at enrollment (step 4.3), read by the host at first boot."
   value       = aws_secretsmanager_secret.wireguard_host_key.arn
 }
+
+# Stage 6c step 2.5 reads this from Production, to associate VPC-Networking after this account
+# has authorized it. The authorization is written here; the association is not.
+output "sandbox_awsds_internal_zone_id" {
+  description = "sandbox.awsds.internal - associated with this VPC and with VPC-Networking (INT-22)."
+  value       = aws_route53_zone.sandbox_awsds_internal.zone_id
+}
