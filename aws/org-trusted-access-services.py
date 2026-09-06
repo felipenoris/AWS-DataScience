@@ -62,6 +62,12 @@ from awslib.report import Report, note, tabulate
 # The service principal section 3 is about. One edit moves the whole section.
 FOCUS_PRINCIPAL = "access-analyzer.amazonaws.com"
 
+# The principal section 1 reports on as a SWITCH: trusted access for Account Management is
+# the prerequisite for renaming a MEMBER account from the management account (Stage 6b
+# step 3). It is not a delegated administration question, which is why it is answered in
+# section 1 and not in sections 2-3.
+ACCOUNT_MGMT_PRINCIPAL = "account.amazonaws.com"
+
 OUT_NAME = "org-trusted-access-services.txt"
 
 
@@ -102,7 +108,8 @@ region    : {cli.region}   (AWS Organizations is global; the region only picks a
 produced  : aws/org-trusted-access-services.py   (index: aws/INDEX.md)
 
 SECTIONS
-  1. Trusted access - the services allowed to act across this organization
+  1. Trusted access - the services allowed to act across this organization,
+     and whether the ACCOUNT MANAGEMENT switch that renames a member is on
   2. Delegated administrator for {FOCUS_PRINCIPAL}
   3. Delegated administrators, service by service
   4. Calls that failed
@@ -152,6 +159,39 @@ inside member accounts. Add `DateEnabled` to the --query above to see when each 
 was switched on, which is what distinguishes a landing-zone default from something
 this project turned on.""")
 
+        # ONE OF THOSE ROWS IS A SWITCH RATHER THAN AN INVENTORY ENTRY, and it is read here
+        # rather than looked for by eye (added 2026-09-05, for Stage 6b step 0.5). Trusted
+        # access for `account.amazonaws.com` is what lets the management account pass
+        # `--account-id` to the Account Management API - which is how a MEMBER account gets
+        # renamed. Without it the parameter is refused and the rename can only be done from
+        # inside the account being renamed. AWS documents it as enableable only from the
+        # management account, and only with all features enabled.
+        res = cli.run(
+            "organizations",
+            "list-aws-service-access-for-organization",
+            "--query",
+            "EnabledServicePrincipals[].ServicePrincipal",
+            "--output",
+            "text",
+        )
+        principals = sorted(p for p in res.text.split() if p)
+        if not res.ok:
+            state = "!! UNREAD - the call failed, see section 4. Not the same as absent."
+        elif ACCOUNT_MGMT_PRINCIPAL in principals:
+            state = (
+                f"PRESENT - `{ACCOUNT_MGMT_PRINCIPAL}` holds trusted access, so\n"
+                "`aws account put-account-name --account-id <member>` is available from the\n"
+                "management account. Stage 6b step 3.1 has nothing to do."
+            )
+        else:
+            state = (
+                f"ABSENT - `{ACCOUNT_MGMT_PRINCIPAL}` is not in the list above. Stage 6b step\n"
+                "3.1 is a real step: `enable-aws-service-access --service-principal\n"
+                f"{ACCOUNT_MGMT_PRINCIPAL}`, from Management, before the rename is attempted."
+            )
+        rep.line(f"THE ACCOUNT-MANAGEMENT SWITCH: {state}")
+        rep.line()
+
         # ------------------------------------------------------------------------------
         rep.h1(f"2. Delegated administrator for {FOCUS_PRINCIPAL}")
 
@@ -176,16 +216,8 @@ result means the registration is absent, not that it is pending.""")
         rep.h1("3. Delegated administrators, service by service")
 
         note("listing delegated administrators for every enabled principal...")
-        res = cli.run(
-            "organizations",
-            "list-aws-service-access-for-organization",
-            "--query",
-            "EnabledServicePrincipals[].ServicePrincipal",
-            "--output",
-            "text",
-        )
-        principals = sorted(p for p in res.text.split() if p)
-
+        # `principals` was resolved in section 1, by the same call, and is reused rather than
+        # re-issued: two readings of one list can disagree, and the file would show both.
         if not principals:
             rep.line("No service principal returned - see section 4.")
         else:
