@@ -864,3 +864,33 @@ Claude's, as the infrastructure user.*
   - The bootstrap count went back to **five**: `staging/`'s slice replaced `development/`'s rather than
     joining it, because this was a **rename, not a vend** — so the number never actually changed, and the
     "six" this README carried for one pass was the migration window showing through.
+
+## 2026-09-06 — pass 5 closed: every document that stated the account as a fact
+
+- **[Claude] 5.1 finished, and one of its instructions was REFUSED.** It said to **remove** the Development
+  slice from `dns-allowlist.py` rather than retarget it, reasoning that a headless deploy target resolves
+  whatever its pipeline resolves. **The reasoning is right about the design and wrong about the code**:
+  `terraform-live/staging/egress/main.tf` still declares `dns_firewall = true` with an allow-list, so
+  dropping the row would have left a list that exists in the tree with nothing reading it — **a check whose
+  scope shrank while the thing it measures did not (Lesson 31)**, which is the failure this whole pass
+  exists to catch. The row is retargeted; whether a headless account keeps a DNS firewall at all is 6c's
+  decision, since D38 rewrites egress outright.
+- **[Claude] 5.2: `./aws/rename-check.py` prints the AFTER verdict, `0 check(s) FAILED`** — and **no MIXED
+  verdict appeared at any point in the stage**, which is the instrument's claim about the step ORDER
+  rather than about any single reading.
+- **[Claude] 5.3 across eleven documents and seven decisions.** Three findings came out of the sweep rather
+  than out of the work:
+  - `ORGANIZATION.md`'s assignment table footnote said **all three `Staging` rows** were pending a vend.
+    **There are two.** A deployment target registers no container image, so `DevEnvStewardAccess` was never
+    coming — the note had counted a row that no decision ever asked for. The table is now **14 rows**,
+    renumbered, and 14 is exactly what `list-identities.py` reads.
+  - `README.md`'s adopt/depart table holds **the one reference recommendation this project took and later
+    gave back** — "experimentation and development as distinct accounts". The honest verdict is that the
+    *boundary* survived and its *account* did not: what is developed past it is a pipeline definition,
+    developed in git and executed into Staging, so the account was a place to stand that nobody stood in.
+  - **The three reference-architecture summaries in `README.md` were deliberately NOT edited.** They say
+    what AWS's samples say, and those samples still name a development account. Editing them would have
+    turned a quotation into a claim.
+- **[Claude] `docs/GENERAL_PLAN.md` needed nothing.** The 2026-09-05 re-scope had already brought its
+  account map and stage index to the post-conversion shape — the one document in the set that was written
+  after the decision instead of before it.

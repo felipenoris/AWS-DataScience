@@ -4,6 +4,8 @@
 
 **AMENDED 2026-09-05:** the chain reads **N Sandboxes → one Staging → one Production**, and the VPN bullet this file left open is **settled in the direction it named**: a designated hub, `VPC-Networking` in Production, so the tunnel does not multiply with the Sandboxes ([D38](D38-single-egress-hub.md)).
 
+**AMENDED 2026-09-06 by the doing.** The chain is now measurably `N Sandboxes → one Staging → one Production`, and the cardinality argument moved one step with it: what is *institutional* past the graduation boundary is no longer "one shared Development account" but one set of engineering **repositories** plus one Staging. The per-unit/institutional split is unchanged; only the object on the institutional side is.
+
 **In one line:** The account population has a cardinality property the map did not have, and its boundary is exactly D21's graduation boundary — experimentation multiplies per business unit, the engineering chain that follows it does not.
 
 **Related decisions:** [D17](D17-interactive-vs-runtime.md), [D18](D18-data-scientist-access.md), [D20](D20-staging-account.md), [D21](D21-development-account.md), [D23](D23-ou-structure.md), [D24](D24-shared-filesystem.md), [D26](D26-unified-studio.md), [D34](D34-account-vending.md)

@@ -4,6 +4,8 @@
 
 **AMENDED 2026-09-05:** the Development row becomes the Staging row and is applied for the first time — `DataScientistStagingAccess` (read-only, no `athena:`), `DeploymentManagerAccess`, and **no** `DevEnvStewardAccess`. The lake share, the resource links, the re-grants and the vending policy the account inherited from its interactive life are all removed at [6b](../stages/stage-06b-development-becomes-staging.md) step 2.
 
+**APPLIED 2026-09-06** ([6b](../stages/stage-06b-development-becomes-staging.md) steps 2.1-2.4). `list-identities.py` reads three project assignments on `Staging Account` — `InfrastructureAccess`, `DeploymentManagerAccess`, `DataScientistStagingAccess` — and no `DevEnvStewardAccess`. The share, the resource links, the re-grants and the vending policy are gone; `rename-check.py`'s `RC-6` reads **no Lake Formation grant names the account**.
+
 **In one line:** Outside the Interactive OU the data scientist gets the data plane, no compute, no control plane; writes only to enumerated prefixes.
 
 **Related decisions:** [D19](D19-derived-zone.md), [D22](D22-data-governance-account.md)

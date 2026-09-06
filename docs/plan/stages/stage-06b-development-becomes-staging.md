@@ -899,6 +899,24 @@ Interactive Development keeps reporting `pass` about an account that no longer e
 - **5.2 — [Claude] Run the conversion report**: `./aws/rename-check.py` must now print the **AFTER**
   verdict — new name, `Workloads`, the three persona sets, zero DataZone objects, no share, no vending
   policy. A **MIXED** verdict names the object that failed to cross.
+- **5.3 — DONE 2026-09-06.** `docs/ORGANIZATION.md` (banner, lifecycle axis, account table, naming
+  table, the `Development Account` section retired, the persona prose, and the assignment table **down to
+  14 rows, renumbered** — which is exactly what `list-identities.py` reads: 2 Data Governance, 1 Identity,
+  4 Production, 4 Sandbox, 3 Staging); `docs/AWS_STATE.md` (roster, A.1, the VPC row, the SMUS, lake,
+  Access Grants and interactive-SCP rows, `EXC-06`, and the account row itself, whose forward-looking body
+  is replaced by what happened); `README.md`; `conventions.md` §6; `terraform-live/README.md`;
+  `docs/GOVERNANCE.md`; `docs/SMUS.md`; `docs/plan/integrations.md`; `docs/plan/cost-model.md`; the seven
+  decisions, each with a dated **APPLIED** line under its 2026-09-05 amendment; and one bullet in
+  `docs/plan/history.md`.
+  - **Three findings came out of the sweep rather than out of the work.** (i) The assignment table's
+    footnote said all three `Staging` rows were pending a vend; **there are two** — a deployment target
+    registers no container image, so `DevEnvStewardAccess` was never coming. (ii) `README.md`'s
+    adopt/depart table holds **the one reference recommendation this project took and later gave back**,
+    and the honest verdict is that the *boundary* survived while its *account* did not. (iii) The three
+    reference-architecture summaries in `README.md` were **deliberately not edited**: they say what AWS's
+    samples say, and those still name a development account.
+  - **`docs/GENERAL_PLAN.md` needed nothing** — the 2026-09-05 re-scope had already brought its account
+    map and stage index to the post-conversion shape.
 - **5.3 — [Claude] Revise the documents that state the account as a fact**: `docs/ORGANIZATION.md` (tree,
   name table, assignment table), `docs/AWS_STATE.md` (`INV-02`, `INV-07`/A.1, `INV-09`, the §C rows, the
   lake, SMUS and vending rows, the grant register), `docs/plan/conventions.md` §6 (the `development`
