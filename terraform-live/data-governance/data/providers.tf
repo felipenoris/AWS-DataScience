@@ -42,11 +42,6 @@ provider "aws" {
   profile = var.consumers["sandbox"].profile
 }
 
-provider "aws" {
-  alias   = "development"
-  region  = var.region
-  profile = var.consumers["development"].profile
-}
 
 provider "aws" {
   alias   = "production"

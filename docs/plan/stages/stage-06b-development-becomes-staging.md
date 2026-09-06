@@ -387,6 +387,13 @@ uses it is destroyed.
   `awsds-org-project-storage-vending` in `terraform-live/development/foundation/persona-vending.tf` in one
   commit and destroy it in the next (the runbook's two-commit rule). The object is referenced **by name**
   by the permission set, so it goes after 2.1 and never before.
+- **2.3 — DONE 2026-09-06.** Applied as `awsds-infra-data`: **`0 added, 6 changed, 2 destroyed`** — and
+  the shape is the one this step was corrected to predict. The **2 destroyed** are the TBAC triples
+  (`share_databases["development"]`, `share_tables["development"]`); the **6 changed** are the **five
+  bucket policies and the lake's data CMK key policy**, because the account's root principal and its S3
+  gateway endpoint leave `trusted_vpce_ids`. Re-plan `No changes`. `list-permissions` naming that account
+  went from **2 to 0**. Six register rows in `docs/AWS_STATE.md` annotated **REVOKED 2026-09-06**, none
+  deleted.
 - **2.3 — [Claude⚡] Revoke the share**: remove `development` from `consumer_accounts` and
   `writer_role_patterns` in `terraform-live/data-governance/data/`; apply as `awsds-infra-data`. Annotate
   the two triples in `docs/AWS_STATE.md`'s grant register as **revoked, with the date** — never delete a

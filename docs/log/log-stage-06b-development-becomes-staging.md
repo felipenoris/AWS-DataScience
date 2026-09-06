@@ -379,3 +379,14 @@ edit, plan, apply and read-back below is Claude's. Applied as the **infrastructu
   from this account and **still present in Sandbox**, whose `DataScientistAccess` references it by name. A
   per-account object removed from the wrong account is a provisioning failure in an account nobody is
   watching — the failure the guard existed to prevent.
+
+- **[Claude] Step 2.3, applied as `awsds-infra-data`: `0 added, 6 changed, 2 destroyed`.** The **2
+  destroyed** are the TBAC triples — `share_databases["development"]` and `share_tables["development"]`.
+  The **6 changed** are the **five lake bucket policies and the data CMK's key policy**: dropping the row
+  from `DATA_CONSUMERS` removes that account's root principal *and* its S3 gateway endpoint from
+  `local.trusted_vpce_ids`, which is INT-05's `aws:SourceVpce` allow-list. The stage said "the two
+  triples"; the preparation sitting added the perimeter half by reading `locals.tf`, and this plan is that
+  reading measured. Re-plan `No changes`.
+- **[Claude]** `lakeformation list-permissions` filtered on that account: **2 → 0**. Six rows of the grant
+  register in `docs/AWS_STATE.md` annotated **REVOKED 2026-09-06** — struck through, dated, **none
+  deleted**, as the register's own rule requires.

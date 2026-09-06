@@ -140,7 +140,13 @@ VPN_HOMES = ["sandbox"]
 # itself (D19 revised), which also retired the reason Stage 9 step 1.4 had to SPLIT this list
 # before adding Production: no emission reaches identity/sso from here any more. Production
 # joins at Stage 9; a vended Sandbox unit at Stage 14.
-DATA_CONSUMERS = ["sandbox", "development"]
+# ONE CONSUMER SINCE STAGE 6b STEP 2.3 (2026-09-06): `development` becomes the headless
+# `Staging`, and D20 keeps a deployment target off the lake share entirely. Dropping the row
+# does three things at once, which is why it is one edit and not three - it stops emitting the
+# aliased-provider identity read, stops emitting that account's `consumer_foundation` remote
+# state (whose gateway-endpoint id is INT-05's `aws:SourceVpce` allow-list), and stops emitting
+# the `lake` map to a consumer slice that step 2.4 destroys.
+DATA_CONSUMERS = ["sandbox"]
 DATA_PRODUCERS = ["production"]
 
 # THE OTHER DIRECTION, added at pass 4 (2026-08-19): the account that OWNS the lake, read BY

@@ -22,9 +22,13 @@ locals {
   # its share carries the governed write and arrives with Stage 9, which has a job role to
   # receive it. The ids come from the aliased providers, so no account id enters a tracked
   # file, and an account that cannot be read fails by name here.
+  # ONE CONSUMER SINCE STAGE 6b STEP 2.3 (2026-09-06). `development` left because the account
+  # becomes the headless `Staging`, which D20 keeps off the lake share entirely - a deployment
+  # target reads what the pipeline gives it, not the catalog. Dropping the row revokes the two
+  # TBAC triples AND removes that account's S3 gateway endpoint from `trusted_vpce_ids` below,
+  # so this apply narrows the bucket policies as well as the grants.
   consumer_accounts = {
-    sandbox     = data.aws_caller_identity.sandbox.account_id
-    development = data.aws_caller_identity.development.account_id
+    sandbox = data.aws_caller_identity.sandbox.account_id
   }
 
   # The five buckets. Names are FOREVER in this account - DenyLakeDeletionAndDeregistration
@@ -60,16 +64,18 @@ locals {
   # contract) cannot be a Principal - the account root is, and the ArnLike condition narrows
   # it to the one role. The same idiom covers the writers, whose project execution roles
   # (Stage 6) do not exist either.
-  sandbox_root     = "arn:${data.aws_partition.current.partition}:iam::${data.aws_caller_identity.sandbox.account_id}:root"
-  development_root = "arn:${data.aws_partition.current.partition}:iam::${data.aws_caller_identity.development.account_id}:root"
-  production_root  = "arn:${data.aws_partition.current.partition}:iam::${data.aws_caller_identity.production.account_id}:root"
+  sandbox_root    = "arn:${data.aws_partition.current.partition}:iam::${data.aws_caller_identity.sandbox.account_id}:root"
+  production_root = "arn:${data.aws_partition.current.partition}:iam::${data.aws_caller_identity.production.account_id}:root"
 
   # D18's writers: the data-scientist persona in each Interactive account. The path is the
   # reserved-SSO one; the suffix is minted per account, so both are patterns. Stage 6's
   # project execution roles join this list when they exist (step 9.3's extension-point rule).
+  # ONE WRITER SINCE STAGE 6b STEP 2.3 (2026-09-06), for the same reason and by the same rule:
+  # D18's writer is the data-scientist persona, and that persona left this account at step 2.1
+  # (`DataScientistStagingAccess` carries `DenyEveryWrite`). The pattern would have matched a
+  # role that no longer exists, which is worse than no pattern - it reads like a live grant.
   writer_role_patterns = [
     "arn:${data.aws_partition.current.partition}:iam::${data.aws_caller_identity.sandbox.account_id}:role/aws-reserved/sso.amazonaws.com/*/AWSReservedSSO_DataScientistAccess_*",
-    "arn:${data.aws_partition.current.partition}:iam::${data.aws_caller_identity.development.account_id}:role/aws-reserved/sso.amazonaws.com/*/AWSReservedSSO_DataScientistAccess_*",
   ]
 
   # Stage 9 step 3's contract - the exact name deploytargets.py reads from both sides.
