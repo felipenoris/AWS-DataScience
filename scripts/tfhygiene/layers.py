@@ -210,6 +210,12 @@ class Slice:
 SLICES = [
     Slice("sandbox", "bootstrap", PERSISTENT, "state bucket + its KMS key (step 2)"),
     Slice("development", "bootstrap", PERSISTENT, "state bucket + its KMS key (step 3)"),
+    # Stage 6b step 4.2 (2026-09-06). It is the SIXTH bootstrap and it is not a vend: the
+    # `Development` account was renamed, and this slice is the new state home its slices
+    # migrate into (Recipe E step 2 - the destination bucket must exist before any
+    # -migrate-state names it). The `development` row above outlives it on purpose and
+    # goes at 4.7, because it owns the bucket every one of those migrations reads FROM.
+    Slice("staging", "bootstrap", PERSISTENT, "state bucket + its KMS key (6b 4.2)"),
     Slice("data-governance", "bootstrap", PERSISTENT, "state bucket + its KMS key (step 3)"),
     Slice("production", "bootstrap", PERSISTENT, "state bucket + TWO keys - D36's is 2nd (3.4)"),
     Slice("identity", "bootstrap", PERSISTENT, "state bucket + its KMS key (step 3)"),
@@ -217,7 +223,9 @@ SLICES = [
     Slice("identity", "org-policies", PERSISTENT, "the 10 SCP/RCP/tag/declarative docs + 10 att."),
     # Stage 3 pass 1 (2026-08-16). Free at rest, [P]: VPC, subnets, IGW, route tables, SGs,
     # gateway endpoints + their policies, flow log - plus zones where the account owns one.
-    # data-governance has NO row here by decision (D22: no VPC at all); staging joins at vend.
+    # data-governance has NO row here by decision (D22: no VPC at all). `staging` used to be
+    # annotated "joins at vend"; the quota refused that vend and Stage 6b renamed
+    # `Development` instead, so its rows arrive by `git mv` at 4.3 (2026-09-06).
     Slice("sandbox", "foundation", PERSISTENT, "VPC 3x2, gateway endpoints, sandbox.internal"),
     Slice("development", "foundation", PERSISTENT, "VPC 3x2, gateway endpoints, no zone (4.2)"),
     Slice("production", "foundation", PERSISTENT, "VPC 3x2, gw endpoints, prod+pages.internal"),
