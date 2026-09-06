@@ -345,12 +345,17 @@ SLICES = [
     # table in reverse, so the proxy goes first and the tunnel last - the tunnel is the way back
     # in, and a session that killed its own path out would have killed its path IN one step
     # earlier. `up` runs it the right way round for the same reason.
+    # 0.0104 AND NOT 0.0052 SINCE 2026-09-06 - the t3.micro row of docs/PRICING.md 8, measured
+    # (Lesson 6). The size is decided by the BUILD and not the steady state: `dnf install squid jq
+    # amazon-cloudwatch-agent` was OOM-killed on a nano (415 MiB usable), with the kernel naming
+    # it. It fit on the first host and not the second, which makes the nano marginal rather than
+    # small - and the estate's single internet exit is the wrong place for a coin-flip.
     Slice(
         "production",
         "proxy",
         DORMANT,
         "Squid explicit proxy - the estate's only internet exit",
-        0.0052,
+        0.0104,
     ),
     # Stage 6 step 5.0 (2026-08-21) - the amd64 build host, [E]. usd_per_hour is the
     # t3.xlarge row of docs/PRICING.md 8, MEASURED us-west-2 (Lesson 6) - and unlike the

@@ -80,8 +80,14 @@ install -m 0644 "$TMP" "$OUT"
 # RUNNING process untouched, rather than by a reload that kills the proxy and takes the estate's
 # internet with it. On failure the previous file goes back and the exit is non-zero, which is
 # what State Manager reports as a failed association.
-if ! squid -k parse >/dev/null 2>&1; then
-  echo "awsds-render-squid: the rendered allow-list does not parse - reverting" >&2
+# THE ERROR IS PRINTED, NOT SWALLOWED - and the first version of this line swallowed it
+# (`>/dev/null 2>&1`), which cost a diagnosis on the very first boot: the log said only "does not
+# parse - reverting", and finding out WHY needed a hand-run of `squid -k parse` on the host
+# through SSM. Squid names the offending ACL and the offending entry; that is exactly the sentence
+# a person needs, and State Manager surfaces stderr in the association's own failure report.
+if ! squid -k parse > /tmp/awsds-squid-parse.out 2>&1; then
+  echo "awsds-render-squid: the rendered allow-list does not parse - reverting. Squid said:" >&2
+  grep -iE "error|fatal" /tmp/awsds-squid-parse.out >&2 || tail -5 /tmp/awsds-squid-parse.out >&2
   if [ -f "$OUT.prev" ]; then
     mv "$OUT.prev" "$OUT"
   else

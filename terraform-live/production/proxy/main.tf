@@ -260,11 +260,21 @@ resource "aws_ssm_association" "reconfigure" {
 
   schedule_expression = var.reconfigure_schedule
 
-  # Run it on the instance the moment the association is created, rather than waiting up to a
-  # full interval: the first boot already rendered the list, so this is a no-op by design - and a
-  # no-op that FAILS is the reading that says the association itself is misconfigured, which is
-  # worth learning at apply time rather than half an hour later.
-  apply_only_at_cron_interval = false
+  # DO NOT RUN AT CREATION - and the first version of this line said the opposite, for a reason
+  # that sounded good and was measured wrong on the very first apply (2026-09-06).
+  #
+  # THE ARGUMENT THAT FAILED: "the first boot already rendered the list, so an immediate run is a
+  # no-op, and a no-op that FAILS is the reading that says the association is misconfigured."
+  # WHAT ACTUALLY HAPPENS: the association is created seconds after `RunInstances`, and the user
+  # data spends its first ~50 seconds in `dnf install`. So the immediate run lands on a host that
+  # has not written `/usr/local/sbin/awsds-render-squid` yet and dies with **exit 127, no such
+  # file**. On a fresh host that is not a diagnostic, it is guaranteed - and it leaves a `Failed`
+  # association sitting in the console as the permanent first impression of a working proxy.
+  #
+  # The first render belongs to the USER DATA, which owns the boot; this association owns the
+  # ONGOING reconciliation. Splitting them that way is also what makes the association's first
+  # scheduled run a real test rather than a race.
+  apply_only_at_cron_interval = true
 }
 
 # ------------------------------------------------------------------------------ the alarm
