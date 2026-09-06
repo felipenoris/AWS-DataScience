@@ -711,6 +711,32 @@ becomes true.
   `ec2messages` in Sandbox, `VPC-SharedServices` and `VPC-Workloads`. Session Manager does not work through
   an HTTPS proxy listener, and the shell that reads the proxy's own log must not depend on the proxy
   (Lesson 24). `VPC-Networking`'s two hosts reach SSM through the IGW directly.
+- **5.6 — DONE 2026-09-06 AS CODE (`vpc-egress-v0.7.0`), AND THE GENERATOR READS THE NAMES RATHER
+  THAN BUILDING THEM.** The module already turns a token into `com.amazonaws.<region>.<token>`, and
+  building the DNS name the same way is the obvious move and wrong: measured across the **29**
+  services this estate can declare, **eight** have a private DNS name no rule derives from the token
+  — `ecr.api` → `api.ecr.…`, `ecr.dkr` → `*.dkr.ecr.…`, `sagemaker.api`/`.runtime` reversed the same
+  way, `sagemaker.studio` → `*.studio.<region>.sagemaker.aws` (**a different TLD**),
+  `emr-dashboard` → `*.emrappui-prod.…` (**an unrelated name**),
+  `emr-serverless-services.sessions` → `*.s.…`, and `elasticmapreduce-services` wildcarded. A hand
+  list would have been wrong for **ECR**, the busiest path here, and wrong *silently*. So a
+  `data "aws_vpc_endpoint_service"` per declared service reads `PrivateDnsName` at plan time — free,
+  and needing no endpoint to exist.
+  **AND THE STEP'S OWN PARENTHESIS WAS AMBIGUOUS IN THE DANGEROUS DIRECTION.** *"S3 and DynamoDB ride
+  the gateway prefix lists"* can be read as *therefore omit them*; the reading that holds is
+  **therefore include them**, and it is not a convenience. Measured 2026-09-06:
+  `com.amazonaws.<region>.s3` returns a `PrivateDnsName` for its **Interface** shape and **`None` for
+  its Gateway shape** — a gateway works by *routing* and never by resolution, so the generator
+  **cannot** emit them and they are hand-named in the fixed half. Omitted, every S3 call would go to
+  Squid, leave through the hub's IGW as a **public** call, and arrive carrying neither
+  `aws:SourceVpc` nor `aws:SourceVpce` — the two keys every bucket policy in this estate is written
+  on. The data perimeter would fail **open**, for the one service that holds the data.
+  **Rendered, not merely validated** (Lesson 54), on all four slices: Sandbox **26** entries, Staging
+  **19**, `VPC-SharedServices` **21**, `VPC-Workloads` **8** — the fixed half alone, which is the
+  right answer for a VPC with no interface endpoint and two `[P]` gateways. Three **output
+  preconditions** carry the three silent failures: no `*`, no `/`, no `:`. The `images/base` rule is
+  recorded in the slices' own `outputs.tf`, where a consumer meets it.
+  *The original step follows:*
 - **5.6 — [Claude] Generate `NO_PROXY` per VPC, from that VPC's endpoint list**: not a blanket
   `.us-west-2.amazonaws.com`. A blanket suffix tells the client "reach every AWS service directly", and a
   service with no endpoint then has no route at all — a timeout with no message (Lesson 42). Generated from
