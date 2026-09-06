@@ -76,38 +76,77 @@ locals {
     }
   })
 
-  # THE VPC-SIDE NAT RULES, BUILT HERE RATHER THAN IN THE TEMPLATE, because a `%{ for }`
-  # directive inside a single wg0.conf LINE has to trim its own newlines on both sides and is
-  # then unreadable in the one place it must not be. `$UPLINK` survives verbatim: Terraform
-  # interpolates `${`, not `$U`, and the heredoc that writes wg0.conf is unquoted, so the
-  # shell substitutes the real interface name at write time.
+  # THE iptables RULES, BUILT HERE RATHER THAN IN THE TEMPLATE, because a `%{ for }` directive
+  # inside a single wg0.conf LINE has to trim its own newlines on both sides and is then
+  # unreadable in the one place it must not be. `$UPLINK` survives verbatim: Terraform
+  # interpolates `${`, not `$U`, and the heredoc that writes wg0.conf is unquoted, so the shell
+  # substitutes the real interface name at write time.
   #
-  # THREE RULES PER RANGE, AND THE TWO FORWARD ONES ARE NOT DECORATION. The existing pair is
-  # `-i wg0` / `-o wg0`, and VPC-side traffic touches wg0 at neither end - it arrives on the
-  # uplink and leaves on the uplink, a hairpin the tunnel rules do not describe. AL2023's
-  # default FORWARD policy is ACCEPT, so these are belt-and-braces today; they stop being so
-  # the first time anything sets a policy.
-  vpc_nat_post_up = join("", [
-    for c in var.vpc_nat_cidrs :
-    "; iptables -t nat -A POSTROUTING -s ${c} -o $UPLINK -j MASQUERADE; iptables -A FORWARD -s ${c} -j ACCEPT; iptables -A FORWARD -d ${c} -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT"
+  # v0.5.0 REPLACED THE VPC-NAT PAIR THAT STOOD HERE WITH THESE TWO (6c step 4.7). What went is
+  # the NAT-instance job for a private tier with no other way out; what arrived is the two halves
+  # of D38's client model - a tunnel that reaches only the private network, and a proxy that can
+  # see which device is talking to it.
+
+  # (a) THE MASQUERADE, WITH ITS EXEMPTIONS FIRST. Order is the whole of it: iptables walks
+  # POSTROUTING top to bottom, so each `-j RETURN` has to be APPENDED before the MASQUERADE it
+  # exempts from. RETURN in a built-in chain means "stop here and take the chain policy", which
+  # in `nat`/POSTROUTING is ACCEPT - so the packet leaves with its original client source.
+  # An empty list makes the prefix empty and reproduces v0.4.0 byte for byte.
+  #
+  # THE PREFIXES ARE THEIR OWN LOCALS BECAUSE `+` IN HCL IS ARITHMETIC, NOT CONCATENATION -
+  # measured, not remembered: the first version of these four lines used `join(...) + "..."` and
+  # Terraform answered `Unsuitable value for left operand: a number is required`. Strings join by
+  # interpolation, and a local per prefix keeps the interpolated line short enough to read.
+  masquerade_exempt_up = join("", [
+    for c in var.no_masquerade_cidrs :
+    "iptables -t nat -A POSTROUTING -s ${var.peer_cidr} -d ${c} -j RETURN; "
   ])
-  vpc_nat_post_down = join("", [
-    for c in var.vpc_nat_cidrs :
-    "; iptables -t nat -D POSTROUTING -s ${c} -o $UPLINK -j MASQUERADE; iptables -D FORWARD -s ${c} -j ACCEPT; iptables -D FORWARD -d ${c} -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT"
+  masquerade_exempt_down = join("", [
+    for c in var.no_masquerade_cidrs :
+    "iptables -t nat -D POSTROUTING -s ${var.peer_cidr} -d ${c} -j RETURN; "
   ])
 
+  # `$UPLINK` survives every layer verbatim: Terraform interpolates `${`, not `$U`, and the
+  # heredoc that writes wg0.conf is unquoted, so the SHELL substitutes the real interface name
+  # at write time. The same is true of `%i`, which is wg-quick's own placeholder for the
+  # interface: templatefile's directive marker is `%{`, not `%i`.
+  masquerade_post_up   = "${local.masquerade_exempt_up}iptables -t nat -A POSTROUTING -s ${var.peer_cidr} -o $UPLINK -j MASQUERADE"
+  masquerade_post_down = "${local.masquerade_exempt_down}iptables -t nat -D POSTROUTING -s ${var.peer_cidr} -o $UPLINK -j MASQUERADE"
+
+  # (b) THE FORWARD CHAIN. Empty `forward_destinations` reproduces v0.4.0 byte for byte - one
+  # blanket accept each way. A non-empty list accepts `-i wg0` only toward the named ranges and
+  # REJECTS the rest; the return leg (`-o wg0`) keeps its blanket accept, unchanged, because
+  # tightening it to ESTABLISHED,RELATED is a fourth change nobody asked for and its failure mode
+  # would be indistinguishable from this one.
+  #
+  # The REJECT sits AFTER the accepts and matches `-i wg0` only, so it can never catch the return
+  # leg: a reply arrives on the uplink, and `-i wg0` does not match it.
+  forward_allow_up = join("", [
+    for c in var.forward_destinations :
+    "iptables -A FORWARD -i %i -d ${c} -j ACCEPT; "
+  ])
+  forward_allow_down = join("", [
+    for c in var.forward_destinations :
+    "iptables -D FORWARD -i %i -d ${c} -j ACCEPT; "
+  ])
+
+  forward_post_up   = length(var.forward_destinations) == 0 ? "iptables -A FORWARD -i %i -j ACCEPT; iptables -A FORWARD -o %i -j ACCEPT" : "${local.forward_allow_up}iptables -A FORWARD -i %i -j REJECT --reject-with icmp-admin-prohibited; iptables -A FORWARD -o %i -j ACCEPT"
+  forward_post_down = length(var.forward_destinations) == 0 ? "iptables -D FORWARD -i %i -j ACCEPT; iptables -D FORWARD -o %i -j ACCEPT" : "${local.forward_allow_down}iptables -D FORWARD -i %i -j REJECT --reject-with icmp-admin-prohibited; iptables -D FORWARD -o %i -j ACCEPT"
+
   user_data = templatefile("${path.module}/user-data.sh.tftpl", {
-    vpc_nat_post_up     = local.vpc_nat_post_up
-    vpc_nat_post_down   = local.vpc_nat_post_down
-    peer_cidr           = var.peer_cidr
-    server_address      = local.server_address
-    listen_port         = var.listen_port
-    mtu                 = var.mtu
-    host_key_secret_arn = var.host_key_secret_arn
-    peers               = local.peers
-    peer_count          = length(local.peers)
-    log_group           = aws_cloudwatch_log_group.handshakes.name
-    agent_config        = local.agent_config
+    masquerade_post_up   = local.masquerade_post_up
+    masquerade_post_down = local.masquerade_post_down
+    forward_post_up      = local.forward_post_up
+    forward_post_down    = local.forward_post_down
+    peer_cidr            = var.peer_cidr
+    server_address       = local.server_address
+    listen_port          = var.listen_port
+    mtu                  = var.mtu
+    host_key_secret_arn  = var.host_key_secret_arn
+    peers                = local.peers
+    peer_count           = length(local.peers)
+    log_group            = aws_cloudwatch_log_group.handshakes.name
+    agent_config         = local.agent_config
   })
 }
 
@@ -141,7 +180,8 @@ resource "aws_instance" "this" {
   user_data_replace_on_change = true
 
   # KEPT ON WHENEVER IT CAN BE, AND THE EXCEPTION IS NAMED RATHER THAN ASSUMED (amended
-  # 2026-08-21, with vpc_nat_cidrs).
+  # 2026-08-21 with vpc_nat_cidrs; RE-KEYED ONTO no_masquerade_cidrs at v0.5.0, 6c step 4.7 -
+  # the trigger changed, the argument below did not).
   #
   # The original argument still holds for the TUNNEL and is why this is not simply `false`:
   # every packet wg0 forwards is masqueraded to this instance's own address (step 1.2), so
@@ -149,18 +189,19 @@ resource "aws_instance" "this" {
   # useful direction - a wrong masquerade rule drops traffic visibly instead of letting it
   # leave with a ${var.peer_cidr} source that a peering discards three hops later.
   #
-  # WHAT VPC-SIDE NAT CHANGES, AND IT IS NOT A PREFERENCE. Source/destination checking is
-  # applied by the ENI on the way IN as well as out: a packet from a buildbox in this VPC
-  # carries neither this instance's address as source nor as destination, so EC2 drops it
-  # BEFORE the kernel could route or masquerade it. There is no iptables rule that recovers
-  # from that, which is why every NAT-instance recipe disables the check - the masquerade is
-  # what makes the OUTBOUND leg legitimate, and this attribute is about the inbound one.
+  # WHAT AN UN-MASQUERADED DESTINATION CHANGES, AND IT IS NOT A PREFERENCE. Source/destination
+  # checking is applied by the ENI on the way IN as well as out. Both legs break at once: the
+  # request leaves this host carrying a `10.90.0.x` source that is not its own address, and the
+  # reply arrives carrying a `10.90.0.x` DESTINATION that is not its own either. EC2 drops each
+  # before the kernel could route it, and there is no iptables rule that recovers from that -
+  # which is why every recipe that makes an instance forward for somebody else disables the
+  # check.
   #
-  # SO THE POSTURE IS: unchanged while vpc_nat_cidrs is empty, which is the default and what
-  # every reading before 2026-08-21 was taken under. A caller that fills the list is deciding
-  # to trade this host's anti-spoofing for being the single public egress of a private tier,
-  # and the trade is bounded by the ROUTE rather than by this line.
-  source_dest_check = length(var.vpc_nat_cidrs) == 0
+  # SO THE POSTURE IS: unchanged while no_masquerade_cidrs is empty, which is the default and
+  # what every reading before 2026-09-06 was taken under. A caller that fills the list is
+  # trading this host's anti-spoofing for a proxy access log that can tell two devices apart -
+  # and the trade is bounded by that list plus the caller's ROUTE, not by this line.
+  source_dest_check = length(var.no_masquerade_cidrs) == 0
 
   metadata_options {
     http_endpoint = "enabled"

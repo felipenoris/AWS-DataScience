@@ -322,6 +322,36 @@ SLICES = [
     # `make status` still quotes this one. Deliberate: ./aws/vpn.py VP-1 is where the reader is
     # told the two have parted company.
     Slice("sandbox", "vpn", DORMANT, "WireGuard host - the only human path in (Stage 4)", 0.0052),
+    # 6c step 4.7 (2026-09-06) - THE SAME HOST, ONE ACCOUNT ACROSS, and the two rows stand side
+    # by side until 4.13 destroys the Sandbox one. Same rank, same DORMANT layer, same measured
+    # t3.nano rate: what moved is the account and the JOB. It is no longer a NAT instance for a
+    # private tier (wireguard-v0.5.0 dropped vpc_nat_cidrs) and it is not an internet door - it
+    # forwards to the private address space and rejects the rest, because under D38 the internet
+    # is the proxy's, one rank below.
+    Slice(
+        "production",
+        "vpn",
+        DORMANT,
+        "WireGuard host in the hub - the only human path in (D38)",
+        0.0052,
+    ),
+    # 6c step 4.8 - THE ESTATE'S SINGLE INTERNET EXIT, and the reason there is no NAT gateway
+    # anywhere: an explicit Squid proxy on a second t3.nano, priced from the same docs/PRICING.md
+    # row (Lesson 6). TWO hosts and not one because the WireGuard host receives untrusted UDP
+    # from the internet and this one parses untrusted internet RESPONSES - separating them keeps
+    # a compromise of either off the other, for the price of one more nano.
+    #
+    # IT RANKS BELOW vpn (41 against 40) AND THAT ORDER IS LOAD-BEARING: `make down` walks the
+    # table in reverse, so the proxy goes first and the tunnel last - the tunnel is the way back
+    # in, and a session that killed its own path out would have killed its path IN one step
+    # earlier. `up` runs it the right way round for the same reason.
+    Slice(
+        "production",
+        "proxy",
+        DORMANT,
+        "Squid explicit proxy - the estate's only internet exit",
+        0.0052,
+    ),
     # Stage 6 step 5.0 (2026-08-21) - the amd64 build host, [E]. usd_per_hour is the
     # t3.xlarge row of docs/PRICING.md 8, MEASURED us-west-2 (Lesson 6) - and unlike the
     # WireGuard row above it, this figure DOES follow the tracked tfvars, because the default

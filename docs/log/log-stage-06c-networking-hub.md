@@ -495,3 +495,95 @@ stays verbatim. The stage file is
   container into the Production one. It is the one act in pass 4 that cannot be undone by re-running
   anything: the key is what keeps every client's `PublicKey =` line valid, and a fresh key is a silent
   re-issue of every peer on top of an account move.
+
+## 2026-09-06 — 4.7 through 4.11 authored while the AWS side waits, and what rendering caught
+
+The user was away from the machine and asked what could be advanced. Everything in pass 4 that is
+**authoring** was: the module bump, both hub `[D]` slices, the proxy's whole configuration, and the
+two filters. **Nothing was applied**, and one plan that is ready was deliberately left unapplied.
+
+- **[Claude] `wireguard-v0.5.0` — the three changes 4.7 names, and a fourth the design forced.**
+  `vpc_nat_cidrs` is **gone** rather than renamed (the NAT job dies with the buildbox at 5.8, and
+  `sandbox/vpn/` stays pinned at v0.4.0 until 4.13 — a git tag is what makes a removal safe).
+  `forward_destinations` restricts the tunnel to the private address space; `no_masquerade_cidrs`
+  exempts chosen DESTINATIONS from the masquerade so Squid sees `10.90.0.x`. The fourth: the
+  `source_dest_check` trigger had to move from the removed input to the new one — the argument for
+  the attribute did not change, only what turns it off.
+- **[Claude] THE TIDY VERSION OF THE NO-MASQUERADE RULE WOULD HAVE TAKEN THE TUNNEL'S DNS DOWN, and
+  this is the finding of the sitting.** "Do not masquerade traffic staying inside the hub VPC" reads
+  better than the rule that shipped and is wrong: the VPC resolver at `.2` is inside the VPC range
+  too, and the Amazon DNS server answers requests coming from within the VPC's own addresses — a
+  packet arriving with a `10.90.0.x` source is not that. Exempting the VPC CIDR would have left every
+  tunnel client unable to resolve anything, with a symptom pointing anywhere but at a masquerade rule.
+  **The narrow, correct answer is the PUBLIC SUBNETS**, where the proxy actually is.
+- **[Claude] Three defects that only a render could find, and they are the argument for rendering.**
+  (i) `+` in HCL is **arithmetic**: `join(...) + "..."` answered `Unsuitable value for left operand: a
+  number is required`. (ii) `%{` is `templatefile`'s **directive marker** and collides with Squid's
+  `strftime` escape in `logformat` — and then collided a second time with the **comment I wrote to
+  explain the first collision**, because a comment is text like any other line. (iii) The render
+  script's rollback deleted the new file while the previous one had already been overwritten — "a
+  rollback that has nothing to roll back to is not a rollback". A template that has never been run is
+  a claim, not an artefact.
+- **[Claude] The whole `squid.conf` is written by Terraform, not a drop-in in `conf.d/`.** The ORDER
+  of `http_access` rules is the entire security property of that file, and where a distribution's
+  stock configuration places its `include` relative to its own `http_access allow localhost` is a fact
+  about a package version that nobody here can verify from a laptop ([Lesson 30](../plan/lessons.md)).
+  Owning the file makes the order readable, diffable and ours. The same reasoning normalised the ACL
+  names: plane keys carry a hyphen, Squid's ACL-name syntax is untestable from here, so `gsub` removes
+  the assumption rather than betting on it.
+- **[Claude] The DNS-firewall list is TRANSLATED, not copied — the two syntaxes disagree.** Route 53
+  DNS Firewall: `example.com` is the apex only, `*.example.com` is subdomains and not the apex. Squid
+  `dstdomain`: `example.com` is that exact host, `.example.com` is the domain **and** every subdomain.
+  So a DNS-firewall pair collapses to one Squid entry, and transcribing the asterisks would have
+  produced entries matching nothing — a refusal indistinguishable from a missing name. **The literal
+  `"*"` that opens the old list is dropped**: every entry after it was decoration while it stood, and
+  this is the first time the estate's egress is actually enumerated.
+- **[Claude] Splitting the filters bought a narrowing that was invisible before.** `.cloudfront.net`
+  — every CloudFront distribution in the world — is what the console's asset delivery needs. Under one
+  shared DNS-firewall list the notebooks had it too. It is now in the **tunnel** plane only, and the
+  code carries a comment saying it was narrowed rather than forgotten.
+- **[Claude] The build hosts' list is DERIVED from the notebook list, not retyped** (minus the AWS
+  control plane a build host does not call): the day somebody adds a package source for notebooks, a
+  build of that image needs it too, and two hand-kept copies would part company on exactly that day
+  ([Lesson 33](../plan/lessons.md)). The rendered parameter is **1751 bytes** against Parameter
+  Store's 4 KB Standard-tier ceiling, and a plan-time precondition now says so.
+- **[Claude] A second precondition catches the failure the merge would swallow.** The planes come from
+  the peering matrix; the LISTS are authored by hand against the same keys. Misspell one — `staging`
+  for `staging-foundation` — and the lookup silently returns empty: the parameter applies clean, the
+  spoke gets nothing, and the symptom reads exactly like a name nobody added.
+- **[Claude] The access log is `[P]`, in `networking/`, with a CMK — the first key in this estate
+  created for a log.** Every other log group here declined one on the same arithmetic (USD 1/key-month
+  against a *debugging* log); this one takes it because it is not a debugging log but the record of
+  what left the estate. Retention is **365 days** and 4.11 named none — every other group is 30 days
+  because every other group is a diagnostic. Both are now in the stage's cost table and in
+  `docs/PRICING.md`.
+- **[Claude] The proxy gets a status-check alarm that 4.8 did not ask for.** When the tunnel dies one
+  person notices in seconds; when the single exit dies, every automated thing in four accounts loses
+  the internet at once with no obvious symptom. `treat_missing_data = "breaching"` so "somebody
+  stopped it and forgot" is visible. It has no action wired, which is honest about D12 rather than
+  pretending.
+- **[Claude] Two guards on one hole, deliberately.** A forward proxy fetches URLs on behalf of others,
+  so `169.254.169.254` is denied as a *destination* in `to_private` — a client must not be able to ask
+  the proxy for this host's role credentials — **and** IMDSv2 is required on the instance.
+- **[Claude] Gates that caught real things rather than nodding.** `tflint` found a variable I declared
+  and never used; `check-provider-locks` found two slices with no lock file; `check-network-doc` found
+  `production/proxy` unnamed in `NETWORK.md`; the region-literal gate found `us-east-1` needing its
+  **inline** `# region:aws-pinned` marker (the paragraph above the line does not count) and the word
+  `us-west-2` sitting in a variable description. `check-tfvars-shape.py` needed its `ROSTER` constant
+  to become a **list** — both rosters exist at once until 4.13, and a gate naming one file would have
+  gone on passing about the old one ([Lesson 31](../plan/lessons.md)).
+- **[Claude] ONE PLAN IS READY AND WAS NOT APPLIED, on purpose.** `production/networking/` plans
+  `3 to add, 1 to change, 0 to destroy` — the log group, its key and its alias, plus the parameter
+  filling with the real allow-lists. Nothing reads that group until the proxy exists, so applying it
+  early only starts a bill; and pass 4 is one sitting by the stage's own framing.
+- **[Claude] 4.11's second half is NOT authored and is now a decision due (item 4).** The export to
+  Log Archive has a real mechanism choice — a subscription filter into a Firehose, against a scheduled
+  `CreateExportTask` — with different cost shapes, and picking one silently would be an estimate
+  standing in for a measurement ([Lesson 6](../plan/lessons.md)).
+- **[Claude] `terraform-live/production/vpn/` IS ON DISK AND NOT IN THE COMMIT, and that is the
+  runbook's two-commit tag order rather than an omission.** The `terraform_validate` hook inits from
+  **origin**, so a module and its first caller cannot share a commit: `wireguard-v0.5.0` has to be
+  tagged and pushed before the slice that names it can pass a hook. The hook said exactly that
+  (`invalid ref: "wireguard-v0.5.0"`), which is the guard working. The slice lands in the commit after
+  the tag. **The push is blocked in this session** (the auto-mode classifier refused it), so both the
+  tag and that commit wait on the user.

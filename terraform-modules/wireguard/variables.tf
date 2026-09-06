@@ -116,8 +116,23 @@ variable "instance_type" {
   default     = "t3.nano"
 }
 
-variable "vpc_nat_cidrs" {
-  description = "SOURCE RANGES INSIDE THE VPC THIS HOST MASQUERADES FOR - empty by default, and empty is the posture every earlier stage was measured under. A non-empty list turns this host into a NAT INSTANCE for those ranges as well as the tunnel endpoint it already is: it disables source/destination checking (see main.tf, where the argument for keeping it ON is stated and now has an exception) and adds one MASQUERADE plus two FORWARD rules per range to wg0's PostUp. WHY THE RULES RIDE wg0 AND NOT THE USER DATA: user data runs at FIRST BOOT ONLY and this is a [D] host that is stopped and started between sessions, so a rule written directly by the user data is gone after the first stop - wg-quick re-runs PostUp on every boot, which is the only re-entrant hook this host already has. THE LIST IS A CAPABILITY, NOT AN ACTIVATION: a masquerade rule matches nothing until some route table sends traffic here, and that route lives in the [E] slice that wants it (Stage 6, terraform-live/sandbox/buildbox/). So the standing cost of a non-empty list is exactly one thing - the source/dest check - and the reach is decided by a route somewhere else. Ranges, never 0.0.0.0/0: a rule that masquerades everything also masquerades this host's own traffic and every packet the tunnel already handles."
+# ------------------------------------------------------- the two knobs D38 replaced NAT with
+#
+# `vpc_nat_cidrs` STOOD HERE UNTIL v0.5.0 (6c step 4.7, 2026-09-06) and is GONE, not renamed.
+# It turned this host into a NAT instance for a private tier that had no other way out. Under
+# D38 no tier has a default route at all and the way out is an explicit proxy, so the job it
+# existed for does not exist: the buildbox moves at 5.8 and `sandbox/vpn/` - the only caller
+# that ever set it - stays pinned at v0.4.0 until 4.13 destroys it. A tag is what makes a
+# removal safe here (conventions 6): the old caller keeps the old module, byte for byte.
+
+variable "forward_destinations" {
+  description = "WHERE A TUNNEL PACKET MAY BE FORWARDED - and empty, the default, means ANYWHERE, which is v0.4.0's behaviour and what every reading before 2026-09-06 was taken under. A non-empty list makes wg0's PostUp accept `-i wg0` only toward these ranges and REJECT the rest. WHY IT EXISTS: under D38 a VPN client is a PRIVATE-NETWORK client - its whole internet crosses the proxy, by name, over an explicit HTTP CONNECT - so a packet from the tunnel addressed straight at a public IP is either a misconfigured client or an attempt to walk around the one egress the estate audits. Callers pass the private address space (scripts/tfhygiene/backend.py RFC1918_CIDRS), never a literal. REJECT AND NOT DROP, deliberately: the plan's word is `drops` and the target is a refusal, because the failure this produces is a client whose proxy settings are wrong, and a timeout is the one symptom nobody diagnoses correctly (the same reasoning that puts `http_access deny all` last in the proxy's own configuration - a fast, named refusal beats a hang)."
+  type        = list(string)
+  default     = []
+}
+
+variable "no_masquerade_cidrs" {
+  description = "DESTINATION ranges that must see the CLIENT's tunnel address instead of this host's - empty by default. Every other destination is masqueraded to this instance, exactly as before. THE ONE CALLER AND THE ONE REASON: the proxy's access log is the estate's egress evidence (Stage 11), and a log in which every line reads `the VPN host` identifies nothing. Passing the hub's PUBLIC subnet ranges - where the proxy lives - gives Squid a per-device source with no logging change anywhere. WHY DESTINATIONS AND NOT `the whole VPC`, which is the tidy-looking version and is WRONG: the VPC resolver at `.2` sits inside the VPC too, and the Amazon DNS server answers requests from within the VPC's own range - a tunnel packet arriving with a `10.90.0.x` source is not that, so exempting the VPC CIDR would take the tunnel's DNS down and the symptom would look like anything but a masquerade rule. The public subnets are the narrow, correct answer. WHAT IT COSTS: source/destination checking on this ENI, which main.tf keys off this list being non-empty - a packet that leaves with a foreign source and returns to a foreign destination is dropped by the ENI before any kernel rule sees it. It also needs a ROUTE: the peer range pointed at this host's ENI in the route table of whatever subnet the far end sits in, and that route is the caller's (6c step 4.7)."
   type        = list(string)
   default     = []
 }

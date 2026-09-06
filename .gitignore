@@ -71,6 +71,15 @@ terraform-modules/*/.terraform.lock.hcl
 # than in somebody's shell. No account id, no address, no key material - and
 # ./scripts/check-tfvars-shape.py holds it to exactly those two keys.
 !terraform-live/sandbox/buildbox/instance_type.auto.tfvars
+# THE THIRD AND FOURTH, AND THEY ARE THE SECOND ACCOUNT RATHER THAN A NEW PATTERN (6c step
+# 4.7, 2026-09-06): the tunnel moves to the hub, so its size file and its ROSTER move with it.
+# The roster is here rather than left to `git add -f` for exactly the reason the first exception
+# was written down - an arrangement carried only in somebody's shell says nothing to whoever
+# creates the file the next time this pattern is copied, and this IS that next time.
+# Both are held to their shape by ./scripts/check-tfvars-shape.py, which now checks BOTH
+# rosters: the two exist side by side until step 4.13 destroys the Sandbox slice.
+!terraform-live/production/vpn/instance_type.auto.tfvars
+!terraform-live/production/vpn/peers.auto.tfvars
 
 # Generated per slice by scripts/gen-backend-hcl.py - the one file allowed to hold the region
 # literal (step 2.5). Ignored unconditionally, whichever mechanism writes it.

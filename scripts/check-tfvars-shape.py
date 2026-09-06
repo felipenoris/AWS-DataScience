@@ -42,8 +42,19 @@ import subprocess
 import sys
 from pathlib import Path
 
-ROSTER = Path("terraform-live/sandbox/vpn/peers.auto.tfvars")
-SIZE = Path("terraform-live/sandbox/vpn/instance_type.auto.tfvars")
+# A LIST SINCE 6c step 4.7 (2026-09-06), and the plural is not speculative: the tunnel moves
+# account in pass 4 and BOTH rosters exist at once until 4.13 destroys the Sandbox slice. A
+# constant that named one file would have gone on passing about the old one while the roster
+# that matters went unchecked - Lesson 31, in a gate written to defend the one thing no content
+# scanner can (a private key pasted where a public one belongs).
+ROSTERS = [
+    Path("terraform-live/sandbox/vpn/peers.auto.tfvars"),
+    Path("terraform-live/production/vpn/peers.auto.tfvars"),
+]
+SIZES = [
+    Path("terraform-live/sandbox/vpn/instance_type.auto.tfvars"),
+    Path("terraform-live/production/vpn/instance_type.auto.tfvars"),
+]
 # The build host's copy of the same file (Stage 6 step 5.0). Two files with one shape:
 # same two keys, same mechanism, deliberately the same name - what differs is that this
 # host is [E], so its disk is not a standing commitment. The slice's own copy says so.
@@ -53,7 +64,7 @@ BUILDBOX_SIZE = Path("terraform-live/sandbox/buildbox/instance_type.auto.tfvars"
 # deliberate act that tracking a new tfvars requires: the .gitignore asks for "an explicit
 # `git add -f` and a reason", and the reason lands here, greppable.
 TRACKED_SHAPES: dict[str, set[str]] = {
-    str(ROSTER): {"peers"},
+    **{str(r): {"peers"} for r in ROSTERS},
     # The VPN host's SHAPE, tracked since 2026-08-20 - the second exception, and the first one
     # .gitignore names rather than leaving to `git add -f`. TWO keys since the same day, the
     # disk having joined the instance type, and the row stays short for the reason it always
@@ -66,7 +77,7 @@ TRACKED_SHAPES: dict[str, set[str]] = {
     # reader who has to ask why the file is still called instance_type.auto.tfvars is answered
     # by the file's own header (renaming it costs the .gitignore negation and every path
     # written about it, and buys a name).
-    str(SIZE): {"instance_type", "root_volume_size"},
+    **{str(z): {"instance_type", "root_volume_size"} for z in SIZES},
     str(BUILDBOX_SIZE): {"instance_type", "root_volume_size"},
 }
 
@@ -147,29 +158,31 @@ def main() -> int:
 
     say()
     say("== B. the roster's shape, tracked or not ==")
-    if ROSTER.exists():
+    present = [r for r in ROSTERS if r.exists()]
+    if present:
         b_before = fail
-        for n, depth, key in assignments(ROSTER):
-            if key == "host_private_key":
-                bad(
-                    f"{ROSTER}:{n}: the SERVER'S PRIVATE KEY does not belong here - it"
-                    " belongs in the [P] secret awsds-<env>-vpn-host-key, never in any"
-                    " tfvars (Stage 4 step 4.3; decision 4, third review). If this file"
-                    " ever reached a remote with it, rotate the key"
-                    " (docs/plan/runbooks/vpn.md, procedure C)"
-                )
-            elif depth == 0 and key != "peers":
-                bad(
-                    f"{ROSTER}:{n}: assigns `{key}` at top level - the roster defines"
-                    " `peers` and nothing else"
-                )
-            elif depth > 0 and key not in ROSTER_NESTED:
-                bad(
-                    f"{ROSTER}:{n}: entry attribute `{key}` - entries carry only:"
-                    f" {', '.join(sorted(ROSTER_NESTED))}"
-                )
+        for roster in present:
+            for n, depth, key in assignments(roster):
+                if key == "host_private_key":
+                    bad(
+                        f"{roster}:{n}: the SERVER'S PRIVATE KEY does not belong here - it"
+                        " belongs in the [P] secret awsds-<env>-vpn-host-key, never in any"
+                        " tfvars (Stage 4 step 4.3; decision 4, third review). If this file"
+                        " ever reached a remote with it, rotate the key"
+                        " (docs/plan/runbooks/vpn.md, procedure C)"
+                    )
+                elif depth == 0 and key != "peers":
+                    bad(
+                        f"{roster}:{n}: assigns `{key}` at top level - the roster defines"
+                        " `peers` and nothing else"
+                    )
+                elif depth > 0 and key not in ROSTER_NESTED:
+                    bad(
+                        f"{roster}:{n}: entry attribute `{key}` - entries carry only:"
+                        f" {', '.join(sorted(ROSTER_NESTED))}"
+                    )
         if fail == b_before:
-            say("  ok")
+            say(f"  ok ({len(present)} roster(s) on disk)")
     else:
         say("  not on disk - nothing to judge (this is not a pass)")
 
