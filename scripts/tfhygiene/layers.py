@@ -294,7 +294,7 @@ SLICES = [
         "11 interface endpoints (8.3) - no NAT",
         0.110,
     ),
-    Slice("production", "egress", EPHEMERAL, "10 interface endpoints (8.3) - no NAT", 0.100),
+    Slice("production", "egress", EPHEMERAL, "13 interface endpoints (5.5) - no NAT", 0.130),
     # Stage 6c step 1.3a (2026-09-06) - VPC-Workloads' endpoint slice, written EMPTY and
     # egress_mode "B" from birth: zero NAT (D38) and no endpoint until Stage 9/10 names one, so
     # usd_per_hour is 0.0 and true rather than 0.0 and pending. It exists now because an [E]
