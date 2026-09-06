@@ -13,7 +13,55 @@ data "aws_region" "current" {}
 data "aws_organizations_organization" "current" {} # DescribeOrganization answers from any member account (measured, Stage 1b)
 
 locals {
-  services = concat(var.core_services, var.extra_services)
+  # THE OPTIONAL GROUPS, ONE MAP, MEASURED AGAINST THE REGION'S OWN CATALOG on 2026-09-06 rather
+  # than copied from a vendor page - `describe-vpc-endpoint-services` in us-west-2 was the source
+  # for every name below, which is what 5.2's "measure rather than copy" asks for and what caught
+  # `q` (the required list names it; **no such endpoint service exists in this Region**).
+  #
+  # EVERY `*-fips` SIBLING IS EXCLUDED ON PURPOSE. The catalog carries `bedrock-fips`,
+  # `bedrock-runtime-fips`, `elasticmapreduce-fips` and more; none of them is the endpoint the
+  # SDKs resolve unless a client is configured for FIPS, and adding one by pattern-match would be
+  # a cent an hour for a path nothing takes.
+  optional_services = {
+    # The six enabled AmazonBedrock* blueprints both AUTHOR Bedrock objects and INVOKE them, and
+    # the two halves are different services. `bedrock` is the control plane that
+    # `AmazonBedrockGuardrail` (CreateGuardrail) and `AmazonBedrockEvaluation` (CreateEvaluationJob)
+    # call; `bedrock-agent` is the control plane for agents, flows and prompts; the two `-runtime`
+    # names are the invocation path. **The stage's own text lists three and omits `bedrock`** -
+    # corrected here from the API split, and 6d measures which of the four are load-bearing.
+    # Excluded and named so nobody adds them by resemblance: bedrock-agentcore*,
+    # bedrock-data-automation*, bedrock-mantle.
+    bedrock = ["bedrock", "bedrock-agent", "bedrock-agent-runtime", "bedrock-runtime"]
+
+    # EmrServerless, the enabled blueprint. All seven measured present in the Region.
+    # `emr-containers` is EMR-on-EKS - a CATEGORY 3 blueprint, deliberately not here - and
+    # `emrwal.prod` belongs to EMR on EC2's write-ahead log.
+    emr = [
+      "emr-serverless",
+      "emr-serverless-services.livy",
+      "emr-serverless-services.sessions",
+      "emr-serverless.dashboard",
+      "emr-dashboard",
+      "elasticmapreduce",
+      "elasticmapreduce-services",
+    ]
+
+    # RESERVED AND EMPTY, WHICH IS A STATE AND NOT A STUB (user decision, 2026-09-06). `Workflows`
+    # is a category-2 blueprint and Stage 10 builds orchestration - but the estate's decision is
+    # **MWAA Serverless only**, and the catalog splits the two shapes: `airflow-serverless` against
+    # the provisioned trio `airflow.api` / `airflow.env` / `airflow.ops`, plus `monitoring`, which
+    # is not in core_services. Filling this in now would be choosing that question by accident.
+    # The NAME is reserved so the day it is answered is one edit, and the empty list means a
+    # `GROUPS=mwaa` today creates nothing rather than erroring - which is the honest behaviour for
+    # a group that exists and has no content yet.
+    mwaa = []
+  }
+
+  services = distinct(concat(
+    var.core_services,
+    var.extra_services,
+    flatten([for g in var.optional_service_groups : local.optional_services[g]]),
+  ))
 
   # The service NAME is regional and almost uniform - `com.amazonaws.<region>.<token>` -
   # with one measured exception (verification (i), answered 2026-08-15 from the region's
