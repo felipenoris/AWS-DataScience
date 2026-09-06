@@ -59,6 +59,16 @@ OUT_NAME = "studio.txt"
 # The registry account and the blueprint targets (D26, D35 - the sandbox side is per unit).
 DATA_PROFILE = "awsds-infra-data"
 INTERACTIVE_PROFILES = ("awsds-infra-sandbox-1", "awsds-infra-dev")
+
+# THE THIRD STATE, AND THIS FILE HAD NO NAME FOR IT UNTIL STAGE 6b STEP 1.5 (2026-09-06).
+# An account can be a member whose association has been REMOVED ON PURPOSE: its blueprint
+# configurations are destroyed and the domain is no longer shared into it, but its OU has not
+# changed yet, so `datazone:*` is not denied and it is not HEADLESS either. Without this list
+# the two "nothing here" notes below read `correct BEFORE this account's association` - green,
+# and describing the wrong side of the event. An operator debugging an incident would be told
+# the association is pending when it was retired. The rows leave with the profile itself at
+# Stage 6b step 5.1, when `awsds-infra-dev` becomes `awsds-infra-staging` and joins HEADLESS.
+RETIRED_MEMBER_PROFILES = ("awsds-infra-dev",)
 IDENTITY_PROFILE = "awsds-infra-identity"
 # Accounts where nothing DataZone- or Studio-shaped may ever appear (D28: deployment
 # targets stay headless). Staging has no profile until the vend.
@@ -617,7 +627,12 @@ def main(argv: list) -> int:
             checks.note(
                 "US-2",
                 f"no DataZone domain visible in {p}",
-                "correct before this account's association (Stage 6 step 1.3)."
+                "the association was REMOVED here (Stage 6b step 1.4) - this account is "
+                "leaving the domain, so nothing visible is the finished state and not a "
+                "pending one. Its OU has not changed yet, so datazone: is not denied: the "
+                "call succeeds and returns nothing."
+                if p in RETIRED_MEMBER_PROFILES
+                else "correct before this account's association (Stage 6 step 1.3)."
                 if p in INTERACTIVE_PROFILES
                 else "and none is ever expected - only the Interactive accounts are "
                 "associated (D28), so this is the resting state rather than a pending one.",
@@ -683,6 +698,11 @@ def main(argv: list) -> int:
                     "left is step 1.4: backend.SMUS_ASSOCIATED carries this account's row "
                     "and the sagemaker/ slice is applied a second time."
                     if associated
+                    else "none, and none is expected - the eleven were destroyed by Stage 6b "
+                    "step 1.2 and the association removed by 1.4. Reading them back from here "
+                    "now FAILS rather than returning empty (UnauthorizedException), which is "
+                    "what makes this row a retirement instead of a pending association."
+                    if member in RETIRED_MEMBER_PROFILES
                     else "none - expected until this account's SMUS association is accepted "
                     "(Stage 6 step 1.3) and backend.SMUS_ASSOCIATED carries its row.",
                 )

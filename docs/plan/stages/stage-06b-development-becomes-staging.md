@@ -247,10 +247,34 @@ because an error and an empty list are different outcomes and only the empty lis
   error, not an empty list**; the empty list belongs to the *first* call only.
 - **1.3 — [Claude] Read the member back**: `aws datazone list-environment-blueprint-configurations` and
   `list-policy-grants` from `awsds-infra-dev`.
-- **1.4 — [user] Disassociate the account**, console, in the **Data Governance** account: *SageMaker Unified
-  Studio → domain `awsds-studio` → Account associations → select the member → Disassociate*, typing
-  `disassociate` to confirm. There is no API for this, and the documentation lists no prerequisite — which
-  is why 1.3 runs first.
+- **1.4 — [user] Disassociate the account**, console. **Sign in as the *Infrastructure User*, account
+  **Data Governance**, permission set **`InfrastructureAccess`** — the same identity that made the
+  association, recorded verbatim in [6a's log](../../log/log-stage-06a-unified-studio.md) for 2026-08-21:
+  *"Login AWS Console as Infrastructure User -> Data Governance Account -> InfrastructureAccess -> Amazon
+  DataZone -> View Domains -> `awsds-studio` -> Account Associations"*. **`GovernanceManagerAccess` cannot
+  do it** despite owning that account's governance surface: its `datazone` actions are subscription-shaped
+  (`AcceptSubscriptionRequest`, `Create/DeleteProjectMembership`, `Get*`, `List*`), and an association is
+  not a subscription.
+  - **Two front doors to the same object**: *SageMaker Unified Studio → domain `awsds-studio` → Account
+    associations*, or the **Amazon DataZone** console → *View Domains → `awsds-studio` → Account
+    Associations*. The second is the one 6a actually walked; either lands on the member row. Select the
+    member → **Disassociate**, typing `disassociate` to confirm. There is no API for this, and the
+    documentation lists no prerequisite — which is why 1.3 runs first.
+- **1.5 — DONE 2026-09-06, both halves.** `list-environment-blueprint-configurations` from the member
+  now raises **`UnauthorizedException: Unauthorized`** — it fails rather than returning empty, which
+  **answers this stage's verification 2** and is 6a step 1.3's proof exactly in reverse. And the RAM
+  listing is down to the **two `LakeFormation-V4-*` shares, both `ACTIVE`**: the
+  `DataZone-EXTENDED_ACCESS-…-ORG-ONLY` share went with the disassociation. `./aws/rename-check.py` turns
+  **RC-3 and RC-4 to `pass`** ("no domain visible - the association is gone", "no DataZone share held - the
+  disassociation has landed") with RC-4b still noting the lake's two — **which is the whole point of having
+  split them**: unsplit, RC-4 would still be reporting *"the console disassociation has not run"* about a
+  step that had just run.
+  - **`studio.py` needed a third state, and got one.** Its two "nothing here" notes read *"correct **before**
+    this account's association"* — green, and describing the wrong side of the event: an operator debugging
+    an incident would be told the association is *pending* when it was *retired*. Added
+    `RETIRED_MEMBER_PROFILES` — a member whose association was removed on purpose, whose OU has not changed
+    yet, so `datazone:*` is not denied and it is not headless either. Both notes now say what happened, and
+    the row leaves with the profile rename at 5.1. **`0 check(s) FAILED`.**
 - **1.5 — [Claude] Read the association back**: from `awsds-infra-dev`,
   `aws ram get-resource-shares --resource-owner OTHER-ACCOUNTS` shows no DataZone share, and
   `list-environment-blueprint-configurations` now **fails** rather than returning empty — 6a step 1.3's
@@ -591,10 +615,13 @@ bucket is cents; the old bucket's storage disappears with it.
 
 ## Verifications to answer while executing
 
-1. Does a blueprint configuration with an attached grant destroy in one plan, or does it need Recipe F?
-   (1.2 — never exercised in this estate.)
-2. Does `list-environment-blueprint-configurations` fail rather than return empty after disassociation?
-   (1.5 — 6a step 1.3's proof in reverse.)
+1. ~~Does a blueprint configuration with an attached grant destroy in one plan, or does it need Recipe F?~~
+   **ANSWERED 2026-09-06 (1.2): one plan, one apply.** The provider orders each grant before its
+   configuration by itself; Recipe F was not needed and stays unexercised.
+2. ~~Does `list-environment-blueprint-configurations` fail rather than return empty after disassociation?~~
+   **ANSWERED 2026-09-06 (1.5): it fails — `UnauthorizedException: Unauthorized`.** Not an access-denied
+   naming a policy: the domain is simply no longer shared into the account. 6a step 1.3's proof in reverse,
+   and the distinction 1.3's own read-back turns on.
 3. Does the OU move through Control Tower re-baseline the account by itself, or does it depend on account
    auto-enrollment? (0.5 + 3.4.) **Narrowed by documentation on 2026-09-05 and then made UNANSWERABLE by
    measurement on 2026-09-06**, which is the honest outcome rather than a gap: auto-enrollment is **ON** in

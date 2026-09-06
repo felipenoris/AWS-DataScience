@@ -269,3 +269,35 @@ set **`InfrastructureAccess`** (profile `awsds-infra-dev`). The vocabulary edit 
 - **[Claude] `./aws/studio.py` after the apply: `0 check(s) FAILED`.** `US-3` for this account reads
   `note — none - the association exists (step 1.3, measured above), so what is left is step 1.4`, which is
   the intermediate state named correctly. Unlike `US-4` at step 1.1, this check already had the branch.
+
+---
+
+## 2026-09-06 — steps 1.4 and 1.5: the account leaves the domain
+
+*Provenance: the console disassociation is the **user's**, performed in the **Data Governance** account as
+the **Infrastructure User** through **`InfrastructureAccess`** — the identity that made the association on
+2026-08-21. Every reading and every edit below are Claude's, read-only against AWS.*
+
+- **[user]** Disassociated the account from domain `awsds-studio`.
+- **[Claude] Read-back, first half — it FAILS now, and that is the answer.**
+  `list-environment-blueprint-configurations` from `awsds-infra-dev` raises
+  **`UnauthorizedException: Unauthorized`**. It returned `0` items, succeeding, one step earlier. Not an
+  access-denied naming a policy — the domain is simply no longer shared into the account. **This answers
+  the stage's verification 2**, and it is 6a step 1.3's proof exactly in reverse.
+- **[Claude] Read-back, second half.** `ram get-resource-shares --resource-owner OTHER-ACCOUNTS` returns
+  **two** shares, both `ACTIVE`: `LakeFormation-V4-FNJKZUVEM0` and `LakeFormation-V4-UQFJZDWRUL`. The
+  `DataZone-EXTENDED_ACCESS-…-ORG-ONLY` share is gone with the association.
+- **[Claude] `./aws/rename-check.py`: `RC-3` and `RC-4` are now `pass`** — *"no domain visible - the
+  association is gone"* and *"no DataZone share held - the disassociation (step 1) has landed"* — with
+  `RC-4b` still noting the lake's two, which belong to step 2.3. **This is what the RC-4/RC-4b split bought:
+  unsplit, the check would still be reporting "the console disassociation has not run" about a step that
+  had just run.** `0 check(s) FAILED`.
+- **[Claude] `./aws/studio.py` needed a third state, and got one.** Its two "nothing here" notes read
+  *"correct **before** this account's association"* — green, and describing the wrong side of the event:
+  an operator would be told the association is **pending** when it was **retired**. Added
+  `RETIRED_MEMBER_PROFILES` for the state this file had no name for — a member whose association was
+  removed on purpose, whose OU has not changed yet, so `datazone:*` is not denied and it is not headless
+  either. Both notes now name the retirement and the row leaves with the profile rename at 5.1.
+  `0 check(s) FAILED`.
+- **[Claude] Two of the stage's four verifications are now answered**: 1 (no Recipe F needed) and 2 (the
+  call fails rather than returning empty).
