@@ -985,3 +985,37 @@ thing to actually run. They are written up individually because three of them ar
   somebody needs at the worst moment. What is missing is something that **notices** one exists —
   it is gitignored, so no gate sees it, and it sat for eleven days beside a slice nobody planned.
   Recorded rather than built mid-pass, beside the other two watchdogs this session has asked for.
+
+## 2026-09-06 — 5.2, and an expired token that nearly became a finding
+
+- **[Claude] THE SESSION EXPIRED MID-STEP AND MY OWN COMMAND TURNED THAT INTO A FALSE MEASUREMENT.**
+  The first re-check of 5.2's names ran with `2>/dev/null`, so
+  `Error when retrieving token from sso: Token has expired` became an empty catalog, and the reading
+  presented itself as **"eight services do not exist in this Region"** — including `s3tables`, which
+  I had measured as *existing* an hour earlier. **The contradiction is what caught it, not the
+  instrument** (Lesson 30: a tool's failure is not a property of the world, and gets written down as
+  one; Lesson 24: the defence against the benign failure hides the serious one). One step from
+  writing it into the plan. Re-run with stderr visible, the user re-authenticated, and the catalog
+  came back with **569 services**.
+- **[Claude] The `q` finding SURVIVED re-measurement**, which is the part that matters: it was taken
+  with a live token the first time and is still absent from a healthy 569-entry catalog. Only
+  `qapps` and the `quicksight*` family exist.
+- **[Claude] Sandbox's `extra_services` goes from 4 to 10**, each entry carrying why it is there:
+  `datazone` **back after its 2026-08-25 removal**, and the reason it can return is structural — it
+  was taken out because its private DNS shadowed a name the VPN CLIENT resolved publicly, and the
+  tunnel is now in `VPC-Networking`, which by decision carries **no interface endpoint at all**
+  (Lessons 40-43). A private zone here can no longer reach the client plane. `ssm`, `ssmmessages`
+  and `ec2messages` are 5.5's trio, needed here because **Session Manager does not work through an
+  HTTPS proxy listener** — the shell that reads the proxy's log must not depend on the proxy
+  (Lesson 24 again, in its architectural form). `ec2` and `secretsmanager` were NAT-covered until
+  now.
+- **[Claude] 18 interface endpoints, and the three `layers.py` rates were COUNTED rather than
+  computed** — `terraform plan | grep -c aws_vpc_endpoint.interface` per slice, at the measured
+  0.010/h. Sandbox **0.160 → 0.180**, Staging **→ 0.110**, Production **→ 0.100**.
+- **[Claude] SANDBOX WENT UP, AND THE LOG SAYS SO RATHER THAN AVERAGING IT AWAY.** Design B does not
+  save money on this slice: it trades 0.050/h of NAT for 0.080/h of endpoints, because 5.2 has to
+  **enumerate** what the NAT covered in silence. What D38 buys is one auditable exit instead of
+  three unenumerated ones. A stage that claimed a saving here would be measuring the wrong thing.
+- **[Claude] The rates deliberately exclude 5.3's optional groups.** `bedrock` adds 0.040 and `emr`
+  0.070 only for an apply that names them; a static rate that assumed them would over-report every
+  session that does not. `make status` quotes this column, and the flag's own cost is in `make help`.

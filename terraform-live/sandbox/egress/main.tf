@@ -95,7 +95,45 @@ module "egress" {
   # `dynamodb` and nothing else, while `s3tables` is its own service name in the Region's catalog
   # (measured 2026-09-06). Under design B a project using that blueprint would have no path at
   # all - the same failure 5.3 describes for Bedrock and EMR, in a blueprint nobody had named.
-  extra_services = ["sagemaker.api", "sagemaker.runtime", "sagemaker.studio", "s3tables"]
+  # STEP 5.2's COMPLETION OF THE REQUIRED SET (2026-09-06). Under design A the NAT covered every
+  # name silently; with no default route anywhere, a service without an endpoint here is a service
+  # with **no path at all**. Every name below was checked against the Region's own catalog on the
+  # day it was added - `describe-vpc-endpoint-services`, 569 entries - which is what this step's own
+  # "measure rather than copy" asks for, and it is how `q` was struck from the step's list: **no
+  # such endpoint service exists in this Region**, only `qapps` and the `quicksight*` family.
+  extra_services = [
+    # The SMUS surface, unchanged since Stage 3.
+    "sagemaker.api",
+    "sagemaker.runtime",
+    "sagemaker.studio",
+
+    # `S3TableCatalog` is one of category 1's eleven and the S3 GATEWAY endpoint does not cover it
+    # (a gateway carries `s3` and `dynamodb`, nothing else). Always-on rather than behind 5.3's
+    # flag, by the user's decision: one endpoint, and the blueprint is enabled.
+    "s3tables",
+
+    # BACK AFTER BEING REMOVED ON 2026-08-25, and the reason it can return is structural rather
+    # than a change of mind. It was taken out because its private DNS shadowed a name the VPN
+    # CLIENT had to resolve publicly - the tunnel was in this VPC then, so the client saw this
+    # VPC's resolver view. **The tunnel is in VPC-Networking now, which by decision carries no
+    # interface endpoint at all** (Lessons 40-43's structural repair), so a private zone here
+    # cannot reach the client plane. What resolves it privately now is what should: a SageMaker
+    # app in this VPC calling the portal's API.
+    "datazone",
+
+    # SESSION MANAGER'S THREE, which 5.5 requires of every instance-bearing spoke. **Session
+    # Manager does not work through an HTTPS proxy listener**, so the shell that reads the proxy's
+    # own log must not depend on the proxy (Lesson 24: the instrument and its subject need
+    # different channels). The hub's two hosts reach SSM through the IGW instead and need none.
+    "ssm",
+    "ssmmessages",
+    "ec2messages",
+
+    # `ec2` for the describe calls SageMaker and EMR make on the account's own network objects,
+    # and `secretsmanager` for a job reading a credential - both covered by the NAT until now.
+    "ec2",
+    "secretsmanager",
+  ]
 
   # THE OPTIONAL FAMILIES, EMPTY UNLESS `make up ENV=sandbox GROUPS=...` NAMES ONE. Wired HERE
   # and in no other egress slice, deliberately: the blueprints these serve are SMUS blueprints and
