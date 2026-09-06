@@ -16,6 +16,8 @@ which they could the moment somebody typed the second one.
 
 from __future__ import annotations
 
+import json
+
 # The one region literal, in the one place, for the whole tree.
 REGION = "us-west-2"
 
@@ -155,6 +157,83 @@ VPC_NAME_SUFFIXES = {
 def vpc_name_suffix_of(account: str, slice_name: str) -> str:
     """The VPC's name suffix inside its account - empty when the account holds only one."""
     return VPC_NAME_SUFFIXES.get((account, slice_name), "")
+
+
+# THE PEERING MATRIX (Stage 6c step 3.1, 2026-09-06) - THE NINTH VOCABULARY, and the first one
+# whose ABSENCES are a control rather than a backlog.
+#
+# Each row is (requester account, requester slice, accepter account, accepter slice). Both sides
+# of every peering are generated from this one list, which is what 0.6 asked for: the requester
+# lives in the spoke and the accepter in Production, and until now each side was hand-written in
+# its own file with nothing tying them together (Lesson 14).
+#
+# WHAT IS NOT HERE IS THE CHEAPEST CONTROL IN THE DESIGN, and it is worth naming so it is not
+# "fixed" by someone who reads a gap as an oversight:
+#
+#   Sandbox <-> Staging                 - Interactive and Workloads never talk. The user's brief.
+#   Sandbox <-> VPC-Workloads           - same rule, other end.
+#   VPC-SharedServices <-> Staging      - DEPLOYMENT IS AN API ACT. The runner assumes a role
+#   VPC-SharedServices <-> VPC-Workloads  across the account boundary and calls SageMaker,
+#                                         CloudFormation and S3; artifacts travel as ECR images,
+#                                         CodeArtifact packages and S3 objects, each reached
+#                                         through an endpoint in the TARGET's own VPC. Nothing in
+#                                         a deployment target clones a repository - the image
+#                                         carries the code (D28) - so a runtime `git clone` there
+#                                         is a contract violation to catch, not a path to give.
+#                                         Building them would grant standing L3 reach from the
+#                                         host that executes repository-supplied build code into
+#                                         both deployment targets: D14's blast radius, widened
+#                                         (Lesson 2).
+#
+# THE TRIGGER FOR ADDING ONE, so it is recognised rather than rediscovered: a shared service
+# consumed at RUNTIME rather than at deploy time. Candidates, none of which exists today - a
+# package mirror on an instance (as opposed to ECR and CodeArtifact, which are endpoints), a
+# metrics or log collector that is not CloudWatch, an internal secrets or configuration service,
+# a certificate-status endpoint. THE INTERNAL CA IS NOT ONE: D36 issues no CRL and runs no OCSP
+# responder, by decision. Prefer a regional service or an endpoint; the peering is the last
+# resort, and it is generated from this same list.
+#
+# THE ROW THAT LEFT. `("staging", "foundation", "production", "foundation")` existed until this
+# step - Stage 3 built it and Stage 6b preserved it through a for_each rename with five moved{}
+# blocks. Preserving it was right: the alternative was destroying it mid-conversion with no
+# replacement, and INT-09 rode on it until here. Staging now reaches only the hub, for the proxy.
+PEERINGS = [
+    ("sandbox", "foundation", "production", "networking"),  # VPN reach, the proxy
+    ("staging", "foundation", "production", "networking"),  # the proxy
+    ("production", "workloads", "production", "networking"),  # the proxy
+    ("production", "foundation", "production", "networking"),  # the proxy, and the VPN to GitLab
+    ("sandbox", "foundation", "production", "foundation"),  # git clone from a notebook (INT-09)
+]
+
+
+def peerings_of(account: str, slice_name: str) -> list[dict]:
+    """Every peering this slice is an end of, with the far end resolved from the same tables.
+
+    One list per slice, both roles in it: a slice can be the requester of one peering and the
+    accepter of another, which `production/foundation` is today.
+    """
+    out = []
+    for r_acct, r_slice, a_acct, a_slice in PEERINGS:
+        if (account, slice_name) == (r_acct, r_slice):
+            role, peer_a, peer_s = "requester", a_acct, a_slice
+        elif (account, slice_name) == (a_acct, a_slice):
+            role, peer_a, peer_s = "accepter", r_acct, r_slice
+        else:
+            continue
+        out.append(
+            {
+                "key": f"{r_acct}-{r_slice}--{a_acct}-{a_slice}",
+                "role": role,
+                "peer_account": peer_a,
+                "peer_slice": peer_s,
+                "peer_cidr": VPC_CIDRS[(peer_a, peer_s)],
+                "peer_profile": PROFILES[peer_a],
+                "peer_env": ENV_TOKENS[peer_a],
+                "peer_name_suffix": vpc_name_suffix_of(peer_a, peer_s),
+                "same_account": peer_a == account,
+            }
+        )
+    return out
 
 
 def vpc_cidr_of(account: str, slice_name: str) -> str | None:
@@ -501,6 +580,11 @@ def tfvars_values(account: str, slice_name: str) -> dict:
             # both spokes and the hook said so.
             if len([a for a, _s in VPC_CIDRS if a == account]) > 1:
                 values["account_folder"] = account
+            # BOTH SIDES OF EVERY PEERING FROM ONE LIST (0.6 / 3.1). A slice gets the rows it is
+            # an end of, with its role in each - so a requester and an accepter can never
+            # disagree about which peerings exist, which is exactly what hand-writing the two
+            # halves in two files made possible.
+            values["peerings"] = peerings_of(account, slice_name)
             # Stage 3 pass 2: the peers map - every VPC-bearing account that has a profile,
             # DERIVED rather than authored a third time (Lesson 14). The slice's aliased
             # providers read a peer's [P] facts (VPC, subnets, route tables) live instead of
@@ -719,6 +803,27 @@ def render_tfvars(account: str, slice_name: str) -> str:
     if "peer_cidrs" in v:
         cidr_list = ", ".join(f'"{c}"' for c in v["peer_cidrs"])
         out += f"peer_cidrs      = [{cidr_list}]\n"
+    if "peerings" in v:
+        rows = "".join(
+            "  {\n"
+            + "".join(
+                f"    {k} = {json.dumps(pr[k])}\n"
+                for k in (
+                    "key",
+                    "role",
+                    "peer_account",
+                    "peer_slice",
+                    "peer_cidr",
+                    "peer_profile",
+                    "peer_env",
+                    "peer_name_suffix",
+                    "same_account",
+                )
+            )
+            + "  },\n"
+            for pr in v["peerings"]
+        )
+        out += f"peerings = [\n{rows}]\n"
     if "peers" in v:
         rows = "".join(
             f'  {acct} = {{ profile = "{p["profile"]}", env = "{p["env"]}", '

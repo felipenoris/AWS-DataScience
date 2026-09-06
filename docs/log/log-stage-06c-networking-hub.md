@@ -199,3 +199,74 @@ stays verbatim. The stage file is
   entries above says why: 2.6 keeps the old zone family alive through pass 6, so an equality check
   written now fails on every surviving old association. It goes at pass 6, where it is true the first
   time it runs.
+
+## 2026-09-06 — pass 3 begins: the matrix declared, and the same-account half of it built
+
+- **[Claude] 3.1 / 0.6 — the peering matrix is one list in `backend.py`, and both sides of every row
+  are generated from it.** `PEERINGS` holds five `(requester account, requester slice, accepter account,
+  accepter slice)` rows; `peerings_of()` projects it onto a slice **with that slice's role in each**, and
+  the generated `peerings` input carries the far end's CIDR, profile, env token and name suffix. Until now
+  each half was hand-written in its own file with nothing tying them together — which is what made a
+  requester and an accepter able to disagree about which peerings exist (Lesson 14).
+  - **`production/foundation` holds both roles**, requester toward the hub and accepter from Sandbox, and
+    the projection produces exactly that. It is the case a "one row per slice" shape would have hidden.
+  - **The absences are written into the table as prose**, with the trigger for adding one: *a shared
+    service consumed at RUNTIME rather than at deploy time*. Deployment is an API act — the runner
+    assumes a role across the account boundary and artifacts travel as ECR images, CodeArtifact packages
+    and S3 objects, each through an endpoint in the **target's own** VPC. **The internal CA is not a
+    trigger**: D36 issues no CRL and runs no OCSP responder, by decision.
+  - **The row that left**: `("staging", "foundation", "production", "foundation")`. Stage 3 built it and
+    6b preserved it through a `for_each` rename with five `moved {}` blocks. **Preserving it was right** —
+    the alternative was destroying it mid-conversion with no replacement, and INT-09 rode on it until
+    here. Staging now reaches only the hub, for the proxy.
+- **[Claude] 3.4, the same-account half — applied, and `same_account` selects the SHAPE.** A peering
+  inside one account is **one resource with `auto_accept`**, not the requester/accepter pair every
+  cross-account row needs, and the generated field is what the code branches on rather than a human
+  remembering which is which. `production/workloads → networking` and
+  `production/foundation → networking`: **9 resources each** (one peering, eight subnet-scoped routes),
+  both `active`, named `awsds-prod-workloads-to-networking` and `awsds-prod-shared-to-networking`.
+- **[Claude] And the half a peering does not work without: the hub's RETURN routes.** `12 to add` —
+  three tables (both private, plus **public**, because the proxy and the VPN host live in that tier) ×
+  four requester private subnets. Read back per table: **4, 4, 4, and `isolated` 0**. The isolated table
+  gets nothing, which is what makes it isolated.
+  - **An attachment with no route is the defect this file exists against**, and the reference
+    implementation this project keeps as a comparison has exactly it: a peering `active` that carries no
+    traffic because one side's route table was never told. **It looks correct in every console view that
+    shows peerings and in none that shows routes** — which is why 3.7's `NT-11` checks both sides rather
+    than the connection.
+  - **Routes are subnet-scoped on both sides, never `10.31.0.0/16`.** A whole-VPC route grants reach to
+    every tier the peer will ever add — including its public one, the only tier in the estate with an
+    internet gateway in front of it.
+
+## 2026-09-06 — pass 3, the cross-account half: six peerings, and three self-inflicted findings
+
+- **[Claude] The two spoke requesters and the hub's accepters applied.** Six peerings now stand, all
+  `active`: the matrix's five — `networking-from-sandbox`, `networking-from-staging`,
+  `workloads-to-networking`, `shared-to-networking`, and `awsds-prod-from-sandbox` (INT-09) — plus
+  `awsds-prod-from-staging`, **the one 3.1 retires**. Peering routes read back **14 in Sandbox, 12 in
+  Staging, 52 in Production**, and `./aws/networking.py` is clean: `NT-3` over **147** routes, `NT-6`
+  over **6** distinct peerings, `NT-5` across five VPCs.
+- **[Claude] THREE THINGS WENT WRONG AND EACH ONE TAUGHT SOMETHING THE PLAN DID NOT SAY.**
+  - **A backgrounded `terraform plan` with a missing variable waits on stdin forever and HOLDS THE STATE
+    LOCK.** I added the `peerings` input and did not regenerate the spokes' tfvars; the plan then prompted
+    for the value, in a background task with no terminal, and sat for eleven minutes. The symptom
+    everywhere else was `Error acquiring the state lock` on a completely different command. **`-input=false`
+    turns that hang into an error**, and every plan and apply in this stage carries it from here.
+    Two locks were force-unlocked after confirming no `terraform` process held them.
+  - **`one()` raised on Sandbox's peerings, and the error caught what a wider filter would have BUILT.**
+    Sandbox requests **two** cross-account peerings — the hub, and the INT-09 one to VPC-SharedServices
+    that Stage 3 built and `peering.tf` still owns by hand. Selecting on `!same_account` alone matched
+    both; had the expression tolerated two, the slice would have declared **a second Terraform resource
+    for a connection that already exists in the same state, in a different file.** The filter is now
+    scoped to the hub row, and folding INT-09's in is a `moved {}` block rather than a rewrite — its own
+    commit, because the connection is live.
+  - **A subnet in another account cannot be read with this account's credentials, and the plan says so in
+    AWS's words rather than Terraform's**: `no matching EC2 Subnet found`, which is truthful about the
+    account it asked. Providers cannot be iterated, so the cross-account subnet reads are one block per
+    peer — the same split `peers.tf` documents, arriving one layer down.
+- **[Claude] And one defect I created and then closed in the same sitting**, which is worth recording
+  because it is exactly what this pass's own check exists for: the spoke requesters applied **without
+  forward routes**, so for one commit each peering read `active` in every console view that shows
+  peerings and **carried nothing**. That is the reference implementation's defect, self-inflicted. Eight
+  subnet-scoped routes per spoke closed it — to the hub's **private and public** tiers, because the proxy
+  and the WireGuard host live in the public one; the hub's **isolated** tier is never a destination.
