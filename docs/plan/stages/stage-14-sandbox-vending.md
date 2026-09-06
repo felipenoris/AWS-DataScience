@@ -9,6 +9,15 @@
 
 *Read with [`docs/plan/conventions.md`](../conventions.md) (naming, layout, `[P]`/`[D]`/`[E]`, IAM rules).*
 
+> **One input this stage's mechanism was never told about** (measured 2026-09-06 by Stage 6b step 0.5b,
+> recorded in [`INV-17`](../../AWS_STATE.md) and argued in [D34](../decisions/D34-account-vending.md)):
+> the landing zone has **account auto-enrollment ON**, so an account created with
+> `organizations:CreateAccount` and placed in a **registered OU** is baselined without Account Factory.
+> This stage takes D34's rung 2 (`aws_servicecatalog_provisioned_product`) because a non-Factory account
+> was assumed unenrolled. **That assumption is false and the choice is unchanged for now** — the stage is
+> blocked on the quota, and the provisioned product is what makes the console's *Update account* flow work
+> — but the alternative is to be weighed when this stage is written, not rediscovered then.*
+
 ---
 
 **Objective:** adding a business unit is a merge request. One input — the unit's name — produces its

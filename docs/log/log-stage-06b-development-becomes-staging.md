@@ -137,3 +137,49 @@ the branch are Claude's. Readings carry the report's own UTC stamp, which had cr
 - **[Claude]** Two instruments given the interpretation they lacked (`org-trusted-access-services.py`,
   `management-landing-zone-drift.sh`); `rename-check.py` corrected in three places; the stage file
   corrected in the places listed above and re-reviewed against the pass 0 readings.
+
+---
+
+## 2026-09-06 — the plan reviewed against pass 0, and six more corrections
+
+*Provenance: the request is the user's; every reading and every edit below are Claude's. All readings are
+read-only calls as the infrastructure user through `InfrastructureAccess`, and the reports they produced
+are `aws/output/{org-policies,tf-backends,networking}.txt` — untracked, regenerable, and not repeated here.*
+
+- **[Claude] The policy delta of the OU move, measured instead of predicted** (`org-policies.py` §2,
+  Development and Production read side by side). Both accounts sit at **25 statements in force**, so the
+  count is not the check — the composition is. The account **loses two** Interactive Sids, not the one
+  step 3.7 named: `DenyClassicNotebookInstances` **and** `DenyAthenaSparkStartSession`. The first is
+  **fully absorbed** by `DenyInteractiveSageMakerSurface`, which denies the same two actions, so only the
+  Athena one is a gap. Everything else — guardrail, `CTMULTISERVICEPV1`, the three root documents — is
+  identical on both sides.
+- **[Claude] Step 3.8 under-specified the statement it copies.** The applied
+  `DenyAthenaSparkStartSession` carries **three** actions — `athena:StartSession`, `athena:UpdateSession`
+  and **`athena:StartCalculationExecution`** — scoped to **`arn:aws:athena:*:*:workgroup/*`**. The stage
+  named two actions and no resource; `POLICIES.md` had all three all along. The missing action is the one
+  that runs the calculation.
+- **[Claude] Step 2.3 does more than revoke grants: it rewrites the lake's bucket policies.**
+  `local.consumer_vpce_ids` iterates the consumer remote states, so dropping the account from
+  `consumer_accounts` also drops its **S3 gateway endpoint** out of `trusted_vpce_ids` — INT-05's
+  `aws:SourceVpce` allow-list. Correct and intended, and a different class of change from a grant
+  revocation.
+- **[Claude] Two justifications in the stage expire before the step that uses them.** 3.4's *"without
+  auto-enrollment, leaves the old OU's Config-rule controls attached"* died with the 0.5b reading; 4.1's
+  *"a rebuild would invalidate the gateway-endpoint ids **the lake's bucket policy names**"* dies at 2.3,
+  three steps before pass 4 runs. **Both conclusions survive on other grounds**, and both sentences were
+  rewritten rather than left to be re-derived — Lesson 3 read backwards.
+- **[Claude] `awsds-dev-tfstate` can actually be destroyed** (`tf-backends.py` §2): versioned, BPA 4/4,
+  TLS-only, two lifecycle rules, and **Object Lock `off`**. On this estate that is not a formality —
+  `INV-14`'s CloudTrail bucket is locked at `COMPLIANCE`/90 days, and the same setting here would have
+  made step 4.7 unexecutable rather than slow.
+- **[Claude] A consequence outside this stage, recorded where it belongs.** With auto-enrollment ON, an
+  account created by `organizations:CreateAccount` and placed in a **registered OU** is baselined without
+  Account Factory — which is the premise that kept a rung off [D34](../plan/decisions/D34-account-vending.md)'s
+  vending ladder. D34 gains a dated note and [Stage 14](../plan/stages/stage-14-sandbox-vending.md) a
+  pointer; **nothing is re-decided** — that stage is blocked on the account quota and D34's revision
+  trigger is frequency, not mechanism (Lesson 7).
+- **[Claude] One correction to Claude's own text of 2026-09-05.** The drift script's section 6 said the
+  Stage 6b account update is *"the event 1b verification (vi), 1d (iv) and 1d (xiv) have each been waiting
+  on"*. Only **(vi)** — that one is about this account's assignment. 1d (iv) waits on an update to **Log
+  Archive** and 1d (xiv) on the **Security** OU's accounts; an update to a member in `Interactive`
+  re-baselines neither.
