@@ -61,8 +61,13 @@ ROLE_BY_PROFILE = {
     "awsds-infra-staging": "awsds-deploy-staging",
     "awsds-infra-prod": "awsds-deploy-prod",
     "awsds-infra-sandbox-1": "awsds-deploy-devenv-sandbox",
-    "awsds-infra-dev": "awsds-deploy-devenv-dev",
 }
+# THE `awsds-infra-dev` ROW WENT ON 2026-09-06 AND WAS NOT RETARGETED (Stage 6b). It named a
+# dev-env REGISTRATION home - the second one, beside Sandbox. The account behind it is now
+# Staging, a DEPLOY TARGET, and D28's rule is that those stay headless: it already appears one
+# row up as `awsds-deploy-staging`, which is a different role for a different job. Interactive
+# compute exists in Sandbox only since the 2026-09-05 re-scope, so this map has one dev-env
+# home by design rather than by attrition.
 # The two roles CloudTrail is asked about, in the account each lives in (INT-08).
 PROMOTION_PROFILES = ("awsds-infra-staging", "awsds-infra-prod")
 
@@ -337,7 +342,7 @@ def main(argv: list) -> int:
 
     # ----------------- the dev-env registration, side by side (INT-17/INT-18 mechanical)
     image_rows: list = []  # (profile, image name, latest version, base image tail)
-    for p in ("awsds-infra-sandbox-1", "awsds-infra-dev"):
+    for p in ("awsds-infra-sandbox-1",):
         if p not in live:
             continue
         cli = cli_for(p)

@@ -68,7 +68,7 @@ OUT_NAME = "supplychain.txt"
 
 # The producer account and the consumers (D14; D35 - the sandbox side is per unit).
 PROD_PROFILE = "awsds-infra-prod"
-CONSUMER_PROFILES = ("awsds-infra-sandbox-1", "awsds-infra-dev")
+CONSUMER_PROFILES = ("awsds-infra-sandbox-1", "awsds-infra-staging")
 
 # The contracts (see header).
 GITLAB_NAME_TAG = "awsds-prod-gitlab"

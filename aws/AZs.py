@@ -10,7 +10,7 @@
 #             sso-session name, not by profile or account (see aws/INDEX.md).
 #
 #   run:      ./aws/AZs.py                       every awsds-* profile in ~/.aws/config
-#             ./aws/AZs.py awsds-infra-dev ...   only the profiles named
+#             ./aws/AZs.py awsds-infra-staging ...   only the profiles named
 #   writes:   aws/output/AZs.txt   (untracked - see .gitignore)
 #   reads:    ec2:DescribeAvailabilityZones and sts:GetCallerIdentity. This script never
 #             creates, updates or deletes anything.

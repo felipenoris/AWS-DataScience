@@ -58,7 +58,7 @@ OUT_NAME = "studio.txt"
 
 # The registry account and the blueprint targets (D26, D35 - the sandbox side is per unit).
 DATA_PROFILE = "awsds-infra-data"
-INTERACTIVE_PROFILES = ("awsds-infra-sandbox-1", "awsds-infra-dev")
+INTERACTIVE_PROFILES = ("awsds-infra-sandbox-1",)
 
 # THE THIRD STATE, AND THIS FILE HAD NO NAME FOR IT UNTIL STAGE 6b STEP 1.5 (2026-09-06).
 # An account can be a member whose association has been REMOVED ON PURPOSE: its blueprint
@@ -66,12 +66,20 @@ INTERACTIVE_PROFILES = ("awsds-infra-sandbox-1", "awsds-infra-dev")
 # changed yet, so `datazone:*` is not denied and it is not HEADLESS either. Without this list
 # the two "nothing here" notes below read `correct BEFORE this account's association` - green,
 # and describing the wrong side of the event. An operator debugging an incident would be told
-# the association is pending when it was retired. The rows leave with the profile itself at
-# Stage 6b step 5.1, when `awsds-infra-dev` becomes `awsds-infra-staging` and joins HEADLESS.
-RETIRED_MEMBER_PROFILES = ("awsds-infra-dev",)
+# the association is pending when it was retired.
+#
+# THE LIST IS EMPTY AGAIN AS OF 2026-09-06, AND IT IS KEPT RATHER THAN DELETED. The one row it
+# ever held was the account this state was invented for, and it held it for the few hours
+# between step 1.5 (the association removed) and step 3.4 (the OU moved). The account is a
+# Workloads member now: `datazone:*` IS denied there, so it is genuinely HEADLESS and the row
+# below carries it. The state itself is not hypothetical - any future member retired the same
+# way passes through it, and re-deriving it under time pressure is how the wrong side of an
+# event gets reported green.
+RETIRED_MEMBER_PROFILES: tuple[str, ...] = ()
 IDENTITY_PROFILE = "awsds-infra-identity"
 # Accounts where nothing DataZone- or Studio-shaped may ever appear (D28: deployment
-# targets stay headless). Staging has no profile until the vend.
+# targets stay headless). `awsds-infra-staging` is no longer a promise: the profile exists
+# since Stage 6b step 5.0, and the account behind it is the renamed `Development`.
 HEADLESS_PROFILES = ("awsds-infra-prod", "awsds-infra-staging")
 
 # The contracts (see header).

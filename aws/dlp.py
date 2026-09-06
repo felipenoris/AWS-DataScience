@@ -72,7 +72,12 @@ def env_token(profile: str) -> str | None:
         return "sandbox"
     return {
         DATA_PROFILE: "data",
-        "awsds-infra-dev": "dev",
+        # Renamed 2026-09-06 (Stage 6b): the profile is `awsds-infra-staging` since step 5.0
+        # and the token it maps to is the FINAL one. Nothing is misnamed by that today -
+        # Stage 11 has not run, so no trail, filter or bucket of this shape exists in the
+        # account yet; when it does it will be `awsds-staging-*`, because step 4.4 flips the
+        # env token before Stage 11 builds anything.
+        "awsds-infra-staging": "staging",
     }.get(profile)
 
 

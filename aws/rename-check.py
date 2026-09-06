@@ -31,7 +31,7 @@
 #                 aws sso login --sso-session awsds
 #
 #   run:      ./aws/rename-check.py                  # every awsds-* profile
-#             ./aws/rename-check.py awsds-infra-dev  # only the ones named (partial reading)
+#             ./aws/rename-check.py awsds-infra-staging  # only the ones named (partial reading)
 #   writes:   aws/output/rename-check.txt   (untracked - see .gitignore)
 #   reads:    organizations:ListAccounts, ListParents, DescribeOrganizationalUnit,
 #             sso-admin:ListPermissionSetsProvisionedToAccount, DescribePermissionSet,
@@ -75,9 +75,11 @@ NEW_OU = "Workloads"
 # (D10), and every read below is a describe.
 ORG_PROFILE = "awsds-infra-identity"
 
-# The member profile. It is named `awsds-infra-dev` before the rename and
-# `awsds-infra-staging` after it; both are tried, because during the sitting the
-# ~/.aws/config edit and the AWS-side rename do not happen in the same second.
+# The member profile. Both spellings are tried on purpose: the ~/.aws/config edit (step 5.0)
+# and the AWS-side rename do not happen in the same second, and this file has to keep reading
+# across that gap. The old row is still here for that reason and NOT because it resolves -
+# it stopped resolving on 2026-09-06, when the user renamed the profile; it is the tolerated
+# miss that lets the file be run from a machine whose config has not been edited yet.
 MEMBER_PROFILES = ("awsds-infra-dev", "awsds-infra-staging")
 
 # The producer of the lake share, and the account that owns the registry policies.

@@ -11,7 +11,7 @@
 #             `sso_session = awsds` (see aws/INDEX.md).
 #
 #   run:      ./aws/org-policy-baseline.py                   # awsds-infra-identity
-#             ./aws/org-policy-baseline.py awsds-infra-dev   # a different profile
+#             ./aws/org-policy-baseline.py awsds-infra-staging   # a different profile
 #             python3 aws/org-policy-baseline.py -           # no --profile: CloudShell on
 #                                                            # MANAGEMENT, as CT Admin (no
 #                                                            # uv there; bring aws/)
