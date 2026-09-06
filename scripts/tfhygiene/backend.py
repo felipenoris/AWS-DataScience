@@ -609,7 +609,14 @@ def tfvars_values(account: str, slice_name: str) -> dict:
             #
             # 3.1 REPLACES THE SHAPE, not the fact: the peering MATRIX supersedes "every
             # VPC-bearing account" as the thing this is derived from. The row survives that.
-            if slice_name in ("foundation", "networking"):
+            # NARROWED TO PRODUCTION'S TWO ON 2026-09-06, and this is `peers` being SUPERSEDED
+            # rather than trimmed. It answered "which VPC-bearing accounts are there, and how do
+            # I reach one" - a question `peerings` now answers precisely, per row, with the role
+            # and the far end resolved. The spokes moved onto `peerings` when their peering files
+            # became generated (3.4), so the only consumers left are the two Production slices
+            # whose ALIASED PROVIDERS need a profile per peer account, and providers cannot be
+            # iterated. When that constraint is gone, so is this map.
+            if account == "production" and slice_name in ("foundation", "networking"):
                 # THE `name_suffix` FIELD ARRIVED ON 2026-09-06 AND IT IS 0.6's SMALLEST HALF,
                 # PULLED FORWARD BY AN OUTAGE STEP 1.1 CAUSED. A requester finds the accepter's
                 # VPC by the tag `awsds-<env>-vpc`; 1.1 re-labelled Production's to

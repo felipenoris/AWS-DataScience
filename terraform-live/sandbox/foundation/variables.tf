@@ -44,11 +44,6 @@ variable "zone_ids" {
   nullable    = false
 }
 
-variable "peers" {
-  description = "Profile, env token and VPC name suffix per VPC-bearing account (Stage 3 pass 2; the suffix arrived at 6c step 0.6). Derived in scripts/tfhygiene/backend.py from the same tables as everything else - never authored here. The suffix is how a requester builds the accepter's VPC Name tag: 6c step 1.1 re-labelled Production's to awsds-prod-shared-vpc, and a lookup that assumed awsds-<env>-vpc stopped resolving."
-  type        = map(object({ profile = string, env = string, name_suffix = string }))
-  nullable    = false
-}
 
 variable "project" {
   description = "Project tag. Fixed by docs/plan/conventions.md and by 1c's tag policy."
