@@ -1239,10 +1239,14 @@ What the checks are, and where each comes from:
         rep.h1("11. The accounts nothing here is measuring")
         rep.text("""Read this BEFORE reading section 10 as a pass.
 
-  - `Staging` has no profile until the vend - sections 5, 7 and the DT-8 pair
-    are blind until then, and INT-07's registry half (4.6) with them.
-  - Development appears here only as a principal in the group policies -
-    INT-04's behavioural half (3.4) is a session, not a listing.
+  - `Staging` HAS a profile since 2026-09-06 and this text used to say it would
+    not until a vend. That vend was refused; Stage 6b made the account by
+    renaming `Development`, so sections 5, 7 and the DT-8 pair are no longer
+    blind - and neither is INT-07's registry half (4.6). What they report is a
+    real reading now, not an absence.
+  - `Development` is gone as an account name. Where this report still says it,
+    read `Staging`: same account, renamed 2026-09-06. INT-04 was retired into
+    INT-07 at the 2026-09-05 re-scope.
   - Log Archive and Audit hold no profile by design; nothing in this stage
     lives there.""")
 

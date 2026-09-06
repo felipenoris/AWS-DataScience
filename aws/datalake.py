@@ -64,8 +64,8 @@ OUT_NAME = "datalake.txt"
 
 DATA_PROFILE = "awsds-infra-data"
 IDENTITY_PROFILE = "awsds-infra-identity"
-# The consumer side is PER BUSINESS UNIT (D35): unit 1's Sandbox plus Development today;
-# Production joins at Stage 9. Add each vended unit's profile here as Stage 14 vends it.
+# The consumer side is PER BUSINESS UNIT (D35): unit 1's Sandbox today, Production at Stage 9.
+# Add each vended unit's profile here as Stage 14 vends it.
 # ONE CONSUMER SINCE STAGE 6b STEP 2.4 (2026-09-06). It was two; `awsds-infra-dev` left with
 # the share itself - that account becomes the headless `Staging`, and D20 keeps a deployment
 # target off the lake entirely.
@@ -1089,8 +1089,10 @@ Expected once the stage closes: the domain keys in Data Governance (step 1.1,
 decision 2), the drop-box key (decision 3), and one *-data key per Interactive
 account (step 9.2, D31) - kept SEPARATE from the account's tfstate key on
 purpose. Since 2026-08-26 (D19 revised) that key no longer serves a derived
-zone: in Sandbox its consumer is the sandbox lake (Stage 16), in Development
-it is held empty for the account's next data bucket.""")
+zone: in Sandbox its consumer is the sandbox lake (Stage 16). The account that
+held one empty "for its next data bucket" is now the headless Staging, whose
+own data/ slice was destroyed at Stage 6b step 2.4 - so there is no second
+consumer to expect, and the key list is one row shorter by decision.""")
         else:
             rep.line("No awsds-* alias in any measured account.")
 
