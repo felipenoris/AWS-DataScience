@@ -941,3 +941,41 @@ section names, run rather than assumed.*
     Stage 9 object stands in the account (job role, model package group, workgroup, bucket) — is what
     `DT-9` two blocks below already uses for exactly this shape. `DT-8` now **notes** until then and
     **fails** from the first Stage 9 apply, with no further edit. Re-run: **`0 check(s) FAILED`**.
+
+## 2026-09-06 — step 3.5, the last one owed: two answers, and one of them closes a 25-day-old verification
+
+- **[user] Control Tower → *Update account*, and the screen answered the question before the button was
+  pressed.** `Display Name` and `Account Email` are rendered **READ-ONLY**, still holding
+  `Development Account` and the old root address, while the OU tree beside them already reads
+  `Staging Account`. The step asked *"whether `AccountName` follows an out-of-band rename is not
+  documented"* — **it does not, and there is no field through which to correct it.** A permanent
+  divergence of the provisioned product, the same treatment D32 gives the direct assignment.
+  - The e-mail half is sharper: the root address was changed out of band in the same sitting, AWS
+    documents the e-mail as not following, and the screen confirms it. The provisioned product now
+    disagrees with Organizations on **two** fields, and a future reader comparing them sees something that
+    looks like drift and is not.
+  - The editable fields — OU and access configuration — already held the right values. **The update was
+    run anyway**, deliberately: it is the supported reconciliation, it clears any `Moved member account`
+    drift an out-of-band move would have left, and it is the only controlled way to fire the event
+    Stage 1b verification (vi) had been waiting on.
+- **[Claude] Read back: `rename-check.py` `0 check(s) FAILED`** — `RC-1` still `Staging Account`, `RC-2`
+  still `Workloads`. The read-only fields did not submit, which is what a disabled field means.
+- **[Claude] AND THE ACCOUNT CAME BACK WITH A SEVENTH ASSIGNMENT.** `./aws/list-identities.py` §5.2 reads
+  **`AWSAdministratorAccess` → the infrastructure user `(USER)`** where it had read six group rows that
+  same morning. **Stage 1b verification (vi) closes in the affirmative, 25 days after step 5.1 removed
+  it**: a Control Tower account update **re-asserts** the direct Account Factory assignment.
+  - **The plan pre-wrote this branch and it is followed rather than re-argued.** 1b step 5.1 says: *"If
+    the assignments do come back, stop removing them and record the direct assignment as a permanent
+    property of an Account Factory-vended account."* Done — `D32` amended, `docs/AWS_STATE.md`'s two
+    roster rows restated, the 1b Status row and its (vi) bullet closed.
+  - **What it buys is a rule, not a row.** The absence of that assignment on the other four vended
+    accounts is **not a control**: it survives only until each account's next update, and no gate may be
+    written assuming otherwise. `Policy Canary`'s row is no longer *the only* direct `USER` assignment —
+    it is the only one that is permanent **by design** rather than by re-assertion.
+  - **This is also why 3.6's morning reading could not answer (vi).** It read the same on *"the trigger
+    fired and produced nothing"* and *"the trigger never fired"* (Lesson 13), and the second turned out to
+    be the case. The reading that settled it is the same instrument, run **after** the event — which is
+    the whole reason 1b refused to close the verification on the strength of the removal succeeding.
+  - **`RC-5` passed while listing the new set**, and that is correct scoping rather than a miss: it checks
+    D18's persona row, and the landing zone's sets are not its subject. Worth knowing before someone reads
+    that `pass` as "the assignment list is as designed".

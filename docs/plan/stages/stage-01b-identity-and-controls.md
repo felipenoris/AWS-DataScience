@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Status** | **DONE** — closed 2026-08-12 (8.3, 1, 2, 3, 4, 5, 5.1, 6, 8.2). Verifications (i), (ii), (a) and (ix) answered; **(vi) is open by construction** and is re-checked at the next landing-zone update, account update or Account Factory re-enrollment, not on a schedule |
+| **Status** | **DONE** — closed 2026-08-12 (8.3, 1, 2, 3, 4, 5, 5.1, 6, 8.2). Verifications (i), (ii), (a) and (ix) answered. **(vi) was open by construction for 25 days and CLOSED 2026-09-06, in the affirmative**: a Control Tower *Update account* — run at [Stage 6b](stage-06b-development-becomes-staging.md) step 3.5 — **re-created the direct `AWSAdministratorAccess` assignment** on the account it updated. The removal of 1b step 5.1 does **not** stick across an account update, and 5.1's own instruction for this branch is followed: it is recorded as a permanent property, not deleted again |
 | **Prerequisites** | Stage 1a complete, bar the deferred `Staging` vend. **Steps 3, 5 and 6 skip their `Staging` items**; the full list of what the deferral owes, across every stage, is in [Stage 1a](stage-01a-landing-zone.md) ("What the deferral leaves owed") and is worked at the vend rather than remembered here |
 | **Consumes** | [D10](../decisions/D10-identity-center-delegation.md), [D11](../decisions/D11-lab-lifecycle.md), [D14](../decisions/D14-supply-chain-account.md), [D16](../decisions/D16-break-glass.md), [D18](../decisions/D18-data-scientist-access.md), [D19](../decisions/D19-derived-zone.md), [D20](../decisions/D20-staging-account.md), [D21](../decisions/D21-development-account.md), [D22](../decisions/D22-data-governance-account.md), [D29](../decisions/D29-policy-canary.md), [D30](../decisions/D30-scp-recovery.md), [D31](../decisions/D31-approver-read.md), [D32](../decisions/D32-account-factory-sso-user.md), [D33](../decisions/D33-control-tower-admin-user.md), [D34](../decisions/D34-account-vending.md), [D35](../decisions/D35-sandbox-cardinality.md) |
 | **Proves** | Nothing cross-account; this stage is what makes every later stage reachable. Step 5's profiles are the precondition for **Stage 1c**, **Stage 1d** and everything from Stage 2 onwards |
@@ -387,6 +387,18 @@ infrastructure user, created in 1a step 4 and sitting outside the group model bu
   landing-zone update, an account update or a re-enrollment. If it returns, the honest outcome is to
   record the direct assignment as a **permanent property of Account Factory-vended accounts** rather
   than to keep deleting something that keeps coming back. D32 is amended either way.
+  - **ANSWERED 2026-09-06, AND IT RETURNS.** The event was a Control Tower *Update account* on the
+    renamed `Staging Account` ([Stage 6b](stage-06b-development-becomes-staging.md) step 3.5).
+    `./aws/list-identities.py` §5.2 read **seven** assignments where it had read six the same morning, the
+    new one being **`AWSAdministratorAccess` → the infrastructure user, `(USER)`** — D32's shape exactly,
+    re-created 25 days after 5.1 removed it. **The branch this bullet names is taken**: it is recorded as
+    permanent and **not deleted again**. What that buys is a rule rather than a row — *an Account Factory
+    account's direct admin assignment is re-asserted by any account update*, so its absence is a state that
+    survives only until the next one, and no gate should be written that assumes otherwise.
+  - **What it does NOT license.** The assignment is the *infrastructure user's*, not a persona's, and D32's
+    own argument is unchanged: one administrator, one MFA device, one credential. The thing to watch is
+    that no `awsds-*` profile is ever pointed at it — every profile reaches an account through
+    `InfrastructureAccess`, and an admin path that exists is not the same as one that is used.
 
 #### 3.9 — Why *one* set is by hand, and the other six are not
 
