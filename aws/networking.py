@@ -98,17 +98,23 @@ CANARY_PROFILE = "awsds-policy-canary"
 
 # The two ranges the route checks are about (Stage 3 validation 2 and step 6.5).
 #
-# NT-5 AND NT-6 STILL MEASURE SOMETHING TRUE AND WILL SOON SAY SOMETHING FALSE, WHICH IS THE
-# WORSE OF THE TWO FAILURES (flagged 2026-09-06, Stage 6b). 10.40.0.0/16 was the allocation
-# reserved for an unvended `Staging`, and both checks print "Staging is deliberately unpeered
-# (D20)" while asserting that nothing routes to it. That vend never happened: Stage 6b renames
-# `Development` instead, so the account called Staging lives at **10.50.0.0/16** and IS peered
-# to Production. Step 4.1 frees 10.40 outright and 6c step 0 spends it.
-# The assertion survives the change - nothing should route to an unallocated range either - but
-# the SENTENCE has to stop naming Staging. Rewritten at 6b pass 5, once 4.1 has landed and
-# there is a measured allocation to name; flagged here rather than half-fixed, because a check
-# whose message and whose assertion disagree is read by whoever is debugging at the time.
-STAGING_CIDR = "10.40.0.0/16"
+# 10.40.0.0/16 IS AN UNALLOCATED RANGE, AND IT USED TO BE CALLED THE STAGING RANGE (rewritten
+# 2026-09-06, Stage 6b step 4.1). It was reserved for a `Staging` account this project never
+# vended - the quota refused it - and Stage 6b made Staging by RENAMING `Development`, which has
+# held 10.50.0.0/16 since Stage 3 and IS peered to Production. So D20's "Staging is deliberately
+# unpeered" stopped being true of the account, while the ASSERTION below stayed exactly as
+# valid: nothing should route or peer into a range nobody has allocated, and a route that does
+# is either a mistake or an allocation somebody made without writing it down.
+#
+# WHAT CHANGED IS THE SENTENCE, NOT THE TEST, and that is why this constant was flagged for a
+# sitting rather than half-fixed: a check whose message and whose assertion disagree is read by
+# whoever is debugging at the time, and it tells them the wrong thing at the worst moment.
+#
+# THE ROW HAS ONE MORE READER COMING: Stage 6c step 0 spends 10.40 (D38's hub). The day it does,
+# these three checks are re-pointed at whatever is unallocated then - or retired, if nothing is.
+# They are worth keeping while a free range exists, because scripts/tfhygiene/backend.py's CIDRS
+# is the allocation table and nothing else measures whether AWS agrees with it.
+UNALLOCATED_CIDR = "10.40.0.0/16"
 WIREGUARD_CIDR = "10.90.0.0/24"
 
 # The range Control Tower's ACCOUNT FACTORY VPC occupies (measured 2026-08-15: every vended
@@ -561,28 +567,29 @@ def main(argv: list) -> int:
                 "every zone of step 4 resolves nothing without them.",
             )
 
-    # NT-3: no non-local route whose destination overlaps 10.40.0.0/16 (validation 2). The
-    # local route of a future Staging VPC is excluded on purpose: the validation's intent is
-    # "no PEERING path into Staging" (D20), not "Staging may not route to itself" - and the
-    # internet-exit default route is excluded for the reason internet_exit_default() carries.
+    # NT-3: no non-local route whose destination overlaps the unallocated range (validation 2).
+    # `local` routes are excluded because a VPC always routes to itself, and the internet-exit
+    # default route for the reason internet_exit_default() carries. What is left is a route
+    # somebody built into a range the allocation table says belongs to nobody.
     nt3 = 0
     for p, rtb, _vpc, dest, target, state in routes:
         if target == "local" or internet_exit_default(dest, target):
             continue
-        if cidr.overlap(dest, STAGING_CIDR):
+        if cidr.overlap(dest, UNALLOCATED_CIDR):
             checks.fail(
                 "NT-3",
-                "route into the Staging range",
+                "route into the unallocated range",
                 f"{p} {rtb}: {dest} -> {target} ({state}) overlaps "
-                f"{STAGING_CIDR} - Staging is deliberately unpeered (D20, "
-                "step 6.6).",
+                f"{UNALLOCATED_CIDR}, which scripts/tfhygiene/backend.py's CIDRS "
+                "table allocates to nobody. Either the route is a mistake or the "
+                "range was spent without being written down (6c step 0 spends it).",
             )
             nt3 += 1
     if nt3 == 0 and routes:
         n_accounts = len({r[0] for r in routes})
         checks.ok(
             "NT-3",
-            f"no non-local route overlaps {STAGING_CIDR}",
+            f"no non-local route overlaps {UNALLOCATED_CIDR}",
             f"{len(routes)} routes read across {n_accounts} account(s)",
         )
 
@@ -649,21 +656,24 @@ def main(argv: list) -> int:
                 f"{nondef} VPC(s) compared pairwise",
             )
 
-    # NT-6: no peering touches the Staging range from either side (D20, step 6.6).
+    # NT-6: no peering touches the unallocated range from either side. Same reading as NT-3 one
+    # layer up - a peering is how a range nobody allocated acquires a path into this estate.
     for p, pcx, status, rvpc, rcidr, avpc, acidr in sorted(set(peers)):
         for c in (rcidr, acidr):
-            if cidr.overlap(c, STAGING_CIDR):
+            if cidr.overlap(c, UNALLOCATED_CIDR):
                 checks.fail(
                     "NT-6",
-                    "peering touching the Staging range",
+                    "peering touching the unallocated range",
                     f"{pcx} ({status}, seen from {p}): {rvpc} {rcidr} <-> "
-                    f"{avpc} {acidr} - there is no peering to Staging, by "
-                    "decision (D20).",
+                    f"{avpc} {acidr} - that range is allocated to nobody in "
+                    "scripts/tfhygiene/backend.py's CIDRS table.",
                 )
     if peers and checks.n_fail("NT-6") == 0:
         n_distinct = len({pr[1] for pr in peers})
         checks.ok(
-            "NT-6", f"no peering touches {STAGING_CIDR}", f"{n_distinct} distinct peering(s) read"
+            "NT-6",
+            f"no peering touches {UNALLOCATED_CIDR}",
+            f"{n_distinct} distinct peering(s) read",
         )
 
     # NT-7: every non-default VPC has a flow log (step 5 is in the same slice as step 1, so
@@ -683,7 +693,7 @@ def main(argv: list) -> int:
             )
 
     # NT-8: the four cross-account zone associations of step 4.4, resolved against the
-    # single non-default VPC of the Sandbox and Development profiles. If an account has
+    # single non-default VPC of the Sandbox and Staging profiles. If an account has
     # zero or more than one non-default VPC the check says "cannot resolve" rather than
     # guessing.
     zone_names = {z[2] for z in zones}
@@ -972,7 +982,7 @@ make up cycle, that is the INT-05 failure mode arriving early - stop and look.
         rep.text("""The API answers from both sides, so one healthy peering between two measured
 accounts appears TWICE below - same pcx-* id, two PROFILE rows. A peering that
 appears under only one measured side is worth a second look. Expected once pass 2
-is done: exactly two distinct ids - Sandbox<->Production and Development<->Production
+is done: exactly two distinct ids - Sandbox<->Production and Staging<->Production
 (INT-09) - and nothing touching 10.40.0.0/16 (NT-6, D20).
 
 """)
@@ -989,9 +999,9 @@ is done: exactly two distinct ids - Sandbox<->Production and Development<->Produ
         rep.h1("7. Private hosted zones, associations, pending authorizations")
 
         rep.text("""Step 4.2 creates THREE zones and deliberately not one per account: sandbox.internal
-(Sandbox), prod.internal and pages.internal (Production). Development and Staging
+(Sandbox), prod.internal and pages.internal (Production). Staging and Data Governance
 get none. The association table is step 4.4: prod.internal and pages.internal must
-each reach the Sandbox AND Development VPCs, or gitlab.prod.internal is NXDOMAIN
+each reach the Sandbox AND Staging VPCs, or gitlab.prod.internal is NXDOMAIN
 over the VPN. Check NT-8 resolves it mechanically.
 
 """)
@@ -1292,7 +1302,7 @@ What the checks are, and where each comes from:
   NT-4  no route overlapping 10.90.0.0/24 anywhere (step 6.5); same exclusion
   NT-5  no CIDR overlap among project VPCs, across accounts (step 1.2);
         172.31.0.0/16 vend artifacts counted once, not pairwise
-  NT-6  no peering touching the Staging range (D20, step 6.6)
+  NT-6  no peering touching the unallocated 10.40/16 range (was D20's Staging range)
   NT-7  a flow log on every non-default VPC (step 5)
   NT-8  the four cross-account zone associations of step 4.4
   NT-9  the endpoint-service catalog still offers NO private door for the

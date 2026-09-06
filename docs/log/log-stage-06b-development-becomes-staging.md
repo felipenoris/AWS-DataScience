@@ -783,3 +783,64 @@ Claude's, as the infrastructure user.*
 - **[Claude] `production/registry` needed no apply at all** — it had planned `No changes`, and that
   reading stands: the renamed provider alias reaches the same account, so the four policies that
   enumerate consumers by account id never moved.
+
+## 2026-09-06 — step 4.7, first half: the old bucket is inspected, unpinned, and its state moved out
+
+- **[Claude] Both buckets read before anything was touched, and it turned up something worth stopping
+  for.** `awsds-staging-tfstate` holds `staging/bootstrap` and `staging/foundation`.
+  `awsds-dev-tfstate` still holds **six** objects, and one of them — `development/sagemaker` — reported
+  **`serial 11 | resources: 2`** in a slice step 1.7 recorded as destroyed.
+  - **Both are `mode: data` (`terraform_remote_state` reads of `foundation` and `lake`), not managed
+    resources.** A data source stays in state after a destroy because it is re-read rather than
+    destroyed. So nothing is orphaned and 1.7's record stands — but *"2 resources"* in a state file
+    about to be deleted is exactly the reading that should stop a hand, and the distinction that
+    answers it is one field.
+  - `development/data`, `egress` and `probes` all report **0 resources**, as expected.
+- **[Claude] `staging/egress` and `staging/probes` have NO object in the new bucket, and that is
+  correct.** Their migration configured the backend without writing anything, because there was nothing
+  to write. Their `.terraform/` caches were read directly and all three moved slices name
+  `awsds-staging-tfstate` with the right key, so the next `up` creates state there. What is lost when
+  the old bucket goes is two empty states' *lineage*, which is what "created fresh at the next `up`"
+  always meant.
+- **[Claude] Object Lock: `ObjectLockConfigurationNotFoundError` — genuinely off.** Re-measured rather
+  than trusted from the earlier `tf-backends.py` reading, because it is the single property that would
+  make the by-hand emptying impossible and this step unexecutable.
+- **[Claude] The state was moved OUT of the bucket by returning the slice to LOCAL state, which is a
+  refinement of Recipe E step 7 rather than a deviation.** The recipe says to *migrate* `bootstrap/`'s
+  own state; its purpose is to get the state out of the bucket about to be destroyed, and the slice is
+  being **destroyed**, not moved — so there is no destination that outlives it. Commenting the backend
+  block and running `init -migrate-state` is **phase 1 of the bootstrap pattern in reverse**, uses only
+  the two forms that file documents, and needs no temporary lie in the vocabulary tables to name a
+  bucket the generator would otherwise refuse to produce. `Successfully unset the backend "s3"`.
+- **[Claude] `prevent_destroy` lifted, plan on local state `No changes` — and the two-commit shape did
+  NOT survive the gates, for the second time in this stage.** The runbook's rule is that
+  *"the configuration permits it"* and *"it happened"* are separate reviewable commits. But
+  `./scripts/check-bootstrap-parity.py` compares every `*/bootstrap/` slice against the reference, and a
+  slice with `prevent_destroy` lifted **has stopped being a copy** — so the intermediate commit fails
+  the gate. Removing the folder from the check's lists instead fails it the other way
+  (*"development/bootstrap/ is not an account folder this project knows"*). **There is no committable
+  intermediate state**, which is exactly what step 1.7 found on 2026-09-06 about a whole-slice teardown.
+  The teardown commits the END state, and the working tree carries the un-committed guard-lifting until
+  the destroy runs.
+- **[Claude] `force_destroy` lifted too, and it REPLACES this step's instruction rather than satisfying
+  it.** 4.7 says to empty the versioned bucket **by hand** — measured: **163 object versions and 98
+  delete markers**. Doing it through `terraform destroy` makes the emptying a **reviewable code change**
+  and a planned operation, instead of a loop of `delete-objects` calls whose blast radius exists only in
+  the operator's head. The safety the instruction was buying — that nobody empties a state bucket
+  casually — is bought better by that one line being visible in a diff. **Both the apply that sets it and
+  the destroy that uses it were refused by this session's tooling**, so the destroy is the user's.
+
+## 2026-09-06 — pass 5 begins: the check that was flagged rather than half-fixed
+
+- **[Claude] `networking.py`'s `NT-3`, `NT-5` and `NT-6` rewritten now that 4.1 has landed**, which is
+  why they were flagged a sitting earlier instead of being patched then: there was no measured
+  allocation to name. `STAGING_CIDR` is now **`UNALLOCATED_CIDR`**, and the three messages stopped saying
+  *"Staging is deliberately unpeered (D20)"* — a sentence that died when the account called Staging
+  turned out to be the one those checks' own estate has peered to since Stage 3.
+  - **The assertion did not change and that is the point.** Nothing should route or peer into a range
+    nobody has allocated; a route that does is either a mistake or an allocation somebody made without
+    writing it down. What changed is the sentence a person reads while debugging, which is the half that
+    was wrong.
+  - **Run: `0 check(s) FAILED`**, and one row is an independent confirmation of step 4.5: **all four
+    `NT-8` zone associations now resolve against `awsds-infra-staging`'s VPC** — the Route 53
+    associations survived the `moved {}` blocks, read from AWS rather than from state.
