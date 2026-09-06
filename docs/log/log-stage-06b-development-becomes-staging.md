@@ -600,3 +600,32 @@ such; every reading is Claude's, as the infrastructure user.*
     frees 10.40 for 6c to spend. A check whose message and whose assertion disagree is read by whoever is
     debugging at the time, so the file now carries the dated warning and the rewrite waits for 4.1 to
     land and give it a measured allocation to name.
+
+## 2026-09-06 — step 3.4 confirmed by the user, and Recipe E step 1 taken
+
+- **[user] The OU move was done "via console AWS".** Recorded in the user's own words because the
+  distinction that matters — Control Tower *Update account* versus the Organizations console, which is
+  `move-account` under a different button — is not one to settle from memory. **3.5 settles it, and 3.5
+  is the same act either way**: Control Tower *Update account* is the read-back, and if the move went
+  through Organizations it is also the repair, because that path leaves the Account Factory provisioned
+  product on the old OU under the old name.
+  - **[Claude] What to expect from that act rather than discover**: it is exactly the account update
+    Stage 1b verification (vi) has been waiting for. If a direct `AWSAdministratorAccess` assignment
+    reappears afterwards, it is **expected** — the row gets restated, not reported. If it does not, (vi)
+    closes in the negative, which is the answer 3.6 could not give on its own.
+
+- **[Claude] Recipe E step 1 — the baseline, taken before the move rather than after it.**
+  `development/foundation/` initialised against the OLD backend (`awsds-dev-tfstate`, key
+  `development/foundation/…`) and planned: **`No changes`**. The state is now cached locally, which is
+  what that step exists to produce.
+  - **The reason to take it first is the reason the recipe orders it first**, and it is worth stating in
+    the log because it is the kind of step that looks skippable: with a clean baseline, a non-empty plan
+    on the far side of the migration **is the migration**. Without one, a non-empty plan is ambiguous
+    between the migration and drift that was already sitting there — and the whole gate of Recipe E step
+    5 is that the plan is empty.
+  - **The generated `peers` map already carries both keys**, `development` and `staging`, both resolving
+    to `awsds-infra-staging`, because 4.2 added the `staging` PROFILES row while `staging` was still in
+    `CIDRS`. **Checked rather than assumed**: `production/foundation/peers.tf` builds
+    `local.peer_vpc_ids` as a hand-written two-row map and never iterates `var.peers`, so the extra key
+    is inert. The opposite would have been a third VPC peering proposed by a plan nobody was reading for
+    that.
