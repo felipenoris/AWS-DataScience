@@ -4,6 +4,25 @@ variable "env" {
   nullable    = false
 }
 
+# STAGE 6c step 0.4 (2026-09-06) - the one input that exists because an ACCOUNT can hold more
+# than one VPC. Until D38 every account had exactly one, so `awsds-<env>-` was unambiguous and
+# two of the names below are ACCOUNT-unique rather than VPC-unique: the flow-log log group is a
+# hard create-time conflict, and every `Name` tag is what ./aws/networking.py reads to tell one
+# object from another. Security-group NAMES would not have collided - they are scoped to a VPC -
+# but their tags would, which is the same failure one layer up.
+#
+# DEFAULT EMPTY, SO EVERY EXISTING CALLER IS UNTOUCHED. `sandbox/foundation/` and
+# `staging/foundation/` pass nothing and keep `awsds-sandbox-*` and `awsds-staging-*`; only
+# Production's three VPCs carry a suffix (`shared`, `networking`, `workloads`). A suffix is part
+# of a security group's `name`, so ADDING one to a live slice replaces its security groups -
+# which is why 6c step 1.1 reads that plan rather than assuming it.
+variable "name_suffix" {
+  description = "Distinguishes VPCs inside one account: names become awsds-<env>-<suffix>-*. Empty for an account with a single VPC, which is every account but Production."
+  type        = string
+  default     = ""
+  nullable    = false
+}
+
 variable "vpc_cidr" {
   description = "The /16 from the allocation table in scripts/tfhygiene/backend.py (Stage 3 decision 1) - arrives through the generated terraform.auto.tfvars, never a literal in a .tf file."
   type        = string
