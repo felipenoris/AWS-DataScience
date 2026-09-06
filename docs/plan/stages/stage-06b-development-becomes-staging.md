@@ -303,6 +303,24 @@ because an error and an empty list are different outcomes and only the empty lis
     list's operative meaning is *"this member should carry blueprint configurations"*, and 6b is the one
     pass where that separates from *"is associated"* — necessarily, since the configurations must go
     **before** the association does.
+- **1.7 — DONE 2026-09-06.** **`0 added, 0 changed, 14 destroyed`**, re-plan `No changes`: the two service
+  roles and their attachments, the D13 boundary policy, the project CMK and its alias, the
+  `/awsds/dev/studio` log group, and the projects bucket with its five configuration resources. **Nothing
+  in the plan was anything but a delete.** The bucket needed no emptying — `list-object-versions` returned
+  **0 versions and 0 delete markers**, which is 0.1's "no project" seen a third way. The project CMK
+  `alias/awsds-dev-project` is `PendingDeletion` with **`DeletionDate` 2026-10-06**; the alias and the
+  bucket are gone (`404` on `head-bucket`).
+  - **The two-commit shape does not survive this repository's own gates, and that is worth knowing before
+    the next whole-slice teardown.** With the module call removed, the slice's remaining declarations are
+    orphans — three `terraform_remote_state` data sources and one variable — and **tflint fails the commit**
+    on `terraform_unused_declarations`. So "the configuration that permits the destroy" is **not a
+    committable state** here. The runbook's two-commit rule is for lifting `prevent_destroy` on a resource
+    that *stays*; a whole-slice teardown applies from the working tree and commits the **end** state: the
+    folder deleted, its `layers.py` row with it.
+  - **Same sitting, because the rule says so**: `docs/NETWORK.md`'s row for the two `sagemaker/` slices
+    loses this one, and `terraform-live/README.md`'s "applied twice, so the two accounts cannot drift"
+    becomes a dated past tense. `docs/plan/conventions.md` §6, `D21` and `INT-15` still name the slice and
+    are **5.3's**, not this step's.
 - **1.7 — [Claude⚡] Destroy the rest of the slice**: list and empty `awsds-dev-smus-projects` by hand,
   remove the module call so the `prevent_destroy` lifecycle block leaves the configuration with it, then
   destroy `terraform-live/development/sagemaker/`. **MEASURED 2026-09-05: the bucket is empty** —

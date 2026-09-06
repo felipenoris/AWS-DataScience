@@ -327,7 +327,7 @@ distinguishable outcomes:
 | `sandbox/vpn/` | `[D]` | one `terraform-modules/wireguard` — the host, its `wg0`, its masquerade rules for the tunnel **and** for the isolated tier, its handshake log and alarm |
 | `sandbox/buildbox/` | `[E]` | the build host, its egress-only security group, and **the isolated tier's only default route**, at the WireGuard host's ENI |
 | `sandbox/probes/` · `development/probes/` · `production/probes/` | `[E]` | the throwaway hosts that measure what a `describe` cannot — the perimeter, both peerings, the flow-log pair — plus Production's second ENI and the two `probe*.prod.internal` records |
-| `sandbox/sagemaker/` · `development/sagemaker/` | `[P]` | **no network object of its own** — it hands the blueprint the VPC id, the private subnets and their zone ids, which is what makes every project app land where §5 and §6 describe. Named here because the check cannot see that relationship and a reader must |
+| `sandbox/sagemaker/` | `[P]` | **no network object of its own** — it hands the blueprint the VPC id, the private subnets and their zone ids, which is what makes every project app land where §5 and §6 describe. Named here because the check cannot see that relationship and a reader must |
 
 **Not network-bearing, and the absence is the design**: `*/bootstrap/`, `identity/sso/`, `identity/org-policies/`, `*/data/`, `data-governance/governance/` and `production/registry/` create nothing that holds an address — Data Governance and Identity have no VPC at all (D22, D29).
 

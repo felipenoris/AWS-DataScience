@@ -301,3 +301,37 @@ the **Infrastructure User** through **`InfrastructureAccess`** — the identity 
   `0 check(s) FAILED`.
 - **[Claude] Two of the stage's four verifications are now answered**: 1 (no Recipe F needed) and 2 (the
   call fails rather than returning empty).
+
+---
+
+## 2026-09-06 — step 1.7: the slice is gone, and the two-commit shape did not survive the gates
+
+*Provenance: the authorization is the user's; the edits, the plan, the apply and the read-backs are
+Claude's. Applied as the **infrastructure user**, account **Development**, permission set
+**`InfrastructureAccess`**.*
+
+- **[Claude] The bucket needed no emptying.** `list-object-versions` on `awsds-dev-smus-projects`:
+  **0 versions, 0 delete markers**. The step says "list and empty by hand" and the listing is what says
+  there is nothing to empty — pass 0's "no project" seen a third way, after `US-8` and `US-4`.
+- **[Claude] The module call was removed rather than the flag lifted.** The projects bucket comes from
+  `terraform-modules/s3-bucket`, which hard-codes `prevent_destroy = true` and `force_destroy = false` and
+  whose own comment says the flag *"cannot be parameterised"*. Removing the call removes the lifecycle
+  block with it.
+- **[Claude] Plan read before applying: 14 resources, every one a delete** — two service roles, two policy
+  attachments, the D13 boundary policy, the project CMK, its alias, a CloudWatch log group, and the bucket
+  with its five configuration resources.
+- **[user]** Authorized. **[Claude] Applied: `0 added, 0 changed, 14 destroyed`.** Re-plan `No changes`.
+- **[Claude] The project CMK is `PendingDeletion`, `DeletionDate` **2026-10-06** — the date this step asks
+  for. `alias/awsds-dev-project` no longer resolves and `head-bucket` on the projects bucket returns
+  **404**.
+- **[Claude] The two-commit split failed at the hook, and the failure is the finding.** The first commit —
+  "the configuration that permits the destroy" — was **rejected by tflint**: with the module call gone, the
+  slice's three `terraform_remote_state` data sources and one variable are unused
+  (`terraform_unused_declarations`, four warnings, exit 2). That intermediate configuration is not a state
+  this repository accepts. The runbook's two-commit rule is for lifting `prevent_destroy` on a resource
+  that **stays**; a whole-slice teardown applies from the working tree and commits the **end** state. The
+  folder and its `scripts/tfhygiene/layers.py` row went in one commit, and the stage now says so.
+- **[Claude] Documents revised in the same sitting**, as the rule requires: `docs/NETWORK.md`'s row for the
+  two `sagemaker/` slices loses this one, and `terraform-live/README.md`'s *"applied twice, so the two
+  accounts cannot drift"* becomes a dated past tense. `conventions.md` §6, `D21` and `INT-15` still name
+  the slice and belong to step 5.3.
