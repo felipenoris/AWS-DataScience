@@ -51,7 +51,8 @@ Blueprint for using AWS as a Data Science infrastructure provider.
   and its reason — Stage 3's network in the three VPC accounts (`foundation/` `[P]`; `egress/` and `probes/`
   `[E]`, destroyed between sessions), Stage 4's `sandbox/vpn/`, the tree's first `[D]` slice, **plus Stage 5's
   three `data/` slices — the governed lake in `data-governance/`, and its consumer half in `sandbox/` and
-  `development/`, which are one module (`consumer-data`) applied twice** — and Stage 6's five:
+  `development/`, one module (`consumer-data`) applied twice; **the second was destroyed 2026-09-06**, so
+  `sandbox/data/` is the only caller left** — and Stage 6's five:
   `production/registry/`, `data-governance/governance/` (the domain, the profiles and both grant layers),
   the two member `sagemaker/` slices (one module, `sagemaker-prereqs`), and the `[E]` `sandbox/buildbox/`.
 - `terraform-modules/` — the reusable modules, consumed **by git tag, never by branch**. `terraform-live/`
@@ -295,9 +296,10 @@ Two refinements, both easy to state wrongly:
 - **Interactive compute lives only in the Interactive OU.** Since the ninth plan revision (D26), the
   interactive surface is **SageMaker Unified Studio**: one DataZone V2 domain, *registered* in the Data
   Governance account because a domain is a registry of projects and data products rather than a runtime,
-  and whose project blueprints *provision compute* into Sandbox (`experimentation` profile) and Development
-  (`engineering` profile) — and nowhere else, enforced by a Service Control Policy on the `Workloads` OU
-  rather than left as an intention. Where the domain is registered and where code runs are two different
+  and whose project blueprints *provision compute* into Sandbox (`experimentation` profile) — and nowhere
+  else, enforced by a Service Control Policy on the `Workloads` OU rather than left as an intention. *(There
+  was a second target, `Development` with an `engineering` profile; both went on 2026-09-06 — the profile
+  destroyed at Stage 6b step 1.1, the account converted into `Staging`, which the same SCP now covers.)* Where the domain is registered and where code runs are two different
   questions, and only the second is an account-boundary question. SageMaker's *runtime*
   APIs — training and processing jobs, Model Registry, endpoints — do exist in Staging and
   Production, because that is where models are tested, retrained and served; the difference is that only a
@@ -317,9 +319,10 @@ Artifacts cross in one direction only, through the pipeline, and they pass throu
 - the Terraform that instantiates them.
 
 
-> **RE-SCOPED 2026-09-05 — three sentences below are superseded, and they are the ones that matter most.**
-> **(1) The promotion chain is `Sandbox → Staging → Production`.** The `Development` account is renamed to
-> `Staging` and loses its interactive surface ([Stage 6b](docs/plan/stages/stage-06b-development-becomes-staging.md));
+> **RE-SCOPED 2026-09-05, and item (1) was CARRIED OUT on 2026-09-06 — the prose below it is being brought
+> up to date section by section, so where the two disagree this note wins.**
+> **(1) The promotion chain is `Sandbox → Staging → Production`.** The `Development` account **was** renamed to
+> `Staging` and lost its interactive surface ([Stage 6b](docs/plan/stages/stage-06b-development-becomes-staging.md), applied);
 > the account cap refused a vend, and the experience of using SageMaker showed a second interactive
 > environment was not needed. Humans run code in **Sandbox only** (D17 sharpened, D21 superseded by its own
 > larger branch). **(2) The network becomes a hub**: three VPCs in Production — `VPC-Networking` (the
@@ -331,16 +334,22 @@ Artifacts cross in one direction only, through the pipeline, and they pass throu
 > portal-over-VPN break this file's item 3 describes — the client stops resolving through a VPC that holds
 > the compute plane's endpoints.
 
-The chain is **Development → Staging → Production**. Staging receives the built artifact, runs the
+The chain is **Sandbox → Staging → Production**. Staging receives the built artifact, runs the
 integration tests against a sampled or synthetic dataset, and is torn down again; only then does the
 **Deployment Manager**'s approval release the same artifact to Production. A failure in Staging stops the
-chain, and Production is
-never touched. Sandbox sits *before* the chain, not at its head: experimentation graduates into a
-Development repository through git — a rewrite and a review, not an automated lift — and only what lands in
-such a repository can be promoted.
+chain, and Production is never touched. Sandbox sits *before* the chain, not at its head: experimentation
+graduates into an **engineering repository** through git — a rewrite and a review, not an automated lift —
+and only what lands in such a repository can be promoted.
+
+**There is no Development account, and there never will be one** (2026-09-06). The chain used to read
+`Development → Staging → Production` with a fourth account at its head, where the unit of work was a
+pipeline rather than a notebook. The thing being developed there is a **pipeline definition**, and a
+pipeline definition is developed in git and executed by the pipeline into Staging — so the account was
+paying for an environment nobody stood in. The account cap refused the Staging vend, which is what forced
+the question; the answer was to convert the Development account instead of adding a fifth.
 
 Data crosses in the other direction: the governed lake lives in the Data Governance account, and its catalog
-is shared read-only to Sandbox and Development through Lake Formation, so that all interactive work happens
+is shared read-only to Sandbox through Lake Formation, so that all interactive work happens
 against real data without making a copy of it. Production's job role holds the same share plus the *governed
 write* — production ETL is the lake's producer. Staging is not part of any share — it never holds governed
 data, for the reason given in the next section.
@@ -441,10 +450,10 @@ an OU and to nothing else. It is the mechanical reason this project has a `Workl
 | Studio only in the development / data-science accounts | The interactive surface only in the **Interactive OU** — since D26, one SageMaker unified domain (DataZone V2) registered in **Data Governance**, whose project blueprints provision compute into Sandbox and Development and nowhere else (D17, D21, D26) — enforced by two SCPs (Stage 1c step 7): the `Workloads` OU denies `sagemaker:CreateDomain`, `CreateUserProfile`, `CreatePresignedDomainUrl` **and `datazone:*` in full**, so a deployment target can neither host a domain nor associate itself to one; and the organization root denies `datazone:CreateDomain` everywhere except the `Data` OU, so "one domain, and it lives in Data Governance" is a control rather than a convention | **Adopted**, and made preventive rather than conventional |
 | A staging / pre-production deployment target between development and production | The **Staging** account (D20) | **Adopted.** It was missing until 2026-08-08; the plan had tried to stand in for it with a Glue namespace inside Production, which shared an account and a blast radius with the thing it was meant to de-risk |
 | Data scientists get read-only access in staging | `DataScientistStagingAccess` — read, no write of any kind (D18) | **Adopted verbatim.** A staging environment a person can write to stops being evidence of what the pipeline does |
-| Environments expressed as Organizations OUs | OUs named for their policy sets (D23): `Workloads` holds Staging and Production, `Interactive` holds Development plus a nested `Sandboxes` for the per-unit Sandbox accounts, `Data` holds Data Governance, `Security` holds Log Archive and Audit, and `Identity` holds the identity plane | **Adopted.** One SCP set per policy set, written once and inherited — an OU holding a single account forever would be a folder with one file. Two of the OUs came from execution rather than design: `Identity`, because a foundational `Security` OU would not take the account, and `Sandboxes`, which groups a cardinality class and carries no policy of its own |
+| Environments expressed as Organizations OUs | OUs named for their policy sets (D23): `Workloads` holds Staging and Production, `Interactive` holds only a nested `Sandboxes` for the per-unit Sandbox accounts since 2026-09-06 — no account sits directly in it, `Data` holds Data Governance, `Security` holds Log Archive and Audit, and `Identity` holds the identity plane | **Adopted.** One SCP set per policy set, written once and inherited — an OU holding a single account forever would be a folder with one file. Two of the OUs came from execution rather than design: `Identity`, because a foundational `Security` OU would not take the account, and `Sandboxes`, which groups a cardinality class and carries no policy of its own |
 | Model Registry and ECR in a Tooling / shared-services account | Both in the **Production** account (D14) | **Departure**, the main one remaining. No separate tooling account, on cost. The consequence is stated rather than hidden: there is no boundary between what builds and what runs, so a compromise of GitLab is a compromise of Production |
 | A separate data lake / data management account | The **Data Governance** account (D22): the lake, its catalog, Lake Formation and the classification scheme, reached from every environment through cross-account shares | **Adopted** on 2026-08-08. It had been a departure; the section below on Data Governance vs. Production records why it stopped being one |
-| Experimentation and development as distinct accounts | **Sandbox** (experimentation — the unit of work is a notebook) and **Development** (the unit of work is a pipeline), both in the Interactive OU (D21) | **Adopted** on 2026-08-08. It had been collapsed "because there is one user"; the section below on Development vs. Experimentation records what the boundary buys anyway |
+| Experimentation and development as distinct accounts | **Sandbox** (experimentation — the unit of work is a notebook) and, until 2026-09-06, **Development** (the unit of work is a pipeline) | **Adopted 2026-08-08, then REVERSED 2026-09-06** — the one recommendation this project took and later gave back. The boundary was real; what did not survive was the claim that it needs an AWS **account**. What is developed past the boundary is a *pipeline definition*, developed in git and executed into Staging, so the account stood empty. The distinction is kept and now runs between **Sandbox and a repository** rather than between two accounts; the section below records what it buys either way |
 | Staging holds data representative of production | Staging holds **sampled or synthetic data only**, never a copy of production | **Deliberate departure.** Staging is a deployment target where data scientists have read access and unattended tests run, so a full copy would make the less-defended of the two accounts the cheapest route to production data. The accepted cost: a test suite that catches permission, schema and wiring errors and misses whatever only appears at production distribution and volume |
 
 ### Why the shape is what it is
@@ -474,26 +483,31 @@ design decision.
 
 The difference is not code maturity — it is the **unit of work**, and everything else follows from it.
 
-| | Experimentation (Sandbox) | Development |
+| | Experimentation (Sandbox) | Engineering (a repository, since 2026-09-06 — an account before that) |
 |---|---|---|
 | Unit of work | The notebook | The pipeline — a repository with tests, a SageMaker Pipeline |
 | Expectation | Nothing survives | "Run it again on Tuesday and get the same answer" |
 | Versioning | None, or informal | Git, CI, tagged artifacts |
 | Cost profile | Spasmodic, human-driven (the GPU left on overnight) | Automated and predictable |
-| Feeds into | Development, by graduation | Staging, by promotion |
+| Feeds into | The engineering repository, by graduation | Staging, by promotion |
 
 In AWS's MLOps roadmap this is a *phase*, not just an account: an organization starts with experimentation
 only, and the development account appears when the MLOps practice matures enough to have pipelines worth
 engineering. In a large organization it is also a **people boundary** — data scientists on one side,
 ML engineers on the other, so that neither inherits the other's mess.
 
-This project has one user, so the people boundary is empty here — and the accounts are still separate,
-because the boundary buys three things that do not depend on headcount: the promotion chain gets an honest
-origin (what enters CI is already repository-shaped — the pipeline never has to pretend a notebook is an
-artifact); the graduation step becomes **visible** (moving work from Sandbox to Development is a deliberate
-git commit and a rewrite, not a gradual blurring inside one account — and the rewrite *is* the quality
-gate); and cost attribution separates exploration from engineering. There is deliberately no automated path
-that lifts a notebook out of Sandbox.
+This project has one user, so the people boundary is empty here. **The boundary itself was kept and its
+second account was given up** (2026-09-06): it buys three things that do not depend on headcount, and none
+of the three needed an AWS account to hold them. The promotion chain gets an honest origin — what enters CI
+is already repository-shaped, so the pipeline never has to pretend a notebook is an artifact. The graduation
+step stays **visible** — moving work out of Sandbox is a deliberate git commit and a rewrite, and *the
+rewrite is the quality gate*. And cost attribution separates exploration from engineering, which the tags
+do. There is deliberately no automated path that lifts a notebook out of Sandbox.
+
+**What the second account was actually buying was a place to stand**, and nobody stood there: the pipeline
+definition is edited in git and executed by the pipeline into Staging. Paying for an interactive environment
+to hold a repository is the kind of thing an account cap is good at exposing — which is exactly how it was
+exposed.
 
 ### OU vs. Account
 
@@ -517,13 +531,13 @@ policy it carries but the disposable account it contains:
 |---|---|---|
 | Security | Log Archive, Audit | Control Tower guardrails. **Foundational** — Control Tower owns it, and it will not accept an account it did not create there |
 | Identity | Identity | No user compute — `DenyUserCompute`, the same statement as `Data`'s and none of its neighbours (1c step 7.6): there is nothing to run in the identity plane, so a compromise of it cannot be turned into compute inside it. Split out of `Security` on 2026-08-09 because the vend into a foundational OU was refused (D23) — so whatever guardrails `Security` carried by being foundational have to be attached here explicitly |
-| Interactive | Development, and the nested `Sandboxes` OU | Interactive compute **allowed**, minus **exactly one statement**: no *classic* SageMaker notebook instance (1c step 7.6, 2026-08-13). The lightest set in the tree, and why it is not heavier is below the table. What keeps the data scientist from changing infrastructure is `DataScientistAccess`, an *identity* policy, not this OU |
+| Interactive | **No account directly, since 2026-09-06** — only the nested `Sandboxes` OU. It held `Development` until Stage 6b moved that account to `Workloads`, so the document's own permissive half is now measured through inheritance | Interactive compute **allowed**, minus **exactly one statement**: no *classic* SageMaker notebook instance (1c step 7.6, 2026-08-13). The lightest set in the tree, and why it is not heavier is below the table. What keeps the data scientist from changing infrastructure is `DataScientistAccess`, an *identity* policy, not this OU |
 | Interactive → Sandboxes | Sandbox, one per business unit (D35) | **None of its own, by rule** (D37): nothing is attached or enabled here unless it *differs* from `Interactive`, so what reaches a Sandbox is the organization-root set plus that one deny, inherited. It is a container for a *cardinality class*, not a policy boundary |
 | Data | Data Governance | No *user* compute (the DataZone control plane and the catalog-maintenance role are carved out by name); deletion denied |
-| Workloads | Staging, Production | No interactive compute; no human control plane |
+| Workloads | Staging, Production — and `Staging` is the account that used to sit in `Interactive` | No interactive compute; no human control plane |
 | Policy Test | Policy Canary | **None of this project's** — this is the OU a *candidate* policy is attached to and exercised against, before it reaches anything real (D29). It does carry the Control Tower controls every governed OU has (the `us-west-2` ceiling and the two root-user controls, 1c step 7.7), so a candidate is measured against the same floor as everything else |
 
-A per-environment OU tree (`Development` OU, `Staging` OU, `Production` OU, one account each) was
+A per-environment OU tree (one OU per environment, one account each) was
 considered and rejected — every OU would hold exactly one account, so the tree would add names without
 adding inheritance. The revision triggers are recorded in the plan (D23): a second production-like account
 nests `Workloads` into `NonProd`/`Prod`; a second data domain does the same for `Data`.
@@ -643,21 +657,22 @@ Read the account map with the question *"how many of these will exist in five ye
 
 | Class | Accounts | Cardinality | How it is created |
 |---|---|---|---|
-| **Structural** | Management, Log Archive, Audit, Identity, Policy Canary, Data Governance, **Development**, Staging, Production | **one, always** | manually, from the console, by the owner named in §3 |
+| **Structural** | Management, Log Archive, Audit, Identity, Policy Canary, Data Governance, **Staging**, Production | **one, always** | manually, from the console, by the owner named in §3 |
 | **Multiplied** | **Sandbox** | **one per business unit** | automated, in Terraform — Stage 14 |
 
 The boundary is not a convenience. It is **exactly the graduation boundary of D21**: in Sandbox the unit of
-work is a notebook and the account is for experimentation; in Development the unit of work is a pipeline and
-the promotion chain begins. Experimentation is naturally per-business-unit — each unit explores its own data,
+work is a notebook and the account is for experimentation; past it the unit of work is a pipeline and the
+promotion chain begins. Experimentation is naturally per-business-unit — each unit explores its own data,
 with its own people, on its own schedule — while engineering is institutional: one discipline, one set of
-repositories, one chain. So the chain reads **N Sandboxes → one Development → one Staging → one
-Production**, and the multiplication sits entirely *upstream* of the approval gate, which is the cheapest
-place for it to be. N is 1 today.
+repositories, one chain. So the chain reads **N Sandboxes → one Staging → one Production**, and the
+multiplication sits entirely *upstream* of the approval gate, which is the cheapest place for it to be.
+N is 1 today. *(It read `→ one Development → one Staging →` until 2026-09-06; removing that account changed
+where the boundary is drawn, not whether it exists — it now falls between a Sandbox and a repository.)*
 
 Two consequences worth stating explicitly, because both are easy to assume wrongly:
 
-- **The promotion chain is untouched by N.** One Development means one set of pipelines, one deploy role
-  pair, one approval gate, however many business units exist.
+- **The promotion chain is untouched by N.** One set of engineering repositories means one set of
+  pipelines, one deploy role pair, one approval gate, however many business units exist.
 - **Per-unit isolation ends at the graduation boundary.** A unit's experimentation is private to it; its
   engineering is not. Past that line, whatever isolation is required is carried by Lake Formation grants,
   LF-Tags and per-pipeline execution roles — never by an account boundary that is deliberately not there.
@@ -792,6 +807,7 @@ once per account and read every time it is changed.
 **When this is revisited.** Account creation becoming frequent enough that the post-vend baseline is run from
 memory rather than read, or a second human joining — at which point the ladder is walked from rung 1, not
 jumped to rung 3, with the cost of whichever rung is chosen *measured* into `docs/PRICING.md` first. For the
-Sandbox class specifically, the trigger is a business unit needing its own **Development**, which would move
-an account off the structural side of the table and break the "the chain is untouched by N" property the
-whole split rests on.
+Sandbox class specifically, the trigger is a business unit needing its **own chain** — its own Staging, or
+its own set of engineering repositories with a deploy role pair behind them — which would move an account
+off the structural side of the table and break the "the chain is untouched by N" property the whole split
+rests on.
