@@ -939,14 +939,36 @@ def main(argv: list) -> int:
                 )
         else:
             checks.ok("DT-8", "staging isolation", "no resource link reaches Data Governance")
+        # THE THIRD STATE, AND IT ARRIVED THE DAY THIS CHECK COULD FIRST RUN (2026-09-06).
+        # The mirror rows were unreachable while `awsds-infra-staging` did not resolve - Stage 6b
+        # made that profile exist, and the first run reported
+        # `curated: DIVERGES (missing 1, extra 0)`. Nothing had drifted: Stage 9 has not built
+        # the mirror, so Staging holds zero tables and the lake holds one, which this comparison
+        # cannot tell from a mirror that fell behind. A check that reads the same on "not built
+        # yet" and on "drifted" is not a check (Lesson 13), and one that is red for several
+        # stages is a check nobody reads on the stage that matters.
+        #
+        # `built` IS THE DISCRIMINATOR AND IT ALREADY EXISTS - DT-9 uses it for exactly this.
+        # It is true once ANY Stage 9 object stands in the account (the job role, a model package
+        # group, the workgroup, a bucket). Until then a divergence is an absence and this notes
+        # it; from the first Stage 9 apply the same reading fails, without this file being edited
+        # again.
         for db, lake_n, staging_n, verdict in mirror_rows:
             if verdict == "mirrored":
                 checks.ok("DT-8", f"mirror {db}", f"{staging_n} table(s), names agree")
             elif verdict.startswith("DIVERGES"):
-                checks.fail(
+                (checks.fail if built else checks.note)(
                     "DT-8",
                     f"mirror {db}",
-                    f"{verdict} - a drifted mirror produces false test failures (4.1, decision 3).",
+                    f"{verdict} - "
+                    + (
+                        "a drifted mirror produces false test failures (4.1, decision 3)."
+                        if built
+                        else "and nothing in Stage 9 stands in this account yet, so the lake's "
+                        f"{lake_n} table(s) have nothing to be mirrored BY. Expected until "
+                        "step 4.1 builds the mirror; it becomes a failure on the first Stage 9 "
+                        "apply, with no edit here."
+                    ),
                 )
 
     # DT-9: the escape hatch - windowed trust, closed at rest, 1 h sessions, alarmed.

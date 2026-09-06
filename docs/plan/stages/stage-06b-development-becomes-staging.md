@@ -956,6 +956,15 @@ Interactive Development keeps reporting `pass` about an account that no longer e
 - `./aws/datalake.py` `DL-5`/`DL-13` pass with no Development row, and `DL-7` reads two resource links.
 - `./aws/deploytargets.py` `DT-8` **runs at all** — it is skipped until `awsds-infra-staging` resolves —
   and passes: no resource link from the deployment target to Data Governance (D20).
+  - **RAN 2026-09-06, and the D20 half passed while the OTHER half went red** — `DT-8` is a **pair**, and
+    this line named one of them. `staging isolation` = **pass**, *"no resource link reaches Data
+    Governance"*. `mirror curated` = **fail**, *"DIVERGES (missing 1, extra 0)"* — and **nothing had
+    drifted**: Stage 9 has not built the mirror, so Staging holds zero tables against the lake's one, and
+    the comparison cannot tell that from a mirror that fell behind. **A check reading the same on "not
+    built yet" and on "drifted" is not a check** (Lesson 13), and this one had been *skipped* rather than
+    green, so nobody had ever seen it. It now takes `built` — the discriminator `DT-9` in the same file
+    already uses — and **notes** until the first Stage 9 object stands in the account, failing from then
+    on with no further edit. Re-run: **`0 check(s) FAILED`**.
 - `./aws/probes/scp-battery.py --phase ou` reads the `Workloads` expectation set, with the Athena Spark
   deny exercised.
 - `make check` and `make check-docs` green; every surviving slice re-plans `No changes`.

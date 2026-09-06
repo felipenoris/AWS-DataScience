@@ -911,3 +911,33 @@ Claude's, as the infrastructure user.*
   product's parameters are readable only from Management, which holds no CLI profile. That reading is also
   what would close **Stage 1b verification (vi)** — it decides whether "the direct assignment did not come
   back" means the trigger fired and produced nothing, or never fired at all.
+
+## 2026-09-06 — the stage's own Validation list, run after the merge
+
+*Claude, as the infrastructure user. The stage was already marked DONE; this is the list its Validation
+section names, run rather than assumed.*
+
+- **`make check` OK; `make check-ou` OK** — every OU's document count is as authored.
+- **`./aws/datalake.py`: `0 check(s) FAILED`.** `DL-5` reads `CROSS_ACCOUNT_VERSION=4, SET_CONTEXT=TRUE`
+  in both accounts (the 5.4 bracket holding); `DL-7` reads **3 shares out and 2 resource links on the
+  consumer side, no pending invitation**; `DL-13` reads the create-time admin list unchanged in Data
+  Governance and the two service-appointed SMUS seats in Sandbox. The exit code is 1 and it is **not** a
+  finding — the persona `sso-session`s hold no token, which is section 14's whole content.
+- **`./aws/deploytargets.py` — and this is where the sitting earned its keep.** The stage's Validation
+  line says `DT-8` *"runs at all — it is skipped until `awsds-infra-staging` resolves — and passes"*.
+  **`DT-8` is a PAIR and that line named one of them.** The D20 half passed:
+  *"no resource link reaches Data Governance"*. The other half **failed**:
+  *"mirror curated: DIVERGES (missing 1, extra 0)"*.
+  - **Nothing had drifted.** Stage 9 has not built the Staging mirror, so the account holds zero tables
+    against the lake's one — and the comparison could not tell that from a mirror that had fallen behind.
+    **A check that reads the same on "not built yet" and on "drifted" is not a check** (Lesson 13).
+  - **The reason nobody had ever seen it is the interesting part.** The check was not green before today;
+    it was **skipped**, because `awsds-infra-staging` did not resolve. Stage 6b made that profile exist,
+    and the first thing the newly-runnable check did was report a divergence against something no stage
+    has built. It would have stayed red through 6c, 6d, 7 and 8 — *"a check that is red for four passes
+    is a check nobody reads on the fifth"*, which is this stage's own pass-5 header, arriving as a
+    measurement instead of a warning.
+  - **The fix used a discriminator that already existed in the same file.** `built` — true once any
+    Stage 9 object stands in the account (job role, model package group, workgroup, bucket) — is what
+    `DT-9` two blocks below already uses for exactly this shape. `DT-8` now **notes** until then and
+    **fails** from the first Stage 9 apply, with no further edit. Re-run: **`0 check(s) FAILED`**.
