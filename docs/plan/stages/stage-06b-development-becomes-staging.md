@@ -800,6 +800,35 @@ followed here, not authored.
   `data-scientist-staging@staging` and `deployment-manager@development` → `…@staging`, plus the
   `accounts` map key `development` → `staging`. Without `moved {}` these are address changes and Terraform
   destroys and re-creates each assignment; with them the plan reads `0 to add, 0 to change, 0 to destroy`.
+- **4.7 — DONE 2026-09-06. `awsds-dev-tfstate` and `alias/awsds-dev-tfstate` are gone;
+  `awsds-staging-tfstate` is the only bucket in the account.** `terraform-live/development/` no longer
+  exists, and the `development` row left `ENV_TOKENS`, `ENVIRONMENT_TAGS`, `PROFILES`, `layers.py`,
+  `check-bootstrap-parity.py`, `conventions.md` §6 and `terraform-live/README.md` in one commit.
+  - **Both buckets were read before anything was touched, and one reading stopped the hand.**
+    `development/sagemaker` reported **`serial 11 | resources: 2`** in a slice step 1.7 recorded as
+    destroyed. **Both are `mode: data`** (`terraform_remote_state` reads of `foundation` and `lake`) —
+    a data source stays in state after a destroy because it is re-read, not destroyed. Nothing was
+    orphaned and 1.7's record stands, but *"2 resources"* in a state about to be deleted is exactly the
+    reading that should stop one, and the field that answers it is one word.
+  - **Object Lock re-measured rather than trusted** (`ObjectLockConfigurationNotFoundError`): it is the
+    single property that would have made this step unexecutable, and this step's own note about it dated
+    from a different instrument's run.
+  - **The state left the bucket by returning the slice to LOCAL state, a refinement of Recipe E step 7
+    rather than a deviation.** The recipe says *migrate*; its purpose is to get the state out of the
+    bucket about to be destroyed, and this slice is **destroyed, not moved**, so no destination outlives
+    it. Commenting the backend block is phase 1 of the bootstrap pattern in reverse — only the two forms
+    that file documents, and no temporary lie in the vocabulary tables to name a bucket the generator
+    would otherwise refuse to produce.
+  - **`force_destroy` REPLACED this step's "empty it by hand" instruction** — measured **163 object
+    versions and 98 delete markers**. Emptying through `terraform destroy` makes it a **reviewable code
+    change** and a planned operation rather than a loop of `delete-objects` calls whose blast radius
+    exists only in the operator's head. The safety the instruction bought is bought better by that line
+    being visible in a diff.
+  - **The two-commit shape did NOT survive the gates, and this is its second instance in this stage.**
+    A bootstrap slice with `prevent_destroy` lifted has stopped being a copy, so
+    `check-bootstrap-parity.py` fails the intermediate commit; dropping the folder from its lists early
+    fails it the other way. **There is no committable intermediate state** — the teardown commits its END
+    state, which is what step 1.7 found about a whole slice on the same day.
 - **4.7 — [Claude⚡] Retire the old bucket, last**: migrate `development/bootstrap/`'s own state to the new
   bucket, lift `prevent_destroy` in one commit, empty the versioned bucket by hand (object versions **and**
   delete markers), destroy it in the next commit. **Measured 2026-09-06 (`./aws/tf-backends.py` §2):

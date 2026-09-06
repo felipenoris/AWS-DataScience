@@ -55,8 +55,15 @@ LIVE = Path("terraform-live")
 # other migration in pass 4 reads FROM, so it is destroyed LAST (4.7). Optional here means
 # "still present, and its absence is the expected end state", which is the mirror of what the
 # word meant a day ago.
+# AND `development` LEFT BOTH LISTS AT 4.7, when its bucket was destroyed and its folder deleted.
+# It was OPTIONAL for exactly one pass - "still present, and its absence is the expected end
+# state" - and this is that end state. THERE IS NO COMMITTABLE INTERMEDIATE STATE for a bootstrap
+# teardown: a slice with `prevent_destroy` lifted has stopped being a copy and fails this check,
+# and dropping it from the lists early fails it the other way ("not an account folder this project
+# knows"). So a teardown commits its END state - the same thing step 1.7 found about a whole slice
+# on the same day.
 REQUIRED = ("sandbox", "staging", "data-governance", "production", "identity")
-OPTIONAL = ("development",)
+OPTIONAL: tuple[str, ...] = ()
 
 # The slice that is compared against. It is the one that has APPLIED (step 2), so a divergence
 # is reported in the direction that matters: what the others would create that this one did not.

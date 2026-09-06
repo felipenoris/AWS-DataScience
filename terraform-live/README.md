@@ -22,9 +22,9 @@ is a broken caller.
 not an authority — `make slices` prints the live table, and a slice that reaches disk without a row in it
 fails `make check`.
 
-**Six `bootstrap/` slices, and they are one slice copied six times — Stage 2 steps 1, 2 and 3, 2026-08-15; the sixth is `staging/`, written at Stage 6b step 4.2 (2026-09-06). `./scripts/check-bootstrap-parity.py` is what keeps them copies.**
+**Five `bootstrap/` slices, and they are one slice copied five times — Stage 2 steps 1, 2 and 3, 2026-08-15. `staging/`'s replaced `development/`'s at Stage 6b step 4.2-4.7 (2026-09-06) - a rename, not a vend, so the count never changed. `./scripts/check-bootstrap-parity.py` is what keeps them copies.**
 
-**DONE 2026-09-06, except its last slice.** `development/` became `staging/` on a new state bucket
+**DONE 2026-09-06.** `development/` became `staging/` on a new state bucket
 ([Stage 6b](../docs/plan/stages/stage-06b-development-becomes-staging.md), Recipe E), losing
 `sagemaker/` and `data/` on the way (destroyed, steps 1.7 and 2.4) and carrying `foundation/`,
 `egress/` and `probes/` across (step 4.3); `production/` grows `networking/`, `workloads/`, `vpn/`
@@ -33,7 +33,7 @@ and `proxy/`, and its existing `foundation/` VPC becomes **VPC-SharedServices**
 is `docs/plan/conventions.md` §6**, which was rewritten in the same sitting; this file describes the tree
 that is on disk today.
 
-`sandbox/`, `development/`, `data-governance/`, `production/` and `identity/` each carry the same
+`sandbox/`, `staging/`, `data-governance/`, `production/` and `identity/` each carry the same
 `main.tf`, `variables.tf`, `outputs.tf`, `providers.tf`, `versions.tf` and `.terraform.lock.hcl` — **the state
 bucket and the KMS key that encrypts it, and nothing else**. **All five have applied and hold their own
 state** — `production/` with a second key besides. **No `staging/`**: the account is unvended (step 3.2), and a
@@ -80,8 +80,8 @@ three resources exist in no other provider at all: the V2 project profile, the b
 (INT-15) — and the DataZone policy grant (`awscc_datazone_policy_grant`, both layers of the create
 authorization since 2026-08-22). `docs/plan/conventions.md` §6 anticipated exactly that split.
 
-**Stage 3 put a network on disk in the three accounts that have one — `sandbox/`, `development/` and
-`production/`, split three ways (2026-08-16, applied and measured).** `foundation/` is `[P]`: the VPC, its
+**Stage 3 put a network on disk in the three accounts that have one — `sandbox/`, `staging/` (then
+named `development/`) and `production/`, split three ways (2026-08-16, applied and measured).** `foundation/` is `[P]`: the VPC, its
 six subnets across three AZs, the gateway endpoints and the private hosted zones, plus the peerings and
 zone associations pass 2 adds on a second apply of the same slice. `egress/` is `[E]` — the NAT gateway
 and the interface endpoints, which are this tree's entire hourly bill. `probes/` is `[E]` as well and is
@@ -94,7 +94,8 @@ alone: the `[E]` slices are destroyed and the tree bills **USD 0.0000/h** betwee
 
 **Stage 5 put the lake on disk, in the one account that has no network — `data-governance/data/`
 (2026-08-18/19, applied in three passes) — and then its consumer side, `sandbox/data/` and
-`development/data/` (pass 4, 2026-08-19).** Those two are the tree's first slices that are **one module
+`development/data/` (pass 4, 2026-08-19; the second was **destroyed** at Stage 6b step 2.4, so
+`sandbox/data/` is the only caller left).** Those two are the tree's first slices that are **one module
 applied twice**: `terraform-modules/consumer-data/`, so the design lives once and each slice says only
 which account. Each holds the account's own `DataLakeSettings`, its `alias/awsds-<env>-data` CMK (one
 data CMK per account — the 2026-08-19 revision that withdrew the `security-zone` dimension; **since
@@ -283,7 +284,6 @@ created; it is also the answer to "who runs `terraform apply` here".
 |---|---|---|---|
 | `identity/` | Identity | `Identity` | `awsds-infra-identity` |
 | `sandbox/` | Sandbox Account 1 | `Sandboxes` | `awsds-infra-sandbox-1` — **one such folder per business unit** (D35), N is 1 today |
-| `development/` | Staging Account | `Workloads` | `awsds-infra-staging` — **one slice left**, `bootstrap/`, and it goes at Stage 6b step 4.7 with the bucket it owns |
 | `data-governance/` | Data Governance | `Data` | `awsds-infra-data` |
 | `staging/` | Staging Account | `Workloads` | `awsds-infra-staging` — **the renamed `Development`, not a vend**: the quota refused that (2026-09-05), so Stage 6b converted the account instead |
 | `production/` | Production | `Workloads` | `awsds-infra-prod` |

@@ -209,12 +209,12 @@ class Slice:
 # 0.005/h. Per account: endpoints x 0.010 + 0.050 where a NAT exists (egress_mode A).
 SLICES = [
     Slice("sandbox", "bootstrap", PERSISTENT, "state bucket + its KMS key (step 2)"),
-    Slice("development", "bootstrap", PERSISTENT, "state bucket + its KMS key (step 3)"),
-    # Stage 6b step 4.2 (2026-09-06). It is the SIXTH bootstrap and it is not a vend: the
-    # `Development` account was renamed, and this slice is the new state home its slices
-    # migrate into (Recipe E step 2 - the destination bucket must exist before any
-    # -migrate-state names it). The `development` row above outlives it on purpose and
-    # goes at 4.7, because it owns the bucket every one of those migrations reads FROM.
+    # Stage 6b step 4.2 (2026-09-06), and it REPLACED a `development` row rather than joining it:
+    # the account was renamed, not vended. This slice is the state home the account's other
+    # slices migrated into (Recipe E step 2 - the destination bucket must exist before any
+    # -migrate-state names it), and the old row outlived it by exactly one pass because
+    # `development/bootstrap/` owned the bucket every one of those migrations read FROM. Step 4.7
+    # destroyed it; awsds-staging-tfstate is now the only state bucket in that account.
     Slice("staging", "bootstrap", PERSISTENT, "state bucket + its KMS key (6b 4.2)"),
     Slice("data-governance", "bootstrap", PERSISTENT, "state bucket + its KMS key (step 3)"),
     Slice("production", "bootstrap", PERSISTENT, "state bucket + TWO keys - D36's is 2nd (3.4)"),

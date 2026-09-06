@@ -242,13 +242,6 @@ terraform-live/
 │                         #     account, which is why an associated account is what enables
 │                         #     blueprints against a shared domain. The flag is
 │                         #     backend.SMUS_ASSOCIATED, whose rows are measurements
-├── (development/)        # ALL BUT ONE SLICE GONE, 2026-09-06 (Stage 6b pass 4). sagemaker/
-│   └── bootstrap/        #     and data/ were DESTROYED (steps 1.7 and 2.4); foundation/,
-│                         #     egress/ and probes/ MIGRATED to staging/ (step 4.3). What is
-│                         #     left is [P] bootstrap/, and it is last on purpose: it owns
-│                         #     awsds-dev-tfstate, the bucket every one of those migrations
-│                         #     read FROM. Step 4.7 empties and destroys it, and this whole
-│                         #     entry goes with it
 ├── staging/              # THE FIRST DEPLOYMENT TARGET (D18/D28), and it is the RENAMED
 │   │                     #     Development account, not a vend - the quota refused that
 │   │                     #     (2026-09-05). Headless: no SMUS domain object, no interactive
@@ -262,6 +255,13 @@ terraform-live/
 │   │                     #     D11 leaves it torn down between sittings
 │   └── probes/           # [E] the INT-09 reachability host. Same, and it must not coexist
 │                         #     with sandbox/probes/ (buildbox runbook)
+│                         #
+│                         #     THERE IS NO development/ ENTRY ANY MORE (2026-09-06). Its
+│                         #     sagemaker/ and data/ were destroyed at 6b steps 1.7 and 2.4,
+│                         #     foundation/, egress/ and probes/ migrated here at 4.3, and
+│                         #     bootstrap/ - which owned awsds-dev-tfstate, the bucket every
+│                         #     one of those migrations read FROM - went last at 4.7 with the
+│                         #     bucket and its KMS key
 ├── data-governance/      # THE OWNERSHIP AXIS (D22, D26): state and governance,
 │   │                     # never compute. Renamed from data-management/ on 2026-08-08
 │   ├── bootstrap/        # [P] state bucket for the Data Governance account

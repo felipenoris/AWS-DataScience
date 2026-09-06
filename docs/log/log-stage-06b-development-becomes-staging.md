@@ -844,3 +844,23 @@ Claude's, as the infrastructure user.*
   - **Run: `0 check(s) FAILED`**, and one row is an independent confirmation of step 4.5: **all four
     `NT-8` zone associations now resolve against `awsds-infra-staging`'s VPC** — the Route 53
     associations survived the `moved {}` blocks, read from AWS rather than from state.
+
+## 2026-09-06 — step 4.7 finished: the old bucket is gone and pass 4 is closed
+
+- **[user] Both commands run. [Claude] Read back: `awsds-dev-tfstate` returns 404, the
+  `alias/awsds-dev-tfstate` is gone, and `list-buckets` in that account returns exactly one name —
+  `awsds-staging-tfstate`.** The KMS key is in its 30-day deletion window, which is the module's
+  `deletion_window_in_days` doing what it was written for.
+- **[Claude] The local state left behind by the destroy reads `serial 16 | resources: 0`** — read before
+  deleting the folder, because that file is the only record that the destroy actually completed rather
+  than half-ran.
+- **[Claude] `terraform-live/development/` deleted, and the `development` row left seven places in one
+  commit**: `ENV_TOKENS`, `ENVIRONMENT_TAGS`, `PROFILES`, `layers.py`, `check-bootstrap-parity.py`,
+  `conventions.md` §6 and `terraform-live/README.md`. **Pass 4 is closed.**
+  - `terraform-live/README.md` had three further lines that had quietly gone false — the account list,
+    the Stage 3 network sentence, and the Stage 5 consumer pair (whose second half was destroyed at step
+    2.4). **No gate reads those**; they were found by grepping the file for the old name, which is the
+    only method there is for prose.
+  - The bootstrap count went back to **five**: `staging/`'s slice replaced `development/`'s rather than
+    joining it, because this was a **rename, not a vend** — so the number never actually changed, and the
+    "six" this README carried for one pass was the migration window showing through.
