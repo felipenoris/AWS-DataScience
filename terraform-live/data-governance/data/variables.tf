@@ -38,8 +38,8 @@ variable "consumers" {
 }
 
 variable "vpn_homes" {
-  description = "The accounts playing the VPN-home role (VPN_HOMES in scripts/tfhygiene/backend.py) - one Elastic IP each, read from that account's foundation/ state. The aws:SourceIp branch of the perimeter deny (step 1.3, D18) is built from this list, per D35."
-  type        = map(object({ profile = string, env = string }))
+  description = "The accounts playing the VPN-home role (VPN_HOMES in scripts/tfhygiene/backend.py) - one Elastic IP each, read from the SLICE the row names. The aws:SourceIp branch of the perimeter deny (step 1.3, D18) is built from this list, per D35. The slice field arrived at Stage 6c step 0.5, when D38 moved the tunnel out of a foundation/ slice and into production/networking/."
+  type        = map(object({ profile = string, env = string, slice = string }))
   nullable    = false
 }
 

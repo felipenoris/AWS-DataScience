@@ -135,7 +135,7 @@ data "terraform_remote_state" "vpn_home" {
     # in the tfvars rather than being re-derived from the env token (that reverse map would be
     # a second copy of ENV_TOKENS - Lesson 14).
     bucket  = "awsds-${each.value.env}-tfstate"
-    key     = "${each.key}/foundation/terraform.tfstate"
+    key     = "${each.key}/${each.value.slice}/terraform.tfstate"
     region  = var.region
     profile = each.value.profile
   }

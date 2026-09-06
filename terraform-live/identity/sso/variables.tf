@@ -67,10 +67,11 @@ variable "environment_tag" {
 # nothing" - the deny would fire on EVERY call from EVERY network and lock all six personas out
 # of everything. An empty allow-list is the one input shape whose failure is total.
 variable "vpn_homes" {
-  description = "Account folder -> { profile, env } for every account terminating a WireGuard tunnel. Generated (backend.py VPN_HOMES); read for its foundation/ Elastic IP."
+  description = "Account folder -> { profile, env, slice } for every account terminating a WireGuard tunnel. Generated (backend.py VPN_HOMES); read for that SLICE's Elastic IP. The slice field arrived at Stage 6c step 0.5: the tunnel moves into VPC-Networking, whose EIP lives in production/networking/ rather than in a foundation/, so the slice stopped being derivable from the account."
   type = map(object({
     profile = string
     env     = string
+    slice   = string
   }))
   nullable = false
 

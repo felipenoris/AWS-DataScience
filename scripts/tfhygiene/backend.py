@@ -195,7 +195,18 @@ WIREGUARD_PEER_CIDR = "10.90.0.0/24"
 # to data-governance/data since Stage 5 pass 1, where the same addresses become a branch of
 # the lake's perimeter deny. Entries must therefore be accounts whose foundation/ EXPORTS the
 # EIP - today only sandbox does (Stage 4 step 2.1).
-VPN_HOMES = ["sandbox"]
+# EACH ROW IS (ACCOUNT, SLICE) SINCE 6c step 0.5 (2026-09-06), and the second half is the whole
+# point. Both consumers turn a row into a `terraform_remote_state` read of that account's
+# **foundation/** slice - the slice name was HARD-CODED in identity/sso/data.tf's key. D38 moves
+# the tunnel into `VPC-Networking`, whose Elastic IP, VPC id and gateway-endpoint id live in
+# `production/networking/`, so the slice stops being derivable from the account.
+#
+# THE VALUE STILL POINTS AT SANDBOX, DELIBERATELY. 0.5 builds the seam; **step 4.9 flips the
+# row** to ("production", "networking") once that slice exists and has applied. Flipping it now
+# would make identity/sso read an EMPTY state, and `DenyControlPlaneOffVpn` would then deny every
+# call from every network - the failure permission-sets.tf's precondition already has an error
+# message for. So this commit changes the shape and not one generated value.
+VPN_HOMES = [("sandbox", "foundation")]
 
 # THE LAKE'S CONSUMERS AND ITS PICKUP PRODUCER (Stage 5 pass 1, 2026-08-18) - the seventh
 # vocabulary, authored like VPN_HOMES and for the same reason: which accounts consume the
@@ -550,7 +561,8 @@ def tfvars_values(account: str, slice_name: str) -> dict:
             acct: {"profile": PROFILES[acct], "env": ENV_TOKENS[acct]} for acct in DATA_CONSUMERS
         }
         values["vpn_homes"] = {
-            acct: {"profile": PROFILES[acct], "env": ENV_TOKENS[acct]} for acct in VPN_HOMES
+            acct: {"profile": PROFILES[acct], "env": ENV_TOKENS[acct], "slice": sl}
+            for acct, sl in VPN_HOMES
         }
         values["producers"] = {
             acct: {"profile": PROFILES[acct], "env": ENV_TOKENS[acct]} for acct in DATA_PRODUCERS
@@ -621,7 +633,8 @@ def tfvars_values(account: str, slice_name: str) -> dict:
 
     if account == "identity" and slice_name == "sso":
         values["vpn_homes"] = {
-            acct: {"profile": PROFILES[acct], "env": ENV_TOKENS[acct]} for acct in VPN_HOMES
+            acct: {"profile": PROFILES[acct], "env": ENV_TOKENS[acct], "slice": sl}
+            for acct, sl in VPN_HOMES
         }
         # Stage 5 pass 4c put TWO cross-account reads here; ONE left on 2026-08-26. The
         # `data_consumers` map (each consumer's workgroup + derived-bucket ARNs) left with the
@@ -681,7 +694,8 @@ def render_tfvars(account: str, slice_name: str) -> str:
         out += f"consumers = {{\n{rows}}}\n"
     if "vpn_homes" in v:
         rows = "".join(
-            f'  {acct} = {{ profile = "{p["profile"]}", env = "{p["env"]}" }}\n'
+            f'  {acct} = {{ profile = "{p["profile"]}", env = "{p["env"]}", '
+            f'slice = "{p["slice"]}" }}\n'
             for acct, p in v["vpn_homes"].items()
         )
         out += f"vpn_homes = {{\n{rows}}}\n"
