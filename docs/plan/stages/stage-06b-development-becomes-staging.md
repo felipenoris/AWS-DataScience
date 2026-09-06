@@ -583,10 +583,15 @@ followed here, not authored.
   `staging` slice rows go into `scripts/tfhygiene/layers.py`, whose `staging joins at vend` comment is
   stale prose to correct in the same commit. **Keep the `development` rows alive** until the old bucket is gone — the
   generator still has to emit the old backend.
-- **4.3 — [Claude⚡] Migrate each surviving slice with Recipe E, one session per slice — three of them**:
-  `foundation/`, `egress/` and `probes/`. (`sagemaker/` and `data/` were destroyed in passes 1-2;
-  `bootstrap/` is last and is 4.7's; `egress/` migrates here even though 6c step 5 re-cuts it, because a
-  slice left behind in the old folder is a slice on the old state bucket.) Recipe E's gate is that
+- **4.3 — [Claude⚡] Migrate with Recipe E — and only ONE slice actually needs it** *(measured
+  2026-09-06)*. `foundation/` is the only surviving slice carrying resources; **`egress/` and `probes/` are
+  `[E]` and their states are EMPTY — zero resources each**, because D11 leaves them torn down between
+  sittings. So they are not migrations at all: their folders move with a `git mv` and their state is
+  created fresh at the next `up`, with no `init -migrate-state` and no empty-plan gate, because there is
+  nothing to gate. This also settles a contradiction: `conventions.md` §6 said `egress/` was *destroyed*
+  while this step said it *migrated*, and the measurement says neither word was right. (`sagemaker/` and
+  `data/` were destroyed in passes 1-2; `bootstrap/` is last and is 4.7's.) For `foundation/`, Recipe E's
+  gate is that
   `terraform plan` returns **`No changes`** after `init -migrate-state`; nothing proceeds past a slice that
   does not.
 - **4.4 — [Claude⚡] Flip the token**: set `env = "staging"` and `environment_tag = "staging"` and read the
