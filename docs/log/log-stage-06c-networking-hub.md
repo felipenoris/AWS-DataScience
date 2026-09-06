@@ -401,3 +401,29 @@ stays verbatim. The stage file is
   and `workloads-egress/` into the slice tree before any of them existed. **Every document that had to be
   corrected describes the estate as DEPLOYED; the one that describes it as DESIGNED was already right.**
   That is the split those files are for, working.
+
+## 2026-09-06 — the lessons re-read, and one shape that had no name
+
+- **[Claude] Lesson 51 added: two intents sharing ONE list.** It is **Lesson 33's mirror and the more
+  dangerous half.** 33 warns that one intent enforced in two places diverges; this is two intents enforced
+  in one place, which never diverges and is wrong differently — **it cannot express a difference the
+  design later requires**, so the first change that needs one takes it from both. `peers.tf`'s
+  `local.peer_vpc_ids` named who a VPC peers with **and** whose VPC its zones are associated into; those
+  were the same set for three stages. **Left conflated, 3.1's retirement would have destroyed a zone
+  association nobody was thinking about, inside a plan whose every line was about peerings** — correct
+  under review, wrong in effect. The test that finds it in seconds: name each consumer and ask whether a
+  row could ever be true for one and false for the other.
+- **[Claude] Lesson 3 gained a forward pointer to 48**, because 48 is its quieter half: the resource need
+  not move at all — its **name** moving is enough, when another account resolves it by tag rather than by
+  id.
+- **[Claude] The Terraform runbook gained Recipe E step 5b: `moved {}`.** It recurred **three times**
+  across 6b and 6c and the cost varies by three orders of magnitude — a renamed `aws_route` is cheap, a
+  renamed **peering accepter deletes the peering**, and a renamed **SSO assignment revokes access**,
+  including once the assignment the operator was signed in through. The step carries that table, the gate
+  (`0 to add, 0 to destroy` for everything the blocks cover), the one exception worth taking deliberately
+  (a key embedding a `[P]` id cannot get a block without pasting that id into a tracked file), and the
+  expiry rule.
+- **[Claude] Six lessons from one session is unusual and the reason is worth stating**: five of the six
+  are **habits about the tools** — the shell, the lock, the tag, the comment, the check's timing — rather
+  than facts about AWS. This session's expensive moments were nearly all self-inflicted and cheap to
+  prevent, which is exactly the class of thing a lessons file exists to stop repeating.

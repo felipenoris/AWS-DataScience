@@ -239,6 +239,26 @@ nobody can read, in which a migration failure and an intended replacement look i
 4. **`terraform init -migrate-state`.** Answer `yes` to copying the existing state.
 5. **`terraform plan` must return `No changes`.** That empty plan is the proof of the migration and the
    gate for everything after it. Anything else means the state did not arrive intact: stop, do not apply.
+5b. **A RENAMED ADDRESS IS A DESTROY-AND-CREATE UNLESS A `moved {}` BLOCK SAYS OTHERWISE**, and this
+   recurred three times across Stages 6b and 6c (added 2026-09-06). Terraform matches state to
+   configuration **by address**, so renaming a resource, or renaming a `for_each` KEY, reads as *"the old
+   one is gone and a new one appeared"*. What that costs depends entirely on the resource:
+
+   | Renamed | Without `moved {}` |
+   |---|---|
+   | `aws_vpc_peering_connection_accepter` | **the peering is deleted**, and comes back `pending-acceptance` with every route on both sides pointing at a dead id |
+   | `aws_ssoadmin_account_assignment` | access is **revoked and re-granted** — including, once, the assignment the operator running the apply was signed in through |
+   | a plain `aws_route` | re-created; cheap, and sometimes the right choice |
+
+   **Write the blocks, then read the plan for the words `has moved to`** — and the gate is that the plan
+   reads `0 to add, 0 to destroy` for everything the blocks cover. **The exception worth taking
+   deliberately**: a key that embeds a `[P]` id (a subnet, an ENI) cannot get a `moved {}` block without
+   pasting that id into a tracked file, which conventions forbid — accept the re-creation and say so in a
+   comment.
+
+   **They are migration records and they expire.** Delete them once nothing can refer to the old address;
+   a `moved {}` whose `from` can no longer exist anywhere is dead weight that reads like history.
+
 6. **Then, as a separate commit, flip the token** and read the plan as a *replacement* list. Expect names
    that are inputs to be replaced (security groups, log groups) and ids that are not to change in place
    (a VPC, its subnets, its gateway endpoints — which is what preserves any policy that names them,
