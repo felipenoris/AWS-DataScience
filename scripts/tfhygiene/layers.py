@@ -74,6 +74,21 @@ RANKS = {
     "sso": 10,
     "org-policies": 11,
     "foundation": 20,
+    # STAGE 6c's THREE NEW RANKS, DECLARED BEFORE ANY FOLDER EXISTS (step 0.3, 2026-09-06) - the
+    # same discipline `vpn` and `pki` above are here under: the ORDER is the part that gets got
+    # wrong once, so it is written down before anything consumes it.
+    #
+    #   networking  production/networking/, D38's hub - the estate's ONLY internet gateway, the
+    #               proxy's VPC and the WireGuard endpoint's after Stage 6c step 4. It ranks 21
+    #               rather than 20 because `production/foundation/` (VPC-SharedServices) is the
+    #               peering ACCEPTER for every spoke and must exist first.
+    #   workloads   production/workloads/, the production runtime's VPC. 23, after the hub it
+    #               peers to.
+    #
+    # BOTH ARE [P] AND NEITHER RANK IS EVER ACTED ON by up/down - what the numbers record is the
+    # dependency an executor respects by hand, exactly as `data` at 45 does.
+    "networking": 21,
+    "workloads": 23,
     # THE TWO RANKS WITH NO SLICE BEHIND THEM YET, and the comment they went four months
     # without (added 2026-08-21). A rank is legal on its own - `slices.py check` validates the
     # SLICES table against the tree and only asks that every ROW have a rank, never the
@@ -145,7 +160,17 @@ RANKS = {
     #              because KMS validates a key policy's principals: a statement naming a role
     #              that does not exist yet is rejected, so the role has to precede it
     "lake": 48,
+    # THE PROXY IS [D] AND ITS RANK IS THE WHOLE POINT (Stage 6c step 0.3). `up` ascends and
+    # `down` descends, so 41 puts it up BEFORE any egress/ (50, 51) and down AFTER them - which
+    # is what makes a spoke's package path exist for the entire life of an [E] session. Under
+    # D38 there is no NAT gateway anywhere, so a spoke with its endpoints up and no proxy has no
+    # route to the internet at all: this number is the difference between an [E] session that
+    # works and one that half-works in a way nobody attributes.
+    "proxy": 41,
     "egress": 50,
+    # VPC-Workloads' own [E] endpoint slice (Stage 6c step 1.3a). 51 rather than 50 only so the
+    # two Production egress slices have a defined order between them; both sit above `proxy`.
+    "workloads-egress": 51,
     # STAGE 6 STEP 5.0's BUILD HOST (2026-08-21). ABOVE `vpn` (40) and BELOW `probes` (60),
     # and only one of those two neighbours is a dependency:
     #
