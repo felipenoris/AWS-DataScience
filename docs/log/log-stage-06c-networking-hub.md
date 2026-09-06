@@ -675,3 +675,38 @@ two filters. **Nothing was applied**, and one plan that is ready was deliberatel
   the apply as a destructive action. It is no longer on the critical path: the union removed the
   reason it had to go first, so it can wait for 4.13 with the trim. The host cannot come up in the
   meantime — its address is in another account.
+
+## 2026-09-06 — a three-and-a-half-hour phantom, and 4.13's first half
+
+- **[Claude] A `terraform plan` from step 3.4 had been hung since 14:17 — LESSON 47, AGAIN, from
+  the session before this one.** The user noticed it, not a gate. The command looped over the two
+  spokes running `terraform plan -no-color` **without `-input=false`**, piped into `grep`: the
+  Sandbox half finished, the Staging half stopped at an input prompt nobody would ever answer, and
+  it sat there for **3h33m**.
+- **[Claude] What made it safe to kill was measured, not assumed** — three readings, because
+  "it's only a plan" is the kind of reassurance that is right until it is not:
+  1. It is a **`plan`**, not an apply: it creates, changes and destroys nothing.
+  2. **It held no state lock.** Every `.tflock` object in all three state buckets was listed:
+     none. It had blocked during *variable evaluation*, which happens **before** the lock is
+     taken. **This is the reading that mattered** — the expensive half of Lesson 47 is never the
+     stopped process, it is the lock it holds making the symptom surface in an unrelated slice,
+     which is exactly how this stage lost time once already.
+  3. Its output would have been **stale**: it planned against the `peering-to-hub.tf` it had just
+     written, and pass 3 has since replaced that with the generated `peerings.tf`, applied and live.
+  `fd 0` on the process was a unix socket — the harness pipe — which is the direct evidence that
+  it was waiting on stdin rather than working.
+- **[Claude] The guard this suggests is cheap and not yet written**: nothing in the repository
+  looks for a `terraform` process older than an hour, or for a `.tflock` with no live owner. The
+  runbook says `-input=false` on every plan and apply; a **check** would have found this in
+  minutes instead of hours. Recorded here rather than built mid-pass.
+- **[user⚡] 4.13's FIRST HALF — `sandbox/vpn/` destroyed, `8 destroyed`**, matching the plan
+  exactly (instance, role, its three policy attachments, instance profile, handshake log group,
+  health alarm — every one `[D]`, no `[P]` anchor among them). The harness refused this apply to
+  Claude as a destructive action, so the user ran it.
+- **[Claude] What that leaves standing in Sandbox, and what it changes:** the `[P]` anchors only —
+  the security group `awsds-sandbox-vpn`, now **attached to nothing**, and the host-key secret,
+  whose value has been copied to Production. Both go with 4.13's second half. **The estate still
+  carries two world-open rules**, but one of them now guards no listener at all.
+- **[Claude] Still standing, and still deliberate:** `sandbox/foundation/` plans **`1 to add`** and
+  must not be applied. The `removed {}` needs the union's Sandbox row trimmed first, and that is
+  pass 6's, after the readings.
