@@ -633,10 +633,11 @@ becomes true.
   Region's catalog (569 services, re-measured with a healthy session) carries `qapps` and
   `quicksight*` and nothing named `q`.
   **The three `layers.py` rates moved with the NAT and were COUNTED, not computed** — Sandbox
-  **0.160 → 0.180**, Staging 0.160 → **0.110**, Production 0.150 → **0.100**. Sandbox going *up*
-  is the honest reading of design B on this slice: it trades 0.050/h of NAT for 0.080/h of
-  endpoints, because 5.2 has to enumerate what the NAT covered silently. What D38 buys is one
-  auditable exit instead of three unenumerated ones, not a smaller bill here. None of the three
+  **0.160 → 0.180**, Staging 0.160 → **0.110**, Production 0.150 → **0.100**. Sandbox's *idle floor*
+  rises because 5.2 has to enumerate what the NAT covered silently — **and that is the only axis on
+  which it rises.** Per gigabyte a NAT is **0.045** against an endpoint's **0.010**, so design B costs
+  +0.020/h fixed here and saves 0.035 on every GB: **break-even ≈ 0.57 GB/h**, which one container pull
+  passes in minutes. Estate-wide the fixed rate falls too, 0.470 → **0.390/h**. None of the three
   includes 5.3's optional groups, which only exist for an apply that names them.
   *The original step follows:*
 - **5.2 — [Claude⚡] Complete the required endpoint set**: Sandbox re-adds **`datazone`** — removed on
