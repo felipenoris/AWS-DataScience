@@ -245,8 +245,21 @@ probe("ou", "sandbox1", "deny", "InvalidRequestException|WorkGroup is not found"
        "--engine-configuration",
        '{"CoordinatorDpuSize":1,"MaxConcurrentDpus":2,"DefaultExecutorDpuSize":1}',
        "--region", "us-west-2"])
-probe("ou", "prod", "allow", "InvalidRequestException|WorkGroup is not found", "blocked",
-      "workloads: athena:StartSession still authorized (1.6 contrast)",
+# THE CONTRAST MOVED TO THE CANARY ON 2026-09-06 (Stage 6b step 3.8), AND EXC-03 NAMED THIS
+# EVENT IN ADVANCE: "the row to watch is the contrast one - if it ever turns into a denial too,
+# the pair stops attributing". Step 3.8 added DenyAthenaSparkStartSession to the Workloads
+# document, so Production - which was the contrast precisely because its OU document carried no
+# athena action at all - now inherits the deny like everyone else. Two rows change together:
+# `prod` flips from allow to deny, and `canary` takes over the contrast from `Policy Test`, an
+# OU with no project SCP of its own.
+probe("ou", "prod", "deny", "InvalidRequestException|WorkGroup is not found", "blocked",
+      "workloads: athena:StartSession now denied too (3.8 amendment)",
+      ["athena", "start-session", "--work-group", "awsds-canary-probe",
+       "--engine-configuration",
+       '{"CoordinatorDpuSize":1,"MaxConcurrentDpus":2,"DefaultExecutorDpuSize":1}',
+       "--region", "us-west-2"])
+probe("ou", "canary", "allow", "InvalidRequestException|WorkGroup is not found", "blocked",
+      "policy test: athena:StartSession still authorized (3.8 contrast, was prod)",
       ["athena", "start-session", "--work-group", "awsds-canary-probe",
        "--engine-configuration",
        '{"CoordinatorDpuSize":1,"MaxConcurrentDpus":2,"DefaultExecutorDpuSize":1}',
