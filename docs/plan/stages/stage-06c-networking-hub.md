@@ -697,6 +697,16 @@ becomes true.
   `sagemaker.runtime` in both AZs; or accept it and let the first `az2` invocation be the measurement.
   **Recommended: pin the subnets**, and measure it at [6d](stage-06d-unified-studio-remainder.md) step 3
   either way.
+- **5.5 — DONE 2026-09-06, AND IT COVERS TWO OF THE THREE VPCs THE STEP NAMES.** Sandbox got the trio
+  at 5.2; **`VPC-SharedServices` gets it here** (`production/egress` 10 → **13** endpoints,
+  0.100 → **0.130/h**), one step ahead of the buildbox 5.8 lands there. **`VPC-Workloads` does NOT,
+  and the step's own qualifier is what excludes it:** it says *every INSTANCE-BEARING spoke*, and
+  that VPC bears none — measured, Production's only two instances are in `VPC-Networking`, which
+  reaches SSM through the IGW and needs no endpoint. `workloads-egress` already refuses endpoints
+  *"because the other egress slices have them"* for a network nothing runs in; adding 0.030/h of
+  Session Manager path there would have been that exact purchase. **The refusal is written INTO the
+  slice**, next to the empty lists, so the next reader meets it where they would look. They arrive
+  with the first workload, from Stage 9/10.
 - **5.5 — [Claude⚡] Give every instance-bearing spoke its SSM path**: `ssm`, `ssmmessages` and
   `ec2messages` in Sandbox, `VPC-SharedServices` and `VPC-Workloads`. Session Manager does not work through
   an HTTPS proxy listener, and the shell that reads the proxy's own log must not depend on the proxy

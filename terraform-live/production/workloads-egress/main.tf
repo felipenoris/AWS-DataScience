@@ -67,6 +67,12 @@ module "egress" {
   # STAGE 9/10 DECIDES WHAT COMES BACK, and deciding is the point: MWAA Serverless documents its
   # own set (logs, monitoring, kms) and the SageMaker runtime will name others. Restoring the
   # core eight wholesale would be inheriting a list chosen for a different kind of VPC.
+  # STEP 5.5 ASKED FOR `ssm`/`ssmmessages`/`ec2messages` HERE AND THEY ARE DELIBERATELY ABSENT
+  # (2026-09-06). The step's own qualifier is what excludes this VPC: it says *every
+  # INSTANCE-BEARING spoke*, and **VPC-Workloads bears none** - measured, Production's only two
+  # instances are in VPC-Networking. Adding them would be 0.030/h of Session Manager path for a
+  # network with nothing to manage, which is the exact purchase the paragraph above refuses.
+  # They arrive with the first workload, from Stage 9/10, beside the rest of that list.
   core_services  = []
   extra_services = []
 }
