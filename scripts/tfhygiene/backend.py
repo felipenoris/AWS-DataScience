@@ -214,14 +214,29 @@ REGISTRY_CONSUMERS = ["sandbox", "development"]
 # not this file's to carry: the stage that performs it is Stage 14 step 4, for a vended unit.
 
 SMUS_DOMAIN = ["data-governance"]
-SMUS_MEMBERS = ["sandbox", "development"]
+# ONE MEMBER SINCE STAGE 6b STEP 1.2 (2026-09-06). It was two; `development` left because the
+# account stops being Interactive - it becomes the headless `Staging` - and the row is what
+# generates `blueprints_enabled` for its sagemaker/ slice. Removing it is therefore not
+# bookkeeping after the fact: it IS the edit that destroys the eleven blueprint configurations,
+# and it is taken in the same commit as the SMUS_ASSOCIATED row below (see that comment).
+SMUS_MEMBERS = ["sandbox"]
 # MEASURED 2026-08-21, not assumed: the association raised no invitation (organization-scoped share,
 # Stage 1d's org-wide RAM enablement), so the console's "Associated" label is not the evidence. What is:
 # `datazone list-environment-blueprint-configurations --domain-identifier dzd-...` run as each member's
 # OWN profile SUCCEEDS and returns an empty list - a call that cannot succeed at all before the
-# association. Both rows are added in one edit because both accounts were associated in one act; the
+# association. Both rows were added in one edit because both accounts were associated in one act; the
 # APPLY ORDER is what is staged, not this list (Stage 6 step 1.4 before 1.5).
-SMUS_ASSOCIATED: list = ["sandbox", "development"]
+#
+# AND BOTH ROWS LEAVE IN ONE EDIT TOO, FOR A DIFFERENT REASON (Stage 6b step 1.2, 2026-09-06).
+# `profiles_enabled` is `set(SMUS_MEMBERS) <= set(SMUS_ASSOCIATED)`, so shrinking either list
+# alone flips it FALSE and the next governance/ apply destroys the `experimentation` project
+# profile as well. The empty governance/ plan is the proof that it did not.
+#
+# THIS LIST NOW MEANS "SHOULD CARRY BLUEPRINT CONFIGURATIONS", WHICH IS NOT "IS ASSOCIATED", and
+# for one pass the two differ: the console disassociation is Stage 6b step 1.4 and it comes AFTER
+# the configurations are destroyed - necessarily, since only the member can delete them and only
+# while the association still exists.
+SMUS_ASSOCIATED: list = ["sandbox"]
 
 # ------------------------------------------------- the persona's project-storage vending policy
 #
@@ -248,7 +263,16 @@ PERSONA_VENDING_POLICY_NAME = "awsds-org-project-storage-vending"
 # and the set's two assignment rows name exactly these accounts today. If the two ever diverge,
 # THIS LIST FOLLOWS THE ASSIGNMENTS, not the members - the symptom of getting it wrong is a
 # provisioning error in the account that was left out, not a plan failure here.
-PERSONA_VENDING_ACCOUNTS = list(SMUS_MEMBERS)
+#
+# AND THAT SENTENCE IS BEING CASHED IN RIGHT NOW (Stage 6b, 2026-09-06). Step 1.2 took
+# `development` out of SMUS_MEMBERS, but `DataScientistAccess` stays assigned to that account
+# until step 2.1 - so the two lists diverge for one pass, and the rule above says this one
+# follows the ASSIGNMENTS. Hence the literal below instead of the derivation: the object must
+# keep being declared while a permission set still references it by name. Step 2.2 restores
+# `list(SMUS_MEMBERS)` once the assignment is gone, and destroys the object in the commit after.
+# Deriving it here instead would leave development/foundation/ carrying a destroy blocked by
+# `prevent_destroy` for a whole pass - loud rather than dangerous, and avoidable.
+PERSONA_VENDING_ACCOUNTS = ["sandbox", "development"]
 
 # Subnets anchor on ZONE IDS, never on AZ names and never on list position (Stage 3 step 1.5,
 # settled by 1b step 6; ./aws/AZs.py is the measurement). Authored per account because a

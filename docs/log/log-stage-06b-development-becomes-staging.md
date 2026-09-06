@@ -220,3 +220,52 @@ branch, edit, generate, init, plan to a file outside the repository, apply exact
   that only knows what it expects cannot report what it found. **`0 check(s) FAILED`** afterwards.
   This is the third instrument pass 5 would have re-scoped four passes too late, and the stage now says so
   at the head of that pass.
+
+---
+
+## 2026-09-06 — step 1.2: the eleven blueprint configurations and their grants
+
+*Provenance: the authorization is the user's, for this specific apply; the edits, both plans, the apply and
+every read-back are Claude's. Applied as the **infrastructure user**, account **Development**, permission
+set **`InfrastructureAccess`** (profile `awsds-infra-dev`). The vocabulary edit that precedes it is
+1.6's, taken here as the corrected stage says.*
+
+- **[Claude] The vocabulary edit, one commit**: `development` out of **both** `SMUS_MEMBERS` and
+  `SMUS_ASSOCIATED`. Regenerated tfvars: `blueprints_enabled = false` for the member slice,
+  `profiles_enabled` still **true** for governance, and its `members` map down to `sandbox` alone.
+- **[Claude] The vocabulary told me not to shrink a third list, and it was right.** The derivation
+  `PERSONA_VENDING_ACCOUNTS = list(SMUS_MEMBERS)` would have dropped `persona_vending_policy_name` from
+  `development/foundation/` at this moment — while `DataScientistAccess` is still assigned to that account
+  until step 2.1 — leaving the slice carrying a destroy blocked by `prevent_destroy` for a whole pass. The
+  comment above that constant already said what to do: *"THIS LIST FOLLOWS THE ASSIGNMENTS, not the
+  members"*. Replaced by the literal for the window, with its expiry written into the comment; step 2.2
+  restores the derivation.
+- **[Claude] The two gates before the apply, both `No changes`**: `data-governance/governance/` (which is
+  1.6's proof that `profiles_enabled` did not flip and `experimentation` survived) and
+  `development/foundation/` (the payoff of the paragraph above).
+- **[Claude] Plan: `0 to add, 1 to change, 22 to destroy`**, read out of the saved plan before applying:
+
+  ```
+  delete   awscc_datazone_environment_blueprint_configuration  x11
+  delete   awscc_datazone_policy_grant                         x11
+  update   aws_kms_key                                         x1
+             module.sagemaker_prereqs.module.project_key.aws_kms_key.this
+  ```
+
+  The `1 to change` is the project CMK losing the domain execution role from
+  `AllowKmsKeyUsageForSageMakerDomain` and every statement gated on the domain id — predicted in the
+  preparation sitting by reading the module, confirmed here by the plan.
+- **[user]** Authorized the apply. **[Claude]** Applied the saved plan. **One apply, one plan — Recipe F
+  was not needed**, which answers this stage's verification 1: the provider orders each grant before its
+  configuration by itself. Re-plan **`No changes`**.
+- **[Claude] Read-back (step 1.3), and the step had asked the second call for an answer it cannot give.**
+  `list-environment-blueprint-configurations` from the member returns **0 items**, succeeding — the
+  association is still in place, which is what step 1.4 removes. But `list-policy-grants` on the grant's
+  own entity raises
+  `ValidationException: Environment Blueprint Configuration with id: 4k186sfh08eqxc does not exist in
+  account: <Development Account>` — it **cannot** return empty, because the grants `for_each` rides the
+  configurations and the entity they hang off went with them. An error and an empty list are different
+  outcomes; only one of them was available here, and the stage now says which call gives which.
+- **[Claude] `./aws/studio.py` after the apply: `0 check(s) FAILED`.** `US-3` for this account reads
+  `note — none - the association exists (step 1.3, measured above), so what is left is step 1.4`, which is
+  the intermediate state named correctly. Unlike `US-4` at step 1.1, this check already had the branch.
