@@ -502,11 +502,17 @@ def tfvars_values(account: str, slice_name: str) -> dict:
             # three, the key stops naming a VPC - which is why 0.6 moves the peering LIST here
             # and generates both sides from it. Until then this derivation is deliberately the
             # old one, so 0.2 changes the table without changing a single generated file.
-            values["peers"] = {
-                acct: {"profile": PROFILES[acct], "env": ENV_TOKENS[acct]}
-                for acct in vpc_bearing_accounts()
-                if acct in PROFILES
-            }
+            # EMITTED TO `foundation` ONLY, and 3.1 is what widens it. The hub accepts four
+            # peerings and will need a map of its own, but that map is the 3.1 MATRIX rather
+            # than "every VPC-bearing account" - so emitting this shape into a slice that has
+            # no peers.tf yet would declare a variable nothing consumes, which tflint rejects
+            # and which would train the reader to ignore an unused input.
+            if slice_name == "foundation":
+                values["peers"] = {
+                    acct: {"profile": PROFILES[acct], "env": ENV_TOKENS[acct]}
+                    for acct in vpc_bearing_accounts()
+                    if acct in PROFILES
+                }
         else:
             # egress/ (pass 3) - and Stage 4's vpn/ when it decides - read foundation/'s
             # [P] facts through terraform_remote_state instead of carrying copies. The

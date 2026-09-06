@@ -254,6 +254,13 @@ SLICES = [
     Slice("sandbox", "foundation", PERSISTENT, "VPC 3x2, gateway endpoints, sandbox.internal"),
     Slice("staging", "foundation", PERSISTENT, "VPC 3x2, gateway endpoints, no zone (4.2)"),
     Slice("production", "foundation", PERSISTENT, "VPC 3x2, gw endpoints, prod+pages.internal"),
+    # Stage 6c step 1.2 (2026-09-06) - D38's hub. The ONLY VPC in the estate whose public tier
+    # routes to an internet gateway; every other one is private by that route's ABSENCE. Free at
+    # rest like every other foundation-shaped slice: the metered things (the proxy, the VPN host)
+    # are [D]/[E] slices of their own that live inside it.
+    Slice(
+        "production", "networking", PERSISTENT, "VPC-Networking 3x2: the estate's only IGW route"
+    ),
     # Stage 3 pass 3 (2026-08-16). The endpoint counts are step 8.3's per-role lists:
     # core 8 + the account's extras; every row includes a mode-A NAT (0.050 = 0.045 + IPv4).
     Slice("sandbox", "egress", EPHEMERAL, "NAT + 11 interface endpoints (8.3)", 0.160),

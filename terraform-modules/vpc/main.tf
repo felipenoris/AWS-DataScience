@@ -11,8 +11,12 @@
 
 locals {
   # THE ONE PLACE A NAME IS BUILT (6c step 0.4). Every name and tag below reads this rather than
-  # re-deriving `${local.name_prefix}`, so a second VPC in one account is one input away and there is
-  # no site left that could be missed (Lesson 14).
+  # re-deriving "awsds-<env>", so a second VPC in one account is one input away and there is no
+  # site left that could be missed (Lesson 14).
+  #
+  # This comment said "rather than re-deriving `${local.name_prefix}`" in v0.2.0 - the mechanical
+  # replacement that created the local hit the sentence describing it, and a comment that names
+  # the thing it is contrasting against is worth more than one that names itself.
   name_prefix = var.name_suffix == "" ? "awsds-${var.env}" : "awsds-${var.env}-${var.name_suffix}"
 
   private_cidrs  = [for i in range(2) : cidrsubnet(var.vpc_cidr, 2, i)]
@@ -107,7 +111,11 @@ resource "aws_route_table" "public" {
   }
 }
 
+# THE ONE ROUTE THAT MAKES A VPC PUBLIC (6c step 1.3). count rather than a separate resource so
+# the address stays stable for a caller that later flips the flag either way.
 resource "aws_route" "public_internet" {
+  count = var.public_internet_route ? 1 : 0
+
   route_table_id         = aws_route_table.public.id
   destination_cidr_block = "0.0.0.0/0"
   gateway_id             = aws_internet_gateway.this.id

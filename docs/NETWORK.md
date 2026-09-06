@@ -276,13 +276,14 @@ distinguishable outcomes:
 
 ## 1. The address plan
 
-**As code** — [`backend.py`](../scripts/tfhygiene/backend.py) `CIDRS`, `ZONE_IDS`, `WIREGUARD_PEER_CIDR`; the cut inside a VPC is [`vpc/main.tf`](../terraform-modules/vpc/main.tf). **Measured 2026-08-23**: every subnet below exists with exactly this CIDR, name and zone id (`./aws/networking.py` `NT-5` — no overlap).
+**As code** — [`backend.py`](../scripts/tfhygiene/backend.py) `VPC_CIDRS` (keyed by **(account, slice)** since 6c step 0.2 — Production holds three), `ZONE_IDS`, `WIREGUARD_PEER_CIDR`; the cut inside a VPC is [`vpc/main.tf`](../terraform-modules/vpc/main.tf). **Measured 2026-08-23**: every subnet below exists with exactly this CIDR, name and zone id (`./aws/networking.py` `NT-5` — no overlap).
 
-| Account | VPC | private (apps, runners, GitLab) — `/18` per AZ | isolated (no route out) — `/20` per AZ | public (IGW) — `/24` per AZ |
+| Account / slice | VPC | private (apps, runners, GitLab) — `/18` per AZ | isolated (no route out) — `/20` per AZ | public (IGW) — `/24` per AZ |
 |---|---|---|---|---|
 | **Sandbox 1** | `10.20.0.0/16` | `10.20.0.0/18` az1 · `10.20.64.0/18` az2 | `10.20.128.0/20` az1 · `10.20.144.0/20` az2 | `10.20.160.0/24` az1 · `10.20.161.0/24` az2 |
-| **Production** | `10.30.0.0/16` | `10.30.0.0/18` · `10.30.64.0/18` | `10.30.128.0/20` · `10.30.144.0/20` | `10.30.160.0/24` · `10.30.161.0/24` |
-| **Staging** | `10.40.0.0/16` **reserved** | — account unvended; never peered to anything, by decision (D20) | | |
+| **Production** `foundation/` — **VPC-SharedServices** | `10.30.0.0/16` | `10.30.0.0/18` · `10.30.64.0/18` | `10.30.128.0/20` · `10.30.144.0/20` | `10.30.160.0/24` · `10.30.161.0/24` |
+| **Production** `networking/` — **VPC-Networking**, D38's hub (built 2026-09-06) | `10.31.0.0/16` | `10.31.0.0/18` · `10.31.64.0/18` | `10.31.128.0/20` · `10.31.144.0/20` | `10.31.160.0/24` · `10.31.161.0/24` — **the estate's only IGW route lives here** |
+| — | `10.40.0.0/16` **UNALLOCATED** | reserved for a `Staging` vend the account cap refused; 6b renamed `Development` instead, so it belongs to nobody and **stays that way** (6c step 0.2). `NT-3`/`NT-5`/`NT-6` are what measure that AWS agrees | | |
 | **Staging** | `10.50.0.0/16` | `10.50.0.0/18` · `10.50.64.0/18` | `10.50.128.0/20` · `10.50.144.0/20` | `10.50.160.0/24` · `10.50.161.0/24` |
 | **WireGuard peers** | `10.90.0.0/24` | `.1` the host's `wg0` · `.2` `mbp` · `.3` `raspi` — **never seen inside AWS**: the host masquerades, and no route table anywhere names this range (`NT-4`) | | |
 
@@ -321,7 +322,7 @@ distinguishable outcomes:
 
 | Slice | Layer | What it creates on the network |
 |---|---|---|
-| `sandbox/foundation/` · `staging/foundation/` · `production/foundation/` | `[P]` | one `terraform-modules/vpc` each — the VPC, six subnets, the IGW, four route tables, the two gateway endpoints with their policies, the tier and endpoint security groups, the flow log. Plus, per account: the private zones, the peering **requesters** (Sandbox, Staging) and the **accepter** with every route and zone association (Production) |
+| `sandbox/foundation/` · `staging/foundation/` · `production/foundation/` · **`production/networking/`** | `[P]` | one `terraform-modules/vpc` each — the VPC, six subnets, the IGW, four route tables, the two gateway endpoints with their policies, the tier and endpoint security groups, the flow log. **`networking/` is the same module with `name_suffix = "networking"` and nothing else of its own** (2026-09-06): no private zone, no peering, and — deliberately — no interface endpoint ever, which is the structural repair of Lessons 40-43. Its public tier is the one that keeps `public_internet_route = true` when pass 5 turns the spokes off. Plus, per account: the private zones, the peering **requesters** (Sandbox, Staging) and the **accepter** with every route and zone association (Production) |
 | `sandbox/foundation/` alone | `[P]` | the VPN anchors: the Elastic IP `52.89.212.1`, the security group `awsds-sandbox-vpn` (the estate's only world-open rule), the host-key secret |
 | `sandbox/egress/` · `staging/egress/` · `production/egress/` | `[E]` | one `terraform-modules/vpc-egress` each — the NAT gateway with its own Elastic IP, the private tier's `0.0.0.0/0`, the interface endpoints with their policy, and (Interactive only) the DNS Firewall rule group, its two domain lists and the query log |
 | `sandbox/vpn/` | `[D]` | one `terraform-modules/wireguard` — the host, its `wg0`, its masquerade rules for the tunnel **and** for the isolated tier, its handshake log and alarm |
