@@ -114,3 +114,13 @@ output "proxy_access_log_group_arn" {
   description = "The same group's ARN - the proxy's role is scoped to exactly this one, with no delete."
   value       = aws_cloudwatch_log_group.proxy_access.arn
 }
+
+output "wireguard_eip_allocation_id" {
+  description = "The [P] Elastic IP allocation - production/vpn/ associates it with the [D] host. NOT the id it had in Sandbox: a transfer mints a new one (measured 2026-09-06, the stage's verification 1)."
+  value       = aws_eip.wireguard.allocation_id
+}
+
+output "wireguard_eip_public_ip" {
+  description = "THE ADDRESS EVERY CLIENT .conf PINS, and the one thing the account move does not change. Read by identity/sso/ and data-governance/data/ through terraform_remote_state once VPN_HOMES flips at 4.12 - never pasted, because a paste is a copy nothing keeps in step and the failure mode is every persona denied every API call."
+  value       = aws_eip.wireguard.public_ip
+}
