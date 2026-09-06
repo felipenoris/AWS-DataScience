@@ -183,21 +183,46 @@ probe("ou", "prod", "deny", "ValidationException|does not exist", "blocked",
        "--role-arn", "arn:aws:iam::@ACCT@:role/awsds-canary-nonexistent",
        "--region", "us-west-2"])
 
+# THE SECOND WORKLOADS ACCOUNT, AND IT IS A DIFFERENT QUESTION FROM THE THREE ROWS ABOVE
+# (added 2026-09-06, Stage 6b step 3.7). Those ask whether the Workloads DOCUMENT is in force;
+# this one asks whether the account Stage 6b MOVED actually acquired it - a question about a
+# membership rather than about a policy, and one worth keeping permanently because this is the
+# account that will hold deploy credentials. `datazone:ListDomains` is the decisive row of the
+# three: it is `ro`, it costs nothing, and DataZone is precisely the surface this stage spent
+# pass 1 removing from the account by hand.
+probe("ou", "staging", "deny", None, "ro",
+      "workloads: datazone:ListDomains in the account Stage 6b moved",
+      ["datazone", "list-domains", "--region", "us-west-2"])
+
 # --- Interactive: decision 1 costs no feature, and that is the point of the two allows.
-#     The nonexistent role is what keeps an "allowed" outcome from billing a notebook.
-probe("ou", "dev", "deny", "ValidationException|does not exist", "blocked",
-      "interactive: sagemaker:CreateNotebookInstance (no such role)",
-      ["sagemaker", "create-notebook-instance",
-       "--notebook-instance-name", "awsds-canary-probe",
-       "--instance-type", "ml.t3.medium",
-       "--role-arn", "arn:aws:iam::@ACCT@:role/awsds-canary-nonexistent",
-       "--region", "us-west-2"])
-probe("ou", "dev", "allow", "ValidationException|ResourceNotFound|does not exist", "blocked",
-      "interactive: sagemaker:CreateSpace still works",
+#     The nonexistent domain is what keeps an "allowed" outcome from billing a space.
+#
+#     THE SAMPLE CHANGED ON 2026-09-06 (Stage 6b step 3.7), AND IT IS NOW AN INHERITED ONE.
+#     Both rows used to run in `Development Account`, which sat DIRECTLY in Interactive. That
+#     account is now `Staging Account` in Workloads, and NO account sits directly in
+#     Interactive any more - `Sandbox Account 1`, in the nested `Sandboxes` OU, is the only
+#     sample the Interactive document has left. The claim is unweakened and it is worth saying
+#     why rather than leaving it to be re-derived: an SCP can only DENY, `Sandboxes` carries no
+#     document of its own (the row below this block is that evidence), so an ALLOW observed
+#     under Interactive+Sandboxes is at least as strong as one observed under Interactive alone.
+#     What is genuinely gone is the direct-attachment sample, and no account can restore it.
+probe("ou", "sandbox1", "allow", "ValidationException|ResourceNotFound|does not exist",
+      "blocked",
+      "interactive (inherited): sagemaker:CreateSpace still works",
       ["sagemaker", "create-space", "--domain-id", "d-0000000000000",
        "--space-name", "awsds-canary-probe", "--region", "us-west-2"])
-probe("ou", "dev", "allow", None, "ro", "interactive: datazone:ListDomains still works",
+probe("ou", "sandbox1", "allow", None, "ro",
+      "interactive (inherited): datazone:ListDomains still works",
       ["datazone", "list-domains", "--region", "us-west-2"])
+
+# THE THIRD ROW OF THIS BLOCK WAS DELETED RATHER THAN RETARGETED (2026-09-06). It was
+# `dev` denied on sagemaker:CreateNotebookInstance, attributed to DenyClassicNotebookInstances
+# in the Interactive document. Moved to Workloads the account keeps the deny but from a
+# DIFFERENT Sid - DenyInteractiveSageMakerSurface carries CreateNotebookInstance and
+# CreatePresignedNotebookInstanceUrl, exactly the two actions the Interactive one carried - so
+# retargeting it would have produced a THIRD copy of a question `prod` and `sandbox1` already
+# ask two rows above and one row below. The Interactive half is the sandbox1 row below; the
+# Workloads half is the prod row above.
 
 # --- Sandboxes is governed by INHERITANCE and carries no policy of its own. This probe is
 #     the whole evidence for that, and it is why sandbox1 appears here at all.
@@ -233,12 +258,9 @@ probe("ou", "sandbox1", "deny", "ValidationException|does not exist", "blocked",
 #
 #     THE WORKGROUP DOES NOT EXIST, which is what makes these `blocked`: an authorized call
 #     cannot start a Spark session and cannot bill a DPU-hour.
-probe("ou", "dev", "deny", "InvalidRequestException|WorkGroup is not found", "blocked",
-      "interactive: athena:StartSession (1.6; Athena names no policy - see prod row)",
-      ["athena", "start-session", "--work-group", "awsds-canary-probe",
-       "--engine-configuration",
-       '{"CoordinatorDpuSize":1,"MaxConcurrentDpus":2,"DefaultExecutorDpuSize":1}',
-       "--region", "us-west-2"])
+#     THE INTERACTIVE ROW IS NOW THE INHERITED ONE (2026-09-06, step 3.7). A `dev` row stood
+#     here and measured the same call in the account that sat directly in Interactive; that
+#     account is in Workloads now and the row below is the whole Interactive half.
 probe("ou", "sandbox1", "deny", "InvalidRequestException|WorkGroup is not found", "blocked",
       "sandboxes: athena:StartSession inherits Interactive's deny (1.6)",
       ["athena", "start-session", "--work-group", "awsds-canary-probe",
@@ -268,15 +290,16 @@ probe("ou", "canary", "allow", "InvalidRequestException|WorkGroup is not found",
 # --- 1.6's NEGATIVE probe, and it is the one that matters most: the amendment must not have
 #     taken D13's query path with it. Athena SQL rides StartQueryExecution on the required
 #     `athena` API endpoint; the three Spark session surfaces are a different product wearing
-#     the same service name. If this row ever flips to a denial, 1.6 broke the lake read.
-#     ONE ROW, NOT TWO: Sandbox's half already exists as 4e's contrast probe further down
-#     ("sandboxes: athena:StartQueryExecution still authorized"), and it measures exactly this
-#     - a second copy would be the same call under two labels, which makes a count of probes
-#     stop meaning a count of questions.
-probe("ou", "dev", "allow", "InvalidRequestException|WorkGroup is not found", "blocked",
-      "interactive: athena:StartQueryExecution STILL WORKS (1.6's negative probe - D13)",
-      ["athena", "start-query-execution", "--query-string", "SELECT 1",
-       "--work-group", "awsds-canary-probe", "--region", "us-west-2"])
+#     the same service name. If that row ever flips to a denial, 1.6 broke the lake read.
+#
+#     IT IS NOW 4e'S CONTRAST ROW AND NOTHING ELSE (2026-09-06, step 3.7), and the reason is
+#     the one this comment already gave when there were two: a `dev` row used to carry the
+#     question because Interactive had a direct member; it does not any more, and the only
+#     Interactive account left is Sandbox 1 - where the identical call, with the identical
+#     expectation, already runs as "sandboxes: athena:StartQueryExecution still authorized
+#     (4e contrast)" further down. Retargeting rather than deleting would have put the same
+#     call in the same account under two labels, which makes a count of probes stop meaning a
+#     count of questions. If 1.6 ever breaks D13's read, THAT row is what goes red.
 
 # --- Data: nothing runs in the lake account
 probe("ou", "data", "deny", None, "dryrun", "data: ec2:RunInstances",
@@ -392,7 +415,7 @@ probe("ou", "identity", "allow", None, "ro", "floor: s3:ListAllMyBuckets",
       ["s3api", "list-buckets"])
 probe("ou", "identity", "allow", None, "ro", "floor: ec2:DescribeVpcs",
       ["ec2", "describe-vpcs", "--region", "us-west-2"])
-probe("ou", "dev", "allow", None, "ro", "floor: ec2:DescribeVpcs",
+probe("ou", "staging", "allow", None, "ro", "floor: ec2:DescribeVpcs",
       ["ec2", "describe-vpcs", "--region", "us-west-2"])
 probe("ou", "prod", "allow", None, "ro", "floor: ec2:DescribeVpcs",
       ["ec2", "describe-vpcs", "--region", "us-west-2"])
@@ -441,7 +464,7 @@ probe("region", "data", "deny", None, "dryrun", "region: us-east-1 denied in Dat
 probe("region", "identity", "deny", None, "dryrun", "region: us-east-1 denied in Identity",
       ["ec2", "create-key-pair", "--key-name", "awsds-canary-probe", "--dry-run",
        "--region", "us-east-1"])
-probe("region", "dev", "deny", None, "dryrun", "region: us-east-1 denied in Development",
+probe("region", "staging", "deny", None, "dryrun", "region: us-east-1 denied in Staging",
       ["ec2", "create-key-pair", "--key-name", "awsds-canary-probe", "--dry-run",
        "--region", "us-east-1"])
 probe("region", "sandbox1", "deny", None, "dryrun",
@@ -460,8 +483,8 @@ probe("region", "identity", "allow", None, "dryrun",
       "region: us-west-2 still works in Identity",
       ["ec2", "create-key-pair", "--key-name", "awsds-canary-probe", "--dry-run",
        "--region", "us-west-2"])
-probe("region", "dev", "allow", None, "dryrun",
-      "region: us-west-2 still works in Development",
+probe("region", "staging", "allow", None, "dryrun",
+      "region: us-west-2 still works in Staging",
       ["ec2", "create-key-pair", "--key-name", "awsds-canary-probe", "--dry-run",
        "--region", "us-west-2"])
 probe("region", "sandbox1", "allow", None, "dryrun",
@@ -479,7 +502,7 @@ probe("region", "data", "allow", None, "ro", "region floor: iam:ListRoles in Dat
       ["iam", "list-roles", "--max-items", "1"])
 probe("region", "identity", "allow", None, "ro", "region floor: iam:ListRoles in Identity",
       ["iam", "list-roles", "--max-items", "1"])
-probe("region", "dev", "allow", None, "ro", "region floor: iam:ListRoles in Development",
+probe("region", "staging", "allow", None, "ro", "region floor: iam:ListRoles in Staging",
       ["iam", "list-roles", "--max-items", "1"])
 probe("region", "sandbox1", "allow", None, "ro", "region floor: iam:ListRoles in Sandbox 1",
       ["iam", "list-roles", "--max-items", "1"])
@@ -535,8 +558,8 @@ probe("region", "canary", "allow", None, "ro",
 probe("rcp", "canary", "allow", None, "ro",
       "rcp floor: credentials still vend in Policy Canary",
       ["sts", "get-caller-identity"])
-probe("rcp", "dev", "allow", None, "ro",
-      "rcp floor: credentials still vend in Development",
+probe("rcp", "staging", "allow", None, "ro",
+      "rcp floor: credentials still vend in Staging",
       ["sts", "get-caller-identity"])
 probe("rcp", "data", "allow", None, "ro",
       "rcp floor: credentials still vend in Data Governance",
@@ -623,31 +646,31 @@ probe("tags", "canary", "allow", None, "dryrun",
        "ResourceType=instance,Tags=[{Key=Environment,Value=org},"
        "{Key=Project,Value=AWS-DataScience}]"])
 
-# The same triple in Development. This is the half that says the document constrains rather
+# The same triple in Staging. This is the half that says the document constrains rather
 # than forbids: Stage 4's VPN endpoint and Stage 7's GitLab both launch instances here, and
 # an over-broad Resource element (`*` instead of `instance/*`) denies EVERY launch, tagged
 # or not, because aws:RequestTag does not populate for the subnet and security group the
 # same call also references. The third row is the only thing that distinguishes the two.
-probe("tags", "dev", "deny", None, "dryrun", "tags: RunInstances with NO tags (Development)",
+probe("tags", "staging", "deny", None, "dryrun", "tags: RunInstances with NO tags (Staging)",
       ["ec2", "run-instances", "--dry-run", "--image-id", "@AMI@",
        "--instance-type", "t3.micro", "--subnet-id", "@SUBNET@",
        "--region", "us-west-2"])
 
-probe("tags", "dev", "deny", None, "dryrun",
-      "tags: RunInstances with Project ONLY (Development)",
+probe("tags", "staging", "deny", None, "dryrun",
+      "tags: RunInstances with Project ONLY (Staging)",
       ["ec2", "run-instances", "--dry-run", "--image-id", "@AMI@",
        "--instance-type", "t3.micro", "--subnet-id", "@SUBNET@",
        "--region", "us-west-2",
        "--tag-specifications",
        "ResourceType=instance,Tags=[{Key=Project,Value=AWS-DataScience}]"])
 
-probe("tags", "dev", "allow", None, "dryrun",
-      "tags: a properly tagged launch still works (Development)",
+probe("tags", "staging", "allow", None, "dryrun",
+      "tags: a properly tagged launch still works (Staging)",
       ["ec2", "run-instances", "--dry-run", "--image-id", "@AMI@",
        "--instance-type", "t3.micro", "--subnet-id", "@SUBNET@",
        "--region", "us-west-2",
        "--tag-specifications",
-       "ResourceType=instance,Tags=[{Key=Environment,Value=development},"
+       "ResourceType=instance,Tags=[{Key=Environment,Value=staging},"
        "{Key=Project,Value=AWS-DataScience}]"])
 
 # ==========================================================================
@@ -712,18 +735,18 @@ probe("decl", "canary", "allow", None, "ro", "decl floor: read serial console st
       ["ec2", "get-serial-console-access-status", "--region", "us-west-2"])
 probe("decl", "canary", "allow", None, "ro", "decl floor: read IMDS defaults",
       ["ec2", "get-instance-metadata-defaults", "--region", "us-west-2"])
-probe("decl", "dev", "allow", None, "ro", "decl floor: read IMDS defaults (Development)",
+probe("decl", "staging", "allow", None, "ro", "decl floor: read IMDS defaults (Staging)",
       ["ec2", "get-instance-metadata-defaults", "--region", "us-west-2"])
 
 # Launching with IMDSv1 explicitly requested. This is NOT expected to be denied and the row
 # says so: without http_tokens_enforced the account default is a default, and a launch may
 # override it. The row exists so that the day 7.8's follow-up sets http_tokens_enforced, the
 # expectation flips to `deny` and the battery measures the change instead of assuming it.
-probe("decl", "dev", "allow", None, "dryrun",
+probe("decl", "staging", "allow", None, "dryrun",
       "decl: a launch may still ask for IMDSv1 (no http_tokens_enforced yet)",
       ["ec2", "run-instances", "--dry-run", "--image-id", "@AMI@",
        "--instance-type", "t3.micro", "--subnet-id", "@SUBNET@",
        "--region", "us-west-2", "--metadata-options", "HttpTokens=optional",
        "--tag-specifications",
-       "ResourceType=instance,Tags=[{Key=Environment,Value=development},"
+       "ResourceType=instance,Tags=[{Key=Environment,Value=staging},"
        "{Key=Project,Value=AWS-DataScience}]"])

@@ -465,6 +465,12 @@ account by the exact string `Development Account` behind a precondition that fai
   AWS documents this as the prerequisite for using the `--account-id` parameter of the Account Management
   API against a member: management (or delegated-admin) credentials, **all features enabled**, trusted
   access on. Success produces no output. **[Claude]** restates `INV-09`'s count afterwards.
+- **3.2 — DONE 2026-09-06 by the user**, and the **root e-mail was changed in the same sitting**,
+  which the step did not ask for and is worth recording as its own fact: the account now carries a
+  `staging`-flavoured root address, so the vended-name pattern and the root address agree again.
+  **Read back the same day** with `./aws/rename-check.py`: `RC-1 pass — Staging Account`, resolved by
+  **exact** match against the ACTIVE roster. No propagation delay was observed between the console act
+  and the read.
 - **3.2 — [user] Rename the account**, Management: *Organizations → AWS accounts → select the member →
   Actions → Update account name*, or
 
@@ -476,10 +482,30 @@ account by the exact string `Development Account` behind a precondition that fai
   management account cannot pass **its own** id. **Keep the ` Account` suffix** — it is the vended-name
   pattern the SSO slice measured. **A propagation delay is not documented**: read the name back with
   `aws organizations list-accounts` rather than re-issuing the call, and record what the read showed.
+- **3.3 — DONE 2026-09-06.** Both **values** changed, both **keys** left alone (`development` stays the
+  for_each key until 4.6 renames it behind a `moved {}` block). `identity/sso/` re-planned as
+  `awsds-infra-identity`: **`No changes`** — the precondition resolves the account by the new name and
+  not one assignment moved, which is the whole gate.
+  - **A third site was corrected in the same commit, and it is prose rather than code**:
+    `aws/import-ids.py`'s header said *"`Staging` arrives at the vend"* — the vend the quota refused.
+    It now says the row's key is the **AWS name** and its value the **folder**, that the two disagree on
+    purpose between 3.2 and 4.6, and that matching the row to the slice is the reason the row exists.
 - **3.3 — [Claude] Re-point the two name-keyed sites, same sitting**: in
   `terraform-live/identity/sso/locals.tf` change the **value** `development = "Development Account"` to
   `"Staging Account"` (not the key), and update `aws/import-ids.py`. Re-plan `identity/sso/` and expect the
   precondition to pass again with **`No changes`** to the assignments.
+- **3.4 — the account IS in `Workloads`, measured two independent ways on 2026-09-06 — but WHICH PATH
+  was taken is not a thing this side can read, and that is the open half.** The two readings:
+  `./aws/rename-check.py` `RC-2 pass` from `organizations list-parents`, and — the stronger one, because
+  it is the ceiling answering rather than the directory — the battery's `region` phase attributes the
+  us-east-1 deny in this account to **`p-i0ney7mx`, the same policy id Production returns**, where
+  `Sandbox Account 1` returns a different one. Same id, same OU, said by a denial rather than by a list.
+  - **What no instrument here can distinguish** is Control Tower *Update account* from
+    `organizations move-account`, and the difference is not cosmetic: the second leaves the Account
+    Factory **provisioned product** pointing at the old OU under the old name, and raises
+    `Moved member account` drift when the two OUs differ in configuration — which auto-enrollment
+    (**ON**, 0.5b) re-baselines but does not un-drift. Both are visible only from Management, which holds
+    **no CLI profile**, so this is a **console reading owed by the user**, not a gap in the tree.
 - **3.4 — [user] Move the OU**, Control Tower console: *Organization → the account → **Update account** →
   registered OU = `Workloads`*, or the Service Catalog update of the provisioned product with
   `ManagedOrganizationalUnit = Workloads`. **Never `aws organizations move-account`** — that path raises
@@ -493,9 +519,59 @@ account by the exact string `Development Account` behind a precondition that fai
   e-mail field as *not* following an out-of-band change; whether `AccountName` does is not documented. If
   it refuses, record the divergence as a permanent property of the provisioned product — the treatment D32
   gives the direct assignment.
+- **3.6 — DONE 2026-09-06, and the trigger did NOT fire — with a caveat that is the honest half of the
+  answer.** `./aws/list-identities.py` §5.2: `Staging Account` carries **six** assignments — the three
+  landing-zone group ones (`AWSOrganizationsFullAccess`, `AWSPowerUserAccess`, `AWSReadOnlyAccess`) and
+  this repository's three (`InfrastructureAccess`, `DeploymentManagerAccess`,
+  `DataScientistStagingAccess`). **No direct `USER` assignment, and no `AWSAdministratorAccess` at all**,
+  so `AWS_STATE.md`'s roster row and `INV-05` stand unedited, and the one surviving D32 direct assignment
+  is still `Policy Canary`'s alone.
+  - **This does not yet answer Stage 1b verification (vi)**, and saying so is the point. That
+    verification watches for the direct assignment returning *when an account update runs*. Whether an
+    account update ran at all is exactly what 3.4 above cannot read from this side. If the user took the
+    Control Tower path, this reading answers (vi) **in the negative** and it can be closed; if the move
+    was `organizations move-account`, the event never happened and (vi) is still waiting — a
+    verification that reads the same on "it did not fire" and "it was never triggered" is not yet a
+    verification (Lesson 13).
 - **3.6 — [Claude] Check D32's trigger**: `./aws/list-identities.py`. An *account update* is exactly what
   re-creates the direct `AWSAdministratorAccess` assignment (Stage 1b verification (vi)); if it came back,
   it is **expected**, and the row is restated rather than removed.
+- **3.7 — DONE 2026-09-06. Full battery, every phase: `89 as expected, 0 unexpected, 10 not measured`**
+  — all ten notes are the by-design ones (`EXC-03`'s four `DENY-NOT-SCP` Athena rows, six `UNTESTED` in
+  accounts with no subnet). **The token is `staging` in both files** and no `dev` string survives
+  anywhere under `aws/probes/`.
+  - **This step's own first sentence was wrong and 3.8 is why**: it predicted the account would **lose**
+    `DenyAthenaSparkStartSession` because *"that Sid exists only in the `Interactive` document"*. It did
+    not — **3.8 put the Sid into the Workloads document three hours earlier**, deliberately before the
+    move, so the account crossed with the deny rather than into a gap. The rest of the prediction held
+    exactly: it lost `DenyClassicNotebookInstances` (fully absorbed) and gained
+    `DenyInteractiveSageMakerSurface` and `DenyDataZoneEntirely`.
+  - **The `ou` phase was not a retarget, it was a re-composition — five rows, and only one of them moved
+    to `staging`.** A token flip alone would have produced three copies of questions `prod` and
+    `sandbox1` already ask, and a battery whose probe count stops meaning a question count is the failure
+    this file's own comments warn about:
+    - **Two `allow` rows moved to `sandbox1`** (`sagemaker:CreateSpace`, `datazone:ListDomains`) — the
+      block's whole point is that decision 1 *costs no feature*, and deleting them would have left the
+      Interactive document with no permissive evidence at all. **Both passed.** The sample is now an
+      **inherited** one, and it is not weaker: an SCP can only deny, `Sandboxes` carries no document of
+      its own (the row below them is that evidence), so an `allow` under Interactive+Sandboxes is at
+      least as strong as one under Interactive alone. What is genuinely gone is the direct-attachment
+      sample, and **no account can restore it** — nothing sits directly in `Interactive` any more.
+    - **Three rows deleted, not moved**: `sagemaker:CreateNotebookInstance` (the same question, from a
+      different Sid, already asked by `prod` and `sandbox1`), `athena:StartSession` (`sandbox1` carries
+      the Interactive half, `prod` the Workloads half), and 1.6's `athena:StartQueryExecution` negative
+      probe — whose own comment already said Sandbox's identical row exists as 4e's contrast. That row
+      is now the **only** place D13's query path is watched, and it passed.
+    - **One row added for `staging`**, and it asks something none of the others do: not *is the Workloads
+      document in force* but *did the account this stage moved actually acquire it*. It is
+      `datazone:ListDomains`, `ro`, and it came back **`DENY-SCP p-83t232f4` — the same policy id
+      Production's three rows return**. That is 3.4's attribution, and it is worth keeping permanently:
+      this is the account that will hold deploy credentials.
+  - **The silent half of the flip was the tag values, and both were caught**: the `tags` allow-probe and
+    the `decl` IMDSv1 probe hard-coded `Environment=development` in their `--tag-specifications`. The tag
+    policy allows all six values org-wide, so neither would have *failed* after the flip — they would
+    have quietly asserted a value nothing carries. Both now read `staging`, and `staging` is confirmed an
+    allowed value in `awsds-org-tag-policy.json`.
 - **3.7 — [Claude⚡] Re-run the battery**: `./aws/probes/scp-battery.py --phase ou` with the new `staging`
   token and **`Workloads` expectations**. Two consequences to record rather than discover: the account
   **loses** `DenyAthenaSparkStartSession` (that Sid exists only in the `Interactive` document) and **gains**

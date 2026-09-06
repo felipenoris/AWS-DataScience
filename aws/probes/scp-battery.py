@@ -67,7 +67,7 @@ PROFILES = {
     "canary": "awsds-policy-canary",
     "data": "awsds-infra-data",
     "identity": "awsds-infra-identity",
-    "dev": "awsds-infra-dev",
+    "staging": "awsds-infra-staging",
     "sandbox1": "awsds-infra-sandbox-1",
     "prod": "awsds-infra-prod",
 }

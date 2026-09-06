@@ -44,7 +44,7 @@ locals {
   # orphan).
   accounts = {
     sandbox           = "Sandbox Account 1"
-    development       = "Development Account"
+    development       = "Staging Account"
     "data-governance" = "Data Governance Account"
     production        = "Production Account"
     identity          = "Identity Account"

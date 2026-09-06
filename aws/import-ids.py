@@ -86,11 +86,17 @@ POLICY_TYPES = [
 # error, it plans a create beside an orphan.
 #
 # AN ACCOUNT MISSING FROM THIS TABLE IS NOT AN ERROR. Management, Audit, Log Archive and Policy
-# Canary hold no assignment this repository manages, and `Staging` arrives at the vend - the
-# emitted key says <UNMAPPED:...> so the line is unrunnable rather than plausible.
+# Canary hold no assignment this repository manages, and an unmapped name emits
+# <UNMAPPED:...> so the line is unrunnable rather than plausible.
+#
+# THE VALUE IS THE FOLDER AND THE KEY IS THE AWS NAME, WHICH IS WHY THEY DISAGREE TODAY
+# (2026-09-06). Stage 6b step 3.2 renamed the account to `Staging Account` while the folder
+# is still terraform-live/development/ and the sso/ assignment key is still `development`.
+# Step 4.6 renames both behind `moved {}` blocks; until then this row reads across the
+# seam on purpose, and matching it to the slice is the whole reason the row exists.
 ACCOUNT_FOLDER_BY_NAME = {
     "Sandbox Account 1": "sandbox",
-    "Development Account": "development",
+    "Staging Account": "development",
     "Data Governance Account": "data-governance",
     "Production Account": "production",
     "Identity Account": "identity",
