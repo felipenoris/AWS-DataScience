@@ -200,9 +200,15 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
 - **What SURVIVED is the load-bearing half:** the VPC keeps **10.50.0.0/16** (CIDR immutable), **both `[P]`
   gateway-endpoint ids** survived folder rename + state migration + token flip, and Production's peering
   kept its **`pcx-` id** through a `for_each` rename. **`10.40.0.0/16` is FREE — 6c step 0 spends it.**
-- **Owed, and only from Management (no CLI profile): step 3.5**, the Account Factory provisioned product's
-  parameters. It is also what closes **Stage 1b verification (vi)** — without it, "the direct
-  `AWSAdministratorAccess` did not come back" cannot be told from "the trigger never fired".
+- **STAGE 6b IS COMPLETE — 3.5 done 2026-09-06, nothing owed.** Two answers came out of it.
+  **(a) The provisioned product does NOT follow an out-of-band rename and CANNOT be made to** — Control
+  Tower renders `Display Name` and `Account Email` read-only, so it disagrees with Organizations on both
+  fields, permanently. Not drift.
+  **(b) Stage 1b verification (vi) CLOSED, affirmative:** a Control Tower *Update account* **re-asserts**
+  D32's direct `AWSAdministratorAccess` → infrastructure user `(USER)` assignment. **Do not delete it
+  again** (1b step 5.1's own instruction for this branch). **The absence of that assignment on the other
+  four vended accounts is NOT a control** — it survives only until each account's next update, so never
+  write a gate that assumes it. `Policy Canary`'s is now the only one permanent *by design*.
 - **Three times a stage step's RULE was right and its LIST was short**, each caught by saving the plan to a
   file and reading it: 4.4 named 5 replacements (8, all one class — the flow-log **IAM role** too); 4.5
   omitted that `development` is a **`for_each` key**, so as written it would have **deleted the peering**;
