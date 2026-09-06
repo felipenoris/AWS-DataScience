@@ -85,7 +85,23 @@ from awslib.report import Checks, Report, failed_calls_epilogue, note
 OUT_NAME = "dns-allowlist.txt"
 
 # The Interactive tier. production/egress/ never sets dns_firewall, so it has no list.
-SLICES = ("sandbox", "development")
+#
+# STAGE 6b STEP 5.1 SAID TO REMOVE THE `development` ROW RATHER THAN RETARGET IT, AND THAT WOULD
+# HAVE BEEN A BLIND SPOT (2026-09-06). Its reasoning is good - the account became the headless
+# `Staging`, and a DNS allow-list is a list of names a PERSON chose to reach from an interactive
+# session, while a deployment target resolves whatever its pipeline resolves. But the reasoning
+# is about the DESIGN and this tuple is about the CODE, and the code did not move:
+# `terraform-live/staging/egress/main.tf` still declares `dns_firewall = true` and still carries
+# `dns_firewall_allow_domains`. Dropping the row would have left an allow-list that exists in the
+# tree with nothing reading it - a check whose scope shrank while the thing it measures did not
+# (Lesson 31), which is the failure this whole pass is supposed to be catching.
+#
+# SO THE ROW IS RETARGETED AND THE QUESTION IS LEFT OPEN FOR 6c, which rewrites egress outright
+# (D38: no NAT gateway anywhere, one explicit proxy). Whether a headless account keeps a DNS
+# firewall at all is that stage's decision, not this one's, and the slice is [E] and torn down
+# meanwhile - so nothing is enforcing today either way. The day the firewall leaves the .tf, this
+# row leaves with it and 5.1's sentence becomes true.
+SLICES = ("sandbox", "staging")
 
 # Answered only by a private hosted zone inside the VPC - listed, never resolved here.
 PRIVATE_SUFFIXES = (".internal",)

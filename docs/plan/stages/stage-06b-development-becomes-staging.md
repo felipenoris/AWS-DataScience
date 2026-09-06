@@ -866,6 +866,24 @@ Interactive Development keeps reporting `pass` about an account that no longer e
   any of the three names** — `awslib/profiles.py` enumerates `awsds-*` at run time, and the only tracked
   files naming the last two are log entries, which are never edited. So this is a `~/.aws/config` act with
   no code half, which is exactly why it needs a step of its own.
+- **5.1 — DONE 2026-09-06, across two sittings, and ONE of its instructions was refused.**
+  `studio.py`, `cicd.py`, `supplychain.py`, `dlp.py`, `networking.py`, `datalake.py`,
+  `deploytargets.py` and six usage-example comments are retargeted; `rename-check.py` keeps both
+  spellings on purpose. No live `awsds-infra-dev` reference survives under `aws/`.
+  - **The refusal is `dns-allowlist.py`, and the step's reasoning was right about the DESIGN while
+    being wrong about the CODE.** It said to **remove** the Development slice rather than retarget it,
+    because a DNS allow-list is a list of names a *person* chose to reach from an interactive session
+    and a deployment target resolves whatever its pipeline resolves. True — but
+    `terraform-live/staging/egress/main.tf` **still declares `dns_firewall = true` and still carries
+    `dns_firewall_allow_domains`**, so removing the row would have left an allow-list that exists in
+    the tree with nothing reading it: a check whose scope shrank while the thing it measures did not
+    (**Lesson 31**, which is the failure this entire pass exists to catch). The row is **retargeted**,
+    the design question is left to **6c** — which rewrites egress outright under D38 — and the comment
+    says what would make 5.1's sentence true.
+  - `networking.py`'s `NT-3`/`NT-5`/`NT-6` were the ones deliberately **flagged a sitting earlier
+    instead of half-fixed**, because until 4.1 landed there was no measured allocation to name.
+    `STAGING_CIDR` is now `UNALLOCATED_CIDR`; the assertion is unchanged and the sentence stopped
+    naming an account it had stopped describing. Run: **`0 check(s) FAILED`**.
 - **5.1 — [Claude] Re-scope the instruments**: drop `awsds-infra-dev` from `studio.py`'s
   `INTERACTIVE_PROFILES`, and **remove** the Development slice from `dns-allowlist.py` rather than
   retargeting it (Staging is headless — it resolves nothing a person chose). **The probe token is NOT
@@ -873,6 +891,11 @@ Interactive Development keeps reporting `pass` about an account that no longer e
   `deploytargets.py`, the prose that still waits for a vend that will not happen** — in
   `cicd.py`, `deploytargets.py`,
   `supplychain.py`, `datalake.py`, `networking.py`, `egress.py`, `vpn.py` and `sandboxlake.py`.
+- **5.2 — DONE 2026-09-06: `./aws/rename-check.py` prints the AFTER verdict, `0 check(s) FAILED`.**
+  `RC-1 Staging Account` · `RC-2 Workloads` · `RC-3 datazone denied here` · `RC-4 no share` ·
+  `RC-5 the three persona sets` · `RC-6 no grant names the account`. **No MIXED verdict at any point
+  in the stage** — which is the instrument's own claim about the step order, not a claim about a
+  single reading.
 - **5.2 — [Claude] Run the conversion report**: `./aws/rename-check.py` must now print the **AFTER**
   verdict — new name, `Workloads`, the three persona sets, zero DataZone objects, no share, no vending
   policy. A **MIXED** verdict names the object that failed to cross.
