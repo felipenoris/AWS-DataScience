@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Status** | not started — **created 2026-09-05** with [6b](stage-06b-development-becomes-staging.md), revised the same day into the action-checklist format and against the AWS documentation, then **corrected again in the plan-wide review of the same date** (three rows added to "What the documentation changed in this plan": there are **three** NAT gateways to destroy rather than two, `vpc-egress` needs the same `name_suffix` as `vpc`, and `VPC-Workloads` gets its own `production/workloads-egress/` `[E]` slice). It builds [D38](../decisions/D38-single-egress-hub.md): a `VPC-Networking` hub in Production carrying the estate's only internet gateway, an explicit HTTP/HTTPS proxy and the VPN endpoint; `VPC-SharedServices` for GitLab, Pages and the runners; `VPC-Workloads` for the production runtime. It also repairs, structurally, the client-plane DNS shadowing of Lessons 40-43 |
+| **Status** | **IN PROGRESS — passes 0 and 1 DONE 2026-09-06**, [logged](../../log/log-stage-06c-networking-hub.md). The three Production VPCs exist: `foundation/` re-labelled **VPC-SharedServices**, plus **VPC-Networking** (10.31) and **VPC-Workloads** (10.32), with `workloads-egress/` written and applying nothing. **Two module bumps, and each was forced by a capability its step did not enumerate** — `vpc-v0.2.0`'s `name_suffix` and `vpc-v0.3.1`'s `public_internet_route`; `vpc-v0.3.0` is **abandoned** on origin, tagged onto the wrong commit by a failed-and-swallowed `git commit`. **0.2 replaced `CIDRS` rather than sitting beside it** (no reader wanted a per-account answer); **0.4a is deferred to 5.1** because the step contradicts itself; **0.6 lands with 3.1**. **Three checks are corrected before being written** — 1.5, 2.4's `NT-12` and 3.7's `NT-11` would each be red for passes at a time as specified, which is 6b's `DT-8` recurring. **Created 2026-09-05**; it builds [D38](../decisions/D38-single-egress-hub.md) and repairs the client-plane DNS shadowing of Lessons 40-43 |
 | **Prerequisites** | [Stage 3](stage-03-networking.md) (the `vpc` and `vpc-egress` modules, the peering pattern in `production/foundation/peers.tf`, the `[P]`/`[E]` split), [Stage 4](stage-04-vpn.md) (the `wireguard` module and its `[P]` anchors), [6a](stage-06a-unified-studio.md) (the endpoint lists and what a Studio app needs), **[6b](stage-06b-development-becomes-staging.md)** (the account is already `staging`, and step 4.1 there freed `10.40.0.0/16` and re-pointed `CIDRS`) |
 | **Consumes** | [D4](../decisions/D04-vpn-wireguard.md), [D5](../decisions/D05-sagemaker-egress.md), [D6](../decisions/D06-dlp-approach.md), [D9](../decisions/D09-az-count.md), [D11](../decisions/D11-lab-lifecycle.md), [D12](../decisions/D12-budget-ceiling.md), [D14](../decisions/D14-supply-chain-account.md), [D15](../decisions/D15-tls-internal.md), [D35](../decisions/D35-sandbox-cardinality.md), [D36](../decisions/D36-internal-pki.md), **[D38](../decisions/D38-single-egress-hub.md)** (written 2026-09-05 — this stage builds it, it does not author it) |
 | **Proves** | [INT-05](../integrations.md) and [INT-06](../integrations.md) re-keyed on the hub; [INT-16](../integrations.md)'s closing choice becomes takeable because this stage owns the address it is keyed on; **INT-21** (every account's compute reaching a Production-owned proxy over peering) and **INT-22** (the `awsds.internal` zone × VPC association matrix) |
@@ -304,6 +304,15 @@ point at it.
   *"internet-originated traffic terminates only in `VPC-Networking`'s public tier, and every listener there
   is enumerated"* — today the WireGuard host's UDP/51820; Stage 13's public ALB becomes the second row. A
   world-open rule anywhere else is a finding.
+- **1.5 — CORRECTED BEFORE IT IS WRITTEN (2026-09-06). As specified it is red for four passes.**
+  *"Fails on any IGW route … outside that tier, in **any** account"* — measured today, **three** such
+  routes exist (Sandbox 1, Staging 1, Production's `foundation/` 1), and they are Stage 3's, removed at
+  **pass 5**. A check written now goes red immediately and stays red through 6c, 6d, 7 and 8, which is
+  this stage's own pass-5 discipline and 6b's `DT-8` arriving a third time. **It takes a discriminator or
+  it waits for 5.1** — `deploytargets.py`'s `built` is the pattern: a spoke that still carries its Stage 3
+  NAT and IGW route is *unconverted*, and unconverted is a **note**; a spoke converted at 5.1 that grows
+  one back is a **failure**. The cheapest signal for "converted" is the spoke's `egress_mode`, which is
+  code, or the absence of its NAT gateway, which is a read.
 - **1.5 — [Claude] Write the no-public-address gate**: extend `./aws/networking.py` with a check that fails
   on any IGW route, public IP or world-open security-group rule outside that tier, in **any** account.
 
@@ -324,6 +333,12 @@ down (INT-22) and read by a check, since nothing derives it.
   `production/workloads/`).
 - **2.3 — [Claude⚡] Keep Pages on its own apex**: `awsds-pages.internal`, unchanged in intent from D36 — a
   sibling under the shared apex would weaken the cookie-scope separation the two-apex choice exists for.
+- **2.4 — the same shape, flagged now (2026-09-06): `NT-12` cannot be written to the FINAL matrix and
+  run before 2.6.** Step 2.6 retires `sandbox.internal`, `prod.internal` and `pages.internal` *"after pass
+  6 measures the new ones"*, so **both zone families coexist for the whole of passes 2-6** and a check
+  asserting *"the matrix as documented equals the matrix as deployed"* fails on every surviving old
+  association. It needs the old family named as an expected, dated exception that 2.6 removes — the same
+  treatment `EXC-nn` rows get — or it is written at 2.6 rather than at 2.4.
 - **2.4 — [Claude] Write the association matrix** into `docs/NETWORK.md` §10, enforced by a new
   `./aws/networking.py` check **`NT-12`** (the matrix as documented equals the matrix as deployed):
 
@@ -354,6 +369,18 @@ the user's brief — Interactive and Workloads never talk — is enforced by the
 cheapest control in the design. **Explanation:** adding peerings "because they might be needed" spends it;
 deploys are AWS API calls and need no L3 path into a target VPC.
 
+- **3.1 — 0.6 LANDS HERE, and two consequences of 6b land with it** (recorded 2026-09-06).
+  0.6 is the mechanism whose data this step is; doing either alone is half a change, because `CIDRS`'s
+  key set is what builds the `peers` map `production/foundation/peers.tf` consumes today.
+  - **This matrix RETIRES the Staging ↔ `VPC-SharedServices` peering.** Staging keeps only
+    Staging → `VPC-Networking`, and `VPC-SharedServices` ↔ Staging is on the *not built* list. That is the
+    peering 6b step 4.5 preserved through a `for_each` rename with five `moved {}` blocks — correctly,
+    because the alternative was destroying it mid-conversion with no replacement, and **INT-09 rides on it
+    until this step re-homes INT-09 onto Sandbox ↔ `VPC-SharedServices`**.
+  - **Those five `moved {}` blocks become dead here.** Their `from` addresses stopped existing when 4.5
+    applied; they are a migration record, and this is the commit that should delete them rather than
+    carry them into a file it is restructuring. The same is true of `terraform-live/identity/sso/moved.tf`
+    at 4.9, which its own header already says.
 - **3.1 — [Claude] Declare the matrix** in `backend.py`:
 
   | Requester | Accepter | Why |
@@ -390,6 +417,13 @@ deploys are AWS API calls and need no L3 path into a target VPC.
   masqueraded today and stays invisible to the spokes. The **one** exception is inside `VPC-Networking`,
   added at 4.7. Re-cut `./aws/networking.py` `NT-4` from *"no route to 10.90/24"* to *"no route to
   10.90/24 outside `VPC-Networking`"*.
+- **3.7 — `NT-11` has a window too, and it is inside pass 3 rather than across passes** (2026-09-06).
+  *"Every active peering has a route on both sides in every affected route table"* is false between **3.4**
+  (the peerings applied) and **3.5** (the tunnel's return path added), and false again for any old peering
+  still standing while the new ones come up. Written as specified it goes red mid-pass, in the one place
+  an operator most needs a trustworthy reading. Either it runs only at pass 6, or it takes the peering
+  matrix as its expectation and reports *"declared but not yet routed"* separately from *"routed to
+  something not in the matrix"* — which are opposite findings and must not share a verdict.
 - **3.7 — [Claude] Add the two-way route check**: new **`NT-11`** — every active peering has a route on
   both sides in every affected route table. The reference implementation this project keeps as a comparison
   has exactly this defect (an attachment with no route), which is why the check exists.
@@ -448,6 +482,13 @@ address transfer is what keeps every client's `Endpoint` line unchanged.
   ```
 
   so neither side tries to create or release it (Terraform ≥ 1.7; this project runs 1.15.8).
+- **4.7 — CHECKED FOR THE COLLISION THIS STAGE HAS HIT TWICE, AND THERE IS NONE (measured 2026-09-06).**
+  0.4 and 1.3 both found a module asked for a capability its step had not enumerated, and 4.7/4.8 put
+  **two hosts in one account** — the exact shape that made `vpc` need a `name_suffix`. So the `wireguard`
+  module was grepped rather than assumed: it builds **two** names, `awsds-<env>-vpn` and
+  `awsds-<env>-vpn-health`, and a proxy slice builds `awsds-<env>-proxy-*`. **Different modules, different
+  stems, no collision** — no bump needed here, and this line exists so the question is not re-opened at
+  the keyboard. `vpc-egress` is the module that *does* need the suffix, and that is 0.4a's deferral to 5.1.
 - **4.7 — [Claude⚡] Build the WireGuard host**: `production/vpn/` `[D]`, in `VPC-Networking`'s public tier,
   from the existing module at **v0.5.0** with three changes: `vpc_nat_cidrs` is **removed** (the
   isolated-tier NAT job dies with the buildbox's move, 5.8), the `PostUp` chain forwards tunnel packets
@@ -570,6 +611,14 @@ becomes true.
   `ContainerEnvironmentVariables` on the app image configuration, or a JupyterLab lifecycle configuration —
   which for SMUS domains **must be attached in the console**, the CLI path being documented as not
   supported.
+- **5.7 — THIS STEP OWNS A QUESTION 6b DEFERRED TO IT** (2026-09-06). 6b step 5.1 wanted
+  `./aws/dns-allowlist.py` to drop the Staging slice, reasoning that a headless deployment target resolves
+  whatever its pipeline resolves. **The row was retargeted instead, not dropped**, because
+  `terraform-live/staging/egress/main.tf` still declares `dns_firewall = true` with an allow-list — a
+  check whose scope shrank while the thing it measures did not is Lesson 31. *"It stays in every **compute**
+  VPC"* is the sentence that decides it: **Staging carries the SageMaker runtime, so it is a compute VPC**
+  and keeps its firewall — or it does not, and both the `.tf` and the instrument row go together. Whichever
+  way, **the two move in the same commit**.
 - **5.7 — [Claude] Re-cut the DNS Firewall**: it stays in every **compute** VPC and its allow-list shrinks
   to `*.amazonaws.com`, `*.api.aws`, `.awsds.internal` and the proxy's name; the `BLOCK`-NXDOMAIN `*` rule
   stays. Its job is no longer filtering the internet but closing the recursive resolver as an exfiltration
