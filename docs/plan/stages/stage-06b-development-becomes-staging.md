@@ -184,6 +184,22 @@ permitted (see the ordering note above). **Explanation:** the order inside the p
 configurations → association → vocabulary, the exact reverse of how 6a built it; each step has a read-back,
 because an error and an empty list are different outcomes and only the empty list closes a step.
 
+- **1.1 — DONE 2026-09-06.** Applied as `awsds-infra-data`: **`0 to add, 0 to change, 2 to destroy`**,
+  exactly the two the step named —
+  `awscc_datazone_policy_grant.create_project_from_profile["engineering"]` and
+  `awscc_datazone_project_profile.this["engineering"]` — re-plan **`No changes`**, and the domain now
+  lists **one** project profile (`experimentation`, `ENABLED`) with **one**
+  `CREATE_PROJECT_FROM_PROJECT_PROFILE` grant, to the data-scientists group. Three comments the removal
+  invalidated were corrected in the same commit: `providers.tf`'s "TWO ALIASES", `data.tf`'s "member
+  accounts" plural, and `locals.tf`'s "WHY THESE TWO GROUPS" — the last of which had itself predicted this
+  removal as *"the expected outcome, not a regression"*.
+  - **And `studio.py`'s `US-4` went red the moment the apply landed** — it asserted the *two*-profile
+    shape, so it now read `missing engineering`. Re-scoped in the same sitting to expect
+    `experimentation` **alone**, with `engineering` kept as a `RETIRED_PROFILE_NAMES` entry so its
+    **return** is the failure rather than an unknown name: a check that only knows what it expects cannot
+    report what it found. `0 check(s) FAILED` after the fix. **This is the third instrument that pass 5
+    would have re-scoped four passes too late** (the probe token at 3.7 was the second) — see the note on
+    pass 5.
 - **1.1 — [Claude] Remove the `engineering` project profile — four sites in three files** (enumerated
   2026-09-05, because "and the provider alias with it" hides one): the `engineering` key in
   `local.project_profiles` **and** the `development` row of `local.member_account_ids`
@@ -462,6 +478,13 @@ followed here, not authored.
   makes `development` REQUIRED and `staging` OPTIONAL — the two swap.
 
 ### 5. Close the stage — instruments, vocabularies and the documents that state the account as a fact
+
+> **Read this pass before running passes 1-4, not after.** Three times now an instrument listed here has
+> gone red — or gone unrunnable — at the pass that *caused* the change rather than at this one: `studio.py`'s
+> `US-4` at 1.1 (2026-09-06, measured), the probe token at 3.7, and `deploytargets.py`'s `DT-8`, which is
+> not runnable until step 4 makes the profile resolve. **A check that is red for four passes is a check
+> nobody reads on the fifth.** So each item below carries the pass that actually owns it, and what stays
+> here is only what the *finished* conversion changes.
 
 **Action:** re-scope every instrument and revise every document that names the account. **Why:** a role
 change is the trigger to re-read every instrument in the same sitting (Lesson 31) — a check written for an

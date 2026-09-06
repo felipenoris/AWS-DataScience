@@ -4,15 +4,13 @@ data "aws_caller_identity" "current" {}
 
 data "aws_partition" "current" {}
 
-# The member accounts a project profile provisions into - resolved live so that no account id
-# enters a tracked file (aws/INDEX.md rule 1).
+# The member account the one project profile provisions into - resolved live so that no account
+# id enters a tracked file (aws/INDEX.md rule 1). The `development` read left with the
+# `engineering` profile at Stage 6b step 1.1 (2026-09-06).
 data "aws_caller_identity" "sandbox" {
   provider = aws.sandbox
 }
 
-data "aws_caller_identity" "development" {
-  provider = aws.development
-}
 
 # The blueprint ids, resolved BY NAME on the domain (pass 2c only). Terraform's project-profile
 # resource takes ids; the decision, the documentation and ./aws/studio.py all speak names, so

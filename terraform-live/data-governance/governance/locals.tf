@@ -61,8 +61,7 @@ locals {
   ]
 
   member_account_ids = {
-    sandbox     = data.aws_caller_identity.sandbox.account_id
-    development = data.aws_caller_identity.development.account_id
+    sandbox = data.aws_caller_identity.sandbox.account_id
   }
 
   # THE TWO PROFILES, WHERE EACH PROVISIONS, AND WHO MAY CREATE FROM IT (D21/D26). The names
@@ -82,23 +81,19 @@ locals {
   # one account while its grant names another (Lesson 33 - share the values, do not duplicate
   # the structure). grants.tf iterates THIS map.
   #
-  # WHY THESE TWO GROUPS (user decision, 2026-08-22). `experimentation` is Sandbox and D21 is
-  # already decided there, so the data scientists' grant is a standing right. `engineering` is
-  # DEVELOPMENT, and whether a person needs an interactive surface next to Development's data
-  # at all is the OPEN half of D21 - so it goes to the persona that owns the promotion chain
-  # the account exists to start, and the grant is the instrument of that open question rather
-  # than a settled entitlement. If D21 closes against the interactive surface, this row is
-  # removed and that removal is the expected outcome, not a regression.
+  # WHY ONE GROUP, AND WHY THERE WERE TWO (user decision 2026-08-22; second row removed by
+  # Stage 6b step 1.1, 2026-09-06). `experimentation` is Sandbox and D21 is already decided
+  # there, so the data scientists' grant is a standing right. `engineering` was DEVELOPMENT,
+  # granted to the persona that owns the promotion chain rather than to the data scientists,
+  # precisely because whether a person needed an interactive surface next to that account's
+  # data at all was the OPEN half of D21. That half closed AGAINST the interactive surface -
+  # the account becomes headless `Staging` - and this comment kept the sentence that said the
+  # removal would be "the expected outcome, not a regression", which is what it is.
   project_profiles = {
     experimentation = {
       account     = "sandbox"
       group       = "sso-group-data-scientists"
       description = "Experimentation (D21): the unit of work is a notebook. Provisions into a business unit's Sandbox."
-    }
-    engineering = {
-      account     = "development"
-      group       = "sso-group-deployment-managers"
-      description = "Engineering (D21): the unit of work is a pipeline. Provisions into Development, where the promotion chain starts."
     }
   }
 
