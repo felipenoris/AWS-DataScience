@@ -86,6 +86,43 @@ locals {
   ]
 
   no_proxy_entries = sort(distinct(concat(local.no_proxy_fixed, local.no_proxy_endpoint_entries)))
+
+  # ------------------------------------------------- the same reading, put to a second question
+  #
+  # THE NAMES AS AWS GIVES THEM, wildcard and all - `no_proxy_endpoint_entries` above has already
+  # had the `*.` trimmed off for NO_PROXY's syntax, and the DNS Firewall's syntax is the other one.
+  # Kept separate rather than re-derived so neither question can quietly answer with the other's
+  # spelling (Lesson 53: two systems expressing one intent in the same-looking syntax are not
+  # translatable by transcription, and they agree on the easy cases).
+  endpoint_private_dns_names = [
+    for s, svc in data.aws_vpc_endpoint_service.this :
+    svc.private_dns_name
+    if svc.private_dns_name != ""
+  ]
+
+  # WHICH OF THIS VPC'S ENDPOINTS THE DNS FIREWALL WOULD MAKE UNREACHABLE (6c step 5.7).
+  #
+  # THE FAILURE THIS EXISTS TO CATCH, because 5.7 is the step that creates the opportunity: the
+  # allow-list shrinks from sixty-odd names to four families, and an interface endpoint whose
+  # private DNS name falls outside those families is then paid for hourly and **cannot be
+  # resolved** - the catch-all returns NXDOMAIN and the tool reports "no such host", which reads
+  # as a network fault rather than as a policy decision. It is not hypothetical: `sagemaker.studio`
+  # answers on `*.studio.<region>.sagemaker.aws`, a TLD neither `*.amazonaws.com` nor `*.api.aws`
+  # covers, so the obvious short list orphans an endpoint in both Interactive slices.
+  #
+  # MATCHING IS THE FIREWALL'S, NOT NO_PROXY'S: an entry matches a name EXACTLY, and `*.x` matches
+  # every nesting level beneath `x` and never `x` itself. A service whose own name is wildcarded
+  # (`*.dkr.ecr...`) is only genuinely covered by a WILDCARD entry - an exact entry would match the
+  # base and none of the names actually queried - so that case is required to find one.
+  dns_firewall_uncovered = [
+    for raw in local.endpoint_private_dns_names : raw
+    if !anytrue([
+      for e in var.dns_firewall_allow_domains :
+      startswith(e, "*.")
+      ? (trimprefix(raw, "*.") == trimprefix(e, "*.") || endswith(trimprefix(raw, "*."), ".${trimprefix(e, "*.")}"))
+      : (!startswith(raw, "*.") && raw == e)
+    ])
+  ]
 }
 
 output "no_proxy_entries" {
