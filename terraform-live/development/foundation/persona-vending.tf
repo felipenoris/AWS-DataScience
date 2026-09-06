@@ -113,11 +113,15 @@ resource "aws_iam_policy" "persona_vending" {
   # (Lesson 14). A path here would have to be mirrored there, and a mismatch is a provisioning
   # failure, not a plan failure.
 
-  lifecycle {
-    # The permission set REFERENCES this object by name. Destroying it - or renaming it, which is
-    # a destroy and a create - breaks provisioning of DataScientistAccess in this account until
-    # the reference is removed first. The order out is therefore identity/sso before foundation/,
-    # the reverse of the order in.
-    prevent_destroy = true
-  }
+  # LIFTED BY STAGE 6b STEP 2.2, COMMIT 1 OF 2 (2026-09-06). The guard read:
+  #
+  #   lifecycle { prevent_destroy = true }
+  #
+  # and its argument was that the permission set REFERENCES this object by name, so destroying
+  # it breaks provisioning of DataScientistAccess in this account until the reference is removed
+  # first - "the order out is identity/sso before foundation/, the reverse of the order in".
+  # That order has now been walked: step 2.1 replaced this account's DataScientistAccess
+  # assignment with DataScientistStagingAccess, which references no vending policy, so nothing
+  # points at this object any more. The next commit removes the object itself; this one exists so
+  # that "the guard came off" is a reviewable act of its own and not a line inside a teardown.
 }
