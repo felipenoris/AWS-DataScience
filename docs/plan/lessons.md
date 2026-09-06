@@ -1142,6 +1142,24 @@ lesson can be *recognised* without opening this file; the reasoning that makes e
     lists whether or not it has diverged yet — and *"a DNS association is not a path"* is the sentence
     that made this one obvious once asked.
 
+52. **A wait whose only exit is SUCCESS waits forever once the thing it waits on is gone — and its
+    silence is indistinguishable from patience.** Stage 6c step 4.8 polled two `until` loops for a
+    cloud-init line on instance `i-0b04…`; the next step `-replace`d that instance, and both loops
+    went on asking a terminated host for its console output every 15 and 20 seconds, indefinitely.
+    They were found by the **user noticing**, not by anything in the repository — for the second
+    time in one session, after the 3h33m `terraform plan` of Lesson 47. **Same symptom, unrelated
+    causes**, which is the point: one was blocked on stdin, this one was polling a corpse, and from
+    outside both look exactly like work in progress. **The defect is the loop's shape, not the
+    object's death:** an `until <success>; do sleep; done` has no branch for *the world changed
+    underneath me*, so every failure mode collapses into "not yet". The `Monitor` tool documents
+    the same trap for event filters — *"if this process crashed right now, would my filter emit
+    anything?"* — and an `until` loop is that question with the answer already fixed at no. **Give
+    every wait a second exit** (a deadline, or a check that the subject still exists) and prefer a
+    condition on something that outlives the step: `terraform output -raw instance_id` re-read each
+    round, never an id pasted at the top. **The estate-level guard this argues for does not exist:**
+    nothing here looks for a `terraform` process older than an hour, a `.tflock` with no live owner,
+    or a poll loop outliving its subject — and two incidents in one session is the evidence for it.
+
 ---
 
 *Plan core: [GENERAL_PLAN.md](../GENERAL_PLAN.md) · Decisions: [docs/plan/decisions/INDEX.md](decisions/INDEX.md) · Stages: [docs/plan/stages/INDEX.md](stages/INDEX.md)*
