@@ -22,11 +22,12 @@ is a broken caller.
 not an authority — `make slices` prints the live table, and a slice that reaches disk without a row in it
 fails `make check`.
 
-**Five `bootstrap/` slices, and they are one slice copied five times — Stage 2 steps 1, 2 and 3, 2026-08-15.**
+**Six `bootstrap/` slices, and they are one slice copied six times — Stage 2 steps 1, 2 and 3, 2026-08-15; the sixth is `staging/`, written at Stage 6b step 4.2 (2026-09-06). `./scripts/check-bootstrap-parity.py` is what keeps them copies.**
 
-**RE-SCOPED 2026-09-05.** `development/` becomes `staging/` on a new state bucket
+**DONE 2026-09-06, except its last slice.** `development/` became `staging/` on a new state bucket
 ([Stage 6b](../docs/plan/stages/stage-06b-development-becomes-staging.md), Recipe E), losing
-`sagemaker/`, `data/` and `egress/` on the way; `production/` grows `networking/`, `workloads/`, `vpn/`
+`sagemaker/` and `data/` on the way (destroyed, steps 1.7 and 2.4) and carrying `foundation/`,
+`egress/` and `probes/` across (step 4.3); `production/` grows `networking/`, `workloads/`, `vpn/`
 and `proxy/`, and its existing `foundation/` VPC becomes **VPC-SharedServices**
 ([Stage 6c](../docs/plan/stages/stage-06c-networking-hub.md)). **The authoritative slice-by-slice layout
 is `docs/plan/conventions.md` §6**, which was rewritten in the same sitting; this file describes the tree
@@ -282,9 +283,9 @@ created; it is also the answer to "who runs `terraform apply` here".
 |---|---|---|---|
 | `identity/` | Identity | `Identity` | `awsds-infra-identity` |
 | `sandbox/` | Sandbox Account 1 | `Sandboxes` | `awsds-infra-sandbox-1` — **one such folder per business unit** (D35), N is 1 today |
-| `development/` | Development | `Interactive` | `awsds-infra-dev` |
+| `development/` | Staging Account | `Workloads` | `awsds-infra-staging` — **one slice left**, `bootstrap/`, and it goes at Stage 6b step 4.7 with the bucket it owns |
 | `data-governance/` | Data Governance | `Data` | `awsds-infra-data` |
-| `staging/` | Staging | `Workloads` | **none yet — the account is unvended**, held on the account cap |
+| `staging/` | Staging Account | `Workloads` | `awsds-infra-staging` — **the renamed `Development`, not a vend**: the quota refused that (2026-09-05), so Stage 6b converted the account instead |
 | `production/` | Production | `Workloads` | `awsds-infra-prod` |
 
 **No folder for Management, Log Archive, Audit or Policy Canary, and each absence is a rule.** Management is

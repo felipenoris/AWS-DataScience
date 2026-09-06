@@ -242,17 +242,26 @@ terraform-live/
 │                         #     account, which is why an associated account is what enables
 │                         #     blueprints against a shared domain. The flag is
 │                         #     backend.SMUS_ASSOCIATED, whose rows are measurements
-├── (development/)        # RETIRED 2026-09-05 by Stage 6b: the account is renamed to
-│                         #     Staging and the folder migrates to staging/ on a new state
-│                         #     bucket. Of its six slices: sagemaker/ and data/ are DESTROYED
-│                         #     (done 2026-09-06, steps 1.7 and 2.4); bootstrap/ and
-│                         #     foundation/ carry real state and migrate with Recipe E;
-│                         #     egress/ and probes/ are [E] and were MEASURED EMPTY on
-│                         #     2026-09-06 - zero resources each - so their folders move and
-│                         #     their state is created fresh at the next `up`. This entry
-│                         #     used to say egress/ was destroyed while the stage said it
-│                         #     migrated; the measurement is what settles it, and neither
-│                         #     word was quite right
+├── (development/)        # ALL BUT ONE SLICE GONE, 2026-09-06 (Stage 6b pass 4). sagemaker/
+│   └── bootstrap/        #     and data/ were DESTROYED (steps 1.7 and 2.4); foundation/,
+│                         #     egress/ and probes/ MIGRATED to staging/ (step 4.3). What is
+│                         #     left is [P] bootstrap/, and it is last on purpose: it owns
+│                         #     awsds-dev-tfstate, the bucket every one of those migrations
+│                         #     read FROM. Step 4.7 empties and destroys it, and this whole
+│                         #     entry goes with it
+├── staging/              # THE FIRST DEPLOYMENT TARGET (D18/D28), and it is the RENAMED
+│   │                     #     Development account, not a vend - the quota refused that
+│   │                     #     (2026-09-05). Headless: no SMUS domain object, no interactive
+│   │                     #     compute, the SageMaker RUNTIME only. VPC stays 10.50.0.0/16,
+│   │                     #     because a CIDR is immutable and a rebuild would replace every
+│   │                     #     subnet, route table, endpoint and the peering with it
+│   ├── bootstrap/        # [P] state bucket + KMS key (step 4.2, applied 2026-09-06)
+│   ├── foundation/       # [P] VPC 3x2, gateway endpoints, no private zone of its own;
+│   │                     #     the peering REQUESTER half toward Production
+│   ├── egress/           # [E] NAT + interface endpoints. Measured EMPTY at the migration -
+│   │                     #     D11 leaves it torn down between sittings
+│   └── probes/           # [E] the INT-09 reachability host. Same, and it must not coexist
+│                         #     with sandbox/probes/ (buildbox runbook)
 ├── data-governance/      # THE OWNERSHIP AXIS (D22, D26): state and governance,
 │   │                     # never compute. Renamed from data-management/ on 2026-08-08
 │   ├── bootstrap/        # [P] state bucket for the Data Governance account

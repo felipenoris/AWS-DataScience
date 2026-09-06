@@ -642,6 +642,14 @@ splitting *migration* from *token flip* is what keeps each plan readable — the
 `No changes`, the second a short, explainable replacement list. Recipe E was written on 2026-09-05 and is
 followed here, not authored.
 
+- **4.1 — DONE 2026-09-06, and SPLIT IN TWO on purpose.** `CIDRS["staging"]` is `10.50.0.0/16` as of
+  the 4.3 commit — the half that prevents the VPC replacement, and it had to land in the same commit as
+  the `git mv` because the tfvars are generated from the folder key. **The `development` row was NOT
+  deleted and 10.40 is NOT free yet**: `production/foundation/peers.tf` reads `var.peers["development"]`
+  by literal, and that map is built from this table's KEYS, so deleting the row breaks Production's slice
+  until 4.5 re-points the four hand-written provider aliases. Both go in that one commit — Recipe E step
+  8's rule (*keep the old vocabulary rows alive*) applied to the one table that is read by another
+  account. **6c step 0 must not consume 10.40 until then.**
 - **4.1 — [Claude] Fix the address table BEFORE the token flip — the hazard that would replace the VPC**:
   in `scripts/tfhygiene/backend.py`, `CIDRS` is keyed by **account folder** and today reads
   `staging = 10.40.0.0/16`, `development = 10.50.0.0/16`. The moment the folder becomes `staging/`, the
@@ -657,6 +665,16 @@ followed here, not authored.
     `foundation/` slice and forces 6c to re-cut a peering it has not built yet. **Second instance of the
     same shape in this stage** — step 3.4's Config-rule clause was the first — and both are Lesson 3 read
     backwards: a fact that moved invalidates the sentence that cited it, even when the conclusion holds.
+- **4.2 — DONE 2026-09-06** (the user ran the apply; Claude wrote, planned and migrated).
+  **`8 to add, 0 to change, 0 to destroy`** → `awsds-staging-tfstate` and
+  `alias/awsds-staging-tfstate`, then **phase 2 of the bootstrap pattern**: backend uncommented,
+  `init -migrate-state` into the bucket the slice had just created, local state deleted, re-plan
+  **`No changes`**. `./scripts/check-bootstrap-parity.py` clean in both phases.
+  - **The parity check rejected the first attempt, and the reason is worth carrying**: three lines of
+    prose were added above the commented backend block explaining the phase. Parity compares that file
+    **with the comment markers removed**, so prose inside it is *content*, and the slice read as diverged.
+    The two forms it tolerates are exactly two — commented and live — and the explanation already lives
+    in the header every copy shares.
 - **4.2 — [Claude⚡] Create the new state home**: `terraform-live/staging/bootstrap/`, producing
   `awsds-staging-tfstate` and `alias/awsds-staging-tfstate` from the existing bootstrap module. **`PROFILES`
   is the only table missing a `staging` row** — `ENV_TOKENS`, `ENVIRONMENT_TAGS` and `ZONE_IDS` already
@@ -665,6 +683,19 @@ followed here, not authored.
   `staging` slice rows go into `scripts/tfhygiene/layers.py`, whose `staging joins at vend` comment is
   stale prose to correct in the same commit. **Keep the `development` rows alive** until the old bucket is gone — the
   generator still has to emit the old backend.
+- **4.3 — DONE 2026-09-06. The gate passed: `terraform plan` → `No changes` after
+  `init -migrate-state`**, with the same gateway-endpoint ids the baseline showed, so the state arrived
+  intact. `foundation/`, `egress/` and `probes/` moved with `git mv`; `development/bootstrap/` stayed.
+  - **The tfvars were NOT regenerated, and that is the whole of Recipe E step 3.** The untracked
+    `terraform.auto.tfvars` moved with the directory still reading `env = "dev"`,
+    `environment_tag = "development"`, so the plan compares the same names against the same resources
+    and an empty plan means the migration. Only `gen-backend-hcl.py` ran.
+  - **The two `[E]` slices WERE migrated after all, and this step said they need not be.** That was right
+    about the *necessity* and wrong about the tidiest path: zero resources is still a state OBJECT with a
+    lineage (measured: 749 and 697 bytes in the old bucket), and their `.terraform/` directories moved
+    still pointing at `awsds-dev-tfstate` — a bucket 4.7 destroys. Leaving them would have made the next
+    `make up` prompt for a backend change in a slice nobody was thinking about. Two `init -migrate-state`
+    calls, no plan gate, because there is genuinely nothing to gate in a torn-down slice.
 - **4.3 — Recipe E step 1 DONE 2026-09-06; steps 3-5 wait on 4.2's apply.** `development/foundation/`
   initialised against the OLD backend (`awsds-dev-tfstate`, key `development/foundation/…`) and planned:
   **`No changes`**. That is the baseline the whole recipe rests on and it is worth taking *before* the
@@ -712,6 +743,10 @@ followed here, not authored.
   emptying impossible and the step unexecutable, and it is on in exactly one bucket in this estate
   (`INV-14`'s CloudTrail bucket), so the shape is not hypothetical. Only then remove the `development` rows from
   `backend.py` and `layers.py`.
+- **4.8 — DONE 2026-09-06, in the `git mv` commit.** `staging` is REQUIRED, `development` is OPTIONAL —
+  and the comment says what the word now means, because it inverted: it used to mean *"not vended yet,
+  and this check starts comparing it the day somebody writes it"*; it now means *"still present, and its
+  absence is the expected end state"*.
 - **4.8 — [Claude] Swap the parity gate**, in the `git mv` commit: `scripts/check-bootstrap-parity.py`
   makes `development` REQUIRED and `staging` OPTIONAL — the two swap.
 

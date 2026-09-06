@@ -44,11 +44,19 @@ from pathlib import Path
 LIVE = Path("terraform-live")
 
 # The account folders that get a bootstrap slice, in the order docs/plan/conventions.md §6
-# lists them. `staging` is OPTIONAL here and nowhere else: the account is unvended (Stage 1a),
-# so 3.2 skips it - and the moment somebody vends it and writes the slice, this check starts
-# comparing it without being edited.
-REQUIRED = ("sandbox", "development", "data-governance", "production", "identity")
-OPTIONAL = ("staging",)
+# lists them.
+#
+# THE TWO SWAPPED ON 2026-09-06 (Stage 6b step 4.8), AND THE DIRECTION IS THE POINT. `staging`
+# was the optional one - "the account is unvended, so 3.2 skips it, and the moment somebody
+# vends it this check starts comparing it without being edited". That vend never happened: the
+# quota refused it and Stage 6b made `Staging` by RENAMING `Development`. So the slice that
+# arrived is staging/bootstrap/ (4.2), and it is REQUIRED from the commit that wrote it.
+# `development/bootstrap/` is what is temporary now - it owns awsds-dev-tfstate, which every
+# other migration in pass 4 reads FROM, so it is destroyed LAST (4.7). Optional here means
+# "still present, and its absence is the expected end state", which is the mirror of what the
+# word meant a day ago.
+REQUIRED = ("sandbox", "staging", "data-governance", "production", "identity")
+OPTIONAL = ("development",)
 
 # The slice that is compared against. It is the one that has APPLIED (step 2), so a divergence
 # is reported in the direction that matters: what the others would create that this one did not.

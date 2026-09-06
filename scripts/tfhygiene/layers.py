@@ -227,13 +227,13 @@ SLICES = [
     # annotated "joins at vend"; the quota refused that vend and Stage 6b renamed
     # `Development` instead, so its rows arrive by `git mv` at 4.3 (2026-09-06).
     Slice("sandbox", "foundation", PERSISTENT, "VPC 3x2, gateway endpoints, sandbox.internal"),
-    Slice("development", "foundation", PERSISTENT, "VPC 3x2, gateway endpoints, no zone (4.2)"),
+    Slice("staging", "foundation", PERSISTENT, "VPC 3x2, gateway endpoints, no zone (4.2)"),
     Slice("production", "foundation", PERSISTENT, "VPC 3x2, gw endpoints, prod+pages.internal"),
     # Stage 3 pass 3 (2026-08-16). The endpoint counts are step 8.3's per-role lists:
     # core 8 + the account's extras; every row includes a mode-A NAT (0.050 = 0.045 + IPv4).
     Slice("sandbox", "egress", EPHEMERAL, "NAT + 11 interface endpoints (8.3)", 0.160),
     Slice(
-        "development",
+        "staging",
         "egress",
         EPHEMERAL,
         "NAT + 11 interface endpoints (8.3)",
@@ -254,7 +254,7 @@ SLICES = [
     Slice("production", "probes", EPHEMERAL, "peering target: 1 host, 2 ENIs, 2 A records", 0.0042),
     Slice("sandbox", "probes", EPHEMERAL, "perimeter probe (isolated) + peering probe", 0.0084),
     Slice(
-        "development",
+        "staging",
         "probes",
         EPHEMERAL,
         "INT-09 reachability + the DNS half Sandbox cannot answer",
