@@ -45,9 +45,18 @@ locals {
   # `distinct()`/`sort()` since 6c step 4.12's union (2026-09-06): two VPN homes now share one
   # address, because the Elastic IP was TRANSFERRED between accounts rather than reallocated.
   # Without it this bucket policy carries the same /32 twice.
-  wireguard_eip_cidrs = sort(distinct([
-    for k, s in data.terraform_remote_state.vpn_home : "${s.outputs.wireguard_eip_public_ip}/32"
-  ]))
+  # THE PROXY'S ADDRESS JOINED AT 6c step 4.12 (2026-09-06) - the same change as identity/sso's,
+  # for the same reason: under D38 a persona's direct S3 call from a laptop leaves through the
+  # hub's Squid proxy, so the lake perimeter must know that address. `try(..., null)` because a
+  # VPN home need not hold a proxy (Sandbox does not, and is still a home while the union stands);
+  # `compact()` drops the nulls. The NAME still says wireguard because the whole list is the VPN
+  # home's egress, and renaming it would touch the bucket policies for nothing.
+  wireguard_eip_cidrs = sort(distinct(compact(flatten([
+    for k, s in data.terraform_remote_state.vpn_home : [
+      "${s.outputs.wireguard_eip_public_ip}/32",
+      try("${s.outputs.proxy_eip_public_ip}/32", null),
+    ]
+  ]))))
 
   # THE VPN HOMES' OWN S3 ENDPOINTS, ON THE AXIS THAT CARRIES THEM (2026-08-20; Lesson 33's
   # second finding, stage 5 log's controls entry). Every tunnel call - whichever account's

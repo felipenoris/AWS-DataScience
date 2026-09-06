@@ -190,10 +190,23 @@ locals {
   # reallocated, so `sandbox/foundation` and `production/networking` both answer `52.89.212.1` -
   # and without this the policy document carries the same /32 twice. Harmless to IAM, and
   # exactly the kind of noise a later reader has to stop and explain.
-  vpn_egress_cidrs = sort(distinct([
-    for home, remote in data.terraform_remote_state.vpn_home :
-    "${remote.outputs.wireguard_eip_public_ip}/32"
-  ]))
+  # THE PROXY'S ADDRESS JOINED THIS LIST AT 6c step 4.12 (2026-09-06), AND UNDER D38 IT IS THE ONE
+  # THAT ACTUALLY MATTERS. A VPN client is a private-network client now: its whole internet crosses
+  # an explicit Squid proxy in the hub, so a persona's control-plane call leaves the estate from
+  # the PROXY's Elastic IP and never from the tunnel endpoint's. The WireGuard address stays
+  # because the tunnel host still originates traffic of its own, and because pass 4's rule is
+  # union first and trim after the readings - a single cut-over apply here is one typo away from
+  # denying six personas every call from every network.
+  #
+  # `try(..., null)` AND NOT A DIRECT READ: a VPN home is not required to hold a proxy - Sandbox
+  # exports no such output and is still a home while the union stands - so a missing output is a
+  # legitimate shape rather than an error. `compact()` drops the nulls that produces.
+  vpn_egress_cidrs = sort(distinct(compact(flatten([
+    for home, remote in data.terraform_remote_state.vpn_home : [
+      "${remote.outputs.wireguard_eip_public_ip}/32",
+      try("${remote.outputs.proxy_eip_public_ip}/32", null),
+    ]
+  ]))))
 
   # THE SAME HOMES, BY THE VPC THEY EXIT THROUGH - and this local replaced a list of GATEWAY
   # ENDPOINT ids on 2026-08-23, because that list was the right fix measured one case short.
