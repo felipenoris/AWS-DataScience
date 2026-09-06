@@ -115,6 +115,17 @@ resource "aws_route53_resolver_firewall_domain_list" "allow" {
   domains = var.dns_firewall_allow_domains
 
   tags = { Name = "${local.name_prefix}-egress-allow" }
+
+  # EVERY INTERFACE ENDPOINT THIS VPC PAYS FOR MUST BE RESOLVABLE IN IT (6c step 5.7, v0.8.0).
+  # The list is computed in no-proxy.tf from the same reading NO_PROXY is built from; the whole
+  # argument is there. In one line: a shrinking allow-list is exactly how a paid endpoint becomes
+  # an NXDOMAIN, and NXDOMAIN reads as a network fault rather than as a policy decision.
+  lifecycle {
+    precondition {
+      condition     = length(local.dns_firewall_uncovered) == 0
+      error_message = "dns_firewall_allow_domains does not cover ${join(", ", local.dns_firewall_uncovered)} - this VPC has an interface endpoint whose private DNS name the firewall would block. Add the family, or drop the endpoint."
+    }
+  }
 }
 
 # The catch-all. `*` matches every name, which is what turns the rule group into a
