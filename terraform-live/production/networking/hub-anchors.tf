@@ -308,10 +308,14 @@ locals {
     ".awsapps.com",
     # IAM Identity Center sign-in.
     "${var.region}.signin.aws",
-    "signin.aws.amazon.com",
+    # `.signin.aws.amazon.com` ALONE, and the apex is NOT listed beside it - measured 2026-09-06,
+    # and it is the difference between the two syntaxes biting. Route 53 DNS Firewall REQUIRED
+    # both forms (`x` for the apex, `*.x` for subdomains); Squid's `.x` covers both, and listing
+    # the apex as well is **FATAL**, not a warning: `ERROR: '.signin.aws.amazon.com' is a
+    # subdomain of 'signin.aws.amazon.com'` followed by `FATAL: Bungled`.
     ".signin.aws.amazon.com",
     # The console families, including the two static-asset hosts and the consent widget.
-    "console.aws.amazon.com",
+    # Same collapse as the sign-in family above, and the same fatal error if the apex comes back.
     ".console.aws.amazon.com",
     ".console-api.aws.amazon.com",
     ".console.api.aws",
@@ -330,8 +334,11 @@ locals {
     # needs and what a notebook must never have. Under the old DNS firewall both planes shared
     # one list and both got it; splitting the filters is what makes narrowing it possible, and
     # this comment is the record that it was narrowed rather than forgotten.
+    # A DEEPER name under a wildcard is only a WARNING in Squid, not fatal - which is why
+    # `d35uxhjf90umnp.cloudfront.net` stood here until 2026-09-06 without breaking anything. It is
+    # removed because it is redundant: `.cloudfront.net` already covers it, and a line that
+    # produces a warning on every reconfigure is a line somebody eventually stops reading.
     ".cloudfront.net",
-    "d35uxhjf90umnp.cloudfront.net",
   ]
 
   # (ii) SAGEMAKER'S STRICTER LIST - what a NOTEBOOK may reach. Today's DNS Firewall allow-list
@@ -444,6 +451,27 @@ resource "aws_ssm_parameter" "proxy_allowlist" {
     # the answer is a parameter per plane (which a per-plane review would want anyway), never
     # Advanced tier at USD 0.05/parameter-month for a list of domain names. 3800 leaves room for
     # the entries added between one reading of this line and the next.
+    # THE APEX-PLUS-WILDCARD COLLISION, CAUGHT AT PLAN TIME (added 2026-09-06, after it took the
+    # proxy's first boot down to an empty allow-list). Squid's `dstdomain` treats `x` beside `.x`
+    # in ONE acl as **FATAL** - and the trap is that the list this was translated from, a Route 53
+    # DNS Firewall allow-list, REQUIRED both forms to mean what `.x` means here. So every future
+    # entry copied from that side carries the defect in, and the failure is invisible from this
+    # repository: the render script reverts, the proxy keeps an EMPTY list, and every source is
+    # refused by name.
+    #
+    # A DEEPER name under a wildcard (`a.b.example.com` under `.example.com`) is only a WARNING and
+    # is deliberately NOT failed here - it is redundant rather than wrong, and a gate that refuses
+    # both would refuse a list that works.
+    precondition {
+      condition = length(flatten([
+        for plane, cfg in local.proxy_allowlist : [
+          for d in cfg.allow : "${plane}:${d}"
+          if !startswith(d, ".") && contains(cfg.allow, ".${d}")
+        ]
+      ])) == 0
+      error_message = "a plane lists a domain AND its own wildcard, which Squid refuses with `FATAL: Bungled`: ${join(", ", flatten([for plane, cfg in local.proxy_allowlist : [for d in cfg.allow : "${plane}:${d} beside .${d}" if !startswith(d, ".") && contains(cfg.allow, ".${d}")]]))}. Keep the dotted form only - `.x` matches the apex as well."
+    }
+
     precondition {
       condition     = length(jsonencode(local.proxy_allowlist)) < 3800
       error_message = "the rendered allow-list is ${length(jsonencode(local.proxy_allowlist))} bytes, against Parameter Store's 4 KB Standard-tier ceiling. Split it per plane rather than paying for Advanced."
