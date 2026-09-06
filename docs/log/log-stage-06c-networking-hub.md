@@ -1064,3 +1064,62 @@ thing to actually run. They are written up individually because three of them ar
   Production VPC. It is SharedServices now — supply chain and build hosts — and whether a SageMaker
   name still belongs there is Stage 7/9's question, not 5.5's. **Removing an endpoint because it looks
   out of place is how a path disappears**, so it is flagged in the code and kept.
+
+## 2026-09-06 — 5.6: `NO_PROXY` generated, and eight names that no rule produces
+
+- **[Claude] `vpc-egress-v0.7.0`, and the interesting half is that the module does not BUILD the
+  names — it reads them.** `local.service_names` already turns `sts` into
+  `com.amazonaws.us-west-2.sts`, so deriving `sts.us-west-2.amazonaws.com` the same way looks like
+  three lines of `replace()`. Measured against the Region instead, across the **29** services this
+  estate can declare, **eight** of them do not follow:
+
+  | token | private DNS name | why a rule would miss it |
+  |---|---|---|
+  | `ecr.api` | `api.ecr.us-west-2.amazonaws.com` | the two labels swap |
+  | `ecr.dkr` | `*.dkr.ecr.us-west-2.amazonaws.com` | swap **and** a wildcard |
+  | `sagemaker.api` | `api.sagemaker.us-west-2.amazonaws.com` | swap |
+  | `sagemaker.runtime` | `runtime.sagemaker.us-west-2.amazonaws.com` | swap |
+  | `sagemaker.studio` | `*.studio.us-west-2.sagemaker.aws` | a **different TLD** |
+  | `emr-dashboard` | `*.emrappui-prod.us-west-2.amazonaws.com` | an unrelated name |
+  | `emr-serverless-services.sessions` | `*.s.emr-serverless-services.…` | `sessions` → `s` |
+  | `elasticmapreduce-services` | `*.elasticmapreduce-services.…` | wildcard |
+
+  So the generator is a `data "aws_vpc_endpoint_service"` per declared service, reading
+  `PrivateDnsName` at plan time: free, needs no endpoint to exist, and is a **reading** rather than
+  a claim ([Lesson 38](../plan/lessons.md)). The one transformation left is a deletion —
+  `trimprefix(…, "*.")`, because `NO_PROXY` wildcards are documented to work as **suffixes only**.
+- **[Claude] THE STEP'S OWN PARENTHESIS WAS AMBIGUOUS, AND THE WRONG READING FAILS OPEN.** It says
+  the list carries the fixed entries *"(S3 and DynamoDB ride the gateway prefix lists)"*, which can
+  be read as *so leave them out*. The reading that holds is the opposite, and the measurement is
+  what settles it: `describe-vpc-endpoint-services` on `com.amazonaws.us-west-2.s3` returns a
+  `PrivateDnsName` for its **Interface** shape and **`None`** for its **Gateway** shape. A gateway
+  endpoint has no private DNS at all — it works by *routing*, the public name resolving to a public
+  address that a prefix-list route carries to the endpoint. Two consequences: the generator
+  **cannot** emit those two names, and if they are missing from `NO_PROXY` every S3 call goes to
+  Squid, leaves through the hub's IGW as a **public** call, and arrives at S3 carrying neither
+  `aws:SourceVpc` nor `aws:SourceVpce`. Those are the two keys the S3 gateway policy, the lake's
+  bucket policies and the projects bucket are all written on. **The data perimeter would fail open,
+  silently, for the one service that holds the data.** Hand-named in the fixed half, with the
+  reasoning in the file.
+- **[Claude] Bare entries, not dot-prefixed, and the two shapes in the list differ for a reason.**
+  An AWS service endpoint **is** the host (`sts.us-west-2.amazonaws.com`), so a leading dot would
+  make the exact name miss under clients that read a dot as *subdomains only* (Go's `httpproxy`);
+  CPython, botocore and curl all match a bare entry against the host and its subdomains, so bare
+  covers both. The two internal zones keep their dots and are named **in full** because they are
+  siblings, not parent and child: `awsds.internal` does not cover `awsds-pages.internal`. The old
+  family (`sandbox.internal`, `prod.internal`, `pages.internal`) is deliberately absent — an entry
+  here is exactly the kind of thing that would keep a retired zone alive past 2.6.
+- **[Claude] RENDERED ON ALL FOUR SLICES, not merely validated** ([Lesson 54](../plan/lessons.md)),
+  by pointing one caller at the local module per Recipe B and then re-planning each at the released
+  tag: Sandbox **26** entries, Staging **19**, `VPC-SharedServices` **21**, `VPC-Workloads` **8**.
+  That last one is the fixed half alone and it is the *right* answer, not an empty one: a VPC with
+  no interface endpoint still has two `[P]` gateway endpoints, so S3 and DynamoDB must bypass the
+  proxy there exactly as everywhere else.
+- **[Claude] Three output `precondition`s for the three ways this variable fails silently** — a
+  `*`, a `/`, a `:`. None of them errors at the client: a malformed entry simply never matches, and
+  the symptom is a 403 for a service that should never have been proxied. Checked where the list is
+  built rather than in a script somebody has to run.
+- **[Claude] Gates:** `terraform validate` on the module alone, `make check` **OK**, `terraform fmt`
+  clean, four plans green (`27`/`20`/`13` to add and *outputs only* for `workloads-egress`). Nothing
+  applied — the four `egress/` slices are `[E]` and down, so the outputs materialise at the next
+  `make up`.
