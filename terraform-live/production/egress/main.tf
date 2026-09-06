@@ -47,5 +47,26 @@ module "egress" {
   # (no Studio domain here - endpoints for people belong to the Interactive accounts).
   # lakeformation stays IN the core deliberately: Production holds the LF read AND governed
   # write share (D22), so there it is load-bearing, not speculative.
-  extra_services = ["sagemaker.api", "sagemaker.runtime"]
+  # STEP 5.5's SESSION MANAGER TRIO (2026-09-06). **Session Manager does not work through an HTTPS
+  # proxy listener**, so with no default route in this VPC the shell is these three endpoints or
+  # nothing - and the shell that will read the proxy's own access log must not depend on the proxy
+  # (Lesson 24: an instrument and its subject need different channels).
+  #
+  # ADDED HERE AHEAD OF THE HOST, WHICH IS DELIBERATE AND NARROW. This VPC holds **zero instances
+  # today** (measured 2026-09-06 - Production's only two are in VPC-Networking, and those reach SSM
+  # through the IGW). Step **5.8 lands the buildbox here** and Stage 7 the runners, so the endpoints
+  # precede their first user by one step rather than by a stage. The slice is `[E]`: nothing is
+  # billed until a `make up` that a build session asks for anyway.
+  extra_services = [
+    # Vestigial from Stage 3, when production/foundation was simply "the" Production VPC. This VPC
+    # is SharedServices now - the supply chain and the build hosts - and whether a SageMaker name
+    # still belongs is Stage 7/9's question, not 5.5's. Left rather than trimmed on the way past:
+    # removing an endpoint because it looks out of place is how a path disappears.
+    "sagemaker.api",
+    "sagemaker.runtime",
+
+    "ssm",
+    "ssmmessages",
+    "ec2messages",
+  ]
 }

@@ -1028,3 +1028,39 @@ thing to actually run. They are written up individually because three of them ar
 - **[Claude] The rates deliberately exclude 5.3's optional groups.** `bedrock` adds 0.040 and `emr`
   0.070 only for an apply that names them; a static rate that assumed them would over-report every
   session that does not. `make status` quotes this column, and the flag's own cost is in `make help`.
+
+## 2026-09-06 — 5.5, and two facts a user question found unrecorded
+
+- **[Claude] Two entries added to `lessons.md`'s undocumented-AWS section**, both from the user asking
+  whether heavy SageMaker traffic escapes NAT cost. The answer was *yes, but not for the reason
+  supposed*, and neither half was written down anywhere:
+  - **An ECR image pull is TWO paths and the heavy one is FREE.** `ecr.api` and `ecr.dkr` carry the
+    auth and the manifest — kilobytes — while the image **layers come from S3**, which here means the
+    `[P]` gateway endpoint: no hourly charge and **no per-GB charge at all**. It is also why AWS
+    requires an S3 gateway endpoint beside the two ECR ones, and the symptom of omitting it is an
+    auth that succeeds and a download that hangs.
+  - **A NAT never carried S3 or DynamoDB traffic here, even under design A** — a prefix-list route
+    beats `0.0.0.0/0`, which `docs/NETWORK.md` has recorded as measured since Stage 3. So removing the
+    NAT did **not** make that traffic cheaper; it was never paying. What design B saves on is the
+    traffic that DID use it — internet downloads at 0.045/GB of processing — which now cross an EC2
+    proxy that charges no per-GB processing at all. **Two axes, and the one that looks heaviest was
+    already free.**
+- **[Claude⚡] 5.5: the Session Manager trio in `VPC-SharedServices`** — `production/egress` goes 10 →
+  **13** endpoints, `layers.py` 0.100 → **0.130/h**. Added one step ahead of its first user, which is
+  narrow rather than speculative: **5.8 lands the buildbox in that VPC**, and the slice is `[E]`, so
+  nothing bills until a build session brings it up anyway.
+- **[Claude] `VPC-WORKLOADS` DOES NOT GET IT, AND THE STEP DISQUALIFIES ITSELF.** 5.5 says *every
+  INSTANCE-BEARING spoke*; that VPC bears none. Measured rather than assumed: Production's only two
+  instances are `awsds-prod-vpn` and `awsds-prod-proxy`, **both in `VPC-Networking`** — which reaches
+  SSM through the IGW and needs no endpoint at all. `workloads-egress` already carries the refusal in
+  its own words — *"adding endpoints because the other egress slices have them would bill 0.010/h each
+  for a VPC nothing runs in yet"* — and 0.030/h of Session Manager path for a network with nothing to
+  manage is precisely that purchase.
+- **[Claude] The refusal is written INTO the slice rather than only into this log**, beside the empty
+  lists, because that is where somebody wondering *"why is SSM missing here?"* will actually look. A
+  decision recorded only at the deciding end is a promise the receiving stage never gets (Lesson 34).
+- **[Claude] One thing left alone on the way past, deliberately:** `production/egress` still carries
+  `sagemaker.api` and `sagemaker.runtime` from Stage 3, when `production/foundation` was simply *the*
+  Production VPC. It is SharedServices now — supply chain and build hosts — and whether a SageMaker
+  name still belongs there is Stage 7/9's question, not 5.5's. **Removing an endpoint because it looks
+  out of place is how a path disappears**, so it is flagged in the code and kept.

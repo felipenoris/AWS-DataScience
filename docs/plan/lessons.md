@@ -1245,6 +1245,24 @@ starts at a state nobody named. Entries below carry the stage that found them.
   rule and this project's `/datascience/<env>/…` answer live in `conventions.md`. Listed here because the
   *error text* is the undocumented half.
 
+### ECR, S3 and what a NAT was never carrying
+
+- **AN ECR IMAGE PULL IS TWO PATHS, AND THE HEAVY ONE IS FREE.** `ecr.api` and `ecr.dkr` carry the
+  authentication and the manifest — kilobytes — while **the image LAYERS are fetched from S3**, which in
+  this estate means the `[P]` **gateway** endpoint: no hourly charge and **no per-GB charge at all**. So
+  the expensive-looking part of a container pull costs nothing, and the two interface endpoints are billed
+  for almost no traffic. It is also why AWS requires an S3 gateway endpoint alongside the two ECR ones —
+  without it the pull does not complete, and the symptom is an auth that succeeds and a download that
+  hangs. **Written down 2026-09-06 after a user question found it recorded nowhere** in this repository,
+  which is how a cost model comes to price the wrong thing.
+- **A NAT NEVER CARRIED S3 OR DYNAMODB TRAFFIC HERE, EVEN UNDER DESIGN A** — a prefix-list route is more
+  specific than `0.0.0.0/0`, so the gateway endpoint always won (`docs/NETWORK.md`, measured in Stage 3;
+  the module's own `nat.tf` carried the same sentence until 6c deleted it). **The consequence is a
+  correction to an obvious-sounding inference**: removing the NAT did not make that traffic cheaper,
+  because it was never paying. What design B actually saves is on the traffic that DID use the NAT —
+  internet downloads at **0.045/GB of processing** — which now cross an EC2 proxy that charges **no
+  per-GB processing at all**. Two axes, and the one that looks heaviest was already free.
+
 ### Route 53
 
 - **DNS Firewall needs BOTH `example.com` and `*.example.com` to cover a domain and its subdomains** —
