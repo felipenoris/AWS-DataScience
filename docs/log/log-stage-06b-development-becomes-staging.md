@@ -363,3 +363,19 @@ edit, plan, apply and read-back below is Claude's. Applied as the **infrastructu
 - **[Claude] Two comments went in with the edit**, both recording a *reason* the estate had contradicted:
   the map key stays `@development` until 4.6's `moved {}` blocks, and the steward seat leaves for D14's
   reason (the registry is ECR in Production) rather than for the false one this step used to give.
+
+- **[Claude] Step 2.2, in two commits, applied as `awsds-infra-dev`.** Commit 1 lifted `prevent_destroy`
+  alone and the plan after it read **`No changes`** — a lifecycle flag changes no resource, which is
+  exactly why it is its own commit. Commit 2 removed `persona-vending.tf`, its `nullable = false`
+  variable and the `PERSONA_VENDING_ACCOUNTS` literal in one edit, and applied
+  **`0 added, 0 changed, 1 destroyed`**. Re-plan `No changes`.
+- **[Claude] The step's implied intermediate state does not exist.** With the resource still declared and
+  the tfvar no longer emitted, Terraform refuses to load the slice at all — *no value for required
+  variable* — because the variable is `nullable = false` with no default. So the object, its variable and
+  the vocabulary restoration are necessarily **one** commit; only the guard can be separated. Same family
+  as 1.7's finding, from the other direction: there the gate refused the intermediate state, here the tool
+  does.
+- **[Claude] Read back in BOTH accounts, which is the check.** `awsds-org-project-storage-vending` is gone
+  from this account and **still present in Sandbox**, whose `DataScientistAccess` references it by name. A
+  per-account object removed from the wrong account is a provisioning failure in an account nobody is
+  watching — the failure the guard existed to prevent.

@@ -368,6 +368,17 @@ uses it is destroyed.
   - **Both permission sets survive the stage**: `DataScientistAccess` stays on Sandbox,
     `DevEnvStewardAccess` on Sandbox and Production. What is deleted here is two *assignments*, never a
     set — which is also why nothing in `identity/sso/`'s permission-set half changes.
+- **2.2 — DONE 2026-09-06, in the two commits the runbook asks for.** Commit 1 lifted `prevent_destroy`
+  and the plan after it read **`No changes`** — which is the point of splitting it: "the guard came off" is
+  a reviewable act with no side effect. Commit 2 removed the object, its variable and the derivation's
+  literal together, and applied **`0 added, 0 changed, 1 destroyed`**; re-plan `No changes`.
+  - **The variable is `nullable = false` with no default**, so the intermediate state that step 2.2 used to
+    imply — the resource still declared while the tfvar stops being emitted — is not a state Terraform will
+    even load: it fails with *no value for required variable*. That is why the resource, the variable and
+    the `PERSONA_VENDING_ACCOUNTS` restoration are **one** commit, and only the guard is its own.
+  - **Read back in both accounts**: the policy is gone from this one and **still present in Sandbox**,
+    whose `DataScientistAccess` still references it by name. That pair is the check — a per-account object
+    removed from the wrong account is a provisioning failure nobody is watching.
 - **2.2 — [Claude⚡] Retire the vending policy, two commits.** **Restore the derivation first**:
   `PERSONA_VENDING_ACCOUNTS` is the literal `["sandbox", "development"]` since 1.2 (see 1.6's side effect
   (i)), and it goes back to `list(SMUS_MEMBERS)` here — after 2.1 has removed the assignment that made the
