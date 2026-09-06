@@ -4,6 +4,8 @@
 
 **AMENDED 2026-09-05:** the associated set is **N Sandboxes**, not N + 1 — the `engineering` project profile and the second member's eleven blueprint configurations are unwound at [6b](../stages/stage-06b-development-becomes-staging.md). A deployment target is still never associated: the SageMaker Unified Studio CI/CD CLI deploys only into existing SMUS **projects**, so using it as the promotion path would require a domain association, the Tooling blueprint and a `datazone:*` carve-out in `Workloads`. It is therefore used at most as an **exporter** on the Sandbox side; the pipeline stays the deployer (D28).
 
+**APPLIED 2026-09-06.** The `engineering` profile is destroyed, the second member's **22** objects (11 blueprint configurations and their 11 grants) are gone, and the association was removed from the member side — `studio.py` reads one associated account and one project profile. `US-4` fails if the retired name ever returns.
+
 **In one line:** One SageMaker unified domain (DataZone V2) in Data Governance, associated to Sandbox and Development; a registry, never a runtime.
 
 **Related decisions:** [D12](D12-budget-ceiling.md), [D17](D17-interactive-vs-runtime.md), [D20](D20-staging-account.md), [D21](D21-development-account.md), [D27](D27-catalog-maintenance.md), [D28](D28-workflow-contract.md)

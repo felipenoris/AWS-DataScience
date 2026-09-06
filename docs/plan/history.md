@@ -496,6 +496,23 @@ onwards the file records how the environment changed, not just the plan.
   fallbacks ranked ahead of it) and a §6c on where each VPC's endpoints live. **Provisioned things this
   touches:** none — the whole sitting is plan, prose and decisions.
 
+- **2026-09-06 — Stage 6b run end to end in one day, and it is the first stage that took an account
+  AWAY.** `Development Account` became `Staging Account` in the `Workloads` OU; its eleven blueprint
+  configurations, their eleven grants, the `engineering` project profile, the domain association, the Lake
+  Formation share, both re-grants, the project-storage vending policy, `development/sagemaker/`,
+  `development/data/` and finally `awsds-dev-tfstate` itself were all removed, and
+  `terraform-live/development/` migrated to `staging/` on a new bucket. **The account cap is what forced
+  the question and experience is what answered it**: a second interactive environment turned out to be a
+  place to stand that nobody stood in, so the chain lost a link rather than gaining an account
+  (`Sandbox → Staging → Production`). **What was preserved is more interesting than what was removed** —
+  the VPC keeps `10.50.0.0/16` because a CIDR is immutable, both `[P]` gateway-endpoint ids survived a
+  folder rename, a state migration and a token flip, and the Production peering kept its `pcx-` id through
+  a `for_each` key rename that would otherwise have destroyed it. **Three times a step's rule was right
+  and its list was short** — 4.4's replacements, 4.5's `for_each` keys, 4.6's third assignment — and every
+  one was caught by saving the plan to a file and reading it. **Provisioned things this touches:** one
+  state bucket and KMS key created, one destroyed; one VPC's security groups, flow log and its IAM role
+  replaced; four Production routes re-created; eight state objects moved.
+
 ---
 
 *Plan core: [GENERAL_PLAN.md](../GENERAL_PLAN.md) · Decisions: [docs/plan/decisions/INDEX.md](decisions/INDEX.md) · Stages: [docs/plan/stages/INDEX.md](stages/INDEX.md)*

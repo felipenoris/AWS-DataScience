@@ -11,7 +11,7 @@ decisions 4 and 5, recorded in [the stage log](log/log-stage-06a-unified-studio.
 
 
 > **RE-SCOPED 2026-09-05 — read this before using the numbers below.** The domain has **one** associated
-> account, not two: `Development` becomes the headless `Staging` at
+> account, not two — DONE 2026-09-06: `Development` became the headless `Staging` at
 > [Stage 6b](plan/stages/stage-06b-development-becomes-staging.md), so its eleven blueprint configurations,
 > its eleven authorization grants and the `engineering` project profile are all unwound, and the
 > associated-account count is **N Sandboxes** rather than N + 1 (D26 amended). Two more corrections that
@@ -45,7 +45,8 @@ Three properties this design leans on:
   where `sagemaker:Create*` is denied (1c step 7.6) — a denial that stays free precisely because of
   this split (Stage 6 step 0.4).
 - **Member accounts join by *account association*** — console-only (**no public API**, read
-  2026-08-16): a RAM share DataZone initiates. Sandbox and Development are associated; **Staging and
+  2026-08-16): a RAM share DataZone initiates. **Sandbox alone is associated since 2026-09-06** — the second
+  association was removed from the member side at Stage 6b step 1.4; **Staging and
   Production never are** (D28). **RUN 2026-08-21, and the invitation half of this line was wrong**:
   under Stage 1d's org-wide RAM enablement the share is created organization-scoped and
   **auto-accepts** — zero invitations either side, so *"invitations expiring in 7 days"* names a clock
@@ -156,7 +157,7 @@ via the blueprint's `templateUrl`, so locked values are checked against the temp
 | Field | What it fixes |
 |---|---|
 | the blueprint set | which capabilities projects born of it can ever exercise — carried as environment configurations, § below |
-| account and Region | pinned per profile, **or** deferred to project creation (all associated accounts, or *account pools*). Here: pinned — `experimentation` → Sandbox, `engineering` → Development |
+| account and Region | pinned per profile, **or** deferred to project creation (all associated accounts, or *account pools*). Here: pinned — `experimentation` → Sandbox. *(`engineering` → Development existed until 2026-09-06; the profile was destroyed at Stage 6b step 1.1 and the account converted.)* |
 | Tooling deployment settings | the parameter surface step 1.5 locks: `sagemakerDomainNetworkType = VpcOnly`, idle shutdown, `maxEbsVolumeSize`, TIP (decision 2) — **non-Editable** (Lesson 5: the *Editable* flag is what turns a default into a control) |
 | project files storage | Amazon S3 or a Git repository (§S3 below) |
 | authorization | which users/groups may create projects from it — grantable domain-wide or per domain unit |
@@ -207,7 +208,7 @@ parameters
 | Object | Written by | Lives in | In this design |
 |---|---|---|---|
 | blueprint | AWS | the service | the 23 in the table below (custom blueprints exist as a console feature; outside decision 5, so outside `US-3`'s allow-list) |
-| blueprint configuration | Terraform, per member account (1.4) | domain × account | category 1's **eleven**, in Sandbox and in Development (applied 2026-08-21) |
+| blueprint configuration | Terraform, per member account (1.4) | domain × account | category 1's **eleven**, in Sandbox and in Development (applied 2026-08-21; **Development's 22 objects — 11 configurations and their 11 grants — were destroyed 2026-09-06**, so eleven stand, in one account) |
 | project profile + its environment configurations | domain admin (1.5) | the domain | `experimentation`, `engineering` |
 | project | an authorized user, in the portal | the domain (registry) | step 2.4's throwaway first |
 | environment | DataZone, through the provisioning role | the member account | read back by `US-8` / step 2.5 |
@@ -221,7 +222,7 @@ The two project profiles this installation carries — created 2026-08-21 by the
 | Profile | Provisions into | The unit of work (D21) | Who may create from it |
 |---|---|---|---|
 | `experimentation` | **Sandbox** | a notebook — experimentation happens where nothing downstream depends on it | `sso-group-data-scientists` |
-| `engineering` | **Development** | a pipeline — where the promotion chain starts | `sso-group-deployment-managers` |
+| ~~`engineering`~~ | ~~**Development**~~ | **DESTROYED 2026-09-06** (Stage 6b step 1.1). The account it targeted became the headless `Staging`, and the chain now starts at a repository rather than an account | — |
 
 Identical in everything but the target account: **eleven environment configurations** (decision 5's
 category 1), `Tooling` the only base — `ON_CREATE`, every other blueprint `ON_DEMAND`; a second base
@@ -264,7 +265,7 @@ kind of claim:
 - **`experimentation` → the data scientists** is a standing right. It is the Sandbox, where D21 is
   already decided.
 - **`engineering` → the deployment managers** is the **instrument of D21's open half** — whether a
-  person needs an interactive surface next to *Development's* data at all. It goes to the persona
+  person needs an interactive surface next to a second account's data at all. It goes to the persona
   that owns the promotion chain the account exists to start, and if that question closes against the
   surface, the grant is removed. **That removal would be the expected outcome, not a regression.**
 
@@ -583,7 +584,9 @@ vend prefix-scoped **project-role** credentials (`s3control GetDataAccess`) — 
 Studio uses, so no second permission surface appears over the projects bucket or the project CMK.
 The persona's half is a **customer-managed policy**, `awsds-org-project-storage-vending`, created by
 each member's `foundation/` slice and referenced by name from `DataScientistAccess` (**applied 2026-08-23**) — one object per
-member account, each naming its **own** account's instance (Development's does not exist until that
+member account, each naming its **own** account's instance (the second member's never existed, and since
+  2026-09-06 never will — that account is the headless `Staging` and its vending policy went at Stage 6b
+  step 2.2; the wording below dates from when it was expected
 account's first project, and a policy may name a resource that does not exist); the consumer is
 **`s3-read-write/`**,
 whose README carries the grant recipe and the first-run probe sequence. Two properties to hold onto:
@@ -760,7 +763,7 @@ spent the first time it lands.
 
 **Both repositories live in the Production account, and the `prod` in their names is where the
 *registry* is, not who the image serves** — `terraform-live/production/registry/ecr.tf` builds them as
-`awsds-${var.env}-ecr-*` with `env = prod`, and Sandbox and Development reach them by
+`awsds-${var.env}-ecr-*` with `env = prod`, and Sandbox and Staging reach them by
 `AllowConsumerAccountsToPull`. Reading the pair as "one for production, one for development" inverts
 D17: there is **one** ancestor for every environment, and what gets promoted is the code, never a
 per-environment image.

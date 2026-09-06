@@ -159,7 +159,8 @@ What it provides, in the order this plan uses it:
    engine asks Lake Formation" (the mechanism behind D13);
 2. **The permission layer** — grants at database/table/column grain (row filters arrive at Stage 11);
 3. **LF-Tags** — the attribute system below, with inheritance and tag-based grants (LF-TBAC);
-4. **Cross-account sharing** through RAM — how Sandbox and Development reach the lake at all (INT-03),
+4. **Cross-account sharing** through RAM — how Sandbox reaches the lake at all (INT-03; it was Sandbox
+   and Development until 2026-09-06, when the second account's share was revoked at Stage 6b step 2.3),
    with the version-4 parameters `DL-5` defends (INT-11).
 
 Its role: the enforcement point. Execution roles hold **no S3 permission on registered prefixes**, so
@@ -286,7 +287,9 @@ causes that look identical — the share never arrived, or the account is not ye
 **before** its first local catalog object exists, because they act at creation time.
 
 **The principals** (who the first element can be): the consumer **accounts** — `Sandbox Account 1` and
-`Development` today, one more per business unit at N>1 (INT-03's N+2) — for the cross-account shares;
+**one consumer today** — `Sandbox Account 1`; `Development` left the list on 2026-09-06 and the account
+became the headless `Staging`, which D20 keeps off the lake entirely. One more per business unit at N>1
+(INT-03's N+2) — for the cross-account shares;
 inside accounts, the persona permission-set roles; `awsds-data-catalog-maintenance` for catalog work;
 from Stage 6, the project execution roles; from Stage 9, `awsds-prod-job-exec` (read + the governed
 write). LF-Tags never gate the read/write direction — the **verbs** in the permission list do; the tags
@@ -352,7 +355,7 @@ TBAC expressions above — at pass 3, and each consumer account's own **re-grant
 ## Drop-box
 
 The ingestion letterbox: **the only governed path for a file to enter the lake from the work accounts.**
-The writer (a scientist in Sandbox/Development) may only `PutObject` into dated prefixes — no read-back,
+The writer (a scientist in Sandbox) may only `PutObject` into dated prefixes — no read-back,
 no list, no delete. The crawler (maintenance role, D27) reads it to infer schema. The Production job
 (Stage 9) reads **and deletes** — a letterbox nobody empties fills up.
 

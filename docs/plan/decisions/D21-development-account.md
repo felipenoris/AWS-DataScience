@@ -4,6 +4,8 @@
 
 **SUPERSEDED BY ITS OWN LARGER BRANCH, 2026-09-05 (user).** The branch this file wrote out on 2026-08-13 — Development leaves the chain, Sandbox graduates straight to Staging — is taken: the trigger fired on experience (no work was found that needs a person next to Development's data) rather than on the quota, which merely removed the alternative. The chain is **N Sandboxes → one Staging → one Production**; `objectives.md` was edited by the user in the same sitting. Its stated precondition is now Stage 7's to deliver (one shared GitLab group namespace), and its surviving objection is answered: CI applies into Staging and never into Sandbox, so the by-hand engineering apply lives in `sandbox/app/`. The file and its number are kept — the record of what was tried is the point.
 
+**CARRIED OUT 2026-09-06.** There is no Development account: `terraform-live/development/` is deleted, `awsds-dev-tfstate` destroyed, and the `engineering` project profile with it. What replaced the account is **nothing** — a pipeline definition is developed in git and executed into Staging, so the boundary this file argued for survives and now runs between a Sandbox and a repository rather than between two accounts.
+
 **In one line:** A Development account: Sandbox becomes pure experimentation and the promotion chain starts in Development.
 
 **Related decisions:** [D17](D17-interactive-vs-runtime.md), [D18](D18-data-scientist-access.md), [D19](D19-derived-zone.md), [D22](D22-data-governance-account.md), [D23](D23-ou-structure.md), [D26](D26-unified-studio.md), [D35](D35-sandbox-cardinality.md)

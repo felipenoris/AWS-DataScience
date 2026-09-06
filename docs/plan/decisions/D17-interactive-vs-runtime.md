@@ -4,6 +4,8 @@
 
 **AMENDED 2026-09-05 (user):** sharpened to **humans run code in Sandbox and nowhere else**. With `Development` converted to `Staging` ([6b](../stages/stage-06b-development-becomes-staging.md)) the Interactive OU holds the Sandboxes alone; Staging and Production carry the SageMaker **runtime** only — jobs, Pipelines, batch transform, the Model Registry and endpoints, none of which needs a domain object — and the `Workloads` OU denies the interactive surface and `datazone:*` outright.
 
+**APPLIED 2026-09-06.** Measured rather than asserted: `studio.py` reads `US-6 pass — datazone reads denied in awsds-infra-staging`, and the battery attributes that account's OU denies to the same policy id Production returns. **No account sits directly in `Interactive` any more**, so that document's permissive half is now measured through `Sandbox Account 1`'s inheritance — a change of sample, not of claim.
+
 **In one line:** Interactive compute exists only in the Interactive OU; deployment targets carry the runtime, and only pipelines submit to it.
 
 **Related decisions:** [D14](D14-supply-chain-account.md), [D20](D20-staging-account.md), [D21](D21-development-account.md)
