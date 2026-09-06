@@ -110,10 +110,18 @@ CANARY_PROFILE = "awsds-policy-canary"
 # sitting rather than half-fixed: a check whose message and whose assertion disagree is read by
 # whoever is debugging at the time, and it tells them the wrong thing at the worst moment.
 #
-# THE ROW HAS ONE MORE READER COMING: Stage 6c step 0 spends 10.40 (D38's hub). The day it does,
-# these three checks are re-pointed at whatever is unallocated then - or retired, if nothing is.
-# They are worth keeping while a free range exists, because scripts/tfhygiene/backend.py's CIDRS
-# is the allocation table and nothing else measures whether AWS agrees with it.
+# AND THE ROW IS PERMANENT, WHICH IS THE OPPOSITE OF WHAT THIS COMMENT SAID FOR ONE DAY. It read
+# "Stage 6c step 0 spends 10.40, and the day it does these checks are re-pointed or retired" -
+# copied out of Stage 6b step 4.1, which says 6c "consumes" the freed range. **Stage 6c step 0.2
+# says the opposite in as many words**: 10.40.0.0/16 "is free and stays unallocated", and D38's
+# hub is built from 10.30 (the existing VPC, re-labelled), 10.31 and 10.32. The stage that has to
+# BUILD it is the one that is right (Lesson 32), and it was corrected here on 2026-09-06 before
+# any 6c code was written.
+#
+# SO THESE THREE CHECKS NEED NO EXPIRY DATE. They measure that AWS agrees with
+# scripts/tfhygiene/backend.py's allocation table about a range nobody has claimed, and nothing
+# else in the estate measures that at all. They only ever need re-pointing if a later stage
+# allocates 10.40 - and no stage currently plans to.
 UNALLOCATED_CIDR = "10.40.0.0/16"
 WIREGUARD_CIDR = "10.90.0.0/24"
 
@@ -582,7 +590,8 @@ def main(argv: list) -> int:
                 f"{p} {rtb}: {dest} -> {target} ({state}) overlaps "
                 f"{UNALLOCATED_CIDR}, which scripts/tfhygiene/backend.py's CIDRS "
                 "table allocates to nobody. Either the route is a mistake or the "
-                "range was spent without being written down (6c step 0 spends it).",
+                "range was spent without being written down. No stage plans to allocate "
+                "it: 6c step 0.2 keeps it free, and 10.60 is what D38 reserves.",
             )
             nt3 += 1
     if nt3 == 0 and routes:

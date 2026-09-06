@@ -979,3 +979,31 @@ section names, run rather than assumed.*
   - **`RC-5` passed while listing the new set**, and that is correct scoping rather than a miss: it checks
     D18's persona row, and the landing zone's sets are not its subject. Worth knowing before someone reads
     that `pass` as "the assignment list is as designed".
+
+## 2026-09-06 — 6c pass 0 read before it was written, and it contradicted 6b
+
+*Claude. No AWS call in this entry beyond a re-run of `networking.py`; this is a plan reading.*
+
+- **[Claude] Two stages disagreed about `10.40.0.0/16`, and the wrong one had already been copied into
+  six files — two of them instruments.** Stage 6b step 4.1 says the freed range is one *"6c step 0
+  consumes"*. **Stage 6c step 0.2 says the opposite in as many words**: 10.40 *"is free and stays
+  unallocated"*, and D38's hub is built from **10.30** (the existing Production VPC, re-labelled),
+  **10.31** and **10.32**, with **10.60** reserved for the account D38's revision trigger names.
+  - **The stage that has to BUILD it is the one that is right** (Lesson 32: two spellings survive while
+    nothing has to build the thing, and the building side is the correct one). 6b was writing a forward
+    claim about a stage it does not execute; 6c is the stage that allocates.
+  - **Where it had spread, in one day:** `aws/networking.py` (twice — the constant's comment and `NT-3`'s
+    failure message), `scripts/tfhygiene/backend.py`'s `CIDRS` comment, `docs/AWS_STATE.md`,
+    `docs/plan/decisions/D20`, `CLAUDE.md`, and 6b's own Status row and Deliverables. All corrected in
+    place, with the wrong clause kept and struck at 4.1 rather than deleted — a sentence that has been
+    copied six times is one a reader will meet again.
+  - **The consequence is that three checks stopped having an expiry date.** `NT-3`, `NT-5` and `NT-6`
+    assert that nothing routes or peers into 10.40, and the comment I wrote yesterday said they would be
+    re-pointed or retired *"the day 6c spends it"*. No stage spends it. They measure that AWS agrees with
+    the allocation table about a range nobody has claimed — and **nothing else in the estate measures
+    that at all**. Re-run after the correction: `NT-3`, `NT-5`, `NT-6` all `pass`.
+- **[Claude] The rest of 6c pass 0 checks out against the tree as 6b left it.** `CIDRS` already carries
+  `sandbox` 10.20 and `staging` 10.50 exactly as step 0.2 expects; step 0.4's prediction that *"the
+  existing VPC's tags change in place while its security groups are replaced"* is no longer a prediction —
+  6b step 4.4 measured precisely that shape on the Staging VPC, and the flow-log **IAM role** was replaced
+  with the group, which 0.4 already names as the second account-unique object.
