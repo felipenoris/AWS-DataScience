@@ -629,3 +629,48 @@ such; every reading is Claude's, as the infrastructure user.*
     `local.peer_vpc_ids` as a hand-written two-row map and never iterates `var.peers`, so the extra key
     is inert. The opposite would have been a third VPC peering proposed by a plan nobody was reading for
     that.
+
+## 2026-09-06 — steps 4.2 and 4.3: the tree moves, and the gate is an empty plan
+
+*The 4.2 apply is the user's; everything else Claude's, as the infrastructure user.*
+
+- **[user] Step 4.2 applied: `8 to add, 0 to change, 0 to destroy`** → `awsds-staging-tfstate` and
+  `alias/awsds-staging-tfstate`, both read back (`Enabled`/`CUSTOMER`).
+- **[Claude] Phase 2 of the bootstrap pattern, same sitting**: backend block uncommented,
+  `init -backend-config=backend.hcl -migrate-state` into the bucket the slice had just created, the two
+  local state files deleted, re-plan **`No changes`**. Every bootstrap slice in this tree does this once;
+  this is the sixth.
+  - **The parity check rejected the first attempt and the reason is worth keeping.** Three lines of prose
+    were added above the commented backend block explaining the phase. Parity compares that file **with
+    the comment markers stripped**, so prose inside it is *content*, not commentary, and the slice read
+    as diverged from the reference. The file tolerates exactly two forms — commented and live — and the
+    explanation already lives in the header every copy shares.
+
+- **[Claude] Step 4.3 — the gate passed.** `git mv` moved `foundation/`, `egress/` and `probes/` into
+  `staging/`; `development/bootstrap/` stayed. `terraform plan` after `init -migrate-state`:
+  **`No changes`**, with the same gateway-endpoint ids the baseline had shown, so the state arrived
+  intact rather than being rebuilt.
+  - **The tfvars were NOT regenerated, and that is the whole of Recipe E step 3.** The untracked
+    `terraform.auto.tfvars` travelled with the directory still reading `env = "dev"`,
+    `environment_tag = "development"`, `vpc_cidr = "10.50.0.0/16"`. Only `gen-backend-hcl.py` ran. That is
+    what makes the empty plan mean *the migration worked* rather than *nothing was compared*.
+  - **Step 4.1 was split in two, and the half that was NOT done is the interesting one.**
+    `CIDRS["staging"]` became `10.50.0.0/16` in this same commit — it had to, because the tfvars are
+    generated from the folder key and a `staging` folder reading the old `10.40` allocation would have
+    proposed **replacing the VPC**. But the `development` row was **kept** and 10.40 is **not free yet**:
+    `production/foundation/peers.tf` reads `var.peers["development"]` by literal and that map is built
+    from this table's KEYS, so deleting the row breaks another account's slice until 4.5 re-points the
+    four hand-written provider aliases. Recipe E step 8 in one sentence — *keep the old vocabulary rows
+    alive* — applied to the one table another account reads. **6c step 0 must not spend 10.40 until 4.5.**
+  - **The two `[E]` slices were migrated after all, and the step said they need not be.** It was right
+    about the *necessity* and wrong about the tidiest path. Zero resources is still a state OBJECT with
+    a lineage — measured, 749 and 697 bytes in the old bucket — and their `.terraform/` directories moved
+    across still pointing at `awsds-dev-tfstate`, **a bucket step 4.7 destroys**. Left alone they would
+    have made the next `make up` stop and prompt for a backend change in a slice nobody was thinking
+    about. Two `init -migrate-state` calls, no plan gate, because a torn-down slice has nothing to gate.
+- **[Claude] Four documents reviewed in the same sitting, which is where the mechanical gates earn
+  their keep.** `./scripts/check-network-doc.py` went red immediately on three renamed slices and is
+  green again; `conventions.md` §6 gained a real `staging/` entry and `(development/)` shrank to the one
+  slice it still has; `terraform-live/README.md`'s account table had `development/` pointing at a profile
+  that no longer exists and `staging/` described as *"none yet — the account is unvended"*, and its
+  opening line still said **five** bootstrap slices. Only the first of those four was caught by a gate.

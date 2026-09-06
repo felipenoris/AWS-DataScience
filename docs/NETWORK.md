@@ -308,9 +308,9 @@ distinguishable outcomes:
 | **Perimeter probe** `awsds-sandbox-probe-perimeter` | isolated · az1 | `10.20.135.117` at reading | `[E]` `sandbox/probes/` | SG `awsds-sandbox-probe-perimeter` — no ingress, egress all |
 | **Peering probe** `awsds-sandbox-probe-peering` | private · az1 | `10.20.30.207` at reading | `[E]` `sandbox/probes/` | SG `awsds-sandbox-probe-peering` — egress to `10.20.0.0/16` and `10.30.0.0/16` only |
 | **Gateway endpoints** S3 + DynamoDB | — (prefix-list routes, no ENI) | none — their **ids** are the INT-05 anchors, the only endpoint ids any policy may name | `[P]` `*/foundation/`, all three VPCs | endpoint policy: the organization's resources + the AWS-owned bucket list (§8) |
-| **Development**, when its `egress/` is up | public az1 · private az1 | one NAT ENI + 11 interface-endpoint ENIs (the same list as Sandbox) | `[E]` `development/egress/` | `awsds-dev-endpoints` |
+| **Development**, when its `egress/` is up | public az1 · private az1 | one NAT ENI + 11 interface-endpoint ENIs (the same list as Sandbox) | `[E]` `staging/egress/` | `awsds-dev-endpoints` |
 | **Production**, when its `egress/` is up | public az1 · private az1 | one NAT ENI + **10** interface-endpoint ENIs (the core eight + `sagemaker.api`, `sagemaker.runtime` — no `sagemaker.studio`: nobody works there — and since 2026-08-25 **no account carries `datazone`**) | `[E]` `production/egress/` | `awsds-prod-endpoints` |
-| **INT-09 probe** `awsds-dev-probe-int09` / **target probe** `awsds-prod-probe-target` (+ a second ENI in Production's isolated tier) | Development private az1 / Production private az1 + isolated az1 | `[E]` addresses — the target's are published as `probe.prod.internal` and `probe-isolated.prod.internal` while it exists | `[E]` `development/probes/`, `production/probes/` | `awsds-prod-probe`: TCP/443 from the two source VPC ranges, no egress rule |
+| **INT-09 probe** `awsds-dev-probe-int09` / **target probe** `awsds-prod-probe-target` (+ a second ENI in Production's isolated tier) | Development private az1 / Production private az1 + isolated az1 | `[E]` addresses — the target's are published as `probe.prod.internal` and `probe-isolated.prod.internal` while it exists | `[E]` `staging/probes/`, `production/probes/` | `awsds-prod-probe`: TCP/443 from the two source VPC ranges, no egress rule |
 | **Not built yet, addresses reserved by tier**: GitLab + Pages + internal ALB, runners, jobs, orchestration | Production **private** tier (Stages 7-10) | — | — | Stage 7's GitLab rule will admit the WireGuard **security group by id** across the peering — never the client range, which never arrives |
 
 **Names, not addresses**: `sandbox.internal` (this VPC's zone), `prod.internal` and `pages.internal` (Production's, associated into Sandbox and Development), and the interface endpoints' private DNS names — §7.
@@ -321,12 +321,12 @@ distinguishable outcomes:
 
 | Slice | Layer | What it creates on the network |
 |---|---|---|
-| `sandbox/foundation/` · `development/foundation/` · `production/foundation/` | `[P]` | one `terraform-modules/vpc` each — the VPC, six subnets, the IGW, four route tables, the two gateway endpoints with their policies, the tier and endpoint security groups, the flow log. Plus, per account: the private zones, the peering **requesters** (Sandbox, Development) and the **accepter** with every route and zone association (Production) |
+| `sandbox/foundation/` · `staging/foundation/` · `production/foundation/` | `[P]` | one `terraform-modules/vpc` each — the VPC, six subnets, the IGW, four route tables, the two gateway endpoints with their policies, the tier and endpoint security groups, the flow log. Plus, per account: the private zones, the peering **requesters** (Sandbox, Development) and the **accepter** with every route and zone association (Production) |
 | `sandbox/foundation/` alone | `[P]` | the VPN anchors: the Elastic IP `52.89.212.1`, the security group `awsds-sandbox-vpn` (the estate's only world-open rule), the host-key secret |
-| `sandbox/egress/` · `development/egress/` · `production/egress/` | `[E]` | one `terraform-modules/vpc-egress` each — the NAT gateway with its own Elastic IP, the private tier's `0.0.0.0/0`, the interface endpoints with their policy, and (Interactive only) the DNS Firewall rule group, its two domain lists and the query log |
+| `sandbox/egress/` · `staging/egress/` · `production/egress/` | `[E]` | one `terraform-modules/vpc-egress` each — the NAT gateway with its own Elastic IP, the private tier's `0.0.0.0/0`, the interface endpoints with their policy, and (Interactive only) the DNS Firewall rule group, its two domain lists and the query log |
 | `sandbox/vpn/` | `[D]` | one `terraform-modules/wireguard` — the host, its `wg0`, its masquerade rules for the tunnel **and** for the isolated tier, its handshake log and alarm |
 | `sandbox/buildbox/` | `[E]` | the build host, its egress-only security group, and **the isolated tier's only default route**, at the WireGuard host's ENI |
-| `sandbox/probes/` · `development/probes/` · `production/probes/` | `[E]` | the throwaway hosts that measure what a `describe` cannot — the perimeter, both peerings, the flow-log pair — plus Production's second ENI and the two `probe*.prod.internal` records |
+| `sandbox/probes/` · `staging/probes/` · `production/probes/` | `[E]` | the throwaway hosts that measure what a `describe` cannot — the perimeter, both peerings, the flow-log pair — plus Production's second ENI and the two `probe*.prod.internal` records |
 | `sandbox/sagemaker/` | `[P]` | **no network object of its own** — it hands the blueprint the VPC id, the private subnets and their zone ids, which is what makes every project app land where §5 and §6 describe. Named here because the check cannot see that relationship and a reader must |
 
 **Not network-bearing, and the absence is the design**: `*/bootstrap/`, `identity/sso/`, `identity/org-policies/`, `*/data/`, `data-governance/governance/` and `production/registry/` create nothing that holds an address — Data Governance and Identity have no VPC at all (D22, D29).
@@ -678,7 +678,7 @@ flowchart LR
         Z3["interface-endpoint private zones [E]<br/>26 visible at reading: per endpoint, the amazonaws.com name<br/>and its api.aws / on.aws / app.aws sibling"]
         PUB["public DNS, through the resolver"]
     end
-    DEVR["Development resolver 10.50.0.2<br/>prod.internal · pages.internal · no zone of its own<br/>DNS Firewall only while development/egress/ is up"]
+    DEVR["Development resolver 10.50.0.2<br/>prod.internal · pages.internal · no zone of its own<br/>DNS Firewall only while staging/egress/ is up"]
     PRDR["Production resolver 10.30.0.2<br/>prod.internal · pages.internal<br/>NO DNS Firewall — vpc-egress v0.1.0, no interactive user there"]
 
     LAP --> FW

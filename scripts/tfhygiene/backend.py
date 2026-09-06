@@ -106,11 +106,20 @@ PROFILES = {
 # to compare.
 SANDBOX_SUPERNET = "10.16.0.0/13"  # room for 8 business units; avoids 10.30/10.40/10.50
 
+# STAGING IS 10.50 AND NOT 10.40, AND THE SWAP IS THE POINT (Stage 6b step 4.1, 2026-09-06).
+# 10.40 was reserved for a `Staging` this project never vended - the quota refused it, and the
+# account was made by RENAMING `Development`, which has held 10.50.0.0/16 since Stage 3. A VPC
+# CIDR is IMMUTABLE, so leaving this row at 10.40 would make the folder rename propose replacing
+# the VPC - and with it every subnet, route table, endpoint and the peering Production accepts.
+# The `development` row outlives the folder deliberately: `production/foundation/peers.tf` reads
+# `var.peers["development"]` by literal, and that map is built from this table's KEYS. Both go in
+# one commit at 4.5, with the four hand-written provider aliases. 10.40 is FREE from that commit
+# and 6c step 0 spends it.
 CIDRS = {
     "sandbox": "10.20.0.0/16",  # unit 1 - the literal Stage 4 and the stage's views use
     "production": "10.30.0.0/16",
-    "staging": "10.40.0.0/16",
-    "development": "10.50.0.0/16",
+    "staging": "10.50.0.0/16",
+    "development": "10.50.0.0/16",  # same account, two keys - closes at 4.5
 }
 
 # Outside every VPC range and never seen inside AWS - the WireGuard instance SNATs (Stage 3
