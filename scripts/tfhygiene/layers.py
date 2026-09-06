@@ -268,15 +268,30 @@ SLICES = [
     Slice("production", "workloads", PERSISTENT, "VPC-Workloads 3x2: private, no IGW route"),
     # Stage 3 pass 3 (2026-08-16). The endpoint counts are step 8.3's per-role lists:
     # core 8 + the account's extras; every row includes a mode-A NAT (0.050 = 0.045 + IPv4).
-    Slice("sandbox", "egress", EPHEMERAL, "NAT + 11 interface endpoints (8.3)", 0.160),
+    # THE NAT LEFT AT 6c step 5.1 AND THESE THREE FIGURES MOVED WITH IT (2026-09-06). Each was
+    # NAT 0.045 + its Elastic IP 0.005 + the endpoints; each is now the endpoints alone, COUNTED
+    # from the slice's own plan rather than computed from a list somebody might have edited
+    # (`terraform plan | grep -c aws_vpc_endpoint.interface`), at the measured 0.010/h per
+    # endpoint of docs/PRICING.md 8.
+    #
+    # SANDBOX WENT **UP**, and that is worth seeing rather than glossing: 0.160 -> 0.180. Design B
+    # does not save money on this slice - it trades 0.050/h of NAT for 0.080/h of endpoints, since
+    # 5.2 has to enumerate what the NAT used to cover silently. What D38 buys is one auditable
+    # exit instead of three unenumerated ones, not a smaller bill here.
+    #
+    # AND NONE OF THE THREE INCLUDES 5.3's OPTIONAL GROUPS, deliberately: `bedrock` adds 0.040 and
+    # `emr` 0.070 only for an apply that names them, and a static rate that assumed them would
+    # over-report every session that does not. `make status` quotes this column; the flag's cost is
+    # in `make help`.
+    Slice("sandbox", "egress", EPHEMERAL, "18 interface endpoints (5.2) - no NAT", 0.180),
     Slice(
         "staging",
         "egress",
         EPHEMERAL,
-        "NAT + 11 interface endpoints (8.3)",
-        0.160,
+        "11 interface endpoints (8.3) - no NAT",
+        0.110,
     ),
-    Slice("production", "egress", EPHEMERAL, "NAT + 10 interface endpoints (8.3)", 0.150),
+    Slice("production", "egress", EPHEMERAL, "10 interface endpoints (8.3) - no NAT", 0.100),
     # Stage 6c step 1.3a (2026-09-06) - VPC-Workloads' endpoint slice, written EMPTY and
     # egress_mode "B" from birth: zero NAT (D38) and no endpoint until Stage 9/10 names one, so
     # usd_per_hour is 0.0 and true rather than 0.0 and pending. It exists now because an [E]

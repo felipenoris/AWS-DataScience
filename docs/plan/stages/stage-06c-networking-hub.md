@@ -626,6 +626,19 @@ becomes true.
   var.egress_mode == "A"`, so **deleting mode A silently disables the DNS Firewall** that 5.7 wants kept
   in every compute VPC. One condition, two intents ([Lesson 51](../lessons.md)) — the clause goes in the
   same commit as the NAT, or 5.1 and 5.7 undo each other without either plan reading wrong.
+- **5.2 — DONE 2026-09-06 (as code; the slice is `[E]` and down, so it takes effect at the next
+  `make up`).** Sandbox's `extra_services` goes from 4 to **10** — the three SageMaker names and
+  `s3tables`, plus `datazone`, `ssm`, `ssmmessages`, `ec2messages`, `ec2` and `secretsmanager`.
+  **18 interface endpoints in total**, counted from the slice's own plan. `q` is struck: the
+  Region's catalog (569 services, re-measured with a healthy session) carries `qapps` and
+  `quicksight*` and nothing named `q`.
+  **The three `layers.py` rates moved with the NAT and were COUNTED, not computed** — Sandbox
+  **0.160 → 0.180**, Staging 0.160 → **0.110**, Production 0.150 → **0.100**. Sandbox going *up*
+  is the honest reading of design B on this slice: it trades 0.050/h of NAT for 0.080/h of
+  endpoints, because 5.2 has to enumerate what the NAT covered silently. What D38 buys is one
+  auditable exit instead of three unenumerated ones, not a smaller bill here. None of the three
+  includes 5.3's optional groups, which only exist for an apply that names them.
+  *The original step follows:*
 - **5.2 — [Claude⚡] Complete the required endpoint set**: Sandbox re-adds **`datazone`** — removed on
   2026-08-25 only because its private zone shadowed a client-plane name, which cannot happen now — and
   gains `ec2`, `ec2messages`, `secretsmanager`, `ssm`, `ssmmessages` and ~~`q`~~. **Measure rather than
