@@ -42,9 +42,12 @@ locals {
   consumer_vpce_ids = [
     for k, s in data.terraform_remote_state.consumer_foundation : s.outputs.s3_gateway_endpoint_id
   ]
-  wireguard_eip_cidrs = [
+  # `distinct()`/`sort()` since 6c step 4.12's union (2026-09-06): two VPN homes now share one
+  # address, because the Elastic IP was TRANSFERRED between accounts rather than reallocated.
+  # Without it this bucket policy carries the same /32 twice.
+  wireguard_eip_cidrs = sort(distinct([
     for k, s in data.terraform_remote_state.vpn_home : "${s.outputs.wireguard_eip_public_ip}/32"
-  ]
+  ]))
 
   # THE VPN HOMES' OWN S3 ENDPOINTS, ON THE AXIS THAT CARRIES THEM (2026-08-20; Lesson 33's
   # second finding, stage 5 log's controls entry). Every tunnel call - whichever account's

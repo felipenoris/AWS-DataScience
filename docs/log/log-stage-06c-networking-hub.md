@@ -637,3 +637,41 @@ two filters. **Nothing was applied**, and one plan that is ready was deliberatel
   **And the fallback 4.13 was waiting on died at 4.5** — the Sandbox host has no address and cannot come
   up; what `[D]` promises instead is that it rebuilds from code and the `[P]` secret if the address is
   ever transferred back.
+
+## 2026-09-06 — 4.12's first half: the union, and a recommendation I had to correct first
+
+- **[Claude] I TOLD THE USER A UNION WAS IMPOSSIBLE. IT WAS NOT, AND THE CORRECTION CHANGED THE
+  PLAN OF ACTION** — so it is written down rather than quietly fixed. The reasoning that failed:
+  a two-row `VPN_HOMES` seemed to need Sandbox's `wireguard_eip_public_ip`, which is the output
+  being removed. **What that missed is that a row yields THREE values, not one.** `vpc_id` and
+  `s3_gateway_endpoint_id` are the slice's ordinary outputs and do not move with the address. And
+  because the address was **transferred** rather than reallocated, both rows answer the *same*
+  `52.89.212.1`. So the union costs nothing on the `aws:SourceIp` axis and is purely additive on
+  the other two. The step's own warning — *"a single cut-over apply is one typo away from locking
+  out all six personas"* — is why the correction mattered rather than being a detail.
+- **[Claude⚡] `identity/sso/` — `0 to add, 6 to change, 0 to destroy`**, applied as
+  `InfrastructureAccess`, the set that carries no VPN-only deny (open question 17's recovery
+  path). **The plan was enumerated key by key before applying, not skimmed**: across all six
+  persona sets the diff touches exactly **one** condition key, and only widens it —
+  `aws:SourceVpc` goes from Sandbox's VPC to **[Sandbox's, the hub's]**. Nothing that passed
+  before stops passing.
+- **[Claude⚡] `data-governance/data/` — `0 to add, 5 to change, 0 to destroy`.** Same shape: the
+  hub's S3 gateway endpoint is **added** to `aws:SourceVpce` on five documents, and nothing is
+  removed.
+- **[Claude] The first plan of the union exposed a latent assumption, and it was worth one line
+  of code.** `vpn_egress_cidrs` rendered `52.89.212.1/32` **twice** — the local was written when
+  one home meant one address, and `sort()` does not deduplicate. Harmless to IAM and exactly the
+  kind of noise a later reader has to stop and explain, so `distinct()` went into all three
+  list-building locals (both in `identity/sso/`, one in `data-governance/data/`). After the fix
+  `aws:SourceIp` **left the diff entirely** — which is the reading that proves the union is
+  additive rather than merely looking additive.
+- **[Claude] What this does NOT do, stated so the trim is not forgotten:** the union is
+  transitional. **Pass 6 removes the Sandbox row**, and that removal is one act with the
+  `removed {}` on `sandbox/foundation`'s Elastic IP — in that order, because the second is what
+  the first unblocks. Until then `sandbox/foundation/` plans **`1 to add`** and must not be
+  applied.
+- **[Claude⚡ REFUSED] The `sandbox/vpn/` destroy was planned and not applied** — `0 to add, 0 to
+  change, 8 to destroy`, every resource `[D]` and no `[P]` anchor among them. The harness refused
+  the apply as a destructive action. It is no longer on the critical path: the union removed the
+  reason it had to go first, so it can wait for 4.13 with the trim. The host cannot come up in the
+  meantime — its address is in another account.
