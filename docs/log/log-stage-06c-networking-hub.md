@@ -304,3 +304,38 @@ stays verbatim. The stage file is
 - **[Claude] `CLAUDE.md`'s Current position rewritten** to 6c's real state, under the 8 KB budget: three
   VPCs, five zones with the measured matrix, six peerings, the module tag situation, and the two habits
   (46 and 47) that cost this session time.
+
+## 2026-09-06 — 3.1's retirement, and a structural thing the two matrices were hiding
+
+- **[Claude] The estate now holds EXACTLY the matrix's five peerings**, read from AWS:
+  `networking-from-sandbox`, `networking-from-staging`, `workloads-to-networking`,
+  `shared-to-networking`, `awsds-prod-from-sandbox`. `awsds-prod-from-staging` is gone —
+  `0 to add, 0 to change, 9 to destroy` on the accepter side, `1 to destroy` on the requester's.
+- **[Claude] THE ZONE MATRIX AND THE PEERING MATRIX WERE ONE LIST, and this step is where they had to
+  part.** `peers.tf`'s `local.peer_vpc_ids` served both: who this VPC peers with, **and** whose VPC
+  Production's zones are associated into. That worked while the two answers were the same set — and 3.1
+  makes them different, because **Staging keeps the apex association and loses the peering.** It reaches
+  the hub for the proxy and has no business in VPC-SharedServices, but it still has to resolve
+  `gitlab.awsds.internal` (INT-22).
+  - **Left as one list, the retirement would have destroyed Staging's apex association too**, silently,
+    inside a plan whose headline was about peerings. The split is `local.zone_vpcs` beside
+    `local.peer_vpc_ids`, and the plan then read `9 to destroy` with **no zone resource in it** — which
+    is the confirmation.
+  - **A DNS association is not a path**, and conflating the two lists is what hid that they could differ.
+    A VPC that resolves a name it cannot reach gets an ANSWER and then a timeout — a better failure than
+    NXDOMAIN and a worse one than a refusal.
+- **[Claude] The five `moved {}` blocks of 6b step 4.5 were deleted in the same commit.** They renamed
+  `development` to `staging` in five addresses, they applied, and the state has held the new addresses
+  since — a migration record whose `from` can no longer exist anywhere. **Two of the five named addresses
+  this commit destroys outright.**
+- **[Claude] 3.6 — `NT-4` re-cut, and deliberately BEFORE the change it will have to tolerate.** It read
+  *"10.90.0.0/24 in no route table anywhere"*; step 4.7 adds exactly one, inside VPC-Networking's public
+  table, and that route is what stops the WireGuard host masquerading traffic bound for the proxy — which
+  is what gives the access log a per-device address without any logging change. The check now **passes
+  that one and fails every other**, naming the hub in its verdict.
+  - **Widening a check before the change is safe; narrowing it afterwards is a rubber stamp** (Lesson 50
+    read the other way). A check edited in the same sitting as the change it would have failed on is a
+    check nobody trusts again.
+  - **The hub is identified by its CIDR, not by a hard-coded id or a tag** — 10.31.0.0/16 is what
+    `VPC_CIDRS` allocates to `(production, networking)`, and `NT-5` already fails if any other VPC
+    answers to it, so a mis-identification here is a failure there first.

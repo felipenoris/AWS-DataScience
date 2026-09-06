@@ -83,18 +83,6 @@ data "aws_subnets" "sandbox_private" {
   }
 }
 
-data "aws_subnets" "staging_private" {
-  provider = aws.staging
-
-  filter {
-    name   = "vpc-id"
-    values = [data.aws_vpc.staging.id]
-  }
-  filter {
-    name   = "tag:Tier"
-    values = ["private"]
-  }
-}
 
 data "aws_subnet" "sandbox_public" {
   provider = aws.sandbox
@@ -108,11 +96,6 @@ data "aws_subnet" "sandbox_private" {
   id       = each.value
 }
 
-data "aws_subnet" "staging_private" {
-  provider = aws.staging
-  for_each = toset(data.aws_subnets.staging_private.ids)
-  id       = each.value
-}
 
 # The route tables the forward routes land on - by Name tag, the names the vpc module
 # authors. The isolated tier is deliberately absent: it never routes anywhere (2.2).
@@ -138,18 +121,6 @@ data "aws_route_tables" "sandbox_private" {
   }
 }
 
-data "aws_route_tables" "staging_private" {
-  provider = aws.staging
-
-  filter {
-    name   = "vpc-id"
-    values = [data.aws_vpc.staging.id]
-  }
-  filter {
-    name   = "tag:Name"
-    values = ["awsds-${var.peers["staging"].env}-private-*"]
-  }
-}
 
 # The pending requests, found by their two VPC ends rather than by pasted ids. The
 # status-code values are OR'd: pending-acceptance on the first apply, active on every
@@ -181,9 +152,13 @@ data "aws_subnet" "own_private" {
 }
 
 locals {
+  # STAGING LEFT THIS MAP AT 6c STEP 3.1 AND THE ABSENCE IS THE CONTROL. The matrix in
+  # scripts/tfhygiene/backend.py has no `VPC-SharedServices <-> Staging` row: deployment is an API
+  # act, and a peering would grant standing L3 reach from the host that executes
+  # repository-supplied build code into a deployment target (Lesson 2). Staging reaches the hub
+  # for the proxy and nothing else. Its APEX ASSOCIATION SURVIVES - see local.zone_vpcs above.
   peer_vpc_ids = {
     sandbox = data.aws_vpc.sandbox.id
-    staging = data.aws_vpc.staging.id
   }
 
   # THE APEX JOINED THIS MAP AT 6c STEP 2.5 (2026-09-06), and adding one row is the whole change:
@@ -203,12 +178,28 @@ locals {
     apex  = aws_route53_zone.awsds_internal.zone_id
   }
 
+  # THE ZONE MATRIX AND THE PEERING MATRIX WERE ONE LIST UNTIL 2026-09-06, AND 6c STEP 3.1 IS
+  # WHERE THEY PART. `local.peer_vpc_ids` below served both: it named who this VPC peers with AND
+  # whose VPC these zones are associated into. That worked while the two answers were the same
+  # set - and 3.1 makes them different, because **Staging keeps the apex association and loses the
+  # peering**. It reaches the hub for the proxy and has no business in VPC-SharedServices, but it
+  # still has to resolve `gitlab.awsds.internal` (INT-22).
+  #
+  # A DNS ASSOCIATION IS NOT A PATH. Nothing about a zone association implies reachability, which
+  # is exactly why the two lists can differ and why conflating them hid that they could: a VPC
+  # that resolves a name it cannot reach gets an ANSWER and then a timeout, which is a better
+  # failure than NXDOMAIN and a worse one than a refusal.
+  zone_vpcs = {
+    sandbox = data.aws_vpc.sandbox.id
+    staging = data.aws_vpc.staging.id
+  }
+
   # zone x peer - the four authorizations of 4.4's table, six since the apex joined.
   zone_peer = {
-    for pair in setproduct(keys(local.zones), keys(local.peer_vpc_ids)) :
+    for pair in setproduct(keys(local.zones), keys(local.zone_vpcs)) :
     "${pair[0]}.${pair[1]}" => {
       zone_id = local.zones[pair[0]]
-      vpc_id  = local.peer_vpc_ids[pair[1]]
+      vpc_id  = local.zone_vpcs[pair[1]]
     }
   }
 
@@ -221,8 +212,6 @@ locals {
     "sandbox-public-${id}" => { cidr = s.cidr_block, peer = "sandbox" } },
     { for id, s in data.aws_subnet.sandbox_private :
     "sandbox-private-${id}" => { cidr = s.cidr_block, peer = "sandbox" } },
-    { for id, s in data.aws_subnet.staging_private :
-    "staging-private-${id}" => { cidr = s.cidr_block, peer = "staging" } },
   )
 
   return_routes = {
@@ -247,13 +236,7 @@ locals {
     }
   }
 
-  staging_forward = {
-    for pair in setproduct(data.aws_route_tables.staging_private.ids, keys(local.own_private_cidrs)) :
-    "${pair[0]}|${pair[1]}" => {
-      route_table_id = pair[0]
-      cidr           = local.own_private_cidrs[pair[1]]
-    }
-  }
+
 }
 
 # ------------------------------------------------- 4.4-4.5: the two-sided DNS handshake
@@ -326,14 +309,6 @@ resource "aws_route" "sandbox_forward" {
   vpc_peering_connection_id = aws_vpc_peering_connection_accepter.peer["sandbox"].id
 }
 
-resource "aws_route" "staging_forward" {
-  provider = aws.staging
-  for_each = local.staging_forward
-
-  route_table_id            = each.value.route_table_id
-  destination_cidr_block    = each.value.cidr
-  vpc_peering_connection_id = aws_vpc_peering_connection_accepter.peer["staging"].id
-}
 
 # WHAT IS DELIBERATELY NOT HERE. No route anywhere touching 10.90.0.0/24 (6.5 - peering does
 # no edge-to-edge routing; NT-4 fails on any). No security-group rule yet: ingress arrives with
@@ -347,43 +322,8 @@ resource "aws_route" "staging_forward" {
 # the peering to Staging. Nothing about the topology changed; what changed is which name the
 # same VPC answers to, which is exactly the shape Lesson 3 warns about from the other side.
 
-# ---------------------------------------------------------------- 6b 4.5: the rename, in state
-#
-# WHY THESE EXIST AT ALL. `staging` is a for_each KEY here, not merely a name, and Terraform
-# reads an address change as destroy-and-create. Without the first block below, renaming the key
-# would DESTROY THE ACCEPTER - and destroying an aws_vpc_peering_connection_accepter destroys the
-# peering connection with it. The rest follow the same rule one step down.
-#
-# WHAT IS NOT HERE, AND IT IS A CHOICE RATHER THAN AN OVERSIGHT: aws_route.return. Its keys are
-# "<route-table-id>|staging-private-<subnet-id>", so a moved block would have to name [P] subnet
-# ids in a tracked file - which this file's own header forbids in the sentence that matters most
-# in it: the peer's facts are READ, NEVER PASTED (Lesson 3). Those routes are re-created instead.
-# The destination CIDRs are unchanged, a route is idempotent and cheap, and the far end is [E]
-# and torn down - seconds on a path nothing is using, against a stale id living here forever.
-
-moved {
-  from = aws_vpc_peering_connection_accepter.peer["development"]
-  to   = aws_vpc_peering_connection_accepter.peer["staging"]
-}
-
-moved {
-  from = aws_route53_vpc_association_authorization.peer["prod.development"]
-  to   = aws_route53_vpc_association_authorization.peer["prod.staging"]
-}
-
-moved {
-  from = aws_route53_vpc_association_authorization.peer["pages.development"]
-  to   = aws_route53_vpc_association_authorization.peer["pages.staging"]
-}
-
-# These two carry the token in the resource NAME while their for_each keys do not, so one block
-# each covers every instance.
-moved {
-  from = aws_route53_zone_association.development
-  to   = aws_route53_zone_association.staging
-}
-
-moved {
-  from = aws_route.development_forward
-  to   = aws_route.staging_forward
-}
+# THE FIVE `moved {}` BLOCKS OF 6b STEP 4.5 WERE DELETED HERE (2026-09-06). They were a migration
+# record: they renamed `development` to `staging` in five addresses when 6b converted the account,
+# they applied, and the state has held the new addresses ever since. `identity/sso/moved.tf` says
+# the same thing about itself - a moved block whose `from` can no longer exist anywhere is dead
+# weight that reads like history. Two of the five named addresses this commit destroys outright.

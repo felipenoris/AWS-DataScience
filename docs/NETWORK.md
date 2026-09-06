@@ -438,7 +438,7 @@ flowchart TB
 | Peering | Forward routes (in the requester) | Return routes (in Production, both private tables) |
 |---|---|---|
 | **Sandbox ↔ Production** | Sandbox **public** table and **both private** tables: `10.30.0.0/18`, `10.30.64.0/18` (6 routes) | `10.20.160.0/24`, `10.20.161.0/24` (the public tier — the tunnel's masqueraded source), `10.20.0.0/18`, `10.20.64.0/18` (the app tier) — 8 routes |
-| **Staging ↔ Production** (INT-09) | Staging **both private** tables: `10.30.0.0/18`, `10.30.64.0/18` (4 routes) | `10.50.0.0/18`, `10.50.64.0/18` — 4 routes |
+| ~~**Staging ↔ Production**~~ | **RETIRED 2026-09-06** (6c step 3.1). The peering matrix has no `VPC-SharedServices ↔ Staging` row: deployment is an API act, and the peering would have granted standing L3 reach from the host that runs repository-supplied build code into a deployment target (Lesson 2). **INT-09 re-homed** onto Sandbox ↔ `VPC-SharedServices`. **Staging's apex DNS association SURVIVED** — the zone matrix and the peering matrix were one list in `peers.tf` until this step, and splitting them is what kept it: a DNS association is not a path | — | — | — |
 
 What the table says when read for *absences*: Production's **public and isolated** tiers are reachable from nobody (the peering probe proved it — `probe-isolated.prod.internal` resolves and never answers); Sandbox's **isolated** tier has no peering route in either direction; **Sandbox and Staging are not peered** and never see each other by address (the exchange between them is S3 and git); **Staging** is in no route table (`NT-6`).
 
