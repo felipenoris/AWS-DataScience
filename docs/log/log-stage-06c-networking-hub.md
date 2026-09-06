@@ -1123,3 +1123,77 @@ thing to actually run. They are written up individually because three of them ar
   clean, four plans green (`27`/`20`/`13` to add and *outputs only* for `workloads-egress`). Nothing
   applied — the four `egress/` slices are `[E]` and down, so the outputs materialise at the next
   `make up`.
+
+## 2026-09-06 — 5.6a and 5.7: the firewall keeps one job, loses sixty-three names, and a `*`
+
+- **[Claude] 5.6a — Staging keeps its DNS Firewall, and 6b's argument was about a job that no
+  longer exists.** 6b step 5.1 wanted the Staging row dropped from `./aws/dns-allowlist.py` on the
+  reasoning that *a headless deployment target resolves whatever its pipeline resolves*. That is
+  true, and it is an argument about **filtering the internet** — the job 5.1 ended by deleting the
+  last default route. The job left is the one 5.7 states: **close the recursive resolver as an
+  exfiltration channel**, which is a property of *a VPC where code runs*, not of who runs it.
+  Staging runs promoted models, unattended, from artefacts built in Sandbox. The `.tf` keeps
+  `dns_firewall = true`, the instrument keeps its row, and **both moved in the same commit** as the
+  re-cut — 5.6a's actual requirement.
+- **[Claude] 5.7 — sixty-three entries to ten, and the step's own list was one family short.** The
+  four families it names are `*.amazonaws.com`, `*.api.aws`, `.awsds.internal` and the proxy's name.
+  Missing: **`*.sagemaker.aws`**. The `sagemaker.studio` endpoint answers on
+  `*.studio.<region>.sagemaker.aws` — a different TLD, covered by neither of the first two — so the
+  obvious short list orphans an interface endpoint **both** Interactive slices pay for hourly, and
+  the symptom is NXDOMAIN, which reads as a network fault rather than as a policy decision.
+- **[Claude] So the coverage question became a `precondition` rather than a paragraph
+  (`vpc-egress-v0.8.0`).** Computed from the same `describe-vpc-endpoint-services` reading 5.6 built
+  NO_PROXY from, but kept as a **separate local**, because the two syntaxes look alike and are not
+  translatable by transcription ([Lesson 53](../plan/lessons.md)): NO_PROXY needs the `*.` gone, a
+  Route 53 domain list needs it **present** and needs the apex listed beside it. **Proven with a
+  negative control, not with a green plan** ([Lesson 13](../plan/lessons.md)): remove the
+  `sagemaker.aws` pair and the plan fails with
+  `dns_firewall_allow_domains does not cover *.studio.us-west-2.sagemaker.aws`; restore it and all
+  four slices plan clean.
+- **[Claude] A `"*"` CAME OFF THE SANDBOX LIST, and it had been live for a fortnight.** Commit
+  `f6bb316` (*"allow-all egress"*, the user's, 2026-08-23) put a single wildcard at the top of the
+  list. `*` matches every name, so the sixty-two entries beneath it were decoration and the Sandbox
+  DNS Firewall was a default-**ALLOW**. It is removed with the re-cut and **named** rather than
+  quietly dropped: a list whose first entry is `*` reads as a configured control to every review
+  that does not read it to the end. `EXC-06` closes on it.
+- **[Claude] `EXC-04` DOES NOT CLOSE, AND THE STAGE FILE SAID IT WOULD.** *"EXC-04, EXC-05 and
+  EXC-06 close with the old allow-list"* is true of two of them. `EXC-04` is the domain-list churn —
+  Route 53 canonicalises every entry with a trailing dot, `vpc-egress` writes them without one, and
+  the provider re-issues `UpdateFirewallDomains` on every apply. That is a comparison of two
+  **spellings** of whatever the content is; 5.7 changed the **content**. Ten entries churn exactly
+  as sixty-three did. It could not even be re-measured in this sitting: the symptom appears on the
+  plan *after* an apply, and all four `egress/` slices are `[E]` and down, so the plans read
+  `27 to add` rather than `2 to change`. Row amended in `docs/AWS_STATE.md` with what would settle
+  it — the next `make up` of an Interactive slice.
+- **[Claude] `EXC-05`'s failure MODE retires rather than moving.** It needed a resolver evaluating a
+  redirection chain and blaming the queried name when a hop was missing. Squid matches the hostname
+  the client **requested** and evaluates no chain at all, and every CDN-fronted name left the
+  firewall for Squid's lists. There is no longer a place in this estate where that mechanism exists.
+- **[Claude] `./aws/dns-allowlist.py` re-aimed at the five Squid planes.** Default source is
+  `production/networking/hub-anchors.tf` — the `[P]` slice that declares them — with `--from-api`
+  adding one read (`ssm:GetParameter`). It is a **better** default source than the one it replaced:
+  the DNS Firewall lists lived in `[E]` slices that are down most of the time, and the parameter is
+  `[P]` and always there.
+  - **`DN-1`** unchanged in spirit — every exact hostname on every plane answers. **46 names, all
+    with an address.**
+  - **`DN-2` is new and is the one nothing else does.** Squid's two overlap outcomes are not the
+    same severity, and the expensive one is not the one that reads as worse: an apex listed beside
+    its own `.x` form is **`FATAL: Bungled`** — the proxy does not start, which surfaces as every
+    spoke losing the internet at once — while a deeper name under a `.x` is a warning nobody
+    notices. `pass` today.
+  - **`DN-3`** compares the committed planes with the deployed parameter: **5 planes, entry for
+    entry.** Stated in the report as the **first of two links**, `PX-3` (7.3) being parameter
+    against the running `squid.conf`. A green `DN-3` says what was written reached the parameter and
+    nothing about what the proxy enforces.
+  - **`DN-4`** measures 4.9's design claim rather than reporting a CDN exposure that no longer
+    means anything: **exactly one** entry — `.amazonaws.com` — appears on both the tunnel and a
+    workload plane. The two filters really are two.
+  - **Both new checks proven by negative control**: an injected `cloudfront.net` beside
+    `.cloudfront.net` produced `fail DN-2 ... 1 FATAL` and `fail DN-3 ... only in code`, and the
+    file was restored.
+- **[Claude] Gates:** `make check` **OK**, `ruff` clean, four `egress/` plans green
+  (`27`/`20`/`13` to add, *outputs only* for `workloads-egress`). Nothing applied — all four are
+  `[E]` and down, so the re-cut takes effect at the next `make up`.
+- **[Claude] `docs/NETWORK.md` is deliberately NOT edited here.** Its §s on the DNS Firewall
+  describe the sixty-three-entry list and are now wrong; **6.7 rewrites that file from the
+  readings**, and editing it ahead of the measurement is what that step exists to prevent.

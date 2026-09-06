@@ -1,7 +1,7 @@
 #!/usr/bin/env -S uv run --quiet
-# dns-allowlist.py - re-resolve every name on the Interactive egress allow-lists and report
-# what each one answers with, which entries are redundant hops, and which reach their address
-# only because the ALLOW rule trusts the redirection chain.
+# dns-allowlist.py - re-resolve every name on the PROXY's source-scoped allow-lists and report
+# what each one answers with, which entries collide under Squid's matching rules, and what the
+# committed lists say against what the estate is actually serving them from.
 #
 #   needs:    NOTHING, in the default mode - no SSO session, no profile, no AWS call. It
 #             reads this repository's own .tf and asks a resolver. `dig` must be on PATH.
@@ -9,65 +9,69 @@
 #
 #                 aws sso login --sso-session awsds
 #
-#   run:      ./aws/dns-allowlist.py                    the lists as CODE declares them
+#   run:      ./aws/dns-allowlist.py                    the planes as CODE declares them
 #             ./aws/dns-allowlist.py --whois            + who owns each answer address
-#             ./aws/dns-allowlist.py --from-api awsds-infra-sandbox ...
-#                                                       the lists as DEPLOYED (slice must be up)
+#             ./aws/dns-allowlist.py --from-api awsds-infra-prod
+#                                                       + the DEPLOYED parameter, compared
 #             ./aws/dns-allowlist.py --resolver 1.1.1.1 ask a specific resolver
 #   writes:   aws/output/dns-allowlist.txt   (untracked - see .gitignore)
-#   reads:    DNS, and `whois` only with --whois. With --from-api, two read-only calls:
-#             route53resolver:ListFirewallDomainLists and ListFirewallDomains. This script
-#             never creates, updates or deletes anything.
+#   reads:    DNS, and `whois` only with --whois. With --from-api, one read-only call:
+#             ssm:GetParameter. This script never creates, updates or deletes anything.
 #
-# WHY THIS EXISTS, AND WHY ITS MAIN QUESTION INVERTED ON 2026-08-23. It was written that
-# morning for docs/AWS_STATE.md EXC-05: DNS Firewall inspected the WHOLE resolution chain, so
-# a name was allowed only while every hop it took was also on the list, and eight of nine
-# external names resolved only because their authoritative side FLATTENED the CDN behind an A
-# record served under the queried name - a switch a third party could turn off unannounced,
-# after which the Resolver log blamed the ORIGINAL name and the block read like "that name was
-# never on the allow-list". That misattribution cost one correct hypothesis (the 2026-08-23
-# log entry).
+# WHAT THIS FILE MEASURED UNTIL 2026-09-06, AND WHY IT NOW MEASURES SOMETHING ELSE. It was
+# written for the Route 53 Resolver DNS Firewall allow-lists in the two Interactive `egress/`
+# slices, when those lists WERE the estate's egress policy: a NAT gateway carried anything, so a
+# name that did not resolve was a host nobody reached. Stage 6c step 5.1 removed the last default
+# route (D38) and step 5.7 cut those lists from sixty-three entries to ten - AWS's own namespaces
+# and this estate's private zones, nothing else. The policy moved, whole, to the explicit proxy's
+# source-scoped allow-lists, so this instrument moved with it. Pointing it at a list that no
+# longer decides anything would be Lesson 31 in the other direction: a check that keeps reading
+# `pass` about a thing that stopped mattering.
 #
-# vpc-egress-v0.4.0 MADE `firewall_domain_redirection_action` A MODULE INPUT - default
-# INSPECT, and both Interactive slices pass `TRUST_REDIRECTION_DOMAIN` on their ALLOW rule, so
-# in those two VPCs the firewall inspects the QUERIED name and trusts the chain beneath it.
-# THIS SCRIPT ASSUMES THAT SETTING, because it reads only the two lists that carry it; a slice
-# left on the default is not in SLICES and would need DN-2 and DN-4 read the other way round. EXC-05's failure mode is closed and DN-2 no longer asks whether a chain stays inside its
-# list - it asks the question the new rule makes load-bearing: IS ANYTHING ON A LIST A HOP OF
-# SOMETHING ELSE ON THE SAME LIST. A listed hop is not redundancy, it is a widening: the trust
-# is scoped to one query transaction, so a redirection target is unreachable on its own until
-# somebody lists it. DN-4 keeps the old measurement as information rather than as a verdict -
-# which names would stop resolving if the module were ever reverted to the API default.
+# THE SUBSTITUTION IS NOT A TRANSLATION, and that is the first thing to know before reading a row
+# here against an old report. Three things changed at once:
 #
-# It also closes the one gap terraform-modules/vpc-egress/variables.tf admits and nothing
-# mechanical was checking: since v0.3.0 each Interactive slice owns its own list, so the two
-# CAN diverge. DN-3 compares them.
+#   1. THERE ARE FIVE LISTS, NOT TWO, and they are keyed by SOURCE rather than by account: the
+#      tunnel range carries the institutional web filter (what a person may reach), each spoke
+#      CIDR carries its own. Two filters where the resolver could only ever hold one, which is
+#      the whole reason D38 splits them.
+#   2. SQUID MATCHES THE HOSTNAME THAT WAS REQUESTED. It never evaluates a CNAME chain, so
+#      EXC-05's entire failure mode - a listed name blocked because a hop was not listed, with
+#      the log blaming the queried name - has no place to occur. `TRUST_REDIRECTION_DOMAIN`, the
+#      v0.4.0 repair, is now a setting on a list that no longer carries a CDN-fronted name.
+#   3. THE SYNTAX IS THE OTHER ONE. Route 53 needs `x` and `*.x` as two entries; Squid's `.x`
+#      covers both, and listing the apex BESIDE it is not redundant but FATAL - `ERROR: '.x' is
+#      a subdomain of 'x'`, then `FATAL: Bungled`. That is DN-2's new question, and it is not a
+#      style rule: it is a proxy that refuses to start (Lesson 53).
+#
+# WHAT STAYED. DN-1 is the same question it always was - does every name somebody depends on
+# still answer - and it is the reason this file resolves anything at all. A dead entry is a dead
+# dependency whichever system enforces it.
 #
 # TWO DELIBERATE DEVIATIONS from aws/INDEX.md's rules for this folder, both stated because a
 # reader is entitled to know why this file looks unlike its neighbours:
 #   - It runs with NO AWS identity by default. Every other script here photographs AWS; this
-#     one photographs the DNS the allow-list depends on, which is not AWS's to answer. The
-#     AWS mode exists (--from-api) and is not the default, because the egress/ slice is [E]
-#     and is down most of the time - a check that only works while the slice is up would not
-#     be running when it matters, which is BEFORE bringing it up.
+#     one photographs the DNS the allow-list depends on, which is not AWS's to answer.
 #   - Its default source is the repository rather than the deployed estate. Read the two
-#     together: --from-api answers "is the deployed list still resolvable", the default
-#     answers "is the list we are about to deploy still resolvable".
+#     together: --from-api answers "is the deployed list still resolvable, and does it still
+#     match the code", the default answers "is the list we are about to deploy still resolvable".
+#     The parameter is [P] and always present, unlike the [E] domain lists this file used to
+#     read - so --from-api is now reliable rather than opportunistic.
 #
 # WHAT IT CANNOT SEE, stated because a clean run here is not a clean run in the VPC:
-#   - THE RESOLVER IS NOT THE ONE THAT MATTERS. This asks the laptop's resolver (or --resolver).
-#     The firewall evaluates what the VPC's Route 53 Resolver resolves, and a CDN can steer a
-#     chain by geography or by EDNS client subnet - so a name can be flat here and a CNAME
-#     there. This is a SCREEN, and a fast one; the proof is a resolution from inside the VPC
-#     (the buildbox, or a Studio terminal). A BROKEN row here is real either way; an ok row
-#     is "no reason to worry from this vantage point".
+#   - THE RESOLVER IS NOT THE ONE THAT MATTERS, and under an explicit proxy it is even further
+#     away: a spoke client does not resolve an internet name at all - SQUID does, from
+#     VPC-Networking. This asks the laptop's resolver (or --resolver). A CDN can steer an answer
+#     by geography or by EDNS client subnet, so a name can answer here and not there. This is a
+#     SCREEN, and a fast one; the proof is a request through the proxy.
 #   - Private-zone names (*.internal) are answered only inside the VPC. They are listed and
-#     skipped, never resolved, and never counted as a failure - a laptop NXDOMAIN on one of
-#     them is the design, not a finding.
-#   - Wildcard entries are coverage, not subjects: `*.amazonaws.com` cannot be queried, so it
-#     is never a row here. It still covers other rows' hops, which is its job.
-#   - Without --whois, section 3 has no owner column. The chain check does not need it; the
-#     flattening EXPOSURE count does, and says so rather than guessing from a name.
+#     skipped, never resolved, and never counted as a failure.
+#   - A leading-dot entry (`.example.com`) is COVERAGE, not a subject: it is not a name anything
+#     queries, so it is never a row in section 2. It still participates in DN-2, which is about
+#     entries colliding with each other rather than about what resolves.
+#   - Whether the RUNNING squid.conf matches the parameter. That is PX-3 in ./aws/proxy.py, read
+#     on the host over SSM. The chain is code -> parameter -> host; DN-3 is the first link and
+#     PX-3 is the second, and neither one alone says the proxy is enforcing what was written.
 
 from __future__ import annotations
 
@@ -84,24 +88,15 @@ from awslib.report import Checks, Report, failed_calls_epilogue, note
 
 OUT_NAME = "dns-allowlist.txt"
 
-# The Interactive tier. production/egress/ never sets dns_firewall, so it has no list.
-#
-# STAGE 6b STEP 5.1 SAID TO REMOVE THE `development` ROW RATHER THAN RETARGET IT, AND THAT WOULD
-# HAVE BEEN A BLIND SPOT (2026-09-06). Its reasoning is good - the account became the headless
-# `Staging`, and a DNS allow-list is a list of names a PERSON chose to reach from an interactive
-# session, while a deployment target resolves whatever its pipeline resolves. But the reasoning
-# is about the DESIGN and this tuple is about the CODE, and the code did not move:
-# `terraform-live/staging/egress/main.tf` still declares `dns_firewall = true` and still carries
-# `dns_firewall_allow_domains`. Dropping the row would have left an allow-list that exists in the
-# tree with nothing reading it - a check whose scope shrank while the thing it measures did not
-# (Lesson 31), which is the failure this whole pass is supposed to be catching.
-#
-# SO THE ROW IS RETARGETED AND THE QUESTION IS LEFT OPEN FOR 6c, which rewrites egress outright
-# (D38: no NAT gateway anywhere, one explicit proxy). Whether a headless account keeps a DNS
-# firewall at all is that stage's decision, not this one's, and the slice is [E] and torn down
-# meanwhile - so nothing is enforcing today either way. The day the firewall leaves the .tf, this
-# row leaves with it and 5.1's sentence becomes true.
-SLICES = ("sandbox", "staging")
+# The [P] slice that owns the proxy's allow-lists (Stage 6c steps 4.9/4.10). ONE file, because
+# the lists are locals in it and the SSM parameter is rendered from them - which is what makes
+# "the committed list" a thing this script can read without an AWS call.
+ANCHORS = ("production", "networking", "hub-anchors.tf")
+
+# The parameter the [D] proxy renders at boot and on a State Manager schedule. Its name is built
+# in the .tf from `/datascience/${var.env}/proxy/allowlist`; `prod` is production's env token.
+# NOT `/awsds/...` - Parameter Store reserves every name beginning with `aws`.
+PARAMETER = "/datascience/prod/proxy/allowlist"
 
 # Answered only by a private hosted zone inside the VPC - listed, never resolved here.
 PRIVATE_SUFFIXES = (".internal",)
@@ -113,38 +108,76 @@ WHOIS_TIMEOUT = 25
 # --------------------------------------------------------------------------- the lists
 
 
-def _slice_path(ctx, env: str):
-    return ctx.repo_root / "terraform-live" / env / "egress" / "main.tf"
+def _anchors_path(ctx):
+    return ctx.repo_root.joinpath("terraform-live", *ANCHORS)
 
 
-_ASSIGN = re.compile(r"dns_firewall_allow_domains\s*=\s*\[")
-
-
-def parse_slice(path) -> list[str]:
-    """The names in one slice's dns_firewall_allow_domains, comments stripped.
-
-    A regex rather than an HCL parser on purpose: this package is dependency-free (the
-    CloudShell fallback needs it), and the block is a flat list of string literals. It
-    fails LOUDLY on anything else - a silent empty list would read as "nothing to check".
-    """
-    text = path.read_text(encoding="utf-8")
-    m = _ASSIGN.search(text)
-    if not m:
-        raise SystemExit(f"{path}: no dns_firewall_allow_domains assignment found")
-    depth, i = 1, m.end()
+def _balanced(text: str, start: int, opener: str, closer: str) -> tuple[str, int]:
+    """The body between one opener at `start` and its matching closer."""
+    depth, i = 1, start + 1
     while i < len(text) and depth:
-        if text[i] == "[":
+        if text[i] == opener:
             depth += 1
-        elif text[i] == "]":
+        elif text[i] == closer:
             depth -= 1
         i += 1
     if depth:
-        raise SystemExit(f"{path}: dns_firewall_allow_domains list is not closed")
-    body = re.sub(r"#[^\n]*", "", text[m.end() : i - 1])
-    names = re.findall(r'"([^"]*)"', body)
-    if not names:
-        raise SystemExit(f"{path}: dns_firewall_allow_domains parsed empty")
-    return names
+        raise SystemExit(f"unbalanced {opener}{closer} starting at offset {start}")
+    return text[start + 1 : i - 1], i
+
+
+_STRIP_COMMENTS = re.compile(r"#[^\n]*")
+_LIST_ASSIGN = re.compile(r"^\s*(proxy_allow_[a-z_]+)\s*=\s*\[", re.M)
+_DERIVED = re.compile(
+    r"^\s*for\s+(\w+)\s+in\s+local\.(proxy_allow_[a-z_]+)\s*:\s*\1\s+if\s+\1\s*!=\s*\"([^\"]+)\"\s*$"
+)
+_PLANE_ROW = re.compile(r'^\s*"?([a-z0-9-]+)"?\s*=\s*(local\.(proxy_allow_[a-z_]+)|\[\s*\])\s*$')
+
+
+def parse_anchors(path) -> dict[str, list[str]]:
+    """The five planes and their entries, from the [P] slice that declares them.
+
+    A small explicit grammar rather than an HCL parser, for the reason parse_slice had before
+    it: this package is dependency-free (the CloudShell fallback needs it). It fails LOUDLY on
+    any form it was not written for - a plane silently read as empty would report a proxy that
+    allows nothing as a proxy with nothing to check.
+    """
+    text = path.read_text(encoding="utf-8")
+
+    named: dict[str, list[str]] = {}
+    derived: list[tuple[str, str, str]] = []
+    for m in _LIST_ASSIGN.finditer(text):
+        body, _ = _balanced(text, m.end() - 1, "[", "]")
+        clean = _STRIP_COMMENTS.sub("", body).strip()
+        d = _DERIVED.match(clean)
+        if d:
+            derived.append((m.group(1), d.group(2), d.group(3)))
+            continue
+        named[m.group(1)] = re.findall(r'"([^"]*)"', clean)
+
+    # The one comprehension in the file, evaluated rather than transcribed: `proxy_allow_shared`
+    # is deliberately DERIVED from the notebook list (Lesson 33 - two hand-kept copies would part
+    # company the day somebody adds a package source), so reading it as a literal would find none.
+    for name, source, excluded in derived:
+        if source not in named:
+            raise SystemExit(f"{path}: {name} derives from {source}, which was not parsed")
+        named[name] = [d for d in named[source] if d != excluded]
+
+    m = re.search(r"^\s*proxy_allow_by_plane\s*=\s*\{", text, re.M)
+    if not m:
+        raise SystemExit(f"{path}: no proxy_allow_by_plane map found")
+    body, _ = _balanced(text, m.end() - 1, "{", "}")
+    planes: dict[str, list[str]] = {}
+    for line in _STRIP_COMMENTS.sub("", body).splitlines():
+        if not line.strip():
+            continue
+        row = _PLANE_ROW.match(line)
+        if not row:
+            raise SystemExit(f"{path}: proxy_allow_by_plane row not understood: {line.strip()!r}")
+        planes[row.group(1)] = list(named[row.group(3)]) if row.group(3) else []
+    if not planes:
+        raise SystemExit(f"{path}: proxy_allow_by_plane parsed empty")
+    return planes
 
 
 def substitute(names: list[str]) -> tuple[list[str], list[str]]:
@@ -162,40 +195,25 @@ def substitute(names: list[str]) -> tuple[list[str], list[str]]:
     return out, notes
 
 
-def read_from_api(cli, env: str, errors: ErrorLog) -> list[str] | None:
-    """The DEPLOYED list, by the name the module gives it."""
-    want = f"awsds-{env}-egress-allow"
-    res = cli.call("route53resolver", "list-firewall-domain-lists", "--output", "json")
-    if not res.ok:
-        errors.add(("route53resolver", "list-firewall-domain-lists"), res.merged, cli.profile)
-        return None
-    try:
-        lists = json.loads(res.text).get("FirewallDomainLists", [])
-    except json.JSONDecodeError:
-        return None
-    match = next((d for d in lists if d.get("Name") == want), None)
-    if match is None:
-        return None
+def read_from_api(cli, errors: ErrorLog) -> dict[str, dict] | None:
+    """The DEPLOYED parameter - the [P] value the proxy renders its configuration from."""
     res = cli.call(
-        "route53resolver",
-        "list-firewall-domains",
-        "--firewall-domain-list-id",
-        match["Id"],
-        "--max-results",
-        "500",
+        "ssm",
+        "get-parameter",
+        "--name",
+        PARAMETER,
+        "--query",
+        "Parameter.Value",
         "--output",
-        "json",
+        "text",
     )
     if not res.ok:
-        errors.add(
-            ("route53resolver", "list-firewall-domains", match["Id"]), res.merged, cli.profile
-        )
+        errors.add(("ssm", "get-parameter", PARAMETER), res.merged, cli.profile)
         return None
     try:
-        # The API canonicalises every entry with a trailing dot (EXC-04). Strip it so the
-        # deployed list and the coded list are comparable at all.
-        return [d.rstrip(".") for d in json.loads(res.text).get("Domains", [])]
+        return json.loads(res.text.strip())
     except json.JSONDecodeError:
+        errors.add(("ssm", "get-parameter", PARAMETER), "value is not JSON", cli.profile)
         return None
 
 
@@ -203,22 +221,55 @@ def read_from_api(cli, env: str, errors: ErrorLog) -> list[str] | None:
 
 
 def covers(pattern: str, name: str) -> bool:
-    """Does one allow-list entry match this name?
+    """Does one Squid `dstdomain` entry match this name?
 
-    The documented semantics, and the reason this is four lines rather than a substring
-    test: `*` must replace a whole leftmost label, it matches EVERY depth beneath the base,
-    and it never matches the base itself - so `*.foo.com` and `foo.com` are two entries.
+    SQUID'S SEMANTICS, NOT ROUTE 53's, and the difference is the whole of Lesson 53: a leading
+    dot means "this domain AND every subdomain of it", so `.example.com` matches both
+    `example.com` and `a.b.example.com` - where Route 53 needed `example.com` and `*.example.com`
+    as two separate entries and its wildcard never matched the apex. An entry with no leading dot
+    is an EXACT hostname match.
     """
     p, n = pattern.rstrip(".").lower(), name.rstrip(".").lower()
-    if p == "*":
-        return True
-    if p.startswith("*."):
-        return n.endswith("." + p[2:])
+    if p.startswith("."):
+        return n == p[1:] or n.endswith(p)
     return n == p
+
+
+def collisions(names: list[str]) -> tuple[list[str], list[str]]:
+    """Squid's two overlap outcomes, which are NOT the same severity.
+
+    Measured 2026-09-06 while building the proxy, and it cost four attempts to learn:
+
+      an apex listed BESIDE its own leading-dot form   ->  FATAL. Squid logs
+          `ERROR: '.x' is a subdomain of 'x'` and then `FATAL: Bungled`, and refuses to start.
+          The estate's single egress does not come up, which surfaces as every spoke losing the
+          internet at once - a symptom no reader attributes to one redundant line.
+
+      a DEEPER name under a leading-dot form           ->  a WARNING only. `d35uxhjf90umnp.cloudfront.net`
+          sat beside `.cloudfront.net` for a fortnight without breaking anything. It is still
+          worth removing - a line that warns on every reconfigure is a line people stop reading -
+          but it is a tidy, not an outage.
+    """
+    fatal, redundant = [], []
+    lowered = [n.rstrip(".").lower() for n in names]
+    for i, a in enumerate(lowered):
+        for j, b in enumerate(lowered):
+            if i == j:
+                continue
+            if a.startswith(".") and b == a[1:]:
+                fatal.append(f"{b} is listed beside {a}")
+            elif a.startswith(".") and not b.startswith(".") and b.endswith(a):
+                redundant.append(f"{b} is already covered by {a}")
+    return sorted(set(fatal)), sorted(set(redundant))
 
 
 def is_private(name: str) -> bool:
     return name.rstrip(".").lower().endswith(PRIVATE_SUFFIXES)
+
+
+def queryable(names: list[str]) -> list[str]:
+    """What is worth asking a resolver about: a real hostname, not coverage, not a private zone."""
+    return [n for n in names if not n.startswith(".") and not is_private(n)]
 
 
 # --------------------------------------------------------------------------- resolution
@@ -233,76 +284,48 @@ class Answer:
 
     @property
     def chain(self) -> list[str]:
-        """Every name the firewall evaluates for this lookup."""
-        return [self.name] + self.hops
+        return [self.name, *self.hops]
 
 
 def resolve(name: str, resolver: str | None) -> Answer:
-    cmd = ["dig", "+noall", "+answer"]
+    """One `dig`, read as a chain. The CNAME hops are kept because section 3b needs them."""
+    cmd = ["dig", "+noall", "+answer", "+tries=1", f"+time={DIG_TIMEOUT // 3 or 1}", name, "A"]
     if resolver:
-        cmd.append("@" + resolver)
-    cmd.append(name)
+        cmd.insert(1, f"@{resolver}")
     try:
         res = subprocess.run(cmd, capture_output=True, text=True, timeout=DIG_TIMEOUT)
-    except subprocess.TimeoutExpired:
-        return Answer(name, error="dig timed out")
-    if res.returncode != 0:
-        return Answer(name, error=(res.stderr.strip() or f"dig exit {res.returncode}"))
+    except (subprocess.TimeoutExpired, OSError) as exc:
+        return Answer(name, error=f"dig failed: {exc}")
     ans = Answer(name)
     for line in res.stdout.splitlines():
-        f = line.split()
-        if len(f) < 5:
+        parts = line.split()
+        if len(parts) < 5:
             continue
-        if f[3] == "CNAME":
-            ans.hops.append(f[4].rstrip("."))
-        elif f[3] in ("A", "AAAA"):
-            ans.addrs.append(f[4])
-    if not ans.hops and not ans.addrs:
-        ans.error = "no answer (NXDOMAIN, or the name has no address record)"
+        rtype, value = parts[3], parts[4]
+        if rtype == "CNAME":
+            ans.hops.append(value.rstrip("."))
+        elif rtype in ("A", "AAAA"):
+            ans.addrs.append(value)
+    if not ans.addrs:
+        ans.error = ans.error or "no address in the answer"
     return ans
 
 
-_OWNER = re.compile(r"^(OrgName|org-name|netname|NetName|descr):[ \t]*(.+)$", re.M | re.I)
-
-# A registry that does not hold the block answers with a placeholder and then REFERS - so
-# the first owner-shaped line in the output is routinely not the owner. Measured on
-# 151.101.64.223 (Fastly): RIPE answers NON-RIPE-NCC-MANAGED-ADDRESS-BLOCK, and ARIN's real
-# answer sits further down the same output. Taking the first match would have printed the
-# placeholder and looked like a reading.
-_PLACEHOLDER = ("non-ripe", "not managed", "not allocated", "no match", "reserved")
-
-
 def owner_of(addr: str) -> str:
+    """whois, reduced to the organisation - never to a network label."""
     try:
         res = subprocess.run(["whois", addr], capture_output=True, text=True, timeout=WHOIS_TIMEOUT)
-    except (subprocess.TimeoutExpired, FileNotFoundError):
-        return "(whois unavailable)"
+    except (subprocess.TimeoutExpired, OSError):
+        return "(whois failed)"
     found = [
-        (f.lower(), v.strip())
-        for f, v in _OWNER.findall(res.stdout)
-        if not any(ph in v.lower() for ph in _PLACEHOLDER)
+        (m.group(1).strip().lower(), m.group(2).strip())
+        for m in re.finditer(r"^(OrgName|org-name|owner|descr):\s*(.+)$", res.stdout, re.M)
     ]
     for want in ("orgname", "org-name"):  # the organisation, before any network label
         for f, v in found:
             if f == want:
                 return v
     return found[0][1] if found else "(not reported)"
-
-
-def verdict(ans: Answer, patterns: list[str]) -> tuple[str, list[str]]:
-    """Three outcomes, and none of them is a block since vpc-egress v0.4.0.
-
-    The queried name is an entry on the list by construction, and the ALLOW rule trusts
-    whatever it redirects through - so the only thing worth separating is HOW the address
-    was reached. `uncovered` is the hops no entry matches: under the old default those were
-    the block, and now they are the part of the answer that rests on the trust setting.
-    """
-    if ans.error:
-        return "no-answer", []
-    uncovered = [h for h in ans.hops if not any(covers(p, h) for p in patterns)]
-    if not ans.hops:
-        return "ok-flat", []
-    return ("ok-trusted" if uncovered else "ok-listed"), uncovered
 
 
 # --------------------------------------------------------------------------- main
@@ -332,63 +355,75 @@ def main(argv: list) -> int:
     out_label = ctx.out_label(OUT_NAME)
 
     errors = ErrorLog()
-    clis: dict[str, object] = {}
-    source_note = "terraform-live/<env>/egress/main.tf (the lists as CODE declares them)"
+    coded_raw = parse_anchors(_anchors_path(ctx))
+    planes: dict[str, list[str]] = {}
+    subs: list[str] = []
+    for plane, names in coded_raw.items():
+        planes[plane], s = substitute(names)
+        subs += s
+
+    deployed: dict[str, dict] | None = None
+    source_note = (
+        "terraform-live/production/networking/hub-anchors.tf (the planes as CODE declares them)"
+    )
     if from_api:
         selected, src = profiles.select(argv)
         callers = profiles.preflight(selected, errors, out_label=out_label)
-        clis = {c.profile: profiles.cli_for(c.profile, errors) for c in callers if c.live}
-        source_note = f"the DEPLOYED domain lists, read through {src}"
-
-    lists: dict[str, list[str]] = {}
-    subs: list[str] = []
-    for env in SLICES:
-        if from_api:
-            cli = next(
-                (c for p, c in clis.items() if p.endswith("-" + env) or p.endswith("-" + env[:3])),
-                None,
-            )
-            names = read_from_api(cli, env, errors) if cli is not None else None
-            if names is None:
-                note(f"  {env}: no deployed list reachable - falling back to the coded one")
-                names, s = substitute(parse_slice(_slice_path(ctx, env)))
-                subs += s
-            lists[env] = names
+        cli = next(
+            (
+                profiles.cli_for(c.profile, errors)
+                for c in callers
+                if c.live and "prod" in c.profile
+            ),
+            None,
+        )
+        if cli is None:
+            note("  no live Production profile - DN-3 cannot be answered")
         else:
-            names, s = substitute(parse_slice(_slice_path(ctx, env)))
-            subs += s
-            lists[env] = names
+            deployed = read_from_api(cli, errors)
+            source_note += f"; the DEPLOYED parameter read through {src}"
 
     checks = Checks()
 
     with open(out_path, "w", encoding="utf-8") as stream:
         rep = Report(stream)
-        rep.banner("dns-allowlist - does every listed name still resolve inside its own list")
+        rep.banner("dns-allowlist - does every name the proxy admits still resolve")
         rep.text(f"""generated : {context.utc_stamp()}
 region    : {context.REGION}
 source    : {source_note}
+parameter : {PARAMETER}
 resolver  : {resolver or "the system resolver of this machine"}
 owners    : {"whois, per terminal address" if do_whois else "not measured (--whois)"}
 
-Both Interactive slices pass firewall_domain_redirection_action = TRUST_REDIRECTION_DOMAIN
-(vpc-egress v0.4.0, whose own default is INSPECT): the firewall inspects the name that was
-QUERIED and trusts the chain under it. So a chain leaving its list is no longer a
-block (that was EXC-05, closed) - the finding to act on is a HOP that somebody left ON a list,
-because listing one is what makes that redirection target resolvable on its own.
+THESE ARE SQUID'S LISTS, NOT THE DNS FIREWALL'S (re-aimed at Stage 6c step 5.7, 2026-09-06).
+One list per SOURCE - the tunnel range carries the institutional web filter, each spoke CIDR
+carries its own - which is the split a VPC resolver could never express, because a VPC has one
+resolver and everything in it shared one answer. Squid matches the hostname the client
+REQUESTED and evaluates no CNAME chain, so a name that redirects off the list is not a block:
+EXC-05's failure mode has no place left to occur. The chains below are read for ATTRIBUTION
+(section 3b), never for a verdict.
 """)
 
         # ---------------------------------------------------------------- 1
-        rep.h1("1. The lists, as read")
-        for env, names in lists.items():
-            rep.h2(f"{env} - {len(names)} entries")
+        rep.h1("1. The planes, as read")
+        for plane, names in planes.items():
+            rep.h2(f"{plane} - {len(names)} entries")
+            if not names:
+                rep.text(
+                    "  empty, and empty is a DENY: with no allow line for this source Squid falls\n"
+                    "  to the final `http_access deny all` and returns a named 403. A source the\n"
+                    "  security group admits and the allow-list has never heard of is reachable and\n"
+                    "  mute, which is the failure that looks like a network fault.\n"
+                )
+                continue
             rows = ["ENTRY\tKIND"]
             for n in names:
                 kind = (
-                    "wildcard (coverage only, never queried)"
-                    if n.startswith("*")
+                    "subtree (`.x` - the apex AND every subdomain; never queried directly)"
+                    if n.startswith(".")
                     else "private zone (answered inside the VPC only)"
                     if is_private(n)
-                    else "queryable"
+                    else "exact hostname"
                 )
                 rows.append(f"{n}\t{kind}")
             rep.tabulate(rows)
@@ -397,139 +432,181 @@ because listing one is what makes that redirection target resolvable on its own.
             rep.tabulate(["WRITTEN\t\tREAD AS"] + subs)
 
         # ---------------------------------------------------------------- 2
-        rep.h1("2. Resolution, per list - what each name answers with")
+        rep.h1("2. Resolution, per plane - what each exact hostname answers with")
         rep.text(
-            "CHAIN is the name asked for, then each CNAME target in order. Three verdicts:\n"
-            "  ok-flat     an A record under the queried name - no redirection at all\n"
-            "  ok-listed   it redirects, and every hop happens to be on the list as well\n"
-            "  ok-trusted  it redirects off the list, and reaches its address because the\n"
-            "              ALLOW rule trusts the chain. Normal since v0.4.0, and the count\n"
-            "              DN-4 reports - these are the rows that would break on a revert.\n"
+            "CHAIN is the name asked for, then each CNAME target in order. Two verdicts, because\n"
+            "under an explicit proxy there is no third: `ok` reached an address, `no-answer` did\n"
+            "not. A redirection is not a finding here - Squid never sees it.\n"
         )
         answers: dict[str, dict[str, Answer]] = {}
-        trusted: list[str] = []  # rows reaching their address through an unlisted hop
         unanswered: list[str] = []
-        for env, names in lists.items():
-            answers[env] = {}
-            queryable = [n for n in names if not n.startswith("*") and not is_private(n)]
-            rep.h2(f"{env} - {len(queryable)} queryable of {len(names)}")
-            rows = ["NAME\tVERDICT\tHOPS\tCHAIN / UNCOVERED"]
-            for n in queryable:
-                note(f"  {env}: {n}")
+        for plane, names in planes.items():
+            answers[plane] = {}
+            subjects = queryable(names)
+            if not subjects:
+                continue
+            rep.h2(f"{plane} - {len(subjects)} exact hostname(s) of {len(names)}")
+            rows = ["NAME\tVERDICT\tHOPS\tCHAIN"]
+            for n in subjects:
+                note(f"  {plane}: {n}")
                 ans = resolve(n, resolver)
-                answers[env][n] = ans
-                v, unc = verdict(ans, names)
-                if v == "no-answer":
-                    unanswered.append(f"{env}: {n} ({ans.error})")
-                    detail = ans.error
+                answers[plane][n] = ans
+                if ans.error:
+                    unanswered.append(f"{plane}: {n} ({ans.error})")
+                    rows.append(f"{n}\tno-answer\t{len(ans.hops)}\t{ans.error}")
                 else:
-                    if unc:
-                        trusted.append(f"{env}: {n} -> {' -> '.join(unc)}")
-                    detail = " -> ".join(ans.chain)
-                rows.append(f"{n}\t{v}\t{len(ans.hops)}\t{detail}")
+                    rows.append(f"{n}\tok\t{len(ans.hops)}\t{' -> '.join(ans.chain)}")
             rep.tabulate(rows)
 
         # ---------------------------------------------------------------- 3
-        rep.h1("3. Entries that are really hops - the v0.4.0 finding")
+        rep.h1("3. Entries that collide with each other - the FATAL one and the tidy one")
         rep.text(
-            "An entry that appears in ANOTHER entry's chain, on the same list, is a hop that\n"
-            "was left behind. Before v0.4.0 listing it was mandatory; now it is a widening -\n"
-            "the trust is scoped to one query transaction, so a redirection target cannot be\n"
-            "reached on its own UNLESS it is listed, and listing it is what grants that. This\n"
-            "is measured from the chains in section 2, not from a list of known CDN suffixes.\n"
+            "Squid's two overlap outcomes are not the same severity, and the expensive one is not\n"
+            "the one that reads as worse. An APEX listed beside its own `.x` form is FATAL: Squid\n"
+            "logs `'.x' is a subdomain of 'x'`, then `FATAL: Bungled`, and does not start - which\n"
+            "surfaces as every spoke losing the internet at once. A DEEPER name under a `.x` is a\n"
+            "WARNING and nothing more; it is worth removing because a line that warns on every\n"
+            "reconfigure is a line people stop reading.\n"
         )
-        hops_listed: list[str] = []
-        for env in lists:
-            rep.h2(env)
-            reached_by: dict[str, list[str]] = {}
-            for n, ans in answers[env].items():
-                for h in ans.hops:
-                    reached_by.setdefault(h.rstrip(".").lower(), []).append(n)
-            rows = ["ENTRY\tALSO A HOP OF"]
-            for n in answers[env]:
-                via = reached_by.get(n.rstrip(".").lower(), [])
-                if via:
-                    hops_listed.append(f"{env}: {n} (hop of {', '.join(via)})")
-                rows.append(f"{n}\t{', '.join(via) if via else '-'}")
+        all_fatal: list[str] = []
+        all_redundant: list[str] = []
+        for plane, names in planes.items():
+            fatal, redundant = collisions(names)
+            all_fatal += [f"{plane}: {f}" for f in fatal]
+            all_redundant += [f"{plane}: {r}" for r in redundant]
+            rep.h2(plane)
+            rows = ["SEVERITY\tFINDING"]
+            for f in fatal:
+                rows.append(f"FATAL\t{f}")
+            for r in redundant:
+                rows.append(f"redundant\t{r}")
+            if len(rows) == 1:
+                rows.append("-\tno entry on this plane overlaps another")
             rep.tabulate(rows)
 
         # ---------------------------------------------------------------- 3b
         rep.h1("3b. What is behind each name")
         rep.text(
-            "Who actually serves the bytes. This stopped being a control question at v0.4.0 -\n"
-            "a CDN-fronted name is listable like any other - and stayed a useful one: the\n"
-            "chain is trusted wherever the owner of the listed name points it, so this is the\n"
-            "party each entry extends trust to.\n"
+            "Who actually serves the bytes to the PROXY - which is the only host in the estate\n"
+            "that fetches them. An entry extends trust to whoever owns the name, wherever they\n"
+            "point it, exactly as it always did; what changed is that only one host follows.\n"
         )
         counted = False
-        for env in lists:
-            rep.h2(env)
-            rows = ["NAME\tVERDICT\tADDRESS\tOWNER OF THE ADDRESS"]
-            for n, ans in answers[env].items():
-                v, _ = verdict(ans, lists[env])
+        for plane in planes:
+            if not answers[plane]:
+                continue
+            rep.h2(plane)
+            rows = ["NAME\tADDRESS\tOWNER OF THE ADDRESS"]
+            for n, ans in answers[plane].items():
                 addr = ans.addrs[0] if ans.addrs else "-"
                 if do_whois and ans.addrs:
                     owner = owner_of(ans.addrs[0])
                     counted = True
                 else:
                     owner = "-"
-                rows.append(f"{n}\t{v}\t{addr}\t{owner}")
+                rows.append(f"{n}\t{addr}\t{owner}")
             rep.tabulate(rows)
 
         # ---------------------------------------------------------------- 4
-        rep.h1("4. The two Interactive lists side by side")
+        rep.h1("4. The two filters, side by side - the tunnel against the workload planes")
         rep.text(
-            "Since vpc-egress v0.3.0 each slice owns its list, which is what lets one account's\n"
-            "reach differ from another's - and also what lets them drift by accident. Private\n"
-            "zones are EXPECTED to differ (each account is associated with different ones), so\n"
-            "only the external halves are compared.\n"
+            "THE DESIGN CLAIM THIS SECTION MEASURES (step 4.9): a name a PERSON may reach is not\n"
+            "thereby reachable from a NOTEBOOK. The overlap is expected to be small and to consist\n"
+            "of AWS's own namespaces; a package host or a console family appearing on both is the\n"
+            "two filters quietly becoming one again. This is a reading, not a check - some overlap\n"
+            "is correct.\n"
         )
-        ext = {e: {n for n in names if not is_private(n)} for e, names in lists.items()}
-        a, b = SLICES
-        only_a, only_b = sorted(ext[a] - ext[b]), sorted(ext[b] - ext[a])
-        rows = ["ENTRY\tIN " + a.upper() + "\tIN " + b.upper()]
-        for n in sorted(ext[a] | ext[b]):
-            rows.append(f"{n}\t{'yes' if n in ext[a] else 'NO'}\t{'yes' if n in ext[b] else 'NO'}")
+        tunnel = {n for n in planes.get("tunnel", []) if not is_private(n)}
+        workload: dict[str, set[str]] = {
+            p: {n for n in names if not is_private(n)}
+            for p, names in planes.items()
+            if p != "tunnel" and names
+        }
+        union = set().union(*workload.values()) if workload else set()
+        rows = ["ENTRY\tON THE TUNNEL\tON A WORKLOAD PLANE"]
+        for n in sorted(tunnel | union):
+            rows.append(f"{n}\t{'yes' if n in tunnel else '-'}\t{'yes' if n in union else '-'}")
         rep.tabulate(rows)
+        rep.text(f"\n  overlap: {len(tunnel & union)} entr(y/ies) on both sides\n")
 
         # ---------------------------------------------------------------- 5
         rep.h1("5. Checks")
         if unanswered:
             checks.fail(
                 "DN-1",
-                "every queryable name answers",
+                "every exact hostname on every plane answers",
                 f"{len(unanswered)} did not: " + "; ".join(unanswered),
             )
         else:
             checks.ok(
                 "DN-1",
-                "every queryable name answers",
+                "every exact hostname on every plane answers",
                 f"{sum(len(v) for v in answers.values())} names, all with an address",
             )
-        if hops_listed:
+
+        if all_fatal:
             checks.fail(
                 "DN-2",
-                "no entry is a redirection target of another entry",
-                f"{len(hops_listed)} is/are: " + "; ".join(hops_listed),
+                "no plane carries a Squid dstdomain collision",
+                f"{len(all_fatal)} FATAL: " + "; ".join(all_fatal),
+            )
+        elif all_redundant:
+            # `note` rather than `fail`, and the asymmetry is Squid's rather than a soft reading:
+            # a redundant entry produces a warning on reconfigure and a working proxy, while the
+            # apex pair produces `FATAL: Bungled` and no proxy at all.
+            checks.note(
+                "DN-2",
+                "no plane carries a Squid dstdomain collision",
+                f"nothing fatal; {len(all_redundant)} redundant (warning only): "
+                + "; ".join(all_redundant),
             )
         else:
             checks.ok(
                 "DN-2",
-                "no entry is a redirection target of another entry",
-                "no list carries a hop of its own - nothing is widened by leftovers",
+                "no plane carries a Squid dstdomain collision",
+                "no apex beside its own subtree entry, and no name already covered by one",
             )
-        if only_a or only_b:
-            checks.fail(
+
+        if deployed is None:
+            checks.note(
                 "DN-3",
-                "the two Interactive lists carry the same external names",
-                f"only in {a}: {only_a or '-'}; only in {b}: {only_b or '-'}",
+                "the committed planes equal the deployed parameter",
+                "not answered - re-run with --from-api <a Production profile> to read "
+                f"{PARAMETER}. The parameter is [P] and always present, so this is a session "
+                "away rather than an apply away",
             )
         else:
-            checks.ok(
-                "DN-3",
-                "the two Interactive lists carry the same external names",
-                f"{len(ext[a])} entries, identical",
-            )
+            diffs = []
+            for plane in sorted(set(planes) | set(deployed)):
+                want = planes.get(plane)
+                got = deployed.get(plane, {}).get("allow") if plane in deployed else None
+                if want is None:
+                    diffs.append(f"{plane} is deployed and not in the code")
+                elif got is None:
+                    diffs.append(f"{plane} is in the code and not deployed")
+                elif list(want) != list(got):
+                    only_code = sorted(set(want) - set(got))
+                    only_dep = sorted(set(got) - set(want))
+                    if only_code or only_dep:
+                        diffs.append(
+                            f"{plane}: only in code {only_code or '-'}, only deployed {only_dep or '-'}"
+                        )
+                    else:
+                        diffs.append(f"{plane}: same entries, different order")
+            if diffs:
+                checks.fail(
+                    "DN-3",
+                    "the committed planes equal the deployed parameter",
+                    "; ".join(diffs),
+                )
+            else:
+                checks.ok(
+                    "DN-3",
+                    "the committed planes equal the deployed parameter",
+                    f"{len(planes)} planes, entry for entry - the first link of "
+                    "code -> parameter -> host",
+                )
+
         attribution = (
             "the owner column in section 3b says whose infrastructure each one lands on"
             if counted
@@ -537,25 +614,28 @@ because listing one is what makes that redirection target resolvable on its own.
         )
         checks.note(
             "DN-4",
-            "names reaching their address through an unlisted hop",
-            f"{len(trusted)} name(s) resolve only because their slice passes "
-            f"TRUST_REDIRECTION_DOMAIN - these are what dropping back to the module default "
-            f"would break: {'; '.join(trusted) if trusted else 'none'}; {attribution}",
+            "what the two filters have in common",
+            f"{len(tunnel & union)} of {len(tunnel | union)} entries appear on both the tunnel "
+            f"and a workload plane: {sorted(tunnel & union) or 'none'}; {attribution}",
         )
         rep.checks_table(checks)
         rep.text("""
-A `fail` on DN-2 is the one to act on, and the action is to REMOVE the entry, not to keep
-it: a slice passing TRUST_REDIRECTION_DOMAIN needs no hop listed, and the listing is what
-makes that redirection target resolvable on its own. On a slice left at the module default
-the finding reverses - there the hop is REQUIRED, and this check does not apply to it. Check first that nothing queries the name
-directly - a hop of one entry can still be a name a different tool asks for by itself, and
-then it is an entry in its own right rather than a leftover.
+A `fail` on DN-2 is the one to act on FIRST, and the action is to delete the apex, not the
+subtree entry: Squid refuses to start on that pair, so the finding is an outage waiting for
+the next reconfigure rather than a tidy. A redundant row is a warning in Squid and a warning
+here.
 
-DN-4 is information, not a warning. A large count is the expected shape of a list written
-against TRUST; it becomes a work item only if a slice drops back to the module default.
+DN-3 is the FIRST of two links. It compares the repository against the SSM parameter; PX-3
+in ./aws/proxy.py compares the parameter against the squid.conf actually running on the host.
+A green DN-3 and no PX-3 says what was written reached the parameter, and nothing about what
+the proxy is enforcing.
 
-A clean run here is a screen, not a proof: this resolver is not the VPC's, and a CDN can
-steer a chain by geography. Confirm anything surprising from inside the VPC.
+DN-4 is information, not a warning. Some overlap is correct - AWS's own namespaces belong on
+every plane. A PACKAGE host or a CONSOLE family on both sides is the finding, and it means the
+two filters have quietly become one.
+
+A clean run here is a screen, not a proof: this resolver is not the proxy's, and a CDN can
+steer a chain by geography. Confirm anything surprising from a request through the proxy.
 """)
 
         rep.h1("6. Calls that failed")

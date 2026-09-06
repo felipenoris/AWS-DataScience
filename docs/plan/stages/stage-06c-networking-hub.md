@@ -754,6 +754,14 @@ becomes true.
   `ContainerEnvironmentVariables` on the app image configuration, or a JupyterLab lifecycle configuration —
   which for SMUS domains **must be attached in the console**, the CLI path being documented as not
   supported.
+- **5.6a — ANSWERED 2026-09-06: STAGING KEEPS ITS FIREWALL, and 6b's argument was about a job that
+  no longer exists.** 6b reasoned that *a headless deployment target resolves whatever its pipeline
+  resolves* — true, and an argument about **filtering the internet**, which is the job 5.1 ended by
+  deleting the last default route. What is left is 5.7's job, *close the recursive resolver as an
+  exfiltration channel*, and that channel is a property of **a VPC where code runs**, not of who runs
+  it: Staging runs promoted models, unattended, from artefacts built in Sandbox. So the `.tf` keeps
+  `dns_firewall = true`, the `dns-allowlist.py` row stays, **and both moved in the same commit** as
+  5.7's re-cut — which was this step's actual requirement.
 - **5.6a — THIS STEP OWNS A QUESTION 6b DEFERRED TO IT** (2026-09-06). *(Numbered `5.7` when written,
   beside the DNS-Firewall re-cut that already had that number — corrected 2026-09-06, the same defect
   4.7 carried. Step numbers are identifiers in this plan.)* 6b step 5.1 wanted
@@ -764,6 +772,34 @@ becomes true.
   VPC"* is the sentence that decides it: **Staging carries the SageMaker runtime, so it is a compute VPC**
   and keeps its firewall — or it does not, and both the `.tf` and the instrument row go together. Whichever
   way, **the two move in the same commit**.
+- **5.7 — DONE 2026-09-06, IN BOTH HALVES, AND THE LIST WENT FROM 63 ENTRIES TO 10.** Both compute
+  VPCs keep the firewall; `VPC-Networking` never had one and still does not; the four families are
+  `*.amazonaws.com`, `*.api.aws`, the two private zones — **and `*.sagemaker.aws`, which the step's
+  own list omitted**. That omission would have orphaned a **paid** endpoint: `sagemaker.studio`
+  answers on `*.studio.<region>.sagemaker.aws`, a TLD neither of the first two covers, and the symptom
+  is NXDOMAIN — indistinguishable from a network fault. **`vpc-egress-v0.8.0` turns it into a
+  plan-time failure**: a precondition computed from the same `describe-vpc-endpoint-services` reading
+  NO_PROXY uses, kept as a **separate** local because the two syntaxes look alike and are not
+  translatable by transcription (Lesson 53) — NO_PROXY needs `*.` gone, a Route 53 domain list needs
+  it present **and** the apex beside it. Proven by **negative control**: with the `sagemaker.aws` pair
+  removed the plan fails naming `*.studio.us-west-2.sagemaker.aws`; with it, green.
+  **AND A `"*"` CAME OFF THE SANDBOX LIST.** Commit `f6bb316` (*"allow-all egress"*, 2026-08-23) had
+  put a single wildcard at the top, so the sixty-two entries beneath it were decoration and the
+  firewall was a default-**ALLOW** for a fortnight. Named rather than quietly dropped.
+  **`EXC-05` and `EXC-06` close; `EXC-04` DOES NOT, and the stage file said it would.** 5.7 changed
+  the CONTENT of the lists; `EXC-04`'s mechanism is the provider comparing two **spellings** of
+  whatever the content is. Ten entries churn exactly as sixty-three did, and it could not even be
+  re-measured — the symptom appears on the plan *after* an apply, and all four `egress/` slices are
+  `[E]` and down.
+  **`./aws/dns-allowlist.py` re-aimed at the five Squid planes** (`hub-anchors.tf` by default, the
+  SSM parameter with `--from-api`). `DN-1` unchanged in spirit — 46 names, all answering. **`DN-2` is
+  new and is the valuable one**: Squid's two overlap outcomes are not the same severity, and the
+  apex-beside-its-own-`.x` pair is `FATAL: Bungled`, a proxy that does not start. `DN-3` compares
+  committed against deployed — **5 planes, entry for entry** — and is explicitly the *first of two
+  links*, `PX-3` being the second. `DN-4` measures the design claim: **exactly one** entry
+  (`.amazonaws.com`) is on both the tunnel and a workload plane, so the two filters really are two.
+  Both new checks proven with a negative control.
+  *The original step follows:*
 - **5.7 — [Claude] Re-cut the DNS Firewall**: it stays in every **compute** VPC and its allow-list shrinks
   to `*.amazonaws.com`, `*.api.aws`, `.awsds.internal` and the proxy's name; the `BLOCK`-NXDOMAIN `*` rule
   stays. Its job is no longer filtering the internet but closing the recursive resolver as an exfiltration
