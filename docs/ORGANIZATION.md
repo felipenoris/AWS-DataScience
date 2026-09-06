@@ -6,13 +6,17 @@ policy boundary, so each OU is named for the policy set it carries rather than f
 ([D23](plan/decisions/D23-ou-structure.md)).
 
 
-> **SCHEDULED CHANGE, 2026-09-05 — the roster below is current and one row of it is about to move.**
-> [Stage 6b](plan/stages/stage-06b-development-becomes-staging.md) renames `Development Account` to
-> `Staging Account` and moves it from `Interactive` to `Workloads`, with a new persona set
+> **DONE 2026-09-06 — the roster below is current, and this note records what moved.**
+> [Stage 6b](plan/stages/stage-06b-development-becomes-staging.md) renamed `Development Account` to
+> `Staging Account` and moved it from `Interactive` to `Workloads`, with a new persona set
 > (`InfrastructureAccess`, `DataScientistStagingAccess`, `DeploymentManagerAccess` — and no
-> `DevEnvStewardAccess`). The account is not vended: the quota increase was refused, and the interactive
-> environment it used to be was found unnecessary. Nothing here is edited ahead of the console act; the
-> tables below stay as measured until that sitting, which is the same rule every other roster fact follows.
+> `DevEnvStewardAccess`). **The account was not vended**: the quota increase was refused, and the
+> interactive environment it used to be was found unnecessary. So this file no longer has a
+> `Development Account` section, and **the promotion chain lost its first link** — it is
+> `Sandbox → Staging → Production` now, with Sandbox still sitting *before* the chain rather than at
+> its head. Where a sentence below still says `Development`, it is either history with a date, or a
+> row this stage did not reach; the roster, the OU table and the assignment tables are the parts that
+> were brought up to date in the same sitting.
 
 **Four OUs carry a document of this project's — `Workloads`, `Data`, `Identity` and `Interactive`, one each
 ([Stage 1c step 7.6](plan/stages/stage-01c-preventive-policies.md)). Of the three that carry none,
@@ -45,9 +49,11 @@ production account". There are three groups, and the distinction decides what ea
 hold:
 
 - **Lifecycle axis** — how mature and how protected the compute in an account is. This is the axis
-  promotion runs along: **Development → Staging → Production**, with **Sandbox** sitting *before* the
-  chain rather than at its head (work graduates from Sandbox into a Development repository through git,
-  never through a pipeline). An account on this axis holds **compute**, and its policy set is about what
+  promotion runs along: **Sandbox → Staging → Production** (2026-09-05; it used to read
+  `Development → Staging → Production` and the first link was removed with the account behind it).
+  **Sandbox** sits *before* the chain rather than at its head — work graduates out of Sandbox through
+  **git**, never through a pipeline, and what it graduates into is a repository rather than an
+  account. An account on this axis holds **compute**, and its policy set is about what
   that compute may do.
 
 - **Ownership axis** — who owns a dataset, answers for its quality and decides who may read it. The lake
@@ -84,7 +90,6 @@ questions, which is why an account can be high blast radius and carry a light po
 | Identity | **Identity** | Platform | The **access-management plane**: permission sets, groups and assignments — and, since 2026-08-15, the organization's **policy** documents as well (see the account's section below). Separate from Audit so that access management and security monitoring do not share a blast radius | No user compute — `DenyUserCompute`, the same statement as `Data`'s and none of its neighbours (1c step 7.6): a compromise of the identity plane cannot be turned into compute inside it. Its own OU since 2026-08-09: Control Tower would not vend the account into the foundational `Security` OU (D23), so what that OU carried by being foundational is attached here explicitly |
 | Policy Canary | Policy Test | Platform | **Deliberately empty, and disposable** — the account a candidate SCP or RCP is exercised against before it reaches anything real. An SCP is evaluated only when a principal makes a call, so a policy-staging OU with no account inside it tests nothing, which is why this is an account and not just a folder. Holds an administrator principal and nothing else, because a deny exercised by a principal that lacked the permission anyway proves nothing about a ceiling | **None of this project's** — the OU exists to hold *candidate* policies under test (D29). It carries the Control Tower controls every governed OU has (the `us-west-2` ceiling and the two root-user controls, 1c step 7.7), so a candidate is measured against the same floor as everything else |
 | Sandbox | Interactive → **Sandboxes** | Lifecycle (before the chain) | **Experimentation** — the unit of work is a notebook. Target of the unified domain's `experimentation` project blueprints (D26): interactive compute running unreviewed code against real, shared data, which makes it **the highest-risk account rather than the lowest** (`README.md` §3). Nothing here survives; nothing promotes from here | Interactive compute allowed — because nothing denies it, save one statement. `Sandboxes` carries no set of its own; `Interactive` carries exactly one deny (classic notebook instances, Stage 1c step 7.6, 2026-08-13), so what reaches this account is the organization-root set plus that. Infrastructure change is held off the data scientist by `DataScientistAccess`, an *identity* policy. **One account per business unit (D35)** — the only non-structural row in this table |
-| Development | Interactive | Lifecycle (head of the chain) | **Development** — the unit of work is a pipeline: a repository with tests, git and CI. Target of the `engineering` project profile (D26). Work graduates in from Sandbox **through git, never through a pipeline**, and the promotion chain starts here | Same as Sandbox — the two differ in content, not in policy |
 | Data Governance | Data | **Ownership** | The **state and governance of data**: the governed lake (S3 + Iceberg), the Glue catalog, Lake Formation, classification, the ingestion drop-box, the Glue Crawlers on raw and drop-box (D27), and the **SageMaker Unified Studio domain** with its catalog, project profiles, blueprints and account associations (D26). **A registry, not a runtime** — no VPC and no interactive sign-in; every environment reaches it through cross-account shares, and the portal it hosts is used by people who can never administer the account. Renamed from `Data Management` on 2026-08-08 | No user compute; catalog maintenance excepted by name; deletion denied |
 | Staging | Workloads | Lifecycle | **Deployment target** — receives the built artifact, runs the integration tests against sampled or synthetic data local to it, and is torn down again. No Studio domain, no Model Registry of its own, no GitLab, no share from the lake. Data scientists: read-only | No interactive compute; no human control plane |
 | Production | Workloads | Lifecycle (end of the chain) | The **software supply chain** (GitLab, runners, ECR, CodeArtifact), the production SageMaker runtime including the **Model Registry**, the **orchestration** layer ([D7](plan/decisions/D07-orchestration.md), built twice and compared), and the lake's **producer** — its job execution role holds the governed write, the only path by which governed data is ever written | Same as Staging |
@@ -100,7 +105,7 @@ and the empty value was then carried forward into a malformed role ARN.
 | Name used in this repository | `Account.Name` in AWS |
 |---|---|
 | Management | **`FELIPE N TAVARES`** — no suffix, no relation to the logical name |
-| Log Archive, Audit, Identity, Development, Production, Data Governance, Policy Canary | the same words plus **` Account`** — `Log Archive Account`, `Development Account`, … |
+| Log Archive, Audit, Identity, Staging, Production, Data Governance, Policy Canary | the same words plus **` Account`** — `Log Archive Account`, `Staging Account`, … . **`Staging Account` was `Development Account` until 2026-09-06** and kept the suffix through the rename, which is what let `identity/sso`'s exact-name lookup keep working with one value changed |
 | Sandbox | **`Sandbox Account 1`** — the per-unit ordinal (D35), so there is no single name for this row |
 | Staging | not vended yet |
 
@@ -130,14 +135,15 @@ wrong account as easily as none.
 - Represents an experimentation sandbox environment, where the unit of work is a notebook. Sandbox users will use this to experiment and develop artifacts.
 
 - **There is one of these per business unit** ([D35](plan/decisions/D35-sandbox-cardinality.md)) — it is the
-  only account in this file that is not structural. Every other account here, `Development` included, is
-  exactly one, forever. The chain reads **N Sandboxes → one Development → one Staging → one Production**, so
-  the cardinality boundary is the same line as the D21 graduation boundary: experimentation is naturally
-  per-unit, engineering is institutional. **N is 1 today.** Two consequences worth stating here rather than
+  only account in this file that is not structural. Every other account here is exactly one, forever.
+  The chain reads **N Sandboxes → one Staging → one Production** (2026-09-06; it read
+  `→ one Development → one Staging →` until Stage 6b removed the middle link), so the cardinality
+  boundary is the same line as the D21 graduation boundary: experimentation is naturally per-unit,
+  everything past it is institutional. **N is 1 today.** Two consequences worth stating here rather than
   discovering later: a unit's experimentation is private to it (its own account, its own
-  people), and **that isolation stops at the graduation boundary** — past it, one shared Development, and
-  whatever separation is required is carried by Lake Formation grants and per-pipeline execution roles, not
-  by an account boundary that is deliberately not there. Vending a unit's account is
+  people), and **that isolation stops at the graduation boundary** — past it there is one shared Staging
+  and one shared Production, and whatever separation is required is carried by Lake Formation grants and
+  per-pipeline execution roles, not by an account boundary that is deliberately not there. Vending a unit's account is
   [Stage 14](plan/stages/stage-14-sandbox-vending.md).
 
 - **Target of the `experimentation` project profile** ([D26](plan/decisions/D26-unified-studio.md)). The SageMaker Unified Studio
@@ -161,19 +167,26 @@ wrong account as easily as none.
   code, interactively, with a browser session attached. The argument is in [§3 of `README.md`](../README.md),
   and it is what makes the perimeter and the egress controls get built here first.
 
-## Development Account
+## ~~Development Account~~ — retired 2026-09-06
 
-- Represents a development environment, where the unit of work is a pipeline (repository with tests, workflow definitions). In contrast with the Sandbox environment, the Development environment uses git, CI and automation tools.
+- **There is no Development account, and the section that stood here described one.** It was an
+  `Interactive` account at the head of the promotion chain, target of the `engineering` project profile,
+  where the unit of work was a pipeline rather than a notebook. Stage 6b converted it into
+  `Staging Account`; the `engineering` project profile was destroyed with it (step 1.1).
 
-- **Target of the `engineering` project profile** (D26), by the same mechanism as Sandbox. This is the head
-  of the promotion chain: what leaves this account as a git tag is what Staging and then Production
-  receive.
+- **What replaced it is nothing, and that is the decision rather than an omission.** The 2026-09-05
+  re-scope found one interactive environment sufficient: a repository with tests, git and CI does not
+  need an AWS account of its own, because the thing being developed is a **pipeline definition**, and it
+  is developed in git and executed by the pipeline into Staging. So work still graduates out of Sandbox
+  through git — it now graduates into a **repository**, not into an account.
 
 ## Staging Account
 
 - **Deployment target, not a staging area someone works in** ([D20](plan/decisions/D20-staging-account.md)).
-  It receives the artifact built in Development, runs the integration tests against it, and is torn down
-  again. No Studio domain, no Model Registry of its own, no GitLab. Only the pipeline writes here, which is
+  It receives the artifact the pipeline builds, runs the integration tests against it, and is torn down
+  again. **It is also, since 2026-09-06, the renamed `Development` account** — the quota refused a vend,
+  so Stage 6b converted the account rather than creating one; the VPC, its CIDR and both `[P]` gateway
+  endpoints are the ones Stage 3 built. No Studio domain, no Model Registry of its own, no GitLab. Only the pipeline writes here, which is
   what its `Workloads` policy set enforces — no interactive compute, no human control plane.
 
 - **Its data is sampled or synthetic and local to it, and it is in no Lake Formation share.** That is a
@@ -231,7 +244,7 @@ catalog, glossary, data products and subscription requests.
 
 **What it does not own: compute.** A domain is a registry, not a runtime. It holds no notebook, no app, no
 training job and no project bucket; blueprints provision all of that into the *associated* accounts
-(Sandbox and Development), decided by the project profile. Two exceptions exist, and both are named rather
+(Sandbox only since 2026-09-06 — it was Sandbox and Development), decided by the project profile. Two exceptions exist, and both are named rather
 than implied:
 
 - **Catalog maintenance (D27)** — Glue Crawlers over the raw zone and the drop-box, Iceberg compaction and
@@ -241,7 +254,7 @@ than implied:
 - **The DataZone control plane (`datazone:*`)** — not compute at all, in the same sense that Lake Formation
   is not compute: a governance control plane that grants and records, and which already lived here.
 
-**Why the domain is here rather than in Development.** The domain is on the ownership axis, not the
+**Why the domain is here rather than in an interactive account.** The domain is on the ownership axis, not the
 lifecycle axis: it outlives every project registered in it, and an account that may one day be rebuilt
 should not be carrying the catalog. There is also a mechanical gain — DataZone fulfils an approved
 subscription by writing a **Lake Formation grant**, so co-locating the business catalog with the technical
@@ -529,7 +542,7 @@ account update or a re-enrollment may re-create them.
 
 | Account | What it holds | Why |
 |---|---|---|
-| Sandbox, Development, Staging, Production, Data Governance, Identity | `InfrastructureAccess`, through the `sso-group-infrastructure` group | These are the Terraform-managed slices, and this is the identity that applies them |
+| Sandbox, Staging, Production, Data Governance, Identity | `InfrastructureAccess`, through the `sso-group-infrastructure` group | These are the Terraform-managed slices, and this is the identity that applies them |
 | Policy Canary | Control Tower's **`AWSAdministratorAccess`**, as a **direct** assignment and deliberately so — *not* `InfrastructureAccess` | Account Factory left it at vend time (D32) and it is **permanent**: the account is outside the Terraform-managed set, has no group and no `awsds-infra-*` profile, so removing it removes the only way in (Stage 1b step 3.8). It is reached through `awsds-policy-canary`. It needs an *administrator* or the [D29](plan/decisions/D29-policy-canary.md) battery measures the identity policy instead of the SCP ceiling |
 | Management | **Nothing, permanently** | Principle 1 makes Management bootstrap-only and console-only; Terraform never runs against it. D33/D34 keep `AWS Control Tower Admin` standing precisely so this user needs no reach there, and [D10](plan/decisions/D10-identity-center-delegation.md) delegates Identity Center to the `Identity` account for the same reason. Stage 1b step 4 used to create an assignment here and no longer does |
 | Log Archive, Audit | **Nothing** | Neither was vended by Account Factory and neither holds a Terraform slice. The audit trail has to survive its own administrators, which is an argument against adding one rather than a gap to close |
@@ -543,7 +556,7 @@ strict superset of all four**, everywhere it holds administrator.
 - In `Data Governance` it can call `lakeformation:GrantPermissions`, the act that *defines* the governance
   manager. The `Data` OU's policy set denies compute, `s3:DeleteBucket` and
   `lakeformation:DeregisterResource`; it does not deny granting.
-- In `Production` it can `ecr:PutImage`, and in Sandbox and Development `sagemaker:CreateImageVersion` — the
+- In `Production` it can `ecr:PutImage`, and in Sandbox `sagemaker:CreateImageVersion` — the
   exact actions `DevEnvStewardAccess` denies so that the `dev-env` gate is not theatre.
 - The derived zone's CMK is what stops a release approver reading query output (D19 as revised by
   [D31](plan/decisions/D31-approver-read.md); since D19's 2026-08-26 revision that key is the **project
@@ -588,18 +601,20 @@ unbounded, and the difference between those two states is the whole control.
 
 ## Data Scientist user
 
-- roles: regular user with read-only access to production environment data, and read-write access to sandbox and development environment. Can't perform infrastructure changes, unless it is managed by some AWS Service (SageMaker). This user can commit to git repos to develop and trigger CI/CD deploy pipelines that promote artifacts along the chain Development -> Staging -> Production. Sandbox work enters that chain by graduating into a Development repository through git, never by a pipeline. This user can also commit to git repos that contains build scripts for `dev-env`.
+- roles: regular user with read-only access to production environment data, and read-write access to the sandbox environment. Can't perform infrastructure changes, unless it is managed by some AWS Service (SageMaker). This user can commit to git repos to develop and trigger CI/CD deploy pipelines that promote artifacts along the chain Sandbox -> Staging -> Production. Sandbox work enters that chain by graduating into an engineering repository through git, never by a pipeline. This user can also commit to git repos that contains build scripts for `dev-env`.
 
 - **The primary working surface is the SageMaker Unified Studio portal** (D26), reached through the VPN like
   every other endpoint. Signing in to the portal is not signing in to the Data Governance account that
-  hosts it: the person's projects run in Sandbox and Development, and the access matrix below is unchanged
+  hosts it: the person's projects run in Sandbox, and the access matrix below is unchanged
   by the portal's existence. In the portal this user is a **project member**, never a domain owner.
 
 - the access matrix this expands into, per account ([D18](plan/decisions/D18-data-scientist-access.md)):
 
-  - **Sandbox and Development**: read-write and interactive. This is where the person works. **The group
-    behind the two halves is not the same one (D35):** `Development` is a single shared engineering account
-    and keeps one `sso-group-data-scientists` group, while a `Sandbox` exists per business unit, so its assignment is
+  - **Sandbox**: read-write and interactive. This is where the person works, and since 2026-09-06 it is
+    the **only** account where they work interactively — the second half of this row was `Development`,
+    which became the headless `Staging` and now carries a **read-only** persona instead
+    (`DataScientistStagingAccess`, D18). **The group question survives the account (D35):** a `Sandbox`
+    exists per business unit, so its assignment is
     to a **`sso-group-data-scientists-<bu>`** group covering that unit's Sandbox and nothing else — otherwise every
     data scientist can sign in to every unit's experimentation account. The permission set itself
     (`DataScientistAccess`) is unchanged and shared. With one unit there is no per-unit group yet; what
@@ -608,7 +623,7 @@ unbounded, and the difference between those two states is the whole control.
     human diagnosing why the pipeline failed.
   - **Production**: the data plane without compute — logs, catalog metadata, job status, named S3
     prefixes and Athena on a dedicated workgroup. No control plane, no ability to start compute.
-  - **Data Governance**: no sign-in at all. The lake is read from Sandbox and Development through the
+  - **Data Governance**: no sign-in at all. The lake is read from Sandbox through the
     Lake Formation cross-account share. The only write toward the lake is `s3:PutObject` into the
     ingestion drop-box, granted by the drop-box **bucket policy in Data Governance together with the
     mirror statement in `DataScientistAccess`** — a cross-account write needs both halves (Lesson 28) —
@@ -625,11 +640,11 @@ labels.**
 | | Deployment Manager | Governance Manager | Dev Env Steward |
 |---|---|---|---|
 | Axis | **Lifecycle** | **Ownership** | **Supply chain** |
-| Approves | promotion of an artifact along Development → Staging → Production | data subscriptions and every other access to data | the `dev-env` container image that every notebook runs on |
+| Approves | promotion of an artifact along Sandbox → Staging → Production | data subscriptions and every other access to data | the `dev-env` container image that every notebook runs on |
 | Acts in | GitLab (the promotion pipeline's manual gate) | the SageMaker Unified Studio portal | GitLab (the dev-env pipeline's manual gate) |
 | Question being answered | *is this build safe to release?* | *may this person read this dataset?* | *is this runtime safe to hand to everyone?* |
 | Group | `sso-group-deployment-managers` | `sso-group-governance-managers` | `sso-group-dev-env-stewards` |
-| Where they have access | `DeploymentManagerAccess` on Sandbox, Development, Staging and Production — **nothing on Data Governance** | `GovernanceManagerAccess` on **Data Governance only** | `DevEnvStewardAccess` on Production (the registry) and read-only on Sandbox and Development (where the image is registered) — **nothing on Staging, Data Governance or Identity** |
+| Where they have access | `DeploymentManagerAccess` on Sandbox, Staging and Production — **nothing on Data Governance** | `GovernanceManagerAccess` on **Data Governance only** | `DevEnvStewardAccess` on Production (the registry) and read-only on Sandbox (where the image is registered) — **nothing on Staging, Data Governance or Identity** |
 | What they may *read* | Logs, job and pipeline status, catalog metadata, image scan findings, enumerated build-artifact prefixes. **Not** query results, not the derived zones, not decrypted data (D31) | The catalog — names, schemas, classifications, lineage. **Not** the rows | The image: its `Dockerfile` history in GitLab, the build log, ECR image metadata and **enhanced-scanning findings**, and the SageMaker image / app-image-config resources. **No data at all** — no lake prefixes, no Athena, no `kms:Decrypt` |
 
 **Neither of the first two is a superset of the other, and the third is on a different axis from both.**
@@ -673,7 +688,7 @@ given in to — Identity Center will not warn, and no policy can detect it.
   elevated role** used to debug a failed production job (Stage 9) — that is a lifecycle act, not a data
   one.
 
-- **Access:** the `DeploymentManagerAccess` permission set on Sandbox, Development, Staging and Production —
+- **Access:** the `DeploymentManagerAccess` permission set on Sandbox, Staging and Production —
   the lifecycle accounts, which is the axis this persona works on — and **no assignment of any kind on
   Data Governance**. Deliberately **no** authority
   over data grants either: this user cannot approve a subscription, is not a domain owner in the Unified
@@ -732,7 +747,7 @@ given in to — Identity Center will not warn, and no policy can detect it.
   data scientist can write to**. A change is a merge request. The pipeline builds the image, smoke-tests
   it, scans it, and pushes it to ECR under an immutable tag. **Nothing reaches a working environment
   until this user approves the manual gate**; the approval is what causes the pipeline to register the
-  image so it appears in the SageMaker image selector for the Sandbox and Development projects.
+  image so it appears in the SageMaker image selector for the Sandbox projects.
 
 - **The parallel worth holding onto:** a `dev-env` image version is to the workbench what a **Model
   Registry version is to a model** (D17) — it is *approved*, not copied. The build is cheap and anyone may
@@ -746,7 +761,7 @@ given in to — Identity Center will not warn, and no policy can detect it.
   propose" — it is "who may release", which is this persona.
 
 - **Access:** the `DevEnvStewardAccess` permission set on **Production** (ECR image metadata and enhanced
-  scanning findings, the build pipeline's CloudWatch logs) and **read-only on Sandbox and Development**
+  scanning findings, the build pipeline's CloudWatch logs) and **read-only on Sandbox**
   (the SageMaker image and app-image-config resources, to confirm what is actually registered). **Nothing
   on Staging, Data Governance, Identity, Audit, Log Archive or Policy Canary.**
 
@@ -933,8 +948,8 @@ than a merge request.
 **One group is planned and deliberately not created yet:** `sso-group-data-scientists-<bu>`, one per business
 unit, covering that unit's `Sandbox` and nothing else (D35, [Stage 14](plan/stages/stage-14-sandbox-vending.md)).
 `Sandbox` is one account per business unit and N is currently 1, so what exists today is the *naming* — which
-makes the second unit an addition rather than a refactor. `Development` is a single shared account and keeps
-one group permanently.
+makes the second unit an addition rather than a refactor. The accounts past the graduation boundary —
+`Staging` and `Production` — are one each, permanently, and keep one group each.
 
 ## The rules these five obey
 
@@ -964,40 +979,43 @@ a grant that appears because an account appeared is the failure mode that rule e
 | # | Permission set | Group | Account | What it is for |
 |---|---|---|---|---|
 | 1 | `InfrastructureAccess` | `sso-group-infrastructure` | Sandbox | Applies the account's Terraform slices |
-| 2 | `InfrastructureAccess` | `sso-group-infrastructure` | Development | Applies the account's Terraform slices |
-| 3 | `InfrastructureAccess` | `sso-group-infrastructure` | Staging \* | Applies the account's Terraform slices |
-| 4 | `InfrastructureAccess` | `sso-group-infrastructure` | Production | Applies the account's Terraform slices, the supply chain included (D14) |
-| 5 | `InfrastructureAccess` | `sso-group-infrastructure` | Data Governance | Applies the lake, the catalog and the Lake Formation wiring |
-| 6 | `InfrastructureAccess` | `sso-group-infrastructure` | Identity | Applies `identity/sso/` and `identity/org-policies/` — the entitlement plane applying itself |
-| 7 | `DataScientistAccess` | `sso-group-data-scientists` † | Sandbox | Where experimentation happens: read-write, interactive |
-| 8 | `DataScientistAccess` | `sso-group-data-scientists` | Development | The shared engineering account: read-write, interactive |
-| 9 | `DataScientistStagingAccess` | `sso-group-data-scientists` | Staging \* | Reading why the pipeline failed — and nothing else, so Staging stays evidence of what the pipeline does |
-| 10 | `DataScientistProdAccess` | `sso-group-data-scientists` | Production | Data plane read: logs, catalog metadata, job status, named prefixes, a dedicated Athena workgroup |
-| 11 | `DeploymentManagerAccess` | `sso-group-deployment-managers` | Sandbox | Diagnosing a build before releasing it |
-| 12 | `DeploymentManagerAccess` | `sso-group-deployment-managers` | Development | Diagnosing a build before releasing it |
-| 13 | `DeploymentManagerAccess` | `sso-group-deployment-managers` | Staging \* | The test results the promotion gate is decided on |
-| 14 | `DeploymentManagerAccess` | `sso-group-deployment-managers` | Production | Diagnosing a failed promotion after the fact |
-| 15 | `GovernanceManagerAccess` | `sso-group-governance-managers` | Data Governance | LF-Tags, subscriptions, domain ownership — the catalog, never the rows |
-| 16 | `DevEnvStewardAccess` | `sso-group-dev-env-stewards` | Production | ECR image metadata, enhanced-scanning findings, the build pipeline's logs (the registry lives here, D14) |
-| 17 | `DevEnvStewardAccess` | `sso-group-dev-env-stewards` | Sandbox | Confirming which image version is actually registered |
-| 18 | `DevEnvStewardAccess` | `sso-group-dev-env-stewards` | Development | Confirming which image version is actually registered |
+| 2 | `InfrastructureAccess` | `sso-group-infrastructure` | Staging \* | Applies the account's Terraform slices |
+| 3 | `InfrastructureAccess` | `sso-group-infrastructure` | Production | Applies the account's Terraform slices, the supply chain included (D14) |
+| 4 | `InfrastructureAccess` | `sso-group-infrastructure` | Data Governance | Applies the lake, the catalog and the Lake Formation wiring |
+| 5 | `InfrastructureAccess` | `sso-group-infrastructure` | Identity | Applies `identity/sso/` and `identity/org-policies/` — the entitlement plane applying itself |
+| 6 | `DataScientistAccess` | `sso-group-data-scientists` † | Sandbox | Where experimentation happens: read-write, interactive |
+| 7 | `DataScientistStagingAccess` | `sso-group-data-scientists` | Staging \* | Reading why the pipeline failed — and nothing else, so Staging stays evidence of what the pipeline does |
+| 8 | `DataScientistProdAccess` | `sso-group-data-scientists` | Production | Data plane read: logs, catalog metadata, job status, named prefixes, a dedicated Athena workgroup |
+| 9 | `DeploymentManagerAccess` | `sso-group-deployment-managers` | Sandbox | Diagnosing a build before releasing it |
+| 10 | `DeploymentManagerAccess` | `sso-group-deployment-managers` | Staging \* | The test results the promotion gate is decided on |
+| 11 | `DeploymentManagerAccess` | `sso-group-deployment-managers` | Production | Diagnosing a failed promotion after the fact |
+| 12 | `GovernanceManagerAccess` | `sso-group-governance-managers` | Data Governance | LF-Tags, subscriptions, domain ownership — the catalog, never the rows |
+| 13 | `DevEnvStewardAccess` | `sso-group-dev-env-stewards` | Production | ECR image metadata, enhanced-scanning findings, the build pipeline's logs (the registry lives here, D14) |
+| 14 | `DevEnvStewardAccess` | `sso-group-dev-env-stewards` | Sandbox | Confirming which image version is actually registered |
 
-\* **The three `Staging` rows do not exist yet** — the account is unvended (the increase to the account cap
-is requested, not granted). Stage 1b step 3 and Stage 2 step 5 both skip them, and they are picked up at the
-vend. **15 assignments today, 18 at the target.**
+\* **The `Staging` rows EXIST since 2026-09-06, and there are two of them rather than three.** This note
+used to say all three were pending an unvended account; the vend was refused and Stage 6b made the account
+by renaming `Development` instead. `InfrastructureAccess` and `DeploymentManagerAccess` moved across with
+the account (behind `moved {}` blocks, so nothing was revoked); the data-scientist row is
+**`DataScientistStagingAccess`**, swapped in at step 2.1, not `DataScientistAccess`. **There is no
+`DevEnvStewardAccess` on Staging** — it judges a container image, and a deployment target registers none.
+**14 assignments today, and 14 is the target** until a second business unit is vended.
 
 † **The `DataScientistAccess` assignment on `Sandbox` is the one that changes shape at the second business
 unit.** D35 makes `Sandbox` one account per unit, so its principal moves to
-`sso-group-data-scientists-<bu>` — covering that unit's Sandbox alone — while the same set's assignment on
-`Development` stays on the shared group. The permission set is unchanged and shared; only the principal
-differs. With one unit there is no per-unit group yet.
+`sso-group-data-scientists-<bu>` — covering that unit's Sandbox alone — while the assignments **past the
+graduation boundary** (`DataScientistStagingAccess` on Staging, `DataScientistProdAccess` on Production)
+stay on the shared group. The permission set is unchanged and shared; only the principal differs. With one
+unit there is no per-unit group yet. *(This note used to name `Development` as the shared side; that
+account became Staging on 2026-09-06 and the argument is unchanged — it was never about which account, but
+about which side of the boundary.)*
 
 ## What is *not* in the table above, and why each absence is deliberate
 
 | Account | Who has nothing there | Why |
 |---|---|---|
 | **Management** | **every persona, permanently** | Bootstrap-only and console-only (principle 1); Terraform never runs against it. D33/D34 keep `AWS Control Tower Admin` standing precisely so no persona needs reach here. Stage 1b step 4 used to create an assignment and now deliberately does not |
-| **Data Governance** | `sso-group-data-scientists`, `sso-group-deployment-managers`, `sso-group-dev-env-stewards` | The lake is read from Sandbox and Development through the Lake Formation cross-account share (D18/D22), not by signing in. A release approver has no business in the account that grants data access — and `sso-group-governance-managers` is the mirror image, holding only this one |
+| **Data Governance** | `sso-group-data-scientists`, `sso-group-deployment-managers`, `sso-group-dev-env-stewards` | The lake is read from Sandbox through the Lake Formation cross-account share (D18/D22), not by signing in. A release approver has no business in the account that grants data access — and `sso-group-governance-managers` is the mirror image, holding only this one |
 | **Staging** | `sso-group-dev-env-stewards` | The artifact it judges is a container image, not an environment — the narrowest of the three approver sets |
 | **Policy Canary** | **every group** | Reached only by the infrastructure *user*'s direct assignment (below). An account whose whole purpose is to have broken permissions is not somewhere a second persona should sign in and draw conclusions |
 | **Log Archive, Audit** | every persona | Neither was vended by Account Factory and neither holds a Terraform slice. The audit trail has to survive its own administrators — an argument against adding an assignment, not a gap to close |
