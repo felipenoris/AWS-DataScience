@@ -23,7 +23,12 @@
 #   B. For every account that HAS a foundation/ slice on disk, every per-tier subnet CIDR
 #      appears - RECOMPUTED from the `cidrsubnet` calls in terraform-modules/vpc/main.tf, so
 #      re-cutting the tiers there is what makes this fail rather than a number typed twice.
-#      An account with an allocation and no foundation/ (Staging today) is checked by rule A
+#      An account with an allocation and no foundation/ is checked by rule A alone. That case has
+#      HAD NO EXAMPLE SINCE 2026-09-06 - it used to read "(Staging today)", meaning the unvended
+#      account whose 10.40 allocation had no VPC behind it. Stage 6b renamed `Development` into
+#      Staging, so all three allocated accounts now carry a foundation/, and 10.40 is unallocated
+#      rather than allocated-and-empty. The branch is kept: Stage 14 vends a Sandbox unit's CIDR
+#      row before its slices exist, which puts an account back in it.
 #      alone: its subnets do not exist, and demanding them would be demanding a fiction.
 #   C. Every NETWORK-BEARING slice is named, as `<account>/<slice>`. Three ways to be one, and
 #      the union is deliberate because each catches what the others miss:

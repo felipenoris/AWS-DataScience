@@ -124,12 +124,31 @@ one of the four (0.4) is a hard create-time conflict rather than a naming prefer
 
 - **0.1 — [Claude] Confirm what is already written**, and do not re-author it: `D38`, `Lesson 44`, `INT-21`,
   `INT-22`, Recipe E and Recipe F all landed on 2026-09-05. What this pass adds is code, not prose.
+- **0.2 — READ 2026-09-06 AND NOT YET WRITTEN, because this step contradicts Stage 6b and it is the one
+  that is right.** 6b step 4.1 said 6c *"consumes"* the freed `10.40.0.0/16`; **this step says it "is free
+  and stays unallocated"**, and the hub is 10.30 (the existing VPC, re-labelled), 10.31 and 10.32. The
+  stage that has to BUILD the thing is the correct side (Lesson 32) — **and 6b's wrong clause had already
+  been copied into six files in one day, two of them instruments.** All corrected before any 6c code was
+  written; the consequence is that `networking.py`'s `NT-3`/`NT-5`/`NT-6` **stop having an expiry date**,
+  because nothing will ever allocate the range they watch.
+  - **One design question is open and it changes 0.6 and 0.7 with it.** This step says the per-(account,
+    VPC) table sits **beside** the per-account `CIDRS`. Two tables carrying the same numbers is Lesson 33
+    exactly — one intent in two places diverges — and `CIDRS` cannot answer *"which /16 does Production
+    have"* once Production has three. The alternative is **one authored table keyed by (account, slice)**
+    with every per-account reader deriving from it. It is not a free choice: `CIDRS`'s key set is what
+    builds the `peers` map that `production/foundation/peers.tf` consumes **today**, so whichever shape is
+    taken, 0.2 and 0.6 land in one commit.
 - **0.2 — [Claude] Extend the address vocabulary**: `scripts/tfhygiene/backend.py` gains a
   per-**(account, VPC)** table — `production-shared` 10.30.0.0/16, `production-networking` 10.31.0.0/16,
   `production-workloads` 10.32.0.0/16 — beside the per-account `CIDRS` that already carries
   `sandbox` 10.20.0.0/16 and `staging` 10.50.0.0/16 (6b step 4.1 put it there). **`10.40.0.0/16` is free**
   and stays unallocated; `10.60.0.0/16` is reserved for the `shared` account D38's trigger names;
   `10.16.0.0/13` stays the Sandbox supernet and `10.90.0.0/24` the WireGuard client range.
+- **0.1 / 0.3 — DONE 2026-09-06.** 0.1 confirmed by reading: `D38`, `Lesson 44`, `INT-21`, `INT-22`,
+  Recipe E and Recipe F all stand as written, and Recipe E was **used, not authored**, by 6b the next day.
+  0.3 added four ranks — `networking` 21, `workloads` 23, `proxy` 41, `workloads-egress` 51 — each with the
+  reason its number is what it is, in the discipline `vpn` and `pki` already sat under. `slices.py check`:
+  **24 declared, 24 on disk**.
 - **0.3 — [Claude] Add the slice ranks before any folder exists**: `RANKS` in `scripts/tfhygiene/layers.py`
   gains `networking` (21), `workloads` (23), `proxy` (41) and **`workloads-egress` (51)** — the `[E]`
   endpoint slice for the second Production VPC, ranked just above `egress` (50) so both come up after the
@@ -160,6 +179,12 @@ one of the four (0.4) is a hard create-time conflict rather than a naming prefer
 - **0.6 — [Claude] Teach the peering pattern about three VPCs**: `production/foundation/peers.tf` finds a
   peer by the single tag `awsds-<env>-vpc`; that lookup becomes per-VPC and the peering map moves into
   `backend.py`, so both sides of every peering are generated from one list (Lesson 14).
+- **0.7 — one of its two halves done 2026-09-06.** The gate's own header carried a stale parenthetical —
+  *"an account with an allocation and no `foundation/` (Staging today)"* — which described the **unvended**
+  Staging, whose 10.40 row had no VPC behind it. 6b renamed `Development` into Staging, so all three
+  allocated accounts carry a `foundation/` and that branch now has **no example**; it is kept because
+  Stage 14 vends a CIDR row before its slices exist and puts an account back in it. The rule-B rewrite
+  waits on 0.2's table.
 - **0.7 — [Claude] Fix the documentation gate**: `scripts/check-network-doc.py` rule B recomputes subnet
   tiers from **one** CIDR per account; it now reads the per-VPC table. `docs/NETWORK.md` §2.1 gains every
   new network-bearing slice in the same commit.
