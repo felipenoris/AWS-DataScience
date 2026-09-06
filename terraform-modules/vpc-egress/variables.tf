@@ -10,26 +10,26 @@ variable "vpc_id" {
   nullable    = false
 }
 
-variable "egress_mode" {
-  description = "Step 10's switch, PER ACCOUNT (10.3): 'A' builds the NAT and the private tier's default route; 'B' builds neither - no default route at all until Stages 6-7 build B's package path. Default A (Stage 3 decision 4); choosing A as the default is not choosing A as the outcome - D5's comparison happens at Stage 6."
+# `egress_mode`, `nat_public_subnet_id` and `private_route_table_ids` STOOD HERE UNTIL v0.6.0
+# (6c step 5.1, 2026-09-06) AND ARE GONE, not defaulted to "B". They were D5's two designs and the
+# NAT gateway that made design A a design; under D38 the estate has ONE internet exit, an explicit
+# proxy in the hub, and **no VPC anywhere carries a default route**. A switch whose other position
+# no longer exists is dead code that reads like a choice.
+#
+# THE CAPABILITY IS NOT GONE, WHICH IS WHY THIS PARAGRAPH IS LONGER THAN THE REMOVAL. Step 5.9
+# keeps a NAT gateway as a CONTINGENCY - for a named service that needs the internet and cannot be
+# told about a proxy, in that service's own VPC, with its own cost row and a removal trigger. That
+# is a deliberate act with a decision behind it, not a flag somebody flips: bringing it back means
+# re-adding this file's resources for one caller, which is the friction the contingency wants.
+#
+# THE ROUTE TABLES WENT WITH IT because nothing else read them: `aws_route.private_default` was
+# their only consumer. A module input nobody consumes is a claim about a capability that does not
+# exist (tflint says so too).
+
+variable "name_suffix" {
+  description = "Distinguishes egress sets inside one account: names become awsds-<env>-<suffix>-*. Empty for a single-VPC account, which is every account but Production. Deferred here from 6c step 0.4a - the vpc module took the same input at v0.2.0, and this one waited so a single version could carry it beside the NAT removal rather than costing two bumps."
   type        = string
-  default     = "A"
-
-  validation {
-    condition     = contains(["A", "B"], var.egress_mode)
-    error_message = "egress_mode is 'A' (NAT) or 'B' (no default route) - D5's two designs, nothing else."
-  }
-}
-
-variable "nat_public_subnet_id" {
-  description = "The ONE public subnet the NAT lands in (step 7.1) - the caller picks the first authored zone. The documented one-per-AZ switch: make this a map like private_route_table_ids and give aws_route.private_default a per-zone NAT - foundation's route tables are already per AZ so it is a route change, not a re-plumbing."
-  type        = string
-  nullable    = false
-}
-
-variable "private_route_table_ids" {
-  description = "foundation/'s private route tables, BY ZONE ID - under design A every one of them gets the default route toward the one NAT (steps 2.2, 7, 10). Read through terraform_remote_state."
-  type        = map(string)
+  default     = ""
   nullable    = false
 }
 
@@ -93,7 +93,7 @@ variable "optional_service_groups" {
 }
 
 variable "dns_firewall" {
-  description = "Attach the Route 53 Resolver DNS Firewall to this VPC - design A's allow-list. false everywhere it does not apply: the deployment targets have no interactive user to constrain, and under egress_mode = B there is no default route for a name to be useful on (dns-firewall.tf enforces the second half itself, so a caller cannot half-enable it)."
+  description = "Attach the Route 53 Resolver DNS Firewall to this VPC. THIS SENTENCE WAS REWRITTEN AT v0.6.0 AND THE OLD ONE IS WHY: it said the firewall was design A's allow-list, that mode B made it pointless, and that `dns-firewall.tf` enforced that second half so a caller could not half-enable it. All three stopped being true when the NAT left - the module no longer reads egress_mode at all, so THIS FLAG IS NOW THE ONLY GATE and a caller gets exactly what it asks for. What the firewall is FOR also changed (6c step 5.7): not filtering the internet, which is the proxy's allow-list now, but closing the recursive resolver as an exfiltration channel - a job that exists with or without a default route. false where there is no interactive user to constrain, and false in the hub, which must resolve everything the proxy is asked to fetch."
   type        = bool
   default     = false
 }
