@@ -214,6 +214,13 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   `production/workloads-egress/` (rank 51) added. **New: Lesson 45.** D38 gains a NAT-contingency candidate
   (ECR's pull-through cache, measured at Stage 7 5.2); INT-19 is **four** surfaces; INT-04 retired into
   INT-07.
+- **Stage 6b pass 0 DONE 2026-09-05** (0.5b, a Management CloudShell act, outstanding); the stage carries
+  eight dated corrections from that sitting. Load-bearing ones: `blueprints_enabled` is **generated** from
+  `SMUS_ASSOCIATED` (a hand-edited tfvar is overwritten by the `init` that consumes it), so 1.6's edit runs
+  inside 1.2 and the plan reads `1 to change, 22 to destroy`; `account.amazonaws.com` trusted access is
+  **ABSENT**; the account carries **seven** SSO assignments, three of them the landing zone's in every
+  governed account; and `rename-check.py` failed three ways on its first run — an instrument written for a
+  stage is unproven until it has been run against the estate.
 - **The chain is `Sandbox → Staging → Production`** (`objectives.md` edited by the user). Interactive
   compute exists in **Sandbox only**; Staging and Production carry the SageMaker **runtime**, which needs
   no domain object. `DataScientistStagingAccess` exists, unassigned, and is 6b's target.
