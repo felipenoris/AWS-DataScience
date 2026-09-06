@@ -251,10 +251,40 @@ def vpc_bearing_accounts() -> list[str]:
     return sorted({a for a, _s in VPC_CIDRS})
 
 
-# Outside every VPC range and never seen inside AWS - the WireGuard instance SNATs (Stage 3
-# step 6.5, Stage 4 step 4.2). Recorded here because this table is where address literals
-# live; emitted as `peer_cidr` to the vpn/ slice since Stage 4 pass 1, and to nothing else.
+# Outside every VPC range - the WireGuard instance SNATs (Stage 3 step 6.5, Stage 4 step 4.2).
+# Recorded here because this table is where address literals live.
+#
+# "AND NEVER SEEN INSIDE AWS ... EMITTED TO THE vpn/ SLICE AND TO NOTHING ELSE" IS WHAT THIS
+# COMMENT SAID UNTIL 6c step 4.1, AND BOTH HALVES STOPPED BEING TRUE ON THE SAME DAY - Lesson
+# 49 exactly: a comment about a knob nobody turns is a claim about the callers that existed
+# when it was written. D38 puts the proxy and the tunnel endpoint in ONE VPC, and step 4.7
+# stops masquerading packets bound for the proxy so that Squid's access log carries a
+# per-device address. From that apply on, `10.90.0.0/24` IS seen inside AWS - by the proxy's
+# security group, which must admit it, and by the hub's public route table, which must send it
+# at the WireGuard host's ENI. So it is emitted to VPN_HOST_SLICE as well.
 WIREGUARD_PEER_CIDR = "10.90.0.0/24"
+
+# WHERE THE TUNNEL IS BUILT - and this is NOT the question VPN_HOMES below answers, which is
+# why it is a second name rather than a second consumer of the first (6c step 4.1, 2026-09-06).
+#
+# LESSON 51, ARRIVING ON SCHEDULE. Until this pass the two intents were one list because they
+# named the same slice:
+#
+#   (a) whose exported Elastic IP the control-plane deny and the lake's perimeter pin to
+#       - VPN_HOMES, read by identity/sso/ and data-governance/data/
+#   (b) which slice OWNS the WireGuard anchors and needs the tunnel's address range
+#
+# Pass 4 is the sitting in which they must differ. (b) moves to the hub at 4.1, because the
+# security group and the route are built before any host exists; (a) may not move until 4.12,
+# because flipping it earlier makes identity/sso read an EMPTY state and `DenyControlPlaneOffVpn`
+# then denies every call from every network. Deriving (b) from VPN_HOMES - the shape that was
+# one edit away and looked tidier - is the failure Lesson 51 describes: a change made for one
+# intent silently made for the other, and the symptom is a total lockout rather than a plan error.
+#
+# It is a single tuple and not a list on purpose: the estate terminates ONE tunnel. When a second
+# business unit terminates its own (D35), this becomes a list and VPN_HOMES stays the separate
+# question it now is.
+VPN_HOST_SLICE = ("production", "networking")
 
 # THE ACCOUNTS THAT PLAY THE VPN-HOME ROLE (Stage 4 step 8.1, 2026-08-17) - the sixth
 # vocabulary, and the one that is a ROLE rather than a property. Stage 4's forward constraint
@@ -585,6 +615,14 @@ def tfvars_values(account: str, slice_name: str) -> dict:
             # disagree about which peerings exist, which is exactly what hand-writing the two
             # halves in two files made possible.
             values["peerings"] = peerings_of(account, slice_name)
+            # THE TUNNEL RANGE, TO THE SLICE THAT TERMINATES THE TUNNEL (6c step 4.1). Two
+            # resources in the hub need it and neither may carry it as a literal (Stage 3
+            # decision 1 - address allocation lives in this file): the proxy's security group
+            # admits `10.90.0.0/24` on TCP/3128, and the public route table sends it at the
+            # WireGuard host's ENI. Keyed on VPN_HOST_SLICE and not on VPN_HOMES: see that
+            # tuple's comment for why the two questions had to stop sharing one list.
+            if (account, slice_name) == VPN_HOST_SLICE:
+                values["wireguard_peer_cidr"] = WIREGUARD_PEER_CIDR
             # Stage 3 pass 2: the peers map - every VPC-bearing account that has a profile,
             # DERIVED rather than authored a third time (Lesson 14). The slice's aliased
             # providers read a peer's [P] facts (VPC, subnets, route tables) live instead of
@@ -807,6 +845,12 @@ def render_tfvars(account: str, slice_name: str) -> str:
         out += f'account_folder  = "{v["account_folder"]}"\n'
     if "peer_cidr" in v:
         out += f'peer_cidr       = "{v["peer_cidr"]}"\n'
+    # SPELLED IN FULL AND NOT `peer_cidr` (6c step 4.1). The vpn/ slice's `peer_cidr` is that
+    # slice's ONE peer range and the module's own input name; in the hub the same value sits
+    # beside `peerings[*].peer_cidr`, four VPC ranges that are peers in the OTHER sense. Two
+    # different things called `peer_cidr` in one tfvars is the ambiguity worth a longer name.
+    if "wireguard_peer_cidr" in v:
+        out += f'wireguard_peer_cidr = "{v["wireguard_peer_cidr"]}"\n'
     if "peer_cidrs" in v:
         cidr_list = ", ".join(f'"{c}"' for c in v["peer_cidrs"])
         out += f"peer_cidrs      = [{cidr_list}]\n"

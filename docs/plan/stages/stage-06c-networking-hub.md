@@ -457,6 +457,15 @@ address transfer is what keeps every client's `Endpoint` line unchanged.
   groups are new — WireGuard UDP/51820 world-open and nothing else; the proxy TCP/3128 **from the spoke and
   tunnel CIDRs only** — so pass 1.4's ingress invariant still reads one listener. The host-key secret is
   new and **empty**.
+  **APPLIED 2026-09-06 — `6 to add`, and three corrections the writing of it forced.** (i) The
+  `wireguard_eip_public_ip` output listed above is **NOT** in this step: the address is transferred rather
+  than allocated, so the resource backing that output arrives with 4.6's `import {}`. Declaring it here
+  would mean allocating a second address, which is the risk table's *fallback*, not the plan.
+  (ii) The proxy's allow-list parameter is `/datascience/<env>/proxy/allowlist` and **cannot** be
+  `/awsds/…`: Parameter Store reserves every name beginning with `aws`, a collision
+  [`conventions.md`](../conventions.md) has carried since 2026-08-16 and this step did not repeat — the
+  apply failed on it. (iii) The tunnel range reaches the slice as a **generated** `wireguard_peer_cidr`
+  from a new `VPN_HOST_SLICE` tuple, which is deliberately **not** `VPN_HOMES`: see 4.12.
 - **4.2 — [Claude] Run the transfer preflight**: new read-only instrument **`./aws/eip-transfer.py`**,
   which answers the four documented refusals *before* either write call — the address must be
   **disassociated** (`InvalidTransfer.AddressAssociated` is raised at accept time, not at enable time), must
@@ -496,14 +505,20 @@ address transfer is what keeps every client's `Endpoint` line unchanged.
   ```
 
   so neither side tries to create or release it (Terraform ≥ 1.7; this project runs 1.15.8).
-- **4.7 — CHECKED FOR THE COLLISION THIS STAGE HAS HIT TWICE, AND THERE IS NONE (measured 2026-09-06).**
+- **4.6a — CHECKED FOR THE COLLISION THIS STAGE HAS HIT TWICE, AND THERE IS NONE (measured 2026-09-06).** *(Numbered `4.7` when written, beside the host build that already had that number — corrected 2026-09-06 at execution. Step numbers are identifiers in this plan, so two steps sharing one is the identifier failing at its only job.)*
   0.4 and 1.3 both found a module asked for a capability its step had not enumerated, and 4.7/4.8 put
   **two hosts in one account** — the exact shape that made `vpc` need a `name_suffix`. So the `wireguard`
   module was grepped rather than assumed: it builds **two** names, `awsds-<env>-vpn` and
   `awsds-<env>-vpn-health`, and a proxy slice builds `awsds-<env>-proxy-*`. **Different modules, different
   stems, no collision** — no bump needed here, and this line exists so the question is not re-opened at
   the keyboard. `vpc-egress` is the module that *does* need the suffix, and that is 0.4a's deferral to 5.1.
-- **4.7 — [Claude⚡] Build the WireGuard host**: `production/vpn/` `[D]`, in `VPC-Networking`'s public tier,
+- **4.7 — [Claude⚡] Build the WireGuard host — AND RE-HOME `./aws/vpn.py` IN THE SAME SITTING.** The
+  instrument hard-codes `VPN_HOME_PROFILE = "awsds-infra-sandbox-1"` (measured 2026-09-06 at 4.1), so from
+  the moment a host exists here it reports on the *old* account: a stopped instance and a group about to be
+  destroyed, while the live tunnel goes unmeasured and **`VP-3` keeps reading `pass` about Sandbox**
+  ([Lesson 31](../lessons.md) exactly — a check inherits the scope of the account it was written in).
+  Between 4.1 and 4.13 the estate carries **two** world-open rules, one per account, and that is expected;
+  the discriminator is the group *name*, `awsds-<env>-vpn`. Build: `production/vpn/` `[D]`, in `VPC-Networking`'s public tier,
   from the existing module at **v0.5.0** with three changes: `vpc_nat_cidrs` is **removed** (the
   isolated-tier NAT job dies with the buildbox's move, 5.8), the `PostUp` chain forwards tunnel packets
   **only to RFC1918 destinations** and drops the rest, and it stops masquerading traffic bound for the
@@ -535,8 +550,16 @@ address transfer is what keeps every client's `Endpoint` line unchanged.
   - **The SharedServices CIDR carries the build hosts' package sources**; the Workloads CIDR is empty by
     default. One list per source is what keeps the two filters two: a name a person may reach is not
     thereby reachable from a notebook.
+  - **AND THE STAGING CIDR, which this list omitted until 4.1 was written (2026-09-06).** Staging is a
+    peered spoke with a runtime of its own, so it needs a plane like every other. The omission is why the
+    parameter's planes are **derived from the peering matrix** rather than transcribed from this
+    paragraph: a spoke the security group admits and the allow-list has never heard of is reachable and
+    mute, which is the failure that looks like a network fault. Its list starts empty, like Workloads'.
 - **4.10 — [Claude] Keep the configuration out of the host, and give it a reload path**: the allow-lists are
   `[P]` data in an SSM parameter rendered at boot, never state that exists only on a `[D]` disk (Lesson 4).
+  **The parameter is `/datascience/<env>/proxy/allowlist`** — not `/awsds/…`, which Parameter Store refuses
+  outright ([`conventions.md`](../conventions.md)); Standard tier, so free and capped at **4 KB**, and an
+  allow-list that outgrows that splits per plane rather than paying for Advanced.
   A parameter change reaches the running host through an **SSM State Manager association** on a
   `rate(30 minutes)` schedule that re-renders and runs `squid -k reconfigure` — so a list edit needs no
   write API from the laptop, no host replacement, and no 30-second estate-wide outage. `./aws/proxy.py`
@@ -757,7 +780,11 @@ estate-wide (INT-21's availability cost).
 carries the full table): this stage takes the estate from **4 Elastic IPs and 3 NAT gateways** (one `[P]`
 WireGuard address plus one `[E]` NAT address per `egress/` slice) to **2 Elastic IPs and 0 NAT gateways** —
 both addresses `[P]` in `production/networking/`, one of them transferred rather than allocated. Peak during
-the cut-over is **3** addresses in Production for one sitting, against a default quota of five.
+the cut-over was projected at **3** addresses in Production for one sitting, against a default quota of
+five. **Measured 2026-09-06 at 4.2: the peak is 2, and the headroom 4 of 5.** Production held **zero**
+Elastic IPs before 4.1 — the projection counted an `[E]` NAT address per `egress/` slice, and those slices
+are torn down. The figure that mattered was never the peak but the destination quota, which
+`AddressLimitExceeded` enforces at *accept* time; `ET-6` is where it is read.
 
 Measured rates, `us-west-2` (PRICING §7/§8 after 7.4's additions): the design **removes three NAT gateways**
 (−0.150/h while a session runs, plus their per-GB processing — 0.045 each plus 0.005 for each one's address) and **adds one Elastic IP** (the proxy's, +0.005/h ≈ 3.65/month) and

@@ -690,13 +690,15 @@ AWS's own *required* list for `VpcOnly` has fifteen names; the slices carry what
 | `default` | all three | **none** | **none** | emptied by the module; any rule appearing in it was placed by hand |
 | `awsds-<env>-public-tier`, `-private-tier`, `-isolated-tier` | all three | none | all | baselines for later workloads — **attached to nothing today** |
 | `awsds-<env>-endpoints` | all three | TCP/443 from the VPC CIDR | none | on every interface endpoint ENI |
-| `awsds-sandbox-vpn` `[P]` | Sandbox | **UDP/51820 from `0.0.0.0/0`** — the estate's only world-open rule (`VP-3`) · ALL from `10.20.128.0/20`, `10.20.144.0/20` (the isolated tier, for the NAT-instance job) | all | no port 22, ever; Stage 7 admits this group **by id** from Production |
+| `awsds-sandbox-vpn` `[P]` | Sandbox | **UDP/51820 from `0.0.0.0/0`** — **one of TWO world-open rules since 2026-09-06** (`VP-3` measures only this account; see the row below) · ALL from `10.20.128.0/20`, `10.20.144.0/20` (the isolated tier, for the NAT-instance job) | all | no port 22, ever; Stage 7 admits this group **by id** from Production |
 | `awsds-sandbox-buildbox` `[E]` | Sandbox | **none** — Session Manager needs none | all | the "reachable only over the VPN" requirement was withdrawn rather than faked (2026-08-21) |
 | `awsds-sandbox-probe-perimeter` `[E]` | Sandbox | none | all — unrestricted **so the route is what is measured** | |
 | `awsds-sandbox-probe-peering` / `awsds-staging-probe-int09` `[E]` | Sandbox / Staging | none | to `10.30.0.0/16` (the whole peer range, so only the route varies) and to the own VPC (the resolver) | |
 | `awsds-prod-probe` `[E]` | Production | TCP/443 from `10.20.0.0/16` and `10.50.0.0/16` | **none** (stateful replies need none) | on both of the target's ENIs |
 | **`datazone-<project id>-dev`** — blueprint-authored | Sandbox (per project, per member account) | **ALL from itself** | all | the app's group — §6 |
 | **`security-group-for-inbound-nfs-<domain>` / `-outbound-nfs-<domain>`** — SageMaker-authored | Sandbox (per domain) | inbound: TCP 988, 1018-1023, 2049 **from the outbound group** | outbound: the same ports **to the inbound group** | the domain's EFS convention; no mount target exists |
+| `awsds-prod-vpn` `[P]` | **VPC-Networking** | **UDP/51820 from `0.0.0.0/0`** — the second world-open rule, and the cut-over rather than a finding: it stands beside the Sandbox one from **6c step 4.1** (2026-09-06) until **4.13** destroys that account's. **No isolated-tier rule** — the NAT-instance job the Sandbox group carries dies with the buildbox move (5.8) | all | the group is `[P]` here and the host `[D]` in `production/vpn/`; `./aws/vpn.py` does **not** see this account until 4.7 re-homes `VPN_HOME_PROFILE` |
+| `awsds-prod-proxy` `[P]` | **VPC-Networking** | **TCP/3128** from `10.20.0.0/16`, `10.30.0.0/16`, `10.32.0.0/16`, `10.50.0.0/16` and `10.90.0.0/24` — every peered spoke plus the tunnel, **derived from the peering matrix** so a spoke cannot be peered and left off | all — **this host IS the estate's egress**, so the control is Squid's allow-list, not this group | 3128 and not 80/443: an explicit proxy is a distinct listener, which is D38 in one line. Admitted ≠ permitted — the Workloads range reaches nothing until its allow-list plane is filled (4.9) |
 
 ---
 
