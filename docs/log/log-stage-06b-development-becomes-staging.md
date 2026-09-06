@@ -335,3 +335,10 @@ Claude's. Applied as the **infrastructure user**, account **Development**, permi
   two `sagemaker/` slices loses this one, and `terraform-live/README.md`'s *"applied twice, so the two
   accounts cannot drift"* becomes a dated past tense. `conventions.md` §6, `D21` and `INT-15` still name
   the slice and belong to step 5.3.
+
+- **[Claude] Step 1.8, which closes pass 1**: `./aws/studio.py` reads **`0 check(s) FAILED`** — one
+  associated account, `US-4` `pass` at one project profile, and every row about this account naming the
+  **retirement** rather than a pending association. `US-8`'s note lost the word *"yet"* in the same
+  sitting: with the two service roles and the boundary destroyed at 1.7, no blueprint-provisioned role
+  will ever appear here, and a note saying one has not appeared *yet* points at a future that is not
+  coming. **Pass 1 is complete.**

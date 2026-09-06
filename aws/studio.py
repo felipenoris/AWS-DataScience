@@ -820,7 +820,11 @@ def main(argv: list) -> int:
             checks.note(
                 "US-8",
                 f"project-role boundary in {p}",
-                "no blueprint-provisioned role exists yet - the check is unexercised here.",
+                "no blueprint-provisioned role exists, and none ever will here - the two "
+                "service roles and the boundary policy were destroyed with the slice at "
+                "Stage 6b step 1.7. The word this note used to carry was `yet`."
+                if p in RETIRED_MEMBER_PROFILES
+                else "no blueprint-provisioned role exists yet - the check is unexercised here.",
             )
             continue
         unbounded = [n for n, b, _ in rows if b == "-"]
