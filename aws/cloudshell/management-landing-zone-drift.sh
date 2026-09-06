@@ -91,6 +91,18 @@
 # `./aws/org-delegation.py` is the fuller instrument for it. What Management is needed for is
 # everything ABOVE section 5.
 #
+# A SECOND QUESTION, ANSWERED BY A FIELD THIS FILE ALREADY READ (added 2026-09-05, for
+# Stage 6b step 0.5). `GetLandingZone` returns `remediationTypes` alongside the version and
+# the drift flag, and section 2 has printed it since the first run without saying what it
+# decides. It is the ACCOUNT AUTO-ENROLLMENT switch: with `INHERITANCE_DRIFT` in that array,
+# Control Tower reacts to Organizations `MoveAccount` events and re-baselines the moved
+# account on its own; with the array empty, moving an account by hand between two registered
+# OUs leaves the SOURCE OU's baseline and controls attached and raises inheritance drift.
+# Stage 6b moves one account from `Interactive` to `Workloads`, so the switch decides whether
+# its step 3.4 has a supported by-hand path at all - and the answer is a reading taken here,
+# not an assumption. The feature needs landing zone 3.1 or later (this one is 4.0), and
+# turning it on is an `update-landing-zone` - a write, printed in section 6 and not performed.
+#
 # NO ACCOUNT IDS ARE PRINTED, in keeping with aws/INDEX.md rule 1: the report names the
 # management account only as `is Management: yes|no`, and the delegation's principal is shown
 # with its account digits masked.
@@ -204,6 +216,7 @@ LZ_ARN="${RUN_OUT:-}"
 LZ_JSON="$TMP/lz.json"
 : >"$LZ_JSON"
 DRIFT="(unread)"; LZ_STATUS="(unread)"; LZ_VERSION="(unread)"; LZ_LATEST="(unread)"; LZ_REMED="(unread)"
+AUTO_ENROLL="(unread)"
 if [ -n "${LZ_ARN:-}" ] && [ "$LZ_ARN" != "None" ]; then
   run controltower get-landing-zone --landing-zone-identifier "$LZ_ARN" --output json
   printf '%s' "$RUN_OUT" >"$LZ_JSON"
@@ -213,6 +226,16 @@ if [ -n "${LZ_ARN:-}" ] && [ "$LZ_ARN" != "None" ]; then
     LZ_VERSION=$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["landingZone"].get("version","(absent)"))' "$LZ_JSON" 2>/dev/null || echo "(unparsed)")
     LZ_LATEST=$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["landingZone"].get("latestAvailableVersion","(absent)"))' "$LZ_JSON" 2>/dev/null || echo "(unparsed)")
     LZ_REMED=$(python3 -c 'import json,sys; print(",".join(json.load(open(sys.argv[1]))["landingZone"].get("remediationTypes",[])) or "(none)")' "$LZ_JSON" 2>/dev/null || echo "(unparsed)")
+    # The switch is the PRESENCE of the inheritance-drift remediation type, not the exact
+    # spelling: AWS`s API reference writes it `INHERITANCE_DRIFT` and its user guide writes
+    # `Inheritance Drift` in prose, so the match is case-insensitive and ignores the
+    # separator. Anything else in the array is printed above and left uninterpreted.
+    case "$(printf '%s' "$LZ_REMED" | tr 'A-Z' 'a-z' | tr -d '_ -')" in
+      *inheritancedrift*) AUTO_ENROLL="on" ;;
+      "(none)"|"")        AUTO_ENROLL="OFF" ;;
+      "(unparsed)")       AUTO_ENROLL="(unparsed)" ;;
+      *)                  AUTO_ENROLL="OFF" ;;
+    esac
   fi
 fi
 
@@ -272,7 +295,7 @@ printf 'produced  : aws/cloudshell/management-landing-zone-drift.sh   (index: aw
 printf '\n'
 printf 'SECTIONS\n'
 printf '  1. Where this ran - read it FIRST; sections 2-4 answer only from Management\n'
-printf '  2. The landing zone: status, version, DRIFT\n'
+printf '  2. The landing zone: status, version, DRIFT - and account AUTO-ENROLLMENT\n'
 printf '  3. What the landing zone declares it manages - the manifest, whole\n'
 printf '  4. Operations, and whether any ran AFTER the delegation\n'
 printf '  5. The resource policy - and it answers from Identity too\n'
@@ -307,7 +330,7 @@ else
 fi
 
 # ======================================================================================
-h1 "2. The landing zone: status, version, DRIFT"
+h1 "2. The landing zone: status, version, DRIFT - and account AUTO-ENROLLMENT"
 
 if [ "$IS_MGMT" != "yes" ]; then
 printf 'SUPPRESSED - this did not run in Management. See section 1: the calls behind this\n'
@@ -323,6 +346,7 @@ else
   printf 'latest available\t%s\n' "$LZ_LATEST"
   printf 'DRIFT STATUS\t%s\n' "$DRIFT"
   printf 'remediation types\t%s\n' "$LZ_REMED"
+  printf 'account auto-enrollment\t%s\n' "$AUTO_ENROLL"
 } | tabulate
 
 printf '\n'
@@ -339,6 +363,36 @@ case "$DRIFT" in
   *)
     printf 'The drift status could not be read (%s). That is not IN_SYNC - a field that was\n' "$DRIFT"
     printf 'not read and a field that said "no drift" are different answers (Lesson 13).\n' ;;
+esac
+
+printf '\n'
+printf 'ACCOUNT AUTO-ENROLLMENT - the second switch, and it is a DIFFERENT question from drift.\n'
+printf '`remediationTypes` is the landing zone opt-in that makes Control Tower react to an\n'
+printf 'AWS Organizations `MoveAccount` event: the moved account inherits the destination OU`s\n'
+printf 'baseline and controls, and the source OU`s are removed. Available from landing zone\n'
+printf '3.1; this one reports its version two rows above.\n\n'
+case "$AUTO_ENROLL" in
+  on)
+    printf 'ON. An account moved with `organizations move-account` between two REGISTERED OUs is\n'
+    printf 're-baselined automatically, with eventual consistency - AWS documents minutes to\n'
+    printf 'several hours. Two things it still does NOT do: it does not touch the Account Factory\n'
+    printf 'PROVISIONED PRODUCT (its parameters keep the old OU and the old name until somebody\n'
+    printf 'updates them), and it does not prevent `Moved member account` drift when the two OUs\n'
+    printf 'differ in configuration. So the Control Tower `Update account` path stays the\n'
+    printf 'supported one for an Account Factory account - Stage 6b step 3.4 - and this reading\n'
+    printf 'is what says the by-hand fallback exists rather than what replaces the step.\n' ;;
+  OFF)
+    printf '!! OFF - `remediationTypes` is empty, which is the default and the state of every\n'
+    printf 'landing zone that never opted in. Moving an account between registered OUs with\n'
+    printf 'the AWS Organizations API or console then leaves the SOURCE OU`s baseline and\n'
+    printf 'controls attached and raises INHERITANCE DRIFT: the account sits in the new OU\n'
+    printf 'carrying the old OU`s Config rules, which is the failure mode Stage 6b step 3.4\n'
+    printf 'refuses by using the Control Tower `Update account` path instead. Nothing here\n'
+    printf 'needs the switch turned on; it needs the switch READ, so that the reason for\n'
+    printf 'taking the console path is a measurement and not a memory.\n' ;;
+  *)
+    printf 'The field could not be read (%s). That is not "OFF" - an unread field and an empty\n' "$LZ_REMED"
+    printf 'array are different answers (Lesson 13). Section 7 says whether the call failed.\n' ;;
 esac
 
 fi
@@ -445,7 +499,19 @@ printf 'an object Control Tower owns. A resource policy on the organization is a
 printf 'class and the same argument is expected to hold - but "expected to hold" is a\n'
 printf 'prediction, and this report is what turns it into a dated reading.\n\n'
 printf 'WHEN TO RE-RUN: after any landing-zone update, after any Control Tower version\n'
-printf 'upgrade (compare the two version fields of section 2), and at the `Staging` vend.\n'
+printf 'upgrade (compare the two version fields of section 2), and around Stage 6b`s rename\n'
+printf 'and OU move - the account update that is also the event 1b verification (vi), 1d (iv)\n'
+printf 'and 1d (xiv) have each been waiting on. There is no `Staging` vend to re-run at: the\n'
+printf 'quota was refused and Stage 6b makes the account by renaming `Development` instead.\n\n'
+printf 'HOW AUTO-ENROLLMENT WOULD BE TURNED ON - NOT PERFORMED HERE, and the same line every\n'
+printf 'script in this folder draws. It is `update-landing-zone` with the manifest re-sent\n'
+printf 'unchanged and `--remediation-types INHERITANCE_DRIFT` added, which re-runs the landing\n'
+printf 'zone across every governed account: a write, slow, and the exact operation section 6\n'
+printf 'above declines to perform as a measurement. Stage 6b does NOT need it - step 3.4 takes\n'
+printf 'the Control Tower `Update account` path, which re-baselines the account whether or not\n'
+printf 'the switch is on. If it is ever wanted for its own sake, it is a decision with a\n'
+printf 'stage, not a line in a report; note that it does not resolve inheritance drift\n'
+printf 'retroactively - only accounts moved AFTER the opt-in are covered.\n'
 
 # ======================================================================================
 h1 "7. Calls that failed"

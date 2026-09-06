@@ -139,6 +139,25 @@
   <https://docs.aws.amazon.com/accounts/latest/reference/using-orgs-trusted-access.html> and
   <https://docs.aws.amazon.com/cli/latest/reference/account/put-account-name.html>.
 
+- **Control Tower account auto-enrollment — the second of Stage 6b step 0.5's two switches.** Read
+  2026-09-05, while preparing the stage. The opt-in is the landing zone's `remediationTypes` field set to
+  the single value `INHERITANCE_DRIFT` — **a top-level field of `GetLandingZone`'s response, not a key
+  inside the manifest**, which is what makes it readable by
+  `aws/cloudshell/management-landing-zone-drift.sh` without parsing the manifest at all (the manifest
+  schema is unpublished by design). It needs **landing zone 3.1 or later**, and is set through the console
+  settings page or `CreateLandingZone`/`UpdateLandingZone`. What it buys: an account moved with the
+  *Organizations* API or console into a registered OU "automatically receives baseline resources and
+  controls from that OU", and the source OU's are removed, instead of raising **inheritance drift**. Three
+  limits that decide Stage 6b step 3.4 rather than merely colouring it: it is **not retroactive** (only
+  accounts moved after the opt-in), it **"does not create, modify, or terminate AWS Service Catalog
+  provisioned products"** — so an Account Factory account's provisioned product keeps the old OU and the
+  old name until somebody updates it — and the account "may show *Moved member account* drift" anyway when
+  the source and destination OUs differ in configuration, which `Interactive` and `Workloads` do.
+  Enrollment is eventually consistent, "a few minutes, up to several hours":
+  <https://docs.aws.amazon.com/controltower/latest/userguide/account-auto-enrollment.html>,
+  <https://docs.aws.amazon.com/controltower/latest/userguide/configure-auto-enroll.html> and
+  <https://docs.aws.amazon.com/controltower/latest/APIReference/API_GetLandingZone.html>.
+
 ## Terraform
 
 - Terraform S3 backend (including native state locking): <https://developer.hashicorp.com/terraform/language/backend/s3>.

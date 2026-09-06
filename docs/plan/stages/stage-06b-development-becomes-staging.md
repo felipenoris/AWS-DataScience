@@ -95,12 +95,31 @@ adjusting it — the disagreement is the finding.
 - **0.4 — [Claude] Read the conversion in one report**: `./aws/rename-check.py` (written 2026-09-05).
   Expect the **BEFORE** verdict — old name, `Interactive`, DataZone objects present, share present. Any
   **MIXED** row before the stage starts is a finding, not a phase.
-- **0.5 — [user] Read the organization's two switches**, CloudShell in **Management** as the
-  **`AWS Control Tower Admin`** user, permission set `AWSAdministratorAccess` (the `awsds-ctadmin-orgfull-*`
-  profiles do not reach Management): is `account.amazonaws.com` in
-  `list-aws-service-access-for-organization`, and is the landing zone's **account auto-enrollment** on?
-  **[Claude]** writes `aws/cloudshell/management-account-switches.sh` first, on the pattern of the three
-  scripts already in that folder.
+- **0.5 — Read the organization's two switches — with the two instruments that already read them.**
+  This step used to open by writing `aws/cloudshell/management-account-switches.sh`. **It does not, and
+  that is a finding of the 2026-09-05 preparation sitting**: both switches were already being read, one
+  per instrument, and a third script would have been a second copy of two readings that exist — the
+  divergence Lesson 33 describes, bought for nothing. What the two instruments lacked was not the call but
+  the **interpretation**, and that is what was added to each.
+  - **0.5a — [Claude] `account.amazonaws.com` trusted access**: `./aws/org-trusted-access-services.py`,
+    from the laptop as `awsds-infra-identity`. Section 1 lists every principal and, since 2026-09-05,
+    names this one as a **switch** and says what its absence costs: it is the prerequisite for passing
+    `--account-id` to the Account Management API, which is how a **member** account is renamed (step 3.2).
+    **No CloudShell session is needed for this half** — Organizations reads answer from Identity, and this
+    exact call was measured answering there on 2026-08-12.
+  - **0.5b — [user] account auto-enrollment**: `./aws/cloudshell/management-landing-zone-drift.sh`,
+    CloudShell in **Management** as the **`AWS Control Tower Admin`** user, permission set
+    `AWSAdministratorAccess` (the `awsds-ctadmin-orgfull-*` profiles do not reach Management). Its
+    section 2 has printed `remediationTypes` since its first run; since 2026-09-05 it also says what the
+    value decides. `INHERITANCE_DRIFT` present = Control Tower re-baselines an account moved with the
+    Organizations API; absent — the default, and the expected reading here — = a hand move leaves the
+    **source** OU's baseline and controls attached and raises inheritance drift. The feature needs landing
+    zone 3.1 or later; this one is 4.0.
+  - **What neither reading changes: step 3.4.** Auto-enrollment does **not** create, modify or terminate
+    the Account Factory **provisioned product**, and does **not** prevent `Moved member account` drift when
+    the two OUs differ in configuration — which `Interactive` and `Workloads` do. So the Control Tower
+    `Update account` path is the supported one whether the switch is on or off; 0.5b is read so that the
+    reason for taking it is a measurement rather than a memory.
 - **0.6 — [user] Paste the five readings into the stage log's first entry**, so every count below is
   measured rather than quoted.
 
@@ -117,11 +136,25 @@ because an error and an empty list are different outcomes and only the empty lis
   provider alias and data source with it. **[Claude⚡] Apply as `awsds-infra-data`. Expect exactly
   `2 destroyed`** — the profile and its `CREATE_PROJECT_FROM_PROJECT_PROFILE` grant to
   `sso-group-deployment-managers`.
-- **1.2 — [Claude⚡] Destroy the eleven configurations and their grants**: set `blueprints_enabled = false`
-  in `terraform-live/development/sagemaker/`, apply as `awsds-infra-dev`, **expect `22 destroyed`**. If the
-  provider orders grant and configuration wrongly, fall back to **Recipe F** (staged destroy, one `-target`
-  per resource type, `plan` between them) — a destroy of a blueprint configuration with a grant attached
-  has never been exercised in this estate.
+- **1.2 — [Claude⚡] Destroy the eleven configurations and their grants — and the edit that does it is
+  1.6's, taken here.** *Corrected 2026-09-05 while preparing the stage; this step used to read "set
+  `blueprints_enabled = false` in `terraform-live/development/sagemaker/`", which names a value **nothing
+  in that folder owns**.* `blueprints_enabled` is **generated**: `scripts/tfhygiene/backend.py` emits it as
+  `account in SMUS_ASSOCIATED`, `slices.py`'s `prepare()` re-runs `gen-tfvars.py` before **every** `init`,
+  and `terraform.auto.tfvars` is git-ignored — so a hand-edited flag is overwritten by the very command
+  that would consume it. **Do 1.6's vocabulary edit first** (both lists, one commit), regenerate, then
+  apply as `awsds-infra-dev`.
+  - **Expect `1 to change, 22 to destroy`, not `22 destroyed`.** The 22 are the eleven configurations and
+    their eleven grants. The **1** is the project CMK: `blueprints_enabled = false` also nulls
+    `domain_execution_role_arn`, `domain_id` and `root_domain_unit_id` (this slice's `main.tf` gates all
+    three on the flag), and `sagemaker-prereqs`' `kms.tf` drops the domain execution role from
+    `AllowKmsKeyUsageForSageMakerDomain` and every statement it filters with `if var.domain_id != null`.
+    The policy is inline on `aws_kms_key.this`, so it is **one in-place update** to
+    `module.sagemaker_prereqs.module.project_key.aws_kms_key.this` — harmless, because 1.7 destroys that
+    key anyway, and worth writing down because this stage stops on a plan it did not predict.
+  - If the provider orders grant and configuration wrongly, fall back to **Recipe F** (staged destroy, one
+    `-target` per resource type, `plan` between them) — a destroy of a blueprint configuration with a grant
+    attached has never been exercised in this estate.
 - **1.3 — [Claude] Read the member back**: `aws datazone list-environment-blueprint-configurations` and
   `list-policy-grants` from `awsds-infra-dev` must both return **empty**.
 - **1.4 — [user] Disassociate the account**, console, in the **Data Governance** account: *SageMaker Unified
@@ -132,11 +165,22 @@ because an error and an empty list are different outcomes and only the empty lis
   `aws ram get-resource-shares --resource-owner OTHER-ACCOUNTS` shows no DataZone share, and
   `list-environment-blueprint-configurations` now **fails** rather than returning empty — 6a step 1.3's
   proof, in reverse.
-- **1.6 — [Claude] Edit the vocabulary in ONE commit**: remove `development` from **both** `SMUS_MEMBERS`
-  and `SMUS_ASSOCIATED` in `scripts/tfhygiene/backend.py`, regenerate the tfvars, and re-plan
-  `data-governance/governance/` to **`No changes`**. `profiles_enabled` is computed from `SMUS_ASSOCIATED`,
-  so editing one list alone would flip the flag and destroy the **`experimentation`** profile too; the
-  empty plan is the proof that it did not.
+- **1.6 — [Claude] The vocabulary edit, and the proof it cost nothing else. PERFORMED AT 1.2** (the
+  numbers are identifiers, not an order): remove `development` from **both** `SMUS_MEMBERS` and
+  `SMUS_ASSOCIATED` in `scripts/tfhygiene/backend.py`, regenerate the tfvars, and re-plan
+  `data-governance/governance/` to **`No changes`**. `profiles_enabled` is
+  `set(SMUS_MEMBERS) <= set(SMUS_ASSOCIATED)`, so editing one list alone flips it false and destroys the
+  **`experimentation`** profile too; the empty plan is the proof that it did not. What is left at *this*
+  point in the pass is that re-plan, taken after 1.5.
+  - **Two side effects of the same edit, both by design and neither obvious from the diff.**
+    (i) `PERSONA_VENDING_ACCOUNTS = list(SMUS_MEMBERS)`, so `persona_vending_policy_name` leaves
+    `development/foundation/`'s tfvars at the same moment: from 1.2 until step 2.2 that slice carries a
+    **destroy blocked by `prevent_destroy`**, and an apply of it in that window *errors*. That is the safe
+    failure and the reason the guard is there — it is not a state to be improvised past.
+    (ii) `SMUS_ASSOCIATED` briefly disagrees with AWS: the console association still exists until 1.4. The
+    list's operative meaning is *"this member should carry blueprint configurations"*, and 6b is the one
+    pass where that separates from *"is associated"* — necessarily, since the configurations must go
+    **before** the association does.
 - **1.7 — [Claude⚡] Destroy the rest of the slice**: list and empty `awsds-dev-smus-projects` by hand (no
   project ever wrote to it), remove the module call so the `prevent_destroy` lifecycle block leaves the
   configuration with it, then destroy `terraform-live/development/sagemaker/`. The project CMK
@@ -162,11 +206,12 @@ uses it is destroyed.
   no image steward. **Renaming the map key here would change the resource address and destroy/recreate the
   assignment for no reason**; the key is renamed at step 4.6 behind `moved {}` blocks, after the account
   itself is renamed. **[Claude⚡] Apply as `awsds-infra-identity`.**
-- **2.2 — [Claude⚡] Retire the vending policy, two commits**: shrink `PERSONA_VENDING_ACCOUNTS` with
-  `SMUS_MEMBERS`; then lift `prevent_destroy` on `awsds-org-project-storage-vending` in
-  `terraform-live/development/foundation/persona-vending.tf` in one commit and destroy it in the next (the
-  runbook's two-commit rule). The object is referenced **by name** by the permission set, so it goes after
-  2.1 and never before.
+- **2.2 — [Claude⚡] Retire the vending policy, two commits.** `PERSONA_VENDING_ACCOUNTS` needs no edit
+  here — it is `list(SMUS_MEMBERS)` and shrank at 1.2, which is why this slice has been carrying a blocked
+  destroy since then. What is left is the guard: lift `prevent_destroy` on
+  `awsds-org-project-storage-vending` in `terraform-live/development/foundation/persona-vending.tf` in one
+  commit and destroy it in the next (the runbook's two-commit rule). The object is referenced **by name**
+  by the permission set, so it goes after 2.1 and never before.
 - **2.3 — [Claude⚡] Revoke the share**: remove `development` from `consumer_accounts` and
   `writer_role_patterns` in `terraform-live/data-governance/data/`; apply as `awsds-infra-data`. Annotate
   the two triples in `docs/AWS_STATE.md`'s grant register as **revoked, with the date** — never delete a
@@ -257,10 +302,12 @@ followed here, not authored.
   immutable and a rebuild would invalidate the `[P]` gateway-endpoint ids the lake's bucket policy names
   (Lesson 3).
 - **4.2 — [Claude⚡] Create the new state home**: `terraform-live/staging/bootstrap/`, producing
-  `awsds-staging-tfstate` and `alias/awsds-staging-tfstate` from the existing bootstrap module. Add the
-  `staging` rows to `PROFILES` and `ZONE_IDS` (`ENV_TOKENS` and `ENVIRONMENT_TAGS` already carry one), and
-  the `staging` slice rows to `scripts/tfhygiene/layers.py`. **Keep the `development` rows alive** until
-  the old bucket is gone — the generator still has to emit the old backend.
+  `awsds-staging-tfstate` and `alias/awsds-staging-tfstate` from the existing bootstrap module. **Only
+  `PROFILES` is missing a `staging` row** — `ENV_TOKENS`, `ENVIRONMENT_TAGS`, `CIDRS` **and `ZONE_IDS`
+  already carry one (read 2026-09-05; this step used to name `ZONE_IDS` too)** — and the `staging` slice
+  rows go into `scripts/tfhygiene/layers.py`, whose `staging joins at vend` comment is stale prose to
+  correct in the same commit. **Keep the `development` rows alive** until the old bucket is gone — the
+  generator still has to emit the old backend.
 - **4.3 — [Claude⚡] Migrate each surviving slice with Recipe E, one session per slice**: `foundation/` and
   `probes/` are the only ones left (`sagemaker/` and `data/` were destroyed in passes 1-2; `egress/`
   survives and is re-cut by 6c step 5, so it migrates here too). Recipe E's gate is that
@@ -325,8 +372,9 @@ Interactive Development keeps reporting `pass` about an account that no longer e
   `terraform-live/development/` gone and the old bucket destroyed.
 - `CIDRS` holding `staging = 10.50.0.0/16` and **`10.40.0.0/16` free** for 6c.
 - `DenyAthenaSparkStartSession` on the `Workloads` document, with its `POLICIES.md` row.
-- `aws/cloudshell/management-account-switches.sh`, and every instrument re-scoped to one Interactive
-  account.
+- Every instrument re-scoped to one Interactive account — and **no new CloudShell script**: the two
+  switches of 0.5 are read by `org-trusted-access-services.py` and `management-landing-zone-drift.sh`,
+  each of which gained the interpretation it was missing on 2026-09-05.
 
 ## Validation
 
@@ -360,7 +408,11 @@ bucket is cents; the old bucket's storage disappears with it.
 2. Does `list-environment-blueprint-configurations` fail rather than return empty after disassociation?
    (1.5 — 6a step 1.3's proof in reverse.)
 3. Does the OU move through Control Tower re-baseline the account by itself, or does it depend on account
-   auto-enrollment? (0.5 + 3.4.)
+   auto-enrollment? (0.5 + 3.4.) **Narrowed by documentation on 2026-09-05, not closed**: auto-enrollment
+   governs moves made with the *Organizations* API, and the Control Tower `Update account` path this stage
+   takes is documented to re-baseline regardless. What is still unmeasured is whether the account comes out
+   the far side carrying **only** the `Workloads` baseline — the `Interactive` Config-rule controls gone,
+   not merely superseded.
 4. Does the direct `AWSAdministratorAccess` assignment return after the account update? (3.6, D32.)
 
 ## Risks
