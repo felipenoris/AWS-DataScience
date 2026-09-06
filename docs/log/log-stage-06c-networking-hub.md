@@ -710,3 +710,45 @@ two filters. **Nothing was applied**, and one plan that is ready was deliberatel
 - **[Claude] Still standing, and still deliberate:** `sandbox/foundation/` plans **`1 to add`** and
   must not be applied. The `removed {}` needs the union's Sandbox row trimmed first, and that is
   pass 6's, after the readings.
+
+## 2026-09-06 — 4.7: the tunnel endpoint is in the hub, and the clients cannot tell
+
+- **[Claude⚡] `production/vpn/` applied — `10 to add, 0 to change, 0 to destroy`.** The eight the
+  Sandbox slice had, plus the Elastic IP association and the tunnel return route. `wireguard-v0.5.0`,
+  `t3.nano`, `usw2-az1`.
+- **[Claude] The plan was read attribute by attribute before applying**, because three of them are
+  what the whole design turns on and none of them errors when wrong — it just silently does not
+  work: `source_dest_check = false` (keyed off the non-empty `no_masquerade_cidrs`); the return
+  route `10.90.0.0/24` → the host's ENI in `rtb-0b13c0405057ab331`; and the rendered `PostUp`, with
+  the two `RETURN` exemptions **before** the `MASQUERADE` and the `REJECT` **after** the three
+  RFC1918 accepts. The subnet and route table were also cross-checked against
+  `production/networking`'s own `vpc_id` output rather than trusted from their names — both resolve
+  to `vpc-068274f8215e131a6`, which is the hub.
+- **[Claude] THE PROOF THAT THE ACCOUNT MOVE IS INVISIBLE TO EVERY DEVICE, and it is two readings
+  and not one.** A client `.conf` pins exactly two things:
+  - **the address** — `52.89.212.1`, transferred rather than reallocated, now associated with the
+    new host (`VP-2`);
+  - **the host's public key** — the interface reports
+    `LCD1d6xjsxRAmOZA/FTo72TToGUkLYqlOryEJwfup28=`, **byte for byte the value recorded at Stage 4**
+    (`runbooks/vpn.md` line 564, `log-stage-04-vpn.md` line 1640).
+  The second follows from 4.3's digest match, but it is measured here independently, from the
+  running interface, because *"the private keys hash the same so the public keys must match"* is a
+  derivation and this is a reading. **No `.conf` on any device needs an edit.**
+- **[Claude] The first boot is legible end to end** (`--on-host`, the deliberate `ssm:SendCommand`
+  the folder rule allows): packages at 20:56:52, uplink `ens5`, **the key fetched from Secrets
+  Manager at 20:57:35 with `base64 length 44`**, `wg0.conf` written for **2 peers**, `wg-quick`
+  started, the sampler active, the CloudWatch agent pointed at `/awsds/prod/vpn`. Both peers are
+  present with their names (`mbp`, `raspi`) and read `handshake=never` — correct: nobody has
+  connected yet.
+- **[Claude] `./aws/vpn.py` RE-HOMED IN THE SAME SITTING**, which is what 4.7's plan text made an
+  obligation rather than a tidy-up. `VPN_HOME_PROFILE` now reads `awsds-infra-prod`. **Nothing else
+  in the file had to move**, and that is `NAME_TAG_PATTERN` earning its wildcard: `awsds-*-vpn`
+  matched the old name and matches the new one. A literal there would have been a second edit
+  nobody would have found until a check came back empty (Lesson 31).
+- **[Claude] `0 check(s) FAILED` — `VP-1` through `VP-9`, both halves of `VP-7`.** One caveat is
+  worth stating rather than reading off the table: **`VP-3` says "exactly one world-open rule" about
+  the HOME ACCOUNT, and the estate has two** until 4.13's second half removes Sandbox's. That is the
+  blind side this instrument has by construction, named in `AWS_STATE.md` and here.
+- **[Claude] VERIFICATION 2, HALF ANSWERED AND UNPROMPTED.** The SSM agent registered `Online` from
+  the hub's public tier **with no interface endpoint anywhere in `VPC-Networking`** — Session
+  Manager reaches this host through the IGW. The proxy is the other half, at 4.8.

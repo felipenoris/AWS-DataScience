@@ -14,7 +14,7 @@
 #                 aws sso login --sso-session awsds
 #
 #   run:      ./aws/vpn.py                        # the two profiles it needs (see below)
-#             ./aws/vpn.py awsds-infra-sandbox-1  # only the ones named
+#             ./aws/vpn.py awsds-infra-prod  # only the ones named
 #             ./aws/vpn.py --on-host              # ALSO read inside the host (see below)
 #             python3 aws/vpn.py -                # CloudShell, ambient credentials
 #   writes:   aws/output/vpn.txt   (untracked - see .gitignore)
@@ -67,9 +67,22 @@ from awslib.report import Checks, Report, failed_calls_epilogue, note
 
 OUT_NAME = "vpn.txt"
 
-# The VPN home is a ROLE an account plays (D35, Stage 4's forward constraint); unit 1's
-# Sandbox plays it today. Stage 14 revisits the topology; this constant moves with it.
-VPN_HOME_PROFILE = "awsds-infra-sandbox-1"
+# The VPN home is a ROLE an account plays (D35, Stage 4's forward constraint). Sandbox played
+# it from Stage 4 until 6c step 4.7; **PRODUCTION PLAYS IT SINCE 2026-09-06**, because D38 puts
+# the tunnel endpoint in VPC-Networking beside the proxy.
+#
+# THIS LINE IS WHY THE MOVE WAS AN OBLIGATION AND NOT A TIDY-UP (Lesson 31: a check inherits the
+# scope of the account it was written in, and keeps reporting `pass` about that one while the
+# design spreads past it). Left at Sandbox after the host moved, every check here would have gone
+# on describing an account with no tunnel in it - VP-3 reading `pass` about a world-open rule
+# guarding nothing, VP-1 finding no host and calling it a finding - while the live tunnel went
+# entirely unmeasured. The failure mode is not a wrong answer, it is a confident answer about the
+# wrong place.
+#
+# NOTHING ELSE IN THIS FILE HAD TO MOVE, and that is NAME_TAG_PATTERN below earning its wildcard:
+# `awsds-*-vpn` matched `awsds-sandbox-vpn` and matches `awsds-prod-vpn`. A pattern written as a
+# literal would have been a second edit nobody would have found until a check came back empty.
+VPN_HOME_PROFILE = "awsds-infra-prod"
 IDENTITY_PROFILE = "awsds-infra-identity"
 
 # The contracts (see header).
