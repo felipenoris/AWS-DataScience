@@ -61,3 +61,20 @@ variable "cost_center" {
   type        = string
   default     = "stage-03"
 }
+
+# Stage 6c step 5.3, the user's decision of 2026-09-06. NOT generated and NOT authored in a
+# tfvars: it arrives from the environment as `TF_VAR_optional_service_groups`, threaded by
+# `make up ENV=sandbox GROUPS=bedrock,emr`. **Empty is the default and the decision** - an apply
+# that does not name a group creates no optional endpoint, so a family nobody is using that day
+# costs nothing.
+#
+# WHY THE ENVIRONMENT AND NOT A TRACKED TFVARS, which is this repository's usual answer for a
+# per-apply knob (the VPN host's size): those knobs describe a STANDING shape somebody should
+# review in git history, and this one is a property of ONE apply. A tracked file would also have
+# to be edited back, and a flag left on in a file is exactly the failure mode the empty default
+# exists to avoid. The closed list of names lives in the module, where the group map is.
+variable "optional_service_groups" {
+  description = "Optional endpoint families for this apply: bedrock, emr (mwaa is reserved and empty). Empty by default. Set with `make up ENV=sandbox GROUPS=bedrock,emr`; each endpoint is ~USD 0.010/h while the slice is up."
+  type        = list(string)
+  default     = []
+}
