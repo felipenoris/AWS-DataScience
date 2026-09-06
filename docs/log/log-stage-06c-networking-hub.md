@@ -167,3 +167,35 @@ stays verbatim. The stage file is
   `pages.internal` and `sandbox.internal`, which **2.6 retires after pass 6 measures the new ones**.
   Zones cannot be renamed, so the two families coexist by construction — the window 2.4's `NT-12` was
   corrected in advance to tolerate. Both peerings still `active`.
+
+## 2026-09-06 — pass 2 finished: the INT-22 matrix, measured rather than asserted
+
+- **[Claude] 2.5 applied in three commits' worth of work, and the matrix reads back EXACTLY as
+  documented** — from `route53 get-hosted-zone` in each owning account, not from the code that built it:
+  `awsds.internal` **5**, `sandbox.awsds.internal` **2**, `staging.awsds.internal` **2**,
+  `prod.awsds.internal` **3**, `awsds-pages.internal` **2**.
+- **[Claude] Three shapes of association, and the third is what 2.5 is actually about.**
+  - **Same account** — five of them. There is no authorization to make: the pair is a *cross-account*
+    protocol, and within one account the VPC owner simply associates. `production/networking/` takes the
+    apex, Pages and `prod.awsds.internal`; `production/workloads/` and `production/foundation/` take one
+    each.
+  - **Cross-account, original direction** — `awsds.internal` into the two spokes. **One line of change**:
+    the apex joined `local.zones` in `peers.tf`, and the `setproduct` and two `for_each`es that already
+    existed generated two authorizations and two associations. That is what the map shape bought.
+  - **Cross-account, REVERSED** — the two child zones into `VPC-Networking`. The spoke **owns** the zone
+    now, so the zone owner authorizes and the VPC owner associates: the opposite of every other
+    cross-account association in this estate. Both halves sit in `production/networking/` through aliased
+    providers — the same trick `peers.tf` uses for the peering accepters — which keeps a two-account
+    handshake inside one readable apply. **The authorization is kept in state** although AWS recommends
+    deleting it, the same divergence `peers.tf` records, and for the same reason: it is what makes the
+    destroy order expressible.
+- **[Claude] The `peers` input's scope moved TWICE in one day, and that is written where it lives rather
+  than hidden.** At 1.2 it was narrowed to `foundation`, because the hub had no consumer and a declared
+  input nothing consumes is what tflint rejects. At 2.5 the hub got one — the reversed authorizations
+  need a profile per account to act as each zone owner. 3.1 replaces the *shape* with the peering matrix;
+  the need survives.
+- **[Claude] 2.4's first half done, second half deferred on purpose.** The matrix is in `docs/NETWORK.md`
+  with the measured counts beside the expected ones. **`NT-12` is not written yet**, and the review three
+  entries above says why: 2.6 keeps the old zone family alive through pass 6, so an equality check
+  written now fails on every surviving old association. It goes at pass 6, where it is true the first
+  time it runs.

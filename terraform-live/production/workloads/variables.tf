@@ -77,3 +77,11 @@ variable "name_suffix" {
   default     = ""
   nullable    = false
 }
+
+# Stage 6c pass 2 - the three Production VPC slices read each other's zone ids and VPC ids, so
+# every one of them needs the folder its state keys are built from (backend.py backend_values).
+variable "account_folder" {
+  description = "This slice's terraform-live/ folder name - the first path segment of every state key."
+  type        = string
+  nullable    = false
+}
