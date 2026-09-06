@@ -763,3 +763,23 @@ planned and saved, not applied — every `terraform apply` in this session is re
   its row, renamed: a deployment target pulls images and packages like anything else, even though the
   same account stopped being a *lake* consumer at step 2.4. That table's comment predicted the two
   lists would diverge one day; this is the day.
+
+## 2026-09-06 — steps 4.5 and 4.6 applied: the peering kept its id and nobody lost access
+
+*User authorised Claude to run the applies for the remainder of this stage. Applies and readings are
+Claude's, as the infrastructure user.*
+
+- **[Claude] Step 4.5 applied on `production/foundation`: `4 added, 1 changed, 4 destroyed`**, re-plan
+  **`No changes`**. **Read back from AWS, which is the check that matters here**:
+  `describe-vpc-peering-connections` returns **`pcx-0999f9d9c55531877  awsds-prod-from-staging
+  active`** — the SAME connection id, renamed, and still `active` rather than `pending-acceptance`. If
+  the `moved {}` block had failed, this would have been a new `pcx-` in `pending-acceptance`, or
+  nothing at all. **The state file said the accepter moved; AWS is what proves the peering was never
+  destroyed.**
+- **[Claude] Step 4.6 applied on `identity/sso`**, re-plan **`No changes`**. The three `moved {}` blocks
+  resolved and no assignment was created or destroyed — including
+  `aws_ssoadmin_account_assignment.infrastructure`, whose absence from the step would have revoked and
+  re-granted the very access the apply was running through.
+- **[Claude] `production/registry` needed no apply at all** — it had planned `No changes`, and that
+  reading stands: the renamed provider alias reaches the same account, so the four policies that
+  enumerate consumers by account id never moved.
