@@ -17,13 +17,15 @@ Blueprint for using AWS as a Data Science infrastructure provider.
   - `docs/plan/stages/` — one file per stage, each declaring the decisions it **consumes**.
   - `docs/plan/decisions/` — one file per decision `D1`…`D37`, plus a one-line-per-decision `INDEX.md`. All
     are settled; `D30` was settled as a *revert* and keeps its file, so the record shows what was tried.
-  - `docs/plan/runbooks/` — a procedure followed in full and in order, rather than remembered. Five today:
+  - `docs/plan/runbooks/` — a procedure followed in full and in order, rather than remembered. Seven today — the four below, plus `buildbox.md`, `sandbox-lake.md` and, since
+    2026-09-07, `client-vpn-proxy-configuration.md`, the short one a device's owner follows (the session up
+    and down, the `.conf` with its four checks, the proxy on macOS and Linux):
     `break-glass.md`, which says when the Management account root may be used, what to do with it, and what
     watches its use; `scp-battery.md`, the probe battery run whenever a policy is attached or amended —
     the two distinguishable outcomes of each probe, so a deny is *measured* rather than assumed;
     `terraform-changes.md`, the two-commit tag order for a Terraform change made by hand, and which commits
     are blocked; and `vpn.md`, the whole VPN surface in three parts — the system (components, topology,
-    host start/stop), the client (a device's config, connecting, and the failure modes WireGuard is
+    host start/stop), the client (what a device may reach, and the failure modes WireGuard is
     silent about by design), and the keys — loss is recovery from the `[P]` secret, never rotation.
   - `docs/plan/architecture.md`, `docs/plan/conventions.md`, `docs/plan/integrations.md` (the `INT-nn` rows),
     `docs/plan/cost-model.md`, `docs/plan/open-questions.md`, `docs/plan/lessons.md`,
@@ -187,9 +189,10 @@ proven, and the third was measured NOT to hold (item 3 below):
    unchanged; the pending choice is unchanged and still the user's — but "recorded acceptance" would now
    record a deviation from a stated objective, not a silent gap.
 
-**The procedure is [`docs/plan/runbooks/vpn.md`](docs/plan/runbooks/vpn.md) Part C and it is not
-repeated here** — the five values a config needs, where each comes from, the three checks that prove
-three *different* claims, and the failure modes WireGuard is silent about by design. Two things about it
+**The procedure is [`docs/plan/runbooks/client-vpn-proxy-configuration.md`](docs/plan/runbooks/client-vpn-proxy-configuration.md)
+§3-§4 and it is not repeated here** — the values a config needs, the four checks that prove four
+*different* claims, and the proxy on the laptop; the failure modes WireGuard is silent about by design
+stay in [`docs/plan/runbooks/vpn.md`](docs/plan/runbooks/vpn.md) §C4. Two things about it
 belong here rather than there, because they are properties of the architecture rather than steps:
 
 **Enrolment is a reviewable diff, and revocation is a one-line deletion.** D4 declined Identity Center
