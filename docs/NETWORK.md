@@ -194,14 +194,17 @@ bridge between VPCs the peering matrix deliberately keeps apart.
 | | |
 |---|---|
 | **in** | UDP/51820 to `52.89.212.1`, the estate's **one** world-open rule |
-| **out of the host** | the `FORWARD` chain accepts **RFC1918 only** and REJECTs the rest with `icmp-admin-prohibited`; a second rule REJECTs **all** forwarded IPv6 |
+| **out of the host** | the `FORWARD` chain accepts **RFC1918 only** and REJECTs the rest with `icmp-admin-prohibited`; a second rule REJECTs **all** forwarded IPv6 — **never reached** (measured 2026-09-07): the host has no IPv6 route, so a tunnelled IPv6 packet is answered *no route* before the chain, `Icmp6OutDestUnreachs` 191 against the rule's 0 |
 | **the internet** | only through the proxy, by name, on the `tunnel` plane |
 | **the masquerade** | everything except traffic bound for the **public tier** — so Squid's log carries `10.90.0.2`, the **device**, not the host |
 
-**The refusal is real and the sender cannot see it.** `curl https://1.1.1.1` from a client reads as a
-**timeout**: the host rejects (8453 packets counted in its first hours) and macOS ignores an ICMP
-unreachable arriving mid-`connect()`. The evidence lives in the counter on the refusing side
-(Lesson 55).
+**The refusal is real and the sender usually cannot see it.** `curl https://1.1.1.1` from a client
+read as a **timeout** twice and as `Couldn't connect … after 194 ms` once (2026-09-07): the host
+rejects — 27681 packets by 16:54 UTC — but **rate-limits the ICMP it answers with, per destination**,
+and a laptop's refused background traffic starves the bucket: 4366 ICMPs sent, **23318 suppressed**
+(`OutRateLimitHost`). When one gets through, macOS honours it at once. The evidence lives in the
+counters on the refusing side (Lesson 55): the `REJECT` rule and `/proc/net/snmp`'s `Icmp` line, both
+in `./aws/vpn.py --on-host`.
 
 **The client's IPv6 enters the tunnel and is rejected there — since 2026-09-07 and not before.**
 `AllowedIPs = ::/0` was **inert** without a matching `Address` line, so every IPv6-capable

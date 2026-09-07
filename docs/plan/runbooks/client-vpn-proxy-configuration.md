@@ -138,7 +138,7 @@ claim:
 |---|---|---|
 | 1 | `sudo wg show` | `latest handshake` seconds ago and non-zero `transfer`; the interface is a `utun*` on macOS |
 | 2 | `dig +short SOA prod.awsds.internal ; dig +short SOA sandbox.internal` | the first **answers**, the second is **empty** — the resolver in use is the hub's. Then `dig +short proxy.awsds.internal` → a **private** address in `10.31.160.0/24` |
-| 3 | `curl -sS --max-time 15 https://1.1.1.1` | **times out** (`curl: (28)`) — no internet without the proxy. The host refuses; the sender cannot see it (Lesson 55) |
+| 3 | `curl -sS --max-time 15 https://1.1.1.1` | **fails** — as `curl: (28)` timeout or as `curl: (7) … after 194 ms`, both measured 2026-09-07: the host refuses every time and rate-limits the ICMP that says so (Lesson 55). A `200` is the finding |
 | 4 | `curl -s --max-time 20 -x http://proxy.awsds.internal:3128 https://checkip.amazonaws.com` | **`184.33.8.126`**, the proxy's address — the tunnel, the peering, the return route and the client plane, in one line |
 
 A 403 on check 4 is the proxy refusing a *name*; nothing at all is the path, or a stopped host (§1).
@@ -167,10 +167,7 @@ below:
   — `.awsds.internal`, `.awsds-pages.internal` — and `localhost` are bypassed.
 - **Off with the tunnel.** Down, the proxy's name does not resolve, and a setting left behind breaks
   every tool that honours it.
-- **Git over SSH has no path** (measured 2026-09-07): the proxy allows `CONNECT` to 443 only, so
-  `github.com:22` is refused by the tunnel host — and macOS's `nc -X connect` rejects Squid's
-  `HTTP/1.1` reply, so SSH-over-443 is not a workaround either. Push over **HTTPS**: `gh auth setup-git`
-  once, and `git` uses `gh`'s token through the proxy.
+- **Git over SSH has no path** — §4.3.
 
 The proof, on any OS, is check 4 of §3.4. What the tunnel may reach through the proxy — everything,
 logged — is `vpn.md` §C5a.
@@ -241,6 +238,34 @@ limitation in [a] is a property of the NetworkExtension tunnel and is not expect
 - **[b] The terminal** — the two functions of §4.1 [b], unchanged, in `~/.bashrc` or `~/.zshrc`.
 - **[c] Google Chrome** — nothing, when [a] is set; otherwise the same two flags on the command line:
   `google-chrome --proxy-server="http://proxy.awsds.internal:3128" --proxy-bypass-list="*.awsds.internal,*.awsds-pages.internal,localhost,127.0.0.1"`.
+
+### 4.3 GitHub — push over HTTPS, never SSH (measured 2026-09-07)
+
+**The port is the problem, and no proxy setting fixes it.** `git@github.com` speaks SSH on port **22**;
+the tunnel host rejects it like any other non-RFC1918 destination, and the proxy cannot carry it either:
+Squid accepts `CONNECT` to **443 only** (the *unsafe ports* deny, `vpn.md` §C5a). So with the tunnel up a
+`git fetch`/`push` over SSH reads *Connection refused* at `github.com:22`, however the shell is
+configured. GitHub's SSH-over-443 endpoint (`ssh.github.com`) is not a way through on macOS either:
+`nc -X connect` rejects Squid's `HTTP/1.1 200 Connection established` reply.
+
+**The path is HTTPS, with `gh`'s token.** `gh` is already signed in (`gh auth status`) and honours
+`https_proxy`; once, tell `git` to take its credentials from `gh`:
+
+```bash
+gh auth setup-git
+```
+
+Then either switch the remote to HTTPS —
+
+```bash
+git remote set-url origin https://github.com/felipenoris/AWS-DataScience.git
+```
+
+— or leave the SSH remote for tunnel-down work and push explicitly to the HTTPS URL when the tunnel is
+up (`git push https://github.com/felipenoris/AWS-DataScience.git HEAD:refs/heads/<branch>`). Both go
+through the proxy with `proxy-on` (§4.1 [b]) and appear in its access log as `CONNECT github.com:443`.
+**With the tunnel down, SSH works again and the proxy variables must be off** — the same rule as every
+other setting in this section.
 
 ---
 

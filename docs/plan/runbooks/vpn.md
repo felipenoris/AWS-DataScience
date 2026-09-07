@@ -93,8 +93,13 @@ laptop 10.90.0.2 ──wg0──▶ host 10.31.160.x  (wg0 at 10.90.0.1)
   **tunnel** packet there.
   **THE HOST REFUSES AND THE CLIENT SEES A TIMEOUT, and those are not in conflict** (measured
   2026-09-07). The rejection is real — `FORWARD` rule 4 counted **8453** rejected packets in its first
-  hours — but a modern TCP stack ignores an ICMP unreachable arriving mid-`connect()`, so the sender
-  retransmits until it gives up. **The counter is the only place the refusal is legible**, which is why
+  hours — but the host **rate-limits the ICMP errors it sends, per destination** (`icmp_ratelimit`,
+  1000 ms), and a laptop whose background applications are refused several times a second drains the
+  bucket: step 6.4 read **23318** of 27681 refusals silenced (`OutRateLimitHost`), so the sender
+  usually retransmits until it gives up, and fails fast (`curl: (7) … after 194 ms`) when a token
+  happens to be free — macOS honours the ICMP the moment it arrives. *This paragraph first blamed the
+  client's stack; the host's own counters corrected it the same day.* **The counters are the only
+  place the refusal is legible** — the rule's, and `/proc/net/snmp`'s `Icmp` line — which is why
   §C4's escalation path is `iptables -L FORWARD -n -v` over an SSM session rather than a better reading
   of the client's error. The rejected-packet count also doubles as a live measure of *how much the
   laptop tries to send straight to the internet* while a full tunnel is up — a number nobody had before.
@@ -722,10 +727,13 @@ them on a **global IPv6 address**, and *none* on the tunnel:
 
 **It does not carry IPv6 traffic and is not meant to.** Every VPC in this estate is IPv4-only
 (measured), so the host has no IPv6 uplink. With the ULA in place, IPv6 **enters** the tunnel and is
-**rejected** there — one `ip6tables` rule, beside the IPv4 that is not RFC1918. The refusal is
-explicit rather than a silent drop for one reason: a dropped packet leaves no evidence and a
-rejected one **increments a counter**, which is the only place a refusal the sender cannot see is
-legible (Lesson 55).
+**refused** there — and the refusal is not the one that was written. One `ip6tables` `REJECT` was
+added beside the IPv4 rule so that a dropped packet would leave a counter behind (Lesson 55). **Measured
+at step 6.4 the same day: that rule has never fired.** The host has no IPv6 route at all, so a
+tunnelled IPv6 packet is answered *no route* at the routing lookup, **before** the `FORWARD` chain sees
+it — `ip6tables` reads **0** while `Icmp6OutDestUnreachs` reads **191**. The refusal is real and it is
+counted, in `/proc/net/snmp6` (`./aws/vpn.py --on-host` prints it); the rule stays as the backstop for
+the day a route exists. Lesson 56's shape, one layer down: the routing table is the control.
 
 **IT IS NOT A CONTROL AGAINST THE DEVICE'S OWNER, and pretending otherwise would be worse than the
 leak.** `AllowedIPs` on the *client* side is a routing directive: whoever holds the laptop can
