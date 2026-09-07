@@ -704,6 +704,14 @@ reached *from*, not where it runs — open question 12, Stage 6 step 1.6).
   page's *public internet* tables is the browser's, which the page states three times
   (*"These endpoints are used by the Amazon SageMaker Unified Studio portal"*, and once
   *"...by the AWS console"*).
+- **A space started while the endpoint set is down does not fail — it hangs (measured 2026-09-07, 6c
+  step 6.2).** JupyterLab loads, the terminal works, the banner *"IDE configuration in progress"* never
+  clears and a kernel never returns: the app's DataZone and SageMaker calls have **no path at all** under
+  design B — no default route, no endpoint — so they get silence rather than an error (Lesson 42).
+  `make up ENV=sandbox` and a stop/start of the space cleared it. The discriminator from the space's own
+  terminal: `getent hosts sts.us-west-2.amazonaws.com` → `10.20.x.x` and
+  `curl https://sts.us-west-2.amazonaws.com/` → `302` with the endpoints up; public addresses and a
+  timeout without. The terminal working is what makes it look like a Studio fault rather than a network one.
 - One required entry cannot be satisfied in-Region: the `q` row pairs with
   `com.amazonaws.us-east-1.codewhisperer`, *available only in `us-east-1`* — a `us-west-2` VPC
   cannot reach it through an interface endpoint at all (Stage 6 step 4.2 records what that breaks).

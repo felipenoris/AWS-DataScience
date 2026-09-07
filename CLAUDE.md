@@ -193,9 +193,11 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
 
 ### Current position
 
-- **STAGE 6c: PASSES 0-5 AND 7 DONE; PASS 6 IS OPEN AND MOSTLY THE USER'S (2026-09-07).** Outstanding:
-  **6.2** (the shadowing closed from the tunnel), **6.4** (the drop rule — `vpn.py --on-host` now prints
-  the FORWARD/nat counters for it), **6.6** (INT-16's closing choice) and the user's half of **6.5**, the
+- **STAGE 6c: PASSES 0-5 AND 7 DONE; PASS 6 IS OPEN AND MOSTLY THE USER'S (2026-09-07).** **6.2 DONE**
+  (portal, catalog tab and a space opened with **no** browser grant; both client names public). **A space
+  started while `sandbox/egress` is down HANGS at "IDE configuration in progress"** — silence, not an
+  error. Outstanding: **6.4** (the user's half taken 15:29 UTC; mine is the counter, `vpn.py --on-host`,
+  before/after a repeat), **6.6** (INT-16's closing choice) and the user's half of **6.5**, the
   **GATE**: trim the Sandbox row from `VPN_HOMES`, **then** the `removed {}` on `sandbox/foundation`'s
   Elastic IP. Until then that slice plans **`1 to add` and must not be applied**, and the estate carries
   **two** world-open rules (`VP-3` reads Production only — Lesson 31). Also owed: **4.11's second half**

@@ -262,8 +262,13 @@ others**. An *extra* association is a spoke resolving into a plane the matrix ke
 half no expected-direction test would find.
 
 **The client plane resolves at VPC-Networking's `.2`, which carries no interface endpoint with
-private DNS.** That is the structural repair: a private zone answers for its whole subtree, so a
-client resolving through a VPC full of endpoints inherited every one of their names (Lessons 40-43).
+private DNS — measured from the tunnel on 2026-09-07 (6c step 6.2).** `agent.datazone.us-west-2.api.aws`
+answered three **public** addresses; `<domain-id>.studio.us-west-2.sagemaker.aws` a CNAME to
+`studio.us-west-2.sagemaker.aws` and three public ones. In a Chrome pointed at the proxy and nothing
+else, the portal, a project, its catalog tab and a JupyterLab space opened **with no Local Network
+Access prompt** — the two surfaces that demanded the grant on 2026-08-26. That is the structural
+repair: a private zone answers for its whole subtree, so a client resolving through a VPC full of
+endpoints inherited every one of their names (Lessons 40-43).
 
 **The DNS Firewall's job changed.** It is in the two **compute** VPCs only, its allow-list is ten
 entries — AWS's own namespaces and this estate's private zones — and its purpose is no longer
@@ -324,10 +329,14 @@ also owns its record (Lesson 18).
 host. Every `[E]` row above is *what the slice builds*, read from the code; every `[P]` and `[D]` row
 is read from AWS.
 
-**One reading this file does not yet carry**: step **6.2** — the portal opening from the tunnel with
-no browser Local Network Access grant, and the two client-plane names resolving **publicly**. It is
-the user's, and §10's shadowing paragraph is written from the design rather than from that
-measurement until it lands.
+**The one reading the first draft did not carry landed the same day**: step **6.2**, §10 — the two
+client-plane names public from the tunnel, and the portal, a catalog tab and a JupyterLab space
+opening with no browser grant. **And a reading nobody planned**: a space started while
+`sandbox/egress` was **down** came up with a working terminal and JupyterLab stuck at *"IDE
+configuration in progress"* — under design B the app's DataZone and SageMaker calls have **no path
+at all**, and the symptom is silence, not an error (Lesson 42). With the endpoints up (`getent` →
+`10.20.x`, STS answering `302`) and the space restarted, everything worked — §5's *"there is no
+fourth path"*, met from inside an app.
 
 ---
 
