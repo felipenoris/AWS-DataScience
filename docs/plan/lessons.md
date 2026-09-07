@@ -1196,9 +1196,14 @@ lesson can be *recognised* without opening this file; the reasoning that makes e
     host's `FORWARD` chain rejects every tunnel packet not bound for RFC1918 with
     `icmp-admin-prohibited`, and this repository's own runbook predicted the client would therefore see
     *"a fast refusal, not a timeout"*. The client saw `curl: (28) Connection timed out after 15006 ms`.
-    Both are true: measured the same hour, the reject rule had fired **8453 times** — modern TCP stacks
-    (macOS among them) **ignore an ICMP unreachable arriving mid-`connect()`**, as hardening against
-    off-path injection, so the sender retransmits until it gives up.
+    Both are true: measured the same hour, the reject rule had fired **8453 times**. **The mechanism this
+    lesson first named — *macOS ignores an ICMP unreachable arriving mid-`connect()`* — was wrong, and
+    step 6.4 measured the real one the same day**: the host **rate-limits** its ICMP errors per
+    destination (`icmp_ratelimit`), and a laptop whose background applications are refused several
+    times a second starves the bucket — of 27681 rejected packets the host had *spoken* 4366 and
+    silenced **23318** (`OutRateLimitHost`), so a given SYN gets its ICMP or does not by the luck of a
+    token; when one arrives, macOS honours it at once (`curl: (7) … after 194 ms`). The sender still
+    cannot tell a starved refusal from a black hole, which is the point.
     **What generalises is where the evidence lives.** The discriminator is not a better reading of the
     client's error — there is nothing in it to read. It is the **counter on the refusing side**, and a
     packet count is also what separates *the rule is present* from *the rule is hit*. So when a control
@@ -1355,6 +1360,22 @@ with the tunnel down**: it is consulted again, points at a host only the tunnel 
 breaks the `aws` CLI — which falls back to the macOS system configuration, so an **empty**
 `https_proxy` does not override it and `NO_PROXY='*'` does. Tracked as
 [issue #67](https://github.com/felipenoris/AWS-DataScience/issues/67).
+
+**Linux rate-limits the ICMP errors a `REJECT` rule promises, per destination, and the rule's own
+counter does not say so** (measured 2026-09-07, 6c step 6.4). `iptables -L FORWARD -v` counted
+27681 rejected packets; `/proc/net/snmp`'s `Icmp` line said **4366** `OutDestUnreachs` and **23318**
+`OutRateLimitHost` — `net.ipv4.icmp_ratelimit = 1000` (ms, per destination), `icmp_ratemask = 6168`
+(destination-unreachable included). So a client whose background traffic is being refused a few
+times a second sees a *timeout* for the one packet it is watching, and a fast *refused* when a token
+happens to be free — the same command, minutes apart, both measured. The `REJECT` counter proves the
+rule is hit; only the `Icmp` line says whether the refusal was spoken. `./aws/vpn.py --on-host` reads
+both since that day. Where: `docs/plan/runbooks/vpn.md` §S2, `docs/NETWORK.md` §7.
+
+**A host with no IPv6 route answers a tunnelled IPv6 packet with ICMPv6 *no route* BEFORE the
+`FORWARD` chain sees it** (same reading). The explicit `ip6tables` `REJECT` written on 2026-09-07 to
+make the refusal *counted* stood at **0** while `Icmp6OutDestUnreachs` read **191**: the refusal is
+real and counted, in `/proc/net/snmp6`, and the rule is a backstop that has never fired — Lesson 56's
+shape one layer down, the routing table being the control. Where: `runbooks/vpn.md` §C6.
 
 ### Route 53
 

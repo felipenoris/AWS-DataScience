@@ -196,8 +196,10 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
 - **STAGE 6c: PASSES 0-5 AND 7 DONE; PASS 6 IS OPEN AND MOSTLY THE USER'S (2026-09-07).** **6.2 DONE**
   (portal, catalog tab and a space opened with **no** browser grant; both client names public). **A space
   started while `sandbox/egress` is down HANGS at "IDE configuration in progress"** — silence, not an
-  error. Outstanding: **6.4** (the user's half taken 15:29 UTC; mine is the counter, `vpn.py --on-host`,
-  before/after a repeat), **6.6** (INT-16's closing choice) and the user's half of **6.5**, the
+  error. **6.4 DONE** (`REJECT` 21040 → 27681 across the repeat; **the timeout was the HOST's per-destination
+  ICMP rate limit, not macOS** — 23318 of 27681 refusals silenced, `OutRateLimitHost`; the `ip6tables`
+  rule has never fired, IPv6 dies at *no route* first). Outstanding: **6.6** (INT-16's closing choice)
+  and the user's half of **6.5**, the
   **GATE**: trim the Sandbox row from `VPN_HOMES`, **then** the `removed {}` on `sandbox/foundation`'s
   Elastic IP. Until then that slice plans **`1 to add` and must not be applied**, and the estate carries
   **two** world-open rules (`VP-3` reads Production only — Lesson 31). Also owed: **4.11's second half**
@@ -228,8 +230,8 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   it **rejects** it — because `AllowedIPs = ::/0` was **inert** without a matching `Address` (Lesson 56).
   Not a control against the device's owner. **macOS: the system proxy is NOT consulted while the tunnel is
   primary** (issue #67): Chrome's `--proxy-server` flag or Firefox; with the tunnel **down** the same
-  setting breaks the `aws` CLI — `NO_PROXY='*'` is the override. **The no-internet check TIMES OUT, it
-  does not refuse** (Lesson 55): the evidence is the counter on the refusing side.
+  setting breaks the `aws` CLI — `NO_PROXY='*'` is the override. **The no-internet check times out OR refuses fast — the host's per-destination ICMP rate limit
+  decides** (Lesson 55, mechanism corrected 2026-09-07): the evidence is the counter on the refusing side.
 - **Documentation swept 2026-09-07 for 6b/6c**: 25 living files corrected (NAT, `sandbox/vpn/`, the
   anchors, `Development`, the zones); `conventions.md` §6 lost a duplicate `staging/` block and gained
   `production/buildbox/`. **Plans re-cut the same day**: 6c pass 6, 6d step 7 (+ `./aws/remote-ide.py` as

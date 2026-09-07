@@ -983,8 +983,9 @@ obligations older than the stage.
   `curl -x` → **`184.33.8.126`**, the proxy's address.
   **THE THIRD READING WAS A TIMEOUT WHERE THE RUNBOOK PREDICTED A FAST REFUSAL**, and measuring the
   host settled it rather than a re-reading: `FORWARD` rule 4 had rejected **8453 packets** with
-  `icmp-admin-prohibited`, so the host refuses exactly as designed — and macOS **ignores an ICMP
-  unreachable arriving mid-`connect()`**, so the sender retransmits until it times out. The refusal is
+  `icmp-admin-prohibited`, so the host refuses exactly as designed — and the sender retransmits until it times out. *This
+  block first blamed macOS ignoring the ICMP; **6.4 measured the real cause**, the host's per-destination
+  ICMP rate limit.* The refusal is
   real and only legible in the **counter on the refusing side**. [Lesson 55](../lessons.md); runbook
   §S2 and §C2 corrected.
   **AND THE RUN PROVED TWO THINGS 6.1 DID NOT ASK FOR.** The proxy's access log carries
@@ -1052,6 +1053,22 @@ obligations older than the stage.
   `curl -x proxy:3128 https://<a Workloads private address>` returns the proxy's **403** while
   `https://pypi.org` returns 200; the mirror from a Workloads probe. Two distinguishable outputs, which is
   what makes it a verification.
+- **6.4 — DONE 2026-09-07, AND READING B OVERTURNED 6.1'S MECHANISM.** The user's half at 15:29 UTC
+  (`curl: (28)` timeout; Squid's `400` from `http://proxy.awsds.internal:3128` — an RFC1918 name still
+  reached) and again at 16:48, where the same command failed in **194 ms** (`curl: (7) … Couldn't
+  connect to server`). Reading A (16:36 UTC) → B (16:54): `REJECT` **21040 → 27681**; the nat `RETURN`
+  for `10.31.160.0/24` 1648 → 1724 — this session's own proxy use, not the curl's. **The accounting that
+  explains both client readings**: of 27681 refusals the host *spoke* **4366** and **silenced 23318**
+  (`Icmp OutRateLimitHost`; `icmp_ratelimit` 1000 ms per destination, `icmp_ratemask` 6168) — a refused
+  SYN gets its ICMP only when the per-destination bucket holds a token, and a laptop's refused
+  background traffic drains it several times a second. When the ICMP arrives macOS honours it at once;
+  **the timeout was the host's silence, not the client's deafness** — 6.1's sentence, Lesson 55's
+  mechanism, `NETWORK.md` §7, both runbooks and `vpn.py`'s comment corrected. **And the `ip6tables`
+  rule of 4.7/§C6 has never fired**: the client's ULA default is in place (`netstat -rn -f inet6` →
+  `default fd90:: utun4`), the host answered **191** ICMPv6 unreachables, and the rule reads **0** — a
+  tunnelled IPv6 packet dies as *no route* at the routing lookup, before `FORWARD`. Real, counted in
+  `/proc/net/snmp6`; the rule stays as the backstop. `aws/vpn.py --on-host` now reads the ICMP block.
+  *The original step follows:*
 - **6.4 — Prove the drop rule** (the FORWARD chain's REJECT is real and legible only on the refusing side —
   Lesson 55):
   - **[user] Unset the proxy** (`unset https_proxy http_proxy`, no browser flag) with the tunnel up:

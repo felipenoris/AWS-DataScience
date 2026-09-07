@@ -191,8 +191,8 @@ HOST_PROBE_COMMANDS = (
     "df -h /",
     # THE REFUSING SIDE'S COUNTERS (6c step 6.1, 2026-09-07; Lesson 55). A refusal the sender cannot
     # see is indistinguishable from silence: the FORWARD chain REJECTs every tunnel packet not bound
-    # for RFC1918 with icmp-admin-prohibited, macOS ignores that ICMP mid-connect(), and the client
-    # reads a TIMEOUT. The only place the refusal is legible is the rule's packet count here - which
+    # for RFC1918 with icmp-admin-prohibited but rate-limits the ICMP that would say so (the ICMP
+    # block below, step 6.4), and the client reads a TIMEOUT more often than not. The only place the refusal is legible is the rule's packet count here - which
     # is what 6c step 6.4 reads across a client's attempt. The nat table is 4.7's other half: the
     # RETURN rule for the proxy's subnet is the deliberate masquerade hole that lets Squid log a
     # per-device address, and its counter should move only for proxy-bound connections. All three
@@ -202,6 +202,18 @@ HOST_PROBE_COMMANDS = (
     "ip6tables -L FORWARD -v -n --line-numbers",
     "echo ---NAT---",
     "iptables -t nat -L POSTROUTING -v -n --line-numbers",
+    # WHETHER THE HOST SAYS "NO" OUT LOUD (6c step 6.4, 2026-09-07). A REJECT counts a packet
+    # whether or not the ICMP error it is meant to send actually left: Linux rate-limits ICMP
+    # errors per destination (icmp_ratelimit / icmp_ratemask), so a laptop whose background
+    # applications are being refused dozens of times a second can starve the bucket, and the ONE
+    # packet the user is watching gets no ICMP at all - a timeout on the client that the REJECT
+    # counter alone would attribute to macOS. The contrast is REJECT pkts against
+    # Icmp OutDestUnreachs (and Icmp6OutDestUnreachs for the ULA rule): equal means every
+    # refusal was spoken; a gap is the host's own silence. Reads, all four.
+    "echo ---ICMP---",
+    "grep -E '^Icmp:' /proc/net/snmp",
+    "grep -E '^Icmp6(In|Out)(DestUnreachs|Errors|Msgs) ' /proc/net/snmp6",
+    "sysctl net.ipv4.icmp_ratelimit net.ipv4.icmp_ratemask net.ipv4.icmp_msgs_per_sec net.ipv4.icmp_msgs_burst",
 )
 HOST_PROBE_BANNED = ("dump", ">", "rm ", "systemctl start", "systemctl stop", "wg set")
 HOST_PROBE_POLLS = 20
