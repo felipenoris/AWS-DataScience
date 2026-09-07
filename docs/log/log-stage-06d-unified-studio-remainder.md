@@ -259,3 +259,23 @@ except the Terraform change, which is authored, tagged and planned — and NOT a
   as `awsds-infra-identity`, `sandbox/sagemaker/` as `awsds-infra-sandbox-1`) wait for the word. **What it
   gives up, said once**: an `ml.p4d` Code Editor space bills USD 30+/h and D12's budget notifies nobody;
   the Tooling idle shutdown bounds an idle space and nothing bounds a busy one.
+
+## 2026-09-07 — the two applies, authorized in chat, and the ceiling read back from both objects
+
+- **[Claude⚡] `identity/sso/` applied as `awsds-infra-identity`**: the six persona inline policies
+  modified in place (`Modifications complete` on all six, 7-9 s each); re-plan **`No changes`**.
+- **[Claude⚡] `sandbox/sagemaker/` applied as `awsds-infra-sandbox-1`**: `Apply complete! Resources: 0
+  added, 1 changed, 0 destroyed` — the boundary policy `awsds-sandbox-project-boundary`, now at
+  version **v2**; re-plan **`No changes`**.
+- **[Claude] Read back from the live objects, not from the plan**: `get-policy-version` on the boundary's
+  default version shows `DenySageMakerInstanceCeiling` as `Deny` with `NotAction`
+  `[UpdateSpace, CreateSpace, CreateApp]` and the seven-type list unchanged;
+  `get-inline-policy-for-permission-set` on all seven sets shows the same shape in the **six** persona
+  sets and no ceiling statement in `AWSServiceCatalogEndUserAccess`, as before. `./aws/studio.py` reads
+  **0 FAILED** — `US-8` all three blueprint-provisioned roles bounded, `US-9` both Sids in all six sets,
+  `US-10` zero running apps; the seven persona and `ctadmin` profiles it could not authenticate are
+  other `sso-session`s with no token (section 10), not findings.
+- **What changed for a data scientist, in one sentence**: a Code Editor or JupyterLab space may now be
+  created or resized at any `ml.*` type — from the portal (the project role, under the boundary) or by
+  API (the persona set) — while a training, processing, tuning or transform job, an endpoint config or a
+  notebook instance still refuses a type outside the seven.

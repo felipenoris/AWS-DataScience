@@ -210,7 +210,7 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   Method 3 + an `IDC_UserName` Allow + `StartSession` denied on the D13 boundary). A remote space needs
   **≥ 8 GB** (`ml.t3.large` **0.100/h**, measured); **the space path carries NO instance ceiling since
   2026-09-07** (`sagemaker-denies-v0.2.0`: `CreateApp`/`CreateSpace`/`UpdateSpace` exempt via `NotAction`,
-  simulated; jobs keep the list) — **not applied yet**; **the VS Code server is downloaded by the SPACE** —
+  simulated; jobs keep the list) — **APPLIED 2026-09-07**, both re-plans `No changes`, read back from both objects; **the VS Code server is downloaded by the SPACE** —
   `remote.SSH.localServerDownload=always` keeps the compute plane unchanged (decision due 5). The
   `session-manager-plugin` honours `HTTPS_PROXY` only if the env reaches it: a browser-launched VS Code on
   macOS has none → direct dial → REJECT → **timeout**. **Portal Query Editors has NO endpoint in any VPC**
