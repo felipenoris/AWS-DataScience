@@ -983,6 +983,29 @@ estate-wide (INT-21's availability cost).
   *The original step follows:*
 - **7.2 — [Claude] Turn the blackhole into an error**: `make up ENV=<spoke>` reads the hub hosts' state
   through `./aws/vpn.py` and **refuses**, naming the stopped host, when either is down.
+- **7.3 — DONE 2026-09-06. `./aws/proxy.py`, all five checks, and TWO of them found defects in
+  themselves before they found anything in AWS.** Shaped after `vpn.py` deliberately — same
+  two-profile default, same typed `--on-host` fence around `ssm:SendCommand`, same "an empty
+  answer and a failed answer are different things" discipline — because the two files are the
+  instruments for D38's two hosts and a reader who knows one should not have to learn the other.
+  **PX-1** `pass`: five rules, all TCP/3128, from the four spoke CIDRs and the tunnel.
+  **PX-2** `pass` on **both** sources; the committed template needs no session at all, which
+  matters because the answer is most wanted *before* an apply. **PX-3** `pass`: five planes,
+  entry for entry. **PX-4** is a **`note`, not a `fail`** — the log group exists with 365 days
+  and has no export, and 4.11's second half is an **open decision** (due #4), so a `fail` would
+  report a gap the plan is holding open on purpose. **PX-5** `pass`: the proxy's address is in
+  `DenyControlPlaneOffVpn` on all six persona sets, `InfrastructureAccess` exempt by decision.
+  **The two self-defects, both found by running it** (Lesson 54 again): the per-plane lists are
+  an **`include`d drop-in**, not part of `squid.conf`, so reading the two files as one blob made
+  the ordering check see `allow` lines after `deny all` and PX-3 see zero planes; and
+  `render-squid.sh` spells a plane `production_foundation` where the parameter says
+  `production-foundation` (`gsub("-"; "_")`), so the raw keys reported every plane as **both**
+  missing and extra. Both are Lesson 53 at its smallest — one intent, two spellings, and a rule
+  between them nothing had written down. **PX-2 also decided its verdict from the committed
+  template alone while merely printing the running one**, which would have passed a host serving
+  a file nobody committed; both sources count now. Negative controls run for PX-2 (an allow moved
+  above the deny → `1 allow(s) precede it`; the deny deleted → `no ... line at all`).
+  *The original step follows:*
 - **7.3 — [Claude] Write the proxy instrument**: `./aws/proxy.py`, read-only by default with an
   `--on-host` flag on the `vpn.py` pattern. Checks: the security group admits only the spoke and tunnel
   CIDRs (`PX-1`); no `http_access allow` precedes the private-destination deny (`PX-2`); the running

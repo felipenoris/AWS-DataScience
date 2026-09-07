@@ -1485,3 +1485,49 @@ thing to actually run. They are written up individually because three of them ar
 - **[Claude] `make help` carries a `THE HUB` section**, because a refusal a person meets for the
   first time mid-apply should be explainable from the tool that refused. Gates: `ruff` clean,
   `./scripts/slices.py check` 29/29, `make check` **OK**, both targets dry-run in both directions.
+
+## 2026-09-06 — 7.3: `./aws/proxy.py`, and the two defects it found were its own
+
+- **[Claude] Shaped after `vpn.py` deliberately.** Same two-profile default, same typed
+  `--on-host` fence around `ssm:SendCommand`, same *an empty answer and a failed answer are
+  different things* discipline. The two files are the instruments for D38's two hosts — one way
+  in, one way out — and a reader who knows one should not have to learn the other.
+- **[Claude] The five checks, first full run:**
+
+  | check | verdict | reading |
+  |---|---|---|
+  | `PX-1` only the spokes and the tunnel may reach 3128 | **pass** | 5 rules, all TCP/3128, from `10.20`, `10.30`, `10.32`, `10.50` and the tunnel's `10.90.0.0/24` |
+  | `PX-2` no `http_access allow` precedes the private deny | **pass** | committed **and** running: `deny to_private` is line 1 of 4 |
+  | `PX-3` the running allow-list equals the committed one | **pass** | 5 planes, entry for entry |
+  | `PX-4` the access log group, with its Log Archive export | **note** | the group exists (365 days) and has **no export** |
+  | `PX-5` the perimeter names the exit address | **pass** | `184.33.8.126` in `DenyControlPlaneOffVpn` on all six persona sets |
+
+- **[Claude] `PX-4` IS A `note` AND NOT A `fail`, AND THE DISTINCTION IS THE POINT.** 4.11's
+  second half — the export to Log Archive — is an **open decision** (this stage's decision due #4)
+  between a subscription filter into a Firehose and a scheduled `CreateExportTask`, with different
+  cost shapes. A `fail` would report a gap the plan is deliberately holding open, and a checklist
+  that is red for a decision nobody has taken is a checklist people learn to skim
+  ([Lesson 50](../plan/lessons.md)). It says instead what standing without it costs: the author of
+  the allow-list also owns its record (Lesson 18).
+- **[Claude] TWO DEFECTS, BOTH THE INSTRUMENT'S OWN, BOTH FOUND BY RUNNING IT** — `validate` and a
+  reading would have found neither ([Lesson 54](../plan/lessons.md)):
+  1. **The per-plane lists are an `include`d drop-in, not part of `squid.conf`.** The main file is
+     owned by Terraform because the ORDER of its `http_access` lines is the security property;
+     the planes are rendered into `/etc/squid/conf.d/awsds-planes.conf` because their *content*
+     changes without their *position* doing so. Read as one blob, the ordering check saw the
+     drop-in's `allow` lines after `deny all` and reported a proxy that allows everything at the
+     end, while PX-3 parsed **zero** planes from a host serving five.
+  2. **`render-squid.sh` spells a plane `production_foundation` where the parameter says
+     `production-foundation`** — `gsub("-"; "_")`, because that is what a Squid acl name takes.
+     Comparing the raw keys reported **every** plane as both missing and extra. Lesson 53 at its
+     smallest: one intent, two spellings, and the rule between them written down nowhere until now.
+- **[Claude] And a third, which is the kind worth naming separately: `PX-2` READ ITS OWN SUBJECT
+  AND THEN DID NOT USE IT.** The first version decided the verdict from the committed template
+  alone and merely *printed* the running one — so a host serving a file nobody committed would
+  have reported `pass` beside a detail string describing the problem. Both sources count now.
+- **[Claude] Negative controls, because a check that has only ever passed is a claim**: an
+  `http_access allow` moved above the deny → `1 allow(s) precede it: allow all_the_things`; the
+  deny deleted entirely → `no http_access deny to_private line at all`. Two distinguishable
+  outputs, plus the correct one.
+- **[Claude] Registered in [`aws/INDEX.md`](../../aws/INDEX.md)** with its write-API fence stated,
+  as the folder's rules require for the two files that have one.
