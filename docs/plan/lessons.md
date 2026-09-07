@@ -1206,6 +1206,55 @@ lesson can be *recognised* without opening this file; the reasoning that makes e
     any prediction about what the sender will observe as a claim about **someone else's stack** — which
     is exactly the class of thing this project measures rather than reasons about.
 
+56. **A configuration line that names a capability the surrounding configuration does not have is
+    INERT, and it reads exactly like a working control.** Stage 6c, 2026-09-07. Every client config
+    in this estate carried `AllowedIPs = 0.0.0.0/0, ::/0` from the first day, and three separate
+    documents — the runbook, the stage file, the objectives' reading — described IPv6 as
+    *"deliberately black-holed"* on the strength of it. It was not routed anywhere: `wg-quick`
+    installs routes only for the address families the interface **has an address in**, and the
+    `[Interface] Address` line was IPv4-only. So `::/0` selected nothing, no IPv6 entered the
+    tunnel, and every IPv6-capable application on the device went out of its own uplink — outside
+    the tunnel, outside the proxy, outside the access log. **Nine established connections were doing
+    it, including the one carrying the session that found it**, and the discovery came from a user
+    noticing that a chat kept working while nothing else did.
+    **The tell is a directive that depends on a second setting to mean anything**, where the second
+    setting lives in a different part of the same file, or a different file, and has a permissive
+    default. `AllowedIPs` needs `Address`; a Squid `http_access allow src dst` needs the `dst` acl
+    to exist; a masquerade rule needs a route to send it traffic (Lesson 28's shape one layer down).
+    **Verify a routing directive by reading the ROUTING TABLE, never the config that was supposed to
+    produce it** — `netstat -rn -f inet6` answered in one line what three documents had asserted for
+    three weeks.
+
+57. **A paraphrase in a plan becomes the specification, and it is the plan's own words that make it
+    look authoritative.** Stage 6c step 4.9 wrote *"the tunnel range carries the institutional web
+    filter — what a person on a company laptop may reach"*, and told the executor to seed it from a
+    vendor's table. `objectives.md` says the opposite in two places: the client's internet is
+    **monitored**, and *"the restriction is on the SageMaker-managed compute, never on the user's
+    (client's) machine"*. Because the proxy's configuration is default-deny, *"filter"* was
+    implemented as an **allow-list** — and the client's internet ended up **stricter** than the
+    compute's, which is the requirement inverted. Nobody noticed until a browser tried it: the AWS
+    console opened and nothing else did.
+    **`CLAUDE.md` already carried the rule that would have prevented it** — the objectives are *"the
+    specification a stage is measured against, so it is summarised nowhere"* — and the summary was
+    written anyway, in the file an executor actually opens. **An institutional web filter is a
+    DENY-list over an open default**; the paraphrase dropped the shape and kept the word.
+    **Before implementing a step that restates a requirement, open the requirement.** The tell is a
+    step that explains *why* rather than only *what*: an explanation is a paraphrase, and a
+    paraphrase of a specification is a fork of it.
+
+58. **Data and code can share a delivery path and still have different costs, and the one that
+    reports success is the cheap one.** Stage 6c, 2026-09-07. The proxy's allow-lists are `[P]` data
+    in an SSM parameter, re-rendered onto the host by a State Manager association every half hour —
+    a design bought precisely so a list edit needs no host replacement. A change of **shape** to
+    those lists needed a change to the **renderer**, and the renderer is a script written by user
+    data: `[D]` state on the disk. The parameter was updated, the association was triggered by hand,
+    and it reported **`Success`** — for running the *old* script perfectly. The new plane simply did
+    not appear, and the only evidence was the old `jq` expression still on the host.
+    **A reload path covers the artefacts it was built for and nothing else**, and its success is a
+    statement about the mechanism rather than about the outcome. Name the two classes where the
+    mechanism is documented — *this reaches the host in thirty minutes; that one needs a new host* —
+    because the failure is silent in the most convincing way available: a green status.
+
 ---
 
 ## What AWS does that its documentation does not say
@@ -1279,6 +1328,33 @@ starts at a state nobody named. Entries below carry the stage that found them.
   because it was never paying. What design B actually saves is on the traffic that DID use the NAT —
   internet downloads at **0.045/GB of processing** — which now cross an EC2 proxy that charges **no
   per-GB processing at all**. Two axes, and the one that looks heaviest was already free.
+
+### WireGuard, and the client platforms this estate actually runs on
+
+**`AllowedIPs` is inert for an address family the interface has no address in** (measured
+2026-09-07, macOS, App Store client). `wg-quick` installs routes only for the families present on
+`[Interface] Address`, so `AllowedIPs = 0.0.0.0/0, ::/0` beside an IPv4-only address installs **no
+IPv6 route at all** — and the config still parses, the tunnel still comes up, and `wg show` reports
+nothing unusual. The reading that settles it is `netstat -rn -f inet6`: the tunnel interface simply
+is not among the default routes. Nothing in WireGuard's own documentation says the two lines are
+coupled. Where: `docs/plan/runbooks/vpn.md` §C6.
+
+**macOS keeps the physical default route as an INTERFACE-SCOPED entry while a tunnel is primary**
+(same reading). `netstat -rn` shows two defaults; the physical one carries the `I` flag, and traffic
+already associated with that interface keeps using it. So a socket established *before* the tunnel
+came up survives the tunnel coming up, and "the tunnel is up" is not the same as "everything is
+going through the tunnel". A new connection to the very same host fails while the old one works.
+
+**macOS does not consult the system proxy while a NetworkExtension tunnel is primary** (measured
+2026-09-07). `networksetup -getsecurewebproxy "Wi-Fi"` reports the proxy as configured and enabled;
+`scutil --proxy` — which is what applications read — returns an empty dictionary. Safari, Chrome by
+default, and every native application that reads the system configuration behave as if no proxy
+existed. Per-application configuration works (Chrome's `--proxy-server` flag, Firefox's own
+settings, `https_proxy` for shell tools). **And the same setting fails in the opposite direction
+with the tunnel down**: it is consulted again, points at a host only the tunnel can reach, and
+breaks the `aws` CLI — which falls back to the macOS system configuration, so an **empty**
+`https_proxy` does not override it and `NO_PROXY='*'` does. Tracked as
+[issue #67](https://github.com/felipenoris/AWS-DataScience/issues/67).
 
 ### Route 53
 

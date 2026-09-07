@@ -384,6 +384,13 @@ the reasoning that makes it *usable* is in the file. Recognising one is the sign
     different verdicts.**
 55. **A refusal the sender cannot see is indistinguishable from silence — and the refusal is real;
     the evidence lives in the counter on the refusing side.**
+56. **A configuration line naming a capability the surrounding configuration does not have is
+    INERT, and reads exactly like a working control — verify a routing directive from the
+    ROUTING TABLE.**
+57. **A paraphrase in a plan becomes the specification; an explanation of a requirement is a fork
+    of it. Open the requirement before implementing the step that restates it.**
+58. **Data and code can share a delivery path and have different costs — and the one that reports
+    SUCCESS is the cheap one.**
 
 **[`lessons.md`](docs/plan/lessons.md) also carries a second list — "What AWS does that its
 documentation does not say"** — platform behaviours that cost a measurement to learn, each with its

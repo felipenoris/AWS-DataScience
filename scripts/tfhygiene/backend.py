@@ -264,6 +264,20 @@ def vpc_bearing_accounts() -> list[str]:
 # at the WireGuard host's ENI. So it is emitted to VPN_HOST_SLICE as well.
 WIREGUARD_PEER_CIDR = "10.90.0.0/24"
 
+# THE SAME TUNNEL, IN THE OTHER FAMILY (2026-09-07). A ULA, and it exists to make
+# `AllowedIPs = ::/0` in a client config REAL rather than to carry IPv6 traffic: every VPC in this
+# estate is IPv4-only (measured), so the tunnel host has no IPv6 uplink and what this buys is that
+# a device's IPv6 enters the tunnel and is REJECTED there instead of leaving by the device's own
+# uplink, outside the proxy and outside the access log.
+#
+# `fd90::` MIRRORS `10.90.` ON PURPOSE, and it is a deliberate departure from RFC 4193's
+# randomly-generated global ID. That rule exists so two private networks can merge without
+# colliding; this prefix never leaves the tunnel and this estate has no other IPv6, so the
+# collision it guards against cannot happen - while the readability is real: `fd90::3` is the
+# device that is `10.90.0.3`, and the roster, the handshake log and the proxy's access log all key
+# on that host number. Recorded as a departure rather than left to look like ignorance of the RFC.
+WIREGUARD_PEER_CIDR_V6 = "fd90::/64"
+
 # THE PRIVATE ADDRESS SPACE - a STANDARD constant, not one of this project's allocations, and
 # the distinction is why it sits apart from VPC_CIDRS above (6c steps 4.7/4.8, 2026-09-06).
 #
@@ -678,6 +692,12 @@ def tfvars_values(account: str, slice_name: str) -> dict:
             # tuple's comment for why the two questions had to stop sharing one list.
             if (account, slice_name) == VPN_HOST_SLICE:
                 values["wireguard_peer_cidr"] = WIREGUARD_PEER_CIDR
+                # AND DELIBERATELY NOT THE ULA. The hub's two consumers are a security group and a
+                # route table, and both deal in IPv4 because every VPC in this estate is IPv4-only
+                # (measured 2026-09-07). Emitting `fd90::/64` here would be an unused value in a
+                # generated file, which is an invitation to find a use for it - and the use would be
+                # an IPv6 path this design does not have. The ULA reaches the ONE slice that needs
+                # it, `production/vpn`, and stops there.
             # Stage 3 pass 2: the peers map - every VPC-bearing account that has a profile,
             # DERIVED rather than authored a third time (Lesson 14). The slice's aliased
             # providers read a peer's [P] facts (VPC, subnets, route tables) live instead of
@@ -751,6 +771,9 @@ def tfvars_values(account: str, slice_name: str) -> dict:
                 # inside AWS: the host SNATs, so no VPC, route table or security group ever
                 # sees it, and its single job is not colliding with a home or cafe LAN.
                 values["peer_cidr"] = WIREGUARD_PEER_CIDR
+                # And the ULA (2026-09-07): the module takes both, and an IPv4-only
+                # tunnel is what let a device's IPv6 leave outside it entirely.
+                values["peer_cidr_v6"] = WIREGUARD_PEER_CIDR_V6
             # NOTHING EXTRA FOR `buildbox`, AND THE ABSENCE IS A DECISION TAKEN THE DAY THE
             # SLICE WAS BUILT (2026-08-21). It briefly took WIREGUARD_PEER_CIDR, to admit the
             # tunnel's clients on its security group - and the requirement behind that was
@@ -916,6 +939,8 @@ def render_tfvars(account: str, slice_name: str) -> str:
     # slice's ONE peer range and the module's own input name; in the hub the same value sits
     # beside `peerings[*].peer_cidr`, four VPC ranges that are peers in the OTHER sense. Two
     # different things called `peer_cidr` in one tfvars is the ambiguity worth a longer name.
+    if "peer_cidr_v6" in v:
+        out += f'peer_cidr_v6    = "{v["peer_cidr_v6"]}"\n'
     if "wireguard_peer_cidr" in v:
         out += f'wireguard_peer_cidr = "{v["wireguard_peer_cidr"]}"\n'
     if "rfc1918_cidrs" in v:

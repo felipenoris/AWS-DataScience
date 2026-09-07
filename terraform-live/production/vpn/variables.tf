@@ -97,6 +97,12 @@ variable "peer_cidr" {
 
 # ------------------------------------------------- the one hand-written file, one variable
 
+variable "peer_cidr_v6" {
+  description = "The tunnel's IPv6 ULA prefix, generated beside `peer_cidr` from the one allocation table (2026-09-07). It carries no traffic - every VPC here is IPv4-only - and exists so that `AllowedIPs = ::/0` in a client config is REAL: without an IPv6 address on the interface, `wg-quick` installs no IPv6 route and the device's IPv6 leaves by its own uplink, outside the tunnel, the proxy and the access log."
+  type        = string
+  nullable    = false
+}
+
 variable "peers" {
   description = "One entry per PERSON PER DEVICE, keyed by a name that reads in `wg show` output. `public_key` is the device's public half, generated ON the device (step 4.1: on a laptop the silent `(umask 077 && wg genkey | tr -d '\n' > d-private.key) && wg pubkey < d-private.key > d-public.key`, run outside this repository; on a phone, by the WireGuard app itself - either way the private half never leaves the device and never enters this repository). `host` is the device's address inside peer_cidr, authored so that revoking a device cannot renumber anybody else. The SERVER's key has no variable here at all: see the header."
   type = map(object({

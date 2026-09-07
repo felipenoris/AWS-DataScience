@@ -541,6 +541,20 @@ address transfer is what keeps every client's `Endpoint` line unchanged.
   `awsds-<env>-vpn-health`, and a proxy slice builds `awsds-<env>-proxy-*`. **Different modules, different
   stems, no collision** — no bump needed here, and this line exists so the question is not re-opened at
   the keyboard. `vpc-egress` is the module that *does* need the suffix, and that is 0.4a's deferral to 5.1.
+- **4.7a — THE TUNNEL GAINED AN IPv6 ULA ON 2026-09-07 (`wireguard-v0.6.0`), AND IT CLOSES A LEAK
+  RATHER THAN OPENING A PATH.** Found by the user asking why a conversation kept working while the
+  tunnel was up and nothing else did. `AllowedIPs = 0.0.0.0/0, ::/0` had been in every config from
+  the start and the `::/0` half was **inert**: `wg-quick` installs routes only for the families the
+  interface **has an address in**, and `Address` was IPv4-only. Measured on the live client — **nine
+  established connections outside the tunnel**, four of them on a global IPv6 address, **zero** on
+  `10.90.0.2`. The estate is IPv4-only in all five VPCs, so the ULA carries no traffic: IPv6 now
+  *enters* the tunnel and is **rejected** by one `ip6tables` rule, explicit rather than dropped so
+  the refusal is **counted** (Lesson 55). `fd90::<n>` mirrors `10.90.0.<n>` — a departure from
+  RFC 4193's random global ID, recorded as such. **It is not a control against the device's owner**
+  and the runbook says so: `AllowedIPs` on the client side is a routing directive, and enforcement
+  lives in `DenyControlPlaneOffVpn` and the proxy's lists. Clients gain **one line**.
+  **A second leak the same measurement found and this does NOT close**: macOS keeps the physical
+  default as an **interface-scoped** route, so a socket that predates the tunnel keeps using it.
 - **4.7 — [Claude⚡] Build the WireGuard host — AND RE-HOME `./aws/vpn.py` IN THE SAME SITTING.** The
   instrument hard-codes `VPN_HOME_PROFILE = "awsds-infra-sandbox-1"` (measured 2026-09-06 at 4.1), so from
   the moment a host exists here it reports on the *old* account: a stopped instance and a group about to be
