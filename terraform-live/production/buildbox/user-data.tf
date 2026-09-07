@@ -150,9 +150,17 @@ locals {
     # `.amazonaws.com` on purpose - a build host has no business calling the AWS control plane
     # through the proxy, since everything it legitimately calls has an endpoint. The address is
     # measured from the TUNNEL plane instead, at 6c step 6.1.
+    # AND THE REFUSED PROBE IS `http://`, NOT `https://`, WHICH IS NOT A DETAIL. Measured
+    # 2026-09-06: over https the client asks for a CONNECT tunnel, Squid refuses it, and `curl`
+    # reports `%%{http_code}` as **000** because no HTTP response ever crossed the tunnel - the
+    # 403 exists but is on the CONNECT, where this format string cannot see it. Over http the
+    # refusal IS the response and reads as a plain 403 whose body names Squid. So the two probes
+    # deliberately use different schemes: the allowed one proves a working tunnel (200), the
+    # refused one proves the allow-list is being enforced (403). A 000 on the second would mean
+    # the proxy is unreachable, which is a different fault with the same appearance (Lesson 42).
     echo "--- egress check: an allowed name, then a refused one"
-    echo "    pypi.org (must be 200):        $(curl -s -o /dev/null -w '%%{http_code}' --max-time 20 --proxy "$PROXY" https://pypi.org/ || echo 000)"
-    echo "    example.com (must be 403):     $(curl -s -o /dev/null -w '%%{http_code}' --max-time 20 --proxy "$PROXY" https://example.com/ || echo 000)"
+    echo "    pypi.org over https (must be 200): $(curl -s -o /dev/null -w '%%{http_code}' --max-time 20 --proxy "$PROXY" https://pypi.org/ || true)"
+    echo "    example.com over http (must be 403): $(curl -s -o /dev/null -w '%%{http_code}' --max-time 20 --proxy "$PROXY" http://example.com/ || true)"
 
     mkdir -p /opt/awsds
     chown ec2-user:ec2-user /opt/awsds

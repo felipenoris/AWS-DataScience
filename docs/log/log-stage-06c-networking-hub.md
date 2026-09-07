@@ -1225,3 +1225,92 @@ thing to actually run. They are written up individually because three of them ar
   answers `proxy.awsds.internal → 10.31.160.106` and `vpn.awsds.internal → 10.31.160.145`, read back
   from `list-resource-record-sets` rather than from the apply output. `gitlab.awsds.internal` is
   still owed and belongs to Stage 7.
+
+## 2026-09-06 — 5.8: the build host moves, and running it finds three things reading could not
+
+- **[Claude⚡] The move was forced, not tidy.** `sandbox/buildbox/`'s only egress was `0.0.0.0/0` at
+  the WireGuard host's ENI. D38 deleted every default route and moved that host to
+  `VPC-Networking` — and **a route target cannot live in another VPC**, so the old shape was not
+  deprecated, it was unbuildable. Destroy-and-create rather than Recipe E: the host is `[E]` and the
+  Sandbox state was **already empty** (serial 36, zero resources), so the destroy half was free.
+- **[Claude] The tier changed, and it is a MEASUREMENT rather than a preference.** The peering routes
+  to `VPC-Networking` live in `VPC-SharedServices`'s **private** route tables and **not** in the
+  isolated one — read from `describe-route-tables`, not assumed. An isolated-tier build host could
+  not reach the proxy at all. The isolated tier was only ever the old home because design A's default
+  route belonged to `egress/` and two slices cannot write one route table; nothing writes a default
+  route now, so that reason evaporated with the design.
+- **[Claude] Four places, because an explicit proxy is not transparent.** A client that has not been
+  told does not fail over — it hangs. `/etc/environment` (both cases), a **docker daemon** systemd
+  drop-in (the daemon is not a child of any shell, so a perfect login environment still leaves
+  `docker pull` hanging), `~/.docker/config.json` `proxies` for **build containers**, and **the boot
+  script's own `export`**, which `/etc/environment` does not provide because cloud-init is neither a
+  login nor a unit that reads it.
+- **[Claude] THE ECONOMICS INVERTED, and the old note said the opposite in three files.**
+  `production/egress/` used to be an *obstacle* — *"build with `egress/` DOWN"*, because its DNS
+  Firewall associated to the VPC id and blocked the CDN-fronted package hosts. It is now a **hard
+  prerequisite**: its `ssm`/`ssmmessages`/`ec2messages` endpoints (5.5) are the host's **only door**.
+  A build session pays **0.130 USD/h** it used to avoid. `layers.py`, `terraform-live/README.md`, the
+  slice README and `runbooks/buildbox.md` all said the old thing and now say this one.
+- **[Claude] `buildbox.py`'s refusals moved with the design.** *Do not coexist with `sandbox/probes/`*
+  is **deleted**, not retargeted — this slice creates no route anywhere and is not in that account,
+  and a guard that no longer guards anything is the one a later reader trusts by mistake. The new
+  pair: **read the `ssmmessages` endpoint before the apply** (without it the apply *succeeds*, the
+  host runs, and `start-session` says not connected — indistinguishable from a slow boot for as long
+  as anyone waits, [Lesson 52](../plan/lessons.md)), and **start the proxy host**, because under
+  design B there is no route to fail over to.
+
+### The three defects the RUN found, and none of them was visible to `validate` or `plan`
+
+- **[Claude⚡] (1) `dnf.conf`'s `proxy=` has no exclusion setting.** The first boot died on
+  `Failed to download metadata for repo 'amazonlinux'` … `CONNECT tunnel failed, response 403`. dnf
+  had been given a proxy in its own configuration, and dnf.conf offers **no `noproxy` to pair with
+  it** — so it sent the AL2023 repositories, which are on S3 and must go direct through the gateway
+  endpoint, at a proxy whose build-host plane deliberately excludes `.amazonaws.com`. The proxy
+  refused them correctly. Removed; the **environment** is the only place that can express both
+  halves, and dnf reaches it through libcurl.
+- **[Claude⚡] (2) `s3.dualstack.<region>.amazonaws.com` IS A DIFFERENT NAME.** It is not a label
+  under `s3.<region>.amazonaws.com`, so a `NO_PROXY` carrying only the plain form does not match it —
+  and AL2023's repositories use exactly the dualstack spelling. Measured on the host: **200 direct**
+  (16.15.35.255, through the gateway) against **000 through the proxy**; the plain spelling also 200
+  direct. `vpc-egress-v0.9.1` adds the dualstack form for **both** gateway services. The gateway
+  carries either because a prefix-list route is keyed on the **address**, and both resolve into S3's
+  IPv4 ranges.
+- **[Claude] LESSON 46 A SECOND TIME IN THIS STAGE, and this one reached origin.**
+  `git commit … | tail -2` hands back **`tail`'s** exit code, so an `&&` chain tagged and pushed
+  `vpc-egress-v0.9.0` on a commit that **never happened** — the pre-commit `check-network-doc` hook
+  had rejected it, because pre-commit **stashes unstaged changes** and the `docs/NETWORK.md` row that
+  satisfied it was unstaged. Caught by reading the fetched module rather than trusting the tag:
+  `git show vpc-egress-v0.9.0:…/no-proxy.tf | grep -c dualstack` → **0**. **v0.9.0 is abandoned on
+  origin**, exactly as `vpc-egress-v0.3.0` was; v0.9.1 carries the change and was verified the same
+  way before use.
+- **[Claude⚡] (3) `public.ecr.aws` REDIRECTS blob downloads to a CloudFront distribution.** A real
+  `docker pull` failed with `download failed after attempts=6: Forbidden` and named nothing. The
+  **access log** named it: `CONNECT d5l0dvt14r5h8.cloudfront.net:443 403 TCP_DENIED`. Squid matches
+  the hostname the client **requested**, so an HTTP redirect is a *new request with a new name* that
+  must itself be allowed — the DNS Firewall never met this, because a CNAME chain and an HTTP
+  redirect are different mechanisms ([Lesson 53](../plan/lessons.md) from the other side).
+  **One distribution, not `.cloudfront.net`**: the tunnel plane carries the whole namespace because a
+  browser needs it, and handing a build host a namespace anyone can publish into is the exact
+  widening that splitting the filters was meant to avoid. Recorded with a revision trigger, because
+  it is a third party's name and the remedy is to read the next one out of the same log.
+  **This is 4.11 earning its keep on the first day it was needed.**
+
+### What the run proved, inside a build container
+
+| probe | result | what it proves |
+|---|---|---|
+| `https://pypi.org` | **200** | the tunnel, the peering, and this plane's allow-list |
+| `http://example.com` | **403** | the allow-list is *enforced*, not merely configured |
+| the AL2023 S3 dualstack name | **200**, direct | `NO_PROXY` and the gateway route, not the proxy |
+| `docker pull public.ecr.aws/…/alpine:3.20` | complete | manifest **and** the redirected blobs |
+| `http://10.32.0.10/` from the host | **403** | **6.3's reading, taken early** — the proxy is not an L7 bridge between VPCs |
+
+- **[Claude] The boot's own egress check is now TWO readings and they use DIFFERENT SCHEMES, which
+  is not a detail.** Over `https` a refusal is a **CONNECT** refusal, and `curl`'s `%{http_code}`
+  reads **000** because no HTTP response ever crossed the tunnel — the 403 exists where that format
+  string cannot see it. Over `http` the refusal **is** the response and reads as a plain 403 whose
+  body names Squid. So the allowed probe is `https` (proves a working tunnel) and the refused probe
+  is `http` (proves enforcement). The first version printed `000000` for both, which reads as a
+  broken proxy.
+- **[Claude⚡] Both slices torn back down** — `5 destroyed` for the buildbox, `13 destroyed` for
+  `production/egress` — so the estate is where it was, plus the code. `make check` **OK**.
