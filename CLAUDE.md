@@ -192,105 +192,85 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
 
 ### Current position
 
-- **STAGE 6c: PASSES 0-5 AND 7 DONE; PASS 6 IS ALL THAT REMAINS, AND MOST OF IT IS THE USER'S
-  (2026-09-06).** Outstanding: **6.2** the shadowing closed, **6.4** the drop rule, **6.6** INT-16's closing choice —
-  and **6.5**, half the user's, which is the **GATE** for trimming the union. **6.7** (rewrite
-  `docs/NETWORK.md` from the readings) waits on 6.1/6.2; so does **2.6** and its `NT-12`.
-- **THE CLIENT PLANE IS `open`, NOT AN ALLOW-LIST (2026-09-07).** `objectives.md`: the client's
-  internet is **monitored**, and the restriction belongs to the **compute**. Each plane carries a
-  `mode`; the tunnel's deny list is **empty by decision**. **Empty means OPPOSITE things** —
-  allow-list empty = refuse everything, deny-list empty = permit everything. SageMaker's list is
-  the `sandbox-foundation` plane, 20 names, unchanged.
-- **THE PARAMETER IS DATA (30 min); THE RENDERER IS CODE (a new host).** A State Manager `Success`
-  is about running the script the host already has.
-- **THE TUNNEL IS DUAL-FAMILY SINCE 2026-09-07** (`wireguard-v0.6.0`, `fd90::/64`). It carries no
-  IPv6 — every VPC is IPv4-only — it **rejects** it, because `AllowedIPs = ::/0` was **inert**
-  without a matching `Address` and every IPv6 app was leaving outside the tunnel. **Not a control
-  against the device's owner.** A client's `Address` line gains `fd90::<n>/128`; nothing else moves.
-- **macOS: the system proxy is NOT consulted while the tunnel is primary** (issue #67). Use
-  Chrome's `--proxy-server` flag or Firefox. With the tunnel **down** the same setting breaks the
-  `aws` CLI; `NO_PROXY='*'` is the override, an empty `https_proxy` is not.
-- **6.1 DONE 2026-09-07 (user), all four readings.** One client line changed (`DNS = 10.31.0.2`);
-  `curl -x` prints the **proxy's** `184.33.8.126`. **The no-internet check TIMES OUT, it does not
-  refuse** — the host rejects (8453 packets counted) and macOS ignores ICMP mid-`connect()`
-  (**Lesson 55**). The proxy log carries **`10.90.0.2`** — a per-device address, so 4.7's
-  no-masquerade hole and 4.11's log are proven together.
-- **6c: 2.6, 2.4, 6.3, 6.7 and all of pass 7 DONE (2026-09-07).** `prod.internal`/`pages.internal`
-  **destroyed**; **`NT-12`** reads INT-22's matrix **two-sided** (5/2/2/3/2, *and no others*), by
-  CIDR not by Name tag; `NT-8` retired. **`docs/NETWORK.md` REWRITTEN from the readings** — the old
-  body described a three-VPC estate with a NAT per account.
-- **STAGE 6d STARTED.** **3.6**: `logs` is covered by accident (core list since St.3); **Portal Query
-  Editors has NO endpoint in any VPC** — a named gap, both spellings exist. **7.2 IS A FINDING**: the
-  persona sets carry both `sagemaker:StartSession` denies and **no `Allow` for it at all**; the grant
-  is on the **project role**, which carries neither deny — **the remote-IDE scoping was granted by
-  nothing**. Repair is the **D13 boundary**, not an SCP; needs 7.5's CloudTrail to name the role.
-- **Owed, in this order:** trim the Sandbox row from `VPN_HOMES`, **then** the `removed {}` on
-  `sandbox/foundation`'s Elastic IP. Until then that slice plans **`1 to add`** and **must not be
-  applied**, and the estate carries **two world-open rules** (one guarding nothing). Also owed:
-  **4.11's second half** (the Log Archive export) as decision due #4 — `PX-4` reports it as a
-  **note**, not a fail, because it is an open decision.
-- **`EXC-04` CLOSED** by the trailing dot (`vpc-egress-v0.10.0`): Route 53 canonicalises a domain
-  list as FQDNs. `re-plan reads No changes` works again on both firewall slices. **`EXC-05` and
-  `EXC-06` closed** with the old allow-list.
-- **Pass 5 made design B real:** zero NAT as code; endpoint sets **counted** — Sandbox **18**,
-  Staging **11**, SharedServices **13**, Workloads **0** (a written refusal), estate fixed rate
-  **0.470 → 0.390/h**; `optional_service_groups` behind `make up ENV=<x> GROUPS=…` (**empty by
-  default**); DNS Firewall **63 → 10** (a live `"*"` removed); buildbox moved to
-  `production/buildbox/`. **Pass 7:** `make hub-up`/`hub-down`; a spoke's `make up` **REFUSES**
-  while a hub host is stopped (UNREADABLE is **waived**); `./aws/proxy.py` `PX-1`..`PX-5`.
-  **`NT-11`** splits declared-but-not-routed from routed-but-not-active; **`PROBE_PEERS` is gone**,
-  derived from `PEERINGS`.
-- **`NO_PROXY` is GENERATED, never written** (`vpc-egress` output, from `describe-vpc-endpoint-services`):
-  **8 of 29** service names are not derivable from the token, and **a gateway endpoint has no
-  `PrivateDnsName` at all**, so S3/DynamoDB are hand-named — **in BOTH spellings, plain and
-  `dualstack`**. Omit them and the data perimeter fails **open**.
-- **Squid matches the hostname the client REQUESTED** — no CNAME chain, and **an HTTP redirect is a new
-  name that must itself be allowed** (`public.ecr.aws` → a CloudFront distribution, on the build plane
-  only). A refusal over `https` reads `000`, not `403`: the 403 is on the CONNECT. **The access log is
-  how an unlisted host gets named.**
-- **`production/egress/` is now a PREREQUISITE of a build**, not an obstacle: its SSM endpoints are the
-  buildbox's only door. A build session is three bills (0.1664 + 0.130 + 0.0104/h). The
-  `sandbox/probes/` exclusion is **deleted**.
-- **`EXC-04` did NOT close** (5.7 changed the *content*; the churn is the provider comparing two
-  *spellings*). `production/egress` re-planning `No changes` is **not** a counter-example — it carries
-  no domain list. **`EXC-05` and `EXC-06` closed.**
-- **Module tags: `vpc-egress-v0.10.1`, `wireguard-v0.6.0`** (**`v0.9.0` ABANDONED** on origin — Lesson 46, a piped `git
-  commit` returned `tail`'s exit code), `vpc-v0.3.1` (`v0.3.0` abandoned), `wireguard-v0.5.0`.
-- **`10.40.0.0/16` is FREE and STAYS unallocated.** **`-input=false` ON EVERY plan AND apply**
-  (Lesson 47); **never pipe a command whose exit code matters** (Lesson 46). The vocabulary is
-  per-(account, slice).
-- **STAGE 6b DONE.** `Development Account` → **`Staging Account`**; the provisioned product does NOT
-  follow an out-of-band rename and CANNOT be made to. **The chain is `Sandbox → Staging → Production`**
-  — no Development account, ever. Interactive compute is **Sandbox only**.
-- **D38 in one paragraph:** peering shares an **address, never a path** (Lesson 44), so the single
-  egress is an **explicit Squid proxy**, **zero NAT gateways**, and no spoke has a default route. **Five
-  peerings** — the absent ones are the isolation control; **peering routes are in the PRIVATE tables,
-  not the isolated one**. The hub carries no interface endpoint with private DNS.
-- **Orchestration is MWAA Serverless only** (USD 0.088/task-hour). **Workers accept no proxy** — two
-  AZs, a priced D9 exception. **The SMUS CI/CD tool deploys only into EXISTING SMUS projects**; the
-  pipeline stays the deployer (D26/D28).
-- **Landing zone closed — Stages 0-1d DONE.** Battery **100**. **Stages 2, 3, 4, 5, 16, 6a DONE.**
-  Stage 5 register **13 rows / 24 triples**. **Gates:** `make check`, `check-ou`.
-- **Three things Stage 5 leaves standing:** no principal can start the crawlers (**OQ 19**); `EXC-02`'s
-  uncollectable object; no Athena in Data Governance.
+- **STAGE 6c: PASSES 0-5 AND 7 DONE; PASS 6 IS OPEN AND MOSTLY THE USER'S (2026-09-07).** Outstanding:
+  **6.2** (the shadowing closed from the tunnel), **6.4** (the drop rule — `vpn.py --on-host` now prints
+  the FORWARD/nat counters for it), **6.6** (INT-16's closing choice) and the user's half of **6.5**, the
+  **GATE**: trim the Sandbox row from `VPN_HOMES`, **then** the `removed {}` on `sandbox/foundation`'s
+  Elastic IP. Until then that slice plans **`1 to add` and must not be applied**, and the estate carries
+  **two** world-open rules (`VP-3` reads Production only — Lesson 31). Also owed: **4.11's second half**
+  (the Log Archive export), decision due #4 — `PX-4` reports it as a **note**. Pass 6 was re-cut into
+  owned sub-steps on 2026-09-07.
+- **STAGE 6d: 3.6, 7.2 AND 7.1 DONE (2026-09-07); STEP 7 RE-CUT AROUND ONE FINDING — THE CONNECTION
+  METHOD DECIDES THE PERIMETER.** 7.1: **nothing to add on either side** — the space's seven names are all
+  in `sandbox/egress/`, the laptop's five ride the `open` tunnel plane; `ec2messages` is on neither vendor
+  page. The deep link's `StartSession` is made **server-side by the project role** (AWS's managed policy
+  scopes it by the two DataZone tags, in Allow form; usable **off-VPN**); SSH/Toolkit use the laptop's
+  credentials (VPN-bound) but the persona sets hold **no Allow** and a persona session carries **no
+  DataZone tag**, so 6a's pair would **deny every space, not scope** — decision due 4 (recommended:
+  Method 3 + an `IDC_UserName` Allow + `StartSession` denied on the D13 boundary). A remote space needs
+  **≥ 8 GB** (`ml.t3.large`, **unpriced**); **the VS Code server is downloaded by the SPACE** —
+  `remote.SSH.localServerDownload=always` keeps the compute plane unchanged (decision due 5). The
+  `session-manager-plugin` honours `HTTPS_PROXY` only if the env reaches it: a browser-launched VS Code on
+  macOS has none → direct dial → REJECT → **timeout**. **Portal Query Editors has NO endpoint in any VPC**
+  (3.6). `conda` and CRAN are **not** on the compute plane (3.1). Pending a sign-in: the project role's
+  policies.
+- **THE CLIENT PLANE IS `open`, NOT AN ALLOW-LIST (2026-09-07).** The client's internet is **monitored**;
+  the restriction belongs to the **compute** plane (`sandbox-foundation`, 20 names). Each plane carries a
+  `mode`; **empty means OPPOSITE things** — allow-list empty = refuse everything, deny-list empty = permit
+  everything. **The parameter is DATA (30 min); the renderer is CODE (a new host)** — a State Manager
+  `Success` only proves the script the host already has ran.
+- **THE TUNNEL IS DUAL-FAMILY SINCE 2026-09-07** (`wireguard-v0.6.0`, `fd90::/64`): it carries no IPv6 —
+  it **rejects** it — because `AllowedIPs = ::/0` was **inert** without a matching `Address` (Lesson 56).
+  Not a control against the device's owner. **macOS: the system proxy is NOT consulted while the tunnel is
+  primary** (issue #67): Chrome's `--proxy-server` flag or Firefox; with the tunnel **down** the same
+  setting breaks the `aws` CLI — `NO_PROXY='*'` is the override. **The no-internet check TIMES OUT, it
+  does not refuse** (Lesson 55): the evidence is the counter on the refusing side.
+- **Documentation swept 2026-09-07 for 6b/6c**: 25 living files corrected (NAT, `sandbox/vpn/`, the
+  anchors, `Development`, the zones); `conventions.md` §6 lost a duplicate `staging/` block and gained
+  `production/buildbox/`. **Plans re-cut the same day**: 6c pass 6, 6d step 7 (+ `./aws/remote-ide.py` as
+  7.9), Stage 7 against 6c as built (the proxy has **no TLS listener**; the SSM trio is already in
+  `production/egress/`; 6c 5.9's measured pull-through fallback ranks first).
+- **Pass 5 made design B real:** zero NAT as code; endpoint sets **counted** — Sandbox **18**, Staging
+  **11**, SharedServices **13**, Workloads **0**; estate fixed rate **0.390/h**; `optional_service_groups`
+  behind `make up ENV=<x> GROUPS=…` (empty by default); DNS Firewall **63 → 10**. **Pass 7:** `make
+  hub-up` / `hub-down`; a spoke's `make up` **REFUSES** while a hub host is stopped; `./aws/proxy.py`
+  `PX-1`..`PX-5`; `NT-11`/`NT-12` (two-sided, by CIDR). `prod.internal`/`pages.internal` **destroyed**
+  (2.6); `docs/NETWORK.md` **rewritten from readings** (6.7); `EXC-04`, `-05`, `-06` **closed**.
+- **`NO_PROXY` is GENERATED, never written** (`vpc-egress` output): 8 of 29 service names are not
+  derivable from the token and a gateway endpoint has no `PrivateDnsName`, so S3/DynamoDB are hand-named
+  in **both** spellings. **Squid matches the hostname the client REQUESTED** — a redirect is a new name; a
+  refusal over `https` reads `000`. **`production/egress/` is a PREREQUISITE of a build** (the buildbox's
+  SSM door).
+- **Module tags: `vpc-egress-v0.10.1`, `wireguard-v0.6.0`, `vpc-v0.3.1`** (`vpc-egress-v0.9.0` and
+  `vpc-v0.3.0` ABANDONED on origin — Lesson 46). **`-input=false` on every plan AND apply** (Lesson 47);
+  **never pipe a command whose exit code matters**. **`10.40.0.0/16` stays unallocated.**
+- **STAGE 6b DONE.** `Development` → **`Staging`**; the provisioned product does not follow an
+  out-of-band rename. **The chain is `Sandbox → Staging → Production`** — no Development account, ever;
+  interactive compute is **Sandbox only**. **D38:** peering shares an **address, never a path** (Lesson
+  44); one explicit Squid proxy, **zero NAT**, no spoke default route, **five peerings**; the hub carries
+  no interface endpoint.
+- **Orchestration is MWAA Serverless only** (USD 0.088/task-hour); workers accept no proxy — two AZs, a
+  priced D9 exception; the `Workflows` blueprint is the **provisioned** shape, not this one. **The SMUS
+  CI/CD tool deploys only into EXISTING projects**; the pipeline stays the deployer (D26/D28).
+- **Landing zone closed — Stages 0-1d DONE.** Battery **100**. **Stages 2, 3, 4, 5, 16, 6a, 6b DONE.**
+  Stage 5 register **13 rows / 24 triples**. Gates: `make check`, `check-ou`. Standing from Stage 5: no
+  principal can start the crawlers (**OQ 19**); `EXC-02`'s uncollectable object; no Athena in Data
+  Governance.
 - **Standing SMUS mechanics:** a blueprint configuration is applied **from the member account**; an
   existing one is **immutable via `awscc`**; the D13 boundary field is **write-only** (**always
-  `get-role`**); an incomplete configuration pins its projects in **both** directions. **SMUS is a Lake
-  Formation admin in Sandbox** (OQ 24 open); `-refresh=false` forbidden on that slice.
-- **A cached SSO token is keyed by `sso-session` name, NEVER by user.** **A denied call does not always
-  name the policy** — attribution is a **contrast probe**; `EXC-03`'s is `Policy Canary`.
+  `get-role`**); an incomplete configuration pins its projects **both** ways. **SMUS is a Lake Formation
+  admin in Sandbox** (OQ 24); `-refresh=false` forbidden on that slice. **A cached SSO token is keyed by
+  `sso-session` name, NEVER by user.** **A denied call does not always name the policy** — attribution is
+  a **contrast probe**.
 - **Standing rules:** never add an `sts:` action to the RCP without reading `CT.STS.PV.1`'s exclusion
   note; **resolve an account by exact vended name**; subnets anchor on AZ `zone_id`; read the denial
-  **wording**, never the exit code; account-level BPA is hand-managed; **Log Archive and Audit hold no
-  CLI profile**. **Account auto-enrollment is ON**; `INV-09` is **ten** principals.
-- **Before reporting a gap, read the file that owns it:** unexercised denies → `POLICIES.md`;
-  "expected" readings → `docs/AWS_STATE.md`; SMUS findings → open questions 12-15, 20, 21.
-- **Deferred by decision — do not offer to close:** the USD 50 budget notifies nobody (D12); OQ 10 waits
-  for N=2; the Config recorder is left alone. **Every governed account sits under `us-west-2`.**
-- **All 38 decisions closed.** Still needed from the user: **the domain name** (blocks Stage 13).
-- **The repository is not documentation-only:** read-only `aws/` scripts, both Terraform trees,
-  `scripts/`, the `Makefile`, the `pre-commit`/`tflint`/`checkov`/`ruff` gates. **Every script is
-  Python 3 on `uv`. Exception: `aws/cloudshell/` is shell**, standalone, for the no-profile accounts.
+  **wording**, never the exit code; account-level BPA is hand-managed; **Log Archive and Audit hold no CLI
+  profile**; auto-enrollment is ON; `INV-09` is **ten** principals. **Before reporting a gap, read the file
+  that owns it:** unexercised denies → `POLICIES.md`; "expected" readings → `AWS_STATE.md`; SMUS findings
+  → OQ 12-15, 20, 21. **Deferred by decision — do not offer to close:** the USD 50 budget notifies nobody
+  (D12); OQ 10 waits for N=2; the Config recorder is left alone. **All 38 decisions closed.** Still needed
+  from the user: **the domain name** (blocks Stage 13). **Every script is Python 3 on `uv`;
+  `aws/cloudshell/` is shell.**
 
 **Budget: ~8 KB** (raised from 4 KB by the user, 2026-08-19). State, not reasoning — **a bullet here that explains *why*, or that a stage file should
 be carrying, is a stale copy of something that already lives elsewhere.** Re-trim whenever a stage closes.

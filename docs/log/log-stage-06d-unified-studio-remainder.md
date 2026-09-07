@@ -71,3 +71,141 @@ texts give: each one is a **lead time**, not a portal click.*
   the user's decision) and which of the three connection methods works (7.4). The reading above makes
   7.3's recommendation stronger rather than weaker — *on for one space, by hand, off as the default* —
   because the scoping everyone assumed was in place is not.
+
+## 2026-09-07 — 7.1: the required set derived from the vendor's pages, and the Sandbox list already had it
+
+*The step said to take it first because a missing endpoint is a slice edit with a lead time. There is
+no missing endpoint. What the pages carry instead is three requirements the step never asked about
+and one fact that re-frames 7.2 — so the lead time went into the plan rather than into a slice.*
+
+- **[Claude] Eight pages read, two of them the ones `REFERENCES.md` had carried since 2026-08-16
+  without a consumer** — the SMUS admin guide's *Configuring remote access* and *Network configuration
+  for remote access* — plus the SageMaker AI guide's remote-access family (the concept page, *Set up
+  remote access*, *Set up Remote IDE*, the private-subnet pair, the ABAC page), the VS Code remote FAQ
+  both AWS pages delegate to, and the `session-manager-plugin`'s own source for the one question no
+  page answers.
+- **[Claude] The space side needs seven names, and `sandbox/egress/` declares all seven.** The SMUS
+  isolated-VPC table, read against the slice:
+
+  | vendor row | service token | where the estate has it |
+  |---|---|---|
+  | STS | `sts` | `core_services` |
+  | SSM | `ssm` | `extra_services`, 6c 5.5 |
+  | SSM-Messages | `ssmmessages` | `extra_services`, 6c 5.5 |
+  | SM Studio | `sagemaker.studio` | `extra_services`, Stage 3 |
+  | SM Runtime | `sagemaker.runtime` | `extra_services`, Stage 3 |
+  | SM API | `sagemaker.api` | `extra_services`, Stage 3 |
+  | DataZone | `datazone` | `extra_services`, back at 6c 5.2 |
+  | DataZone FIPS | `datazone-fips` | **not declared, not needed** — a compliance variant |
+
+  The SageMaker AI guide's private-subnet page adds only `ssm` and `ssmmessages` *"in addition to the
+  standard set"*. **`ec2messages` is on neither page** — 6c 5.5's trio was two-thirds this channel's
+  answer; the third entry serves the probe hosts, which is the reason it was added. **No slice edit.**
+- **[Claude] The endpoint policy already carries the vendor's recommended branch.** AWS's page asks
+  for `aws:PrincipalIsAWSService: true` on the `ssm` and `ssmmessages` endpoints, because the space's
+  SSM registration is made by an AWS service principal that carries no `aws:PrincipalOrgID`.
+  `vpc-egress`'s policy has had exactly that second statement (`AllowAWSServicePrincipals`) since
+  Stage 3, for flow-log delivery — so the registration passes statement 2 rather than dying at
+  statement 1, and a refusal at the endpoint is **not** one of 7.4's failure modes.
+- **[Claude] The laptop side needs five names and the tunnel plane is `open`.** The SageMaker AI
+  guide's local prerequisites: `ssm.<region>.amazonaws.com`, `ssm.<region>.api.aws`,
+  `ssmmessages.<region>.amazonaws.com`, `ec2messages.<region>.amazonaws.com` — plus
+  `api.sagemaker.<region>.amazonaws.com`, which Methods 2 and 3 call from the laptop for
+  `StartSession` itself. Since the 2026-09-07 decision the tunnel plane refuses nothing, so the list
+  is a diagnosis aid, not an ACL edit. **What is left is whether each program honours the proxy:**
+  `aws` does (botocore). `session-manager-plugin` dials with gorilla's `websocket.DefaultDialer`,
+  whose `Proxy` field is `http.ProxyFromEnvironment` — read from `websocketutil.go`, not measured —
+  so it honours `HTTPS_PROXY` **when the variable reaches its process**. That is the catch: Method 1's
+  deep link opens VS Code from the browser, and a macOS app opened that way inherits no shell
+  environment (issue #67's neighbour), so the plugin dials `ssmmessages` directly, the WireGuard host's
+  FORWARD chain rejects it, and the symptom is a **timeout** (Lesson 55). Method 3 from a terminal
+  that exported the variables is the only method whose process tree the user controls. Written into
+  7.1 and 7.5 so the first timeout is diagnosed as the environment and not as the endpoint set.
+- **[Claude] Three requirements the pages carry that the step did not ask about**, each checked
+  against the estate the same sitting:
+  - **≥ 8 GB of memory**, and `ml.t3.medium` — the estate's default and its only measured Studio
+    price — is named **unsupported**. `ml.t3.large` and `ml.m5.large` are inside
+    `sagemaker-denies`' ceiling, and **neither is priced** in `PRICING.md` §8: a measurement owed
+    before 7.3, not an estimate (Lesson 6).
+  - **SMD ≥ 2.7, or a BYOI carrying `curl`/`wget`, `unzip`, `tar`, `gzip`** — `images/base/` is
+    `sagemaker-distribution:4.3.0-cpu` and installs `curl` and `unzip`; and **TIP must be off** —
+    delivered `false` and non-editable by 6a decision 2, which named this feature as its reason.
+  - **The VS Code server is downloaded by the SPACE**, from `update.code.visualstudio.com` and
+    `vscode.download.prss.microsoft.com` (extensions: `marketplace.visualstudio.com`,
+    `*.gallerycdn.vsassets.io`). The vendor's private-subnet answer is an HTTP proxy with those names
+    allowed — on this estate a **compute-plane widening**, the plane the user's rule keeps
+    restricted. Two shapes avoid it: VS Code's `remote.SSH.localServerDownload = always` with
+    `remote.downloadExtensionsLocally = true` (the laptop downloads on the open plane and pushes
+    through the SSH tunnel), and AWS's pre-packaged tarball installed by a lifecycle configuration
+    from S3. Recorded as **decision due 5**, recommended: the client settings.
+- **[Claude] And the pages re-frame 7.2, which is why the lead time went into the plan.** The SMUS
+  guide names the **project role** as the principal that must hold `StartSession`, and says AWS's
+  managed policy *"has already been updated to provide access for the Spaces they own"* —
+  conditioned on `AmazonDataZoneProject` and `datazone:userId`, the same two tags as the estate's
+  denies, in **Allow** form, on the principal that makes the call. Three consequences:
+  - **The method decides the perimeter.** With the deep link the portal makes the call server-side as
+    the project role — `DenyControlPlaneOffVpn` never sees it, the portal is reachable off-VPN
+    (INT-16), the data channel is a token-bearing WebSocket — so **that method is usable entirely off
+    the VPN**, and 7.5's expected reading (*the proxy's Elastic IP as `sourceIPAddress`*) is wrong for
+    it: the address will be AWS's. With SSH or the Toolkit the laptop's credentials call it and the
+    VPN statement applies.
+  - **The persona pair would deny everything, not scope.** A persona's SSO session carries no
+    `AmazonDataZoneProject` or `datazone:userId` principal tag, so `StringNotEquals` against an
+    unresolvable variable is true for every space. The guard `policies-sagemaker.tf` describes —
+    *"a deny is what survives someone else granting it"* — is a kill-switch wearing a scoping's name.
+    The 2026-09-07 morning reading said *granted by nothing*; the precise sentence is **scoped by
+    AWS's Allow on the project role if that policy is attached, and by nothing of ours**.
+  - **No method is both VPN-bound and scoped today.** Decision due 4 re-framed: choose the method
+    first, after 7.4/7.5 read each one's caller and address. Recommended if VPN-only is to be true of
+    this channel: Method 3, a tag-scoped Allow on the persona sets keyed on something a persona session
+    carries (the vendor's ABAC example uses `IDC_UserName` through Identity Center's attributes for
+    access control; the one space is tagged by hand at 7.3), the pair rewritten to that key, and
+    `StartSession` **denied on the D13 boundary** so the deep link's path closes.
+- **[Claude] One reading NOT taken, named so it is not read as taken**: whether the Sandbox project
+  role actually carries AWS's conditioned Allow — `list-attached-role-policies` and the inline
+  documents, as `awsds-infra-sandbox-1`. The SSO session had expired; the user was asked for the
+  sign-in (infrastructure user, `Sandbox`, `InfrastructureAccess`). It decides whether the deep-link
+  path is *AWS-scoped* or *unscoped*, and nothing above changes with the answer except that word.
+
+## 2026-09-07 — the session audited, the documentation swept for 6b/6c, and three plans re-cut
+
+*Done at the user's request after 7.1, in this order: the transcript against the logs, then every living
+document against what 6b and 6c built, then the plans for what remains.*
+
+- **[Claude] The log audit found nothing missing from the session's final stretch** (the messages from
+  2026-09-06 23:27 to 2026-09-07 05:13, read from the transcript): 6.1's four readings verbatim, the
+  client-plane inversion, issue #67, the ULA, Lessons 55-58, 2.6/2.4, 6.7 and this stage's first readings
+  each have a section in the 6c or 6d log. What said less than the repository knew were the **living
+  documents**, not the logs.
+- **[Claude] Twenty-five files corrected in the sweep**, found by three regex families (network terms,
+  account terms, plane and remote-IDE claims) over every non-historical document. `conventions.md` §6
+  still put a NAT in every `egress/`, the WireGuard host *and* a NAT instance in `sandbox/vpn/`, the
+  buildbox in Sandbox, and carried **two `staging/` blocks** — one the migrated tree, one the planned
+  target — now merged; `terraform-live/README.md` counted 26 slices, said *"no `staging/`"* and kept the
+  VPN anchors in `sandbox/foundation/`; the root README pointed at `sandbox/vpn/peers.auto.tfvars`;
+  GLOSSARY, `architecture.md` (the tree, the four roles) and `institutional-delta.md` still had four
+  environments and a Development account; PRICING and `cost-model.md` carried the design-A hour and eight
+  zones; `AWS_STATE.md`'s *"no Staging"* and *"one NAT per account"* rows stood unstruck; INT-21 read
+  *"half built"*; `vpn.md` still said IPv6 was *"deliberately black-holed"* — Lesson 56's own sentence,
+  in the runbook that lesson came from; the scp-battery and terraform-changes runbooks and Stage 11 named
+  `awsds-infra-dev`; D15, D36 and D38 kept predictions as facts (`pages.internal` *"stands"*, *"three NAT
+  gateways to destroy"*); both stage indexes read *not started* for 6c and 6d. Historical prose in the
+  stage files and the logs was left alone — those are records.
+- **[Claude] Three plans re-cut.** 6c's pass 6 into owned sub-steps — 6.2, 6.4, 6.5, 6.6, each `[user]`
+  half named, the union trim and the `removed {}` in their order, `VP-3` widened to every account (it
+  reads Production alone today, Lesson 31) — with its Status row taken from *"passes 0 and 1"* to the
+  truth and two verifications answered. 6d's step 7 around the method finding: the per-method table,
+  7.3-7.9 (`./aws/remote-ide.py` is 7.9), decision due 6 for the names step 3 will produce — **`conda`
+  and CRAN are not on the compute plane**, and CodeArtifact needs no Sandbox endpoint because
+  `.amazonaws.com` is — and 4.1/4.4 read against the vendor: the **`Workflows` blueprint is the
+  provisioned MWAA shape**, not the serverless one D7 chose, and serverless workflows *"run with their
+  own execution role and worker"*. Stage 7 against 6c as built: five corrections, the sharpest that the
+  proxy has **no TLS listener**, so the leaf 2.4 planned for it is not issued.
+- **[Claude] Three vendor pages re-read for the review, and none contradicted the plan**: ECR's
+  pull-through page still says the first pull *"may require a route to the internet"* (Stage 7 quotes it
+  right; 6c 5.9's measured fallback now ranks first); GitLab Runner's proxy page has the four layers 6.2
+  lists; the SMUS blueprint and workflow pages are what re-cut 4.1.
+- **[Claude] One script extended for a step that had no instrument**: `./aws/vpn.py --on-host` now prints
+  the FORWARD chain (both families) and the nat `POSTROUTING` counters, so 6c 6.4 reads the REJECT
+  rule's packet count across the user's attempt — the only place that refusal is legible (Lesson 55).
+  Eighteen read commands; the ban list is unchanged.
