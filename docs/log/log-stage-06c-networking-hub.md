@@ -1445,3 +1445,43 @@ thing to actually run. They are written up individually because three of them ar
   result, which is the same shape as Lesson 52 one layer down.
 - **[Claude⚡] Everything torn back down**: probes `4 destroyed`, `sandbox/egress` `27 destroyed`.
   `make check` **OK**.
+
+## 2026-09-06 — 7.1 and 7.2: the hub gets a lifecycle, and a stopped one becomes an error
+
+- **[Claude] 7.1 — `make hub-up` / `make hub-down`, over a new `--only`.** The hub is one
+  account's pair of `[D]` hosts and **every other account's session depends on them**, while
+  `make up` acts on one env and has no concept of that: `make up ENV=production` would also raise
+  Production's `[E]` endpoint slices and its probes, which is money for a Sandbox session that
+  needs none of it.
+  **`--only` narrows and never widens** — a slice the env already refuses stays refused, with its
+  reason still printed — and it is a **closed list**, so an unknown name is an error rather than a
+  run that does nothing and reports success (the shape `optional_service_groups` got a validation
+  block for). It filters the `[D]` hook as well as the `[E]` loop, which is what makes `hub-up`
+  touch the two hosts and no endpoint.
+  **No `ENV` argument, deliberately**: there is exactly one hub, so an ENV here would be a
+  parameter with one legal value — the shape that invites a second nobody meant.
+- **[Claude] 7.2 — the refusal goes BEFORE the `[D]` hook and before the first apply**, because a
+  refusal after either would leave the env half-raised, which is worse than not starting.
+- **[Claude] A direct `describe-instances`, and the step named `./aws/vpn.py`.** That instrument is
+  right for the **question** and wrong for this **moment**: it writes a nine-check report and is
+  what a person runs to find out *why* the tunnel is unhappy, whereas this needs one boolean before
+  an apply and must not turn `make up` into a report generator. The two cannot disagree, because
+  both find the host by the same Name tag — the contract `instance_name()` owns.
+- **[Claude] UNREADABLE IS WAIVED, NOT REFUSED, and it is the uncomfortable half of Lesson 13.**
+  A spoke operator may hold **no session on the Production account at all** — the profiles are per
+  account — so treating a failed read as a stopped hub would make a legitimate `make up ENV=sandbox`
+  impossible for exactly the person the check exists to protect. So the two nothings are told apart:
+  a read that **fails** is printed and waved through with the reason; a read that **succeeds** and
+  says `stopped` is what stops the apply.
+- **[Claude] All four outcomes exercised** rather than the happy one:
+
+  | case | result |
+  |---|---|
+  | both hosts running (the real state) | proceed |
+  | the proxy stopped (injected) | **REFUSED**, naming `awsds-prod-proxy` with `<-- this one` |
+  | neither readable (no session) | proceed, with the waiver printed |
+  | the hub's own env | never checked — `up` is what starts it |
+
+- **[Claude] `make help` carries a `THE HUB` section**, because a refusal a person meets for the
+  first time mid-apply should be explainable from the tool that refused. Gates: `ruff` clean,
+  `./scripts/slices.py check` 29/29, `make check` **OK**, both targets dry-run in both directions.

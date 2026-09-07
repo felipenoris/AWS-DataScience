@@ -87,8 +87,18 @@ help:
 	@printf '  up   ENV=x  start the [D] slices and apply the [E] ones of one account folder\n'
 	@printf '             GROUPS=a,b  optional endpoint families for THIS apply (see below)\n'
 	@printf '  down ENV=x  delete Studio apps, destroy the [E] slices, stop the [D] ones\n'
+	@printf '  hub-up      start the estate hub ALONE - the WireGuard host and the proxy (6c 7.1)\n'
+	@printf '  hub-down    stop them. [D] is stop/start: addresses, keys and groups survive\n'
 	@printf '  status      what is up and the estimated hourly burn (static rates, PRICING 3)\n'
 	@printf '  clean       remove the volatile artifacts (aws/output, .venv, caches) - never secrets/\n'
+	@printf '\n'
+	@printf '\033[1mTHE HUB\033[0m - one way in, one way out, in the Production account (6c 7.1/7.2, D38)\n'
+	@printf '  The WireGuard host and the Squid proxy are [D] hosts every OTHER account depends\n'
+	@printf '  on. `make hub-up` starts the pair without raising Production endpoints or GitLab.\n'
+	@printf '  A spoke `make up` REFUSES while either is stopped, naming it: a stopped hub is a\n'
+	@printf '  blackhole rather than an error, so the apply would succeed and every symptom\n'
+	@printf '  afterwards would be a timeout. No session on Production waives the check rather\n'
+	@printf '  than failing it - the two nothings are told apart.\n'
 	@printf '\n'
 	@printf '\033[1mGROUPS\033[0m - optional interface endpoints, per apply (6c step 5.3)\n'
 	@printf '  Both optional blueprint families stay ENABLED in the portal; what this flag\n'
@@ -185,6 +195,23 @@ up:
 down:
 	@$(MAKE) --no-print-directory guard-env TARGET=down
 	@./scripts/slices.py down --env $(ENV) $(if $(AUTO),--auto-approve,) $(if $(DRY),--dry-run,)
+
+# THE HUB, AND WHY IT HAS TARGETS OF ITS OWN (6c step 7.1). D38 gives the estate ONE way in (the
+# WireGuard host) and ONE way out (the Squid proxy), both [D] hosts in the Production account. Every
+# other account's session depends on them, and `make up ENV=production` would also raise that
+# account's [E] endpoint slices and its probes - money for a Sandbox session that needs none of it.
+# So the two hosts get a lifecycle that is not any one env's.
+#
+# NO ENV, NO GUARD, ON PURPOSE: there is exactly one hub, so an ENV argument here would be a
+# parameter with one legal value - the shape that invites a second one nobody meant.
+hub-up:
+	@./scripts/slices.py up --env production --only vpn,proxy $(if $(AUTO),--auto-approve,) $(if $(DRY),--dry-run,)
+
+# `hub-down` STOPS, IT NEVER DESTROYS - [D] is a stop/start contract (D11), so the Elastic IPs, the
+# host key and both security groups survive. It is also the last thing to run in a session and the
+# easiest to forget while a spoke is still up, which is why `make status` prices the two hosts.
+hub-down:
+	@./scripts/slices.py down --env production --only vpn,proxy $(if $(AUTO),--auto-approve,) $(if $(DRY),--dry-run,)
 
 status:
 	@./scripts/slices.py status $(if $(ENV),--env $(ENV),)
