@@ -190,6 +190,32 @@ rather than exercised. It is also the only feature in the estate that crosses **
 single act: the laptop's half leaves through the tunnel and the explicit proxy, the space's half sits in a
 spoke with no default route. Neither half has ever been read.
 
+**How the VPN enters this, because it enters twice and the two halves fail differently.** *The tunnel is
+required for two independent reasons, and an executor who knows only one of them will misdiagnose the
+other.* **(1) The call.** `DenyControlPlaneOffVpn` (`identity/sso/policies-shared.tf`) denies `*` on `*` in
+the six persona sets — deliberately total rather than a list of actions — so `sagemaker:StartSession` is
+inside it. Its three conditions are ANDed and off the tunnel all three hold: the source is not a VPN home's
+Elastic IP, the call is not `ViaAWSService`, and a laptop carries no `aws:SourceVpc` at all, which the
+`IfExists` form passes rather than rescues. The refusal is an explicit IAM deny naming that document, not a
+timeout. **(2) The path.** Under D38 the VPN client is a *private-network* client: the tunnel routes
+`0.0.0.0/0, ::/0`, the laptop's whole internet crosses the explicit proxy, and both the API call and the
+session's data channel therefore present the **proxy's** Elastic IP — which is where 6c re-keys every
+VPN-only condition. Squid is default-deny, so the channel also needs its destination on the allow-list:
+**the tunnel can be up, the identity correct, and the connection still die at the proxy** (7.5). The two
+halves hold each other up — a **split** tunnel would leave every API call on the laptop's own connection
+and the statement of (1) would then deny the user everything, tunnel up or not.
+
+**One measured caveat, and one thing that is not settled.** The **portal is not covered** by that statement
+— it is entered by an IdC sign-in, not by an IAM call, measured both ways on 2026-08-22 (6a step 1.7: off
+the tunnel a persona opened the portal and enumerated its project profiles, while the console was refused
+by name). So the **deep link** can be started off the VPN and the refusal arrives at `StartSession` rather
+than before it — a diagnosis note, not a hole. What is **not** settled is whether "VPN-only" is a true
+sentence about this channel at all: it holds only if the caller is a **persona** role, which is 7.2's
+question, and it is a claim about the **call** rather than the **channel** until 7.7 says whether an
+established session outlives the tunnel. **The space side is indifferent to all of this** — it needs
+endpoints (7.1), not a tunnel — so the two requirements are separate, and failing one looks nothing like
+failing the other.
+
 - **7.1 — [Claude] Derive the required set from AWS's pages, not from the estate's list**: two
   [`docs/REFERENCES.md`](../../REFERENCES.md) rows already carry them — *configuring remote access* and
   *network configuration for remote access* — and **no step has ever consumed either**. Write down which
@@ -218,14 +244,16 @@ spoke with no default route. Neither half has ever been read.
   are all documented. They are not one channel and they will not fail the same way. One working method
   satisfies the objective; the other two are recorded as *worked*, *refused* or *not tried*, never left
   blank — a method nobody tried is not a method that does not work.
-- **7.5 — [Claude] Read the two perimeters the connection crossed.** `DenyControlPlaneOffVpn` is `*` on
-  `*`, so `sagemaker:StartSession` is inside it: CloudTrail must show the **proxy's** Elastic IP as
-  `sourceIPAddress`, since 6c re-keys every VPN-only condition onto it. The laptop's own address there is
-  the finding, not the happy path — it means either a split tunnel or a statement that did not fire, and
-  the two are told apart by a contrast, never by a re-reading. Then `./aws/proxy.py --on-host` for the
-  CONNECT the client opened: a long-lived tunnel to an AWS-owned name that either is on the allow-list
-  already or is the entry this step adds. **If the client ignores `HTTPS_PROXY`, this is 3.4's shape on the
-  laptop** — the same undocumented question, the other side of the tunnel.
+- **7.5 — [Claude] Read the two perimeters the connection crossed**, one instrument each. CloudTrail must
+  show the **proxy's** Elastic IP as `sourceIPAddress` on the `StartSession`; the laptop's own address
+  there is the finding and not the happy path, and it is what separates a split tunnel from a statement
+  that did not fire. Then `./aws/proxy.py --on-host` for the CONNECT the client opened: a long-lived tunnel
+  to an AWS-owned name that either is on the allow-list already or is the entry this step adds. **If the
+  client ignores `HTTPS_PROXY`, this is 3.4's shape on the laptop** — the same undocumented question, the
+  other side of the tunnel. **Take the negative control in the same sitting** — the same connection
+  attempted with the tunnel **down**. It must be refused, by name: that is the first exercise
+  `DenyControlPlaneOffVpn` has ever had on this action. If it is **not** refused, 7.2 has been answered
+  from the other direction, because no statement attached to a persona reached the call.
 - **7.6 — [user provokes, Claude records] Exercise 6a step 3.2's pair — its first exercise**: attach to a
   space carrying **another project's** tag, and to **another user's** space in the same project. Both must
   be refused, and the wording must name an **identity-based policy** — an SCP says *service control
@@ -263,7 +291,8 @@ spoke with no default route. Neither half has ever been read.
 `./aws/studio.py` all-pass with one Interactive account; `US-10` zero running apps after `make down`;
 `./aws/egress.py` showing no NAT and no default route while a session runs; `./aws/proxy.py` `PX-3` green
 after any ACL entry step 3 or step 7 adds; the deny pair's two wordings in the log, and the remote-IDE
-pair's two alongside them; one `sagemaker:StartSession` in CloudTrail carrying the proxy's Elastic IP.
+pair's two alongside them; one `sagemaker:StartSession` in CloudTrail carrying the proxy's Elastic IP, and
+the same call refused **by name** with the tunnel down.
 
 ## Cost
 
