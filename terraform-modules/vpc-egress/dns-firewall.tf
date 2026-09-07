@@ -131,11 +131,25 @@ resource "aws_route53_resolver_firewall_domain_list" "allow" {
 # The catch-all. `*` matches every name, which is what turns the rule group into a
 # default-deny instead of a list of blocked sites (Lesson 5: an allow-list that is not the
 # LAST word is a suggestion).
+#
+# `"*."` RATHER THAN `"*"`, AND THE TRAILING DOT IS THE WHOLE OF `EXC-04`'s REPAIR (v0.10.0,
+# 6c step 5.7, 2026-09-06). Route 53 Resolver canonicalises every domain-list entry as an FQDN -
+# `list-firewall-domains` returns `pypi.org.`, `*.amazonaws.com.` and, for this list, `*.` - while
+# this module wrote them without one. The provider was comparing two SPELLINGS of the same list,
+# re-issued `UpdateFirewallDomains` on every apply, and the diff never converged: `terraform plan`
+# read `0 to add, 2 to change` immediately after a successful apply of the same code, FOREVER.
+# The cost was not cosmetic - it took away *"re-plan reads `No changes`"*, which is this
+# repository's closing check for every change, on the two slices that carry a firewall.
+#
+# MEASURED BEFORE IT WAS WRITTEN, on a live Sandbox list: with the caller's ten entries dotted and
+# this one still bare, the plan went from `2 to change` to `1 to change` - the allow list settled
+# and this one did not. The candidate fix the row carried was a hypothesis; that reading is what
+# turned it into a repair.
 resource "aws_route53_resolver_firewall_domain_list" "everything" {
   count = local.dns_firewall_enabled ? 1 : 0
 
   name    = "${local.name_prefix}-egress-everything"
-  domains = ["*"]
+  domains = ["*."]
 
   tags = { Name = "${local.name_prefix}-egress-everything" }
 }
