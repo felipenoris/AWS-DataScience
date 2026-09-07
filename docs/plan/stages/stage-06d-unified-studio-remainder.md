@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Status** | not started — **created 2026-09-05** by splitting the old Stage 6, revised the same day into the action-checklist format. It holds only what had not run, re-cut to the estate the split produces: **one** Interactive account (Sandbox), no NAT anywhere, every internet call through the institutional proxy. Two items the old stage carried are gone rather than pending — the design A / design B **comparison** (6c settles it by construction) and the derived-zone decision (dissolved 2026-08-26) |
+| **Status** | not started — **created 2026-09-05** by splitting the old Stage 6, revised the same day into the action-checklist format. It holds only what had not run, re-cut to the estate the split produces: **one** Interactive account (Sandbox), no NAT anywhere, every internet call through the institutional proxy. Two items the old stage carried are gone rather than pending — the design A / design B **comparison** (6c settles it by construction) and the derived-zone decision (dissolved 2026-08-26). **Step 7 added 2026-09-06**, from a reading of the plan against [`objectives.md`](../objectives.md): the local-VS-Code clause had its **policy** half applied at 6a step 3.2 and no step anywhere that opens the connection — so the endpoints it needs under design B were never derived (AWS's own two pages sit in `REFERENCES.md`, consumed by nothing), the two denies were never exercised, and **nothing had ever checked that the principal carrying them is the one that calls `sagemaker:StartSession`** |
 | **Prerequisites** | **[6c](stage-06c-networking-hub.md) pass 5** — what a Studio app can reach changes there, so any measurement below taken earlier would have to be retaken. [6b](stage-06b-development-becomes-staging.md) only in that its instrument re-scoping removes the second Interactive account from the readings |
 | **Consumes** | [D5](../decisions/D05-sagemaker-egress.md), [D11](../decisions/D11-lab-lifecycle.md), [D13](../decisions/D13-lake-formation-enforcement.md), [D17](../decisions/D17-interactive-vs-runtime.md), [D26](../decisions/D26-unified-studio.md), [D28](../decisions/D28-workflow-contract.md), [D38](../decisions/D38-single-egress-hub.md) |
 | **Proves** | [INT-01](../integrations.md) and [INT-17](../integrations.md) (the cross-account image pull and the selector — 6a built the repositories and pushed the image; nothing has consumed it), [INT-02](../integrations.md)'s consumer half under design B |
@@ -29,6 +29,12 @@ workflow that can be promoted, and leaves nothing running when the session ends.
 
 Steps 1, 2 and 5 are independent. **Step 3 depends on step 2** (the friction reading is taken in the house
 image, not the stock one) and **step 4 depends on step 3** only for the session. Step 6 is the close.
+
+**Step 7 needs a space to attach to**, so it follows 2.3 — its own is a **Code Editor** space, not the
+JupyterLab one 2.3 creates — but **7.1 is taken before anything else in the stage**: if the channel needs an
+endpoint the Sandbox list lacks, that is a `sandbox/egress/` edit and an apply, not a portal click. It is
+numbered after the close because numbers here are identifiers: step 6 remains the close, and 7's answers are
+read into it.
 
 ---
 
@@ -169,6 +175,73 @@ rather than intended.
   profile, the workflow surface as measured in step 4, and the CI/CD tool as what it is — an exporter on the
   Sandbox side, never a deployer into a Workload account (D28's amendment, written at Stage 8).
 
+### 7. Open the remote-IDE channel — the objective everything so far has only scoped
+
+**Action:** connect a VS Code on the laptop to a Sandbox space, over the tunnel and through the proxy, and
+read both perimeters the connection crossed. **Why:** [`objectives.md`](../objectives.md) asks for it in one
+clause — *"possibility of remote connecting their local computer vscode to a remote session"* — and every
+artefact built for it so far is a **deny**: [1c](stage-01c-preventive-policies.md) withholds
+`sagemaker:StartSession` from the `Interactive` document alone (`Workloads`, `Data` and `Identity` deny it,
+and 1c says in its own text that denying it here would deny the feature `CLAUDE.md` asks for), and
+[6a](stage-06a-unified-studio.md) step 3.2 put two tag-scoped denies into the six persona sets. **Nobody has
+ever made the call.** **Explanation:** a channel whose entire implementation is a pair of conditions on an
+action never invoked is Lesson 5 and Lesson 20 at once — an intention, and a statement that is attached
+rather than exercised. It is also the only feature in the estate that crosses **both** perimeters in a
+single act: the laptop's half leaves through the tunnel and the explicit proxy, the space's half sits in a
+spoke with no default route. Neither half has ever been read.
+
+- **7.1 — [Claude] Derive the required set from AWS's pages, not from the estate's list**: two
+  [`docs/REFERENCES.md`](../../REFERENCES.md) rows already carry them — *configuring remote access* and
+  *network configuration for remote access* — and **no step has ever consumed either**. Write down which
+  names the **space** side needs and which the **laptop** side does. Under design B this is not a latency
+  question: an absent endpoint is no path at all. The `ssm` / `ssmmessages` / `ec2messages` trio that
+  [6c](stage-06c-networking-hub.md) step 5.5 puts in every instance-bearing spoke is a **candidate** answer
+  and not a measured one — it was added for Session Manager on EC2, and whether a space's remote agent uses
+  the same three is exactly what this reading settles. Take it **first**: a name the Sandbox list lacks is a
+  slice edit with a lead time, not a portal click.
+- **7.2 — [Claude] Find out which principal makes the call, because the scoping rests on the answer**: 6a
+  step 3.2's two denies live in the **six persona sets**, and `policies-sagemaker.tf` says in its own
+  comment that `sagemaker:StartSession` is granted by the **project role**, not by those sets. A deny is a
+  control only over the principal that carries it (Lesson 18, Lesson 28): if the caller is a
+  blueprint-authored project role, the pair never evaluates and the objective was granted with no scoping
+  at all. Read the caller from CloudTrail in 7.5's own record. **If it is not a persona, the repair is the
+  D13 permissions boundary of 6a step 2.1** — the only thing this estate attaches to a role the blueprint
+  writes — and not a new SCP, which would deny the feature rather than scope it.
+- **7.3 — [Claude reads, user decides] Decide whether a space is created with remote access at all**:
+  nothing in the estate turns it on, and `sagemaker:RemoteAccess` appears in this repository only as the
+  kill-switch named in a comment (`terraform-live/identity/sso/policies-sagemaker.tf`). Read whether the
+  portal exposes the choice per space, whether the project or the domain must permit it first, and whether
+  it can be set after creation. **Recommended: on for one space, by hand, and off as the default** until
+  7.7 has a reading — the residual is a 12-hour credential, so the feature earns its default after the
+  measurement rather than before it.
+- **7.4 — [user] Connect, and record which of the three methods worked**: deep link, AWS Toolkit and SSH
+  are all documented. They are not one channel and they will not fail the same way. One working method
+  satisfies the objective; the other two are recorded as *worked*, *refused* or *not tried*, never left
+  blank — a method nobody tried is not a method that does not work.
+- **7.5 — [Claude] Read the two perimeters the connection crossed.** `DenyControlPlaneOffVpn` is `*` on
+  `*`, so `sagemaker:StartSession` is inside it: CloudTrail must show the **proxy's** Elastic IP as
+  `sourceIPAddress`, since 6c re-keys every VPN-only condition onto it. The laptop's own address there is
+  the finding, not the happy path — it means either a split tunnel or a statement that did not fire, and
+  the two are told apart by a contrast, never by a re-reading. Then `./aws/proxy.py --on-host` for the
+  CONNECT the client opened: a long-lived tunnel to an AWS-owned name that either is on the allow-list
+  already or is the entry this step adds. **If the client ignores `HTTPS_PROXY`, this is 3.4's shape on the
+  laptop** — the same undocumented question, the other side of the tunnel.
+- **7.6 — [user provokes, Claude records] Exercise 6a step 3.2's pair — its first exercise**: attach to a
+  space carrying **another project's** tag, and to **another user's** space in the same project. Both must
+  be refused, and the wording must name an **identity-based policy** — an SCP says *service control
+  policy*, a boundary says *permissions boundary*, so the wording is the attribution and the exit code is
+  not (Lesson 24). A refusal naming something else is 7.2's answer arriving from the other direction.
+- **7.7 — [Claude] Measure the residual instead of restating it** (open question 14,
+  [Stage 11](stage-11-dlp.md) step 3.3): does the session survive the tunnel going down, and does it
+  survive portal logout — AWS documents up to **12 h**. One reading each, and both change what Stage 11 may
+  write: a session that outlives the tunnel makes the VPN-only statement a control on the **call** and not
+  on the **channel**, which is a different sentence from the one accepted today.
+- **7.8 — [Claude] Write the client half down**, in a runbook that does not exist yet —
+  `docs/plan/runbooks/remote-ide.md`: what a laptop needs (client and toolkit versions, the proxy
+  variables, the tunnel, the identity to sign in as), which failures are silent, and the one symptom that
+  is **not** a client problem: an endpoint the space side does not have. Its row in `CLAUDE.md`'s routing table lands in the same sitting, the way every
+  other runbook's did — a runbook nothing points at is a file, not a procedure.
+
 ---
 
 ## Deliverables
@@ -181,29 +254,43 @@ rather than intended.
 - Idle shutdown and `make down` both observed; the Studio layer table written; the hub precondition
   exercised.
 - Ten verification rows answered, or explicitly re-homed with an owner.
+- **The remote-IDE channel opened once from the laptop** — the endpoint set it needs under design B, the
+  principal that calls `StartSession`, 6a step 3.2's two denies exercised, the 12-hour residual measured
+  rather than restated, and the client half in a runbook the routing table points at.
 
 ## Validation
 
 `./aws/studio.py` all-pass with one Interactive account; `US-10` zero running apps after `make down`;
 `./aws/egress.py` showing no NAT and no default route while a session runs; `./aws/proxy.py` `PX-3` green
-after any ACL entry step 3 adds; the deny pair's two wordings in the log.
+after any ACL entry step 3 or step 7 adds; the deny pair's two wordings in the log, and the remote-IDE
+pair's two alongside them; one `sagemaker:StartSession` in CloudTrail carrying the proxy's Elastic IP.
 
 ## Cost
 
 No standing cost of its own. A session costs the Sandbox `[E]` endpoint set plus the space's instance; the
 workflow measurement costs MWAA Serverless task-hours with a one-minute minimum. Both rates come from
-`docs/PRICING.md` as 6c step 7.4 leaves them.
+`docs/PRICING.md` as 6c step 7.4 leaves them. **Step 7 can add a line rather than an hour:** each endpoint
+7.1 turns out to require is USD 0.010/h per AZ in this Region ([`docs/PRICING.md`](../../PRICING.md) §3) —
+`[E]`, so it is up only while `egress/` is, and it is a *recurring* cost decided by a *one-off*
+measurement, which is the shape worth naming before it is paid.
 
 ## Decisions due while executing
 
 1. **Whether `codewhisperer` joins the Sandbox proxy list** (3.5). Recommended: no, until asked for.
 2. **Which portal surfaces of the optional endpoint table this estate actually uses** (3.6) — each one used
    is an endpoint to add, each one unused is a line not to pay for.
+3. **Whether a space is created with remote access enabled, and whether that becomes the default** (7.3).
+   Recommended: one space by hand, default off until 7.7 reads the 12-hour residual.
+4. **Where the tag-scoped `StartSession` pair belongs, if 7.2 says the caller is not a persona** — the D13
+   permissions boundary rather than the six persona sets. This is a *re-homing*, not a widening: the same
+   two conditions, attached to the principal that actually makes the call.
 
 ## Verifications to answer while executing
 
-The ten rows of 6.1, plus: does the registered image survive a blueprint reconciliation (2.4), and does the
-workflow surface exist without a blueprint change (4.1)?
+The ten rows of 6.1, plus: does the registered image survive a blueprint reconciliation (2.4); does the
+workflow surface exist without a blueprint change (4.1); **which principal calls `sagemaker:StartSession`
+(7.2), which endpoints the remote channel needs under design B (7.1), and whether a remote session outlives
+the tunnel and the portal logout (7.7)**.
 
 ## Risks
 
@@ -211,6 +298,13 @@ workflow surface exist without a blueprint change (4.1)?
   change and re-opens 6a's decision 5. Recorded as that step's own alternative.
 - **A component with no proxy support inside the image** (3.4). The fallback is an endpoint, then D38's
   per-VPC NAT contingency — in that order, and never a default route.
+- **The VS Code client or its toolkit may not honour the proxy** (7.5) — 3.4's risk on the laptop, with the
+  same ladder and one rung fewer: the client is not ours to configure past its own settings, and there is no
+  endpoint to fall back to on that side of the tunnel.
+- **The scoping may never have applied** (7.2). If the project role is the caller, 6a step 3.2 has been
+  attached to the wrong principal since the day it was applied — a control believed to exist, which is worse
+  than a known gap, and the reason this step reads the caller before it reads anything else about the
+  refusals.
 
 ---
 
