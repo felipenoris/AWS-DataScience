@@ -268,6 +268,15 @@ started. **The first one is load-bearing against principle 4.**
     also asks the question the scoping silently rests on: `StartSession` is granted by the **project
     role**, while the denies are attached to the **persona** — if the caller is the former, the pair never
     evaluates (Lesson 18) and the repair is the D13 boundary, not a new statement.
+    **7.1 read 2026-09-07, and the endpoints were never the question** — every name the vendor's
+    isolated-VPC table requires was already in `sandbox/egress/`, and the laptop's names ride the tunnel
+    plane, which is `open`. What the pages moved is the *scoping*: AWS grants `StartSession` on the
+    **project role** with the two tags as Allow conditions, the deep link makes that call server-side
+    (usable off the VPN — `DenyControlPlaneOffVpn` never sees it), and a persona session carries neither
+    tag, so the 6a pair on the persona sets would deny every space rather than scope one. **The method
+    decides the perimeter, and no method is both VPN-bound and scoped today** — 6d decision due 4 carries
+    the choice and the recommended repair (Method 3, an `IDC_UserName`-keyed Allow, `StartSession` denied
+    on the D13 boundary). The residual (12 h) is still 6d 7.7's to measure.
 15. **"As many instances as they like" is a cost statement before it is an access statement.** Each
     JupyterLab or Code Editor space is a running instance billed by the hour, and D11 ("pay nothing while
     idle") is a property of the *design*, not of the user's habits. What closes it is idle shutdown plus a
