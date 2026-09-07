@@ -1937,3 +1937,38 @@ thing to actually run. They are written up individually because three of them ar
   `orchestration.py`, `layers.py` and `aws/INDEX.md`. **Historical prose in Stages 3, 4 and 6a is
   deliberately left alone** — those are records of what was true then, and rewriting them would be
   editing a log.
+
+## 2026-09-07 — 6.7: `docs/NETWORK.md` rewritten from the readings, not promoted
+
+- **[Claude] The file had been describing an estate that stopped existing three passes ago** — three
+  VPCs, a NAT gateway per account, a WireGuard host in Sandbox doubling as a NAT instance, and a DNS
+  Firewall whose job was filtering the internet. It carried the target in a `§T` block marked
+  explicitly *as not built*, which is the discipline that made this rewrite cheap: the shape was
+  already argued, and what 6.7 owed was the **measurement**.
+- **[Claude] Rewritten FROM readings taken today, not promoted from `§T`.** `describe-vpcs`,
+  `describe-subnets`, `describe-route-tables` and `describe-vpc-peering-connections` across three
+  profiles; `NT-1`..`NT-12`; `PX-1`..`PX-5`; `DN-1`..`DN-4`; `VP-1`..`VP-9`; and the SSM parameter
+  the proxy renders. Where `§T` said *"five peerings"*, the body now says which five, by `pcx-` id
+  and CIDR pair, and which five are **absent**.
+- **[Claude] Four rules head the file, and the third is the one this estate keeps needing:**
+  *what is ABSENT is often the control*. Five peerings where there could be ten; no default route in
+  any spoke; `prod.awsds.internal` deliberately not associated with Sandbox. A reader who only looks
+  for what is present will read every one of those as an omission.
+- **[Claude] The gate found two things a reading would not have.** `check-network-doc.py` requires
+  **every subnet CIDR literally** — the first draft used `x.0.0/18` placeholders, which is more
+  readable and unverifiable — and it requires **`sandbox/vpn/`** to be named, because the folder is
+  still on disk and the gate reads the disk. Both fixed: a per-VPC subnet table with the thirty
+  literal ranges, and a row for the slice whose host is already destroyed and whose folder waits on
+  6.5.
+- **[Claude] `docs/AWS_STATE.md`'s §C row restated as a RECORD rather than a prediction**, and one
+  of its predictions was wrong in an interesting way: it said *"zero NAT gateways (three destroyed,
+  not two)"*, and **none was ever destroyed** — every `egress/` slice was `[E]` and down when 5.1
+  removed the code, so the act was a code change and the count was zero all along.
+- **[Claude] A new §C row for what 6c LEAVES OWED**, because a frozen slice with an unapplied plan is
+  exactly the state that gets rediscovered as a finding: `sandbox.internal`, the Sandbox VPN anchors
+  and `sandbox/foundation`'s `1 to add` all wait on 6.5, **in that order**, and both `NT-12` and
+  `VP-3` carry it as a dated note.
+- **[Claude] What 6.7 does NOT yet carry, said in the file rather than left to be noticed**: step
+  **6.2**'s reading — the portal opening from the tunnel with no browser grant, and the two
+  client-plane names resolving publicly. §10's shadowing paragraph is written from the design until
+  that measurement lands.
