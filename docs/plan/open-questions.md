@@ -281,6 +281,8 @@ started. **The first one is load-bearing against principle 4.**
     JupyterLab or Code Editor space is a running instance billed by the hour, and D11 ("pay nothing while
     idle") is a property of the *design*, not of the user's habits. What closes it is idle shutdown plus a
     restricted instance-type list, not a policy — **Stage 6**, priced into `docs/plan/cost-model.md` against the
+    (**the list stopped reaching spaces on 2026-09-07** — `sagemaker-denies-v0.2.0`, the user's decision for the
+    remote-IDE floor; idle shutdown is what remains on that path, and jobs keep the list)
     USD 50 ceiling. Also confirms rather than changes D7/D28: **SMUS workflows are MWAA**, serverless or
     provisioned, so Stage 10's orchestration comparison and this feature are one surface, not two.
 
