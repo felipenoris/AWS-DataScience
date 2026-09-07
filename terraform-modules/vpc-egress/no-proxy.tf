@@ -129,10 +129,19 @@ locals {
   # every nesting level beneath `x` and never `x` itself. A service whose own name is wildcarded
   # (`*.dkr.ecr...`) is only genuinely covered by a WILDCARD entry - an exact entry would match the
   # base and none of the names actually queried - so that case is required to find one.
+  # THE TRAILING DOT IS STRIPPED ON THE ALLOW-LIST SIDE, AND FORGETTING IT MADE THIS PRECONDITION
+  # FIRE ON A CORRECT LIST (v0.10.1, 2026-09-06). `EXC-04`'s repair one file over writes every entry
+  # as an FQDN - `amazonaws.com.` - because that is how Route 53 canonicalises them; the names this
+  # compares them against come from `describe-vpc-endpoint-services`, which returns them WITHOUT
+  # one. Two controls landed in the same sitting and the second read the first's output as a
+  # mismatch, naming ten endpoints as uncovered when all ten were covered. Normalised here rather
+  # than by dropping the dots, because the dots are what makes the plan converge at all.
+  dns_firewall_allow_normalised = [for e in var.dns_firewall_allow_domains : trimsuffix(e, ".")]
+
   dns_firewall_uncovered = [
     for raw in local.endpoint_private_dns_names : raw
     if !anytrue([
-      for e in var.dns_firewall_allow_domains :
+      for e in local.dns_firewall_allow_normalised :
       startswith(e, "*.")
       ? (trimprefix(raw, "*.") == trimprefix(e, "*.") || endswith(trimprefix(raw, "*."), ".${trimprefix(e, "*.")}"))
       : (!startswith(raw, "*.") && raw == e)
