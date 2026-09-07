@@ -74,9 +74,24 @@ locals {
   # and a suffix that covered both would have to be `.internal`. The old family - `sandbox.internal`,
   # `prod.internal`, `pages.internal` - is deliberately absent; 6c step 2.6 retires it, and an entry
   # here would be the thing that kept it alive.
+  # AND THE DUALSTACK SPELLINGS, ADDED 2026-09-06 AFTER A BUILD HOST FAILED ITS FIRST BOOT ON
+  # EXACTLY THIS. `s3.dualstack.<region>.amazonaws.com` is a DIFFERENT NAME, not a label under the
+  # one above: `al2023-repos-<region>-xxxx.s3.dualstack.<region>.amazonaws.com` does not end in
+  # `.s3.<region>.amazonaws.com`, so a bypass list carrying only the first form sends the AL2023
+  # repositories at the proxy - which refuses them with a 403, because a build host's plane
+  # deliberately excludes `.amazonaws.com`. `dnf` then reports `Failed to download metadata`, which
+  # reads as a broken mirror. Measured on the host: the dualstack name returns 200 direct (16.15.35.255,
+  # through the gateway) and 000 through the proxy.
+  #
+  # THE GATEWAY CARRIES IT, which is what makes the bypass correct rather than merely quieter: a
+  # prefix-list route is keyed on the ADDRESS, and both spellings resolve into S3's IPv4 ranges. The
+  # dualstack name also has AAAA records; nothing in this estate has IPv6, so the client picks IPv4
+  # and the route applies.
   no_proxy_fixed = [
     "s3.${data.aws_region.current.region}.amazonaws.com",
+    "s3.dualstack.${data.aws_region.current.region}.amazonaws.com",
     "dynamodb.${data.aws_region.current.region}.amazonaws.com",
+    "dynamodb.dualstack.${data.aws_region.current.region}.amazonaws.com",
     "169.254.169.254",
     "169.254.170.2",
     "localhost",
