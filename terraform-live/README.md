@@ -151,22 +151,30 @@ down** — the order that becomes load-bearing once Stage 4 step 8.3 makes every
 its Elastic IP. `make status` reads a `[D]` row's **power state from EC2**, not its state file, or a
 stopped host would report a burn forever.
 
-**And since Stage 6 step 5.0 that `[D]` host has a second job, with its activation in a different
-slice — the pattern is worth naming because it will recur.** `wireguard-v0.4.0` gave the module a
-`vpc_nat_cidrs` input: filled, it turns source/destination checking **off** and adds masquerade rules
-that make the tunnel host a **NAT instance** for the isolated tier, which is what lets
-[`sandbox/buildbox/`](sandbox/buildbox/README.md) — an `[E]` `amd64` build host — reach the internet with **no
-NAT gateway anywhere**, so `egress/` need not be up for a build at all. **The capability is `[D]` and the
-reach is `[E]`:** a masquerade rule matches nothing until a route table sends traffic at it, and the route
-(`0.0.0.0/0` in the isolated tier, at that ENI) is created and destroyed with the build session. So the
-standing change is exactly one attribute, and everything metered comes and goes.
+**That `[D]` host had a second job from Stage 6 step 5.0 until 6c step 5.8, and it is worth recording
+that it ENDED, because the pattern it illustrated is the one that will recur.** `wireguard-v0.4.0` gave
+the module a `vpc_nat_cidrs` input: filled, it turned source/destination checking **off** and added
+masquerade rules that made the tunnel host a **NAT instance** for the isolated tier, which is what let
+an `[E]` `amd64` build host reach the internet with no NAT gateway anywhere. **The capability was `[D]`
+and the reach was `[E]`** — a masquerade rule matches nothing until a route table sends traffic at it —
+so the standing change was exactly one attribute and everything metered came and went.
+**D38 ended it in two moves and neither was optional**: there is no default route anywhere in the estate,
+and the WireGuard host now lives in `VPC-Networking`, where **a route in another VPC cannot point at its
+ENI**. `vpc_nat_cidrs` went with `wireguard-v0.5.0`; the build host is
+[`production/buildbox/`](production/buildbox/README.md) and reaches the internet **as a client of the
+explicit proxy**, which reverses the old economics: `egress/` is now a hard prerequisite of a build
+session (its SSM endpoints are the only door into the host) rather than a slice a build could avoid.
 
 **`buildbox/` is also the tree's first slice `make up` deliberately does not drive.** It is `[E]` and it has
-a row, so `make status` sees it and `make down ENV=sandbox` would destroy it — but bringing it *up* is
-[`scripts/buildbox.py`](../scripts/buildbox.py), because the slice must **not** coexist with `probes/`, whose
-perimeter reading is precisely the absence of the default route this one adds. That refusal is code in the
-helper rather than a sentence here (Lesson 5), and the helper also starts the tunnel host first: the route
-points at its ENI, and a stopped target is a **blackhole**, not an error.
+a row, so `make status` sees it and `make down ENV=production` would destroy it — but bringing it *up* is
+[`scripts/buildbox.py`](../scripts/buildbox.py), which drives one slice rather than the whole account —
+`make up ENV=production` would also raise `workloads-egress/` and `probes/`, which a build needs neither of.
+**Its two refusals moved with the design at 6c step 5.8**: the old pair (do not coexist with `probes/`, whose
+perimeter reading was the absence of the default route this slice used to add; and start the tunnel host,
+because a stopped route target is a blackhole) are gone with the route itself. The new pair reads the
+**`ssmmessages` endpoint** before applying — without it the apply succeeds and the host is unreachable, which
+looks exactly like a slow boot — and **starts the proxy host**, because under design B there is no route to
+fail over to. Both are code in the helper rather than sentences here (Lesson 5).
 
 **That `[D]` slice is also this tree's clearest instance of the layer deciding the folder, not the topic.** The
 VPN's three durable things — the Elastic IP, the host security group and the **host private key's Secrets

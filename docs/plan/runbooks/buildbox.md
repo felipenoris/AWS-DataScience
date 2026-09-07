@@ -1,16 +1,18 @@
 # Runbook — the buildbox
 
-> **THIS HOST IS RETIRED AT [STAGE 6c](../stages/stage-06c-networking-hub.md) — 2026-09-05.** Its only
-> egress is the `[E]` route `0.0.0.0/0 → the WireGuard host's ENI`, and a route target cannot live in
-> another VPC — so when the VPN host moves to Production this host has no way out. It moves to
-> `VPC-SharedServices` beside the runners, configured as an **explicit-proxy client** (docker daemon,
-> SSM agent, BuildKit `--build-arg`), and Stage 7's build runner absorbs it: same `amd64` shape, same
-> 64 GiB, pushing with its instance profile instead of §P's token dance. `vpc_nat_cidrs`, the
-> isolated-tier security-group rule and the *must not coexist with `probes/`* rule die in the same commit.
-> **Until that stage applies, everything below is the live procedure.**
+> **THE HOST MOVED ACCOUNTS ON 2026-09-06 ([Stage 6c](../stages/stage-06c-networking-hub.md) step 5.8),
+> and this file is rewritten to the new shape.** Its only egress used to be the `[E]` route
+> `0.0.0.0/0 → the WireGuard host's ENI`, and **a route target cannot live in another VPC** — so when
+> D38 moved the VPN host to `VPC-Networking` and deleted every default route in the estate, the old
+> shape was not deprecated, it was unbuildable. The host now sits in **`VPC-SharedServices`**, in the
+> **private** tier, as an **explicit-proxy client**. `vpc_nat_cidrs`, the isolated-tier route and the
+> *must not coexist with `probes/`* refusal all died in the same commit.
+> **[Stage 7](../stages/stage-07-gitlab-runners-ecr.md) still absorbs it** — same `amd64` shape, same
+> 64 GiB, pushing with its instance profile instead of §P's token dance — and until then everything
+> below is the live procedure.
 
-The `amd64` build host of [Stage 6 step 5.0](../stages/stage-06a-unified-studio.md), in the Sandbox
-account. Slice: [`terraform-live/sandbox/buildbox/`](../../../terraform-live/sandbox/buildbox/README.md).
+The `amd64` build host of [Stage 6 step 5.0](../stages/stage-06a-unified-studio.md), in the **Production**
+account. Slice: [`terraform-live/production/buildbox/`](../../../terraform-live/production/buildbox/README.md).
 Layer **`[E]`** — created for a build session, destroyed at the end of it.
 
 **The estate-wide picture — every VPC, route and address, and where this host's one route sits in
@@ -22,6 +24,7 @@ One EC2 instance (`t3.xlarge`, 64 GiB gp3, both selectable in the tracked
 `instance_type.auto.tfvars` beside the slice), with docker and git installed at first boot, plus the
 one route that gives it a way out. It holds nothing worth keeping: the volume dies with the
 instance, the state carries no secret, and anything that must survive leaves as an image in ECR.
+**It no longer creates a route** — there is none to create.
 
 ## M. Why it exists
 
@@ -32,24 +35,41 @@ all** (measured 2026-08-21 from the public registry's tag list); the laptop also
 machine of the right architecture, inside the perimeter, that exists only while a build runs.
 
 It is a **builder, not a workstation**. It cannot push: its role carries Session Manager and no
-`ecr:` permission at all, because the Production registry grants the Interactive accounts a *pull*
-and nothing more. The push is step 5.0's own act, from an identity that may — **§P is how that
+`ecr:` permission at all. The push is step 5.0's own act, from an identity that may — **§P is how that
 identity reaches a host that has none, and why the two acts share one session**.
+
+**AND THE MOVE TOOK HALF OF THAT CONTROL AWAY (5.8).** The old reasoning had two legs: this role names
+no `ecr:` action, **and** the Production registry grants the *Interactive* accounts a pull and nothing
+more, so a push from Sandbox was refused **at the far end** whatever the near end said. The host is now
+**in the registry's own account**. The far-end refusal does not apply to it, so the absent permission is
+no longer a belt beside a brace — **it is the whole control**, and one added in a hurry would work.
+§P's token dance is unchanged and is now the only thing between a build host and the registry.
 
 ## C. The components, and how they connect
 
 | Piece | Where | What it does |
 |---|---|---|
-| the instance | isolated tier, no public IP | the build host itself |
+| the instance | **private** tier of `VPC-SharedServices`, no public IP | the build host itself |
 | its security group | the slice, `[E]` | **egress only — no ingress rule at all.** Session Manager needs none |
-| **the route** | `0.0.0.0/0` in the **isolated** route table, `[E]` | sends this tier's default at the WireGuard host's **ENI** |
-| `vpc_nat_cidrs` | `sandbox/vpn/`, module `wireguard-v0.4.0`, `[D]` | makes that host a **NAT instance** for this tier: source/dest check off, MASQUERADE + FORWARD in `wg0`'s `PostUp` |
-| the WireGuard **security group** | `sandbox/foundation/vpn-anchors.tf`, `[P]` | admits the isolated tier's ranges **inbound**. Without it the other three do their jobs and the packet is dropped on arrival |
+| **the proxy** | `production/proxy/` in `VPC-Networking`, `[D]` | the estate's single way to the internet. Reached at `proxy.awsds.internal:3128` over the SharedServices ↔ Networking **peering** |
+| the proxy's **allow-list** | `production/networking/`, `[P]` SSM parameter | what this host may fetch: the `production-foundation` plane (4.9) — the notebook list minus the AWS control plane |
+| the **SSM endpoints** | `production/egress/`, `[E]` | `ssm` / `ssmmessages` / `ec2messages`. **The only door into the host**, put there by step 5.5 one step ahead of it |
+| the **gateway** endpoints | `production/foundation/`, `[P]` | S3 and DynamoDB by route — free, and where every image **layer** comes from |
+| `no_proxy` | generated by `vpc-egress` from this VPC's endpoint list (5.6) | which names must NOT go to the proxy. **Includes the SSM names** — a `no_proxy` that missed `ssmmessages` would send the agent's own websocket at Squid and lock the host out of its only door |
 
-**Those last three are one path in three slices, and that is what made the gap easy to miss.** Reach is
-an **intersection** (Lesson 28): the first apply had the route and the masquerade and no security-group
+**THE ROUTE TABLE ROW IS GONE AND NOTHING REPLACES IT.** That is what design B means for this host: reach
+is three separate, *named* paths rather than one invisible default. It is also why the tier changed —
+**measured 2026-09-06, the peering routes to `VPC-Networking` are in the private route tables and not in
+the isolated one**, so an isolated-tier build host could not reach the proxy at all. The isolated tier was
+only ever the old home because design A's default route belonged to `egress/` and two slices cannot write
+one route table; nothing writes a default route now.
+
+**Reach is still an INTERSECTION and the halves are still in different slices** (Lesson 28) — what changed
+is which halves. The first apply of the old shape had the route and the masquerade and no security-group
 rule, so the host booted, installed its packages through the S3 gateway endpoint, and then timed out on
-`ssm.<region>.amazonaws.com`. Nothing in any single file was wrong.
+`ssm.<region>.amazonaws.com` with nothing in any single file wrong. The equivalent gap now is the proxy's
+allow-list: a source the proxy's security group admits and whose plane has never heard of a name is
+**reachable and mute**.
 
 **In: nothing.** There is no ingress rule at all — the *"reachable only over the VPN"* requirement was
 **withdrawn by the user on 2026-08-21** rather than delivered in name only: the rule that used to be here
@@ -58,36 +78,31 @@ sees it) and it left port 22 reachable on a host with no authorized keys. **What
 for the six persona sets the VPN still does; for `InfrastructureAccess` it does not, by open question 17,
 option (a). A port served during a build is reached with SSM **port forwarding**, not with an ingress rule.
 
-**Out:** through the WireGuard host, the single public egress of this design. **No NAT gateway is
-involved**, so `egress/` need never be up for a build — 0.160 USD/h not spent. **That is true of the
-route and not of the names** — see the last coupling below.
+**Out: as a client of the proxy, and a client that is not TOLD does not fail over — it hangs.** The first
+boot writes the setting in **four** places because four different things open connections and each reads
+it from somewhere else:
+
+| | reads it from | the symptom when it is missing |
+|---|---|---|
+| shells, `curl`, `git`, `pip` | `/etc/environment` (both cases — clients disagree about which they honour) | everything hangs |
+| the docker **daemon** | a systemd drop-in — it is not a child of any shell | `docker pull` hangs while `curl` works, and the error names the registry |
+| **build containers** | `~/.docker/config.json` `proxies` | the base image pulls and the first `pip install` inside the build hangs |
+| `dnf` | `proxy=` in `/etc/dnf/dnf.conf` | a package install hangs — *not* the AL2023 repos, which are on S3 and go through the gateway |
 
 **Three couplings worth holding in mind:**
 
-- **Three lifetimes, one path.** The security group is `[P]` (a private range, admitting a tier that is
-  empty between sessions), the masquerade rules are `[D]` with the host, and only the **route** is `[E]`.
-  So the reach is the one thing that comes and goes.
-- **The capability is `[D]`, the reach is `[E]`.** A masquerade rule matches nothing until a route
-  table sends traffic at it. Turning `vpc_nat_cidrs` on is one standing attribute; everything
-  metered comes and goes with the session. (`vpn.md` §S carries the rest, including why the rules
-  ride `PostUp` rather than the user data.)
-- **A stopped WireGuard host makes the route a blackhole**, not an error — every symptom then looks
-  like a broken package mirror. `up` starts it; `down` does **not** stop it (it is `[D]` and shared).
-- **It must not coexist with `sandbox/probes/`.** That slice's perimeter probe measures the isolated
-  tier's *absence* of a default route; this one adds one. `buildbox.py` refuses rather than warns.
-- **`egress/` is irrelevant to this host's ROUTE and hostile to its NAME RESOLUTION** — so **build with
-  `egress/` DOWN**, which is the normal state anyway (measured 2026-08-23). Design A's DNS Firewall rule
-  group associates to the **VPC id**, not to a route table, so while `egress/` is up every lookup from
-  this host is judged by an allow-list written for the SageMaker subnets — and `public.ecr.aws` and
-  `static.rust-lang.org`, two of the five things a build pulls, are **deliberately off it**: both are
-  CNAMEs into a shared CDN, DNS Firewall evaluates the whole chain, and the only thing that would make
-  them resolve is allowing the CDN namespace, which ends the control (Stage 6 step 4.3). **Adding the
-  names does not fix it, and the list is not the place to try.** Never yet exercised: no build has run
-  while `egress/` was up. **The symptom distinguishes the two failures** — a blackholed route hangs, a
-  blocked name returns *no such host* immediately — and the rule action is in
-  `/awsds/sandbox/dns-firewall`, where the block is reported against the **queried** name even when a
-  CNAME target is what matched. The list is `terraform-live/sandbox/egress/main.tf`, and its own plan
-  never converges (`EXC-04`).
+- **`production/egress/` is now a PREREQUISITE, where it used to be an obstacle.** The old note here said
+  to build with `egress/` **down**, because its DNS Firewall associated to the VPC id and blocked the
+  CDN-fronted package hosts. Three things ended that: `vpc-egress-v0.4.0` made chain evaluation an input,
+  **6c step 5.7 cut the firewall lists** to AWS's own namespaces and this estate's private zones, and those
+  package names moved to the **proxy**, which matches the hostname the client *requested* and evaluates no
+  chain. What `egress/` now provides is the **shell**. It costs **0.130 USD/h** for the session — the one
+  bill the move added.
+- **A stopped PROXY is the new blackhole, and it announces itself better than the old one did.** A stopped
+  route target dropped packets silently; a stopped proxy is a **connection refused** to a name that
+  resolves. `up` starts it; `down` does **not** stop it — it is `[D]` and it is the whole estate's egress.
+- **A build session is three bills**: this host (0.1664/h), `production/egress/` (0.130/h), and the proxy's
+  `t3.micro` (0.0104/h, shared). **`down` tears down only the first.**
 
 ## U. Up
 
@@ -95,8 +110,10 @@ route and not of the names** — see the last coupling below.
 ./scripts/buildbox.py up && ./scripts/buildbox.py sync && ./scripts/buildbox.py ssm
 ```
 
-`up` refuses if a probe instance exists, starts the WireGuard host if it is stopped, applies the
-slice, and waits for Session Manager. `sync` puts `images/` at `/opt/awsds/images` — the one write
+`up` **refuses while `production/egress/` is down** — it reads the `ssmmessages` endpoint *before* the
+apply, because without it the apply succeeds, the host reaches `running`, and `start-session` reports it
+as not connected, which is indistinguishable from a slow boot for as long as anyone waits (Lesson 52). It
+then **starts the proxy host** if it is stopped, applies the slice, and waits for Session Manager. `sync` puts `images/` at `/opt/awsds/images` — the one write
 API in the tooling (`ssm:SendCommand`), fenced the way `./aws/vpn.py --on-host` is. `ssm` opens the
 shell.
 
@@ -113,10 +130,14 @@ R and Rust download again. That is the price of D17's single ancestor and it is 
 `images/base/`, not only on the big ones. It also means a rebuild writes a **second** copy of a ~17 GB
 image before the old one loses its tag: read §S before starting one on a disk you have not looked at.
 
-**If it never registers with SSM**, the route is failing nine times out of ten. Read the first boot
-without SSM: `aws ec2 get-console-output --instance-id <id> --latest`, and `/var/log/awsds-buildbox-boot.log`
-once you are in — its egress check prints the public address the host leaves under, which must be the
-WireGuard Elastic IP.
+**If it never registers with SSM**, it is the endpoints nine times out of ten — and `up`'s first refusal
+exists so that this is checked before the apply rather than diagnosed after it. Read the first boot without
+SSM: `aws ec2 get-console-output --instance-id <id> --latest`, and `/var/log/awsds-buildbox-boot.log` once
+you are in — its egress check prints the public address the host leaves under, which must be the **proxy's**
+Elastic IP. Anything else means this host found another way out, which under design B should be impossible;
+a `NO EGRESS` line means the proxy is down, the peering route is missing, or the name is not on the
+`production-foundation` plane — and the proxy's own 403 **names itself**, so the three are told apart from
+the body of the reply rather than from its absence (Lesson 42).
 
 To test a docker container:
 
@@ -272,13 +293,13 @@ on `prod-<region>-starport-layer-bucket`. Sandbox's endpoint policy grants exact
 `ListBucket`, which is the pull path Stage 3 already provided for; the push uploads its layer parts to
 the registry endpoint instead.
 
-**And the Sandbox VPC has no interface endpoint of any kind** (measured 2026-08-22 — the `egress/`
-slice that would carry them is `[E]` and down), so `dkr.ecr` resolves to its public address and the
-upload leaves through the default route: the WireGuard host, a `t3.nano`, doing NAT for this tier (§C).
-**That path is proven rather than novel** — the build pulls the SageMaker distribution and every Julia,
-R and Rust artifact through the same instance, in the same hop, and the first build did it clean. The
-push is the same order of magnitude in the other direction, so budget the time and do not go looking
-for a broken mirror when it is merely slow.
+**THE PUSH PATH CHANGED WITH THE ACCOUNT (5.8), AND IT GOT BETTER.** In Sandbox the VPC had no
+interface endpoint of any kind while `egress/` was down, so `dkr.ecr` resolved publicly and the upload
+crossed the WireGuard `t3.nano` doing NAT — proven, but slow, and the note here said to budget the time.
+`VPC-SharedServices` has `ecr.api` and `ecr.dkr` as interface endpoints and `production/egress/` is up
+by necessity (it is the shell), so the push goes **through the endpoints**, and the layer bytes go to
+**S3 through the `[P]` gateway** — free, and not across the proxy at all. The `t3.micro` proxy is not in
+this path; do not size the push against it.
 
 **Do not size it from `docker images`.** That column is uncompressed and counts shared layers once per
 image; ECR stores layers **compressed** and **per repository**, so `dev-env` uploads its copy of
@@ -290,8 +311,10 @@ image; ECR stores layers **compressed** and **per repository**, so `dev-env` upl
 ./scripts/buildbox.py down
 ```
 
-Destroys the host **and the route**, so the isolated tier goes back to having no default route. It
-deliberately leaves the WireGuard host running — `make down ENV=sandbox` is what stops that.
+Destroys the host and **nothing else** — there is no route to remove. It deliberately leaves the proxy
+running (`[D]`, and the whole estate's single egress — `make hub-down` is what stops it) and leaves
+`production/egress/` up (`[E]`, and **still billing at 0.130 USD/h** — `make down ENV=production` is what
+stops that, and it is the easiest thing to forget after a build).
 
 **`./scripts/buildbox.py status` is the reading**, and the reason to take it: `t3.xlarge` is
 **0.1664 USD/h** (`PRICING.md` §8) — a week left up is USD 28 against D12's USD 50/month.
