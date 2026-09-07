@@ -52,7 +52,7 @@
 #   - Whether the backup → destroy → restore path works (step 8.2) is a rehearsal, not a
 #     reading; this file only shows the anchors it depends on.
 #   - GitLab's own objects - groups, protected tags, mirror settings - live behind
-#     gitlab.prod.internal, which no AWS API reads.
+#     gitlab.awsds.internal, which no AWS API reads.
 
 from __future__ import annotations
 
@@ -78,7 +78,10 @@ CA_DOMAIN = "awsds-prod-packages"
 CA_REPOS = ("pypi", "crates")
 SECRET_NAME = "awsds-prod-gitlab-secrets"
 CA_ROOT_PARAM = "/datascience/prod/pki/ca-root-pem"
-ZONES = ("prod.internal.", "pages.internal.")
+# The zones GitLab and Pages are named in. `prod.internal`/`pages.internal` until 6c step 2.6
+# (2026-09-07) retired them: the shared names moved to the APEX, which is the one zone all five
+# VPCs resolve, and Pages keeps a sibling apex of its own for the cookie-scope reason D36 gives.
+ZONES = ("awsds.internal.", "awsds-pages.internal.")
 LEAF_EXPIRY_WARN_DAYS = 45
 
 
@@ -782,7 +785,7 @@ date) is the expected state between creation (1.1) and the first boot (1.5).""")
             if record_rows:
                 rep.tabulate(["ZONE\tRECORD\tTYPE"] + ["\t".join(r) for r in record_rows])
             else:
-                rep.line("No record in prod.internal / pages.internal beyond NS/SOA yet.")
+                rep.line("No record in awsds.internal / awsds-pages.internal beyond NS/SOA yet.")
 
         # ==============================================================================
         rep.h1("5. ECR: repositories, scanning, the pull-through cache")
@@ -871,7 +874,7 @@ What the checks are, and where each comes from:
   - Every Sandbox beyond unit 1 has no profile until Stage 14 - re-run after
     each vend: the consumer map and section 7 must both grow with N (D35).
   - GitLab's own objects (groups, protected tags, mirrors) live behind
-    gitlab.prod.internal - no AWS API reads them; the stage log does.""")
+    gitlab.awsds.internal - no AWS API reads them; the stage log does.""")
 
         # ==============================================================================
         rep.h1("10. Calls that failed")

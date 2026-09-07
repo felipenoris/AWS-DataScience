@@ -6,7 +6,7 @@
 #   different routes on both sides; exercising one says nothing about the other, and INT-09
 #   is the one a promotion will actually run over.
 #
-#   THE OTHER HALF OF THE DNS DELIVERABLE. It asks that probe.prod.internal resolve from a
+#   THE OTHER HALF OF THE DNS DELIVERABLE. It asks that probe.awsds.internal resolve from a
 #   Sandbox host AND from a Development host. The zone association reaching this VPC can be
 #   READ from Route 53, but reading an association is not resolving a name (Lesson 5), and
 #   the harness can produce this principal - so it is attempted rather than inferred. The

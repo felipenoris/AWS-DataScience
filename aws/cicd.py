@@ -38,7 +38,7 @@
 #
 # WHAT IT CANNOT SEE, stated because an empty listing and a missing account look alike:
 #   - GitLab's side of the stage - the three .gitlab-ci.yml files, protected tags, which
-#     runner a job scheduled onto - lives behind gitlab.prod.internal; no AWS API reads it.
+#     runner a job scheduled onto - lives behind gitlab.awsds.internal; no AWS API reads it.
 #   - The behavioural proofs (a broken version dying in Staging, the blocked vulnerable
 #     dependency, the by-hand parity of 3.8) are the stage's own (Lesson 20).
 #   - Whether a registration SURVIVES a blueprint reconciliation (INT-17's open half) is a
@@ -737,7 +737,7 @@ What the checks are, and where each comes from:
   - Every Sandbox beyond unit 1 has no profile until Stage 14 - the deploy-role
     map and section 6 must both grow with N (D35).
   - GitLab's objects (the three .gitlab-ci.yml files, protected tags, runner
-    assignments) live behind gitlab.prod.internal - the stage log records them.""")
+    assignments) live behind gitlab.awsds.internal - the stage log records them.""")
 
         # ==============================================================================
         rep.h1("10. Calls that failed")

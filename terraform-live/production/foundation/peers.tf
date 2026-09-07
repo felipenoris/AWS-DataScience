@@ -170,12 +170,13 @@ locals {
   #
   # `awsds-pages.internal` is deliberately NOT here. Its matrix row is VPC-SharedServices and
   # VPC-Networking only - both in this account - because Pages is reached from the tunnel and from
-  # the runners, never from a spoke's compute. The old `pages` row below stays until 2.6 retires
-  # the zone it names.
+  # the runners, never from a spoke's compute.
+  # ONE ZONE SINCE STEP 2.6 (2026-09-07), where there were three. `prod` and `pages` named the old
+  # family and went with it; what a spoke needs from this account is the APEX, because that is where
+  # the shared names live (`gitlab`, `proxy`, `vpn`) and where the `[E]` probe records go. The
+  # per-environment child zones are associated by their own owners, not from here.
   zones = {
-    prod  = aws_route53_zone.prod_internal.zone_id
-    pages = aws_route53_zone.pages_internal.zone_id
-    apex  = aws_route53_zone.awsds_internal.zone_id
+    apex = aws_route53_zone.awsds_internal.zone_id
   }
 
   # THE ZONE MATRIX AND THE PEERING MATRIX WERE ONE LIST UNTIL 2026-09-06, AND 6c STEP 3.1 IS
@@ -194,7 +195,7 @@ locals {
     staging = data.aws_vpc.staging.id
   }
 
-  # zone x peer - the four authorizations of 4.4's table, six since the apex joined.
+  # zone x peer - two authorizations since 2.6 left one zone and two peers.
   zone_peer = {
     for pair in setproduct(keys(local.zones), keys(local.zone_vpcs)) :
     "${pair[0]}.${pair[1]}" => {

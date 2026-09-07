@@ -13,7 +13,7 @@
 #   "the Sandbox probe reaches the Production probe on the GitLab port"   -> the listener
 #   "the same probe reaches NOTHING in a Production subnet outside the
 #    permitted one"                                                       -> the SECOND ENI
-#   "a temporary probe.prod.internal A record resolves from a Sandbox
+#   "a temporary probe.awsds.internal A record resolves from a Sandbox
 #    host"                                                                -> the two records
 #
 # THE SECOND ENI IS THE WHOLE DESIGN, and it is what turns the negative reading into
@@ -164,9 +164,19 @@ resource "aws_network_interface_attachment" "isolated" {
 # address, so nothing is pasted and nothing is read across the account boundary - and a name
 # that resolves in Sandbox is itself the cross-account private-DNS Deliverable, answered on
 # the way past rather than as a step of its own.
+# THE NAMES MOVED TO THE APEX AT STEP 2.6 (2026-09-07), AND THE OBVIOUS TARGET WAS WRONG.
+# `prod.awsds.internal` is the natural successor to `prod.internal` by name - and INT-22's matrix
+# deliberately associates it with VPC-Workloads, VPC-SharedServices and VPC-Networking and **not**
+# with Sandbox or Staging. These two records exist to be resolved FROM Sandbox: that is the
+# cross-account private-DNS Deliverable, answered on the way past. In the per-environment child
+# zone they would be NXDOMAIN at the only place that asks for them.
+#
+# So they go in the APEX, `awsds.internal`, which is the one zone all five VPCs are associated with
+# - the same property that makes it the home of `gitlab`, `proxy` and `vpn`. Two more names there,
+# and unlike those three these are `[E]`: they exist while a probe session does and vanish with it.
 resource "aws_route53_record" "probe" {
-  zone_id = data.terraform_remote_state.foundation.outputs.prod_internal_zone_id
-  name    = "probe.prod.internal"
+  zone_id = data.terraform_remote_state.foundation.outputs.awsds_internal_zone_id
+  name    = "probe.awsds.internal"
   type    = "A"
   ttl     = 60
   records = [aws_instance.target.private_ip]
@@ -174,8 +184,8 @@ resource "aws_route53_record" "probe" {
 
 resource "aws_route53_record" "probe_isolated" {
   # checkov:skip=CKV2_AWS_23:the record DOES have an attached resource - a secondary ENI, whose private_ip the check cannot trace the way it traces an aws_instance attribute. That the address belongs to an interface rather than to an instance is the design, not an oversight
-  zone_id = data.terraform_remote_state.foundation.outputs.prod_internal_zone_id
-  name    = "probe-isolated.prod.internal"
+  zone_id = data.terraform_remote_state.foundation.outputs.awsds_internal_zone_id
+  name    = "probe-isolated.awsds.internal"
   type    = "A"
   ttl     = 60
 
