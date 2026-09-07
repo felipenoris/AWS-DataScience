@@ -434,6 +434,12 @@ deploys are AWS API calls and need no L3 path into a target VPC.
   accepter-last as the existing pattern does.
 - **3.5 — [Claude⚡] Route the tunnel's return path**: every spoke private route table carries a route to
   `VPC-Networking`'s **public** tier (where both hosts live) as well as to its private tier.
+- **3.6 — DONE (the re-cut landed with 4.7; the epilogue caught up 2026-09-06).** `NT-4` reads
+  *"no route overlaps `10.90.0.0/24` **outside the hub**"* and pairs it with a positive reading —
+  *"the ONE `10.90.0.0/24` route, inside the hub"* — so the exception is **asserted** rather than
+  merely excluded. Measured: `rtb-0b13c0405057ab331`, `10.90.0.0/24 → eni-0a6313a565c2b09c7`,
+  `active`. The instrument's closing legend still described the old wording and now does not.
+  *The original step follows:*
 - **3.6 — [Claude] Keep `10.90.0.0/24` out of every table but one**: the WireGuard client range is
   masqueraded today and stays invisible to the spokes. The **one** exception is inside `VPC-Networking`,
   added at 4.7. Re-cut `./aws/networking.py` `NT-4` from *"no route to 10.90/24"* to *"no route to
@@ -445,6 +451,22 @@ deploys are AWS API calls and need no L3 path into a target VPC.
   an operator most needs a trustworthy reading. Either it runs only at pass 6, or it takes the peering
   matrix as its expectation and reports *"declared but not yet routed"* separately from *"routed to
   something not in the matrix"* — which are opposite findings and must not share a verdict.
+- **3.7 — DONE 2026-09-06, AND THE TWO FINDINGS ARE SEPARATE CHECKS, WHICH IS WHAT THE STEP
+  ABOVE ASKED FOR.** `NT-11` reads **`pass`: 5 active peerings, both sides routed in every account
+  this run could read.** The sixth peering in the estate is `deleted` and nothing points at it,
+  which is why it is silent rather than a finding. The split:
+  **declared but not routed** — an `active` peering with no route on one side, named by side rather
+  than counted, and normal for the minutes between creating a peering and adding its routes;
+  **routed but not active** — a route whose target is deleted, failed or pending, which is a
+  **blackhole** and the more urgent of the two. A single verdict over both would let the second
+  hide behind the first.
+  **It asserts only about accounts it actually read**: a VPC whose account holds no live profile is
+  skipped, because *"no route found"* and *"no session"* are the same silence — and this check
+  crosses accounts by construction, so that case is normal rather than exceptional.
+  **Both branches proven on synthetic inputs**, since the estate has neither defect and a check
+  that has only ever passed is a claim: one side unrouted → named; a deleted peering still routed →
+  named as a blackhole; a route to a peering id nobody read → named; an unread side → silent.
+  *The original step follows:*
 - **3.7 — [Claude] Add the two-way route check**: new **`NT-11`** — every active peering has a route on
   both sides in every affected route table. The reference implementation this project keeps as a comparison
   has exactly this defect (an attachment with no route), which is why the check exists.
