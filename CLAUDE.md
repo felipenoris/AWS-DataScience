@@ -198,8 +198,9 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   started while `sandbox/egress` is down HANGS at "IDE configuration in progress"** — silence, not an
   error. **6.4 DONE** (`REJECT` 21040 → 27681 across the repeat; **the timeout was the HOST's per-destination
   ICMP rate limit, not macOS** — 23318 of 27681 refusals silenced, `OutRateLimitHost`; the `ip6tables`
-  rule has never fired, IPv6 dies at *no route* first). Outstanding: **6.6** (INT-16's closing choice)
-  and the user's half of **6.5**, the
+  rule has never fired, IPv6 dies at *no route* first). **6.6 DONE** (the user chose **(ii), recorded
+  acceptance** — a recorded deviation from the objectives; Stage 11 step 3.4 re-takes it, its 5.2 alarms
+  on an off-proxy portal session). Outstanding: the user's half of **6.5**, the
   **GATE**: trim the Sandbox row from `VPN_HOMES`, **then** the `removed {}` on `sandbox/foundation`'s
   Elastic IP. Until then that slice plans **`1 to add` and must not be applied**, and the estate carries
   **two** world-open rules (`VP-3` reads Production only — Lesson 31). Also owed: **4.11's second half**

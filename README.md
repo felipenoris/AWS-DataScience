@@ -188,6 +188,13 @@ proven, and the third was measured NOT to hold (item 3 below):
    cloud's own egress behind an institutional HTTP/HTTPS proxy (Stage 11). The measurement above is
    unchanged; the pending choice is unchanged and still the user's — but "recorded acceptance" would now
    record a deviation from a stated objective, not a silent gap.
+   **Taken 2026-09-07 (Stage 6c step 6.6): recorded acceptance, fallback (ii).** So this item is a
+   **recorded deviation**: the portal is reachable from any network by anyone holding an Identity Center
+   session for the domain, and the objectives' VPN-only statement holds for items 1 and 2 only. The
+   Identity Center sign-in is the whole control on this surface. What compensates it is detective and is
+   Stage 11's: an alarm on a portal session whose source is not the proxy's address (its step 5.2), the
+   threat model's ledger row, and the choice re-taken there with the inputs its step 3.4 lists — fallback
+   (i)'s condition shape kept ready in 6c's step 6.6.
 
 **The procedure is [`docs/plan/runbooks/client-vpn-proxy-configuration.md`](docs/plan/runbooks/client-vpn-proxy-configuration.md)
 §3-§4 and it is not repeated here** — the values a config needs, the four checks that prove four

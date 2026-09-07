@@ -1103,6 +1103,20 @@ obligations older than the stage.
     security groups rather than Production's alone (Lesson 31 — a check inherits the account it was
     written in); restate `docs/NETWORK.md`, `AWS_STATE.md`'s last §C row and `cost-model.md`'s zone count
     from the readings.
+- **6.6 — DONE 2026-09-07: THE USER CHOSE (ii), RECORDED ACCEPTANCE — recorded as a DEVIATION, not as a
+  gap.** Taken after 6.2's reading (the portal, the catalog tab and a JupyterLab space open from the
+  tunnel with no browser grant; off the tunnel the same surfaces open with a valid IdC session — measured
+  2026-08-22, unchanged). Fallback (i) — `NotIpAddress` on the proxy's EIP **and** `StringNotEqualsIfExists`
+  on `aws:SourceVpc`, on the **domain execution role**, keeping the `userid` and `ViaAWSService`
+  carve-outs — is authored nowhere and applied nowhere; its shape stays in the original step below so the
+  revisit does not rediscover it. **What (ii) records**: the portal is reachable from any network by anyone
+  holding an IdC session for the domain, so `objectives.md`'s *client reaches the cloud infrastructure only
+  through the VPN* is **not met for the portal**, and `README.md` item 3 says so in those words. **The
+  revisit is Stage 11's, by name**: its step **3.4** re-takes the choice with the inputs it lists, its
+  **5.2** gains the detective rule for a portal session arriving from any address but the proxy's (the
+  compensation — an acceptance that nothing watches is Lesson 5), and its **6.1** reads the ledger row
+  instead of deferring it again. Verification 3 was answered at 6.2; decision due 3 is taken.
+  *The original step follows:*
 - **6.6 — Take INT-16's closing choice** (fallback (i) versus recorded acceptance — the proxy's address is
   now stable and owned by this stage, which is what the choice was waiting for):
   - **[user] Choose**, after 6.2's reading: the portal is entered by an IdC sign-in and stays reachable off
@@ -1280,8 +1294,8 @@ in the cost model.
    as a fourth shape**: both stay enabled, the ENDPOINTS become a per-apply flag (`GROUPS=bedrock,emr`),
    empty by default. `s3tables` is always-on rather than optional. `make help` documents it.
 2. ~~**The `sagemaker.runtime` AZ answer** (5.4)~~ — **TAKEN 2026-09-06: pin the subnets** (free; D9 intact).
-3. **INT-16's closing choice** (6.6) — fallback (i) in this estate's condition shape, or recorded
-   acceptance.
+3. ~~**INT-16's closing choice** (6.6)~~ — **TAKEN 2026-09-07: (ii), recorded acceptance**, a recorded
+   deviation revisited at Stage 11 step 3.4; the (i) condition shape stays in 6.6's original text.
 4. **How the proxy's access log reaches Log Archive** (4.11, opened 2026-09-06 when the rest of 4.11 was
    authored). The requirement is Lesson 18's — the author of the allow-list must not own its record — and
    the group plus its CMK are built; only the *export* is open. Candidates: (a) a CloudWatch Logs

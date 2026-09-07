@@ -139,33 +139,35 @@ cross-account") taken to its logical conclusion: the share is the *default* read
 chain: whoever controls them controls what runs in Production. They must not live in the account where
 the `sso-group-data-scientists` group has broad permissions. Two consequences shape several stages: the Production
 VPC has to exist before Stage 7 (so it is built in Stage 3, not Stage 9), and the human path to GitLab is
-laptop → WireGuard in Sandbox → VPC peering → GitLab in Production.
+laptop → WireGuard in `VPC-Networking` → peering → GitLab in `VPC-SharedServices` (both Production VPCs
+since 6c; the tunnel terminated in Sandbox until 2026-09-06).
 
 Note the refinement this forces on "only Terraform and CI/CD touch Production": nobody changes Production
 *infrastructure* by hand, but humans do *use* a service hosted there (GitLab, over the VPN). The boundary
 is the control plane, not the account.
 
 **How a human actually reaches each account, because "the VPN is the only entry point" hides two different
-paths.** The WireGuard instance lives in Sandbox and is a **full tunnel** (Stage 4 step 5), so *all* the
-laptop's traffic leaves through its Elastic IP — and that, not a route into every VPC, is what makes the
-single entry point true **for a laptop with the tunnel up; the Unified Studio portal is the measured
-exception (INT-16, 2026-08-22 — a portal session works with the tunnel down; the closing choice is the
-user's, deferred)**. Concretely there are two paths and they should not be confused:
+paths.** The WireGuard host lives in Production's `VPC-Networking` (since 6c, 2026-09-06; Sandbox before)
+and is a **full tunnel** (Stage 4 step 5), so *all* the laptop's traffic enters it — and leaves the
+estate only through the **proxy's** Elastic IP (D38) — and that, not a route into every VPC, is what
+makes the single entry point true **for a laptop with the tunnel up; the Unified Studio portal is the
+measured exception (INT-16, 2026-08-22 — a portal session works with the tunnel down; closed 2026-09-07
+as a recorded acceptance, revisited at Stage 11 step 3.4)**. Concretely there are two paths and they should not be confused:
 
-- **VPC-level reach**, which only Sandbox and Production have. The tunnel terminates in the Sandbox VPC,
-  and the Sandbox↔Production peering extends it to the GitLab subnet. This is the path for private DNS
+- **VPC-level reach**. The tunnel terminates in `VPC-Networking`, and the five peerings extend it to
+  every VPC — an address, never a path (Lesson 44). This is the path for private DNS
   names and anything addressed by a private IP.
 - **AWS API and portal reach**, which every account has, over public AWS endpoints exited through the
-  WireGuard Elastic IP. This is how **the unified domain is used (D26)**: the Unified
+  **proxy's** Elastic IP (6c 4.12). This is how **the unified domain is used (D26)**: the Unified
   Studio portal — like the presigned Studio URL before it — is a public endpoint even when project
   compute is `VpcOnly`; VPC-only governs how the *app containers* reach the network, not how the browser
-  reaches the UI. The laptop needs no route into the Development VPC.
+  reaches the UI. The laptop needs no route into the Staging VPC.
 
-The control that makes the second path VPN-only is therefore **`aws:SourceIp` on the WireGuard Elastic IP**
+The control that makes the second path VPN-only is therefore **`aws:SourceIp` on the proxy's Elastic IP**
 (Stage 4 step 8), not `aws:SourceVpce` — **measured 2026-08-22 to gate the API/console half of this path
 and NOT the portal half**: the portal is entered by an IdC sign-in the permission-set deny never sees
-(INT-16; `README.md` item 3 carries the full statement, the fallback-(i)-versus-acceptance choice is the
-user's, deferred). Getting that backwards is the fastest way to write a condition that
+(INT-16; `README.md` item 3 carries the full statement — **recorded acceptance since 2026-09-07**, Stage 11
+step 3.4 revisits it, its 5.2 alarms on an off-proxy portal session). Getting that backwards is the fastest way to write a condition that
 either denies everything or protects nothing.
 
 **Where the humans are (D17, D18, D21).** D14 refined that boundary once; the decisions above refine it
