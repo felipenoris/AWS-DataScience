@@ -2122,3 +2122,84 @@ comandos necessários") and was signed in as the infrastructure user.*
   (Lesson 13): either the laptop's `.conf` has not yet gained its `fd90::2/128` line, or nothing IPv6
   was attempted; `netstat -rn -f inet6` on the client — a default route through the `utun` — is the
   reading that separates them.
+
+## 2026-09-07 — 6.4 closes with reading B, and the timeout was the host's silence, not the client's deafness
+
+*Claude's readings and the user's, the user's verbatim. The `--on-host` read is the one the user
+authorized earlier in the sitting; `aws/vpn.py` gained four ICMP reads for it first (`ruff` clean).*
+
+- **[user] The repeat, tunnel up, no proxy, verbatim:**
+
+  ```
+  unset https_proxy http_proxy HTTPS_PROXY HTTP_PROXY; date -u; curl -m 15 https://1.1.1.1
+  seg  7 set 2026 16:48:10 UTC
+  curl: (7) Failed to connect to 1.1.1.1 port 443 after 194 ms: Couldn't connect to server
+  ```
+
+  **A fast failure where 02:58 and 15:29 had timed out** — the same laptop, the same command.
+- **[user] The `fd90::2/128` half of `Address` added to the `.conf` just before, and the IPv6 routes,
+  verbatim:**
+
+  ```
+  netstat -rn -f inet6 | grep default
+  default                                 fd90::                                  UGcg                utun4
+  default                                 fe80::1%en0                             UGcIg                 en0
+  default                                 fe80::%utun0                            UGcIg               utun0
+  default                                 fe80::%utun1                            UGcIg               utun1
+  default                                 fe80::%utun2                            UGcIg               utun2
+  default                                 fe80::%utun3                            UGcIg               utun3
+  ```
+
+  The tunnel was then taken **down** on the laptop.
+- **[Claude] Reading B — `./aws/vpn.py --on-host` at 16:54:59Z, direct (tunnel down, no proxy),
+  `VP-1`..`VP-9` pass. The lines that matter, verbatim:**
+
+  ```
+  4    27681 5642K REJECT     all  --  wg0    *       0.0.0.0/0            0.0.0.0/0            reject-with icmp-admin-prohibited
+  1        0     0 REJECT     all      wg0    *       ::/0                 ::/0                 reject-with icmp6-adm-prohibited
+  1     1724  110K RETURN     all  --  *      *       10.90.0.0/24         10.31.160.0/24
+  2        0     0 RETURN     all  --  *      *       10.90.0.0/24         10.31.161.0/24
+  3     1552  113K MASQUERADE  all  --  *      ens5    10.90.0.0/24         0.0.0.0/0
+  Icmp: InMsgs InErrors InCsumErrors InDestUnreachs InTimeExcds InParmProbs InSrcQuenchs InRedirects InEchos InEchoReps InTimestamps InTimestampReps InAddrMasks InAddrMaskReps OutMsgs OutErrors OutRateLimitGlobal OutRateLimitHost OutDestUnreachs OutTimeExcds OutParmProbs OutSrcQuenchs OutRedirects OutEchos OutEchoReps OutTimestamps OutTimestampReps OutAddrMasks OutAddrMaskReps
+  Icmp: 85 0 0 85 0 0 0 0 0 0 0 0 0 0 4366 0 0 23318 4366 0 0 0 0 0 0 0 0 0 0
+  Icmp6InMsgs                     	3
+  Icmp6InErrors                   	0
+  Icmp6OutMsgs                    	219
+  Icmp6OutErrors                  	0
+  Icmp6InDestUnreachs             	3
+  Icmp6OutDestUnreachs            	191
+  net.ipv4.icmp_ratelimit = 1000
+  net.ipv4.icmp_ratemask = 6168
+  net.ipv4.icmp_msgs_per_sec = 1000
+  net.ipv4.icmp_msgs_burst = 50
+  ```
+
+- **[Claude] 6.4 reads as designed, and the mechanism 6.1 wrote down was wrong.** `REJECT`
+  **21040 → 27681** across the window that holds the repeat (+6641 in 18 minutes: the laptop's refused
+  background traffic, the repeat's single SYN among them); the nat `RETURN` for `10.31.160.0/24`
+  1648 → 1724 is this session's own proxy use (SSO, SSM, the HTTPS push) and the user's Chrome — not
+  the curl's, and not meant to be. **The ICMP accounting is the finding**: 27681 rejected, **4366**
+  ICMPs sent (`OutDestUnreachs`), **23318 suppressed** by the per-destination limit (`OutRateLimitHost`;
+  `icmp_ratelimit` 1000 ms, `icmp_ratemask` 6168 includes destination-unreachable, the global limit
+  never hit). A refused SYN gets its ICMP only when the bucket holds a token, and the laptop's
+  background applications drain it several times a second — so the client sees a timeout most of the
+  time and a fast `Couldn't connect` when lucky, **and macOS honours the ICMP the moment it arrives**
+  (194 ms, one round trip). Lesson 55's conclusion stands — the evidence is on the refusing side; its
+  mechanism sentence is corrected, and with it `runbooks/vpn.md` §S2, `docs/NETWORK.md` §7, the stage's
+  6.1 block, both client checks, `CLAUDE.md` and `vpn.py`'s comment. The platform fact went to
+  `lessons.md`'s second list.
+- **[Claude] The ULA line works, and the `ip6tables` rule has never fired.** The client's IPv6 default
+  now points at `fd90::` on `utun4`, the host answered **191** ICMPv6 destination-unreachables — and
+  the explicit `FORWARD` `REJECT` for `::/0` still reads **0**. The host has no IPv6 route, so a
+  tunnelled IPv6 packet is refused as *no route* at the routing lookup, **before** the `FORWARD` chain.
+  The leak is closed and the refusal is counted — in `/proc/net/snmp6`, not in the rule written to
+  count it (Lesson 56's shape, one layer down). The rule stays as the backstop; §C6 says so now. Also
+  visible in the user's `netstat`: the physical IPv6 default (`fe80::1%en0`) survives as an
+  **interface-scoped** route — the morning's IPv4 phenomenon, in the other family.
+- **[Claude] `aws/vpn.py --on-host` reads the ICMP block from now on** — `/proc/net/snmp`'s `Icmp`
+  line, three `Icmp6*` counters and the four `icmp_*` sysctls, all reads under the same ban list.
+  **6.4 DONE** in the stage file; pass 6 keeps **6.6** and the user's half of **6.5**.
+- **[Claude] And one defect of my own, kept**: the script that first appended this entry failed on a
+  count assertion, and the commit chain behind it was not gated on the script's exit — so commit
+  `9316dc1` carried every correction and the index row's *"forty-nine sections"* without the entry
+  they described (Lesson 46's shape). This commit is the entry.
