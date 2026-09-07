@@ -28,7 +28,7 @@
 
 module "sagemaker_denies" {
   # checkov:skip=CKV_TF_1:pinned by git TAG by convention (conventions §6, Stage 3 step 1.1a) - a repository-internal tag only the repo owner can move
-  source = "git::git@github.com:felipenoris/AWS-DataScience.git//terraform-modules/sagemaker-denies?ref=sagemaker-denies-v0.1.0"
+  source = "git::git@github.com:felipenoris/AWS-DataScience.git//terraform-modules/sagemaker-denies?ref=sagemaker-denies-v0.2.0"
 
   # allowed_instance_types is deliberately NOT passed: the module owns the list, and the
   # project boundary in the two Interactive accounts omits it for the same reason.
