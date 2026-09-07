@@ -997,6 +997,22 @@ obligations older than the stage.
   `VPC-Networking`'s `.2`); the `Endpoint` is unchanged because the address moved with it. Then
   `runbooks/vpn.md` §C's three checks, plus a fourth: `curl https://1.1.1.1` **times out**, and
   `curl -x proxy.awsds.internal:3128 https://checkip.amazonaws.com` prints the **proxy's** EIP.
+- **6.2 — DONE 2026-09-07 BY THE USER, AND THE PORTAL OPENED WITH NO BROWSER GRANT.** From the
+  tunnel, `agent.datazone.us-west-2.api.aws` → three **public** addresses;
+  `<domain-id>.studio.us-west-2.sagemaker.aws` → a CNAME to `studio.us-west-2.sagemaker.aws` and three
+  public ones. In a Chrome launched with `--proxy-server` and nothing else, the IdC start page, the
+  portal (`dzd-*.sagemaker.us-west-2.on.aws`), the project, its **catalog tab** and a **JupyterLab
+  space** all opened — the two surfaces that demanded the Local Network Access grant on 2026-08-26 —
+  and **Chrome asked for no permission**. Lesson 43's term is out of the reach question.
+  **One wrong turn on the way, kept because the next person will take it**: the bare
+  `<domain-id>.studio.…` host, opened at its root, redirects to AWS's SageMaker marketing page — it is
+  the Studio front-end, not the portal. **And a reading the step did not ask for**: the space was first
+  started while `sandbox/egress` was **down** — the terminal worked and JupyterLab hung at *"IDE
+  configuration in progress"*, the kernel never returning; `make up ENV=sandbox` and a restart cleared
+  it (`getent hosts sts.…` → `10.20.32.164`, `curl` → `302`). Under design B an app's AWS call with no
+  endpoint gets **silence**, not an error (Lesson 42); `SMUS.md` §`VpcOnly` and the client runbook §1
+  carry the symptom. `docs/NETWORK.md` §10 restated from the readings.
+  *The original step follows:*
 - **6.2 — Close the shadowing** (Lesson 43's repair, and the reading that retires the interim):
   - **[user] Resolve the two client-plane names from the tunnel**: `dig +short agent.datazone.us-west-2.api.aws`
     and `dig +short <domain-id>.studio.us-west-2.sagemaker.aws` — both must return **public** addresses
@@ -1265,7 +1281,9 @@ in the cost model.
 2. ~~Does Session Manager reach both hub hosts through the IGW with no interface endpoint?~~ **Answered
    2026-09-06: yes** — both hosts are read over SSM (`vpn.py --on-host`, `proxy.py --on-host`) with
    `VPC-Networking` carrying no endpoint.
-3. Does the SMUS portal open with no browser grant once the client resolves in the hub? (6.2 — Lesson 43.)
+3. ~~Does the SMUS portal open with no browser grant once the client resolves in the hub?~~ **Answered
+   2026-09-07 at 6.2: yes** — the portal, the catalog tab and a JupyterLab space, with no Local Network
+   Access prompt, and both client-plane names public from the tunnel (Lesson 43's term retired).
 4. Which door does a laptop's S3 call take after the re-keying — the hub's gateway endpoint, or the proxy's
    public address? (6.5, and it decides whether `trusted_vpce_ids` is complete.)
 

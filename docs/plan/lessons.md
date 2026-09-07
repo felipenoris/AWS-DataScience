@@ -1420,6 +1420,15 @@ breaks the `aws` CLI — which falls back to the macOS system configuration, so 
 - **The `Workflows` blueprint has THREE states and the bill starts at the third.** Enabling it provides
   the CloudFormation template; the fee-bearing MWAA environment is born when a **project first uses** the
   blueprint. *"Enabled"* is therefore not *"billing"*, and neither is *"a project exists"*.
+- **A `VpcOnly` space started with no interface endpoints does not fail — it hangs, with a working
+  terminal** — measured 2026-09-07 (6c step 6.2, the first space under design B). JupyterLab loaded,
+  the terminal answered, and the banner *"IDE configuration in progress"* never cleared while a Python
+  kernel never returned: the app's DataZone and SageMaker calls had no route and no endpoint, so they got
+  silence rather than a denial (Lesson 42), and nothing in the UI said *network*. The vendor's pages list
+  the endpoints as *required* and say nothing about what their absence looks like. `make up ENV=sandbox`
+  plus a stop/start of the space cleared it; the discriminator from inside the space is `getent hosts
+  sts.us-west-2.amazonaws.com` (`10.20.x.x` with the endpoints, public without) and `curl` to the same
+  name (`302` against a timeout). `docs/SMUS.md` §`VpcOnly`, the client runbook §1, and the 6c log.
 
 ### Athena
 

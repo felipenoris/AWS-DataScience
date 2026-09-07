@@ -46,6 +46,10 @@ hosts; it needs a spoke's `[E]` slices only when it uses them.
    Add `GROUPS=bedrock,emr` for the optional families; the default is none. It **refuses** while a hub
    host is stopped, naming it — and it is never the way to start the hub: it raises endpoint sets a
    tunnel does not use.
+   **Without it a space does not fail, it hangs** (measured 2026-09-07): JupyterLab loads, the terminal
+   works, and *"IDE configuration in progress"* never clears — the app's AWS calls have no path. Run
+   this, then stop and start the space. From its terminal, `getent hosts sts.us-west-2.amazonaws.com`
+   must answer `10.20.x.x`.
 
 4. Tunnel up on the device (§3.4), then the proxy (§4).
 
@@ -163,6 +167,10 @@ below:
   — `.awsds.internal`, `.awsds-pages.internal` — and `localhost` are bypassed.
 - **Off with the tunnel.** Down, the proxy's name does not resolve, and a setting left behind breaks
   every tool that honours it.
+- **Git over SSH has no path** (measured 2026-09-07): the proxy allows `CONNECT` to 443 only, so
+  `github.com:22` is refused by the tunnel host — and macOS's `nc -X connect` rejects Squid's
+  `HTTP/1.1` reply, so SSH-over-443 is not a workaround either. Push over **HTTPS**: `gh auth setup-git`
+  once, and `git` uses `gh`'s token through the proxy.
 
 The proof, on any OS, is check 4 of §3.4. What the tunnel may reach through the proxy — everything,
 logged — is `vpn.md` §C5a.

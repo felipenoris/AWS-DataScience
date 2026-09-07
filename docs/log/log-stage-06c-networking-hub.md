@@ -1972,3 +1972,153 @@ thing to actually run. They are written up individually because three of them ar
   **6.2**'s reading — the portal opening from the tunnel with no browser grant, and the two
   client-plane names resolving publicly. §10's shadowing paragraph is written from the design until
   that measurement lands.
+
+## 2026-09-07 — the client runbook, and `vpn.md` loses what moved
+
+*Written by Claude at the user's request ("atualize o log com o andamento"), covering this sitting's
+documentation work; nothing in this entry touched AWS.*
+
+- **[Claude] `docs/plan/runbooks/client-vpn-proxy-configuration.md` is new**, at the user's request and
+  to the user's outline: §1 up and §2 down (the session order), §3 the device and the tunnel (enrol,
+  the `.conf`, up with its four checks, down), §4 the device and the proxy — macOS in three parts
+  (system, terminal, Chrome) and Linux, the Linux half and Firefox marked *documented, not exercised*
+  (Lesson 54). Every value in it is `[P]` except the proxy's private address, looked up by name.
+- **[Claude] `vpn.md` lost what moved**: §S5's session order (it keeps the host-only start, the
+  capacity signal and the floor), and §C0-§C3 whole, replaced by a stub; every internal pointer
+  re-aimed. **§K4 step 3 was stale and got fixed on the way**: it named account `Sandbox` and
+  `gen-tfvars.py sandbox vpn` for a slice that has been `production/vpn` since pass 4.
+- **[Claude] The `proxy-on` shell function's first draft was wrong, and only running it said so** —
+  `export https_proxy=… http_proxy=$https_proxy` in one statement expands the variable before the
+  assignment, so `http_proxy` came out empty in **both** zsh and bash. Split into two statements and
+  re-run in both shells before it went into the file (Lesson 54).
+- **[user] Merged as PR #68** with the `docs/log/INDEX.md` row of the morning, and synced `main`.
+
+## 2026-09-07 — 6.4's client half, 6.2's DNS half, and the wrong host
+
+*Written by Claude at the user's request; the user's readings are pasted verbatim from the chat.*
+
+- **[user] Tunnel up, no proxy variable set, verbatim:**
+
+  ```
+  ➜  ~ aws sso logout
+  ➜  ~ unset https_proxy http_proxy HTTPS_PROXY HTTP_PROXY; date -u; curl -m 15 https://1.1.1.1
+  seg  7 set 2026 15:29:33 UTC
+  curl: (28) Connection timed out after 15004 milliseconds
+  ➜  ~ curl -sI --max-time 10 http://proxy.awsds.internal:3128 | head -5
+  HTTP/1.1 400 Bad Request
+  Server: squid
+  Mime-Version: 1.0
+  Date: Mon, 07 Sep 2026 15:30:14 GMT
+  Content-Type: text/html;charset=utf-8
+  ➜  ~ dig +short agent.datazone.us-west-2.api.aws
+  35.83.83.45
+  35.163.146.141
+  35.155.47.91
+  ➜  ~ dig +short dzd-d8yrvx1ko7im6o.studio.us-west-2.sagemaker.aws
+  studio.us-west-2.sagemaker.aws.
+  100.21.12.108
+  54.201.39.161
+  100.21.5.92
+  ```
+
+- **[user] The browser**: with no proxy configured, no site opened. Launched with
+  `open -na "Google Chrome" --args --proxy-server="proxy.awsds.internal:3128"`, **any** site opened —
+  and `dzd-….studio.us-west-2.sagemaker.aws`, opened at its root, **redirected to
+  `https://aws.amazon.com/pt/sagemaker/`**.
+- **[Claude] 6.4's client half reads as predicted**: the timeout is the `FORWARD` refusal the sender
+  cannot see (Lesson 55), and Squid's own `400` proves an RFC1918 name still reached through the
+  tunnel. The counter half is Claude's, below.
+- **[Claude] 6.2's DNS half passes**: both client-plane names resolve to **public** addresses from the
+  tunnel — `agent.datazone` to three, the Studio host through a CNAME to `studio.us-west-2.sagemaker.aws`
+  and three more. No `10.x` anywhere: the hub's resolver inherits nothing from the compute VPC's
+  endpoints.
+- **[Claude] The redirect is not the portal, and the next person will take the same turn**: the
+  `<domain-id>.studio.…` host is the **Studio front-end**, the host that serves a space's JupyterLab;
+  with no space path it sends the visitor to the marketing page. The portal is the `on.aws` surface,
+  `dzd-*.sagemaker.us-west-2.on.aws`.
+
+## 2026-09-07 — 6.2 closes: the portal with no browser grant, and the first space under design B hung
+
+*Written by Claude at the user's request; the user's readings are pasted verbatim.*
+
+- **[user] The portal, the right way**: the IdC access portal (`…awsapps.com/start`), signed in as the
+  Data Scientist, *Applications* → the SageMaker domain → redirected to
+  `https://dzd-d8yrvx1ko7im6o.sagemaker.us-west-2.on.aws/login`; **the site opened**. Project
+  `eighth-experimentation`, then JupyterLab: **the terminal works, a Python session completes no
+  command, and JupyterLab shows "IDE configuration in progress."**
+- **[Claude] Diagnosis before any reading: `sandbox/egress` was down.** Under design B the VPC has no
+  default route, so an app's DataZone and SageMaker calls have a path only through the 18 `[E]`
+  interface endpoints `make up ENV=sandbox` raises — and the user had not run it. No endpoint means
+  **silence**, not a denial (Lesson 42), which is exactly what a banner that never clears looks like;
+  the terminal works because it needs nothing remote. A discriminator was proposed from inside the
+  space, where the terminal already answered.
+- **[user] The confirmations, verbatim**: *"O chrome não pediu nenhuma permissão."* The catalog —
+  *Dados → Catálogos → AwsDataCatalog* — opened without errors, showing an empty database. Ran
+  `make up ENV=sandbox`, restarted the JupyterLab instances, **and everything worked normally**. From
+  the space's terminal:
+
+  ```
+  sagemaker-user@default:~$ getent hosts datazone.us-west-2.amazonaws.com sts.us-west-2.amazonaws.com
+  10.20.34.83     datazone.us-west-2.amazonaws.com
+  10.20.32.164    sts.us-west-2.amazonaws.com
+  sagemaker-user@default:~$ curl -sS -m 10 -o /dev/null -w '%{http_code}\n' https://sts.us-west-2.amazonaws.com/
+  302
+  ```
+
+- **[user] A question the `make up` plan raised**: the plan created the DNS Firewall domain list
+  (ten entries — `*.amazonaws.com.`, `*.api.aws.`, `*.sagemaker.aws.`, the two private zones and their
+  apexes) and printed the `no_proxy` output (the endpoint names, S3 and DynamoDB in both spellings,
+  the private zones, `localhost`, `169.254.169.254`, `169.254.170.2`) — *are these private VPC routes,
+  or the access control to external sites, the SageMaker restricted list? I saw none of the whitelist's
+  sites.*
+- **[Claude] Neither is the list, and the list is in another account — three layers, three questions.**
+  The firewall list answers *does this name resolve?*: since pass 5 it closes the recursive resolver as an
+  exfiltration channel and allows only AWS's namespaces and the estate's zones; a notebook never
+  resolves `pypi.org` itself, it sends `CONNECT` to the proxy and the **proxy** resolves, in
+  `VPC-Networking`, which carries no firewall. `no_proxy` answers *which door?*: the names that must
+  **not** cross the proxy from inside the VPC, generated per VPC from the endpoint catalogue. The
+  twenty-name allow-list answers *is it permitted?* and lives on the **proxy** —
+  `production/networking/hub-anchors.tf`'s `proxy_allow_sandbox`, rendered into the SSM parameter — which
+  is why a Sandbox plan cannot show it. And the firewall list was *created* because the slice is `[E]`:
+  every `make up` rebuilds it.
+- **[Claude] What closed**: **6.2 DONE** in the stage file, with the wrong-host turn and the hung space
+  recorded under it; verification 3 answered; `docs/NETWORK.md` §10's shadowing paragraph and §13's owed
+  note restated from the readings; `docs/SMUS.md` §`VpcOnly` gained the hang as a dated consequence, the
+  client runbook §1 the symptom, and `lessons.md`'s second list the platform fact — *a `VpcOnly` space
+  with no endpoints does not fail, it hangs with a working terminal*; `CLAUDE.md`'s position trimmed.
+  `make check` OK, `check-plan-refs` unchanged.
+
+## 2026-09-07 — 6.4's counter, reading A, taken from inside the tunnel through the proxy
+
+*Claude's readings. The user authorized the on-host read in chat ("Autorizo você a executar os
+comandos necessários") and was signed in as the infrastructure user.*
+
+- **[Claude] The first attempt met the design, from the inside.** This shell runs on the laptop, inside
+  the full tunnel, and carried no proxy variables: `git fetch` over SSH came back *Connection refused*
+  at `github.com:22`, and the SSO credential fetch could not reach `portal.sso.us-west-2.amazonaws.com`.
+  With the client runbook §4.1 [b]'s variables exported, both the credential fetch and the SSM read went
+  through the proxy. **Git over SSH has no path at all**: the proxy allows `CONNECT` to 443 only, and
+  macOS's `nc -X connect` refuses Squid's `HTTP/1.1 200 Connection established` reply — so this branch
+  is pushed over **HTTPS**, with `gh`'s credential helper, through the proxy. Two observations kept
+  rather than explained: `ssh` reported *refused* where `curl` times out (§C2's Lesson 55 reading was
+  taken with `curl`), and the ip6tables counter below reads **0**.
+- **[Claude] `./aws/vpn.py --on-host` at 16:36:41Z** — `VP-1`..`VP-9` pass, every call returned. The
+  lines that matter, verbatim:
+
+  ```
+  4    21040 4305K REJECT     all  --  wg0    *       0.0.0.0/0            0.0.0.0/0            reject-with icmp-admin-prohibited
+  1        0     0 REJECT     all      wg0    *       ::/0                 ::/0                 reject-with icmp6-adm-prohibited
+  1     1648  105K RETURN     all  --  *      *       10.90.0.0/24         10.31.160.0/24
+  2        0     0 RETURN     all  --  *      *       10.90.0.0/24         10.31.161.0/24
+  3     1190 87322 MASQUERADE  all  --  *      ens5    10.90.0.0/24         0.0.0.0/0
+  ```
+
+- **[Claude] Reading.** The counters restarted when the host was replaced for the ULA (the user-data
+  log on the host begins `04:54:23Z`), so **21040** is the refusal count since then: it already
+  contains the user's 15:29 attempt and cannot isolate it. **What closes 6.4 is reading B** — the same
+  read after the user repeats `curl -m 15 https://1.1.1.1` with no proxy: the `REJECT` count must grow
+  by a handful (the SYN retransmissions of one 15-second attempt) and the `RETURN` for
+  `10.31.160.0/24` must stay at **1648**. **The ip6tables zero is a zero that cannot discriminate**
+  (Lesson 13): either the laptop's `.conf` has not yet gained its `fd90::2/128` line, or nothing IPv6
+  was attempted; `netstat -rn -f inet6` on the client — a default route through the `utun` — is the
+  reading that separates them.
