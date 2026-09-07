@@ -645,19 +645,25 @@ The domain is also where the *catalog* lives — glossary, data products, subscr
 state in the rule-2 sense and on its own settles the layer question.
 
 **[D] Dormant — kept, but powered off between sessions.** Stateful services where a rebuild is riskier
-than the idle cost: the GitLab EC2 instance and its EBS volume, and the WireGuard instance. `make down`
-stops them, `make up` starts them. Idle cost is their EBS volumes (~USD 4.65/month) plus the Elastic IP,
-which stays associated across a stop/start (and bills while stopped) — the address itself is allocated in
-`[P]`, so it survives even if the instance is replaced. This is what makes the Stage 7 backup/restore cycle a disaster-recovery procedure
-rather than a daily dependency.
+than the idle cost: the WireGuard host and the Squid proxy — D38's two hub hosts, in `production/` since
+Stage 6c (2026-09-06) — and, from Stage 7, the GitLab EC2 instance and its EBS volume. `make down` stops
+them, `make up` starts them, and **the hub pair has its own `make hub-up` / `make hub-down`** (D11 amended
+2026-09-05): every other account's session depends on those two, so a spoke's `make up` refuses while either
+is stopped. Idle cost is their EBS volumes (~USD 4.65/month) plus the Elastic IPs, which stay associated
+across a stop/start (and bill while stopped) — the addresses, the host-key secret and the security groups
+live in `[P]` (`production/networking/`), so they survive even if the instance is replaced. This is what
+makes the Stage 7 backup/restore cycle a disaster-recovery procedure rather than a daily dependency.
 
 **[E] Ephemeral — destroyed at the end of a session.** Everything metered by the hour and rebuildable in
-minutes: NAT Gateway, interface VPC endpoints, SageMaker Studio *apps* (the domain stays), the internal
-ALB in front of GitLab (an ALB cannot be stopped, only destroyed — it bills ~USD 0.023/h for as long as
-it exists), GitLab Runners, both D7 orchestrators (the MWAA environment and the native
-EventBridge/Step Functions/Lambda stack), the Stage 13 web tier. **MWAA is the awkward member of this
-list** — ~20-30 minutes to create or delete, and a metadata database that holds state nothing else
-persists; D7 records what Stage 10 must decide about it.
+minutes: interface VPC endpoints (the `egress/` slices — **no NAT gateway exists anywhere since D38**, 6c
+step 5.1, 2026-09-06), the probes, the `amd64` build host, SageMaker Studio *apps* (the domain and the
+spaces stay), GitLab Runners, and the Stage 13 web tier's ALB (an ALB cannot be stopped, only destroyed —
+it bills ~USD 0.023/h for as long as it exists; nothing fronts GitLab itself, which terminates TLS on its
+own nginx since D15 was revised). **The awkward member left the list with a decision**: the provisioned
+MWAA environment (~20-30 minutes to create or delete, and a metadata database holding state nothing else
+persists) is not built — D7 amended 2026-09-05 makes **MWAA Serverless the only orchestrator**, and a
+serverless workflow bills nothing at rest, so the `orchestration/` slices stay `[E]` with no idle cost and
+nothing to lose on a destroy.
 
 **Rules this imposes:**
 
@@ -674,8 +680,8 @@ persists; D7 records what Stage 10 must decide about it.
    only works by hand is a bug.
 4. Anything slow or awkward to create — Control Tower, accounts, ACM DNS validation, Identity Center —
    belongs in `[P]` by construction.
-5. Keep addresses stable: private DNS names instead of IPs, and a retained Elastic IP for WireGuard, so
-   client configs survive a rebuild.
+5. Keep addresses stable: private DNS names instead of IPs, and retained Elastic IPs for the WireGuard
+   host and the proxy, so client configs and every VPN-only condition survive a rebuild.
 6. Each stage documents its teardown as well as its build, and records the measured rebuild time.
 7. The layer assignment is a cost judgement and can change. If a `[D]` service turns out to be cheap to
    rebuild, demote it to `[E]`; if an `[E]` rebuild proves slow or fragile, promote it to `[D]` and pay

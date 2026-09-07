@@ -166,10 +166,14 @@ ENI**. `vpc_nat_cidrs` went with `wireguard-v0.5.0`; the build host is
 explicit proxy**, which reverses the old economics: `egress/` is now a hard prerequisite of a build
 session (its SSM endpoints are the only door into the host) rather than a slice a build could avoid.
 
-**`buildbox/` is also the tree's first slice `make up` deliberately does not drive.** It is `[E]` and it has
-a row, so `make status` sees it and `make down ENV=production` would destroy it — but bringing it *up* is
-[`scripts/buildbox.py`](../scripts/buildbox.py), which drives one slice rather than the whole account —
-`make up ENV=production` would also raise `workloads-egress/` and `probes/`, which a build needs neither of.
+**`buildbox/` is raised by [`scripts/buildbox.py`](../scripts/buildbox.py), not by `make up` — by convention,
+not by refusal** (corrected 2026-09-07: the sentence here used to read as if `make up` skipped it). It is `[E]`
+with a row and no refusal in `layers.py`, so `make status` sees it, `make down ENV=production` destroys it,
+**and `make up ENV=production` applies it** with the account's other three `[E]` slices — `egress/`,
+`workloads-egress/`, `probes/` — at 0.1664/h for a `t3.xlarge` a Sandbox session never needs. The script
+exists for the reverse case: a build needs `egress/` and this slice and neither of the other two, so it raises
+this one alone, checks the two prerequisites a rank cannot express, syncs the context, opens the shell and
+tears down.
 **Its two refusals moved with the design at 6c step 5.8**: the old pair (do not coexist with `probes/`, whose
 perimeter reading was the absence of the default route this slice used to add; and start the tunnel host,
 because a stopped route target is a blackhole) are gone with the route itself. The new pair reads the
