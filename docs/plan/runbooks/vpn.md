@@ -9,10 +9,11 @@
 > | **moved** | the host, to `VPC-Networking`'s public tier in **Production** — profile **`awsds-infra-prod`**, tag **`awsds-prod-vpn`**. With it: the `[P]` security group, the host-key secret, the log group `/awsds/prod/vpn`, and the `production/vpn/` slice |
 > | **did NOT move** | the **Elastic IP** — it was *transferred* between accounts, so `52.89.212.1` is still the address and **no client's `Endpoint` line changes** — and the **host key**, copied by hand at step 4.3, so **no client's `PublicKey` line changes and no peer was re-enrolled** |
 > | **changed meaning** | the host **stops being a NAT instance** (`vpc_nat_cidrs` is gone at `wireguard-v0.5.0`) and starts **rejecting every tunnel packet not bound for an RFC1918 address**. A client's internet is now the **proxy's**, by name, and `DenyControlPlaneOffVpn` is anchored on the **proxy's** address rather than this host's |
-> | **the one client edit** | `DNS =` → **`10.31.0.2`**, `VPC-Networking`'s resolver (§C0). It is the *only* line that changes, and it is not optional: the tunnel comes up without it and then **nothing resolves**, because a VPC's `.2` resolver answers only queries born inside that VPC and never across a peering |
+> | **the one client edit** | `DNS =` → **`10.31.0.2`**, `VPC-Networking`'s resolver (the client runbook, §3.3). It is the *only* line that changes, and it is not optional: the tunnel comes up without it and then **nothing resolves**, because a VPC's `.2` resolver answers only queries born inside that VPC and never across a peering |
 >
-> **Two of §C2's three checks were retired by the move** and are replaced there. Following the old ones
-> literally produces two "failures" that are the design working.
+> **Two of the old three client checks were retired by the move**; the four that replaced them are the
+> client runbook's §3.4. Following the old ones literally produces two "failures" that are the design
+> working.
 >
 > **AND TWO THINGS CHANGED AGAIN ON 2026-09-07, both found by the user rather than by a gate.** The
 > client plane's proxy list was an **allow**-list and the objectives ask for the opposite — it is now
@@ -20,14 +21,19 @@
 > list beside it). And the tunnel gained an **IPv6 ULA**, which closes a leak rather than opening a path:
 > `AllowedIPs = ::/0` had been inert without a matching `Address` line, and every IPv6-capable
 > application was leaving outside the tunnel (**§C6**). An existing config gains one line.
+>
+> **SPLIT 2026-09-07, at the user's request: the procedures a device's owner follows — the session up
+> and down (§S5's `make` order), the `.conf`, up with its four checks, down, and the proxy on macOS and
+> Linux — are [`client-vpn-proxy-configuration.md`](client-vpn-proxy-configuration.md).** This file keeps the system, the failure
+> modes, the two planes, the IPv6 reasoning and the keys; where a section moved, a stub says where.
 
 | | |
 |---|---|
-| **Scope** | The whole VPN surface, in three parts. **Part S — the system**: what the pieces are, which slice owns each, how a packet actually travels, what the VPN is *not* (the NAT), how the host is started and stopped, and how its size is switched (§S6). **Part C — the client**: one enrolled device's side of the tunnel — writing its `.conf`, bringing it up, proving it, taking it down, **what it may then reach** (§C5a's two tables) and **why it carries an IPv6 address that routes nowhere** (§C6). **Part K — the server**: the shell on the host (§K0a), the two kinds of key pair, and the four procedures — recovery, revocation, host rotation, device rotation (the last also being how a device is *added*) |
+| **Scope** | The whole VPN surface, in three parts. **Part S — the system**: what the pieces are, which slice owns each, how a packet actually travels, what the VPN is *not* (the NAT), the host-only start and stop (§S5 — the session order itself is the client runbook's), and how its size is switched (§S6). **Part C — the client**: **what an enrolled device may reach** (§C5a's two tables), the failure modes WireGuard is silent about (§C4), the cost (§C5) and **why it carries an IPv6 address that routes nowhere** (§C6) — the procedure (the `.conf`, up, the four checks, down) is [`client-vpn-proxy-configuration.md`](client-vpn-proxy-configuration.md) §3 since 2026-09-07. **Part K — the server**: the shell on the host (§K0a), the two kinds of key pair, and the four procedures — recovery, revocation, host rotation, device rotation (the last also being how a device is *added*) |
 | **Operator** | Parts S and K: the **infrastructure user**, profile `awsds-infra-prod` (`InfrastructureAccess` in `Production`) — plus `awsds-infra-identity` for §K6's fragment toggles. Part C: the **device's owner, on the device** — no AWS profile and no SSO session: nothing in that part calls an AWS API |
 | **The two rules** | **Loss is answered by recovery, never by rotation** (Part K): a new host key forces an instance replacement and breaks every client config at once — each one pins the server's public key. Rotate for *compromise* (§K3), recover for *loss* (§K1); the mechanised violation is Secrets Manager's own rotation feature, off forever (§K5, `VP-9`). **Full tunnel, never split** (Part C): `AllowedIPs = 0.0.0.0/0, ::/0`, both families — **and the reason changed with the estate on 2026-09-06 while the rule did not.** It used to be that `DenyControlPlaneOffVpn`'s `aws:SourceIp` matched only traffic exiting through *this host's* Elastic IP. Under [D38](../decisions/D38-single-egress-hub.md) the tunnel host reaches no public address at all: a persona's control-plane call travels tunnel → **proxy** → AWS, and the address the deny names is the **proxy's**. A split tunnel would send that call out of the laptop's own uplink, where it wears neither address — still a lockout with the tunnel up, by a longer path |
 | **The picture around it** | **[`docs/NETWORK.md`](../../NETWORK.md)** — every VPC, subnet, route table and address in the estate, and where this host sits in them. This file stays the **procedure**; that one is what a packet's whole path looks like |
-| **Written** | §S6 added 2026-08-20 (the size becoming a slice parameter). The keys half 2026-08-16 (Stage 4's third design review; rewritten the same day when the host key moved into the `[P]` secret), the client half 2026-08-17 (the first handshake). **Unified 2026-08-19, at the user's request, replacing `vpn-keys.md` and `vpn-client.md`** — their content is Parts K and C, kept whole; Part S is new, written from the topology readings of Stage 5 pass 4d's first sitting. **Rewritten 2026-09-06 for the Production home** — the banner above lists what moved, and every reading in Part S was re-taken rather than re-worded |
+| **Written** | §S6 added 2026-08-20 (the size becoming a slice parameter). The keys half 2026-08-16 (Stage 4's third design review; rewritten the same day when the host key moved into the `[P]` secret), the client half 2026-08-17 (the first handshake). **Unified 2026-08-19, at the user's request, replacing `vpn-keys.md` and `vpn-client.md`** — their content is Parts K and C, kept whole; Part S is new, written from the topology readings of Stage 5 pass 4d's first sitting. **Rewritten 2026-09-06 for the Production home** — the banner above lists what moved, and every reading in Part S was re-taken rather than re-worded. **Split 2026-09-07**: §S5's session order and §C0-§C3 moved to `client-vpn-proxy-configuration.md` |
 
 ---
 
@@ -173,6 +179,12 @@ Two independent controls, either alone sufficient:
 
 ### S5. Start and stop the host
 
+**The session lifecycle — `make hub-up`, a spoke's `make up ENV=…`, and the order down — moved to
+[`client-vpn-proxy-configuration.md`](client-vpn-proxy-configuration.md) §1 and §2 on 2026-09-07 and is not
+repeated here.** This section keeps what that file does not: what `[D]` means for this host, the
+host-only start for when the tooling is unavailable, the capacity signal, and the floor that bills
+while everything is stopped.
+
 `[D]` means the host is **stopped between sessions and started for one** — never destroyed, never
 re-applied by a lifecycle target (refusal 5 in `scripts/tfhygiene/layers.py`). Across stop/start
 nothing moves: the Elastic IP stays associated (Stage 4 verification (ii); re-measured 2026-08-19,
@@ -180,59 +192,37 @@ nothing moves: the Elastic IP stays associated (Stage 4 verification (ii); re-me
 while stopped is the monthly floor — EIP ~USD 3.65 + secret ~USD 0.40 + 8 GB gp3 — not the hourly
 rate.
 
-**Two sanctioned ways up, and since 2026-09-06 the right one has a target of its own:**
+**The host-only start**, when the tooling is unavailable or the question is exactly one host. Two
+commands as the **infrastructure user in Production** (`InfrastructureAccess` — the set that works
+off-VPN, which is what makes this the way back in). The instance id is `[D]` state: it survives
+stop/start but **a roster change replaces the host and the id with it** (§K2/§K4), so it is looked up
+at the moment of use, by the Name-tag contract, and written down nowhere:
 
-1. **`make hub-up`** — **the one to reach for.** It starts the WireGuard host **and the proxy**, and
-   raises no `[E]` slice at all: 0.0156/h, against the 0.19+/h `make up ENV=production` would cost by
-   also applying that account's endpoint sets and probes. It exists because the hub is one account's
-   pair of `[D]` hosts and **every other account's session depends on them**, which `make up` — acting
-   on one env at a time — has no way to express (step 7.1).
+```bash
+AWS_PROFILE=awsds-infra-prod aws ec2 describe-instances --region us-west-2 --filters 'Name=tag:Name,Values=awsds-prod-vpn' --query 'Reservations[].Instances[].[InstanceId,State.Name]' --output text
+```
 
-   ```bash
-   make hub-up
-   ```
+No state filter, on purpose: a `stopped` row is D11 working; **no row at all is a finding** (the
+slice was never applied, or the host is gone). Then, with the id the read printed:
 
-   `make hub-down` is its mirror, and it **stops**: `[D]` is a stop/start contract, so both Elastic IPs,
-   the host key and both security groups survive.
+```bash
+AWS_PROFILE=awsds-infra-prod aws ec2 start-instances --region us-west-2 --instance-ids <INSTANCE_ID>
+```
 
-2. **`make up ENV=<account>`** — right only when the session also needs that account's `[E]` slices. It
-   starts nothing in the hub, and **since step 7.2 it REFUSES while either hub host is stopped**, naming
-   the one that is down. Before that refusal existed, a stopped hub was a **blackhole rather than an
-   error**: the apply succeeded and every symptom afterwards was a timeout. A read that *fails* — no
-   session on Production — is waived rather than treated as a stopped host, because the two nothings are
-   not the same finding.
+The guarded one-liner, for when the lookup must be programmatic — the guard is the point: a
+`&&`-chain that carries an empty id forward converts "no host" into a confusing downstream error
+(Lesson 25):
 
-3. **The host-only start**, when the tooling is unavailable or the question is exactly one host. Two
-   commands as the **infrastructure user in Production** (`InfrastructureAccess` — the set that works
-   off-VPN, which is what makes this the way back in). The instance id is `[D]` state: it survives
-   stop/start but **a roster change replaces the host and the id with it** (§K2/§K4), so it is looked up
-   at the moment of use, by the Name-tag contract, and written down nowhere:
+```bash
+ID=$(AWS_PROFILE=awsds-infra-prod aws ec2 describe-instances --region us-west-2 --filters 'Name=tag:Name,Values=awsds-prod-vpn' --query 'Reservations[0].Instances[0].InstanceId' --output text); if [ -z "$ID" ] || [ "$ID" = "None" ]; then echo "no VPN host found - a finding, not a retry"; else AWS_PROFILE=awsds-infra-prod aws ec2 start-instances --region us-west-2 --instance-ids "$ID"; fi
+```
 
-   ```bash
-   AWS_PROFILE=awsds-infra-prod aws ec2 describe-instances --region us-west-2 --filters 'Name=tag:Name,Values=awsds-prod-vpn' --query 'Reservations[].Instances[].[InstanceId,State.Name]' --output text
-   ```
+**Starting only the WireGuard host is half a session.** The tunnel will come up and the client will
+have no internet, because the internet is the proxy — `awsds-prod-proxy`, the same two commands with
+the other tag. `make hub-up` is the form that cannot forget one of them.
 
-   No state filter, on purpose: a `stopped` row is D11 working; **no row at all is a finding** (the
-   slice was never applied, or the host is gone). Then, with the id the read printed:
-
-   ```bash
-   AWS_PROFILE=awsds-infra-prod aws ec2 start-instances --region us-west-2 --instance-ids <INSTANCE_ID>
-   ```
-
-   The guarded one-liner, for when the lookup must be programmatic — the guard is the point: a
-   `&&`-chain that carries an empty id forward converts "no host" into a confusing downstream error
-   (Lesson 25):
-
-   ```bash
-   ID=$(AWS_PROFILE=awsds-infra-prod aws ec2 describe-instances --region us-west-2 --filters 'Name=tag:Name,Values=awsds-prod-vpn' --query 'Reservations[0].Instances[0].InstanceId' --output text); if [ -z "$ID" ] || [ "$ID" = "None" ]; then echo "no VPN host found - a finding, not a retry"; else AWS_PROFILE=awsds-infra-prod aws ec2 start-instances --region us-west-2 --instance-ids "$ID"; fi
-   ```
-
-   **Starting only the WireGuard host is half a session.** The tunnel will come up and the client will
-   have no internet, because the internet is the proxy — `awsds-prod-proxy`, the same two commands with
-   the other tag. `make hub-up` is the form that cannot forget one of them.
-
-   §K0a's other two lookups — `./aws/vpn.py` and `terraform output -raw instance_id` — answer the same
-   question with more context around it.
+§K0a's other two lookups — `./aws/vpn.py` and `terraform output -raw instance_id` — answer the same
+question with more context around it.
 
 **`InsufficientInstanceCapacity` on start is transient until proven otherwise — retry, change
 nothing (measured 2026-08-19).** A stopped instance holds no hardware: every start re-contests
@@ -256,23 +246,15 @@ on the first transient signal.
 
 **After the start**: `./aws/vpn.py` must read `running` with everything passing; the SSM agent needs
 a further minute before a shell works (§K0a's `Online` check); the tunnel itself needs only the
-handshake (§C2).
+handshake (the client runbook, §3.4).
 
-**Down, in this order:**
+**The direct stop**, when the tooling is unavailable — after the tunnel is down on every device (the
+client runbook's §2 order; with a full tunnel up, a stopped host strands the laptop's default route
+until `wg-quick down` runs):
 
-1. Tunnel down **on each device first** (§C3) — with a full tunnel up, stopping the host strands the
-   laptop's default route until `wg-quick down` runs.
-2. **`make down ENV=<account>`** for any account whose `[E]` slices are up — it destroys those first and
-   stops that account's `[D]` hosts last, by rank design, so the tunnel outlives every API call of the
-   teardown.
-3. **`make hub-down`** last of all, and it is easy to forget because nothing depends on it any more at
-   that point. It stops both hub hosts; nothing is destroyed and no client config moves.
-
-   The direct equivalent, when the tooling is unavailable:
-
-   ```bash
-   AWS_PROFILE=awsds-infra-prod aws ec2 stop-instances --region us-west-2 --instance-ids <INSTANCE_ID>
-   ```
+```bash
+AWS_PROFILE=awsds-infra-prod aws ec2 stop-instances --region us-west-2 --instance-ids <INSTANCE_ID>
+```
 
 **What bills while everything is stopped** is the monthly floor, not an hourly rate: **two** Elastic IPs
 now (~USD 3.65 each — the tunnel's and the proxy's), the host-key secret ~0.40, and the two 8 GB gp3
@@ -519,12 +501,12 @@ that needed a flag would be a plan somebody could run without one.
 
 Then the apply, in the order §S5's teardown already establishes:
 
-1. **Tunnel down on each device first** (§C3). The host is about to stop; with a full tunnel up, a
+1. **Tunnel down on each device first** ([`client-vpn-proxy-configuration.md`](client-vpn-proxy-configuration.md) §3.5). The host is about to stop; with a full tunnel up, a
    stopped host strands the laptop's default route until `wg-quick down` runs.
 2. `terraform apply` on the slice — a deliberate, authorized apply
    (`docs/plan/runbooks/terraform-changes.md`). Nothing to pass: the file is already what the plan
    just read.
-3. Bring the tunnel back up (§C2) and read the three proofs.
+3. Bring the tunnel back up (the client runbook, §3.4) and read the three proofs.
 
 **What survives, and why each one is safe** — the same in both directions:
 
@@ -539,7 +521,7 @@ Then the apply, in the order §S5's teardown already establishes:
 name the **new** type with `state running`, and `VP-2` must still read the Elastic IP **associated**
 (the one thing whose loss would be silent until a client tried to connect). The SSM agent needs a
 further minute before a shell works (§K0a's `Online` check). The tunnel itself needs only the
-handshake (§C2). `make status` will keep quoting the nano rate — expected, per the coupling note
+handshake (the client runbook, §3.4). `make status` will keep quoting the nano rate — expected, per the coupling note
 above.
 
 **If the disk moved, one more reading, and `./aws/vpn.py` is not it** — `VP-1` reports the instance
@@ -563,181 +545,25 @@ parameter, so the fallback is this same procedure with a different value in the 
 
 ---
 
-## Part C — the client: writing a config, connecting, disconnecting
+## Part C — the client: what it may reach, and when it does not work
 
 *Was `vpn-client.md` (written 2026-08-17, from the first handshake — Stage 4 step 5 is the
-requirement, step 9.1 the deliverable). The operator is the device's owner, on the device: nothing
-in this part calls an AWS API. Bare step numbers in this part are Stage 4's.*
+requirement, step 9.1 the deliverable). **Since 2026-09-07 the procedure — the values, writing the
+`.conf`, up with its four checks, down — is [`client-vpn-proxy-configuration.md`](client-vpn-proxy-configuration.md)
+§3, beside the proxy configuration of the same laptop (its §4).** What stays here is what a device's
+owner needs after the procedure has been followed: the failure modes WireGuard is silent about by
+design (§C4), the cost (§C5), the two planes (§C5a), and why the tunnel carries an IPv6 address that
+routes nowhere (§C6). The operator is the device's owner, on the device: nothing in this part calls an
+AWS API. Bare step numbers in this part are Stage 4's.*
 
-### C0. The values, and where each comes from — five from the design, one from the path
+### C0-C3. Moved — the values, the config, up and its four checks, down
 
-Nothing here is invented, and three of the five are **stable by design** — which is the property
-decision 4 bought and step 4.2 proved by rebuilding the host without moving either the address or the
-key. **`MTU` is the exception and belongs in a different category**: it is the only line whose correct
-value is a property of the network the device happens to be sitting on, so it is derived from nothing in
-AWS and is the one line worth re-examining when a working config stops working somewhere new (§C4).
-
-| Line | Value today | Where it comes from |
-|---|---|---|
-| `PrivateKey` | this device's own | Generated **on the device** and never anywhere else (§K4). Read from its file, never retyped |
-| `Address` | `10.90.0.<host>/32, fd90::<host>/128` | `cidrhost()` over **both** ranges in the allocation table, at the same `host` number from the roster — `fd90::3` is the device that is `10.90.0.3`. `/32` and `/128`, mirroring the server's `AllowedIPs`: a peer does not reach another peer. **The IPv6 half arrived 2026-09-07 and it is the one line an existing config must gain** (§C6) |
-| `DNS` | **`10.31.0.2`** | `.2` of **`VPC-Networking`**'s CIDR (`10.31.0.0/16`) — the hub's VPC resolver. **This is the one line the 2026-09-06 move changed, and it is not optional**: a VPC's `.2` resolver answers only queries born inside that VPC and **never across a peering**, so the previous value (`10.20.0.2`, the Sandbox home's) leaves the tunnel up and every name unresolvable. The hub is associated with the whole `awsds.internal` family, which is what makes `proxy.awsds.internal` resolvable at all |
-| `PublicKey` | the host's | **`[P]`, in a Secrets Manager secret** — it survives every instance rebuild, **and it survived the change of account**, because step 4.3 copied the *value* by hand rather than letting a new host mint one. Recover it without touching the secret: `host-public.key` on the laptop, this line in any existing config, or `wg show wg0 public-key` on the host |
-| `Endpoint` | `52.89.212.1:51820` | The **`[P]` Elastic IP**, now in `production/networking/` a slice away from the host, plus the one port open to the world. **It did not change when the host changed accounts** — the address was *transferred*, which is the whole reason this line is stable across a move that touched everything else |
-| `MTU` | `1280` | **The path, not the design.** Absent this line `wg-quick` derives it — the MTU of the interface reaching the endpoint, minus 80 — and that derivation is wrong on any path narrower than the local link, phone tethering above all (§C4, measured 2026-08-17). **The server pins the same 1280 since 2026-08-18**, which does *not* make this line optional: the two govern opposite directions, and this one is the only thing bounding what **this device sends** |
-
-**If either of the two key/endpoint lines ever changes without §K3 having been run, that is a
-finding, not a reconnection problem.** The 2026-09-06 move is the proof of how strong that rule is: the
-host changed *account*, and neither line moved.
-
-### C1. Write the config
-
-**Outside the repository** — `cd ~` first, and it is not housekeeping: this file carries a private key,
-and `.gitignore` grew a `*.conf` rule on the day this runbook was written **as the net under this
-practice, not as a substitute for it**. Pre-commit's `detect-private-key` reads PEM armor; a WireGuard
-key is bare base64, indistinguishable from the public halves this repository commits on purpose, so no
-scanner would catch a committed client config. The glob is the only thing that can.
-
-```bash
-cd ~ && (umask 077 && cat > mbp.conf <<EOF
-[Interface]
-PrivateKey = $(cat mbp-private.key)
-Address = 10.90.0.2/32, fd90::2/128
-DNS = 10.31.0.2
-MTU = 1280
-
-[Peer]
-PublicKey = LCD1d6xjsxRAmOZA/FTo72TToGUkLYqlOryEJwfup28=
-AllowedIPs = 0.0.0.0/0, ::/0
-Endpoint = 52.89.212.1:51820
-PersistentKeepalive = 25
-EOF
-)
-```
-
-**The private key is read from its file and never typed**, so it reaches neither the screen nor the
-shell history. The `umask 077` sits **inside the subshell** on purpose: the config lands `600` at
-creation, and the interactive shell's umask is left alone.
-
-**`MTU = 1280` is in the template rather than in a troubleshooting note, and that is deliberate.** The
-alternative — "add this line if the tunnel misbehaves" — is an intention, and the failure it prevents is
-one nobody diagnoses at 23:00 in an airport (§C4). 1280 is the IPv6 minimum and passes every path
-encountered so far; it costs a little throughput on a wired network, where the value can be raised once
-a real path MTU has been measured rather than guessed.
-
-**Since 2026-08-18 the server pins `MTU = 1280` on its own `wg0` too, and it covers the other
-direction — downloads.** The host used to inherit its uplink's MTU, 9001 on an AWS ENA, so it would
-inject up to 8921 bytes into a tunnel whose every peer is reached across the internet; it now refuses
-anything over 1280, measured from inside the host (`ping -M do -s 1253` returns a local
-`message too long, mtu=1280`, and `-s 1252` does not). **What that buys is not speed and not a fixed
-bug: it is not depending on ICMP.** An unpinned client on a 1492-byte PPPoE line — measured, and it is
-an ordinary home link — emits 1500-byte outer packets and survives only because a router bothers to send
-back `frag needed`. Where that ICMP is filtered, which is common, nothing comes back at all. The line
-above removes the dependency for what the device sends; the server's removes it for what the device
-receives.
-
-For another device, the only line that changes is `Address` — its own `host` number from the roster.
-On a phone or tablet there is no file at all: the WireGuard app holds the private key it generated and
-the other values are typed into its form — **including MTU**, which the apps expose in the same
-interface section.
-
-### C2. Up, and the four things that prove four different claims
-
-*Rewritten 2026-09-06. **Two of the three checks this section used to carry were retired by the move**,
-and following them literally now produces two "failures" that are the design working. Both are named
-below rather than deleted, because a reader with an older copy needs to recognise them.*
-
-```bash
-sudo wg-quick up ~/mbp.conf
-```
-
-**1 — the tunnel exists.**
-
-```bash
-sudo wg show
-```
-
-`latest handshake: N seconds ago` and non-zero `transfer`. On macOS the interface is a `utun*`, not
-`wg0`.
-
-**2 — the resolver in use is the HUB's, and it takes two queries in opposite directions.**
-
-```bash
-dig +short SOA prod.awsds.internal ; dig +short SOA sandbox.internal
-```
-
-The first **must answer**; the second **must come back empty**. Measured 2026-09-06:
-`prod.awsds.internal` is associated with `VPC-Networking` and **not** with Sandbox, and
-`sandbox.internal` is the reverse — so the pair turns on one variable, which resolver the query reached.
-**Do not use `awsds.internal` here**: both VPCs are associated with it, so it answers either way and
-discriminates nothing.
-
-~~`dig +short SOA sandbox.internal` must answer~~ — **that was check 3 until 2026-09-06**, and it proved
-`DNS = 10.20.0.2` was in use. It now proves the opposite, which is why it is half of the pair above
-rather than deleted.
-
-Then the name everything else depends on:
-
-```bash
-dig +short proxy.awsds.internal
-```
-
-It must answer, and the answer must be a **private** address in **`10.31.160.0/24`** — the hub's public
-tier. The literal is deliberately not written here: it is the proxy instance's private address, a `[D]`
-value that moves on a replacement, and this runbook's rule is that such a value is looked up rather than
-pinned. **What matters is that it is private**: a public answer would mean the record points at the
-proxy's Elastic IP, and a spoke reaching 3128 over a *peering* has no route to that — a name that
-resolves perfectly and times out.
-That record did not exist before 2026-09-06 — step 2.1 said pass 4 would write it and pass 4 did not, so
-every instruction naming it, this file's included, was pointing at NXDOMAIN.
-
-**3 — there is no internet without the proxy.**
-
-```bash
-curl -sS --max-time 15 https://1.1.1.1
-```
-
-**Must fail — and it fails as a TIMEOUT, which is not what this file predicted (corrected 2026-09-07,
-from the user's first run).** The prediction was a fast refusal, on the reasoning that the host answers
-with `icmp-admin-prohibited` rather than dropping. The host does exactly that: measured the same hour,
-`FORWARD` rule 4 had rejected **8453 packets**, and the counter is what proves the rule is *hit* rather
-than merely present. **The client cannot see it.** macOS — like most modern stacks — ignores ICMP
-unreachable arriving for a TCP connection in progress, as hardening against off-path injection, so
-`curl` keeps retransmitting the SYN until `--max-time` expires.
-
-So the expected reading is `curl: (28) Connection timed out`, and **the distinction that matters is not
-the shape of the failure but where it can be observed**: the refusal is real and lives in the host's
-counter, not in anything the sender is told.
-
-~~`curl -s https://checkip.amazonaws.com` must print `52.89.212.1`~~ — **that was check 2 until
-2026-09-06**, and it proved the full tunnel was real by showing traffic leaving through this host's NAT.
-There is no such NAT now. Its replacement is check 4, which proves the same thing about the path that
-actually exists.
-
-**4 — and there is internet through it, wearing the proxy's address.**
-
-```bash
-curl -s --max-time 20 -x http://proxy.awsds.internal:3128 https://checkip.amazonaws.com
-```
-
-**Must print `184.33.8.126`** — the **proxy's** Elastic IP, not the tunnel's. That literal is safe to
-write down where the one above was not: it is `[P]`, allocated in `production/networking/`, and it
-survives every replacement of the host wearing it. It is the same address `DenyControlPlaneOffVpn`
-names, which is exactly why it is the one worth asserting. This is the check the rest
-of the estate depends on: `DenyControlPlaneOffVpn` matches that address or nothing, and one command
-proves the tunnel, the peering, the return route and the `tunnel` plane of the allow-list at once.
-
-**A 403 here is a different finding from silence.** 403 means the proxy is up and the *name* is not on
-this plane's list — a policy answer, with the host named in `/awsds/prod/proxy`. Nothing at all means
-the path: the peering, the security group, or a stopped host (§S5).
-
-### C3. Down
-
-```bash
-sudo wg-quick down ~/mbp.conf
-```
-
-The config file stays; nothing is revoked, nothing on the server changes. Reconnecting is §C2.
+All four are [`client-vpn-proxy-configuration.md`](client-vpn-proxy-configuration.md) §3. **Two rules stay here because
+they are the design's rather than the procedure's.** **Full tunnel, never split** — the scope table
+above says why the reason changed on 2026-09-06 while the rule did not. And **if `PublicKey` or
+`Endpoint` ever changes without §K3 having been run, that is a finding, not a reconnection problem**:
+the 2026-09-06 move is the proof of how strong that rule is — the host changed *account*, and neither
+line moved.
 
 ### C4. When it does not work
 
@@ -750,8 +576,8 @@ The config file stays; nothing is revoked, nothing on the server changes. Reconn
   suspicion, a broken NAT on the host, is the expensive wrong turn. **Two answered `dig`s rule the host
   out on their own**: the VPC resolver replies only if the packet was forwarded *and* source-NATed to an
   address inside the VPC, so DNS working means the whole server side is working.
-  **The fix is `MTU = 1280` under `[Interface]`** (already in §C1's template — if a config predates it,
-  this is what to add). Take the tunnel down and up: editing the file while the interface is up does not
+  **The fix is `MTU = 1280` under `[Interface]`** (already in the client runbook's template, §3.3 — if a config
+  predates it, this is what to add). Take the tunnel down and up: editing the file while the interface is up does not
   change its MTU.
   **Since 2026-08-18 this symptom should have become one-sided** rather than disappearing: the server
   pins 1280 as well, so a config missing the line still receives fine and stalls on what it *sends* —
@@ -802,7 +628,7 @@ The config file stays; nothing is revoked, nothing on the server changes. Reconn
   proxy setting, which is per network service and may or may not be consulted while a NetworkExtension
   tunnel is primary — `scutil --proxy`, run with the tunnel up, is what settles it.
 - **Nothing above settled it, and the suspicion has moved to the server.** That is where this part
-  stops by design — the checks in §C2 exist to rule the device in or out *before* anybody signs in
+  stops by design — the checks in the client runbook's §3.4 exist to rule the device in or out *before* anybody signs in
   to AWS. A shell on the host is an SSM session, opened by the **infrastructure user** and not by the
   device's owner: §K0a, which is also where the `--target` instance id comes
   from. It works with this tunnel down, which is the whole point of it.
@@ -878,12 +704,9 @@ running the old one).
 *New 2026-09-07, from a leak the user found by asking why a conversation kept working while the
 tunnel was up and nothing else did.*
 
-**An existing config needs ONE edit**, and it is the same shape as the `DNS` line the account move
-needed:
-
-```
-Address = 10.90.0.2/32, fd90::2/128
-```
+**An existing config needs ONE edit** — the `Address` line gains its `fd90::<host>/128` half. The
+template in [`client-vpn-proxy-configuration.md`](client-vpn-proxy-configuration.md) §3.3 carries it, and it is the same
+shape as the `DNS` edit the account move needed.
 
 **What it fixes.** `AllowedIPs = 0.0.0.0/0, ::/0` had been in every config from the start, and the
 `::/0` half was **inert**: `wg-quick` installs routes only for the address families the interface
@@ -1258,12 +1081,12 @@ why anything else pending goes in the same window.
    public one, and nothing can — that is why the generation stays on the device.
 
 3. **Apply it — this is what "publishing to the server" actually means.** Sign in as the
-   **infrastructure user** (`awsds`), account **`Sandbox`**, permission set **`InfrastructureAccess`**
+   **infrastructure user** (`awsds`), account **`Production`**, permission set **`InfrastructureAccess`**
    — profile `awsds-infra-prod`. **Read §K6 first if step 8.3 has landed.** Then, per
    [terraform-changes.md](terraform-changes.md) Recipe A:
 
    ```bash
-   ./scripts/gen-backend-hcl.py sandbox vpn && ./scripts/gen-tfvars.py sandbox vpn
+   ./scripts/gen-backend-hcl.py production vpn && ./scripts/gen-tfvars.py production vpn
    ```
 
    ```bash

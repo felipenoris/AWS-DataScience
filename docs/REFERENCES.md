@@ -317,6 +317,7 @@
 - SageMaker Unified Studio: accessing the portal — the domain URL is issued by AWS and handed to users, so nothing here needs a domain of ours (D15 phase 1): <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/getting-started-access-the-portal.html>.
 
 - **Chrome's Local Network Access permission** — a public page's request to a private address is gated behind a user grant, and ungranted it rejects as `TypeError: Failed to fetch`. **This is a non-AWS term in the reach question** (Lesson 43): on the full-tunnel laptop the SMUS portal is a public origin while `glue`, `sagemaker.api` and the `*.studio.<region>.sagemaker.aws` subtree resolve to the VPC's interface endpoints, so the portal needs the grant to work on the VPN at all: <https://developer.chrome.com/blog/local-network-access>. Its predecessor, Private Network Access, carries the address-space model the gate is built on: <https://developer.chrome.com/blog/private-network-access-update>.
+- **Chromium's proxy flags** — `--proxy-server` and `--proxy-bypass-list`, the bypass-rule syntax (suffix patterns, IP literals, `<local>`), and the fact that with neither flag Chrome reads the platform's system proxy — which on macOS is empty while the WireGuard tunnel is primary (issue #67), so the flag is the working path (`runbooks/client-vpn-proxy-configuration.md` §4.1): <https://www.chromium.org/developers/design-documents/network-settings/>.
 
 ## SageMaker and shared storage
 
