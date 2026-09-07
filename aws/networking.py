@@ -131,6 +131,31 @@ UNALLOCATED_CIDR = "10.40.0.0/16"
 HUB_CIDR = "10.31.0.0/16"
 WIREGUARD_CIDR = "10.90.0.0/24"
 
+# INT-22's ZONE MATRIX, WHICH NT-12 READS (6c steps 2.4 and 2.6). Keyed by zone, valued by the VPC
+# RANGES that must be associated - and by exactly those, because the associations that are ABSENT
+# carry as much of the design as the ones that are present: `prod.awsds.internal` is deliberately
+# not in Sandbox, `awsds-pages.internal` deliberately not in Workloads.
+#
+# BY CIDR AND NOT BY NAME TAG, for two reasons. A range is this estate's identifier for a VPC
+# (`scripts/tfhygiene/backend.py`'s allocation table), it is already in this file's readings, and it
+# does not move when a Name tag does - which it did at 6c step 1.1, breaking two spokes while every
+# id-shaped gate read clean (Lesson 48). The human names are here as comments so a reader can
+# compare this table with `docs/NETWORK.md` without a lookup.
+INT22_MATRIX = {
+    # the apex: every VPC, because it holds the shared names (gitlab, proxy, vpn) and the [E] probes
+    "awsds.internal": (
+        "10.20.0.0/16",  # Sandbox
+        "10.30.0.0/16",  # VPC-SharedServices
+        "10.31.0.0/16",  # VPC-Networking
+        "10.32.0.0/16",  # VPC-Workloads
+        "10.50.0.0/16",  # Staging
+    ),
+    "sandbox.awsds.internal": ("10.20.0.0/16", "10.31.0.0/16"),  # Sandbox + the hub
+    "staging.awsds.internal": ("10.50.0.0/16", "10.31.0.0/16"),  # Staging + the hub
+    "prod.awsds.internal": ("10.30.0.0/16", "10.31.0.0/16", "10.32.0.0/16"),  # the three Production
+    "awsds-pages.internal": ("10.30.0.0/16", "10.31.0.0/16"),  # where Pages is served and read
+}
+
 # The range Control Tower's ACCOUNT FACTORY VPC occupies (measured 2026-08-15: every vended
 # account carries one - IsDefault=False, three private subnets named aws-controltower-*, no
 # IGW, a flow log at 90 days). The project's own address plan is 10.0.0.0/8-based (step
@@ -739,46 +764,72 @@ def main(argv: list) -> int:
                 "the flow log is how a dropped packet is seen at all.",
             )
 
-    # NT-8: the four cross-account zone associations of step 4.4, resolved against the
-    # single non-default VPC of the Sandbox and Staging profiles. If an account has
-    # zero or more than one non-default VPC the check says "cannot resolve" rather than
-    # guessing.
+    # NT-8 IS RETIRED AND NT-12 REPLACES IT (6c step 2.6, 2026-09-07). NT-8 asked whether
+    # `prod.internal` and `pages.internal` reached the two spoke VPCs - four questions about a zone
+    # family that no longer exists. What replaced that family is not a longer list of the same
+    # question: it is INT-22's MATRIX, five zones against five VPCs, where the associations that are
+    # ABSENT carry as much of the design as the ones that are present. `prod.awsds.internal` is
+    # deliberately not in Sandbox; `awsds-pages.internal` is deliberately not in Workloads.
+    #
+    # SO THE CHECK IS TWO-SIDED, and that is the whole difference. A missing association is a name
+    # that NXDOMAINs where somebody expects it; an EXTRA one is a spoke resolving into a plane it
+    # was kept out of, which no amount of testing the expected direction would find.
+    #
+    # THE VPCs ARE RESOLVED BY NAME TAG, not by position: an account with three VPCs (Production
+    # has three) cannot be reduced to "its non-default VPC", which is exactly the assumption NT-8
+    # carried and could carry only while every account had one.
+    vpc_by_cidr = {c: vpc for _p, vpc, c, is_default, _s, _h in vpcs if is_default == "False"}
     zone_names = {z[2] for z in zones}
-    for zone in ("prod.internal", "pages.internal"):
+    for zone, want_names in sorted(INT22_MATRIX.items()):
         if zone not in zone_names:
-            checks.note("NT-8", f"zone {zone}", "not created yet - expected before Stage 3 step 4.")
+            checks.fail("NT-12", f"zone {zone}", "does not exist - the matrix names it (INT-22)")
             continue
-        for tp in (SBX_PROFILE, STAGING_PROFILE):
-            candidates = [
-                vpc for p, vpc, _c, is_default, _s, _h in vpcs if p == tp and is_default == "False"
-            ]
-            tv = candidates[0] if len(candidates) == 1 else ""
-            if not tv:
-                checks.note(
-                    "NT-8",
-                    f"{zone} associated with the {tp} VPC",
-                    f"cannot resolve: {tp} has zero or several non-default VPCs, "
-                    "or was not measured.",
+        want = {vpc_by_cidr[c] for c in want_names if c in vpc_by_cidr}
+        unresolved = [c for c in want_names if c not in vpc_by_cidr]
+        got = {zv for _p, zn, zv, _r in zonevpcs if zn == zone}
+        missing = sorted(want - got)
+        extra = sorted(got - want)
+        if unresolved:
+            checks.note(
+                "NT-12",
+                f"{zone} - the matrix as documented equals the matrix as deployed",
+                f"no VPC with range(s) {', '.join(unresolved)} was measured in this run - that account holds no live profile here. Reported rather than assumed.",
+            )
+        elif missing or extra:
+            checks.fail(
+                "NT-12",
+                f"{zone} - the matrix as documented equals the matrix as deployed",
+                (
+                    f"MISSING {missing} - a name that NXDOMAINs where the matrix says it resolves. "
+                    if missing
+                    else ""
                 )
-            elif any(zn == zone and zv == tv for _p, zn, zv, _r in zonevpcs):
-                checks.ok("NT-8", f"{zone} associated with the {tp} VPC", f"{tv} (step 4.4)")
-            else:
-                checks.fail(
-                    "NT-8",
-                    f"{zone} associated with the {tp} VPC",
-                    f"{tv} is NOT in the zone's association list - the query for "
-                    f"gitlab.{zone} from that VPC returns NXDOMAIN, and over the "
-                    "VPN that is 'GitLab is down' (step 4.4).",
-                )
+                + (
+                    f"EXTRA {extra} - a VPC resolving into a plane INT-22 keeps it out of, which is "
+                    "the half no expected-direction test would find."
+                    if extra
+                    else ""
+                ),
+            )
+        else:
+            checks.ok(
+                "NT-12",
+                f"{zone} - the matrix as documented equals the matrix as deployed",
+                f"{len(want)} association(s), and no others",
+            )
+
+    # THE ONE ZONE OF THE OLD FAMILY STILL STANDING, AND IT IS A DATED EXCEPTION RATHER THAN A
+    # FINDING. `prod.internal` and `pages.internal` were destroyed at 2.6 on 2026-09-07;
+    # `sandbox.internal` could not go with them because `sandbox/foundation` is FROZEN - it plans
+    # `1 to add` (an Elastic IP that would be a SECOND allocation) until 6c's `VPN_HOMES` trim, and
+    # that trim waits on step 6.5's readings. The zone is harmless meanwhile: nothing resolves it
+    # and nothing points at it. It leaves with the same apply that unfreezes that slice.
     if "sandbox.internal" in zone_names:
-        checks.ok(
-            "NT-8",
-            "zone sandbox.internal exists",
-            "associated at creation, no handshake needed (step 4.4)",
-        )
-    else:
         checks.note(
-            "NT-8", "zone sandbox.internal", "not created yet - expected before Stage 3 step 4."
+            "NT-12",
+            "sandbox.internal, the last of the retired family",
+            "still present - `sandbox/foundation` is frozen until the VPN_HOMES trim (6c 6.5), so "
+            "this zone leaves with the apply that unfreezes it. Expected, dated, not drift.",
         )
 
     # NT-9: the private-door premise of 2026-08-24 (PORTAL_FAMILY_BASELINE). A membership
@@ -1136,9 +1187,12 @@ is done: exactly two distinct ids - Sandbox<->Production and Staging<->Productio
         rep.h1("7. Private hosted zones, associations, pending authorizations")
 
         rep.text("""Step 4.2 creates THREE zones and deliberately not one per account: sandbox.internal
-(Sandbox), prod.internal and pages.internal (Production). Staging and Data Governance
-get none. The association table is step 4.4: prod.internal and pages.internal must
-each reach the Sandbox AND Staging VPCs, or gitlab.prod.internal is NXDOMAIN
+(Sandbox), prod.internal and pages.internal (Production) - AND THAT FAMILY IS RETIRED.
+6c step 2.6 destroyed the two Production zones on 2026-09-07 and NT-12 replaced NT-8's
+four questions with INT-22's whole matrix. What resolves now is one APEX (awsds.internal,
+all five VPCs, holding gitlab/proxy/vpn and the [E] probe records), three per-account
+child zones, and awsds-pages.internal. `sandbox.internal` is the last of the old family
+and leaves with the apply that unfreezes sandbox/foundation - see NT-12's note.
 over the VPN. Check NT-8 resolves it mechanically.
 
 """)

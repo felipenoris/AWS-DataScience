@@ -1892,3 +1892,48 @@ thing to actually run. They are written up individually because three of them ar
   generated file is an invitation to find a use for it.
 - **[Claude] Client instruction: ONE line.** `Address = 10.90.0.2/32, fd90::2/128`. Same shape as the
   `DNS` edit the account move needed, and for the same reason — everything else is `[P]`.
+
+## 2026-09-07 — 2.6 and 2.4: the old zone family retired, and the obvious target was wrong
+
+- **[Claude⚡] `prod.internal` and `pages.internal` destroyed** — `0 to add, 0 to change,
+  **10 to destroy**`: the two zones, four cross-account authorizations and four associations,
+  exactly the old family and nothing else. The gate was **6.1's DNS pair**, which was built for this:
+  it asks that `prod.awsds.internal` **answer** and `sandbox.internal` **not**, so passing it is the
+  measurement 2.6 was waiting for.
+- **[Claude] THE OBVIOUS TARGET FOR THE PROBE RECORDS WAS WRONG, and the matrix is what says so.**
+  `probe.prod.internal` and `probe-isolated.prod.internal` look like they belong in
+  `prod.awsds.internal` — same account, successor name. INT-22 associates that zone with
+  VPC-Workloads, VPC-SharedServices and VPC-Networking and **deliberately not with Sandbox**, which
+  is the one place those records are resolved **from**: their whole job is to be the cross-account
+  private-DNS Deliverable. In the child zone they would be NXDOMAIN at the only address that asks.
+  They went to the **apex**, the one zone all five VPCs share — joining `gitlab`, `proxy` and `vpn`,
+  and unlike those three they are `[E]`.
+- **[Claude] `sandbox.internal` STAYS, and the reason is another slice's freeze.**
+  `sandbox/foundation` plans **`1 to add`** — an Elastic IP that would be a **second** allocation —
+  until the `VPN_HOMES` trim, and that trim waits on step **6.5**, which is half the user's.
+  `-target` would destroy just the zone and the runbook forbids it outside two recipes, neither of
+  which is this. So the zone stands, harmless (nothing resolves it, nothing points at it), and
+  leaves with the apply that unfreezes the slice. Recorded where it will be met: `NT-12` carries it
+  as a **dated note**, naming the step that ends it.
+- **[Claude] `NT-12` written at 2.6, exactly as 2.4's own correction predicted it would have to
+  be** — *"it cannot be written to the FINAL matrix and run before 2.6"*. Reading:
+  **5, 2, 2, 3, 2 associations, and no others.**
+  - **Two-sided, and that is the design.** A **missing** association is a name that NXDOMAINs where
+    the matrix says it resolves; an **extra** one is a spoke resolving into a plane INT-22 keeps it
+    out of — *the half no expected-direction test would find*. `prod.awsds.internal` not being in
+    Sandbox is a control, and only the second half measures it.
+  - **By CIDR, not by Name tag.** A range is this estate's identifier for a VPC and it does not move
+    when a tag does — which it did at step 1.1, breaking both spokes while every id-shaped gate read
+    clean ([Lesson 48](../plan/lessons.md)). The human names ride along as comments so the table can
+    be compared with `docs/NETWORK.md` without a lookup.
+  - **Four branches exercised on synthetic input** (Lesson 13): matching, one association missing,
+    one extra, the zone absent, and an account that was not measured — the last being a `note`
+    rather than a `fail`, because no session on an account and no association look alike.
+  - **`NT-8` is retired, not renumbered.** It asked four questions about a family that no longer
+    exists, and it resolved a VPC as *"the account's non-default one"* — an assumption that could
+    only hold while every account had exactly one, which Production stopped doing at pass 1.
+- **[Claude] Seven consumers followed the retirement**, found by grep before the destroy rather than
+  after it: the three probe slices, `networking.py`, `supplychain.py`'s `ZONES`, `cicd.py`,
+  `orchestration.py`, `layers.py` and `aws/INDEX.md`. **Historical prose in Stages 3, 4 and 6a is
+  deliberately left alone** — those are records of what was true then, and rewriting them would be
+  editing a log.

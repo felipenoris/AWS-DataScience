@@ -1,6 +1,9 @@
-# prod.internal and pages.internal - Production owns both (Stage 3 step 4.2; pages here
-# rather than in Stage 7 because conventions §6 places it in production/foundation/).
-# ~USD 0.50/zone-month, both already in the cost-model floor.
+# The private DNS this account owns: the `awsds.internal` APEX and the `awsds-pages.internal`
+# sibling (Pages keeps its own apex for the cookie-scope reason D36 gives; conventions §6 places
+# it here rather than in Stage 7). ~USD 0.50/zone-month each, both in the cost-model floor.
+#
+# THE FAMILY THIS REPLACED - `prod.internal` and `pages.internal`, Stage 3 step 4.2 - was retired
+# at 6c step 2.6 on 2026-09-07; the block below says what moved where.
 #
 # THE INLINE vpc BLOCK IS THE INITIAL ASSOCIATION ONLY. The four cross-account associations
 # of 4.4 (Sandbox and Development, pass 2) are made by aws_route53_zone_association
@@ -8,31 +11,21 @@
 # provider requires ignore_changes on vpc for exactly that mix, or every later plan tries to
 # remove what the other account associated.
 
-resource "aws_route53_zone" "prod_internal" {
-  name    = "prod.internal"
-  comment = "Production private names - gitlab and friends (Stage 3 step 4.2, Stage 7)"
-
-  vpc {
-    vpc_id = module.vpc.vpc_id
-  }
-
-  lifecycle {
-    ignore_changes = [vpc]
-  }
-}
-
-resource "aws_route53_zone" "pages_internal" {
-  name    = "pages.internal"
-  comment = "GitLab Pages private names (Stage 3 step 4.2, Stage 7 step 4)"
-
-  vpc {
-    vpc_id = module.vpc.vpc_id
-  }
-
-  lifecycle {
-    ignore_changes = [vpc]
-  }
-}
+# THE TWO ZONES THAT STOOD HERE ARE GONE (step 2.6, 2026-09-07). `prod.internal` and
+# `pages.internal` were created at Stage 3 step 4.2 and retired once pass 6 had measured their
+# successors - step 6.1's DNS pair is that measurement, and it was built to discriminate: it asks
+# that `prod.awsds.internal` ANSWER and `sandbox.internal` NOT, from the hub's resolver.
+#
+# ZONES CANNOT BE RENAMED, so the two families coexisted from pass 2 to pass 6 by construction, and
+# every check that compared "the matrix as documented" with "the matrix as deployed" had to tolerate
+# that window. It is closed, and `NT-12` is written against the final matrix rather than against a
+# dated exception.
+#
+# WHAT MOVED, so a reader looking for a name knows where it went: the shared names (`gitlab`,
+# `proxy`, `vpn`) are in the apex below; the per-environment ones are in the child zones each
+# account owns; and the two `[E]` probe records went to the APEX rather than to
+# `prod.awsds.internal`, because they are resolved FROM Sandbox and the child zone is deliberately
+# not associated there.
 
 # ---------------------------------------------------------------- Stage 6c pass 2: the apex
 #
@@ -51,10 +44,6 @@ resource "aws_route53_zone" "pages_internal" {
 # ones is therefore a naming convention, not a delegation hierarchy - and INT-22's matrix is what
 # makes it work, which is why 2.4 writes the matrix down and a check reads it.
 #
-# THE OLD FAMILY IS STILL HERE, AND FOR SEVERAL PASSES. `prod.internal` and `pages.internal` above
-# are retired at step 2.6, AFTER pass 6 measures the new ones - zones cannot be renamed, so the
-# two families coexist by construction. Anything comparing "the matrix as documented" against "the
-# matrix as deployed" has to tolerate that window (2.4's NT-12, corrected before it was written).
 
 resource "aws_route53_zone" "awsds_internal" {
   name    = "awsds.internal"

@@ -69,13 +69,13 @@ variable "peer_cidrs" {
 variable "target_name" {
   description = "The target's name in the peer account's private zone - the permitted address, in a tier this account routes to."
   type        = string
-  default     = "probe.prod.internal"
+  default     = "probe.awsds.internal"
 }
 
 variable "target_forbidden_name" {
   description = "The SAME host's second interface, in a tier this account holds no route to. That this name RESOLVES and still does not connect is the reading: resolution proves the zone association and the host, so only the route is left to explain the silence."
   type        = string
-  default     = "probe-isolated.prod.internal"
+  default     = "probe-isolated.awsds.internal"
 }
 
 variable "listener_port" {

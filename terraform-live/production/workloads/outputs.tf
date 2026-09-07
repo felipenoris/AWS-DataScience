@@ -61,7 +61,7 @@ output "tier_security_group_ids" {
 }
 
 # NO ZONE OUTPUTS, AND THE ABSENCE IS THE DESIGN (Stage 6c step 1.2). production/foundation/
-# owns prod.internal and pages.internal; this VPC is ASSOCIATED into zones it does not own,
+# owns the awsds.internal apex and awsds-pages.internal; this VPC is ASSOCIATED into zones it does not own,
 # which is the opposite direction (step 2.5) and produces nothing for a caller to read.
 
 # Stage 6c step 2.5 reads this from Production, to associate VPC-Networking after this account

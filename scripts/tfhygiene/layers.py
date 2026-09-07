@@ -261,9 +261,9 @@ SLICES = [
     # data-governance has NO row here by decision (D22: no VPC at all). `staging` used to be
     # annotated "joins at vend"; the quota refused that vend and Stage 6b renamed
     # `Development` instead, so its rows arrive by `git mv` at 4.3 (2026-09-06).
-    Slice("sandbox", "foundation", PERSISTENT, "VPC 3x2, gateway endpoints, sandbox.internal"),
+    Slice("sandbox", "foundation", PERSISTENT, "VPC 3x2, gw endpoints, sandbox.awsds.internal"),
     Slice("staging", "foundation", PERSISTENT, "VPC 3x2, gateway endpoints, no zone (4.2)"),
-    Slice("production", "foundation", PERSISTENT, "VPC 3x2, gw endpoints, prod+pages.internal"),
+    Slice("production", "foundation", PERSISTENT, "VPC 3x2, gw endpoints, the apex + Pages zones"),
     # Stage 6c step 1.2 (2026-09-06) - D38's hub. The ONLY VPC in the estate whose public tier
     # routes to an internet gateway; every other one is private by that route's ABSENCE. Free at
     # rest like every other foundation-shaped slice: the metered things (the proxy, the VPN host)
@@ -325,7 +325,7 @@ SLICES = [
     # nothing about them was the subject of that change, and a probe pays the ~20% Graviton
     # discount for measuring exactly what an x86 one would.
     # THEY ARE ORDERED: production/probes is the target, so it applies BEFORE the two source
-    # rows, which find it by name in prod.internal. rank 60 puts all three after egress/,
+    # rows, which find it by name in the awsds.internal apex. rank 60 puts all three after egress/,
     # whose S3 gateway policy the perimeter probe measures.
     Slice("production", "probes", EPHEMERAL, "peering target: 1 host, 2 ENIs, 2 A records", 0.0042),
     Slice("sandbox", "probes", EPHEMERAL, "perimeter probe (isolated) + peering probe", 0.0084),

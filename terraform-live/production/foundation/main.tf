@@ -1,6 +1,6 @@
 # production/foundation/ - Production's [P] network (Stage 3 pass 1), built now because
 # Stage 7 (GitLab) cannot start before it exists (D14). One vpc-module instance plus its
-# flow-log delivery role; the prod.internal and pages.internal zones are in zones.tf. Pass 2
+# flow-log delivery role; the awsds.internal apex and awsds-pages.internal are in zones.tf. Pass 2
 # (the TWO peering accepters - Sandbox and Development, and nothing else, step 6.2 - and the
 # four association authorizations of 4.4, as a for_each over a map of peers so the second
 # apply is additive) lands here in its own sitting.

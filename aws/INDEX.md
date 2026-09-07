@@ -603,7 +603,7 @@ draws, applied to one subsystem — and a `[P]` fact that moves is re-measured h
 | Do the `[P]` anchors exist — the versioned backup bucket, the `gitlab-secrets` container? | 3, decided by `SC-3` — **metadata only; this file never reads a secret value** |
 | **How many days of runway does an imported leaf have** (ACM does not renew imports)? | 4, decided by `SC-8` |
 | Is the CA root published at its one source (INT-19, Lesson 14)? | 4, decided by `SC-9` |
-| Do `gitlab.prod.internal` and `*.pages.internal` resolve to records at all? | 4 |
+| Do `gitlab.awsds.internal` and `*.awsds-pages.internal` resolve to records at all? | 4 |
 | **Are the two required repositories tag-IMMUTABLE** — the Stage 8 premise? | 5, decided by `SC-4` |
 | Is a pull-through cache repository immutable (the documented trap)? | 5, decided by `SC-5` |
 | Is scanning BASIC (decision 2's free path) or ENHANCED (the Stage 11 upgrade)? | 5 — reported, not judged |

@@ -919,7 +919,7 @@ What the checks are, and where each comes from:
     (5.4) and the full promotion (6.1) are measured only after it.
   - Every Sandbox beyond unit 1 has no profile until Stage 14 (D35).
   - GitLab's objects (the lint job, the approval manual job) live behind
-    gitlab.prod.internal - the stage log records them.
+    gitlab.awsds.internal - the stage log records them.
   - The Studio's serverless-Workflows surface is console-recorded (0.4);
     Development's project-side runs bill task-hours there and are not listed
     here - this file reads Production's workflows only.""")

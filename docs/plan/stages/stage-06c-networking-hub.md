@@ -360,6 +360,15 @@ down (INT-22) and read by a check, since nothing derives it.
   asserting *"the matrix as documented equals the matrix as deployed"* fails on every surviving old
   association. It needs the old family named as an expected, dated exception that 2.6 removes — the same
   treatment `EXC-nn` rows get — or it is written at 2.6 rather than at 2.4.
+- **2.4 — DONE 2026-09-07, WRITTEN AT 2.6 AS ITS OWN NOTE PREDICTED.** `NT-12` reads all five
+  zones and passes — **5, 2, 2, 3, 2 associations, and no others**. It is **two-sided on purpose**:
+  a MISSING association is a name that NXDOMAINs where the matrix says it resolves, and an EXTRA
+  one is a spoke resolving into a plane INT-22 keeps it out of — *the half no expected-direction
+  test would find*. It resolves each VPC by **CIDR and not by Name tag**, because a range is this
+  estate's identifier and does not move when a tag does, which it did at step 1.1 while every
+  id-shaped gate read clean (Lesson 48). All four branches exercised on synthetic input.
+  **`NT-8` is RETIRED, not renumbered** — it asked four questions about a zone family that no
+  longer exists. *The original step follows:*
 - **2.4 — [Claude] Write the association matrix** into `docs/NETWORK.md` §10, enforced by a new
   `./aws/networking.py` check **`NT-12`** (the matrix as documented equals the matrix as deployed):
 
@@ -379,6 +388,23 @@ down (INT-22) and read by a check, since nothing derives it.
   keeps it in Terraform state** (`aws_route53_vpc_association_authorization`, as `peers.tf` keeps the
   peering pair) so the destroy order stays expressible — record the divergence and its reason in
   `NETWORK.md` §10 rather than leaving it to look like an oversight.
+- **2.6 — DONE 2026-09-07 FOR TWO OF THREE, AND THE THIRD IS BLOCKED BY A DIFFERENT GATE.**
+  `prod.internal` and `pages.internal` destroyed with their four authorizations and four
+  cross-account associations — **`0 to add, 0 to change, 10 to destroy`**, exactly the old family
+  and nothing else. The gate was step **6.1's DNS pair**, which was built to discriminate:
+  `prod.awsds.internal` must answer and `sandbox.internal` must not.
+  **`sandbox.internal` STAYS**, and not for a reason of its own: `sandbox/foundation` is **frozen**
+  — it plans `1 to add`, an Elastic IP that would be a **second** allocation, until the `VPN_HOMES`
+  trim, and that trim waits on **6.5**. The zone is harmless (nothing resolves it, nothing points at
+  it) and leaves with the apply that unfreezes the slice. `NT-12` carries it as a **dated note**.
+  **THE OBVIOUS TARGET FOR THE PROBE RECORDS WAS WRONG.** `probe.prod.internal` and
+  `probe-isolated.prod.internal` look like they belong in `prod.awsds.internal` — and INT-22
+  deliberately does **not** associate that zone with Sandbox, which is the one place the records are
+  resolved FROM. They moved to the **apex** instead, joining `gitlab`, `proxy` and `vpn`, and unlike
+  those three they are `[E]`.
+  Seven consumers followed the retirement: the three probe slices, `networking.py` (NT-8 → NT-12),
+  `supplychain.py`'s `ZONES`, `cicd.py`, `orchestration.py`, `layers.py` and `aws/INDEX.md`.
+  *The original step follows:*
 - **2.6 — [Claude⚡] Retire the old zones, after pass 6 measures the new ones**: `sandbox.internal`,
   `prod.internal` and `pages.internal` with their associations. Zones cannot be renamed, so this is
   create-then-retire and the two families coexist for one sitting.
