@@ -259,6 +259,15 @@ started. **The first one is load-bearing against principle 4.**
     way.** 1c denies the action in
     `Workloads`, `Data` and `Identity` — where nobody should be running a space at all — and deliberately
     not in `Interactive`.
+    **Half-answered, and the halves are written here so the open one is not read as closed (2026-09-06):**
+    6a step 3.2 **applied** the two tag-scoped denies into the six persona sets, and that is the whole of
+    what exists — **the channel has never been opened**, so the endpoints it needs under design B were
+    never derived (AWS's own two pages sit in [`REFERENCES.md`](../REFERENCES.md), consumed by no step),
+    the denies were never exercised, and the residual is *accepted* on the documentation's word rather than
+    measured. The exercise half is **[6d](stages/stage-06d-unified-studio-remainder.md) step 7**, which
+    also asks the question the scoping silently rests on: `StartSession` is granted by the **project
+    role**, while the denies are attached to the **persona** — if the caller is the former, the pair never
+    evaluates (Lesson 18) and the repair is the D13 boundary, not a new statement.
 15. **"As many instances as they like" is a cost statement before it is an access statement.** Each
     JupyterLab or Code Editor space is a running instance billed by the hour, and D11 ("pay nothing while
     idle") is a property of the *design*, not of the user's habits. What closes it is idle shutdown plus a
