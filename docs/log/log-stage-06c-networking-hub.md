@@ -1814,3 +1814,81 @@ thing to actually run. They are written up individually because three of them ar
   Safari, Chrome-by-default and native apps have no working path; and with the tunnel **down** the
   same setting breaks the `aws` CLI, which falls back to the macOS system configuration and which an
   empty `https_proxy` does **not** override — `NO_PROXY='*'` does.
+
+## 2026-09-07 — the tunnel gains an IPv6 ULA, and it closes a leak nobody had a reading for
+
+- **[user] The question that found it was not about IPv6.** *"Com o túnel ligado não tenho internet,
+  mas a nossa conversa continua funcionando. Como isso é possível?"* — and the answer took two
+  measurements, of which only the second was the real one.
+- **[Claude] First measurement, and it was only half the story.** `netstat -rn -f inet` shows **two**
+  default routes: the tunnel's, and the physical one carrying the **`I` (interface-scoped)** flag.
+  macOS keeps the physical default alive and scoped, so a socket already associated with `en0` keeps
+  using it. Proven both ways: a new `curl https://example.com` **fails**; the same with
+  `--interface en0` returns **200**.
+- **[Claude] Second measurement, and this was the finding.** Established TCP connections by local
+  address:
+
+  ```
+     5 on 192.168.18.45      the Wi-Fi address (IPv4)
+     4 on 2804:…             a GLOBAL IPv6 address
+     0 on 10.90.0.2          the tunnel
+  ```
+
+  By process: **`claude` ×5**, `Claude`, `OneDrive` ×2, `Spotify`, and three macOS services. **The
+  session asking the question was one of them**, on IPv6, with no route into the tunnel at all —
+  `utun4` had **no `inet6` address and no IPv6 default route**.
+- **[Claude] `AllowedIPs = ::/0` HAD BEEN INERT SINCE THE FIRST DAY, AND THREE DOCUMENTS SAID
+  OTHERWISE.** `wg-quick` installs routes only for the address families the interface **has an
+  address in**, and `[Interface] Address` was IPv4-only. The runbook's §C4 said IPv6 was
+  *"deliberately black-holed"* — it was not black-holed, it was **not routed**, and the difference
+  is a leak. [Lesson 56](../plan/lessons.md): a configuration line naming a capability the
+  surrounding configuration does not have is inert and reads exactly like a working control; verify
+  a routing directive from the **routing table**, never from the config that was meant to produce it.
+- **[Claude] AND THE LEAK IS NOT AN AWS LEAK, which is worth being precise about.** Measured: `ec2`,
+  `ssm`, `logs` and `sts` in `us-west-2` have **no AAAA records** — AWS API endpoints are IPv4-only,
+  so they went into the tunnel and were rejected. The perimeter was never bypassed. What leaked was
+  ordinary internet traffic — Spotify, OneDrive, Apple's services and the Anthropic clients —
+  outside the proxy, outside the allow-list and outside the access log. For the objectives'
+  data-leakage requirement the honest sentence is that the full tunnel was, on this client, an
+  **IPv4-only** leakage control.
+- **[Claude⚡] `wireguard-v0.6.0`, and the point is what it does NOT do.** All five VPCs are
+  IPv4-only (measured), so the host has no IPv6 uplink and the ULA carries nothing: IPv6 now
+  **enters** the tunnel and is **rejected** there. One `ip6tables` rule rather than an allow-list,
+  because there is one answer — and explicit rather than left to routing (forwarding is already `0`)
+  so the refusal is **counted**, which [Lesson 55](../plan/lessons.md) established two days earlier
+  as the only place a refusal the sender cannot see is legible.
+  **`fd90::<n>` mirrors `10.90.0.<n>`** — a deliberate departure from RFC 4193's randomly generated
+  global ID, recorded as a departure: that rule guards against collisions when private networks
+  merge, this prefix never leaves the tunnel, and the roster, the handshake log and the access log
+  all key on the host number.
+- **[Claude] THE HONEST HALF, WHICH CORRECTED THE USER'S PREMISE BEFORE THEY CONFIRMED.** The user
+  asked whether the ULA is a host-side control the client cannot bypass. **It is not.**
+  `AllowedIPs` on the *client* side is a routing directive: whoever holds the laptop deletes the
+  IPv6 `Address` line and IPv6 leaves the tunnel again. Nothing on a WireGuard server can compel a
+  peer to send it traffic. What this closes is an **accidental** leak and it makes the config honest;
+  enforcement is `DenyControlPlaneOffVpn` (which fails closed) and the proxy's lists, and the
+  institutional answer to the client half is an MDM profile the owner cannot edit. The user
+  confirmed knowing that.
+- **[Claude⚡] Applied — `2 to add, 3 to change, 2 to destroy`** (the host is replaced; user data
+  writes `wg0.conf`). Measured on the new host:
+
+  ```
+  wg0    10.90.0.1/24 fd90::1/64
+  peer   allowed ips: 10.90.0.2/32, fd90::2/128
+  peer   allowed ips: 10.90.0.3/32, fd90::3/128
+  ip6tables FORWARD 1  REJECT  all  wg0 *  ::/0 ::/0  reject-with icmp6-adm-prohibited
+  ```
+
+  **The host's public key is unchanged** — `LCD1d6xj…` — because it came from the `[P]` secret again,
+  so **no client's `PublicKey` or `Endpoint` line moves**. `./aws/vpn.py`: `VP-1` through `VP-9`,
+  all pass, Elastic IP still `52.89.212.1`.
+- **[Claude] Rendered before tagging** (Lesson 54): a scratch `templatefile` produced
+  `Address = 10.90.0.1/24, fd90::1/64` and both peers' dual `AllowedIPs`, and `bash -n` passed on
+  the whole user data. `ip6tables` was confirmed present on the running host **before** the rule was
+  written, because a failing `PostUp` on a host reachable only by SSM is an expensive way to learn.
+- **[Claude] The vocabulary carries the ULA to exactly one slice.** `WIREGUARD_PEER_CIDR_V6` reaches
+  `production/vpn` and **deliberately not** `production/networking`: the hub's consumers are a
+  security group and a route table, both IPv4 because the VPCs are, and an unused value in a
+  generated file is an invitation to find a use for it.
+- **[Claude] Client instruction: ONE line.** `Address = 10.90.0.2/32, fd90::2/128`. Same shape as the
+  `DNS` edit the account move needed, and for the same reason — everything else is `[P]`.

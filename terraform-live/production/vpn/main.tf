@@ -44,12 +44,13 @@ data "aws_subnet" "public" {
 
 module "wireguard" {
   # checkov:skip=CKV_TF_1:pinned by git TAG by convention (conventions §6, Stage 3 step 1.1a) - a repository-internal tag only the repo owner can move
-  source = "git::git@github.com:felipenoris/AWS-DataScience.git//terraform-modules/wireguard?ref=wireguard-v0.5.0"
+  source = "git::git@github.com:felipenoris/AWS-DataScience.git//terraform-modules/wireguard?ref=wireguard-v0.6.0"
 
-  env        = var.env
-  zone_ids   = var.zone_ids
-  zone_index = var.zone_index
-  peer_cidr  = var.peer_cidr
+  env          = var.env
+  zone_ids     = var.zone_ids
+  zone_index   = var.zone_index
+  peer_cidr    = var.peer_cidr
+  peer_cidr_v6 = var.peer_cidr_v6
 
   instance_type    = var.instance_type
   root_volume_size = var.root_volume_size

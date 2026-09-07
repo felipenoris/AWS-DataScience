@@ -13,10 +13,17 @@
 >
 > **Two of §C2's three checks were retired by the move** and are replaced there. Following the old ones
 > literally produces two "failures" that are the design working.
+>
+> **AND TWO THINGS CHANGED AGAIN ON 2026-09-07, both found by the user rather than by a gate.** The
+> client plane's proxy list was an **allow**-list and the objectives ask for the opposite — it is now
+> `open` with an empty deny list, everything permitted and everything logged (**§C5a**, with SageMaker's
+> list beside it). And the tunnel gained an **IPv6 ULA**, which closes a leak rather than opening a path:
+> `AllowedIPs = ::/0` had been inert without a matching `Address` line, and every IPv6-capable
+> application was leaving outside the tunnel (**§C6**). An existing config gains one line.
 
 | | |
 |---|---|
-| **Scope** | The whole VPN surface, in three parts. **Part S — the system**: what the pieces are, which slice owns each, how a packet actually travels, what the VPN is *not* (the NAT), how the host is started and stopped, and how its size is switched (§S6). **Part C — the client**: one enrolled device's side of the tunnel — writing its `.conf`, bringing it up, proving it, taking it down. **Part K — the server**: the shell on the host (§K0a), the two kinds of key pair, and the four procedures — recovery, revocation, host rotation, device rotation (the last also being how a device is *added*) |
+| **Scope** | The whole VPN surface, in three parts. **Part S — the system**: what the pieces are, which slice owns each, how a packet actually travels, what the VPN is *not* (the NAT), how the host is started and stopped, and how its size is switched (§S6). **Part C — the client**: one enrolled device's side of the tunnel — writing its `.conf`, bringing it up, proving it, taking it down, **what it may then reach** (§C5a's two tables) and **why it carries an IPv6 address that routes nowhere** (§C6). **Part K — the server**: the shell on the host (§K0a), the two kinds of key pair, and the four procedures — recovery, revocation, host rotation, device rotation (the last also being how a device is *added*) |
 | **Operator** | Parts S and K: the **infrastructure user**, profile `awsds-infra-prod` (`InfrastructureAccess` in `Production`) — plus `awsds-infra-identity` for §K6's fragment toggles. Part C: the **device's owner, on the device** — no AWS profile and no SSO session: nothing in that part calls an AWS API |
 | **The two rules** | **Loss is answered by recovery, never by rotation** (Part K): a new host key forces an instance replacement and breaks every client config at once — each one pins the server's public key. Rotate for *compromise* (§K3), recover for *loss* (§K1); the mechanised violation is Secrets Manager's own rotation feature, off forever (§K5, `VP-9`). **Full tunnel, never split** (Part C): `AllowedIPs = 0.0.0.0/0, ::/0`, both families — **and the reason changed with the estate on 2026-09-06 while the rule did not.** It used to be that `DenyControlPlaneOffVpn`'s `aws:SourceIp` matched only traffic exiting through *this host's* Elastic IP. Under [D38](../decisions/D38-single-egress-hub.md) the tunnel host reaches no public address at all: a persona's control-plane call travels tunnel → **proxy** → AWS, and the address the deny names is the **proxy's**. A split tunnel would send that call out of the laptop's own uplink, where it wears neither address — still a lockout with the tunnel up, by a longer path |
 | **The picture around it** | **[`docs/NETWORK.md`](../../NETWORK.md)** — every VPC, subnet, route table and address in the estate, and where this host sits in them. This file stays the **procedure**; that one is what a packet's whole path looks like |
@@ -573,7 +580,7 @@ AWS and is the one line worth re-examining when a working config stops working s
 | Line | Value today | Where it comes from |
 |---|---|---|
 | `PrivateKey` | this device's own | Generated **on the device** and never anywhere else (§K4). Read from its file, never retyped |
-| `Address` | `10.90.0.<host>/32` | `cidrhost(peer_cidr, host)` — the device's `host` number in the tracked roster `peers.auto.tfvars`, and `peer_cidr` from the allocation table. `/32`, mirroring the server's `AllowedIPs`: a peer does not reach another peer |
+| `Address` | `10.90.0.<host>/32, fd90::<host>/128` | `cidrhost()` over **both** ranges in the allocation table, at the same `host` number from the roster — `fd90::3` is the device that is `10.90.0.3`. `/32` and `/128`, mirroring the server's `AllowedIPs`: a peer does not reach another peer. **The IPv6 half arrived 2026-09-07 and it is the one line an existing config must gain** (§C6) |
 | `DNS` | **`10.31.0.2`** | `.2` of **`VPC-Networking`**'s CIDR (`10.31.0.0/16`) — the hub's VPC resolver. **This is the one line the 2026-09-06 move changed, and it is not optional**: a VPC's `.2` resolver answers only queries born inside that VPC and **never across a peering**, so the previous value (`10.20.0.2`, the Sandbox home's) leaves the tunnel up and every name unresolvable. The hub is associated with the whole `awsds.internal` family, which is what makes `proxy.awsds.internal` resolvable at all |
 | `PublicKey` | the host's | **`[P]`, in a Secrets Manager secret** — it survives every instance rebuild, **and it survived the change of account**, because step 4.3 copied the *value* by hand rather than letting a new host mint one. Recover it without touching the secret: `host-public.key` on the laptop, this line in any existing config, or `wg show wg0 public-key` on the host |
 | `Endpoint` | `52.89.212.1:51820` | The **`[P]` Elastic IP**, now in `production/networking/` a slice away from the host, plus the one port open to the world. **It did not change when the host changed accounts** — the address was *transferred*, which is the whole reason this line is stable across a move that touched everything else |
@@ -595,7 +602,7 @@ scanner would catch a committed client config. The glob is the only thing that c
 cd ~ && (umask 077 && cat > mbp.conf <<EOF
 [Interface]
 PrivateKey = $(cat mbp-private.key)
-Address = 10.90.0.2/32
+Address = 10.90.0.2/32, fd90::2/128
 DNS = 10.31.0.2
 MTU = 1280
 
@@ -805,6 +812,115 @@ between them; what the second hop buys is a hostname in an access log and an all
 
 Connect for lab sessions; this is not an always-on VPN (Stage 4 step 5.3). And the two hosts are `[D]`:
 `make hub-down` when the session ends (§S5).
+
+### C5a. What the tunnel may reach — the client's plane, and the compute's beside it
+
+*New 2026-09-07. The two filters the objectives ask for are **not the same kind of list**, and until
+that day the client's was the wrong kind — a defect the first browser to try the proxy exposed.*
+
+**The client plane is `open`: everything is permitted and everything is logged.** That is
+`objectives.md`, twice — *"all internet access will be **monitored** … the user can therefore use
+the browser to reach the internet"*, and *"the restriction is on the SageMaker-**managed
+compute**, never on the user's (client's) machine"*. Its list is a **deny** list, and it is
+**empty by decision** (2026-09-07): the control for this plane is the **access log**, which is what
+the word *monitored* names.
+
+| plane | source | mode | list | an entry means |
+|---|---|---|---|---|
+| **`tunnel`** — this runbook's subject | `10.90.0.0/24` | **`open`** | **empty** | a name the estate's people may **not** reach |
+| `sandbox-foundation` — **SageMaker's** | `10.20.0.0/16` | `allowlist` | 20 | the only kind of name that plane **may** reach |
+| `production-foundation` — the build hosts | `10.30.0.0/16` | `allowlist` | 20 | as above |
+| `production-workloads` | `10.32.0.0/16` | `allowlist` | 0 | nothing may be reached — empty by decision |
+| `staging-foundation` | `10.50.0.0/16` | `allowlist` | 0 | as above |
+
+**Empty means opposite things in the two modes, and that is the sentence to carry away.** An empty
+**allow**-list emits no rule at all, so the source falls to `squid.conf`'s final `http_access deny
+all` and is refused **by name**. An empty **deny**-list emits a bare `http_access allow`, so
+everything passes. `./aws/dns-allowlist.py` `DN-4` is the check that a compute plane never becomes
+`open`.
+
+**SageMaker's list, in full** — the twenty names a notebook may reach, which is D5's *"short list"*
+under [D38](../decisions/D38-single-egress-hub.md):
+
+| what | names |
+|---|---|
+| AWS | `.amazonaws.com` |
+| containers | `public.ecr.aws` |
+| OS packages | `archive.ubuntu.com` · `security.ubuntu.com` |
+| Python | `astral.sh` · `releases.astral.sh` · `pypi.org` · `files.pythonhosted.org` |
+| DuckDB | `blobs.duckdb.org` · `extensions.duckdb.org` |
+| Julia | `install.julialang.org` · `julialang-s3.julialang.org` · `pkg.julialang.org` · `storage.julialang.net` · `us-west.pkg.julialang.org` |
+| Rust | `sh.rustup.rs` · `index.crates.io` · `static.crates.io` · `static.rust-lang.org` |
+| source | `github.com` |
+
+`production-foundation` is that list **minus `.amazonaws.com`** (a build host calls no AWS control
+plane) **plus one CloudFront distribution** — the host `public.ecr.aws` redirects blob downloads to,
+which Squid needs by name because it matches the hostname the client *requested* and a redirect is a
+new request.
+
+**Three denies sit above every plane and are not in any list**: private destinations (the L7-bridge
+control), unsafe ports, and `CONNECT` to anything but 443. **`open` means open to the internet,
+never open to the estate.**
+
+**Where to change one**: the lists are `[P]` locals in
+[`production/networking/hub-anchors.tf`](../../../terraform-live/production/networking/hub-anchors.tf),
+rendered into an SSM parameter. An **edit to a list** reaches the running host on a half-hour State
+Manager schedule — no host replacement. An edit to the **renderer** does not: that script is written
+by user data and needs a new host (learned 2026-09-07, when the association reported `Success` for
+running the old one).
+
+### C6. The IPv6 half, and why it exists to close something rather than to open it
+
+*New 2026-09-07, from a leak the user found by asking why a conversation kept working while the
+tunnel was up and nothing else did.*
+
+**An existing config needs ONE edit**, and it is the same shape as the `DNS` line the account move
+needed:
+
+```
+Address = 10.90.0.2/32, fd90::2/128
+```
+
+**What it fixes.** `AllowedIPs = 0.0.0.0/0, ::/0` had been in every config from the start, and the
+`::/0` half was **inert**: `wg-quick` installs routes only for the address families the interface
+**has an address in**, so an IPv4-only `Address` line means no IPv6 route into the tunnel at all.
+Measured on a live client — nine established connections were on the device's own uplink, four of
+them on a **global IPv6 address**, and *none* on the tunnel:
+
+```
+   5 connections on 192.168.18.45      the Wi-Fi address (IPv4, interface-scoped route)
+   4 connections on 2804:…             a global IPv6 address, outside the tunnel entirely
+   0 connections on 10.90.0.2          the tunnel
+```
+
+**It does not carry IPv6 traffic and is not meant to.** Every VPC in this estate is IPv4-only
+(measured), so the host has no IPv6 uplink. With the ULA in place, IPv6 **enters** the tunnel and is
+**rejected** there — one `ip6tables` rule, beside the IPv4 that is not RFC1918. The refusal is
+explicit rather than a silent drop for one reason: a dropped packet leaves no evidence and a
+rejected one **increments a counter**, which is the only place a refusal the sender cannot see is
+legible (Lesson 55).
+
+**IT IS NOT A CONTROL AGAINST THE DEVICE'S OWNER, and pretending otherwise would be worse than the
+leak.** `AllowedIPs` on the *client* side is a routing directive: whoever holds the laptop can
+delete the IPv6 `Address` line and have IPv6 leave the tunnel again. Nothing on a WireGuard server
+can compel a peer to send it traffic. What this closes is an **accidental** leak — the config now
+does what it always claimed — and what enforces anything is elsewhere:
+`DenyControlPlaneOffVpn`, which **fails closed** for AWS, and the proxy's allow-lists for what
+crosses the tunnel. The institutional answer to the client half is an **MDM profile** the owner
+cannot edit ([institutional-delta.md](../institutional-delta.md)), and it is not built here.
+
+**`fd90::` mirrors `10.90.` on purpose**, and that is a deliberate departure from RFC 4193's
+randomly-generated global ID. The RFC's rule exists so two private networks can merge without
+colliding; this prefix never leaves the tunnel and the estate has no other IPv6, so that collision
+cannot happen — while the readability is real, since the roster, the handshake log and the proxy's
+access log all key on the host number.
+
+**The other IPv4 leak this measurement found, which the ULA does NOT close.** macOS keeps the
+physical default route as an **interface-scoped** entry (`I` in `netstat -rn`'s flags), so a socket
+already associated with `en0` keeps using it — a connection established *before* the tunnel came up
+survives the tunnel coming up. New connections take the tunnel and die. Nothing in a WireGuard
+config changes that; **bring the tunnel up before starting anything that talks to AWS**, and read a
+persona call that is denied *with the tunnel up* as possibly a socket that predates it.
 
 ---
 
