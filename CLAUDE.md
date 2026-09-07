@@ -215,6 +215,15 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   refuse** — the host rejects (8453 packets counted) and macOS ignores ICMP mid-`connect()`
   (**Lesson 55**). The proxy log carries **`10.90.0.2`** — a per-device address, so 4.7's
   no-masquerade hole and 4.11's log are proven together.
+- **6c: 2.6, 2.4, 6.3, 6.7 and all of pass 7 DONE (2026-09-07).** `prod.internal`/`pages.internal`
+  **destroyed**; **`NT-12`** reads INT-22's matrix **two-sided** (5/2/2/3/2, *and no others*), by
+  CIDR not by Name tag; `NT-8` retired. **`docs/NETWORK.md` REWRITTEN from the readings** — the old
+  body described a three-VPC estate with a NAT per account.
+- **STAGE 6d STARTED.** **3.6**: `logs` is covered by accident (core list since St.3); **Portal Query
+  Editors has NO endpoint in any VPC** — a named gap, both spellings exist. **7.2 IS A FINDING**: the
+  persona sets carry both `sagemaker:StartSession` denies and **no `Allow` for it at all**; the grant
+  is on the **project role**, which carries neither deny — **the remote-IDE scoping was granted by
+  nothing**. Repair is the **D13 boundary**, not an SCP; needs 7.5's CloudTrail to name the role.
 - **Owed, in this order:** trim the Sandbox row from `VPN_HOMES`, **then** the `removed {}` on
   `sandbox/foundation`'s Elastic IP. Until then that slice plans **`1 to add`** and **must not be
   applied**, and the estate carries **two world-open rules** (one guarding nothing). Also owed:
