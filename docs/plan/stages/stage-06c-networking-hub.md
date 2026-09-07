@@ -898,6 +898,33 @@ obligations older than the stage.
   `dig <domain-id>.studio.us-west-2.sagemaker.aws` return **public** addresses, and the SMUS portal opens
   with **no** Chrome Local Network Access grant. That is Lesson 43's repair and the reading that retires the
   interim.
+- **6.3 — MEASURED 2026-09-06, AND IT IS FOUR READINGS RATHER THAN TWO — but NOT over SSM, and
+  not from a Workloads probe.** Two things the step assumed turned out not to hold. **The probes
+  carry no IAM role at all** — they report to `/dev/console`, read with `get-console-output`, which
+  is why they work in a tier with no SSM path; so the readings were added to the **peering probe's
+  user data** rather than driven over Session Manager, which makes them repeatable instead of
+  ad hoc. And **there is no Workloads probe and cannot be one today**: that VPC has no interface
+  endpoint, by 5.5's deliberate refusal, so a host there would have no management path. The mirror
+  is taken from `VPC-SharedServices` instead (the buildbox, at 5.8): `http://10.32.0.10/` → **403**.
+  From the Sandbox spoke, on the console:
+
+  | reading | result | what it proves |
+  |---|---|---|
+  | internet **without** the proxy | silence | **no default route** — design B's core claim, and it is the absence of a thing |
+  | an address in `VPC-Workloads`, **through** the proxy | **403** | `http_access deny to_private` fires before every allow: the proxy is **not an L7 bridge** between VPCs that peering deliberately keeps apart |
+  | a name on this plane | **200** | the peering, the proxy, and this source CIDR's allow-list |
+  | a name on **no** plane | **403** | the allow-list is *enforced*, not merely configured |
+
+  **The refused probes use `http://`**: over `https` a refusal is a CONNECT refusal and `curl`'s
+  `%{http_code}` reads **000** — the 403 is where that format string cannot see it.
+  **AND IT FOUND A STALE VOCABULARY ROW ON THE WAY, as a TIMEOUT rather than a diff.** The first
+  run could not reach the proxy at all: `PROBE_PEERS` still read `{"sandbox": ["production"],
+  "development": [...]}` — blind to the peering pass 3 added, and carrying an account name 6b
+  retired. Its own comment had predicted *"the reading that will force PROBE_PEERS to name slices
+  rather than accounts"*. **Deleted rather than corrected**: `peer_cidrs` is now derived from
+  `PEERINGS` via `probe_peer_cidrs()`, so a probe cannot be blind to a peering the matrix has
+  (Lesson 33).
+  *The original step follows:*
 - **6.3 — [Claude] Prove the isolation over SSM**: from a Sandbox probe,
   `curl -x proxy:3128 https://<a Workloads private address>` returns the proxy's **403** while
   `https://pypi.org` returns 200; the mirror from a Workloads probe. Two distinguishable outputs, which is

@@ -118,3 +118,17 @@ variable "cost_center" {
   type        = string
   default     = "stage-03"
 }
+
+# ------------------------------------------------- the proxy readings (6c step 6.3, 2026-09-06)
+
+variable "proxy_url" {
+  description = "The estate's single internet exit (D38), as a client is told about it. A NAME, resolved through the `awsds.internal` apex this VPC is associated with (6c step 2.1) - and the PRIVATE address behind it, because a spoke reaches 3128 over a peering and a peering carries the private address only. The public one would resolve perfectly and time out with no message."
+  type        = string
+  default     = "http://proxy.awsds.internal:3128"
+}
+
+variable "proxy_probe_private_target" {
+  description = "An address inside VPC-Workloads' range. NOTHING ANSWERS ON IT AND NOTHING NEEDS TO: the reading is Squid's REFUSAL, which `http_access deny to_private` produces before any connection is attempted, so a listening host would prove less rather than more. Sandbox has no peering to Workloads, which is what makes this the L7-bridge question rather than a routing one."
+  type        = string
+  default     = "10.32.0.10"
+}

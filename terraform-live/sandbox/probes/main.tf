@@ -144,6 +144,49 @@ locals {
       "http://${var.target_forbidden_name}:${var.listener_port}/"
     probe "permitted address, blocked port   [expect silence]" \
       "http://${var.target_name}:${var.blocked_port}/"
+
+    # ------------------------------------------------- the proxy, added at 6c step 6.3 (2026-09-06)
+    #
+    # WHAT THIS SECTION MEASURES THAT THE THREE ABOVE CANNOT. Those three are about a PEERING - a
+    # route and a security group. D38 puts a second thing in the path that neither can see: an
+    # explicit proxy in another VPC, which every spoke reaches over its own peering and which is the
+    # estate's ONLY way to the internet. Three properties follow, and each one is silent in a
+    # different way if it is wrong:
+    #
+    #   no default route      the internet is unreachable WITHOUT the proxy. This is design B's
+    #                         whole claim, and it is the absence of a thing - so it reads as
+    #                         silence, which is why it is taken here beside a reading that is NOT
+    #                         silent (Lesson 13).
+    #   not an L7 bridge      the proxy CAN route to every spoke; `http_access deny to_private`
+    #                         fires before any allow, so it refuses. Without that rule a peering
+    #                         nobody built would exist at layer 7, which is the isolation this
+    #                         estate gets for free from the absent peerings (Lesson 44).
+    #   the plane is enforced this source CIDR's own allow-list admits one name and refuses
+    #                         another. A 403 from Squid is a POLICY answer; silence is a network
+    #                         one, and the two must not be confused.
+    #
+    # THE REFUSED PROBES USE `http://`, NOT `https://`, AND THAT IS NOT A DETAIL. Over https the
+    # refusal is a CONNECT refusal and `curl` reports `%%{http_code}` as 000 - the 403 exists where
+    # that format string cannot see it. Over http the refusal IS the response and reads as 403.
+    echo "--- the single egress (D38), one property at a time"
+    proxy_probe () {
+      printf '%-58s ' "$1"
+      code=$(curl -s -o /dev/null --max-time 15 -w '%%{http_code}' -x "${var.proxy_url}" "$2" 2>/dev/null)
+      rc=$?
+      if [ "$rc" = "0" ] ; then echo "HTTP $code" ; else echo "no answer (curl exit $rc)" ; fi
+    }
+    printf '%-58s ' "internet WITHOUT the proxy         [expect silence]"
+    if curl -s -o /dev/null --max-time 15 --noproxy '*' https://pypi.org/ ; then
+      echo "REACHED - there is a default route, and there must not be"
+    else
+      echo "no answer (no default route - design B)"
+    fi
+    proxy_probe "an address in VPC-Workloads       [expect HTTP 403]" \
+      "http://${var.proxy_probe_private_target}/"
+    proxy_probe "a name on this plane              [expect HTTP 200]" \
+      "https://pypi.org/"
+    proxy_probe "a name on NO plane                [expect HTTP 403]" \
+      "http://example.com/"
     echo "=== AWSDS-PROBE-PEERING-END ==="
   EOT
 }
