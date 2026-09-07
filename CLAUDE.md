@@ -220,26 +220,17 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   applied**, and the estate carries **two world-open rules** (one guarding nothing). Also owed:
   **4.11's second half** (the Log Archive export) as decision due #4 — `PX-4` reports it as a
   **note**, not a fail, because it is an open decision.
-- **Pass 7 built two instruments and a lifecycle:** `make hub-up` / `make hub-down` over
-  `slices.py --only`; a spoke's `make up` **REFUSES** while either hub host is stopped (UNREADABLE
-  is **waived**, not refused — a spoke operator may hold no Production session); and
-  **`./aws/proxy.py`** with `PX-1`..`PX-5`, shaped after `vpn.py` including its `--on-host` fence.
-- **`NT-11` exists** (5 active peerings, both sides routed) and splits **declared-but-not-routed**
-  from **routed-but-not-active**, which is a blackhole — the two never share a verdict. **`NT-4`**
-  now asserts the hub's ONE `10.90.0.0/24` route positively.
 - **`EXC-04` CLOSED** by the trailing dot (`vpc-egress-v0.10.0`): Route 53 canonicalises a domain
   list as FQDNs. `re-plan reads No changes` works again on both firewall slices. **`EXC-05` and
   `EXC-06` closed** with the old allow-list.
-- **Pass 4 built the hub:** the WireGuard EIP **transferred** (allocation id did NOT survive), both
-  `[D]` hosts up in `VPC-Networking`, the perimeter re-keyed onto the **proxy's** EIP as a **union**.
-  `proxy.awsds.internal` / `vpn.awsds.internal` were **NXDOMAIN until 2026-09-06** — pass 4 never wrote
-  them; now `[D]` records in the host slices, private addresses.
-- **Pass 5 made design B real:** zero NAT as code; endpoint sets completed (Sandbox **18**, Staging
-  **11**, SharedServices **13**, Workloads **0** — its emptiness is a written refusal);
-  `optional_service_groups` behind `make up ENV=<x> GROUPS=bedrock,emr` (**empty by default**, `mwaa`
-  reserved); DNS Firewall **63 → 10** entries in the two compute VPCs (a live `"*"` removed);
-  `./aws/dns-allowlist.py` **re-aimed at Squid's five planes**; buildbox moved to
-  `production/buildbox/`; the NAT contingency re-stated.
+- **Pass 5 made design B real:** zero NAT as code; endpoint sets **counted** — Sandbox **18**,
+  Staging **11**, SharedServices **13**, Workloads **0** (a written refusal), estate fixed rate
+  **0.470 → 0.390/h**; `optional_service_groups` behind `make up ENV=<x> GROUPS=…` (**empty by
+  default**); DNS Firewall **63 → 10** (a live `"*"` removed); buildbox moved to
+  `production/buildbox/`. **Pass 7:** `make hub-up`/`hub-down`; a spoke's `make up` **REFUSES**
+  while a hub host is stopped (UNREADABLE is **waived**); `./aws/proxy.py` `PX-1`..`PX-5`.
+  **`NT-11`** splits declared-but-not-routed from routed-but-not-active; **`PROBE_PEERS` is gone**,
+  derived from `PEERINGS`.
 - **`NO_PROXY` is GENERATED, never written** (`vpc-egress` output, from `describe-vpc-endpoint-services`):
   **8 of 29** service names are not derivable from the token, and **a gateway endpoint has no
   `PrivateDnsName` at all**, so S3/DynamoDB are hand-named — **in BOTH spellings, plain and
@@ -256,9 +247,6 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   no domain list. **`EXC-05` and `EXC-06` closed.**
 - **Module tags: `vpc-egress-v0.10.1`, `wireguard-v0.6.0`** (**`v0.9.0` ABANDONED** on origin — Lesson 46, a piped `git
   commit` returned `tail`'s exit code), `vpc-v0.3.1` (`v0.3.0` abandoned), `wireguard-v0.5.0`.
-- **`PROBE_PEERS` is GONE** — `peer_cidrs` derives from `PEERINGS`, after a stale row surfaced as a
-  probe that could not reach the proxy. **`make status`/`layers.py` count endpoints, not ranges:**
-  Sandbox 18, Staging 11, SharedServices 13, Workloads 0; estate fixed rate **0.470 → 0.390/h**.
 - **`10.40.0.0/16` is FREE and STAYS unallocated.** **`-input=false` ON EVERY plan AND apply**
   (Lesson 47); **never pipe a command whose exit code matters** (Lesson 46). The vocabulary is
   per-(account, slice).
@@ -269,9 +257,6 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   egress is an **explicit Squid proxy**, **zero NAT gateways**, and no spoke has a default route. **Five
   peerings** — the absent ones are the isolation control; **peering routes are in the PRIVATE tables,
   not the isolated one**. The hub carries no interface endpoint with private DNS.
-- **Stage 1b verification (vi) CLOSED, affirmative:** a Control Tower *Update account* **re-asserts**
-  D32's direct `AWSAdministratorAccess` → infrastructure user assignment. **Do not delete it again**;
-  its absence on the other four is **not** a control.
 - **Orchestration is MWAA Serverless only** (USD 0.088/task-hour). **Workers accept no proxy** — two
   AZs, a priced D9 exception. **The SMUS CI/CD tool deploys only into EXISTING SMUS projects**; the
   pipeline stays the deployer (D26/D28).
