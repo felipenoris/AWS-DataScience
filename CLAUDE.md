@@ -192,15 +192,26 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
 
 ### Current position
 
-- **STAGE 6c IN PROGRESS — passes 0-5 DONE; pass 6 OPEN (2026-09-06)**. Four of pass 6's readings are
-  **the user's** and outstanding: **6.1** the tunnel from a client (only the `.conf`'s `DNS =` line
-  changes), **6.2** the shadowing closed, **6.4** the drop rule, **6.6** INT-16's closing choice. **6.5
-  is half the user's and is the GATE** for trimming the union.
-- **Owed into pass 6, in this order:** trim the Sandbox row from `VPN_HOMES`, **then** the `removed {}`
-  on `sandbox/foundation`'s Elastic IP. Until then that slice plans **`1 to add`** and **must not be
+- **STAGE 6c: PASSES 0-5 AND 7 DONE; PASS 6 IS ALL THAT REMAINS, AND MOST OF IT IS THE USER'S
+  (2026-09-06).** Outstanding: **6.1** the tunnel from a client (only the `.conf`'s `DNS =` line
+  changes), **6.2** the shadowing closed, **6.4** the drop rule, **6.6** INT-16's closing choice —
+  and **6.5**, half the user's, which is the **GATE** for trimming the union. **6.7** (rewrite
+  `docs/NETWORK.md` from the readings) waits on 6.1/6.2; so does **2.6** and its `NT-12`.
+- **Owed, in this order:** trim the Sandbox row from `VPN_HOMES`, **then** the `removed {}` on
+  `sandbox/foundation`'s Elastic IP. Until then that slice plans **`1 to add`** and **must not be
   applied**, and the estate carries **two world-open rules** (one guarding nothing). Also owed:
-  `NT-11`/`NT-4` (3.6-3.7), **2.6** (retire `sandbox.internal`, `prod.internal`, `pages.internal`),
-  and **4.11's second half** (the Log Archive export) as decision due #4.
+  **4.11's second half** (the Log Archive export) as decision due #4 — `PX-4` reports it as a
+  **note**, not a fail, because it is an open decision.
+- **Pass 7 built two instruments and a lifecycle:** `make hub-up` / `make hub-down` over
+  `slices.py --only`; a spoke's `make up` **REFUSES** while either hub host is stopped (UNREADABLE
+  is **waived**, not refused — a spoke operator may hold no Production session); and
+  **`./aws/proxy.py`** with `PX-1`..`PX-5`, shaped after `vpn.py` including its `--on-host` fence.
+- **`NT-11` exists** (5 active peerings, both sides routed) and splits **declared-but-not-routed**
+  from **routed-but-not-active**, which is a blackhole — the two never share a verdict. **`NT-4`**
+  now asserts the hub's ONE `10.90.0.0/24` route positively.
+- **`EXC-04` CLOSED** by the trailing dot (`vpc-egress-v0.10.0`): Route 53 canonicalises a domain
+  list as FQDNs. `re-plan reads No changes` works again on both firewall slices. **`EXC-05` and
+  `EXC-06` closed** with the old allow-list.
 - **Pass 4 built the hub:** the WireGuard EIP **transferred** (allocation id did NOT survive), both
   `[D]` hosts up in `VPC-Networking`, the perimeter re-keyed onto the **proxy's** EIP as a **union**.
   `proxy.awsds.internal` / `vpn.awsds.internal` were **NXDOMAIN until 2026-09-06** — pass 4 never wrote
@@ -225,8 +236,11 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
 - **`EXC-04` did NOT close** (5.7 changed the *content*; the churn is the provider comparing two
   *spellings*). `production/egress` re-planning `No changes` is **not** a counter-example — it carries
   no domain list. **`EXC-05` and `EXC-06` closed.**
-- **Module tags: `vpc-egress-v0.9.1`** (`v0.9.0` **ABANDONED** on origin — Lesson 46, a piped `git
-  commit`), `vpc-v0.3.1` (`v0.3.0` abandoned), `wireguard-v0.5.0`.
+- **Module tags: `vpc-egress-v0.10.1`** (**`v0.9.0` ABANDONED** on origin — Lesson 46, a piped `git
+  commit` returned `tail`'s exit code), `vpc-v0.3.1` (`v0.3.0` abandoned), `wireguard-v0.5.0`.
+- **`PROBE_PEERS` is GONE** — `peer_cidrs` derives from `PEERINGS`, after a stale row surfaced as a
+  probe that could not reach the proxy. **`make status`/`layers.py` count endpoints, not ranges:**
+  Sandbox 18, Staging 11, SharedServices 13, Workloads 0; estate fixed rate **0.470 → 0.390/h**.
 - **`10.40.0.0/16` is FREE and STAYS unallocated.** **`-input=false` ON EVERY plan AND apply**
   (Lesson 47); **never pipe a command whose exit code matters** (Lesson 46). The vocabulary is
   per-(account, slice).
