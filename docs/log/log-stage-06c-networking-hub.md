@@ -1725,3 +1725,92 @@ thing to actually run. They are written up individually because three of them ar
 - **[Claude] What 6.1 leaves**: `6.2`, `6.4` and `6.6` are still the user's, and `6.4`'s premise — *with
   the laptop's proxy setting removed* — now has a documented shape, since this run confirms no such
   setting was ever needed for the `-x` form.
+
+## 2026-09-07 — the client plane was an allow-list, and the objectives ask for the opposite
+
+- **[user] Found by the first browser that tried to use the proxy.** With Chrome launched against
+  `proxy.awsds.internal:3128`, the AWS portal opened and **no other site did**. The user's question
+  was the right one: *"me recordo de que iríamos colocar lista restrita apenas para a instância
+  SageMaker, e a allow-list dos clientes seria bem menos restritiva"*.
+- **[Claude] The record agrees with the user and not with what was built.** `objectives.md`, twice:
+
+  > *"all internet access will be **monitored** — there will be an HTTP/HTTPS proxy between the
+  > VPN-connected client and the cloud's internet egress. Once on the VPN, **the user can therefore
+  > use the browser to reach the internet**"*
+  >
+  > *"the restriction is on the **SageMaker-managed compute**, **never on the user's (client's)
+  > machine**"*
+
+  What stood in the `tunnel` plane was a **23-name allow-list** of AWS console, portal and sign-in
+  families — making the **client's** internet stricter than the **compute's**, which is the exact
+  inversion of the requirement.
+- **[Claude] How it happened, because the mechanism is more useful than the mistake.** Step 4.9
+  wrote *"the tunnel range carries the institutional web filter — what a person on a company laptop
+  may reach"*, and told the executor to seed it from the SMUS network-isolation guide's tables.
+  `squid.conf` is default-deny, so *"filter"* was implemented as an **allow-list**. **An
+  institutional web filter is a DENY-list over an open default** — it blocks categories, it does not
+  enumerate the web. `CLAUDE.md` says the objectives are *"the specification a stage is measured
+  against, so it is summarised nowhere"*; the paraphrase in the stage file **became** the
+  specification. That is [Lesson 38](../plan/lessons.md) at a new address: a name travels further
+  than the sentence that carried it.
+- **[Claude⚡] The repair is a `mode` per plane**, and both keys are always present so no downstream
+  parser meets a missing field:
+
+  | mode | list used | meaning | who |
+  |---|---|---|---|
+  | `allowlist` | `allow` | may reach these names and nothing else | the four spokes — `sandbox-foundation` is D5's *"short list"* for the compute |
+  | `open` | `deny` | may reach anything **except** these | the `tunnel` plane, **deny list empty by decision** (the user, 2026-09-07) |
+
+  **Empty is not "no control"** for an open plane — the control is the access log, which is what the
+  objectives' word *monitored* names, and it already carries a per-device address. **The three
+  global denies are untouched**: private destinations, unsafe ports, CONNECT to anything but 443.
+  *Open* means open to the internet, never to the estate.
+- **[Claude] Two plan-time gates followed the shape.** The apex-beside-wildcard collision check now
+  reads **both** kinds of list — a deny list is the one somebody will paste names into in a hurry,
+  from a blocklist written for another syntax — and an unknown `mode` is a **plan failure**, because
+  the render script branches on that string and a typo would emit no block at all: a source the
+  security group admits and the config has never heard of, reachable and mute.
+
+### The finding that cost the most, and it is a property of the design
+
+- **[Claude⚡] THE PARAMETER IS DATA AND REACHES THE HOST IN THIRTY MINUTES; THE RENDERER IS CODE AND
+  NEEDS A NEW HOST.** After applying the new parameter and triggering the association by hand, it
+  reported **`Success`** — and the tunnel plane was still absent from the host. Read on the host:
+
+  ```
+  55:    | select((.value.allow | length) > 0)
+  ```
+
+  the **old** jq, which skips a plane whose `allow` is empty. `/usr/local/sbin/awsds-render-squid` is
+  written by **user data**, so it is `[D]` state on the disk; step 4.10 bought a reload path for the
+  **list**, not for the **renderer**. The association ran the old script perfectly, which is what its
+  `Success` meant. **Two kinds of change with very different costs, and nothing had said so** — the
+  proxy host was replaced (`2 to add, 2 to change, 2 to destroy`) and the new one renders
+  `acl src_tunnel` + a bare `http_access allow src_tunnel`.
+- **[Claude] `PX-3` reported a false mismatch and it was the check's fault, not the estate's.** An
+  **empty `allowlist`** plane renders nothing — correct: no acl, no allow line, the source falls to
+  the backstop and is refused by name, which is what an empty allow-list means. The check read that
+  absence as a diff for `production-workloads` and `staging-foundation`. An empty **`open`** plane is
+  the opposite and must be present, so its absence stays a finding. Both cases are now explicit.
+- **[Claude] `./aws/dns-allowlist.py`'s parser met a form it did not know, and failed as a
+  `KeyError` traceback rather than the loud refusal its own docstring promises.**
+  `proxy_allow_shared` had become `concat(<comprehension>, <literal>)` on 2026-09-06 — one
+  CloudFront distribution added to a list that is otherwise derived — and the grammar only knew
+  `= [`. Both halves are parsed now, and a plane pointing at a local the parser does not recognise
+  raises a message naming it. `DN-4` also changed question entirely: comparing the two planes'
+  contents would now compare a **blocklist with a permit-list**, so it asks the shape question
+  instead — *only the client plane is `open`; every compute plane is an allow-list* — and a compute
+  plane that went `open` is a `fail`.
+- **[Claude] And a decision from 2026-09-06 was vindicated the next day.** The host replacement moved
+  the proxy's private address, and `proxy.awsds.internal` followed it: `10.31.160.106` →
+  **`10.31.160.181`**. Yesterday's runbook edit refused to write that literal into §C2 on the
+  grounds that it is `[D]` and moves on a replacement. It moved on a replacement.
+- **[Claude] Verified end to end**: `./aws/proxy.py --on-host` reads `PX-1`, `PX-2`, `PX-3`, `PX-5`
+  **pass** (`PX-4` the standing note), and `./aws/dns-allowlist.py` reads `DN-1`, `DN-2`, `DN-4`
+  pass with `tunnel — 0 entries, mode open`.
+- **[Claude] Issue opened** at the user's request for the macOS limitation that surfaced alongside
+  this: the system proxy is **not consulted** while the WireGuard NetworkExtension tunnel is the
+  primary service (`scutil --proxy` returns empty while `networksetup` shows it configured), so
+  Safari, Chrome-by-default and native apps have no working path; and with the tunnel **down** the
+  same setting breaks the `aws` CLI, which falls back to the macOS system configuration and which an
+  empty `https_proxy` does **not** override — `NO_PROXY='*'` does.

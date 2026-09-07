@@ -48,15 +48,42 @@ JSON=$(aws ssm get-parameter --name "$PARAM" --region "$REGION" --query 'Paramet
   # failure would not even be loud: `squid -k parse` would refuse the file and this script
   # would correctly revert, leaving a proxy that allows NOTHING and an association that
   # reports a failure somebody has to go and read.
+  # TWO MODES SINCE 2026-09-07, AND THE ORDER INSIDE A BLOCK IS THE WHOLE OF THE SECOND ONE.
+  #
+  #   allowlist  one src acl, one dst acl, one `allow src dst`. Anything not on the list falls
+  #              through to squid.conf's final `deny all` and is refused BY NAME. This is the
+  #              compute's shape, and the objectives' "restriction on the SageMaker-managed
+  #              compute".
+  #   open       one src acl, then - only if the deny list has content - a `deny src dstdeny`
+  #              ABOVE a bare `allow src`. The deny must come first or it is unreachable, which
+  #              is the same top-to-bottom rule the global denies in squid.conf rely on. This is
+  #              the client's shape, and the objectives' "all internet access will be MONITORED":
+  #              the control is the access log, not the list.
+  #
+  # AN `open` PLANE WITH AN EMPTY DENY LIST STILL EMITS A BLOCK - a bare `allow src` - which is why
+  # the `select` below tests the MODE and not the length of a list. Under the old expression an
+  # empty list meant "emit nothing", and that is correct for `allowlist` (silence = refuse) and
+  # exactly backwards for `open` (silence would refuse a plane that is meant to be permitted).
+  # An `allowlist` plane with an empty list is still skipped, and squid.conf's backstop refuses it.
+  #
+  # `to_private`, the port guards and CONNECT are in squid.conf ABOVE this include, so "open" is
+  # open to the internet and never to the estate.
   echo "$JSON" | jq -r '
     to_entries
     | sort_by(.key)
     | .[]
-    | select((.value.allow | length) > 0)
+    | select(.value.mode == "open" or (.value.allow | length) > 0)
     | (.key | gsub("-"; "_")) as $n
     | "acl src_\($n) src \(.value.sources | join(" "))\n" +
-      "acl dst_\($n) dstdomain \(.value.allow | join(" "))\n" +
-      "http_access allow src_\($n) dst_\($n)\n"
+      (if .value.mode == "open"
+       then (if (.value.deny | length) > 0
+             then "acl dstdeny_\($n) dstdomain \(.value.deny | join(" "))\n" +
+                  "http_access deny src_\($n) dstdeny_\($n)\n"
+             else "" end) +
+            "http_access allow src_\($n)\n"
+       else "acl dst_\($n) dstdomain \(.value.allow | join(" "))\n" +
+            "http_access allow src_\($n) dst_\($n)\n"
+       end)
   '
 } > "$TMP"
 

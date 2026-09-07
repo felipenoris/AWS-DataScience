@@ -248,12 +248,25 @@ def host_section(text: str, marker: str) -> str:
 
 
 def parse_allowlist(raw: str) -> dict:
-    """The parameter's planes, or {} when it is not the JSON this design writes."""
+    """The parameter's planes as {plane: (mode, [names])}, or {} when it is not this design's JSON.
+
+    TWO MODES SINCE 2026-09-07, and PX-3 has to compare like with like: an `allowlist` plane's
+    names render into `acl dst_<plane>`, an `open` plane's into `acl dstdeny_<plane>`, and the
+    second may legitimately be EMPTY - which is the client plane's decided state. Reading only
+    `allow`, as this did, would report the tunnel as a plane with nothing on it and the host as a
+    plane with nothing on it, agreeing for the wrong reason.
+    """
     try:
         doc = json.loads(raw)
     except json.JSONDecodeError:
         return {}
-    return {k: list(v.get("allow", [])) for k, v in doc.items() if isinstance(v, dict)}
+    out = {}
+    for k, v in doc.items():
+        if not isinstance(v, dict):
+            continue
+        mode = v.get("mode", "allowlist")
+        out[k] = (mode, list(v.get("deny", []) if mode == "open" else v.get("allow", [])))
+    return out
 
 
 def running_allowlist(config_text: str) -> dict:
@@ -266,8 +279,16 @@ def running_allowlist(config_text: str) -> dict:
     render-squid.sh's contract, and a rename there must fail loudly here.
     """
     out: dict = {}
-    for m in re.finditer(r"^\s*acl\s+dst_(\S+)\s+dstdomain\s+(.+)$", config_text, re.M):
-        out.setdefault(m.group(1), []).extend(m.group(2).split())
+    for m in re.finditer(r"^\s*acl\s+dst(deny)?_(\S+)\s+dstdomain\s+(.+)$", config_text, re.M):
+        mode = "open" if m.group(1) else "allowlist"
+        cur = out.setdefault(m.group(2), (mode, []))
+        cur[1].extend(m.group(3).split())
+    # AN `open` PLANE WITH AN EMPTY DENY LIST EMITS NO dstdomain ACL AT ALL - only `acl src_<n>`
+    # and a bare `http_access allow src_<n>`. It is a real plane in a real state, so it is found
+    # by its ALLOW LINE rather than by a list that is legitimately absent; missing it would make
+    # PX-3 report the client plane as deployed-but-empty on one side and present on the other.
+    for m in re.finditer(r"^\s*http_access\s+allow\s+src_(\S+)\s*$", config_text, re.M):
+        out.setdefault(m.group(1), ("open", []))
     return out
 
 
@@ -590,8 +611,9 @@ actually succeeds is 6c step 6.3's probe, whose four readings are the behavioura
         )
         rep.h2(f"committed - {PARAMETER}")
         rep.tabulate(
-            ["PLANE\tENTRIES"] + [f"{k}\t{len(v)}" for k, v in sorted(committed.items())]
-            or ["PLANE\tENTRIES", "not read\t-"]
+            ["PLANE\tMODE\tENTRIES"]
+            + [f"{k}\t{m}\t{len(v)}" for k, (m, v) in sorted(committed.items())]
+            or ["PLANE\tMODE\tENTRIES", "not read\t-\t-"]
         )
         running = running_allowlist(planes_conf) if on_host else {}
         rep.h2("running - the host's own squid.conf")
@@ -599,8 +621,9 @@ actually succeeds is 6c step 6.3's probe, whose four readings are the behavioura
             rep.text("  not read - --on-host was not given\n")
         else:
             rep.tabulate(
-                ["PLANE\tENTRIES"] + [f"{k}\t{len(v)}" for k, v in sorted(running.items())]
-                or ["PLANE\tENTRIES", f"none parsed (ssm status: {host_status})\t-"]
+                ["PLANE\tMODE\tENTRIES"]
+                + [f"{k}\t{m}\t{len(v)}" for k, (m, v) in sorted(running.items())]
+                or ["PLANE\tMODE\tENTRIES", f"none parsed (ssm status: {host_status})\t-\t-"]
             )
 
         rep.h1("5. The access log (PX-4)")
@@ -698,8 +721,25 @@ actually succeeds is 6c step 6.3's probe, whose four readings are the behavioura
             want_by = {plane_key(k): v for k, v in committed.items()}
             got_by = {plane_key(k): v for k, v in running.items()}
             for plane in sorted(set(want_by) | set(got_by)):
-                want = [d.strip() for d in want_by.get(plane, [])]
-                got = [d.strip() for d in got_by.get(plane, [])]
+                want_mode, want_names = want_by.get(plane, ("(absent)", []))
+                got_mode, got_names = got_by.get(plane, ("(absent)", []))
+                # AN EMPTY `allowlist` PLANE RENDERS NOTHING, AND THAT IS THE CORRECT STATE - not
+                # a mismatch. With no names there is no acl and no allow line, so the source falls
+                # to squid.conf's backstop and is refused BY NAME, which is exactly what an empty
+                # allow-list means. `production-workloads` and `staging-foundation` are in that
+                # state by decision. An empty `OPEN` plane is the opposite and must be present:
+                # it renders a bare `http_access allow src_<n>`, so its absence IS a finding.
+                if want_mode == "allowlist" and not want_names and got_mode == "(absent)":
+                    continue
+                # THE MODE IS PART OF THE COMPARISON, not context around it: a plane that flipped
+                # from `allowlist` to `open` with both lists empty would otherwise compare EQUAL,
+                # and the difference between those two is the difference between "may reach
+                # nothing" and "may reach everything".
+                if want_mode != got_mode:
+                    diffs.append(f"{plane}: committed mode {want_mode}, running {got_mode}")
+                    continue
+                want = [d.strip() for d in want_names]
+                got = [d.strip() for d in got_names]
                 if sorted(want) != sorted(got):
                     diffs.append(
                         f"{plane}: only committed {sorted(set(want) - set(got)) or '-'}, "
