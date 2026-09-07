@@ -3,11 +3,16 @@
 # it, open a shell, tear it down.
 #
 # WHY IT IS A SCRIPT OF ITS OWN AND NOT `make up ENV=production`. That target acts on EVERY [E]
-# slice in an account, which for Production means egress/, workloads-egress/ and probes/. A build
-# session needs exactly one of those - egress/, for the SSM endpoints that are the only door into
-# the host - and paying for the other two while a build runs is money for nothing.
-# `scripts/slices.py` has no per-slice targeting and giving it some would weaken the refusals it
-# exists for, so this file drives one slice deliberately.
+# slice in an account, which for Production means egress/, workloads-egress/, probes/ AND this one
+# - nothing in layers.py refuses it, so `make up` raises the build host too. A build session needs
+# exactly two of the four - egress/, for the SSM endpoints that are the only door into the host,
+# and this slice - and paying for the other two while a build runs is money for nothing.
+# `scripts/slices.py up --only <names>` can narrow an apply since 6c step 7.1 (2026-09-07; it is
+# what `make hub-up` is built on, and the Makefile exposes it for the hub pair alone), which
+# retired the sentence that stood here until then - "slices.py has no per-slice targeting". What
+# a narrowed apply still cannot do is the rest of a build session: the two prerequisite checks
+# below (one of them in another account, which no rank can express), the context sync, the shell
+# and the teardown. So this file drives the slice, deliberately, and says why.
 #
 # IT MOVED ACCOUNTS AT 6c STEP 5.8 (2026-09-06), AND BOTH ITS REFUSALS CHANGED WITH THE DESIGN.
 # The host used to live in `sandbox/buildbox/` and reach the internet through a default route at
