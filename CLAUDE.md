@@ -193,10 +193,14 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
 ### Current position
 
 - **STAGE 6c: PASSES 0-5 AND 7 DONE; PASS 6 IS ALL THAT REMAINS, AND MOST OF IT IS THE USER'S
-  (2026-09-06).** Outstanding: **6.1** the tunnel from a client (only the `.conf`'s `DNS =` line
-  changes), **6.2** the shadowing closed, **6.4** the drop rule, **6.6** INT-16's closing choice —
+  (2026-09-06).** Outstanding: **6.2** the shadowing closed, **6.4** the drop rule, **6.6** INT-16's closing choice —
   and **6.5**, half the user's, which is the **GATE** for trimming the union. **6.7** (rewrite
   `docs/NETWORK.md` from the readings) waits on 6.1/6.2; so does **2.6** and its `NT-12`.
+- **6.1 DONE 2026-09-07 (user), all four readings.** One client line changed (`DNS = 10.31.0.2`);
+  `curl -x` prints the **proxy's** `184.33.8.126`. **The no-internet check TIMES OUT, it does not
+  refuse** — the host rejects (8453 packets counted) and macOS ignores ICMP mid-`connect()`
+  (**Lesson 55**). The proxy log carries **`10.90.0.2`** — a per-device address, so 4.7's
+  no-masquerade hole and 4.11's log are proven together.
 - **Owed, in this order:** trim the Sandbox row from `VPN_HOMES`, **then** the `removed {}` on
   `sandbox/foundation`'s Elastic IP. Until then that slice plans **`1 to add`** and **must not be
   applied**, and the estate carries **two world-open rules** (one guarding nothing). Also owed:
@@ -378,6 +382,8 @@ the reasoning that makes it *usable* is in the file. Recognising one is the sign
     transcription — and they agree on the easy cases.**
 54. **A program that has never been run is a claim: `validate`, `render` and `run` are three
     different verdicts.**
+55. **A refusal the sender cannot see is indistinguishable from silence — and the refusal is real;
+    the evidence lives in the counter on the refusing side.**
 
 **[`lessons.md`](docs/plan/lessons.md) also carries a second list — "What AWS does that its
 documentation does not say"** — platform behaviours that cost a measurement to learn, each with its

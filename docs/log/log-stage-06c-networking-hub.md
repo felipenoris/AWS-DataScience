@@ -1661,3 +1661,67 @@ thing to actually run. They are written up individually because three of them ar
 - **[Claude] Every substituted identifier verified against AWS, not against the plan**:
   `awsds-prod-vpn-host-key`, `/awsds/prod/vpn`, `awsds-prod-vpn-health` all exist under those names.
   `check-tfvars-shape.py` already carried both tfvars paths, so nothing there had to move.
+
+## 2026-09-07 — 6.1 measured by the user, and the third reading corrected this repository
+
+- **[user] The four readings, verbatim as pasted** (`macOS`, one terminal, **no proxy environment
+  variable set** — check 4 uses `-x` explicitly, which is why it needs none):
+
+  ```
+  ➜  ~ dig +short SOA prod.awsds.internal ; dig +short SOA sandbox.internal
+  ns-1536.awsdns-00.co.uk. awsdns-hostmaster.amazon.com. 1 7200 900 1209600 86400
+  ➜  ~ dig +short proxy.awsds.internal
+  10.31.160.106
+  ➜  ~ curl -sS --max-time 15 https://1.1.1.1
+  curl: (28) Connection timed out after 15006 milliseconds
+  ➜  ~ curl -s --max-time 20 -x http://proxy.awsds.internal:3128 https://checkip.amazonaws.com
+  184.33.8.126
+  ```
+
+- **[Claude] Reading 1 — the resolver in use is the HUB's, and the pair is what says so.** One SOA
+  line for `prod.awsds.internal` and **nothing** for `sandbox.internal`. `.internal` is not a public
+  TLD, so an answer can only come from a private zone, and the hub is associated with the first and not
+  the second. Had the check been the obvious `awsds.internal`, both resolvers would have answered and
+  the reading would have proved nothing.
+- **[Claude] Reading 2 — `proxy.awsds.internal` → `10.31.160.106`**, private, inside the hub's public
+  tier. The record was **NXDOMAIN until 2026-09-06**: step 2.1 said pass 4 would write it and pass 4
+  did not.
+- **[Claude] Reading 4 — `184.33.8.126`, the PROXY's Elastic IP.** One command proving the tunnel, the
+  peering, the return route and the `tunnel` plane of the allow-list. It is also the address
+  `DenyControlPlaneOffVpn` names since 4.12, so this is the perimeter's own premise, measured from the
+  outside for the first time.
+- **[Claude] READING 3 CONTRADICTED THE RUNBOOK I HAD WRITTEN THE DAY BEFORE, and the host settled it
+  rather than a re-reading.** The file predicted *"a refusal, arriving fast, not a timeout"*, because
+  the `FORWARD` chain answers with `icmp-admin-prohibited` rather than dropping. The user got
+  `curl: (28) Connection timed out after 15006 milliseconds`. Measured on the host the same hour:
+
+  ```
+  4     8453  2104K  REJECT  all -- wg0 * 0.0.0.0/0 0.0.0.0/0  reject-with icmp-admin-prohibited
+  ```
+
+  **Both are true.** The host refuses, 8453 times — and the counter is what proves the rule is *hit*
+  rather than merely present. macOS, like most modern stacks, **ignores an ICMP unreachable arriving
+  mid-`connect()`** as hardening against off-path injection, so `curl` retransmits the SYN until
+  `--max-time` expires. **The refusal is real and the sender cannot see it.** That is
+  [Lesson 42](../plan/lessons.md) mirrored — there *is* a response and the receiver discards it, so
+  absence is observed anyway — and it is written up as **Lesson 55**: the discriminator is not a better
+  reading of the client's error, it is the counter on the **refusing** side. `§S2` and `§C2` of the
+  runbook corrected the same sitting.
+  **The rejected-packet count is also a number nobody had**: it is a live measure of how much a laptop
+  tries to send straight to the internet while a full tunnel is up.
+- **[Claude] AND THE RUN PROVED TWO THINGS 6.1 DID NOT ASK FOR.** The proxy's access log, read for the
+  same minutes:
+
+  ```
+  2026-09-07T02:58:26+0000 10.90.0.2 CONNECT checkip.amazonaws.com:443 200 4950 735 TCP_TUNNEL
+  ```
+
+  **`10.90.0.2` — the DEVICE, not the WireGuard host.** That is 4.7's deliberate hole in the masquerade
+  and 4.11's access log working together, end to end, for the first time: the log carries a per-device
+  address instead of one indistinguishable blur, which is the whole reason the exemption exists and
+  costs the ENI's `source_dest_check`. The NAT table confirms it from the other side —
+  `RETURN … 10.90.0.0/24 → 10.31.160.0/24` counted **2** packets, exactly the user's two connections
+  (POSTROUTING sees only the first packet of each; conntrack carries the rest).
+- **[Claude] What 6.1 leaves**: `6.2`, `6.4` and `6.6` are still the user's, and `6.4`'s premise — *with
+  the laptop's proxy setting removed* — now has a documented shape, since this run confirms no such
+  setting was ever needed for the `-x` form.

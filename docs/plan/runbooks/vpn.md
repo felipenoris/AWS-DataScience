@@ -77,8 +77,14 @@ laptop 10.90.0.2 ──wg0──▶ host 10.31.160.x  (wg0 at 10.90.0.1)
   for **RFC1918** and rejects the rest with `icmp-admin-prohibited`. There is no route to remove and no
   default to delete: the host *has* an IGW default in its subnet, because it needs one itself — the SSM
   agent, the CloudWatch agent, its own `dnf`. What it does not have is any willingness to carry a
-  **tunnel** packet there. So `curl https://1.1.1.1` from a client fails **immediately with a refusal**,
-  not with a timeout, and that distinction is a diagnostic (§C4).
+  **tunnel** packet there.
+  **THE HOST REFUSES AND THE CLIENT SEES A TIMEOUT, and those are not in conflict** (measured
+  2026-09-07). The rejection is real — `FORWARD` rule 4 counted **8453** rejected packets in its first
+  hours — but a modern TCP stack ignores an ICMP unreachable arriving mid-`connect()`, so the sender
+  retransmits until it gives up. **The counter is the only place the refusal is legible**, which is why
+  §C4's escalation path is `iptables -L FORWARD -n -v` over an SSM session rather than a better reading
+  of the client's error. The rejected-packet count also doubles as a live measure of *how much the
+  laptop tries to send straight to the internet* while a full tunnel is up — a number nobody had before.
 - **The masquerade has a hole in it, deliberately.** Everything forwarded is source-NATed to the host's
   own address *except* traffic bound for the public tier — so **Squid sees `10.90.0.x`**, and the proxy's
   access log carries a **per-device** address instead of one indistinguishable blur. That is what makes
@@ -684,8 +690,17 @@ every instruction naming it, this file's included, was pointing at NXDOMAIN.
 curl -sS --max-time 15 https://1.1.1.1
 ```
 
-**Must fail.** The host rejects every forwarded packet not bound for an RFC1918 address (§S2), so this
-is a *refusal*, arriving fast, not a timeout.
+**Must fail — and it fails as a TIMEOUT, which is not what this file predicted (corrected 2026-09-07,
+from the user's first run).** The prediction was a fast refusal, on the reasoning that the host answers
+with `icmp-admin-prohibited` rather than dropping. The host does exactly that: measured the same hour,
+`FORWARD` rule 4 had rejected **8453 packets**, and the counter is what proves the rule is *hit* rather
+than merely present. **The client cannot see it.** macOS — like most modern stacks — ignores ICMP
+unreachable arriving for a TCP connection in progress, as hardening against off-path injection, so
+`curl` keeps retransmitting the SYN until `--max-time` expires.
+
+So the expected reading is `curl: (28) Connection timed out`, and **the distinction that matters is not
+the shape of the failure but where it can be observed**: the refusal is real and lives in the host's
+counter, not in anything the sender is told.
 
 ~~`curl -s https://checkip.amazonaws.com` must print `52.89.212.1`~~ — **that was check 2 until
 2026-09-06**, and it proved the full tunnel was real by showing traffic leaving through this host's NAT.
