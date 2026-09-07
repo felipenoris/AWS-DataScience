@@ -1607,3 +1607,57 @@ thing to actually run. They are written up individually because three of them ar
   on a healthy estate is a claim: one side unrouted → `pcx-1: vpc-b has no route to it`; a deleted
   peering still routed → `is deleted and 2 side(s) still point at it`; a route to an id nobody read
   → named; an unread account side → correctly silent.
+
+## 2026-09-06 — the VPN runbook rewritten, because two of its checks now read as failures
+
+- **[Claude] The file still described a host in Sandbox, and its banner said the move was in the
+  FUTURE.** Fifty-five stale identifiers — profile, Name tag, slice paths, log group, secret,
+  `make up ENV=sandbox` — but the expensive part was not staleness. **Two of Part C's three connection
+  checks now produce a "failure" when the design is working**, and the user was about to follow them:
+  - `curl https://checkip.amazonaws.com` *"must print `52.89.212.1`"* — there is no NAT on that host
+    any more. The address the estate leaves under is the **proxy's**, and only through it.
+  - `dig +short SOA sandbox.internal` *"must answer"* — that is the **old** zone family, associated
+    with Sandbox alone. Once `DNS` points at the hub it must **not** answer.
+  Both are **struck through rather than deleted**, so a reader holding an older copy recognises them
+  instead of wondering which file is wrong.
+- **[Claude] The DNS check is now a PAIR, in opposite directions, and choosing it needed a
+  measurement.** `dig SOA prod.awsds.internal` must **answer** and `dig SOA sandbox.internal` must
+  **not**. Read the zone associations rather than the plan: `prod.awsds.internal` and
+  `awsds-pages.internal` are associated with `VPC-Networking` and **not** with Sandbox;
+  `sandbox.internal` is the reverse. **`awsds.internal` answers through both** and therefore
+  discriminates nothing — which is the trap a careless replacement walks into, since it is the obvious
+  name to reach for.
+- **[Claude] §C4's MTU proof had to be re-aimed, and the old form is now silently useless.** It was
+  `ping -D -s 1372 1.1.1.1` against `-s 1200`, and the reading is *1200 passes while 1372 fails*. The
+  host now rejects every forwarded packet not bound for RFC1918, so **both sizes fail identically** and
+  the test says nothing at all. Re-aimed at **`10.90.0.1`** — `wg0`'s own address, the tunnel's far end
+  — which isolates the tunnel from everything beyond it and is reached by the host's INPUT path rather
+  than the FORWARD chain the rejection lives in. **Flagged in the file as not yet exercised**, because
+  a substituted test is a claim until somebody runs it.
+- **[Claude] §S2 re-drawn around three mechanisms that are easy to conflate.** The FORWARD chain is the
+  perimeter and **not** a route — the host keeps an IGW default because *it* needs one (SSM, CloudWatch,
+  `dnf`); what it will not do is carry a **tunnel** packet there, which is why the failure is a fast
+  refusal rather than a timeout. The masquerade has a **deliberate hole** for the public tier so Squid
+  sees `10.90.0.x`. And the estate's one sight of the tunnel range is a single route in one table.
+  **The warning that earns its place**: do not widen that hole to the VPC CIDR — the resolver at
+  `10.31.0.2` sits inside `10.31.0.0/16` and is not in a public subnet, so the tunnel's DNS would die
+  while everything else kept working.
+- **[Claude] §S3's NAT-instance job retired whole** — `vpc_nat_cidrs`, the disabled
+  `source_dest_check`, the isolated-tier route and the extra `[P]` ingress rule. Not because it was
+  disliked: the build host moved to Production and **a route target cannot live in another VPC**. What
+  is kept is the **lesson** rather than the mechanism — reach is an intersection, the three halves lived
+  in three slices, and the missing one made a build look like a broken package mirror. The same shape
+  now guards the proxy: a spoke its group admits and its allow-list has never heard of is **reachable
+  and mute**.
+- **[Claude] Two honesty fixes made while in there, neither of them asked for:**
+  - `VP-3`'s *"the estate's only world-open rule"* is currently **one per ACCOUNT** — Sandbox's `[P]`
+    anchors outlive the host that used them until 4.13's second half — and the instrument reads
+    **Production**, so it says `pass` about one of two ([Lesson 31](../plan/lessons.md)). Recorded as a
+    dated exception with the step that ends it.
+  - **The proxy's private address is deliberately NOT written down.** §C2 asserts that
+    `dig proxy.awsds.internal` returns *a private address in `10.31.160.0/24`* rather than a literal,
+    because that value is `[D]` and moves on a replacement — this runbook's own rule. Its **Elastic IP**
+    stays literal, because it is `[P]` and is the address `DenyControlPlaneOffVpn` names.
+- **[Claude] Every substituted identifier verified against AWS, not against the plan**:
+  `awsds-prod-vpn-host-key`, `/awsds/prod/vpn`, `awsds-prod-vpn-health` all exist under those names.
+  `check-tfvars-shape.py` already carried both tfvars paths, so nothing there had to move.
