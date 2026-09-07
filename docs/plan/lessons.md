@@ -1189,6 +1189,23 @@ lesson can be *recognised* without opening this file; the reasoning that makes e
     in a scratch directory costs one minute), and treat the first successful *boot* — not the first
     successful *apply* — as the moment a `[D]` slice is evidence rather than intent.
 
+55. **A refusal the sender cannot see is indistinguishable from silence — and the refusal is real.**
+    [Lesson 42](#) separates a *permission* failure, which is a response, from a *network* failure, which
+    is the absence of one. This is its mirror and the harder case: there **is** a response, and the
+    sender discards it by policy, so it observes absence anyway. Stage 6c step 6.1, 2026-09-07. The VPN
+    host's `FORWARD` chain rejects every tunnel packet not bound for RFC1918 with
+    `icmp-admin-prohibited`, and this repository's own runbook predicted the client would therefore see
+    *"a fast refusal, not a timeout"*. The client saw `curl: (28) Connection timed out after 15006 ms`.
+    Both are true: measured the same hour, the reject rule had fired **8453 times** — modern TCP stacks
+    (macOS among them) **ignore an ICMP unreachable arriving mid-`connect()`**, as hardening against
+    off-path injection, so the sender retransmits until it gives up.
+    **What generalises is where the evidence lives.** The discriminator is not a better reading of the
+    client's error — there is nothing in it to read. It is the **counter on the refusing side**, and a
+    packet count is also what separates *the rule is present* from *the rule is hit*. So when a control
+    is expected to answer rather than drop, write the verification against the enforcing end, and treat
+    any prediction about what the sender will observe as a claim about **someone else's stack** — which
+    is exactly the class of thing this project measures rather than reasons about.
+
 ---
 
 ## What AWS does that its documentation does not say

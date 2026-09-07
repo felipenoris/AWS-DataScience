@@ -912,6 +912,25 @@ becomes true.
 about a path, and a path is measured, never read off a diagram. **Explanation:** three of these also close
 obligations older than the stage.
 
+- **6.1 — DONE 2026-09-07 BY THE USER, ALL FOUR READINGS, AND ONE OF THEM CORRECTED THIS
+  REPOSITORY'S OWN PREDICTION.** The client edited **one line** — `DNS = 10.31.0.2` — and the
+  `Endpoint` and `PublicKey` lines did not move, which is the transfer and the hand-copied host key
+  paying off in the only place a user would notice. Readings: the DNS **pair** discriminated
+  (`prod.awsds.internal` answered, `sandbox.internal` did not); `proxy.awsds.internal` →
+  **`10.31.160.106`**, private, in the hub's public tier; no internet without the proxy; and
+  `curl -x` → **`184.33.8.126`**, the proxy's address.
+  **THE THIRD READING WAS A TIMEOUT WHERE THE RUNBOOK PREDICTED A FAST REFUSAL**, and measuring the
+  host settled it rather than a re-reading: `FORWARD` rule 4 had rejected **8453 packets** with
+  `icmp-admin-prohibited`, so the host refuses exactly as designed — and macOS **ignores an ICMP
+  unreachable arriving mid-`connect()`**, so the sender retransmits until it times out. The refusal is
+  real and only legible in the **counter on the refusing side**. [Lesson 55](../lessons.md); runbook
+  §S2 and §C2 corrected.
+  **AND THE RUN PROVED TWO THINGS 6.1 DID NOT ASK FOR.** The proxy's access log carries
+  `10.90.0.2 CONNECT checkip.amazonaws.com:443 200 TCP_TUNNEL` — a **per-device** address, which is
+  4.7's no-masquerade exemption and 4.11's log working together, end to end, for the first time. The
+  NAT table confirms it from the other side: the `RETURN` rule for `10.31.160.0/24` counted exactly
+  the user's two connections.
+  *The original step follows:*
 - **6.1 — [user] Measure the tunnel from a client**: the `.conf` changes **only** its `DNS =` line (to
   `VPC-Networking`'s `.2`); the `Endpoint` is unchanged because the address moved with it. Then
   `runbooks/vpn.md` §C's three checks, plus a fourth: `curl https://1.1.1.1` **times out**, and
