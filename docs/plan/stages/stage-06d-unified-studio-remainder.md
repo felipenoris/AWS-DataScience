@@ -99,6 +99,15 @@ around.
   the Sandbox list, a small widening) or they do not work. **Recommended: leave it out** until somebody asks
   for the feature — an allow-list entry nobody uses is reach nobody needed. Record whichever way it goes;
   do not let it be discovered as a breakage.
+- **3.6 — DONE 2026-09-07, AND THE TWO SURFACES ARE IN OPPOSITE STATES.** Measured against the
+  Region's own catalog, all four names exist. **`logs` is already covered — by accident**: it has
+  been in `vpc-egress`'s `core_services` since Stage 3, for another reason, so CloudWatch has an
+  endpoint in every VPC. **Portal Query Editors has none, in any VPC** — and under design B that is
+  not a slower path but **no path at all**, a feature that exists in the portal and fails on first
+  use. **Both spellings exist** (`sqlworkbench`, `sqlworkbench-v2`) and which one the portal calls
+  needs the feature opened, so it is recorded as a **named gap** rather than closed by adding both
+  at 0.020/h for something nobody has used. `codeconnections.api` and `codestar-connections.api`
+  both exist and are confirmed as **Stage 7's** input. *The original step follows:*
 - **3.6 — [Claude] Read the two portal surfaces the optional table names, before they are needed**: the
   **Portal Query Editors** (`sqlworkbench`, `sqlworkbench-v2`) and **CloudWatch** (`logs`). Under design B a
   portal feature whose endpoint is absent has no path at all; measuring which of the two the estate actually
@@ -225,6 +234,20 @@ failing the other.
   and not a measured one — it was added for Session Manager on EC2, and whether a space's remote agent uses
   the same three is exactly what this reading settles. Take it **first**: a name the Sandbox list lacks is a
   slice edit with a lead time, not a portal click.
+- **7.2 — THE STATIC HALF IS DONE 2026-09-07, AND IT IS DECISIVE WITHOUT CLOUDTRAIL.** Read back
+  from Identity Center: `DataScientistAccess` carries **both denies** on `sagemaker:StartSession`
+  and **no `Allow` for it at all** — its only SageMaker Allow is `ReadSageMakerStatus`
+  (`Search`, `List*`, `Describe*`). `policies-sagemaker.tf` says in its own comment where the grant
+  lives: *"the project role is"*. **So the pair is attached to a principal that cannot make the call
+  and absent from the principal that can**, and the conclusion holds whichever way 7.5 resolves the
+  caller: with persona credentials the call fails for want of an Allow (an access-denied that is
+  **not** the deny pair, and reads like a broken feature); with the project role it succeeds
+  **unscoped**. **The objective's scoping was granted by nothing** — Lesson 18 plainly, with
+  Lesson 28 underneath, since the grant and the constraint are in two different slices.
+  The repair the step already names is right and is **not** a new SCP: the **D13 permissions
+  boundary**, the one instrument this estate has that reaches a blueprint-authored role. Not applied
+  here — the boundary field is write-only and 7.5's CloudTrail is what names the role.
+  *The original step follows:*
 - **7.2 — [Claude] Find out which principal makes the call, because the scoping rests on the answer**: 6a
   step 3.2's two denies live in the **six persona sets**, and `policies-sagemaker.tf` says in its own
   comment that `sagemaker:StartSession` is granted by the **project role**, not by those sets. A deny is a
