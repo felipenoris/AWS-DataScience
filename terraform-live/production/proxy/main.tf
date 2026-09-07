@@ -307,3 +307,41 @@ resource "aws_cloudwatch_metric_alarm" "health" {
     InstanceId = aws_instance.this.id
   }
 }
+
+# ------------------------------------------------- the name (6c step 2.1, written here at 4.8)
+#
+# `proxy.awsds.internal`, AND IT IS THE ONE NAME THE WHOLE DESIGN IS CONFIGURED AGAINST. Every
+# client in every spoke is told `http_proxy=http://proxy.awsds.internal:3128`, NO_PROXY carries
+# `.awsds.internal` so that name is never sent to the proxy itself, and step 6.1's closing check
+# is `curl -x proxy.awsds.internal:3128 https://checkip.amazonaws.com`. Step 2.1 says this record
+# is *"written by pass 4 from the host's private address"* - and pass 4 did not write it (found
+# 2026-09-06 at 5.7). Until now the name has been NXDOMAIN, so every one of those instructions
+# named a host that did not resolve.
+#
+# WHY IT IS HERE AND NOT IN networking/. The zone is [P] and belongs to production/foundation/;
+# the ADDRESS is a property of an instance this [D] slice may replace on a configuration change,
+# and a [P] slice must not take a dependency on a [D] value (Lesson 4 in the other direction).
+# `make down` stops this host rather than destroying it, so the ENI and its private address
+# survive a down/up cycle and the record does not churn.
+#
+# PRIVATE, NOT THE ELASTIC IP, and here that is load-bearing rather than tidy: a spoke reaches
+# 3128 over a PEERING, and a peering carries the private address only. Pointing this name at the
+# Elastic IP would send every spoke's proxy traffic at a public address it has no route to - a
+# timeout with no message, from a name that resolves perfectly.
+data "terraform_remote_state" "foundation" {
+  backend = "s3"
+
+  config = {
+    bucket = "awsds-${var.env}-tfstate"
+    key    = "${var.account_folder}/foundation/terraform.tfstate"
+    region = var.region
+  }
+}
+
+resource "aws_route53_record" "proxy" {
+  zone_id = data.terraform_remote_state.foundation.outputs.awsds_internal_zone_id
+  name    = "proxy.awsds.internal"
+  type    = "A"
+  ttl     = 60
+  records = [aws_instance.this.private_ip]
+}
