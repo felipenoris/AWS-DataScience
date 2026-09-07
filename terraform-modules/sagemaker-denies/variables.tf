@@ -1,5 +1,5 @@
 variable "allowed_instance_types" {
-  description = "Every ml.* instance type any principal in this design may ask SageMaker for. D12's budget expressed as a control: the budget notifies nobody, so the only thing that stops a USD 30/hour parameter is a policy that refuses it in the first hour."
+  description = "Every ml.* instance type any principal in this design may ask SageMaker for OUTSIDE a space - jobs, endpoints, notebook instances. Since v0.2.0 (2026-09-07, the user's decision) the space path (CreateApp, CreateSpace, UpdateSpace) carries NO ceiling. D12's budget expressed as a control: the budget notifies nobody, so the only thing that stops a USD 30/hour job parameter is a policy that refuses it in the first hour."
   type        = list(string)
   nullable    = false
 
@@ -10,9 +10,10 @@ variable "allowed_instance_types" {
   # written once at each end would have been exactly the divergence the module exists to
   # prevent.
   #
-  # WHAT IS IN IT: the app sizes SMUS actually launches (ml.t3.medium is the JupyterLab and
-  # Code Editor default, USD 0.050/h - docs/PRICING.md 8) plus a small general-purpose and
-  # compute range for jobs. NO GPU AND NO *.2xlarge OR LARGER, deliberately: a single ml.p3
+  # WHAT IS IN IT: the app sizes SMUS launched when the list still reached apps (ml.t3.medium is
+  # the JupyterLab and Code Editor default, USD 0.050/h - docs/PRICING.md 8; ml.t3.large 0.100 is
+  # the remote-IDE floor) plus a small general-purpose and compute range for jobs - which, since
+  # v0.2.0, are the only calls this list governs. NO GPU AND NO *.2xlarge OR LARGER, deliberately: a single ml.p3
   # hour is a fifth of D12's whole monthly ceiling, and the budget notifies nobody.
   #
   # RAISING IT IS A DIFF ON THIS LINE, in a module whose tag every caller pins - which is the
