@@ -55,6 +55,7 @@ from tfhygiene import backend, layers
 
 LIVE = Path("terraform-live")
 BOLD, RESET = "\033[1m", "\033[0m"
+RED = "\033[31m"  # step 7.2's refusal - the one line in this file that must not be skimmed
 
 
 def run(cmd: list, env_extra: dict | None = None, dry: bool = False, capture: bool = False):
@@ -146,7 +147,81 @@ def instance_states(env: str, slice_name: str, dry: bool) -> list | None:
     return [tuple(ln.split("\t")) for ln in res.stdout.split("\n") if ln.strip()]
 
 
-def dormant(env: str, action: str, dry: bool) -> None:
+# ----------------------------------------------------------- the hub (6c steps 7.1 and 7.2)
+#
+# THE HUB IS ONE ACCOUNT'S PAIR OF [D] HOSTS AND EVERY OTHER ACCOUNT'S SESSION DEPENDS ON THEM.
+# D38 gives the estate one way in (the WireGuard host) and one way out (the Squid proxy), both in
+# `production/networking`'s VPC. `make up` / `make down` act on ONE env and have no concept of
+# that, so two things follow and both are here rather than in a runbook (Lesson 5):
+#
+#   7.1  a Sandbox session must be able to start the two hub hosts WITHOUT starting GitLab or
+#        Production's [E] endpoints - hence `--only`, and `make hub-up` / `make hub-down`.
+#   7.2  a spoke's `make up` must REFUSE while either hub host is down, naming it. Left alone a
+#        stopped hub is a BLACKHOLE rather than an error: the apply succeeds, and every symptom
+#        afterwards is a timeout that looks like a broken mirror or a broken package index. That
+#        is the failure `runbooks/buildbox.md` documented for one tier, now estate-wide.
+HUB_ENV = "production"
+HUB_SLICES = ("vpn", "proxy")
+
+
+def hub_state(dry: bool) -> list:
+    """[(name, id, power state)] for the two hub hosts, or [] when nothing could be read.
+
+    A DIRECT `describe-instances` RATHER THAN `./aws/vpn.py`, and the step named that instrument
+    (7.2 says "reads the hub hosts' state through ./aws/vpn.py"). It is the right instrument for
+    the QUESTION and the wrong one for this MOMENT: `vpn.py` writes a full nine-check report and
+    is what a person runs to find out why the tunnel is unhappy, whereas this needs one boolean
+    before an apply and must not turn `make up` into a report generator. The two agree because
+    both find the host by the same Name tag, which is the contract `instance_name()` owns.
+    """
+    out = []
+    for name in HUB_SLICES:
+        states = instance_states(HUB_ENV, name, dry)
+        tag = instance_name(HUB_ENV, name)
+        if states is None:
+            out.append((tag, "-", "UNREADABLE"))
+        elif not states:
+            out.append((tag, "-", "absent"))
+        else:
+            out.append((tag, states[0][0], states[0][1]))
+    return out
+
+
+def refuse_if_hub_down(env: str, dry: bool) -> bool:
+    """True to proceed. Applies to SPOKES only - the hub's own env starts it as part of `up`.
+
+    UNREADABLE IS NOT A REFUSAL, and that asymmetry is deliberate: a spoke operator may hold no
+    session on Production at all (the profiles are per account), so a failed read here would make
+    a legitimate `make up ENV=sandbox` impossible for the person it is meant to protect. A read
+    that FAILS is reported and waved through; a read that SUCCEEDS and says `stopped` is what
+    stops the apply. Lesson 13 in its uncomfortable direction - the two nothings are told apart,
+    and only one of them is a finding.
+    """
+    if env == HUB_ENV:
+        return True
+    print(f"\n  {BOLD}the hub (step 7.2){RESET} - one way in, one way out, in another account:")
+    rows = hub_state(dry)
+    stopped = [r for r in rows if r[2] not in ("running", "UNREADABLE")]
+    for tag, iid, state in rows:
+        mark = "" if state in ("running", "UNREADABLE") else "  <-- this one"
+        print(f"    {tag:<22} {state} {iid}{mark}")
+    if not stopped:
+        if any(r[2] == "UNREADABLE" for r in rows):
+            print(
+                "    NOT READ - no session on the hub account, so this refusal is waived rather\n"
+                "    than failed. `make hub-up` from an identity that has one if a spoke misbehaves."
+            )
+        return True
+    print(
+        f"\n  {RED}REFUSED{RESET}: the hub is not up, and a stopped hub is a BLACKHOLE rather than\n"
+        "  an error - this apply would succeed and every symptom afterwards would be a timeout.\n"
+        "  Start it:  make hub-up",
+        file=sys.stderr,
+    )
+    return False
+
+
+def dormant(env: str, action: str, dry: bool, only: list | None = None) -> None:
     """[D] is stop/start and NEVER destroy (D11). Stage 4 step 1.3 gave this hook its body.
 
     THE INSTANCES ARE FOUND BY NAME TAG, NOT BY STATE FILE (instance_name above). Two
@@ -163,6 +238,8 @@ def dormant(env: str, action: str, dry: bool) -> None:
     a hook that reported both as silence would be indistinguishable from one that ran.
     """
     declared = [s for s in layers.for_env(env) if s.layer == layers.DORMANT]
+    if only is not None:
+        declared = [s for s in declared if s.name in only]
     if not declared:
         print(f"  [D] none declared in {env} - nothing to {'start' if action == 'up' else 'stop'}")
         print("      (the first is Stage 4's WireGuard vpn/; Stage 7 adds GitLab's instance)")
@@ -333,7 +410,27 @@ def cmd_updown(args) -> int:
 
     take, skipped = layers.actionable(args.env, action)
 
+    # `--only` (step 7.1) NARROWS, IT NEVER WIDENS: a slice this env refuses stays refused, and
+    # the reason is still printed. A closed list rather than a filter that silently matches
+    # nothing - an unknown name here would produce a run that does nothing and reports success,
+    # which is the shape `optional_service_groups` was given a validation block for.
+    only = None
+    if getattr(args, "only", None):
+        only = [s.strip() for s in args.only.split(",") if s.strip()]
+        known = {sl.name for sl in layers.for_env(args.env)}
+        unknown = [s for s in only if s not in known]
+        if unknown:
+            print(
+                f"unknown slice(s) for env '{args.env}': {', '.join(unknown)}. "
+                f"known: {', '.join(sorted(known))}",
+                file=sys.stderr,
+            )
+            return 2
+        take = [sl for sl in take if sl.name in only]
+
     print(f"{BOLD}make {action} ENV={args.env}{RESET}")
+    if only:
+        print(f"  --only {','.join(only)} - every other slice in this env is untouched")
     print(f"\n  refused ({len(skipped)}), and the reason is printed rather than implied:")
     for sl, reason in skipped:
         print(f"    - {sl.path}: {reason}")
@@ -360,7 +457,12 @@ def cmd_updown(args) -> int:
     # has to decide which side of that loop the hook sits on too.
     def run_dormant() -> None:
         print("\n  dormant [D] (step 8.2):")
-        dormant(args.env, action, args.dry_run)
+        dormant(args.env, action, args.dry_run, only=only)
+
+    # THE HUB CHECK GOES BEFORE THE [D] HOOK AND BEFORE THE FIRST APPLY (step 7.2), because a
+    # refusal after either would leave the env half-raised - which is worse than not starting.
+    if action == "up" and not refuse_if_hub_down(args.env, args.dry_run):
+        return 1
 
     if action == "up":
         run_dormant()
@@ -520,6 +622,12 @@ def main(argv: list) -> int:
         p.add_argument("--env", required=True)
         p.add_argument("--auto-approve", action="store_true")
         p.add_argument("--dry-run", action="store_true")
+        p.add_argument(
+            "--only",
+            help="comma-separated slice names to act on, instead of the whole env (6c step 7.1). "
+            "Narrows only: a slice this env refuses stays refused. `make hub-up` is "
+            "`up --env production --only vpn,proxy`.",
+        )
         p.set_defaults(fn=cmd_updown, action=action)
     p = sub.add_parser("status")
     p.add_argument("--env")

@@ -956,9 +956,31 @@ account's session, and `make up`/`down` has no concept of that. **Explanation:**
 host is a blackhole rather than an error — the failure mode `buildbox.md` documents for one tier, now
 estate-wide (INT-21's availability cost).
 
+- **7.1 — DONE 2026-09-06.** `make hub-up` / `make hub-down`, over
+  `./scripts/slices.py up --env production --only vpn,proxy`. `--only` **narrows and never
+  widens** — a slice the env already refuses stays refused, with its reason still printed — and it
+  is a **closed list**: an unknown name is an error, not a run that quietly does nothing. It
+  filters the `[D]` hook as well as the `[E]` loop, which is what makes `hub-up` act on the two
+  hosts and **no** endpoint slice. **No `ENV` argument, on purpose**: there is exactly one hub, so
+  a parameter with one legal value would be the shape that invites a second nobody meant. Verified
+  by dry-run on both directions: `[E] (0)`, both `[D]` hosts named.
+  *The original step follows:*
 - **7.1 — [Claude] Split the hub's lifecycle**: `make hub-up` / `make hub-down`, over a new
   `./scripts/slices.py up --env production --only vpn,proxy`, so a Sandbox session starts the two hub hosts
   **without** starting GitLab or Production's `[E]` endpoints.
+- **7.2 — DONE 2026-09-06, WITH ONE DELIBERATE ASYMMETRY.** A spoke's `make up` reads both hub
+  hosts **before** the `[D]` hook and before the first apply — a refusal after either would leave
+  the env half-raised — and names the stopped one. **A direct `describe-instances` rather than
+  `./aws/vpn.py`**, which the step named: that instrument writes a nine-check report and is what a
+  person runs to find out *why* the tunnel is unhappy; this needs one boolean and must not turn
+  `make up` into a report generator. The two agree because both find the host by the same Name tag.
+  **UNREADABLE is waived, not refused**, and that is the uncomfortable half of Lesson 13: a spoke
+  operator may hold no session on Production at all, so a failed read must not make a legitimate
+  `make up ENV=sandbox` impossible. A read that **succeeds** and says `stopped` is what stops the
+  apply. **All four outcomes exercised** — both running (proceed), proxy stopped (refuse, naming
+  it), unreadable (waive with a printed reason), and the hub's own env (never checked, since `up`
+  is what starts it).
+  *The original step follows:*
 - **7.2 — [Claude] Turn the blackhole into an error**: `make up ENV=<spoke>` reads the hub hosts' state
   through `./aws/vpn.py` and **refuses**, naming the stopped host, when either is down.
 - **7.3 — [Claude] Write the proxy instrument**: `./aws/proxy.py`, read-only by default with an
