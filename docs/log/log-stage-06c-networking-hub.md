@@ -1314,3 +1314,31 @@ thing to actually run. They are written up individually because three of them ar
   broken proxy.
 - **[Claude⚡] Both slices torn back down** — `5 destroyed` for the buildbox, `13 destroyed` for
   `production/egress` — so the estate is where it was, plus the code. `make check` **OK**.
+
+## 2026-09-06 — 5.9, and pass 5 closes
+
+- **[Claude] The re-statement was already written; what 5.9 adds is a fallback that was MEASURED.**
+  [D38](../plan/decisions/D38-single-egress-hub.md) already struck MWAA Serverless (its private shape
+  *forbids* a route to a NAT device; the requirements list demanding two NAT gateways belongs to the
+  **public** shape on the same page — [Lesson 41](../plan/lessons.md)) and already named ECR's
+  pull-through cache as the candidate, with Stage 7 step 5.2 as the measurement. Restating that would
+  have been transcription.
+- **[Claude] So the amendment is what 5.8's run proved: pull-and-push through the proxy, ranked
+  first.** A full `docker pull public.ecr.aws/docker/library/alpine:3.20` completed through Squid once
+  the blob redirect's CloudFront distribution was on the build plane — token and manifest over the
+  proxy, **layers over the free S3 gateway**. It needs no host in `VPC-Networking`, no second build
+  environment and no route: it is the ordinary build path with one name added to one allow-list.
+- **[Claude] What it deliberately does NOT settle**, because the distinction is the whole of Stage 7
+  step 5.2: this is a **client** fetching an image. A pull-through *cache* is **AWS fetching from
+  upstream on the service's own behalf**, and no client-side proxy setting reaches that. So 5.2 still
+  measures whether the cache needs a route — the change is that the estate no longer *depends* on the
+  answer in order to obtain a public image. Ranking is now (i) pull-and-push through the proxy
+  (measured), (ii) prime from the hub's public tier, (iii) bake the images into `base`, and only then
+  the estate's first NAT gateway.
+- **[Claude] PASS 5 IS CLOSED.** 5.1 and 5.2 as code, 5.3 and 5.4 as decisions, 5.5 the SSM trio with
+  a written refusal, 5.6 `NO_PROXY` generated from names AWS returns, 5.6a Staging keeps its
+  firewall, 5.7 sixty-three entries to ten with a precondition and a re-aimed instrument, 5.8 the
+  build host moved **and exercised**, 5.9 the contingency. **Owed into pass 6:** the `VPN_HOMES` trim
+  and then the `removed {}` on `sandbox/foundation`'s Elastic IP, in that order; `NT-11`/`NT-4`
+  (3.6-3.7); 2.6's retirement of the old zone family; and 4.11's second half (the Log Archive export)
+  as decision due #4.
