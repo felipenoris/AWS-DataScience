@@ -196,6 +196,20 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   (2026-09-06).** Outstanding: **6.2** the shadowing closed, **6.4** the drop rule, **6.6** INT-16's closing choice —
   and **6.5**, half the user's, which is the **GATE** for trimming the union. **6.7** (rewrite
   `docs/NETWORK.md` from the readings) waits on 6.1/6.2; so does **2.6** and its `NT-12`.
+- **THE CLIENT PLANE IS `open`, NOT AN ALLOW-LIST (2026-09-07).** `objectives.md`: the client's
+  internet is **monitored**, and the restriction belongs to the **compute**. Each plane carries a
+  `mode`; the tunnel's deny list is **empty by decision**. **Empty means OPPOSITE things** —
+  allow-list empty = refuse everything, deny-list empty = permit everything. SageMaker's list is
+  the `sandbox-foundation` plane, 20 names, unchanged.
+- **THE PARAMETER IS DATA (30 min); THE RENDERER IS CODE (a new host).** A State Manager `Success`
+  is about running the script the host already has.
+- **THE TUNNEL IS DUAL-FAMILY SINCE 2026-09-07** (`wireguard-v0.6.0`, `fd90::/64`). It carries no
+  IPv6 — every VPC is IPv4-only — it **rejects** it, because `AllowedIPs = ::/0` was **inert**
+  without a matching `Address` and every IPv6 app was leaving outside the tunnel. **Not a control
+  against the device's owner.** A client's `Address` line gains `fd90::<n>/128`; nothing else moves.
+- **macOS: the system proxy is NOT consulted while the tunnel is primary** (issue #67). Use
+  Chrome's `--proxy-server` flag or Firefox. With the tunnel **down** the same setting breaks the
+  `aws` CLI; `NO_PROXY='*'` is the override, an empty `https_proxy` is not.
 - **6.1 DONE 2026-09-07 (user), all four readings.** One client line changed (`DNS = 10.31.0.2`);
   `curl -x` prints the **proxy's** `184.33.8.126`. **The no-internet check TIMES OUT, it does not
   refuse** — the host rejects (8453 packets counted) and macOS ignores ICMP mid-`connect()`
@@ -240,7 +254,7 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
 - **`EXC-04` did NOT close** (5.7 changed the *content*; the churn is the provider comparing two
   *spellings*). `production/egress` re-planning `No changes` is **not** a counter-example — it carries
   no domain list. **`EXC-05` and `EXC-06` closed.**
-- **Module tags: `vpc-egress-v0.10.1`** (**`v0.9.0` ABANDONED** on origin — Lesson 46, a piped `git
+- **Module tags: `vpc-egress-v0.10.1`, `wireguard-v0.6.0`** (**`v0.9.0` ABANDONED** on origin — Lesson 46, a piped `git
   commit` returned `tail`'s exit code), `vpc-v0.3.1` (`v0.3.0` abandoned), `wireguard-v0.5.0`.
 - **`PROBE_PEERS` is GONE** — `peer_cidrs` derives from `PEERINGS`, after a stale row surfaced as a
   probe that could not reach the proxy. **`make status`/`layers.py` count endpoints, not ranges:**
