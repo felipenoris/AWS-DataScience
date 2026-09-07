@@ -116,3 +116,42 @@ resource "aws_route" "tunnel_return" {
   destination_cidr_block = var.peer_cidr
   network_interface_id   = module.wireguard.primary_network_interface_id
 }
+
+# ------------------------------------------------- the name (6c step 2.1, written here at 4.7)
+#
+# `vpn.awsds.internal`. STEP 2.1 SAYS THIS RECORD AND THE PROXY'S ARE *"written by pass 4 from
+# the two hosts' private addresses"*, AND PASS 4 DID NOT WRITE THEM (found 2026-09-06, while 5.7
+# was re-cutting the firewall lists to include `.awsds.internal` - a family whose only content
+# was, at that moment, nothing). The apex zone was created at 2.1 with the comment *"shared names
+# only: gitlab, proxy, vpn"* and then no record was ever declared, so both names have been
+# NXDOMAIN since the zone existed. Pass 6's step 6.1 asks a client to reach
+# `proxy.awsds.internal:3128` by NAME; that reading was unrunnable and nothing said so, which is
+# a deferred obligation recorded only at the deferring end (Lesson 34).
+#
+# THE RECORD IS [D] AND LIVES WITH THE HOST, WHICH IS THE POINT. The zone is [P] in
+# production/foundation/; the ADDRESS is a property of an instance this slice may replace, so the
+# record is declared beside the thing that owns the value. `make down` STOPS this host rather
+# than destroying it, so both the ENI and its private address survive a down/up cycle and the
+# record does not churn.
+#
+# PRIVATE, NOT THE ELASTIC IP. Everything that resolves this name is inside the estate and reaches
+# the host over the VPC or a peering; the public address is the tunnel ENDPOINT, which clients
+# carry in their `.conf` and never look up.
+data "terraform_remote_state" "foundation" {
+  backend = "s3"
+
+  config = {
+    bucket = "awsds-${var.env}-tfstate"
+    key    = "${var.account_folder}/foundation/terraform.tfstate"
+    region = var.region
+  }
+}
+
+resource "aws_route53_record" "vpn" {
+  # checkov:skip=CKV2_AWS_23:the value IS an attached resource - `module.wireguard.private_ip`, the host built two blocks up. Checkov traces a reference into a resource in the same file (the proxy slice's identical record passes) and cannot follow one through a module output. The dangling-record risk this check exists for is absent: the address is the module's, so the record cannot outlive the instance
+  zone_id = data.terraform_remote_state.foundation.outputs.awsds_internal_zone_id
+  name    = "vpn.awsds.internal"
+  type    = "A"
+  ttl     = 60
+  records = [module.wireguard.private_ip]
+}

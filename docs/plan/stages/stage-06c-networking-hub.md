@@ -342,6 +342,13 @@ down (INT-22) and read by a check, since nothing derives it.
 - **2.1 — [Claude⚡] Create the apex** `awsds.internal`, owned by `production/foundation/` (the services
   named directly under it live there). Records: `gitlab.awsds.internal`; `proxy.awsds.internal` and
   `vpn.awsds.internal` are written by pass 4 from the two hosts' **private** addresses.
+  **THOSE TWO RECORDS WERE NOT WRITTEN BY PASS 4, AND NOBODY NOTICED UNTIL 5.7 (2026-09-06).** The
+  zone was created here, both host slices were built at 4.7/4.8, and neither declared a record — so
+  `proxy.awsds.internal` was **NXDOMAIN** while every client instruction, `NO_PROXY`'s
+  `.awsds.internal` entry and step **6.1's closing check** all named it. A deferred obligation
+  recorded only at the deferring end ([Lesson 34](../lessons.md)). **Repaired and applied**: each
+  record is declared in the `[D]` slice that owns the address, `1 to add` each, both re-planning
+  `No changes`. `gitlab.awsds.internal` is still owed and belongs to [Stage 7](stage-07-gitlab-runners-ecr.md).
 - **2.2 — [Claude⚡] Create the three child zones**: `sandbox.awsds.internal` (owned by Sandbox),
   `staging.awsds.internal` (owned by the renamed account), `prod.awsds.internal` (owned by
   `production/workloads/`).
