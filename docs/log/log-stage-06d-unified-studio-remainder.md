@@ -209,3 +209,53 @@ document against what 6b and 6c built, then the plans for what remains.*
   the FORWARD chain (both families) and the nat `POSTROUTING` counters, so 6c 6.4 reads the REJECT
   rule's packet count across the user's attempt — the only place that refusal is legible (Lesson 55).
   Eighteen read commands; the ban list is unchanged.
+
+## 2026-09-07 — the pending reading, two prices, and the space-path ceiling removed at the user's request
+
+*After the sign-in (infrastructure user, `Sandbox`, `InfrastructureAccess`). Everything below is a read
+except the Terraform change, which is authored, tagged and planned — and NOT applied.*
+
+- **[Claude] The project role's policies — the reading 7.1 left pending, and the word it was waiting for
+  is *scoped*.** One DataZone role in Sandbox, `datazone_usr_role_<project>_<env>`, under the boundary
+  **`awsds-sandbox-project-boundary`** (D13's; `get-role`), with three AWS managed policies and no inline
+  document: `SageMakerStudioProjectUserRolePolicy`, `SageMakerStudioProjectRoleMachineLearningPolicy` and
+  the Bedrock knowledge-base service-role policy. **The second carries
+  `AllowStartSessionForSpaceRemoteConnection`** — `Allow sagemaker:StartSession` on `space/*`, conditioned
+  on `aws:ResourceTag/AmazonDataZoneProject = ${aws:PrincipalTag/AmazonDataZoneProject}` and
+  `aws:ResourceTag/AmazonDataZoneUser = ${aws:PrincipalTag/datazone:userId}` — the vendor's page, verbatim,
+  on the principal that makes the call. The role's own tags carry the project, domain, environment,
+  `AmazonDataZoneBlueprint=Tooling`, the Spaces domain id and the VPC; the *principal* tags the conditions
+  read come from the session SMUS opens, not from these. Nothing in 7.1's conclusions changes: the
+  deep-link path is **AWS-scoped**, and by nothing of ours.
+- **[Claude] The domain and its one space**: one SageMaker AI domain (`SageMakerUnifiedStudio-<project>-<env>-dev`,
+  `InService`), one JupyterLab space at **`ml.t3.medium`**, **`RemoteAccess: DISABLED`**, owned by the
+  user's profile. The field 7.3 toggles exists per space and reads back.
+- **[Claude] Two prices measured** (Price List Query API, `AmazonSageMaker`, `us-west-2`; `ml.t3.medium`
+  read beside them as the control and it returned the 0.050 `PRICING.md` already carries):
+  **`ml.t3.large` 0.100/h**, **`ml.m5.large` 0.115/h**, JupyterLab and Code Editor identical;
+  `sa-east-1` 0.161 (JupyterLab only — the offer has no Code Editor row for `t3.large` there) and 0.184.
+  Two rows in `PRICING.md` §8; 7.3's pricing sub-step closed.
+- **[Claude] Identity Center's ABAC pages read for decision 4**: attributes for access control are
+  enabled on the instance (`CreateInstanceAccessControlAttributeConfiguration`, or **Settings → Attributes
+  for access control**), a key is mapped to a value from the identity store, and it arrives in the account
+  as a **session tag** readable as `aws:PrincipalTag/<key>` in every IAM policy type. The mechanism the
+  `IDC_UserName` recommendation needs exists, and it is a console act in the Identity account.
+- **[user] The instance-type ceiling no longer reaches spaces.** Asked mid-session: *"não colocar mais
+  nenhum limite no tipo de instância que o usuário pode criar via Code Spaces"*. **[Claude]**
+  `sagemaker-denies`' `DenySageMakerInstanceCeiling` moved from `Action: sagemaker:*` to **`NotAction:
+  CreateApp, CreateSpace, UpdateSpace`** — the reach stays bounded by the key (a request carrying no
+  `sagemaker:InstanceTypes` is untouched by `ForAnyValue`, as before) and now excludes the three calls
+  that create or resize a space's app; jobs, endpoints and notebook instances keep the list. Read as
+  *spaces exempt, jobs kept* — the user's sentence names spaces; dropping the ceiling entirely is one
+  statement fewer if that is what was meant. **Simulated before it was tagged** (`simulate-custom-policy`,
+  ten cases): `CreateTrainingJob`/`CreateProcessingJob` at `ml.p4d.24xlarge`/`ml.g5.xlarge` →
+  **explicitDeny**, the same at `ml.m5.large` → allowed; `CreateSpace`/`UpdateSpace`/`CreateApp` at p4d/g5
+  → **allowed**; `ListSpaces`, `DescribeDomain`, `s3:ListAllMyBuckets`, `glue:GetDatabases` with no key →
+  allowed. Tagged **`sagemaker-denies-v0.2.0`** and **`sagemaker-prereqs-v0.4.0`** on the same commit (the
+  boundary composes the denies by relative path, so its tag moves too); both callers bumped in the
+  second commit; **plans read `0 to add, 6 to change, 0 to destroy`** in `identity/sso/` (the six persona
+  sets, in place) and **`0 to add, 1 to change, 0 to destroy`** in `sandbox/sagemaker/` (the boundary
+  policy, in place), the diff being the one statement. **Not applied** — the two applies (`identity/sso/`
+  as `awsds-infra-identity`, `sandbox/sagemaker/` as `awsds-infra-sandbox-1`) wait for the word. **What it
+  gives up, said once**: an `ml.p4d` Code Editor space bills USD 30+/h and D12's budget notifies nobody;
+  the Tooling idle shutdown bounds an idle space and nothing bounds a busy one.

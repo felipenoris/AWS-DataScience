@@ -245,8 +245,8 @@ statement reaches and whose process tree the user controls, with the repair deci
   rejects it and the symptom is a **timeout** (Lesson 55). Method 3 from a terminal that exported
   the variables is the only method whose process tree the user controls. **The three unasked
   answers:** (a) **the space needs ≥ 8 GB** — `ml.t3.medium`, the estate's default and its only
-  measured price, is named unsupported; `ml.t3.large` and `ml.m5.large` are inside the ceiling and
-  **unpriced** (Lesson 6 — measure before 7.3); (b) the image and the profile already qualify — base
+  measured price, is named unsupported; `ml.t3.large` and `ml.m5.large` are **priced the same day** — 0.100/h and 0.115/h — and since
+  2026-09-07 the space path carries **no ceiling** at all (`sagemaker-denies-v0.2.0`, the user's decision); (b) the image and the profile already qualify — base
   is SMD **4.3.0** (≥ 2.7) with `curl` and `unzip` installed, and TIP is `false` non-editable (6a
   decision 2, which named this feature as its reason); (c) **the VS Code server is downloaded by the
   SPACE**, from `update.code.visualstudio.com` and `vscode.download.prss.microsoft.com` (extensions:
@@ -293,9 +293,10 @@ statement reaches and whose process tree the user controls, with the repair deci
   so the feature earns its default *after* 7.7, not before):
   - **[user decides] The method** — Method 3 recommended; the deep link is the alternative, and choosing it
     means recording in Stage 11 that "VPN-only" is not a true sentence about this channel.
-  - **[Claude] Price `ml.t3.large` and `ml.m5.large`** into `PRICING.md` §8 before any space is created —
-    the remote server needs **≥ 8 GB** and `ml.t3.medium` is named unsupported; both types are inside the
-    ceiling and neither is measured (Lesson 6).
+  - ~~**[Claude] Price `ml.t3.large` and `ml.m5.large`**~~ **DONE 2026-09-07**: 0.100/h and 0.115/h in
+    `PRICING.md` §8 (Lesson 6). The remote server needs **≥ 8 GB** and `ml.t3.medium` is named
+    unsupported; **the space path carries no instance ceiling since the same day** (`sagemaker-denies-v0.2.0`
+    — `CreateApp`/`CreateSpace`/`UpdateSpace` exempt; jobs keep the list), so the size is a cost choice.
   - **[Claude] If Method 3, write the three policy changes in one branch**: a tag-scoped
     `Allow sagemaker:StartSession` on the persona sets keyed on `aws:PrincipalTag/IDC_UserName` (the
     vendor's own ABAC example); the 6a pair rewritten to the same key in `sagemaker-denies`; and
@@ -342,7 +343,7 @@ statement reaches and whose process tree the user controls, with the repair deci
   endpoint the space lacks. Its row in `CLAUDE.md`'s routing table lands in the same sitting.
 - **7.9 — [Claude] Write the instrument**, `./aws/remote-ide.py`, read-only, as `awsds-infra-sandbox-1`:
   `RI-1` the seven endpoints of 7.1 exist while `egress/` is up; `RI-2` every space with `RemoteAccess`
-  enabled is ≥ 8 GB and inside the ceiling; `RI-3` the project role's `StartSession` statements and its
+  enabled is ≥ 8 GB, its type and hourly rate **reported** (no ceiling on spaces since 2026-09-07); `RI-3` the project role's `StartSession` statements and its
   boundary (`get-role`, never `list-roles`); `RI-4` the persona sets' Allow and pair agree on one condition
   key; `RI-5` the latest `StartSession` events — caller and `sourceIPAddress` — so 7.5 is repeatable.
 

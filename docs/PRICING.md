@@ -279,6 +279,8 @@ one Stage 12 step 5 measures against the real bill — this is arithmetic over l
 | Stage 6 build host `t3.xlarge` (`production/buildbox/`, `[E]`) | 0.2688 | **0.1664** | 1.62 |
 | Internal ALB | 0.034 + 0.011/LCU-h | 0.0225 + 0.008/LCU-h | 1.51 |
 | SageMaker Studio JupyterLab / CodeEditor `ml.t3.medium` | 0.081 | 0.050 | 1.62 |
+| SageMaker Studio JupyterLab / CodeEditor `ml.t3.large` — **measured 2026-09-07**, the remote-IDE floor (≥ 8 GB; `ml.t3.medium` is named unsupported for it) | 0.161 (JupyterLab; the offer has no Code Editor row for it there) | **0.100** | 1.61 |
+| SageMaker Studio JupyterLab / CodeEditor `ml.m5.large` — measured 2026-09-07, the 8 GB general-purpose alternative | 0.184 | **0.115** | 1.60 |
 | SageMaker processing job `ml.t3.medium` | 0.066 | — | |
 | WireGuard EC2 `t3.nano` (`t4g.nano` at 0.0067 / 0.0042 until 2026-08-20) | 0.0084 | 0.0052 | 1.62 |
 | Public IPv4 address (in use or idle) | 0.005 | 0.005 | **1.00** |
@@ -587,6 +589,8 @@ in São Paulo that discipline is worth exactly twice as much.
 | EBS `gp3` provisioned IOPS (USD/IOPS-mo) | 0.0095 | — | |
 | EBS snapshot storage (USD/GB-mo) | 0.068 | — | |
 | SageMaker Studio JupyterLab `ml.t3.medium` | 0.081 | 0.050 | 1.62 |
+| SageMaker Studio JupyterLab / Code Editor `ml.t3.large` (2026-09-07 — the remote-IDE floor) | 0.161 | **0.100** | 1.61 |
+| SageMaker Studio JupyterLab / Code Editor `ml.m5.large` (2026-09-07) | 0.184 | **0.115** | 1.60 |
 | SageMaker notebook instance `ml.t3.medium` | 0.081 | 0.050 | 1.62 |
 | SageMaker processing `ml.t3.medium` | 0.066 | — | |
 | SageMaker notebook EBS (USD/GB-mo) | 0.266 | — | |
