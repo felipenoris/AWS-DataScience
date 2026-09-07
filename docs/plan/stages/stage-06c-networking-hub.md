@@ -815,6 +815,40 @@ becomes true.
   *requested* hostname, so a CDN that stops flattening its chain can no longer turn an allowed name into a
   block that blames the wrong entry. Re-aim `./aws/dns-allowlist.py` at the Squid lists — `DN-1`..`DN-4`
   become questions about the proxy's lists, read through SSM the way `vpn.py --on-host` reads the VPN host.
+- **5.8 — DONE AND EXERCISED END TO END 2026-09-06, AND THE EXERCISE IS THE POINT.** The slice is
+  `production/buildbox/`, in **`VPC-SharedServices`'s PRIVATE tier** — not the isolated one the old
+  home used: **measured**, the peering routes to `VPC-Networking` are in the private route tables and
+  **not** in the isolated one, so an isolated-tier build host could not reach the proxy at all. The
+  Sandbox state was already empty, so the destroy half was free. `vpc_nat_cidrs` was already gone at
+  `wireguard-v0.5.0`; the isolated-tier route is deleted; **the `probes/` refusal is deleted rather
+  than retargeted**, and `buildbox.py`'s two refusals are now *read the `ssmmessages` endpoint before
+  applying* and *start the proxy host*.
+  **THE ECONOMICS INVERTED**: `production/egress/` used to be an obstacle (*"build with `egress/`
+  down"*) and is now a **hard prerequisite** — its SSM endpoints are the host's only door — so a build
+  session pays **0.130 USD/h** it used to avoid.
+  **FOUR PLACES, BECAUSE AN EXPLICIT PROXY IS NOT TRANSPARENT**: `/etc/environment`, a docker daemon
+  systemd drop-in, `~/.docker/config.json` for build containers, and **the boot script's own exported
+  environment**, which `/etc/environment` does not provide.
+  **THREE DEFECTS THE RUN FOUND THAT NEITHER `validate` NOR `plan` COULD** (Lesson 54, and the whole
+  reason this was applied rather than authored):
+  1. **`dnf.conf`'s `proxy=` has no exclusion setting**, so it sent the AL2023 repositories — which
+     are on S3 and must go direct — at the proxy. Removed; the environment is the only place that
+     expresses both halves.
+  2. **`s3.dualstack.<region>.amazonaws.com` is a DIFFERENT NAME**, not a label under
+     `s3.<region>.amazonaws.com`, so `NO_PROXY` did not cover it and the first boot died on
+     `Failed to download metadata`. `vpc-egress-v0.9.1` adds both gateway services' dualstack forms.
+     (**`v0.9.0` is ABANDONED on origin** — Lesson 46 a second time: a piped `git commit` returned
+     `tail`'s exit code and the `&&` chain tagged a commit that never happened.)
+  3. **`public.ecr.aws` REDIRECTS blob downloads to a CloudFront distribution**, and Squid matches the
+     hostname the client *requested* — so a redirect is a new request with a new name that must
+     itself be allowed. The name came **out of the access log**, which is what 4.11 is for:
+     `docker pull` said only `Forbidden`. **One distribution, not `.cloudfront.net`** — the tunnel
+     plane has the namespace and a build host must not.
+  **Verified inside a build container**, three outcomes: `pypi.org` **200**, `example.com` **403**,
+  the AL2023 S3 dualstack name **200 direct**. Plus a real `docker pull` completing, and — free from
+  the same session — `http://10.32.0.10/` returning **403**, which is 6.3's *"the proxy is not an L7
+  bridge"* reading taken early. Both slices torn back down afterwards.
+  *The original step follows:*
 - **5.8 — [Claude⚡] Move the build host**: `sandbox/buildbox/` is destroyed and re-created as
   `production/buildbox/` in `VPC-SharedServices` beside the runners, with the docker daemon and the SSM
   agent proxy-configured. It is `[E]` and holds no state that survives a session (`buildbox.md` §S), so

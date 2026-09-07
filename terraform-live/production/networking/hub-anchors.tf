@@ -378,7 +378,31 @@ locals {
   # AWS control plane it does not call. Derived rather than retyped: the day somebody adds a
   # package source for notebooks, a build of that image needs it too, and two hand-kept copies
   # would part company on exactly that day (Lesson 33).
-  proxy_allow_shared = [for d in local.proxy_allow_sandbox : d if d != ".amazonaws.com"]
+  # AND ONE NAME THIS PLANE NEEDS THAT NO OTHER DOES, ADDED 2026-09-06 AFTER A BUILD HOST FAILED
+  # A REAL PULL. `public.ecr.aws` serves the token and the manifest and then **redirects the blob
+  # download to a CloudFront distribution** - and Squid matches the hostname the client REQUESTED,
+  # so a redirect is a NEW request with a NEW name that must itself be allowed. The old DNS
+  # Firewall never met this: it evaluated a CNAME chain (and `TRUST_REDIRECTION_DOMAIN` handled
+  # it), while an HTTP redirect is not a chain at all. Two systems, one intent, different
+  # mechanisms - Lesson 53 from the other side.
+  #
+  # THE NAME WAS READ OUT OF THE ACCESS LOG, WHICH IS WHY 4.11 EXISTS. `docker pull` reported
+  # `download failed after attempts=6: Forbidden` and named nothing; `/awsds/prod/proxy` carried
+  # `CONNECT d5l0dvt14r5h8.cloudfront.net:443 403 TCP_DENIED`. That is the difference between a
+  # proxy and a route, in one line of evidence.
+  #
+  # ONE DISTRIBUTION, NOT `.cloudfront.net`, AND THE ASYMMETRY IS DELIBERATE. The tunnel plane
+  # carries `.cloudfront.net` - every distribution in the world - because the console's asset
+  # delivery needs it and a person's browser is a different threat model. Granting that to a BUILD
+  # host would hand it a namespace anyone can publish into, which is the exact widening splitting
+  # the filters was meant to avoid.
+  # REVISION TRIGGER, and it is a WHEN rather than an IF: this is a third party's name and AWS may
+  # change it without notice. The symptom is a pull that fails with `Forbidden`, and the remedy is
+  # to read the new name out of the same log. Do not "fix" it by widening to the namespace.
+  proxy_allow_shared = concat(
+    [for d in local.proxy_allow_sandbox : d if d != ".amazonaws.com"],
+    ["d5l0dvt14r5h8.cloudfront.net"],
+  )
 
   # THE PLANES, BY THE KEY THE MATRIX GENERATES. A key here that is not a plane below is a typo
   # that would otherwise be silently dropped by the merge - the precondition on the resource is
