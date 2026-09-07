@@ -211,12 +211,14 @@ module "egress" {
     "awsds-pages.internal", "*.awsds-pages.internal",
   ]
 
-  # ONE REACH THIS LIST HAS THAT ITS NAME DOES NOT SUGGEST: the rule group associates to the
-  # VPC ID, not to a route table, so it also filters sandbox/buildbox/ in the isolated tier -
-  # whose egress leaves through the WireGuard NAT instance and never touches this slice's
-  # NAT. public.ecr.aws is one of the five things that host pulls, and under v0.4.0 the entry
-  # above is finally enough to reach it: it is a CNAME into CloudFront, so before the trust
-  # setting a build run while this slice was up failed on it even though it was listed.
+  # THE REACH THIS LIST HAS THAT ITS NAME DOES NOT SUGGEST is still true and no longer has a
+  # subject in this account: the rule group associates to the VPC ID rather than to a route
+  # table, so it filters EVERY host in this VPC. It used to filter `sandbox/buildbox/` too - a
+  # host whose egress left through the WireGuard NAT instance and never touched this slice at
+  # all - which is how "a build must run with egress/ DOWN" became a rule. That host moved to
+  # `production/buildbox/` at 6c step 5.8 and this VPC no longer has a tenant the sentence
+  # applies to. Kept because the MECHANISM is the thing to remember: anything put in this VPC
+  # is filtered by this list, whether or not this slice is what gives it a path.
 
   # DELIBERATELY ABSENT, and this is the record that makes it a control rather than an
   # oversight (Lesson 5; Stage 6 decision 3, 2026-08-19): Athena Spark's three session

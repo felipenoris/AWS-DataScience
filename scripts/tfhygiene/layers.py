@@ -177,16 +177,26 @@ RANKS = {
     #   vpn      IS one, and hard. This slice's single route points at the WireGuard host's
     #            ENI and the host must be RUNNING, or the route is a blackhole rather than an
     #            error. `up` ascends rank, so the [D] hook starts the tunnel first.
-    #   egress   is NOT one, and the absence is the design rather than an accident: the build
-    #            reaches the internet through the VPN host, so no NAT gateway is involved and
-    #            `egress/` need never come up for a build session (0.160 USD/h not spent).
-    #            The rank sits above it anyway - nothing is ordered wrongly by that, and it
-    #            keeps the reading "everything ephemeral in this account is at or above 50".
-    #   probes   is a CONFLICT, not a dependency, and it is the reason this row's slice
-    #            refuses to coexist with it: sandbox/probes/'s perimeter probe measures the
-    #            isolated tier's ABSENCE of a default route, and this slice's whole mechanism
-    #            is adding one. ./scripts/buildbox.py enforces the exclusion; the rank only
-    #            records that this one goes down first.
+    #   egress   IS ONE SINCE 6c STEP 5.8 (2026-09-06), AND THE COMMENT HERE SAID THE OPPOSITE.
+    #            It read: "the build reaches the internet through the VPN host, so no NAT gateway
+    #            is involved and `egress/` need never come up for a build session". Both halves
+    #            died with D38. The build host moved to `production/buildbox/`, its default route
+    #            is gone, and its SHELL is now an interface endpoint - `ssm`/`ssmmessages`/
+    #            `ec2messages`, put in VPC-SharedServices by step 5.5 one step ahead of it. So
+    #            `egress/` is a HARD prerequisite: without it there is no way into the host at
+    #            all. The rank was already above it and is unchanged; what changed is that the
+    #            ordering is now load-bearing rather than incidental, and 0.130 USD/h is a cost
+    #            of a build session rather than a cost avoided.
+    #   proxy    is the other one, and it is in a different account: the internet arrives as an
+    #            explicit proxy over the SharedServices <-> Networking peering. A rank cannot
+    #            express a cross-account dependency, which is exactly why ./scripts/buildbox.py
+    #            checks it - a rank is not a control (Lesson 5).
+    #   probes   IS NO LONGER A CONFLICT, and the exclusion is removed rather than left as a
+    #            superstition. It existed because `sandbox/probes/`'s perimeter probe measures
+    #            the Sandbox ISOLATED tier's absence of a default route while this slice's whole
+    #            mechanism was adding one there. This slice creates no route anywhere now and is
+    #            not in that account. A guard that no longer guards anything is the thing a later
+    #            reader trusts by mistake.
     "buildbox": 55,
     "probes": 60,
 }
@@ -381,8 +391,13 @@ SLICES = [
     # and the assignment agree by design (the slice's own instance_type.auto.tfvars says why).
     # The 64 GiB gp3 is ~0.007/h on top and is not in this column: it is billed per GB-MONTH
     # and this slice is [E], so it exists only while the host does.
+    # MOVED TO PRODUCTION AT 6c STEP 5.8 (2026-09-06), account and tier both. Same rate - the
+    # instance and its 64 GiB gp3 did not change - and the same [E] layer. What changed is that
+    # this host now has TWO prerequisites it cannot express, `production/egress/` in its own
+    # account (the SSM endpoints that are its only door) and `production/proxy/` in the hub (the
+    # only way to the internet), so a build session costs this row plus 0.130 plus 0.0104.
     Slice(
-        "sandbox",
+        "production",
         "buildbox",
         EPHEMERAL,
         "amd64 build host for the dev-env image (St.6 5.0)",
