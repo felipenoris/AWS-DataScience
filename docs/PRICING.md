@@ -27,7 +27,8 @@ VPC 2026-07-24, S3 2026-08-07), so a rate can be a few months old without being 
 offer file only when something in it changes. **The EMR Serverless and DNS Firewall rows were read on
 2026-08-16** (offer files `ElasticMapReduce` 2026-07-17, `AmazonRoute53`), when the Stage 6 revision made
 both services load-bearing: EMR Serverless is the VPC-capable replacement for the Athena Spark default the
-stage disables, and DNS Firewall is egress design A's allowlist mechanism.
+stage disables, and DNS Firewall was egress design A's allowlist mechanism — since 6c step 5.7 it closes the
+**resolver channel** only (ten names), the internet filter having moved to the proxy's source-scoped lists.
 
 **The three `t3` rows added on 2026-08-21 came through a different door, and it is named rather
 than glossed** (`t3.xlarge`/`t3.2xlarge` in §8 and §3, for Stage 6's build host (`production/buildbox/` since 6c step 5.8)): the
@@ -216,7 +217,7 @@ not free, because FSBP `KMS.4` runs org-wide under `awsds-fsbp-only` and suppres
 policy edit that turns that policy custom (Stage 5 step 13.3); or D12's ceiling revised.
 | ECR images (~10 GB) | 0.10 USD/GB-mo | 0.10 USD/GB-mo | 1.00 | 1.00 |
 | AWS Config, every governed account (**Management is the one not recorded — confirmed 2026-08-14**, verification (xiii)) | 0.003 USD/item | 0.003 USD/item | 2.50-5.00 → **billed ~0.5** | 2.50-5.00 |
-| Route 53 **private** hosted zones (**3 at N=1**: `sandbox.internal` per business unit, plus `prod.internal` and `pages.internal`, both in Production — Development and Staging get none, Stage 3 step 4.2) | 0.50 USD/zone-mo (global) | 0.50 USD/zone-mo | 1.00-1.50 | 1.00-1.50 |
+| Route 53 **private** hosted zones (**5 at N=1 since 6c** — the `awsds.internal` apex, its `sandbox.`/`staging.`/`prod.` children and `awsds-pages.internal`; **6 today**, `sandbox.internal` standing until 6c step 6.5; `prod.internal`/`pages.internal` destroyed 2026-09-07. Before 6c: 3) | 0.50 USD/zone-mo (global) | 0.50 USD/zone-mo | **3.00 today, 2.50 steady** | idem |
 | Route 53 **public** hosted zone (D15 phase 2 — **Stage 13 only**) | 0.50 USD/zone-mo (global) | 0.50 USD/zone-mo | 0 → 0.50 | 0 → 0.50 |
 | Public domain registration (D15 phase 2 — **Stage 13 only**) | registrar, region-independent | idem | 0 → ~1.00 | 0 → ~1.00 |
 | ACM **imported** certificates (D15 phase 1 — the internal CA's leaves) | free | free | 0 | 0 |
@@ -269,9 +270,10 @@ one Stage 12 step 5 measures against the real bill — this is arithmetic over l
 |---|---|---|---|
 | NAT Gateway (1) | 0.093 + 0.093/GB | 0.045 + 0.045/GB | 2.07 |
 | Interface VPC endpoint (each, per AZ) | 0.021 + 0.01/GB | 0.010 + 0.01/GB | 2.10 |
-| — Sandbox, **11** endpoints, single AZ (D9), design A (12 until 2026-08-17 when `elasticfilesystem` left with the NFS requirement; 11 until 2026-08-21 when `datazone` joined at Stage 6 step 4.2; **11 again since 2026-08-25, when it left — issue #39**) | 0.231 | 0.110 | 2.10 |
-| — Sandbox, 14 endpoints, design B — **11 + the two CodeArtifact + `datazone` back**, which is the one entry design B must re-add: with no NAT the app has no other path to DataZone (the 2026-08-25 removal is design A's, issue #39). It is required by B's own premise, **never by `VpcOnly`** (Lesson 41), and the portal names it shadows belong to the client plane | 0.294 | 0.140 | (design B needs CodeArtifact — see §9) |
-| — Development **11** / Staging 9 / Production 10-12 | 0.231 / 0.189 / 0.210-0.252 | 0.110 / 0.090 / 0.100-0.120 | 2.10 |
+| — *(until 6c)* Sandbox, **11** endpoints, single AZ (D9), design A (12 until 2026-08-17 when `elasticfilesystem` left with the NFS requirement; 11 until 2026-08-21 when `datazone` joined at Stage 6 step 4.2; **11 again since 2026-08-25, when it left — issue #39**) | 0.231 | 0.110 | 2.10 |
+| — *(the 2026-08 projection)* Sandbox, 14 endpoints, design B — **11 + the two CodeArtifact + `datazone` back**, which is the one entry design B must re-add: with no NAT the app has no other path to DataZone (the 2026-08-25 removal is design A's, issue #39). It is required by B's own premise, **never by `VpcOnly`** (Lesson 41), and the portal names it shadows belong to the client plane | 0.294 | 0.140 | (design B needs CodeArtifact — see §9) |
+| — Sandbox **18** endpoints **as built** (6c step 5.2, counted from the slice's plan: the core 8, the SMUS 3, `s3tables`, `datazone`, the SSM trio, `ec2`, `secretsmanager`) | 0.378 | **0.180** | 2.10 |
+| — Staging **11** / `VPC-SharedServices` **13** / `VPC-Workloads` **0** (6c step 5.5 counts; the third is a written refusal, not an omission) | 0.231 / 0.273 / 0 | **0.110 / 0.130 / 0** | 2.10 |
 | GitLab EC2 `t4g.large` | 0.1072 | 0.0672 | 1.60 |
 | — `t3.large`, the x86 equivalent | 0.1344 | 0.0832 | 1.62 |
 | Stage 6 build host `t3.xlarge` (`production/buildbox/`, `[E]`) | 0.2688 | **0.1664** | 1.62 |
@@ -284,7 +286,10 @@ one Stage 12 step 5 measures against the real bill — this is arithmetic over l
 | Internet data transfer out, first 10 TB (see §7 note) | 0.150/GB | 0.090/GB | 1.67 |
 | Inter-region transfer to the other region | 0.16/GB out of São Paulo | 0.02/GB into São Paulo | asymmetric |
 
-**Typical Sandbox hour** (its endpoints + one Studio app + WireGuard, plus the NAT under design A):
+**Typical Sandbox hour, as built (6c, 2026-09-07, `us-west-2`)**: 18 endpoints 0.180 + one `ml.t3.medium` app
+0.050 + the hub's two hosts 0.0156 (`t3.nano` + `t3.micro`) ≈ **0.25/h**, and **no per-GB NAT charge** — an EC2
+proxy bills nothing per gigabyte. *The comparison 6c closed, kept as the record:* **Typical Sandbox hour**
+(its endpoints + one Studio app + WireGuard, plus the NAT under design A):
 design A `sa-east-1` **≈ 0.44/h**, `us-west-2` **≈ 0.22/h**; design B **≈ 0.40** and **≈ 0.20**
 (both were up one endpoint — `datazone`, Stage 6 step 4.2 — from 2026-08-21; **design A came back down on
 2026-08-25** when it was removed, by exactly one endpoint at the rate above. **Design B keeps it**: with no

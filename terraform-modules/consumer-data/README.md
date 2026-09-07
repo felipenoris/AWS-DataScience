@@ -3,7 +3,7 @@
 The Stage 5 pass 4 module ([stage file](../../docs/plan/stages/stage-05-data-foundation.md); the governance
 model's one copy is [`docs/GOVERNANCE.md`](../../docs/GOVERNANCE.md)). Called by
 [`terraform-live/sandbox/data/`](../../terraform-live/sandbox/data/) and
-[`terraform-live/development/data/`](../../terraform-live/development/data/) — both thin, both `[P]`, both
+~~`terraform-live/development/data/`~~ (destroyed at Stage 6b step 2.4, 2026-09-06) — thin, `[P]`,
 pinning the module **by git tag** — and by every further business unit's Sandbox once D35's N
 passes 1. **The design lives here once; a slice says which account, never what.** That is also why this
 index is in the module and not in the slices: two copies of one design drift on the first divergence.

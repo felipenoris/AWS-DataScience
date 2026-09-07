@@ -169,13 +169,19 @@ terraform-live/
 │   │                     # from a single input. N is 1 today; the naming is settled
 │   │                     # there, not here (see the D35 note above)
 │   ├── bootstrap/        # [P] state bucket for this account (state migrated in, never committed)
-│   ├── foundation/       # [P] VPC, subnets, route tables, IGW, security groups, private
-│   │                     #     hosted zone, KMS keys, IAM roles, WireGuard Elastic IP,
-│   │                     #     peering requester + routes to Production (D14), and the
+│   ├── foundation/       # [P] VPC, subnets, route tables, IGW, security groups, the
+│   │                     #     sandbox.awsds.internal zone, KMS keys, IAM roles, the peering
+│   │                     #     REQUESTER + routes to both Production VPCs (INT-22), and the
 │   │                     #     persona's vending policy - a customer-managed policy the
 │   │                     #     entitlement plane references BY NAME, so it lives in a [P]
 │   │                     #     slice: a missing one fails PROVISIONING of the permission
-│   │                     #     set in this account (2026-08-23, persona-vending.tf)
+│   │                     #     set in this account (2026-08-23, persona-vending.tf).
+│   │                     #     STILL HOLDS THE OLD VPN ANCHORS (vpn-anchors.tf: an Elastic
+│   │                     #     IP, a world-open SG, the host-key secret) and sandbox.internal,
+│   │                     #     ALL RETIRING: the address was TRANSFERRED to production/
+│   │                     #     networking/ at 6c 4.3, so this slice plans `1 to add` (a
+│   │                     #     second allocation) until 6.5's VPN_HOMES trim + `removed {}`.
+│   │                     #     MUST NOT BE APPLIED until then (AWS_STATE.md §C)
 │   ├── data/             # [P] the lake's consumer side (consumer-data - the ONLY caller
 │   │                     #     since 2026-09-06; development/data/ was destroyed at Stage 6b
 │   │                     #     step 2.4): this account's DataLakeSettings, the LF
@@ -196,22 +202,18 @@ terraform-live/
 │   │                     #     the access role awsds-sandbox-lake-access and (its decision
 │   │                     #     3) the Access Grants location + per-group grants; per-PROJECT
 │   │                     #     grants are hand-made: runbooks/sandbox-lake.md
-│   ├── egress/           # [E] NAT gateway, interface VPC endpoints - the metered network.
-│   │                     #     Two variants behind a switch: D5(A) with NAT, D5(B) without
+│   ├── egress/           # [E] interface VPC endpoints (18 since 6c 5.2, single AZ) and the
+│   │                     #     DNS Firewall - NO NAT, no default route (D38; the NAT code left
+│   │                     #     vpc-egress at v0.6.0). The optional families (bedrock, emr,
+│   │                     #     mwaa) exist only when `make up ENV=sandbox GROUPS=...` names one
 │   ├── probes/           # [E] Stage 3's measurement instruments (perimeter + peering),
 │   │                     #     created and destroyed by make up/make down, ranked after
 │   │                     #     egress/ so down tears them first
-│   ├── vpn/              # [D] WireGuard EC2 (stopped, not destroyed) - and, since Stage 6
-│   │                     #     step 5.0, the NAT INSTANCE for the isolated tier as well:
-│   │                     #     vpc_nat_cidrs turns source/dest checking off and adds the
-│   │                     #     masquerade rules buildbox/ routes traffic into
-│   ├── buildbox/         # [E] the amd64 BUILD HOST for the dev-env image (Stage 6 step 5.0).
-│   │                     #     Isolated tier, NO ingress rule at all (Session Manager needs
-│   │                     #     none; the VPN-only requirement was withdrawn 2026-08-21),
-│   │                     #     egress ONLY through vpn/ - no NAT gateway, so egress/ need
-│   │                     #     never be up for a build. Driven by ./scripts/buildbox.py, not by
-│   │                     #     make up: it must NOT coexist with probes/, whose perimeter
-│   │                     #     reading is the absence of the default route this slice adds
+│   ├── vpn/              # [D] RETIRING. Its host was DESTROYED at 6c 4.13 (2026-09-06); the
+│   │                     #     WireGuard host is production/vpn/ now. The folder stays on disk
+│   │                     #     until 6.5 unfreezes foundation/ and takes the anchors with it -
+│   │                     #     the gates read the disk, so it is still a row in layers.py.
+│   │                     #     (buildbox/ used to sit here too: MOVED to production/ at 6c 5.8)
 │   ├── dev-env/          # [P] the approved dev-env image registered for this account:
 │   │                     #     aws_sagemaker_image + image_version + app_image_config.
 │   │                     #     Applied by the Stage 8 step 1 pipeline after the dev-env
@@ -242,26 +244,6 @@ terraform-live/
 │                         #     account, which is why an associated account is what enables
 │                         #     blueprints against a shared domain. The flag is
 │                         #     backend.SMUS_ASSOCIATED, whose rows are measurements
-├── staging/              # THE FIRST DEPLOYMENT TARGET (D18/D28), and it is the RENAMED
-│   │                     #     Development account, not a vend - the quota refused that
-│   │                     #     (2026-09-05). Headless: no SMUS domain object, no interactive
-│   │                     #     compute, the SageMaker RUNTIME only. VPC stays 10.50.0.0/16,
-│   │                     #     because a CIDR is immutable and a rebuild would replace every
-│   │                     #     subnet, route table, endpoint and the peering with it
-│   ├── bootstrap/        # [P] state bucket + KMS key (step 4.2, applied 2026-09-06)
-│   ├── foundation/       # [P] VPC 3x2, gateway endpoints, no private zone of its own;
-│   │                     #     the peering REQUESTER half toward Production
-│   ├── egress/           # [E] NAT + interface endpoints. Measured EMPTY at the migration -
-│   │                     #     D11 leaves it torn down between sittings
-│   └── probes/           # [E] the INT-09 reachability host. Same, and it must not coexist
-│                         #     with sandbox/probes/ (buildbox runbook)
-│                         #
-│                         #     THERE IS NO development/ ENTRY ANY MORE (2026-09-06). Its
-│                         #     sagemaker/ and data/ were destroyed at 6b steps 1.7 and 2.4,
-│                         #     foundation/, egress/ and probes/ migrated here at 4.3, and
-│                         #     bootstrap/ - which owned awsds-dev-tfstate, the bucket every
-│                         #     one of those migrations read FROM - went last at 4.7 with the
-│                         #     bucket and its KMS key
 ├── data-governance/      # THE OWNERSHIP AXIS (D22, D26): state and governance,
 │   │                     # never compute. Renamed from data-management/ on 2026-08-08
 │   ├── bootstrap/        # [P] state bucket for the Data Governance account
@@ -291,12 +273,17 @@ terraform-live/
 │                         #     accounts, never into this one. No foundation/ slice: no
 │                         #     VPC, no user compute, nothing standing - which is also why
 │                         #     INT-13 has no host
-├── staging/              # DEPLOYMENT TARGET (D20, D17): the renamed Development
-│   │                     # account since Stage 6b. SageMaker RUNTIME only - no domain,
-│   │                     # no space, no blueprint, no Model Registry of its own, no
-│   │                     # GitLab, no lake share (revoked at 6b). CIDR stays 10.50.0.0/16
-│   ├── bootstrap/        # [P] awsds-staging-tfstate + its key. Created at 6b step 4
-│   │                     #     BEFORE any slice migrates into it
+├── staging/              # DEPLOYMENT TARGET (D20, D17): the RENAMED Development account
+│   │                     # since Stage 6b (2026-09-06) - not a vend, the quota refused
+│   │                     # that. SageMaker RUNTIME only - no domain, no space, no blueprint,
+│   │                     # no Model Registry of its own, no GitLab, no lake share (revoked
+│   │                     # at 6b 2.3). CIDR stays 10.50.0.0/16: a CIDR is immutable and a
+│   │                     # rebuild would replace every subnet, endpoint and the peering.
+│   │                     # THERE IS NO development/ ENTRY ANY MORE: its sagemaker/ and data/
+│   │                     # were destroyed at 6b 1.7 and 2.4, foundation/, egress/ and probes/
+│   │                     # migrated here at 4.3, and bootstrap/ - which owned awsds-dev-tfstate,
+│   │                     # the bucket every migration read FROM - went last at 4.7
+│   ├── bootstrap/        # [P] awsds-staging-tfstate + its key (6b 4.2, applied 2026-09-06)
 │   ├── foundation/       # [P] VPC, subnets, KMS, IAM roles - migrated from
 │   │                     #     development/foundation/ with its VPC and its [P] gateway
 │   │                     #     endpoint ids intact (the INT-05 anchors). Peering requester
@@ -311,8 +298,9 @@ terraform-live/
 │   ├── orchestration/    # [E] MWAA Serverless workflows for the staging leg (D7 amended:
 │   │                     #     a serverless workflow bills nothing at rest, so the reason
 │   │                     #     orchestration was Production-only is gone)
-│   ├── egress/           # [E] interface endpoints only - NO NAT, no default route
-│   │                     #     (egress_mode B, fixed by D38)
+│   ├── egress/           # [E] interface endpoints only (11) - NO NAT, no default route
+│   │                     #     (D38). Measured EMPTY at the migration; D11 leaves it torn
+│   │                     #     down between sittings
 │   └── app/
 │       └── app-etl/      # [E] deployed by the pipeline, torn down after the tests
 └── production/
@@ -322,15 +310,14 @@ terraform-live/
     │                     #     host. Peering accepters, and the awsds.internal APEX zone
     │                     #     plus awsds-pages.internal (D15/D36 amended - the old
     │                     #     prod.internal/pages.internal zones are retired at 6c).
-    │                     #     Originally: VPC etc. + peering accepters for Sandbox AND Development.
     │                     #     Built in Stage 3, because Stage 7 (GitLab) depends on it (D14).
-    │                     #     ALSO the prod.internal and pages.internal private zones and
-    │                     #     their cross-account associations (D15 as revised 2026-08-09),
-    │                     #     and GitLab's [P] anchors - the object-storage and backup
-    │                     #     buckets and the gitlab-secrets container (Stage 7 step 1.1):
-    │                     #     the restore path must survive tooling/'s destruction, the
-    │                     #     same argument that put the WireGuard EIP in Sandbox's
-    │                     #     foundation. NO public zone, NO registered domain: those are
+    │                     #     The old prod.internal and pages.internal zones were DESTROYED
+    │                     #     at 6c 2.6 (2026-09-07). Also GitLab's [P] anchors - the
+    │                     #     object-storage and backup buckets and the gitlab-secrets
+    │                     #     container (Stage 7 step 1.1): the restore path must survive
+    │                     #     tooling/'s destruction, the same argument that keeps both
+    │                     #     hub hosts' anchors in networking/ below. NO public zone, NO
+    │                     #     registered domain: those are
     │                     #     Stage 13, and NOT the CA - see pki/ below
     ├── networking/       # [P] VPC-Networking (10.31.0.0/16, created at 6c - D38): the
     │                     #     estate's ONLY internet gateway and its only internet-facing
@@ -359,7 +346,14 @@ terraform-live/
     │                     #     shaped slice reads exactly ONE foundation/: egress/ below
     │                     #     serves VPC-SharedServices and cannot also serve this one.
     │                     #     Rank 51, just above egress (50). Created at 6c step 1.3a,
-    │                     #     populated by Stages 9 and 10
+    │                     #     populated by Stages 9 and 10 - EMPTY today, a written refusal
+    ├── buildbox/         # [E] the amd64 BUILD HOST for the dev-env image - MOVED here from
+    │                     #     sandbox/ at 6c step 5.8 (2026-09-06). VPC-SharedServices
+    │                     #     private tier, NO route at all: the internet is the proxy, told
+    │                     #     in four places (runbooks/buildbox.md). egress/'s SSM endpoints
+    │                     #     are its only door, so egress/ is a PREREQUISITE of a build.
+    │                     #     Driven by scripts/buildbox.py, never by make up; rank 55.
+    │                     #     Retires into the build runner at Stage 7 step 6
     ├── pki/              # [P] the internal root CA (D36). OWN state file and OWN KMS key,
     │                     #     deliberately not foundation/'s: foundation is opened to change
     │                     #     a CIDR or accept a peering, and every such edit would otherwise
@@ -391,9 +385,10 @@ terraform-live/
     │                     #     THE 5.a HALF IS APPLIED (2026-08-21, 14 resources)
     ├── sagemaker/        # [P] Model Registry (model package groups) + the execution role
     │                     #     pipeline-submitted jobs assume. No domain, no user profiles (D17)
-    ├── egress/           # [E] VPC-SharedServices' interface endpoints - NO NAT anywhere
-    │                     #     (D38; egress_mode flips A -> B at 6c step 5.1, which is where
-    │                     #     the THIRD NAT gateway dies) - and the internal ALB for
+    ├── egress/           # [E] VPC-SharedServices' interface endpoints (13 since 6c 5.5) -
+    │                     #     NO NAT anywhere (D38; the NAT code left vpc-egress at v0.6.0,
+    │                     #     6c 5.1 - nothing was destroyed, every egress/ was down) - and,
+    │                     #     if Stage 7 decision 1 picks it, the internal ALB for
     │                     #     GitLab/Pages ONLY if Stage 7 decision 1 picks it over
     │                     #     nginx-on-instance (an ALB cannot stop, so it is [E])
     ├── probes/           # [E] Stage 3's instrument here: the peering target
@@ -403,8 +398,8 @@ terraform-live/
     │                     #     ON whenever external_url is https and retries every
     │                     #     reconfigure (Stage 7 step 1.3)
     ├── runners/          # [E] GitLab Runners (D14) - amd64, and since 2026-09-05 also the
-    │                     #     BUILDBOX's successor: sandbox/buildbox/ dies at 6c step 5.8
-    │                     #     and its job lands here (Stage 7 step 6)
+    │                     #     BUILDBOX's successor: production/buildbox/ above retires into
+    │                     #     the build runner at Stage 7 step 6
     ├── orchestration/    # [E] MWAA SERVERLESS ONLY (D7 amended 2026-09-05):
     │                     #     awscc_mwaaserverless_workflow per app, YAML in S3, a
     │                     #     per-workflow role and log group (D28), NetworkConfiguration
@@ -443,10 +438,10 @@ CI is the same bug as one that only works by hand — but the expected caller is
 - Pin the provider version and `required_version`. One `providers.tf` per slice.
 - Region, AZs and AMIs follow the portability rules in `docs/plan/architecture.md` §4.1 — no region literals in `.tf` files.
 - Authentication through named SSO profiles, one per Terraform-managed account — `awsds-infra-sandbox-1`,
-  `awsds-infra-dev`, `awsds-infra-data`, `awsds-infra-staging`, `awsds-infra-prod`,
-  `awsds-infra-identity` (Stage 1b step 5) — never keys. **The sandbox one is ordinal-suffixed and there is
-  one per business unit** (D35): `-1` today, `-2` when the second unit is vended. The other five are
-  structural and carry no suffix.
+  `awsds-infra-data`, `awsds-infra-staging` (the renamed `Development`'s since Stage 6b; `awsds-infra-dev`
+  is gone), `awsds-infra-prod`, `awsds-infra-identity` (Stage 1b step 5) — never keys. **The sandbox one is
+  ordinal-suffixed and there is one per business unit** (D35): `-1` today, `-2` when the second unit is
+  vended. The other four are structural and carry no suffix.
 - Every slice: `terraform fmt`, `validate` and `plan` must be clean before apply.
 - Remote state read across slices through `terraform_remote_state` data sources, never hardcoded IDs.
 - **The Organization is never in Terraform, and the code is written to survive that (D34).** Accounts and

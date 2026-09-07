@@ -203,7 +203,8 @@ full rebuild, and the rebuild is the twenty minutes, not the push.
 
 **Why the identity has to arrive from somewhere else — read from the live registry, 2026-08-22, not
 inferred.** Both repository policies carry exactly one statement, `AllowConsumerAccountsToPull`, granting
-the two Interactive accounts `BatchCheckLayerAvailability`, `BatchGetImage`, `GetDownloadUrlForLayer` and
+the two consumer accounts (`REGISTRY_CONSUMERS` in `backend.py` — Sandbox and Staging, the latter
+inheriting Development's seat at 6b because a deployment target still pulls) `BatchCheckLayerAvailability`, `BatchGetImage`, `GetDownloadUrlForLayer` and
 `DescribeImages`. **No statement anywhere grants a push to anybody**, and none needs to: same-account
 access is decided by the identity policy alone, so the push is a **Production** principal's act and can
 be nothing else. Giving this instance's role an `ecr:` permission would not change that — it would meet

@@ -293,7 +293,7 @@ back from the APIs and the trail, not from the page.*
 ## Validation
 
 1. Run `./aws/sandboxlake.py` — `SL-1`–`SL-5` pass, 0 FAILED.
-2. `terraform plan` on `sandbox/lake/`, `sandbox/data/` and `development/data/` reads `No changes` after
+2. `terraform plan` on `sandbox/lake/` and `sandbox/data/` (and `development/data/`, until 6b destroyed it) reads `No changes` after
    every by-hand act — the by-hand writes and the code describe the same world.
 3. `make check` — the slice's layers row, the README index rows, no identifier leaks.
 4. `./aws/datalake.py` unchanged, 0 FAILED — the governed lake's readings must not move because a

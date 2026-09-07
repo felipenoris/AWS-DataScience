@@ -777,10 +777,14 @@ The config file stays; nothing is revoked, nothing on the server changes. Reconn
   common on corporate and café Wi-Fi. WireGuard is silent about it by design: it is a UDP protocol that
   never answers unauthenticated packets, so there is nothing to time out visibly. Test from another
   network before suspecting anything in AWS.
-- **IPv6 appears broken while connected.** It is: `::/0` routes IPv6 into a tunnel that carries only
-  IPv4, so IPv6 is deliberately black-holed. That is the point — on a dual-stack network an AWS call
-  over IPv6 would carry an IPv6 source, fail Stage 4 step 8's `NotIpAddress` and read as a lockout *with
-  the tunnel up*. Happy Eyeballs falls back to IPv4; a site may pause a moment first.
+- **IPv6 appears broken while connected — and it must.** Since `wireguard-v0.6.0` (2026-09-07) the
+  tunnel carries a ULA (`fd90::/64`) so that the client's `AllowedIPs = ::/0` is a **real route**, and the
+  host **rejects** every IPv6 packet it receives — §C6. Before that version this bullet said the line
+  "deliberately black-holed" IPv6, and it did not: `wg-quick` installs a route only for a family the
+  interface has an address in, so the directive was inert and every IPv6 app left **outside** the tunnel
+  (Lesson 56, measured). An AWS call over IPv6 would then have carried the device's own source, failed
+  `DenyControlPlaneOffVpn` and read as a lockout *with the tunnel up*. Happy Eyeballs falls back to IPv4;
+  a site may pause a moment first.
 - **`handshake_age_s` grows without resetting** in the log group `/awsds/prod/vpn`. With
   `PersistentKeepalive = 25` the keepalives count as data, so a live tunnel renegotiates about every two
   minutes and the age returns to zero on its own. **An age that only grows means the client stopped

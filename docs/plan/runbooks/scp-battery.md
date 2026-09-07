@@ -33,7 +33,7 @@ A policy that passed both halves is a control. One that was only attached is a h
 |---|---|---|
 | The **subject** — the principal every probe runs as | `awsds-policy-canary`, which is Control Tower's `AWSAdministratorAccess` as a **direct** assignment (D32) | An SCP is a *ceiling*. A deny exercised by a principal that lacked the permission anyway proves nothing, so the subject has to be an administrator |
 | The **attacher** — `create-policy`, `attach-policy`, `detach-policy` | **`AWS Control Tower Admin` on Management**, console or CloudShell | Management is exempt from SCPs by AWS's design (D16). It is the whole recovery path, which is why it is open *before* the first attach and not after |
-| One probe only — the decision-7 carve-out, positive direction | `awsds-infra-dev` (`InfrastructureAccess`) | That probe asks whether the carve-out matches. The canary's principal is deliberately *outside* it |
+| One probe only — the decision-7 carve-out, positive direction | `awsds-infra-staging` (`InfrastructureAccess`; it was `awsds-infra-dev` until Stage 6b renamed the account) | That probe asks whether the carve-out matches. The canary's principal is deliberately *outside* it |
 
 `Policy Canary` is alone in the `Policy Test` OU, so a candidate attached to that OU reaches exactly one
 account. **A document attached to the organization root reaches the canary too**, because `Policy Test`
@@ -214,10 +214,10 @@ aws organizations attach-policy --policy-id <POLICY_ID> --target-id <ROOT_ID>
 
 ### Must still succeed — the decision-7 carve-out, and it is the load-bearing probe of this phase
 
-**As `awsds-infra-dev`, not as the canary.** Same call, same values, a principal *inside* the carve-out:
+**As `awsds-infra-staging` (`awsds-infra-dev` before 6b), not as the canary.** Same call, same values, a principal *inside* the carve-out:
 
 ```bash
-aws s3control put-public-access-block --account-id <DEV_ACCT> --profile awsds-infra-dev --public-access-block-configuration BlockPublicAcls=true,IgnorePublicAcls=true,BlockPublicPolicy=true,RestrictPublicBuckets=true
+aws s3control put-public-access-block --account-id <STAGING_ACCT> --profile awsds-infra-staging --public-access-block-configuration BlockPublicAcls=true,IgnorePublicAcls=true,BlockPublicPolicy=true,RestrictPublicBuckets=true
 ```
 
 **This is the one probe whose failure is silent in the expensive direction.** `aws:PrincipalArn` for an
@@ -267,9 +267,9 @@ probe there measures the document *where it will actually live*, composed with e
 
 | Document | Parked on `Policy Test` for | Then attached to | And re-probed as |
 |---|---|---|---|
-| `awsds-org-scp-ou-workloads` | the deny half | `Workloads` | `awsds-infra-prod` |
+| `awsds-org-scp-ou-workloads` | the deny half | `Workloads` | `awsds-infra-prod` **and** `awsds-infra-staging` — in `Workloads` since 6b step 3.4 |
 | `awsds-org-scp-ou-data` | the deny half | `Data` | `awsds-infra-data` |
-| `awsds-org-scp-ou-interactive` | the deny half | `Interactive` | `awsds-infra-dev` **and** `awsds-infra-sandbox-1` — the second one is the nested-OU reading, and it is free here |
+| `awsds-org-scp-ou-interactive` | the deny half | `Interactive` | `awsds-infra-sandbox-1` — the nested-OU reading (`Sandboxes` under `Interactive`); the direct-child reading lost its principal when `Development` left the OU at 6b |
 | `awsds-org-scp-ou-identity` | the deny half | `Identity` | `awsds-infra-identity` |
 
 **It is one policy object, moved — not created twice.** `create-policy` once, `attach-policy` to
@@ -417,7 +417,7 @@ It carries no `enforced_for`, so it **reports** and prevents nothing; there is n
 therefore nothing for the battery to attempt. It is read, not probed:
 
 ```bash
-aws organizations describe-effective-policy --policy-type TAG_POLICY --profile awsds-infra-dev --region us-east-1
+aws organizations describe-effective-policy --policy-type TAG_POLICY --profile awsds-infra-staging --region us-east-1
 ```
 
 Reading a compliance *report* needs the Resource Groups Tagging API and a resource population this project

@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Status** | **IN PROGRESS — passes 0 and 1 DONE 2026-09-06**, [logged](../../log/log-stage-06c-networking-hub.md). The three Production VPCs exist: `foundation/` re-labelled **VPC-SharedServices**, plus **VPC-Networking** (10.31) and **VPC-Workloads** (10.32), with `workloads-egress/` written and applying nothing. **Two module bumps, and each was forced by a capability its step did not enumerate** — `vpc-v0.2.0`'s `name_suffix` and `vpc-v0.3.1`'s `public_internet_route`; `vpc-v0.3.0` is **abandoned** on origin, tagged onto the wrong commit by a failed-and-swallowed `git commit`. **0.2 replaced `CIDRS` rather than sitting beside it** (no reader wanted a per-account answer); **0.4a is deferred to 5.1** because the step contradicts itself; **0.6 lands with 3.1**. **Three checks are corrected before being written** — 1.5, 2.4's `NT-12` and 3.7's `NT-11` would each be red for passes at a time as specified, which is 6b's `DT-8` recurring. **Created 2026-09-05**; it builds [D38](../decisions/D38-single-egress-hub.md) and repairs the client-plane DNS shadowing of Lessons 40-43 |
+| **Status** | **IN PROGRESS — passes 0-5 and 7 DONE 2026-09-06/07, pass 6 OPEN** ([log](../../log/log-stage-06c-networking-hub.md)): 6.1, 6.3 and 6.7 measured; **6.2, 6.4, 6.6 and the user's half of 6.5 outstanding**, and 6.5 is the **gate** that unfreezes `sandbox/foundation` (frozen at `1 to add` — must not be applied). Pass 6 was re-cut into sub-steps on 2026-09-07. *The earlier position, kept as the record:* passes 0 and 1 DONE 2026-09-06. The three Production VPCs exist: `foundation/` re-labelled **VPC-SharedServices**, plus **VPC-Networking** (10.31) and **VPC-Workloads** (10.32), with `workloads-egress/` written and applying nothing. **Two module bumps, and each was forced by a capability its step did not enumerate** — `vpc-v0.2.0`'s `name_suffix` and `vpc-v0.3.1`'s `public_internet_route`; `vpc-v0.3.0` is **abandoned** on origin, tagged onto the wrong commit by a failed-and-swallowed `git commit`. **0.2 replaced `CIDRS` rather than sitting beside it** (no reader wanted a per-account answer); **0.4a is deferred to 5.1** because the step contradicts itself; **0.6 lands with 3.1**. **Three checks are corrected before being written** — 1.5, 2.4's `NT-12` and 3.7's `NT-11` would each be red for passes at a time as specified, which is 6b's `DT-8` recurring. **Created 2026-09-05**; it builds [D38](../decisions/D38-single-egress-hub.md) and repairs the client-plane DNS shadowing of Lessons 40-43 |
 | **Prerequisites** | [Stage 3](stage-03-networking.md) (the `vpc` and `vpc-egress` modules, the peering pattern in `production/foundation/peers.tf`, the `[P]`/`[E]` split), [Stage 4](stage-04-vpn.md) (the `wireguard` module and its `[P]` anchors), [6a](stage-06a-unified-studio.md) (the endpoint lists and what a Studio app needs), **[6b](stage-06b-development-becomes-staging.md)** (the account is already `staging`, and step 4.1 there freed `10.40.0.0/16` and re-pointed `CIDRS`) |
 | **Consumes** | [D4](../decisions/D04-vpn-wireguard.md), [D5](../decisions/D05-sagemaker-egress.md), [D6](../decisions/D06-dlp-approach.md), [D9](../decisions/D09-az-count.md), [D11](../decisions/D11-lab-lifecycle.md), [D12](../decisions/D12-budget-ceiling.md), [D14](../decisions/D14-supply-chain-account.md), [D15](../decisions/D15-tls-internal.md), [D35](../decisions/D35-sandbox-cardinality.md), [D36](../decisions/D36-internal-pki.md), **[D38](../decisions/D38-single-egress-hub.md)** (written 2026-09-05 — this stage builds it, it does not author it) |
 | **Proves** | [INT-05](../integrations.md) and [INT-06](../integrations.md) re-keyed on the hub; [INT-16](../integrations.md)'s closing choice becomes takeable because this stage owns the address it is keyed on; **INT-21** (every account's compute reaching a Production-owned proxy over peering) and **INT-22** (the `awsds.internal` zone × VPC association matrix) |
@@ -997,10 +997,14 @@ obligations older than the stage.
   `VPC-Networking`'s `.2`); the `Endpoint` is unchanged because the address moved with it. Then
   `runbooks/vpn.md` §C's three checks, plus a fourth: `curl https://1.1.1.1` **times out**, and
   `curl -x proxy.awsds.internal:3128 https://checkip.amazonaws.com` prints the **proxy's** EIP.
-- **6.2 — [user] Close the shadowing**: from the tunnel, `dig agent.datazone.us-west-2.api.aws` and
-  `dig <domain-id>.studio.us-west-2.sagemaker.aws` return **public** addresses, and the SMUS portal opens
-  with **no** Chrome Local Network Access grant. That is Lesson 43's repair and the reading that retires the
-  interim.
+- **6.2 — Close the shadowing** (Lesson 43's repair, and the reading that retires the interim):
+  - **[user] Resolve the two client-plane names from the tunnel**: `dig +short agent.datazone.us-west-2.api.aws`
+    and `dig +short <domain-id>.studio.us-west-2.sagemaker.aws` — both must return **public** addresses
+    (`NT-10` reads the hub-side half; this is the client's).
+  - **[user] Open the SMUS portal** with no Chrome Local Network Access grant and no proxy flag beyond
+    the one `runbooks/vpn.md` §C5a names; paste both `dig` outputs and the portal's result into the log.
+  - **[Claude] Restate `docs/NETWORK.md` §10's shadowing paragraph from the reading** — it is written from
+    the design until this lands, and 6.7 says so in the file.
 - **6.3 — MEASURED 2026-09-06, AND IT IS FOUR READINGS RATHER THAN TWO — but NOT over SSM, and
   not from a Workloads probe.** Two things the step assumed turned out not to hold. **The probes
   carry no IAM role at all** — they report to `/dev/console`, read with `get-console-output`, which
@@ -1032,20 +1036,63 @@ obligations older than the stage.
   `curl -x proxy:3128 https://<a Workloads private address>` returns the proxy's **403** while
   `https://pypi.org` returns 200; the mirror from a Workloads probe. Two distinguishable outputs, which is
   what makes it a verification.
-- **6.4 — [user] Prove the drop rule**: with the laptop's proxy setting removed, no internet is reachable
-  and `gitlab.awsds.internal` still is.
-- **6.5 — [Claude and user] Re-measure the vending path**: `s3-read-write` from the laptop, and
-  `runbooks/sandbox-lake.md` §T's laptop half, both from the new tunnel, with the CloudTrail
-  `sourceIPAddress` and `vpcEndpointId` pair read for each call. This is the proof that 4.12's re-keying was
-  complete — and the gate for trimming the union.
-- **6.6 — [user] Take INT-16's closing choice**: fallback (i) versus recorded acceptance. **If (i):
-  do not copy AWS's example verbatim.** Its `StringNotEquals` on `aws:SourceVpc` matches whenever the key is
-  **absent**, which is every browser-origin call — under this design the hub holds no interface endpoint, so
-  the portal's calls carry the proxy's public address and no `aws:SourceVpc` at all, and the documented
-  policy would deny the portal outright. Author it in `policies-shared.tf`'s shape instead: `NotIpAddress`
-  on `aws:SourceIp` (the proxy's EIP) **and** `StringNotEqualsIfExists` on `aws:SourceVpc`, keeping AWS's
-  `aws:userid` `*:user-*` and `aws:ViaAWSService` carve-outs. The address is now stable and owned by this
-  stage, which is what the choice was waiting for.
+- **6.4 — Prove the drop rule** (the FORWARD chain's REJECT is real and legible only on the refusing side —
+  Lesson 55):
+  - **[user] Unset the proxy** (`unset https_proxy http_proxy`, no browser flag) with the tunnel up:
+    `curl -m 15 https://1.1.1.1` **times out** (not "refused" — macOS ignores the ICMP), while
+    `curl -sI http://proxy.awsds.internal:3128` answers with Squid's own error page — an RFC1918 name still
+    reached through the tunnel (the intranet target until Stage 7 gives it `gitlab.awsds.internal`).
+  - **[Claude] Read the counter**: `./aws/vpn.py --on-host` prints `iptables -L FORWARD -v -n`,
+    `ip6tables -L FORWARD -v -n` and the nat table's `POSTROUTING` (added 2026-09-07 for this step). The
+    REJECT rule's packet count must have **grown** across the user's attempt; the nat `RETURN` rule for the
+    proxy's subnet must not.
+- **6.5 — Re-measure the vending path, then trim the union** (the proof that 4.12's re-keying was complete
+  is the gate that unfreezes `sandbox/foundation`):
+  - **[user] Run the two laptop-side proofs from the new tunnel**, proxy variables exported:
+    the `s3-read-write` tool (`s3-read-write/README.md`'s laptop recipe) and
+    `runbooks/sandbox-lake.md` §T's laptop half. Both must succeed;
+    paste the outputs.
+  - **[Claude] Read CloudTrail for each call**: `sourceIPAddress` must be the **proxy's** Elastic IP and
+    `vpcEndpointId` absent — a laptop call crosses the proxy to S3's public endpoint, never the hub's
+    gateway endpoint (verification 4). The laptop's own address there is a split tunnel; the WireGuard
+    host's is a masquerade hole where none should be.
+  - **[Claude⚡] Trim the union**: remove the `("sandbox", "foundation")` row from `VPN_HOMES` in
+    `scripts/tfhygiene/backend.py`; regenerate; plan `identity/sso/` (the six sets lose the old address,
+    `PX-5` stays green) and `data-governance/data/` (the bucket-policy branch); apply both, as
+    `awsds-infra-identity` and `awsds-infra-data`.
+  - **[Claude⚡] Unfreeze `sandbox/foundation`**: a `removed {}` block for the Elastic IP (forget, never
+    destroy — the allocation lives in Production), delete `vpn-anchors.tf`'s other two objects (the
+    world-open security group and the host-key secret container — a `[P]` destroy, named in chat first;
+    the secret keeps Secrets Manager's recovery window) and the `sandbox.internal` zone; the plan must read
+    **`0 to add`**; apply as `awsds-infra-sandbox-1`; re-plan `No changes`.
+  - **[Claude] Retire the folder and re-measure**: delete `terraform-live/sandbox/vpn/` and its
+    `layers.py` row; `NT-12` and `VP-3` lose their dated notes; widen `VP-3` to read **every** account's
+    security groups rather than Production's alone (Lesson 31 — a check inherits the account it was
+    written in); restate `docs/NETWORK.md`, `AWS_STATE.md`'s last §C row and `cost-model.md`'s zone count
+    from the readings.
+- **6.6 — Take INT-16's closing choice** (fallback (i) versus recorded acceptance — the proxy's address is
+  now stable and owned by this stage, which is what the choice was waiting for):
+  - **[user] Choose**, after 6.2's reading: the portal is entered by an IdC sign-in and stays reachable off
+    the tunnel; (i) narrows the **domain execution role**'s calls to the proxy's address, acceptance
+    records the gap in `README.md` item 3 and hands it to Stage 11.
+  - **[Claude] If (i), author it in `policies-shared.tf`'s shape and never AWS's example**: `NotIpAddress`
+    on `aws:SourceIp` (the proxy's EIP) **and** `StringNotEqualsIfExists` on `aws:SourceVpc`, keeping the
+    `aws:userid` `*:user-*` and `aws:ViaAWSService` carve-outs. AWS's `StringNotEquals` on `aws:SourceVpc`
+    matches whenever the key is **absent** — every browser-origin call, since the hub holds no interface
+    endpoint — so the documented policy would deny the portal outright.
+  - **[Claude⚡] Apply** in `data-governance/governance/` as `awsds-infra-data`; **[user]** repeat 6a step
+    1.7's off-tunnel portal reading — it must now be **refused**, and the wording goes into the log.
+- **6.7 — DONE 2026-09-07, REWRITTEN FROM THE READINGS AND NOT PROMOTED FROM §T.** `docs/NETWORK.md`
+  (331 lines) from `describe-vpcs`/`-subnets`/`-route-tables`/`-vpc-peering-connections` across three
+  profiles plus `NT-1`..`NT-12`, `PX-1`..`PX-5`, `DN-1`..`DN-4`, `VP-1`..`VP-9` and the rendered proxy
+  parameter; where §T said *"five peerings"* the body names which five, by `pcx-` id and CIDR pair, and
+  which five are absent. The gate found two things reading would not: it wants **every subnet CIDR
+  literally** (no `x.0.0/18`), and **`sandbox/vpn/` named** while the folder is on disk. `AWS_STATE.md`'s
+  §C row restated as a record — and its prediction *"three NAT gateways destroyed"* corrected to **none**,
+  every `egress/` having been `[E]` and down at 5.1 — with a new row for what the stage leaves owed
+  (`sandbox.internal`, the Sandbox anchors, the `1 to add`). **Not yet carried, said in the file**: 6.2's
+  reading — §10's shadowing paragraph is written from the design until it lands.
+  *The original step follows:*
 - **6.7 — [Claude] Re-measure the documents, same sitting**: `docs/NETWORK.md` rewritten **from the
   readings**, not from this file (its §T becomes §0-§14); `./scripts/check-network-doc.py` green;
   `./aws/networking.py` and `./aws/egress.py` snapshots regenerated; `docs/AWS_STATE.md`'s §C rows, the VPN
@@ -1165,7 +1212,8 @@ estate-wide (INT-21's availability cost).
 - `./aws/egress.py`: no NAT gateway in any account; every private route table without a default route.
 - `./aws/proxy.py`: `PX-1`..`PX-5` pass.
 - `./aws/vpn.py`: `VP-1`..`VP-9` from the new home, `VP-2` with no orphan allocation, `VP-3` still one
-  world-open rule in the estate.
+  world-open rule in the estate — **it reads Production alone today (Lesson 31); the Sandbox rule stands
+  until 6.5, which widens the check.**
 - The six readings of pass 6, each with its two distinguishable outcomes.
 
 ## Cost
@@ -1211,8 +1259,12 @@ in the cost model.
 
 ## Verifications to answer while executing
 
-1. Does the allocation id survive the address transfer? (4.5 — not documented; it decides 4.6's import.)
-2. Does Session Manager reach both hub hosts through the IGW with no interface endpoint? (5.5.)
+1. ~~Does the allocation id survive the address transfer?~~ **Answered 2026-09-06 at 4.5: it does NOT** —
+   the address kept its value and arrived under a new `eipalloc-` id, so 4.6 was an `import` of the new id
+   and a `removed {}` is owed in Sandbox (6.5).
+2. ~~Does Session Manager reach both hub hosts through the IGW with no interface endpoint?~~ **Answered
+   2026-09-06: yes** — both hosts are read over SSM (`vpn.py --on-host`, `proxy.py --on-host`) with
+   `VPC-Networking` carrying no endpoint.
 3. Does the SMUS portal open with no browser grant once the client resolves in the hub? (6.2 — Lesson 43.)
 4. Which door does a laptop's S3 call take after the re-keying — the hub's gateway endpoint, or the proxy's
    public address? (6.5, and it decides whether `trusted_vpce_ids` is complete.)

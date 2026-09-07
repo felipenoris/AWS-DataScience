@@ -160,7 +160,7 @@ wrong account as easily as none.
   or a value in the user data (Stage 4 decision 4, third review; every key event follows
   [`docs/plan/runbooks/vpn.md`](plan/runbooks/vpn.md) Part K). The shared EFS that used to live beside
   it left with the NFS requirement (withdrawn 2026-08-17,
-  [D24](plan/decisions/D24-shared-filesystem.md)); the exchange between the two Interactive accounts
+  [D24](plan/decisions/D24-shared-filesystem.md)); the exchange between Sandbox and the pipeline's accounts
   is S3 and git.
 
 - **This is the highest-risk account in the organization, not the lowest** — real data meets unreviewed
@@ -943,7 +943,7 @@ than a merge request.
 | `sso-group-data-scientists` | [Data Scientist](#data-scientist-user) | hundreds | The three `DataScientist*Access` sets |
 | `sso-group-deployment-managers` | [Deployment Manager](#deployment-manager-user) | one | `DeploymentManagerAccess` on the lifecycle accounts |
 | `sso-group-governance-managers` | [Governance Manager](#governance-manager-user) | one | `GovernanceManagerAccess` on Data Governance alone |
-| `sso-group-dev-env-stewards` | [Dev Env Steward](#dev-env-steward-user) | a handful | `DevEnvStewardAccess` on Production and the Interactive accounts |
+| `sso-group-dev-env-stewards` | [Dev Env Steward](#dev-env-steward-user) | a handful | `DevEnvStewardAccess` on Production and the `Interactive` OU's accounts (the Sandboxes only, since 6b) |
 
 **One group is planned and deliberately not created yet:** `sso-group-data-scientists-<bu>`, one per business
 unit, covering that unit's `Sandbox` and nothing else (D35, [Stage 14](plan/stages/stage-14-sandbox-vending.md)).
