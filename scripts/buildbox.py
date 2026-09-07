@@ -2,31 +2,47 @@
 # buildbox.py - the [E] build host of Stage 6 step 5.0: bring it up, put the build context on
 # it, open a shell, tear it down.
 #
-# WHY IT IS A SCRIPT OF ITS OWN AND NOT `make up ENV=sandbox`. That target acts on EVERY [E]
-# slice in an account, which for Sandbox means egress/ (a NAT gateway and eleven interface
-# endpoints, 0.160 USD/h) and probes/ (Stage 3's instruments). A build session needs neither -
-# it reaches the internet through the WireGuard host - and one of them, probes/, must NOT be
-# up at the same time. `scripts/slices.py` has no per-slice targeting and giving it some would
-# weaken the refusals it exists for, so this file drives one slice deliberately.
+# WHY IT IS A SCRIPT OF ITS OWN AND NOT `make up ENV=production`. That target acts on EVERY [E]
+# slice in an account, which for Production means egress/, workloads-egress/ and probes/. A build
+# session needs exactly one of those - egress/, for the SSM endpoints that are the only door into
+# the host - and paying for the other two while a build runs is money for nothing.
+# `scripts/slices.py` has no per-slice targeting and giving it some would weaken the refusals it
+# exists for, so this file drives one slice deliberately.
+#
+# IT MOVED ACCOUNTS AT 6c STEP 5.8 (2026-09-06), AND BOTH ITS REFUSALS CHANGED WITH THE DESIGN.
+# The host used to live in `sandbox/buildbox/` and reach the internet through a default route at
+# the WireGuard host's ENI, in the Sandbox isolated tier. D38 removed every default route and put
+# the WireGuard host in another VPC, where a route cannot point at it. What replaced that one
+# dependency is two, and neither is in this slice:
+#
+#   the SHELL     `production/egress/`'s `ssm` / `ssmmessages` / `ec2messages` endpoints (5.5).
+#                 Without them the agent cannot register and there is NO way into the host - not
+#                 a degraded way, none. This is the refusal that used to be about a route.
+#   the INTERNET  `production/proxy/` in VPC-Networking, reached over a peering. A build that
+#                 cannot reach it fails on every package source at once.
 #
 # WHAT IT REFUSES, AND WHY EACH REFUSAL IS HERE RATHER THAN IN A COMMENT (Lesson 5):
 #
-#   1. `up` while sandbox/probes/ exists. The perimeter probe's premise is that the isolated
-#      tier has NO default route; this slice's mechanism is adding one. Up together, the
-#      probe reports a perimeter finding that is an artefact of this host. A comment saying
-#      "do not run these together" is an intention.
-#   2. `up` with the WireGuard host not RUNNING. The route points at its ENI, so a stopped
-#      host turns every request into a timeout that looks like a broken package mirror.
-#      `up` starts it rather than failing - the [D] contract is stop/start, so starting one
-#      is not a change of state anybody has to approve.
+#   1. `up` with `production/egress/` down. The SSM endpoints are this host's only management
+#      path, and their absence produces the most misleading symptom in the set: the apply
+#      SUCCEEDS, the instance runs, and `ssm start-session` says it is not connected - which
+#      reads as a slow boot for as long as anyone is willing to wait (Lesson 52).
+#   2. `up` with the proxy host not RUNNING. `up` starts it rather than failing - the [D]
+#      contract is stop/start, so starting one is not a change of state anybody has to approve.
 #   3. `sync` and `ssm` against a host that is not `Online` in Session Manager, with the
 #      PingStatus printed. An empty answer and a failed answer are different things
 #      (Lesson 13).
 #
-# WHAT `down` DELIBERATELY DOES NOT DO: stop the WireGuard host. This script owns one [E]
-# slice; the tunnel is [D], it is shared with everything else in the account, and stopping it
-# because a build finished would be this script reaching outside its own slice. `make down
-# ENV=sandbox` is what stops it, and it is the user's call.
+# THE REFUSAL THAT WAS DELETED RATHER THAN RETARGETED: `sandbox/probes/`. It existed because that
+# slice's perimeter probe measures the Sandbox ISOLATED tier's absence of a default route while
+# this slice's whole mechanism was adding one there. This slice creates no route anywhere now and
+# is not in that account. A guard that no longer guards anything is worse than no guard - it is
+# the one a later reader trusts by mistake.
+#
+# WHAT `down` DELIBERATELY DOES NOT DO: stop the proxy, or tear down `egress/`. This script owns
+# one [E] slice; the proxy is [D], it is the whole estate's single egress, and stopping it because
+# a build finished would cut off every other account. `make hub-down` is what stops it, and it is
+# the user's call.
 #
 # THE ONE WRITE THAT IS NOT TERRAFORM - `sync`, and it is fenced the way ./aws/vpn.py
 # --on-host is: ssm:SendCommand is a WRITE API. It is used here to place a tar of images/ on
@@ -39,7 +55,7 @@
 #          ./scripts/buildbox.py sync       # copy images/ to /opt/awsds/images on the host
 #          ./scripts/buildbox.py ssm        # interactive shell (needs session-manager-plugin)
 #          ./scripts/buildbox.py status     # what is up, and what it is costing
-#          ./scripts/buildbox.py down       # destroy the slice - the host AND its route
+#          ./scripts/buildbox.py down       # destroy the slice - the host and nothing else
 #
 #   needs: a live SSO session as the infrastructure user:  aws sso login --sso-session awsds
 
@@ -60,7 +76,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from tfhygiene import backend, layers  # noqa: E402
 
-ACCOUNT = "sandbox"
+ACCOUNT = "production"
 SLICE = "buildbox"
 CONTEXT = Path("images")
 REMOTE_DIR = "/opt/awsds/images"
@@ -120,49 +136,74 @@ def buildbox_name() -> str:
     return f"awsds-{backend.env_token(ACCOUNT)}-{SLICE}"
 
 
-def vpn_name() -> str:
-    return f"awsds-{backend.env_token(ACCOUNT)}-vpn"
+def proxy_name() -> str:
+    return f"awsds-{backend.env_token(ACCOUNT)}-proxy"
 
 
-def probe_names() -> list[str]:
-    token = backend.env_token(ACCOUNT)
-    return [f"awsds-{token}-probe-perimeter", f"awsds-{token}-probe-peering"]
+# The endpoint whose ABSENCE is the failure this script exists to make loud. `ssmmessages` rather
+# than `ssm`: `ssm` carries the API and `ssmmessages` carries the SESSION channel, so it is the
+# one whose absence produces "the instance is not connected" on a host that is otherwise perfect.
+SSM_SESSION_ENDPOINT = "ssmmessages"
 
 
 # --------------------------------------------------------------------------- the refusals
 
 
-def refuse_if_probes_up() -> None:
-    """Refusal 1 - the perimeter probe and this slice contradict each other."""
-    print(f"\n  {BOLD}refusal 1: the perimeter probe's premise{RESET}")
-    for name in probe_names():
-        found = instance(name)
-        if found:
-            raise SystemExit(
-                f"\n{RED}REFUSED{RESET}: {name} is {found[1]} ({found[0]}).\n"
-                "  sandbox/probes/ measures that the isolated tier has NO default route.\n"
-                "  This slice's whole mechanism is adding one, so up together the probe\n"
-                "  reports a perimeter finding that is an artefact of the build host.\n"
-                "  Tear the probes down first:  make down ENV=sandbox"
-            )
-    print("    clear - no probe instance in this account")
+def refuse_if_no_ssm_endpoints() -> None:
+    """Refusal 1 - the SSM endpoints in this VPC are the only door into the host.
+
+    THE SYMPTOM THIS REPLACES IS THE MISLEADING KIND. With `production/egress/` down the apply
+    succeeds, the instance reaches `running`, and `ssm start-session` reports it as not
+    connected - which is indistinguishable from a slow boot for as long as anyone is willing to
+    wait (Lesson 52: a wait whose only exit is success waits forever once its subject is gone).
+    Read the endpoints instead, before the apply, where the answer is a yes or a no.
+    """
+    print(f"\n  {BOLD}refusal 1: the shell's path{RESET}")
+    res = sh(
+        aws(
+            "ec2",
+            "describe-vpc-endpoints",
+            "--filters",
+            f"Name=service-name,Values=com.amazonaws.{backend.REGION}.{SSM_SESSION_ENDPOINT}",
+            "--query",
+            "VpcEndpoints[?State==`available`].[VpcId]",
+            "--output",
+            "text",
+        )
+    )
+    if res.returncode != 0 or not res.stdout.strip():
+        raise SystemExit(
+            f"\n{RED}REFUSED{RESET}: no available `{SSM_SESSION_ENDPOINT}` interface endpoint in "
+            f"this account.\n"
+            "  Session Manager is the ONLY way into the build host - no ingress rule, no public\n"
+            "  address, and no default route to reach the public SSM API through. Without this\n"
+            "  endpoint the apply would succeed and the host would be unreachable.\n"
+            "  Bring it up first:  make up ENV=production   (or apply terraform-live/production/egress/)"
+        )
+    print(f"    {SSM_SESSION_ENDPOINT} endpoint available in {res.stdout.split()[0]}")
 
 
-def ensure_vpn_running() -> str:
-    """Refusal 2 - the route points at the WireGuard host's ENI, so it must be running."""
-    print(f"\n  {BOLD}refusal 2: the route target{RESET}")
-    found = instance(vpn_name())
+def ensure_proxy_running() -> str:
+    """Refusal 2 - the internet on this host is a proxy, and a stopped one has no fallback.
+
+    Under design B there is no route to fail over to: every package source, every base image
+    and every `RUN` step in a build goes through this one host. `up` STARTS it rather than
+    refusing, because [D] is a stop/start contract (D11) and starting one is not a change of
+    state anybody has to approve.
+    """
+    print(f"\n  {BOLD}refusal 2: the internet{RESET}")
+    found = instance(proxy_name())
     if not found:
         raise SystemExit(
-            f"\n{RED}REFUSED{RESET}: no {vpn_name()} instance exists.\n"
-            "  This slice routes 0.0.0.0/0 at that host's ENI; without it there is nothing\n"
-            "  to point at. Apply terraform-live/sandbox/vpn/ first (Stage 4 pass 1)."
+            f"\n{RED}REFUSED{RESET}: no {proxy_name()} instance exists.\n"
+            "  The estate has ONE way to the internet and this is it (D38). Apply\n"
+            "  terraform-live/production/proxy/ first (Stage 6c pass 4)."
         )
     iid, state = found
     if state == "running":
-        print(f"    {vpn_name()} is running ({iid})")
+        print(f"    {proxy_name()} is running ({iid})")
         return iid
-    print(f"    {vpn_name()} is {state} - starting it ([D] is stop/start, D11)")
+    print(f"    {proxy_name()} is {state} - starting it ([D] is stop/start, D11)")
     sh(aws("ec2", "start-instances", "--instance-ids", iid), check=True)
     sh(aws("ec2", "wait", "instance-running", "--instance-ids", iid), capture=False, check=True)
     print(f"    started {iid} - note that `buildbox.py down` will NOT stop it again")
@@ -293,8 +334,8 @@ def wait_for_docker(iid: str) -> bool:
 
 def cmd_up(args) -> int:
     print(f"{BOLD}buildbox up{RESET} - Stage 6 step 5.0's build host, in {ACCOUNT}")
-    refuse_if_probes_up()
-    ensure_vpn_running()
+    refuse_if_no_ssm_endpoints()
+    ensure_proxy_running()
     print(f"\n  {BOLD}apply{RESET}")
     if terraform("apply", args.auto_approve) != 0:
         return 1
@@ -441,29 +482,31 @@ def cmd_ssm(args) -> int:
 def cmd_status(args) -> int:
     print(f"{BOLD}buildbox status{RESET} - {ACCOUNT}")
     box = instance(buildbox_name())
-    vpn = instance(vpn_name())
+    proxy = instance(proxy_name())
     print(
         f"\n  {buildbox_name():<28} {box[1] + ' ' + box[0] if box else 'absent (nothing billing)'}"
     )
-    print(f"  {vpn_name():<28} {vpn[1] + ' ' + vpn[0] if vpn else 'absent'}")
+    print(f"  {proxy_name():<28} {proxy[1] + ' ' + proxy[0] if proxy else 'absent'}")
     if box and box[1] == "running":
         ssm_online(box[0])
         print(f"\n  {YELLOW}billing{RESET}: the build host is up. ./scripts/buildbox.py down")
-    for name in probe_names():
-        found = instance(name)
-        if found:
-            print(f"  {RED}{name}{RESET} is {found[1]} - it and the buildbox contradict each other")
+        print(
+            f"  {YELLOW}and so is its path{RESET}: production/egress/ is a prerequisite of this "
+            "host and bills while it is up"
+        )
     return 0
 
 
 def cmd_down(args) -> int:
-    print(f"{BOLD}buildbox down{RESET} - destroying the host AND its default route")
+    print(f"{BOLD}buildbox down{RESET} - destroying the host, and nothing else")
     print(
-        "  the WireGuard host is [D] and shared: this does NOT stop it (make down ENV=sandbox does)"
+        "  the proxy is [D] and is the whole estate's single egress: this does NOT stop it\n"
+        "  (make hub-down does). production/egress/ is [E] and is NOT torn down here either -\n"
+        "  `make down ENV=production` owns that, and it still bills until you run it."
     )
     rc = terraform("destroy", args.auto_approve)
     if rc == 0:
-        print(f"\n  {BOLD}down.{RESET} the isolated tier has no default route again.")
+        print(f"\n  {BOLD}down.{RESET} nothing of this slice is left; no route was ever created.")
     return rc
 
 

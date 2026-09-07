@@ -58,7 +58,7 @@ SIZES = [
 # The build host's copy of the same file (Stage 6 step 5.0). Two files with one shape:
 # same two keys, same mechanism, deliberately the same name - what differs is that this
 # host is [E], so its disk is not a standing commitment. The slice's own copy says so.
-BUILDBOX_SIZE = Path("terraform-live/sandbox/buildbox/instance_type.auto.tfvars")
+BUILDBOX_SIZE = Path("terraform-live/production/buildbox/instance_type.auto.tfvars")
 
 # path -> the top-level keys that tracked tfvars may assign. Growing this table is the
 # deliberate act that tracking a new tfvars requires: the .gitignore asks for "an explicit
