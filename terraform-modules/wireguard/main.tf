@@ -48,10 +48,20 @@ locals {
   # client configs nobody edited.
   server_address = "${cidrhost(var.peer_cidr, 1)}/${split("/", var.peer_cidr)[1]}"
 
+  # THE SAME HOST NUMBER IN BOTH FAMILIES (v0.6.0). `fd90::2` is the device that is `10.90.0.2`,
+  # and that is deliberate rather than tidy: the access log, the handshake log and the roster all
+  # key on that number, so a reader meeting `fd90::3` should not have to look anything up. The
+  # server keeps `.1` in both.
+  server_address_v6 = var.peer_cidr_v6 == "" ? "" : "${cidrhost(var.peer_cidr_v6, 1)}/${split("/", var.peer_cidr_v6)[1]}"
+  server_addresses  = join(", ", compact([local.server_address, local.server_address_v6]))
+
   peers = {
     for name, p in var.peers : name => {
       public_key = p.public_key
       address    = cidrhost(var.peer_cidr, p.host)
+      # `/128` for the same reason the v4 half is `/32`: a peer does not reach another peer. An
+      # empty string when the tunnel is IPv4-only, and `compact()` at the render site drops it.
+      address_v6 = var.peer_cidr_v6 == "" ? "" : "${cidrhost(var.peer_cidr_v6, p.host)}/128"
     }
   }
 
@@ -110,6 +120,19 @@ locals {
   # heredoc that writes wg0.conf is unquoted, so the SHELL substitutes the real interface name
   # at write time. The same is true of `%i`, which is wg-quick's own placeholder for the
   # interface: templatefile's directive marker is `%{`, not `%i`.
+  # (c) THE IPv6 HALF OF THE FORWARD CHAIN, AND IT IS ONE RULE BECAUSE THERE IS ONE ANSWER.
+  # This estate is IPv4-only in every VPC, so there is no IPv6 destination a forwarded packet could
+  # reach and no allow-list to write. `net.ipv6.conf.all.forwarding` is 0 on this host (measured
+  # 2026-09-07), so the packets would be dropped by routing anyway - the rule is here so the
+  # refusal is EXPLICIT and, more usefully, so it is COUNTED. A dropped packet leaves no evidence;
+  # a rejected one increments a counter, and that counter is the only place a refusal the sender
+  # cannot see is legible (Lesson 55, learned on this host's IPv4 half two days earlier).
+  #
+  # EMPTY WHEN THE TUNNEL IS IPv4-ONLY, so v0.5.0's rendered PostUp is reproduced byte for byte and
+  # a caller that has not opted in sees no change at all.
+  forward_v6_up   = var.peer_cidr_v6 == "" ? "" : "; ip6tables -A FORWARD -i %i -j REJECT --reject-with icmp6-adm-prohibited"
+  forward_v6_down = var.peer_cidr_v6 == "" ? "" : "; ip6tables -D FORWARD -i %i -j REJECT --reject-with icmp6-adm-prohibited"
+
   masquerade_post_up   = "${local.masquerade_exempt_up}iptables -t nat -A POSTROUTING -s ${var.peer_cidr} -o $UPLINK -j MASQUERADE"
   masquerade_post_down = "${local.masquerade_exempt_down}iptables -t nat -D POSTROUTING -s ${var.peer_cidr} -o $UPLINK -j MASQUERADE"
 
@@ -136,10 +159,11 @@ locals {
   user_data = templatefile("${path.module}/user-data.sh.tftpl", {
     masquerade_post_up   = local.masquerade_post_up
     masquerade_post_down = local.masquerade_post_down
-    forward_post_up      = local.forward_post_up
-    forward_post_down    = local.forward_post_down
+    forward_post_up      = "${local.forward_post_up}${local.forward_v6_up}"
+    forward_post_down    = "${local.forward_post_down}${local.forward_v6_down}"
     peer_cidr            = var.peer_cidr
-    server_address       = local.server_address
+    peer_cidr_v6         = var.peer_cidr_v6
+    server_addresses     = local.server_addresses
     listen_port          = var.listen_port
     mtu                  = var.mtu
     host_key_secret_arn  = var.host_key_secret_arn

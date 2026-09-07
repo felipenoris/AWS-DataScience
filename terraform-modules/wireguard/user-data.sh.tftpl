@@ -115,7 +115,7 @@ umask 077
 mkdir -p /etc/wireguard
 cat > /etc/wireguard/wg0.conf <<WGEOF
 [Interface]
-Address = ${server_address}
+Address = ${server_addresses}
 ListenPort = ${listen_port}
 MTU = ${mtu}
 PrivateKey = $HOST_KEY
@@ -126,7 +126,7 @@ PostDown = ${masquerade_post_down}; ${forward_post_down}
 # ${name}
 [Peer]
 PublicKey = ${peer.public_key}
-AllowedIPs = ${peer.address}/32
+AllowedIPs = ${join(", ", compact(["${peer.address}/32", peer.address_v6]))}
 %{ endfor ~}
 WGEOF
 unset HOST_KEY
