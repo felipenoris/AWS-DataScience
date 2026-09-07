@@ -63,33 +63,35 @@ Two cost levers worth applying rather than discovering later:
   project. The same caution applies to **CloudTrail S3 data events**, which bill per event: a single Spark
   job listing and reading thousands of objects generates a matching number of events.
 
-**Per hour of lab time — added while the environment is up:**
+**Per hour of lab time — added while the environment is up. REWRITTEN 2026-09-06 at
+[6c](stages/stage-06c-networking-hub.md) step 7.4, on the zero-NAT basis and from COUNTED endpoint sets**
+— the 2026-09-05 repricing sat below this table as a list of corrections, which is one intent in two places
+and the shape that drifts ([Lesson 33](lessons.md)). The corrections are folded in:**
 
 | Item | Approx. USD/h |
 |---|---|
-| NAT Gateway (1) + its public IPv4 | ~0.050 + 0.045/GB processed — **zero under egress design B** (`docs/plan/architecture.md` §4.3) |
-| **Interface VPC endpoints — per account, single AZ (D9)** | ~0.010 each. The list is per account role, not one list (Stage 3 step 8): **Sandbox** **11** (14 under design B — the one entry B keeps and A dropped; 12 between 2026-08-21, when `datazone` joined at Stage 6 step 4.2, and 2026-08-25, when it left; 11 before that, since `elasticfilesystem` went with the NFS requirement on 2026-08-17), **Staging** **11** (14) — the count is the renamed `Development` account's, measured before the conversion and unchanged by it, since its `egress/` slice moved intact. **Production** 10-12. Double if spread across 2 AZs. **The Sandbox line is per business unit (D35)** — this is the term that multiplies |
+| ~~NAT Gateway (1) + its public IPv4~~ | **GONE FROM EVERY ACCOUNT.** Zero NAT gateways exist ([D38](decisions/D38-single-egress-hub.md)); no spoke has a default route, and the internet is reached by *addressing* the proxy. A standing one would be ≈ USD 36.50/month — three quarters of the D12 ceiling — which is what makes "zero, with a per-VPC contingency" the design rather than a preference |
+| **Interface VPC endpoints — per account, single AZ (D9)** | **0.010 each, and the counts are now MEASURED rather than ranged** (6c passes 5-6, from each slice's own plan): **Sandbox 18** = 0.180/h · **Staging 11** = 0.110/h · **`VPC-SharedServices` 13** = 0.130/h · **`VPC-Workloads` 0** — its emptiness is a written refusal, not an omission, and Stage 9/10 decides the list. **`VPC-Networking` carries none**, by the invariant that keeps the client plane resolving publicly. **The Sandbox line is per business unit (D35)** — this is the term that multiplies |
+| **the optional endpoint groups** (`make up ENV=x GROUPS=…`) | **0 unless named.** `bedrock` is 4 endpoints ≈ 0.040/h; `emr` is 7 ≈ 0.070/h; `mwaa` is reserved and empty. A family nobody uses that day costs nothing, which is what 6c step 5.3 bought instead of disabling blueprints |
+| **the proxy** — `production/proxy/`, `[D]` | **0.0104** (`t3.micro`; it was sized up from `t3.nano` after `dnf` was OOM-killed on 415 MiB) plus **USD 3.65/month** for its `[P]` Elastic IP. **It replaces every NAT gateway in the estate**, and unlike them it charges nothing per GB — an EC2 proxy does no metered "data processing" |
+| WireGuard EC2 `t3.nano` — `production/vpn/`, `[D]` | ~0.005. **Its Elastic IP was TRANSFERRED, not added**, so the estate's address count did not move |
 | GitLab EC2 `t4g.large` | ~0.067 (`t3.large` would be ~0.083) |
 | Internal ALB in front of GitLab/Pages (only while GitLab is up) | ~0.023 + LCU usage |
-| **Production `egress/`** (only while runner builds or orchestration need it) | NAT ~0.050 + **endpoints ~0.100-0.120** — the endpoint half was missing from every earlier version of this table |
+| **the build host** — `production/buildbox/`, `[E]` | 0.1664 (`t3.xlarge`) **plus `VPC-SharedServices`'s 0.130/h**, which since 6c step 5.8 is a *prerequisite* rather than a slice a build could avoid: the SSM endpoints are the host's only door. A build session is three bills, not one |
 | SageMaker Studio `ml.t3.medium` (per running app) | ~0.050 |
-| WireGuard EC2 `t3.nano` | ~0.005 (`t4g.nano` at ~0.004 until the amd64 move of 2026-08-20; a `t3.medium` session is ~0.042) |
-| VPC peering — **five of them after [Stage 6c](stages/stage-06c-networking-hub.md)**, hub-and-spoke (was two) | free within an AZ; USD 0.01/GB each way across AZs — **`PRICING.md` §7 carries the same clause since 2026-09-05, and the two files agreed on it that day**; with the hub hosts and every endpoint set pinned to `usw2-az1` the common path is free — see `docs/plan/open-questions.md` item 3 |
-| **Staging `egress/` during a promotion run** (D20) | ~0.140/h, but measured in *minutes* per promotion, not hours — `make up ENV=staging` is a pipeline step, and the pipeline tears it down. Budget ~USD 0.03 per promotion, not a standing hourly cost |
-| **Development `egress/` + Studio apps** (D21) | ~0.160/h under design A (0.170 until the 2026-08-25 `datazone` removal), ~0.140 under B — which must re-add that endpoint, plus ~0.05/h per running app — but only while pipeline-engineering work is happening. A session is either exploratory (Sandbox up) or engineering (Development up), so the *typical* hourly burn does not double even though the worst case does |
+| VPC peering — **five**, hub-and-spoke | free within an AZ; USD 0.01/GB each way across AZs. With the hub hosts and every endpoint set pinned to `usw2-az1` the common path is free. **Transit Gateway was the alternative and it is priced**: 5 attachments × 0.05/h ≈ USD 182/month standing before a byte (`PRICING.md` §7) |
+| **Staging `egress/` during a promotion run** (D20) | 0.110/h, measured in *minutes* per promotion rather than hours — `make up ENV=staging` is a pipeline step and the pipeline tears it down. Budget ~USD 0.02 per promotion, not a standing hourly cost |
 | Athena, Glue | usage-based; negligible at lab scale |
 
-**REPRICED 2026-09-05 for the [D38](decisions/D38-single-egress-hub.md) topology, and the direction is
-down.** Three rows above are obsolete the moment [Stage 6c](stages/stage-06c-networking-hub.md) applies,
-and they are the rows that carried the NAT:
+**The estate-wide fixed rate fell with the NAT: 0.470 → 0.390/h** across the four egress slices
+(`scripts/tfhygiene/layers.py` carries the per-slice figures, and `make status` sums them). **Sandbox's own
+idle floor ROSE**, 0.160 → 0.180, because design B has to enumerate what the NAT covered silently — **and
+that is the only axis on which it rose.** Per gigabyte a NAT is 0.045 against an endpoint's 0.010, so the
+break-even is ≈ **0.57 GB/h**, which one container pull passes in minutes.
 
-| Row | After 6c |
-|---|---|
-| `NAT Gateway (1) + its public IPv4` | **gone from every account.** Zero NAT gateways exist; a spoke has no default route, and the internet is reached by addressing the proxy |
-| `Development egress/ + Studio apps ~0.160/h` | **gone with the account's interactive life** (6b). Sandbox's own hour falls to the endpoint set alone: ~0.110-0.140/h depending on how many of the SMUS required list a design-B start actually needs |
-| `Staging egress/ during a promotion ~0.140/h` | ~**0.090/h** — endpoints only |
-| — | **new:** the Squid host, `[D]`, **0.0052/h** (`t3.nano`) or **0.0104/h** (`t3.micro`), plus **+USD 3.65/month** for its `[P]` Elastic IP and **+USD 0.50-1.00/month** for the extra private zones. The WireGuard host's own address is *transferred*, not added |
-| — | **new:** two more `[E]` endpoint sets in Production — `VPC-Workloads` (~0.090-0.100/h, up only while jobs or workflows run) and `VPC-SharedServices` (~0.070-0.090/h, up with GitLab). **`VPC-Networking` carries none**, by the invariant that keeps the client plane resolving publicly |
+**What a row here can no longer hide:** the `Development egress/ + Studio apps` line is gone with that
+account's interactive life (6b), and the old `Production egress/` row said *NAT ~0.050 + endpoints
+~0.100-0.120* — a range covering a set nobody had counted. Both are replaced by counted numbers above.
 
 **Net, derived over `PRICING.md`'s measured rates and not itself a measurement:** the floor moves by about
 **+USD 4.65/month** (one address, one or two zones) and by about **−USD 2/month** as 6b destroys two KMS

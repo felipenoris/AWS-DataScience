@@ -1531,3 +1531,45 @@ thing to actually run. They are written up individually because three of them ar
   outputs, plus the correct one.
 - **[Claude] Registered in [`aws/INDEX.md`](../../aws/INDEX.md)** with its write-API fence stated,
   as the folder's rules require for the two files that have one.
+
+## 2026-09-06 — 7.4: re-measuring found one wrong number, and it flattered a rejection
+
+- **[Claude] The three rows this step asked for were already in `PRICING.md`**, added at the
+  2026-09-05 review. Restating them would have been transcription, so they were **re-read** from the
+  Price List bulk API instead — offer files republished **2026-08-31**, `AmazonVPC` and
+  `AmazonRoute53`, `us-west-2` and `sa-east-1`.
+- **[Claude] `us-west-2` held exactly**: Transit Gateway **0.05** per VPC-attachment-hour and
+  **0.02**/GB processed; Route 53 Resolver endpoint **0.125** per ENI-hour, and an inbound or
+  outbound endpoint needs at least two ENIs — so ≈ **USD 182/month standing** for the shape open
+  question 23 priced and D38 declined.
+- **[Claude] ONE FIGURE WAS WRONG, AND IN THE DIRECTION THAT FLATTERED THE REJECTION**
+  ([Lesson 7](../plan/lessons.md)). The table gave `sa-east-1` a Transit Gateway attachment of
+  **0.05/h with a ratio of 1.00**; the offer file says **0.09**, ratio **1.80**. The five-attachment
+  hub-and-spoke this estate does *not* build would be ≈ **USD 328/month** in São Paulo rather than
+  182. The rejection stands and is now stronger, which is exactly why a rejected-on-cost option has
+  to be re-read rather than remembered.
+- **[Claude] `cost-model.md`'s hourly table is REWRITTEN, not annotated.** The 2026-09-05 repricing
+  had left the table saying one thing and a block below it saying another — one intent in two
+  places, the shape that drifts ([Lesson 33](../plan/lessons.md)). Folded in, and the endpoint
+  counts are now **counted rather than ranged**, each from its own slice's plan:
+
+  | set | endpoints | USD/h |
+  |---|---|---|
+  | Sandbox | **18** | 0.180 |
+  | Staging | **11** | 0.110 |
+  | `VPC-SharedServices` | **13** | 0.130 |
+  | `VPC-Workloads` | **0** | 0.000 — a written refusal, not an omission |
+
+  The row it replaces read *"NAT ~0.050 + endpoints ~0.100-0.120"* — a range over a set nobody had
+  counted. Three new rows carry what 6c actually built: the proxy at **0.0104/h with no per-GB
+  charge at all**, the optional endpoint groups at **zero unless named**, and the build host's
+  **three** bills.
+- **[Claude] `architecture.md` §4.3a now names the shape that EXISTS.** The cell had read
+  *"0.0052/h (`t3.nano`) or 0.0104/h (`t3.micro`)"* — a two-value range for a host that had not been
+  built. It is a **`t3.micro`**, sized up because `dnf` was OOM-killed on 415 MiB, which is a
+  measurement rather than a preference. And it gains the half the NAT comparison kept omitting:
+  **an EC2 proxy charges nothing per GB**, where a NAT gateway adds 0.045/GB of processing.
+- **[Claude] The two numbers that close the cost story.** Estate-wide the fixed rate fell
+  **0.470 → 0.390/h** with the NAT. Sandbox's own idle floor **rose**, 0.160 → 0.180, because
+  design B has to enumerate what a NAT covered silently — **the only axis on which it rose**, since
+  per gigabyte a NAT is 0.045 against an endpoint's 0.010. Break-even ≈ **0.57 GB/h**.

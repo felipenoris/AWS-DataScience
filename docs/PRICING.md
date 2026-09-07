@@ -515,7 +515,7 @@ monitor.
 | Gateway VPC endpoint (S3, DynamoDB) | free | free | — |
 | Public IPv4 address, in use or idle (USD/h) | 0.005 | 0.005 | **1.00** |
 | VPC peering, in and out (USD/GB each way) — **charged only when the traffic crosses an Availability Zone; same-AZ peering traffic is free** (VPC pricing page, and the 2021 announcement that made it so) | 0.01 | 0.01 | **1.00** |
-| **Transit Gateway — VPC attachment (USD/h per attachment)** | 0.05 | 0.05 | **1.00** |
+| **Transit Gateway — VPC attachment (USD/h per attachment)** | **0.09** | 0.05 | **1.80** |
 | **Transit Gateway — data processed (USD/GB)** | 0.02 | 0.02 | **1.00** |
 | **Route 53 Resolver endpoint (USD/h per ENI; an inbound or outbound endpoint needs at least two)** | 0.125 | 0.125 | **1.00** |
 | Application Load Balancer (USD/h) | 0.034 | 0.0225 | 1.51 |
@@ -547,6 +547,14 @@ Resolver outbound endpoint** — the shape open question 23 priced for moving th
 without moving the client — is two ENIs, ≈ **USD 182/month standing**; D38 takes the free shape instead
 (the client resolves in a VPC that carries no compute-plane endpoint). Both figures are from the
 `AmazonVPC` and `AmazonRoute53` offer files for `us-west-2`, read 2026-09-05.
+
+**RE-MEASURED 2026-09-06 at [6c](plan/stages/stage-06c-networking-hub.md) step 7.4, against offer files
+republished 2026-08-31, and the `us-west-2` numbers held exactly** — 0.05 per attachment-hour, 0.02 per GB,
+0.125 per Resolver ENI-hour. **One `sa-east-1` figure did not, and it was wrong in the direction that
+flattered the rejection** ([Lesson 7](plan/lessons.md)): the Transit Gateway attachment is **0.09/h in São
+Paulo, not 0.05**, so the hub-and-spoke this estate does not build would be ≈ **USD 328/month** there
+rather than 182. Corrected above. The Resolver ENI is genuinely 0.125 in both regions, which is one of the
+few rows in this file with a ratio of exactly 1.00 and no rounding behind it.
 
 Interface VPC endpoints at 0.021 USD/h are the sharpest single difference for this project's operating
 model: the plan already calls them "the largest hourly item" and keeps the list minimal and single-AZ, and
