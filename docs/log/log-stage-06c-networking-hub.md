@@ -1373,3 +1373,75 @@ thing to actually run. They are written up individually because three of them ar
   five Squid planes, `DN-2`'s two severities and the `ssm:GetParameter` read — and the page's own
   paragraph about the one script that needs no AWS identity says *why* it moved. A routing file that
   points at the old subject is worse than one that points nowhere.
+
+## 2026-09-06 — `EXC-04` closed, and 6.3 measured after a stale table surfaced as a timeout
+
+- **[Claude⚡] `EXC-04` IS CLOSED, AND THE CANDIDATE FIX IT CARRIED SINCE 2026-08-22 WAS RIGHT.**
+  Route 53 Resolver canonicalises a domain list as **FQDNs** — `list-firewall-domains` returns
+  `pypi.org.`, `*.amazonaws.com.` and `*.` — while `vpc-egress` and its callers wrote them bare. The
+  provider was comparing two **spellings** of the same list and re-issued `UpdateFirewallDomains` on
+  every apply, so a plan read `0 to add, 2 to change` immediately after a successful apply of the
+  same code, forever. What that cost is the thing worth naming: **`re-plan reads No changes` is this
+  repository's closing check for every change**, and it was unavailable on the two slices carrying a
+  firewall.
+- **[Claude] Three readings, because the row itself said the fix was a HYPOTHESIS** — the provider
+  could normalise the other way and produce the mirror diff:
+  1. On the live Sandbox list, after the 5.7 apply: **`0 to add, 2 to change`**, reproduced with
+     **ten** entries where it was found with sixty-three. So it was never about list length.
+  2. With the caller's ten entries **dotted** and the module's catch-all still bare:
+     **`1 to change`** — the allow list settled and the catch-all did not. **That is the reading
+     that turned the hypothesis into a repair**, and it is why `vpc-egress-v0.10.0` dots `["*."]`.
+  3. With both dotted: **`No changes`** — and then again after a forced re-create of both lists
+     (`4 added, 4 destroyed`), so the **create** path is proven and not only convergence. A fix that
+     converges an existing list and fails a fresh one would have been the worse outcome.
+- **[Claude] Two controls landed in one sitting and the second misread the first (`v0.10.1`).** The
+  v0.8.0 endpoint-coverage precondition compares allow-list entries against `PrivateDnsName` values,
+  which come back **without** a trailing dot. With the dots in place it failed the plan naming **ten**
+  endpoints as uncovered, all ten of which were covered. Normalised on the allow-list side —
+  `trimsuffix(e, ".")` — rather than by dropping the dots, because the dots are the repair. Worth the
+  note: this is the shape where a new gate reports a defect that is its own.
+- **[Claude⚡] 6.3 measured, and TWO of the step's assumptions did not hold.**
+  - **The probes carry no IAM role at all.** They report to `/dev/console`, read back with
+    `get-console-output` — which is exactly why they work in a tier with no SSM path. So the readings
+    went into the **peering probe's user data** rather than being driven over Session Manager, which
+    also makes them repeatable rather than ad hoc.
+  - **There is no Workloads probe and cannot be one today.** That VPC has no interface endpoint, by
+    5.5's deliberate refusal, so a host there would have no management path at all. The mirror was
+    taken from `VPC-SharedServices` instead, at 5.8: `http://10.32.0.10/` → **403**.
+- **[Claude] The four readings, from the Sandbox spoke's console:**
+
+  | reading | result |
+  |---|---|
+  | internet **without** the proxy | **silence** — no default route |
+  | an address in `VPC-Workloads`, **through** the proxy | **HTTP 403** |
+  | a name on this plane (`pypi.org`) | **HTTP 200** |
+  | a name on **no** plane (`example.com`) | **HTTP 403** |
+
+  The second is the one D38 rests on: the proxy **can** route to every spoke, and
+  `http_access deny to_private` refuses before any allow — so the isolation the absent peerings give
+  for free is not quietly undone at layer 7 ([Lesson 44](../plan/lessons.md)).
+- **[Claude] The three ORIGINAL peering readings are `curl exit 6` and that is expected, not a
+  finding**: `production/probes/` is `[E]` and down, and `probe.prod.internal` belongs to the **old**
+  zone family that step 2.6 retires. A name that does not resolve is the honest answer while its
+  target does not exist.
+- **[Claude] AND 6.3 FOUND A STALE VOCABULARY ROW — AS A TIMEOUT, NOT AS A DIFF.** The first run
+  could not reach the proxy at all (`curl exit 28`, after DNS had resolved). Cause:
+  `PROBE_PEERS = {"sandbox": ["production"], "development": [...], ...}`, which scoped the probe's
+  egress security group to `10.30.0.0/16` alone. Pass 3 added
+  `sandbox/foundation ↔ production/networking` to `PEERINGS` and **nothing added `10.31.0.0/16`
+  here** — one intent, *which VPCs does this account reach*, in two tables, and only one of them
+  moved ([Lesson 33](../plan/lessons.md)). The row was **also** stale from 6b: `development` is a key
+  no account has answered to since that rename.
+  **Its own comment had predicted the day** — *"the reading that will force PROBE_PEERS to name
+  slices rather than accounts"*. So it is **deleted rather than corrected**: `peer_cidrs` is derived
+  from `PEERINGS` through a new `probe_peer_cidrs()`, and the membership guard became *"this
+  account's `foundation/` must be an end of at least one peering"*, which is stricter than the test
+  it replaces. Sandbox now emits `["10.30.0.0/16", "10.31.0.0/16"]`, Production
+  `["10.20.0.0/16", "10.31.0.0/16"]` — the second **drops Staging**, correctly, because Staging peers
+  only with the hub.
+- **[Claude] A security-group change does NOT re-run user data**, and the first re-read after the fix
+  returned the **previous boot's** console verbatim — same timestamps, same failures. `-replace` on
+  the instance is what took the new reading. A stale console is indistinguishable from an unchanged
+  result, which is the same shape as Lesson 52 one layer down.
+- **[Claude⚡] Everything torn back down**: probes `4 destroyed`, `sandbox/egress` `27 destroyed`.
+  `make check` **OK**.

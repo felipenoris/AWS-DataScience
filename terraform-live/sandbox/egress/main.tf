@@ -22,7 +22,7 @@ data "terraform_remote_state" "foundation" {
 
 module "egress" {
   # checkov:skip=CKV_TF_1:pinned by git TAG by convention (conventions §6, Stage 3 step 1.1a) - a repository-internal tag only the repo owner can move
-  source = "git::git@github.com:felipenoris/AWS-DataScience.git//terraform-modules/vpc-egress?ref=vpc-egress-v0.9.1"
+  source = "git::git@github.com:felipenoris/AWS-DataScience.git//terraform-modules/vpc-egress?ref=vpc-egress-v0.10.1"
 
   env    = var.env
   vpc_id = data.terraform_remote_state.foundation.outputs.vpc_id
@@ -185,21 +185,29 @@ module "egress" {
   # rather than moving: it needed a resolver evaluating a redirection chain and blaming the
   # original name for a hop's absence. The filter that replaced it never sees a chain.
   dns_firewall_allow_domains = [
+    # EVERY ENTRY CARRIES A TRAILING DOT, AND IT IS `EXC-04`'s REPAIR RATHER THAN A STYLE
+    # (2026-09-06). Route 53 Resolver canonicalises a domain list as FQDNs and returns
+    # `amazonaws.com.`; written without one, the provider compared two spellings of the same list
+    # and re-issued `UpdateFirewallDomains` on every apply, so `terraform plan` read
+    # `0 to add, 2 to change` immediately after a successful apply of this very code - taking away
+    # *"re-plan reads `No changes`"*, this repository's closing check for every change. Measured on
+    # a live list before being written: dotting these entries alone took the plan from `2 to change`
+    # to `1 to change`, and `vpc-egress-v0.10.0` dots the module's catch-all for the other half.
     # AWS'S OWN NAMESPACES. Every regional service endpoint lives under one of these, and they
     # cannot be enumerated - which is why they are wildcards rather than names. The apex is listed
     # beside each wildcard because a Route 53 domain-list wildcard never matches the apex itself.
     # THIS IS THE SYNTAX SQUID COLLAPSES: there, `.amazonaws.com` covers both and listing the apex
     # beside it is FATAL. Two systems, one intent, two spellings - transcribing between them is
     # Lesson 53, and they agree on every easy case.
-    "amazonaws.com", "*.amazonaws.com",
-    "api.aws", "*.api.aws",
+    "amazonaws.com.", "*.amazonaws.com.",
+    "api.aws.", "*.api.aws.",
 
     # `sagemaker.aws` IS COVERED BY NEITHER OF THE ABOVE, and omitting it is how this slice would
     # pay hourly for an endpoint nothing can resolve: `sagemaker.studio` answers on
     # `*.studio.<region>.sagemaker.aws`, a different TLD entirely. `vpc-egress-v0.8.0`'s
     # precondition is what turns that from a silent NXDOMAIN into a plan-time failure naming the
     # endpoint - written because this step is exactly the one that creates the opportunity.
-    "sagemaker.aws", "*.sagemaker.aws",
+    "sagemaker.aws.", "*.sagemaker.aws.",
 
     # THE ESTATE'S OWN PRIVATE ZONES - `proxy.awsds.internal` and `gitlab.awsds.internal` among
     # them, which is why a client can be told to use a NAME for the proxy rather than an address.
@@ -207,8 +215,8 @@ module "egress" {
     # different label, not a subdomain. The old family (`sandbox.internal`, `prod.internal`,
     # `pages.internal`) is deliberately absent - an entry here is exactly what would keep a
     # retired zone alive past step 2.6.
-    "awsds.internal", "*.awsds.internal",
-    "awsds-pages.internal", "*.awsds-pages.internal",
+    "awsds.internal.", "*.awsds.internal.",
+    "awsds-pages.internal.", "*.awsds-pages.internal.",
   ]
 
   # THE REACH THIS LIST HAS THAT ITS NAME DOES NOT SUGGEST is still true and no longer has a

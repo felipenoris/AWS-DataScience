@@ -550,11 +550,33 @@ VPC_SLICES = {"foundation", "networking", "workloads"}
 # Production is the peering the Deliverables measure, and Development to Production is INT-09,
 # the integration this stage's Proves row claims. One target host exercises both, so the
 # second source costs one instance rather than a second target.
-PROBE_PEERS = {
-    "sandbox": ["production"],
-    "development": ["production"],
-    "production": ["sandbox", "development"],
-}
+# DELETED AT 6c STEP 6.3 (2026-09-06), AND ITS OWN COMMENT PREDICTED THE DAY. The table read:
+#
+#     PROBE_PEERS = {"sandbox": ["production"], "development": ["production"],
+#                    "production": ["sandbox", "development"]}
+#
+# and the emission below said *"every peer named here has exactly one `foundation/` VPC ... which
+# is the reading that will force PROBE_PEERS to name slices rather than accounts."* Step 6.3 is
+# that reading, and it arrived as a TIMEOUT rather than as a diff: the Sandbox peering probe could
+# not reach the proxy at all, because pass 3 added `sandbox/foundation <-> production/networking`
+# to `PEERINGS` and nothing added `10.31.0.0/16` here. One intent - *which VPCs does this account
+# reach* - in two tables, and only one of them moved (Lesson 33). The row was ALSO stale from 6b:
+# `development` is a key no account has answered to since that rename.
+#
+# SO IT IS DERIVED FROM `PEERINGS` AND NOT REPLACED BY A BETTER LIST. A hand-kept table keyed by
+# slice would have the same defect one peering later. `peerings_of()` already answers exactly this
+# question, and a probe whose egress is generated from the peering matrix cannot be blind to a
+# peering the matrix has.
+
+
+def probe_peer_cidrs(account: str) -> list:
+    """Every VPC range this account's `foundation/` VPC is peered with, from PEERINGS.
+
+    The peering probe's egress security group is scoped to these, and each is kept WHOLE
+    deliberately: the permitted address and the forbidden one are both inside one of them, so the
+    group is constant across the pair and the ROUTE is the single variable the reading turns on.
+    """
+    return sorted({p["peer_cidr"] for p in peerings_of(account, "foundation")})
 
 
 class UnknownAccountFolder(Exception):
@@ -742,17 +764,21 @@ def tfvars_values(account: str, slice_name: str) -> dict:
                 # WHOLE is deliberate - the permitted address and the forbidden one are both
                 # inside it, so the security group is constant across the pair and the route
                 # is the single variable the reading turns on.
-                if account not in PROBE_PEERS:
+                # THE GUARD IS NOW THE MATRIX ITSELF, which is stricter than the membership
+                # test it replaces: an account whose `foundation/` is an end of no peering has
+                # nothing for a peering probe to measure, and an empty egress list would produce
+                # a probe reporting silence about a question nobody asked.
+                if not probe_peer_cidrs(account):
                     raise UnknownAccountFolder(
-                        f"{account}: 'probes' is the Sandbox-Production pair of Stage 3's "
-                        "Deliverables - another account joins PROBE_PEERS deliberately"
+                        f"{account}: 'probes' needs at least one peering its foundation/ VPC is "
+                        "an end of - add it to PEERINGS deliberately, not here"
                     )
-                # A PROBE PEER IS AN ACCOUNT TODAY AND BECOMES A VPC AT 6c (step 0.6): every
-                # peer named here has exactly one `foundation/` VPC, so its account's single
-                # allocation IS its range. account_cidrs() returns a list for that reason -
-                # Production's three would arrive as three, which is the reading that will force
-                # PROBE_PEERS to name slices rather than accounts.
-                values["peer_cidrs"] = [c for p in PROBE_PEERS[account] for c in account_cidrs(p)]
+                # A PROBE PEER IS A VPC, NOT AN ACCOUNT, since 6c step 6.3 - which is the
+                # promise the deleted PROBE_PEERS table made to itself and never kept. Generated
+                # from `PEERINGS`, so a probe cannot be blind to a peering the matrix has: the
+                # Sandbox probe now reaches the hub (10.31) as well as SharedServices (10.30),
+                # which is what makes step 6.3's proxy readings possible at all.
+                values["peer_cidrs"] = probe_peer_cidrs(account)
 
     # THE FIRST NON-NETWORK EMISSION, and the repository's first CROSS-ACCOUNT remote-state
     # read (Stage 4 step 8.1) - Stage 5's maps below follow the same shape.
