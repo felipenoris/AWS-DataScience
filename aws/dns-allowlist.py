@@ -127,7 +127,16 @@ def _balanced(text: str, start: int, opener: str, closer: str) -> tuple[str, int
 
 
 _STRIP_COMMENTS = re.compile(r"#[^\n]*")
-_LIST_ASSIGN = re.compile(r"^\s*(proxy_allow_[a-z_]+)\s*=\s*\[", re.M)
+# `proxy_deny_*` as well as `proxy_allow_*` since 2026-09-07 - the client plane carries a DENY
+# list, and a regex that only knew one kind would read it as an absent plane.
+_LIST_ASSIGN = re.compile(r"^\s*(proxy_(?:allow|deny)_[a-z_]+)\s*=\s*\[", re.M)
+
+# THE SECOND SHAPE A LIST CAN TAKE, and it was added to the .tf before it was added here - which
+# cost a KeyError traceback rather than the loud, readable refusal this parser promises.
+# `proxy_allow_shared` became `concat(<comprehension>, <literal>)` on 2026-09-06, when one
+# CloudFront distribution had to be added to a list that is otherwise DERIVED from the notebook's.
+# Both halves are parsed; anything else still fails by name.
+_CONCAT_ASSIGN = re.compile(r"^\s*(proxy_(?:allow|deny)_[a-z_]+)\s*=\s*concat\(", re.M)
 _DERIVED = re.compile(
     r"^\s*for\s+(\w+)\s+in\s+local\.(proxy_allow_[a-z_]+)\s*:\s*\1\s+if\s+\1\s*!=\s*\"([^\"]+)\"\s*$"
 )
@@ -135,7 +144,11 @@ _PLANE_ROW = re.compile(r'^\s*"?([a-z0-9-]+)"?\s*=\s*(local\.(proxy_allow_[a-z_]
 
 
 def parse_anchors(path) -> dict[str, list[str]]:
-    """The five planes and their entries, from the [P] slice that declares them.
+    """`({plane: [names]}, {plane: mode})` from the [P] slice that declares them.
+
+    The names are what this file RESOLVES, and both kinds are worth resolving: a dead entry on a
+    deny list is as stale as one on an allow list. The mode is what stops DN-4 reading an empty
+    deny list as an empty allow list, which are opposite states.
 
     A small explicit grammar rather than an HCL parser, for the reason parse_slice had before
     it: this package is dependency-free (the CloudShell fallback needs it). It fails LOUDLY on
@@ -163,21 +176,55 @@ def parse_anchors(path) -> dict[str, list[str]]:
             raise SystemExit(f"{path}: {name} derives from {source}, which was not parsed")
         named[name] = [d for d in named[source] if d != excluded]
 
+    # `concat(...)` lists, parsed after the literals so a derived half can look its source up.
+    for m in _CONCAT_ASSIGN.finditer(text):
+        body, _ = _balanced(text, m.end() - 1, "(", ")")
+        clean = _STRIP_COMMENTS.sub("", body)
+        collected: list = []
+        for part in re.finditer(r"\[(.*?)\]", clean, re.S):
+            chunk = part.group(1)
+            d = _DERIVED.match(chunk.strip())
+            if d:
+                if d.group(2) not in named:
+                    raise SystemExit(f"{path}: {m.group(1)} derives from {d.group(2)}, not parsed")
+                collected += [x for x in named[d.group(2)] if x != d.group(3)]
+            else:
+                collected += re.findall(r'"([^"]*)"', chunk)
+        named[m.group(1)] = collected
+
     m = re.search(r"^\s*proxy_allow_by_plane\s*=\s*\{", text, re.M)
     if not m:
         raise SystemExit(f"{path}: no proxy_allow_by_plane map found")
     body, _ = _balanced(text, m.end() - 1, "{", "}")
     planes: dict[str, list[str]] = {}
+    modes: dict[str, str] = {}
     for line in _STRIP_COMMENTS.sub("", body).splitlines():
         if not line.strip():
             continue
         row = _PLANE_ROW.match(line)
         if not row:
             raise SystemExit(f"{path}: proxy_allow_by_plane row not understood: {line.strip()!r}")
+        if row.group(3) and row.group(3) not in named:
+            raise SystemExit(
+                f"{path}: plane {row.group(1)} points at local `{row.group(3)}`, which this "
+                "parser did not recognise. Its assignment is a form the grammar here does not "
+                "cover - add the form rather than letting the plane read as empty."
+            )
         planes[row.group(1)] = list(named[row.group(3)]) if row.group(3) else []
+        modes[row.group(1)] = "allowlist"
+
+    # THE CLIENT PLANE IS NOT IN THAT MAP, AND ITS ABSENCE IS THE POINT (2026-09-07). `tunnel` used
+    # to be a row there carrying a 23-name allow-list. `objectives.md` asks for the client's
+    # internet to be **monitored** rather than restricted, so it is now an `open` plane whose list
+    # is a DENY list - `proxy_deny_tunnel`, empty by decision. It is read from its own local
+    # because it is a different KIND of list, and merging the two would let this instrument report
+    # "the tunnel allows nothing", which is the exact opposite of what an empty deny list means.
+    if "proxy_deny_tunnel" in named:
+        planes["tunnel"] = list(named["proxy_deny_tunnel"])
+        modes["tunnel"] = "open"
     if not planes:
         raise SystemExit(f"{path}: proxy_allow_by_plane parsed empty")
-    return planes
+    return planes, modes
 
 
 def substitute(names: list[str]) -> tuple[list[str], list[str]]:
@@ -355,7 +402,7 @@ def main(argv: list) -> int:
     out_label = ctx.out_label(OUT_NAME)
 
     errors = ErrorLog()
-    coded_raw = parse_anchors(_anchors_path(ctx))
+    coded_raw, plane_modes = parse_anchors(_anchors_path(ctx))
     planes: dict[str, list[str]] = {}
     subs: list[str] = []
     for plane, names in coded_raw.items():
@@ -407,14 +454,24 @@ EXC-05's failure mode has no place left to occur. The chains below are read for 
         # ---------------------------------------------------------------- 1
         rep.h1("1. The planes, as read")
         for plane, names in planes.items():
-            rep.h2(f"{plane} - {len(names)} entries")
+            rep.h2(f"{plane} - {len(names)} entries, mode {plane_modes.get(plane, '?')}")
             if not names:
-                rep.text(
-                    "  empty, and empty is a DENY: with no allow line for this source Squid falls\n"
-                    "  to the final `http_access deny all` and returns a named 403. A source the\n"
-                    "  security group admits and the allow-list has never heard of is reachable and\n"
-                    "  mute, which is the failure that looks like a network fault.\n"
-                )
+                if plane_modes.get(plane) == "open":
+                    rep.text(
+                        "  empty, and for an `open` plane empty means EVERYTHING IS PERMITTED - the\n"
+                        "  opposite of the line below. This is the client plane, and the objectives\n"
+                        "  ask for its internet to be MONITORED rather than restricted: the control\n"
+                        "  is the access log in /awsds/prod/proxy, not this list. An entry here, when\n"
+                        "  one is added, is a name the estate's people may NOT reach.\n"
+                    )
+                else:
+                    rep.text(
+                        "  empty, and for an `allowlist` plane empty is a DENY: with no allow line for\n"
+                        "  this source Squid falls to the final `http_access deny all` and returns a\n"
+                        "  named 403. A source the security group admits and the allow-list has never\n"
+                        "  heard of is reachable and mute, which is the failure that looks like a\n"
+                        "  network fault.\n"
+                    )
                 continue
             rows = ["ENTRY\tKIND"]
             for n in names:
@@ -490,8 +547,8 @@ EXC-05's failure mode has no place left to occur. The chains below are read for 
             "Who actually serves the bytes to the PROXY - which is the only host in the estate\n"
             "that fetches them. An entry extends trust to whoever owns the name, wherever they\n"
             "point it, exactly as it always did; what changed is that only one host follows.\n"
+            "Run with --whois to attribute each address to an organisation.\n"
         )
-        counted = False
         for plane in planes:
             if not answers[plane]:
                 continue
@@ -499,35 +556,37 @@ EXC-05's failure mode has no place left to occur. The chains below are read for 
             rows = ["NAME\tADDRESS\tOWNER OF THE ADDRESS"]
             for n, ans in answers[plane].items():
                 addr = ans.addrs[0] if ans.addrs else "-"
-                if do_whois and ans.addrs:
-                    owner = owner_of(ans.addrs[0])
-                    counted = True
-                else:
-                    owner = "-"
+                owner = owner_of(ans.addrs[0]) if (do_whois and ans.addrs) else "-"
                 rows.append(f"{n}\t{addr}\t{owner}")
             rep.tabulate(rows)
 
         # ---------------------------------------------------------------- 4
-        rep.h1("4. The two filters, side by side - the tunnel against the workload planes")
+        rep.h1("4. The two filters, and they are two DIFFERENT KINDS since 2026-09-07")
         rep.text(
-            "THE DESIGN CLAIM THIS SECTION MEASURES (step 4.9): a name a PERSON may reach is not\n"
-            "thereby reachable from a NOTEBOOK. The overlap is expected to be small and to consist\n"
-            "of AWS's own namespaces; a package host or a console family appearing on both is the\n"
-            "two filters quietly becoming one again. This is a reading, not a check - some overlap\n"
-            "is correct.\n"
+            "THE DESIGN CLAIM THIS SECTION USED TO MEASURE was that a name a PERSON may reach is not\n"
+            "thereby reachable from a NOTEBOOK - an overlap between two allow-lists. That comparison\n"
+            "no longer applies, because the two planes are no longer the same kind of list.\n"
+            "`objectives.md`: the client's internet is MONITORED (an `open` plane, whose list is a\n"
+            "DENY list) and the restriction belongs to the SageMaker-managed compute (an `allowlist`\n"
+            "plane). Comparing their contents would compare a blocklist with a permit-list.\n"
+            "\n"
+            "So what is reported is the SHAPE, and the finding to look for is a plane whose mode is\n"
+            "not what its role calls for - a compute plane that went `open`, above all.\n"
         )
-        tunnel = {n for n in planes.get("tunnel", []) if not is_private(n)}
-        workload: dict[str, set[str]] = {
-            p: {n for n in names if not is_private(n)}
-            for p, names in planes.items()
-            if p != "tunnel" and names
-        }
-        union = set().union(*workload.values()) if workload else set()
-        rows = ["ENTRY\tON THE TUNNEL\tON A WORKLOAD PLANE"]
-        for n in sorted(tunnel | union):
-            rows.append(f"{n}\t{'yes' if n in tunnel else '-'}\t{'yes' if n in union else '-'}")
-        rep.tabulate(rows)
-        rep.text(f"\n  overlap: {len(tunnel & union)} entr(y/ies) on both sides\n")
+        rep.tabulate(
+            ["PLANE\tMODE\tENTRIES\tWHAT AN ENTRY MEANS"]
+            + [
+                f"{p}\t{plane_modes.get(p, '?')}\t{len(planes[p])}\t"
+                + (
+                    "a name this plane may NOT reach"
+                    if plane_modes.get(p) == "open"
+                    else "the only kind of name this plane MAY reach"
+                )
+                for p in sorted(planes)
+            ]
+        )
+        open_planes = sorted(p for p in planes if plane_modes.get(p) == "open")
+        compute_open = [p for p in open_planes if p != "tunnel"]
 
         # ---------------------------------------------------------------- 5
         rep.h1("5. Checks")
@@ -607,17 +666,22 @@ EXC-05's failure mode has no place left to occur. The chains below are read for 
                     "code -> parameter -> host",
                 )
 
-        attribution = (
-            "the owner column in section 3b says whose infrastructure each one lands on"
-            if counted
-            else "WHOSE they are is not measured - re-run with --whois to attribute them"
-        )
-        checks.note(
-            "DN-4",
-            "what the two filters have in common",
-            f"{len(tunnel & union)} of {len(tunnel | union)} entries appear on both the tunnel "
-            f"and a workload plane: {sorted(tunnel & union) or 'none'}; {attribution}",
-        )
+        if compute_open:
+            checks.fail(
+                "DN-4",
+                "only the client plane is `open`; every compute plane is an allow-list",
+                f"{', '.join(compute_open)} is `open` - a compute plane whose list is a DENY list "
+                "may reach anything not named on it, which inverts the objectives' restriction "
+                "(`the restriction is on the SageMaker-MANAGED COMPUTE`)",
+            )
+        else:
+            checks.ok(
+                "DN-4",
+                "only the client plane is `open`; every compute plane is an allow-list",
+                f"{len(planes) - len(open_planes)} allow-list plane(s); `open`: "
+                f"{', '.join(open_planes) or 'none'}. An `open` plane's control is the access log, "
+                "not its list - so an empty one is permissive by decision, not empty by omission",
+            )
         rep.checks_table(checks)
         rep.text("""
 A `fail` on DN-2 is the one to act on FIRST, and the action is to delete the apex, not the

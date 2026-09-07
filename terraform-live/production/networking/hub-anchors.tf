@@ -285,61 +285,27 @@ resource "aws_secretsmanager_secret_policy" "wireguard_host_key" {
 # stands. It is not carried across: this list is the first time the estate's egress is actually
 # enumerated.
 locals {
-  # (i) THE INSTITUTIONAL WEB FILTER - what a PERSON on a company laptop may reach. Its source is
-  # the tunnel range, and the reason a person gets a different list from a notebook is the whole
-  # point of splitting them: a name somebody may browse to is not thereby a name a training job
-  # may exfiltrate to.
+  # (i) THE CLIENT PLANE'S DENY LIST, AND IT REPLACED AN ALLOW-LIST THAT WAS THE WRONG SHAPE
+  # (2026-09-07). What stood here was twenty-three AWS console, portal and sign-in families, seeded
+  # from the SMUS network-isolation guide exactly as step 4.9 said to - and the result was a client
+  # that could open the AWS console and nothing else on the internet. `objectives.md` asks for the
+  # opposite: the client's internet is **monitored**, not restricted, and the restriction belongs to
+  # the SageMaker compute. The full argument is on `proxy_allowlist` below, where the mode is set.
   #
-  # Seeded from the SMUS network-isolation guide's own families rather than by trial, plus the
-  # console and sign-in families the DNS firewall had already measured.
-  proxy_allow_tunnel = [
-    # The AWS control plane. A laptop's `aws` CLI now exits through here (4.12), so without this
-    # every persona is denied every API call - which is the failure mode 4.12's union-then-trim
-    # exists to keep out of one apply.
-    ".amazonaws.com",
-    # The SageMaker Unified Studio portal: its client APIs, its agent, and the domain the portal
-    # itself is served from.
-    "datazone.${var.region}.api.aws",
-    "agent.datazone.${var.region}.api.aws",
-    "sagemaker-unified-studio.${var.region}.api.aws",
-    ".sagemaker.${var.region}.on.aws",
-    ".sagemaker.aws",
-    ".sagemaker.aws.dev",
-    ".awsapps.com",
-    # IAM Identity Center sign-in.
-    "${var.region}.signin.aws",
-    # `.signin.aws.amazon.com` ALONE, and the apex is NOT listed beside it - measured 2026-09-06,
-    # and it is the difference between the two syntaxes biting. Route 53 DNS Firewall REQUIRED
-    # both forms (`x` for the apex, `*.x` for subdomains); Squid's `.x` covers both, and listing
-    # the apex as well is **FATAL**, not a warning: `ERROR: '.signin.aws.amazon.com' is a
-    # subdomain of 'signin.aws.amazon.com'` followed by `FATAL: Bungled`.
-    ".signin.aws.amazon.com",
-    # The console families, including the two static-asset hosts and the consent widget.
-    # Same collapse as the sign-in family above, and the same fatal error if the apex comes back.
-    ".console.aws.amazon.com",
-    ".console-api.aws.amazon.com",
-    ".console.api.aws",
-    ".console.aws.a2z.com",
-    ".cdn.console.awsstatic.com",
-    ".cdn.uis.awsstatic.com",
-    ".shortbread.aws.dev",
-    "public.lotus.awt.aws.a2z.com",
-    # Health and notifications.
-    "health.aws.amazon.com",
-    "phd.aws.amazon.com",
-    ".ctrl.prod.os.notifications.aws.dev",
-    "uxc.us-east-1.api.aws", # region:aws-pinned AWS serves this endpoint from one Region only - its pin, not ours (the marker must be INLINE: the gate reads the line, not the paragraph)
-    # THE BROADEST ENTRY IN EITHER LIST, AND IT IS DELIBERATELY ONLY HERE. `.cloudfront.net` is
-    # every CloudFront distribution in the world, which is what the console's asset delivery
-    # needs and what a notebook must never have. Under the old DNS firewall both planes shared
-    # one list and both got it; splitting the filters is what makes narrowing it possible, and
-    # this comment is the record that it was narrowed rather than forgotten.
-    # A DEEPER name under a wildcard is only a WARNING in Squid, not fatal - which is why
-    # `d35uxhjf90umnp.cloudfront.net` stood here until 2026-09-06 without breaking anything. It is
-    # removed because it is redundant: `.cloudfront.net` already covers it, and a line that
-    # produces a warning on every reconfigure is a line somebody eventually stops reading.
-    ".cloudfront.net",
-  ]
+  # EMPTY, BY DECISION (the user, 2026-09-07): everything permitted, everything logged, and this
+  # list filled when a written policy exists to fill it from. **Empty is not "no control"** - the
+  # control for this plane is the access log, which is what the objectives' word *monitored* names,
+  # and it is already carrying a per-device address (`10.90.0.2`, measured at step 6.1).
+  #
+  # WHAT AN ENTRY HERE WILL MEAN when the list is filled: a name this estate's people may not
+  # reach. It obeys the same `dstdomain` rules as the allow-lists - `.x` covers `x` and every
+  # subdomain, and `x` beside `.x` in one acl is **FATAL** - so the plan-time collision check below
+  # reads this list too.
+  #
+  # THE THREE GLOBAL DENIES STILL APPLY and are not repeated here: private destinations (the L7
+  # bridge control), unsafe ports, and CONNECT to anything but 443. "Open" means open to the
+  # internet, never open to the estate.
+  proxy_deny_tunnel = []
 
   # (ii) SAGEMAKER'S STRICTER LIST - what a NOTEBOOK may reach. Today's DNS Firewall allow-list
   # moved across, minus the wildcard and minus every portal family above: a notebook does not
@@ -407,8 +373,10 @@ locals {
   # THE PLANES, BY THE KEY THE MATRIX GENERATES. A key here that is not a plane below is a typo
   # that would otherwise be silently dropped by the merge - the precondition on the resource is
   # what turns it into a plan-time failure.
+  # THE TUNNEL IS ABSENT FROM THIS MAP SINCE 2026-09-07, and its absence is the correction: this
+  # map holds ALLOW-lists, and the client plane no longer has one. Its deny list is
+  # `proxy_deny_tunnel` above, and `proxy_allowlist` is where the two are given their modes.
   proxy_allow_by_plane = {
-    tunnel                  = local.proxy_allow_tunnel
     "sandbox-foundation"    = local.proxy_allow_sandbox
     "production-foundation" = local.proxy_allow_shared
     # EMPTY, AND EMPTY IS A DECISION RATHER THAN AN OMISSION. `production-workloads` is the
@@ -420,19 +388,68 @@ locals {
     "staging-foundation"   = []
   }
 
+  # EVERY PLANE CARRIES A `mode`, AND THE TUNNEL'S IS THE ONE THAT IS NOT `allowlist`
+  # (restructured 2026-09-07, correcting a requirements defect - see the block above the tunnel
+  # entry). Two values, and the render script branches on exactly this field:
+  #
+  #   allowlist   the plane may reach the names in `allow` and nothing else. `deny` is unused.
+  #               This is a RESTRICTION, and it is what the objectives ask for on the compute.
+  #   open        the plane may reach anything EXCEPT the names in `deny`. `allow` is unused.
+  #               This is MONITORING - the control is the access log, not the list - and it is
+  #               what the objectives ask for on the client.
+  #
+  # BOTH KEYS ARE ALWAYS PRESENT, one of them empty, so no parser downstream has to handle a
+  # missing field: `./aws/proxy.py` PX-3 and `./aws/dns-allowlist.py` both read this document, and
+  # a shape that is sometimes one thing and sometimes another is how those two drift apart.
+  # THE UNION THE COLLISION GATE READS - both kinds, keyed by plane, because a `deny` entry is
+  # rendered into the same `dstdomain` syntax and carries the same fatal pair.
+  proxy_collision_lists = {
+    for plane, cfg in local.proxy_allowlist : plane => concat(cfg.allow, cfg.deny)
+  }
+
   proxy_allowlist = merge(
     {
-      # The institutional filter's source is the tunnel range, which reaches Squid UN-MASQUERADED
-      # (4.7) so the access log carries a per-device address.
+      # THE CLIENT PLANE IS `open`, AND THE ALLOW-LIST IT USED TO CARRY WAS A REQUIREMENTS DEFECT
+      # (found by the user 2026-09-07, on the first browser that tried to use the proxy).
+      # `objectives.md` is explicit in two places, and they agree:
+      #
+      #   "all internet access will be MONITORED - there will be an HTTP/HTTPS proxy between the
+      #    VPN-connected client and the cloud's internet egress. Once on the VPN, the user can
+      #    therefore use the browser to reach the internet"
+      #   "the restriction is on the SageMaker-MANAGED COMPUTE, never on the user's (client's)
+      #    machine"
+      #
+      # What stood here was a 23-name allow-list of AWS console and portal families, which made the
+      # CLIENT's internet stricter than the COMPUTE's - the exact inversion of the requirement.
+      # It came from step 4.9's paraphrase, *"the institutional web filter - what a person on a
+      # company laptop may reach"*, plus a `squid.conf` that is default-deny: "filter" was
+      # implemented as an allow-list. **An institutional web filter is a DENY-list over an open
+      # default** - it blocks categories, it does not enumerate the web - and `CLAUDE.md` says the
+      # objectives are "the specification a stage is measured against, so it is summarised
+      # nowhere". The paraphrase became the specification, which is what that rule exists to stop.
+      #
+      # THE DENY LIST IS EMPTY BY DECISION (the user, 2026-09-07): everything permitted, everything
+      # logged, and the list filled when there is a written policy to fill it from. Empty here does
+      # NOT mean "no control" - it means the control is the access log in `/awsds/prod/proxy`,
+      # which is what "monitored" names. The three global denies above every plane still apply to
+      # this one: private destinations, unsafe ports, and CONNECT to anything but 443.
       tunnel = {
         sources = [var.wireguard_peer_cidr]
-        allow   = local.proxy_allow_by_plane["tunnel"]
+        mode    = "open"
+        allow   = []
+        deny    = local.proxy_deny_tunnel
       }
     },
     {
+      # EVERY SPOKE STAYS `allowlist`, and that is the objectives' other half: the restriction
+      # belongs to the compute. `sandbox-foundation` is SageMaker's list - D5 as amended by D38
+      # calls it "the length of that compute's source-scoped allow-list on the proxy", which is
+      # design A's short one rather than design B's empty one.
       for p in var.peerings : "${p.peer_account}-${p.peer_slice}" => {
         sources = [p.peer_cidr]
+        mode    = "allowlist"
         allow   = lookup(local.proxy_allow_by_plane, "${p.peer_account}-${p.peer_slice}", [])
+        deny    = []
       }
     },
   )
@@ -486,14 +503,29 @@ resource "aws_ssm_parameter" "proxy_allowlist" {
     # A DEEPER name under a wildcard (`a.b.example.com` under `.example.com`) is only a WARNING and
     # is deliberately NOT failed here - it is redundant rather than wrong, and a gate that refuses
     # both would refuse a list that works.
+    #
+    # IT READS BOTH LIST KINDS SINCE 2026-09-07. `deny` renders into a `dstdomain` acl exactly as
+    # `allow` does, so an apex beside its own wildcard is just as fatal there - and a deny list is
+    # the one somebody will paste names into in a hurry, from a blocklist written for a different
+    # syntax. `local.proxy_collision_lists` is the union, so neither kind can be added later
+    # without this gate seeing it.
     precondition {
       condition = length(flatten([
-        for plane, cfg in local.proxy_allowlist : [
-          for d in cfg.allow : "${plane}:${d}"
-          if !startswith(d, ".") && contains(cfg.allow, ".${d}")
+        for plane, names in local.proxy_collision_lists : [
+          for d in names : "${plane}:${d}"
+          if !startswith(d, ".") && contains(names, ".${d}")
         ]
       ])) == 0
-      error_message = "a plane lists a domain AND its own wildcard, which Squid refuses with `FATAL: Bungled`: ${join(", ", flatten([for plane, cfg in local.proxy_allowlist : [for d in cfg.allow : "${plane}:${d} beside .${d}" if !startswith(d, ".") && contains(cfg.allow, ".${d}")]]))}. Keep the dotted form only - `.x` matches the apex as well."
+      error_message = "a plane lists a domain AND its own wildcard, which Squid refuses with `FATAL: Bungled`: ${join(", ", flatten([for plane, names in local.proxy_collision_lists : [for d in names : "${plane}:${d} beside .${d}" if !startswith(d, ".") && contains(names, ".${d}")]]))}. Keep the dotted form only - `.x` matches the apex as well."
+    }
+
+    # EVERY PLANE'S MODE IS ONE OF TWO WORDS, AND AN UNKNOWN ONE MUST NOT REACH THE HOST. The
+    # render script branches on this string; a typo would match neither branch, emit no block at
+    # all for that plane, and the symptom would be a source that is admitted by the security group
+    # and refused by name - reachable and mute, which is the failure this estate keeps meeting.
+    precondition {
+      condition     = alltrue([for cfg in values(local.proxy_allowlist) : contains(["allowlist", "open"], cfg.mode)])
+      error_message = "every plane's `mode` must be `allowlist` (may reach only `allow`) or `open` (may reach anything but `deny`)."
     }
 
     precondition {

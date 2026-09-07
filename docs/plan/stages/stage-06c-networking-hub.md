@@ -579,6 +579,28 @@ address transfer is what keeps every client's `Endpoint` line unchanged.
   3. Source-scoped allow-lists, **one per plane** (4.9).
   4. `http_access deny all`, last — so an unlisted name is a fast, named 403 rather than a timeout.
 
+- **4.9 — REOPENED AND CORRECTED 2026-09-07: THE CLIENT PLANE WAS THE WRONG SHAPE, AND THIS
+  STEP'S OWN PARAPHRASE IS WHAT MADE IT SO.** The user found it on the first browser that tried to
+  use the proxy: the AWS console opened and **nothing else on the internet did**.
+  `objectives.md` is explicit in two places and they agree — *"all internet access will be
+  **MONITORED** … the user can therefore use the browser to reach the internet"* and *"the
+  restriction is on the SageMaker-**MANAGED COMPUTE**, never on the user's (client's) machine"*.
+  What stood here was a **23-name allow-list** of AWS console, portal and sign-in families, which
+  made the **client's** internet stricter than the **compute's**. The step said *"the tunnel range
+  carries the institutional web filter — what a person on a company laptop may reach"*, and
+  `squid.conf` is default-deny, so *"filter"* was implemented as an **allow-list**. **An
+  institutional web filter is a DENY-list over an open default.** `CLAUDE.md` says the objectives
+  are *"the specification a stage is measured against, so it is summarised nowhere"* — and the
+  summary in this step became the specification, which is exactly what that rule exists to stop.
+  **The repair**: every plane now carries a `mode`. `allowlist` (the four spokes, unchanged —
+  `sandbox-foundation` is D5's *"short list"* for the compute) and **`open`** (the tunnel), whose
+  list is a **deny** list, **empty by decision** — everything permitted, everything logged, filled
+  when a written policy exists. The control for that plane is the access log, which is what
+  *monitored* names. **The three global denies still apply**: private destinations, unsafe ports,
+  CONNECT to anything but 443 — *open* means open to the internet, never to the estate.
+  Two plan-time gates followed: the collision check now reads **both** kinds of list, and an
+  unknown `mode` is a plan failure rather than a plane that renders nothing.
+  *The original step follows:*
 - **4.9 — [Claude] Author the two filters the objectives require, as source-scoped lists**: an
   explicit-proxy client never resolves an internet name, so a per-VPC DNS firewall can no longer see one and
   **both** filters live here.
