@@ -1342,3 +1342,34 @@ thing to actually run. They are written up individually because three of them ar
   and then the `removed {}` on `sandbox/foundation`'s Elastic IP, in that order; `NT-11`/`NT-4`
   (3.6-3.7); 2.6's retirement of the old zone family; and 4.11's second half (the Log Archive export)
   as decision due #4.
+
+## 2026-09-06 — session audit: three things the log said less than it should
+
+- **[Claude] `EXC-04` STILL COULD NOT BE MEASURED, AND `production/egress` WAS APPLIED AFTER THE
+  SENTENCE THAT SAID SO.** The 5.7 entry above records that the churn could not be re-measured
+  because *"all four `egress/` slices are `[E]` and down"*. Hours later 5.8 **applied**
+  `production/egress` (13 endpoints), re-planned it — **`No changes`** — and destroyed it again. Left
+  alone, that reads as a counter-example and closes the row by accident. **It is not one:**
+  `production/egress` sets no `dns_firewall`, so it builds **no domain list at all**, and `EXC-04` is
+  a defect of `aws_route53_resolver_firewall_domain_list`. A clean re-plan there says nothing about
+  it. What settles the row is still the next `make up` of an **Interactive** slice — Sandbox or
+  Staging — and only those two. Recorded because a reading taken for one reason is exactly what gets
+  quoted later for another (Lesson 37).
+- **[Claude] What this session wrote that was NOT Terraform, named rather than left implicit.** Three
+  write APIs were called, all of them in the fenced class this repository already recognises:
+  - **`ssm:SendCommand`**, repeatedly, to read *inside* the build host — the boot log, `docker info`,
+    the proxy probes, and the `docker build` that produced the three-outcome table. Every command it
+    carried was a read; the API is a write. This is the same fence `./scripts/buildbox.py sync` and
+    `./aws/vpn.py --on-host` sit behind, used deliberately rather than to gather information.
+  - **`ssm:StartAssociationsOnce`** on `awsds-prod-proxy-reconfigure`, once, to make the allow-list
+    edit reach the running proxy without waiting for the half-hour schedule. It is 4.10's own reload
+    path, run early rather than a new mechanism, and its `Success` is the evidence that the path
+    works at all — which nothing had exercised before today.
+  - **`ec2:CreateTags`/instance lifecycle** through `terraform apply`, under the user's standing
+    authorization for this stage's steps.
+- **[Claude] The instrument index moved with the instrument.** [`aws/INDEX.md`](../../aws/INDEX.md)'s
+  `dns-allowlist.py` row described the DNS Firewall lists, the `EXC-05` flattening exposure and a
+  `--from-api` that read `route53resolver`. All three were false after 5.7. The row now describes the
+  five Squid planes, `DN-2`'s two severities and the `ssm:GetParameter` read — and the page's own
+  paragraph about the one script that needs no AWS identity says *why* it moved. A routing file that
+  points at the old subject is worse than one that points nowhere.
