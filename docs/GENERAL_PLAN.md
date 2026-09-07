@@ -92,8 +92,8 @@ These come from `CLAUDE.md` and constrain every stage:
    points are the VPN and, later (Stage 13), an experimental web tier — **qualified 2026-08-22 (INT-16,
    measured): the VPN is the only entry to the private network and the AWS control plane; the Unified
    Studio portal's user ingress was measured reachable off-VPN** (`README.md` item 3 carries the full
-   statement; the closing choice — fallback (i) on the domain execution role versus recorded acceptance —
-   is the user's, deferred, and presumed nowhere). **Built by [Stage 6c](plan/stages/stage-06c-networking-hub.md) under D38 (2026-09-05), monitored by [Stage 11](plan/stages/stage-11-dlp.md) and first tested by [Stage 13](plan/stages/stage-13-public-web-tier.md): the client is a
+   statement; **the closing choice was taken 2026-09-07 — recorded acceptance, fallback (ii)** — a recorded
+   deviation, revisited at Stage 11 step 3.4 and alarmed by its 5.2). **Built by [Stage 6c](plan/stages/stage-06c-networking-hub.md) under D38 (2026-09-05), monitored by [Stage 11](plan/stages/stage-11-dlp.md) and first tested by [Stage 13](plan/stages/stage-13-public-web-tier.md): the client is a
    private-network client, so its whole internet — the AWS control plane included — crosses the
    institutional proxy, and the WireGuard host drops every tunnel packet that is not bound for an RFC1918
    address. Re-grounded 2026-08-25: the requirement side is
@@ -101,7 +101,8 @@ These come from `CLAUDE.md` and constrain every stage:
    only through the VPN, and once connected, *all* of the client's internet (the portal's public names
    included) runs through the cloud's own egress behind an institutional HTTP/HTTPS proxy (D5/D6 revised;
    Stage 11; **D38 owns the topology and open question 23 is closed**). The measured off-VPN gap is unchanged; what changed is
-   that accepting it would now be recording a deviation from a stated objective.
+   that accepting it would now be recording a deviation from a stated objective — **which is what 6c step
+   6.6 did, on 2026-09-07, by the user's choice.**
 5. **Incremental.** Each stage must leave the environment in a working, verifiable state.
 6. **Cost is a first-class constraint.** This is a personal account. Every stage lists its recurring cost and,
    where relevant, a cheaper alternative.

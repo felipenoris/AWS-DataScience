@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Status** | not started — **re-scoped and re-reviewed 2026-09-05**. (1) **The egress-control leg is now monitoring, not building** — [D38](../decisions/D38-single-egress-hub.md) and [6c](stage-06c-networking-hub.md) build the single proxied egress; this stage inherits a **Squid access log** in CloudWatch (exported to Log Archive) as the evidence its threat model reasons over, and 3.1's answer must be retaken for the third egress shape: *no default route plus an explicit proxy*, in which the raw-address row flips from **accepted** to **closed by route**. (2) **Two Interactive accounts become one** — Macie's member set, the data-event trails on `awsds-<env>-smus-projects` and the exfiltration alarm's writer list all lose their Development half. (3) **The proxy sees destination and volume, never content** (CONNECT without interception): domain fronting through an allowed CDN host is an accepted residual, and the client plane's DNS-tunnelling residual is accepted under the endpoint-DLP premise; both belong in the threat model rather than in a control. (4) **The per-VPC DNS firewall's job changed** — it no longer filters the internet (an explicit-proxy client never resolves one) and now closes the recursive resolver as an exfiltration channel, which is a detection feed this stage reads. — *earlier:* not started — **revised 2026-08-17 into the action-checklist format** (executor markers, action-first steps), against the official documentation and the Price List API, and pre-instrumented by `./aws/dlp.py`. Corrections folded in: **internal-access analysis was measured at USD 9.00 per resource-month, charged at setup and then on the first of each month** — so step 2.1's analyzer became an enumerated-ARN, read-then-delete instrument rather than a standing monitor, and its KMS claim was narrowed (**KMS keys are not an internal-access resource type**: the derived CMK is verified by reading its key policy, not by the analyzer); **Macie's auto-enable covers *new* accounts only** — existing accounts are added one by one by the administrator, the inverse of GuardDuty's `ALL` that Stage 4 recorded; the Macie job's **discovery-results repository prompt** is answered as a decision, not at the keyboard (Lesson 16); GuardDuty's two deferred features are named by their **API feature names** (`S3_DATA_EVENTS`, `EBS_MALWARE_PROTECTION`), both prices are measured (USD 0.80/1M events, 0.03/GB), and step 4 is written against the collision `POLICIES.md` documents — with `./aws/vpn.py`'s `VP-8` expectation flipped in the same sitting (that check moved to `./aws/guardduty.py` `GD-3` at the 2026-08-18 split — 4.4 now flips `GD-3`); **the step 5 trails are data-event-only** (the org trail already carries the management copy) with advanced selectors on a monitored-bucket *map*, and the alarms ride **EventBridge rules + the `MatchedEvents` metric** — data events are matched by ordinary `ENABLED` rules once a trail logs them (read 2026-08-17) — never CloudWatch Logs ingestion; **the first member-account trail fires the revision trigger `POLICIES.md` names**, so the CloudTrail-tampering statement is decided here; the presigned-URL correction stands (*use* is detectable as `AuthenticationMethod=QueryString`; *creation* is not detectable); the Athena-inversion alarm became **conditional on Stage 5 decision 4's outcome**; archive **rules** stay forbidden (INV-10) — an accepted external finding is archived individually; and the stale addresses were repointed (open question 6's narrowed answer, Stage 6 step 3.2's recorded residual, Stage 6 step 6's D5 verdict). **Revised again later the same day: the NFS requirement was withdrawn and D24 with it — the EFS residual leaves 2.1.2, 6.1 and the threat-model deliverable** |
+| **Status** | not started — **re-scoped and re-reviewed 2026-09-05**. (1) **The egress-control leg is now monitoring, not building** — [D38](../decisions/D38-single-egress-hub.md) and [6c](stage-06c-networking-hub.md) build the single proxied egress; this stage inherits a **Squid access log** in CloudWatch (exported to Log Archive) as the evidence its threat model reasons over, and 3.1's answer must be retaken for the third egress shape: *no default route plus an explicit proxy*, in which the raw-address row flips from **accepted** to **closed by route**. (2) **Two Interactive accounts become one** — Macie's member set, the data-event trails on `awsds-<env>-smus-projects` and the exfiltration alarm's writer list all lose their Development half. (3) **The proxy sees destination and volume, never content** (CONNECT without interception): domain fronting through an allowed CDN host is an accepted residual, and the client plane's DNS-tunnelling residual is accepted under the endpoint-DLP premise; both belong in the threat model rather than in a control. (4) **The per-VPC DNS firewall's job changed** — it no longer filters the internet (an explicit-proxy client never resolves one) and now closes the recursive resolver as an exfiltration channel, which is a detection feed this stage reads. (5) **INT-16's closing choice landed here on 2026-09-07 as a recorded acceptance** (6c step 6.6, fallback (ii), the user's): step 3.4 re-takes it with named inputs, 5.2 gains the compensating detective rule, 6.1 reads the ledger row instead of deferring it. — *earlier:* not started — **revised 2026-08-17 into the action-checklist format** (executor markers, action-first steps), against the official documentation and the Price List API, and pre-instrumented by `./aws/dlp.py`. Corrections folded in: **internal-access analysis was measured at USD 9.00 per resource-month, charged at setup and then on the first of each month** — so step 2.1's analyzer became an enumerated-ARN, read-then-delete instrument rather than a standing monitor, and its KMS claim was narrowed (**KMS keys are not an internal-access resource type**: the derived CMK is verified by reading its key policy, not by the analyzer); **Macie's auto-enable covers *new* accounts only** — existing accounts are added one by one by the administrator, the inverse of GuardDuty's `ALL` that Stage 4 recorded; the Macie job's **discovery-results repository prompt** is answered as a decision, not at the keyboard (Lesson 16); GuardDuty's two deferred features are named by their **API feature names** (`S3_DATA_EVENTS`, `EBS_MALWARE_PROTECTION`), both prices are measured (USD 0.80/1M events, 0.03/GB), and step 4 is written against the collision `POLICIES.md` documents — with `./aws/vpn.py`'s `VP-8` expectation flipped in the same sitting (that check moved to `./aws/guardduty.py` `GD-3` at the 2026-08-18 split — 4.4 now flips `GD-3`); **the step 5 trails are data-event-only** (the org trail already carries the management copy) with advanced selectors on a monitored-bucket *map*, and the alarms ride **EventBridge rules + the `MatchedEvents` metric** — data events are matched by ordinary `ENABLED` rules once a trail logs them (read 2026-08-17) — never CloudWatch Logs ingestion; **the first member-account trail fires the revision trigger `POLICIES.md` names**, so the CloudTrail-tampering statement is decided here; the presigned-URL correction stands (*use* is detectable as `AuthenticationMethod=QueryString`; *creation* is not detectable); the Athena-inversion alarm became **conditional on Stage 5 decision 4's outcome**; archive **rules** stay forbidden (INV-10) — an accepted external finding is archived individually; and the stale addresses were repointed (open question 6's narrowed answer, Stage 6 step 3.2's recorded residual, Stage 6 step 6's D5 verdict). **Revised again later the same day: the NFS requirement was withdrawn and D24 with it — the EFS residual leaves 2.1.2, 6.1 and the threat-model deliverable** |
 | **Prerequisites** | Stages 5, 6, 9 — by named input: Stage 5's classification scheme (its step 2), the LF-Tags, the derived zones (its 9.2) and **decision 4's Athena outcome**; ~~and, since 2026-08-19, Stage 9's producer path having written real rows into `curated`~~ — **lifted 2026-08-20: `sample_trades` holds 12 synthetic rows** (Stage 5's in-account load, user decision; step 2.3's callout carries the shape-and-volume caveat that survives); Stage 6's **D5 verdict** (its step 6), the grain (Stage 5 decision 6 / TIP), and the **remote-access residual its step 3.2 records**; Stage 9's producer path, outputs and results zones. **Stage 15 (GuardDuty base on org-wide — Stage 4 step 10 until the 2026-08-18 split) plus about a month of billing behind it; read its log for the exercised decision-1 path**, which is this stage's step 4 unblock (its step 5 settled that no administration role exists to carve out). Decision D6 is the strategy this stage executes |
 | **Consumes** | [D5](../decisions/D05-sagemaker-egress.md), [D6](../decisions/D06-dlp-approach.md), [D13](../decisions/D13-lake-formation-enforcement.md), [D19](../decisions/D19-derived-zone.md), [D22](../decisions/D22-data-governance-account.md), [D27](../decisions/D27-catalog-maintenance.md), [D31](../decisions/D31-approver-read.md) |
 | **Proves** | — |
@@ -302,6 +302,27 @@ control at all. A threat model that lists a control nobody implemented is worse 
   and remote sessions authenticate with **IAM credentials even in IdC domains, persisting up to 12 h after
   portal logout**. Accepted, with the kill-switch named: the `sagemaker:RemoteAccess` condition key on
   `CreateSpace`/`UpdateSpace`.
+- **3.4 — [Claude reads, user decides] Re-take INT-16's closing choice — the portal's off-VPN ingress,
+  accepted on 2026-09-07 (6c step 6.6, fallback (ii)) as a recorded deviation from `objectives.md`'s
+  VPN-only statement.** The acceptance was taken with the proxy's address newly stable and nothing yet
+  watching the surface; this step re-takes it with what the stage has built. Inputs, all read before the
+  choice: **(a)** 5.2's off-proxy-session rule — how many portal sessions arrived from an address other than
+  the proxy's since it was armed (CloudTrail's `sourceIPAddress` under the domain execution role, which
+  INT-16 measured carrying the end user's own address); **(b)** whether AWS has shipped a private door for
+  the portal — `NT-9` red means one exists, and the choice is then a different one (D38's client-plane
+  premise, re-read); **(c)** the cost of (i): a condition on a role that exists, nothing metered;
+  **(d)** the one admissible shape of (i) — `NotIpAddress` on the proxy's EIP **and**
+  `StringNotEqualsIfExists` on `aws:SourceVpc`, keeping the `aws:userid` `*:user-*` and
+  `aws:ViaAWSService` carve-outs; AWS's own `StringNotEquals` example matches whenever the key is absent,
+  which is every browser-origin call, and would deny the portal outright — so the on-tunnel positive
+  control after the apply is mandatory (Lesson 13), and the off-tunnel refusal's wording goes into the
+  log; **(e)** whether the institution's answer has moved closer — a managed device or a posture check
+  (the device-trust row of `institutional-delta.md`) makes (i) the observation and the endpoint the
+  control. **Either outcome goes into `docs/plan/threat-model.md`'s accepted-rather-than-controlled column
+  with the date, the inputs and the verdict**; acceptance re-taken is still acceptance, dated twice.
+  Recommended: **(i)** unless (b) changed the picture — it costs nothing, it was measured viable on
+  2026-08-22, and it closes the one surface where an unmanaged laptop reaches governed data; acceptance
+  stays defensible only while 5.2's rule stays quiet.
 
 ### 4. GuardDuty's two paid features — decided against a real bill, unblocked deliberately
 
@@ -390,6 +411,17 @@ are free) with the rule's `MatchedEvents` metric — no CloudWatch Logs ingestio
   - **`awsds-data-unexpected-writer`** (Data Governance only) — `PutObject` on lake + drop-box where
     `userIdentity`'s role is **anything-but** the three designed writers (the Interactive-OU writer roles,
     `awsds-data-catalog-maintenance`, `awsds-prod-job-exec` — D25's asymmetry, alarmed).
+  - **`awsds-data-portal-offproxy`** (Data Governance only — the domain lives there) — **the compensation
+    for INT-16's recorded acceptance (6c step 6.6)**: a portal session whose `sourceIPAddress` is
+    **anything but the proxy's Elastic IP**, on `datazone.amazonaws.com` events under the domain
+    execution role (INT-16 measured 770 of them carrying the user's own address, tunnel up and down
+    in the same hour). Management events, so the org trail already carries them and no member trail is
+    needed. **The matching shape is measured before it is written** (Lesson 54): EventBridge's CIDR
+    matcher against the `/32`, if it composes with `anything-but`, else a Logs metric filter over the
+    trail — and the rule is armed only after a tunnel-up session proves it quiet and a tunnel-down one
+    proves it loud (Lesson 13; verification xi). Target: the SNS topic. What it cannot do is stop the
+    session; what it does is make the acceptance *monitored* rather than merely written (Lesson 5), and
+    feed 3.4's input (a).
   - **`awsds-data-athena`** (Data Governance only) — on `StartQueryExecution` (a management event: the
     org trail already logs it, so this rule needs no member trail). **Conditional on Stage 5 decision 4's
     outcome:** if the Athena hole was closed by SCP amendment, *any* occurrence — allowed or denied — is
@@ -423,10 +455,9 @@ residuals, not against fear. **Explanation:** a reading, recorded in the threat 
 
 - **6.1 — [Claude] Walk the threat model's residual column** — the remote-IDE
   channel, design A's raw-IP bypass (if A survived), `UpdateTrail`, the within-persona result visibility
-  (Stage 9's stated limit), **and the portal's off-VPN user ingress (INT-16, measured 2026-08-22 — the
-  strong form: JupyterLab works with the tunnel down; whether it enters this ledger as a recorded
-  acceptance or was closed by fallback (i) is the user's decision, deferred at Stage 6 and read here, not
-  re-taken)** — and ask which, if any, an agent would actually close, at what cost, with what
+  (Stage 9's stated limit), **and the portal's off-VPN user ingress (INT-16 — entered this ledger as a RECORDED ACCEPTANCE on
+  2026-09-07, 6c step 6.6 fallback (ii); step 3.4 re-takes the choice with its inputs and 5.2 monitors
+  it — read the row as 3.4 left it)** — and ask which, if any, an agent would actually close, at what cost, with what
   new principals (Lesson 17). Recommended answer at lab scale: none — record it and the reasoning in
   `docs/plan/threat-model.md` and `docs/plan/institutional-delta.md` (an institution buys the catalog with
   lineage first, D19 practice v).
@@ -441,7 +472,8 @@ filters and filtered grants, the trails' shape (data-event-only, the monitored m
 delivering to the logs bucket), the rules and alarms, the GuardDuty features now expected `ENABLED`, and
 the tampering `Sid`. The behavioural proofs are the stage's own (Lesson 20):
 
-- **The threat model, `docs/plan/threat-model.md`** — one control (or one named acceptance) per item, and
+- **The threat model, `docs/plan/threat-model.md`** — one control (or one named acceptance) per item —
+  INT-16's portal ingress among the acceptances, dated 2026-09-07 and re-dated by 3.4 — and
   a **reachability row per governed resource**: who outside the organization can reach it (the external
   analyzer's answer), who inside can (the internal analyzer's, for the types it covers; a reading, for the
   CMKs and the catalog layer).
@@ -522,6 +554,9 @@ decision-maker.
 9. **ECR enhanced scanning** (4.6, Stage 7 decision 2's deferral) — recommended: **stay on basic** until a
    Stage 8 gate reading misses a language-package CVE that mattered; if adopted, standalone Inspector in
    Production only, and re-read the re-scan churn against the bill at Stage 12.
+10. **INT-16's choice, re-taken** (3.4) — recorded acceptance since 2026-09-07 (6c 6.6, the user's)
+    versus fallback (i) on the domain execution role. Recommended: **(i)**, for the reasons 3.4 lists —
+    unless `NT-9` says a private door for the portal now exists, which reopens the question differently.
 
 ## Verifications to answer while executing
 
@@ -539,6 +574,7 @@ Record every answer, including the ones that come out fine.
 | viii | Does presigned **use** arrive as `AuthenticationMethod=QueryString` and drive its rule — while creation, as predicted, appears nowhere? | 5.5 |
 | ix | Do the trails read back data-event-only (`get-event-selectors`: no management events) with validation on, delivering cross-account into `awsds-data-logs`? | 5.3 |
 | x | Does the Athena rule match Stage 5 decision 4's outcome — closed hole alarming on any occurrence, open hole alarming on non-maintenance principals only? | 5.2 |
+| xi | Does the off-proxy portal rule stay quiet through a tunnel-up portal session and fire on a tunnel-down one — and what did the tunnel-down session's events carry as `sourceIPAddress`? | 5.2, 5.5, 3.4 |
 
 ## Risks
 

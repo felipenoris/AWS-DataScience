@@ -63,7 +63,8 @@ what is genuinely still unanswered:
    injected via the configuration's write-only field into the stack template, with the qualification that
    the template's two conditional EMR roles carry none — and INT-16 is answered in the strong form (VPN-only
    APIs and console, NOT a VPN-only portal: off-VPN the whole interactive surface works, JupyterLab
-   included). The INT-16 closing choice — fallback (i) versus recorded acceptance — is the user's, deferred.
+   included). The INT-16 closing choice was taken 2026-09-07: **recorded acceptance (ii)**, a recorded
+   deviation from the objectives, revisited at Stage 11 step 3.4 and alarmed by its 5.2.
    INT-11's organization halves were **enabled in Stage 1d** (RAM org-wide sharing on 2026-08-14; the LF
    cross-account version already read 4 with `SET_CONTEXT: TRUE`); its Stage 5 half **closed 2026-08-19
    (pass 3, confirmed per account at pass 4 — see the row)**. The credential-vending half of
