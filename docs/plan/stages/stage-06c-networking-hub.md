@@ -856,6 +856,20 @@ becomes true.
   ENI, and a route target cannot live in another VPC. The `vpc_nat_cidrs` input, the isolated-tier
   security-group rule and the *must not coexist with `probes/`* rule all die in the same commit;
   `runbooks/buildbox.md` is rewritten in the same sitting.
+- **5.9 — DONE 2026-09-06, AND IT GAINED A FALLBACK THAT IS MEASURED RATHER THAN ARGUED.** The
+  re-statement itself was already carried by [D38](../decisions/D38-single-egress-hub.md) — MWAA
+  Serverless struck (its private shape *forbids* a NAT route; the requirements list demanding two NAT
+  gateways belongs to the public shape, Lesson 41), ECR's pull-through cache named as the candidate,
+  Stage 7 step 5.2 as the measurement. What 5.8's run adds is a **third fallback, ranked first**:
+  **pull the public image through the proxy and push it into ECR**, exercised end to end that day —
+  `docker pull public.ecr.aws/…/alpine:3.20` completed through Squid once the blob redirect's
+  CloudFront distribution was on the build plane, with the **layers taking the free S3 gateway path**.
+  It needs no host in the hub, no second build environment and no route. It does **not** make the
+  pull-through *cache* work — that is AWS fetching upstream on the service's own behalf, which no
+  client-side proxy setting reaches — so 5.2 still measures that. But the estate no longer *depends*
+  on the answer in order to obtain a public image, which is what "the contingency has a candidate and
+  no instance" was worth having.
+  *The original step follows:*
 - **5.9 — [Claude] Re-state the NAT contingency, with its first candidate removed**: a NAT gateway is built
   **only** for a named service that needs the internet and cannot be told about a proxy, in **that
   service's own VPC**, with its own cost row and a trigger to remove it. **MWAA Serverless is no longer that

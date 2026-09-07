@@ -59,6 +59,24 @@ promotes `VPC-SharedServices` to this estate's first NAT gateway, with a cost ro
 **The contingency therefore has a named candidate and no instance**, which is a different state from having
 neither.
 
+**Amended a third time 2026-09-06, at 6c step 5.9, and this one is a MEASUREMENT rather than a reading of a
+vendor page.** A third fallback now ranks ahead of the other two, because it was exercised end to end that
+day on the moved build host: **pull the public image through the proxy and push it into ECR**, from a
+host inside the estate. `public.ecr.aws` serves its token and its manifest through Squid, and the blob
+download — which **redirects to a CloudFront distribution**, a name Squid must be told about separately
+because it matches the hostname the client *requested* — completed once that distribution was on the build
+plane. A full `docker pull public.ecr.aws/docker/library/alpine:3.20` finished, and the layers took the
+free path: **S3 through the `[P]` gateway endpoint**, not the proxy.
+
+**Why that outranks priming from the hub's public tier**: it needs no host in `VPC-Networking`, no second
+copy of a build environment, and no route. It is the ordinary build path with one name added to one
+allow-list. **What it does not do** is make the pull-through *cache* work — that mechanism is AWS fetching
+from upstream on the service's own behalf, and no client-side proxy setting reaches it. So the ranking is:
+(i) pull-and-push through the proxy, **measured working**; (ii) prime the cache from the hub's public tier;
+(iii) bake the two or three public images into `base`; and only then a NAT gateway. Stage 7 step 5.2 still
+measures whether the cache needs one at all — but the estate no longer *depends* on that answer to obtain a
+public image.
+
 ### 2. Where the hub lives, and what that costs
 
 The institutional answer is a `Network` account and a `Shared Services` account
