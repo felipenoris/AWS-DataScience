@@ -1573,3 +1573,37 @@ thing to actually run. They are written up individually because three of them ar
   **0.470 → 0.390/h** with the NAT. Sandbox's own idle floor **rose**, 0.160 → 0.180, because
   design B has to enumerate what a NAT covered silently — **the only axis on which it rose**, since
   per gigabyte a NAT is 0.045 against an endpoint's 0.010. Break-even ≈ **0.57 GB/h**.
+
+## 2026-09-06 — 3.6 and 3.7 paid off: `NT-11` exists, and its two findings are two checks
+
+- **[Claude] 3.6 was already done in the code and stale in the legend.** `NT-4` was re-cut with 4.7
+  and reads *"no route overlaps `10.90.0.0/24` **outside the hub**"*, paired with a **positive**
+  reading — *"the ONE `10.90.0.0/24` route, inside the hub"* — so the exception is asserted rather
+  than merely excluded. Measured this run: `rtb-0b13c0405057ab331`,
+  `10.90.0.0/24 → eni-0a6313a565c2b09c7`, `active`. The instrument's own closing legend still said
+  *"anywhere"*; a summary that contradicts the check above it is the half a reader quotes.
+- **[Claude] 3.7 — `NT-11` written, and step 3.7's warning is the design rather than a caveat.**
+  *"Every active peering has a route on both sides"* would be red for a whole pass if written as one
+  verdict, in the one place an operator most needs a trustworthy reading. So it is **two checks that
+  never share a verdict**:
+
+  | finding | what it is | urgency |
+  |---|---|---|
+  | **declared but not routed** | an `active` peering with no route on one side, **named by side** | real, and the normal state for the minutes between creating a peering and adding its routes |
+  | **routed but not active** | a route whose target is deleted, failed or pending, or an id no peering answered to | a **BLACKHOLE** — packets leave and nothing comes back, with no ICMP and no log line. The opposite finding, and the more urgent one |
+
+- **[Claude] Why it exists at all, and it is not hypothetical**: the reference implementation this
+  project keeps as a comparison has exactly this defect — an `active` peering whose route table on
+  one side never learned about it. Nothing *describes* that as an error. The attachment shows
+  healthy, the CIDRs look right in a diagram, and traffic in one direction dies silently. **Peering
+  shares an ADDRESS, never a PATH** ([Lesson 44](../plan/lessons.md)), and the path is this route.
+- **[Claude] It asserts only about accounts it actually read.** A VPC whose account holds no live
+  profile is skipped and said so: *"no route found"* and *"no session"* are the same silence
+  (Lesson 13), and a check that crosses accounts by construction meets that case as the norm.
+- **[Claude] Reading: `pass` — 5 active peerings, both sides routed, across 5 VPCs.** The estate's
+  sixth peering is `deleted` and nothing points at it, which is why it is silent rather than a
+  finding — and it is also the live proof that the second branch is looking at the right thing.
+- **[Claude] Both branches proven on synthetic inputs**, because a check that has only ever passed
+  on a healthy estate is a claim: one side unrouted → `pcx-1: vpc-b has no route to it`; a deleted
+  peering still routed → `is deleted and 2 side(s) still point at it`; a route to an id nobody read
+  → named; an unread account side → correctly silent.

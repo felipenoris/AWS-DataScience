@@ -860,6 +860,96 @@ def main(argv: list) -> int:
                 "The page's WILDCARD rows are not mechanised (section 11).",
             )
 
+    # NT-11: EVERY ACTIVE PEERING HAS A ROUTE ON BOTH SIDES (Stage 6c step 3.7).
+    #
+    # WHY IT EXISTS, and it is not hypothetical: the reference implementation this project keeps
+    # as a comparison has exactly this defect - a peering connection that is `active` and a route
+    # table on one side that never learned about it. Nothing describes that as an error. The
+    # attachment shows healthy, the CIDRs look right in a diagram, and traffic in one direction
+    # dies with no ICMP and no log line. Peering shares an ADDRESS, never a PATH (Lesson 44), and
+    # the path is exactly this route.
+    #
+    # TWO FINDINGS THAT MUST NOT SHARE A VERDICT, which is what step 3.7 asks for after noticing
+    # this check would otherwise be red for a whole pass:
+    #
+    #   DECLARED BUT NOT ROUTED   an `active` peering with no route on one side. Real, and the
+    #                             normal state for the minutes between creating a peering and
+    #                             adding its routes - so it is reported with the SIDE named, not
+    #                             as a bare count.
+    #   ROUTED BUT NOT ACTIVE     a route whose target is a peering that is deleted, failed or
+    #                             pending. That is a BLACKHOLE: packets leave and nothing comes
+    #                             back. It is the opposite finding and the more urgent one, and a
+    #                             single verdict covering both would let it hide behind the first.
+    #
+    # IT ASSERTS ONLY ABOUT ACCOUNTS IT ACTUALLY READ. A VPC whose account holds no live profile
+    # is skipped and SAID so, because "no route found" and "no session" are the same silence
+    # (Lesson 13) - and this check runs across accounts by construction, so that case is normal
+    # rather than exceptional.
+    read_vpcs = {v for _p, v, _c, _d, _s, _h in vpcs}
+    routed_by_pcx: dict = {}
+    for _p, _rtb, vpc, _dest, target, _state in routes:
+        if isinstance(target, str) and target.startswith("pcx-"):
+            routed_by_pcx.setdefault(target, set()).add(vpc)
+
+    active_pcx: dict = {}  # pcx -> (status, {req vpc, acc vpc})
+    for _p, pcx, status, rvpc, _rc, avpc, _ac in peers:
+        prev = active_pcx.get(pcx)
+        sides = (prev[1] if prev else set()) | {rvpc, avpc}
+        active_pcx[pcx] = (status, sides)
+
+    not_routed, blackholes = [], []
+    for pcx, (status, sides) in sorted(active_pcx.items()):
+        have = routed_by_pcx.get(pcx, set())
+        if status != "active":
+            if have:
+                blackholes.append(
+                    f"{pcx} is {status} and {len(have)} route table side(s) still point at it"
+                )
+            continue
+        for side in sorted(sides):
+            if side not in read_vpcs:
+                continue  # no session on that account - silence here is not a finding
+            if side not in have:
+                not_routed.append(f"{pcx}: {side} has no route to it")
+
+    for pcx, sides in sorted(routed_by_pcx.items()):
+        if pcx not in active_pcx:
+            blackholes.append(
+                f"{pcx} is routed from {', '.join(sorted(sides))} and no peering by that id was read"
+            )
+
+    if blackholes:
+        for line in blackholes:
+            checks.fail(
+                "NT-11",
+                "a route points at a peering that is not active",
+                f"{line} - packets leave and nothing comes back, with no ICMP and no log "
+                "line. This is the opposite of the finding below and the more urgent one.",
+            )
+    if not_routed:
+        for line in not_routed:
+            checks.fail(
+                "NT-11",
+                "an active peering is not routed on both sides",
+                f"{line} - peering shares an ADDRESS, never a PATH (Lesson 44), and the "
+                "path is this route. Normal for the minutes between creating a peering and "
+                "adding its routes; a finding at any other time.",
+            )
+    if active_pcx and not blackholes and not not_routed:
+        n_active = len([1 for s, _ in active_pcx.values() if s == "active"])
+        checks.ok(
+            "NT-11",
+            "every active peering is routed on both sides",
+            f"{n_active} active peering(s), both sides routed in every account this run "
+            f"could read ({len(read_vpcs)} VPC(s))",
+        )
+    elif not active_pcx:
+        checks.note(
+            "NT-11",
+            "every active peering is routed on both sides",
+            "no peering was read - nothing to check",
+        )
+
     # --------------------------------------------------------------------------- the report
     with open(out_path, "w", encoding="utf-8") as stream:
         rep = Report(stream)
@@ -1346,7 +1436,9 @@ What the checks are, and where each comes from:
   NT-3  no non-local route overlapping 10.40.0.0/16 (validation 2, D20);
         the 0.0.0.0/0 -> igw/nat internet exit is excluded - it cannot
         deliver into an RFC1918 range
-  NT-4  no route overlapping 10.90.0.0/24 anywhere (step 6.5); same exclusion
+  NT-4  no route overlapping 10.90.0.0/24 OUTSIDE VPC-Networking (step 6.5,
+        re-cut at 6c step 3.6 - the hub carries the estate's one such route,
+        which is what gives the proxy a per-device source); same exclusion
   NT-5  no CIDR overlap among project VPCs, across accounts (step 1.2);
         172.31.0.0/16 vend artifacts counted once, not pairwise
   NT-6  no peering touching the unallocated 10.40/16 range (was D20's Staging range)
