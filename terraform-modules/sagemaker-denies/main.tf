@@ -96,16 +96,36 @@ data "aws_iam_policy_document" "this" {
 
   # -------------------------------------------------------------------- the cost ceiling
   #
-  # THE ONLY CONTROL THAT STOPS AN OVERSIZED INSTANCE INSIDE ITS FIRST HOUR. D12's budget
-  # notifies nobody by decision, so an ml.p4d parameter typed by mistake is discovered on a
-  # bill weeks later. sagemaker:InstanceTypes covers CreateApp, CreateSpace, UpdateSpace and
-  # CreateTrainingJob (read 2026-08-16), which is why this one is scoped to sagemaker:* -
+  # THE ONLY CONTROL THAT STOPS AN OVERSIZED JOB INSIDE ITS FIRST HOUR. D12's budget notifies
+  # nobody by decision, so an ml.p4d parameter typed by mistake is discovered on a bill weeks
+  # later. sagemaker:InstanceTypes covers CreateApp, CreateSpace, UpdateSpace and
+  # CreateTrainingJob (read 2026-08-16), which is why this one was scoped to sagemaker:* -
   # every action that names an instance type is caught, and every action that does not is
   # left alone by the ForAnyValue operator rather than by an action list that would go stale.
+  #
+  # THE SPACE PATH IS EXEMPT SINCE 2026-09-07 (the user's decision, v0.2.0): a JupyterLab or
+  # Code Editor space may be created or resized at ANY type. The remote-IDE server needs
+  # >= 8 GB, which the ml.t3.medium default does not have (6d step 7.1), and the user chose no
+  # ceiling on that path over a wider list. `not_actions` rather than an action list, so the
+  # reach stays what it was - every action that names an instance type, bounded by the KEY -
+  # minus the three that create or resize a space's app, and nothing goes stale when SageMaker
+  # adds a job action. A Deny with NotAction reads as "every action in every service", and the
+  # condition is what keeps it SageMaker-only: a request carrying no sagemaker:InstanceTypes is
+  # left alone exactly as before. SIMULATED BEFORE IT WAS TAGGED (simulate-custom-policy, ten
+  # cases, 6d log 2026-09-07): CreateTrainingJob/CreateProcessingJob at p4d/g5 explicitDeny,
+  # at ml.m5.large allowed; CreateSpace/UpdateSpace/CreateApp at p4d/g5 allowed; ListSpaces,
+  # DescribeDomain, s3:ListAllMyBuckets, glue:GetDatabases with no key allowed.
+  # WHAT THIS GIVES UP, named rather than implied: an ml.p4d Code Editor space bills USD 30+/h
+  # and D12's budget notifies nobody; the Tooling idle shutdown bounds an IDLE space and nothing
+  # bounds a busy one. Jobs, endpoints and notebook instances keep the list below.
   statement {
-    sid       = "DenySageMakerInstanceCeiling"
-    effect    = "Deny"
-    actions   = ["sagemaker:*"]
+    sid    = "DenySageMakerInstanceCeiling"
+    effect = "Deny"
+    not_actions = [
+      "sagemaker:CreateApp",
+      "sagemaker:CreateSpace",
+      "sagemaker:UpdateSpace",
+    ]
     resources = ["*"]
 
     condition {
