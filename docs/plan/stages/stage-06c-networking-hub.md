@@ -1011,6 +1011,26 @@ estate-wide (INT-21's availability cost).
   CIDRs (`PX-1`); no `http_access allow` precedes the private-destination deny (`PX-2`); the running
   allow-list equals the committed one (`PX-3`, over SSM Run Command); the access log group exists with its
   Log Archive export (`PX-4`); the EIP is the one `identity/sso/` names (`PX-5`).
+- **7.4 — DONE 2026-09-06, AND RE-MEASURING FOUND ONE WRONG NUMBER — in the direction that
+  flattered a rejection** ([Lesson 7](../lessons.md)). The three rows this step wanted in
+  `PRICING.md` were already there from the 2026-09-05 review; re-read against offer files
+  republished **2026-08-31**, the `us-west-2` figures held **exactly** (Transit Gateway 0.05 per
+  attachment-hour and 0.02/GB, Resolver endpoint **0.125 per ENI-hour**, the same in both regions).
+  **`sa-east-1`'s Transit Gateway attachment is 0.09/h, not 0.05** — so the hub-and-spoke this
+  estate does *not* build would be ≈ **USD 328/month** there rather than 182. Corrected.
+  **`cost-model.md`'s hourly table is REWRITTEN rather than annotated.** The 2026-09-05 repricing
+  sat below it as a list of corrections — one intent in two places, which is the shape that drifts
+  (Lesson 33) — so the corrections are folded in and the endpoint counts are now **counted, not
+  ranged**: Sandbox **18** = 0.180/h, Staging **11** = 0.110, `VPC-SharedServices` **13** = 0.130,
+  `VPC-Workloads` **0**. The old `Production egress/` row said *"NAT ~0.050 + endpoints
+  ~0.100-0.120"* — a range over a set nobody had counted.
+  **`architecture.md` §4.3a's proxy cell now names the shape that EXISTS** — `t3.micro` at
+  **0.0104/h**, sized up from `t3.nano` because `dnf` was OOM-killed on 415 MiB — and adds the half
+  the comparison kept omitting: **an EC2 proxy charges nothing per GB**, where a NAT gateway adds
+  0.045/GB of processing. **Estate-wide the fixed rate fell 0.470 → 0.390/h**; Sandbox's own idle
+  floor **rose** 0.160 → 0.180, and that is the only axis on which it rose — break-even against a
+  NAT is ≈ **0.57 GB/h**.
+  *The original step follows:*
 - **7.4 — [Claude] Restate the cost, measured before written** (Lesson 6): add the rows to
   `docs/PRICING.md` first — Transit Gateway per attachment-hour plus per GB (the number that records why
   peering was chosen), the Route 53 Resolver endpoint per ENI (which ruled out the forwarding-rule shape of
