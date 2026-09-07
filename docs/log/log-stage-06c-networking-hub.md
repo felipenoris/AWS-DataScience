@@ -1197,3 +1197,31 @@ thing to actually run. They are written up individually because three of them ar
 - **[Claude] `docs/NETWORK.md` is deliberately NOT edited here.** Its §s on the DNS Firewall
   describe the sixty-three-entry list and are now wrong; **6.7 rewrites that file from the
   readings**, and editing it ahead of the measurement is what that step exists to prevent.
+
+## 2026-09-06 — the two names pass 4 was supposed to write, and did not
+
+- **[Claude⚡] `proxy.awsds.internal` and `vpn.awsds.internal` did not exist.** Step 2.1 created the
+  apex zone with the comment *"shared names only: gitlab, proxy, vpn"* and says the two host records
+  are *"written by pass 4 from the two hosts' private addresses"*. Pass 4 built both hosts and
+  declared neither record. Found while 5.7 was re-cutting the firewall list to include
+  `.awsds.internal` — a family whose only content, at that moment, was nothing.
+- **[Claude] What it was breaking, which is more than a convenience.** Every client in the estate is
+  configured with `http_proxy=http://proxy.awsds.internal:3128`; 5.6's `NO_PROXY` carries
+  `.awsds.internal` precisely so that name is never sent to the proxy itself; and **step 6.1's
+  closing check is `curl -x proxy.awsds.internal:3128 https://checkip.amazonaws.com`**. That reading
+  was unrunnable and nothing said so — [Lesson 34](../plan/lessons.md), a deferred obligation
+  recorded only at the deferring end.
+- **[Claude] The record is `[D]` and lives with the host, not with the zone.** The zone is `[P]` in
+  `production/foundation/`; the **address** is a property of an instance the `[D]` slice may replace,
+  so a `[P]` slice declaring it would be taking a dependency on a `[D]` value. `make down` **stops**
+  these hosts rather than destroying them, so the ENI and its private address survive a down/up
+  cycle and the record does not churn.
+- **[Claude] Private address, not the Elastic IP, and for the proxy that is load-bearing rather than
+  tidy.** A spoke reaches 3128 over a **peering**, and a peering carries the private address only.
+  Pointing this name at the Elastic IP would send every spoke's proxy traffic at a public address it
+  has no route to — a timeout with no message, from a name that resolves perfectly (Lesson 44 in its
+  DNS form).
+- **[Claude⚡] Applied:** `1 to add` in each slice, both re-planning **`No changes`**; the zone now
+  answers `proxy.awsds.internal → 10.31.160.106` and `vpn.awsds.internal → 10.31.160.145`, read back
+  from `list-resource-record-sets` rather than from the apply output. `gitlab.awsds.internal` is
+  still owed and belongs to Stage 7.
