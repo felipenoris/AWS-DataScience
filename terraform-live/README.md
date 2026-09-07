@@ -18,7 +18,7 @@ is a broken caller.
 
 ## What is here today
 
-**Twenty-six slices across five account folders: eighteen `[P]`, one `[D]`, seven `[E]`.** That is a summary,
+**Twenty-nine slices across five account folders: eighteen `[P]`, three `[D]`, eight `[E]`** (2026-09-07 — one of the three `[D]` rows is `sandbox/vpn/`, whose host is already destroyed and whose folder waits on 6c step 6.5). That is a summary,
 not an authority — `make slices` prints the live table, and a slice that reaches disk without a row in it
 fails `make check`.
 
@@ -36,8 +36,7 @@ that is on disk today.
 `sandbox/`, `staging/`, `data-governance/`, `production/` and `identity/` each carry the same
 `main.tf`, `variables.tf`, `outputs.tf`, `providers.tf`, `versions.tf` and `.terraform.lock.hcl` — **the state
 bucket and the KMS key that encrypts it, and nothing else**. **All five have applied and hold their own
-state** — `production/` with a second key besides. **No `staging/`**: the account is unvended (step 3.2), and a
-folder for an account that does not exist is a folder that fails at `init` with a message about S3.
+state** — `production/` with a second key besides.
 
 **Two files are allowed to differ, and both are files of their own so the rule can be blunt:** `backend.tf`,
 which is commented out until a slice has migrated, and `production/bootstrap/pki-key.tf`, D36's second state
@@ -83,8 +82,8 @@ authorization since 2026-08-22). `docs/plan/conventions.md` §6 anticipated exac
 **Stage 3 put a network on disk in the three accounts that have one — `sandbox/`, `staging/` (then
 named `development/`) and `production/`, split three ways (2026-08-16, applied and measured).** `foundation/` is `[P]`: the VPC, its
 six subnets across three AZs, the gateway endpoints and the private hosted zones, plus the peerings and
-zone associations pass 2 adds on a second apply of the same slice. `egress/` is `[E]` — the NAT gateway
-and the interface endpoints, which are this tree's entire hourly bill. `probes/` is `[E]` as well and is
+zone associations pass 2 adds on a second apply of the same slice. `egress/` is `[E]` — the interface endpoints (and, until 6c step 5.1 removed the code, a NAT gateway),
+which are this tree's entire hourly bill. `probes/` is `[E]` as well and is
 an **instrument rather than infrastructure**: the hosts the perimeter, both peerings and the flow logs
 were measured from, kept on disk because a probe that has to be rewritten is a probe nobody re-runs.
 **`data-governance/` has no `foundation/` and never will** (D22 — a registry needs no VPC), which is why
@@ -141,15 +140,17 @@ act for real and `make status` reports a burn — the end-of-session reading is 
 slice created without a row fails the sixth check, because `make down` skips what it has never heard of
 in silence — and for an ephemeral slice that is a bill nobody is told about. `make slices` prints the table.
 
-**Since Stage 4 pass 1 there is a `[D]` row too — [`sandbox/vpn/`](sandbox/vpn/README.md) — and `[D]` is
-not a slower `[E]`.** `make down` **stops** that host and destroys nothing; `make up` starts it; creating
-or changing it is always a deliberate `terraform apply`, because an SSM-resolved AMI re-plans as a
-*replacement* and a routine `make up` is no place to rebuild the only way into the network. All three are
-one refusal in `layers.py` (the fifth), and the rank decides which side of the `[E]` loop the stop/start
-lands on: `vpn` at 40 sits below `egress` at 50, so **the tunnel is the first thing up and the last thing
-down** — the order that becomes load-bearing once Stage 4 step 8.3 makes every AWS API call exit through
-its Elastic IP. `make status` reads a `[D]` row's **power state from EC2**, not its state file, or a
-stopped host would report a burn forever.
+**Since Stage 4 pass 1 there are `[D]` rows too, and `[D]` is not a slower `[E]`.** Today they are the
+two hub hosts in `VPC-Networking` — [`production/vpn/`](production/vpn/) (rank 40) and
+[`production/proxy/`](production/proxy/) (rank 41), 6c pass 4 — plus `sandbox/vpn/`, the tree's first `[D]`
+slice (Stage 4), whose host was destroyed at 6c step 4.13 and whose folder stays on disk until step 6.5
+unfreezes `sandbox/foundation/`. **`make hub-up` / `make hub-down` start and stop the two hub hosts
+together** and destroy nothing; a spoke's `make up ENV=…` **refuses** while either is stopped, naming the
+stopped host, because under D38 a stopped proxy is the estate's whole internet gone and a stopped tunnel is
+every persona's control plane gone. Creating or changing either host is always a deliberate `terraform
+apply` — an SSM-resolved AMI re-plans as a *replacement*, and a routine bring-up is no place to rebuild the
+only way in. `make status` reads a `[D]` row's **power state from EC2**, not its state file, or a stopped
+host would report a burn forever.
 
 **That `[D]` host had a second job from Stage 6 step 5.0 until 6c step 5.8, and it is worth recording
 that it ENDED, because the pattern it illustrated is the one that will recur.** `wireguard-v0.4.0` gave
@@ -176,17 +177,21 @@ because a stopped route target is a blackhole) are gone with the route itself. T
 looks exactly like a slow boot — and **starts the proxy host**, because under design B there is no route to
 fail over to. Both are code in the helper rather than sentences here (Lesson 5).
 
-**That `[D]` slice is also this tree's clearest instance of the layer deciding the folder, not the topic.** The
-VPN's three durable things — the Elastic IP, the host security group and the **host private key's Secrets
-Manager container** — are `[P]` and live in [`sandbox/foundation/vpn-anchors.tf`](sandbox/foundation/),
-one slice away from the `[D]` instance that consumes them. Each is named from outside Stage 4 (the
-permission sets and Stage 5's bucket policy pin the address, Stage 7's GitLab rule names the group,
-and every instance the `[D]` slice ever boots reads the key), and **a reference is only worth writing if
-what it names outlives the thing using it**: after step 8.3 an address that changed would deny every
+**Those `[D]` slices are also this tree's clearest instance of the layer deciding the folder, not the
+topic.** The hub's durable things — **two** Elastic IPs (the WireGuard one **transferred** from Sandbox at
+6c step 4.3, so no client `.conf` moved; a new one for the proxy), two security groups, the **host private
+key's Secrets Manager container** and the proxy's allow-list parameter — are `[P]` and live in
+[`production/networking/hub-anchors.tf`](production/networking/), one slice away from the two `[D]`
+instances that consume them. Each is named from outside the slice (the permission sets and Stage 5's
+bucket policy pin **the proxy's** address since 6c step 4.12 — every VPN-only condition is keyed on the
+address a client's calls *present*, and under D38 that is the proxy's, not the tunnel's; Stage 7's GitLab
+rule names the group; every instance the `[D]` slices ever boot reads the key), and **a reference is only
+worth writing if what it names outlives the thing using it**: an address that changed would deny every
 persona every API call until each client config and the permission-set fragment were edited together.
 The **value** in that secret is never Terraform's — it is put there by the user at enrollment and read by
 the host at first boot ([`docs/plan/runbooks/vpn.md`](../docs/plan/runbooks/vpn.md) Part K owns every
-event that touches it).
+event that touches it). The Sandbox copies of the first three stand in `sandbox/foundation/vpn-anchors.tf`
+until 6.5 removes them, which is why that slice plans `1 to add` and **must not be applied** until then.
 
 Three of them exist because nothing else can enforce their rule: **no `.tf` in this tree may declare
 `aws_s3_account_public_access_block`** (the SCP that denies the API carves out exactly the principal every
@@ -276,8 +281,8 @@ list whose rows are **measurements, not intentions**.
    slices is a *reason*, not a size: `identity/` is split into `sso/` and `org-policies/` because the two
    reach their objects through **different delegations**; `production/pki/` is split from `foundation/`
    because foundation is opened to change a CIDR and that edit would otherwise decrypt the root CA; and
-   the VPN's anchors sit in `sandbox/foundation/` rather than in `sandbox/vpn/` because they are `[P]` and
-   the host is `[D]` — **question 3 answered differently for two halves of one topic is a slice boundary**,
+   the hub's anchors sit in `production/networking/` rather than in `production/vpn/` or `production/proxy/`
+   because they are `[P]` and the hosts are `[D]` — **question 3 answered differently for two halves of one topic is a slice boundary**,
    which is the general form of all three.
 3. **Which layer?** → `[P]` persistent, `[D]` dormant (stopped, not destroyed), `[E]` ephemeral (destroyed
    between sessions). This is principle 7 — *pay nothing while idle* (D11) — and it is a property of the

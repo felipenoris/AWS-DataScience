@@ -2,8 +2,8 @@
 
 | | |
 |---|---|
-| **Status** | not started — **re-scoped and re-reviewed 2026-09-05** against [6b](stage-06b-development-becomes-staging.md)/[6c](stage-06c-networking-hub.md)/[D38](../decisions/D38-single-egress-hub.md), rewritten in the action-checklist format, and corrected against the vendor documentation (the list is "What the documentation changed in this plan"). The structural changes: everything lands in **`VPC-SharedServices`** (Production's 10.30.0.0/16 under its new name); the names move to the **`awsds.internal` family**; **there is no NAT anywhere**, so every outbound call is an explicit-proxy call; the **buildbox is retired into the build runner**; one GitLab group `awsds/` is the shared namespace; and INT-09's clone is exercised from **Sandbox**, the only Interactive account left. **Pass 0 is already applied** — step 5.a ran inside 6a on 2026-08-21 (`14 added`) |
-| **Prerequisites** | **[6c](stage-06c-networking-hub.md) passes 1-4**: `VPC-SharedServices` exists under its new name, `awsds.internal` resolves in it, the Sandbox↔SharedServices peering carries routes both ways, and the proxy answers on `proxy.awsds.internal:3128`. **[6d](stage-06d-unified-studio-remainder.md)** for one deliverable only — the INT-09 clone needs a live Sandbox project. **`production/registry/` exists**: step 5.a was applied at 6a, so this stage starts with the two ECR repositories and CodeArtifact already there and **`production/pki/` not yet written** |
+| **Status** | not started — **re-reviewed 2026-09-07 against 6c as built**, five corrections written into their steps: the SSM trio is already in `production/egress/` (1.7), the proxy has no TLS listener so no leaf is issued for it (2.4), the buildbox is `production/buildbox/` (6, 6.5), 6c 5.9's **measured** pull-through fallback ranks first (5.2), and the runner's `NO_PROXY` is generated (6.2). **Re-scoped and re-reviewed 2026-09-05** against [6b](stage-06b-development-becomes-staging.md)/[6c](stage-06c-networking-hub.md)/[D38](../decisions/D38-single-egress-hub.md), rewritten in the action-checklist format, and corrected against the vendor documentation (the list is "What the documentation changed in this plan"). The structural changes: everything lands in **`VPC-SharedServices`** (Production's 10.30.0.0/16 under its new name); the names move to the **`awsds.internal` family**; **there is no NAT anywhere**, so every outbound call is an explicit-proxy call; the **buildbox is retired into the build runner**; one GitLab group `awsds/` is the shared namespace; and INT-09's clone is exercised from **Sandbox**, the only Interactive account left. **Pass 0 is already applied** — step 5.a ran inside 6a on 2026-08-21 (`14 added`) |
+| **Prerequisites** | **[6c](stage-06c-networking-hub.md) passes 1-4 — met 2026-09-06**: `VPC-SharedServices` exists under its new name, `awsds.internal` resolves in it, the Sandbox↔SharedServices peering carries routes both ways, and the proxy answers on `proxy.awsds.internal:3128`. **[6d](stage-06d-unified-studio-remainder.md)** for one deliverable only — the INT-09 clone needs a live Sandbox project. **`production/registry/` exists**: step 5.a was applied at 6a, so this stage starts with the two ECR repositories and CodeArtifact already there and **`production/pki/` not yet written** |
 | **Consumes** | [D8](../decisions/D08-gitlab-hosting.md), [D11](../decisions/D11-lab-lifecycle.md), [D12](../decisions/D12-budget-ceiling.md), [D14](../decisions/D14-supply-chain-account.md), [D15](../decisions/D15-tls-internal.md), [D20](../decisions/D20-staging-account.md), [D35](../decisions/D35-sandbox-cardinality.md), [D36](../decisions/D36-internal-pki.md), **[D38](../decisions/D38-single-egress-hub.md)** |
 | **Proves** | [INT-09](../integrations.md) (the `git clone` from a **Sandbox** project over the SharedServices peering), [INT-13](../integrations.md) (CodeConnections against a private GitLab — expected to fail; the manual `git remote add` is the accepted path), [INT-19](../integrations.md) (the CA root on **four** client surfaces — the fourth is GitLab itself), **[INT-21](../integrations.md)** first exercised by something that is not a Studio app. **Supplies** [INT-02](../integrations.md)'s provider half — already applied at 6a. INT-08 is **not** here: the deploy roles are Stage 8's |
 
@@ -22,12 +22,12 @@ Everything below is in the **Production** account, **`VPC-SharedServices`** (10.
 
 | Slice | What | Layer |
 |---|---|---|
-| `production/pki/` (new) | the CA root, its own KMS key, the publication of the root, and the **three** leaves | `[P]` |
+| `production/pki/` (new) | the CA root, its own KMS key, the publication of the root, and the **two** leaves (a third, the proxy's, only if it ever terminates TLS) | `[P]` |
 | `production/foundation/` (amended) | GitLab's `[P]` anchors: the object-storage bucket, the backup bucket, the `gitlab-secrets.json` container | `[P]` |
 | `production/registry/` (amended — **5.b only**) | the pull-through cache and the per-application repositories. **5.a is applied** | `[P]` |
 | `production/tooling/` (new) | the GitLab instance, EBS, the DLM snapshot policy, the instance role, the rendered `gitlab.rb`, the two DNS records | `[D]` — stopped, never destroyed |
 | `production/runners/` (new) | the build runner and its role — **and the retired buildbox's job** | `[E]` |
-| `production/egress/` (amended) | the endpoints this VPC needs for a build: `ecr.api`, `ecr.dkr`, `codeartifact.api`, `codeartifact.repositories`, `sts`, `logs`, `ssm`/`ssmmessages`/`ec2messages`, `secretsmanager` | `[E]` |
+| `production/egress/` (amended) | **13 endpoints today** (6c 5.5: the core 8 — `sts`, `logs`, `kms`, `ecr.api`, `ecr.dkr`, `athena`, `glue`, `lakeformation` — plus `sagemaker.api`, `sagemaker.runtime` and the SSM trio); this stage adds `codeartifact.api`, `codeartifact.repositories` and `secretsmanager` → **16** | `[E]` |
 | Identity Center console, by hand | the custom SAML 2.0 application | — |
 | GitLab itself, by hand | the `awsds/` group, the four persona groups, the repositories, the protected release tags | — |
 | `scripts/` | `layers.py`: `tooling` `[D]`, `runners` `[E]` | — |
@@ -43,7 +43,7 @@ flowchart LR
         RUN["Build runner [E] · amd64<br/>instance profile · BuildKit rootless"]
         REG["registry/ [P]: ECR + cache · CodeArtifact"]
         S3["foundation/ [P]: objects + backup + secret"]
-        PKI["pki/ [P]: CA root · 3 leaves"]
+        PKI["pki/ [P]: CA root · 2 leaves"]
     end
     SBX["Sandbox · Studio project"] -->|"clone/push over peering · INT-09"| GL
     GL --- S3
@@ -64,7 +64,7 @@ Read before executing. Each row is a correction to what the pre-2026-09-05 draft
 | The CA root goes on three client surfaces | There is a **fourth**, and it is GitLab: roots are dropped in **`/etc/gitlab/trusted-certs/`** and picked up by `reconfigure`. The leaf pair is **hostname-named** — `/etc/gitlab/ssl/gitlab.awsds.internal.{crt,key}`, 644/600 | 1.3, 2.5 |
 | GitLab inherits the proxy from the instance | Omnibus takes it **per component**: `gitlab_rails['env']`, `gitaly['env']`, `gitlab_workhorse['env']`, `gitlab_pages['env']`. `no_proxy` accepts wildcards and **must carry no port** — a port there breaks DNS resolution for repository mirroring | 1.3, 7.1 |
 | The runner inherits it too | GitLab Runner needs its own **systemd drop-in** (`/etc/systemd/system/gitlab-runner.service.d/http-proxy.conf`), the docker daemon needs a second one, and the build container is handed the values through `config.toml`'s `environment` — **in both cases**, `HTTP_PROXY` and `http_proxy`, because tools disagree. `NO_PROXY` wildcards work only as **suffixes**: no prefixes, **no CIDR** | 6.2, and 6c 5.6 |
-| The pull-through cache is primed "while the NAT is up" | ECR documents that the **first** pull *"may require a route to the internet"* and its own remedy is a public subnet with an internet gateway — **a route, which design B removes; a proxy is not one.** Unauthenticated upstream pulls are *"initiated by AWS IP addresses"*, so the requirement is conditional, not universal: it is **measured**, and a failure makes this the **first named candidate** for D38's NAT contingency | 5.2, decision 3, verification vii |
+| The pull-through cache is primed "while the NAT is up" | ECR documents that the **first** pull *"may require a route to the internet"* and its own remedy is a public subnet with an internet gateway — **a route, which design B removes; a proxy is not one.** Unauthenticated upstream pulls are *"initiated by AWS IP addresses"*, so the requirement is conditional, not universal: it is **measured**, and a failure makes this the **first named candidate** for D38's NAT contingency — behind the fallback 6c 5.9 **measured** on 2026-09-06: pull the public image through the proxy and push it into ECR (re-read 2026-09-07, the page still says exactly this) | 5.2, decision 3, verification vii |
 | "No repository creation template forces immutability" | **Repository creation templates exist** and can set tag immutability, encryption, policies and lifecycle on repositories ECR creates for the cache. The rule is therefore *do not write a template that turns immutability on for the cache prefix* — and the caution that *"tag immutability … will prevent Amazon ECR from updating images using the same tag"* stands | 5.2 |
 | CodeArtifact needs client egress for `public:pypi` | The **service** fetches from the external connection; a client with no internet still resolves a package that has never been cached. **One external connection per repository**, which is why `pypi` and `crates` are two repositories rather than one | 5.3 |
 | Pages needs its own address | For a **wildcard** Pages domain behind the Omnibus nginx proxy, **no secondary IP is required** — a second address is only for custom domains. Pages **access control is a Free-tier feature** | 4.1 |
@@ -126,9 +126,9 @@ in `[P]` slices, which is Stage 4's Elastic IP pattern applied to GitLab.
   `delete_on_termination = false` on the data volume; one **Data Lifecycle Manager** daily snapshot policy
   (DLM is free, snapshot storage is billed). Instance `Name` tag **`awsds-prod-gitlab`** — a contract with
   `./aws/supplychain.py`. No port 22, SSM Session Manager only. The security group admits HTTPS from the
-  **WireGuard host's security group** (a cross-account reference over the peering) and from **Sandbox's
-  private-subnet CIDR** (INT-09) — never `10.90.0.0/24`, which under 6c reaches this VPC as the WireGuard
-  host's address, not as itself.
+  **WireGuard host's security group** in `VPC-Networking` (a same-account, cross-VPC reference over the
+  peering) and from **Sandbox's private-subnet CIDR** (INT-09) — never `10.90.0.0/24`: 6c 4.7 masquerades
+  everything but proxy-bound traffic, so a tunnel client reaches this VPC as the WireGuard host's address.
 - **1.3 — [Claude] Render `gitlab.rb` from a Terraform template** delivered by user data — configuration is
   code, not console. Six blocks, and the first two are the ones the documentation changed:
   1. `external_url "https://gitlab.awsds.internal"` **with `letsencrypt['enable'] = false`** — Let's Encrypt
@@ -162,8 +162,9 @@ in `[P]` slices, which is Stage 4's Elastic IP pattern applied to GitLab.
   `make check`.
 - **1.7 — [Claude⚡] Apply `foundation/` (amended), then `egress/` (amended), then `tooling/`** as
   `awsds-infra-prod`, `fmt`/`validate`/`plan` clean first. `egress/` comes before `tooling/`: without
-  `ssm`/`ssmmessages`/`ec2messages` in this VPC there is no shell on the host, and Session Manager does not
-  work through an HTTPS proxy listener (6c step 5.5).
+  its SSM endpoints there is no shell on the host, and Session Manager does not work through an HTTPS
+  proxy listener. **The trio is already there** (6c 5.5); this amendment adds CodeArtifact's two and
+  `secretsmanager`.
 - **1.8 — [user] Take first sign-in**: read `/etc/gitlab/initial_root_password` through an SSM session (it
   self-deletes after 24 h), set the root password, and record in the log that **the local `root` account is
   kept** — it is GitLab's own break-glass when SAML breaks, and step 3 creates no other local account.
@@ -187,9 +188,10 @@ itself, which needs the root in `/etc/gitlab/trusted-certs/` to trust its own Pa
   Production bucket **and** the SSM parameter `/datascience/prod/pki/ca-root-pem` (the `/datascience/` path
   because Parameter Store reserves `aws*`). 2.6's image rebuild, step 6's runner user data and 1.3's
   `trusted-certs` drop all read these; nothing pastes a PEM.
-- **2.4 — [Claude] Issue three leaves** (same pass, amending `pki/`): `gitlab.awsds.internal`,
-  `*.awsds-pages.internal` and — new under D38 — **`proxy.awsds.internal`**, so a client that is told to
-  trust the proxy's own listener has something to validate. **≤ 398 days** each (D15 note 5). `tooling/`
+- **2.4 — [Claude] Issue two leaves** (same pass, amending `pki/`): `gitlab.awsds.internal` and
+  `*.awsds-pages.internal`. **`proxy.awsds.internal` gets one only if the proxy ever gains a TLS
+  listener** — Squid listens on plain `3128` today (6c 4.8), so nothing would validate it. **≤ 398 days**
+  each (D15 note 5). `tooling/`
   reads the first two through `terraform_remote_state`; the re-issue date goes into the log, and
   `./aws/supplychain.py` `SC-8` watches the expiry.
 - **2.5 — [user] Trust the root on all four surfaces**: the laptop (macOS keychain, plus `git`, `curl` and
@@ -296,10 +298,12 @@ a second folder. Everything is `[P]` and free at rest except stored bytes.
     public subnet with an internet gateway and a route from the private tier — exactly what D38 removed. The
     upstreams above need no authentication and their pulls are *"initiated by AWS IP addresses"*, so the
     requirement may not bite; **the reading is the deliverable** (verification vii). If it does bite, the
-    fallbacks in order are: (a) run the first pull from `VPC-Networking`'s public tier, which has the route,
-    then let SharedServices pull the cached copy; (b) a NAT gateway in `VPC-SharedServices` — **the first
-    named candidate for D38's contingency**, with a cost row and a removal trigger; (c) drop the cache and
-    mirror the two or three public images by hand into `base`.
+    fallbacks in order are: (a) **pull the public image through the proxy and push it into ECR** — measured
+    end to end at 6c 5.8 (`public.ecr.aws` with its CloudFront redirect on the build plane; the layers took
+    the free S3 gateway path), no host in the hub and no route; (b) run the first pull from
+    `VPC-Networking`'s public tier, which has the route, then let SharedServices pull the cached copy; (c) a
+    NAT gateway in `VPC-SharedServices` — **the first named candidate for D38's contingency**, with a cost
+    row and a removal trigger. Mirroring by hand into `base` is (a) by another name.
   - **Cached repositories are created by ECR**, so a consumer grant rides on the **registry-level**
     permission policy, never on per-repository ones.
 - **5.3 — [Claude] Record why CodeArtifact needs no such treatment**: the **service** fetches from the
@@ -322,7 +326,8 @@ can fetch, so OIDC federation is structurally unavailable and the instance profi
 credential (principle 2); the runner is `[E]` because it holds nothing worth keeping. **Explanation:** this
 host is also the **buildbox's successor** — the same `amd64` shape, in a VPC that has a proxy instead of a
 route through the VPN host, pushing with its instance profile rather than a hand-carried ECR token. The
-`sandbox/buildbox/` slice and its runbook die at 6c step 5.8; this step is where its job lands.
+buildbox moved to `production/buildbox/` at 6c 5.8, with two new refusals of its own; this step is where its
+job lands and that slice retires.
 
 - **6.1 — [Claude] Write `production/runners/`**: instance `Name` tag **`awsds-prod-runner`** (the script's
   contract), **`amd64`** — the images are `amd64` and the laptop is not, which was the buildbox's whole
@@ -341,7 +346,8 @@ route through the VPN host, pushing with its instance profile rather than a hand
      (`HTTP_PROXY` and `http_proxy`), since tools disagree on which they read.
   4. **The build itself** — BuildKit `--build-arg http_proxy=…` for `FROM` and package steps.
 
-  `NO_PROXY` is 6c step 5.6's per-VPC list and is **suffixes and literals only**: GitLab documents that
+  `NO_PROXY` is 6c step 5.6's per-VPC list — **generated by `vpc-egress`'s output, never written by
+  hand; the buildbox's four callers are the template** — and is **suffixes and literals only**: GitLab documents that
   wildcards work as suffixes, never prefixes, and that **CIDR notation does not work** — so `10.0.0.0/8`
   in that variable is silently ignored, and the intranet names are listed as suffixes instead
   (`.awsds.internal`, `.awsds-pages.internal`, `169.254.169.254`, `169.254.170.2`, `localhost`,
@@ -353,10 +359,10 @@ route through the VPN host, pushing with its instance profile rather than a hand
 - **6.4 — [Claude⚡] Apply through `make up ENV=prod`**, and **[user]** run the first pipeline: a
   `.gitlab-ci.yml` on `app-etl` that builds and pushes an image. Then run **2.6** here — the image rebuild
   now has a host that can do it.
-- **6.5 — [Claude] Delete the buildbox's leftovers in the same commit**: `scripts/buildbox.py`'s
-  coexistence refusal, the `buildbox` rank if 6c did not take it, and
+- **6.5 — [Claude⚡] Retire the buildbox in the same sitting**: destroy `production/buildbox/` if it is up
+  (`[E]`), then delete the slice, its `layers.py` row (rank 55), `scripts/buildbox.py` and
   [`docs/plan/runbooks/buildbox.md`](../runbooks/buildbox.md) — replaced by a §R "the build runner" section
-  pointing at this step. A runbook for a host that no longer exists is the stale path that still succeeds
+  pointing at this step; `conventions.md` §6 and `terraform-live/README.md` lose their rows. A runbook for a host that no longer exists is the stale path that still succeeds
   (Lesson 35).
 
 ### 7. Settle mirroring, and read INT-13
@@ -482,7 +488,7 @@ decision-maker.
    lives, and this decision must not be closed in a way that contradicts it.
 3. **The pull-through cache, after 5.2's reading** — recommended: keep the credential-free three if the
    first pull succeeds through the proxy or from the hub's public tier; if it needs a route, prefer fallback
-   (a) or (c) over standing up this estate's first NAT gateway.
+   (a) — measured at 6c 5.8 — or (b) over standing up this estate's first NAT gateway.
 4. **The mirroring policy** (7.1) — recommended: no standing mirror.
 5. **Runner shape** (6.1) — recommended: **one `[E]` `amd64` instance, docker executor**, rebuilt per
    session. The docker-autoscaler/fleeting path is adopted when a measured queue wait justifies it.

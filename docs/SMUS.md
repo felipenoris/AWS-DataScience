@@ -675,7 +675,8 @@ reached *from*, not where it runs — open question 12, Stage 6 step 1.6).
 - **Under the admin guide's own premise — no public egress from the VPC, its "network isolation",
   which is design B and NOT a property of `VpcOnly`** (the scope corrected 2026-08-24; under design A
   the NAT + allow-list serves, measured: six of the fifteen names have never had an endpoint here and
-  the create path closed end to end) — every AWS service an app reaches needs a **VPC interface
+  the create path closed end to end; **design A is gone since 6c step 5.1, and 5.2 completed the required
+  set — 18 endpoints in `sandbox/egress/`, each checked against the Region's own catalog**) — every AWS service an app reaches needs a **VPC interface
   endpoint** in the account. The guide's required list is `athena`, `datazone` + `datazone-fips`,
   `ec2`, `ec2messages`, `q`, `s3`, `sagemaker.api`, `sagemaker.runtime`, `glue`, `kms`,
   `secretsmanager`, `sts`, `ssm`, `ssmmessages` (re-read 2026-08-19; `REFERENCES.md` — Stage 6 step

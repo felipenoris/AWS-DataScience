@@ -62,18 +62,11 @@ AWS Organization (Management account - console only)                        [P]
 │   │       ├── derived zone = the SMUS project path (D19 rev. 2026-08-26): [P]
 │   │       │     awsds-sandbox-smus-projects/<domain>/<project>/<scope>/,
 │   │       │     project CMK (D31's carrier); data CMK = the sandbox lake's
-│   │       ├── WireGuard EC2 <- the only human entry point (see below)     [D]
-│   │       └── NAT Gateway + interface VPC endpoints                       [E]
+│   │       └── interface VPC endpoints - NO NAT, no default route (D38):
+│   │             the internet is Production's proxy, over the peering    [E]
 │   │
-│   └── Development account  <- DEVELOPMENT: the unit of work is a pipeline
-│       │                       (repository with tests, workflows)          D21
-│       ├── VPC (same module, own CIDR, peered to Production for GitLab)    [P]
-│       ├── blueprint target (D26): the engineering project's
-│       │     environments are provisioned here by the domain in
-│       │     Data Governance. Slice is [P]; running apps are            [P/E]
-│       ├── derived zone = the SMUS project path, idem (data CMK held      [P]
-│       │     empty - D19 rev. 2026-08-26)
-│       └── NAT + interface VPC endpoints                                   [E]
+│   │   (a Development account stood here until 2026-09-06 - Stage 6b
+│   │    converted it into Staging below; D21 superseded)
 │
 ├── OU Data                  <- one SCP set: no USER compute (two named
 │   │                           exceptions); data cannot be deleted, only
@@ -86,26 +79,32 @@ AWS Organization (Management account - console only)                        [P]
 │       │     blueprints (`Tooling` + the enabled set - docs/SMUS.md), account
 │       │     associations, SageMaker Catalog            <- D26            [P]
 │       │     A REGISTRY, NOT A RUNTIME: blueprints provision compute
-│       │     into Sandbox and Development, never here
+│       │     into the Sandbox accounts, never here
 │       ├── Glue Crawlers (raw + drop-box) under the maintenance role,
 │       │     event-driven; Iceberg optimizers           <- D27            [P] cfg
 │       ├── ingestion drop-box prefix (PutObject-only, dated, D18)          [P]
-│       └── LF cross-account shares -> Sandbox, Development (read),
+│       └── LF cross-account shares -> Sandbox (read; Development's revoked at 6b),
 │           Production (read + governed write: the producer path)           [P]
 │
 └── OU Workloads             <- one SCP set for both: no interactive compute,
     │                           no human control plane (D20)
     ├── Staging account      <- deployment target; integration tests land here
-    │   ├── VPC (same module, own CIDR; deliberately not peered - Stage 3)  [P]
+    │   ├── VPC (same module, own CIDR; peered to VPC-Networking since 6c)  [P]
     │   ├── S3 + Glue Catalog (Iceberg) - sampled or synthetic data only,
     │   │     local to this account, never LF-shared production data        [P]
     │   ├── SageMaker job execution roles (no domain, no Model Registry)    [P]
-    │   ├── NAT + interface VPC endpoints (only during a promotion run)     [E]
+    │   ├── interface VPC endpoints, no NAT (only during a promotion run)  [E]
     │   └── app slices, deployed by the pipeline and torn down after tests  [E]
     │
     └── Production account   <- no human runs code here; no Studio domain   D17
-        ├── VPC (mirrors sandbox topology; peering accepter for Sandbox
-        │     and Development)                                              [P]
+        │                       AND, since 6c (D38), the network platform
+        ├── VPC-SharedServices (10.30/16): GitLab, runners, the build host;
+        │     the awsds.internal apex zone; peering accepter                [P]
+        ├── VPC-Networking (10.31/16): the estate's ONLY internet gateway,
+        │     the peering accepter for every spoke, both hub anchors        [P]
+        │     ├── WireGuard EC2 <- the only human entry point (see below)   [D]
+        │     └── Squid EC2     <- the single egress, an EXPLICIT proxy     [D]
+        ├── VPC-Workloads (10.32/16): the production runtime, no IGW route  [P]
         ├── ECR (dev-env images, application images)          <- D14        [P]
         ├── CodeArtifact (package proxy: PyPI, Cargo, ...)    <- D14        [P]
         ├── SageMaker Model Registry + job execution roles    <- D17        [P]
@@ -114,9 +113,8 @@ AWS Organization (Management account - console only)                        [P]
         ├── GitLab (EC2, private) + GitLab Pages              <- D14        [D]
         ├── internal ALB for GitLab/Pages (rebuilt per session)             [E]
         ├── GitLab Runners                                    <- D14        [E]
-        ├── NAT Gateway + interface VPC endpoints                           [E]
-        ├── orchestration, built twice and compared (D7):                   [E]
-        │     (A) MWAA  (B) EventBridge + Step Functions + Lambda/Fargate
+        ├── interface VPC endpoints per VPC - NO NAT anywhere (D38)         [E]
+        ├── orchestration: MWAA Serverless only (D7 amended 2026-09-05)     [E]
         └── (Stage 13) public web tier -> private backend                   [E]
 ```
 
@@ -174,9 +172,9 @@ either denies everything or protects nothing.
 further, and the resulting sentence is the one to remember: *humans run code in the Interactive OU and
 nowhere else; they read the deployment targets' data planes; nobody changes a Workloads-OU control plane
 by hand, and the lake is written only through governed engines.* Concretely: interactive compute exists in
-Sandbox and Development and nowhere else — since D26 one unified domain, registered in Data Governance,
-whose project blueprints provision compute into the two Interactive accounts and into no others (D17 as
-revised by D21 and re-read by D26). The domain being elsewhere changes nothing about where code runs: it
+Sandbox and nowhere else (Development's half left at Stage 6b, 2026-09-06) — since D26 one unified
+domain, registered in Data Governance, whose project blueprints provision compute into the Sandbox accounts
+and into no others (D17 as revised by D21, re-read by D26, and narrowed by 6b). The domain being elsewhere changes nothing about where code runs: it
 is a registry, and the project profile names the target account. The data
 scientist holds read-only
 permission sets on Staging and Production for logs, catalog metadata, job status and Athena (D18); the
@@ -489,17 +487,18 @@ and what an intentional exfiltration attempt achieves. The plan does not pre-com
 Moved here from `CLAUDE.md` on 2026-08-08: it is a mental model, not a status. Every old habit
 contradicts some part of it.
 
-- **Four environment roles, one axis of lifecycle:** Sandbox (experimentation — the unit of work is a
-  notebook), Development (the unit of work is a pipeline), Staging and Production (deployment targets,
-  written only by the pipeline). Promotion runs **Development → Staging → Production**; Sandbox feeds
-  Development through **git graduation**, never through a pipeline (D21).
-- **Four roles, but not one account each: `Sandbox` is one account per business unit (D35).** The chain is
-  **N Sandboxes → one Development → one Staging → one Production**, so the cardinality boundary is the same
-  line as the graduation boundary above — experimentation multiplies, the engineering chain after it does
-  not, and the promotion chain is therefore untouched by N. N is 1 today. Per-unit isolation ends at that
-  line; past it, isolation is Lake Formation's job and not an account boundary's.
+- **Three environment roles, one axis of lifecycle** (four until 2026-09-06 — Stage 6b converted
+  `Development` into `Staging`, D21 superseded): Sandbox (experimentation — the unit of work is a notebook,
+  and the only account where a human runs code), Staging and Production (deployment targets, written only
+  by the pipeline). Promotion runs **Staging → Production**; Sandbox feeds the pipeline through **git
+  graduation**, never through a pipeline of its own.
+- **Three roles, but not one account each: `Sandbox` is one account per business unit (D35).** The chain is
+  **N Sandboxes → one Staging → one Production**, so the cardinality boundary is the same line as the
+  graduation boundary above — experimentation multiplies, the engineering chain after it does not, and the
+  promotion chain is therefore untouched by N. N is 1 today. Per-unit isolation ends at that line; past it,
+  isolation is Lake Formation's job and not an account boundary's.
 - **Three groups, not one sequence** (`docs/ORGANIZATION.md` carries the per-account classification):
-  the **lifecycle** axis (Sandbox before the chain, then Development → Staging → Production), the
+  the **lifecycle** axis (Sandbox → Staging → Production), the
   **ownership** axis (Data Governance alone), and the **platform** accounts on neither — the organization's
   own machinery, serving every account and belonging to no environment. *An account off the lifecycle axis
   is not "a production account"* — that
@@ -577,7 +576,7 @@ contradicts some part of it.
   the API/console half only; the closing choice — fallback (i) on the domain execution role versus
   recorded acceptance — is the user's, deferred, presumed nowhere.
 - **D24 (withdrawn 2026-08-17):** the NFS requirement left `objectives.md`, and the shared filesystem
-  with it; the exchange between the two Interactive accounts is S3 and git. **D25:** the ingestion drop-box is
+  with it; the exchange between Sandbox and the pipeline is S3 and git. **D25:** the ingestion drop-box is
   picked up by Production's job role on the producer path — which also closed a hole where the `Data` OU
   SCP never denied Glue jobs.
 

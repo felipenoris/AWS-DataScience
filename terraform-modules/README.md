@@ -87,9 +87,9 @@ variables adds a tag to maintain and answers no question.
 
 **Here:** anything more than one slice instantiates — `vpc`, `wireguard`, `iam-role`, `ecr-repo`,
 `s3-bucket`, `kms-key`, `consumer-data`, `step-function`, `mwaa-serverless-workflow`. **`consumer-data`
-is the first that is a whole slice's design rather than one resource shape**: `sandbox/data/` and
-`development/data/` differ only in which account they name, and D35 makes that three callers at the second
-business unit.
+is the first that is a whole slice's design rather than one resource shape**: `sandbox/data/` and,
+until Stage 6b destroyed it, `development/data/` differed only in which account they named; D35 makes it
+two callers again at the second business unit.
 
 **Not here:** anything applied against a specific account. That is a *slice*, and it lives in
 [`terraform-live/`](../terraform-live/README.md). The distinction is the same one that file opens with: a

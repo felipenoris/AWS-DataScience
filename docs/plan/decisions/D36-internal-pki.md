@@ -10,8 +10,8 @@ registrable parent.** The estate's other private names moved under one apex, `aw
 child zone per account; **Pages did not**, and the reason is this decision's own: a
 `pages.awsds.internal` child would put user-published content under the same registrable parent as the
 platform's names, and a cookie scoped to that parent would be readable by it. The zone is
-**`awsds-pages.internal`** — the project prefix without the shared parent. `pages.internal` stands until
-6c step 2.6 retires it; zones cannot be renamed, so the two coexist by construction.
+**`awsds-pages.internal`** — the project prefix without the shared parent. `pages.internal` stood until
+6c step 2.6 **destroyed it (2026-09-07)**; zones cannot be renamed, so the two coexisted for a day, by construction.
 
 **AMENDED 2026-09-05:** the naming section changes with [D15](D15-tls-internal.md) — the leaves are issued for `gitlab.awsds.internal`, `*.awsds-pages.internal` and the `<env>.awsds.internal` children. Custody, the slice, the key and the detective controls are untouched.
 

@@ -53,7 +53,7 @@ that is actually public*, which is the Stage 13 web tier, and wrong as a prerequ
 ## Phase 1 — Stages 3 to 12: internal names, internal trust
 
 1. **Naming.** Every internal endpoint lives in a Route 53 **private hosted zone** per account
-   (`sandbox.internal`, `prod.internal`, …), `[P]`, associated cross-account with the VPCs that must resolve
+   (`sandbox.internal`, `prod.internal`, … — **the `awsds.internal` family since 6c**, per the amendment above; the old zones are destroyed or retiring), `[P]`, associated cross-account with the VPCs that must resolve
    it (Stage 3 step 4). No public zone, no registered domain, no split-horizon.
 2. **Trust.** One **internal root CA**, generated once and living in `production/foundation/` `[P]` — the
    only pre-Stage-13 TLS consumers (GitLab, Pages) are in Production. Leaf certificates are issued from it,

@@ -231,7 +231,9 @@ consequences, both nearly missed in the first draft:
   lists and its query-log config collide by `Name`. It takes the same `name_suffix`, in the same version
   bump that removes the NAT half.
 - **There are three NAT gateways to destroy, not two.** `production/egress/` is `egress_mode = "A"` today,
-  so `VPC-SharedServices` has one as well.
+  so `VPC-SharedServices` has one as well. **Measured 2026-09-07: none was destroyed** — every `egress/`
+  slice was `[E]` and down when 6c step 5.1 removed the code, so the count was zero all along; the
+  sentence above is a prediction kept as the record of what was believed.
 
 ### 7. What this does not decide
 

@@ -38,7 +38,7 @@ aws sso login --sso-session awsds
 ```
 
 ```bash
-aws sts get-caller-identity --profile awsds-infra-dev
+aws sts get-caller-identity --profile awsds-infra-staging
 ```
 
 The last one confirms *who you are* before anything acts. One login covers every profile:
@@ -46,7 +46,7 @@ The last one confirms *who you are* before anything acts. One login covers every
 | Account folder | Profile |
 |---|---|
 | `sandbox` | `awsds-infra-sandbox-1` |
-| `development` | `awsds-infra-dev` |
+| `staging` | `awsds-infra-staging` — the renamed `Development`'s profile since Stage 6b (`awsds-infra-dev` is gone) |
 | `data-governance` | `awsds-infra-data` |
 | `production` | `awsds-infra-prod` |
 | `identity` | `awsds-infra-identity` |

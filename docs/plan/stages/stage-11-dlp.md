@@ -59,7 +59,7 @@ principals, and log files that survive to be read. Enabling one does not dischar
 | **[user]** | console/CloudShell acts in Management and Audit (no profile there, by design), the behavioural proofs run from persona sessions and the laptop, and every log entry |
 
 Hand applies run as the **infrastructure user**: `awsds-infra-data`, `awsds-infra-sandbox-1`,
-`awsds-infra-dev` (the trail slices), `awsds-infra-identity` (the org-policies amendment). Every Macie,
+`awsds-infra-staging` (the trail slices), `awsds-infra-identity` (the org-policies amendment). Every Macie,
 analyzer and GuardDuty act is `AWS Control Tower Admin`, console or CloudShell, in **`us-west-2`** — the
 Region ceiling does not exempt any of the three (open question 16's closure).
 
@@ -295,6 +295,10 @@ control at all. A threat model that lists a control nobody implemented is worse 
   classification.
 - **3.3 — [Claude] Carry the remote-IDE residual Stage 6 step 3.2 recorded** (open question 14):
   `StartSession` is tag-scoped to the user's own spaces — a *scoping* control, not a *transfer* control —
+  **(re-read 2026-09-07 at 6d 7.1/7.2: the scoping that exists is AWS's Allow on the project role, if
+  attached; the estate's pair sits on the persona sets, which never make the call, and a persona session
+  carries no DataZone tag, so the pair would deny every space — 6d decision due 4 owns the repair, and the
+  connection method decides whether the VPN perimeter applies to this channel at all)** —
   and remote sessions authenticate with **IAM credentials even in IdC domains, persisting up to 12 h after
   portal logout**. Accepted, with the kill-switch named: the `sagemaker:RemoteAccess` condition key on
   `CreateSpace`/`UpdateSpace`.
@@ -393,7 +397,7 @@ are free) with the rule's `MatchedEvents` metric — no CloudWatch Logs ingestio
     rule excludes the maintenance role and alarms on everyone else. The inversion is deliberate: in every
     *other* account Athena is the normal way to read.
 - **5.3 — [Claude⚡] Apply the three slices** — `awsds-infra-data`, `awsds-infra-sandbox-1`,
-  `awsds-infra-dev`; `DL-5` brackets the Data Governance apply as always. **[user]** Record in the log.
+  `awsds-infra-staging`; `DL-5` brackets the Data Governance apply as always. **[user]** Record in the log.
 - **5.4 — [Claude] Write the tampering statement the trigger demands** (decision 6): `POLICIES.md` records
   "no CloudTrail statement" with the revision trigger *"the first trail this project creates in a member
   account"* — which is this step. Recommended `Sid` **`DenyCloudTrailKill`** in `awsds-org-scp-baseline`:

@@ -49,7 +49,7 @@ Blueprint for using AWS as a Data Science infrastructure provider.
   slices of Stage 2 — `sso/`, the seven permission sets and their assignments, and `org-policies/`, the ten
   organization policy documents (SCP, RCP, tag, declarative EC2) with `POLICIES.md` indexing every statement
   and its reason — Stage 3's network in the three VPC accounts (`foundation/` `[P]`; `egress/` and `probes/`
-  `[E]`, destroyed between sessions), Stage 4's `sandbox/vpn/`, the tree's first `[D]` slice, **plus Stage 5's
+  `[E]`, destroyed between sessions), Stage 4's `sandbox/vpn/`, the tree's first `[D]` slice (its host moved to `production/vpn/` at 6c, beside `production/proxy/`), **plus Stage 5's
   three `data/` slices — the governed lake in `data-governance/`, and its consumer half in `sandbox/` and
   `development/`, one module (`consumer-data`) applied twice; **the second was destroyed 2026-09-06**, so
   `sandbox/data/` is the only caller left** — and Stage 6's five:
@@ -122,8 +122,9 @@ Blueprint for using AWS as a Data Science infrastructure provider.
   `make down ENV=…` reverses it; `make status` says what is up and what it burns per hour. **No longer
   no-ops: Stage 3 exercised the machinery twice** — the three `egress/` `[E]` slices built, measured and
   torn down to USD 0.0000/h, with `foundation/` re-planning byte-identical and every `[E]` id new on the
-  second `up` — and Stage 4's `sandbox/vpn/` is the first `[D]` row, stopped by `make down` rather than
-  destroyed. The refusals stand: a `[P]` slice, a missing `ENV`, `production/pki/` (D36) and `bootstrap/`,
+  second `up` — and the `[D]` rows — since 6c the two hub hosts, `production/vpn/` and `production/proxy/` — are
+  stopped by **`make hub-down`** rather than destroyed, and a spoke's `make up` refuses while either is
+  stopped. The refusals stand: a `[P]` slice, a missing `ENV`, `production/pki/` (D36) and `bootstrap/`,
   which holds its own state.
 - `pyproject.toml`, `.python-version`, `uv.lock` — **every script in this repository but two is Python 3,
   run through uv** (2026-08-15; they began as shell). The scripts keep their paths and carry the shebang
@@ -193,7 +194,7 @@ belong here rather than there, because they are properties of the architecture r
 
 **Enrolment is a reviewable diff, and revocation is a one-line deletion.** D4 declined Identity Center
 integration and accepted exactly this price: a device enters by having its **public** half written into
-[`terraform-live/sandbox/vpn/peers.auto.tfvars`](terraform-live/sandbox/vpn/peers.auto.tfvars), the one
+[`terraform-live/production/vpn/peers.auto.tfvars`](terraform-live/production/vpn/peers.auto.tfvars), the one
 *tracked* tfvars in the repository. The private half is generated on the device and never leaves it. A
 WireGuard private key is bare base64 that no secret scanner can distinguish from a public one, so the
 file is held to **structure** by `./scripts/check-tfvars-shape.py` rather than to content.

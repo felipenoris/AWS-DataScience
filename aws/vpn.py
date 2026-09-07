@@ -189,6 +189,19 @@ HOST_PROBE_COMMANDS = (
     "echo ---DISK---",
     "lsblk",
     "df -h /",
+    # THE REFUSING SIDE'S COUNTERS (6c step 6.1, 2026-09-07; Lesson 55). A refusal the sender cannot
+    # see is indistinguishable from silence: the FORWARD chain REJECTs every tunnel packet not bound
+    # for RFC1918 with icmp-admin-prohibited, macOS ignores that ICMP mid-connect(), and the client
+    # reads a TIMEOUT. The only place the refusal is legible is the rule's packet count here - which
+    # is what 6c step 6.4 reads across a client's attempt. The nat table is 4.7's other half: the
+    # RETURN rule for the proxy's subnet is the deliberate masquerade hole that lets Squid log a
+    # per-device address, and its counter should move only for proxy-bound connections. All three
+    # are `-L` listings - reads, under the same ban list as everything above.
+    "echo ---FORWARD---",
+    "iptables -L FORWARD -v -n --line-numbers",
+    "ip6tables -L FORWARD -v -n --line-numbers",
+    "echo ---NAT---",
+    "iptables -t nat -L POSTROUTING -v -n --line-numbers",
 )
 HOST_PROBE_BANNED = ("dump", ">", "rm ", "systemctl start", "systemctl stop", "wg set")
 HOST_PROBE_POLLS = 20
@@ -934,9 +947,10 @@ part that is not, so it has to be typed:
 
     ./aws/vpn.py --on-host
 
-It runs thirteen READ commands on the host through SSM Run Command - the boot's
+It runs eighteen READ commands on the host through SSM Run Command - the boot's
 say-lines, `cloud-init status`, `wg show wg0`, the name map, the sampler timer
-and the tail of its log, then `lsblk` and `df -h /`. The commands read;
+and the tail of its log, then `lsblk` and `df -h /`, and (since 2026-09-07) the FORWARD
+chain and nat POSTROUTING counters - the refusing side's evidence (Lesson 55). The commands read;
 `ssm:SendCommand` writes, which is the whole reason for the flag. A stopped host
 is skipped, not attempted.
 
