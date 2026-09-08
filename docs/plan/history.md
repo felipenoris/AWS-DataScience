@@ -513,6 +513,18 @@ onwards the file records how the environment changed, not just the plan.
   state bucket and KMS key created, one destroyed; one VPC's security groups, flow log and its IAM role
   replaced; four Production routes re-created; eight state objects moved.
 
+- **2026-09-08 — D38 amended: the BUILD plane stopped being an allow-list.** The user, reading
+  `hub-anchors.tf` after the day's proxy measurements, asked why a build host is restricted at all. It is
+  not the thing `objectives.md` restricts — that is the SageMaker-managed compute — and the buildbox stands
+  in for the CI/CD pipeline whose control is the reviewed Dockerfile, not a hostname list. The list it
+  carried was also a treadmill whose own comment called its next revision *"a WHEN rather than an IF"*.
+  So `production-foundation` became `open` (everything permitted, everything logged, the three global
+  denies untouched), `proxy_allow_shared` and its one CloudFront name were deleted, the plane's mode became
+  a property of **which of two maps** it is in rather than a hard-coded string, and `DN-4` was rewritten
+  from *"only the client plane is open"* to *"no plane is open except the ones a decision names"*, carrying
+  each exception's reason into its pass line. D38 §6 amended in place. The same sitting added `open-vsx.org`
+  to the Sandbox plane after a Code Editor space failed to update AWS's own extensions.
+
 ---
 
 *Plan core: [GENERAL_PLAN.md](../GENERAL_PLAN.md) · Decisions: [docs/plan/decisions/INDEX.md](decisions/INDEX.md) · Stages: [docs/plan/stages/INDEX.md](stages/INDEX.md)*

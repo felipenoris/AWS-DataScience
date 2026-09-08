@@ -49,7 +49,9 @@ reasoning, its consequences or its revision trigger.
 
 **All of them are settled.** **Amended 2026-09-05** by the 6b/6c re-scope, each in place with a dated
 line: D4, D5, D6, D7, D9, D11, D12, D14, D15, D17, D18, D19, D20, D22, D23, D26, D35, D36 — plus D21
-superseded and D38 written. A decision is normally revisited only through its own *revision trigger*;
+superseded and D38 written. **D38 amended again on 2026-09-08** (§6): the BUILD plane is `open`, not an
+allow-list — the restriction belongs to the compute, and a build host's control is the reviewed Dockerfile.
+A decision is normally revisited only through its own *revision trigger*;
 when one is revisited — for whatever reason — edit its file in place and add a line to
 [`docs/plan/history.md`](../history.md). **A reverted decision keeps its file and its number**, because the
 record of what was tried and why it was undone is worth more than a tidy list.

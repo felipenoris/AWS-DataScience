@@ -674,8 +674,8 @@ the word *monitored* names.
 | plane | source | mode | list | an entry means |
 |---|---|---|---|---|
 | **`tunnel`** — this runbook's subject | `10.90.0.0/24` | **`open`** | **empty** | a name the estate's people may **not** reach |
-| `sandbox-foundation` — **SageMaker's** | `10.20.0.0/16` | `allowlist` | 20 | the only kind of name that plane **may** reach |
-| `production-foundation` — the build hosts | `10.30.0.0/16` | `allowlist` | 20 | as above |
+| `sandbox-foundation` — **SageMaker's** | `10.20.0.0/16` | `allowlist` | 21 † | the only kind of name that plane **may** reach |
+| `production-foundation` — the build hosts | `10.30.0.0/16` | **`open`** † | **empty** | a name a BUILD may **not** fetch |
 | `production-workloads` | `10.32.0.0/16` | `allowlist` | 0 | nothing may be reached — empty by decision |
 | `staging-foundation` | `10.50.0.0/16` | `allowlist` | 0 | as above |
 
@@ -685,7 +685,12 @@ all` and is refused **by name**. An empty **deny**-list emits a bare `http_acces
 everything passes. `./aws/dns-allowlist.py` `DN-4` is the check that a compute plane never becomes
 `open`.
 
-**SageMaker's list, in full** — the twenty names a notebook may reach, which is D5's *"short list"*
+† **Both rows are code and not the running host until `production/networking/` is applied** (2026-09-08,
+6d steps 8.1 and 9): `open-vsx.org` on the Sandbox plane, and the build plane's own allow-list deleted
+outright — D38 §6 amended, because a build host's control is the reviewed Dockerfile rather than a hostname
+list. `DN-3` compares code against the parameter, `PX-3` the parameter against the running `squid.conf`.
+
+**SageMaker's list, in full** — the twenty-one names a notebook may reach, which is D5's *"short list"*
 under [D38](../decisions/D38-single-egress-hub.md):
 
 | what | names |
@@ -698,11 +703,30 @@ under [D38](../decisions/D38-single-egress-hub.md):
 | Julia | `install.julialang.org` · `julialang-s3.julialang.org` · `pkg.julialang.org` · `storage.julialang.net` · `us-west.pkg.julialang.org` |
 | Rust | `sh.rustup.rs` · `index.crates.io` · `static.crates.io` · `static.rust-lang.org` |
 | source | `github.com` |
+| IDE extensions | `open-vsx.org` † |
 
-`production-foundation` is that list **minus `.amazonaws.com`** (a build host calls no AWS control
-plane) **plus one CloudFront distribution** — the host `public.ecr.aws` redirects blob downloads to,
-which Squid needs by name because it matches the hostname the client *requested* and a redirect is a
-new request.
+`production-foundation` **has no list at all since 2026-09-08.** It used to be that list minus
+`.amazonaws.com` plus one CloudFront distribution — the host `public.ecr.aws` redirects blob downloads to,
+which Squid needed by name because it matches the hostname the client *requested*. Both are gone with the
+plane's allow-list: it is `open`, so it reaches any public name and every one is logged. The three global
+denies below still apply to it.
+
+**What these lists match is the name the client REQUESTED, and never a DNS answer** (measured
+2026-09-08). Squid reads the `Host:` header, or the target of a `CONNECT`, and then resolves that name
+itself — no CNAME chain is evaluated anywhere in the estate. Two consequences that look alike and are
+opposite:
+
+- **A CNAME is invisible.** `static.crates.io` is a CNAME into a CDN, and it works because the CDN's name
+  never appears in the request. Nothing about the chain has to be listed.
+- **An HTTP redirect is a new name.** `github.com` → `codeload.github.com` and `public.ecr.aws` → its
+  CloudFront distribution are two requests, and the second must itself be on the plane. Both were measured
+  as `403 TCP_DENIED` before being understood.
+- **A bare entry matches exactly.** `github.com` on the plane does **not** cover `api.github.com` or
+  `raw.githubusercontent.com`; only a leading dot (`.x`) covers a subtree. This is the same syntax note as
+  the collision rule, read from the permissive side.
+
+Because the control is *which names may be requested*, an allowed CDN host fronts whatever that CDN
+serves — an accepted residual, recorded in D38 §6 and Stage 11's threat model.
 
 **Three denies sit above every plane and are not in any list**: private destinations (the L7-bridge
 control), unsafe ports, and `CONNECT` to anything but 443. **`open` means open to the internet,

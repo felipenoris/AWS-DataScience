@@ -2,7 +2,21 @@
 
 | | |
 |---|---|
-| **Status** | **IN PROGRESS — 3.2 AND 3.3 DONE, 3.1 HALF TAKEN, 2026-09-08** ([log](../../log/log-stage-06d-unified-studio-remainder.md)): the first working session under the proxy, from a JupyterLab terminal with the variables exported **by hand** (2.2 is still unapplied) and on the **stock** image. `NO_PROXY` held on two channels that do not share a failure mode (CloudTrail's `vpcEndpointId`, and the access log's *absence* of every AWS name); the allow-list enforced (`pypi.org` 200, `example.com` 403); **`conda` and CRAN refused by name — decision due 6's evidence**; the `codeload.github.com` redirect refused on a third source plane. **Owed**: `uv`, Julia and R, in the house image. **And one check was corrected by the user's own first command**: `--noproxy '*'` returning `000` measured a **DNS** refusal, not the absent route — the routing half stays 6c 6.3's probe (Lesson 42). *Earlier:* **3.6, 7.1 and 7.2 taken 2026-09-07**: the two portal surfaces read, the remote-IDE endpoint set derived (**nothing to add on either side**), and the `StartSession` pair found attached to a principal that never makes the call — so **the connection method decides the perimeter** (decision due 4), and step 7 was re-cut around that the same day. **Created 2026-09-05** by splitting the old Stage 6, revised the same day into the action-checklist format. It holds only what had not run, re-cut to the estate the split produces: **one** Interactive account (Sandbox), no NAT anywhere, every internet call through the institutional proxy. Two items the old stage carried are gone rather than pending — the design A / design B **comparison** (6c settles it by construction) and the derived-zone decision (dissolved 2026-08-26). **Step 7 added 2026-09-06**, from a reading of the plan against [`objectives.md`](../objectives.md): the local-VS-Code clause had its **policy** half applied at 6a step 3.2 and no step anywhere that opens the connection — so the endpoints it needs under design B were never derived (AWS's own two pages sit in `REFERENCES.md`, consumed by nothing), the two denies were never exercised, and **nothing had ever checked that the principal carrying them is the one that calls `sagemaker:StartSession`** |
+| **Status** | **IN PROGRESS — STEPS 8 AND 9 OPENED, 3.2 AND 3.3 DONE, 3.1 HALF TAKEN, 2026-09-08** ([log](../../log/log-stage-06d-unified-studio-remainder.md)): the first working session under the proxy, from a JupyterLab terminal with the variables exported **by hand** (2.2 is still unapplied) and on the **stock** image. `NO_PROXY` held on two channels that do not share a failure mode (CloudTrail's `vpcEndpointId`, and the access log's *absence* of every AWS name); the allow-list enforced (`pypi.org` 200, `example.com` 403); **`conda` and CRAN refused by name — decision due 6's evidence**; the `codeload.github.com` redirect refused on a third source plane. **Owed**: `uv`, Julia and R, in the house image. **And one check was corrected by the user's own first command**: `--noproxy '*'` returning `000` measured a **DNS** refusal, not the absent route — the routing half stays 6c 6.3's probe (Lesson 42). **A second sitting the same day added step 8 and one
+plane entry**: `sudo apt update` proved the variables stop at **`sudo`** (`env_reset`), so 2.2 owes two
+image-side files beside its `ContainerEnvironmentVariables`; and a **Code Editor** space failed to update
+**AWS's own two extensions** at startup with four `getaddrinfo ENOTFOUND open-vsx.org` — a **resolution**
+failure, so the VS Code server never saw a proxy and this plane was never consulted. `open-vsx.org` is
+authored onto `sandbox-foundation` (**unapplied**); **step 8** carries the rest — the delivery mechanism
+2.2 does not cover, and an asset host nobody has read yet. **A third sitting closed 8.2 and opened step 9.**
+The DNS Firewall log settled the attribution — `open-vsx.org` **BLOCK**, 8 queries, from a Sandbox address —
+and named **three more** the Code Editor needs: `idetoolkits.amazonwebservices.com` (**`amazonwebservices.com`
+is not `amazonaws.com`**), `api.github.com` and `raw.githubusercontent.com`, the last two uncovered because
+the plane's `github.com` is a **bare** name. And **D38 §6 was amended by the user**: `production-foundation`
+is **`open`**, not an allow-list — a build host's control is the reviewed Dockerfile, not a hostname list —
+so `proxy_allow_shared` and its CloudFront entry are deleted, a plane's mode is now decided by **which of two
+maps** it is in, and `DN-4` was rewritten to *"no plane is open except the ones a decision names"*.
+`terraform plan`: **`0 to add, 1 to change`**. *Earlier:* **3.6, 7.1 and 7.2 taken 2026-09-07**: the two portal surfaces read, the remote-IDE endpoint set derived (**nothing to add on either side**), and the `StartSession` pair found attached to a principal that never makes the call — so **the connection method decides the perimeter** (decision due 4), and step 7 was re-cut around that the same day. **Created 2026-09-05** by splitting the old Stage 6, revised the same day into the action-checklist format. It holds only what had not run, re-cut to the estate the split produces: **one** Interactive account (Sandbox), no NAT anywhere, every internet call through the institutional proxy. Two items the old stage carried are gone rather than pending — the design A / design B **comparison** (6c settles it by construction) and the derived-zone decision (dissolved 2026-08-26). **Step 7 added 2026-09-06**, from a reading of the plan against [`objectives.md`](../objectives.md): the local-VS-Code clause had its **policy** half applied at 6a step 3.2 and no step anywhere that opens the connection — so the endpoints it needs under design B were never derived (AWS's own two pages sit in `REFERENCES.md`, consumed by nothing), the two denies were never exercised, and **nothing had ever checked that the principal carrying them is the one that calls `sagemaker:StartSession`** |
 | **Prerequisites** | **[6c](stage-06c-networking-hub.md) pass 5** — what a Studio app can reach changes there, so any measurement below taken earlier would have to be retaken. [6b](stage-06b-development-becomes-staging.md) only in that its instrument re-scoping removes the second Interactive account from the readings |
 | **Consumes** | [D5](../decisions/D05-sagemaker-egress.md), [D11](../decisions/D11-lab-lifecycle.md), [D13](../decisions/D13-lake-formation-enforcement.md), [D17](../decisions/D17-interactive-vs-runtime.md), [D26](../decisions/D26-unified-studio.md), [D28](../decisions/D28-workflow-contract.md), [D38](../decisions/D38-single-egress-hub.md) |
 | **Proves** | [INT-01](../integrations.md) and [INT-17](../integrations.md) (the cross-account image pull and the selector — 6a built the repositories and pushed the image; nothing has consumed it), [INT-02](../integrations.md)'s consumer half under design B |
@@ -69,6 +83,12 @@ work at all* — is still open.
   conventions §6 lists this slice as **pipeline-written** (Stage 8 step 1, INT-18), which takes it over.
 - **2.2 — [Claude⚡] Attach it to the domain**: the app image configuration, carrying 6c step 5.6's proxy
   variables as `ContainerEnvironmentVariables` rather than baked into the Dockerfile.
+  **NECESSARY AND NOT SUFFICIENT, MEASURED 2026-09-08 (3.1).** `ContainerEnvironmentVariables` sets the
+  *process* environment, and two things in a working session never see it: **`sudo`**, which resets the
+  environment before `apt` ever runs, and **the VS Code server** in a Code Editor app, which is a
+  different app type and not covered by a JupyterLab image configuration at all. So this sub-step's
+  deliverable grew by two image-side files — `/etc/apt/apt.conf.d/01proxy` and a sudoers `env_keep`
+  for the six proxy variables — and by a cross-reference: the Code Editor half is **step 8**.
 - **2.3 — [user] Select it**: create a JupyterLab space on the house image from the portal, and record
   whether it appears in the list without any further act.
 - **2.4 — [Claude] Read reconciliation**: `./aws/studio.py` before and after a blueprint reconciliation. If
@@ -92,7 +112,14 @@ around.
   **decision due 6's evidence**, taken from the network rather than from the package manager.
   **And a third source plane met the redirect trap**: `github.com` answered `200`, the release
   tarball redirected, and `codeload.github.com` — on no plane — was refused in the same second,
-  the same shape as `public.ecr.aws` → CloudFront at 6c 5.8. **What is still owed**: `uv`, `Pkg`
+  the same shape as `public.ecr.aws` → CloudFront at 6c 5.8. **And `apt` found a boundary the
+  variables do not cross**: `sudo apt update` failed with `Could not resolve archive.ubuntu.com` —
+  a name that **is** on the plane — and failed **identically before and after the export**, which
+  is the measurement rather than the symptom: `sudo`'s `env_reset` drops `http_proxy`, so `apt` ran
+  with a clean environment and resolved the destination itself. `sudo apt -o
+  Acquire::http::Proxy=… update` then fetched **10.6 MB in 3 s**. The house image therefore owes
+  `/etc/apt/apt.conf.d/` **and** a sudoers `env_keep` **beside** 2.2's variables — see 2.2.
+  **What is still owed**: `uv`, `Pkg`
   (Julia) and R were **not run**, and the reading belongs in the **house** image, where Julia and R
   are image-delivered — so the step stands, narrowed to the ecosystems the stock image cannot
   answer for. The sitting is [`log-stage-06d`](../../log/log-stage-06d-unified-studio-remainder.md),
@@ -125,6 +152,14 @@ around.
   entry; anyone repeating 3.3 needs the second command as well as the first.
   *The original step follows:*
 - **3.3 — [Claude] Read what the proxy saw**: `./aws/proxy.py --on-host` for the session's access log.
+- **3.4 — ONE COMPONENT ANSWERED 2026-09-08, AND IT IS THE ONE THE STEP DID NOT LIST.** The Code
+  Editor's **extension gallery** does not honour the proxy — not because it refuses one, but because
+  nothing puts one in the VS Code server's environment: four `getaddrinfo ENOTFOUND open-vsx.org`, a
+  **resolution** failure, which an explicit-proxy client never performs. The list this step enumerates
+  is therefore short by at least one, and the failing component turned out to be **AWS's own two
+  extensions updating themselves at startup**. Broken out as **step 8** rather than absorbed here,
+  because the fix is a plane entry *and* a delivery mechanism 2.2 does not cover. *The original step
+  follows:*
 - **3.4 — [Claude] Measure the SMUS components**: whether the DataZone agent, the S3 Access Grants plugin
   and Amazon Q honour `HTTP_PROXY` is **undocumented**. The reading settles it; anything that does not is
   either given an endpoint or written down as an accepted loss.
@@ -378,6 +413,115 @@ statement reaches and whose process tree the user controls, with the repair deci
 
 ---
 
+### 8. Make the Code Editor usable — the extension gallery, and the boundary the variables do not cross
+
+**Action:** allow the gallery on the compute plane, put the proxy in the VS Code server's own process tree,
+and install one extension. **Why:** on 2026-09-08 a Code Editor space failed to update **AWS's own two
+extensions** at its own startup, with nothing configured and no error a user could act on.
+**Explanation:** this is 3.4's risk arriving with a name and a date, and it is a step rather than a note
+because the repair has two halves that live in different places — a name on `sandbox-foundation`, authored
+here, and a delivery mechanism **2.2 does not cover**, because a Code Editor app is a different app type
+from the JupyterLab image configuration. A gallery is a code-download path onto the compute plane, the same
+class as `pypi.org`: the question is never *whether* code may be fetched, only *from which names*.
+
+- **8.1 — [Claude] DONE 2026-09-08: allow the gallery.** `open-vsx.org` added to `proxy_allow_sandbox` in
+  [`hub-anchors.tf`](../../../terraform-live/production/networking/hub-anchors.tf); `terraform validate`
+  clean and the four preconditions unaffected — there is no `.open-vsx.org` sibling, so no `dstdomain`
+  collision. **Unapplied.** By the derivation it lands on `production-foundation` as well; the comment
+  names why that is right today and what would make it wrong (Lesson 51).
+- **8.2 — DONE 2026-09-08, AND THE LOG ANSWERED MORE THAN IT WAS ASKED.** `open-vsx.org.`,
+  **`firewall_rule_action: BLOCK`**, `rcode NXDOMAIN`, **8 queries from `10.20.65.56`** — a Sandbox
+  address. **The space asked**, as the error's shape predicted; the argument is now a record. The same
+  source, in the same minutes, was **also** refused three names nobody had listed:
+  **`idetoolkits.amazonwebservices.com`** (20 queries — the AWS Toolkit's own asset host, and note the
+  domain: **`amazonwebservices.com` is not `amazonaws.com`**, so `.amazonaws.com` does not cover it,
+  while `idetoolkits-hostedfiles.amazonaws.com` beside it **was** allowed), **`api.github.com`** and
+  **`raw.githubusercontent.com`** (12 each). All three are the IDE working normally. Two independent
+  confirmations came free from the same window: `pypi.org` BLOCK from a second Sandbox address — the
+  `curl` before the export in 3.1 — and `archive.ubuntu.com`/`security.ubuntu.com` BLOCK from that same
+  address, which is `sudo apt update`. **Every name is queried twice**, bare and with
+  `.us-west-2.compute.internal` appended by the VPC search domain, and both forms are blocked.
+  *The original step follows:*
+- **8.2 — [Claude] Attribute the refusal from the estate's own log**: `/awsds/sandbox/dns-firewall`,
+  30-day retention, records the rule action beside the name. Not a formality — it settles **which side
+  asked**. The hub carries no DNS Firewall (`production/egress` leaves `dns_firewall` at its default
+  `false`: *"the hub must resolve everything the proxy is asked to fetch"*), so a laptop resolving through
+  the tunnel would have **succeeded** and failed later at the connection, with a refusal rather than
+  `ENOTFOUND`. The error's shape already says *the space asked*; this turns an argument into a record.
+- **8.3 — [Claude⚡] Apply, then wait the half hour.** A list edit reaches the running host on the State
+  Manager schedule with **no host replacement** — the parameter is data, the renderer is code. `PX-3` is
+  red between the apply and the association, which is expected, and is why it is read twice rather than
+  once.
+- **8.4 — [Claude⚡ / user] Put the proxy in the server's process tree**, and the mechanism is the open
+  question. Three candidates, in the order to try them, each narrower and cheaper than the next is
+  general: **(a)** the space's own `http.proxy` setting, which targets the gallery alone and needs no
+  apply; **(b)** a lifecycle configuration writing the six variables where the app's entrypoint reads
+  them; **(c)** `ContainerEnvironmentVariables` on a Code Editor-capable image configuration — 2.2's
+  mechanism, reaching this app only once the house image is selectable there. Record **which one the
+  gallery actually honours**: VS Code's request stack and its extension host do not read the environment
+  the same way, and *"the variables are set"* is not the same claim as *"the gallery used them"*
+  (Lesson 5).
+- **8.5 — [user] Install one extension**, and paste the log. The success criterion is a **`200` in
+  `/awsds/prod/proxy` naming `open-vsx.org`** — not merely an extension that appears, which a cached
+  `.vsix` also produces.
+- **8.6 — [Claude] Read the asset host, and the three names 8.2 already found.** Once 8.4 lands, every
+  refusal **moves from a DNS `BLOCK` to a Squid `403`** — the space stops resolving and starts asking —
+  and that is when the plane's list becomes the thing being measured. Expect at least three: the
+  `.vsix` asset host if `open-vsx.org` redirects the download (a second name, exactly as `public.ecr.aws`
+  → CloudFront was at 6c 5.8), plus **`idetoolkits.amazonwebservices.com`**, **`api.github.com`** and
+  **`raw.githubusercontent.com`** from 8.2. **The last two are not covered by the plane's `github.com`**:
+  that entry is a bare name, and Squid's `dstdomain` matches a bare name **exactly** — which is also why
+  `codeload.github.com` was refused at 3.1. Each is a name to allow or a loss to record (decision due 6);
+  add names, never namespaces.
+- **8.7 — [user] Settle the one string this reading could not explain.** The failing requests asked for
+  `targetPlatform=alpine-arm64`, while a JupyterLab space in the same estate fetched **`amd64`** Ubuntu
+  packages an hour earlier. `uname -m` and `/etc/os-release` from the Code Editor's terminal cost nothing,
+  and either make it a fact about the space or retire it as VS Code's own fallback. Carried as an
+  **unexplained string, not a finding** (Lesson 38).
+
+### 9. Take the build plane out of the allow-list business
+
+**Action:** apply `production/networking/` with `production-foundation` in `open` mode and
+`proxy_allow_shared` deleted. **Why:** the user, reading `hub-anchors.tf` after the day's measurements,
+asked why a build host is restricted at all. **Explanation:** it is not what `objectives.md` restricts —
+that is the SageMaker-**managed compute** — and the buildbox stands in for the CI/CD pipeline whose control
+is the **reviewed Dockerfile in git**, not a hostname list. The list was also a treadmill: its one
+hand-added entry, `d5l0dvt14r5h8.cloudfront.net`, carried a comment calling its own next revision *"a WHEN
+rather than an IF"*. [D38](../decisions/D38-single-egress-hub.md) §6 is amended in place; this step is the
+apply and the readings that prove it landed. **The slice is 6c's**; the step lives here because 6d is the
+open stage and this is where the apply happens.
+
+- **9.1 — [Claude] DONE 2026-09-08: the code.** `proxy_allow_shared` deleted with its CloudFront name;
+  `proxy_deny_shared = []` in its place; a second map, `proxy_deny_by_plane`, whose membership **is** the
+  plane's mode — so the merge no longer hard-codes `"allowlist"` and cannot contradict the lists. Two new
+  preconditions: a plane in **both** maps fails at plan time, and the "plane no peering generates" check
+  reads both key sets. `terraform plan`: **`0 to add, 1 to change, 0 to destroy`** — the SSM parameter,
+  every precondition passing.
+- **9.2 — [Claude] DONE 2026-09-08: the instrument, which the change would otherwise have made red.**
+  `./aws/dns-allowlist.py` parses the `.tf` by an explicit grammar; it knew one plane map and hard-coded
+  every plane as `allowlist`. It now reads both maps (both **required** — a missing deny map would make an
+  `open` plane read as an allow-list with nothing on it, the exact inversion the parser exists to
+  prevent). **`DN-4` was rewritten rather than relaxed**: from *"only the client plane is `open`"* to
+  *"no plane is `open` except the ones a decision names"*, against an `OPEN_BY_DECISION` map whose values
+  are the reasons, printed in the pass line. A **new** plane going open still fails (Lesson 50).
+- **9.3 — [Claude⚡] ONE apply for steps 8 and 9.** Both edits are the same parameter in the same slice;
+  applying twice is the mistake to avoid, and reading `PX-3` between them is the other. The plan is
+  already taken.
+- **9.4 — [Claude] Read that it landed, in two links.** `DN-3` (code → parameter) is **red today and
+  names exactly these two changes** — `sandbox-foundation: only in code [open-vsx.org]`,
+  `production-foundation: only deployed [the 20 names]`; it must be green after the apply. `PX-3`
+  (parameter → the running `squid.conf`) goes green up to a **half hour later**, on the State Manager
+  schedule, with **no host replacement**. A green `DN-3` and a red `PX-3` is the expected middle state,
+  not a failure.
+- **9.5 — [user] Exercise the plane where the old list was load-bearing.** Bring the buildbox up and run
+  one full build and push. The name that must now work without being listed is the CloudFront distribution
+  `public.ecr.aws` redirects blobs to — the entry this step deleted. A pull that fails with `Forbidden`
+  here would mean the mode did not reach the host, not that a name is missing.
+- **9.6 — [Claude reads, user decides] Whether the deny list stays empty.** It is empty by the same
+  decision the tunnel's is: everything permitted, everything logged, and a list filled when there is a
+  written policy to fill it from. An entry here would be a name a **build** may not fetch. Stage 11 owns
+  the policy; this step records that nothing was written today.
+
 ## Deliverables
 
 - The house image registered, selectable and pulled across the account boundary.
@@ -388,6 +532,10 @@ statement reaches and whose process tree the user controls, with the repair deci
 - Idle shutdown and `make down` both observed; the Studio layer table written; the hub precondition
   exercised.
 - Ten verification rows answered, or explicitly re-homed with an owner.
+- **The Code Editor's extension gallery working through the proxy, or the loss recorded** — with the
+  mechanism that delivers the variables to a VS Code server **named**, not assumed.
+- **The build plane `open` on the running host**, D38 §6's amendment carried through code, parameter and
+  `squid.conf`, with one full build and push exercised across it.
 - **The remote-IDE channel opened once from the laptop** — the endpoint set it needs under design B, the
   principal that calls `StartSession`, 6a step 3.2's two denies exercised, the 12-hour residual measured
   rather than restated, and the client half in a runbook the routing table points at.
@@ -395,8 +543,9 @@ statement reaches and whose process tree the user controls, with the repair deci
 ## Validation
 
 `./aws/studio.py` all-pass with one Interactive account; `US-10` zero running apps after `make down`;
-`./aws/egress.py` showing no NAT and no default route while a session runs; `./aws/proxy.py` `PX-3` green
-after any ACL entry step 3 or step 7 adds; the deny pair's two wordings in the log, and the remote-IDE
+`./aws/egress.py` showing no NAT and no default route while a session runs; `./aws/dns-allowlist.py`
+`DN-3` **and** `DN-4` green and `./aws/proxy.py` `PX-3` green after the step 8 / step 9 apply, and after any
+ACL entry step 3 or step 7 adds; the deny pair's two wordings in the log, and the remote-IDE
 pair's two alongside them; one `sagemaker:StartSession` in CloudTrail carrying the proxy's Elastic IP **for the chosen method**, the
 same call refused **by name** with the tunnel down, and `./aws/remote-ide.py` `RI-1`..`RI-5` green.
 
@@ -445,6 +594,16 @@ measurement, which is the shape worth naming before it is paid.
    Microsoft names on the compute plane, or the pre-packaged tarball by lifecycle configuration.
 6. **Which compute-plane names step 3 adds** (3.1): every `403` the proxy logs is a name to allow or a loss
    to record — `conda` and CRAN are the two expected, and Julia/R are image-delivered by design.
+   **PARTLY TAKEN 2026-09-08 (the user): `open-vsx.org` is allowed**, authored at 8.1 after a Code Editor
+   space failed on its own startup — a gallery is the same class of path as `pypi.org`, which this plane
+   already carries, so refusing it would not be a narrower perimeter but the same one with an ecosystem
+   arbitrarily missing. **And its evidence was a DNS refusal, not a `403`**, which qualifies this
+   decision's own instrument: a name missing from this plane can fail **without ever reaching the proxy's
+   log**, so "every `403` the proxy logs" is a floor on the list of names to decide, never the whole of
+   it. **`conda` and CRAN stay open**, and 8.2 added **three more candidates**:
+   `idetoolkits.amazonwebservices.com`, `api.github.com`, `raw.githubusercontent.com`.
+7. **Whether the build plane's deny list stays empty** (9.6). Empty by decision today; Stage 11 owns the
+   policy that would fill it.
 
 ## Verifications to answer while executing
 
@@ -458,7 +617,11 @@ whether a remote session outlives the tunnel and the portal logout (7.7)**.
 - **The workflow surface is not enabled by anything we control**, which moves 4.1's answer into a blueprint
   change and re-opens 6a's decision 5. Recorded as that step's own alternative.
 - **A component with no proxy support inside the image** (3.4). The fallback is an endpoint, then D38's
-  per-VPC NAT contingency — in that order, and never a default route.
+  per-VPC NAT contingency — in that order, and never a default route. **Measured once, 2026-09-08**: the
+  Code Editor's extension gallery, and the cause was not *"no proxy support"* but **no proxy in the
+  process**, which is a different repair and a cheaper one — step 8. The risk stands for the components
+  3.4 still lists; what this instance revises is the diagnosis order, which now begins with *does that
+  process have the variables at all*.
 - **The VS Code client or its toolkit may not honour the proxy** (7.5) — 3.4's risk on the laptop. Read
   from source 2026-09-07: the Session Manager plugin honours `HTTPS_PROXY` **when it reaches its process**,
   so the risk is now *where the variable is set* (a browser-launched VS Code has none), not whether it is

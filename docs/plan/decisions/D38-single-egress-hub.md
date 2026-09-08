@@ -191,6 +191,38 @@ become an L7 bridge between VPCs that peering deliberately keeps apart:
 One list per source is what keeps the two filters two: a name a person may reach is not thereby reachable
 from a notebook.
 
+**AMENDED 2026-09-08 (the user): the BUILD plane is `open`, not an allow-list.** The sentence above says
+*"allow-lists, one per plane"*, and that was written from the two planes the objectives name — the client's
+and SageMaker's. `production-foundation` is neither. It is `VPC-SharedServices`: the buildbox today, the
+GitLab runners from Stage 7 — the tooling that **builds** the restricted environment rather than a surface
+the restriction is about. Its control is the **review of the build definition**, which is in git and
+promoted as an artifact, not a list of hostnames; and the list it carried was a treadmill whose own comment
+called its next revision *"a WHEN rather than an IF"* — `d5l0dvt14r5h8.cloudfront.net`, read out of the
+access log after a `docker pull` failed on a redirect nobody could have predicted. A control that must be
+widened in a hurry by whoever is blocked, guarding a host whose real control is elsewhere, is not buying
+what it costs. So that plane is now `open`: **everything permitted, everything logged**, exactly the shape
+the client plane has. `proxy_allow_shared` is deleted and `d5l0dvt14r5h8.cloudfront.net` with it.
+
+**What the amendment does NOT change**, and each of these is why "open" here is not "unbounded":
+
+- **The three global denies still sit above this plane** — private destinations (so the proxy cannot become
+  an L7 bridge into the estate), unsafe ports, and `CONNECT` to anything but 443.
+- **There is still no default route in SharedServices**, and the security group admits that source to 3128
+  and nothing else. The proxy is the only door; what changed is which public names fit through it.
+- **`sandbox-foundation` stays an allow-list.** This is the first time the source-scoped split earns its
+  keep in the *permissive* direction: a name a build host may fetch is not thereby reachable from a
+  notebook. That property is the whole reason the planes are per-source.
+
+**And one thing it does change that is easy to miss: a plane is a CIDR, not a host.** `10.30.0.0/16` is the
+whole VPC, so anything that lands in SharedServices inherits the open internet — including something put
+there for an unrelated reason (Lesson 29). That is the intent for CI/CD tooling and is *not* a general
+permission: a host that should not have the open internet does not belong in SharedServices.
+
+**What moved, rather than disappeared, is a control from the network to code review.** An image built with
+unrestricted egress can bake in anything, and the thing that stops it is the Dockerfile being read before
+it is promoted. An institution would likely keep both — the delta is
+[`institutional-delta.md`](../institutional-delta.md)'s to record.
+
 The DNS firewall survives in every compute VPC with a different job: an allow-list of AWS and intranet
 names plus the blocking rule, which closes the recursive resolver as an exfiltration channel — the classic
 residual of a VPC with no NAT. `VPC-Networking` carries none, because the proxy has to resolve.

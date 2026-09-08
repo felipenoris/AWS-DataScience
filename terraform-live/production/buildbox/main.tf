@@ -51,10 +51,11 @@
 #        them apart is what makes a failure diagnosable:
 #
 #          the internet         -> `http_proxy` at `proxy.awsds.internal:3128`, over the
-#                                  SharedServices <-> Networking peering. What it may reach is
-#                                  the `production-foundation` plane of the proxy's allow-list
-#                                  (4.9), which is the notebook list minus the AWS control
-#                                  plane - the build hosts' package sources.
+#                                  SharedServices <-> Networking peering. The
+#                                  `production-foundation` plane, `open` since 2026-09-08
+#                                  (D38 section 6 amended): any public name, all of it logged.
+#                                  It was an allow-list until then; a build host's control is
+#                                  the reviewed Dockerfile, not a list of hostnames.
 #          AWS APIs             -> this VPC's interface endpoints, which is why `no_proxy` is
 #                                  generated rather than written (5.6). Session Manager is one
 #                                  of these, and it must NOT be proxied.
@@ -111,9 +112,11 @@ resource "aws_security_group" "buildbox" {
   # be "what bounds this host's reach is the ROUTE - a single default at a NAT instance this
   # design owns". There is no route now. What bounds it is stronger and named: this tier has NO
   # default route at all, so the only way to the internet is a proxy the host must be CONFIGURED
-  # to use, and what that proxy will fetch is the `production-foundation` plane of its
-  # source-scoped allow-list. A port list in this group would be a second, weaker copy of a
-  # control that already exists, in the file where somebody would later "fix" it.
+  # to use. What that proxy will fetch for this source is the `production-foundation` plane,
+  # which since 2026-09-08 is `open` rather than an allow-list (D38 section 6 amended) - so the
+  # bound is the absent route, the security group's single destination port, and the three
+  # global denies, not a list of names. A port list in this group would be a second, weaker copy
+  # of a control that already exists, in the file where somebody would later "fix" it.
   #
   # AND THE PARAGRAPH THAT USED TO FOLLOW IS RETIRED WITH THE DESIGN. It said that
   # `sandbox/egress/`'s DNS Firewall associated to the VPC ID rather than to a route table, so it

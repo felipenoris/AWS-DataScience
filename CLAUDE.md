@@ -180,6 +180,7 @@ its `Consumes` row lists.
 | Root is needed, or its alarm chain is being changed | [`docs/plan/runbooks/break-glass.md`](docs/plan/runbooks/break-glass.md) |
 | **Anything VPN** — the pieces, starting/stopping the hub, connecting a device, a tunnel that will not come up, a key event (loss, revocation, rotation), or a shell on the VPN host | [`docs/plan/runbooks/vpn.md`](docs/plan/runbooks/vpn.md) — one runbook, three parts. **REWRITTEN 2026-09-06 for the Production home**: the host is `production/vpn/` in `VPC-Networking`, profile `awsds-infra-prod`, and **`make hub-up` / `make hub-down`** start and stop it *with the proxy* — never `make up ENV=…`, which raises endpoint sets a tunnel does not use and now **refuses** while the hub is down. **The Elastic IP and the host key did NOT move** (transferred, and copied by hand), so **the only client edit is `DNS = 10.31.0.2`** — and without it the tunnel comes up and nothing resolves. **§S** the system: the FORWARD chain is the perimeter (RFC1918 accepted, the rest REJECTED), the masquerade has a deliberate hole so Squid sees a per-device address, and the isolated-tier NAT job is **gone**. **§C** the client: what it may reach and when it does not work — **the procedure itself moved to the row below on 2026-09-07**. **§K** the keys — loss is recovery, never rotation, and the account move is that rule's strongest evidence — and **§K0a is the SSM session** |
 | **Connecting a LAPTOP** — the session's up/down order, the `.conf` and its four checks, and the proxy on macOS (system, terminal, Chrome) and Linux | [`docs/plan/runbooks/client-vpn-proxy-configuration.md`](docs/plan/runbooks/client-vpn-proxy-configuration.md) — **new 2026-09-07**, the procedures moved out of `vpn.md` §S5 and §C0-§C3; four short sections, the reasoning stays in `vpn.md`. **macOS's system proxy is NOT the path** (issue #67 — ignored while the tunnel is up, and it breaks the `aws` CLI when the tunnel is down): the terminal's variables and Chrome's `--proxy-server` flag are. **Nothing private goes through the proxy, and everything public does — AWS included**. **Two profiles since 2026-09-08** (§3.3; `vpn.md` §C7): *monitored* (full tunnel, the institution's) and *split-tunnel* (the private ranges only, internet direct and unmonitored — for building the plan; persona work still through the proxy, the infrastructure user proxy-free) |
+| **The PROXY inside a SageMaker space** — the `NO_PROXY` value, `apt`, the Code Editor's extension gallery | [`docs/plan/runbooks/sg-proxy.md`](docs/plan/runbooks/sg-proxy.md) — **the space side**, as `client-vpn-proxy-configuration.md` is the laptop side. `NO_PROXY` is **generated** (`terraform output -raw no_proxy` on `sandbox/egress`), never transcribed. **The variables stop at `sudo`** — `apt` needs `-o Acquire::http::Proxy` or the image's own file — and **the VS Code server never had them at all** (6d step 8) |
 | **Anything EGRESS, PROXY or the hub topology** — where the internet is reached, which VPC a thing belongs in, why there is no NAT gateway | [`docs/plan/decisions/D38-single-egress-hub.md`](docs/plan/decisions/D38-single-egress-hub.md) (the decision, closing OQ 23) + [`docs/plan/stages/stage-06c-networking-hub.md`](docs/plan/stages/stage-06c-networking-hub.md) (the build). **Peering shares an address, never a path** (Lesson 44): no spoke has a default route, the single egress is an **explicit proxy**, and the hub carries no interface endpoint with private DNS |
 | **The NETWORK as built** — VPCs, subnets, routes, peerings, egress, VPN, DNS, security groups, every internal address; **how a SageMaker app sees the internet, and what can reach one** | [`docs/NETWORK.md`](docs/NETWORK.md) — code plus measurement, with diagrams. **Its first section now names the six facts Stage 6c replaces**; until that apply the tables below it are current, and they are **re-measured** then, never edited ahead. The runbooks stay the procedures, `AWS_STATE.md` stays what is *expected* |
 | **Anything BUILDBOX** — the `[E]` `amd64` build host of St.6 5.0, now `production/buildbox/` | [`docs/plan/runbooks/buildbox.md`](docs/plan/runbooks/buildbox.md) — seven short sections: what it is, why it exists (**the images are `amd64`, the laptop is `arm64`**), the components, `up`, **§S space** (the 64 GiB root against two images that share layers — prune before recreating), **§P push** (**build and push are ONE session** — the volume dies with the host; the identity arrives as an ECR **token**, never as a permission), `down`. **It MOVED at 6c 5.8**: `VPC-SharedServices` private tier, **no route at all** — the internet is the proxy and the host is told in **four** places; `production/egress/` is now a **prerequisite** (its SSM endpoints are the only door), the `probes/` exclusion is **deleted**, and the far-end ECR refusal no longer applies because the host is in the registry's own account |
@@ -209,6 +210,34 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   reads every account**; **6.6 taken as (ii),
   recorded acceptance** — Stage 11 step 3.4 re-takes it, its 5.2 alarms on an off-proxy portal session.
   **`aws sso logout` invalidates EVERY cached session's token; a browser sign-out invalidates none.**
+- **D38 §6 AMENDED (2026-09-08, the user): THE BUILD PLANE IS `open`, NOT AN ALLOW-LIST.**
+  `production-foundation` (= all of `VPC-SharedServices`) reaches **any** public name through the proxy,
+  everything logged. **A build host's control is the reviewed Dockerfile, not a hostname list** — and the
+  list was a treadmill whose own comment called its next revision *"a WHEN rather than an IF"*.
+  `proxy_allow_shared` and `d5l0dvt14r5h8.cloudfront.net` **deleted**; a plane's mode is now decided by
+  **which of two maps** it is in (`proxy_allow_by_plane` / `proxy_deny_by_plane`), with plan-time
+  preconditions on both. **`sandbox-foundation` is untouched** — the first time source-scoping earns its
+  keep in the *permissive* direction. Unchanged: the three global denies, the absent default route, the
+  3128-only SG. **A plane is a CIDR, not a host** (Lesson 29). `DN-4` rewritten to *"no plane is `open`
+  except the ones a decision names"* (`OPEN_BY_DECISION`, reasons in the pass line). `plan`:
+  **`0 to add, 1 to change`**, **UNAPPLIED**.
+- **SQUID MATCHES THE NAME THE CLIENT REQUESTED, AND NEVER A DNS ANSWER** (measured 2026-09-08). **A CNAME
+  is INVISIBLE** (`static.crates.io` works with no CDN entry); **an HTTP redirect is a NEW name**
+  (`codeload.github.com`, the ECR CloudFront); **a bare entry matches EXACTLY** — `github.com` covers
+  neither `api.github.com` nor `raw.githubusercontent.com`. **`amazonwebservices.com` is NOT
+  `amazonaws.com`** (`idetoolkits.*` refused beside `idetoolkits-hostedfiles.amazonaws.com` allowed).
+- **6d STEP 3 RUN, STEPS 8 AND 9 OPENED (2026-09-08).** The proxy works from a space with the variables exported
+  by hand (`pypi.org` 200, `example.com` 403, `NO_PROXY` held on **two** channels). **Two components then
+  failed for ONE cause — no proxy IN THE PROCESS, never a refused one**: `sudo` strips the variables
+  (`apt` needs `-o Acquire::http::Proxy`, or the image's own file) and a **Code Editor**'s VS Code server
+  never had them — four `ENOTFOUND open-vsx.org`, **AWS's own two extensions**, at every space start.
+  `open-vsx.org` authored onto `proxy_allow_sandbox` (**20 → 21, UNAPPLIED**); step 8 owns the delivery
+  mechanism and the **unread asset host**; 2.2 grew two image-side files. **A missing plane name can fail
+  WITHOUT a `403`** — the second instrument is `/awsds/sandbox/dns-firewall`, which **answered 8.2**
+  (`open-vsx.org` BLOCK from a Sandbox address: **the space asked**) and named three more the Code Editor
+  needs; **the hub carries no DNS Firewall**, so an `ENOTFOUND` can only come from a compute VPC.
+  `--noproxy '*'` → `000` measured **DNS**, not the absent route. Measured on the plane: **Python, Rust and
+  `github.com` clone all work**; `uv`/Julia/R still owed.
 - **STAGE 6d: 3.6, 7.2 AND 7.1 DONE (2026-09-07); STEP 7 RE-CUT AROUND ONE FINDING — THE CONNECTION
   METHOD DECIDES THE PERIMETER.** 7.1: **nothing to add on either side** — the space's seven names are all
   in `sandbox/egress/`, the laptop's five ride the `open` tunnel plane; `ec2messages` is on neither vendor
@@ -226,7 +255,9 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   (3.6). `conda` and CRAN are **not** on the compute plane (3.1). Pending a sign-in: the project role's
   policies.
 - **THE CLIENT PLANE IS `open`, NOT AN ALLOW-LIST (2026-09-07).** The client's internet is **monitored**;
-  the restriction belongs to the **compute** plane (`sandbox-foundation`, 20 names). Each plane carries a
+  the restriction belongs to the **compute** plane (`sandbox-foundation`, **21 in code / 20 running**) —
+  **and since 2026-09-08 the BUILD plane is `open` too**, so `allowlist` is now the compute planes' mode,
+  not every spoke's. Each plane carries a
   `mode`; **empty means OPPOSITE things** — allow-list empty = refuse everything, deny-list empty = permit
   everything. **The parameter is DATA (30 min); the renderer is CODE (a new host)** — a State Manager
   `Success` only proves the script the host already has ran.
@@ -273,7 +304,7 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   profile**; auto-enrollment is ON; `INV-09` is **ten** principals. **Before reporting a gap, read the file
   that owns it:** unexercised denies → `POLICIES.md`; "expected" readings → `AWS_STATE.md`; SMUS findings
   → OQ 12-15, 20, 21. **Deferred by decision — do not offer to close:** the USD 50 budget notifies nobody
-  (D12); OQ 10 waits for N=2; the Config recorder is left alone. **All 38 decisions closed.** Still needed
+  (D12); OQ 10 waits for N=2; the Config recorder is left alone. **All 38 decisions closed; D38 §6 amended 2026-09-08.** Still needed
   from the user: **the domain name** (blocks Stage 13). **Every script is Python 3 on `uv`;
   `aws/cloudshell/` is shell.**
 

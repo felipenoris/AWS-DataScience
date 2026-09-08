@@ -104,6 +104,21 @@ PRIVATE_SUFFIXES = (".internal",)
 DIG_TIMEOUT = 15
 WHOIS_TIMEOUT = 25
 
+# THE PLANES A DECISION HAS PUT IN `open` MODE, AND WHY - DN-4's allow-list of exceptions.
+# DN-4 used to read "every plane but `tunnel` must be an allow-list", which was true of the
+# design on the day it was written and stopped being true on 2026-09-08. Rewriting it as
+# "whatever is open is fine" would have retired the check; this keeps it load-bearing, because a
+# NEW plane going `open` still fails, and the entry a person has to add to make it pass carries
+# the decision that took it. The value is the reason, printed in the pass line - a reader of the
+# report should not have to open a decision file to learn why a plane is open (Lesson 50).
+OPEN_BY_DECISION = {
+    "tunnel": "the client's internet is MONITORED, not restricted - objectives.md, 2026-09-07",
+    "production-foundation": (
+        "a BUILD plane, not a compute one: its control is the review of the Dockerfile in git, "
+        "not a hostname list - D38 section 6 as amended, 2026-09-08"
+    ),
+}
+
 
 # --------------------------------------------------------------------------- the lists
 
@@ -136,11 +151,22 @@ _LIST_ASSIGN = re.compile(r"^\s*(proxy_(?:allow|deny)_[a-z_]+)\s*=\s*\[", re.M)
 # `proxy_allow_shared` became `concat(<comprehension>, <literal>)` on 2026-09-06, when one
 # CloudFront distribution had to be added to a list that is otherwise DERIVED from the notebook's.
 # Both halves are parsed; anything else still fails by name.
+# NOTHING IN THE .tf MATCHES EITHER FORM SINCE 2026-09-08 - `proxy_allow_shared` was deleted when
+# the build plane became `open` (D38 section 6, 6d step 9). KEPT ANYWAY, and not because it might
+# come back: without the derived branch a `[for d in local.x : d if d != "y"]` list would be read
+# by the literal path, whose `findall` would return the EXCLUDED name and nothing else. That is a
+# silent misreading, and this parser's whole contract is that an unknown form fails loudly. The
+# dead branch is what keeps the failure loud.
 _CONCAT_ASSIGN = re.compile(r"^\s*(proxy_(?:allow|deny)_[a-z_]+)\s*=\s*concat\(", re.M)
 _DERIVED = re.compile(
     r"^\s*for\s+(\w+)\s+in\s+local\.(proxy_allow_[a-z_]+)\s*:\s*\1\s+if\s+\1\s*!=\s*\"([^\"]+)\"\s*$"
 )
-_PLANE_ROW = re.compile(r'^\s*"?([a-z0-9-]+)"?\s*=\s*(local\.(proxy_allow_[a-z_]+)|\[\s*\])\s*$')
+# BOTH KINDS OF LOCAL SINCE 2026-09-08. `proxy_deny_by_plane` names the planes that are `open`,
+# and its rows have the same shape as the allow map's - so the grammar widens by one alternation
+# rather than growing a second regex that could drift from this one.
+_PLANE_ROW = re.compile(
+    r'^\s*"?([a-z0-9-]+)"?\s*=\s*(local\.(proxy_(?:allow|deny)_[a-z_]+)|\[\s*\])\s*$'
+)
 
 
 def parse_anchors(path) -> dict[str, list[str]]:
@@ -168,9 +194,9 @@ def parse_anchors(path) -> dict[str, list[str]]:
             continue
         named[m.group(1)] = re.findall(r'"([^"]*)"', clean)
 
-    # The one comprehension in the file, evaluated rather than transcribed: `proxy_allow_shared`
-    # is deliberately DERIVED from the notebook list (Lesson 33 - two hand-kept copies would part
-    # company the day somebody adds a package source), so reading it as a literal would find none.
+    # Derived lists, evaluated rather than transcribed. There are none in the .tf today (see the
+    # note on _CONCAT_ASSIGN); the loop is what makes a re-introduced one correct instead of
+    # silently inverted.
     for name, source, excluded in derived:
         if source not in named:
             raise SystemExit(f"{path}: {name} derives from {source}, which was not parsed")
@@ -192,26 +218,40 @@ def parse_anchors(path) -> dict[str, list[str]]:
                 collected += re.findall(r'"([^"]*)"', chunk)
         named[m.group(1)] = collected
 
-    m = re.search(r"^\s*proxy_allow_by_plane\s*=\s*\{", text, re.M)
-    if not m:
-        raise SystemExit(f"{path}: no proxy_allow_by_plane map found")
-    body, _ = _balanced(text, m.end() - 1, "{", "}")
     planes: dict[str, list[str]] = {}
     modes: dict[str, str] = {}
-    for line in _STRIP_COMMENTS.sub("", body).splitlines():
-        if not line.strip():
-            continue
-        row = _PLANE_ROW.match(line)
-        if not row:
-            raise SystemExit(f"{path}: proxy_allow_by_plane row not understood: {line.strip()!r}")
-        if row.group(3) and row.group(3) not in named:
-            raise SystemExit(
-                f"{path}: plane {row.group(1)} points at local `{row.group(3)}`, which this "
-                "parser did not recognise. Its assignment is a form the grammar here does not "
-                "cover - add the form rather than letting the plane read as empty."
-            )
-        planes[row.group(1)] = list(named[row.group(3)]) if row.group(3) else []
-        modes[row.group(1)] = "allowlist"
+
+    # TWO MAPS SINCE 2026-09-08, AND WHICH ONE A PLANE IS IN IS ITS MODE. `proxy_allow_by_plane`
+    # holds the allow-lists; `proxy_deny_by_plane` holds the planes that are `open` and carries
+    # what they may NOT reach. Both are REQUIRED here: a missing deny map would make an `open`
+    # plane read as an allow-list with nothing on it, which is the exact inversion this parser
+    # exists to prevent - a plane that reaches everything, reported as a plane that reaches
+    # nothing.
+    for map_name, mode in (("proxy_allow_by_plane", "allowlist"), ("proxy_deny_by_plane", "open")):
+        m = re.search(r"^\s*" + map_name + r"\s*=\s*\{", text, re.M)
+        if not m:
+            raise SystemExit(f"{path}: no {map_name} map found")
+        body, _ = _balanced(text, m.end() - 1, "{", "}")
+        for line in _STRIP_COMMENTS.sub("", body).splitlines():
+            if not line.strip():
+                continue
+            row = _PLANE_ROW.match(line)
+            if not row:
+                raise SystemExit(f"{path}: {map_name} row not understood: {line.strip()!r}")
+            if row.group(3) and row.group(3) not in named:
+                raise SystemExit(
+                    f"{path}: plane {row.group(1)} points at local `{row.group(3)}`, which this "
+                    "parser did not recognise. Its assignment is a form the grammar here does not "
+                    "cover - add the form rather than letting the plane read as empty."
+                )
+            if row.group(1) in planes:
+                raise SystemExit(
+                    f"{path}: plane {row.group(1)} is in BOTH plane maps. The .tf has a "
+                    "precondition for this; if it applied anyway, the mode is whatever the "
+                    "render script happened to branch on."
+                )
+            planes[row.group(1)] = list(named[row.group(3)]) if row.group(3) else []
+            modes[row.group(1)] = mode
 
     # THE CLIENT PLANE IS NOT IN THAT MAP, AND ITS ABSENCE IS THE POINT (2026-09-07). `tunnel` used
     # to be a row there carrying a 23-name allow-list. `objectives.md` asks for the client's
@@ -223,7 +263,7 @@ def parse_anchors(path) -> dict[str, list[str]]:
         planes["tunnel"] = list(named["proxy_deny_tunnel"])
         modes["tunnel"] = "open"
     if not planes:
-        raise SystemExit(f"{path}: proxy_allow_by_plane parsed empty")
+        raise SystemExit(f"{path}: the plane maps parsed empty")
     return planes, modes
 
 
@@ -571,7 +611,11 @@ EXC-05's failure mode has no place left to occur. The chains below are read for 
             "plane). Comparing their contents would compare a blocklist with a permit-list.\n"
             "\n"
             "So what is reported is the SHAPE, and the finding to look for is a plane whose mode is\n"
-            "not what its role calls for - a compute plane that went `open`, above all.\n"
+            "not what its role calls for. `open` is not by itself the finding - `production-foundation`\n"
+            "is open by a decision (a BUILD plane; its control is the reviewed Dockerfile, not a\n"
+            "hostname list). An open plane NOBODY DECIDED is the finding, and DN-4 is what separates\n"
+            "the two: it fails on a plane that is not in OPEN_BY_DECISION, and prints the reason for\n"
+            "each one that is.\n"
         )
         rep.tabulate(
             ["PLANE\tMODE\tENTRIES\tWHAT AN ENTRY MEANS"]
@@ -586,7 +630,7 @@ EXC-05's failure mode has no place left to occur. The chains below are read for 
             ]
         )
         open_planes = sorted(p for p in planes if plane_modes.get(p) == "open")
-        compute_open = [p for p in open_planes if p != "tunnel"]
+        unexpected_open = [p for p in open_planes if p not in OPEN_BY_DECISION]
 
         # ---------------------------------------------------------------- 5
         rep.h1("5. Checks")
@@ -666,21 +710,23 @@ EXC-05's failure mode has no place left to occur. The chains below are read for 
                     "code -> parameter -> host",
                 )
 
-        if compute_open:
+        if unexpected_open:
             checks.fail(
                 "DN-4",
-                "only the client plane is `open`; every compute plane is an allow-list",
-                f"{', '.join(compute_open)} is `open` - a compute plane whose list is a DENY list "
-                "may reach anything not named on it, which inverts the objectives' restriction "
-                "(`the restriction is on the SageMaker-MANAGED COMPUTE`)",
+                "no plane is `open` except the ones a decision names",
+                f"{', '.join(unexpected_open)} is `open` and no decision names it - a plane whose "
+                "list is a DENY list may reach anything not on it. If that is intended, add it to "
+                "OPEN_BY_DECISION with the decision that took it; if it is not, the objectives' "
+                "restriction (`the restriction is on the SageMaker-MANAGED COMPUTE`) is inverted",
             )
         else:
             checks.ok(
                 "DN-4",
-                "only the client plane is `open`; every compute plane is an allow-list",
+                "no plane is `open` except the ones a decision names",
                 f"{len(planes) - len(open_planes)} allow-list plane(s); `open`: "
-                f"{', '.join(open_planes) or 'none'}. An `open` plane's control is the access log, "
-                "not its list - so an empty one is permissive by decision, not empty by omission",
+                + ("; ".join(f"{p} ({OPEN_BY_DECISION[p]})" for p in open_planes) or "none")
+                + ". An `open` plane's control is the access log, not its list - so an empty one "
+                "is permissive by decision, not empty by omission",
             )
         rep.checks_table(checks)
         rep.text("""
@@ -694,9 +740,11 @@ in ./aws/proxy.py compares the parameter against the squid.conf actually running
 A green DN-3 and no PX-3 says what was written reached the parameter, and nothing about what
 the proxy is enforcing.
 
-DN-4 is information, not a warning. Some overlap is correct - AWS's own namespaces belong on
-every plane. A PACKAGE host or a CONSOLE family on both sides is the finding, and it means the
-two filters have quietly become one.
+DN-4 is a gate, not information - and the paragraph that stood here said the opposite, because
+it described an overlap comparison this report stopped making when the two planes became two
+different KINDS of list. What DN-4 asks now is whether every `open` plane was chosen: it fails
+on one that is not in OPEN_BY_DECISION, and makes the pass line carry each exception's reason,
+so a reader does not have to open a decision file to learn why a plane is open.
 
 A clean run here is a screen, not a proof: this resolver is not the proxy's, and a CDN can
 steer a chain by geography. Confirm anything surprising from a request through the proxy.

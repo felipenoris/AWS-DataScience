@@ -42,7 +42,7 @@ and anything that must survive leaves as an image in ECR.
 | the instance | `VPC-SharedServices`, **private** tier, no public IP | the build host |
 | its security group | the slice, `[E]` | **no ingress rule at all**; egress unrestricted — the control is the absent route plus the proxy's allow-list |
 | the **proxy** | `production/proxy/` in `VPC-Networking`, `[D]` | the estate's only way to the internet: `proxy.awsds.internal:3128`, over the SharedServices ↔ Networking peering |
-| its **allow-list** | `production/networking/`, `[P]` SSM parameter | the `production-foundation` plane: the notebook list minus `.amazonaws.com`, plus the one CloudFront name `public.ecr.aws` redirects blobs to |
+| its **egress plane** | `production/networking/`, `[P]` SSM parameter | the `production-foundation` plane, **`open` since 2026-09-08** (D38 §6 amended): any public name, all of it logged. It used to be an allow-list — the notebook list minus `.amazonaws.com` plus one CloudFront name — and the reason it is gone is that a build host's control is the **reviewed Dockerfile**, not a hostname list. Still bounded by the three global denies (private destinations, unsafe ports, `CONNECT` to anything but 443), by the absent default route, and by a security group that admits only 3128 |
 | the **SSM endpoints** | `production/egress/`, `[E]` | `ssm`, `ssmmessages`, `ec2messages` — **the only door into the host** |
 | the **ECR endpoints** | `production/egress/`, `[E]`, core list | `ecr.api`, `ecr.dkr` — private-registry calls stay inside the VPC |
 | the **gateway** endpoints | `production/foundation/`, `[P]` | S3 and DynamoDB by route, free: the AL2023 repositories, and the layers of a private-registry pull |
