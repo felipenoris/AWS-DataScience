@@ -193,19 +193,18 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
 
 ### Current position
 
-- **STAGE 6c: PASSES 0-5 AND 7 DONE; PASS 6 IS OPEN AND MOSTLY THE USER'S (2026-09-07).** **6.2 DONE**
-  (portal, catalog tab and a space opened with **no** browser grant; both client names public). **A space
-  started while `sandbox/egress` is down HANGS at "IDE configuration in progress"** — silence, not an
-  error. **6.4 DONE** (`REJECT` 21040 → 27681 across the repeat; **the timeout was the HOST's per-destination
-  ICMP rate limit, not macOS** — 23318 of 27681 refusals silenced, `OutRateLimitHost`; the `ip6tables`
-  rule has never fired, IPv6 dies at *no route* first). **6.6 DONE** (the user chose **(ii), recorded
-  acceptance** — a recorded deviation from the objectives; Stage 11 step 3.4 re-takes it, its 5.2 alarms
-  on an off-proxy portal session). Outstanding: the user's half of **6.5**, the
-  **GATE**: trim the Sandbox row from `VPN_HOMES`, **then** the `removed {}` on `sandbox/foundation`'s
-  Elastic IP. Until then that slice plans **`1 to add` and must not be applied**, and the estate carries
-  **two** world-open rules (`VP-3` reads Production only — Lesson 31). Also owed: **4.11's second half**
-  (the Log Archive export), decision due #4 — `PX-4` reports it as a **note**. Pass 6 was re-cut into
-  owned sub-steps on 2026-09-07.
+- **STAGE 6c: PASSES 0-7 DONE (2026-09-08); ONE DECISION STILL DUE — #4, THE ACCESS LOG'S EXPORT TO LOG
+  ARCHIVE** (both rates measured before the user chooses; `PX-4` a note). Pass 6's readings: **6.2** portal,
+  catalog and a space open from the tunnel with **no** browser grant, both client names public — **a space
+  started while `sandbox/egress` is down HANGS** at "IDE configuration in progress"; **6.4** the timeout was the
+  **host's per-destination ICMP rate limit**, not macOS (23318 of 27681 refusals silenced), and the
+  `ip6tables` rule has never fired (IPv6 dies at *no route*); **6.5** a laptop call takes **two doors by
+  service family** — `sts` from the proxy's EIP, `s3control` through the hub's S3 gateway endpoint — the
+  union trimmed (`identity/sso` 6 changed, the lake unchanged), `sandbox/foundation` unfrozen (4 destroyed,
+  the EIP **forgotten**), `sandbox/vpn/` retired, **`VP-3` reads every account**; **6.6** the user chose
+  **(ii), recorded acceptance** — a recorded deviation, Stage 11 step 3.4 re-takes it, its 5.2 alarms on an
+  off-proxy portal session. **`aws sso logout` invalidates EVERY cached session's token; a browser sign-out
+  invalidates none.**
 - **STAGE 6d: 3.6, 7.2 AND 7.1 DONE (2026-09-07); STEP 7 RE-CUT AROUND ONE FINDING — THE CONNECTION
   METHOD DECIDES THE PERIMETER.** 7.1: **nothing to add on either side** — the space's seven names are all
   in `sandbox/egress/`, the laptop's five ride the `open` tunnel plane; `ec2messages` is on neither vendor

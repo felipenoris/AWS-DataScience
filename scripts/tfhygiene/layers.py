@@ -349,9 +349,9 @@ SLICES = [
     # section S6), so a t3.medium session burns 0.0416/h - EIGHT times this figure - and
     # `make status` still quotes this one. Deliberate: ./aws/vpn.py VP-1 is where the reader is
     # told the two have parted company.
-    Slice("sandbox", "vpn", DORMANT, "WireGuard host - the only human path in (Stage 4)", 0.0052),
-    # 6c step 4.7 (2026-09-06) - THE SAME HOST, ONE ACCOUNT ACROSS, and the two rows stand side
-    # by side until 4.13 destroys the Sandbox one. Same rank, same DORMANT layer, same measured
+    # 6c step 4.7 (2026-09-06) - THE SAME HOST, ONE ACCOUNT ACROSS; the Sandbox row (Stage 4's
+    # first [D] slice) stood beside this one until 6c step 6.5 retired it with an empty state
+    # (2026-09-08). Same rank, same DORMANT layer, same measured
     # t3.nano rate: what moved is the account and the JOB. It is no longer a NAT instance for a
     # private tier (wireguard-v0.5.0 dropped vpc_nat_cidrs) and it is not an internet door - it
     # forwards to the private address space and rejects the rest, because under D38 the internet

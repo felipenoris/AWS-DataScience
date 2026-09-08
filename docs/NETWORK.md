@@ -97,7 +97,6 @@ compares it against — **az1 · az2** in each column:
 | `production/proxy/` | `[D]` | the Squid host, its Elastic IP association, `proxy.awsds.internal`, the reconfigure association |
 | `sandbox/egress/` · `staging/egress/` · `production/egress/` · `production/workloads-egress/` | `[E]` | interface endpoints; in the two **compute** VPCs, the DNS Firewall |
 | `sandbox/probes/` · `staging/probes/` · `production/probes/` | `[E]` | the throwaway hosts that measure what a `describe` cannot |
-| `sandbox/vpn/` | `[D]` | **nothing, any more.** Its host was destroyed at 6c step 4.13's first half; the folder and its `[P]` anchors in `sandbox/foundation/` stand until 6.5 unfreezes that slice. Named here because it is still on disk and the gate reads the disk |
 | `production/buildbox/` | `[E]` | the build host and its egress-only security group — **and no route at all** |
 | `sandbox/sagemaker/` | `[P]` | **no network object of its own** — it hands the blueprint the VPC, the private subnets and their zone ids, which is what makes every project app land where §5 describes |
 
@@ -240,9 +239,9 @@ otherwise, naming the endpoint. The case that forced it: `sagemaker.studio` answ
 | `awsds-prod-buildbox` `[E]` | **nothing** — no ingress rule at all; Session Manager needs none |
 | the probe groups `[E]` | no ingress; egress scoped to the peers the **peering matrix** generates |
 
-**A dated exception**: `awsds-sandbox-vpn` still exists and still carries a world-open rule, guarding
-**no listener at all**. It leaves with `sandbox/foundation`'s unfreezing (6c 6.5). Until then the
-estate has *two* world-open rules, one per account, and `VP-3` reads Production.
+**The dated exception of 2026-09-07 closed on 2026-09-08 (6c step 6.5)**: `awsds-sandbox-vpn` is
+destroyed, the estate holds **one** world-open rule again, and `VP-3` reads **every** account's security
+groups to say so (Lesson 31).
 
 ---
 

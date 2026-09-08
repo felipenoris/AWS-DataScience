@@ -13,7 +13,7 @@
 #
 #                 aws sso login --sso-session awsds
 #
-#   run:      ./aws/vpn.py                        # the two profiles it needs (see below)
+#   run:      ./aws/vpn.py                        # every awsds-infra-* profile (VP-3 reads all)
 #             ./aws/vpn.py awsds-infra-prod  # only the ones named
 #             ./aws/vpn.py --on-host              # ALSO read inside the host (see below)
 #             python3 aws/vpn.py -                # CloudShell, ambient credentials
@@ -308,8 +308,14 @@ def main(argv: list) -> int:
     if argv:
         selected, source = profiles.select(argv)
     else:
-        selected = [VPN_HOME_PROFILE, IDENTITY_PROFILE]
-        source = "the two profiles this file needs (the VPN home and Identity)"
+        # EVERY awsds-infra-* PROFILE SINCE 2026-09-07 (6c step 6.5), not the two this file
+        # used to need: VP-3 asks whether the estate holds exactly one world-open rule, and a
+        # check that reads one account keeps reporting pass while another account carries a
+        # second (Lesson 31 - it did, for a day). The home and Identity are among them.
+        selected = sorted(
+            set(profiles.discover("awsds-infra-")) | {VPN_HOME_PROFILE, IDENTITY_PROFILE}
+        )
+        source = "every awsds-infra-* profile (VP-3 reads every account's security groups)"
 
     errors = ErrorLog()
     callers = profiles.preflight(selected, errors, out_label=out_label)
@@ -327,7 +333,7 @@ def main(argv: list) -> int:
     instances: list = []  # (id, type, state, subnet, public ip, http tokens, sg ids)
     root_volumes: dict = {}  # instance id -> (volume id, size in GiB, volume type)
     addresses: list = []  # (allocation id, public ip, instance id or '-')
-    world_open: list = []  # (sg id, sg name, proto, from, to)
+    world_open: list = []  # (profile, sg id, sg name, proto, from, to) - EVERY live infra account
     log_groups: list = []  # (name, retention)
     alarms: list = []  # (name, state)
     host_key_secrets: list = []  # (name, rotation enabled, value-read deny: yes/no/(call failed))
@@ -428,26 +434,6 @@ def main(argv: list) -> int:
                 f = line.split("\t")
                 if len(f) >= 3 and f[0]:
                     addresses.append((f[0], f[1], f[2] if f[2] != "None" else "-"))
-
-        res = cli.run("ec2", "describe-security-groups", "--output", "json", log=False)
-        if not res.ok:
-            logerr(VPN_HOME_PROFILE, "ec2 describe-security-groups", res.stderr)
-        else:
-            doc = json.loads(res.stdout or "{}")
-            for sg in doc.get("SecurityGroups", []):
-                for perm in sg.get("IpPermissions", []):
-                    open_v4 = any(r.get("CidrIp") == "0.0.0.0/0" for r in perm.get("IpRanges", []))
-                    open_v6 = any(r.get("CidrIpv6") == "::/0" for r in perm.get("Ipv6Ranges", []))
-                    if open_v4 or open_v6:
-                        world_open.append(
-                            (
-                                sg.get("GroupId", "?"),
-                                sg.get("GroupName", "?"),
-                                perm.get("IpProtocol", "?"),
-                                str(perm.get("FromPort", "-")),
-                                str(perm.get("ToPort", "-")),
-                            )
-                        )
 
         res = cli.run(
             "logs",
@@ -700,28 +686,65 @@ def main(argv: list) -> int:
                     "step 8's deny would then deny everyone everywhere.",
                 )
 
-    # VP-3: exactly one world-open ingress rule in the whole VPN home: UDP/51820 (step 3).
-    if home_live and (instances or world_open):
-        bad = [r for r in world_open if not (r[2] == "udp" and r[3] == "51820" and r[4] == "51820")]
-        good = [r for r in world_open if r[2] == "udp" and r[3] == "51820" and r[4] == "51820"]
-        for sgid, sgname, proto, pfrom, pto in bad:
+    # WORLD-OPEN INGRESS, READ IN EVERY LIVE INFRA ACCOUNT (6c step 6.5, 2026-09-07). Until then
+    # this read the VPN home alone, and VP-3 kept passing while Sandbox's retired anchors carried
+    # a second world-open rule guarding no listener - a check inheriting the scope of the account
+    # it was written in (Lesson 31). One describe-security-groups per account; all reads.
+    sg_accounts_read: list = []
+    for prof in [c.profile for c in callers if c.live and c.profile.startswith("awsds-infra-")]:
+        res = cli_for(prof).run("ec2", "describe-security-groups", "--output", "json", log=False)
+        if not res.ok:
+            logerr(prof, "ec2 describe-security-groups", res.stderr)
+            continue
+        sg_accounts_read.append(prof)
+        doc = json.loads(res.stdout or "{}")
+        for sg in doc.get("SecurityGroups", []):
+            for perm in sg.get("IpPermissions", []):
+                open_v4 = any(r.get("CidrIp") == "0.0.0.0/0" for r in perm.get("IpRanges", []))
+                open_v6 = any(r.get("CidrIpv6") == "::/0" for r in perm.get("Ipv6Ranges", []))
+                if open_v4 or open_v6:
+                    world_open.append(
+                        (
+                            prof,
+                            sg.get("GroupId", "?"),
+                            sg.get("GroupName", "?"),
+                            perm.get("IpProtocol", "?"),
+                            str(perm.get("FromPort", "-")),
+                            str(perm.get("ToPort", "-")),
+                        )
+                    )
+
+    # VP-3: exactly one world-open ingress rule in the WHOLE ESTATE, and it is the VPN home's
+    # UDP/51820 (step 3). Widened 2026-09-07 (6c step 6.5): a rule in any other account is a
+    # finding whatever its port, and so is a second one in the home.
+    def _is_the_tunnel(rule: tuple) -> bool:
+        prof, _g, _n, proto, pfrom, pto = rule
+        return prof == VPN_HOME_PROFILE and proto == "udp" and pfrom == "51820" and pto == "51820"
+
+    if world_open or (home_live and instances):
+        good = [r for r in world_open if _is_the_tunnel(r)]
+        bad = [r for r in world_open if not _is_the_tunnel(r)]
+        for prof, sgid, sgname, proto, pfrom, pto in bad:
+            where = "the VPN home" if prof == VPN_HOME_PROFILE else prof
             checks.fail(
                 "VP-3",
                 "world-open ingress rule",
-                f"{sgid} ({sgname}): {proto}/{pfrom}-{pto} open to the world - step 3 "
-                "allows exactly UDP/51820; port 22 belongs to SSM, not the internet.",
+                f"{sgid} ({sgname}) in {where}: {proto}/{pfrom}-{pto} open to the world - step 3 "
+                "allows exactly UDP/51820 in the VPN home and nothing anywhere else; port 22 "
+                "belongs to SSM, not the internet.",
             )
-        if instances and not good:
+        if home_live and instances and not good:
             checks.fail(
                 "VP-3",
                 "UDP/51820 reachable",
                 "the host exists and no SG opens UDP/51820 - the tunnel cannot come up.",
             )
         if good and not bad:
+            others = len([p for p in sg_accounts_read if p != VPN_HOME_PROFILE])
             checks.ok(
                 "VP-3",
-                "exactly one world-open rule",
-                f"UDP/51820 on {good[0][0]} - the expected shape from Stage 4 on",
+                "exactly one world-open rule in the estate",
+                f"UDP/51820 on {good[0][1]} in the VPN home, none in the {others} other account(s) read",
             )
 
     # VP-4: IMDSv2 required on the host - it holds a role credential on a public subnet.
@@ -1013,11 +1036,11 @@ then the handshake log calls it `peer=unknown`.""")
             rep.line()
             if world_open:
                 rep.tabulate(
-                    ["SG\tNAME\tPROTO\tFROM\tTO  (world-open ingress)"]
-                    + [f"{g}\t{n}\t{pr}\t{f}\t{t}" for g, n, pr, f, t in world_open]
+                    ["ACCOUNT\tSG\tNAME\tPROTO\tFROM\tTO  (world-open ingress, every account read)"]
+                    + [f"{p}\t{g}\t{n}\t{pr}\t{f}\t{t}" for p, g, n, pr, f, t in world_open]
                 )
             else:
-                rep.line("No world-open ingress rule in the VPN home.")
+                rep.line("No world-open ingress rule in any account read.")
             rep.line()
             if host_key_secrets:
                 rep.tabulate(
@@ -1085,7 +1108,8 @@ What the checks are, and where each comes from:
         because they are wrong differently - the type's gap is HOURLY and only while the
         host runs, the volume's is STANDING and survives a month nobody connects
   VP-2  the [P] Elastic IP exists and is associated with the host (step 2.1)
-  VP-3  exactly one world-open ingress rule, UDP/51820; never port 22 (step 3)
+  VP-3  exactly one world-open ingress rule in the ESTATE: the home's UDP/51820, never
+        port 22, nothing in any other account (step 3; every account since 6c 6.5)
   VP-4  IMDSv2 required on the host
   VP-5  the handshake log group exists, with retention (step 7)
   VP-6  the health alarm exists (step 7)

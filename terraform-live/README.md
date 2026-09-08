@@ -18,7 +18,7 @@ is a broken caller.
 
 ## What is here today
 
-**Twenty-nine slices across five account folders: eighteen `[P]`, three `[D]`, eight `[E]`** (2026-09-07 — one of the three `[D]` rows is `sandbox/vpn/`, whose host is already destroyed and whose folder waits on 6c step 6.5). That is a summary,
+**Twenty-eight slices across five account folders: eighteen `[P]`, two `[D]`, eight `[E]`** (2026-09-08 — `sandbox/vpn/`, the tree's first `[D]` slice, was retired at 6c step 6.5 with an empty state). That is a summary,
 not an authority — `make slices` prints the live table, and a slice that reaches disk without a row in it
 fails `make check`.
 
@@ -142,9 +142,7 @@ in silence — and for an ephemeral slice that is a bill nobody is told about. `
 
 **Since Stage 4 pass 1 there are `[D]` rows too, and `[D]` is not a slower `[E]`.** Today they are the
 two hub hosts in `VPC-Networking` — [`production/vpn/`](production/vpn/) (rank 40) and
-[`production/proxy/`](production/proxy/) (rank 41), 6c pass 4 — plus `sandbox/vpn/`, the tree's first `[D]`
-slice (Stage 4), whose host was destroyed at 6c step 4.13 and whose folder stays on disk until step 6.5
-unfreezes `sandbox/foundation/`. **`make hub-up` / `make hub-down` start and stop the two hub hosts
+[`production/proxy/`](production/proxy/) (rank 41), 6c pass 4. `sandbox/vpn/`, the tree's first `[D]` slice (Stage 4), was retired at 6c step 6.5 (2026-09-08). **`make hub-up` / `make hub-down` start and stop the two hub hosts
 together** and destroy nothing; a spoke's `make up ENV=…` **refuses** while either is stopped, naming the
 stopped host, because under D38 a stopped proxy is the estate's whole internet gone and a stopped tunnel is
 every persona's control plane gone. Creating or changing either host is always a deliberate `terraform
