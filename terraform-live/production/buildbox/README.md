@@ -119,7 +119,9 @@ every helper the script prints ends in `down`, and why `./scripts/buildbox.py st
 `t3.micro` at 0.0104, which is `[D]` and shared with the whole estate.
 
 **One thing a bigger instance does not fix:** every byte this host pulls from the internet crosses
-the **proxy**, a `t3.micro`. If a build is network-bound rather than CPU-bound, the knob is that
-host's instance type, not this slice's — and note that the heaviest traffic a build takes, image
-**layers** from ECR, does **not** cross it: those come from S3 through the `[P]` gateway endpoint,
-free and direct.
+the **proxy**, a `t3.micro` — the base image included, whose manifest comes from `public.ecr.aws` and
+whose blobs come from the CloudFront distribution its redirect names (measured 2026-09-06). If a build
+is network-bound rather than CPU-bound, the knob is that host's instance type, not this slice's. What
+does **not** cross it: a private-registry pull's layers, which come from S3 through the `[P]` gateway
+endpoint, and the push, which goes to this VPC's `ecr.dkr` interface endpoint — the documented shape,
+not yet measured since the move.

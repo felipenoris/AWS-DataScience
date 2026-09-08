@@ -56,7 +56,7 @@
 # on a throwaway host, and an S3 hop needs a bucket and a grant for a file that lives for an
 # hour. It sends no credential and reads nothing back but the command's own status.
 #
-#   run:   ./scripts/buildbox.py up         # apply the slice (starts the tunnel host first)
+#   run:   ./scripts/buildbox.py up         # apply the slice (starts the proxy host first)
 #          ./scripts/buildbox.py sync       # copy images/ to /opt/awsds/images on the host
 #          ./scripts/buildbox.py ssm        # interactive shell (needs session-manager-plugin)
 #          ./scripts/buildbox.py status     # what is up, and what it is costing
@@ -183,7 +183,8 @@ def refuse_if_no_ssm_endpoints() -> None:
             "  Session Manager is the ONLY way into the build host - no ingress rule, no public\n"
             "  address, and no default route to reach the public SSM API through. Without this\n"
             "  endpoint the apply would succeed and the host would be unreachable.\n"
-            "  Bring it up first:  make up ENV=production   (or apply terraform-live/production/egress/)"
+            "  Bring it up first, and only it:  ./scripts/slices.py up --env production --only egress\n"
+            "  (make up ENV=production would also raise workloads-egress/, probes/ and this host)"
         )
     print(f"    {SSM_SESSION_ENDPOINT} endpoint available in {res.stdout.split()[0]}")
 
@@ -371,7 +372,8 @@ def cmd_up(args) -> int:
             return 0
         time.sleep(10)
     print(f"\n{RED}the host is up but never registered with Session Manager.{RESET}")
-    print("  That is the route through the WireGuard host failing, nine times out of ten.")
+    print("  Refusal 1 read the ssmmessages endpoint before the apply, so the door was there -")
+    print("  look at the host, not the path.")
     print(
         f"  Read the first boot without SSM:  aws ec2 get-console-output --instance-id {iid} --latest"
     )

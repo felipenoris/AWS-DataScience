@@ -1,232 +1,220 @@
 # Runbook — the buildbox
 
-> **THE HOST MOVED ACCOUNTS ON 2026-09-06 ([Stage 6c](../stages/stage-06c-networking-hub.md) step 5.8),
-> and this file is rewritten to the new shape.** Its only egress used to be the `[E]` route
-> `0.0.0.0/0 → the WireGuard host's ENI`, and **a route target cannot live in another VPC** — so when
-> D38 moved the VPN host to `VPC-Networking` and deleted every default route in the estate, the old
-> shape was not deprecated, it was unbuildable. The host now sits in **`VPC-SharedServices`**, in the
-> **private** tier, as an **explicit-proxy client**. `vpc_nat_cidrs`, the isolated-tier route and the
-> *must not coexist with `probes/`* refusal all died in the same commit.
-> **[Stage 7](../stages/stage-07-gitlab-runners-ecr.md) still absorbs it** — same `amd64` shape, same
-> 64 GiB, pushing with its instance profile instead of §P's token dance — and until then everything
-> below is the live procedure.
+The `amd64` build host of [Stage 6a step 5.0](../stages/stage-06a-unified-studio.md): where
+[`images/`](../../../images/README.md) (`base`, `dev-env`) is built and pushed. Slice
+[`terraform-live/production/buildbox/`](../../../terraform-live/production/buildbox/README.md), **Production**
+account, layer **`[E]`** — created for a build session, destroyed at its end. Driven by
+[`scripts/buildbox.py`](../../../scripts/buildbox.py), never by `make up`.
 
-The `amd64` build host of [Stage 6 step 5.0](../stages/stage-06a-unified-studio.md), in the **Production**
-account. Slice: [`terraform-live/production/buildbox/`](../../../terraform-live/production/buildbox/README.md).
-Layer **`[E]`** — created for a build session, destroyed at the end of it.
-
-**The estate-wide picture — every VPC, route and address, and where this host's one route sits in
-them — is [`docs/NETWORK.md`](../../NETWORK.md).** This file stays the procedure.
+> **Rewritten 2026-09-06 for the move ([6c step 5.8](../stages/stage-06c-networking-hub.md)), reviewed
+> 2026-09-08.** The host used to sit in Sandbox's isolated tier behind a default route at the WireGuard
+> host's ENI. D38 deleted every default route and moved that host to `VPC-Networking`, where a route in
+> another VPC cannot point — so the old shape was unbuildable, not deprecated. The host now lives in
+> **`VPC-SharedServices`**, private tier, as a **client of the explicit proxy**.
+> [Stage 7](../stages/stage-07-gitlab-runners-ecr.md) retires it into the build runner; until then this is
+> the live procedure. The estate-wide picture — VPCs, routes, addresses — is
+> [`docs/NETWORK.md`](../../NETWORK.md); this file is the procedure.
 
 ## D. What it is
 
-One EC2 instance (`t3.xlarge`, 64 GiB gp3, both selectable in the tracked
-`instance_type.auto.tfvars` beside the slice), with docker and git installed at first boot, plus the
-one route that gives it a way out. It holds nothing worth keeping: the volume dies with the
-instance, the state carries no secret, and anything that must survive leaves as an image in ECR.
-**It no longer creates a route** — there is none to create.
+One EC2 instance — `t3.xlarge`, 64 GiB gp3, both set in the tracked `instance_type.auto.tfvars` beside the
+slice — with docker and git installed at first boot. **No public address, no ingress rule, no route to the
+internet.** It holds nothing worth keeping: the volume dies with the instance, the state carries no secret,
+and anything that must survive leaves as an image in ECR.
 
 ## M. Why it exists
 
-**The images this estate runs on are `linux/amd64` and the laptop is `arm64`.** SageMaker instance
-types are x86 and `sagemaker-distribution` publishes `-cpu`/`-gpu` tags with **no `arm64` variant at
-all** (measured 2026-08-21 from the public registry's tag list); the laptop also has no docker. So
-[`images/`](../../../images/README.md) — `base` and `dev-env` — is built here rather than there, on a
-machine of the right architecture, inside the perimeter, that exists only while a build runs.
+- **The images are `linux/amd64`; the laptop is `arm64` and has no docker.** SageMaker instance types are
+  x86 and `sagemaker-distribution` publishes `-cpu`/`-gpu` tags only (read 2026-08-21 from the public
+  registry). So the build runs on a machine of the right architecture, inside the perimeter, that exists
+  only while a build runs.
+- **It is a builder, not a workstation.** Its role carries `AmazonSSMManagedInstanceCore` and no `ecr:`
+  action at all. The push is the user's act, from the laptop, with a token — §P.
+- **Since the move, that absent permission is the whole control.** In Sandbox a push was also refused at
+  the far end: the registry grants the Interactive accounts a pull and nothing more. The host is now in
+  the registry's own account, where same-account access is decided by the identity policy alone — an
+  `ecr:` action added here in a hurry would simply work.
 
-It is a **builder, not a workstation**. It cannot push: its role carries Session Manager and no
-`ecr:` permission at all. The push is step 5.0's own act, from an identity that may — **§P is how that
-identity reaches a host that has none, and why the two acts share one session**.
+## C. The components
 
-**AND THE MOVE TOOK HALF OF THAT CONTROL AWAY (5.8).** The old reasoning had two legs: this role names
-no `ecr:` action, **and** the Production registry grants the *Interactive* accounts a pull and nothing
-more, so a push from Sandbox was refused **at the far end** whatever the near end said. The host is now
-**in the registry's own account**. The far-end refusal does not apply to it, so the absent permission is
-no longer a belt beside a brace — **it is the whole control**, and one added in a hurry would work.
-§P's token dance is unchanged and is now the only thing between a build host and the registry.
-
-## C. The components, and how they connect
-
-| Piece | Where | What it does |
+| Piece | Where | Role |
 |---|---|---|
-| the instance | **private** tier of `VPC-SharedServices`, no public IP | the build host itself |
-| its security group | the slice, `[E]` | **egress only — no ingress rule at all.** Session Manager needs none |
-| **the proxy** | `production/proxy/` in `VPC-Networking`, `[D]` | the estate's single way to the internet. Reached at `proxy.awsds.internal:3128` over the SharedServices ↔ Networking **peering** |
-| the proxy's **allow-list** | `production/networking/`, `[P]` SSM parameter | what this host may fetch: the `production-foundation` plane (4.9) — the notebook list minus the AWS control plane |
-| the **SSM endpoints** | `production/egress/`, `[E]` | `ssm` / `ssmmessages` / `ec2messages`. **The only door into the host**, put there by step 5.5 one step ahead of it |
-| the **gateway** endpoints | `production/foundation/`, `[P]` | S3 and DynamoDB by route — free, and where every image **layer** comes from |
-| `no_proxy` | generated by `vpc-egress` from this VPC's endpoint list (5.6) | which names must NOT go to the proxy. **Includes the SSM names** — a `no_proxy` that missed `ssmmessages` would send the agent's own websocket at Squid and lock the host out of its only door |
+| the instance | `VPC-SharedServices`, **private** tier, no public IP | the build host |
+| its security group | the slice, `[E]` | **no ingress rule at all**; egress unrestricted — the control is the absent route plus the proxy's allow-list |
+| the **proxy** | `production/proxy/` in `VPC-Networking`, `[D]` | the estate's only way to the internet: `proxy.awsds.internal:3128`, over the SharedServices ↔ Networking peering |
+| its **allow-list** | `production/networking/`, `[P]` SSM parameter | the `production-foundation` plane: the notebook list minus `.amazonaws.com`, plus the one CloudFront name `public.ecr.aws` redirects blobs to |
+| the **SSM endpoints** | `production/egress/`, `[E]` | `ssm`, `ssmmessages`, `ec2messages` — **the only door into the host** |
+| the **ECR endpoints** | `production/egress/`, `[E]`, core list | `ecr.api`, `ecr.dkr` — private-registry calls stay inside the VPC |
+| the **gateway** endpoints | `production/foundation/`, `[P]` | S3 and DynamoDB by route, free: the AL2023 repositories, and the layers of a private-registry pull |
+| `no_proxy` | generated by `vpc-egress` from this VPC's endpoint list ([5.6](../stages/stage-06c-networking-hub.md)) | what must **not** go to the proxy: the endpoint names above, and S3/DynamoDB in both spellings (plain and `dualstack`) |
 
-**THE ROUTE TABLE ROW IS GONE AND NOTHING REPLACES IT.** That is what design B means for this host: reach
-is three separate, *named* paths rather than one invisible default. It is also why the tier changed —
-**measured 2026-09-06, the peering routes to `VPC-Networking` are in the private route tables and not in
-the isolated one**, so an isolated-tier build host could not reach the proxy at all. The isolated tier was
-only ever the old home because design A's default route belonged to `egress/` and two slices cannot write
-one route table; nothing writes a default route now.
+**Why the private tier.** Measured 2026-09-06: the peering routes to `VPC-Networking` are in the private
+route tables and not in the isolated one, so an isolated-tier host could not reach the proxy at all.
 
-**Reach is still an INTERSECTION and the halves are still in different slices** (Lesson 28) — what changed
-is which halves. The first apply of the old shape had the route and the masquerade and no security-group
-rule, so the host booted, installed its packages through the S3 gateway endpoint, and then timed out on
-`ssm.<region>.amazonaws.com` with nothing in any single file wrong. The equivalent gap now is the proxy's
-allow-list: a source the proxy's security group admits and whose plane has never heard of a name is
-**reachable and mute**.
+**In: nothing.** Session Manager needs no inbound rule — the agent holds its channel open outbound. The
+"reachable only over the VPN" rule was withdrawn on 2026-08-21: it never gated the shell, and it left port
+22 open on a host with no keys. **What gates the shell is IAM**: the persona sets are VPN-bound;
+`InfrastructureAccess` is not, by open question 17 (a). A port served during a build is reached with SSM
+port forwarding, never with an ingress rule.
 
-**In: nothing.** There is no ingress rule at all — the *"reachable only over the VPN"* requirement was
-**withdrawn by the user on 2026-08-21** rather than delivered in name only: the rule that used to be here
-did not gate the shell (`ssm start-session` reaches the agent's *outbound* channel and no security group
-sees it) and it left port 22 reachable on a host with no authorized keys. **What gates the shell is IAM** —
-for the six persona sets the VPN still does; for `InfrastructureAccess` it does not, by open question 17,
-option (a). A port served during a build is reached with SSM **port forwarding**, not with an ingress rule.
+**Out: only through the proxy, and only if told.** An explicit proxy is not transparent — a client that was
+not told does not fail over, it **hangs**. The first boot tells four things, each in its own place:
 
-**Out: as a client of the proxy, and a client that is not TOLD does not fail over — it hangs.** The first
-boot writes the setting in **four** places because four different things open connections and each reads
-it from somewhere else:
-
-| | reads it from | the symptom when it is missing |
+| client | reads the proxy from | symptom when missing |
 |---|---|---|
-| shells, `curl`, `git`, `pip` | `/etc/environment` (both cases — clients disagree about which they honour) | everything hangs |
-| the docker **daemon** | a systemd drop-in — it is not a child of any shell | `docker pull` hangs while `curl` works, and the error names the registry |
-| **build containers** | `~/.docker/config.json` `proxies` | the base image pulls and the first `pip install` inside the build hangs |
-| `dnf` | `proxy=` in `/etc/dnf/dnf.conf` | a package install hangs — *not* the AL2023 repos, which are on S3 and go through the gateway |
+| shells, `curl`, `git`, `pip`, `dnf` | `/etc/environment`, both cases (`dnf` via libcurl) | everything hangs |
+| the docker **daemon** | a systemd drop-in — not a child of any shell | `docker pull` hangs while `curl` works |
+| **build containers** (`RUN` steps) | `~/.docker/config.json` `proxies`, for root and `ec2-user` | the base image pulls, the first `pip install` hangs |
+| the boot script itself | its own `export` — `/etc/environment` does not reach cloud-init | the first boot "works" until it needs the internet |
 
-**Three couplings worth holding in mind:**
+**Never `proxy=` in `dnf.conf`.** It has no exclusion setting, so it sends the AL2023 repositories — on S3,
+reached direct through the gateway — at a proxy whose plane refuses `.amazonaws.com`. That broke the first
+boot on 2026-09-06.
 
-- **`production/egress/` is now a PREREQUISITE, where it used to be an obstacle.** The old note here said
-  to build with `egress/` **down**, because its DNS Firewall associated to the VPC id and blocked the
-  CDN-fronted package hosts. Three things ended that: `vpc-egress-v0.4.0` made chain evaluation an input,
-  **6c step 5.7 cut the firewall lists** to AWS's own namespaces and this estate's private zones, and those
-  package names moved to the **proxy**, which matches the hostname the client *requested* and evaluates no
-  chain. What `egress/` now provides is the **shell**. It costs **0.130 USD/h** for the session — the one
-  bill the move added.
-- **A stopped PROXY is the new blackhole, and it announces itself better than the old one did.** A stopped
-  route target dropped packets silently; a stopped proxy is a **connection refused** to a name that
-  resolves. `up` starts it; `down` does **not** stop it — it is `[D]` and it is the whole estate's egress.
-- **A build session is three bills**: this host (0.1664/h), `production/egress/` (0.130/h), and the proxy's
-  `t3.micro` (0.0104/h, shared). **`down` tears down only the first.**
+**Three couplings:**
+
+- **`production/egress/` is a prerequisite**, not the obstacle the old note called it: its SSM endpoints are
+  the shell.
+- **A stopped proxy is the blackhole** — a *connection refused* to a name that resolves. `up` starts it;
+  `down` never stops it (`[D]`, the whole estate's egress).
+- **A build session is three bills**, and `down` ends only the first:
+
+| bill | USD/h |
+|---|---|
+| this host, `t3.xlarge` | 0.1664 |
+| `production/egress/` | 0.130 |
+| the proxy, `t3.micro`, shared | 0.0104 |
 
 ## U. Up
+
+The identity is `awsds-infra-prod` — the infrastructure user, account **Production**, permission set
+**`InfrastructureAccess`**. **The tunnel is not needed**: that permission set is reachable from any network.
+With the tunnel up, export the proxy variables in that terminal first
+([client runbook](client-vpn-proxy-configuration.md)).
+
+**1. The door.** `production/egress/` up, and only it — `make up ENV=production` would also raise
+`workloads-egress/`, `probes/` and this host:
+
+```bash
+./scripts/slices.py up --env production --only egress
+```
+
+**2. The host, the context, the shell:**
 
 ```bash
 ./scripts/buildbox.py up && ./scripts/buildbox.py sync && ./scripts/buildbox.py ssm
 ```
 
-`up` **refuses while `production/egress/` is down** — it reads the `ssmmessages` endpoint *before* the
-apply, because without it the apply succeeds, the host reaches `running`, and `start-session` reports it
-as not connected, which is indistinguishable from a slow boot for as long as anyone waits (Lesson 52). It
-then **starts the proxy host** if it is stopped, applies the slice, and waits for Session Manager. `sync` puts `images/` at `/opt/awsds/images` — the one write
-API in the tooling (`ssm:SendCommand`), fenced the way `./aws/vpn.py --on-host` is. `ssm` opens the
-shell.
+- `up` **refuses while the `ssmmessages` endpoint is absent** — without it the apply succeeds, the host
+  runs, and `start-session` says *not connected*, indistinguishable from a slow boot (Lesson 52). It then
+  **starts the proxy** if stopped, applies, waits for the agent and then for docker (the agent registers
+  about a minute before `dnf install docker` finishes).
+- `sync` puts `images/` at `/opt/awsds/images` — the one write API in the tooling (`ssm:SendCommand`),
+  fenced like `./aws/vpn.py --on-host`.
+- `ssm` opens the shell. **You land as `ssm-user`**, an account Session Manager creates after the first
+  boot, so it is not in the `docker` group: `sudo docker …`, or `sudo -iu ec2-user`.
 
-**In the session you are `ssm-user`, not `ec2-user`** — Session Manager creates that account on its
-first connection, so the first boot cannot add it to the `docker` group. Use `sudo docker …` or
-`sudo -iu ec2-user`. Then:
+**3. Build:**
 
 ```bash
 cd /opt/awsds/images && sudo docker build -t awsds/base:local base && sudo docker build -t awsds/dev-env:local dev-env
 ```
 
-**`dev-env` is `FROM base`, so any change to `base` rebuilds `dev-env` from its first layer** — Julia,
-R and Rust download again. That is the price of D17's single ancestor and it is paid on every edit to
-`images/base/`, not only on the big ones. It also means a rebuild writes a **second** copy of a ~17 GB
-image before the old one loses its tag: read §S before starting one on a disk you have not looked at.
+`dev-env` is `FROM base`, so any change to `base` rebuilds `dev-env` from its first layer — Julia, R and
+Rust download again — and a rebuild writes a second ~17 GB image before the old one loses its tag: read §S
+first. The base image comes through the proxy: manifest from `public.ecr.aws`, blobs from the one
+CloudFront distribution its redirect names. Measured 2026-09-06: `docker pull` said only `Forbidden`; the
+proxy's access log named the host. If that happens again, read the new name out of the same log
+(`./aws/proxy.py --on-host`) — never widen to `.cloudfront.net`.
 
-**If it never registers with SSM**, it is the endpoints nine times out of ten — and `up`'s first refusal
-exists so that this is checked before the apply rather than diagnosed after it. Read the first boot without
-SSM: `aws ec2 get-console-output --instance-id <id> --latest`, and `/var/log/awsds-buildbox-boot.log` once
-you are in — its egress check prints the public address the host leaves under, which must be the **proxy's**
-Elastic IP. Anything else means this host found another way out, which under design B should be impossible;
-a `NO EGRESS` line means the proxy is down, the peering route is missing, or the name is not on the
-`production-foundation` plane — and the proxy's own 403 **names itself**, so the three are told apart from
-the body of the reply rather than from its absence (Lesson 42).
-
-To test a docker container:
+**4. Test:**
 
 ```bash
 sudo docker run --rm -it awsds/dev-env:local bash
 ```
 
-Neither `Dockerfile` sets an `ENTRYPOINT` or a `CMD` — that is the SMUS BYOI rule, not an omission — so
-both are inherited from the distribution: `/usr/local/bin/_entrypoint.sh` with `/bin/bash`, running as
-`sagemaker-user` in `/home/sagemaker-user`. The entrypoint activates the conda environment and `exec`s
-what you passed, which is why the run above is also the cheapest proof that the rule was respected.
+Neither `Dockerfile` sets `ENTRYPOINT` or `CMD` — the SMUS BYOI rule — so the distribution's
+`_entrypoint.sh` runs, as `sagemaker-user` in `/home/sagemaker-user`. The run above is the cheapest proof
+the rule was kept.
+
+**If it never registers with SSM**: `up` read the `ssmmessages` endpoint before the apply, so the door was
+there — look at the host. Read the first boot without SSM (`aws ec2 get-console-output --instance-id <id>
+--latest`), and once in, `/var/log/awsds-buildbox-boot.log`. Its egress check is two readings, deliberately in two schemes: over
+https a refusal is on the CONNECT and `curl` reads it as `000`; over http the 403 is the response and its
+body names Squid (Lesson 42).
+
+| `pypi.org` over https | `example.com` over http | meaning |
+|---|---|---|
+| 200 | 403 | proxy, peering route and allow-list all work |
+| 000 | 000 | the proxy is unreachable — stopped, or the peering route is missing |
+| 403 | 403 | the plane is empty or wrong |
+
+### GitHub from the host
+
+`git` is installed, but **an SSH clone has no path**: no route, and the proxy tunnels to port 443 only. A
+**public** repository clones over HTTPS through the proxy — `github.com` is on the plane and `git` reads
+`/etc/environment`:
+
+```bash
+git clone https://github.com/felipenoris/AWS-DataScience
+```
+
+A private clone would need a credential on a throwaway host, which is what `sync` exists to avoid. The
+SSH-key steps below were written on 2026-08-21, when the host still had a route; they now apply to the
+**laptop**, where port 22 has a path:
+
+```bash
+ssh-keygen -t ed25519 -C "<EMAIL>" && eval "$(ssh-agent -s)" && cat ~/.ssh/id_ed25519.pub
+```
+
+Add the public key at <https://github.com/settings/keys>, then `git clone git@github.com:felipenoris/AWS-DataScience`.
 
 ## S. Space — checking it, and getting it back
 
-**The root volume is 64 GiB and the two images are most of it.** `base` is ~12 GB and `dev-env` ~17.4 GB
-(measured 2026-08-21, first build). A rebuild is where the wall is actually hit, because the new image is
-written *before* the old one loses its tag, and the failure arrives mid-build as `no space left on
-device` — after the twenty minutes, not before.
+The root volume is 64 GiB; `base` is ~12 GB and `dev-env` ~17.4 GB (measured 2026-08-21). A rebuild hits the
+wall mid-build — the new image is written before the old one loses its tag — as `no space left on device`,
+after the twenty minutes rather than before.
 
 ```bash
 df -h / && sudo docker system df
 ```
 
-**Read them in that order and do not add the two image sizes together.** `df` is the truth about the
-filesystem; `docker system df` says who is holding it, split into Images / Containers / Build Cache with
-a RECLAIMABLE column. The `SIZE` column of `docker images` counts **shared layers once per image**, so
-`base` at 12 GB and `dev-env` at 17.4 GB are not 29.4 GB on disk — `dev-env` *contains* `base`'s layers.
-`docker system df` is the one that de-duplicates. `-v` breaks it down per image and per cache record.
+Read them in that order: `df` is the filesystem's truth; `docker system df` says who holds it, de-duplicated,
+with a RECLAIMABLE column (`-v` breaks it down per image and cache record). `docker images` counts shared
+layers once per image, so 12 + 17.4 is not what is on disk — `dev-env` contains `base`'s layers.
 
-**Dropping the notebook image:**
-
-```bash
-sudo docker rmi awsds/dev-env:local
-```
-
-It frees the **delta**, not the 17.4 GB: `base` still references the shared layers below. If a container
-still exists from that image the removal is refused — `sudo docker ps -a`, then `sudo docker rm <id>`
-(a `docker run --rm` has already done this for you).
-
-**What usually holds the space is not an image.** After a rebuild the previous `dev-env` is still there,
-untagged, holding its unique layers, and the build cache holds another copy of everything expensive:
+What usually holds the space is not a tagged image: the previous, now untagged `dev-env`, and the build cache.
 
 ```bash
 sudo docker image prune && sudo docker builder prune
 ```
 
-The first removes dangling images (no tag, nothing referencing them), the second the build cache. Both
-are safe: neither touches a tagged image, and the cache only costs time to rebuild. **`docker system
-prune -a` is a different thing** — it removes every image not backing a running container, `base`
-included, so the next build starts by pulling the distribution again.
+Both are safe — neither touches a tagged image. `sudo docker rmi awsds/dev-env:local` frees only the delta
+above `base`, and is refused while a container from it exists (`sudo docker ps -a`, then `rm`).
+**`docker system prune -a` is different**: it removes `base` too, so the next build pulls the distribution
+again.
 
-**And the escape hatch is the layer.** This host is `[E]` and holds nothing worth keeping: if the disk
-is a mess, `down` then `up` gives a clean 64 GiB in about two minutes. Weigh it against a full rebuild
-(~20 minutes) — pruning first is nearly always the cheaper move, recreating is for when it is not.
+The escape hatch is the layer: `down` then `up` gives a clean 64 GiB in about two minutes. Against a
+~20-minute rebuild, pruning first is nearly always cheaper.
 
 ## P. Push — the one act this host cannot do under its own name
 
-**Build and push are ONE session, and that is a property of the layer rather than a preference.** The
-volume dies with the instance (§D), so a `down` between the two acts throws the build away — measured on
-2026-08-22, when the host was absent and the 2026-08-21 images with it. Until this section existed the
-two were described in consecutive sentences that read as two sittings; the cost of that reading is the
-full rebuild, and the rebuild is the twenty minutes, not the push.
+**Build and push are ONE session.** The volume dies with the instance, so a `down` between the two throws
+the build away — measured 2026-08-22, when the previous day's images had gone with the host.
 
-**Why the identity has to arrive from somewhere else — read from the live registry, 2026-08-22, not
-inferred.** Both repository policies carry exactly one statement, `AllowConsumerAccountsToPull`, granting
-the two consumer accounts (`REGISTRY_CONSUMERS` in `backend.py` — Sandbox and Staging, the latter
-inheriting Development's seat at 6b because a deployment target still pulls) `BatchCheckLayerAvailability`, `BatchGetImage`, `GetDownloadUrlForLayer` and
-`DescribeImages`. **No statement anywhere grants a push to anybody**, and none needs to: same-account
-access is decided by the identity policy alone, so the push is a **Production** principal's act and can
-be nothing else. Giving this instance's role an `ecr:` permission would not change that — it would meet
-a repository policy that offers Sandbox a *pull*, which is the design (§M), not an oversight.
-
-**So the credential travels and the permission does not.** `ecr:GetAuthorizationToken`, called on the
-laptop as `awsds-infra-prod`, mints a 12-hour bearer token that the docker client presents to the
-registry: what authorizes the upload is the **token's identity**, not the host holding it. Nothing here
-is granted to the buildbox, nothing survives the session, and the box's role is untouched.
-
-**The ceiling permits this and forbids its mirror image**, which is worth knowing before the first
-`InitiateLayerUpload` fails and gets blamed on the relay. `awsds-org-scp-perimeter`'s
-`DenyEcrPushOutsideOrganization` denies the four push actions when `aws:ResourceOrgID` is **not** ours —
-it is the exfiltration shape, our layers into somebody else's registry — and `awsds-org-rcp-perimeter`'s
-`EnforceOrgIdentitiesOnRegistry` denies `ecr:*` to principals outside the organization. This push is an
-org identity into an org registry and neither statement sees it.
+**The credential travels; the permission does not.** No repository policy grants a push to anybody (read
+2026-08-22: one statement each, `AllowConsumerAccountsToPull`, for `REGISTRY_CONSUMERS` in `backend.py` —
+Sandbox and Staging). Same-account access is decided by the identity policy alone, so the push is a
+**Production principal's** act: `ecr:GetAuthorizationToken` on the laptop mints a 12-hour token, and what
+authorises the upload is the token's identity, not the host holding it. The box's role is untouched. The
+organization ceiling permits this and forbids its mirror image: `DenyEcrPushOutsideOrganization` (SCP) and
+`EnforceOrgIdentitiesOnRegistry` (RCP) both watch for a foreign side, and an org identity pushing into an
+org registry has none.
 
 ### The relay
 
-On the **laptop** — SSO user: the **infrastructure user**; account: **Production**; permission set:
-**`InfrastructureAccess`**, through `awsds-infra-prod`. The first command prints the two registry URIs
-(the host part before the first `/` is the registry); the second prints the token, and only the token:
+On the **laptop**, as `awsds-infra-prod`. The host part of either URI is the registry; the second command
+prints the token and nothing else:
 
 ```bash
 aws ecr describe-repositories --profile awsds-infra-prod --region us-west-2 --query 'repositories[].repositoryUri' --output text
@@ -236,11 +224,10 @@ aws ecr describe-repositories --profile awsds-infra-prod --region us-west-2 --qu
 aws ecr get-login-password --profile awsds-infra-prod --region us-west-2
 ```
 
-In the **buildbox session**, take it without echoing it. `read -rs` keeps the token off the screen and out
-of the shell history, and nothing else records it: the account has **no `SSM-SessionManagerRunShell`
-document** (measured 2026-08-22), so Session Manager runs on defaults and no session stream is logged.
-The daemon runs as root and every build command here is `sudo docker`, so the login has to be `sudo`
-too — otherwise the credential lands in `ssm-user`'s config and the push looks unauthenticated.
+In the **buildbox session**, take it without echoing it. `read -rs` keeps it off the screen and out of the
+history, and nothing else records it: Production has no `SSM-SessionManagerRunShell` document (re-measured
+2026-09-08, after the move), so no session stream is logged. The login must be `sudo`, like every build
+command — otherwise the credential lands in `ssm-user`'s config and the push looks unauthenticated.
 
 ```bash
 read -rs ECR_TOKEN
@@ -256,55 +243,54 @@ echo "$ECR_TOKEN" | sudo docker login --username AWS --password-stdin "$REGISTRY
 
 ### Tag, push, record
 
-**The repositories are `IMMUTABLE`, so a tag is spent the first time it lands** — a re-push under the
-same tag is refused, and that is the control rather than a nuisance (`images/README.md`). Pick the tag
-deliberately: the first one written here is the convention Stage 8's pipeline inherits.
+**The tag is decided before the push, by [`docs/SMUS.md`](../../SMUS.md)**: `<flavour>-v<major>.<minor>.<patch>`,
+the same number in both repositories. Both are `IMMUTABLE`, so a tag is spent the first time it lands —
+`default-v0.1.0` was spent on 2026-08-22, and the next hand build is `default-v0.2.0` (Stage 7 step 2.6, the
+CA layer).
 
 ```bash
-sudo docker tag awsds/base:local "$REGISTRY/awsds-prod-ecr-base:v0.1.0" && sudo docker tag awsds/dev-env:local "$REGISTRY/awsds-prod-ecr-dev-env:v0.1.0"
+TAG=default-v<major>.<minor>.<patch>
 ```
 
 ```bash
-sudo docker push "$REGISTRY/awsds-prod-ecr-base:v0.1.0"
+sudo docker tag awsds/base:local "$REGISTRY/awsds-prod-ecr-base:$TAG" && sudo docker tag awsds/dev-env:local "$REGISTRY/awsds-prod-ecr-dev-env:$TAG"
 ```
 
 ```bash
-sudo docker push "$REGISTRY/awsds-prod-ecr-dev-env:v0.1.0"
+sudo docker push "$REGISTRY/awsds-prod-ecr-base:$TAG"
+```
+
+```bash
+sudo docker push "$REGISTRY/awsds-prod-ecr-dev-env:$TAG"
 ```
 
 ```bash
 sudo docker logout "$REGISTRY"
 ```
 
-**Both digests go in the stage log** — Stage 6 step 5.1 registers a SageMaker image *version* against
-one of them, and Stage 7 step 2.6 has to be able to say which digest its CA rebuild replaced. Read them
-back from the laptop rather than from the push output:
+**Both digests go in the stage log** — [Stage 6d step 2.1](../stages/stage-06d-unified-studio-remainder.md)
+registers a SageMaker image version against one, and Stage 7 step 2.6 must be able to say which digest it
+replaced. Read them from the laptop, not from the push output:
 
 ```bash
-aws ecr describe-images --profile awsds-infra-prod --region us-west-2 --repository-name awsds-prod-ecr-base --query 'imageDetails[].{Tag:imageTags[0],Digest:imageDigest,Bytes:imageSizeInBytes}' --output table
+aws ecr describe-images --profile awsds-infra-prod --region us-west-2 --repository-name awsds-prod-ecr-dev-env --query 'imageDetails[].{Tag:imageTags[0],Digest:imageDigest,Bytes:imageSizeInBytes}' --output table
 ```
 
-### What the bytes do on the way out
+### Which path the bytes take
 
-**The push does not touch the S3 gateway endpoint, and the endpoint policy's missing `PutObject` is not
-a gap.** AWS's own page is explicit in both directions: `ecr.dkr` is the Docker Registry API and *"Docker
-client commands such as `push` and `pull` use this endpoint"*, while the S3 gateway endpoint exists so
-that containers **downloading** an image can fetch the layers — its documented minimum is `s3:GetObject`
-on `prod-<region>-starport-layer-bucket`. Sandbox's endpoint policy grants exactly that plus
-`ListBucket`, which is the pull path Stage 3 already provided for; the push uploads its layer parts to
-the registry endpoint instead.
+- **Push**: to the registry's `dkr.ecr` name, which resolves to this VPC's `ecr.dkr` interface endpoint and
+  is in `no_proxy` — inside the VPC, never through the proxy. That is the vendor's documented shape;
+  **no push has been measured since the move** (the last one, 2026-08-22, left Sandbox across the WireGuard
+  host). The first push from here is the measurement: read `vpcEndpointId` on its `InitiateLayerUpload`
+  event.
+- **Pull from the private registry**: manifest via `ecr.dkr`, layers from S3 through the `[P]` gateway,
+  whose policy names `prod-us-west-2-starport-layer-bucket` — free, and not through the proxy.
+- **Pull of the public base image**: through the proxy — `public.ecr.aws`, then the CloudFront distribution
+  its blob redirect names (measured 2026-09-06). The `t3.micro` proxy is in this path and in no other.
 
-**THE PUSH PATH CHANGED WITH THE ACCOUNT (5.8), AND IT GOT BETTER.** In Sandbox the VPC had no
-interface endpoint of any kind while `egress/` was down, so `dkr.ecr` resolved publicly and the upload
-crossed the WireGuard `t3.nano` doing NAT — proven, but slow, and the note here said to budget the time.
-`VPC-SharedServices` has `ecr.api` and `ecr.dkr` as interface endpoints and `production/egress/` is up
-by necessity (it is the shell), so the push goes **through the endpoints**, and the layer bytes go to
-**S3 through the `[P]` gateway** — free, and not across the proxy at all. The `t3.micro` proxy is not in
-this path; do not size the push against it.
-
-**Do not size it from `docker images`.** That column is uncompressed and counts shared layers once per
-image; ECR stores layers **compressed** and **per repository**, so `dev-env` uploads its copy of
-`base`'s layers again into the second repository. Two repositories, not one deduplicated push.
+**Do not size the push from `docker images`**: that column is uncompressed and counts shared layers once per
+image, while ECR stores layers compressed and per repository — `dev-env` uploads its copy of `base`'s
+layers again. Measured 2026-08-22: 12.1 and 17.5 GB on the host became 3.96 and 5.65 GB in ECR.
 
 ## X. Down
 
@@ -312,26 +298,13 @@ image; ECR stores layers **compressed** and **per repository**, so `dev-env` upl
 ./scripts/buildbox.py down
 ```
 
-Destroys the host and **nothing else** — there is no route to remove. It deliberately leaves the proxy
-running (`[D]`, and the whole estate's single egress — `make hub-down` is what stops it) and leaves
-`production/egress/` up (`[E]`, and **still billing at 0.130 USD/h** — `make down ENV=production` is what
-stops that, and it is the easiest thing to forget after a build).
+Destroys the host and nothing else. It leaves the **proxy** running — `[D]`, the whole estate's egress;
+`make hub-down` stops it — and leaves **`production/egress/` up**, still billing 0.130 USD/h. End it with
+the narrowed form, or with `make down ENV=production`, which also destroys this host if it is still up:
 
-**`./scripts/buildbox.py status` is the reading**, and the reason to take it: `t3.xlarge` is
-**0.1664 USD/h** (`PRICING.md` §8) — a week left up is USD 28 against D12's USD 50/month.
-
-## Setting up github conectivity
-
-```
-ssh-keygen -t ed25519 -C "<EMAIL>"
-eval "$(ssh-agent -s)"
-cat ~/.ssh/id_ed25519.pub
+```bash
+./scripts/slices.py down --env production --only egress
 ```
 
-- go to <https://github.com/settings/keys> and add new ssh key. paste pulic key.
-
-- Clone with git protocol:
-
-```
-git clone git@github.com:felipenoris/AWS-DataScience
-```
+`./scripts/buildbox.py status` is the reading: a `t3.xlarge` left up for a week is USD 28 against D12's
+USD 50/month.

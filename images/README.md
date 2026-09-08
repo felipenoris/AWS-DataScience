@@ -31,10 +31,12 @@ is asserted empty — see [`base/ca-certificates/README.md`](base/ca-certificate
 `-cpu` and `-gpu` tags and **no `arm64` variant at all** (read 2026-08-21 from the public registry's
 tag list), and SMUS spaces run on x86 instance types, so the platform is not a choice. The laptop
 also has no docker installed. So the build happens on
-[`terraform-live/sandbox/buildbox/`](../terraform-live/sandbox/buildbox/README.md) — an `[E]` `t3.xlarge`
-in the Sandbox account's isolated tier, reached over Session Manager and **with no ingress rule at
-all**, reaching the internet only through the WireGuard host. It exists while a build runs and is
-destroyed after.
+[`terraform-live/production/buildbox/`](../terraform-live/production/buildbox/README.md) — an `[E]` `t3.xlarge`
+in `VPC-SharedServices`'s private tier (Production, since
+[6c step 5.8](../docs/plan/stages/stage-06c-networking-hub.md)), reached over Session Manager through
+`production/egress/`'s SSM endpoints and **with no ingress rule at all**, reaching the internet only as
+a client of the explicit proxy. It exists while a build runs and is destroyed after; the session's
+order — the door first, then the host — is [`docs/plan/runbooks/buildbox.md`](../docs/plan/runbooks/buildbox.md) §U.
 
 ```bash
 ./scripts/buildbox.py up && ./scripts/buildbox.py sync && ./scripts/buildbox.py ssm
@@ -64,17 +66,18 @@ prebuilt binaries, the R environment is conda-forge binaries. That was a require
 was still planned for an emulated laptop; on the buildbox it is simply why the build is short.
 
 **The buildbox cannot push, and the build does not survive it being asked to.** Its role carries
-Session Manager and no `ecr:` permission, because the Production registry grants the Interactive
-accounts a *pull* and nothing more — read live on 2026-08-22, both repository policies carry one
-statement and it is `AllowConsumerAccountsToPull`. The push into `awsds-prod-ecr-base` /
-`awsds-prod-ecr-dev-env` is Stage 6 step 5.0's own act from an identity that may
-(`awsds-infra-prod`), and it reaches this host as a 12-hour ECR **authorization token** rather than
-as a permission: **the whole procedure is [`buildbox.md`](../docs/plan/runbooks/buildbox.md) §P.** Read
+Session Manager and no `ecr:` permission — and since the host lives in the registry's own account, that
+absence is the whole control: no repository policy grants a push to anybody (read live on 2026-08-22,
+both carry one statement, `AllowConsumerAccountsToPull`), and same-account access is decided by the
+identity policy alone. The push into `awsds-prod-ecr-base` / `awsds-prod-ecr-dev-env` is the user's own
+act from an identity that may (`awsds-infra-prod`; first done at Stage 6a step 5.0), and it reaches this
+host as a 12-hour ECR **authorization token** rather than as a permission: **the whole procedure is [`buildbox.md`](../docs/plan/runbooks/buildbox.md) §P.** Read
 it before the build, not after — **the host is `[E]` and its volume dies with it, so build and push
 are one session** and a `down` in between costs the rebuild. The repositories are tag-immutable, so
 a tag is spent the first time it lands and a re-push under the same tag is rejected — that is the
-control, not a nuisance. **Record the pushed digests in the stage log**: Stage 6 step 5.1 registers
-a SageMaker image *version*, and Stage 7 step 2.6 has to be able to say which digest it replaced.
+control, not a nuisance. **Record the pushed digests in the stage log**:
+[Stage 6d step 2.1](../docs/plan/stages/stage-06d-unified-studio-remainder.md) registers a SageMaker
+image *version*, and Stage 7 step 2.6 has to be able to say which digest it replaced.
 
 **What tag to spend is not decided here.** The convention — `<flavour>-v<major>.<minor>.<patch>`, the
 same number in both repositories, `default-v0.1.0` first written 2026-08-22 — has one copy, in
@@ -112,7 +115,7 @@ a merge request against a `RUN` line is not:
 | — | Rust | Yes (`crates`) — the toolchain is baked, the crates are not |
 
 **And for two of those rows, reviewing the merge request is not just good practice — it is the only
-control there is.** Measured 2026-08-22, when Stage 6 step 5.0 pushed the first images: ECR's scan read
+control there is.** Measured 2026-08-22, when Stage 6a step 5.0 pushed the first images: ECR's scan read
 `base` and `dev-env` to **identical** severity counts, so the Julia, R and Rust content of this image
 produced **zero findings because nothing scanned it** — basic scanning reads OS packages, and Amazon
 Inspector's supported languages for container images do not include Julia or R at any price. Python has
