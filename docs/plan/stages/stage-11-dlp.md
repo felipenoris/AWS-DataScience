@@ -318,7 +318,11 @@ control at all. A threat model that lists a control nobody implemented is worse 
   control after the apply is mandatory (Lesson 13), and the off-tunnel refusal's wording goes into the
   log; **(e)** whether the institution's answer has moved closer — a managed device or a posture check
   (the device-trust row of `institutional-delta.md`) makes (i) the observation and the endpoint the
-  control. **Either outcome goes into `docs/plan/threat-model.md`'s accepted-rather-than-controlled column
+  control; **(f)** *(added 2026-09-08, 6c pass 8)* how many of (a)'s off-proxy sessions were the lab's own
+  **split-tunnel** profile — under it a portal session arrives from the laptop's own address, so 5.2's rule
+  fires on the lab's own sessions unless the portal is opened in the proxied Chrome; the arming test of
+  5.2 (quiet with the tunnel up) is taken under the **monitored** profile, and a session count that is
+  all the lab's own is no evidence against (i). **Either outcome goes into `docs/plan/threat-model.md`'s accepted-rather-than-controlled column
   with the date, the inputs and the verdict**; acceptance re-taken is still acceptance, dated twice.
   Recommended: **(i)** unless (b) changed the picture — it costs nothing, it was measured viable on
   2026-08-22, and it closes the one surface where an unmanaged laptop reaches governed data; acceptance
@@ -425,8 +429,9 @@ are free) with the rule's `MatchedEvents` metric — no CloudWatch Logs ingestio
     in the same hour). Management events, so the org trail already carries them and no member trail is
     needed. **The matching shape is measured before it is written** (Lesson 54): EventBridge's CIDR
     matcher against the `/32`, if it composes with `anything-but`, else a Logs metric filter over the
-    trail — and the rule is armed only after a tunnel-up session proves it quiet and a tunnel-down one
-    proves it loud (Lesson 13; verification xi). Target: the SNS topic. What it cannot do is stop the
+    trail — and the rule is armed only after a tunnel-up session **under the monitored profile** proves it quiet
+    and a tunnel-down one proves it loud (Lesson 13; verification xi) — a **split-tunnel** session (6c pass
+    8) trips it like a tunnel-down one, since the portal's session then arrives from the laptop's own address. Target: the SNS topic. What it cannot do is stop the
     session; what it does is make the acceptance *monitored* rather than merely written (Lesson 5), and
     feed 3.4's input (a).
   - **`awsds-data-athena`** (Data Governance only) — on `StartQueryExecution` (a management event: the

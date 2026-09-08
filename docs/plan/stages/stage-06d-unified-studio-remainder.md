@@ -323,7 +323,8 @@ statement reaches and whose process tree the user controls, with the repair deci
 - **7.5 — Read the two perimeters the connection crossed, one instrument each, per method**:
   - **[Claude] CloudTrail** on `StartSession`: Method 1 must show the **project role** with an AWS-side
     `sourceIPAddress`; Methods 2 and 3 the **persona** with the **proxy's** Elastic IP. The laptop's own
-    address there is a split tunnel, never a happy path.
+    address there is the **split-tunnel profile** (6c pass 8): for Methods 2 and 3 never a happy path — the
+    persona's deny fires — and for Method 1 what 6c 8.5 predicts; read under both profiles.
   - **[Claude] `./aws/proxy.py --on-host`** for the CONNECTs the client opened — `api.sagemaker`,
     `ssmmessages` — on the tunnel plane's log, each carrying the device's `10.90.0.x` source.
   - **[user provokes, Claude records] The negative control, tunnel down**: Methods 2 and 3 must be
@@ -395,7 +396,10 @@ measurement, which is the shape worth naming before it is paid.
    link** the portal makes that call server-side as the project role: `DenyControlPlaneOffVpn` never sees
    it, the portal is reachable off-VPN (INT-16) and the data channel is a token-bearing WebSocket, so
    **that method is usable entirely off the VPN** — and on the VPN it is the one most likely to time out
-   (7.1's environment catch). With **SSH or the Toolkit** the laptop's own credentials call it, so the VPN
+   (7.1's environment catch). *Added 2026-09-08 (6c pass 8):* **under the split-tunnel profile that timeout
+   disappears** — the browser-launched process dials `ssmmessages` on the laptop's own uplink, and the
+   `StartSession` is the project role's, server-side — so Method 1 is expected to work with nothing
+   configured; 7.5 reads it under both profiles before the method is chosen. With **SSH or the Toolkit** the laptop's own credentials call it, so the VPN
    statement applies — but the persona sets hold no Allow, and a persona session carries **no**
    `AmazonDataZoneProject` / `datazone:userId` principal tag, so `StringNotEquals` against an unresolvable
    variable is true for every space: **the pair would deny everything, not scope** — the guard

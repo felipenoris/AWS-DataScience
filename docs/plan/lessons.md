@@ -1371,6 +1371,25 @@ happens to be free — the same command, minutes apart, both measured. The `REJE
 rule is hit; only the `Icmp` line says whether the refusal was spoken. `./aws/vpn.py --on-host` reads
 both since that day. Where: `docs/plan/runbooks/vpn.md` §S2, `docs/NETWORK.md` §7.
 
+**The App Store WireGuard client applies a `DNS` line to EVERY query, whatever `AllowedIPs` says**
+(read from its source on 2026-09-08 — `matchDomains = [""]` in `PacketTunnelSettingsGenerator.swift` —
+and measured the same night, 6c step 8.3). Under a split `AllowedIPs` the tunnel's resolver is still
+`scutil --dns`'s resolver #1, with no domain restriction and an order ahead of the physical interface's;
+`/etc/resolv.conf` names it, and `dig` resolves a private name through it. So a split tunnel does not
+give the laptop its own DNS back — every name crosses the tunnel, only the traffic does not. The
+`wg-quick` path does the same by writing the server on every network service. Where:
+`docs/plan/runbooks/vpn.md` §C7.
+
+**The same client installs an INTERFACE-SCOPED default route on the tunnel in both families, even when
+`AllowedIPs` names no default** (measured 2026-09-08, 6c step 8.3). `netstat -rn` shows a
+`default … utun4` carrying the `I` flag beside the physical `default … en0` without it — and the scoped
+entry is inert for any socket not bound to the tunnel. The reading that separates the two profiles is
+therefore the **flag**, not the presence of the line: under the monitored profile the tunnel's default has
+no `I` and is primary. A step written as *"no default via the tunnel"* was one flag short, and the counter
+on the host (`REJECT` flat across a burst) is what proved the route inert. Observed the same night, from
+the user: the app's tunnel is a Network Extension that `wg show` does not list — the app's window is check
+1's reading.
+
 **A host with no IPv6 route answers a tunnelled IPv6 packet with ICMPv6 *no route* BEFORE the
 `FORWARD` chain sees it** (same reading). The explicit `ip6tables` `REJECT` written on 2026-09-07 to
 make the refusal *counted* stood at **0** while `Icmp6OutDestUnreachs` read **191**: the refusal is
