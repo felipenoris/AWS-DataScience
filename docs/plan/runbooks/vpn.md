@@ -31,7 +31,8 @@
 > VPN access, **monitored** and **split-tunnel**; every reading in this file was taken under the monitored
 > one, and *"full tunnel, never split"* is now that profile's rule rather than the estate's. The other
 > profile is the same device, the same key and one `AllowedIPs` line; the cloud side is identical under
-> both. Its readings are owed to 6c steps 8.3 and 8.4.
+> both. **Measured the same night** (6c 8.3, 8.4): check 3 inverted, the persona pair explicit/implicit on
+> one command, the host's `REJECT` counter flat across a deliberate burst.
 
 | | |
 |---|---|
@@ -39,7 +40,7 @@
 | **Operator** | Parts S and K: the **infrastructure user**, profile `awsds-infra-prod` (`InfrastructureAccess` in `Production`) — plus `awsds-infra-identity` for §K6's fragment toggles. Part C: the **device's owner, on the device** — no AWS profile and no SSO session: nothing in that part calls an AWS API |
 | **The two rules** | **Loss is answered by recovery, never by rotation** (Part K): a new host key forces an instance replacement and breaks every client config at once — each one pins the server's public key. Rotate for *compromise* (§K3), recover for *loss* (§K1); the mechanised violation is Secrets Manager's own rotation feature, off forever (§K5, `VP-9`). **Full tunnel in the monitored profile; the split-tunnel profile is §C7** (Part C; the rule read *"full tunnel, never split"* until 2026-09-08): under monitored, `AllowedIPs = 0.0.0.0/0, ::/0`, both families — **and the reason changed with the estate on 2026-09-06 while the rule did not.** It used to be that `DenyControlPlaneOffVpn`'s `aws:SourceIp` matched only traffic exiting through *this host's* Elastic IP. Under [D38](../decisions/D38-single-egress-hub.md) the tunnel host reaches no public address at all: a persona's control-plane call travels tunnel → **proxy** → AWS, and the address the deny names is the **proxy's**. A split tunnel would send that call out of the laptop's own uplink, where it wears neither address — still a lockout with the tunnel up, by a longer path. **That is exactly what §C7's split-tunnel profile does, on purpose**, and why persona work under it is pointed at the proxy by the *application* rather than by the tunnel |
 | **The picture around it** | **[`docs/NETWORK.md`](../../NETWORK.md)** — every VPC, subnet, route table and address in the estate, and where this host sits in them. This file stays the **procedure**; that one is what a packet's whole path looks like |
-| **Written** | **§C7 added 2026-09-08** (the two profiles — 6c pass 8, from the design and the client's source, not yet from a reading). §S6 added 2026-08-20 (the size becoming a slice parameter). The keys half 2026-08-16 (Stage 4's third design review; rewritten the same day when the host key moved into the `[P]` secret), the client half 2026-08-17 (the first handshake). **Unified 2026-08-19, at the user's request, replacing `vpn-keys.md` and `vpn-client.md`** — their content is Parts K and C, kept whole; Part S is new, written from the topology readings of Stage 5 pass 4d's first sitting. **Rewritten 2026-09-06 for the Production home** — the banner above lists what moved, and every reading in Part S was re-taken rather than re-worded. **Split 2026-09-07**: §S5's session order and §C0-§C3 moved to `client-vpn-proxy-configuration.md` |
+| **Written** | **§C7 added 2026-09-08** (the two profiles — 6c pass 8, from the design and the client's source, and measured the same night at 8.3/8.4). §S6 added 2026-08-20 (the size becoming a slice parameter). The keys half 2026-08-16 (Stage 4's third design review; rewritten the same day when the host key moved into the `[P]` secret), the client half 2026-08-17 (the first handshake). **Unified 2026-08-19, at the user's request, replacing `vpn-keys.md` and `vpn-client.md`** — their content is Parts K and C, kept whole; Part S is new, written from the topology readings of Stage 5 pass 4d's first sitting. **Rewritten 2026-09-06 for the Production home** — the banner above lists what moved, and every reading in Part S was re-taken rather than re-worded. **Split 2026-09-07**: §S5's session order and §C0-§C3 moved to `client-vpn-proxy-configuration.md` |
 
 ---
 
@@ -773,8 +774,8 @@ persona call that is denied *with the tunnel up* as possibly a socket that preda
 VPN bullet, amended by the user the same day: **two types of VPN access**. This section is the design's
 half; the procedure — the second template and the inverted check — is
 [`client-vpn-proxy-configuration.md`](client-vpn-proxy-configuration.md) §3.3 and §3.4. **Written from the
-design and from the client's source code, not yet from a reading**: 8.3 and 8.4 are where the profile is
-proved, and until then `NETWORK.md` §7 says so.*
+design and from the client's source code, then measured the same night** (6c 8.3 and 8.4 — `NETWORK.md` §7
+carries the readings, profile by profile).*
 
 **One device, one key, two `.conf` files that differ in one line.**
 
@@ -783,7 +784,7 @@ proved, and until then `NETWORK.md` §7 says so.*
 | `AllowedIPs` | `0.0.0.0/0, ::/0` | the five VPC CIDRs of `NETWORK.md` §1 and the tunnel's own range: `10.20.0.0/16, 10.30.0.0/16, 10.31.0.0/16, 10.32.0.0/16, 10.50.0.0/16, 10.90.0.0/24` |
 | the private address space | through the tunnel | through the tunnel — **the same** |
 | the client's internet | enters the tunnel, is refused by the host's `FORWARD` chain (§S2), and exists only through the proxy — by name, HTTP/HTTPS, logged (§C5a) | leaves through the laptop's own uplink — any protocol, both families, **unmonitored, by decision** |
-| DNS | the hub's `.2`, every query | **the same** (decision due 6, taken 2026-09-08): the App Store client applies a `DNS` line to every query whatever `AllowedIPs` says — `matchDomains = [""]` in its source, read 2026-09-08 — and `wg-quick` writes it on every network service. One tunnel round trip per uncached name (194 ms, measured at 6.4) and CDN answers geolocated to Oregon; the refinement is a scoped resolver with no `DNS` line (`/etc/resolver/awsds.internal` → `10.31.0.2`; `resolvectl domain %i ~awsds.internal ~awsds-pages.internal` on Linux), documented and not exercised — `dig` cannot read it, `dscacheutil -q host -a name proxy.awsds.internal` can |
+| DNS | the hub's `.2`, every query | **the same** (decision due 6, taken 2026-09-08): the App Store client applies a `DNS` line to every query whatever `AllowedIPs` says — `matchDomains = [""]` in its source, read 2026-09-08 and **measured the same night** (`scutil --dns`: the tunnel's resolver first, no domain restriction) — and `wg-quick` writes it on every network service. One tunnel round trip per uncached name (194 ms, measured at 6.4) and CDN answers geolocated to Oregon; the refinement is a scoped resolver with no `DNS` line (`/etc/resolver/awsds.internal` → `10.31.0.2`; `resolvectl domain %i ~awsds.internal ~awsds-pages.internal` on Linux), documented and not exercised — `dig` cannot read it, `dscacheutil -q host -a name proxy.awsds.internal` can |
 | a persona's AWS calls | through the proxy, because everything is | **through the proxy, because `DenyControlPlaneOffVpn` and the lake's policies say so** (§S4) — `proxy-on` in that terminal, the `--proxy-server` flag on that Chrome; direct, they die with an *explicit* deny |
 | `InfrastructureAccess` | through the proxy, because everything is | **direct — no proxy anywhere**; Terraform, `make`, every `aws/` script |
 | SSH to `github.com:22`, non-HTTP protocols, IPv6 | no path (client runbook §4.3) | the laptop's own |
@@ -808,8 +809,10 @@ bursts. Bring one down before the other comes up — in the app, *deactivate* fi
 proxy"* holds under monitored only; the client runbook's check 3 **inverts** (a `2xx`/`3xx` is the pass,
 a timeout the finding). §C6's ULA line stays in the file and is inert under split-tunnel by design — the
 client's IPv6 is its own. §S2's rejected-packet counter, which under monitored doubles as *how much the
-laptop tries to send straight to the internet*, must stay **flat** across a split-tunnel session — 8.4's
-reading. The access log carries nothing of a split-tunnel session except the persona work that was pointed
+laptop tries to send straight to the internet*, must stay **flat** across a split-tunnel session — **8.4's
+reading: 82009 → 82009 across a deliberate burst**. And in `netstat -rn` the tunnel's default route carries
+the `I` flag in both families — interface-scoped, inert — where the monitored profile's has none: the
+discriminator is the flag, not the line. The access log carries nothing of a split-tunnel session except the persona work that was pointed
 at the proxy.
 
 **What it is not.** Not a control, in either direction — §C6's paragraph: the owner chooses the file, and

@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Status** | **DONE 2026-09-08 FOR PASSES 0-7 — AND PASS 8 ADDED 2026-09-08, OPEN: the second client profile**, the **split-tunnel** profile beside the **monitored** one (the user's request, 2026-09-08; the names are `objectives.md`'s): laptop-only, **no host change**, 8.1 and 8.2 done, decisions due 5 and 6 taken, its readings (8.3, 8.4) owed and its two consequences carried to 6d decision due 4 and Stage 11 step 3.4. *Passes 0-7:* **DONE 2026-09-08** ([log](../../log/log-stage-06c-networking-hub.md)) — every step executed and measured, and **decision due 4 taken as (c)** the same day with the rates measured first: the access log's export waits for Stage 11 step 5.1's centralized delivery, the organization trail records any deletion or retention change meanwhile, and `PX-4` says so as a note. Pass 6 closed on 2026-09-08 with 6.5: the vending path re-measured from the new tunnel (**two doors, by service family**), the union trimmed, `sandbox/foundation` unfrozen and its anchors gone, `sandbox/vpn/` retired, `VP-3` widened to every account. Pass 6 was re-cut into sub-steps on 2026-09-07. *The earlier position, kept as the record:* passes 0 and 1 DONE 2026-09-06. The three Production VPCs exist: `foundation/` re-labelled **VPC-SharedServices**, plus **VPC-Networking** (10.31) and **VPC-Workloads** (10.32), with `workloads-egress/` written and applying nothing. **Two module bumps, and each was forced by a capability its step did not enumerate** — `vpc-v0.2.0`'s `name_suffix` and `vpc-v0.3.1`'s `public_internet_route`; `vpc-v0.3.0` is **abandoned** on origin, tagged onto the wrong commit by a failed-and-swallowed `git commit`. **0.2 replaced `CIDRS` rather than sitting beside it** (no reader wanted a per-account answer); **0.4a is deferred to 5.1** because the step contradicts itself; **0.6 lands with 3.1**. **Three checks are corrected before being written** — 1.5, 2.4's `NT-12` and 3.7's `NT-11` would each be red for passes at a time as specified, which is 6b's `DT-8` recurring. **Created 2026-09-05**; it builds [D38](../decisions/D38-single-egress-hub.md) and repairs the client-plane DNS shadowing of Lessons 40-43 |
+| **Status** | **DONE 2026-09-08, PASS 8 INCLUDED — the second client profile**, the **split-tunnel** profile beside the **monitored** one (the user's request, 2026-09-08; the names are `objectives.md`'s): laptop-only, **no host change**, written at 8.1-8.2, decisions due 5 and 6 taken, **measured at 8.3-8.4 the same night** — check 3 inverted, the persona pair explicit/implicit on one command, the host's `REJECT` counter flat across a deliberate burst — and restated at 8.5, its two consequences carried to 6d decision due 4 and Stage 11 step 3.4. *Passes 0-7:* **DONE 2026-09-08** ([log](../../log/log-stage-06c-networking-hub.md)) — every step executed and measured, and **decision due 4 taken as (c)** the same day with the rates measured first: the access log's export waits for Stage 11 step 5.1's centralized delivery, the organization trail records any deletion or retention change meanwhile, and `PX-4` says so as a note. Pass 6 closed on 2026-09-08 with 6.5: the vending path re-measured from the new tunnel (**two doors, by service family**), the union trimmed, `sandbox/foundation` unfrozen and its anchors gone, `sandbox/vpn/` retired, `VP-3` widened to every account. Pass 6 was re-cut into sub-steps on 2026-09-07. *The earlier position, kept as the record:* passes 0 and 1 DONE 2026-09-06. The three Production VPCs exist: `foundation/` re-labelled **VPC-SharedServices**, plus **VPC-Networking** (10.31) and **VPC-Workloads** (10.32), with `workloads-egress/` written and applying nothing. **Two module bumps, and each was forced by a capability its step did not enumerate** — `vpc-v0.2.0`'s `name_suffix` and `vpc-v0.3.1`'s `public_internet_route`; `vpc-v0.3.0` is **abandoned** on origin, tagged onto the wrong commit by a failed-and-swallowed `git commit`. **0.2 replaced `CIDRS` rather than sitting beside it** (no reader wanted a per-account answer); **0.4a is deferred to 5.1** because the step contradicts itself; **0.6 lands with 3.1**. **Three checks are corrected before being written** — 1.5, 2.4's `NT-12` and 3.7's `NT-11` would each be red for passes at a time as specified, which is 6b's `DT-8` recurring. **Created 2026-09-05**; it builds [D38](../decisions/D38-single-egress-hub.md) and repairs the client-plane DNS shadowing of Lessons 40-43 |
 | **Prerequisites** | [Stage 3](stage-03-networking.md) (the `vpc` and `vpc-egress` modules, the peering pattern in `production/foundation/peers.tf`, the `[P]`/`[E]` split), [Stage 4](stage-04-vpn.md) (the `wireguard` module and its `[P]` anchors), [6a](stage-06a-unified-studio.md) (the endpoint lists and what a Studio app needs), **[6b](stage-06b-development-becomes-staging.md)** (the account is already `staging`, and step 4.1 there freed `10.40.0.0/16` and re-pointed `CIDRS`) |
 | **Consumes** | [D4](../decisions/D04-vpn-wireguard.md), [D5](../decisions/D05-sagemaker-egress.md), [D6](../decisions/D06-dlp-approach.md), [D9](../decisions/D09-az-count.md), [D11](../decisions/D11-lab-lifecycle.md), [D12](../decisions/D12-budget-ceiling.md), [D14](../decisions/D14-supply-chain-account.md), [D15](../decisions/D15-tls-internal.md), [D35](../decisions/D35-sandbox-cardinality.md), [D36](../decisions/D36-internal-pki.md), **[D38](../decisions/D38-single-egress-hub.md)** (written 2026-09-05 — this stage builds it, it does not author it) |
 | **Proves** | [INT-05](../integrations.md) and [INT-06](../integrations.md) re-keyed on the hub; [INT-16](../integrations.md)'s closing choice becomes takeable because this stage owns the address it is keyed on; **INT-21** (every account's compute reaching a Production-owned proxy over peering) and **INT-22** (the `awsds.internal` zone × VPC association matrix) |
@@ -107,7 +107,7 @@ Read before executing; each is a correction to what the 2026-09-05 draft assumed
 | **5** | the spokes become design B | after 4 | [6d](stage-06d-unified-studio-remainder.md), Stage 7 |
 | **6** | the measurements | after 5 | the close |
 | **7** | cost, lifecycle, the two operational instruments | after 6 | — |
-| **8** | **the second client profile** — the split-tunnel profile beside the monitored one; laptop-only, no host change *(added 2026-09-08)* | after 6 | [6d](stage-06d-unified-studio-remainder.md) 7.5, [Stage 11](stage-11-dlp.md) step 3.4 |
+| **8** | **the second client profile** — the split-tunnel profile beside the monitored one; laptop-only, no host change *(added and DONE 2026-09-08)* | after 6 | [6d](stage-06d-unified-studio-remainder.md) 7.5, [Stage 11](stage-11-dlp.md) step 3.4 |
 
 Passes 0-3 are `[P]` and cost nothing at rest. **Stage 7 waits on passes 1-2**; **Stage 13's public tier**
 lands in `VPC-Networking`'s public tier as its second enumerated listener; **6d waits on pass 5**.
@@ -1344,6 +1344,31 @@ uses `list-buckets`, the call 4d's proof already used.
   owner chooses); `NETWORK.md` §7's title gains *"under which profile"* and the section is **re-measured
   at 8.3, never edited ahead** (its own rule); `AWS_STATE.md` gains no row, because no invariant moves;
   `GLOSSARY.md` gains the two terms, *monitored profile* and *split-tunnel profile*.
+- **8.3 — DONE 2026-09-08 (02:30-02:53 UTC), THE USER'S HALF FROM THE LAPTOP AND CLAUDE'S FROM THE SAME
+  LAPTOP — AND THE STEP'S WORDING WAS ONE FLAG SHORT.** The `.conf` matched the template line for line.
+  **Routes**: the IPv4 default stays on `en0` (`UGScg`), the six private routes sit on `utun4`, and the
+  `utun4` default carries **`I`** — interface-scoped, inert for any unbound socket; the IPv6 `fd90::`
+  default carries `I` too, where 6.4's monitored reading had it `UGcg`, primary. *The step said "no
+  `fd90::` default"; the reading is "no PRIMARY one" — the discriminator is the flag, the platform fact of
+  `lessons.md`'s second list one family over.* **DNS**: `scutil --dns` resolver #1 is `10.31.0.2` on
+  `utun4`, order 102200 ahead of `en0`'s 200000, no domain restriction; `/etc/resolv.conf` names it; `dig`
+  answered `proxy.awsds.internal` → `10.31.160.181` and `prod.awsds.internal`'s SOA — **verification 5
+  answered: every query.** **The internet**: `https://1.1.1.1` → **`301` in 10 ms** direct (check 3
+  inverted); `checkip` direct → the laptop's own address (never written down), through the proxy →
+  `184.33.8.126`; `ssh -T git@github.com` → GitHub's greeting. **The identity half — the finding,
+  measured**: `InfrastructureAccess` direct with no proxy variable, `get-caller-identity` and
+  `describe-instances` (both hub hosts `running`); the Data Scientist's `list-buckets` **direct → "with an
+  explicit deny in an identity-based policy"**, **through the proxy → "because no identity-based policy
+  allows"**; and a positive control stronger than the step's, `list-caller-access-grants`, a read the
+  persona holds — **direct → the explicit deny; through the proxy → the two `READWRITE` grants**. Same
+  session, same call, the proxy setting alone. **Check 1 was read on the WireGuard app's window**, not
+  `wg show` — the App Store tunnel is a Network Extension `wg` does not list (the user's report): latest
+  handshake 1 min 33 s, 194.88 KiB received / 99.84 KiB sent, the six ranges, the endpoint, both
+  addresses, the DNS. **One defect of the readings line, kept**: pasted with `\;`, it became ONE `curl`
+  with five arguments — the two URLs ending in `;` were *Bad hostname* (`000`), the two words `curl` were
+  fetched **through the proxy** (Squid **`503 ERR_DNS_FAIL`** for a host named `curl`: the proxy resolving,
+  and refusing by name), and only the last URL passed. Claude took the two lost readings from its own
+  shell on the same laptop. *The original step follows:*
 - **8.3 — [user] Write the (b) file and take the readings** — the `.conf` (a) with its one line changed,
   the (a) tunnel **down** first. Each reading has two distinguishable outcomes:
   - `sudo wg show` — a handshake, as under (a). `netstat -rn -f inet | grep -E 'utun|^default'` — the
@@ -1368,6 +1393,19 @@ uses `list-buckets`, the call 4d's proof already used.
     their exit code). The positive control is the `s3-read-write` tool through `proxy-on`, 6.5's own
     proof, succeeding under (b). Paste all of it verbatim.
   - `ssh -T git@github.com` → GitHub's greeting: the one door (a) has none for.
+- **8.4 — DONE 2026-09-08: TWO `--on-host` READS TWO MINUTES APART, A DELIBERATE BURST BETWEEN THEM, AND
+  THE `REJECT` COUNTER DID NOT MOVE.** The user authorized both `ssm:SendCommand`s in chat. Reading A at
+  02:53:04Z, reading B at 02:55:01Z; between them, from the laptop: four public sites direct (`301`, `200`,
+  `200`, `200`), one IPv6 attempt (`Couldn't connect … after 397 ms` — no primary IPv6 route on the laptop,
+  so nothing to enter the tunnel), three names through the tunnel's resolver, two `checkip`s through the
+  proxy. **`FORWARD` `REJECT` 82009 → 82009**; `ip6tables` 0 → 0; nat `RETURN` for `10.31.160.0/24`
+  **3622 → 3624** — the two proxied calls and nothing else; `MASQUERADE` 6907 → 6948, the DNS queries;
+  `Icmp` `OutDestUnreachs` 12203 → 12203 and `OutRateLimitHost` 69809 → 69809 — the host spoke no refusal
+  because none was owed; `Icmp6OutDestUnreachs` 17197 → 17197. The handshake log read `peer=mbp` at 21 s
+  and 91 s, then 39 s and 109 s. *For scale: between 6.4's reading B (16:54Z the day before) and reading
+  A, the monitored sessions had grown `REJECT` by 54328 and `Icmp6OutDestUnreachs` by 17006 — the ULA line
+  at work, every IPv6-capable application refused at* no route. `VP-1`..`VP-9` pass on both reads.
+  *The original step follows:*
 - **8.4 — [Claude] Read the host across a (b) session**: `./aws/vpn.py --on-host` before the user's 8.3
   and after it — the user authorizes the two `ssm:SendCommand`s in chat, as at 6.4. The `FORWARD`
   `REJECT` count must **not grow**: 6.4's (a) sessions grew it by thousands, and a count that grows under
@@ -1375,6 +1413,17 @@ uses `list-buckets`, the call 4d's proof already used.
   active. `OutRateLimitHost` must not grow either. The nat `RETURN` for `10.31.160.0/24` grows by the
   proxied `checkip` and the proxied `list-buckets` alone. That is the reading which separates *the
   profile is what it claims* from *the profile parsed* (Lesson 54, on a configuration file).
+- **8.5 — DONE 2026-09-08.** `NETWORK.md` §7 re-measured with a profile column and its *owed* paragraph
+  retired; the client runbook's check 1 gains the app's fields (the App Store tunnel is invisible to `wg
+  show`) and its split-tunnel paragraph carries the measured values and the flag; `vpn.md` §C7 and its
+  banner say *measured* where they said *owed*; `lessons.md`'s second list gains the App Store client's
+  two behaviours **from the readings** — the `DNS` line applied to every query under a split
+  `AllowedIPs`, and the interface-scoped defaults it installs in both families, inert; **Stage 11 step
+  3.4 gains input (f)** — a split-tunnel portal session arrives from the laptop's own address, so 5.2's
+  rule fires on the lab's own sessions unless the portal is opened in the proxied Chrome, and 5.2's arming
+  test is taken under the monitored profile; **6d decision due 4 gains the line** that Method 1 is expected
+  to work under split-tunnel with nothing configured, and 7.5 reads it under both profiles; `CLAUDE.md`'s
+  position; the log. `make check` OK, `check-plan-refs` unchanged. *The original step follows:*
 - **8.5 — [Claude] Restate from the readings, and carry the two consequences to the stages that own
   them.** `NETWORK.md` §7 re-measured, with a profile column; `lessons.md`'s second list gains the App
   Store client's `DNS` behaviour **only once 8.3 has measured it**, never from the source read alone;
@@ -1495,9 +1544,11 @@ in the cost model.
    Elastic IP with no endpoint; `s3control` (`GetDataAccess`, `ListCallerAccessGrants`) arrives from the proxy
    host's private address through VPC-Networking's S3 gateway endpoint — so both branches of
    `DenyControlPlaneOffVpn` are load-bearing, and `trusted_vpce_ids` was complete (the vends succeeded).
-5. Does the App Store client apply a `DNS` line to **every** query under a split `AllowedIPs`, as its
-   source says (`matchDomains = [""]`, read 2026-09-08)? `scutil --dns` at 8.3 is the reading; the
-   fact enters `lessons.md`'s second list only from that reading.
+5. ~~Does the App Store client apply a `DNS` line to **every** query under a split `AllowedIPs`, as its
+   source says (`matchDomains = [""]`, read 2026-09-08)?~~ **Answered 2026-09-08 at 8.3: YES** —
+   `scutil --dns` lists the tunnel's resolver first (order 102200, no domain restriction, `if_index` the
+   `utun`), `/etc/resolv.conf` names it, and `dig` resolved a private name through it. In `lessons.md`'s
+   second list from that reading.
 
 ## Risks
 

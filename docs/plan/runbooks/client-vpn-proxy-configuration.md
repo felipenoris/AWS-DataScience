@@ -150,16 +150,18 @@ claim:
 
 | # | Command | Must read |
 |---|---|---|
-| 1 | `sudo wg show` | `latest handshake` seconds ago and non-zero `transfer`; the interface is a `utun*` on macOS |
+| 1 | `sudo wg show` — or, with the App Store app, **its window**: `wg` does not list a Network Extension tunnel (2026-09-08) | `latest handshake` seconds ago and non-zero `transfer`; in the app, *Latest handshake* and *Data received / sent* under the peer; the interface is a `utun*` on macOS |
 | 2 | `dig +short SOA prod.awsds.internal ; dig +short SOA sandbox.internal` | the first **answers**, the second is **empty** — the resolver in use is the hub's. Then `dig +short proxy.awsds.internal` → a **private** address in `10.31.160.0/24` |
 | 3 | `curl -sS --max-time 15 https://1.1.1.1` | **fails** — as `curl: (28)` timeout or as `curl: (7) … after 194 ms`, both measured 2026-09-07: the host refuses every time and rate-limits the ICMP that says so (Lesson 55). A `200` is the finding |
 | 4 | `curl -s --max-time 20 -x http://proxy.awsds.internal:3128 https://checkip.amazonaws.com` | **`184.33.8.126`**, the proxy's address — the tunnel, the peering, the return route and the client plane, in one line |
 
-**Under the split-tunnel profile the third reading inverts and the other three hold** (6c pass 8, owed to
-8.3): check 3 **answers** — `301`, the site redirects — and `curl -s https://checkip.amazonaws.com` prints
-the laptop's own uplink address; checks 1, 2 and 4 read the same, because the private space, the resolver
-and the proxy are all still through the tunnel. A timeout on check 3 under split-tunnel is the finding — a
-stale route, or the monitored tunnel still up.
+**Under the split-tunnel profile the third reading inverts and the other three hold** (measured 2026-09-08,
+6c step 8.3): check 3 **answers** — `301` in 10 ms, the site redirects — and
+`curl -s https://checkip.amazonaws.com` prints the laptop's own uplink address; checks 1, 2 and 4 read the
+same, because the private space, the resolver and the proxy are all still through the tunnel. In
+`netstat -rn` the `utun`'s default carries the **`I`** flag in both families — interface-scoped, inert — and
+`en0` keeps the primary; under the monitored profile the tunnel's default has no `I`. A timeout on check 3
+under split-tunnel is the finding — a stale route, or the monitored tunnel still up.
 
 A 403 on check 4 is the proxy refusing a *name*; nothing at all is the path, or a stopped host (§1).
 When a check fails: `vpn.md` §C4.

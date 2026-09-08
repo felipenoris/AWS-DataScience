@@ -2433,3 +2433,103 @@ profile yet — this sitting wrote it; 8.3 measures it.*
 - **[user] Decisions due 5 and 6 taken, later the same evening, in the user's words: *"Confirmo as
   decisões 5 e 6. Uma chave. DNS 10.31.0.2"*** — after asking where the two decisions were and how they
   read. Both struck in the stage file; §C7 and the 8.1 block no longer say *to be confirmed*.
+
+## 2026-09-08 — 8.3 and 8.4 measured: the split-tunnel profile from both ends, the persona pair on one command, and a counter that did not move
+
+*Written by Claude at the user's standing request in this sitting; the user's pastes are verbatim, and the
+laptop's own public address is never written. The user signed in as the Data Scientist and then as the
+infrastructure user, and authorized the two `ssm:SendCommand`s in chat ("autorizo os comandos").*
+
+- **[user] The tunnel up in the split-tunnel profile — the routes and the DNS, verbatim:**
+
+  ```
+  default            192.168.1.1        UGScg                 en0
+  default            link#23            UCSIg               utun4
+  10.20/16           link#23            UCS                 utun4
+  10.30/16           link#23            UCS                 utun4
+  10.31/16           link#23            UCS                 utun4
+  10.31.0.2          link#23            UHWIi               utun4
+  10.32/16           link#23            UCS                 utun4
+  10.50/16           link#23            UCS                 utun4
+  10.90/24           link#23            UCS                 utun4
+  10.90.0.2          10.90.0.2          UH                  utun4
+  default                                 fd90::                                  UGcIg               utun4
+  10.31.160.181
+  ns-1536.awsdns-00.co.uk. awsdns-hostmaster.amazon.com. 1 7200 900 1209600 86400
+  resolver #1  nameserver[0] : 10.31.0.2   if_index : 23 (utun4)   order : 102200
+  resolver #2  nameserver[0] : 192.168.22.11  nameserver[1] : 192.168.22.12   if_index : 15 (en0)   order : 200000
+  ```
+
+- **[Claude] Reading.** The IPv4 default stays on `en0`; the `utun4` default and the `fd90::` default both
+  carry **`I`** — interface-scoped, inert — where 6.4's monitored reading had the `fd90::` one `UGcg`,
+  primary. The step said *"no `fd90::` default"*; the reading is *no primary one*, and the discriminator
+  is the flag. The hub is still the resolver (`proxy.awsds.internal` → `10.31.160.181`, the SOA answered),
+  and it is the resolver for **every** query: resolver #1, no domain restriction, order ahead of `en0`'s —
+  **verification 5 answered from the reading**, the source's `matchDomains = [""]` measured.
+- **[user] The `curl` line, and a shell defect kept.** Pasted with `\;`, the line became ONE `curl` with
+  five arguments: `https://1.1.1.1;` and `https://checkip.amazonaws.com;` were *URL rejected: Bad hostname*
+  (`000`); the two words `curl` became URLs fetched **through the proxy**, and Squid answered
+  **`503 ERR_DNS_FAIL`** — *"Unable to determine IP address from host name curl"*, generated 02:33:57 GMT by
+  `ip-10-31-160-181` — the proxy resolving, and refusing by name; only the last URL passed:
+  **`184.33.8.126`, `200`** — check 4, valid.
+- **[Claude] The two lost readings, from this shell on the same laptop, 02:37:02Z, no proxy variable**:
+  `https://1.1.1.1` → **`301`** in 0.010 s connect; `checkip` direct → the laptop's own uplink address
+  (elided — not the proxy's, not the tunnel's); through the proxy → `184.33.8.126`; `dig checkip` → a public
+  address, `/etc/resolv.conf` naming `10.31.0.2`; `ssh -T git@github.com` → *"Hi felipenoris! You've
+  successfully authenticated"*. The infrastructure token was gone (*Token for awsds does not exist*), so
+  the identity half waited for a login.
+- **[user] Check 1 on the WireGuard app's window** — `wg` does not work well against the App Store tunnel,
+  the user reported, and the window is the equivalent reading: *Allowed IPs* the six ranges, *Endpoint*
+  `52.89.212.1:51820`, *Data received* 194.88 KiB, *Data sent* 99.84 KiB, *Latest handshake* 1 minute 33 s,
+  *Addresses* `10.90.0.2/32, fd90::2/128`, *DNS servers* `10.31.0.2`.
+- **[user] "fiz login com sso data scientist."** **[Claude] The persona pair, 02:45:55-02:46:27Z, the
+  same session, verbatim (account ids and the user elided):**
+
+  ```
+  list-buckets, DIRECT:   AccessDenied ... is not authorized to perform: s3:ListAllMyBuckets with an explicit deny in an identity-based policy
+  list-buckets, PROXY:    AccessDenied ... is not authorized to perform: s3:ListAllMyBuckets because no identity-based policy allows the s3:ListAllMyBuckets action
+  list-caller-access-grants, DIRECT:  AccessDenied ... s3:ListCallerAccessGrants on resource: "arn:aws:s3:us-west-2:<acct>:access-grants/default" with an explicit deny in an identity-based policy
+  list-caller-access-grants, PROXY:   READWRITE s3://awsds-sandbox-lake/sso-group-data-scientists/*  ·  READWRITE s3://awsds-sandbox-smus-projects/dzd-d8yrvx1ko7im6o/avhvbqn37ty7m8/shared/*
+  ```
+
+  The proxy setting alone decides. The second pair is a positive control stronger than the step's — a read
+  the persona holds, refused direct and answered through the proxy — and it needed no write, where the
+  `s3-read-write` tool would have put an object in the lake. `get-caller-identity` succeeded direct, as
+  AWS documents it must: exempt from every IAM deny, and no discriminator.
+- **[user] "infrastructure user logado. autorizo os comandos."** **[Claude] `InfrastructureAccess` direct,
+  02:52:59Z, no proxy variable**: the assumed-role ARN, and `describe-instances` — `awsds-prod-vpn`
+  `running`, `awsds-prod-proxy` `running`. The whole infrastructure surface is direct under split-tunnel.
+- **[Claude⚡] 8.4 — reading A at 02:53:04Z, the burst, reading B at 02:55:01Z.** Between them, from this
+  laptop: `https://1.1.1.1` → `301`, `github.com` / `pypi.org` / `www.google.com` → `200`, one IPv6 attempt
+  (`ipv6.google.com`: *Couldn't connect to server after 397 ms* — no primary IPv6 route, nothing to enter
+  the tunnel), three names through `10.31.0.2`, two `checkip`s through the proxy. The lines that matter,
+  A then B:
+
+  ```
+  4    82009   18M REJECT     all  --  wg0    *       0.0.0.0/0            0.0.0.0/0            reject-with icmp-admin-prohibited
+  1        0     0 REJECT     all      wg0    *       ::/0                 ::/0                 reject-with icmp6-adm-prohibited
+  1     3622  232K RETURN     all  --  *      *       10.90.0.0/24         10.31.160.0/24
+  3     6907  501K MASQUERADE  all  --  *      ens5    10.90.0.0/24         0.0.0.0/0
+  Icmp: 286 0 0 286 0 0 0 0 0 0 0 0 0 0 12203 0 0 69809 12203 0 0 0 0 0 0 0 0 0 0
+  Icmp6OutDestUnreachs            	17197
+  ---
+  4    82009   18M REJECT     all  --  wg0    *       0.0.0.0/0            0.0.0.0/0            reject-with icmp-admin-prohibited
+  1        0     0 REJECT     all      wg0    *       ::/0                 ::/0                 reject-with icmp6-adm-prohibited
+  1     3624  232K RETURN     all  --  *      *       10.90.0.0/24         10.31.160.0/24
+  3     6948  504K MASQUERADE  all  --  *      ens5    10.90.0.0/24         0.0.0.0/0
+  Icmp: 286 0 0 286 0 0 0 0 0 0 0 0 0 0 12203 0 0 69809 12203 0 0 0 0 0 0 0 0 0 0
+  Icmp6OutDestUnreachs            	17197
+  ```
+
+  **`REJECT` 82009 → 82009; `RETURN` 3622 → 3624, the two proxied calls and nothing else; `MASQUERADE` +41,
+  the DNS; every ICMP counter flat.** The handshake log read `peer=mbp` at 21 s and 91 s, then 39 s and
+  109 s; `VP-1`..`VP-9` pass on both reads. For scale, between 6.4's reading B and A the monitored sessions
+  had grown `REJECT` by 54328 and `Icmp6OutDestUnreachs` by **17006** — the ULA line at work.
+- **[Claude] 8.5, and the stage closes with pass 8 included.** `NETWORK.md` §7 re-measured with a profile
+  column; the client runbook's check 1 gains the app's fields and its split-tunnel paragraph the flag;
+  `vpn.md` §C7 and its banner say *measured*; `lessons.md`'s second list gains the App Store client's two
+  behaviours from the readings; Stage 11 step 3.4 gains input (f) and 5.2's arming test names the
+  monitored profile; 6d decision due 4 and 7.5 gain the split-tunnel line; verification 5 struck; the
+  indexes and `CLAUDE.md`. `make check` OK; `check-plan-refs` unchanged. **What the sitting leaves running**:
+  the two hub hosts, `sandbox/egress` and `sandbox/probes` — `make down ENV=sandbox`, then `make hub-down`,
+  are the user's.

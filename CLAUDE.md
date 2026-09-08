@@ -193,19 +193,20 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
 
 ### Current position
 
-- **STAGE 6c DONE (2026-09-08) FOR PASSES 0-7; PASS 8 ADDED 2026-09-08, OPEN — the second client
-  profile.** The **split-tunnel** profile beside the **monitored** one (`objectives.md`'s words — *open* is
-  the proxy plane's `mode`, not a profile): same key, same `DNS`, `AllowedIPs` = the
-  five VPC CIDRs + `10.90.0.0/24`; laptop-only, **no host change**. The reach difference is by
-  **identity**, never by network — `InfrastructureAccess` direct, a persona still through the proxy
-  (`DenyControlPlaneOffVpn`). 8.1-8.2 done, decisions 5/6 taken (one key, `DNS` unchanged); 8.3/8.4 owed; carried to 6d decision due 4 (Method 1
-  expected to work under split-tunnel) and Stage 11 step 3.4 (the portal alarm fires on split-tunnel). Decision due 4 taken as **(c)**:
-  the access log stays in Production 365 days until Stage 11 step 5.1 folds it into the centralized
-  delivery — measured first, the organization trail records any deletion meanwhile, `PX-4` a note.
+- **STAGE 6c DONE (2026-09-08), PASS 8 INCLUDED — two client profiles.** The **split-tunnel** profile beside
+  the **monitored** one (`objectives.md`'s words — *open* is the proxy plane's `mode`, not a profile): same
+  key, same `DNS`, `AllowedIPs` = the five VPC CIDRs + `10.90.0.0/24`; laptop-only, **no host change**;
+  `vpn.md` §C7. **Measured 2026-09-08**: the reach difference is by **identity**, never by network —
+  `InfrastructureAccess` direct; a persona's call direct is an *explicit* deny, through the proxy an
+  *implicit* one or a success; the host's `REJECT` counter flat across a burst; the App Store client sends
+  **every DNS query** through the tunnel and installs an inert `I`-flagged default on the `utun`. Carried to
+  6d decision due 4 (Method 1 expected to work under split-tunnel; 7.5 reads both) and Stage 11 step 3.4
+  (input (f): the portal alarm fires on split-tunnel sessions). Decision due 4 taken as **(c)**:
+  the access log stays in Production until Stage 11 step 5.1 folds it in; `PX-4` a note.
   Pass 6: **a space started while `sandbox/egress` is down HANGS** at "IDE configuration in progress";
   the no-internet timeout is the **host's per-destination ICMP rate limit** (Lesson 55); a laptop call takes
-  **two doors by service family** (`sts` from the proxy's EIP, `s3control` through the hub's S3 gateway
-  endpoint); the union trimmed, `sandbox/vpn/` retired, **`VP-3` reads every account**; **6.6 taken as (ii),
+  **two doors by service family** (`sts` public, `s3control` via the hub's S3 gateway endpoint); **`VP-3`
+  reads every account**; **6.6 taken as (ii),
   recorded acceptance** — Stage 11 step 3.4 re-takes it, its 5.2 alarms on an off-proxy portal session.
   **`aws sso logout` invalidates EVERY cached session's token; a browser sign-out invalidates none.**
 - **STAGE 6d: 3.6, 7.2 AND 7.1 DONE (2026-09-07); STEP 7 RE-CUT AROUND ONE FINDING — THE CONNECTION

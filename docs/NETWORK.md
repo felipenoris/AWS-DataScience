@@ -188,22 +188,23 @@ bridge between VPCs the peering matrix deliberately keeps apart.
 
 ---
 
-## 7. The tunnel — what a packet from a laptop can and cannot reach  `[measured 2026-09-07]`
+## 7. The tunnel — what a packet from a laptop can and cannot reach, under which profile  `[measured 2026-09-07/08]`
 
-**Two client profiles since 2026-09-08 (`objectives.md`; 6c pass 8), and everything measured in this
-section is the monitored one's.** Under the **split-tunnel** profile the `.conf` lists the private ranges
-instead of `0.0.0.0/0, ::/0`: the *in* and *the masquerade* rows below hold, *out of the host* is never
-exercised (no internet-bound packet enters the tunnel), and *the internet* is the laptop's own uplink —
-unmonitored, by decision. The cloud side is identical, so a persona's calls still take the proxy under
-either profile. **Its readings are owed to 6c steps 8.3 and 8.4** and land here then; nothing below is
-edited ahead of them.
+**Two client profiles since 2026-09-08** (`objectives.md`; 6c pass 8): the same device, the same key, one
+`AllowedIPs` line apart. The cloud side is identical under both — the difference is what the laptop sends
+into the tunnel — and it was measured from both ends on 2026-09-08 (6c steps 8.3 and 8.4).
 
-| | |
-|---|---|
-| **in** | UDP/51820 to `52.89.212.1`, the estate's **one** world-open rule |
-| **out of the host** | the `FORWARD` chain accepts **RFC1918 only** and REJECTs the rest with `icmp-admin-prohibited`; a second rule REJECTs **all** forwarded IPv6 — **never reached** (measured 2026-09-07): the host has no IPv6 route, so a tunnelled IPv6 packet is answered *no route* before the chain, `Icmp6OutDestUnreachs` 191 against the rule's 0 |
-| **the internet** | only through the proxy, by name, on the `tunnel` plane |
-| **the masquerade** | everything except traffic bound for the **public tier** — so Squid's log carries `10.90.0.2`, the **device**, not the host |
+| | **monitored** — `AllowedIPs = 0.0.0.0/0, ::/0` | **split-tunnel** — the five VPC CIDRs + `10.90.0.0/24` |
+|---|---|---|
+| **in** | UDP/51820 to `52.89.212.1`, the estate's **one** world-open rule | the same |
+| **the private space** | through the tunnel | through the tunnel — the same six routes, on the `utun` |
+| **out of the host** | the `FORWARD` chain accepts **RFC1918 only** and REJECTs the rest with `icmp-admin-prohibited`; a second rule REJECTs **all** forwarded IPv6 — **never reached** (measured 2026-09-07): the host has no IPv6 route, so a tunnelled IPv6 packet is answered *no route* before the chain (`Icmp6OutDestUnreachs` 17197 by 2026-09-08, the rule's counter 0) | **never exercised**: nothing bound for the internet enters the tunnel — `REJECT` **82009 → 82009** across a deliberate burst (four public sites, an IPv6 attempt, three names, two proxied calls), every ICMP counter flat |
+| **the internet** | only through the proxy, by name, on the `tunnel` plane | the laptop's own uplink — any protocol, both families, **unmonitored, by decision**: `https://1.1.1.1` answers in 10 ms, `checkip` prints the laptop's address |
+| **the masquerade** | everything except traffic bound for the **public tier** — so Squid's log carries `10.90.0.2`, the **device**, not the host | the same — the proxy is still there for whoever asks (`checkip` through it: `184.33.8.126`) |
+| **DNS** | the hub's `.2`, every query | the same, **every query**: the App Store client applies a `DNS` line to all of them whatever `AllowedIPs` says (`scutil --dns`: the tunnel's resolver first, no domain restriction) |
+| **a persona's AWS call** | through the proxy, because everything is | **through the proxy, or refused**: `list-buckets` direct is an *explicit* deny (`DenyControlPlaneOffVpn`), through the proxy an *implicit* one; `list-caller-access-grants` direct the explicit deny, through the proxy the two grants — same session, same call |
+| **`InfrastructureAccess`** | through the proxy | direct — no proxy anywhere |
+| **the laptop's routes** | the tunnel's default is primary in both families | the `utun`'s default carries the **`I`** flag in both families — interface-scoped, inert; `en0` keeps the primary |
 
 **The refusal is real and the sender usually cannot see it.** `curl https://1.1.1.1` from a client
 read as a **timeout** twice and as `Couldn't connect … after 194 ms` once (2026-09-07): the host
