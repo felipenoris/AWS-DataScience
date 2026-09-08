@@ -198,7 +198,7 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   the proxy plane's `mode`, not a profile): same key, same `DNS`, `AllowedIPs` = the
   five VPC CIDRs + `10.90.0.0/24`; laptop-only, **no host change**. The reach difference is by
   **identity**, never by network — `InfrastructureAccess` direct, a persona still through the proxy
-  (`DenyControlPlaneOffVpn`). 8.1-8.2 done (decisions 5/6 on their recommendation, to confirm); 8.3/8.4 owed; carried to 6d decision due 4 (Method 1
+  (`DenyControlPlaneOffVpn`). 8.1-8.2 done, decisions 5/6 taken (one key, `DNS` unchanged); 8.3/8.4 owed; carried to 6d decision due 4 (Method 1
   expected to work under split-tunnel) and Stage 11 step 3.4 (the portal alarm fires on split-tunnel). Decision due 4 taken as **(c)**:
   the access log stays in Production 365 days until Stage 11 step 5.1 folds it into the centralized
   delivery — measured first, the organization trail records any deletion meanwhile, `PX-4` a note.
