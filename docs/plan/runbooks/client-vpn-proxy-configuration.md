@@ -9,7 +9,7 @@
 
 | | |
 |---|---|
-| **Scope** | §1 up and §2 down — the session: the two hub hosts, and a spoke's `[E]` slices when the day needs them. §3 — the device and the tunnel: enrol, write the `.conf`, up with its four checks, down. §4 — the device and the proxy: macOS (system, terminal, Chrome) and Linux |
+| **Scope** | §1 up and §2 down — the session: the two hub hosts, and a spoke's `[E]` slices when the day needs them. §3 — the device and the tunnel: enrol, write the `.conf` — **two profiles since 2026-09-08, monitored and split-tunnel** (§3.3; the rule for choosing is `vpn.md` §C7) — up with its four checks, down. §4 — the device and the proxy: macOS (system, terminal, Chrome) and Linux |
 | **Operator** | §1-§2: the **infrastructure user** (`sso-session awsds`), account **Production**, permission set **`InfrastructureAccess`**, profile `awsds-infra-prod` — plus the spoke's profile on the same session (`awsds-infra-sandbox-1` for `ENV=sandbox`). §3-§4: the **device's owner, on the device** — no AWS profile, no SSO session |
 | **The values** | `Endpoint` **`52.89.212.1:51820`** · the host's `PublicKey` **`LCD1d6xjsxRAmOZA/FTo72TToGUkLYqlOryEJwfup28=`** · `DNS` **`10.31.0.2`** · `MTU` **`1280`** · this device's `Address` **`10.90.0.<n>/32, fd90::<n>/128`** · the proxy **`proxy.awsds.internal:3128`**, whose internet-facing address is **`184.33.8.126`**. All `[P]`: they survive every host stop, start and replacement. The proxy's *private* address is the one thing looked up by name and never written down |
 
@@ -51,12 +51,14 @@ hosts; it needs a spoke's `[E]` slices only when it uses them.
    this, then stop and start the space. From its terminal, `getent hosts sts.us-west-2.amazonaws.com`
    must answer `10.20.x.x`.
 
-4. Tunnel up on the device (§3.4), then the proxy (§4).
+4. Tunnel up on the device (§3.4), in the profile the day needs (§3.3), then the proxy (§4) — which under
+   the split-tunnel profile is only for the applications acting as a persona.
 
 ## 2. Down — in this order
 
-1. **Tunnel down on every device first** (§3.5): with a full tunnel up, a stopped host strands the
-   laptop's default route until `wg-quick down` runs.
+1. **Tunnel down on every device first** (§3.5): with a monitored (full) tunnel up, a stopped host strands the
+   laptop's default route until `wg-quick down` runs; under split-tunnel it strands the private routes and
+   the DNS.
 2. **`make down ENV=<account>`** for each account whose `[E]` slices are up — it deletes the running
    Studio apps, destroys the `[E]` slices, then stops that account's `[D]` hosts. `ENV` is never optional.
 3. **`make hub-down`** — last, and the easiest to forget. It **stops** both hub hosts; nothing is
@@ -114,12 +116,24 @@ EOF
 )
 ```
 
+**The split-tunnel profile — the same file, one line changed** *(added 2026-09-08, 6c pass 8; which profile
+when is `vpn.md` §C7)*. Write it as a second file from the same key, and replace the `AllowedIPs` line:
+
+```bash
+cd ~ && (umask 077 && sed 's#^AllowedIPs = .*#AllowedIPs = 10.20.0.0/16, 10.30.0.0/16, 10.31.0.0/16, 10.32.0.0/16, 10.50.0.0/16, 10.90.0.0/24#' mbp.conf > mbp-split.conf)
+```
+
+The five VPC CIDRs of `NETWORK.md` §1 plus the tunnel's own range. A sixth VPC is a new entry here and
+nothing in the monitored file; `10.0.0.0/8` is the one-line alternative, and it captures a home LAN
+numbered in `10.x`. `Address`, `DNS`, `MTU`, `PublicKey`, `Endpoint` and the key are the same — the two files
+differ in that line alone. **One profile active at a time**: the same key is one peer on the host.
+
 | Line | The rule it carries |
 |---|---|
 | `Address` | `<n>` is this device's `host` number from the roster. **The `fd90::` half must be present**: without it `AllowedIPs = ::/0` is inert and every IPv6-capable application leaves outside the tunnel (`vpn.md` §C6) |
 | `DNS` | the hub's resolver, `VPC-Networking`'s `.2`. A VPC's resolver answers no query from across a peering, so any other value leaves the tunnel up and every name unresolvable |
 | `MTU` | the one path-dependent value; `1280` passes every path met so far — phone tethering is where a derived value fails (`vpn.md` §C4) |
-| `AllowedIPs` | **full tunnel, never split**: a persona's AWS call must leave through the proxy, whose address is the one `DenyControlPlaneOffVpn` accepts |
+| `AllowedIPs` | **full tunnel in the monitored profile**: a persona's AWS call must leave through the proxy, whose address is the one `DenyControlPlaneOffVpn` accepts. **The split-tunnel profile lists the private ranges instead** (above; `vpn.md` §C7): the internet leaves direct, and a persona's call still needs the proxy — pointed at it by the application (§4) |
 
 `PublicKey` and `Endpoint` are stable by design: if either ever changes without `vpn.md` §K3 having been
 run, that is a finding, not a reconnection problem.
@@ -141,6 +155,12 @@ claim:
 | 3 | `curl -sS --max-time 15 https://1.1.1.1` | **fails** — as `curl: (28)` timeout or as `curl: (7) … after 194 ms`, both measured 2026-09-07: the host refuses every time and rate-limits the ICMP that says so (Lesson 55). A `200` is the finding |
 | 4 | `curl -s --max-time 20 -x http://proxy.awsds.internal:3128 https://checkip.amazonaws.com` | **`184.33.8.126`**, the proxy's address — the tunnel, the peering, the return route and the client plane, in one line |
 
+**Under the split-tunnel profile the third reading inverts and the other three hold** (6c pass 8, owed to
+8.3): check 3 **answers** — `301`, the site redirects — and `curl -s https://checkip.amazonaws.com` prints
+the laptop's own uplink address; checks 1, 2 and 4 read the same, because the private space, the resolver
+and the proxy are all still through the tunnel. A timeout on check 3 under split-tunnel is the finding — a
+stale route, or the monitored tunnel still up.
+
 A 403 on check 4 is the proxy refusing a *name*; nothing at all is the path, or a stopped host (§1).
 When a check fails: `vpn.md` §C4.
 
@@ -155,6 +175,12 @@ The file stays and nothing is revoked. Then proxy off (§4).
 ---
 
 ## 4. The device and the proxy
+
+**Which profile decides who needs this section** (`vpn.md` §C7, 2026-09-08): under the **monitored**
+profile, every application; under the **split-tunnel** profile, **only the applications that act as a
+persona** — a terminal running a persona profile, a Chrome opened on the console or the portal as a
+persona — while everything else, the infrastructure user's terminal included, goes direct and needs nothing
+here.
 
 The estate's only internet is an **explicit** proxy, `proxy.awsds.internal:3128`, resolvable only
 through the tunnel. Explicit means not transparent: a program that has not been told about it does not
