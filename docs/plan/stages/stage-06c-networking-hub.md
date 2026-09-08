@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Status** | **IN PROGRESS — passes 0-5 and 7 DONE 2026-09-06/07, pass 6 OPEN** ([log](../../log/log-stage-06c-networking-hub.md)): 6.1, 6.3 and 6.7 measured; **6.2, 6.4, 6.6 and the user's half of 6.5 outstanding**, and 6.5 is the **gate** that unfreezes `sandbox/foundation` (frozen at `1 to add` — must not be applied). Pass 6 was re-cut into sub-steps on 2026-09-07. *The earlier position, kept as the record:* passes 0 and 1 DONE 2026-09-06. The three Production VPCs exist: `foundation/` re-labelled **VPC-SharedServices**, plus **VPC-Networking** (10.31) and **VPC-Workloads** (10.32), with `workloads-egress/` written and applying nothing. **Two module bumps, and each was forced by a capability its step did not enumerate** — `vpc-v0.2.0`'s `name_suffix` and `vpc-v0.3.1`'s `public_internet_route`; `vpc-v0.3.0` is **abandoned** on origin, tagged onto the wrong commit by a failed-and-swallowed `git commit`. **0.2 replaced `CIDRS` rather than sitting beside it** (no reader wanted a per-account answer); **0.4a is deferred to 5.1** because the step contradicts itself; **0.6 lands with 3.1**. **Three checks are corrected before being written** — 1.5, 2.4's `NT-12` and 3.7's `NT-11` would each be red for passes at a time as specified, which is 6b's `DT-8` recurring. **Created 2026-09-05**; it builds [D38](../decisions/D38-single-egress-hub.md) and repairs the client-plane DNS shadowing of Lessons 40-43 |
+| **Status** | **PASSES 0-7 DONE 2026-09-06/08** ([log](../../log/log-stage-06c-networking-hub.md)) — every step executed and measured; **the one item still open is decision due 4**, the access log's export to Log Archive (both rates measured before the user chooses; `PX-4` carries it as a note). Pass 6 closed on 2026-09-08 with 6.5: the vending path re-measured from the new tunnel (**two doors, by service family**), the union trimmed, `sandbox/foundation` unfrozen and its anchors gone, `sandbox/vpn/` retired, `VP-3` widened to every account. Pass 6 was re-cut into sub-steps on 2026-09-07. *The earlier position, kept as the record:* passes 0 and 1 DONE 2026-09-06. The three Production VPCs exist: `foundation/` re-labelled **VPC-SharedServices**, plus **VPC-Networking** (10.31) and **VPC-Workloads** (10.32), with `workloads-egress/` written and applying nothing. **Two module bumps, and each was forced by a capability its step did not enumerate** — `vpc-v0.2.0`'s `name_suffix` and `vpc-v0.3.1`'s `public_internet_route`; `vpc-v0.3.0` is **abandoned** on origin, tagged onto the wrong commit by a failed-and-swallowed `git commit`. **0.2 replaced `CIDRS` rather than sitting beside it** (no reader wanted a per-account answer); **0.4a is deferred to 5.1** because the step contradicts itself; **0.6 lands with 3.1**. **Three checks are corrected before being written** — 1.5, 2.4's `NT-12` and 3.7's `NT-11` would each be red for passes at a time as specified, which is 6b's `DT-8` recurring. **Created 2026-09-05**; it builds [D38](../decisions/D38-single-egress-hub.md) and repairs the client-plane DNS shadowing of Lessons 40-43 |
 | **Prerequisites** | [Stage 3](stage-03-networking.md) (the `vpc` and `vpc-egress` modules, the peering pattern in `production/foundation/peers.tf`, the `[P]`/`[E]` split), [Stage 4](stage-04-vpn.md) (the `wireguard` module and its `[P]` anchors), [6a](stage-06a-unified-studio.md) (the endpoint lists and what a Studio app needs), **[6b](stage-06b-development-becomes-staging.md)** (the account is already `staging`, and step 4.1 there freed `10.40.0.0/16` and re-pointed `CIDRS`) |
 | **Consumes** | [D4](../decisions/D04-vpn-wireguard.md), [D5](../decisions/D05-sagemaker-egress.md), [D6](../decisions/D06-dlp-approach.md), [D9](../decisions/D09-az-count.md), [D11](../decisions/D11-lab-lifecycle.md), [D12](../decisions/D12-budget-ceiling.md), [D14](../decisions/D14-supply-chain-account.md), [D15](../decisions/D15-tls-internal.md), [D35](../decisions/D35-sandbox-cardinality.md), [D36](../decisions/D36-internal-pki.md), **[D38](../decisions/D38-single-egress-hub.md)** (written 2026-09-05 — this stage builds it, it does not author it) |
 | **Proves** | [INT-05](../integrations.md) and [INT-06](../integrations.md) re-keyed on the hub; [INT-16](../integrations.md)'s closing choice becomes takeable because this stage owns the address it is keyed on; **INT-21** (every account's compute reaching a Production-owned proxy over peering) and **INT-22** (the `awsds.internal` zone × VPC association matrix) |
@@ -682,6 +682,9 @@ address transfer is what keeps every client's `Endpoint` line unchanged.
   `data-governance/data/` as `InfrastructureAccess`, which carries no VPN-only deny by decision (open
   question 17's recovery path). Read the Sandbox lake's and the projects bucket's policies in the same
   sitting: any `aws:SourceVpce` branch there needs the hub's gateway id too.
+- **4.13 — DONE IN TWO HALVES: the host on 2026-09-06, the anchors, `sandbox.internal` and the folder at
+  6.5 on 2026-09-08.** The Elastic IP was *forgotten*, never released — it is Production's `[P]` allocation;
+  `VP-2` reads no orphan. *The original step follows:*
 - **4.13 — [Claude⚡] Destroy the old home, last**: `sandbox/vpn/` and the VPN anchors in
   `sandbox/foundation/`, once pass 6's readings pass. `VP-2` (no orphan allocation) is the closing check.
 
@@ -1079,6 +1082,31 @@ obligations older than the stage.
     `ip6tables -L FORWARD -v -n` and the nat table's `POSTROUTING` (added 2026-09-07 for this step). The
     REJECT rule's packet count must have **grown** across the user's attempt; the nat `RETURN` rule for the
     proxy's subnet must not.
+- **6.5 — DONE 2026-09-08, AND VERIFICATION 4 ANSWERED: TWO DOORS, BY SERVICE FAMILY.** Both laptop
+  proofs ran from the new tunnel through the proxy as the Data Scientist — `demo.py` once per grant scope
+  (the sandbox lake's `sso-group-data-scientists/*`, then the project's `shared/*` by `--target`):
+  discover, vend, write, list, read-back all OK, each vend naming its own role — and the direct `aws s3 ls`
+  on the lake refused *"no identity-based policy allows"*. CloudTrail in Sandbox two minutes later:
+  `GetCallerIdentity` from **`184.33.8.126`**, the proxy's EIP, no `vpcEndpointId`; `GetDataAccess` and
+  `ListCallerAccessGrants` from **`10.31.160.181`**, the proxy host's private address, through
+  **`vpce-043a6f047c31e06cc`**, VPC-Networking's S3 gateway endpoint — the split 4.12 predicted, so both
+  branches of `DenyControlPlaneOffVpn` are load-bearing and `trusted_vpce_ids` was already complete (the
+  vends would otherwise have been denied). **The trim**: `VPN_HOMES = [("production", "networking")]`;
+  `identity/sso` planned `0 to add, 6 to change` — each set's `aws:SourceVpc` collapsing from
+  `[Sandbox, VPC-Networking]` to `VPC-Networking` alone, the address list unchanged because the transferred
+  EIP reads the same through either row — applied as `awsds-infra-identity`, re-plan `No changes`, `PX-5`
+  pass; `data-governance/data` planned **`No changes`** (Sandbox's gateway stays trusted as a consumer).
+  **The unfreeze**: `sandbox/foundation` planned `0 to add, 0 to change, 4 to destroy` with the Elastic IP
+  *"no longer managed, not destroyed"*; applied as `awsds-infra-sandbox-1` — `sandbox.internal`, the
+  world-open group, the host-key secret container (30-day recovery window) and its policy gone; re-plan
+  `No changes`. **The retirement**: `terraform-live/sandbox/vpn/` deleted with an empty state, its
+  `layers.py` row with it (28 slices, two `[D]`); `NT-12`'s dated note and `VP-3`'s Production-only scope
+  gone. **Re-measured**: `./aws/vpn.py` `VP-1`..`VP-9` pass, `VP-3` reading *"UDP/51820 in the VPN home,
+  none in the 4 other account(s) read"*; `./aws/networking.py` on the five infra profiles all pass, `NT-12`
+  five zones and no others — and **`NT-10` went red on the first run with `sandbox/egress` up**, reading
+  Sandbox's `datazone` endpoint as a client-plane seizure: a check written for the world in which the
+  laptop resolved in Sandbox (Lesson 50). Re-cut the same sitting — a seizure in a **compute** VPC is
+  design B working, only one in the hub is the finding. *The original step follows:*
 - **6.5 — Re-measure the vending path, then trim the union** (the proof that 4.12's re-keying was complete
   is the gate that unfreezes `sandbox/foundation`):
   - **[user] Run the two laptop-side proofs from the new tunnel**, proxy variables exported:
@@ -1315,8 +1343,11 @@ in the cost model.
 3. ~~Does the SMUS portal open with no browser grant once the client resolves in the hub?~~ **Answered
    2026-09-07 at 6.2: yes** — the portal, the catalog tab and a JupyterLab space, with no Local Network
    Access prompt, and both client-plane names public from the tunnel (Lesson 43's term retired).
-4. Which door does a laptop's S3 call take after the re-keying — the hub's gateway endpoint, or the proxy's
-   public address? (6.5, and it decides whether `trusted_vpce_ids` is complete.)
+4. ~~Which door does a laptop's S3 call take after the re-keying — the hub's gateway endpoint, or the proxy's
+   public address?~~ **Answered 2026-09-08 at 6.5: BOTH, by service family.** `sts` arrives from the proxy's
+   Elastic IP with no endpoint; `s3control` (`GetDataAccess`, `ListCallerAccessGrants`) arrives from the proxy
+   host's private address through VPC-Networking's S3 gateway endpoint — so both branches of
+   `DenyControlPlaneOffVpn` are load-bearing, and `trusted_vpce_ids` was complete (the vends succeeded).
 
 ## Risks
 

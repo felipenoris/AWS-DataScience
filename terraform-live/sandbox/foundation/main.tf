@@ -1,6 +1,6 @@
 # sandbox/foundation/ - the [P] network of a business unit's sandbox (Stage 3 pass 1).
-# One vpc-module instance plus its flow-log delivery role; the sandbox.internal zone is in
-# zones.tf. Pass 2 (the peering requester toward Production, the cross-account zone
+# One vpc-module instance plus its flow-log delivery role; the sandbox.awsds.internal zone is
+# in zones.tf. Pass 2 (the peering requester toward Production, the cross-account zone
 # associations) lands here in its own sitting, additively.
 #
 # MODULES ARRIVE BY GIT TAG, NEVER BY BRANCH (docs/plan/conventions.md §6; Stage 3 step

@@ -2203,3 +2203,114 @@ authorized earlier in the sitting; `aws/vpn.py` gained four ICMP reads for it fi
   count assertion, and the commit chain behind it was not gated on the script's exit — so commit
   `9316dc1` carried every correction and the index row's *"forty-nine sections"* without the entry
   they described (Lesson 46's shape). This commit is the entry.
+
+## 2026-09-08 — 6.6 taken as (ii), and 6.5 closes pass 6: two doors by family, the union trimmed, the Sandbox home retired
+
+*Written by Claude at the user's standing request in this sitting; the user's decisions and pastes are
+marked. The sitting straddled midnight UTC: it began on 2026-09-07 evening.*
+
+- **[user] 6.6 — the closing choice of INT-16 is (ii), recorded acceptance**, in the user's words: *"vamos
+  pela opção (ii). Revise o que for necessário no plano do estágio 11 para rever esta decisão"*.
+- **[Claude] Recorded as a DEVIATION, not a gap**, in nine files (the stage's 6.6 block and decision due 3,
+  the INT-16 row, `README.md` item 3, `GENERAL_PLAN.md` principle 4, `architecture.md` §3 — which still
+  placed the tunnel in Sandbox, corrected —, `open-questions.md`, the device-trust row of
+  `institutional-delta.md`, `CLAUDE.md`). Fallback (i)'s condition shape stays written in 6.6 and is
+  applied nowhere. **Stage 11 gained the revisit**: step 3.4 re-takes the choice with five named inputs
+  (recommendation: (i), unless `NT-9` reports a private door for the portal), 5.2 gains
+  `awsds-data-portal-offproxy` — the alarm on a portal session arriving from any address but the proxy's,
+  armed only after a tunnel-up session proves it quiet and a tunnel-down one proves it loud — decision
+  due 10, verification xi, and the threat model's dated row.
+- **[user] The Data Scientist signed in for 6.5, the infrastructure user for the rest**, and authorized
+  the two `demo.py` runs, the readings, and — after reading the three plans — both applies, in order.
+  The first Data Scientist login came back `ForbiddenException: No access` at `GetRoleCredentials`: the
+  browser's IdC session still belonged to the infrastructure user and the flow re-used it silently
+  (`aws/AWS-CLI.md`'s documented failure). A portal sign-out and a second login fixed it.
+- **[Claude] The two laptop proofs, as the Data Scientist through the proxy, verbatim (account ids
+  elided):**
+
+  ```
+  Grants available to this identity: 2
+    READWRITE s3://awsds-sandbox-lake/sso-group-data-scientists/*
+    READWRITE s3://awsds-sandbox-smus-projects/dzd-d8yrvx1ko7im6o/avhvbqn37ty7m8/shared/*
+  Vended identity: arn:aws:sts::<acct>:assumed-role/awsds-sandbox-lake-access/access-grants-45d4246f-6a6d-4129-9622-e7553b1076b4
+  Wrote s3://awsds-sandbox-lake/sso-group-data-scientists/s3-read-write-demo/hello.txt
+  Objects under s3://awsds-sandbox-lake/sso-group-data-scientists/: 2
+            11  sso-group-data-scientists/from-notebook.txt
+            44  sso-group-data-scientists/s3-read-write-demo/hello.txt
+  Read back OK — laptop read/write/list on the project path works.
+  ```
+
+  ```
+  Grants available to this identity: 2
+    READWRITE s3://awsds-sandbox-lake/sso-group-data-scientists/*
+    READWRITE s3://awsds-sandbox-smus-projects/dzd-d8yrvx1ko7im6o/avhvbqn37ty7m8/shared/*
+  Vended identity: arn:aws:sts::<acct>:assumed-role/datazone_usr_role_avhvbqn37ty7m8_5hkjdsy3umpi1c/access-grants-760060d8-98b8-45d5-9e20-e49aef446689
+  Wrote s3://awsds-sandbox-smus-projects/dzd-d8yrvx1ko7im6o/avhvbqn37ty7m8/shared/s3-read-write-demo/hello.txt
+  Objects under s3://awsds-sandbox-smus-projects/dzd-d8yrvx1ko7im6o/avhvbqn37ty7m8/shared/: 17
+  Read back OK — laptop read/write/list on the project path works.
+  ```
+
+  And the negative control, the persona's direct call on the lake:
+
+  ```
+  aws s3 ls s3://awsds-sandbox-lake/ --profile awsds-scientist-sandbox
+  An error occurred (AccessDenied) when calling the ListObjectsV2 operation: User: arn:aws:sts::<acct>:assumed-role/AWSReservedSSO_DataScientistAccess_…/… is not authorized to perform: s3:ListBucket on resource: "arn:aws:s3:::awsds-sandbox-lake" because no identity-based policy allows the s3:ListBucket action
+  ```
+
+- **[Claude] CloudTrail in Sandbox, read two minutes later (`lookup-events`, 2026-09-07 UTC):**
+
+  | time | event | `sourceIPAddress` | `vpcEndpointId` | identity |
+  |---|---|---|---|---|
+  | 23:53:05 | `GetCallerIdentity` | `184.33.8.126` | `-` | DataScientistAccess |
+  | 23:53:06 | `GetCallerIdentity` | `184.33.8.126` | `-` | InfrastructureAccess |
+  | 23:53:38 | `GetCallerIdentity` | `184.33.8.126` | `-` | DataScientistAccess |
+  | 23:53:39 | `GetDataAccess` | `10.31.160.181` | `vpce-043a6f047c31e06cc` | DataScientistAccess |
+  | 23:53:39 | `ListCallerAccessGrants` | `10.31.160.181` | `vpce-043a6f047c31e06cc` | DataScientistAccess |
+  | 23:53:40 | `GetCallerIdentity` | `184.33.8.126` | `-` | lake access role |
+  | 23:53:46 | `GetCallerIdentity` | `184.33.8.126` | `-` | DataScientistAccess |
+  | 23:53:46 | `ListCallerAccessGrants` | `10.31.160.181` | `vpce-043a6f047c31e06cc` | DataScientistAccess |
+  | 23:53:47 | `GetDataAccess` | `10.31.160.181` | `vpce-043a6f047c31e06cc` | DataScientistAccess |
+  | 23:53:48 | `GetCallerIdentity` | `184.33.8.126` | `-` | project role (vended) |
+
+  **Verification 4 answered: TWO DOORS, BY SERVICE FAMILY.** `sts` leaves the proxy for the public
+  endpoint and arrives as the proxy's Elastic IP; `s3control` resolves inside the S3 prefix list and
+  takes VPC-Networking's **gateway** endpoint, arriving as the proxy host's private address with the
+  endpoint id — 4.12's prediction, measured. Both branches of `DenyControlPlaneOffVpn` are load-bearing,
+  and `trusted_vpce_ids` was complete before the trim: the vends succeeded.
+- **[Claude] Two plans read as the step wrote them, one read `No changes`.** `identity/sso`: `0 to add,
+  6 to change` — the diff shows `aws:SourceVpc` going from `["vpc-00dca…", "vpc-068274…"]` to the string
+  `"vpc-068274…"`, which Terraform renders as two removals and is one: Sandbox's VPC leaves,
+  `VPC-Networking` stays; the address list is unchanged because the transferred EIP reads `52.89.212.1`
+  through either row. `data-governance/data`: **`No changes`** — Sandbox's gateway endpoint stays trusted
+  as a consumer, and the addresses are the same set. `sandbox/foundation`: `0 to add, 0 to change, 4 to
+  destroy`, the Elastic IP *"will no longer be managed by Terraform, but will not be destroyed"*.
+- **[Claude⚡] Applied in the user's order.** `identity/sso` as `awsds-infra-identity` at 00:08 UTC: six
+  inline policies modified, re-plan `No changes`, `./aws/proxy.py` `PX-5` pass (`184.33.8.126` on all
+  six sets). `sandbox/foundation` as `awsds-infra-sandbox-1` at 00:10: the secret policy, the secret
+  (30-day recovery window), the security group and `sandbox.internal` destroyed — the zone took 1m33s —
+  and the Elastic IP forgotten; re-plan `No changes`.
+- **[Claude] The retirement.** `terraform-live/sandbox/vpn/` deleted after `state list` read empty; its
+  `layers.py` row with it — 28 slices, two `[D]`. `VP-3` widened to every `awsds-infra-*` account
+  (Lesson 31), `NT-12`'s dated note removed, and the documents restated: `NETWORK.md`, `AWS_STATE.md`'s
+  §C row (closed), `cost-model.md` (five zones, USD 2.50), `conventions.md` §6, `terraform-live/README.md`,
+  `aws/INDEX.md`, the stage's status row, 4.13 and verification 4, `GENERAL_PLAN.md`, `CLAUDE.md`.
+- **[Claude] Re-measured.** `./aws/vpn.py`: `VP-1`..`VP-9` pass — `VP-3` *"UDP/51820 on
+  sg-09308ebfd2da884eb in the VPN home, none in the 4 other account(s) read"*. `./aws/networking.py` on
+  the five infra profiles: all pass, `NT-12` five zones and no others. **And `NT-10` went red on the first
+  run**, with `sandbox/egress` still up from the 6.2 sitting: Sandbox's `datazone` endpoint seizes
+  `datazone.us-west-2.api.aws` and the check called that a shadowing of the portal's public name —
+  written for the world in which the laptop resolved in Sandbox, red the first time an endpoint existed
+  after 6.7 (Lesson 50). Re-cut: a seizure in a **compute** VPC is design B working (5.3 requires the
+  endpoint there; the apps are not portal web clients), only one in the hub is the finding. Reads
+  `pass` with the discriminator. The run before it also listed every persona profile's preflight failure,
+  which is what running the script with no profile named does while only two sessions are live — noise,
+  not findings.
+- **[Claude] One reading about tokens, two observations.** The infrastructure token was invalidated
+  earlier in the sitting and the Terraform plans failed with `GetRoleCredentials … 401`; the CLI kept
+  answering for profiles whose role credentials were already cached. This time the Data Scientist's
+  token **survived** the browser sign-out and the infrastructure login. So what kills a session's token
+  is **`aws sso logout`**, which logs every cached session out at once (the user ran it at 15:29); a
+  browser sign-out invalidates none.
+- **[Claude] What 6c leaves.** Pass 6 is closed; every pass is executed and measured. **Decision due 4**
+  — the access log's export to Log Archive — is the stage's one open item, both rates to be measured
+  before the user chooses. `sandbox/egress` is still up.

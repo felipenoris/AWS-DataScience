@@ -176,12 +176,9 @@ terraform-live/
 │   │                     #     entitlement plane references BY NAME, so it lives in a [P]
 │   │                     #     slice: a missing one fails PROVISIONING of the permission
 │   │                     #     set in this account (2026-08-23, persona-vending.tf).
-│   │                     #     STILL HOLDS THE OLD VPN ANCHORS (vpn-anchors.tf: an Elastic
-│   │                     #     IP, a world-open SG, the host-key secret) and sandbox.internal,
-│   │                     #     ALL RETIRING: the address was TRANSFERRED to production/
-│   │                     #     networking/ at 6c 4.3, so this slice plans `1 to add` (a
-│   │                     #     second allocation) until 6.5's VPN_HOMES trim + `removed {}`.
-│   │                     #     MUST NOT BE APPLIED until then (AWS_STATE.md §C)
+│   │                     #     The Stage 4 VPN anchors and sandbox.internal LEFT at 6c step 6.5
+│   │                     #     (2026-09-08): the Elastic IP forgotten (it is production/networking/'s
+│   │                     #     [P] allocation), the group, the secret and the zone destroyed
 │   ├── data/             # [P] the lake's consumer side (consumer-data - the ONLY caller
 │   │                     #     since 2026-09-06; development/data/ was destroyed at Stage 6b
 │   │                     #     step 2.4): this account's DataLakeSettings, the LF
@@ -209,11 +206,6 @@ terraform-live/
 │   ├── probes/           # [E] Stage 3's measurement instruments (perimeter + peering),
 │   │                     #     created and destroyed by make up/make down, ranked after
 │   │                     #     egress/ so down tears them first
-│   ├── vpn/              # [D] RETIRING. Its host was DESTROYED at 6c 4.13 (2026-09-06); the
-│   │                     #     WireGuard host is production/vpn/ now. The folder stays on disk
-│   │                     #     until 6.5 unfreezes foundation/ and takes the anchors with it -
-│   │                     #     the gates read the disk, so it is still a row in layers.py.
-│   │                     #     (buildbox/ used to sit here too: MOVED to production/ at 6c 5.8)
 │   ├── dev-env/          # [P] the approved dev-env image registered for this account:
 │   │                     #     aws_sagemaker_image + image_version + app_image_config.
 │   │                     #     Applied by the Stage 8 step 1 pipeline after the dev-env

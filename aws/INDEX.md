@@ -532,7 +532,7 @@ draws, applied to one subsystem — and a `[P]` fact that moves is re-measured h
 |---|---|
 | Is the WireGuard host there, what type, and is it running or stopped ([D])? | 2 — `stopped` between sessions is D11 working, not an outage |
 | **What is the Elastic IP** — the value step 8's deny and Stage 5's bucket policy name? | 3 — printed as `WG_EIP=`; also whether it is associated with the host |
-| Is anything world-open besides UDP/51820 — did port 22 sneak in? | 3, decided by `VP-3` |
+| Is anything world-open besides the home's UDP/51820 — in **any** account, port 22 included? | 3, decided by `VP-3` (every `awsds-infra-*` account since 6c 6.5) |
 | Is the handshake log shipping, and does the health alarm exist (step 7)? | 4 |
 | **Which permission sets carry `DenyControlPlaneOffVpn`** — did the 8.2 rollout reach all six, and has the deliberate 8.3 diff been applied to `InfrastructureAccess`? | 5, decided by `VP-7` — a partial rollout FAILS (Lesson 14) |
 

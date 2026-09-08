@@ -818,20 +818,6 @@ def main(argv: list) -> int:
                 f"{len(want)} association(s), and no others",
             )
 
-    # THE ONE ZONE OF THE OLD FAMILY STILL STANDING, AND IT IS A DATED EXCEPTION RATHER THAN A
-    # FINDING. `prod.internal` and `pages.internal` were destroyed at 2.6 on 2026-09-07;
-    # `sandbox.internal` could not go with them because `sandbox/foundation` is FROZEN - it plans
-    # `1 to add` (an Elastic IP that would be a SECOND allocation) until 6c's `VPN_HOMES` trim, and
-    # that trim waits on step 6.5's readings. The zone is harmless meanwhile: nothing resolves it
-    # and nothing points at it. It leaves with the same apply that unfreezes that slice.
-    if "sandbox.internal" in zone_names:
-        checks.note(
-            "NT-12",
-            "sandbox.internal, the last of the retired family",
-            "still present - `sandbox/foundation` is frozen until the VPN_HOMES trim (6c 6.5), so "
-            "this zone leaves with the apply that unfreezes it. Expected, dated, not drift.",
-        )
-
     # NT-9: the private-door premise of 2026-08-24 (PORTAL_FAMILY_BASELINE). A membership
     # change in EITHER direction is a recorded premise moving, so it FAILS loudly rather
     # than noting quietly - red is the signal to re-read, never a network to fix.
@@ -882,25 +868,44 @@ def main(argv: list) -> int:
             "becomes a real reading only while egress/ is up.",
         )
     else:
+        # WHICH VPC THE SEIZURE IS IN DECIDES THE VERDICT (re-cut 2026-09-08, 6c step 6.5). A private
+        # zone binds the clients of THAT VPC's resolver. Until 6c the tunnelled laptop was one of
+        # Sandbox's (the 2026-08-24 breakage); under D38 it resolves in VPC-Networking, which holds
+        # no interface endpoint, and 6.2 measured both portal names PUBLIC from the tunnel. So a
+        # seizure in a COMPUTE VPC is design B working - 5.3 requires the datazone endpoint there,
+        # and the apps inside are not portal web clients - and only a seizure in the hub is the
+        # finding. Written to the final expectation with the discriminator (Lesson 50), because
+        # this check went red the first time egress/ was up after 6.7 and nothing had broken.
         collisions = [
-            (p, ep, svc, required, seized, verdict)
-            for p, ep, svc, _state, privdns, _vpc, seized_names in ifeps
+            (p, ep, svc, required, seized, verdict, vpc)
+            for p, ep, svc, _state, privdns, vpc, seized_names in ifeps
             if privdns == "True"
             for required in PORTAL_PUBLIC_NAMES
             for seized in seized_names
             if (verdict := shadow_verdict(required, seized))
         ]
-        for p, ep, svc, required, seized, verdict in collisions:
+        in_hub = [c for c in collisions if c[6] in hub_vpc_ids]
+        in_compute = [c for c in collisions if c[6] not in hub_vpc_ids]
+        for p, ep, svc, required, seized, verdict, vpc in in_hub:
             checks.fail(
                 "NT-10",
-                f"{required} vs {ep} ({short_svc(svc)}, {p})",
-                f"{verdict} by the endpoint's seizure of '{seized}' - AWS's SMUS "
-                "network-isolation page lists this name under PUBLIC INTERNET ACCESS for "
-                "the portal web client, and this endpoint's private DNS is authoritative "
-                "for its subtree. Every VPC-resolver client is affected, the tunnelled "
-                "laptop included. The fix is the ENDPOINT (drop it, or accept the portal "
-                "is unusable from inside), never the DNS firewall allow-list, which "
-                "cannot reach a private zone.",
+                f"{required} vs {ep} ({short_svc(svc)}, {p}, {vpc})",
+                f"{verdict} by the endpoint's seizure of '{seized}' IN THE CLIENT PLANE'S VPC - "
+                "AWS's SMUS network-isolation page lists this name under PUBLIC INTERNET ACCESS "
+                "for the portal web client, the tunnelled laptop resolves here (D38), and this "
+                "endpoint's private DNS is authoritative for its subtree. The fix is the "
+                "ENDPOINT (the hub carries none by design), never the DNS firewall allow-list, "
+                "which cannot reach a private zone.",
+            )
+        if in_compute and not in_hub:
+            checks.ok(
+                "NT-10",
+                "portal public names vs deployed endpoints",
+                f"{len(in_compute)} seizure(s), all in COMPUTE VPCs ("
+                + ", ".join(sorted({f"{c[6]} ({c[0]})" for c in in_compute}))
+                + ") - design B working: the endpoint is required there (5.3) and the client "
+                "plane resolves in the hub, where none is deployed. The page's WILDCARD rows "
+                "are not mechanised (section 11).",
             )
         if not collisions:
             checks.ok(
@@ -1191,9 +1196,9 @@ is done: exactly two distinct ids - Sandbox<->Production and Staging<->Productio
 6c step 2.6 destroyed the two Production zones on 2026-09-07 and NT-12 replaced NT-8's
 four questions with INT-22's whole matrix. What resolves now is one APEX (awsds.internal,
 all five VPCs, holding gitlab/proxy/vpn and the [E] probe records), three per-account
-child zones, and awsds-pages.internal. `sandbox.internal` is the last of the old family
-and leaves with the apply that unfreezes sandbox/foundation - see NT-12's note.
-over the VPN. Check NT-8 resolves it mechanically.
+child zones, and awsds-pages.internal. `sandbox.internal`, the last of the old family, left
+at 6c step 6.5 (2026-09-08) with the apply that unfroze sandbox/foundation; NT-12 reads the
+whole matrix, two-sided, with no dated exception left.
 
 """)
 
@@ -1438,9 +1443,13 @@ breakage. Endpoint-specific vpce-*-prefixed entries are dropped: they seize noth
 
 HOW TO READ A SEIZED NAME. The private hosted zone behind it is authoritative for
 the WHOLE SUBTREE, with no fall-through to public DNS. So an unlisted SUBDOMAIN of
-a seized name is NXDOMAIN for every VPC-resolver client - including a full-tunnel
-laptop, whose DNS is the VPC's. NT-10 tests exactly that against the concrete names
-AWS's SMUS network-isolation page lists under PUBLIC INTERNET ACCESS. The page's
+a seized name is NXDOMAIN for every client of THAT VPC's resolver. Until 6c the
+full-tunnel laptop was one of Sandbox's (the 2026-08-24 breakage); under D38 it
+resolves in VPC-Networking, which holds no interface endpoint by design, and 6.2
+measured both portal names PUBLIC from the tunnel. NT-10 therefore tests the concrete
+names AWS's SMUS network-isolation page lists under PUBLIC INTERNET ACCESS against the
+CLIENT plane's VPC alone: a seizure in a COMPUTE VPC is design B working (the datazone
+endpoint is required there, 5.3), a seizure in the hub is the finding. The page's
 WILDCARD rows are NOT mechanised (*.sagemaker.aws, *.execute-api.<region>.
 amazonaws.com, *.console.api.aws, *.console.aws.a2z.com, *.sagemaker.aws.dev, the
 CDN ones) - testing one needs a judgement about what it stands for, so the gap is

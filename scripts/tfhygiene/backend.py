@@ -362,7 +362,15 @@ VPN_HOST_SLICE = ("production", "networking")
 # THE TRIM IS PASS 6's, after the readings, and it is what makes this a union rather than a
 # permanent widening. Removing the Sandbox row is also what unblocks `removed {}` on
 # `sandbox/foundation`'s Elastic IP - the two are one act, in that order.
-VPN_HOMES = [("sandbox", "foundation"), ("production", "networking")]
+#
+# TRIMMED 2026-09-07 (6c step 6.5), after the readings the union was waiting for: both
+# laptop proofs passed from the new tunnel, and CloudTrail read the two doors the hub's row
+# already covers - `sts` arriving from the PROXY's Elastic IP, `s3control` arriving from the
+# proxy host's private address through VPC-Networking's S3 gateway endpoint (verification 4:
+# BOTH branches of DenyControlPlaneOffVpn are load-bearing, by service family). Nothing a
+# persona does presents Sandbox's VPC or the old address any more, so the Sandbox row leaves,
+# and with it the last remote-state read of `sandbox/foundation` that pinned that slice.
+VPN_HOMES = [("production", "networking")]
 
 # THE LAKE'S CONSUMERS AND ITS PICKUP PRODUCER (Stage 5 pass 1, 2026-08-18) - the seventh
 # vocabulary, authored like VPN_HOMES and for the same reason: which accounts consume the
