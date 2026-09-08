@@ -1377,6 +1377,16 @@ make the refusal *counted* stood at **0** while `Icmp6OutDestUnreachs` read **19
 real and counted, in `/proc/net/snmp6`, and the rule is a backstop that has never fired — Lesson 56's
 shape one layer down, the routing table being the control. Where: `runbooks/vpn.md` §C6.
 
+**`aws sso logout` invalidates EVERY cached session's token, and a browser sign-out of the access
+portal invalidates none** (measured 2026-09-07/08). The infrastructure token died at
+`GetRoleCredentials … 401` right after the user's `aws sso logout`, while the CLI kept answering for
+profiles whose role credentials were already cached locally — Terraform, which exchanges the token
+itself, was the first to notice. Later the same night the Data Scientist's token survived the user
+signing out of the portal in the browser and signing in again as the infrastructure user. So two
+people's sessions coexist on one laptop as long as nobody types `aws sso logout`; and the browser's
+portal session decides WHOSE token a login mints (`aws/AWS-CLI.md`, the `ForbiddenException` at
+`GetRoleCredentials`). Where: `aws/AWS-CLI.md`.
+
 ### Route 53
 
 - **DNS Firewall needs BOTH `example.com` and `*.example.com` to cover a domain and its subdomains** —

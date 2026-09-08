@@ -193,8 +193,10 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
 
 ### Current position
 
-- **STAGE 6c: PASSES 0-7 DONE (2026-09-08); ONE DECISION STILL DUE — #4, THE ACCESS LOG'S EXPORT TO LOG
-  ARCHIVE** (both rates measured before the user chooses; `PX-4` a note). Pass 6's readings: **6.2** portal,
+- **STAGE 6c DONE (2026-09-08).** Decision due 4 taken as **(c)**: the access log stays in Production 365
+  days until Stage 11 step 5.1 folds it into the centralized delivery — measured first (0.13-0.53 MB/day,
+  every mechanism under a cent), the organization trail records any deletion meanwhile, `PX-4` a note.
+  Pass 6's readings: **6.2** portal,
   catalog and a space open from the tunnel with **no** browser grant, both client names public — **a space
   started while `sandbox/egress` is down HANGS** at "IDE configuration in progress"; **6.4** the timeout was the
   **host's per-destination ICMP rate limit**, not macOS (23318 of 27681 refusals silenced), and the

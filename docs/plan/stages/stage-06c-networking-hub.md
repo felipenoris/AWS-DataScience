@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Status** | **PASSES 0-7 DONE 2026-09-06/08** ([log](../../log/log-stage-06c-networking-hub.md)) — every step executed and measured; **the one item still open is decision due 4**, the access log's export to Log Archive (both rates measured before the user chooses; `PX-4` carries it as a note). Pass 6 closed on 2026-09-08 with 6.5: the vending path re-measured from the new tunnel (**two doors, by service family**), the union trimmed, `sandbox/foundation` unfrozen and its anchors gone, `sandbox/vpn/` retired, `VP-3` widened to every account. Pass 6 was re-cut into sub-steps on 2026-09-07. *The earlier position, kept as the record:* passes 0 and 1 DONE 2026-09-06. The three Production VPCs exist: `foundation/` re-labelled **VPC-SharedServices**, plus **VPC-Networking** (10.31) and **VPC-Workloads** (10.32), with `workloads-egress/` written and applying nothing. **Two module bumps, and each was forced by a capability its step did not enumerate** — `vpc-v0.2.0`'s `name_suffix` and `vpc-v0.3.1`'s `public_internet_route`; `vpc-v0.3.0` is **abandoned** on origin, tagged onto the wrong commit by a failed-and-swallowed `git commit`. **0.2 replaced `CIDRS` rather than sitting beside it** (no reader wanted a per-account answer); **0.4a is deferred to 5.1** because the step contradicts itself; **0.6 lands with 3.1**. **Three checks are corrected before being written** — 1.5, 2.4's `NT-12` and 3.7's `NT-11` would each be red for passes at a time as specified, which is 6b's `DT-8` recurring. **Created 2026-09-05**; it builds [D38](../decisions/D38-single-egress-hub.md) and repairs the client-plane DNS shadowing of Lessons 40-43 |
+| **Status** | **DONE 2026-09-08** ([log](../../log/log-stage-06c-networking-hub.md)) — every step executed and measured, and **decision due 4 taken as (c)** the same day with the rates measured first: the access log's export waits for Stage 11 step 5.1's centralized delivery, the organization trail records any deletion or retention change meanwhile, and `PX-4` says so as a note. Pass 6 closed on 2026-09-08 with 6.5: the vending path re-measured from the new tunnel (**two doors, by service family**), the union trimmed, `sandbox/foundation` unfrozen and its anchors gone, `sandbox/vpn/` retired, `VP-3` widened to every account. Pass 6 was re-cut into sub-steps on 2026-09-07. *The earlier position, kept as the record:* passes 0 and 1 DONE 2026-09-06. The three Production VPCs exist: `foundation/` re-labelled **VPC-SharedServices**, plus **VPC-Networking** (10.31) and **VPC-Workloads** (10.32), with `workloads-egress/` written and applying nothing. **Two module bumps, and each was forced by a capability its step did not enumerate** — `vpc-v0.2.0`'s `name_suffix` and `vpc-v0.3.1`'s `public_internet_route`; `vpc-v0.3.0` is **abandoned** on origin, tagged onto the wrong commit by a failed-and-swallowed `git commit`. **0.2 replaced `CIDRS` rather than sitting beside it** (no reader wanted a per-account answer); **0.4a is deferred to 5.1** because the step contradicts itself; **0.6 lands with 3.1**. **Three checks are corrected before being written** — 1.5, 2.4's `NT-12` and 3.7's `NT-11` would each be red for passes at a time as specified, which is 6b's `DT-8` recurring. **Created 2026-09-05**; it builds [D38](../decisions/D38-single-egress-hub.md) and repairs the client-plane DNS shadowing of Lessons 40-43 |
 | **Prerequisites** | [Stage 3](stage-03-networking.md) (the `vpc` and `vpc-egress` modules, the peering pattern in `production/foundation/peers.tf`, the `[P]`/`[E]` split), [Stage 4](stage-04-vpn.md) (the `wireguard` module and its `[P]` anchors), [6a](stage-06a-unified-studio.md) (the endpoint lists and what a Studio app needs), **[6b](stage-06b-development-becomes-staging.md)** (the account is already `staging`, and step 4.1 there freed `10.40.0.0/16` and re-pointed `CIDRS`) |
 | **Consumes** | [D4](../decisions/D04-vpn-wireguard.md), [D5](../decisions/D05-sagemaker-egress.md), [D6](../decisions/D06-dlp-approach.md), [D9](../decisions/D09-az-count.md), [D11](../decisions/D11-lab-lifecycle.md), [D12](../decisions/D12-budget-ceiling.md), [D14](../decisions/D14-supply-chain-account.md), [D15](../decisions/D15-tls-internal.md), [D35](../decisions/D35-sandbox-cardinality.md), [D36](../decisions/D36-internal-pki.md), **[D38](../decisions/D38-single-egress-hub.md)** (written 2026-09-05 — this stage builds it, it does not author it) |
 | **Proves** | [INT-05](../integrations.md) and [INT-06](../integrations.md) re-keyed on the hub; [INT-16](../integrations.md)'s closing choice becomes takeable because this stage owns the address it is keyed on; **INT-21** (every account's compute reaching a Production-owned proxy over peering) and **INT-22** (the `awsds.internal` zone × VPC association matrix) |
@@ -605,7 +605,7 @@ address transfer is what keeps every client's `Endpoint` line unchanged.
   gone. **What is deliberately NOT authored is 4.11's second half** — the export to Log Archive. The
   mechanism is a real choice (a subscription filter into a Firehose in Log Archive, against a scheduled
   `CreateExportTask` to S3) with different cost shapes, and picking one silently would be an estimate
-  standing in for a measurement (Lesson 6). It is a decision due below.
+  standing in for a measurement (Lesson 6). It is a decision due below — **taken 2026-09-08 as (c)**.
 - **4.8 — [Claude⚡] Build the proxy**: `production/proxy/` `[D]`, a second host in the same public tier.
   Squid is in the Amazon Linux 2023 repositories (`dnf install -y squid`) and needs no third-party repo.
   The configuration, **in this order**:
@@ -1217,7 +1217,7 @@ estate-wide (INT-21's availability cost).
   **PX-2** `pass` on **both** sources; the committed template needs no session at all, which
   matters because the answer is most wanted *before* an apply. **PX-3** `pass`: five planes,
   entry for entry. **PX-4** is a **`note`, not a `fail`** — the log group exists with 365 days
-  and has no export, and 4.11's second half is an **open decision** (due #4), so a `fail` would
+  and has no export, and 4.11's second half was an **open decision** (due #4, taken 2026-09-08 as (c)), so a `fail` would
   report a gap the plan is holding open on purpose. **PX-5** `pass`: the proxy's address is in
   `DenyControlPlaneOffVpn` on all six persona sets, `InfrastructureAccess` exempt by decision.
   **The two self-defects, both found by running it** (Lesson 54 again): the per-plane lists are
@@ -1324,8 +1324,17 @@ in the cost model.
 2. ~~**The `sagemaker.runtime` AZ answer** (5.4)~~ — **TAKEN 2026-09-06: pin the subnets** (free; D9 intact).
 3. ~~**INT-16's closing choice** (6.6)~~ — **TAKEN 2026-09-07: (ii), recorded acceptance**, a recorded
    deviation revisited at Stage 11 step 3.4; the (i) condition shape stays in 6.6's original text.
-4. **How the proxy's access log reaches Log Archive** (4.11, opened 2026-09-06 when the rest of 4.11 was
-   authored). The requirement is Lesson 18's — the author of the allow-list must not own its record — and
+4. ~~**How the proxy's access log reaches Log Archive**~~ — **TAKEN 2026-09-08: (c), the 365-day
+   in-account retention stands until Stage 11, recorded.** Measured first (Lesson 6; `PRICING.md`): the
+   log runs 0.13-0.53 MB/day; Firehose is 0.029 USD/GB in 5 KB increments, the Scheduler free, and the
+   catalogue holds no SKU for an export task or a Standard-class subscription — under a cent a month
+   whichever way, so the money did not decide. What did: (a) and (b) both need objects built by hand in
+   Log Archive, an account with no CLI profile and no IaC (Lesson 35's shape); the record's destruction
+   is not silent meanwhile — `DeleteLogGroup` and `PutRetentionPolicy` are management events on the
+   organization trail, which already lands in Log Archive; and Stage 11 step 5.1 decides once where
+   every log the author must not own lands (its decision 7), where this group now joins. The author of
+   the allow-list owns its record until then, knowingly; `PX-4` carries it as a note. *The question as
+   opened (4.11, 2026-09-06):* the requirement is Lesson 18's — the author of the allow-list must not own its record — and
    the group plus its CMK are built; only the *export* is open. Candidates: (a) a CloudWatch Logs
    **subscription filter** into a Kinesis Data Firehose owned by Log Archive, which is continuous and
    carries a per-GB Firehose rate; (b) a scheduled **`CreateExportTask`** to a Log Archive bucket, which is
