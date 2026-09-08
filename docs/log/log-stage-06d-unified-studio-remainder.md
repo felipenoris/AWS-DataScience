@@ -394,3 +394,289 @@ The same reading is the design working: with an explicit proxy the client never 
 | **3.1** | **Half taken.** Python measured end to end (`pip`, index **and** file host); `conda` and CRAN refused **by name**, which is decision due 6's evidence. **`uv`, `Pkg` (Julia) and R were not run** — a `curl` to a package host is a network reading, not a package manager's. And this was the **stock** image: 3.1 is written to be taken in the house image, where Julia and R are image-delivered, so the ecosystems that matter most to it are exactly the ones still owed |
 | **3.4** | **Untouched.** The DataZone agent, the S3 Access Grants plugin and Amazon Q run in the server's process tree, which saw no `export` of the user's |
 | **2.2** | Still the durable path. Everything above dies with the shell |
+
+---
+
+## 2026-09-08 — the second sitting: two components that never saw the proxy, and step 8
+
+*The user kept working in the space after the entry above and hit two failures that look like the
+allow-list and are not. Both were run by the user; the readings, the plane entry and the plan edits are
+Claude's. Nothing was applied.*
+
+### [user] `apt`, and the two runs whose IDENTITY is the measurement
+
+*(The `Ign:` block repeats three times in each run — `apt`'s own retries. Elided as `[…]`; nothing else
+is removed.)*
+
+```
+sagemaker-user@default:~$ sudo apt update
+Ign:1 http://security.ubuntu.com/ubuntu noble-security InRelease
+Ign:2 http://archive.ubuntu.com/ubuntu noble InRelease
+Ign:3 http://archive.ubuntu.com/ubuntu noble-updates InRelease
+Ign:4 http://archive.ubuntu.com/ubuntu noble-backports InRelease
+[…]
+0% [Working]^C
+```
+
+Then the six proxy variables were exported in that same shell — the 28-entry `NO_PROXY` and the four
+`http_proxy`/`https_proxy` spellings — and the command was run again:
+
+```
+sagemaker-user@default:~$ sudo apt update
+Ign:1 http://security.ubuntu.com/ubuntu noble-security InRelease
+[…]
+Err:2 http://archive.ubuntu.com/ubuntu noble InRelease
+  Could not resolve 'archive.ubuntu.com'
+Err:3 http://archive.ubuntu.com/ubuntu noble-updates InRelease
+  Could not resolve 'archive.ubuntu.com'
+Err:4 http://archive.ubuntu.com/ubuntu noble-backports InRelease
+  Could not resolve 'archive.ubuntu.com'
+Err:1 http://security.ubuntu.com/ubuntu noble-security InRelease
+  Could not resolve 'security.ubuntu.com'
+Reading package lists... Done
+[…]
+W: Some index files failed to download. They have been ignored, or old ones used instead.
+```
+
+### [Claude] What that proves, and the evidence is that the export changed NOTHING
+
+`archive.ubuntu.com` and `security.ubuntu.com` **are** on `proxy_allow_sandbox` — they have been since
+6c step 4.9. So this is not the allow-list. It is not the proxy at all: the message is `Could not
+resolve`, and **an explicit-proxy client never resolves the destination** — it hands the name to Squid.
+A resolution attempt is therefore proof that `apt` was not using a proxy, and the refusal came from the
+Sandbox DNS Firewall, whose ten entries are four families that do not include Ubuntu's archives and by
+design never will.
+
+**Why the export did not help is the whole finding, and the tell is that the two runs are identical.**
+`sudo` on Ubuntu defaults to `env_reset`, and `http_proxy` is not in its `env_keep`: the variables were
+stripped at the `sudo` boundary and `apt` ran with a clean environment. Not "the proxy failed" — *the
+process never saw one*. This is the same class as 6c 5.8's *"the host is told in four places"*, arriving
+on the notebook side, and it revises **2.2**: `ContainerEnvironmentVariables` sets a *process*
+environment, which is exactly what `sudo` discards.
+
+### [user] The repair, first attempt, using `apt`'s own option rather than the environment
+
+```
+sudo apt -o Acquire::http::Proxy="http://proxy.awsds.internal:3128" -o Acquire::https::Proxy="http://proxy.awsds.internal:3128" update
+Hit:1 http://archive.ubuntu.com/ubuntu noble InRelease
+Get:2 http://security.ubuntu.com/ubuntu noble-security InRelease [126 kB]
+Get:3 http://archive.ubuntu.com/ubuntu noble-updates InRelease [126 kB]
+Get:4 http://archive.ubuntu.com/ubuntu noble-backports InRelease [126 kB]
+Get:5 http://security.ubuntu.com/ubuntu noble-security/main amd64 Packages [1240 kB]
+Get:6 http://archive.ubuntu.com/ubuntu noble-updates/restricted amd64 Packages [1902 kB]
+Get:7 http://archive.ubuntu.com/ubuntu noble-updates/universe amd64 Packages [2151 kB]
+Get:8 http://archive.ubuntu.com/ubuntu noble-updates/main amd64 Packages [1562 kB]
+Get:9 http://security.ubuntu.com/ubuntu noble-security/restricted amd64 Packages [1791 kB]
+Get:10 http://security.ubuntu.com/ubuntu noble-security/universe amd64 Packages [1530 kB]
+Fetched 10.6 MB in 3s (3608 kB/s)
+Reading package lists... Done
+Building dependency tree... Done
+Reading state information... Done
+41 packages can be upgraded. Run 'apt list --upgradable' to see them.
+```
+
+**10.6 MB at 3608 kB/s through the proxy** — the OS-package half of the compute plane, exercised for the
+first time. `-o Acquire::http::Proxy` needs no environment and no sudoers change, which is why it is the
+*test*; the durable form is `/etc/apt/apt.conf.d/01proxy` in the house image, plus a sudoers `env_keep`
+so that a person's exported variables survive `sudo` for everything that is not `apt`. Both are now
+2.2's.
+
+**One incidental fact worth keeping**: the packages are **`amd64`**. It is the only architecture reading
+this estate has taken from inside a space, and it contradicts a string in the next section.
+
+### [user] A Code Editor space, nothing configured, failing on its own startup
+
+*A different space, a different app type, no proxy variables set anywhere. The user was installing the
+`Anthropic/claude-code` extension. Excerpted — the `[Network]` failures are numbered `#69` through `#74`
+and only three are kept.*
+
+```
+2026-09-08 12:21:23.328 [info] [Window] Resolving connection token (…studio.us-west-2.sagemaker.aws)...
+2026-09-08 12:21:36.742 [info] [Window] Auto updating outdated extensions. amazonwebservices.amazon-q-vscode, amazonwebservices.aws-toolkit-vscode, ms-python.python, ms-toolsai.jupyter
+2026-09-08 12:22:13.453 [error] [Window] An unknown error occurred. Please consult the log for more details.
+2026-09-08 12:22:24.584 [info] [Window] Auto updating outdated extensions. amazonwebservices.amazon-q-vscode, amazonwebservices.aws-toolkit-vscode, ms-python.python, ms-toolsai.jupyter
+2026-09-08 12:22:27.173 [error] [Network] #69: https://open-vsx.org/vscode/asset/Anthropic/claude-code/2.1.263/Microsoft.VisualStudio.Code.Manifest?targetPlatform=alpine-arm64 - error GET Failed to fetch
+2026-09-08 12:22:27.654 [error] [Window] Error: getaddrinfo ENOTFOUND open-vsx.org
+    at GetAddrInfoReqWrap.onlookupall [as oncomplete] (node:dns:122:26)
+2026-09-08 12:22:27.666 [error] [Window] getaddrinfo ENOTFOUND open-vsx.org: Error: getaddrinfo ENOTFOUND open-vsx.org
+2026-09-08 12:22:28.120 [error] [Window] Error: getaddrinfo ENOTFOUND open-vsx.org
+```
+
+Six `[Network]` failures, **four** `getaddrinfo ENOTFOUND open-vsx.org`, and the socket to the space
+itself connected in 721 ms — the space works; its gallery does not.
+
+### [Claude] Which side asked, and the shape of the error settles it before any log is opened
+
+The candidates are the **space's** VS Code server and the **laptop's** browser, and they resolve through
+different resolvers. The laptop's DNS goes down the tunnel to `10.31.0.2`, which is `VPC-Networking`'s
+resolver — and **`production/egress` leaves `dns_firewall` at its default `false`**, the module's own
+variable saying *"false in the hub, which must resolve everything the proxy is asked to fetch"*. So a
+laptop **resolves `open-vsx.org` successfully**; under the monitored profile it would then be *rejected*
+by the host's FORWARD chain, and under split-tunnel it would simply work. Neither of those is
+`ENOTFOUND`.
+
+Only the Sandbox VPC has a resolver that answers this way. **The space asked.** `/awsds/sandbox/dns-firewall`
+(30-day retention, the rule action beside the name) turns that from an argument into a record, and that
+reading is step 8.2.
+
+**What the failure is NOT is the allow-list.** `ENOTFOUND` means the server resolved the name itself,
+which an explicit-proxy client never does — the same reading as `apt`, one layer up. Two components, one
+cause: **no proxy in the process**. That is a cheaper repair than *"the component has no proxy support"*,
+and it is worth separating, because the two have different fallbacks (D38's endpoint, then the per-VPC
+NAT contingency) and only one of them is expensive.
+
+**And the failing extensions are AWS's own.** `amazonwebservices.amazon-q-vscode` and
+`amazonwebservices.aws-toolkit-vscode` update themselves at every space start. So this is not a user
+reaching for something unusual — **every Code Editor space in this estate produces this failure, in
+silence**, and reads as a broken IDE rather than as a policy.
+
+**One string is unexplained and is written down as such.** The requests asked for
+`targetPlatform=alpine-arm64`; the JupyterLab space an hour earlier fetched `amd64` Ubuntu packages, and
+the SageMaker Distribution image is not Alpine. It is more likely VS Code's own fallback than a fact
+about the space, but nothing here measured it — `uname -m` and `/etc/os-release` from that terminal
+settle it, and that is step 8.7. Recorded as a **string, not a finding** (Lesson 38).
+
+### [Claude] What was authored, and none of it is applied
+
+| | |
+|---|---|
+| `hub-anchors.tf` | **`open-vsx.org` added to `proxy_allow_sandbox`** (20 → 21 names) with the reasoning inline: why a gallery is the same class of path as `pypi.org`; why **this entry alone changes nothing** while the server has no variables; that the **asset host is unread** and, if the download fails after the manifest succeeds, its name is a `403` in `/awsds/prod/proxy` exactly as `public.ecr.aws` → CloudFront was; and that it propagates to `production-foundation` by the derivation — right today, and Lesson 51's fork condition named. `terraform fmt` clean, `terraform validate` **Success**, no `dstdomain` collision (there is no `.open-vsx.org` sibling) |
+| Stage file | **Step 8 added** — seven sub-steps, 8.1 already done. 3.1 carries `apt`; 3.4 carries the gallery and hands it to step 8; **2.2 grew two image-side files**; decision due 6 records `open-vsx.org` as **taken by the user**, with `conda` and CRAN still open; the risk row's diagnosis order revised |
+| Not done | **The apply.** A list edit reaches the host on the State Manager half-hour with no host replacement, so `PX-3` will read red between the two — expected, and 8.3 says to read it twice |
+
+### [Claude] The decision the user took, and the qualifier it puts on the one that remains
+
+`open-vsx.org` is allowed, on the user's instruction in this sitting. The argument is symmetry rather
+than convenience: this plane already carries five package indexes, and an extension gallery is the same
+kind of channel. Refusing it would not have been a narrower perimeter — it would have been the same
+perimeter with one ecosystem missing for no stated reason.
+
+**The qualifier matters more than the decision.** Decision due 6 is written as *"every `403` the proxy
+logs is a name to allow or a loss to record"*, and this name **never produced a `403`**: it failed at
+resolution, upstream of the proxy, and the proxy's log has no line for it at all. So that decision's
+instrument reads a **floor**, not the whole list — a missing name can fail without ever reaching the
+log, and the second instrument for it is `/awsds/sandbox/dns-firewall`.
+
+---
+
+## 2026-09-08 — the third sitting: the attribution recorded, and the BUILD plane stops being an allow-list
+
+*The user read `hub-anchors.tf`, reported three more measurements from the JupyterLab space (Rust and
+crates installed, GitHub cloned, random sites refused), asked a mechanism question about CNAMEs, and then
+took a decision about the build plane. The readings, the code and the plan edits are Claude's; the decision
+is the user's. **Nothing was applied.***
+
+### [Claude] The mechanism question, answered — a CNAME is invisible to this filter, a redirect is not
+
+The user asked whether the proxy allows a listed name whose DNS resolves into some CDN. **Yes, and the
+reason is that Squid never looks.** `dstdomain` matches the hostname the client **requested** — the
+`Host:` header, or the target of a `CONNECT` — and then Squid resolves that name itself and connects. No
+CNAME chain is evaluated anywhere in the estate. So:
+
+| what the client asks for | what Squid sees | outcome |
+|---|---|---|
+| `static.crates.io`, which is a CNAME into a CDN | `static.crates.io` | **allowed** — the CDN's name never appears |
+| `github.com`, for a clone | `github.com` | **allowed** |
+| `github.com` → **HTTP 302** → `codeload.github.com` | two requests, two names | first allowed, **second refused** (measured 3.1) |
+| `public.ecr.aws` → **HTTP redirect** → a CloudFront distribution | two names | the second had to be listed by name (6c 5.8) |
+
+**A CNAME and an HTTP redirect look alike from the outside and are opposite here.** A CNAME is resolution,
+which this filter does not perform; a redirect is a new request with a new name, which is the only thing
+this filter reads. The old DNS Firewall had it the other way round — it evaluated chains and needed
+`TRUST_REDIRECTION_DOMAIN`, and never met a redirect at all. Lesson 53 from both sides in one paragraph.
+
+**One consequence worth stating rather than discovering**: because the control is *which names may be
+requested*, an allowed CDN host is a front for whatever that CDN serves. D38 §6 already records domain
+fronting through an allowed CDN as an accepted residual, in Stage 11's threat model.
+
+### [Claude] 8.2 taken — `/awsds/sandbox/dns-firewall`, 2026-09-08 15:10-15:40 UTC, 358 events
+
+`storedBytes` read **0** for this group and the streams were live; the field lags by hours, and a listing
+of streams is the reading that settles it. The window covers both spaces.
+
+| name | action | queries | source |
+|---|---|---|---|
+| `open-vsx.org.` | **BLOCK** | 8 | `10.20.65.56` |
+| `idetoolkits.amazonwebservices.com.` | **BLOCK** | 20 | `10.20.65.56` |
+| `idetoolkits-hostedfiles.amazonaws.com.` | *allowed* | 13 | `10.20.65.56` |
+| `api.github.com.` | **BLOCK** | 12 | `10.20.65.56` |
+| `raw.githubusercontent.com.` | **BLOCK** | 12 | `10.20.65.56` |
+| `pypi.org.` | **BLOCK** | 8 + 8 | both spaces |
+| `archive.ubuntu.com.` · `security.ubuntu.com.` | **BLOCK** | 4 each | `10.20.16.8` |
+| `s3.us-west-2.amazonaws.com.` · `datazone.us-west-2.api.aws.` · `sts…` | *allowed* | 33 · 8 · 4 | `10.20.16.8` |
+
+**8.2 is answered as predicted: the space asked.** `10.20.65.56` is a Sandbox address, and the ENIs are
+gone (the spaces were stopped), so the two sources are named by their behaviour rather than by a lookup —
+unambiguously: one queried `open-vsx.org`, `idetoolkits` and `api.github.com` (the **Code Editor**), the
+other `archive.ubuntu.com`, `pypi.org`, `datazone` and the projects bucket (the **JupyterLab** space).
+
+**Three names nobody had listed, and one of them is a domain this estate had not noticed:**
+
+- **`idetoolkits.amazonwebservices.com` — `amazonwebservices.com` is NOT `amazonaws.com`.** A different
+  registrable domain, AWS's, and `.amazonaws.com` on the plane does not cover a byte of it. Beside it in
+  the same log, `idetoolkits-hostedfiles.amazonaws.com` **was** allowed — the two hosts of one feature,
+  split across two domains, one covered and one not.
+- **`api.github.com` and `raw.githubusercontent.com`.** The plane carries `github.com` as a **bare** name,
+  and Squid's `dstdomain` matches a bare name **exactly**. Neither is covered — which is the same reason
+  `codeload.github.com` was refused at 3.1, now stated as a property of the entry rather than as an
+  incident.
+
+**And two independent confirmations arrived free.** `pypi.org` BLOCK from `10.20.16.8` is the `curl` before
+the export in 3.1; `archive.ubuntu.com` and `security.ubuntu.com` BLOCK from the same address is
+`sudo apt update`. Both entries above were written from the terminal output alone; the resolver's own log
+agrees with them.
+
+**Every name is queried twice** — bare, and with `.us-west-2.compute.internal` appended by the VPC search
+domain — and both forms are blocked. It doubles the log volume and is not a finding.
+
+### [user] The decision: the BUILD plane is not the thing the objectives restrict
+
+Reading `proxy_allow_shared`, the user observed that it exists to serve the buildbox, that the buildbox is
+today's stand-in for the CI/CD pipeline, and that a pipeline's external access is criticised **by the code
+that defines it** rather than by a network list — the pipeline's whole job being to build the image for the
+environment that *is* restricted. Decision: **the buildbox reaches the internet through the proxy with no
+allow-list**, and `proxy_allow_shared` goes.
+
+**Claude's reading agrees, and adds the practical half.** The list was a treadmill: every base image, every
+package source, every registry redirect is a name somebody must read out of `/awsds/prod/proxy` and add.
+`d5l0dvt14r5h8.cloudfront.net` was exactly that, and the comment carrying it said so — *"REVISION TRIGGER,
+and it is a WHEN rather than an IF"*. A control whose maintenance cost is a refusal nobody can predict,
+guarding a host whose real control is elsewhere, is one that gets widened in a hurry by whoever is blocked.
+
+**One caveat was raised and accepted: a plane is a CIDR, not a host.** `10.30.0.0/16` is all of
+`VPC-SharedServices` — the buildbox today, the GitLab runners from Stage 7. That is the intent, and it is
+inherited by anything else that lands in that VPC for an unrelated reason (Lesson 29). Written into the
+`.tf`, into D38 §6 and into the buildbox runbook: a host that should not have the open internet does not
+belong in SharedServices.
+
+### [Claude] What was authored
+
+| | |
+|---|---|
+| `hub-anchors.tf` | `proxy_allow_shared` **deleted** with its CloudFront entry; `proxy_deny_shared = []` in its place; a second map `proxy_deny_by_plane` whose **membership is the mode**, so the merge no longer hard-codes `"allowlist"`. Two new preconditions: a plane in **both** maps fails at plan time; the "plane no peering generates" check reads both key sets |
+| `aws/dns-allowlist.py` | The grammar reads **both** plane maps, both **required** — a missing deny map would make an `open` plane read as an allow-list with nothing on it, the exact inversion this parser exists to prevent. **`DN-4` rewritten rather than relaxed**: *"no plane is `open` except the ones a decision names"*, against `OPEN_BY_DECISION` whose values are the **reasons**, printed in the pass line. A new plane going open still fails (Lesson 50). Two stale paragraphs corrected — one still called DN-4 *"information, not a warning"* |
+| `D38` §6 | **Amended in place**, dated, with what the amendment does **not** change: the three global denies, the absent default route, the security group's single port, and `sandbox-foundation` staying an allow-list. Plus what moved — a control from the network to code review — and the institutional delta that follows |
+| Stage 6d | **Step 9** (six sub-steps), 8.2 closed with the reading, 8.6 re-aimed at the three names, deliverables/validation/decision 6 and a new decision 7 |
+| `history.md`, `decisions/INDEX.md`, `institutional-delta.md`, `NETWORK.md`, `vpn.md`, `buildbox.md`, `buildbox/README.md`, `buildbox/main.tf` | the amendment carried to every place that described the build plane as an allow-list |
+
+### [Claude] The three readings taken, and the one middle state to expect
+
+- **`terraform plan` on `production/networking/`: `0 to add, 1 to change, 0 to destroy`** — the SSM
+  parameter, with all four preconditions passing (a precondition failure fails the plan, so this is their
+  proof as well).
+- **`./aws/dns-allowlist.py`**: `DN-1` pass (20 resolvable names), `DN-2` pass (no `dstdomain` collision),
+  **`DN-4` pass** naming both open planes with their reasons. The plane table now reads
+  `production-foundation open 0`, `sandbox-foundation allowlist 21`.
+- **`DN-3` fails, and its failure is the diff**: `sandbox-foundation: only in code ['open-vsx.org']`;
+  `production-foundation: only deployed [the 20 names]`. Exactly the two authored changes and nothing else.
+
+**The middle state to expect after the apply**: `DN-3` green immediately, `PX-3` green up to **half an hour
+later** on the State Manager schedule, with no host replacement. A green `DN-3` beside a red `PX-3` is that
+window, not a failure.
+
+### [user] Three more friction readings from the JupyterLab space, all as designed
+
+Rust installed and crates fetched (`sh.rustup.rs`, `index.crates.io`, `static.crates.io`,
+`static.rust-lang.org` — four of the plane's entries); GitHub repositories cloned (`github.com`); random
+sites off the list refused by Squid. Together with `pip` at 3.1 that is **Python, Rust and source** measured
+end to end on the compute plane. Still owed by 3.1: `uv`, `Pkg` (Julia) and R, in the house image.

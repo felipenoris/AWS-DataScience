@@ -307,7 +307,7 @@ locals {
   # internet, never open to the estate.
   proxy_deny_tunnel = []
 
-  # (ii) SAGEMAKER'S STRICTER LIST - what a NOTEBOOK may reach. Today's DNS Firewall allow-list
+  # (ii) SAGEMAKER'S STRICTER LIST - what a NOTEBOOK/VSCode may reach. Today's DNS Firewall allow-list
   # moved across, minus the wildcard and minus every portal family above: a notebook does not
   # open the console, and a name it cannot reach is a name a job cannot post data to.
   proxy_allow_sandbox = [
@@ -337,38 +337,62 @@ locals {
     "static.rust-lang.org",
     # Source.
     "github.com",
+    # VSCode Extension Gallery. Obs.: THE ASSET HOST IS UNREAD, AND IT MAY BE A SECOND NAME.
+    # THE ASSET HOST IS UNREAD, AND IT MAY BE A SECOND NAME. `open-vsx.org` serves the query and
+    # the manifest; whether it serves the `.vsix` itself or redirects to storage is not something
+    # this repository has measured, and Squid matches the hostname the client REQUESTED - so a
+    # redirect is a new request with a new name. If an install gets past the manifest and fails on
+    # the download, the name is in `/awsds/prod/proxy` as a `403 TCP_DENIED`, the same way
+    # `public.ecr.aws`'s CloudFront distribution was read at 6c 5.8. Read it from the log and add
+    # it; do NOT widen to a namespace anyone can publish into.
+    "open-vsx.org",
   ]
 
-  # (iii) THE BUILD HOSTS' PACKAGE SOURCES. SharedServices is where the buildbox lands when 5.8
-  # moves it, and a build host needs what an image needs - which is the notebook list minus the
-  # AWS control plane it does not call. Derived rather than retyped: the day somebody adds a
-  # package source for notebooks, a build of that image needs it too, and two hand-kept copies
-  # would part company on exactly that day (Lesson 33).
-  # AND ONE NAME THIS PLANE NEEDS THAT NO OTHER DOES, ADDED 2026-09-06 AFTER A BUILD HOST FAILED
-  # A REAL PULL. `public.ecr.aws` serves the token and the manifest and then **redirects the blob
-  # download to a CloudFront distribution** - and Squid matches the hostname the client REQUESTED,
-  # so a redirect is a NEW request with a NEW name that must itself be allowed. The old DNS
-  # Firewall never met this: it evaluated a CNAME chain (and `TRUST_REDIRECTION_DOMAIN` handled
-  # it), while an HTTP redirect is not a chain at all. Two systems, one intent, different
-  # mechanisms - Lesson 53 from the other side.
+  # (iii) THE BUILD PLANE'S DENY LIST, AND IT REPLACED AN ALLOW-LIST THAT WAS ANSWERING THE WRONG
+  # QUESTION (2026-09-08, the user, amending D38 section 6; 6d step 9).
   #
-  # THE NAME WAS READ OUT OF THE ACCESS LOG, WHICH IS WHY 4.11 EXISTS. `docker pull` reported
-  # `download failed after attempts=6: Forbidden` and named nothing; `/awsds/prod/proxy` carried
-  # `CONNECT d5l0dvt14r5h8.cloudfront.net:443 403 TCP_DENIED`. That is the difference between a
-  # proxy and a route, in one line of evidence.
+  # WHAT STOOD HERE was `proxy_allow_shared`: the notebook list minus `.amazonaws.com`, plus one
+  # CloudFront distribution read out of the access log after a `docker pull` failed. It worked.
+  # The reason it is gone is not that it broke - it is that a build host is not the thing the
+  # objectives restrict. `objectives.md` puts the restriction on the SageMaker-MANAGED COMPUTE:
+  # an interactive surface, where a person can fetch whatever they like and the network is the
+  # only thing standing between the lake and a package index. A build host is the opposite shape.
+  # It runs a Dockerfile that is in git, reviewed, and promoted as an artifact - it is the thing
+  # that BUILDS the restricted environment, and today it stands in for the CI/CD pipeline that
+  # will replace it. Its control is the review of the build definition, not a list of hostnames.
   #
-  # ONE DISTRIBUTION, NOT `.cloudfront.net`, AND THE ASYMMETRY IS DELIBERATE. The tunnel plane
-  # carries `.cloudfront.net` - every distribution in the world - because the console's asset
-  # delivery needs it and a person's browser is a different threat model. Granting that to a BUILD
-  # host would hand it a namespace anyone can publish into, which is the exact widening splitting
-  # the filters was meant to avoid.
-  # REVISION TRIGGER, and it is a WHEN rather than an IF: this is a third party's name and AWS may
-  # change it without notice. The symptom is a pull that fails with `Forbidden`, and the remedy is
-  # to read the new name out of the same log. Do not "fix" it by widening to the namespace.
-  proxy_allow_shared = concat(
-    [for d in local.proxy_allow_sandbox : d if d != ".amazonaws.com"],
-    ["d5l0dvt14r5h8.cloudfront.net"],
-  )
+  # AND THE LIST WAS A TREADMILL, WHICH IS THE PRACTICAL HALF. Every base image, every package
+  # source, every HTTP redirect a registry makes is a name somebody has to read out of
+  # `/awsds/prod/proxy` and add here. `d5l0dvt14r5h8.cloudfront.net` was exactly that, and the
+  # comment that carried it said so: *"REVISION TRIGGER, and it is a WHEN rather than an IF"*. A
+  # control whose maintenance cost is a refusal nobody can predict, guarding a host whose real
+  # control is elsewhere, is a control that will be widened in a hurry by whoever is blocked.
+  #
+  # `open` IS NOT "NO CONTROL", AND THE DIFFERENCE IS THE SAME ONE THE TUNNEL PLANE MAKES. Three
+  # things still bound this plane and none of them are in this list: the three global denies
+  # above every plane (PRIVATE DESTINATIONS - so the proxy cannot become an L7 bridge into the
+  # estate - unsafe ports, and CONNECT to anything but 443); the security group, which admits
+  # this source to 3128 and nothing else; and the absence of a default route in SharedServices,
+  # which means the proxy is the ONLY way out. What changes is which public NAMES are reachable
+  # through that one door, and every one of them is still written to the access log.
+  #
+  # WHAT THIS DOES NOT WIDEN: `sandbox-foundation` stays an allow-list. That is the whole reason
+  # the planes are source-scoped - a name a build host may fetch is not thereby reachable from a
+  # notebook, and this edit is the first time that split earns its keep in the permissive
+  # direction rather than the restrictive one.
+  #
+  # THE PLANE IS A CIDR, NOT A HOST, and that is the sentence to re-read before adding anything
+  # to `VPC-SharedServices`. `10.30.0.0/16` is the whole VPC: the buildbox today, the GitLab
+  # runners when Stage 7 puts them there. That is the intent - the CI/CD tooling is exactly what
+  # this decision is about - but it is inherited by ANYTHING that lands in that VPC, including
+  # something put there for an unrelated reason (Lesson 29). A host that should not have the
+  # open internet does not belong in SharedServices; it belongs in a VPC with its own plane.
+  #
+  # EMPTY, LIKE THE TUNNEL'S, AND FOR THE SAME REASON: everything permitted, everything logged,
+  # and this list filled when there is a written policy to fill it from. An entry here would be a
+  # name a BUILD may not fetch - a compromised package host, say - and it obeys the same
+  # `dstdomain` rules as the allow-lists, so the collision gate below reads it too.
+  proxy_deny_shared = []
 
   # THE PLANES, BY THE KEY THE MATRIX GENERATES. A key here that is not a plane below is a typo
   # that would otherwise be silently dropped by the merge - the precondition on the resource is
@@ -377,8 +401,7 @@ locals {
   # map holds ALLOW-lists, and the client plane no longer has one. Its deny list is
   # `proxy_deny_tunnel` above, and `proxy_allowlist` is where the two are given their modes.
   proxy_allow_by_plane = {
-    "sandbox-foundation"    = local.proxy_allow_sandbox
-    "production-foundation" = local.proxy_allow_shared
+    "sandbox-foundation" = local.proxy_allow_sandbox
     # EMPTY, AND EMPTY IS A DECISION RATHER THAN AN OMISSION. `production-workloads` is the
     # production runtime: everything it needs is an AWS API reached through an endpoint or the
     # proxy's own AWS entry, and nothing has yet named a public dependency for it. Staging is the
@@ -386,6 +409,21 @@ locals {
     # here, empty, so that adding to it is an edit rather than a discovery.
     "production-workloads" = []
     "staging-foundation"   = []
+  }
+
+  # THE PLANES THAT ARE `open`, AND MEMBERSHIP OF THIS MAP IS WHAT DECIDES THE MODE. A peering
+  # plane appears in exactly one of the two maps: in `proxy_allow_by_plane` it is an allow-list,
+  # here it is `open` and its list is a DENY list. Two maps rather than one map of objects
+  # because the mode then cannot be set independently of the KIND of list the plane carries -
+  # the failure the tunnel's own restructure was written to prevent, where a plane could say
+  # `open` and carry an allow-list, and the render script would emit a block that means the
+  # opposite of what it reads like. The preconditions below fail a plane that is in both maps
+  # and a plane that is in neither is simply an allow-list with nothing on it, which is the
+  # safe default rather than the permissive one.
+  # `tunnel` IS NOT HERE for the same reason it is not in the allow map: it is authored inline
+  # below, because its source is a variable rather than a peering row.
+  proxy_deny_by_plane = {
+    "production-foundation" = local.proxy_deny_shared
   }
 
   # EVERY PLANE CARRIES A `mode`, AND THE TUNNEL'S IS THE ONE THAT IS NOT `allowlist`
@@ -441,15 +479,19 @@ locals {
       }
     },
     {
-      # EVERY SPOKE STAYS `allowlist`, and that is the objectives' other half: the restriction
-      # belongs to the compute. `sandbox-foundation` is SageMaker's list - D5 as amended by D38
-      # calls it "the length of that compute's source-scoped allow-list on the proxy", which is
-      # design A's short one rather than design B's empty one.
+      # EVERY SPOKE CARRYING COMPUTE STAYS `allowlist`, and that is the objectives' other half:
+      # the restriction belongs to the compute. `sandbox-foundation` is SageMaker's list - D5 as
+      # amended by D38 calls it "the length of that compute's source-scoped allow-list on the
+      # proxy", which is design A's short one rather than design B's empty one.
+      # THE WORD WAS "EVERY" UNTIL 2026-09-08, and the exception is `production-foundation`: a
+      # BUILD plane, not a compute one, `open` by the user's decision (see `proxy_deny_shared`
+      # above and D38 section 6). The mode is no longer hard-coded here - it comes from which of
+      # the two maps the plane is in, so this branch cannot silently contradict them.
       for p in var.peerings : "${p.peer_account}-${p.peer_slice}" => {
         sources = [p.peer_cidr]
-        mode    = "allowlist"
+        mode    = contains(keys(local.proxy_deny_by_plane), "${p.peer_account}-${p.peer_slice}") ? "open" : "allowlist"
         allow   = lookup(local.proxy_allow_by_plane, "${p.peer_account}-${p.peer_slice}", [])
-        deny    = []
+        deny    = lookup(local.proxy_deny_by_plane, "${p.peer_account}-${p.peer_slice}", [])
       }
     },
   )
@@ -484,8 +526,18 @@ resource "aws_ssm_parameter" "proxy_allowlist" {
     # looks it up: the parameter applies clean, the spoke gets an empty list, and the symptom is
     # a refusal that reads exactly like a name nobody added. This turns it into a plan failure.
     precondition {
-      condition     = length(setsubtract(keys(local.proxy_allow_by_plane), keys(local.proxy_allowlist))) == 0
-      error_message = "proxy_allow_by_plane names a plane that no peering generates: ${join(", ", setsubtract(keys(local.proxy_allow_by_plane), keys(local.proxy_allowlist)))}. The plane keys are `tunnel` plus one `<peer_account>-<peer_slice>` per row of PEERINGS."
+      condition     = length(setsubtract(setunion(keys(local.proxy_allow_by_plane), keys(local.proxy_deny_by_plane)), keys(local.proxy_allowlist))) == 0
+      error_message = "a plane map names a plane that no peering generates: ${join(", ", setsubtract(setunion(keys(local.proxy_allow_by_plane), keys(local.proxy_deny_by_plane)), keys(local.proxy_allowlist)))}. The plane keys are `tunnel` plus one `<peer_account>-<peer_slice>` per row of PEERINGS."
+    }
+
+    # A PLANE IN BOTH MAPS IS A MODE NOBODY CHOSE. `mode` is decided by membership of
+    # `proxy_deny_by_plane`, so a plane listed in both would be `open` AND carry an allow-list -
+    # the render script would emit the deny block and drop the allow list in silence, which is
+    # the permissive half of the pair. There is no reading of "both" that is what the author
+    # meant, so it fails here rather than being resolved by precedence.
+    precondition {
+      condition     = length(setintersection(keys(local.proxy_allow_by_plane), keys(local.proxy_deny_by_plane))) == 0
+      error_message = "a plane is in BOTH proxy_allow_by_plane and proxy_deny_by_plane: ${join(", ", setintersection(keys(local.proxy_allow_by_plane), keys(local.proxy_deny_by_plane)))}. A plane is an allow-list or it is `open`; membership of the deny map is what decides."
     }
 
     # THE 4 KB STANDARD-TIER CEILING, CHECKED AT PLAN TIME RATHER THAN MET AT APPLY TIME. Past it

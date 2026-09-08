@@ -291,9 +291,23 @@ channel**. `VPC-Networking` carries none: the proxy has to resolve.
 | plane | source | mode | entries |
 |---|---|---|---|
 | `tunnel` | `10.90.0.0/24` | **`open`** — everything permitted, everything logged | 0 (a *deny* list, empty by decision) |
-| `sandbox-foundation` | `10.20.0.0/16` | `allowlist` — SageMaker's | 20 |
-| `production-foundation` | `10.30.0.0/16` | `allowlist` — the build hosts' | 20 |
+| `sandbox-foundation` | `10.20.0.0/16` | `allowlist` — SageMaker's | 21 † |
+| `production-foundation` | `10.30.0.0/16` | **`open`** — the build plane † | 0 (a *deny* list, empty by decision) |
 | `production-workloads` · `staging-foundation` | `10.32` · `10.50` | `allowlist` | 0 — **refuse everything**, by decision |
+
+† **BOTH ROWS ARE CODE, NOT THE RUNNING HOST, UNTIL `production/networking/` IS APPLIED** (authored
+2026-09-08, 6d steps 8.1 and 9). The host still carries 20 Sandbox names and a 20-name allow-list on the
+build plane. A list edit reaches the proxy on the State Manager half-hour *after* the apply, with no host
+replacement, so the two are legitimately different for a while: **`./aws/dns-allowlist.py` `DN-3`** compares
+code against the parameter and **`./aws/proxy.py` `PX-3`** compares the parameter against the running
+`squid.conf` — between them they say which number is live.
+
+**Why the build plane is not an allow-list** (D38 §6, amended 2026-09-08): `VPC-SharedServices` holds the
+tooling that **builds** the restricted environment — the buildbox today, the GitLab runners from Stage 7 —
+and its control is the reviewed Dockerfile in git, not a hostname list. `open` here still means the three
+global denies apply (private destinations, unsafe ports, `CONNECT` to anything but 443), there is still no
+default route in that VPC, and the security group still admits only 3128. **`sandbox-foundation` is
+unaffected** — that is what source-scoped planes are for.
 
 **Empty means opposite things in the two modes**, and that is the sentence to carry away. The
 objectives ask for the client's internet to be *monitored* and the **compute's** to be restricted.
