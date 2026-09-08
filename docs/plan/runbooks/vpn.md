@@ -26,14 +26,20 @@
 > and down (§S5's `make` order), the `.conf`, up with its four checks, down, and the proxy on macOS and
 > Linux — are [`client-vpn-proxy-configuration.md`](client-vpn-proxy-configuration.md).** This file keeps the system, the failure
 > modes, the two planes, the IPv6 reasoning and the keys; where a section moved, a stub says where.
+>
+> **A SECOND CLIENT PROFILE SINCE 2026-09-08 — §C7, Stage 6c pass 8.** `objectives.md` names two types of
+> VPN access, **monitored** and **split-tunnel**; every reading in this file was taken under the monitored
+> one, and *"full tunnel, never split"* is now that profile's rule rather than the estate's. The other
+> profile is the same device, the same key and one `AllowedIPs` line; the cloud side is identical under
+> both. Its readings are owed to 6c steps 8.3 and 8.4.
 
 | | |
 |---|---|
-| **Scope** | The whole VPN surface, in three parts. **Part S — the system**: what the pieces are, which slice owns each, how a packet actually travels, what the VPN is *not* (the NAT), the host-only start and stop (§S5 — the session order itself is the client runbook's), and how its size is switched (§S6). **Part C — the client**: **what an enrolled device may reach** (§C5a's two tables), the failure modes WireGuard is silent about (§C4), the cost (§C5) and **why it carries an IPv6 address that routes nowhere** (§C6) — the procedure (the `.conf`, up, the four checks, down) is [`client-vpn-proxy-configuration.md`](client-vpn-proxy-configuration.md) §3 since 2026-09-07. **Part K — the server**: the shell on the host (§K0a), the two kinds of key pair, and the four procedures — recovery, revocation, host rotation, device rotation (the last also being how a device is *added*) |
+| **Scope** | The whole VPN surface, in three parts. **Part S — the system**: what the pieces are, which slice owns each, how a packet actually travels, what the VPN is *not* (the NAT), the host-only start and stop (§S5 — the session order itself is the client runbook's), and how its size is switched (§S6). **Part C — the client**: **what an enrolled device may reach** (§C5a's two tables), the failure modes WireGuard is silent about (§C4), the cost (§C5) and **why it carries an IPv6 address that routes nowhere** (§C6), and **the two profiles** (§C7, 2026-09-08) — the procedure (the `.conf`, up, the four checks, down) is [`client-vpn-proxy-configuration.md`](client-vpn-proxy-configuration.md) §3 since 2026-09-07. **Part K — the server**: the shell on the host (§K0a), the two kinds of key pair, and the four procedures — recovery, revocation, host rotation, device rotation (the last also being how a device is *added*) |
 | **Operator** | Parts S and K: the **infrastructure user**, profile `awsds-infra-prod` (`InfrastructureAccess` in `Production`) — plus `awsds-infra-identity` for §K6's fragment toggles. Part C: the **device's owner, on the device** — no AWS profile and no SSO session: nothing in that part calls an AWS API |
-| **The two rules** | **Loss is answered by recovery, never by rotation** (Part K): a new host key forces an instance replacement and breaks every client config at once — each one pins the server's public key. Rotate for *compromise* (§K3), recover for *loss* (§K1); the mechanised violation is Secrets Manager's own rotation feature, off forever (§K5, `VP-9`). **Full tunnel, never split** (Part C): `AllowedIPs = 0.0.0.0/0, ::/0`, both families — **and the reason changed with the estate on 2026-09-06 while the rule did not.** It used to be that `DenyControlPlaneOffVpn`'s `aws:SourceIp` matched only traffic exiting through *this host's* Elastic IP. Under [D38](../decisions/D38-single-egress-hub.md) the tunnel host reaches no public address at all: a persona's control-plane call travels tunnel → **proxy** → AWS, and the address the deny names is the **proxy's**. A split tunnel would send that call out of the laptop's own uplink, where it wears neither address — still a lockout with the tunnel up, by a longer path |
+| **The two rules** | **Loss is answered by recovery, never by rotation** (Part K): a new host key forces an instance replacement and breaks every client config at once — each one pins the server's public key. Rotate for *compromise* (§K3), recover for *loss* (§K1); the mechanised violation is Secrets Manager's own rotation feature, off forever (§K5, `VP-9`). **Full tunnel in the monitored profile; the split-tunnel profile is §C7** (Part C; the rule read *"full tunnel, never split"* until 2026-09-08): under monitored, `AllowedIPs = 0.0.0.0/0, ::/0`, both families — **and the reason changed with the estate on 2026-09-06 while the rule did not.** It used to be that `DenyControlPlaneOffVpn`'s `aws:SourceIp` matched only traffic exiting through *this host's* Elastic IP. Under [D38](../decisions/D38-single-egress-hub.md) the tunnel host reaches no public address at all: a persona's control-plane call travels tunnel → **proxy** → AWS, and the address the deny names is the **proxy's**. A split tunnel would send that call out of the laptop's own uplink, where it wears neither address — still a lockout with the tunnel up, by a longer path. **That is exactly what §C7's split-tunnel profile does, on purpose**, and why persona work under it is pointed at the proxy by the *application* rather than by the tunnel |
 | **The picture around it** | **[`docs/NETWORK.md`](../../NETWORK.md)** — every VPC, subnet, route table and address in the estate, and where this host sits in them. This file stays the **procedure**; that one is what a packet's whole path looks like |
-| **Written** | §S6 added 2026-08-20 (the size becoming a slice parameter). The keys half 2026-08-16 (Stage 4's third design review; rewritten the same day when the host key moved into the `[P]` secret), the client half 2026-08-17 (the first handshake). **Unified 2026-08-19, at the user's request, replacing `vpn-keys.md` and `vpn-client.md`** — their content is Parts K and C, kept whole; Part S is new, written from the topology readings of Stage 5 pass 4d's first sitting. **Rewritten 2026-09-06 for the Production home** — the banner above lists what moved, and every reading in Part S was re-taken rather than re-worded. **Split 2026-09-07**: §S5's session order and §C0-§C3 moved to `client-vpn-proxy-configuration.md` |
+| **Written** | **§C7 added 2026-09-08** (the two profiles — 6c pass 8, from the design and the client's source, not yet from a reading). §S6 added 2026-08-20 (the size becoming a slice parameter). The keys half 2026-08-16 (Stage 4's third design review; rewritten the same day when the host key moved into the `[P]` secret), the client half 2026-08-17 (the first handshake). **Unified 2026-08-19, at the user's request, replacing `vpn-keys.md` and `vpn-client.md`** — their content is Parts K and C, kept whole; Part S is new, written from the topology readings of Stage 5 pass 4d's first sitting. **Rewritten 2026-09-06 for the Production home** — the banner above lists what moved, and every reading in Part S was re-taken rather than re-worded. **Split 2026-09-07**: §S5's session order and §C0-§C3 moved to `client-vpn-proxy-configuration.md` |
 
 ---
 
@@ -178,6 +184,9 @@ Two independent controls, either alone sufficient:
    leaves through that gateway. Consequence for this runbook's readers: **a persona whose S3 calls fail
    while Glue and Athena work is this statement, not the network** — and the diagnostic that separates
    them is `InfrastructureAccess` making the same call over the same tunnel.
+   **Under the split-tunnel profile (§C7, 2026-09-08) the tunnel no longer makes this happen — the
+   application does**: a persona's terminal or browser is pointed at the proxy explicitly, and a persona
+   call refused with an *explicit* deny under split-tunnel is one that went out the laptop's own uplink.
 2. **The lake's bucket policies admit only §S2's two branches** — the Elastic IP and the consumers'
    gateway endpoints (D18, INT-05). Off the tunnel, even a call that IAM would allow dies at the
    resource.
@@ -564,8 +573,9 @@ AWS API. Bare step numbers in this part are Stage 4's.*
 ### C0-C3. Moved — the values, the config, up and its four checks, down
 
 All four are [`client-vpn-proxy-configuration.md`](client-vpn-proxy-configuration.md) §3. **Two rules stay here because
-they are the design's rather than the procedure's.** **Full tunnel, never split** — the scope table
-above says why the reason changed on 2026-09-06 while the rule did not. And **if `PublicKey` or
+they are the design's rather than the procedure's.** **Full tunnel in the monitored profile** — the scope table
+above says why the reason changed on 2026-09-06 while the rule did not, and **§C7 is the split-tunnel
+profile beside it** (2026-09-08). And **if `PublicKey` or
 `Endpoint` ever changes without §K3 having been run, that is a finding, not a reconnection problem**:
 the 2026-09-06 move is the proof of how strong that rule is — the host changed *account*, and neither
 line moved.
@@ -756,6 +766,62 @@ already associated with `en0` keeps using it — a connection established *befor
 survives the tunnel coming up. New connections take the tunnel and die. Nothing in a WireGuard
 config changes that; **bring the tunnel up before starting anything that talks to AWS**, and read a
 persona call that is denied *with the tunnel up* as possibly a socket that predates it.
+
+### C7. The two profiles — monitored, and split-tunnel
+
+*New 2026-09-08 — Stage 6c pass 8, step 8.1, at the user's request. The requirement is `objectives.md`'s
+VPN bullet, amended by the user the same day: **two types of VPN access**. This section is the design's
+half; the procedure — the second template and the inverted check — is
+[`client-vpn-proxy-configuration.md`](client-vpn-proxy-configuration.md) §3.3 and §3.4. **Written from the
+design and from the client's source code, not yet from a reading**: 8.3 and 8.4 are where the profile is
+proved, and until then `NETWORK.md` §7 says so.*
+
+**One device, one key, two `.conf` files that differ in one line.**
+
+| | **monitored** — the institution's | **split-tunnel** — the lab's, for building the plan |
+|---|---|---|
+| `AllowedIPs` | `0.0.0.0/0, ::/0` | the five VPC CIDRs of `NETWORK.md` §1 and the tunnel's own range: `10.20.0.0/16, 10.30.0.0/16, 10.31.0.0/16, 10.32.0.0/16, 10.50.0.0/16, 10.90.0.0/24` |
+| the private address space | through the tunnel | through the tunnel — **the same** |
+| the client's internet | enters the tunnel, is refused by the host's `FORWARD` chain (§S2), and exists only through the proxy — by name, HTTP/HTTPS, logged (§C5a) | leaves through the laptop's own uplink — any protocol, both families, **unmonitored, by decision** |
+| DNS | the hub's `.2`, every query | **the same** (decision due 6): the App Store client applies a `DNS` line to every query whatever `AllowedIPs` says — `matchDomains = [""]` in its source, read 2026-09-08 — and `wg-quick` writes it on every network service. One tunnel round trip per uncached name (194 ms, measured at 6.4) and CDN answers geolocated to Oregon; the refinement is a scoped resolver with no `DNS` line (`/etc/resolver/awsds.internal` → `10.31.0.2`; `resolvectl domain %i ~awsds.internal ~awsds-pages.internal` on Linux), documented and not exercised — `dig` cannot read it, `dscacheutil -q host -a name proxy.awsds.internal` can |
+| a persona's AWS calls | through the proxy, because everything is | **through the proxy, because `DenyControlPlaneOffVpn` and the lake's policies say so** (§S4) — `proxy-on` in that terminal, the `--proxy-server` flag on that Chrome; direct, they die with an *explicit* deny |
+| `InfrastructureAccess` | through the proxy, because everything is | **direct — no proxy anywhere**; Terraform, `make`, every `aws/` script |
+| SSH to `github.com:22`, non-HTTP protocols, IPv6 | no path (client runbook §4.3) | the laptop's own |
+| the SMUS portal and a space in the browser | through the proxied Chrome | direct — and the session then arrives from the laptop's address, which is the deviation 6.6 recorded and what Stage 11's `awsds-data-portal-offproxy` will fire on |
+| a remote IDE on a space (6d step 7) | Method 3 from a terminal with the variables; the deep link times out (a browser-launched process has no proxy) | the deep link is expected to work with nothing configured — the data channel dials `ssmmessages` on the laptop's uplink and its `StartSession` is the project role's, server-side; **6d 7.5 measures it under both** |
+| what it is for | a persona at work; the portal under Stage 11's alarm; any reading of the access log; anything that models the institution | advancing the plan |
+
+**Why the host is untouched.** The host holds **one peer per key**, and its `AllowedIPs` for that peer is
+the client's own address — identical under both profiles. What decides what *enters* the tunnel is the
+client's `AllowedIPs`, a routing directive of the device's owner (§C6). The `FORWARD` chain, the
+masquerade and its hole, the return route, the proxy's planes and the two IAM controls of §S4 are the
+same for both; under split-tunnel the chain's `REJECT` is simply never reached, because nothing bound for
+the internet arrives. Nothing on the cloud side can tell the two apart, and nothing needs to: what the
+cloud enforces, it enforces on the address a call *arrives from*, never on the profile. So: no roster row,
+no Elastic IP, no instance, no apply — and no `aws/vpn.py` check moves.
+
+**The one discipline: one profile active at a time.** The same key is one peer on the host. With two
+tunnels live on it, the host answers whichever spoke last, and the symptom is a tunnel that works in
+bursts. Bring one down before the other comes up — in the app, *deactivate* first, then *activate*.
+
+**What the split-tunnel profile changes in the reading of this runbook.** §C4's *"no internet without the
+proxy"* holds under monitored only; the client runbook's check 3 **inverts** (a `2xx`/`3xx` is the pass,
+a timeout the finding). §C6's ULA line stays in the file and is inert under split-tunnel by design — the
+client's IPv6 is its own. §S2's rejected-packet counter, which under monitored doubles as *how much the
+laptop tries to send straight to the internet*, must stay **flat** across a split-tunnel session — 8.4's
+reading. The access log carries nothing of a split-tunnel session except the persona work that was pointed
+at the proxy.
+
+**What it is not.** Not a control, in either direction — §C6's paragraph: the owner chooses the file, and
+in the institution that line is fixed by MDM and the split-tunnel profile does not exist
+([institutional-delta.md](../institutional-delta.md)). Not a change to the monitored profile, which stays
+the institution's and the requirement's. Not a NAT: the host forwards nothing to the internet under either
+profile. And not *open* — that word is the proxy plane's `mode` (§C5a), a different object.
+
+**Decisions it was written on** (Stage 6c decisions due 5 and 6, on their recommendations, to be confirmed
+by the user before 8.3): one key per device, never one per profile — the alternative names the profile in
+the handshake log at the price of a roster row, an instance replacement (§K4), and a second address per
+device; and `DNS = 10.31.0.2` in both files.
 
 ---
 
