@@ -279,3 +279,118 @@ except the Terraform change, which is authored, tagged and planned — and NOT a
   created or resized at any `ml.*` type — from the portal (the project role, under the boundary) or by
   API (the persona set) — while a training, processing, tuning or transform job, an endpoint config or a
   notebook instance still refuses a type outside the seven.
+
+## 2026-09-08 — the first working session under the proxy: 3.2 closed, 3.1 half taken, 3.3 read
+
+*The user asked whether the plan anywhere tested a JupyterLab space's internet through the proxy, and
+then ran the test the same night. Nothing was raised for it: `./scripts/slices.py status` read
+`production/vpn` **UP**, `production/proxy` **UP**, `sandbox/egress` **UP** (27 resources), burn
+**0.2040 USD/h**. The variables were exported by hand in the space's terminal — the durable delivery is
+still 2.2's `ContainerEnvironmentVariables`, unapplied — and the space runs the **stock** image, not the
+house image, which is why 3.1 is half taken rather than done.*
+
+### [user] The terminal, verbatim
+
+*(The `NO_PROXY` export carried the 28-entry value read from `terraform output -raw no_proxy` on
+`sandbox/egress`; the identity output's account id and role ARN are elided here, per this folder's rule.)*
+
+```
+sagemaker-user@default:~$ curl https://pypi.org
+curl: (6) Could not resolve host: pypi.org
+sagemaker-user@default:~$ export no_proxy="$NO_PROXY" http_proxy=http://proxy.awsds.internal:3128 https_proxy=http://proxy.awsds.internal:3128 HTTP_PROXY=http://proxy.awsds.internal:3128 HTTPS_PROXY=http://proxy.awsds.internal:3128
+sagemaker-user@default:~$ curl -s -o /dev/null -w '%{http_code}\n' --max-time 20 https://pypi.org/
+200
+sagemaker-user@default:~$ curl -s -o /dev/null -w '%{http_code}\n' --max-time 20 http://example.com/
+403
+sagemaker-user@default:~$ curl -s -o /dev/null -w '%{http_code}\n' --max-time 10 --noproxy '*' https://pypi.org/
+000
+sagemaker-user@default:~$ getent hosts sts.us-west-2.amazonaws.com && aws sts get-caller-identity
+10.20.32.164    sts.us-west-2.amazonaws.com
+{
+    "UserId": "AROA47P7U4BDOUDA4B63F:SageMaker",
+    "Account": "<elided>",
+    "Arn": "arn:aws:sts::<account>:assumed-role/datazone_usr_role_<project>_<env>/SageMaker"
+}
+sagemaker-user@default:~$ pip download --no-deps -d /tmp/proxytest requests
+Collecting requests
+  Downloading requests-2.34.2-py3-none-any.whl.metadata (4.8 kB)
+Downloading requests-2.34.2-py3-none-any.whl (73 kB)
+Saved /tmp/proxytest/requests-2.34.2-py3-none-any.whl
+Successfully downloaded requests
+sagemaker-user@default:~$ curl -s -o /dev/null -w '%{http_code}\n' --max-time 20 http://repo.anaconda.com/pkgs/main/noarch/repodata.json
+403
+sagemaker-user@default:~$ curl -s -o /dev/null -w '%{http_code}\n' --max-time 20 http://cloud.r-project.org/src/contrib/PACKAGES
+403
+sagemaker-user@default:~$ curl -sL -o /dev/null -w '%{http_code}\n' --max-time 30 https://github.com/psf/requests/archive/refs/tags/v2.32.3.tar.gz
+000
+```
+
+### [Claude] 3.2 is closed, and by two channels that do not share a failure mode
+
+- **CloudTrail, from inside the account.** The `sts:GetCallerIdentity` the user typed
+  (`aws-cli/2.36.31 … md/command#sts.get-caller-identity`, 03:49:25Z) carries **`vpcEndpointId`
+  `vpce-0f5adbfef0071b8e5`** — confirmed by `describe-vpc-endpoints` as `com.amazonaws.us-west-2.sts`,
+  Interface, private DNS on — `sourceIPAddress` **10.20.66.132** (the app ENI) and
+  `clientProvidedHostHeader` `sts.us-west-2.amazonaws.com`, by the project role's `SageMaker` session.
+  With `HTTPS_PROXY` set, the AWS call did **not** go to Squid: the 4d defect shape has not returned.
+- **The proxy's own access log, from the other side.** The session's window carries **no AWS name at
+  all**. An absence is weak evidence on its own and is not weak here: had `NO_PROXY` failed,
+  `sts.us-west-2.amazonaws.com` would be a `CONNECT` line beside the others, because `.amazonaws.com`
+  **is** on the `sandbox-foundation` plane — the proxy would have permitted it, and the call would have
+  arrived carrying neither `aws:SourceVpc` nor `aws:SourceVpce`. The failure this pair rules out is the
+  one that succeeds.
+- `getent hosts` returning **10.20.32.164** for `sts` is the same address 6c step 6.2 recorded on
+  2026-09-07 from a restarted space — an unplanned cross-check on the endpoint set.
+
+### [Claude] 3.3 — what the proxy saw, and the GitHub redirect is confirmed BY NAME
+
+`./aws/proxy.py --on-host` (authorized in chat; `ssm:SendCommand`) read **`PX-1`, `PX-2`, `PX-3`, `PX-5`
+`pass`, `PX-4` the standing note** — five planes, entry for entry, the render current. The report does
+not carry the access log, so the log group was read directly (`filter-log-events` on
+`/awsds/prod/proxy`, `awsds-infra-prod`):
+
+```
+2026-09-08T03:48:58+0000 10.20.66.132 CONNECT pypi.org:443 200 TCP_TUNNEL
+2026-09-08T03:49:10+0000 10.20.66.132 GET http://example.com/ 403 TCP_DENIED
+2026-09-08T03:49:34+0000 10.20.66.132 CONNECT pypi.org:443 200 TCP_TUNNEL
+2026-09-08T03:49:35+0000 10.20.66.132 CONNECT files.pythonhosted.org:443 200 TCP_TUNNEL
+2026-09-08T03:49:35+0000 10.20.66.132 CONNECT pypi.org:443 200 TCP_TUNNEL
+2026-09-08T03:49:44+0000 10.20.66.132 GET http://repo.anaconda.com/pkgs/main/noarch/repodata.json 403 TCP_DENIED
+2026-09-08T03:49:48+0000 10.20.66.132 GET http://cloud.r-project.org/src/contrib/PACKAGES 403 TCP_DENIED
+2026-09-08T03:49:53+0000 10.20.66.132 CONNECT codeload.github.com:443 403 TCP_DENIED
+2026-09-08T03:49:53+0000 10.20.66.132 CONNECT github.com:443 200 TCP_TUNNEL
+```
+
+- **The redirect trap is now measured on a third source plane.** `github.com` is on the list and answered
+  `200`; the release tarball redirects, and `codeload.github.com` — a name nobody put on any plane — was
+  refused in the same second. Same shape as `public.ecr.aws` → CloudFront (2026-09-06, a build host),
+  and the same remedy: read the new name out of this log, never widen to the namespace.
+- **The `403`s are legible because the refused probes used `http://`** — over `https` the refusal is a
+  CONNECT refusal and `%{http_code}` reads `000`, which is exactly what the tarball line returned to the
+  user while the proxy was logging a named `403`. The two views of one event, in one sitting.
+- **The source address in every line is the app ENI, 10.20.66.132** — a spoke reaches 3128 over the
+  peering, un-masqueraded, so the log is per-workload the same way the tunnel's is per-device.
+
+### [Claude] The one reading that is weaker than it looks, and the user's own first command is why
+
+`curl --noproxy '*' https://pypi.org/` returned `000`, and the step wanted that read as *no default
+route*. It is not: the user's **first** command, before the proxy variables were exported, returned
+**`curl: (6) Could not resolve host: pypi.org`** — the Sandbox DNS Firewall, whose allow-list is the four
+families of 6c step 5.7. So the `000` measured a **resolution** refusal, and the absent route was never
+reached. Both facts are true — there is no default route, as code — but this measurement cannot separate
+them (Lesson 42). **The routing half stays 6c step 6.3's probe**, which uses `checkip.amazonaws.com`: a
+name inside `*.amazonaws.com`, so it resolves and then has nowhere to go. Recorded so that a later reader
+does not cite the `000` as the route's proof.
+
+The same reading is the design working: with an explicit proxy the client never resolves the destination
+— the name is handed to Squid — which is what allowed the DNS list to fall from 63 entries to 10.
+
+### [Claude] What this closes, and what it does not
+
+| | |
+|---|---|
+| **3.2** | **Closed** — two channels, above |
+| **3.3** | **Read for this session** — the nine lines above; `PX-1`/`PX-2`/`PX-3`/`PX-5` `pass` |
+| **3.1** | **Half taken.** Python measured end to end (`pip`, index **and** file host); `conda` and CRAN refused **by name**, which is decision due 6's evidence. **`uv`, `Pkg` (Julia) and R were not run** — a `curl` to a package host is a network reading, not a package manager's. And this was the **stock** image: 3.1 is written to be taken in the house image, where Julia and R are image-delivered, so the ecosystems that matter most to it are exactly the ones still owed |
+| **3.4** | **Untouched.** The DataZone agent, the S3 Access Grants plugin and Amazon Q run in the server's process tree, which saw no `export` of the user's |
+| **2.2** | Still the durable path. Everything above dies with the shell |
