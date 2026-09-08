@@ -2099,9 +2099,11 @@ comandos necessários") and was signed in as the infrastructure user.*
   With the client runbook §4.1 [b]'s variables exported, both the credential fetch and the SSM read went
   through the proxy. **Git over SSH has no path at all**: the proxy allows `CONNECT` to 443 only, and
   macOS's `nc -X connect` refuses Squid's `HTTP/1.1 200 Connection established` reply — so this branch
-  is pushed over **HTTPS**, with `gh`'s credential helper, through the proxy. Two observations kept
-  rather than explained: `ssh` reported *refused* where `curl` times out (§C2's Lesson 55 reading was
-  taken with `curl`), and the ip6tables counter below reads **0**.
+  is pushed over **HTTPS**, with `gh`'s credential helper, through the proxy. **The client runbook
+  gained §4.3 (GitHub) at the user's request the same hour**: push over HTTPS, never SSH, `gh auth
+  setup-git` once, either remote shape. Two observations kept rather than explained: `ssh` reported
+  *refused* where `curl` times out (§C2's Lesson 55 reading was taken with `curl`), and the ip6tables
+  counter below reads **0**.
 - **[Claude] `./aws/vpn.py --on-host` at 16:36:41Z** — `VP-1`..`VP-9` pass, every call returned. The
   lines that matter, verbatim:
 
@@ -2316,6 +2318,9 @@ marked. The sitting straddled midnight UTC: it began on 2026-09-07 evening.*
   before the user chooses. `sandbox/egress` is still up.
 
 ## 2026-09-08 — decision due 4 taken as (c): the access log stays in Production until Stage 11, and the stage closes
+
+*Written by Claude at the user's request, the same sitting; the choice is the user's, quoted, and the
+measurements are Claude's.*
 
 - **[user] The choice, in the user's words: *"Vamos pela opção (c)."*** — after the brief that put the
   three candidates side by side with the measured inputs.

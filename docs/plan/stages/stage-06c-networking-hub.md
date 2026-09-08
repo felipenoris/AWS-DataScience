@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Status** | **DONE 2026-09-08** ([log](../../log/log-stage-06c-networking-hub.md)) — every step executed and measured, and **decision due 4 taken as (c)** the same day with the rates measured first: the access log's export waits for Stage 11 step 5.1's centralized delivery, the organization trail records any deletion or retention change meanwhile, and `PX-4` says so as a note. Pass 6 closed on 2026-09-08 with 6.5: the vending path re-measured from the new tunnel (**two doors, by service family**), the union trimmed, `sandbox/foundation` unfrozen and its anchors gone, `sandbox/vpn/` retired, `VP-3` widened to every account. Pass 6 was re-cut into sub-steps on 2026-09-07. *The earlier position, kept as the record:* passes 0 and 1 DONE 2026-09-06. The three Production VPCs exist: `foundation/` re-labelled **VPC-SharedServices**, plus **VPC-Networking** (10.31) and **VPC-Workloads** (10.32), with `workloads-egress/` written and applying nothing. **Two module bumps, and each was forced by a capability its step did not enumerate** — `vpc-v0.2.0`'s `name_suffix` and `vpc-v0.3.1`'s `public_internet_route`; `vpc-v0.3.0` is **abandoned** on origin, tagged onto the wrong commit by a failed-and-swallowed `git commit`. **0.2 replaced `CIDRS` rather than sitting beside it** (no reader wanted a per-account answer); **0.4a is deferred to 5.1** because the step contradicts itself; **0.6 lands with 3.1**. **Three checks are corrected before being written** — 1.5, 2.4's `NT-12` and 3.7's `NT-11` would each be red for passes at a time as specified, which is 6b's `DT-8` recurring. **Created 2026-09-05**; it builds [D38](../decisions/D38-single-egress-hub.md) and repairs the client-plane DNS shadowing of Lessons 40-43 |
+| **Status** | **DONE 2026-09-08 FOR PASSES 0-7 — AND PASS 8 ADDED 2026-09-08, OPEN: the second client profile**, the open tunnel beside the monitored one (the user's request, 2026-09-08): laptop-only, **no host change**, its readings (8.3, 8.4) owed and its two consequences carried to 6d decision due 4 and Stage 11 step 3.4. *Passes 0-7:* **DONE 2026-09-08** ([log](../../log/log-stage-06c-networking-hub.md)) — every step executed and measured, and **decision due 4 taken as (c)** the same day with the rates measured first: the access log's export waits for Stage 11 step 5.1's centralized delivery, the organization trail records any deletion or retention change meanwhile, and `PX-4` says so as a note. Pass 6 closed on 2026-09-08 with 6.5: the vending path re-measured from the new tunnel (**two doors, by service family**), the union trimmed, `sandbox/foundation` unfrozen and its anchors gone, `sandbox/vpn/` retired, `VP-3` widened to every account. Pass 6 was re-cut into sub-steps on 2026-09-07. *The earlier position, kept as the record:* passes 0 and 1 DONE 2026-09-06. The three Production VPCs exist: `foundation/` re-labelled **VPC-SharedServices**, plus **VPC-Networking** (10.31) and **VPC-Workloads** (10.32), with `workloads-egress/` written and applying nothing. **Two module bumps, and each was forced by a capability its step did not enumerate** — `vpc-v0.2.0`'s `name_suffix` and `vpc-v0.3.1`'s `public_internet_route`; `vpc-v0.3.0` is **abandoned** on origin, tagged onto the wrong commit by a failed-and-swallowed `git commit`. **0.2 replaced `CIDRS` rather than sitting beside it** (no reader wanted a per-account answer); **0.4a is deferred to 5.1** because the step contradicts itself; **0.6 lands with 3.1**. **Three checks are corrected before being written** — 1.5, 2.4's `NT-12` and 3.7's `NT-11` would each be red for passes at a time as specified, which is 6b's `DT-8` recurring. **Created 2026-09-05**; it builds [D38](../decisions/D38-single-egress-hub.md) and repairs the client-plane DNS shadowing of Lessons 40-43 |
 | **Prerequisites** | [Stage 3](stage-03-networking.md) (the `vpc` and `vpc-egress` modules, the peering pattern in `production/foundation/peers.tf`, the `[P]`/`[E]` split), [Stage 4](stage-04-vpn.md) (the `wireguard` module and its `[P]` anchors), [6a](stage-06a-unified-studio.md) (the endpoint lists and what a Studio app needs), **[6b](stage-06b-development-becomes-staging.md)** (the account is already `staging`, and step 4.1 there freed `10.40.0.0/16` and re-pointed `CIDRS`) |
 | **Consumes** | [D4](../decisions/D04-vpn-wireguard.md), [D5](../decisions/D05-sagemaker-egress.md), [D6](../decisions/D06-dlp-approach.md), [D9](../decisions/D09-az-count.md), [D11](../decisions/D11-lab-lifecycle.md), [D12](../decisions/D12-budget-ceiling.md), [D14](../decisions/D14-supply-chain-account.md), [D15](../decisions/D15-tls-internal.md), [D35](../decisions/D35-sandbox-cardinality.md), [D36](../decisions/D36-internal-pki.md), **[D38](../decisions/D38-single-egress-hub.md)** (written 2026-09-05 — this stage builds it, it does not author it) |
 | **Proves** | [INT-05](../integrations.md) and [INT-06](../integrations.md) re-keyed on the hub; [INT-16](../integrations.md)'s closing choice becomes takeable because this stage owns the address it is keyed on; **INT-21** (every account's compute reaching a Production-owned proxy over peering) and **INT-22** (the `awsds.internal` zone × VPC association matrix) |
@@ -107,6 +107,7 @@ Read before executing; each is a correction to what the 2026-09-05 draft assumed
 | **5** | the spokes become design B | after 4 | [6d](stage-06d-unified-studio-remainder.md), Stage 7 |
 | **6** | the measurements | after 5 | the close |
 | **7** | cost, lifecycle, the two operational instruments | after 6 | — |
+| **8** | **the second client profile** — the open tunnel beside the monitored one; laptop-only, no host change *(added 2026-09-08)* | after 6 | [6d](stage-06d-unified-studio-remainder.md) 7.5, [Stage 11](stage-11-dlp.md) step 3.4 |
 
 Passes 0-3 are `[P]` and cost nothing at rest. **Stage 7 waits on passes 1-2**; **Stage 13's public tier**
 lands in `VPC-Networking`'s public tier as its second enumerated listener; **6d waits on pass 5**.
@@ -1264,6 +1265,108 @@ estate-wide (INT-21's availability cost).
   figure against the measured rate, and reconcile PRICING with the cost model on peering (charged
   **cross-AZ** only).
 
+### 8. The second client profile — the same device, the same key, a tunnel that carries only the private space
+
+**Action:** give every enrolled device a second `.conf`, differing from the first in **one line**, and write
+down which of the two a session uses and why. **Why:** the **monitored** profile — (a), the one every reading
+above was taken under — is the institution's: every byte of the client's internet crosses Squid, which is
+`objectives.md`'s sentence and Stage 11's evidence. It is also what makes a day of building this project
+slow: a proxy in every terminal and every browser, no SSH to `github.com`, no protocol but HTTP, a
+browser-launched program with no way to find the proxy ([6d](stage-06d-unified-studio-remainder.md) step
+7), and every refused background packet of the laptop counted on the host. The user asked on 2026-09-08 for
+an **open** profile — (b) — beside it: the tunnel carries the private address space only, the client's
+internet leaves through its own uplink, and the monitored profile is reached for whenever the institution
+is what is being tested. **Explanation:** what makes (b) *cheap* is what `runbooks/vpn.md` §C6 already
+says about `AllowedIPs` — a routing directive of the device's owner, never a control — and what makes it
+*safe* is that the cloud cannot tell the two profiles apart and does not need to: the host's `FORWARD`
+chain still refuses every tunnel packet bound for the internet (under (b) none arrives), and
+`DenyControlPlaneOffVpn` and the lake's `DenyOutsideTrustedNetworks` still accept a persona's call only
+from the proxy's exit. **So the two profiles differ on the laptop and nowhere else** — no host edit, no
+roster row, no Elastic IP, no instance, no apply. What (b) changes is the reach table, and the change is
+**by identity, not by network** — read this before executing anything below: a persona's AWS work under
+(b) must still be pointed at the proxy (`proxy-on` in that terminal, the flag on that Chrome), which is the
+requirement's own control holding; `InfrastructureAccess` carries no such deny (open question 17) and
+needs no proxy at all under (b). Nothing (a) reaches is out of (b)'s reach, and (b) reaches what (a)
+cannot — SSH to `github.com:22`, any protocol, IPv6 — unmonitored, by decision. `aws sts
+get-caller-identity` is **not** a discriminator between the two, and never was: AWS documents that no
+permission is required for it and that an explicit deny does not affect it — the persona contrast below
+uses `list-buckets`, the call 4d's proof already used.
+
+- **8.1 — [Claude] Write the profile before anyone uses it.** `runbooks/vpn.md` gains **§C7, the two
+  profiles**: the one-line difference; the rule for choosing — **monitored** for anything that models
+  the institution (a persona at work, the portal under Stage 11's alarm, any reading of the access log),
+  **open** for building the plan; the one discipline — **one profile active at a time**, because the
+  same key is *one* peer on the host and two live tunnels on it would have the host answering whichever
+  spoke last; and why the host is untouched. The scope table's *"Full tunnel, never split"* becomes
+  *"Full tunnel in the monitored profile; the open profile is §C7"*, and §S4 gains the sentence that
+  under (b) a persona's proxy is the terminal's, not the tunnel's. The client runbook §3.3 gains the
+  second template — `AllowedIPs = 10.20.0.0/16, 10.30.0.0/16, 10.31.0.0/16, 10.32.0.0/16, 10.50.0.0/16,
+  10.90.0.0/24`, the five VPC CIDRs of `NETWORK.md` §1 plus the tunnel's own range (a sixth VPC —
+  `10.60.0.0/16` is reserved — is a new line in (b) and nothing in (a); `10.0.0.0/8` is the one-line
+  alternative and it captures a home LAN numbered in `10.x`, so the explicit list is the template) —
+  §3.4's check 3 gains its (b) reading (a `2xx`/`3xx` **is** the pass; (a)'s `28`/`7` is the finding),
+  and §4 its first sentence: *under the open profile this section applies only to the applications that
+  act as a persona*. **`DNS = 10.31.0.2` stays in both** (decision due 6): read from the App Store
+  client's own source on 2026-09-08, a `DNS` line is applied to **every** query (`matchDomains = [""]`)
+  whatever `AllowedIPs` says, and `wg-quick`'s `set_dns` writes it on every network service — so under
+  (b) every name resolves through the hub and the traffic leaves direct. The cost is one tunnel round
+  trip per uncached name (**194 ms** laptop → host, measured at 6.4) and CDN answers geolocated to
+  Oregon; the refinement, if that shows, is the **scoped resolver** with no `DNS` line
+  (`/etc/resolver/awsds.internal` → `10.31.0.2`, macOS `resolver(5)`; `resolvectl domain %i
+  ~awsds.internal ~awsds-pages.internal` on Linux) — documented, not exercised (Lesson 54), and `dig`
+  ignores scoped resolvers, so its reading is `dscacheutil -q host -a name proxy.awsds.internal`.
+- **8.2 — [user] Amend the requirement, in your own words** (Lesson 57 — a plan step that restates a
+  requirement forks it): `objectives.md`'s VPN bullet gains the two profiles and which of them is the
+  institution's. **[Claude]** then: `institutional-delta.md`'s device-trust row names the open profile
+  as the lab's second gap of the same kind (the institution fixes the client's profile by MDM; here the
+  owner chooses); `NETWORK.md` §7's title gains *"under which profile"* and the section is **re-measured
+  at 8.3, never edited ahead** (its own rule); `AWS_STATE.md` gains no row, because no invariant moves;
+  `GLOSSARY.md` gains the two terms, *monitored profile* and *open profile*.
+- **8.3 — [user] Write the (b) file and take the readings** — the `.conf` (a) with its one line changed,
+  the (a) tunnel **down** first. Each reading has two distinguishable outcomes:
+  - `sudo wg show` — a handshake, as under (a). `netstat -rn -f inet | grep -E 'utun|^default'` — the
+    six routes on the `utun`, and the **default still on `en0`** (under (a) the default is on the
+    `utun`). `netstat -rn -f inet6 | grep default` — **no `fd90::` default** (6.4's (a) reading had one).
+  - `dig +short proxy.awsds.internal` → a private `10.31.160.x` address, and `dig +short SOA
+    prod.awsds.internal` **answering**: the hub is still the resolver. `scutil --dns` — the tunnel's
+    resolver listed with no domain restriction (verification 5).
+  - `curl -sS --max-time 15 https://1.1.1.1` → a **`301`** (the site redirects) — the exact opposite of
+    (a)'s check 3, and the reading that says the internet is direct. Then
+    `curl -s https://checkip.amazonaws.com` → **the laptop's own uplink address**, and
+    `curl -s -x http://proxy.awsds.internal:3128 https://checkip.amazonaws.com` → **`184.33.8.126`**:
+    the proxy is still there for whoever asks for it.
+  - **The identity half, no proxy variable set.** `aws sts get-caller-identity --profile
+    awsds-infra-prod` **succeeds** — and so does a real call, `aws ec2 describe-instances --profile
+    awsds-infra-prod --query 'length(Reservations)'`: the infrastructure user's whole surface is direct
+    under (b). Then the persona pair on one command, `aws s3api list-buckets --profile
+    awsds-scientist-sandbox`: **direct**, an *explicit* deny — the network branch of
+    `DenyControlPlaneOffVpn` fired, the wording names it; **after `proxy-on` in the same shell**, an
+    *implicit* deny — the network branch passed and the grant is simply absent, which is the same
+    sentence 4d's proof read on 2026-08-20 (Lesson 42: the two refusals differ in their text, never in
+    their exit code). The positive control is the `s3-read-write` tool through `proxy-on`, 6.5's own
+    proof, succeeding under (b). Paste all of it verbatim.
+  - `ssh -T git@github.com` → GitHub's greeting: the one door (a) has none for.
+- **8.4 — [Claude] Read the host across a (b) session**: `./aws/vpn.py --on-host` before the user's 8.3
+  and after it — the user authorizes the two `ssm:SendCommand`s in chat, as at 6.4. The `FORWARD`
+  `REJECT` count must **not grow**: 6.4's (a) sessions grew it by thousands, and a count that grows under
+  (b) is a client still sending internet-bound packets into the tunnel — a stale route, a second tunnel
+  active. `OutRateLimitHost` must not grow either. The nat `RETURN` for `10.31.160.0/24` grows by the
+  proxied `checkip` and the proxied `list-buckets` alone. That is the reading which separates *the
+  profile is what it claims* from *the profile parsed* (Lesson 54, on a configuration file).
+- **8.5 — [Claude] Restate from the readings, and carry the two consequences to the stages that own
+  them.** `NETWORK.md` §7 re-measured, with a profile column; `lessons.md`'s second list gains the App
+  Store client's `DNS` behaviour **only once 8.3 has measured it**, never from the source read alone;
+  `CLAUDE.md`'s position. **Stage 11 step 3.4 gains an input**: under (b) a portal session arrives from
+  the laptop's own address, so `awsds-data-portal-offproxy` (its 5.2) **fires on every open-profile
+  portal session** — either the portal is opened in the proxied Chrome even under (b), or the alarm is
+  understood as one the lab's own sessions trip; 3.4 decides, and 5.2's arming test (quiet with the
+  tunnel up) is taken under (a). **6d decision due 4 gains a line**: its recommendation of Method 3
+  rests on the proxy not reaching a browser-launched process — under (b) that process dials
+  `ssmmessages` on the laptop's own uplink, and Method 1's `StartSession` is the project role's,
+  server-side, carrying no persona deny — so the deep link is expected to work with nothing configured,
+  and **6d 7.5 measures it under both profiles** before the method is chosen. `make check`;
+  `check-plan-refs` unchanged.
+
 ---
 
 ## Deliverables
@@ -1277,6 +1380,8 @@ estate-wide (INT-21's availability cost).
 - Zero NAT gateways, zero default routes outside `VPC-Networking`, and a DNS firewall in every compute VPC
   with an intranet-only list.
 - `./aws/proxy.py`, `./aws/eip-transfer.py`, `make hub-up`/`hub-down`, and the spoke guard.
+- **The second client profile** (pass 8, added 2026-09-08): `vpn.md` §C7, the (b) template in the client
+  runbook, the requirement amended by the user, and the readings of 8.3/8.4 — laptop-only, no host change.
 
 ## Validation
 
@@ -1290,6 +1395,9 @@ estate-wide (INT-21's availability cost).
   world-open rule in the estate — **it reads Production alone today (Lesson 31); the Sandbox rule stands
   until 6.5, which widens the check.**
 - The six readings of pass 6, each with its two distinguishable outcomes.
+- **Pass 8's readings** (owed): check 3 inverted under (b), the persona contrast pair on `list-buckets`
+  (explicit direct, implicit through the proxy), and the `FORWARD` `REJECT` counter **flat** across a (b)
+  session.
 
 ## Cost
 
@@ -1340,6 +1448,14 @@ in the cost model.
    carries a per-GB Firehose rate; (b) a scheduled **`CreateExportTask`** to a Log Archive bucket, which is
    cheap and batchy and needs something to schedule it; (c) accept the 365-day in-account retention until
    Stage 11 and record that. **Both rates are measured before the choice, never estimated** (Lesson 6).
+5. **One key, or one per profile** (8.1, added 2026-09-08). Recommended: **one key** — the profile is
+   invisible to the host, and nothing moves. The alternative names the profile in the handshake log,
+   at the price of a roster row per device — an instance replacement (`vpn.md` §K4) — and a second
+   tunnel address per device.
+6. **Where the open profile resolves** (8.1, added 2026-09-08). Recommended: **`DNS = 10.31.0.2` in
+   both** — the measured path, and one line of difference between the two files. The scoped resolver
+   (no `DNS` line, `/etc/resolver/awsds.internal`) is the refinement if the tunnel round trip per
+   name shows; it is documented, not exercised, and `dig` cannot read it.
 
 ## Verifications to answer while executing
 
@@ -1357,6 +1473,9 @@ in the cost model.
    Elastic IP with no endpoint; `s3control` (`GetDataAccess`, `ListCallerAccessGrants`) arrives from the proxy
    host's private address through VPC-Networking's S3 gateway endpoint — so both branches of
    `DenyControlPlaneOffVpn` are load-bearing, and `trusted_vpce_ids` was complete (the vends succeeded).
+5. Does the App Store client apply a `DNS` line to **every** query under a split `AllowedIPs`, as its
+   source says (`matchDomains = [""]`, read 2026-09-08)? `scutil --dns` at 8.3 is the reading; the
+   fact enters `lessons.md`'s second list only from that reading.
 
 ## Risks
 
@@ -1374,6 +1493,10 @@ in the cost model.
   with no candidate today.
 - **One stopped hub host takes every account's internet with it.** That is INT-21's new availability cost;
   7.1 and 7.2 turn it from a blackhole into a refusal that names the host.
+- **The open profile becomes the only one used, and the monitored one stops being exercised** (pass 8).
+  The institutional mode then survives as a file nobody has brought up in weeks — Lesson 5's shape, an
+  intention standing in for a control. Mitigation: §C7's rule names the moments (a) is mandatory, and an
+  access log empty across a sitting that claims to have tested a persona is the finding.
 
 ---
 

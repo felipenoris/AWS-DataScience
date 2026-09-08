@@ -12,17 +12,24 @@ The goal is to achieve the following:
 
 - All user access to the cloud infrastructure will be performed through a VPN.
 
-- Once connected to the VPN, all of the client's internet access will go through an egress inside the
-  AWS cloud *(added 2026-08-25)*. This has two implications, both tied to the DLP objective (Stage 11):
-  (1) the client can reach the organization's cloud infrastructure only while connected to the VPN;
-  (2) all internet access will be monitored — there will be an HTTP/HTTPS proxy between the
-  VPN-connected client and the cloud's internet egress. Once on the VPN, the user can therefore use the
-  browser to reach the internet, which includes the SageMaker portal and the public links that are usage
-  requirements of SageMaker (the network-isolation guide's public-internet-access section). In the
-  real-world institution this models, only institution-owned laptops can connect to the VPN, and those
-  laptops carry their own endpoint DLP (a Microsoft 365 service) — so requiring the VPN closes the
-  circuit: nothing extracted through SageMaker, even by downloading files to the laptop, leaves the
-  institution unmonitored.
+- Two types of VPN access:
+
+  - restricted: once connected to the VPN, all of the client's internet access will go through an egress inside the
+    AWS cloud *(added 2026-08-25)*. This has two implications, both tied to the DLP objective (Stage 11):
+    (1) the client can reach the organization's cloud infrastructure only while connected to the VPN;
+    (2) all internet access will be monitored — there will be an HTTP/HTTPS proxy between the
+    VPN-connected client and the cloud's internet egress. Once on the VPN, the user can therefore use the
+    browser to reach the internet, which includes the SageMaker portal and the public links that are usage
+    requirements of SageMaker (the network-isolation guide's public-internet-access section). In the
+    real-world institution this models, only institution-owned laptops can connect to the VPN, and those
+    laptops carry their own endpoint DLP (a Microsoft 365 service) — so requiring the VPN closes the
+    circuit: nothing extracted through SageMaker, even by downloading files to the laptop, leaves the
+    institution unmonitored.
+
+  - opened: a client connected to VPN in the opened mode can see private IPs, but all internet access will be routed
+    by the client to the internet provider, without going through the private net, unchecked by the private proxy.
+    As a side effect, tthe client won't need to set a proxy configuration. This kind of access will be used to
+    proceed with the plan implementation, while the first type will be used as a Lab environment.
 
 - Use SageMaker Unified Studio as a development tool for Data Scientists.
 
