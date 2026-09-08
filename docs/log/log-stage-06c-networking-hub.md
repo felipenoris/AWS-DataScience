@@ -2314,3 +2314,33 @@ marked. The sitting straddled midnight UTC: it began on 2026-09-07 evening.*
 - **[Claude] What 6c leaves.** Pass 6 is closed; every pass is executed and measured. **Decision due 4**
   — the access log's export to Log Archive — is the stage's one open item, both rates to be measured
   before the user chooses. `sandbox/egress` is still up.
+
+## 2026-09-08 — decision due 4 taken as (c): the access log stays in Production until Stage 11, and the stage closes
+
+- **[user] The choice, in the user's words: *"Vamos pela opção (c)."*** — after the brief that put the
+  three candidates side by side with the measured inputs.
+- **[Claude] Measured before the choice (Lesson 6), all from public sources through the proxy.** The
+  group's own volume from `IncomingBytes`: **0.53 MB** on 2026-09-06 (the buildbox's image pulls) and
+  **0.13 MB** on 2026-09-07 — 4386 and 1057 lines; ~15 MB/month at the higher rate. The bulk Price List,
+  `us-west-2`: Firehose **0.029 USD/GB** in 5 KB increments per record; EventBridge Scheduler **free** to
+  14 million invocations; Lambda 0.20 USD/million requests; and **no SKU at all** for an export task or a
+  Standard-class subscription — the catalogue's delivery SKUs (0.25 USD/GB to S3 or Firehose) are written
+  for *vended* logs. Under a cent a month whichever way. `storedBytes` still read 0 on a group two days
+  old, so the metric was the reading, not the describe call. Rows in `PRICING.md`; the four documentation
+  and offer pages in `REFERENCES.md`.
+- **[Claude] What decided it, since the money could not.** (a) and (b) both need objects built by hand in
+  Log Archive — a CloudWatch Logs destination, a Firehose, a role and a bucket for (a); a bucket with a
+  policy for the `logs` service principal for (b) — in an account with no CLI profile and no IaC, which is
+  Lesson 35's shape. The record's destruction is not silent meanwhile: `DeleteLogGroup` and
+  `PutRetentionPolicy` are management events on the organization trail, which already lands in Log
+  Archive. And Stage 11 step 5.1 decides once, for every log the author must not own, where it lands
+  (its decision 7): `/awsds/prod/proxy` now joins that delivery by name. The author of the allow-list owns
+  its record until then, knowingly — the same shape as 6.6: accept, watch, revisit in the stage that owns
+  the answer.
+- **[Claude] Recorded**: the stage's decision due 4 and status row (**DONE 2026-09-08**), the 4.11 block,
+  `PX-4`'s note (the reason is dated and compensated, no longer "open"), Stage 11's status and step 5.1,
+  `GENERAL_PLAN.md`, `CLAUDE.md`, this index. And the token observation of the night went to `lessons.md`'s
+  second list: `aws sso logout` invalidates every cached session's token, a browser sign-out none.
+- **Stage 6c is DONE.** Three VPCs, five peerings, the `awsds.internal` family, two `[D]` hub hosts, zero
+  NAT, no default route in any spoke, the client plane resolving in the hub, the perimeter re-keyed on the
+  proxy's address and trimmed, the Sandbox home retired — every pass executed and every claim measured.

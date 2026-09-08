@@ -479,6 +479,21 @@ vector store), and Guardrails. None is reachable from the blueprint as enabled.
 | Route 53 Resolver DNS Firewall, first 1B queries (USD per million) | 0.60 | — | |
 | Route 53 Resolver queries, first 1B (USD per million) | 0.40 | — | |
 
+**6c decision due 4's inputs — the proxy access log's road to Log Archive, `us-west-2`, measured 2026-09-08**
+(the bulk API's `AmazonKinesisFirehose`, `AmazonCloudWatch`, `AWSEvents` and `AWSLambda` offer files; the
+volume from the group's `IncomingBytes` metric):
+
+| Item | USD, `us-west-2` |
+|---|---|
+| The access log's volume — `/awsds/prod/proxy`, `IncomingBytes` per day | **0.53 MB** (2026-09-06, the buildbox's image pulls) and **0.13 MB** (2026-09-07); ~15 MB/month at the higher rate |
+| Firehose data ingested, tier 1 (per GB; billed in 5 KB increments per record, so a ~120-byte log line bills as 5 KB) | 0.029 |
+| CloudWatch Logs delivered to S3, or to Firehose, first 10 TB (per GB) — **the catalogue's only delivery SKUs, written for *vended* logs**; whether an export task or a subscription filter of a Standard-class group bills them is not in the catalogue | 0.25 |
+| EventBridge Scheduler, scheduled invocations | **0** for the first 14 million per month, then 1.00 per million |
+| Lambda requests (per million) · duration (per GB-second, tier 1) | 0.20 · 0.0000166667 |
+
+At 15 MB/month every mechanism costs under a cent: even Firehose's 5 KB rounding (~40× the bytes) is
+~USD 0.02, and a daily export is a handful of S3 PUTs. **The money does not decide this one.**
+
 **A metric emitted by a CloudWatch Logs metric filter is a custom metric, at USD 0.30/metric-month.** That
 is three times the alarm beside it, and it is avoidable: custom metrics are metered only for the hours in
 which datapoints are actually published, so a metric filter created **without a default value** publishes

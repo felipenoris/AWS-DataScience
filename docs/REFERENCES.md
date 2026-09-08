@@ -694,6 +694,9 @@
 - AWS Security Hub: <https://docs.aws.amazon.com/securityhub/latest/userguide/what-is-securityhub.html>.
 
 - AWS CloudWatch: <https://aws.amazon.com/pt/cloudwatch/>.
+  - *Export log data to Amazon S3* — the export-task procedure, same-account and **cross-account** (the destination bucket's policy names the `logs` service principal and the source account), SSE-KMS buckets supported, DSSE-KMS not; tasks time out after 24 h. Read 2026-09-08 for 6c decision due 4 (candidate (b)): <https://docs.aws.amazon.com/AmazonCloudWatch/latest/logs/S3ExportTasks.html> and the overview <https://docs.aws.amazon.com/AmazonCloudWatch/latest/logs/S3Export.html>.
+  - *Cross-account subscriptions* — a subscription filter into another account needs a CloudWatch Logs **destination** in the receiving account (same Region as the log group; the Kinesis/Firehose resource behind it may be elsewhere), with its own access policy. Candidate (a)'s hand-built half: <https://docs.aws.amazon.com/AmazonCloudWatch/latest/logs/CrossAccountSubscriptions.html>; subscription filters in general: <https://docs.aws.amazon.com/AmazonCloudWatch/latest/logs/SubscriptionFilters.html>.
+  - *Prices measured for decision due 4* (Lesson 6, the bulk API, `us-west-2`): Firehose <https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AmazonKinesisFirehose/current/us-west-2/index.json>, CloudWatch <https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AmazonCloudWatch/current/us-west-2/index.json>, EventBridge (offer code `AWSEvents`, not `AmazonEventBridge`) <https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AWSEvents/current/us-west-2/index.json>, Lambda <https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AWSLambda/current/us-west-2/index.json>; the rows are in `docs/PRICING.md`.
 
 - AWS Secrets Manager: <https://docs.aws.amazon.com/secretsmanager/latest/userguide/intro.html>.
 

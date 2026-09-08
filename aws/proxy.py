@@ -760,18 +760,22 @@ actually succeeds is 6c step 6.3's probe, whose four readings are the behavioura
                 f"no log group named {LOG_GROUP} - 4.11's evidence is not being written",
             )
         elif not subscriptions:
-            # NOT A FAIL, AND THE REASON IS DATED: 4.11's second half is an OPEN DECISION (the
-            # stage's decision due #4) between a subscription filter into a Firehose in Log
-            # Archive and a scheduled CreateExportTask to S3. They have different cost shapes,
-            # and picking one silently would be an estimate standing in for a measurement
-            # (Lesson 6). A `fail` here would report a gap the plan is holding open on purpose.
+            # NOT A FAIL, BY DECISION: 6c decision due 4 was taken on 2026-09-08 as (c) - the group
+            # keeps its 365-day retention in Production until Stage 11 step 5.1 folds it into the
+            # centralized log delivery, where the mechanism (a subscription filter into Log
+            # Archive, or a scheduled CreateExportTask) is decided once for every log the author
+            # must not own. Measured first (Lesson 6): 0.13-0.53 MB/day, every mechanism under a
+            # cent a month. Meanwhile a deletion or a shorter retention is a management event on
+            # the organization trail, which already lands in Log Archive. A `fail` here would
+            # report a gap the plan holds open on purpose, dated and compensated.
             checks.note(
                 "PX-4",
                 "the access log group exists, with its Log Archive export",
                 f"{log_groups[0][0]} exists ({log_groups[0][1]} days) and has NO export - "
-                "4.11's second half is an open decision (6c decision due #4), not drift. "
-                "Until it lands, the author of the allow-list also owns its record "
-                "(Lesson 18)",
+                "by decision (6c decision due 4, taken 2026-09-08 as (c)), not drift: the export "
+                "waits for Stage 11 step 5.1's centralized delivery; a deletion or a shorter "
+                "retention meanwhile is on the organization trail. The author of the "
+                "allow-list owns its record until then, knowingly (Lesson 18)",
             )
         else:
             checks.ok(
