@@ -2430,3 +2430,6 @@ profile yet — this sitting wrote it; 8.3 measures it.*
   8.2), `cbe23f6` (8.1), then this entry. **What 6c still holds open**: 8.3 (the user's readings), 8.4
   (two `ssm:SendCommand`s the user authorizes), 8.5, decisions due 5 and 6 to confirm, verification 5.
   `sandbox/egress` and `sandbox/probes` are still up.
+- **[user] Decisions due 5 and 6 taken, later the same evening, in the user's words: *"Confirmo as
+  decisões 5 e 6. Uma chave. DNS 10.31.0.2"*** — after asking where the two decisions were and how they
+  read. Both struck in the stage file; §C7 and the 8.1 block no longer say *to be confirmed*.

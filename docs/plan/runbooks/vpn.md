@@ -783,7 +783,7 @@ proved, and until then `NETWORK.md` §7 says so.*
 | `AllowedIPs` | `0.0.0.0/0, ::/0` | the five VPC CIDRs of `NETWORK.md` §1 and the tunnel's own range: `10.20.0.0/16, 10.30.0.0/16, 10.31.0.0/16, 10.32.0.0/16, 10.50.0.0/16, 10.90.0.0/24` |
 | the private address space | through the tunnel | through the tunnel — **the same** |
 | the client's internet | enters the tunnel, is refused by the host's `FORWARD` chain (§S2), and exists only through the proxy — by name, HTTP/HTTPS, logged (§C5a) | leaves through the laptop's own uplink — any protocol, both families, **unmonitored, by decision** |
-| DNS | the hub's `.2`, every query | **the same** (decision due 6): the App Store client applies a `DNS` line to every query whatever `AllowedIPs` says — `matchDomains = [""]` in its source, read 2026-09-08 — and `wg-quick` writes it on every network service. One tunnel round trip per uncached name (194 ms, measured at 6.4) and CDN answers geolocated to Oregon; the refinement is a scoped resolver with no `DNS` line (`/etc/resolver/awsds.internal` → `10.31.0.2`; `resolvectl domain %i ~awsds.internal ~awsds-pages.internal` on Linux), documented and not exercised — `dig` cannot read it, `dscacheutil -q host -a name proxy.awsds.internal` can |
+| DNS | the hub's `.2`, every query | **the same** (decision due 6, taken 2026-09-08): the App Store client applies a `DNS` line to every query whatever `AllowedIPs` says — `matchDomains = [""]` in its source, read 2026-09-08 — and `wg-quick` writes it on every network service. One tunnel round trip per uncached name (194 ms, measured at 6.4) and CDN answers geolocated to Oregon; the refinement is a scoped resolver with no `DNS` line (`/etc/resolver/awsds.internal` → `10.31.0.2`; `resolvectl domain %i ~awsds.internal ~awsds-pages.internal` on Linux), documented and not exercised — `dig` cannot read it, `dscacheutil -q host -a name proxy.awsds.internal` can |
 | a persona's AWS calls | through the proxy, because everything is | **through the proxy, because `DenyControlPlaneOffVpn` and the lake's policies say so** (§S4) — `proxy-on` in that terminal, the `--proxy-server` flag on that Chrome; direct, they die with an *explicit* deny |
 | `InfrastructureAccess` | through the proxy, because everything is | **direct — no proxy anywhere**; Terraform, `make`, every `aws/` script |
 | SSH to `github.com:22`, non-HTTP protocols, IPv6 | no path (client runbook §4.3) | the laptop's own |
@@ -818,8 +818,8 @@ in the institution that line is fixed by MDM and the split-tunnel profile does n
 the institution's and the requirement's. Not a NAT: the host forwards nothing to the internet under either
 profile. And not *open* — that word is the proxy plane's `mode` (§C5a), a different object.
 
-**Decisions it was written on** (Stage 6c decisions due 5 and 6, on their recommendations, to be confirmed
-by the user before 8.3): one key per device, never one per profile — the alternative names the profile in
+**Decisions it was written on** (Stage 6c decisions due 5 and 6, on their recommendations — **confirmed by
+the user on 2026-09-08**): one key per device, never one per profile — the alternative names the profile in
 the handshake log at the price of a roster row, an instance replacement (§K4), and a second address per
 device; and `DNS = 10.31.0.2` in both files.
 
