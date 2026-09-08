@@ -2349,3 +2349,84 @@ measurements are Claude's.*
 - **Stage 6c is DONE.** Three VPCs, five peerings, the `awsds.internal` family, two `[D]` hub hosts, zero
   NAT, no default route in any spoke, the client plane resolving in the hub, the perimeter re-keyed on the
   proxy's address and trimmed, the Sandbox home retired — every pass executed and every claim measured.
+
+## 2026-09-08 — pass 8 added: the split-tunnel profile beside the monitored one, the requirement amended, 8.1 and 8.2 done, and the user's first `.conf`
+
+*Written by Claude at the user's request ("Suba no mesmo PR o log deste andamento"); the user's decisions,
+words and `.conf` are theirs, quoted. No AWS act in this entry beyond reads, and no reading of the new
+profile yet — this sitting wrote it; 8.3 measures it.*
+
+- **[user] The ask, after merging PR #69**: a second type of VPN access — *"(a) monitorado"*, what exists,
+  and *"(b) aberto"*: the client reaches the private network through the tunnel and its internet leaves on
+  its own, with no proxy to configure and no load on the proxy — to be built, if possible, with a new
+  client file and host adjustments only, no new address and no new instance; and a check that every cloud
+  resource is reachable under both. Asked first: which component implements today's control.
+- **[Claude] The log checked first, at the user's request**: fifty-one sections, complete; two lines
+  added — the provenance line the decision-(c) entry lacked, and the sentence that the client runbook
+  gained §4.3 at the user's request. `make status` at the start of the sitting: both hub hosts **UP**,
+  `sandbox/egress` **UP** (0.18/h) and `sandbox/probes` **UP** (0.0084/h) since the previous sitting; the
+  tunnel **down** on the laptop — this shell reached `https://1.1.1.1` direct (`301`).
+- **[Claude] The control is three layers in three places.** The client's `AllowedIPs = 0.0.0.0/0, ::/0`
+  — a routing directive of the device's owner, never a control (`vpn.md` §C6 already said so); the host's
+  `FORWARD` chain from `wg0`'s `PostUp` (RFC1918 accepted, the rest `REJECT`ed, the masquerade hole for
+  the public tier, the single return route), which makes the internet exist only through the proxy, by
+  name, HTTP/HTTPS; and IAM — `DenyControlPlaneOffVpn` on the six persona sets plus the lake's
+  `DenyOutsideTrustedNetworks`, with `InfrastructureAccess` outside by decision (OQ 17). The first two make
+  *the internet through the proxy*; the third makes *AWS through the proxy*, and it does not depend on the
+  tunnel at all.
+- **[Claude] The finding that shaped the pass: the reach difference between the profiles is by IDENTITY,
+  never by network.** A split-tunnel `.conf` is the monitored one with one line changed — same key, so the
+  host holds the same peer and nothing moves: no roster row, no Elastic IP, no instance, no apply. Nothing
+  the monitored profile reaches is out of the other's reach; a persona's AWS work under split-tunnel needs
+  the proxy pointed at by the *application*, because the perimeter accepts only the proxy's exit, and the
+  infrastructure user needs no proxy anywhere. Split-tunnel reaches what monitored cannot — SSH to
+  `github.com:22`, any protocol, IPv6 — unmonitored, by decision. Two consequences carried to their owners:
+  Stage 11's planned `awsds-data-portal-offproxy` fires on every split-tunnel portal session (an input to
+  its 3.4), and 6d's Method 1 deep link is expected to work under split-tunnel with nothing configured
+  (its decision due 4 re-read at 7.5).
+- **[Claude] Read from source, not measured.** `wireguard-apple`'s `PacketTunnelSettingsGenerator.swift`
+  applies a `DNS` line to **every** query (`matchDomains = [""]`) whatever `AllowedIPs` says, and
+  `wg-quick`'s `darwin.bash` writes it on every network service — so `DNS = 10.31.0.2` stays in both
+  files (decision due 6, on the recommendation; the scoped resolver is the refinement, and `dig` cannot
+  read it). One key per device (decision due 5, on the recommendation; the alternative is a roster row per
+  device, an instance replacement). **Both to be confirmed by the user before 8.3.** And a correction to
+  the brief as first given: `aws sts get-caller-identity` is **not** a discriminator between the profiles —
+  AWS documents that no permission is required for it and that an explicit deny does not affect it — so
+  8.3's contrast pair is `list-buckets`, the call 4d's proof used (explicit deny direct, implicit through
+  the proxy).
+- **[user] *"Perfeito. Pode prosseguir"*** — pass 8 written into the stage (8.1-8.5, decisions due 5 and
+  6, verification 5, one risk: the monitored profile stops being exercised); the pass table, the stage
+  index, `GENERAL_PLAN.md` and `CLAUDE.md` say *DONE for passes 0-7; pass 8 added, open*. The user asked
+  for a suggested wording and then **amended `objectives.md` by hand, twice**. The first draft said
+  *restricted* / *opened* — *restricted* is the word Lesson 57 caught on 2026-09-07 (the client plane is
+  monitored, the compute plane restricted), *opened* collides with the proxy plane's `mode = open` — and
+  the second, after the review, **monitored** / **split-tunnel**, the requirement's names since. The paste
+  had replaced the monitored paragraph with the suggestion's placeholder; restored verbatim from the
+  previous commit, and the bullet given its date marker. The plan then followed the requirement, never
+  the other way round (Lesson 57).
+- **[Claude] 8.2 done on both halves, 8.1 written.** `institutional-delta.md`'s device-trust row gains a
+  fourth instance — the configuration file itself, fixed by MDM in the institution and chosen by the owner
+  here; `NETWORK.md` §7 a dated paragraph saying every reading there is the monitored profile's and the
+  split-tunnel readings are owed, nothing edited ahead; `GLOSSARY.md` one row for the pair, naming the
+  `mode = open` collision; `architecture.md` §3's *full tunnel* sentence qualified. Then `vpn.md` **§C7**
+  — the table of the two profiles, why the host is untouched, the one discipline (*one profile active at a
+  time*: the same key is one peer), what it is not — and the client runbook's second file, **one `sed` over
+  the first**, proved to yield a one-line diff; the scope rule now reads *"full tunnel in the monitored
+  profile; the split-tunnel profile is §C7"*.
+- **[user] The first split-tunnel `.conf`, shown in chat before the runbook was committed** (key elided):
+
+  ```
+  Address = 10.90.0.2/32, fd90::2/128
+  DNS = 10.31.0.2
+  MTU = 1280
+  AllowedIPs = 10.20.0.0/16, 10.30.0.0/16, 10.31.0.0/16, 10.32.0.0/16, 10.50.0.0/16, 10.90.0.0/24
+  Endpoint = 52.89.212.1:51820
+  PersistentKeepalive = 25
+  ```
+
+  **The template, line for line.** Not yet brought up: 8.3's readings are the next act — the monitored
+  tunnel down first — and 8.4's two on-host reads bracket them.
+- **Commits on PR #70**: `50b4440` (pass 8 and the first objectives draft), `474aa2c` (the vocabulary and
+  8.2), `cbe23f6` (8.1), then this entry. **What 6c still holds open**: 8.3 (the user's readings), 8.4
+  (two `ssm:SendCommand`s the user authorizes), 8.5, decisions due 5 and 6 to confirm, verification 5.
+  `sandbox/egress` and `sandbox/probes` are still up.
