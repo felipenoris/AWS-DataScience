@@ -148,7 +148,9 @@ is the control plane, not the account.
 
 **How a human actually reaches each account, because "the VPN is the only entry point" hides two different
 paths.** The WireGuard host lives in Production's `VPC-Networking` (since 6c, 2026-09-06; Sandbox before)
-and is a **full tunnel** (Stage 4 step 5), so *all* the laptop's traffic enters it — and leaves the
+and, in the **monitored** profile, is a **full tunnel** (Stage 4 step 5 — since 2026-09-08 `objectives.md`
+names a second, **split-tunnel** profile for building the plan, 6c pass 8, under which the cloud side is
+identical and only the laptop's own internet leaves the tunnel), so *all* the laptop's traffic enters it — and leaves the
 estate only through the **proxy's** Elastic IP (D38) — and that, not a route into every VPC, is what
 makes the single entry point true **for a laptop with the tunnel up; the Unified Studio portal is the
 measured exception (INT-16, 2026-08-22 — a portal session works with the tunnel down; closed 2026-09-07

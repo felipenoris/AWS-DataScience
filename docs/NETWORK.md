@@ -190,6 +190,14 @@ bridge between VPCs the peering matrix deliberately keeps apart.
 
 ## 7. The tunnel — what a packet from a laptop can and cannot reach  `[measured 2026-09-07]`
 
+**Two client profiles since 2026-09-08 (`objectives.md`; 6c pass 8), and everything measured in this
+section is the monitored one's.** Under the **split-tunnel** profile the `.conf` lists the private ranges
+instead of `0.0.0.0/0, ::/0`: the *in* and *the masquerade* rows below hold, *out of the host* is never
+exercised (no internet-bound packet enters the tunnel), and *the internet* is the laptop's own uplink —
+unmonitored, by decision. The cloud side is identical, so a persona's calls still take the proxy under
+either profile. **Its readings are owed to 6c steps 8.3 and 8.4** and land here then; nothing below is
+edited ahead of them.
+
 | | |
 |---|---|
 | **in** | UDP/51820 to `52.89.212.1`, the estate's **one** world-open rule |
