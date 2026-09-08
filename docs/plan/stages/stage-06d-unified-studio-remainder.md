@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Status** | **IN PROGRESS — 3.6, 7.1 and 7.2 taken 2026-09-07** ([log](../../log/log-stage-06d-unified-studio-remainder.md)): the two portal surfaces read, the remote-IDE endpoint set derived (**nothing to add on either side**), and the `StartSession` pair found attached to a principal that never makes the call — so **the connection method decides the perimeter** (decision due 4), and step 7 was re-cut around that the same day. **Created 2026-09-05** by splitting the old Stage 6, revised the same day into the action-checklist format. It holds only what had not run, re-cut to the estate the split produces: **one** Interactive account (Sandbox), no NAT anywhere, every internet call through the institutional proxy. Two items the old stage carried are gone rather than pending — the design A / design B **comparison** (6c settles it by construction) and the derived-zone decision (dissolved 2026-08-26). **Step 7 added 2026-09-06**, from a reading of the plan against [`objectives.md`](../objectives.md): the local-VS-Code clause had its **policy** half applied at 6a step 3.2 and no step anywhere that opens the connection — so the endpoints it needs under design B were never derived (AWS's own two pages sit in `REFERENCES.md`, consumed by nothing), the two denies were never exercised, and **nothing had ever checked that the principal carrying them is the one that calls `sagemaker:StartSession`** |
+| **Status** | **IN PROGRESS — 3.2 AND 3.3 DONE, 3.1 HALF TAKEN, 2026-09-08** ([log](../../log/log-stage-06d-unified-studio-remainder.md)): the first working session under the proxy, from a JupyterLab terminal with the variables exported **by hand** (2.2 is still unapplied) and on the **stock** image. `NO_PROXY` held on two channels that do not share a failure mode (CloudTrail's `vpcEndpointId`, and the access log's *absence* of every AWS name); the allow-list enforced (`pypi.org` 200, `example.com` 403); **`conda` and CRAN refused by name — decision due 6's evidence**; the `codeload.github.com` redirect refused on a third source plane. **Owed**: `uv`, Julia and R, in the house image. **And one check was corrected by the user's own first command**: `--noproxy '*'` returning `000` measured a **DNS** refusal, not the absent route — the routing half stays 6c 6.3's probe (Lesson 42). *Earlier:* **3.6, 7.1 and 7.2 taken 2026-09-07**: the two portal surfaces read, the remote-IDE endpoint set derived (**nothing to add on either side**), and the `StartSession` pair found attached to a principal that never makes the call — so **the connection method decides the perimeter** (decision due 4), and step 7 was re-cut around that the same day. **Created 2026-09-05** by splitting the old Stage 6, revised the same day into the action-checklist format. It holds only what had not run, re-cut to the estate the split produces: **one** Interactive account (Sandbox), no NAT anywhere, every internet call through the institutional proxy. Two items the old stage carried are gone rather than pending — the design A / design B **comparison** (6c settles it by construction) and the derived-zone decision (dissolved 2026-08-26). **Step 7 added 2026-09-06**, from a reading of the plan against [`objectives.md`](../objectives.md): the local-VS-Code clause had its **policy** half applied at 6a step 3.2 and no step anywhere that opens the connection — so the endpoints it needs under design B were never derived (AWS's own two pages sit in `REFERENCES.md`, consumed by nothing), the two denies were never exercised, and **nothing had ever checked that the principal carrying them is the one that calls `sagemaker:StartSession`** |
 | **Prerequisites** | **[6c](stage-06c-networking-hub.md) pass 5** — what a Studio app can reach changes there, so any measurement below taken earlier would have to be retaken. [6b](stage-06b-development-becomes-staging.md) only in that its instrument re-scoping removes the second Interactive account from the readings |
 | **Consumes** | [D5](../decisions/D05-sagemaker-egress.md), [D11](../decisions/D11-lab-lifecycle.md), [D13](../decisions/D13-lake-formation-enforcement.md), [D17](../decisions/D17-interactive-vs-runtime.md), [D26](../decisions/D26-unified-studio.md), [D28](../decisions/D28-workflow-contract.md), [D38](../decisions/D38-single-egress-hub.md) |
 | **Proves** | [INT-01](../integrations.md) and [INT-17](../integrations.md) (the cross-account image pull and the selector — 6a built the repositories and pushed the image; nothing has consumed it), [INT-02](../integrations.md)'s consumer half under design B |
@@ -84,6 +84,19 @@ path was superseded twice. **Explanation:** what breaks under an explicit proxy 
 is the one the environment will actually have — a denied name is a decision to take, not a failure to work
 around.
 
+- **3.1 — HALF TAKEN 2026-09-08, ON THE STOCK IMAGE, AND THE HALF THAT RAN CONFIRMED EVERY
+  PREDICTION.** From a JupyterLab terminal with the variables exported by hand (2.2 is not applied):
+  `pypi.org` **200**, `pip download requests` fetching index **and** wheel, `example.com` **403** —
+  the allow-list *enforced*, not merely configured. **`conda` and CRAN refused BY NAME** in the
+  proxy's access log (`repo.anaconda.com`, `cloud.r-project.org`, both `TCP_DENIED`), which is
+  **decision due 6's evidence**, taken from the network rather than from the package manager.
+  **And a third source plane met the redirect trap**: `github.com` answered `200`, the release
+  tarball redirected, and `codeload.github.com` — on no plane — was refused in the same second,
+  the same shape as `public.ecr.aws` → CloudFront at 6c 5.8. **What is still owed**: `uv`, `Pkg`
+  (Julia) and R were **not run**, and the reading belongs in the **house** image, where Julia and R
+  are image-delivered — so the step stands, narrowed to the ecosystems the stock image cannot
+  answer for. The sitting is [`log-stage-06d`](../../log/log-stage-06d-unified-studio-remainder.md),
+  2026-09-08. *The original step follows:*
 - **3.1 — [user] Install packages** from a JupyterLab terminal, one ecosystem per command, and paste each
   result: `pip`, `uv`, `conda`, `Pkg` (Julia) and R. Read against the compute plane's list
   (`hub-anchors.tf`, `proxy_allow_sandbox`, 20 names) before running, so a refusal is expected rather than
@@ -93,9 +106,24 @@ around.
   the proxy's log, and a decision (due 6): allow the name on the compute plane, or record the loss and
   keep the ecosystem image-delivered (`images/dev-env/`'s premise). CodeArtifact needs no endpoint in
   Sandbox: `.amazonaws.com` is on the plane, so INT-02's consumer half is proved **through the proxy**.
+- **3.2 — DONE 2026-09-08, AND BY TWO CHANNELS RATHER THAN ONE.** The instrument was
+  `sts:GetCallerIdentity` rather than `aws s3 ls` — the call the session made — and CloudTrail carries
+  **`vpcEndpointId` `vpce-0f5adbfef0071b8e5`**, confirmed as `com.amazonaws.us-west-2.sts`, with
+  `sourceIPAddress` the app ENI and the project role's `SageMaker` session. **The proxy's access log is
+  the second channel and it reads by ABSENCE**: not one AWS name in the session's window — and the
+  absence is decisive precisely because `.amazonaws.com` **is** on this plane, so a failed `NO_PROXY`
+  would have been *permitted*, arriving with neither `aws:SourceVpc` nor `aws:SourceVpce`. The failure
+  ruled out is the one that succeeds. *The original step follows:*
 - **3.2 — [Claude] Check the door each AWS call takes**: in the same session, `aws s3 ls` on the projects
   bucket must still show `vpcEndpointId` in CloudTrail — the proof that `NO_PROXY` kept AWS traffic on the
   endpoints and that the 4d defect shape has not returned.
+- **3.3 — DONE 2026-09-08 FOR THIS SESSION, AND THE STEP NAMES THE WRONG INSTRUMENT FOR HALF OF IT.**
+  `./aws/proxy.py --on-host` reads the rendered planes and the host's `squid.conf` — `PX-1`, `PX-2`,
+  `PX-3`, `PX-5` `pass`, `PX-4` its standing note — and **carries no access log at all**. The log is a
+  CloudWatch group and was read directly: `filter-log-events` on `/awsds/prod/proxy` as
+  `awsds-infra-prod`, nine lines, every one sourced from the app ENI. Both readings are in the log
+  entry; anyone repeating 3.3 needs the second command as well as the first.
+  *The original step follows:*
 - **3.3 — [Claude] Read what the proxy saw**: `./aws/proxy.py --on-host` for the session's access log.
 - **3.4 — [Claude] Measure the SMUS components**: whether the DataZone agent, the S3 Access Grants plugin
   and Amazon Q honour `HTTP_PROXY` is **undocumented**. The reading settles it; anything that does not is
