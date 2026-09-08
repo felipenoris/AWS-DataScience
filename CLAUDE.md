@@ -193,20 +193,20 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
 
 ### Current position
 
-- **STAGE 6c DONE (2026-09-08).** Decision due 4 taken as **(c)**: the access log stays in Production 365
-  days until Stage 11 step 5.1 folds it into the centralized delivery — measured first (0.13-0.53 MB/day,
-  every mechanism under a cent), the organization trail records any deletion meanwhile, `PX-4` a note.
-  Pass 6's readings: **6.2** portal,
-  catalog and a space open from the tunnel with **no** browser grant, both client names public — **a space
-  started while `sandbox/egress` is down HANGS** at "IDE configuration in progress"; **6.4** the timeout was the
-  **host's per-destination ICMP rate limit**, not macOS (23318 of 27681 refusals silenced), and the
-  `ip6tables` rule has never fired (IPv6 dies at *no route*); **6.5** a laptop call takes **two doors by
-  service family** — `sts` from the proxy's EIP, `s3control` through the hub's S3 gateway endpoint — the
-  union trimmed (`identity/sso` 6 changed, the lake unchanged), `sandbox/foundation` unfrozen (4 destroyed,
-  the EIP **forgotten**), `sandbox/vpn/` retired, **`VP-3` reads every account**; **6.6** the user chose
-  **(ii), recorded acceptance** — a recorded deviation, Stage 11 step 3.4 re-takes it, its 5.2 alarms on an
-  off-proxy portal session. **`aws sso logout` invalidates EVERY cached session's token; a browser sign-out
-  invalidates none.**
+- **STAGE 6c DONE (2026-09-08) FOR PASSES 0-7; PASS 8 ADDED 2026-09-08, OPEN — the second client
+  profile.** The **open** tunnel beside the **monitored** one: same key, same `DNS`, `AllowedIPs` = the
+  five VPC CIDRs + `10.90.0.0/24`; laptop-only, **no host change**. The reach difference is by
+  **identity**, never by network — `InfrastructureAccess` direct, a persona still through the proxy
+  (`DenyControlPlaneOffVpn`). 8.3/8.4 readings owed; carried to 6d decision due 4 (Method 1 expected to
+  work under (b)) and Stage 11 step 3.4 (the portal alarm fires on (b)). Decision due 4 taken as **(c)**:
+  the access log stays in Production 365 days until Stage 11 step 5.1 folds it into the centralized
+  delivery — measured first, the organization trail records any deletion meanwhile, `PX-4` a note.
+  Pass 6: **a space started while `sandbox/egress` is down HANGS** at "IDE configuration in progress";
+  the no-internet timeout is the **host's per-destination ICMP rate limit** (Lesson 55); a laptop call takes
+  **two doors by service family** (`sts` from the proxy's EIP, `s3control` through the hub's S3 gateway
+  endpoint); the union trimmed, `sandbox/vpn/` retired, **`VP-3` reads every account**; **6.6 taken as (ii),
+  recorded acceptance** — Stage 11 step 3.4 re-takes it, its 5.2 alarms on an off-proxy portal session.
+  **`aws sso logout` invalidates EVERY cached session's token; a browser sign-out invalidates none.**
 - **STAGE 6d: 3.6, 7.2 AND 7.1 DONE (2026-09-07); STEP 7 RE-CUT AROUND ONE FINDING — THE CONNECTION
   METHOD DECIDES THE PERIMETER.** 7.1: **nothing to add on either side** — the space's seven names are all
   in `sandbox/egress/`, the laptop's five ride the `open` tunnel plane; `ec2messages` is on neither vendor
@@ -234,17 +234,11 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   primary** (issue #67): Chrome's `--proxy-server` flag or Firefox; with the tunnel **down** the same
   setting breaks the `aws` CLI — `NO_PROXY='*'` is the override. **The no-internet check times out OR refuses fast — the host's per-destination ICMP rate limit
   decides** (Lesson 55, mechanism corrected 2026-09-07): the evidence is the counter on the refusing side.
-- **Documentation swept 2026-09-07 for 6b/6c**: 25 living files corrected (NAT, `sandbox/vpn/`, the
-  anchors, `Development`, the zones); `conventions.md` §6 lost a duplicate `staging/` block and gained
-  `production/buildbox/`. **Plans re-cut the same day**: 6c pass 6, 6d step 7 (+ `./aws/remote-ide.py` as
-  7.9), Stage 7 against 6c as built (the proxy has **no TLS listener**; the SSM trio is already in
-  `production/egress/`; 6c 5.9's measured pull-through fallback ranks first).
 - **Pass 5 made design B real:** zero NAT as code; endpoint sets **counted** — Sandbox **18**, Staging
   **11**, SharedServices **13**, Workloads **0**; estate fixed rate **0.390/h**; `optional_service_groups`
   behind `make up ENV=<x> GROUPS=…` (empty by default); DNS Firewall **63 → 10**. **Pass 7:** `make
   hub-up` / `hub-down`; a spoke's `make up` **REFUSES** while a hub host is stopped; `./aws/proxy.py`
-  `PX-1`..`PX-5`; `NT-11`/`NT-12` (two-sided, by CIDR). `prod.internal`/`pages.internal` **destroyed**
-  (2.6); `docs/NETWORK.md` **rewritten from readings** (6.7); `EXC-04`, `-05`, `-06` **closed**.
+  `PX-1`..`PX-5`; `NT-11`/`NT-12` (two-sided, by CIDR).
 - **`NO_PROXY` is GENERATED, never written** (`vpc-egress` output): 8 of 29 service names are not
   derivable from the token and a gateway endpoint has no `PrivateDnsName`, so S3/DynamoDB are hand-named
   in **both** spellings. **Squid matches the hostname the client REQUESTED** — a redirect is a new name; a
