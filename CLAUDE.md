@@ -226,7 +226,15 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   (`codeload.github.com`, the ECR CloudFront); **a bare entry matches EXACTLY** — `github.com` covers
   neither `api.github.com` nor `raw.githubusercontent.com`. **`amazonwebservices.com` is NOT
   `amazonaws.com`** (`idetoolkits.*` refused beside `idetoolkits-hostedfiles.amazonaws.com` allowed).
-- **THE CODE EDITOR'S GALLERY IGNORES `http.proxy` — MEASURED TWICE, 2026-09-08.** The space's own
+- **THE CODE EDITOR'S GALLERY: THE CHAIN IS SOLVED (2026-09-09), AND IT IS TWO SMALL ACTS.** The client
+  **honours `http_proxy`/`https_proxy` and ignores the `http.proxy` SETTING** — `code-editor-server
+  --install-extension` with the variables exported reached `Installing extensions...` and returned an
+  **HTTP** `403`, never `getaddrinfo`. And the `403` is **Squid's**: `open-vsx.org` serves the API (`200`,
+  on the plane) and **`openvsx.eclipsecontent.org` serves the `.vsix` bytes** (`403`, **not** on the
+  plane) — the redirect shape of `public.ecr.aws` → CloudFront, and why 8.1's single name was never
+  enough. **Repair: deliver the ENVIRONMENT to the `codeeditorserver` supervisord program + add that one
+  name.** The tunnel plane reaching the same host with `200` is the negative control.
+- **THE SETTING ROUTE WAS MEASURED FIRST, TWICE, 2026-09-08.** The space's own
   setting moved `idetoolkits.amazonwebservices.com`, `api.github.com` and `raw.githubusercontent.com`
   **from a DNS `BLOCK` to a Squid `403`** and `pypi.org` to `200` — a **paired before/after**, because a
   space restart renames the container and cuts the log into non-overlapping windows — while

@@ -557,8 +557,24 @@ class as `pypi.org`: the question is never *whether* code may be fetched, only *
     `http.proxy`**, which is the opposite of what this step inferred an hour earlier, and it puts (b) and
     (c) back as the repair rather than ruling them out. What has to reach the **supervisord program**
     `codeeditorserver` is the environment, not a setting — the shape the terminal reading already named.
-    **Still unattributed**: whether the `403` is Squid's or Open VSX's, which the proxy log decides and an
-    expired SSO session deferred. **(ii)** `curl` the `.vsix` through the proxy. `open-vsx.org` is on the plane, so this
+    **THE `403` IS SQUID'S, AND IT NAMES THE ASSET HOST — 8.6's LAST UNREAD NAME, 2026-09-09.** The proxy
+    log carries the whole install in sequence, from the space's own address:
+
+    | 03:32:00Z | `CONNECT open-vsx.org:443` | **200** `TCP_TUNNEL` — the gallery API, on the plane |
+    |---|---|---|
+    | 03:32:00Z | `CONNECT openvsx.eclipsecontent.org:443` | **403** `TCP_DENIED` — the download, **not** on the plane |
+    | 03:32:09-10Z | `open-vsx.org` ×4 **200**, `openvsx.eclipsecontent.org` ×2 **403** | the retries |
+
+    **`open-vsx.org` serves the API and `openvsx.eclipsecontent.org` serves the bytes** — the redirect
+    shape 8.6 predicted (`public.ecr.aws` → CloudFront, `github.com` → `codeload`), and the reason 8.1's
+    single name was never going to be enough. The negative control came free in the same minutes: the
+    **tunnel** plane, which is `open`, reached that same host with **200**, so the name is refused by this
+    plane's list and by nothing else.
+    **So the chain is complete and step 8's repair is now two acts, both small**: deliver the environment
+    to the `codeeditorserver` supervisord program (b or c), and add **one name** to `proxy_allow_sandbox`.
+    Neither is a fallback; decision due 6's `.vsix` route goes back to being the contingency it was, except
+    for target-platform-specific extensions, where 8.7's second defect still makes it the only correct
+    route. **(ii)** `curl` the `.vsix` through the proxy. `open-vsx.org` is on the plane, so this
     either downloads — and the fallback is proven — or it is refused **on the redirect target**, whose
     name the proxy log then hands over. Either outcome is a result; the second is the asset host 8.6 has
     been unable to read because the gallery never got far enough to be redirected.
@@ -606,7 +622,9 @@ class as `pypi.org`: the question is never *whether* code may be fetched, only *
   name with an endpoint belongs in the bypass list, where the call keeps `aws:SourceVpce`; putting it on
   the allow-list instead makes it *work* while sending it out through the hub as a public call. The two
   repairs are indistinguishable from the symptom, and only one of them is correct.
-  **The asset host is still unread** — the gallery never got far enough to redirect. **Five names remain,
+  **THE ASSET HOST IS `openvsx.eclipsecontent.org`, READ 2026-09-09** (8.4): `open-vsx.org` serves the
+  API with a `200` and the `.vsix` bytes come from that second name, refused `403` because 8.1 listed only
+  the first. It is the same redirect shape as `public.ecr.aws` → CloudFront. **Five other names remain,
   and a sixth fits no column yet**: `dzd-<id>.sagemaker.us-west-2.on.aws`, the SMUS domain's own URL, is
   **DNS-blocked** from every space address in every window read on 2026-09-08 — not in the bypass list,
   not on the plane, not resolvable. It has been failing throughout and nothing has attributed it.
