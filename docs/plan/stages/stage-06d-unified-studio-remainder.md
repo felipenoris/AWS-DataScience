@@ -637,10 +637,29 @@ class as `pypi.org`: the question is never *whether* code may be fetched, only *
   **`x86_64`** and `/etc/os-release` reads **Ubuntu 24.04.4 LTS (Noble)** — glibc, not musl; `amd64`, not
   `arm64`. So `targetPlatform=alpine-arm64` describes nothing in that container. It is **not** the cause of
   anything either: the failure is `getaddrinfo`, and a platform string sits in the URL path, downstream of
-  resolution. Retired as VS Code's own detection, exactly as Lesson 38 prescribed for it. One coincidence
-  is recorded without being promoted to a finding: **`arm64` is the laptop's** architecture, and the
-  workbench runs in the laptop's browser (the stack traces are `browser/workbench.js`), so a client-side
-  probe is the likelier author than the server. Nothing here measured that, and nothing depends on it.
+  resolution. Retired as a fact about the space, exactly as Lesson 38 prescribed for it.
+  **AND THE AUTHOR WAS FOUND 2026-09-09 — IT IS NEITHER CLIENT'S PLATFORM DETECTION.** The first reading
+  guessed at VS Code's own detection and recorded a hypothesis that `arm64` was **the laptop's**; the Open
+  VSX API falsifies both. Queried from the space, with the variables exported:
+
+  | query | version | `targetPlatform` |
+  |---|---|---|
+  | `/api/Anthropic/claude-code` | 2.1.266 | **`alpine-arm64`** |
+  | `/api/Anthropic/claude-code/latest` | 2.1.266 | **`alpine-arm64`** |
+  | `/api/Anthropic/claude-code/linux-x64/latest` | 2.1.266 | `linux-x64` |
+
+  **`alpine-arm64` is what the REGISTRY returns when no platform is named.** VS Code queried the gallery,
+  got that variant back as *the* version, and echoed its platform into the asset URL — it was never
+  detecting anything, and the laptop coincidence was a coincidence. **Lesson 38 twice over**: the string
+  was correctly written down rather than believed, and then the *explanation* of it was believed one
+  reading too early.
+  - **This is a SECOND defect, independent of the proxy, with a different blast radius.** The resolution
+    failure stops **every** extension; this one stops only **target-platform-specific** ones, and it would
+    survive a perfectly working proxy — the gallery would fetch an `alpine-arm64` build for an
+    `x86_64`/glibc container. `Anthropic/claude-code` ships per-platform; the AWS pair that fails at every
+    startup almost certainly does not, so the two failures overlap in this log without sharing a cause.
+  - **For a platform-specific extension the `.vsix` is not a fallback but the only correct route**, which
+    changes what decision due 6 is choosing between.
   *The original step follows:* the failing requests asked for `targetPlatform=alpine-arm64` while a
   JupyterLab space fetched `amd64` packages an hour earlier; `uname -m` and `/etc/os-release` settle it.
 
