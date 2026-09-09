@@ -17,8 +17,13 @@ export http_proxy=http://proxy.awsds.internal:3128 https_proxy=$http_proxy HTTP_
 
 ## Latest reading
 
+**50 entries, read from `sandbox/egress` after the `vpc-egress-v0.11.1` apply of 2026-09-09**
+(6d step 8.8). It was 28 before that: the generator read the *service's* one canonical name and
+now reads every name the *endpoint* answers for. If your copy has 28, it is missing
+`datazone.us-west-2.api.aws` among twenty-one others, and DataZone will be refused in the space.
+
 ```
-export NO_PROXY='.awsds-pages.internal,.awsds.internal,127.0.0.1,169.254.169.254,169.254.170.2,api.ecr.us-west-2.amazonaws.com,api.sagemaker.us-west-2.amazonaws.com,athena.us-west-2.amazonaws.com,datazone.us-west-2.amazonaws.com,dkr.ecr.us-west-2.amazonaws.com,dynamodb.dualstack.us-west-2.amazonaws.com,dynamodb.us-west-2.amazonaws.com,ec2.us-west-2.amazonaws.com,ec2messages.us-west-2.amazonaws.com,glue.us-west-2.amazonaws.com,kms.us-west-2.amazonaws.com,lakeformation.us-west-2.amazonaws.com,localhost,logs.us-west-2.amazonaws.com,runtime.sagemaker.us-west-2.amazonaws.com,s3.dualstack.us-west-2.amazonaws.com,s3.us-west-2.amazonaws.com,s3tables.us-west-2.amazonaws.com,secretsmanager.us-west-2.amazonaws.com,ssm.us-west-2.amazonaws.com,ssmmessages.us-west-2.amazonaws.com,sts.us-west-2.amazonaws.com,studio.us-west-2.sagemaker.aws'
+export NO_PROXY='.awsds-pages.internal,.awsds.internal,.dkr-ecr.us-west-2.on.aws,.dkr.ecr.us-west-2.amazonaws.com,.studio.sagemaker.us-west-2.app.aws,.studio.us-west-2.sagemaker.aws,127.0.0.1,169.254.169.254,169.254.170.2,api.ecr.us-west-2.amazonaws.com,api.sagemaker.us-west-2.amazonaws.com,api.sagemaker.us-west-2.api.aws,athena.us-west-2.amazonaws.com,athena.us-west-2.api.aws,datazone.us-west-2.amazonaws.com,datazone.us-west-2.api.aws,dkr-ecr.us-west-2.on.aws,dkr.ecr.us-west-2.amazonaws.com,dynamodb.dualstack.us-west-2.amazonaws.com,dynamodb.us-west-2.amazonaws.com,ec2.us-west-2.amazonaws.com,ec2.us-west-2.api.aws,ec2messages.us-west-2.amazonaws.com,ecr.us-west-2.api.aws,glue.us-west-2.amazonaws.com,glue.us-west-2.api.aws,kms.us-west-2.amazonaws.com,kms.us-west-2.api.aws,lakeformation.us-west-2.amazonaws.com,lakeformation.us-west-2.api.aws,localhost,logs.us-west-2.amazonaws.com,logs.us-west-2.api.aws,runtime.sagemaker.us-west-2.amazonaws.com,runtime.sagemaker.us-west-2.api.aws,s3.dualstack.us-west-2.amazonaws.com,s3.us-west-2.amazonaws.com,s3tables.us-west-2.amazonaws.com,s3tables.us-west-2.api.aws,secretsmanager.us-west-2.amazonaws.com,ssm.us-west-2.amazonaws.com,ssm.us-west-2.api.aws,ssmmessages.us-west-2.amazonaws.com,ssmmessages.us-west-2.api.aws,streaming-logs.us-west-2.amazonaws.com,streaming-logs.us-west-2.api.aws,sts.us-west-2.amazonaws.com,sts.us-west-2.api.aws,studio.sagemaker.us-west-2.app.aws,studio.us-west-2.sagemaker.aws'
 
 export no_proxy="$NO_PROXY" http_proxy=http://proxy.awsds.internal:3128 https_proxy=http://proxy.awsds.internal:3128 HTTP_PROXY=http://proxy.awsds.internal:3128 HTTPS_PROXY=http://proxy.awsds.internal:3128
 ```
@@ -64,34 +69,54 @@ path is not written down here on purpose — the palette is stable, the path is 
     "*.awsds.internal",
     ".awsds-pages.internal",
     ".awsds.internal",
+    ".dkr-ecr.us-west-2.on.aws",
+    ".dkr.ecr.us-west-2.amazonaws.com",
+    ".studio.sagemaker.us-west-2.app.aws",
+    ".studio.us-west-2.sagemaker.aws",
     "127.0.0.1",
     "169.254.169.254",
     "169.254.170.2",
     "api.ecr.us-west-2.amazonaws.com",
     "api.sagemaker.us-west-2.amazonaws.com",
+    "api.sagemaker.us-west-2.api.aws",
     "athena.us-west-2.amazonaws.com",
+    "athena.us-west-2.api.aws",
     "datazone.us-west-2.amazonaws.com",
+    "datazone.us-west-2.api.aws",
+    "dkr-ecr.us-west-2.on.aws",
     "dkr.ecr.us-west-2.amazonaws.com",
     "dynamodb.dualstack.us-west-2.amazonaws.com",
     "dynamodb.us-west-2.amazonaws.com",
     "ec2.us-west-2.amazonaws.com",
+    "ec2.us-west-2.api.aws",
     "ec2messages.us-west-2.amazonaws.com",
+    "ecr.us-west-2.api.aws",
     "glue.us-west-2.amazonaws.com",
+    "glue.us-west-2.api.aws",
     "kms.us-west-2.amazonaws.com",
+    "kms.us-west-2.api.aws",
     "lakeformation.us-west-2.amazonaws.com",
+    "lakeformation.us-west-2.api.aws",
     "localhost",
     "logs.us-west-2.amazonaws.com",
+    "logs.us-west-2.api.aws",
     "runtime.sagemaker.us-west-2.amazonaws.com",
+    "runtime.sagemaker.us-west-2.api.aws",
     "s3.dualstack.us-west-2.amazonaws.com",
     "s3.us-west-2.amazonaws.com",
     "s3tables.us-west-2.amazonaws.com",
+    "s3tables.us-west-2.api.aws",
     "secretsmanager.us-west-2.amazonaws.com",
     "ssm.us-west-2.amazonaws.com",
+    "ssm.us-west-2.api.aws",
     "ssmmessages.us-west-2.amazonaws.com",
+    "ssmmessages.us-west-2.api.aws",
+    "streaming-logs.us-west-2.amazonaws.com",
+    "streaming-logs.us-west-2.api.aws",
     "sts.us-west-2.amazonaws.com",
-    "studio.us-west-2.sagemaker.aws",
-    "datazone.us-west-2.api.aws",
-    "studio.sagemaker.us-west-2.app.aws"
+    "sts.us-west-2.api.aws",
+    "studio.sagemaker.us-west-2.app.aws",
+    "studio.us-west-2.sagemaker.aws"
   ]
 }
 ```
@@ -105,18 +130,14 @@ VPC endpoint: bytes paid for that the gateway endpoint carries free, and arrival
 carries, one layer up.
 
 **The list is generated, and the syntax is not the environment's.** It is `terraform output -raw no_proxy`
-on `sandbox/egress` — the value at the top of this file — never transcribed. But the env-var form
-suffix-matches on a **leading dot** (`.awsds.internal`) and VS Code's `http.noProxy` is documented with a
-**glob** (`*.awsds.internal`) ([Lesson 53](../lessons.md) in its smallest form), so **both spellings are
-carried** for the entries where the two matchers could disagree — correct under either, at a cost of a
-few array entries. Regenerate it, do not copy it, whenever an endpoint moves.
-
-**THE HAND-PATCH IS RETIRED (2026-09-09).** Adding `datazone.us-west-2.api.aws` and
-`studio.sagemaker.us-west-2.app.aws` to `http.noProxy` by hand was the right repair on 2026-09-08 and is
-now the wrong one: `vpc-egress-v0.11.1` generates them. The list is **50 entries** where it was 28,
-because the generator used to read the *service's* one canonical name and now reads every name the
-*endpoint* answers for (6d step 8.8). Anyone still carrying the two by hand is carrying them twice, and
-will not notice when the generated list next changes underneath the copy. **Regenerate.**
+on `sandbox/egress` — the value at the top of this file — never transcribed. The array above is a
+**snapshot of that output**, so regenerate it rather than copying it whenever an endpoint moves.
+The generator already emits every **wildcard service name in two forms**, bare and dot-prefixed, because
+the matchers disagree about which one covers a subtree. What it cannot know is that VS Code's
+`http.noProxy` is documented with a **glob** (`*.awsds.internal`) where the environment variable
+suffix-matches on a **leading dot** (`.awsds.internal`) — [Lesson 53](../lessons.md) in its smallest
+form — so the array carries **two entries the generator did not produce**: the glob spelling of the two
+internal zones. Everything else is the output verbatim.
 
 **`http.proxyStrictSSL` stays `true`.** It is the first knob anyone turns when a proxy misbehaves, and it
 would buy nothing here: Squid `CONNECT`-tunnels rather than terminating TLS, so the certificate the client

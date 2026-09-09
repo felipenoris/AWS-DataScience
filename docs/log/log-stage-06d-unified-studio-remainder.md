@@ -1157,3 +1157,139 @@ stays broken afterwards so nobody reads the detail-page error as a botched insta
 with 8.6's rule that a refused name **with** a VPC endpoint belongs in the bypass list and never on the
 allow-list. It also says the two things that bound it: **per space, dies with the space**, and **only
 until step 2 delivers the environment**.
+
+## 2026-09-09 — the seventh sitting: 8.8, and the guard that moved with the reading
+
+*Claude took every measurement, wrote the code and the documents, and ran the one apply the user
+authorized; the user authorized the applies up front, took the two decisions below, and asked for this
+entry. One inference Claude made mid-sitting was falsified by its own measurement and is recorded as
+such rather than repaired silently.*
+
+### [Claude] The defect measured before a line was written — sixteen of eighteen, not two
+
+`describe-vpc-endpoints` on Sandbox, `DnsEntries` per interface endpoint. 8.8 had recorded two endpoints
+answering for a name the generated list did not carry. The reading says **16 of 18**:
+
+| endpoint | names it answers for, beyond the canonical one |
+|---|---|
+| twelve services | an `.api.aws` twin apiece |
+| `logs` | `logs.<region>.api.aws`, **`streaming-logs.<region>.amazonaws.com`**, `streaming-logs.<region>.api.aws` |
+| `ecr.dkr` | `dkr-ecr.<region>.on.aws` and its wildcard — a fifth AWS domain family |
+| `sagemaker.studio` | four names, two of them wildcards, across `sagemaker.aws` and `app.aws` |
+| `ec2messages`, `secretsmanager` | nothing — the only two with a single name |
+
+**The `403`s that started this were loud by luck of the domain family.** `.api.aws` is on no compute
+plane, so those refusals were visible. `.amazonaws.com` **is** on the plane — so
+`streaming-logs.<region>.amazonaws.com` was answered **200**, left through the hub's IGW as a **public**
+call, and arrived carrying neither `aws:SourceVpc` nor `aws:SourceVpce`. It is a different *label* under
+a family the list already had, so no suffix rule covered it and no instrument would ever have reported
+it. That name is the reason this was worth fixing in the generator rather than by adding entries.
+
+**`dns_entry` also carries the endpoint's own names** — regional and zonal, `vpce-<id>-<hash>.…`.
+Excluded: nothing dials them (`private_dns_enabled` is true on every endpoint the module makes) and they
+embed an `[E]` id, so carrying them would make `NO_PROXY` churn on every up/down cycle. **Filtered on the
+`vpce-` prefix, not on a `.vpce.amazonaws.com` suffix** — `sagemaker.studio`'s end in
+`.vpce.sagemaker.aws`, and a suffix filter would have let four through. That is a measurement, not a
+style choice.
+
+### [user] Two decisions, both taken before any code was written
+
+1. **The two DNS Firewall families.** Widening the module's coverage precondition to the same reading
+   exposed two endpoints both compute VPCs pay for hourly that were **NXDOMAIN**:
+   `dkr-ecr.<region>.on.aws` and `studio.sagemaker.<region>.app.aws`. Taken: **add `app.aws` and `on.aws`
+   to `sandbox/egress` and `staging/egress`**, on the argument that put `sagemaker.aws` there. The
+   alternative — fix `NO_PROXY` alone and record the gap — was refused for a reason the measurement had
+   made concrete: a bypassed name stops asking Squid and starts asking the resolver, so fixing one half
+   would have converted a legible `403` into an unattributable NXDOMAIN for exactly those names.
+2. **Both spellings for a wildcard name**, bare and dot-prefixed. requests/botocore do a plain
+   `endswith`, so bare covers the subtree *and* the apex while dot-prefixed covers the subtree only; a
+   strict suffix matcher is the mirror image. Neither is right under all of them. Four extra entries.
+
+### [Claude⚡] The module, the tags, and the one apply
+
+Recipe B, twice — the second cycle is the next entry's subject. `vpc-egress-v0.11.1` on all four
+callers; `sandbox/egress` was the only egress slice with anything in state (48 resources), so it is the
+only one applied. The other three are `[E]` and down and take the module on their next `make up`.
+
+- `terraform plan`: **`0 to add, 1 to change, 0 to destroy`** — the firewall domain list, in place.
+- Applied. **Re-plan: `No changes`.**
+- The bypass list: **28 → 50 entries, nothing removed.** Twenty-two added.
+- Read back from Route 53 Resolver rather than from state: **14 domains live** (the ten, plus
+  `app.aws.`, `*.app.aws.`, `on.aws.`, `*.on.aws.`).
+- `./aws/dns-allowlist.py --from-api awsds-infra-prod`: `DN-1`..`DN-4` **pass**. `./aws/egress.py`:
+  **69 pass, 0 fail**, with `EG-5`'s standing note that 18 interface endpoints are metered at
+  ~USD 0.180/h. Neither instrument touches the proxy planes, which this change does not alter.
+
+### [Claude] `vpc-egress-v0.11.0` is tagged and was never deployed, and its own measurement is why
+
+`dns_entry` is a **resource attribute**. On a VPC whose endpoints do not exist yet it is
+`(known after apply)`, so the whole coverage condition is unknown and Terraform **defers it to apply**.
+Measured on `staging/egress`, torn down: `terraform plan` printed `20 to add`,
+`no_proxy = (known after apply)` and **raised nothing** — where the same code with a missing family used
+to fail before a single resource was touched.
+
+6c step 5.7 wrote that precondition to turn a silent NXDOMAIN into *a plan-time failure naming the
+endpoint*. v0.11.0 had quietly taken the plan half away. **The repair produced Lesson 39 in a step
+written to remove a different defect**, which is what makes it worth its own lesson rather than an
+instance of that one — written up as **Lesson 59**: changing *where* a value is read from can change
+*when* it is knowable, and every guard reading it moves with it in silence.
+
+v0.11.1 brings the service data source back **for the guard alone, never for the output**, and splits
+the precondition in two — `declared` (one name per service, plan-time, narrow) and `served` (every name,
+complete, sometimes late) — with **one matcher mapped over both lists** rather than two copies of it.
+Each message names its reading. The v0.11.0 tag stays where it is; never retag.
+
+### [Claude] Both halves have a negative control
+
+A guard that passes proves nothing on its own.
+
+| control | result |
+|---|---|
+| the two families removed for one plan, `sandbox/egress` (up) | precondition fails naming **all four** uncovered names |
+| `sagemaker.aws` removed for one plan, `staging/egress` (**torn down**) | fails **in the plan**, naming `*.studio.us-west-2.sagemaker.aws` **and its own reading** — the proof that the plan-time bite came back |
+
+### [Claude] 8.6's orphan, attributed for free
+
+`dzd-<id>.sagemaker.us-west-2.on.aws` — the Unified Studio domain's own URL, DNS-blocked from every
+space address in every window read on 2026-09-08, in the bypass list of nothing and on the plane of
+nothing, attributed to nothing. It is **`.on.aws`**, a family the DNS Firewall did not carry. That is
+the attribution, and it arrived as a side effect of listing what the endpoints answer for.
+
+It resolves now. **Resolving is not reaching**: it has no endpoint, so it leaves as a proxy request and
+returns a `403` naming the host — the diagnosable failure rather than the silent one. Whether to allow
+it on the plane is decision due 6's, unchanged by this.
+
+### [Claude] The documents the fix made false
+
+- **`NETWORK.md`** said the list is read from `describe-vpc-endpoint-services` at plan time, which is no
+  longer how it is built or when. Replaced, with the table that matters: a missing entry in an
+  `.api.aws`-shaped family is a visible `403`, and one in the `.amazonaws.com` family is a silent `200`
+  arriving without `aws:SourceVpce`. The firewall is **fourteen** entries, not ten. And
+  `sandbox-foundation` reads **24**, not 21 — stale since decision 6 was taken in full the day before,
+  counted from `hub-anchors.tf` rather than assumed.
+- **`AWS_STATE.md`**'s "sixty-three entries to ten" gained its successor.
+- **`sg-proxy.md`** carried the **28-entry** export string in *Latest reading* and a 32-entry settings
+  array, two of whose entries were the user's hand-patch of 2026-09-08. Both replaced from the
+  post-apply output. The array is the output **plus exactly two entries the generator cannot produce** —
+  the glob spelling of the two internal zones, which is VS Code's syntax and not the environment's. The
+  hand-patch is gone rather than annotated: at the user's reading, a correct list makes a paragraph
+  explaining the incorrect one unnecessary.
+- **`CLAUDE.md`**'s 8.8 bullet and Lesson 59's recognition key.
+
+### [Claude] What 8.8 closes, and what it does not
+
+**Closed**: the generator, the guard, the two families, and the runbook's two stale copies. 8.8 itself.
+
+**Not closed, and both are the same shape — a fix nobody has yet seen work where it matters:**
+
+1. **Applied in Sandbox only.** `staging/egress`, `production/egress` and `production/workloads-egress`
+   are `[E]` and down; they take `v0.11.1` on their next `make up`, unverified until then.
+   `staging/egress` is the one that matters — it carries a firewall and both new families.
+2. **The in-space proof is the user's.** DataZone working from a space with **no** hand-patch in
+   `http.noProxy` needs a running space, and no API reading substitutes for it. That is the test this
+   sitting hands over.
+
+**One operational note for the next sitting**: the infrastructure user's SSO session expired during this
+one — the cached token file was gone mid-command — so the last readings above were taken before it
+lapsed and the runbook's export string was rebuilt from the post-apply output already on disk rather
+than re-read live.
