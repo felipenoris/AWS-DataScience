@@ -574,7 +574,33 @@ class as `pypi.org`: the question is never *whether* code may be fetched, only *
     to the `codeeditorserver` supervisord program (b or c), and add **one name** to `proxy_allow_sandbox`.
     Neither is a fallback; decision due 6's `.vsix` route goes back to being the contingency it was, except
     for target-platform-specific extensions, where 8.7's second defect still makes it the only correct
-    route. **(ii)** `curl` the `.vsix` through the proxy. `open-vsx.org` is on the plane, so this
+    route.
+  - **THE DELIVERY MECHANISM, READ FROM THE SERVICE MODEL 2026-09-09 — AND (b) AND (c) TURN OUT TO BE
+    ONE QUESTION, WHICH IS STEP 2's.** Both exist:
+
+    | mechanism | the API says | needs |
+    |---|---|---|
+    | **(b)** lifecycle configuration | `StudioLifecycleConfigAppType` includes **`CodeEditor`** | nothing — works on the stock image |
+    | **(c)** image configuration | **`CodeEditorAppImageConfig`** exists, with `ContainerConfig.ContainerEnvironmentVariables`, **symmetric to `JupyterLabAppImageConfig`** | the house image — step 2 |
+
+    **But neither can be attached to a SPACE.** `SpaceSettings.CodeEditorAppSettings` is a *different
+    shape* — `SpaceCodeEditorAppSettings`, carrying only `DefaultResourceSpec` and
+    `AppLifecycleManagement`. `LifecycleConfigArns` and `CustomImages` live **only** on
+    `UserSettings.CodeEditorAppSettings`, which is the **domain default or a user profile**. In this
+    estate that object is provisioned by the **`Tooling` blueprint**.
+    - **So the delivery question and INT-17 are the same question**, and 8.4 is not independent of step 2
+      after all: it is blocked behind **2.4's** reading — *does an attachment we make to a
+      blueprint-provisioned domain survive reconciliation*. Two mechanisms, one risk; there is little
+      point paying for (b) as a bridge when it buys no risk reduction over (c).
+    - **(c) is the recommendation.** It is declarative and lands **beside 2.2's JupyterLab config**, so
+      one intent stays in one place rather than being expressed twice in two syntaxes (Lesson 33's
+      mirror, Lesson 51). It sets the **container** environment, which supervisord inherits and the
+      server inherits — and the terminal with it, which retires the by-hand `export` from every reading
+      in this stage. **`sudo` still strips them**: 2.2's two image-side files remain necessary.
+    - **What (b) buys and (c) does not** is working **today**, on the stock image, without step 2. If step
+      2 slips, that is the only argument for it — and it should then be written as a **dated exception**,
+      not as the design (Lesson 50).
+  **(ii)** `curl` the `.vsix` through the proxy. `open-vsx.org` is on the plane, so this
     either downloads — and the fallback is proven — or it is refused **on the redirect target**, whose
     name the proxy log then hands over. Either outcome is a result; the second is the asset host 8.6 has
     been unable to read because the gallery never got far enough to be redirected.

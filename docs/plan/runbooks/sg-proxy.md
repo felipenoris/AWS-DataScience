@@ -143,8 +143,24 @@ requests, 96 MiB**. **`open-vsx.org` alone did not move**: 24 `BLOCK`s from the 
 appearance in the proxy log at all.
 
 So *"no proxy in the process"* no longer describes this component. The process has one; the gallery does
-not use it. Environment variables deliver the same fact by another route, so they are not expected to
-reach a client that ignores `http.proxy` either.
+not use it.
+
+**But the ENVIRONMENT does reach it — measured 2026-09-09, and it corrects the sentence that stood here.**
+`code-editor-server --install-extension`, run from the terminal with the six variables exported and
+`VSCODE_IPC_HOOK_CLI` unset, connected and returned an **HTTP** `403`, never `getaddrinfo`. **The client
+honours `http_proxy`/`https_proxy` and ignores the `http.proxy` setting** — two delivery routes that look
+like one fact and are read by different code.
+
+And the `403` was **Squid's**, naming the last missing piece: **`open-vsx.org` serves the API and
+`openvsx.eclipsecontent.org` serves the `.vsix` bytes**. Both are now on the compute plane (committed
+2026-09-09; **the second is unapplied** until the parameter write). A single-name allow-list authorised
+the question and refused the answer.
+
+**So the repair is two acts**: the compute plane's second name, and the environment delivered to the
+`codeeditorserver` supervisord program — which can be attached only at the **domain or user-profile**
+level (`SpaceSettings` carries a smaller shape that has neither `LifecycleConfigArns` nor
+`CustomImages`), so it inherits Stage 6d step 2.4's reconciliation question. Until then, the by-hand
+`export` in a terminal is what works.
 
 ### ⚠ It also breaks DataZone, and that is the exception list, not the proxy
 
