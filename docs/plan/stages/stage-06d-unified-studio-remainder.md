@@ -628,7 +628,20 @@ class as `pypi.org`: the question is never *whether* code may be fetched, only *
   correctly, and the `alpine-arm64` the browser workbench asked for is the registry's default reaching a
   client that named none. That narrows the defect from *the gallery* to *the browser workbench*, and it
   means the `.vsix` contingency is needed only where that path is the one in use.
-  **And the extension is invisible in the IDE, which is this step's own doing**: the probe installed into
+  **A THIRD FACE OF THE SAME DEFECT, 2026-09-09, and it widens what the delivery is worth.** Installed
+  through the CLI into the server's own directory, the extension appears — the `Install` button goes — and
+  then **clicking it raises an error**. The log shows why, and it is not an update: `claude-code` is
+  **absent** from the `Auto updating outdated extensions` list, yet the workbench fetches
+  `…/claude-code/2.1.266/Microsoft.VisualStudio.Code.Manifest?targetPlatform=alpine-arm64` for the version
+  **already installed**, fails, and prints `An unknown error occurred`. That is the extension's **detail
+  page** rendering, which is a gallery read. So the missing proxy costs three things, not one: the
+  startup auto-update, installing from the UI, and **viewing an extension that is already installed and
+  working**. `alpine-arm64` appears again, from the workbench and never from the CLI — 8.7's narrowing,
+  confirmed a second time.
+  - **Whether the extension RUNS is a different question and this log does not answer it.** Nothing here
+    says `claude-code` failed to activate; the `isCn` errors belong to the AWS Toolkit. The test is to
+    use it, never to click its marketplace entry — which is the one action guaranteed to fail.
+  **And the extension being invisible in the IDE before that, which was this step's own doing**: the probe installed into
   a scratch `--extensions-dir` so it would not modify the thing being measured, and the running server
   reads `$PERSISTENT_VOLUME_EXTENSIONS_DIR`. Re-running against that directory, then reloading the window,
   is what makes it appear — **per extension and per space, until the delivery lands**. *The original step follows:*
