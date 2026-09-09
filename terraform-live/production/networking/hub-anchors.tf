@@ -335,8 +335,36 @@ locals {
     "index.crates.io",
     "static.crates.io",
     "static.rust-lang.org",
-    # Source.
-    "github.com",
+    # SOURCE CONTROL IS DELIBERATELY ABSENT - `github.com` REMOVED 2026-09-09 BY THE USER (6d 8.6).
+    # It was on this plane and it worked: 3.1 measured a clone from a JupyterLab space on 2026-09-08.
+    # It comes off because a name is not judged by whether it works but by whether an INTERACTIVE
+    # COMPUTE plane should reach it, and source control is the path by which code - and whatever a
+    # notebook has put beside it - leaves a governed environment. `objectives.md` names data-leakage
+    # protection as a requirement of its own; this is that requirement costing something.
+    # `api.github.com` and `raw.githubusercontent.com` were refused for the same reason in the same
+    # sitting, though they were the IDE's own startup traffic rather than anyone's clone - measured
+    # 2026-09-09: both fire in bursts where the gallery is not touched at all.
+    #
+    # WHAT THIS COSTS, so nobody re-adds it as a bug fix: `git clone`, `fetch` and `push` from a
+    # Sandbox space now fail. The BUILD plane is unaffected - `production-foundation` is `open`, so
+    # the buildbox and the future pipeline still reach GitHub, which is where a build belongs.
+    #
+    # THE IDE's OWN HOSTS, allowed as one block 2026-09-09 (6d 8.6). Each was read as a `403` in
+    # `/awsds/prod/proxy` after 8.4 put the proxy in the process, each fires at STARTUP without
+    # anyone asking for anything, and none has a VPC endpoint - which is the test that separates an
+    # allow-list entry from a bypass-list one (an endpoint-backed name allow-listed here would work
+    # while arriving without `aws:SourceVpce`). Note the domain families: three names, three
+    # different ones, and none of them `.amazonaws.com`.
+    "idetoolkits.amazonwebservices.com",
+    "ide-toolkits.app-composer.aws.dev",
+    # REGIONAL, so it is INTERPOLATED - and the form is `${var.region}`, not
+    # `${data.aws_region.current.region}`, because TWO readers parse this list and only one of them
+    # is Terraform. `check-tf-conventions` caught the literal (a hard-coded region is a portability
+    # defect that reads as data); `aws/dns-allowlist.py` then caught the wrong interpolation, because
+    # it resolves `${var.region}` and REPORTS anything else as unresolved rather than guessing.
+    # Terraform accepts both and says `No changes` either way, so the instrument is the only thing
+    # that can tell these two apart. It is the only regional entry on this plane.
+    "sagemaker-unified-studio-mcp.${var.region}.api.aws",
     # VSCode Extension Gallery - TWO NAMES, AND THE SECOND WAS MEASURED 2026-09-09 (6d 8.6).
     # `open-vsx.org` serves the API and the manifest; `openvsx.eclipsecontent.org` serves the
     # `.vsix` BYTES. The install goes to the first, is redirected to the second, and Squid matches

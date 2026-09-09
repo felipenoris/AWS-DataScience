@@ -261,8 +261,10 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   cause now covers only the first (see above). `open-vsx.org` is on `proxy_allow_sandbox` (**21**,
   applied). **A missing plane name can fail WITHOUT a `403`** — the second instrument is
   `/awsds/sandbox/dns-firewall`; **the hub carries no DNS Firewall**, so an `ENOTFOUND` can only come from
-  a compute VPC. `--noproxy '*'` → `000` measured **DNS**, not the absent route. Measured on the plane:
-  **Python, Rust and `github.com` clone all work**; `uv`/Julia/R still owed. **Owed in step 8**: five
+  a compute VPC. `--noproxy '*'` → `000` measured **DNS**, not the absent route. Measured on the plane: **Python and
+  Rust work**; `uv`/Julia/R still owed. **`github.com` clone worked on 2026-09-08 and the name was
+  REMOVED 2026-09-09 by the user** — source control is how code leaves a governed environment, so an
+  interactive compute plane does not carry it; the BUILD plane, being `open`, still does. **Owed in step 8**: five
   allow-or-lose names, the unread asset host, and `dzd-<id>.sagemaker.us-west-2.on.aws`, DNS-blocked
   throughout and attributed to nothing.
 - **STAGE 6d STEP 7 RE-CUT 2026-09-07 — THE CONNECTION METHOD DECIDES THE PERIMETER.** 7.1: **nothing to
