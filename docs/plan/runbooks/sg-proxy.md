@@ -130,3 +130,33 @@ reproduces it.
 **Do not add names to the plane before this reading.** Ahead of it they turn an informative `403` into an
 uninformative `200`. If the extension host ignores the proxy the names fail with `ENOTFOUND` whether they
 are listed or not; if it honours it, the `403` is the measurement. The list is edited **after** step 8.6.
+
+### What it measured, 2026-09-08 — row four, inverted
+
+**The setting is honoured by everything except the gallery.** The restart gave the space a new address, so
+the reading is a paired before/after on one space with no overlap. Three names moved **from a DNS `BLOCK`
+to a Squid `403`** across it — `idetoolkits.amazonwebservices.com`, `api.github.com`,
+`raw.githubusercontent.com` — `pypi.org` moved from `BLOCK` to `200`, and the space made **98 proxied
+requests, 96 MiB**. **`open-vsx.org` alone did not move**: 24 `BLOCK`s from the new address and no
+appearance in the proxy log at all.
+
+So *"no proxy in the process"* no longer describes this component. The process has one; the gallery does
+not use it. Environment variables deliver the same fact by another route, so they are not expected to
+reach a client that ignores `http.proxy` either.
+
+### ⚠ It also breaks DataZone, and that is the exception list, not the proxy
+
+`datazone.us-west-2.api.aws` was refused **11 times**. The service has an interface endpoint in the VPC,
+and the endpoint answers for **two** names — `datazone.us-west-2.amazonaws.com` **and**
+`datazone.us-west-2.api.aws` — while the generated list carries only the first. `aws.sagemaker.us-west-2.studio`
+carries **four** and contributes one. Until Stage 6d step 8.8 fixes the generator, **add the missing names
+by hand** to `http.noProxy` when you set this up:
+
+```
+"datazone.us-west-2.api.aws",
+"studio.sagemaker.us-west-2.app.aws"
+```
+
+**A refused name that has a VPC endpoint is never an allow-list entry.** Allowing it makes it work while
+sending the call out through the hub as a public one, arriving without `aws:SourceVpce` — the symptom is
+identical and only one of the two repairs is correct.
