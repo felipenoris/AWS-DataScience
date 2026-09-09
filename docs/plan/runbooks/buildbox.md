@@ -122,10 +122,15 @@ cd /opt/awsds/images && sudo docker build -t awsds/base:local base && sudo docke
 
 `dev-env` is `FROM base`, so any change to `base` rebuilds `dev-env` from its first layer — Julia, R and
 Rust download again — and a rebuild writes a second ~17 GB image before the old one loses its tag: read §S
-first. The base image comes through the proxy: manifest from `public.ecr.aws`, blobs from the one
-CloudFront distribution its redirect names. Measured 2026-09-06: `docker pull` said only `Forbidden`; the
-proxy's access log named the host. If that happens again, read the new name out of the same log
-(`./aws/proxy.py --on-host`) — never widen to `.cloudfront.net`.
+first. The base image comes through the proxy: manifest from `public.ecr.aws`, blobs from the CloudFront
+distribution its redirect names.
+
+**Since 2026-09-08 neither name has to be listed** (D38 §6 amended, 6d step 9): this plane is `open`, and
+`d5l0dvt14r5h8.cloudfront.net` was deleted with the allow-list it was added to. **This build is what
+exercises that** — step 9.5. Measured 2026-09-06, and kept because it is what a future refusal will look
+like: `docker pull` said only `Forbidden` and named nothing; the proxy's access log named the host. A
+`Forbidden` here now would mean the **mode** did not reach the proxy, not that a name is missing — read
+`./aws/proxy.py --on-host` and check the plane renders as a bare `http_access allow`.
 
 **4. Test:**
 
@@ -143,11 +148,17 @@ there — look at the host. Read the first boot without SSM (`aws ec2 get-consol
 https a refusal is on the CONNECT and `curl` reads it as `000`; over http the 403 is the response and its
 body names Squid (Lesson 42).
 
-| `pypi.org` over https | `example.com` over http | meaning |
+| `pypi.org` over https | `10.31.0.1` over http | meaning |
 |---|---|---|
-| 200 | 403 | proxy, peering route and allow-list all work |
+| 200 | 403 | proxy, peering route and the private-destination deny all work |
 | 000 | 000 | the proxy is unreachable — stopped, or the peering route is missing |
-| 403 | 403 | the plane is empty or wrong |
+| 200 | **200** | **`deny to_private` is gone or has been moved below an allow** — the one failure in `squid.conf` that opens a path between spokes |
+
+**The second probe changed on 2026-09-08 and the old one is why.** It was `http://example.com/`, chosen
+as a name on no plane, and it read 403. This plane is **`open`** now (D38 §6 amended), so `example.com`
+returns **200** — the line would have printed `must be 403: 200` at every boot, a diagnostic announcing a
+failure that is the design, in the file somebody opens precisely when something *is* wrong. The private
+address is the better probe anyway: on an open plane, `deny to_private` **is** the perimeter.
 
 ### GitHub from the host
 
