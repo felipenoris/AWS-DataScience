@@ -507,6 +507,26 @@ class as `pypi.org`: the question is never *whether* code may be fetched, only *
   | `open-vsx.org` 200, **403 on another name** | that name absent | (a) works; **8.6 has arrived** — the asset host |
   | **nothing** | `open-vsx.org` BLOCK persists | (a) is not honoured by this server. Go to **(b)** |
   | `open-vsx.org` 200 | **`idetoolkits.amazonwebservices.com` BLOCK** | **the split, and the likeliest result**: VS Code's own request service proxied, the extension host's not. `http.proxySupport` is then the knob, and if it does not close it, (a) is a **gallery** fix and the toolkit still needs (b) or (c) |
+
+  **MEASURED 2026-09-08, AND THE SPLIT IS REAL BUT INVERTED — the prediction above is wrong in its
+  direction.** The setting is honoured by **everything except the gallery**. The restart gave the space a
+  new address, so the reading is a **paired before/after on one space**, 74 seconds apart and with no
+  overlap: `10.20.102.237` (before, 02:15:00-02:18:48Z) and `10.20.79.130` (after, 02:20:02-02:27:08Z).
+  Three names moved **from a DNS `BLOCK` to a Squid `403`** across that restart —
+  `idetoolkits.amazonwebservices.com`, `api.github.com`, `raw.githubusercontent.com` — and `pypi.org`
+  moved from `BLOCK` to `200`. After the restart the space made **98 proxied requests, 96 MiB**, including
+  52 MiB of AWS language servers. **`open-vsx.org` alone did not move**: 24 `BLOCK`s from the new address,
+  and it never appears in the proxy log at all.
+  - **So the earlier diagnosis no longer covers this component.** *"No proxy in the process"* was right on
+    2026-09-08 and is now false: the process has one, the extension host uses it, and the gallery does not.
+    That is a **more expensive** class of failure than the one it replaces, and it moves the burden of
+    proof — (b) and (c) deliver the same fact by another route, so neither is expected to reach a client
+    that ignores `http.proxy`. **Decision due 6's fallback (a pre-packaged `.vsix`) is now the live
+    option**, and 8.4's remaining work is to test that inference cheaply before paying for a lifecycle
+    configuration: the `remote-cli` on the space's `PATH` and the server binary under
+    `/opt/conda/share/sagemaker-code-editor/` are a `--install-extension` run whose environment a shell
+    controls.
+  - **The setting also caused a REGRESSION, and it is the exception list's, not the proxy's** — see 8.8.
 - **8.5 — [user] Install one extension**, and paste the log. The success criterion is a **`200` in
   `/awsds/prod/proxy` naming `open-vsx.org`** — not merely an extension that appears, which a cached
   `.vsix` also produces.
@@ -519,11 +539,63 @@ class as `pypi.org`: the question is never *whether* code may be fetched, only *
   that entry is a bare name, and Squid's `dstdomain` matches a bare name **exactly** — which is also why
   `codeload.github.com` was refused at 3.1. Each is a name to allow or a loss to record (decision due 6);
   add names, never namespaces.
-- **8.7 — [user] Settle the one string this reading could not explain.** The failing requests asked for
-  `targetPlatform=alpine-arm64`, while a JupyterLab space in the same estate fetched **`amd64`** Ubuntu
-  packages an hour earlier. `uname -m` and `/etc/os-release` from the Code Editor's terminal cost nothing,
-  and either make it a fact about the space or retire it as VS Code's own fallback. Carried as an
-  **unexplained string, not a finding** (Lesson 38).
+  **HALF-ARRIVED 2026-09-08, AND THE LIST IS LONGER AND OF TWO KINDS.** 8.4's setting turned the refusals
+  into `403`s, so the plane is now the thing being measured — for every component except the gallery,
+  which never reached the proxy and therefore contributes **no** `403`. Six names, and **the first
+  question about each is not whether to allow it**:
+
+  | name | `403`s | has a VPC endpoint? | so |
+  |---|---:|---|---|
+  | `datazone.us-west-2.api.aws` | 11 | **yes** | **an exception-list bug — 8.8**, never an allow-list entry |
+  | `idetoolkits.amazonwebservices.com` | 6 | no | allow, or record the loss |
+  | `raw.githubusercontent.com` | 6 | no | allow, or record the loss |
+  | `api.github.com` | 2 | no | allow, or record the loss |
+  | `sagemaker-unified-studio-mcp.us-west-2.api.aws` | 1 | no | allow, or record the loss — `.api.aws` **without** an endpoint |
+  | `ide-toolkits.app-composer.aws.dev` | 1 | no | allow, or record the loss — a fourth AWS domain family, `.aws.dev` |
+
+  **Sorting a `403` into the wrong column is how a data-perimeter hole gets opened by a convenience.** A
+  name with an endpoint belongs in the bypass list, where the call keeps `aws:SourceVpce`; putting it on
+  the allow-list instead makes it *work* while sending it out through the hub as a public call. The two
+  repairs are indistinguishable from the symptom, and only one of them is correct.
+  **The asset host is still unread** — the gallery never got far enough to redirect.
+- **8.8 — [Claude⚡] NEW 2026-09-08: the generated bypass list carries ONE name per endpoint, and an
+  endpoint answers for several.** 8.4's setting made an existing gap observable by sending the space's
+  proxy-aware clients at it: `datazone.us-west-2.api.aws` refused **11 times**, on a service that has an
+  interface endpoint **in this VPC**. Read from the endpoints themselves:
+
+  | endpoint | names it actually answers for | in the generated list |
+  |---|---|---|
+  | `com.amazonaws.us-west-2.datazone` | `datazone.us-west-2.amazonaws.com`, **`datazone.us-west-2.api.aws`** | the first only |
+  | `aws.sagemaker.us-west-2.studio` | `studio.us-west-2.sagemaker.aws`, **`*.studio.us-west-2.sagemaker.aws`**, **`studio.sagemaker.us-west-2.app.aws`**, **`*.studio.sagemaker.us-west-2.app.aws`** | the first only |
+
+  **The cause is in the module, and it is a data-source choice.** `no-proxy.tf` reads
+  `data.aws_vpc_endpoint_service.private_dns_name` — a **string**, the service's canonical name — while
+  the names AWS answers for live on the **endpoint**, in `dns_entry`, as a list. The file's own comments
+  already carry two hand-patches of exactly this shape (the gateway pair, then the `dualstack` spellings
+  added after a build host failed its first boot), so this is the third instance of one cause: **the
+  roster yields fewer names than the resolver serves** (Lesson 40's neighbour). `.api.aws` and `.app.aws`
+  make it a *family* problem rather than a spelling one, the same way `amazonwebservices.com` did at 8.2.
+  - **The wildcard entry is the one to think about before changing anything.**
+    `*.studio.us-west-2.sagemaker.aws` is the shape the space's **own** URL takes
+    (`<id>.studio.us-west-2.sagemaker.aws`), and the module has a **precondition forbidding `*` in the
+    output** — deliberately, because `NO_PROXY` wildcards work only as suffixes. `trimprefix` already
+    converts it to the bare name, which then covers the subtree in CPython/botocore/curl but **not** in
+    Go's `httpproxy`. Whether VS Code's `http.noProxy` reads a bare entry as a suffix is **unmeasured**,
+    and is why 8.4's list carries both spellings for the two internal zones.
+  - **Cost, so the decision is priced rather than assumed**: `terraform-modules/vpc-egress/` changes →
+    a new tag → the three `egress/` slices re-apply. Not a note; it wants its own apply authorization. It
+    is a **`[P]`-layer output** consumed by hand-set variables, so nothing breaks until the value is read
+    again — which also means nothing fixes itself.
+- **8.7 — DONE 2026-09-08: `alpine-arm64` is NOT the space, and the string is retired.** `uname -m` reads
+  **`x86_64`** and `/etc/os-release` reads **Ubuntu 24.04.4 LTS (Noble)** — glibc, not musl; `amd64`, not
+  `arm64`. So `targetPlatform=alpine-arm64` describes nothing in that container. It is **not** the cause of
+  anything either: the failure is `getaddrinfo`, and a platform string sits in the URL path, downstream of
+  resolution. Retired as VS Code's own detection, exactly as Lesson 38 prescribed for it. One coincidence
+  is recorded without being promoted to a finding: **`arm64` is the laptop's** architecture, and the
+  workbench runs in the laptop's browser (the stack traces are `browser/workbench.js`), so a client-side
+  probe is the likelier author than the server. Nothing here measured that, and nothing depends on it.
+  *The original step follows:* the failing requests asked for `targetPlatform=alpine-arm64` while a
+  JupyterLab space fetched `amd64` packages an hour earlier; `uname -m` and `/etc/os-release` settle it.
 
 ### 9. Take the build plane out of the allow-list business
 
