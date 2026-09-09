@@ -870,6 +870,23 @@ measurement, which is the shape worth naming before it is paid.
    log**, so "every `403` the proxy logs" is a floor on the list of names to decide, never the whole of
    it. **`conda` and CRAN stay open**, and 8.2 added **three more candidates**:
    `idetoolkits.amazonwebservices.com`, `api.github.com`, `raw.githubusercontent.com`.
+   **TAKEN IN FULL 2026-09-09 (the user), AND IT SUBTRACTS AS WELL AS ADDS — APPLIED THE SAME DAY.**
+   Allowed as one block, on the reasoning that each is the IDE working normally: the gallery's **two**
+   names (`open-vsx.org` + `openvsx.eclipsecontent.org`, 8.6) and the IDE's own three
+   (`idetoolkits.amazonwebservices.com`, `ide-toolkits.app-composer.aws.dev`,
+   `sagemaker-unified-studio-mcp.us-west-2.api.aws`) — none of which has a VPC endpoint, the test that
+   keeps an allow-list entry from being a bypass-list one.
+   **Refused: `api.github.com` and `raw.githubusercontent.com`. Removed: `github.com`, which was already
+   on the plane and WORKED** (3.1 clones a repository from a space, 2026-09-08).
+   **This is the first time this decision has taken something away, and the reason is the one the
+   decision was written to weigh**: a name is judged not by whether it works but by whether an
+   *interactive compute* plane should reach it, and source control is the path by which code — and
+   whatever a notebook has put beside it — leaves a governed environment. `objectives.md` carries
+   data-leakage protection as a requirement of its own; this is that requirement costing something.
+   **What it costs, recorded so nobody re-adds the name as a bug fix**: `clone`, `fetch` and `push` from
+   a Sandbox space now fail. **The build plane is unaffected** — `production-foundation` is `open`, so
+   the buildbox and the future pipeline still reach GitHub, which is where a build belongs.
+   **`conda` and CRAN remain open** — this decision's original two, still undecided.
 7. **Whether the build plane's deny list stays empty** (9.6). Empty by decision today; Stage 11 owns the
    policy that would fill it.
 
