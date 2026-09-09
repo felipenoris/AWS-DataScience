@@ -1122,7 +1122,20 @@ invoked by hand with variables a person exported. **Opening the space and clicki
 because the server supervisord starts has none of them. Step 8 has therefore produced a *proof* and not
 yet a *fix*, and saying otherwise would be the failure Lesson 5 names — an intention is not a control.
 
-**One question this sitting did not ask.** The registry returns `alpine-arm64` when no platform is named
-(8.7), and nothing here read **which build got installed**. If it is the `alpine-arm64` one, the extension
-is installed and broken — a failure that reads as success, which is the worse shape. The directory name
-under `--extensions-dir` settles it and costs nothing.
+**The platform build was read, and it is `linux-x64`** — `anthropic.claude-code-2.1.266-linux-x64`. So
+`code-editor-server` negotiates the platform correctly, and **8.7's second defect belongs to the browser
+workbench alone**: the `alpine-arm64` it asks for is the registry's default reaching a client that named
+none. The `.vsix` contingency is needed only where that path is in use.
+
+**And installing it properly produced a third face of the same defect.** Into the server's own
+`--extensions-dir`, the extension appears and the `Install` button goes — then **clicking it raises an
+error**. Not an update: `claude-code` is **absent** from the `Auto updating outdated extensions` list,
+yet the workbench fetches `Microsoft.VisualStudio.Code.Manifest` for the version **already installed**,
+fails, and prints `An unknown error occurred`. That is the extension's **detail page**, which is a gallery
+read. So the missing proxy costs three things rather than one: the startup auto-update, installing from
+the UI, and **viewing an extension that is already installed** — which widens what step 2's delivery is
+worth, since the fix is the same and the surface it repairs is larger than *"cannot install"*.
+
+**The extension itself runs** — confirmed from the command palette. The two are cleanly separated: the
+extension is fine, the IDE's marketplace surface is not, and the only broken action left in this space is
+the one that reads the gallery.
