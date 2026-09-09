@@ -623,9 +623,15 @@ class as `pypi.org`: the question is never *whether* code may be fetched, only *
   measured on both sides in one window. **But the thing that works is not the thing a user does**: this is
   `code-editor-server` invoked by hand with exported variables. Opening the space and clicking Install
   still fails, because the server supervisord starts has none of them. A proof, not yet a fix (Lesson 5).
-  **Unread: which platform build landed** — the registry returns `alpine-arm64` when none is named (8.7),
-  so an `alpine-arm64` build on this container would be installed and broken, a failure shaped like
-  success. The directory name under `--extensions-dir` settles it. *The original step follows:*
+  **The platform build was read, and it is `linux-x64`** — `anthropic.claude-code-2.1.266-linux-x64`.
+  **So 8.7's second defect belongs to the WEB path alone**: `code-editor-server` negotiates the platform
+  correctly, and the `alpine-arm64` the browser workbench asked for is the registry's default reaching a
+  client that named none. That narrows the defect from *the gallery* to *the browser workbench*, and it
+  means the `.vsix` contingency is needed only where that path is the one in use.
+  **And the extension is invisible in the IDE, which is this step's own doing**: the probe installed into
+  a scratch `--extensions-dir` so it would not modify the thing being measured, and the running server
+  reads `$PERSISTENT_VOLUME_EXTENSIONS_DIR`. Re-running against that directory, then reloading the window,
+  is what makes it appear — **per extension and per space, until the delivery lands**. *The original step follows:*
 - **8.5 — [user] Install one extension**, and paste the log. The success criterion is a **`200` in
   `/awsds/prod/proxy` naming `open-vsx.org`** — not merely an extension that appears, which a cached
   `.vsix` also produces.
