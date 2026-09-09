@@ -45,5 +45,88 @@ The durable form is in the house image, not in a shell: `/etc/apt/apt.conf.d/01p
 Measured 2026-09-08. A Code Editor space fails to update **AWS's own** `aws-toolkit-vscode` and
 `amazon-q-vscode` at every start, with `getaddrinfo ENOTFOUND open-vsx.org`. That is a **resolution**
 failure, so the VS Code server never had proxy variables — the allow-list was never consulted.
-`open-vsx.org` is now on the compute plane (committed, unapplied); the delivery mechanism is the open
-half, and both are Stage 6d **step 8**.
+`open-vsx.org` is on the compute plane since 2026-09-08 (applied, read back on the host). The delivery
+mechanism is the open half: Stage 6d **step 8.4**.
+
+### The setting, and it is a probe before it is a fix
+
+Per space, and it **dies with the space** — so this is how you learn whether the server honours a proxy
+at all, not how every space gets one. Command Palette → **Preferences: Open User Settings (JSON)** (the
+path is not written down here on purpose — the palette is stable, the path is not), then:
+
+```json
+{
+  "http.proxy": "http://proxy.awsds.internal:3128",
+  "http.proxySupport": "override",
+  "http.proxyStrictSSL": true,
+  "http.noProxy": [
+    "*.awsds-pages.internal",
+    "*.awsds.internal",
+    ".awsds-pages.internal",
+    ".awsds.internal",
+    "127.0.0.1",
+    "169.254.169.254",
+    "169.254.170.2",
+    "api.ecr.us-west-2.amazonaws.com",
+    "api.sagemaker.us-west-2.amazonaws.com",
+    "athena.us-west-2.amazonaws.com",
+    "datazone.us-west-2.amazonaws.com",
+    "dkr.ecr.us-west-2.amazonaws.com",
+    "dynamodb.dualstack.us-west-2.amazonaws.com",
+    "dynamodb.us-west-2.amazonaws.com",
+    "ec2.us-west-2.amazonaws.com",
+    "ec2messages.us-west-2.amazonaws.com",
+    "glue.us-west-2.amazonaws.com",
+    "kms.us-west-2.amazonaws.com",
+    "lakeformation.us-west-2.amazonaws.com",
+    "localhost",
+    "logs.us-west-2.amazonaws.com",
+    "runtime.sagemaker.us-west-2.amazonaws.com",
+    "s3.dualstack.us-west-2.amazonaws.com",
+    "s3.us-west-2.amazonaws.com",
+    "s3tables.us-west-2.amazonaws.com",
+    "secretsmanager.us-west-2.amazonaws.com",
+    "ssm.us-west-2.amazonaws.com",
+    "ssmmessages.us-west-2.amazonaws.com",
+    "sts.us-west-2.amazonaws.com",
+    "studio.us-west-2.sagemaker.aws"
+  ]
+}
+```
+
+Four things in there are decisions rather than detail:
+
+**`http.noProxy` is not optional.** `http.proxySupport` defaults to `override`, which patches the
+**extension host's** HTTP stack — so an extension's AWS SDK calls would leave by the proxy instead of the
+VPC endpoint: bytes paid for that the gateway endpoint carries free, and arrival **without
+`aws:SourceVpce`**, which is a deny wherever a policy conditions on it. The same hazard the buildbox
+carries, one layer up.
+
+**The list is generated, and the syntax is not the environment's.** It is `terraform output -raw no_proxy`
+on `sandbox/egress` — the value at the top of this file — never transcribed. But the env-var form
+suffix-matches on a **leading dot** (`.awsds.internal`) and VS Code's `http.noProxy` is documented with a
+**glob** (`*.awsds.internal`). They agree on all 26 exact names and differ on exactly the two wildcards
+([Lesson 53](../lessons.md) in its smallest form), so **both spellings are carried** — correct under
+either matcher, at a cost of two array entries. Regenerate it, do not copy it, whenever an endpoint moves.
+
+**`http.proxyStrictSSL` stays `true`.** It is the first knob anyone turns when a proxy misbehaves, and it
+would buy nothing here: Squid `CONNECT`-tunnels rather than terminating TLS, so the certificate the client
+validates is the origin's. A failure that `proxyStrictSSL: false` fixes would mean the proxy had started
+intercepting — a finding, not a setting.
+
+**Restart the space, do not reload the window.** The failure is on the startup auto-update path
+(`Auto updating outdated extensions`, before any user act), so only a stop/start from the portal
+reproduces it.
+
+### Reading the result — two logs, and the interesting outcome is not the clean one
+
+| `/awsds/prod/proxy` | `/awsds/sandbox/dns-firewall` | reading |
+|---|---|---|
+| `open-vsx.org` **200** | no `open-vsx.org` BLOCK | the setting is honoured, end to end |
+| `open-vsx.org` 200, **403 on another name** | that name absent | honoured; a **second name** is needed — the asset host (6d step 8.6) |
+| **nothing** | `open-vsx.org` BLOCK persists | not honoured by this server; the mechanism is a lifecycle configuration instead |
+| `open-vsx.org` 200 | **`idetoolkits.amazonwebservices.com` BLOCK** | **the split**: VS Code's own request service proxied, the extension host's not |
+
+**Do not add names to the plane before this reading.** Ahead of it they turn an informative `403` into an
+uninformative `200`. If the extension host ignores the proxy the names fail with `ENOTFOUND` whether they
+are listed or not; if it honours it, the `403` is the measurement. The list is edited **after** step 8.6.

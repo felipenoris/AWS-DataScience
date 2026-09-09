@@ -472,6 +472,41 @@ class as `pypi.org`: the question is never *whether* code may be fetched, only *
   gallery actually honours**: VS Code's request stack and its extension host do not read the environment
   the same way, and *"the variables are set"* is not the same claim as *"the gallery used them"*
   (Lesson 5).
+  **(a) IS THE ONE TO TRY, AND IT IS A PROBE BEFORE IT IS A FIX (designed 2026-09-08).** It is per space
+  and dies with the space, so it can never be the delivery mechanism — which is exactly why it goes
+  first: it isolates *does this server honour a proxy at all* from *how does every space get one*. The
+  procedure is [`sg-proxy.md`](../runbooks/sg-proxy.md); four things about it are decisions, not detail:
+  - **`http.noProxy` is not optional, and it is the same `aws:SourceVpce` hazard the buildbox carries.**
+    `http.proxySupport` defaults to `override`, which patches the **extension host's** HTTP stack — so an
+    extension's AWS SDK calls would leave by the proxy instead of the VPC endpoint: bytes paid for that
+    the gateway endpoint carries free, and arrival **without `aws:SourceVpce`**, which is a *deny* wherever
+    a policy conditions on it. A proxy setting with no exception list is a perimeter change disguised as
+    a convenience.
+  - **The exception list is the SAME generated value in a DIFFERENT syntax** — `terraform output -raw
+    no_proxy` on `sandbox/egress`, never transcribed. The env-var form suffix-matches on a **leading
+    dot** (`.awsds.internal`); VS Code's `http.noProxy` is documented with a **glob** (`*.awsds.internal`).
+    The two agree on all 26 exact names and differ only on the two wildcards — **Lesson 53 in its
+    smallest form**. Carry **both spellings** for those two, as the S3 names already are in the env-var
+    list: correct under either matcher, and it costs two array entries.
+  - **`http.proxyStrictSSL` stays `true`.** It is the first knob anyone turns when a proxy misbehaves, and
+    turning it here would buy nothing: Squid `CONNECT`-tunnels, it does not terminate TLS, so the
+    certificate the client validates is the origin's. A failure that `proxyStrictSSL: false` fixes would
+    mean the proxy started intercepting, which is a finding, not a setting.
+  - **Do NOT add 8.2's three names to the plane first.** Ahead of the measurement they would convert an
+    informative `403` into an uninformative `200` and destroy 8.6's signal. If the extension host ignores
+    the proxy the names fail with `ENOTFOUND` whether listed or not; if it honours it, the `403` is the
+    reading. The list is edited **after** 8.6, never before it.
+
+  **What the two instruments say, and the interesting outcome is not the clean one.** Restart the space —
+  the failure was at startup, on the auto-update path, so only a restart reproduces it — then read
+  `/awsds/prod/proxy` and `/awsds/sandbox/dns-firewall` for the same minutes:
+
+  | `/awsds/prod/proxy` | `/awsds/sandbox/dns-firewall` | reading |
+  |---|---|---|
+  | `open-vsx.org` **200** | no `open-vsx.org` BLOCK | **(a) answers 8.4.** Gallery and extension host both honour it |
+  | `open-vsx.org` 200, **403 on another name** | that name absent | (a) works; **8.6 has arrived** — the asset host |
+  | **nothing** | `open-vsx.org` BLOCK persists | (a) is not honoured by this server. Go to **(b)** |
+  | `open-vsx.org` 200 | **`idetoolkits.amazonwebservices.com` BLOCK** | **the split, and the likeliest result**: VS Code's own request service proxied, the extension host's not. `http.proxySupport` is then the knob, and if it does not close it, (a) is a **gallery** fix and the toolkit still needs (b) or (c) |
 - **8.5 — [user] Install one extension**, and paste the log. The success criterion is a **`200` in
   `/awsds/prod/proxy` naming `open-vsx.org`** — not merely an extension that appears, which a cached
   `.vsix` also produces.
