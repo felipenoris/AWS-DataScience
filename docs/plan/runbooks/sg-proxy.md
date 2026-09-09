@@ -178,3 +178,65 @@ by hand** to `http.noProxy` when you set this up:
 **A refused name that has a VPC endpoint is never an allow-list entry.** Allowing it makes it work while
 sending the call out through the hub as a public one, arriving without `aws:SourceVpce` — the symptom is
 identical and only one of the two repairs is correct.
+
+## Installing an extension in a Code Editor space — the working procedure
+
+**Use this whenever an extension is needed in a Code Editor space.** The `Install` button in the
+Extensions view does **not** work and will not until Stage 6d step 2 delivers the environment to the
+`codeeditorserver` supervisord program: the server the space starts has no proxy variables, and the
+gallery client honours `http_proxy`/`https_proxy` while **ignoring** the `http.proxy` setting. This
+procedure gives that one invocation the environment the server lacks.
+
+**It is per space and it dies with the space.** A rebuilt or recreated space needs it again.
+
+### 1. Install
+
+Replace `Anthropic.claude-code` with the extension id you want — the `publisher.name` shown on the
+extension's page.
+
+```bash
+export http_proxy=http://proxy.awsds.internal:3128 https_proxy=$http_proxy HTTP_PROXY=$http_proxy HTTPS_PROXY=$http_proxy && unset VSCODE_IPC_HOOK_CLI && /opt/conda/share/sagemaker-code-editor/bin/code-editor-server --install-extension Anthropic.claude-code --extensions-dir "$PERSISTENT_VOLUME_EXTENSIONS_DIR" --force ; echo "rc=$?"
+```
+
+Four parts of that line are load-bearing, and three of them were learned by getting them wrong first:
+
+| | why |
+|---|---|
+| the **six variables** | the gallery client reads the environment and ignores the `http.proxy` setting — two delivery routes that look like one fact and are read by different code |
+| `unset VSCODE_IPC_HOOK_CLI` | without it the `remote-cli` **forwards the call into the already-running server**, which has no proxy. The command would then measure that server's environment instead of this shell's, and fail exactly as the button does |
+| `--extensions-dir "$PERSISTENT_VOLUME_EXTENSIONS_DIR"` | the directory the running server actually reads. Installing into a scratch directory succeeds and the IDE never sees it |
+| `; echo "rc=$?"` — a semicolon, **not** `&&` | the exit code is wanted **especially** on failure, and `&&` would swallow it ([Lesson 46](../lessons.md)) |
+
+### 2. Reload
+
+**Developer: Reload Window.** The server scans the extensions directory at startup, so without the
+reload it does not see what appeared underneath it.
+
+### 3. What is fixed, and what is still broken
+
+`rc=0` and the extension appears with its `Install` button gone. **It runs** — measured 2026-09-09 from
+the command palette.
+
+**Clicking the extension's card still raises `An unknown error occurred`.** That is the extension's
+**detail page**, which is a gallery read, and it fails for the same reason the button does. It is not a
+sign that the install went wrong, and the extension works regardless — **test it by using it, never by
+opening its marketplace entry**, which is the one action guaranteed to fail. The same cause also produces
+the `getaddrinfo ENOTFOUND open-vsx.org` burst at every space start, from the auto-update check.
+
+Platform-specific extensions get the **right** build this way: the CLI negotiates the platform
+(`…-linux-x64`), while the browser workbench names none and the registry then answers with its own
+default — which is why a gallery URL in the log may read `targetPlatform=alpine-arm64` on an `x86_64`
+container.
+
+### 4. If it fails with a `403`
+
+The `403` is **Squid's**, and the refused name is in `/awsds/prod/proxy` within seconds:
+
+```bash
+aws logs filter-log-events --profile awsds-infra-prod --region us-west-2 --log-group-name /awsds/prod/proxy --start-time $(python3 -c "import time;print(int((time.time()-600)*1000))") --output json
+```
+
+An extension can pull from hosts nobody has listed. Adding a name is a decision, not a fix — Stage 6d
+decision due 6, and the first question about a refused name is **whether it has a VPC endpoint**: one
+that does belongs in `NO_PROXY`, never on the proxy's allow-list, or the call works while arriving
+without `aws:SourceVpce`.
