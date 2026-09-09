@@ -979,3 +979,150 @@ A sixth is in neither column. `dzd-<id>.sagemaker.us-west-2.on.aws` — the SMUS
 **DNS-blocked** from every space address in every window read today: not in the bypass list, not on the
 plane, and not resolvable. It has been failing throughout and nothing has attributed it. Recorded as an
 open name, not a finding.
+
+## 2026-09-09 — the sixth sitting: step 8 closes, and the compute plane loses source control
+
+*The user ran every probe and took the decision; Claude read the logs, the service model and the
+endpoints, and made the apply the user authorized. Two inferences Claude had committed earlier the same
+night are falsified below, both in the same direction.*
+
+### [user] The two probes — and the environment reaches what the setting could not
+
+The gallery client was invoked directly, outside the running server:
+
+```
+$ ... && unset VSCODE_IPC_HOOK_CLI && code-editor-server --install-extension Anthropic.claude-code ...
+Installing extensions...
+Server returned 403
+```
+
+**No `getaddrinfo`.** Every earlier gallery attempt died at resolution; this one connected and got an
+**HTTP** answer. So **the client honours `http_proxy`/`https_proxy` and ignores the `http.proxy`
+setting** — and the plan had said, four hours earlier, that environment variables *"deliver the same fact
+by another route, so neither is expected to reach a client that ignores `http.proxy`"*. That reasoning
+treated two delivery routes as one fact. **They are read by different code, and only the setting is
+ignored.** (b) and (c) went back to being the repair rather than being ruled out.
+
+The `unset` is not incidental: with `VSCODE_IPC_HOOK_CLI` set, the `remote-cli` forwards the call into
+the **already running** server and measures its environment instead of the shell's.
+
+### [Claude] The `403` is Squid's, and it names the last unread host
+
+The proxy log carries the whole install in sequence, from the space's own address:
+
+| `03:32:00Z` | `CONNECT open-vsx.org:443` | **200** — the API, on the plane |
+|---|---|---|
+| `03:32:00Z` | `CONNECT openvsx.eclipsecontent.org:443` | **403** — the download, on no plane |
+
+**`open-vsx.org` serves the API and `openvsx.eclipsecontent.org` serves the bytes.** That is the redirect
+shape 8.6 predicted from `public.ecr.aws` → CloudFront and `github.com` → `codeload`, and the reason
+8.1's single entry was never going to be enough: **it authorised the question and refused the answer.**
+The negative control arrived free in the same minutes — the **tunnel** plane, which is `open`, reached
+that host with a `200`, so the name was refused by this list and by nothing else.
+
+### [Claude] The delivery mechanism, read from the service model — and it is step 2's question
+
+Both candidates exist. `StudioLifecycleConfigAppType` includes **`CodeEditor`** (b), and
+**`CodeEditorAppImageConfig`** exists with `ContainerConfig.ContainerEnvironmentVariables`, symmetric to
+the JupyterLab shape 2.2 already plans to use (c).
+
+**But neither attaches to a space.** `SpaceSettings.CodeEditorAppSettings` is a *different shape* —
+`SpaceCodeEditorAppSettings`, carrying only `DefaultResourceSpec` and `AppLifecycleManagement`.
+`LifecycleConfigArns` and `CustomImages` live **only** on `UserSettings.CodeEditorAppSettings`: the domain
+default or a user profile, which in this estate the **`Tooling` blueprint** provisions.
+
+**So the delivery question and INT-17 are the same question**, and 8.4 is not independent of step 2 after
+all — it is blocked behind **2.4**, *does an attachment we make to a blueprint-provisioned domain survive
+reconciliation*. Two mechanisms, one risk, which removes the argument for (b) as a bridge: it buys no
+risk reduction over (c), only earliness.
+
+### [user] Decision due 6, taken in full — and it is the first time it has SUBTRACTED
+
+Allowed as one block, on the reasoning that each is the IDE working normally: the gallery's two names,
+plus `idetoolkits.amazonwebservices.com`, `ide-toolkits.app-composer.aws.dev` and
+`sagemaker-unified-studio-mcp.<region>.api.aws`. None has a VPC endpoint — the test that keeps an
+allow-list entry from being a bypass-list one.
+
+**Refused: `api.github.com` and `raw.githubusercontent.com`. Removed: `github.com`** — a name that was on
+the plane, and that **worked**: 3.1 cloned a repository from a space the day before.
+
+A name is judged not by whether it works but by whether an *interactive compute* plane should reach it,
+and source control is the path by which code — and whatever a notebook has put beside it — leaves a
+governed environment. `objectives.md` carries data-leakage protection as a requirement of its own; this
+is that requirement costing something. **What it costs is written into the `.tf` beside the gap it
+leaves**, so nobody re-adds the name as a bug fix: `clone`, `fetch` and `push` from a Sandbox space now
+fail. **The build plane is untouched** — `production-foundation` is `open`, so the buildbox and the future
+pipeline still reach GitHub, which is where a build belongs.
+
+Claude noted the measured consequence before writing, and the user confirmed. `conda` and CRAN, this
+decision's original two, remain undecided.
+
+### [Claude⚡] The apply, and two gates that disagreed about one name
+
+`0 to add, 1 to change`; parameter **6 → 7** at 01:24:39 -03:00; re-plan `No changes`; `DN-1`..`DN-4` all
+pass.
+
+**One name cost two rounds, and neither gate was wrong.** `check-tf-conventions` refused the literal
+`us-west-2` in `sagemaker-unified-studio-mcp.us-west-2.api.aws` — a hard-coded region is a portability
+defect that reads as data. Rewritten as `${data.aws_region.current.region}`, `dns-allowlist.py` then went
+**red**, because it resolves `${var.region}` and **reports** any other interpolation as unresolved rather
+than guessing. **Terraform says `No changes` for either form**, so the instrument was the only thing in
+the toolchain that could tell the two apart. The `.tf` now carries why the form is what it is.
+
+*A process note, recorded because the runbook warns about it two lines above where Claude was reading:*
+the apply's output was piped through `tail -8`, which cut off the sentence saying what happened; a second
+apply was then run on a spent plan and returned `Saved plan is stale`. The first apply had succeeded
+(Lesson 46, in its smallest form).
+
+### [user] `PX-3` green — and it is the check that can see a REMOVAL
+
+`sandbox_foundation allowlist 24` on the running host, **entry for entry**, the association having run at
+01:31:18 after the 01:24:39 write.
+
+**That verdict is what proves `github.com` is gone.** A drop-in lists what a plane allows and never what
+it stopped allowing, so a removal leaves nothing a reader could grep for — an absence is indistinguishable
+from a name that was never there. Only the parameter-against-host comparison can see one. It also resolves
+the interpolation end to end: the host carries the region expanded, which no reading of the `.tf` alone
+could confirm.
+
+The running file shows **three** planes against the parameter's five, exactly as 9.4 recorded: an empty
+`allowlist` plane renders as nothing.
+
+### [user] 8.5 closes, on its own criterion
+
+```
+Installing extension 'anthropic.claude-code'...
+Extension 'anthropic.claude-code' v2.1.266 was successfully installed.
+rc=0
+```
+
+And the access log is the criterion the step was actually written to require — a `200` naming the gallery,
+produced by the gallery client rather than by a `curl`:
+
+| host | | |
+|---|---|---|
+| `openvsx.eclipsecontent.org` | **200** ×3 | **96.32 MiB** — the `.vsix` itself |
+| `open-vsx.org` | **200** ×5 | the API |
+| `idetoolkits.amazonwebservices.com` | **200** ×6 | was `403` |
+| `sagemaker-unified-studio-mcp.us-west-2.api.aws` | **200** ×3 | was `403`; the interpolation, resolved |
+| `ide-toolkits.app-composer.aws.dev` | **200** ×2 | was `403` |
+| `api.github.com`, `raw.githubusercontent.com` | **403** ×15 | **refused by decision**, still asked at every start |
+
+Five names moved `403` → `200` and the two refused ones did not. That is the decision, measured on both
+sides, in one window.
+
+### [Claude] What step 8 closes and what it does not
+
+**Closed**: 8.1, 8.2, 8.3, 8.5, 8.6, 8.7. **8.4 has its answer but not its delivery** — the mechanism is
+an *environment*, and the only place to attach one is the blueprint-provisioned domain, so it waits on
+2.4. **8.8 is open**: the `no_proxy` generator defect.
+
+**And the thing that works is not the thing a user does.** Everything above is `code-editor-server`
+invoked by hand with variables a person exported. **Opening the space and clicking Install still fails**,
+because the server supervisord starts has none of them. Step 8 has therefore produced a *proof* and not
+yet a *fix*, and saying otherwise would be the failure Lesson 5 names — an intention is not a control.
+
+**One question this sitting did not ask.** The registry returns `alpine-arm64` when no platform is named
+(8.7), and nothing here read **which build got installed**. If it is the `alpine-arm64` one, the extension
+is installed and broken — a failure that reads as success, which is the worse shape. The directory name
+under `--extensions-dir` settles it and costs nothing.
