@@ -548,7 +548,17 @@ class as `pypi.org`: the question is never *whether* code may be fetched, only *
     call into the **running** server and measures nothing — with `--extensions-dir
     "$PERSISTENT_VOLUME_EXTENSIONS_DIR"` so a success survives. A fresh Node process with the variables
     separates *"ignores `http.proxy`"* from *"ignores every proxy"*, which is the whole question (b) and
-    (c) turn on. **(ii)** `curl` the `.vsix` through the proxy. `open-vsx.org` is on the plane, so this
+    (c) turn on. **ANSWERED 2026-09-09, AND THE INFERENCE ABOVE IS FALSIFIED: THE VARIABLES REACH THE
+    GALLERY CLIENT.** `code-editor-server --install-extension`, run with the six variables exported and
+    `VSCODE_IPC_HOOK_CLI` unset, printed its gallery configuration (`serviceUrl:
+    https://open-vsx.org/vscode/gallery`), reached `Installing extensions...`, and failed with **`Server
+    returned 403`** — an **HTTP answer**, not `getaddrinfo`. Every previous gallery attempt died at
+    resolution; this one connected. **So the client honours `http_proxy`/`https_proxy` and ignores
+    `http.proxy`**, which is the opposite of what this step inferred an hour earlier, and it puts (b) and
+    (c) back as the repair rather than ruling them out. What has to reach the **supervisord program**
+    `codeeditorserver` is the environment, not a setting — the shape the terminal reading already named.
+    **Still unattributed**: whether the `403` is Squid's or Open VSX's, which the proxy log decides and an
+    expired SSO session deferred. **(ii)** `curl` the `.vsix` through the proxy. `open-vsx.org` is on the plane, so this
     either downloads — and the fallback is proven — or it is refused **on the redirect target**, whose
     name the proxy log then hands over. Either outcome is a result; the second is the asset host 8.6 has
     been unable to read because the gallery never got far enough to be redirected.
