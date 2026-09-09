@@ -62,6 +62,24 @@
 # by hand and by production/buildbox's user-data through terraform_remote_state - so the whole cost
 # is that a first plan prints (known after apply). The data source is gone: keeping it beside this
 # would be two readings of one fact, which is Lesson 33 in a file that already argues against it.
+# THE SERVICE READING IS BACK, AND IT IS NO LONGER THE OUTPUT'S SOURCE (v0.11.1, 2026-09-09). It
+# survives for one job: the DNS Firewall coverage guard below has to be able to fail at PLAN time,
+# and `dns_entry` cannot do that on a VPC whose endpoints do not exist yet.
+#
+# MEASURED, not reasoned (staging/egress, torn down, 2026-09-09): with the guard reading `dns_entry`
+# alone, `terraform plan` on an empty state printed `20 to add` and `no_proxy = (known after apply)`
+# and RAISED NOTHING - the whole condition was unknown, so Terraform deferred it to apply. v0.11.0
+# had quietly turned 6c step 5.7's plan-time failure into a mid-apply one, which is Lesson 39 exactly:
+# the strict validator arrives one act late. This data source is what buys the act back.
+#
+# It is a plan-time READING, one call per declared service, free and requiring no endpoint to exist
+# (Lesson 38 - an identifier read out of prose is a claim, not a reading).
+data "aws_vpc_endpoint_service" "this" {
+  for_each = local.service_names
+
+  service_name = each.value
+}
+
 locals {
   # EVERY NAME, MINUS THE ENDPOINT-SPECIFIC ONES. `dns_entry` carries two kinds of name and only one
   # of them is a service name (measured 2026-09-09, sagemaker.studio, eight entries):
@@ -108,6 +126,15 @@ locals {
   #
   # `trimprefix` rather than `replace` on purpose: it touches only a LEADING `*`, so a name that
   # carried the sequence elsewhere would survive intact.
+  # THE DECLARED HALF, for the guard alone - NEVER for NO_PROXY. This is what the output read until
+  # 8.8, and shipping it into the bypass list is the defect this version removes: one name per
+  # service, where the resolver serves several.
+  declared_private_dns_names = [
+    for s, svc in data.aws_vpc_endpoint_service.this :
+    svc.private_dns_name
+    if svc.private_dns_name != ""
+  ]
+
   no_proxy_endpoint_entries = distinct(flatten([
     for name in local.endpoint_dns_names :
     startswith(name, "*.")
@@ -207,15 +234,36 @@ locals {
   # than by dropping the dots, because the dots are what makes the plan converge at all.
   dns_firewall_allow_normalised = [for e in var.dns_firewall_allow_domains : trimsuffix(e, ".")]
 
-  dns_firewall_uncovered = [
-    for raw in local.endpoint_dns_names : raw
-    if !anytrue([
-      for e in local.dns_firewall_allow_normalised :
-      startswith(e, "*.")
-      ? (trimprefix(raw, "*.") == trimprefix(e, "*.") || endswith(trimprefix(raw, "*."), ".${trimprefix(e, "*.")}"))
-      : (!startswith(raw, "*.") && raw == e)
-    ])
-  ]
+  # TWO READINGS OF ONE QUESTION, AND THEY DIFFER IN *WHEN* THEY CAN ANSWER, never in what they ask
+  # (v0.11.1, 2026-09-09). This is the arrangement the measurement above forced:
+  #
+  #   declared   the service's canonical name, from the data source. ONE per declared service, and
+  #              known at PLAN time whether or not the endpoint exists. Narrower, and always early.
+  #   served     every name the endpoint answers for, from `dns_entry`. Known at plan on a VPC that
+  #              is already up; (known after apply) on one being raised. Complete, and sometimes late.
+  #
+  # Neither replaces the other. Dropping `declared` puts the whole guard behind an apply on every new
+  # VPC - the defect this file has just been repaired for, in its own guard. Dropping `served` puts
+  # the 8.8 blind spot back. They are two preconditions on the resource below, each naming its own
+  # reading, so a failure says which half found it.
+  #
+  # ONE MATCHER, TWO INPUTS. The comparison is written once and mapped over both lists rather than
+  # copied - two copies of a rule stay identical until the day one of them is edited (Lesson 33, and
+  # Lesson 51 for the half that bites).
+  dns_firewall_uncovered = {
+    for reading, names in {
+      declared = local.declared_private_dns_names
+      served   = local.endpoint_dns_names
+      } : reading => [
+      for raw in names : raw
+      if !anytrue([
+        for e in local.dns_firewall_allow_normalised :
+        startswith(e, "*.")
+        ? (trimprefix(raw, "*.") == trimprefix(e, "*.") || endswith(trimprefix(raw, "*."), ".${trimprefix(e, "*.")}"))
+        : (!startswith(raw, "*.") && raw == e)
+      ])
+    ]
+  }
 }
 
 output "no_proxy_entries" {

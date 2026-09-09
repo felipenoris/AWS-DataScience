@@ -120,10 +120,23 @@ resource "aws_route53_resolver_firewall_domain_list" "allow" {
   # The list is computed in no-proxy.tf from the same reading NO_PROXY is built from; the whole
   # argument is there. In one line: a shrinking allow-list is exactly how a paid endpoint becomes
   # an NXDOMAIN, and NXDOMAIN reads as a network fault rather than as a policy decision.
+  # TWO PRECONDITIONS RATHER THAN ONE SINCE v0.11.1 (2026-09-09), because they answer at different
+  # times and only one of them can be trusted to answer EARLY. `declared` reads the service's
+  # canonical name from a data source and therefore fails in the PLAN of a VPC that does not exist
+  # yet; `served` reads every name the endpoints answer for and is (known after apply) until they do.
+  # Keeping only the second would put the whole guard behind an apply on every new spoke - Lesson 39,
+  # measured on staging/egress the day it was written. Each message names its reading, so a failure
+  # says which half found it and, by implication, whether a plan or an apply was the earliest it could
+  # have been found.
   lifecycle {
     precondition {
-      condition     = length(local.dns_firewall_uncovered) == 0
-      error_message = "dns_firewall_allow_domains does not cover ${join(", ", local.dns_firewall_uncovered)} - this VPC has an interface endpoint whose private DNS name the firewall would block. Add the family, or drop the endpoint."
+      condition     = length(local.dns_firewall_uncovered["declared"]) == 0
+      error_message = "dns_firewall_allow_domains does not cover ${join(", ", local.dns_firewall_uncovered["declared"])} - this VPC DECLARES an interface endpoint whose canonical private DNS name the firewall would block. Add the family, or drop the endpoint. (declared reading: the service's own name, checked at plan time.)"
+    }
+
+    precondition {
+      condition     = length(local.dns_firewall_uncovered["served"]) == 0
+      error_message = "dns_firewall_allow_domains does not cover ${join(", ", local.dns_firewall_uncovered["served"])} - an interface endpoint in this VPC ANSWERS for that name and the firewall would block it. Add the family, or drop the endpoint. (served reading: aws_vpc_endpoint.dns_entry, so this one can only be checked once the endpoints exist.)"
     }
   }
 }
