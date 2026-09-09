@@ -887,6 +887,16 @@ measurement, which is the shape worth naming before it is paid.
    a Sandbox space now fail. **The build plane is unaffected** — `production-foundation` is `open`, so
    the buildbox and the future pipeline still reach GitHub, which is where a build belongs.
    **`conda` and CRAN remain open** — this decision's original two, still undecided.
+   **READ BACK ON THE HOST 2026-09-09, `PX-3` green**: `sandbox_foundation allowlist 24`, *entry for
+   entry*, the association having run at 01:31:18 after the 01:24:39 write. **That verdict is what says
+   `github.com` is gone** — the drop-in lists what a plane allows and never what it stopped allowing, so
+   a removal leaves no trace a reader could grep for, and only the parameter-against-host comparison can
+   see one. It also resolves the interpolation end to end: the host carries the region expanded, which no
+   reading of the `.tf` alone could confirm.
+   **The running file shows THREE planes against the parameter's five**, as 9.4 recorded: an empty
+   `allowlist` plane renders as nothing, so `production-workloads` and `staging-foundation` are absent
+   from the file entirely. `PX-3` still reads *5 planes* because it compares against the parameter, which
+   is the source of truth for which planes exist.
 7. **Whether the build plane's deny list stays empty** (9.6). Empty by decision today; Stage 11 owns the
    policy that would fill it.
 
