@@ -297,9 +297,13 @@ channel**. `VPC-Networking` carries none: the proxy has to resolve.
 
 † **APPLIED 2026-09-08** (6d steps 8.3/9.3): `0 added, 1 changed, 0 destroyed` — the SSM parameter — and
 the re-plan reads `No changes`. `DN-1`, `DN-2`, `DN-3` and `DN-4` all pass, so **code and parameter agree,
-entry for entry**. The **running `squid.conf`** follows on the State Manager half-hour with no host
-replacement, and `./aws/proxy.py` `PX-3` is the only reading that speaks for it — it needs `--on-host`
-(`ssm:SendCommand`), so it is taken deliberately rather than in passing.
+entry for entry**. **Read back on the host the same evening**: the rendered drop-in carries `Rendered
+2026-09-09T00:01:22Z`, after the parameter write, its Sandbox list matches the parameter name for name,
+and the build plane renders as `acl src_production_foundation` plus a **bare** `http_access allow` — the
+tunnel's shape, sitting after `deny to_private` and the port guards and before the backstop. **An `open`
+plane emits no `dstdeny_` ACL, and an `allowlist` plane with an empty list emits nothing at all** — so
+the rendered file cannot distinguish *refuses everything* from *does not exist*, which is why `PX-3`
+compares it against the parameter rather than reading it alone.
 
 **Why the build plane is not an allow-list** (D38 §6, amended 2026-09-08): `VPC-SharedServices` holds the
 tooling that **builds** the restricted environment — the buildbox today, the GitLab runners from Stage 7 —
