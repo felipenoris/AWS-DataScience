@@ -337,15 +337,22 @@ locals {
     "static.rust-lang.org",
     # Source.
     "github.com",
-    # VSCode Extension Gallery. Obs.: THE ASSET HOST IS UNREAD, AND IT MAY BE A SECOND NAME.
-    # THE ASSET HOST IS UNREAD, AND IT MAY BE A SECOND NAME. `open-vsx.org` serves the query and
-    # the manifest; whether it serves the `.vsix` itself or redirects to storage is not something
-    # this repository has measured, and Squid matches the hostname the client REQUESTED - so a
-    # redirect is a new request with a new name. If an install gets past the manifest and fails on
-    # the download, the name is in `/awsds/prod/proxy` as a `403 TCP_DENIED`, the same way
-    # `public.ecr.aws`'s CloudFront distribution was read at 6c 5.8. Read it from the log and add
-    # it; do NOT widen to a namespace anyone can publish into.
+    # VSCode Extension Gallery - TWO NAMES, AND THE SECOND WAS MEASURED 2026-09-09 (6d 8.6).
+    # `open-vsx.org` serves the API and the manifest; `openvsx.eclipsecontent.org` serves the
+    # `.vsix` BYTES. The install goes to the first, is redirected to the second, and Squid matches
+    # the hostname the client REQUESTED - so a redirect is a new request with a new name, and the
+    # first entry alone authorised the question while refusing the answer. Read from
+    # `/awsds/prod/proxy` exactly as the comment above it predicted: `open-vsx.org:443 200
+    # TCP_TUNNEL` followed by `openvsx.eclipsecontent.org:443 403 TCP_DENIED`, the same shape as
+    # `public.ecr.aws`'s CloudFront distribution at 6c 5.8. The tunnel plane, which is `open`,
+    # reached the second host with a 200 in the same minutes - the negative control that says the
+    # name is refused by THIS LIST and by nothing else.
+    #
+    # BOTH ARE BARE NAMES ON PURPOSE. `dstdomain` matches a bare entry exactly, so neither covers a
+    # subdomain, and that is the property being bought: `eclipsecontent.org` is a namespace, and a
+    # namespace entry would authorise every host anyone puts under it.
     "open-vsx.org",
+    "openvsx.eclipsecontent.org",
   ]
 
   # (iii) THE BUILD PLANE'S DENY LIST, AND IT REPLACED AN ALLOW-LIST THAT WAS ANSWERING THE WRONG
