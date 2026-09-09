@@ -246,14 +246,22 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   client's detection (2026-09-09: Open VSX returns that variant when no platform is named and VS Code
   echoes it) — a **second, independent** defect that survives a working proxy, but only for
   **target-platform-specific** extensions. The space is `x86_64`/Ubuntu Noble.
-- **`NO_PROXY` CARRIES ONE NAME PER ENDPOINT, AND AWS ANSWERS FOR SEVERAL (2026-09-08, 6d 8.8).**
-  `no-proxy.tf` reads the **service's** `private_dns_name` (a string); the names live on the **endpoint's**
-  `dns_entry` (a list) — `datazone` answers for **two**, `studio` for **four**, two of them wildcards.
-  Third instance of one cause after the gateway pair and the `dualstack` spellings. **`.api.aws`,
-  `.app.aws` and `.aws.dev` are separate AWS domain families**, as `amazonwebservices.com` was.
-  **The first question about a `403` is not whether to allow it but whether it has an ENDPOINT** — the two
-  repairs are indistinguishable from the symptom, and allow-listing one that has an endpoint makes it work
-  while losing `aws:SourceVpce`. Fix = module + tag + three `egress/` re-applies; **unfixed**.
+- **8.8 FIXED AND APPLIED 2026-09-09 (`vpc-egress-v0.11.1`), AND IT WAS EIGHT TIMES ITS RECORDED SIZE.**
+  `no-proxy.tf` now reads the **endpoint's** `dns_entry` (a list) instead of the **service's**
+  `private_dns_name` (a string): **16 of 18** Sandbox endpoints answered for a name the list lacked, so
+  `sandbox/egress` went **28 → 50 entries** on `0 to add, 1 to change`, re-plan `No changes`. **The `403`s
+  were loud only by luck of the family** — `streaming-logs.<region>.amazonaws.com` **is** on the plane, so
+  it was answered `200` and left as a **public** call with neither `aws:SourceVpc` nor `aws:SourceVpce`.
+  **The GUARD had the same blind spot**: pointing the new reading at the DNS Firewall coverage
+  precondition named two endpoints the estate pays for hourly that were **NXDOMAIN**, so `app.aws` and
+  `on.aws` joined both compute allow-lists (**14 domains live**) — which **attributes 8.6's orphan**,
+  `dzd-<id>.…on.aws`, blocked by family. **`v0.11.0` is tagged and was never deployed**: `dns_entry` is a
+  resource attribute, so on a torn-down VPC it is `(known after apply)` and the precondition silently
+  moved from plan to apply (**Lesson 59**); v0.11.1 splits it into `declared` and `served`. Both halves
+  carry a negative control. **Still `.api.aws`/`.app.aws`/`.on.aws`/`.aws.dev` are separate AWS families**,
+  and **the first question about a `403` is whether the name has an ENDPOINT**, never whether to allow it.
+  **Not closed**: the other three `egress/` slices are `[E]` and down — they take v0.11.1 on their next
+  `make up`; the in-space proof is the user's.
 - **6d STEP 3 RUN, STEP 8 MEASURED, STEP 9 DONE (2026-09-08).** The proxy works from a space with the
   variables exported by hand. **Two components failed for ONE cause — no proxy IN THE PROCESS**: `sudo`
   strips the variables (`apt` needs `-o Acquire::http::Proxy`, or the image's own file) and a **Code
@@ -438,6 +446,8 @@ the reasoning that makes it *usable* is in the file. Recognising one is the sign
     of it. Open the requirement before implementing the step that restates it.**
 58. **Data and code can share a delivery path and have different costs — and the one that reports
     SUCCESS is the cheap one.**
+59. **Changing WHERE a value is read from can change WHEN it is knowable — and every guard that
+    reads it moves with it, silently.**
 
 **[`lessons.md`](docs/plan/lessons.md) also carries a second list — "What AWS does that its
 documentation does not say"** — platform behaviours that cost a measurement to learn, each with its

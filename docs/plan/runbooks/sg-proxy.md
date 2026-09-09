@@ -107,9 +107,16 @@ carries, one layer up.
 **The list is generated, and the syntax is not the environment's.** It is `terraform output -raw no_proxy`
 on `sandbox/egress` — the value at the top of this file — never transcribed. But the env-var form
 suffix-matches on a **leading dot** (`.awsds.internal`) and VS Code's `http.noProxy` is documented with a
-**glob** (`*.awsds.internal`). They agree on all 26 exact names and differ on exactly the two wildcards
-([Lesson 53](../lessons.md) in its smallest form), so **both spellings are carried** — correct under
-either matcher, at a cost of two array entries. Regenerate it, do not copy it, whenever an endpoint moves.
+**glob** (`*.awsds.internal`) ([Lesson 53](../lessons.md) in its smallest form), so **both spellings are
+carried** for the entries where the two matchers could disagree — correct under either, at a cost of a
+few array entries. Regenerate it, do not copy it, whenever an endpoint moves.
+
+**THE HAND-PATCH IS RETIRED (2026-09-09).** Adding `datazone.us-west-2.api.aws` and
+`studio.sagemaker.us-west-2.app.aws` to `http.noProxy` by hand was the right repair on 2026-09-08 and is
+now the wrong one: `vpc-egress-v0.11.1` generates them. The list is **50 entries** where it was 28,
+because the generator used to read the *service's* one canonical name and now reads every name the
+*endpoint* answers for (6d step 8.8). Anyone still carrying the two by hand is carrying them twice, and
+will not notice when the generated list next changes underneath the copy. **Regenerate.**
 
 **`http.proxyStrictSSL` stays `true`.** It is the first knob anyone turns when a proxy misbehaves, and it
 would buy nothing here: Squid `CONNECT`-tunnels rather than terminating TLS, so the certificate the client

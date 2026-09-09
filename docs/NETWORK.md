@@ -167,11 +167,28 @@ directly has nowhere to go — which is why `NO_PROXY` is **generated per VPC** 
 endpoint list (`vpc-egress`'s output) rather than written: a blanket suffix would send a service with
 no endpoint into a timeout with no message, where the proxy gives a **403 naming the host**.
 
-**Eight of the twenty-nine service names are not derivable from their token** — `ecr.dkr` answers on
-`*.dkr.ecr.<region>.amazonaws.com`, `emr-dashboard` on `*.emrappui-prod.…` — so the list is **read**
-from `describe-vpc-endpoint-services` at plan time. And **S3 and DynamoDB are hand-named in it**,
-because a *gateway* endpoint has no private DNS at all: omit them and every S3 call goes to Squid,
-leaves publicly, and arrives carrying neither `aws:SourceVpc` nor `aws:SourceVpce`.
+**The names come from the ENDPOINTS, not from the service roster** (`vpc-egress-v0.11.1`, 2026-09-09).
+A service has one canonical private DNS name; an endpoint answers for **several**, and the bypass list
+has to carry all of them or the ones it misses stop being bypassed. Measured in Sandbox: **16 of 18**
+interface endpoints answer for at least one name beyond the canonical one, and the list went from **28
+entries to 50** the day it was repaired — `datazone.<region>.api.aws` beside
+`datazone.<region>.amazonaws.com`, **four** names for `sagemaker.studio`, and
+`streaming-logs.<region>.amazonaws.com`, which is a different *label* that no suffix rule covers.
+
+**A missing entry fails two different ways and only one of them is visible**, which is why the count
+above matters more than it looks:
+
+| the missing name's family | what Squid does | what arrives |
+|---|---|---|
+| `.api.aws`, `.app.aws`, `.on.aws` | on no compute plane — **403** | nothing; the tool reports a refusal naming the host |
+| `.amazonaws.com` | **on** the plane — **200** | a **public** call out through the hub's IGW, carrying neither `aws:SourceVpc` nor `aws:SourceVpce` |
+
+That second row is the same fail-open **S3 and DynamoDB are hand-named against**: a *gateway* endpoint
+has no private DNS at all, so no reading can produce them, and omitting them sends every S3 call to
+Squid. **Eight of the twenty-nine service names are also not derivable from their token** — `ecr.dkr`
+answers on `*.dkr.ecr.<region>.amazonaws.com`, `emr-dashboard` on `*.emrappui-prod.…` — which is why
+none of this is written by hand. A **wildcard** name is emitted in **both** spellings, bare and
+dot-prefixed, because the clients disagree about which one covers a subtree.
 
 ---
 
@@ -281,17 +298,26 @@ Access prompt** — the two surfaces that demanded the grant on 2026-08-26. That
 repair: a private zone answers for its whole subtree, so a client resolving through a VPC full of
 endpoints inherited every one of their names (Lessons 40-43).
 
-**The DNS Firewall's job changed.** It is in the two **compute** VPCs only, its allow-list is ten
-entries — AWS's own namespaces and this estate's private zones — and its purpose is no longer
-filtering the internet (the proxy does that) but **closing the recursive resolver as an exfiltration
-channel**. `VPC-Networking` carries none: the proxy has to resolve.
+**The DNS Firewall's job changed.** It is in the two **compute** VPCs only, its allow-list is
+**fourteen** entries — AWS's own namespaces and this estate's private zones — and its purpose is no
+longer filtering the internet (the proxy does that) but **closing the recursive resolver as an
+exfiltration channel**. `VPC-Networking` carries none: the proxy has to resolve.
+
+**It was ten until 2026-09-09**, when the same reading that repaired `NO_PROXY` was pointed at this
+list and found two endpoints both compute VPCs pay for hourly answering on families it did not carry:
+`dkr-ecr.<region>.on.aws` (`ecr.dkr`) and `studio.sagemaker.<region>.app.aws` (`sagemaker.studio`).
+Both were NXDOMAIN. `app.aws` and `on.aws` joined the list with their apexes, on the argument that put
+`sagemaker.aws` there. **One consequence is worth knowing rather than rediscovering:** `on.aws` also
+makes `dzd-<id>.sagemaker.<region>.on.aws` — the Unified Studio domain's own URL — resolvable, which is
+the DNS block 6d step 8.6 could attribute to nothing. **Resolving is not reaching**: that name has no
+endpoint, so it leaves as a proxy request and comes back a 403 naming the host.
 
 **The proxy's filters are the estate's egress policy, and they are two KINDS of list:**
 
 | plane | source | mode | entries |
 |---|---|---|---|
 | `tunnel` | `10.90.0.0/24` | **`open`** — everything permitted, everything logged | 0 (a *deny* list, empty by decision) |
-| `sandbox-foundation` | `10.20.0.0/16` | `allowlist` — SageMaker's | 21 † |
+| `sandbox-foundation` | `10.20.0.0/16` | `allowlist` — SageMaker's | 24 † |
 | `production-foundation` | `10.30.0.0/16` | **`open`** — the build plane † | 0 (a *deny* list, empty by decision) |
 | `production-workloads` · `staging-foundation` | `10.32` · `10.50` | `allowlist` | 0 — **refuse everything**, by decision |
 
