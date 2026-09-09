@@ -234,8 +234,10 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   in the process"* is **false for that one component**: env vars (a lifecycle config, or
   `ContainerEnvironmentVariables`) deliver the same fact by another route and are not expected to reach a
   client that ignores the setting — the pre-packaged `.vsix` is the live option. The terminal **is** the
-  server's environment (`SUPERVISOR_PROCESS_NAME=codeeditorserver`). `alpine-arm64` **retired**: the space
-  is `x86_64`/Ubuntu Noble; `arm64` is the laptop's, and the workbench runs in the laptop's browser.
+  server's environment (`SUPERVISOR_PROCESS_NAME=codeeditorserver`). **`alpine-arm64` is the REGISTRY's**, not either
+  client's detection (2026-09-09: Open VSX returns that variant when no platform is named and VS Code
+  echoes it) — a **second, independent** defect that survives a working proxy, but only for
+  **target-platform-specific** extensions. The space is `x86_64`/Ubuntu Noble.
 - **`NO_PROXY` CARRIES ONE NAME PER ENDPOINT, AND AWS ANSWERS FOR SEVERAL (2026-09-08, 6d 8.8).**
   `no-proxy.tf` reads the **service's** `private_dns_name` (a string); the names live on the **endpoint's**
   `dns_entry` (a list) — `datazone` answers for **two**, `studio` for **four**, two of them wildcards.
