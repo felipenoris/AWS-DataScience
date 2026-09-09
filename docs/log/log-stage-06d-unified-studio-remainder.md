@@ -860,3 +860,122 @@ looked at, on the day the plane was first exercised, and left empty deliberately
 The user brought `production/egress` down after the session. Verified: `production/egress` **down**,
 `production/buildbox` **down**; estate burn back to **USD 0.2040/h** from the 0.3340/h the two doors cost
 while a build is running. `production/vpn` and `production/proxy` remain up, as they are meant to be.
+
+## 2026-09-08 — the fifth sitting: step 8 measured, and the setting works everywhere except the gallery
+
+*The user applied the setting, restarted the space twice and pasted three logs. Claude read
+`/awsds/prod/proxy`, `/awsds/sandbox/dns-firewall` and the VPC endpoints afterwards. Two of the three
+readings below are **paired before/after comparisons the user did not set out to produce**: a space
+restart gives the container a new address, so each restart cut the log into two non-overlapping windows
+attributable by source.*
+
+### [user] 8.7 — the terminal, and the unexplained string retires
+
+```
+sagemaker-user@default:~$ uname -m
+x86_64
+sagemaker-user@default:~$ cat /etc/os-release
+PRETTY_NAME="Ubuntu 24.04.4 LTS"
+VERSION_CODENAME=noble
+ID=ubuntu
+```
+
+`x86_64`, glibc, Noble. **`targetPlatform=alpine-arm64` describes nothing in that container** — not the
+architecture, not the libc, not the distribution. It is also not the cause of anything: the failure is
+`getaddrinfo`, and a platform string sits in the URL *path*, downstream of resolution. Retired as VS
+Code's own detection, which is what [Lesson 38](../plan/lessons.md) prescribed when it was written down
+as a string rather than a finding. One coincidence recorded **without** promotion: `arm64` is the
+**laptop's** architecture and the workbench runs in the laptop's browser (every stack trace is
+`browser/workbench.js`), so a client-side probe is the likelier author than the server. Nothing measured
+it; nothing depends on it.
+
+### [user] The environment inside the Code Editor, which answers a question 2.2 had left open
+
+The terminal carries **no proxy variable of any kind** — and three lines say why that is a fact about the
+*server*, not about the shell:
+
+```
+declare -x SUPERVISOR_ENABLED="1"
+declare -x SUPERVISOR_PROCESS_NAME="codeeditorserver"
+declare -x SAGEMAKER_APP_TYPE="CodeEditor"
+```
+
+The terminal is a child of the code-server process, which is a **supervisord program**. So the terminal's
+environment *is* the server's environment, and reading one reads the other. That is the mechanism behind
+2.2's note that a Code Editor app is not covered by a JupyterLab image configuration, and it is also why
+candidate (b) has a shape: whatever writes those variables has to reach a supervisord program, not a
+login shell.
+
+### [Claude] 8.4 — the split is real, and it is the inverse of the prediction
+
+The stage predicted *"gallery proxied, extension host not"*. **It is the extension host proxied and the
+gallery not.**
+
+The first restart cut the log cleanly: `10.20.102.237` ran 02:15:00→02:18:48Z and `10.20.79.130` ran
+02:20:02→02:27:08Z, with **no overlap** — the same space, 74 seconds apart, before and after.
+
+| name | before the restart | after |
+|---|---|---|
+| `idetoolkits.amazonwebservices.com` | DNS **BLOCK** ×20 | Squid **403** ×6 |
+| `api.github.com` | DNS **BLOCK** ×12 | Squid **403** ×2 |
+| `raw.githubusercontent.com` | DNS **BLOCK** ×12 | Squid **403** ×6 |
+| `pypi.org` | DNS **BLOCK** ×8 | Squid **200** ×5 |
+| **`open-vsx.org`** | DNS **BLOCK** | **DNS BLOCK ×24 — it did not move** |
+
+After the restart the space made **98 proxied requests carrying 96 MiB**, including 52 MiB of AWS
+language servers from `us-east-1`. `open-vsx.org` **never appears in the proxy log at all**, in any
+window, from any address.
+
+**So the diagnosis of the second sitting no longer covers this component.** *"No proxy in the process,
+never a refused one"* was right at 12:21 and is false by 23:22: the process has one, the extension host
+uses it, and the gallery does not. That is a **more expensive** class of failure than the one it replaces
+— a component that ignores a configured proxy is not repaired by configuring the proxy somewhere else —
+and it shifts the burden of proof onto (b) and (c), which deliver the same fact by another route.
+
+### [user] The second restart, and it confirms the fix by confirming its absence
+
+The user added the two names by hand and restarted again. `datazone.us-west-2.api.aws` **disappeared from
+the proxy log entirely** and appears only in the resolver's, answered normally. The five remaining
+refusals are unchanged in name and roughly in count, from both post-fix addresses. **A hand-patch that
+removes exactly one row and leaves the other five is the cause confirmed**, not merely a symptom
+relieved — which is what promotes 8.8 from a hypothesis about a data source to a defect with a
+reproduction.
+
+`open-vsx.org` was blocked 12 more times in the same window. The gallery result is now measured twice,
+across two restarts and three container addresses.
+
+### [Claude] 8.8 — one name per endpoint, where AWS answers for several
+
+`datazone.us-west-2.api.aws` was refused **11 times** on a service that has an interface endpoint **in
+this VPC**. Read from the endpoints rather than from the module's assumption:
+
+| endpoint | names it answers for | in the generated list |
+|---|---|---|
+| `com.amazonaws.us-west-2.datazone` | `datazone.us-west-2.amazonaws.com`, **`datazone.us-west-2.api.aws`** | the first only |
+| `aws.sagemaker.us-west-2.studio` | four, **two of them wildcards** | the first only |
+
+`no-proxy.tf` reads `data.aws_vpc_endpoint_service.private_dns_name` — a **string**, the service's
+canonical name — while the names AWS actually answers for live on the **endpoint**, in `dns_entry`, as a
+list. The file already carries two hand-patches of exactly this shape: the gateway pair (a gateway
+endpoint has no private DNS at all) and the `dualstack` spellings, added on 2026-09-06 after a build host
+failed its first boot. **This is the third instance of one cause — the roster yields fewer names than the
+resolver serves** — and `.api.aws` and `.app.aws` make it a *domain-family* problem rather than a
+spelling one, exactly as `amazonwebservices.com` was at 8.2.
+
+**And the two repairs for a `403` are indistinguishable from the symptom.** A name with an endpoint
+belongs in the bypass list, where the call keeps `aws:SourceVpce`; putting it on the proxy's allow-list
+instead makes it *work* while sending it out through the hub as a public call. The first thing 8.6 asks
+of a refused name is therefore not *may this be fetched* but **does this have an endpoint** — a question
+the plane's list cannot answer and the endpoint roster can.
+
+### [Claude] What step 8 now owes, and one name that fits no category yet
+
+Five names are genuine allow-or-lose decisions (8.6): `idetoolkits.amazonwebservices.com`,
+`raw.githubusercontent.com`, `api.github.com`, `sagemaker-unified-studio-mcp.us-west-2.api.aws`,
+`ide-toolkits.app-composer.aws.dev`. **The asset host is still unread** — the gallery never reached a
+redirect.
+
+A sixth is in neither column. `dzd-<id>.sagemaker.us-west-2.on.aws` — the SMUS domain's own URL — is
+**DNS-blocked** from every space address in every window read today: not in the bypass list, not on the
+plane, and not resolvable. It has been failing throughout and nothing has attributed it. Recorded as an
+open name, not a finding.
