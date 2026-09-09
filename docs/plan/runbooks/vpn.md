@@ -685,10 +685,10 @@ all` and is refused **by name**. An empty **deny**-list emits a bare `http_acces
 everything passes. `./aws/dns-allowlist.py` `DN-4` is the check that a compute plane never becomes
 `open`.
 
-† **Both rows are code and not the running host until `production/networking/` is applied** (2026-09-08,
-6d steps 8.1 and 9): `open-vsx.org` on the Sandbox plane, and the build plane's own allow-list deleted
-outright — D38 §6 amended, because a build host's control is the reviewed Dockerfile rather than a hostname
-list. `DN-3` compares code against the parameter, `PX-3` the parameter against the running `squid.conf`.
+† **Applied 2026-09-08** (6d steps 8.3/9.3): `open-vsx.org` onto the Sandbox plane, and the build plane's
+allow-list deleted outright — D38 §6 amended, because a build host's control is the reviewed Dockerfile
+rather than a hostname list. `DN-3` (code → parameter) passes; the running `squid.conf` follows on the
+State Manager half-hour, and `PX-3` is what speaks for it.
 
 **SageMaker's list, in full** — the twenty-one names a notebook may reach, which is D5's *"short list"*
 under [D38](../decisions/D38-single-egress-hub.md):
