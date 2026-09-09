@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Status** | **IN PROGRESS — STEPS 8 AND 9 OPENED, 3.2 AND 3.3 DONE, 3.1 HALF TAKEN, 2026-09-08** ([log](../../log/log-stage-06d-unified-studio-remainder.md)): the first working session under the proxy, from a JupyterLab terminal with the variables exported **by hand** (2.2 is still unapplied) and on the **stock** image. `NO_PROXY` held on two channels that do not share a failure mode (CloudTrail's `vpcEndpointId`, and the access log's *absence* of every AWS name); the allow-list enforced (`pypi.org` 200, `example.com` 403); **`conda` and CRAN refused by name — decision due 6's evidence**; the `codeload.github.com` redirect refused on a third source plane. **Owed**: `uv`, Julia and R, in the house image. **And one check was corrected by the user's own first command**: `--noproxy '*'` returning `000` measured a **DNS** refusal, not the absent route — the routing half stays 6c 6.3's probe (Lesson 42). **A second sitting the same day added step 8 and one
+| **Status** | **IN PROGRESS — STEP 9 APPLIED, STEP 8 OPEN, 3.2 AND 3.3 DONE, 3.1 HALF TAKEN, 2026-09-08** ([log](../../log/log-stage-06d-unified-studio-remainder.md)): the first working session under the proxy, from a JupyterLab terminal with the variables exported **by hand** (2.2 is still unapplied) and on the **stock** image. `NO_PROXY` held on two channels that do not share a failure mode (CloudTrail's `vpcEndpointId`, and the access log's *absence* of every AWS name); the allow-list enforced (`pypi.org` 200, `example.com` 403); **`conda` and CRAN refused by name — decision due 6's evidence**; the `codeload.github.com` redirect refused on a third source plane. **Owed**: `uv`, Julia and R, in the house image. **And one check was corrected by the user's own first command**: `--noproxy '*'` returning `000` measured a **DNS** refusal, not the absent route — the routing half stays 6c 6.3's probe (Lesson 42). **A second sitting the same day added step 8 and one
 plane entry**: `sudo apt update` proved the variables stop at **`sudo`** (`env_reset`), so 2.2 owes two
 image-side files beside its `ContainerEnvironmentVariables`; and a **Code Editor** space failed to update
 **AWS's own two extensions** at startup with four `getaddrinfo ENOTFOUND open-vsx.org` — a **resolution**
@@ -16,7 +16,9 @@ the plane's `github.com` is a **bare** name. And **D38 §6 was amended by the us
 is **`open`**, not an allow-list — a build host's control is the reviewed Dockerfile, not a hostname list —
 so `proxy_allow_shared` and its CloudFront entry are deleted, a plane's mode is now decided by **which of two
 maps** it is in, and `DN-4` was rewritten to *"no plane is open except the ones a decision names"*.
-`terraform plan`: **`0 to add, 1 to change`**. *Earlier:* **3.6, 7.1 and 7.2 taken 2026-09-07**: the two portal surfaces read, the remote-IDE endpoint set derived (**nothing to add on either side**), and the `StartSession` pair found attached to a principal that never makes the call — so **the connection method decides the perimeter** (decision due 4), and step 7 was re-cut around that the same day. **Created 2026-09-05** by splitting the old Stage 6, revised the same day into the action-checklist format. It holds only what had not run, re-cut to the estate the split produces: **one** Interactive account (Sandbox), no NAT anywhere, every internet call through the institutional proxy. Two items the old stage carried are gone rather than pending — the design A / design B **comparison** (6c settles it by construction) and the derived-zone decision (dissolved 2026-08-26). **Step 7 added 2026-09-06**, from a reading of the plan against [`objectives.md`](../objectives.md): the local-VS-Code clause had its **policy** half applied at 6a step 3.2 and no step anywhere that opens the connection — so the endpoints it needs under design B were never derived (AWS's own two pages sit in `REFERENCES.md`, consumed by nothing), the two denies were never exercised, and **nothing had ever checked that the principal carrying them is the one that calls `sagemaker:StartSession`** |
+`terraform plan`: `0 to add, 1 to change` — **applied the same day**, re-plan `No changes`, `DN-1`..`DN-4`
+all pass. **Owed**: `PX-3` (the running `squid.conf`, after the State Manager half-hour) and 9.5, one full
+build and push across the plane whose CloudFront entry this deleted. *Earlier:* **3.6, 7.1 and 7.2 taken 2026-09-07**: the two portal surfaces read, the remote-IDE endpoint set derived (**nothing to add on either side**), and the `StartSession` pair found attached to a principal that never makes the call — so **the connection method decides the perimeter** (decision due 4), and step 7 was re-cut around that the same day. **Created 2026-09-05** by splitting the old Stage 6, revised the same day into the action-checklist format. It holds only what had not run, re-cut to the estate the split produces: **one** Interactive account (Sandbox), no NAT anywhere, every internet call through the institutional proxy. Two items the old stage carried are gone rather than pending — the design A / design B **comparison** (6c settles it by construction) and the derived-zone decision (dissolved 2026-08-26). **Step 7 added 2026-09-06**, from a reading of the plan against [`objectives.md`](../objectives.md): the local-VS-Code clause had its **policy** half applied at 6a step 3.2 and no step anywhere that opens the connection — so the endpoints it needs under design B were never derived (AWS's own two pages sit in `REFERENCES.md`, consumed by nothing), the two denies were never exercised, and **nothing had ever checked that the principal carrying them is the one that calls `sagemaker:StartSession`** |
 | **Prerequisites** | **[6c](stage-06c-networking-hub.md) pass 5** — what a Studio app can reach changes there, so any measurement below taken earlier would have to be retaken. [6b](stage-06b-development-becomes-staging.md) only in that its instrument re-scoping removes the second Interactive account from the readings |
 | **Consumes** | [D5](../decisions/D05-sagemaker-egress.md), [D11](../decisions/D11-lab-lifecycle.md), [D13](../decisions/D13-lake-formation-enforcement.md), [D17](../decisions/D17-interactive-vs-runtime.md), [D26](../decisions/D26-unified-studio.md), [D28](../decisions/D28-workflow-contract.md), [D38](../decisions/D38-single-egress-hub.md) |
 | **Proves** | [INT-01](../integrations.md) and [INT-17](../integrations.md) (the cross-account image pull and the selector — 6a built the repositories and pushed the image; nothing has consumed it), [INT-02](../integrations.md)'s consumer half under design B |
@@ -448,6 +450,8 @@ class as `pypi.org`: the question is never *whether* code may be fetched, only *
   `false`: *"the hub must resolve everything the proxy is asked to fetch"*), so a laptop resolving through
   the tunnel would have **succeeded** and failed later at the connection, with a refusal rather than
   `ENOTFOUND`. The error's shape already says *the space asked*; this turns an argument into a record.
+- **8.3 — DONE 2026-09-08 (with 9.3 — one apply, as the step said).** `0 to add, 1 to change, 0 to
+  destroy`; the re-plan reads `No changes`. See 9.4 for the readings. *The original step follows:*
 - **8.3 — [Claude⚡] Apply, then wait the half hour.** A list edit reaches the running host on the State
   Manager schedule with **no host replacement** — the parameter is data, the renderer is code. `PX-3` is
   red between the apply and the association, which is expected, and is why it is read twice rather than
@@ -504,9 +508,18 @@ open stage and this is where the apply happens.
   prevent). **`DN-4` was rewritten rather than relaxed**: from *"only the client plane is `open`"* to
   *"no plane is `open` except the ones a decision names"*, against an `OPEN_BY_DECISION` map whose values
   are the reasons, printed in the pass line. A **new** plane going open still fails (Lesson 50).
+- **9.3 — DONE 2026-09-08, authorized in chat.** One apply for both steps: `aws_ssm_parameter
+  .proxy_allowlist` **updated in place**, `Apply complete! Resources: 0 added, 1 changed, 0 destroyed`,
+  and the re-plan `No changes`. *The original step follows:*
 - **9.3 — [Claude⚡] ONE apply for steps 8 and 9.** Both edits are the same parameter in the same slice;
   applying twice is the mistake to avoid, and reading `PX-3` between them is the other. The plan is
   already taken.
+- **9.4 — FIRST LINK DONE 2026-09-08; THE SECOND IS OWED.** `DN-3` went from the failure that
+  *was* the diff to **`pass — 5 planes, entry for entry`**, with `DN-1`, `DN-2` and `DN-4` beside it —
+  `DN-4` naming both open planes and their reasons. **Code and parameter agree.** `PX-3` is
+  **`note — not answered`**: it needs `--on-host`, an `ssm:SendCommand`, so it is taken deliberately and
+  is worth taking only after the State Manager half-hour has passed. `PX-1`, `PX-2` and `PX-5` pass on
+  the committed file; `PX-4` its standing note. *The original step follows:*
 - **9.4 — [Claude] Read that it landed, in two links.** `DN-3` (code → parameter) is **red today and
   names exactly these two changes** — `sandbox-foundation: only in code [open-vsx.org]`,
   `production-foundation: only deployed [the 20 names]`; it must be green after the apply. `PX-3`

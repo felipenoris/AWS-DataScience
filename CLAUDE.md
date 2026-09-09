@@ -219,8 +219,9 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   preconditions on both. **`sandbox-foundation` is untouched** — the first time source-scoping earns its
   keep in the *permissive* direction. Unchanged: the three global denies, the absent default route, the
   3128-only SG. **A plane is a CIDR, not a host** (Lesson 29). `DN-4` rewritten to *"no plane is `open`
-  except the ones a decision names"* (`OPEN_BY_DECISION`, reasons in the pass line). `plan`:
-  **`0 to add, 1 to change`**, **UNAPPLIED**.
+  except the ones a decision names"* (`OPEN_BY_DECISION`, reasons in the pass line). **APPLIED 2026-09-08**
+  with `open-vsx.org` in one parameter write: `0 added, 1 changed`, re-plan `No changes`, `DN-1`..`DN-4`
+  pass. **`PX-3` still owed** (the running `squid.conf`; needs `--on-host`), and 9.5 — one build and push.
 - **SQUID MATCHES THE NAME THE CLIENT REQUESTED, AND NEVER A DNS ANSWER** (measured 2026-09-08). **A CNAME
   is INVISIBLE** (`static.crates.io` works with no CDN entry); **an HTTP redirect is a NEW name**
   (`codeload.github.com`, the ECR CloudFront); **a bare entry matches EXACTLY** — `github.com` covers
@@ -255,7 +256,7 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   (3.6). `conda` and CRAN are **not** on the compute plane (3.1). Pending a sign-in: the project role's
   policies.
 - **THE CLIENT PLANE IS `open`, NOT AN ALLOW-LIST (2026-09-07).** The client's internet is **monitored**;
-  the restriction belongs to the **compute** plane (`sandbox-foundation`, **21 in code / 20 running**) —
+  the restriction belongs to the **compute** plane (`sandbox-foundation`, **21 names**) —
   **and since 2026-09-08 the BUILD plane is `open` too**, so `allowlist` is now the compute planes' mode,
   not every spoke's. Each plane carries a
   `mode`; **empty means OPPOSITE things** — allow-list empty = refuse everything, deny-list empty = permit

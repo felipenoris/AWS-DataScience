@@ -295,12 +295,11 @@ channel**. `VPC-Networking` carries none: the proxy has to resolve.
 | `production-foundation` | `10.30.0.0/16` | **`open`** — the build plane † | 0 (a *deny* list, empty by decision) |
 | `production-workloads` · `staging-foundation` | `10.32` · `10.50` | `allowlist` | 0 — **refuse everything**, by decision |
 
-† **BOTH ROWS ARE CODE, NOT THE RUNNING HOST, UNTIL `production/networking/` IS APPLIED** (authored
-2026-09-08, 6d steps 8.1 and 9). The host still carries 20 Sandbox names and a 20-name allow-list on the
-build plane. A list edit reaches the proxy on the State Manager half-hour *after* the apply, with no host
-replacement, so the two are legitimately different for a while: **`./aws/dns-allowlist.py` `DN-3`** compares
-code against the parameter and **`./aws/proxy.py` `PX-3`** compares the parameter against the running
-`squid.conf` — between them they say which number is live.
+† **APPLIED 2026-09-08** (6d steps 8.3/9.3): `0 added, 1 changed, 0 destroyed` — the SSM parameter — and
+the re-plan reads `No changes`. `DN-1`, `DN-2`, `DN-3` and `DN-4` all pass, so **code and parameter agree,
+entry for entry**. The **running `squid.conf`** follows on the State Manager half-hour with no host
+replacement, and `./aws/proxy.py` `PX-3` is the only reading that speaks for it — it needs `--on-host`
+(`ssm:SendCommand`), so it is taken deliberately rather than in passing.
 
 **Why the build plane is not an allow-list** (D38 §6, amended 2026-09-08): `VPC-SharedServices` holds the
 tooling that **builds** the restricted environment — the buildbox today, the GitLab runners from Stage 7 —

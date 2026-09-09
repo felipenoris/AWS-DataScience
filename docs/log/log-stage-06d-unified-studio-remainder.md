@@ -680,3 +680,28 @@ Rust installed and crates fetched (`sh.rustup.rs`, `index.crates.io`, `static.cr
 `static.rust-lang.org` — four of the plane's entries); GitHub repositories cloned (`github.com`); random
 sites off the list refused by Squid. Together with `pip` at 3.1 that is **Python, Rust and source** measured
 end to end on the compute plane. Still owed by 3.1: `uv`, `Pkg` (Julia) and R, in the house image.
+
+### [Claude⚡] The apply, authorized in chat the same sitting
+
+One apply for steps 8 and 9 — the two edits are the same parameter in the same slice, and applying twice
+was the named mistake to avoid. Recipe A, `production/networking/`, `awsds-infra-prod`
+(`InfrastructureAccess` on `Production`).
+
+```
+aws_ssm_parameter.proxy_allowlist: Modifying... [id=/datascience/prod/proxy/allowlist]
+aws_ssm_parameter.proxy_allowlist: Modifications complete after 2s
+Apply complete! Resources: 0 added, 1 changed, 0 destroyed.
+```
+
+Re-plan: **`No changes. Your infrastructure matches the configuration.`**
+
+**The first link of the chain closed, and the second is owed.** `DN-3` went from the failure that *was*
+the diff to `pass — 5 planes, entry for entry`; `DN-1`, `DN-2` and `DN-4` pass beside it, `DN-4` naming
+both open planes with their reasons. **Code and parameter agree.** What no reading here can say is what
+the proxy is *enforcing*: `PX-3` reads the running `squid.conf` and needs `--on-host`, an
+`ssm:SendCommand` — a write API carrying only reads, so it is taken deliberately, and it is worth taking
+only once the State Manager half-hour has passed. `PX-1`, `PX-2` and `PX-5` pass against the committed
+file; `PX-4` carries its standing note.
+
+**Still owed by step 9**: 9.5, one full build and push across the plane, which is the only thing that
+exercises the deleted CloudFront entry's absence.
