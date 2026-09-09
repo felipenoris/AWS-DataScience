@@ -89,7 +89,9 @@ path is not written down here on purpose — the palette is stable, the path is 
     "ssm.us-west-2.amazonaws.com",
     "ssmmessages.us-west-2.amazonaws.com",
     "sts.us-west-2.amazonaws.com",
-    "studio.us-west-2.sagemaker.aws"
+    "studio.us-west-2.sagemaker.aws",
+    "datazone.us-west-2.api.aws",
+    "studio.sagemaker.us-west-2.app.aws"
   ]
 }
 ```

@@ -556,6 +556,19 @@ class as `pypi.org`: the question is never *whether* code may be fetched, only *
 - **8.5 — [user] Install one extension**, and paste the log. The success criterion is a **`200` in
   `/awsds/prod/proxy` naming `open-vsx.org`** — not merely an extension that appears, which a cached
   `.vsix` also produces.
+  **THE PLANE IS PROVEN AND THE STEP IS NOT (2026-09-09).** `open-vsx.org` appears in the proxy log for
+  the **first time ever** — `CONNECT open-vsx.org:443 200 TCP_TUNNEL`, 03:16:19Z, from the space's own
+  address — because a `curl` in the terminal, with the variables exported, reached it. **The literal
+  criterion is met by the wrong client**, so the step stays open: what it was written to prove is that
+  the *gallery* used the proxy, and the gallery still has not.
+  **What that `curl` settles, and it is most of the remaining uncertainty.** It returned **`404`, not
+  `403`** — a refusal from Open VSX, not from Squid — which means the tunnel was established, TLS
+  validated end to end (`proxyStrictSSL` is not implicated), and the origin answered. **The network path
+  from the space to the gallery is therefore fine, and every remaining fault is client-side.** The `404`
+  is this reading's own bug: the URL guessed a file name, and a **target-platform-specific** extension
+  stores one per platform (`…@linux-x64.vsix`), so the download URL is read from the API's
+  `files.download` rather than composed — and the platform to ask for is **`linux-x64`**, which 8.7
+  measured, never the `alpine-arm64` the gallery asks for.
 - **8.6 — [Claude] Read the asset host, and the three names 8.2 already found.** Once 8.4 lands, every
   refusal **moves from a DNS `BLOCK` to a Squid `403`** — the space stops resolving and starts asking —
   and that is when the plane's list becomes the thing being measured. Expect at least three: the
