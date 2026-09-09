@@ -17,7 +17,7 @@ data "terraform_remote_state" "foundation" {
 
 module "egress" {
   # checkov:skip=CKV_TF_1:pinned by git TAG by convention (conventions §6, Stage 3 step 1.1a) - a repository-internal tag only the repo owner can move
-  source = "git::git@github.com:felipenoris/AWS-DataScience.git//terraform-modules/vpc-egress?ref=vpc-egress-v0.10.1"
+  source = "git::git@github.com:felipenoris/AWS-DataScience.git//terraform-modules/vpc-egress?ref=vpc-egress-v0.11.0"
 
   env    = var.env
   vpc_id = data.terraform_remote_state.foundation.outputs.vpc_id
@@ -143,6 +143,27 @@ module "egress" {
     # precondition is what turns that from a silent NXDOMAIN into a plan-time failure naming the
     # endpoint - written because this step is exactly the one that creates the opportunity.
     "sagemaker.aws.", "*.sagemaker.aws.",
+
+    # `app.aws` AND `on.aws` - TWO MORE FAMILIES OF ENDPOINTS THIS VPC ALREADY PAYS FOR, added
+    # 2026-09-09 (6d step 8.8) by the user's decision. Same argument as the line above, found the
+    # same way it predicted: an interface endpoint answers for SEVERAL names and the module used to
+    # read only the service's canonical one, so two of them were invisible to the coverage check.
+    # Read from the endpoints themselves -
+    #
+    #   ecr.dkr           dkr-ecr.<region>.on.aws            (and `*.dkr-ecr.<region>.on.aws`)
+    #   sagemaker.studio  studio.sagemaker.<region>.app.aws  (and its wildcard)
+    #
+    # - both NXDOMAIN in this VPC until now, which is this list's own failure mode: a paid endpoint
+    # unreachable by one of its names, reported as a network fault rather than as a policy decision.
+    #
+    # WHAT `on.aws` ALSO MAKES RESOLVABLE, named here so it is a consequence rather than a surprise:
+    # `dzd-<id>.sagemaker.<region>.on.aws`, the Unified Studio domain's own URL, which 6d step 8.6
+    # recorded as a DNS BLOCK from every space address and could attribute to nothing. This is the
+    # attribution, and the family is why. RESOLVING IS NOT REACHING - that name has no endpoint, so
+    # it now leaves as a proxy request and comes back a 403 naming the host. The reach question is
+    # still the plane's, and this list does not answer it (D38).
+    "app.aws.", "*.app.aws.",
+    "on.aws.", "*.on.aws.",
 
     # THE ESTATE'S OWN PRIVATE ZONES - `proxy.awsds.internal` and `gitlab.awsds.internal` among
     # them, which is why a client can be told to use a NAME for the proxy rather than an address.
