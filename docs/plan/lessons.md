@@ -1260,6 +1260,26 @@ lesson can be *recognised* without opening this file; the reasoning that makes e
     mechanism is documented — *this reaches the host in thirty minutes; that one needs a new host* —
     because the failure is silent in the most convincing way available: a green status.
 
+59. **Changing WHERE a value is read from can change WHEN it is knowable — and every guard that
+    reads it moves with it, silently.** Stage 6d step 8.8, 2026-09-09. The `NO_PROXY` generator was
+    repaired by reading `aws_vpc_endpoint.dns_entry` (every name an endpoint answers for) instead of
+    `data.aws_vpc_endpoint_service.private_dns_name` (the service's one canonical name). Correct on
+    the question it was asked, and it had a second effect nobody was asked about: a **data source**
+    is known at plan time and a **resource attribute** is not. The DNS Firewall coverage
+    precondition, sitting one file away and reading the same local, therefore stopped being
+    evaluatable at plan on any VPC whose endpoints did not exist yet. Terraform did not complain; it
+    deferred the condition to apply and printed a clean plan. Measured on a torn-down slice:
+    `20 to add`, `no_proxy = (known after apply)`, **and nothing raised** — where the same code with
+    a missing family used to fail before a single resource was touched.
+    **The repair had produced Lesson 39** — the strict validator arriving one act late — in a step
+    written to remove a different defect entirely, which is what makes this its own lesson rather
+    than an instance of that one. **A reading has two properties, its CONTENT and its TIMING, and a
+    change of source usually changes both.** The fix was not to choose between them: the narrow,
+    early reading came back beside the complete, late one, as two conditions naming their own
+    reading, so a failure says which half found it *and* whether a plan could have found it at all.
+    **Before swapping the source of a value, list what else reads it and ask when each of those
+    needs an answer.**
+
 ---
 
 ## What AWS does that its documentation does not say

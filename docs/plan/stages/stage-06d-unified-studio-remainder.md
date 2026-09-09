@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Status** | **IN PROGRESS — STEP 9 APPLIED AND READ BACK, STEP 8 OPEN, 3.2 AND 3.3 DONE, 3.1 HALF TAKEN, 2026-09-08** ([log](../../log/log-stage-06d-unified-studio-remainder.md)): the first working session under the proxy, from a JupyterLab terminal with the variables exported **by hand** (2.2 is still unapplied) and on the **stock** image. `NO_PROXY` held on two channels that do not share a failure mode (CloudTrail's `vpcEndpointId`, and the access log's *absence* of every AWS name); the allow-list enforced (`pypi.org` 200, `example.com` 403); **`conda` and CRAN refused by name — decision due 6's evidence**; the `codeload.github.com` redirect refused on a third source plane. **Owed**: `uv`, Julia and R, in the house image. **And one check was corrected by the user's own first command**: `--noproxy '*'` returning `000` measured a **DNS** refusal, not the absent route — the routing half stays 6c 6.3's probe (Lesson 42). **A second sitting the same day added step 8 and one
+| **Status** | **IN PROGRESS — 8.8 DONE AND APPLIED 2026-09-09, STEP 9 APPLIED AND READ BACK, STEP 8 CLOSED EXCEPT ITS DELIVERY, 3.2 AND 3.3 DONE, 3.1 HALF TAKEN** ([log](../../log/log-stage-06d-unified-studio-remainder.md)): the first working session under the proxy, from a JupyterLab terminal with the variables exported **by hand** (2.2 is still unapplied) and on the **stock** image. `NO_PROXY` held on two channels that do not share a failure mode (CloudTrail's `vpcEndpointId`, and the access log's *absence* of every AWS name); the allow-list enforced (`pypi.org` 200, `example.com` 403); **`conda` and CRAN refused by name — decision due 6's evidence**; the `codeload.github.com` redirect refused on a third source plane. **Owed**: `uv`, Julia and R, in the house image. **And one check was corrected by the user's own first command**: `--noproxy '*'` returning `000` measured a **DNS** refusal, not the absent route — the routing half stays 6c 6.3's probe (Lesson 42). **A second sitting the same day added step 8 and one
 plane entry**: `sudo apt update` proved the variables stop at **`sudo`** (`env_reset`), so 2.2 owes two
 image-side files beside its `ContainerEnvironmentVariables`; and a **Code Editor** space failed to update
 **AWS's own two extensions** at startup with four `getaddrinfo ENOTFOUND open-vsx.org` — a **resolution**
@@ -28,7 +28,20 @@ applied** (parameter 6 → 7, `DN-1`..`DN-4` and `PX-3` green): five names in, `
 subtracted, and `clone`/`fetch`/`push` from a Sandbox space now fail by design. **8.5 closed** on its own
 criterion (96.32 MiB of `.vsix` through the proxy, by the gallery client). **But the delivery is owed and
 belongs to step 2**: neither mechanism attaches to a *space*, only to the blueprint-provisioned domain, so
-8.4 waits on **2.4** — clicking Install in a space still fails. **8.8 open.** *Earlier:* **the setting
+8.4 waits on **2.4** — clicking Install in a space still fails. **8.8 DONE AND APPLIED 2026-09-09, AND IT WAS EIGHT TIMES ITS RECORDED SIZE**: `vpc-egress-v0.11.1`
+reads the **endpoint's** `dns_entry` rather than the **service's** one canonical name — **16 of 18**
+Sandbox endpoints answered for a name the list lacked, and the bypass list went **28 → 50** on a
+`0 to add, 1 to change` apply that re-plans `No changes`. The `403`s were loud only by luck of the
+domain family: **`streaming-logs.us-west-2.amazonaws.com`** was on the plane, so it was answered
+`200` and left as a **public** call with neither `aws:SourceVpc` nor `aws:SourceVpce`. The guard had
+the same blind spot, and pointing the new reading at it named **two endpoints the estate pays for
+hourly that were NXDOMAIN** — `app.aws` and `on.aws` joined both compute allow-lists (**14 domains
+live**), which is also **8.6's orphan attributed**: `dzd-<id>.…on.aws` was blocked by family.
+**`v0.11.0` is tagged and was never deployed** — its own measurement on torn-down `staging/egress`
+showed `dns_entry` is `(known after apply)`, so it had turned 5.7's plan-time guard into a mid-apply
+one (Lesson 39, produced by the repair); v0.11.1 splits the precondition into `declared` and
+`served`. Both halves carry a negative control. **Not closed: the other three `egress/` slices are
+down and take it on their next `make up`, and the in-space proof is the user's.** *Earlier:* **the setting
 route was measured 2026-09-08, and it works everywhere except the gallery.** `http.proxy` in the space's own settings moved `idetoolkits.amazonwebservices.com`,
 `api.github.com` and `raw.githubusercontent.com` **from a DNS `BLOCK` to a Squid `403`** and `pypi.org` to
 `200` — read as a **paired before/after**, because a restart gives the container a new address — while
@@ -679,7 +692,7 @@ class as `pypi.org`: the question is never *whether* code may be fetched, only *
 
   | name | `403`s | has a VPC endpoint? | so |
   |---|---:|---|---|
-  | ~~`datazone.us-west-2.api.aws`~~ | ~~11~~ | **yes** | **FIXED BY HAND 2026-09-08 — an exception-list bug, 8.8** |
+  | ~~`datazone.us-west-2.api.aws`~~ | ~~11~~ | **yes** | **FIXED IN CODE 2026-09-09 — `vpc-egress-v0.11.1` generates it; the 2026-09-08 hand-patch is retired, 8.8** |
   | `idetoolkits.amazonwebservices.com` | 6 | no | allow, or record the loss |
   | `raw.githubusercontent.com` | 6 | no | allow, or record the loss |
   | `api.github.com` | 2 | no | allow, or record the loss |
@@ -696,6 +709,63 @@ class as `pypi.org`: the question is never *whether* code may be fetched, only *
   and a sixth fits no column yet**: `dzd-<id>.sagemaker.us-west-2.on.aws`, the SMUS domain's own URL, is
   **DNS-blocked** from every space address in every window read on 2026-09-08 — not in the bypass list,
   not on the plane, not resolvable. It has been failing throughout and nothing has attributed it.
+- **8.8 — DONE AND APPLIED 2026-09-09, AND THE DEFECT WAS EIGHT TIMES THE SIZE THIS STEP RECORDED.**
+  `vpc-egress-v0.11.1` reads `aws_vpc_endpoint.dns_entry` — the names the **endpoint** answers for —
+  instead of `data.aws_vpc_endpoint_service.private_dns_name`, the **service's** one canonical name.
+  Measured before a line was written: **16 of 18** Sandbox interface endpoints answer for at least one
+  name the list did not carry, not two. Applied to `sandbox/egress`, the only egress slice up:
+  `0 to add, 1 to change, 0 to destroy`, re-plan **`No changes`**, and the list **28 → 50 entries,
+  nothing removed**.
+  - **THE SILENT ONE WAS ALWAYS THE POINT, AND IT IS REAL:
+    `streaming-logs.us-west-2.amazonaws.com`.** The 11 × `403` that started this were `.api.aws`, a
+    family on **no** compute plane, so they were loud. `.amazonaws.com` **is** on the plane — so that
+    name was answered **200**, left through the hub's IGW as a **public** call, and arrived carrying
+    neither `aws:SourceVpc` nor `aws:SourceVpce`. Nothing would ever have reported it. **The loud
+    outcome was luck of the domain family**, which is the reading this step is worth keeping for.
+  - **`dns_entry` carries two kinds of name and the filter is measured, not stylistic.** Beside the
+    service names it carries the endpoint's own (`vpce-<id>-<hash>.…`, regional and zonal), which
+    nothing dials — `private_dns_enabled` is true everywhere — and which embed an `[E]` id, so
+    including them would make `NO_PROXY` churn on every up/down cycle. Filtered on the **`vpce-`
+    prefix**: `sagemaker.studio`'s end in `.vpce.sagemaker.aws`, so a `.vpce.amazonaws.com` **suffix**
+    filter would have let four through.
+  - **A wildcard name is emitted in BOTH spellings** — bare and dot-prefixed — the user's decision,
+    because requests/botocore do a plain `endswith` (bare covers the subtree *and* the apex,
+    dot-prefixed the subtree only) and a strict suffix matcher is the mirror image. Four extra entries.
+  - **THE OTHER HALF WAS IN THE GUARD, and pointing the same reading at it found two endpoints the
+    estate pays for hourly that were NXDOMAIN.** The DNS Firewall coverage precondition read the
+    service's canonical name too, so widening the output alone would have left the blind spot in the
+    check (Lesson 51) — and worse, would have converted a legible `403` into an unattributable
+    NXDOMAIN for exactly those names, since a bypassed name stops asking Squid and starts asking the
+    resolver. `dkr-ecr.<region>.on.aws` (`ecr.dkr`) and `studio.sagemaker.<region>.app.aws`
+    (`sagemaker.studio`): **`app.aws` and `on.aws` added to both compute slices** by the user's
+    decision, on the argument that put `sagemaker.aws` there. Read back from the service, not from
+    state: **14 domains live**.
+  - **AND THAT ATTRIBUTES 8.6's ORPHAN.** `dzd-<id>.sagemaker.us-west-2.on.aws`, DNS-blocked from every
+    space address in every window read on 2026-09-08 and attributed to nothing, is `.on.aws` — a family
+    the firewall did not carry. It is resolvable now. **Resolving is not reaching**: it has no endpoint,
+    so it leaves as a proxy request and comes back a `403` naming the host, which is the diagnosable
+    failure rather than the silent one. Whether to allow it on the plane is decision due 6's, unchanged.
+  - **`vpc-egress-v0.11.0` IS TAGGED AND WAS NEVER DEPLOYED, AND ITS OWN MEASUREMENT IS WHY.**
+    `dns_entry` is a **resource attribute**, so on a VPC whose endpoints do not exist yet it is
+    `(known after apply)` — and v0.11.0's single precondition therefore could not be evaluated at plan
+    time at all. Measured on `staging/egress`, torn down: `terraform plan` printed `20 to add`,
+    `no_proxy = (known after apply)` and **raised nothing**. 6c step 5.7 wrote that guard to turn a
+    silent NXDOMAIN into *a plan-time failure naming the endpoint*, and the repair had quietly moved it
+    to mid-apply — **Lesson 39 produced by the fix rather than found by it**. v0.11.1 restores the
+    service data source **for the guard alone** and splits the precondition in two, `declared`
+    (plan-time, narrow) and `served` (complete, sometimes late), one matcher over both lists. The tag
+    stays where it is; never retag (Lesson 46).
+  - **Both halves have a negative control, because a guard that passes proves nothing on its own
+    (Lesson 13).** With the two families removed for one plan, `sandbox/egress` fails naming all four
+    uncovered names. With `sagemaker.aws` removed for one plan, **torn-down** `staging/egress` fails
+    **in the plan**, naming `*.studio.us-west-2.sagemaker.aws` **and its own reading** — which is the
+    proof that the plan-time bite came back.
+  - **WHAT IS NOT CLOSED, and it is two things.** The fix is applied in **Sandbox only**: the other
+    three `egress/` slices are `[E]` and down, so they take `v0.11.1` on their next `make up` and are
+    unverified until then — `staging/egress` is the one that matters, since it carries the firewall and
+    the two new families. And the **in-space proof** — DataZone no longer refused, with no hand-patch in
+    `http.noProxy` — needs a running space and is the user's measurement, not an API reading.
+  *The original step follows:*
 - **8.8 — [Claude⚡] NEW 2026-09-08: the generated bypass list carries ONE name per endpoint, and an
   endpoint answers for several.** 8.4's setting made an existing gap observable by sending the space's
   proxy-aware clients at it: `datazone.us-west-2.api.aws` refused **11 times**, on a service that has an
