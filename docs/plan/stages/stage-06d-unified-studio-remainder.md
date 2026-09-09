@@ -19,8 +19,17 @@ maps** it is in, and `DN-4` was rewritten to *"no plane is open except the ones 
 `terraform plan`: `0 to add, 1 to change` — **applied the same day**, re-plan `No changes`, `DN-1`..`DN-4`
 all pass. **Read back the same evening from the host**: the drop-in's own `Rendered` timestamp is after the
 parameter write, `sandbox-foundation` matches name for name, and the build plane renders as a **bare
-allow**, the tunnel's shape. **STEP 8 MEASURED 2026-09-08, AND THE SETTING WORKS EVERYWHERE EXCEPT THE
-GALLERY.** `http.proxy` in the space's own settings moved `idetoolkits.amazonwebservices.com`,
+allow**, the tunnel's shape. **STEP 8 CLOSED EXCEPT ITS DELIVERY, 2026-09-09.** The gallery client honours
+`http_proxy`/`https_proxy` and ignores the `http.proxy` **setting**; its `403` was **Squid's**, naming the
+last unread host — **`open-vsx.org` serves the API, `openvsx.eclipsecontent.org` serves the bytes**, so
+8.1's single entry had authorised the question and refused the answer. **Decision due 6 taken in full and
+applied** (parameter 6 → 7, `DN-1`..`DN-4` and `PX-3` green): five names in, `api.github.com` and
+`raw.githubusercontent.com` refused, and **`github.com` REMOVED** — the first time this decision has
+subtracted, and `clone`/`fetch`/`push` from a Sandbox space now fail by design. **8.5 closed** on its own
+criterion (96.32 MiB of `.vsix` through the proxy, by the gallery client). **But the delivery is owed and
+belongs to step 2**: neither mechanism attaches to a *space*, only to the blueprint-provisioned domain, so
+8.4 waits on **2.4** — clicking Install in a space still fails. **8.8 open.** *Earlier:* **the setting
+route was measured 2026-09-08, and it works everywhere except the gallery.** `http.proxy` in the space's own settings moved `idetoolkits.amazonwebservices.com`,
 `api.github.com` and `raw.githubusercontent.com` **from a DNS `BLOCK` to a Squid `403`** and `pypi.org` to
 `200` — read as a **paired before/after**, because a restart gives the container a new address — while
 **`open-vsx.org` did not move**: 36 `BLOCK`s across two restarts and never once in the proxy log. So
@@ -605,6 +614,18 @@ class as `pypi.org`: the question is never *whether* code may be fetched, only *
     name the proxy log then hands over. Either outcome is a result; the second is the asset host 8.6 has
     been unable to read because the gallery never got far enough to be redirected.
   - **The setting also caused a REGRESSION, and it is the exception list's, not the proxy's** — see 8.8.
+- **8.5 — DONE 2026-09-09.** `Extension 'anthropic.claude-code' v2.1.266 was successfully installed`,
+  `rc=0`, and the access log carries the criterion this step was written to require — a `200` naming the
+  gallery, produced by the **gallery client** rather than by a `curl`: `openvsx.eclipsecontent.org`
+  **200 ×3, 96.32 MiB** beside `open-vsx.org` **200 ×5**. Three names that were `403` an hour earlier are
+  `200` (`idetoolkits.amazonwebservices.com`, `sagemaker-unified-studio-mcp.<region>.api.aws`,
+  `ide-toolkits.app-composer.aws.dev`) and the two the user refused are still `403` — the decision
+  measured on both sides in one window. **But the thing that works is not the thing a user does**: this is
+  `code-editor-server` invoked by hand with exported variables. Opening the space and clicking Install
+  still fails, because the server supervisord starts has none of them. A proof, not yet a fix (Lesson 5).
+  **Unread: which platform build landed** — the registry returns `alpine-arm64` when none is named (8.7),
+  so an `alpine-arm64` build on this container would be installed and broken, a failure shaped like
+  success. The directory name under `--extensions-dir` settles it. *The original step follows:*
 - **8.5 — [user] Install one extension**, and paste the log. The success criterion is a **`200` in
   `/awsds/prod/proxy` naming `open-vsx.org`** — not merely an extension that appears, which a cached
   `.vsix` also produces.
