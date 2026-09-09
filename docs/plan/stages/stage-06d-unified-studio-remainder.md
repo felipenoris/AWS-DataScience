@@ -638,9 +638,11 @@ class as `pypi.org`: the question is never *whether* code may be fetched, only *
   startup auto-update, installing from the UI, and **viewing an extension that is already installed and
   working**. `alpine-arm64` appears again, from the workbench and never from the CLI — 8.7's narrowing,
   confirmed a second time.
-  - **Whether the extension RUNS is a different question and this log does not answer it.** Nothing here
-    says `claude-code` failed to activate; the `isCn` errors belong to the AWS Toolkit. The test is to
-    use it, never to click its marketplace entry — which is the one action guaranteed to fail.
+  - **IT RUNS — CONFIRMED 2026-09-09 from the command palette.** The extension activates and works. So the
+    two are cleanly separated: **the extension is fine and the IDE's marketplace surface is not**, and the
+    only broken thing left in this space is the one action that reads the gallery. Nothing here says
+    `claude-code` failed to activate; the `isCn` errors belong to the AWS Toolkit. **The test is to use
+    it, never to click its marketplace entry** — the one action guaranteed to fail.
   **And the extension being invisible in the IDE before that, which was this step's own doing**: the probe installed into
   a scratch `--extensions-dir` so it would not modify the thing being measured, and the running server
   reads `$PERSISTENT_VOLUME_EXTENSIONS_DIR`. Re-running against that directory, then reloading the window,
