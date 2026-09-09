@@ -705,3 +705,54 @@ file; `PX-4` carries its standing note.
 
 **Still owed by step 9**: 9.5, one full build and push across the plane, which is the only thing that
 exercises the deleted CloudFront entry's absence.
+
+### [user] The running `squid.conf`, read on the host — the second link closes
+
+*The user ran `./aws/proxy.py --on-host` and then an interactive `start-session`, pasting both files.
+Claude verified the rendered list against the deployed parameter by hand, name for name.*
+
+The drop-in's own header carries the timestamp that settles the ordering: **`Rendered
+2026-09-09T00:01:22Z`** — the association run at 21:01:22 -03:00, and the parameter was written at
+**20:58:42 -03:00**. The render is **after** the apply, by the file's own record rather than by
+inference.
+
+```
+acl src_production_foundation src 10.30.0.0/16
+http_access allow src_production_foundation
+
+acl src_sandbox_foundation src 10.20.0.0/16
+acl dst_sandbox_foundation dstdomain .amazonaws.com … github.com open-vsx.org
+http_access allow src_sandbox_foundation dst_sandbox_foundation
+
+acl src_tunnel src 10.90.0.0/24
+http_access allow src_tunnel
+```
+
+| | |
+|---|---|
+| `sandbox-foundation` | **21 names, same order, same content** as the parameter — diffed, not eyeballed; `open-vsx.org` last |
+| `production-foundation` | `dst_production_foundation` **gone**; a **bare** `http_access allow` in its place |
+| `d5l0dvt14r5h8.cloudfront.net` | **absent from both files** |
+| `squid.conf` part 1-4 | unchanged: `deny to_private` line 1, the port guards, the include, `deny all` last |
+
+**The build plane now renders exactly like the tunnel**, which is the clearest statement of what the
+amendment did: two `open` planes, two bare allows, both sitting **after** `deny to_private` and the port
+guards and **before** the backstop. "Open to the internet, never open to the estate" is not a claim about
+this change — it is the position of the include in the file.
+
+**One prediction was wrong in its detail and it is worth correcting.** Claude expected an empty
+`dstdeny_production_foundation` ACL. There is none: the renderer emits **no ACL at all** for an empty
+list, of either kind. So the observable signature of an `open` plane is `acl src_X` followed by a bare
+`http_access allow src_X` — not a `dstdeny_` line, and somebody grepping for one would conclude the
+change had not landed.
+
+**And a legibility note that follows from the same rule.** `production-workloads` and
+`staging-foundation` are `allowlist` with empty lists, so they render as **nothing** — they are absent
+from the file entirely. On the host, *"a plane that refuses everything"* and *"a plane that does not
+exist"* are indistinguishable. The behaviour is right either way (the backstop refuses that source by
+name), and the typo case is caught upstream by the `.tf` precondition — but it is why the **parameter**,
+not the rendered file, is the source of truth for which planes exist, and why `PX-3` compares the two
+rather than reading either alone.
+
+**Step 9's remaining item is 9.5**: one full build and push, the only thing that exercises the deleted
+CloudFront entry's absence.

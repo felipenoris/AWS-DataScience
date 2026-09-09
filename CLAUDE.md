@@ -221,7 +221,10 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   3128-only SG. **A plane is a CIDR, not a host** (Lesson 29). `DN-4` rewritten to *"no plane is `open`
   except the ones a decision names"* (`OPEN_BY_DECISION`, reasons in the pass line). **APPLIED 2026-09-08**
   with `open-vsx.org` in one parameter write: `0 added, 1 changed`, re-plan `No changes`, `DN-1`..`DN-4`
-  pass. **`PX-3` still owed** (the running `squid.conf`; needs `--on-host`), and 9.5 — one build and push.
+  pass. **read back on the host**: the drop-in's `Rendered` stamp is after the parameter write, Sandbox matches
+  name for name, the build plane is a **bare allow** (the tunnel's shape). **An `open` plane emits NO
+  `dstdeny_` ACL and an empty `allowlist` plane emits NOTHING** — the file cannot separate *refuses
+  everything* from *does not exist*. Owed: **9.5**, one build and push.
 - **SQUID MATCHES THE NAME THE CLIENT REQUESTED, AND NEVER A DNS ANSWER** (measured 2026-09-08). **A CNAME
   is INVISIBLE** (`static.crates.io` works with no CDN entry); **an HTTP redirect is a NEW name**
   (`codeload.github.com`, the ECR CloudFront); **a bare entry matches EXACTLY** — `github.com` covers
