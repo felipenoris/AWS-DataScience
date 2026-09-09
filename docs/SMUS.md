@@ -840,6 +840,9 @@ in the stage log at push time. The image cannot be asked either: `dev-env`'s own
 was later given.
 
 **First applied 2026-08-22, Stage 6 step 5.0:** `default-v0.1.0` in both repositories.
+**Second, 2026-09-08, Stage 6d step 9.5:** `default-v0.1.1` in both — the same recipe rebuilt to exercise
+the `open` build plane, so the bump is a **patch**. Digests: `base` `sha256:a4b763a3…1ea6`, `dev-env`
+`sha256:6916fc13…6d13`.
 
 #### How it survives the hand-off to the pipeline
 

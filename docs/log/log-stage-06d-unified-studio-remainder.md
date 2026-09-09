@@ -756,3 +756,107 @@ rather than reading either alone.
 
 **Step 9's remaining item is 9.5**: one full build and push, the only thing that exercises the deleted
 CloudFront entry's absence.
+
+## 2026-09-08 — the fourth sitting: 9.5 exercised, and the allow-list would have refused this build
+
+*The build and the push are the user's hand, in one buildbox session. Every reading below is Claude's,
+taken afterwards from the registry and from the proxy's own access log — the user ran nothing to produce
+them.*
+
+### [user] The build ran, and both images are in the ECR
+
+> Rodei o build completo das imagens, e publiquei no ECR com a tag v0.1.1
+
+### [Claude] The push, read from the registry rather than from the report
+
+`aws ecr describe-images` on both repositories, profile `awsds-infra-prod`:
+
+| repository | tag | digest | stored | pushed |
+|---|---|---|---|---|
+| `awsds-prod-ecr-base` | `default-v0.1.1` | `sha256:a4b763a3…1ea6` | 3 959 751 977 B | 22:16:59 -03 |
+| `awsds-prod-ecr-dev-env` | `default-v0.1.1` | `sha256:6916fc13…6d13` | 5 636 978 991 B | 22:19:07 -03 |
+
+Both repositories are `IMMUTABLE` and both still carry `default-v0.1.0` from 2026-08-22, so the two tags
+are four objects, not two — the digests above are the identity, the tag is the pointer (`SMUS.md`,
+"the tag is not the identity").
+
+### [Claude] What the build actually fetched — 196 requests, and one of them is the finding
+
+`/awsds/prod/proxy`, filtered to the build window. **196 requests, all from `10.30.47.211`**, a
+`VPC-SharedServices` address — which is the first thing the reading confirms: the source matched
+`acl src_production_foundation src 10.30.0.0/16` **by CIDR**, exactly as the plane is defined. 4.67 GiB
+in 27 minutes 46 seconds, `00:39:55Z` → `01:07:41Z`.
+
+| destination | req | MiB | on the 21-name list? |
+|---|---:|---:|---|
+| `d5l0dvt14r5h8.cloudfront.net` | 3 | 3758.5 | only on the deleted `proxy_allow_shared` |
+| **`conda.anaconda.org`** | **155** | **368.2** | **no — on no list, of either plane** |
+| `julialang-s3.julialang.org` | 1 | 277.2 | yes |
+| `storage.julialang.net` | 2 | 222.7 | yes |
+| `static.rust-lang.org` | 8 | 145.1 | yes |
+| `archive.ubuntu.com` | 11 | 6.5 | yes |
+| `security.ubuntu.com` | 5 | 4.5 | yes |
+| `public.ecr.aws` | 4 | 0.1 | yes |
+| `us-west.pkg.julialang.org`, `pypi.org`, `pkg.julialang.org` | 6 | 0.2 | yes |
+| `10.31.0.1` | 1 | 0.0 | the boot probe — **403 `TCP_DENIED`** |
+
+**The first line of the boot log read as the fix intended**: `pypi.org` 200, then `10.31.0.1` 403. The
+probe corrected earlier the same day (it had asserted `example.com → 403`, which the amendment
+falsified) now measures the control that survives an `open` plane — `deny to_private`, line 1 of
+`squid.conf`, above every allow.
+
+**`conda.anaconda.org` is on no allow-list.** Not on `proxy_allow_sandbox`'s 21 names, not on the
+`proxy_allow_shared` that used to derive from them, and `.amazonaws.com` does not cover it. It is 155 of
+the 196 requests and 368 MiB — and it is not a surprise nobody could have had: 3.1 recorded on
+2026-09-08 that **`conda` and CRAN are refused by name on the compute plane**. Nothing carried that
+reading across to the build plane, because on the build plane it had never cost anything.
+
+**So under the design this sitting replaced, this build fails.** The timing says where:
+
+| | |
+|---|---|
+| `00:42:18` → `00:43:24` | `public.ecr.aws` — the manifest, 4 requests |
+| `00:44:24` → `00:45:35` | the CloudFront distribution — **3.76 GiB of layers in 71 seconds** |
+| `00:46:36` → `00:56:20` | `conda.anaconda.org` — 155 requests over ten minutes |
+
+The refusal would have landed **one minute after** the 3.76 GiB pull completed, on the step after the one
+the old allow-list had been patched for. That is the whole argument for the amendment, arriving as a
+measurement rather than as a prediction: the deleted comment called its own next revision *"a WHEN rather
+than an IF"*, and the WHEN was **the next build**.
+
+It also says something sharper about the list that was deleted. Its CloudFront entry came from a failed
+`docker pull` — so what had been exercised against that list was the *pull*, and nothing had ever run
+past it. A list believed complete because it was only ever tested to its first step.
+
+### [Claude] Two readings the log gives away for free
+
+**Squid is caching, and only for `apt`.** `archive.ubuntu.com` and `security.ubuntu.com` are the only
+`GET` rows — apt speaks plain HTTP, so the proxy sees whole URLs, and one of the eleven came back
+**`304`**. Everything else is `CONNECT`/`TCP_TUNNEL`, opaque by construction. Whatever caching the hub
+does for a build, it does for the distro packages only.
+
+**The `open` mode delivered precisely what it promised**: it restricted nothing and recorded everything —
+every name, every byte, per request. The plane is not "unmonitored", it is *monitored instead of
+restricted*, and this table is what that distinction buys.
+
+### [Claude] The rebuild is the same recipe, and that is worth writing down
+
+`images/` carries **no commit** between `default-v0.1.0` and `default-v0.1.1` (last change `e49aa28`).
+The two are the same Dockerfiles built seventeen days apart, and the entire delta is upstream drift:
+`base` **+942 bytes**, `dev-env` **-11.8 MB**. That makes the patch bump the right shape, and it makes
+one property explicit that no stage had yet had cause to state: **the recipe is not reproducible
+byte-for-byte**. A pipeline that assumes it is will report a change on every run and push a new digest
+for none. Recorded in `buildbox.md` beside the spent-tag list, and in `SMUS.md`'s tag record.
+
+### [Claude] 9.6 — nothing was written to the deny list
+
+The build plane's deny list is empty, and this sitting adds nothing to it. There is no written policy
+naming something a **build** may not fetch, and inventing one from this session's traffic would be the
+allow-list treadmill in mirror image. Stage 11 owns the policy; this entry records that the list was
+looked at, on the day the plane was first exercised, and left empty deliberately.
+
+### [user] The teardown
+
+The user brought `production/egress` down after the session. Verified: `production/egress` **down**,
+`production/buildbox` **down**; estate burn back to **USD 0.2040/h** from the 0.3340/h the two doors cost
+while a build is running. `production/vpn` and `production/proxy` remain up, as they are meant to be.

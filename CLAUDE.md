@@ -212,19 +212,21 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   **`aws sso logout` invalidates EVERY cached session's token; a browser sign-out invalidates none.**
 - **D38 §6 AMENDED (2026-09-08, the user): THE BUILD PLANE IS `open`, NOT AN ALLOW-LIST.**
   `production-foundation` (= all of `VPC-SharedServices`) reaches **any** public name through the proxy,
-  everything logged. **A build host's control is the reviewed Dockerfile, not a hostname list** — and the
-  list was a treadmill whose own comment called its next revision *"a WHEN rather than an IF"*.
+  everything logged. **A build host's control is the reviewed Dockerfile, not a hostname list.**
   `proxy_allow_shared` and `d5l0dvt14r5h8.cloudfront.net` **deleted**; a plane's mode is now decided by
-  **which of two maps** it is in (`proxy_allow_by_plane` / `proxy_deny_by_plane`), with plan-time
-  preconditions on both. **`sandbox-foundation` is untouched** — the first time source-scoping earns its
-  keep in the *permissive* direction. Unchanged: the three global denies, the absent default route, the
-  3128-only SG. **A plane is a CIDR, not a host** (Lesson 29). `DN-4` rewritten to *"no plane is `open`
-  except the ones a decision names"* (`OPEN_BY_DECISION`, reasons in the pass line). **APPLIED 2026-09-08**
-  with `open-vsx.org` in one parameter write: `0 added, 1 changed`, re-plan `No changes`, `DN-1`..`DN-4`
-  pass. **read back on the host**: the drop-in's `Rendered` stamp is after the parameter write, Sandbox matches
-  name for name, the build plane is a **bare allow** (the tunnel's shape). **An `open` plane emits NO
-  `dstdeny_` ACL and an empty `allowlist` plane emits NOTHING** — the file cannot separate *refuses
-  everything* from *does not exist*. Owed: **9.5**, one build and push.
+  **which of two maps** it is in (`proxy_allow_by_plane` / `proxy_deny_by_plane`), preconditions on both.
+  **`sandbox-foundation` is untouched** — source-scoping earning its keep in the *permissive* direction.
+  Unchanged: the three global denies, the absent default route, the 3128-only SG. **A plane is a CIDR, not
+  a host** (Lesson 29). `DN-4` is now *"no plane is `open` except the ones a decision names"*
+  (`OPEN_BY_DECISION`). **APPLIED and read back on the host 2026-09-08.**
+  **9.5/9.6 CLOSED 2026-09-08 — AND THE OLD LIST WOULD HAVE REFUSED THE BUILD**: `default-v0.1.1` pushed
+  to both repositories; **196 requests, 4.67 GiB**, plane matched **by CIDR**; the deleted CloudFront entry
+  served **3.76 GiB** unnamed — but **`conda.anaconda.org` (155 req, 368 MiB) is on NO allow-list**, so the
+  refusal would have landed a minute after the pull. **The old list had only ever been exercised to its
+  first step** (its CloudFront entry came from a failed pull). **The rebuild is the same recipe** (no
+  `images/` commit between tags; delta = upstream drift) → **not reproducible byte-for-byte**. Deny list
+  **stays empty**. **An `open` plane emits NO `dstdeny_` ACL and an empty `allowlist` plane emits
+  NOTHING** — the file cannot separate *refuses everything* from *does not exist*.
 - **SQUID MATCHES THE NAME THE CLIENT REQUESTED, AND NEVER A DNS ANSWER** (measured 2026-09-08). **A CNAME
   is INVISIBLE** (`static.crates.io` works with no CDN entry); **an HTTP redirect is a NEW name**
   (`codeload.github.com`, the ECR CloudFront); **a bare entry matches EXACTLY** — `github.com` covers
@@ -235,7 +237,7 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   failed for ONE cause — no proxy IN THE PROCESS, never a refused one**: `sudo` strips the variables
   (`apt` needs `-o Acquire::http::Proxy`, or the image's own file) and a **Code Editor**'s VS Code server
   never had them — four `ENOTFOUND open-vsx.org`, **AWS's own two extensions**, at every space start.
-  `open-vsx.org` authored onto `proxy_allow_sandbox` (**20 → 21, UNAPPLIED**); step 8 owns the delivery
+  `open-vsx.org` onto `proxy_allow_sandbox` (**20 → 21, applied the same day**); step 8 owns the delivery
   mechanism and the **unread asset host**; 2.2 grew two image-side files. **A missing plane name can fail
   WITHOUT a `403`** — the second instrument is `/awsds/sandbox/dns-firewall`, which **answered 8.2**
   (`open-vsx.org` BLOCK from a Sandbox address: **the space asked**) and named three more the Code Editor

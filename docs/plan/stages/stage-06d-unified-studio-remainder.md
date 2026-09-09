@@ -19,8 +19,11 @@ maps** it is in, and `DN-4` was rewritten to *"no plane is open except the ones 
 `terraform plan`: `0 to add, 1 to change` — **applied the same day**, re-plan `No changes`, `DN-1`..`DN-4`
 all pass. **Read back the same evening from the host**: the drop-in's own `Rendered` timestamp is after the
 parameter write, `sandbox-foundation` matches name for name, and the build plane renders as a **bare
-allow**, the tunnel's shape. **Owed**: 9.5 only — one full build and push across the plane whose
-CloudFront entry this deleted. *Earlier:* **3.6, 7.1 and 7.2 taken 2026-09-07**: the two portal surfaces read, the remote-IDE endpoint set derived (**nothing to add on either side**), and the `StartSession` pair found attached to a principal that never makes the call — so **the connection method decides the perimeter** (decision due 4), and step 7 was re-cut around that the same day. **Created 2026-09-05** by splitting the old Stage 6, revised the same day into the action-checklist format. It holds only what had not run, re-cut to the estate the split produces: **one** Interactive account (Sandbox), no NAT anywhere, every internet call through the institutional proxy. Two items the old stage carried are gone rather than pending — the design A / design B **comparison** (6c settles it by construction) and the derived-zone decision (dissolved 2026-08-26). **Step 7 added 2026-09-06**, from a reading of the plan against [`objectives.md`](../objectives.md): the local-VS-Code clause had its **policy** half applied at 6a step 3.2 and no step anywhere that opens the connection — so the endpoints it needs under design B were never derived (AWS's own two pages sit in `REFERENCES.md`, consumed by nothing), the two denies were never exercised, and **nothing had ever checked that the principal carrying them is the one that calls `sagemaker:StartSession`** |
+allow**, the tunnel's shape. **9.5 AND 9.6 CLOSED THE SAME DAY — step 9 is done.** One full build and
+push (`default-v0.1.1` in both repositories) put **196 requests and 4.67 GiB** across the plane, and the
+measurement is that the design this replaced would have **refused this build**: `conda.anaconda.org`, 155
+requests and 368 MiB, is on no allow-list — the refusal would have landed one minute after the deleted
+CloudFront entry served 3.76 GiB. The deny list was looked at and **left empty**. *Earlier:* **3.6, 7.1 and 7.2 taken 2026-09-07**: the two portal surfaces read, the remote-IDE endpoint set derived (**nothing to add on either side**), and the `StartSession` pair found attached to a principal that never makes the call — so **the connection method decides the perimeter** (decision due 4), and step 7 was re-cut around that the same day. **Created 2026-09-05** by splitting the old Stage 6, revised the same day into the action-checklist format. It holds only what had not run, re-cut to the estate the split produces: **one** Interactive account (Sandbox), no NAT anywhere, every internet call through the institutional proxy. Two items the old stage carried are gone rather than pending — the design A / design B **comparison** (6c settles it by construction) and the derived-zone decision (dissolved 2026-08-26). **Step 7 added 2026-09-06**, from a reading of the plan against [`objectives.md`](../objectives.md): the local-VS-Code clause had its **policy** half applied at 6a step 3.2 and no step anywhere that opens the connection — so the endpoints it needs under design B were never derived (AWS's own two pages sit in `REFERENCES.md`, consumed by nothing), the two denies were never exercised, and **nothing had ever checked that the principal carrying them is the one that calls `sagemaker:StartSession`** |
 | **Prerequisites** | **[6c](stage-06c-networking-hub.md) pass 5** — what a Studio app can reach changes there, so any measurement below taken earlier would have to be retaken. [6b](stage-06b-development-becomes-staging.md) only in that its instrument re-scoping removes the second Interactive account from the readings |
 | **Consumes** | [D5](../decisions/D05-sagemaker-egress.md), [D11](../decisions/D11-lab-lifecycle.md), [D13](../decisions/D13-lake-formation-enforcement.md), [D17](../decisions/D17-interactive-vs-runtime.md), [D26](../decisions/D26-unified-studio.md), [D28](../decisions/D28-workflow-contract.md), [D38](../decisions/D38-single-egress-hub.md) |
 | **Proves** | [INT-01](../integrations.md) and [INT-17](../integrations.md) (the cross-account image pull and the selector — 6a built the repositories and pushed the image; nothing has consumed it), [INT-02](../integrations.md)'s consumer half under design B |
@@ -75,9 +78,11 @@ contrast, and the **wording** is the evidence, not the exit code.
 
 ### 2. Make the house image selectable, and pull it across the account boundary
 
-**Action:** register `default-v0.1.0` as a SageMaker AI image, attach it to the domain and select it from
-the portal. **Why:** the image has sat in `awsds-prod-ecr-dev-env` since 2026-08-22 and nothing has ever
-selected it. **Explanation:** this is INT-01 and INT-17's only proof, and verification (vi) — *which call
+**Action:** register **`default-v0.1.1`** as a SageMaker AI image, attach it to the domain and select it
+from the portal. **Why:** the image has sat in `awsds-prod-ecr-dev-env` since 2026-08-22 — rebuilt as
+`default-v0.1.1` on 2026-09-08 by step 9.5 — and nothing has ever selected either. **Register the newer
+one**: `v0.1.0` is not wrong, it is merely older, and pointing the domain at a spent tag nobody rebuilds
+is how a registration outlives the image it was chosen for. **Explanation:** this is INT-01 and INT-17's only proof, and verification (vi) — *which call
 makes the image selectable, does it survive a blueprint reconciliation, and does the cross-account pull
 work at all* — is still open.
 
@@ -539,14 +544,24 @@ open stage and this is where the apply happens.
   (parameter → the running `squid.conf`) goes green up to a **half hour later**, on the State Manager
   schedule, with **no host replacement**. A green `DN-3` and a red `PX-3` is the expected middle state,
   not a failure.
-- **9.5 — [user] Exercise the plane where the old list was load-bearing.** Bring the buildbox up and run
-  one full build and push. The name that must now work without being listed is the CloudFront distribution
-  `public.ecr.aws` redirects blobs to — the entry this step deleted. A pull that fails with `Forbidden`
-  here would mean the mode did not reach the host, not that a name is missing.
-- **9.6 — [Claude reads, user decides] Whether the deny list stays empty.** It is empty by the same
-  decision the tunnel's is: everything permitted, everything logged, and a list filled when there is a
-  written policy to fill it from. An entry here would be a name a **build** may not fetch. Stage 11 owns
-  the policy; this step records that nothing was written today.
+- **9.5 — DONE 2026-09-08 (the user built and pushed; Claude read).** `default-v0.1.1` in both
+  repositories, `base` `sha256:a4b763a3…1ea6` and `dev-env` `sha256:6916fc13…6d13`. The access log carries
+  **196 requests from `10.30.47.211`** — a `VPC-SharedServices` address, so the plane matched **by CIDR** —
+  4.67 GiB in 27 minutes, and the deleted CloudFront entry served **3.76 GiB in 71 seconds** with no list
+  naming it. **The finding is a different name: `conda.anaconda.org`, 155 requests and 368 MiB, is on no
+  allow-list of either plane** — 3.1 had already measured it refused on the compute plane, and nothing
+  carried that across. Under the design this step replaced the build **fails one minute after** the 3.76
+  GiB pull completes. The old list's CloudFront entry came from a failed `docker pull`, so that list had
+  only ever been exercised to its first step. Also read: the corrected boot probe now measures
+  `deny to_private` (`pypi.org` 200, `10.31.0.1` **403**); `apt` is the only plain-HTTP traffic and the
+  only thing Squid caches (one `304`); and **the rebuild is the same recipe** — no commit in `images/`
+  between the two tags, the whole delta upstream drift (`base` +942 B, `dev-env` **-11.8 MB**), so the
+  recipe is **not reproducible byte-for-byte** and a pipeline assuming it is will push a digest per run.
+- **9.6 — TAKEN 2026-09-08: the deny list stays empty.** It is empty by the same decision the tunnel's is:
+  everything permitted, everything logged, and a list filled when there is a written policy to fill it
+  from. An entry here would be a name a **build** may not fetch. Deriving one from 9.5's traffic would be
+  the allow-list treadmill in mirror image. Stage 11 owns the policy; this step records that the list was
+  looked at on the day the plane was first exercised, and left empty deliberately.
 
 ## Deliverables
 
