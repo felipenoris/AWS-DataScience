@@ -889,6 +889,16 @@ as a string rather than a finding. One coincidence recorded **without** promotio
 `browser/workbench.js`), so a client-side probe is the likelier author than the server. Nothing measured
 it; nothing depends on it.
 
+> **FALSIFIED THE NEXT DAY — 2026-09-09. The hypothesis above is wrong, and so is the sentence before
+> it.** The Open VSX API, queried from the space, returns `targetPlatform: alpine-arm64` for this
+> extension whenever **no platform is named** — at the root and at `/latest` alike — and `linux-x64` only
+> when the path asks for it. So VS Code was not detecting a platform at all: the workbench queried the
+> gallery, got that variant back as *the* version, and echoed its platform into the asset URL. The
+> laptop coincidence was a coincidence. This paragraph stands as written because it records what was
+> believed at the time; the reading that overturns it is in the sixth sitting below. **Lesson 38 twice
+> over** — the string was correctly written down rather than believed, and then the *explanation* of it
+> was believed one reading too early.
+
 ### [user] The environment inside the Code Editor, which answers a question 2.2 had left open
 
 The terminal carries **no proxy variable of any kind** — and three lines say why that is a fact about the
@@ -1139,3 +1149,11 @@ worth, since the fix is the same and the surface it repairs is larger than *"can
 **The extension itself runs** — confirmed from the command palette. The two are cleanly separated: the
 extension is fine, the IDE's marketplace surface is not, and the only broken action left in this space is
 the one that reads the gallery.
+
+**And the procedure is written down rather than left to be reconstructed.** [`sg-proxy.md`](../plan/runbooks/sg-proxy.md)
+§*Installing an extension in a Code Editor space* carries the invocation with the reason for each
+load-bearing part — three of which were learned by getting them wrong first — the reload it needs, what
+stays broken afterwards so nobody reads the detail-page error as a botched install, and the `403` path
+with 8.6's rule that a refused name **with** a VPC endpoint belongs in the bypass list and never on the
+allow-list. It also says the two things that bound it: **per space, dies with the space**, and **only
+until step 2 delivers the environment**.
