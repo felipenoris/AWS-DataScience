@@ -194,22 +194,16 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
 
 ### Current position
 
-- **STAGE 6c DONE (2026-09-08), PASS 8 INCLUDED — two client profiles.** The **split-tunnel** profile beside
-  the **monitored** one (`objectives.md`'s words — *open* is the proxy plane's `mode`, not a profile): same
-  key, same `DNS`, `AllowedIPs` = the five VPC CIDRs + `10.90.0.0/24`; laptop-only, **no host change**;
-  `vpn.md` §C7. **Measured 2026-09-08**: the reach difference is by **identity**, never by network —
-  `InfrastructureAccess` direct; a persona's call direct is an *explicit* deny, through the proxy an
-  *implicit* one or a success; the host's `REJECT` counter flat across a burst; the App Store client sends
-  **every DNS query** through the tunnel and installs an inert `I`-flagged default on the `utun`. Carried to
-  6d decision due 4 (Method 1 expected to work under split-tunnel; 7.5 reads both) and Stage 11 step 3.4
-  (input (f): the portal alarm fires on split-tunnel sessions). Decision due 4 taken as **(c)**:
-  the access log stays in Production until Stage 11 step 5.1 folds it in; `PX-4` a note.
-  Pass 6: **a space started while `sandbox/egress` is down HANGS** at "IDE configuration in progress";
-  the no-internet timeout is the **host's per-destination ICMP rate limit** (Lesson 55); a laptop call takes
-  **two doors by service family** (`sts` public, `s3control` via the hub's S3 gateway endpoint); **`VP-3`
-  reads every account**; **6.6 taken as (ii),
-  recorded acceptance** — Stage 11 step 3.4 re-takes it, its 5.2 alarms on an off-proxy portal session.
-  **`aws sso logout` invalidates EVERY cached session's token; a browser sign-out invalidates none.**
+- **STAGE 6c DONE (2026-09-08), PASS 8 INCLUDED — two client profiles.** The **split-tunnel** profile
+  beside the **monitored** one (*open* is the proxy plane's `mode`, not a profile): same key, same `DNS`,
+  `AllowedIPs` = the five VPC CIDRs + `10.90.0.0/24`; laptop-only, **no host change**; `vpn.md` §C7.
+  **The reach difference is by IDENTITY, never by network** — a persona's call direct is an *explicit*
+  deny, through the proxy an *implicit* one or a success. The App Store client sends **every DNS query**
+  through the tunnel. Decision due 4 taken as **(c)**; 6.6 as **(ii)**, a recorded acceptance Stage 11
+  step 3.4 re-takes. **A space started while `sandbox/egress` is down HANGS** at "IDE configuration in
+  progress"; the no-internet timeout is the host's per-destination **ICMP rate limit** (Lesson 55); a
+  laptop call takes **two doors by service family**. **`aws sso logout` invalidates EVERY cached session's
+  token; a browser sign-out invalidates none.**
 - **D38 §6 AMENDED (2026-09-08, the user): THE BUILD PLANE IS `open`, NOT AN ALLOW-LIST.**
   `production-foundation` (= all of `VPC-SharedServices`) reaches **any** public name through the proxy,
   everything logged. **A build host's control is the reviewed Dockerfile, not a hostname list.**
@@ -232,34 +226,46 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   (`codeload.github.com`, the ECR CloudFront); **a bare entry matches EXACTLY** — `github.com` covers
   neither `api.github.com` nor `raw.githubusercontent.com`. **`amazonwebservices.com` is NOT
   `amazonaws.com`** (`idetoolkits.*` refused beside `idetoolkits-hostedfiles.amazonaws.com` allowed).
-- **6d STEP 3 RUN, STEPS 8 AND 9 OPENED (2026-09-08).** The proxy works from a space with the variables exported
-  by hand (`pypi.org` 200, `example.com` 403, `NO_PROXY` held on **two** channels). **Two components then
-  failed for ONE cause — no proxy IN THE PROCESS, never a refused one**: `sudo` strips the variables
-  (`apt` needs `-o Acquire::http::Proxy`, or the image's own file) and a **Code Editor**'s VS Code server
-  never had them — four `ENOTFOUND open-vsx.org`, **AWS's own two extensions**, at every space start.
-  `open-vsx.org` onto `proxy_allow_sandbox` (**20 → 21, applied the same day**); step 8 owns the delivery
-  mechanism and the **unread asset host**; 2.2 grew two image-side files. **A missing plane name can fail
-  WITHOUT a `403`** — the second instrument is `/awsds/sandbox/dns-firewall`, which **answered 8.2**
-  (`open-vsx.org` BLOCK from a Sandbox address: **the space asked**) and named three more the Code Editor
-  needs; **the hub carries no DNS Firewall**, so an `ENOTFOUND` can only come from a compute VPC.
-  `--noproxy '*'` → `000` measured **DNS**, not the absent route. Measured on the plane: **Python, Rust and
-  `github.com` clone all work**; `uv`/Julia/R still owed.
-- **STAGE 6d: 3.6, 7.2 AND 7.1 DONE (2026-09-07); STEP 7 RE-CUT AROUND ONE FINDING — THE CONNECTION
-  METHOD DECIDES THE PERIMETER.** 7.1: **nothing to add on either side** — the space's seven names are all
-  in `sandbox/egress/`, the laptop's five ride the `open` tunnel plane; `ec2messages` is on neither vendor
-  page. The deep link's `StartSession` is made **server-side by the project role** (AWS's managed policy
-  scopes it by the two DataZone tags, in Allow form; usable **off-VPN**); SSH/Toolkit use the laptop's
-  credentials (VPN-bound) but the persona sets hold **no Allow** and a persona session carries **no
-  DataZone tag**, so 6a's pair would **deny every space, not scope** — decision due 4 (recommended:
-  Method 3 + an `IDC_UserName` Allow + `StartSession` denied on the D13 boundary). A remote space needs
-  **≥ 8 GB** (`ml.t3.large` **0.100/h**, measured); **the space path carries NO instance ceiling since
-  2026-09-07** (`sagemaker-denies-v0.2.0`: `CreateApp`/`CreateSpace`/`UpdateSpace` exempt via `NotAction`,
-  simulated; jobs keep the list) — **APPLIED 2026-09-07**, both re-plans `No changes`, read back from both objects; **the VS Code server is downloaded by the SPACE** —
-  `remote.SSH.localServerDownload=always` keeps the compute plane unchanged (decision due 5). The
-  `session-manager-plugin` honours `HTTPS_PROXY` only if the env reaches it: a browser-launched VS Code on
-  macOS has none → direct dial → REJECT → **timeout**. **Portal Query Editors has NO endpoint in any VPC**
-  (3.6). `conda` and CRAN are **not** on the compute plane (3.1). Pending a sign-in: the project role's
-  policies.
+- **THE CODE EDITOR'S GALLERY IGNORES `http.proxy` — MEASURED TWICE, 2026-09-08.** The space's own
+  setting moved `idetoolkits.amazonwebservices.com`, `api.github.com` and `raw.githubusercontent.com`
+  **from a DNS `BLOCK` to a Squid `403`** and `pypi.org` to `200` — a **paired before/after**, because a
+  space restart renames the container and cuts the log into non-overlapping windows — while
+  **`open-vsx.org` never reached the proxy** (36 `BLOCK`s, two restarts, three addresses). So *"no proxy
+  in the process"* is **false for that one component**: env vars (a lifecycle config, or
+  `ContainerEnvironmentVariables`) deliver the same fact by another route and are not expected to reach a
+  client that ignores the setting — the pre-packaged `.vsix` is the live option. The terminal **is** the
+  server's environment (`SUPERVISOR_PROCESS_NAME=codeeditorserver`). `alpine-arm64` **retired**: the space
+  is `x86_64`/Ubuntu Noble; `arm64` is the laptop's, and the workbench runs in the laptop's browser.
+- **`NO_PROXY` CARRIES ONE NAME PER ENDPOINT, AND AWS ANSWERS FOR SEVERAL (2026-09-08, 6d 8.8).**
+  `no-proxy.tf` reads the **service's** `private_dns_name` (a string); the names live on the **endpoint's**
+  `dns_entry` (a list) — `datazone` answers for **two**, `studio` for **four**, two of them wildcards.
+  Third instance of one cause after the gateway pair and the `dualstack` spellings. **`.api.aws`,
+  `.app.aws` and `.aws.dev` are separate AWS domain families**, as `amazonwebservices.com` was.
+  **The first question about a `403` is not whether to allow it but whether it has an ENDPOINT** — the two
+  repairs are indistinguishable from the symptom, and allow-listing one that has an endpoint makes it work
+  while losing `aws:SourceVpce`. Fix = module + tag + three `egress/` re-applies; **unfixed**.
+- **6d STEP 3 RUN, STEP 8 MEASURED, STEP 9 DONE (2026-09-08).** The proxy works from a space with the
+  variables exported by hand. **Two components failed for ONE cause — no proxy IN THE PROCESS**: `sudo`
+  strips the variables (`apt` needs `-o Acquire::http::Proxy`, or the image's own file) and a **Code
+  Editor**'s VS Code server never had them — **AWS's own two extensions**, at every space start. That
+  cause now covers only the first (see above). `open-vsx.org` is on `proxy_allow_sandbox` (**21**,
+  applied). **A missing plane name can fail WITHOUT a `403`** — the second instrument is
+  `/awsds/sandbox/dns-firewall`; **the hub carries no DNS Firewall**, so an `ENOTFOUND` can only come from
+  a compute VPC. `--noproxy '*'` → `000` measured **DNS**, not the absent route. Measured on the plane:
+  **Python, Rust and `github.com` clone all work**; `uv`/Julia/R still owed. **Owed in step 8**: five
+  allow-or-lose names, the unread asset host, and `dzd-<id>.sagemaker.us-west-2.on.aws`, DNS-blocked
+  throughout and attributed to nothing.
+- **STAGE 6d STEP 7 RE-CUT 2026-09-07 — THE CONNECTION METHOD DECIDES THE PERIMETER.** 7.1: **nothing to
+  add on either side**. The deep link's `StartSession` is made **server-side by the project role**, scoped
+  by two DataZone tags and usable **off-VPN**; SSH/Toolkit use the laptop's credentials, but persona sets
+  hold **no Allow** and carry **no DataZone tag**, so 6a's pair would **deny every space, not scope** —
+  decision due 4 (recommended: Method 3 + an `IDC_UserName` Allow + `StartSession` denied on the D13
+  boundary). A remote space needs **≥ 8 GB** (`ml.t3.large` **0.100/h**); **the space path carries NO
+  instance ceiling since 2026-09-07** (`sagemaker-denies-v0.2.0`, applied, read back) — jobs keep the
+  list. **The VS Code server is downloaded by the SPACE** (`remote.SSH.localServerDownload=always`,
+  decision due 5). The `session-manager-plugin` honours `HTTPS_PROXY` only if the env reaches it: a
+  browser-launched VS Code on macOS has none → direct dial → REJECT → **timeout**. **Portal Query Editors
+  has NO endpoint in any VPC** (3.6). **`conda` and CRAN are not on the compute plane** (3.1).
 - **THE CLIENT PLANE IS `open`, NOT AN ALLOW-LIST (2026-09-07).** The client's internet is **monitored**;
   the restriction belongs to the **compute** plane (`sandbox-foundation`, **21 names**) —
   **and since 2026-09-08 the BUILD plane is `open` too**, so `allowlist` is now the compute planes' mode,
@@ -280,9 +286,8 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   `PX-1`..`PX-5`; `NT-11`/`NT-12` (two-sided, by CIDR).
 - **`NO_PROXY` is GENERATED, never written** (`vpc-egress` output): 8 of 29 service names are not
   derivable from the token and a gateway endpoint has no `PrivateDnsName`, so S3/DynamoDB are hand-named
-  in **both** spellings. **Squid matches the hostname the client REQUESTED** — a redirect is a new name; a
-  refusal over `https` reads `000`. **`production/egress/` is a PREREQUISITE of a build** (the buildbox's
-  SSM door).
+  in **both** spellings — and see the one-name-per-endpoint defect above. A refusal over `https` reads
+  `000`. **`production/egress/` is a PREREQUISITE of a build** (the buildbox's SSM door).
 - **Module tags: `vpc-egress-v0.10.1`, `wireguard-v0.6.0`, `vpc-v0.3.1`** (`vpc-egress-v0.9.0` and
   `vpc-v0.3.0` ABANDONED on origin — Lesson 46). **`-input=false` on every plan AND apply** (Lesson 47);
   **never pipe a command whose exit code matters**. **`10.40.0.0/16` stays unallocated.**
