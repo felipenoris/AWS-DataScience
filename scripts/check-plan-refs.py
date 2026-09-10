@@ -1,14 +1,13 @@
 #!/usr/bin/env -S uv run --quiet
-# Verify the plan's stable identifiers and relative links still resolve.
-# Run from anywhere:  ./scripts/check-plan-refs.py
+# check-plan-refs.py - the plan's stable identifiers and relative links still resolve.
 #
+#   run:      ./scripts/check-plan-refs.py
 #   reads:    *.md across the repository. No AWS session, no side effect.
 #   exit:     0 clean | 1 at least one broken reference
 #
-# KNOWN RED (see the Makefile): three stage files record dated measurements phrased as
-# "all six accounts with a profile", and the account-count scan cannot tell a historical
-# measurement from a count that goes stale - which is why this runs as its own
-# `make check-docs` target rather than inside the commit gate.
+# Known red (see the Makefile): stage files record dated measurements phrased as account counts, and
+# the account-count scan cannot tell a historical measurement from a count that goes stale. That is
+# why this is its own `make check-docs` target rather than part of the commit gate.
 
 from __future__ import annotations
 
@@ -26,8 +25,7 @@ from repohygiene.markdown import (
     strip_mention_spans,
 )
 
-# Every prose file the plan owns. The root docs were outside this net until 2026-08-08,
-# which is exactly where the stale references had survived.
+# Every prose file the plan owns, the root docs included.
 PROSE_FIXED = [
     "docs/GENERAL_PLAN.md",
     "CLAUDE.md",
@@ -50,13 +48,9 @@ ACCOUNT_COUNT_RE = re.compile(
 )
 ACCOUNT_COUNT_EXCLUDE_RE = re.compile(r"quota|limit|Service Quotas", re.IGNORECASE)
 
-# Bytes, per core file. The budget is what forces the CLAUDE.md / GENERAL_PLAN.md split: a core
-# file that may grow without limit stops being a routing map and becomes the narrative it is
-# supposed to point at. RAISED 20000 -> 40000 on 2026-08-19, deliberately and by the user: at
-# Stage 5 the tree had outgrown the original ceiling, and the two ways to meet it were both worse
-# than the overrun - move the routing table or the lesson keys out of CLAUDE.md, which is the one
-# copy of each, or delete state nothing else records. The trigger to re-read this number is the
-# same as before: a core file whose growth is narrative rather than state.
+# Bytes, per core file. The budget forces the CLAUDE.md / GENERAL_PLAN.md split: a core file that
+# may grow without limit stops being a routing map and becomes the narrative it should point at.
+# Set by the user; re-read it when a core file's growth is narrative rather than state.
 SIZE_BUDGET = 40000
 
 

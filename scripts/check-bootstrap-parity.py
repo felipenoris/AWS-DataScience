@@ -5,33 +5,20 @@
 #   reads:    terraform-live/*/bootstrap/ only. No AWS session, no side effect, nothing written.
 #   exit:     0 clean | 1 at least one divergence
 #
-# WHY A COPY AND NOT A MODULE, since that is the first question this check invites. Step 2.3
-# settled it: terraform-modules/ is consumed BY GIT TAG, a tag cannot exist before the module
-# does, and bootstrap is the slice that makes every other slice possible - giving it a
-# dependency on the tree it bootstraps is how a repository acquires a cycle nobody can unwind
-# at 23:00. A relative-path module inside terraform-live/ would dodge the tag rule and keep the
-# cycle. So the five slices are copies, by decision.
+# A copy and not a module, by step 2.3: terraform-modules/ is consumed by git tag, a tag cannot exist
+# before the module does, and bootstrap is the slice that makes every other slice possible. The
+# copy's failure mode is Lesson 14, a setting changed in four slices out of five with nothing
+# announcing that the fifth stopped being a copy. Hence this check, and the legitimate differences
+# split into files of their own:
 #
-# WHICH LEAVES THE COPY'S OWN FAILURE MODE, and it is Lesson 14 exactly: a bucket setting
-# changed in four places out of five, with the fifth still applying. Nothing about a copy
-# announces that it has stopped being one. THIS CHECK IS THE ANSWER TO THAT, and it is the
-# reason the divergence between the slices was pushed into files of its own:
+#   - backend.tf holds the one part that may differ, because a slice that has not migrated yet
+#     (step 2.2) must not declare a backend. It is compared with the comment markers removed.
+#   - production/bootstrap/pki-key.tf is the one extra file, D36's second key (3.4), allow-listed
+#     by name.
 #
-#   - backend.tf holds the ONE part that legitimately differs, because a slice that has not
-#     migrated yet (step 2.2) must not declare a backend. It is compared with the comment
-#     markers removed, so the commented and the live form must still be the same three lines.
-#   - production/bootstrap/pki-key.tf is the ONE extra file in the tree, D36's second key
-#     (3.4). It is allow-listed here BY NAME - a second entry has to be added deliberately.
-#
-# WHAT IT DELIBERATELY DOES NOT SEE:
-#
-#   - THE GENERATED FILES. backend.hcl and terraform.auto.tfvars are per-slice by construction
-#     and gitignored; comparing them would fail on the values that are supposed to differ.
-#     gen-backend-hcl.py and gen-tfvars.py are what keep those two honest, from one table.
-#   - WHETHER A SLICE HAS APPLIED. This is a file comparison. `./aws/tf-backends.py` is the
-#     instrument that reads AWS, and its BK-0 answers "does this account have a bucket at all".
-#   - staging/bootstrap/, which does not exist until the account is vended (3.2). Its absence
-#     is expected and reported as such; its arrival is picked up automatically.
+# Not seen here: the generated files (backend.hcl and terraform.auto.tfvars are per-slice by
+# construction and gitignored; gen-backend-hcl.py and gen-tfvars.py keep them honest from one
+# table), and whether a slice has applied (./aws/tf-backends.py BK-0 reads AWS).
 
 from __future__ import annotations
 
@@ -43,25 +30,11 @@ from pathlib import Path
 
 LIVE = Path("terraform-live")
 
-# The account folders that get a bootstrap slice, in the order docs/plan/conventions.md §6
-# lists them.
-#
-# THE TWO SWAPPED ON 2026-09-06 (Stage 6b step 4.8), AND THE DIRECTION IS THE POINT. `staging`
-# was the optional one - "the account is unvended, so 3.2 skips it, and the moment somebody
-# vends it this check starts comparing it without being edited". That vend never happened: the
-# quota refused it and Stage 6b made `Staging` by RENAMING `Development`. So the slice that
-# arrived is staging/bootstrap/ (4.2), and it is REQUIRED from the commit that wrote it.
-# `development/bootstrap/` is what is temporary now - it owns awsds-dev-tfstate, which every
-# other migration in pass 4 reads FROM, so it is destroyed LAST (4.7). Optional here means
-# "still present, and its absence is the expected end state", which is the mirror of what the
-# word meant a day ago.
-# AND `development` LEFT BOTH LISTS AT 4.7, when its bucket was destroyed and its folder deleted.
-# It was OPTIONAL for exactly one pass - "still present, and its absence is the expected end
-# state" - and this is that end state. THERE IS NO COMMITTABLE INTERMEDIATE STATE for a bootstrap
-# teardown: a slice with `prevent_destroy` lifted has stopped being a copy and fails this check,
-# and dropping it from the lists early fails it the other way ("not an account folder this project
-# knows"). So a teardown commits its END state - the same thing step 1.7 found about a whole slice
-# on the same day.
+# The account folders with a bootstrap slice, in the order docs/plan/conventions.md §6 lists them.
+# OPTIONAL holds a slice that is still present while its absence is the expected end state; it is
+# empty since Stage 6b step 4.7 destroyed development/bootstrap/. A bootstrap teardown commits its
+# end state: a slice with `prevent_destroy` lifted has stopped being a copy and fails this check, and
+# a name dropped early fails it the other way.
 REQUIRED = ("sandbox", "staging", "data-governance", "production", "identity")
 OPTIONAL: tuple[str, ...] = ()
 
