@@ -124,10 +124,25 @@ work at all* — is still open.
   different app type and not covered by a JupyterLab image configuration. The deliverable therefore also
   carries two image-side files — `/etc/apt/apt.conf.d/01proxy` and a sudoers `env_keep` for the six proxy
   variables — and the Code Editor half is **step 8**.
+- **2.3 done 2026-09-10, and it answers more than it asked.** The user created spaces from the portal
+  and **both started on the image — JupyterLab and Code Editor**. So the picker reads the domain's
+  `DefaultUserSettings`, with `DefaultSpaceSettings` carrying no `CustomImages` as the control, and the
+  Code Editor half — attached on the same write and marked unexercised because the Dockerfile is
+  JupyterLab-shaped — works. INT-17's fallback (iii), *the image can only be chosen per space*, is not
+  needed: the choice is per domain, and this estate's domain is per project.
 - **2.3 — [user] Select it**: create a JupyterLab space on the house image from the portal, and record
   whether it appears in the list without any further act.
 - **2.4 — [Claude] Read reconciliation**: `./aws/studio.py` before and after a blueprint reconciliation. If
   the selector is a blueprint-authored object it may be reset — verification (vi)'s second half.
+- **2.5 done 2026-09-10: INT-01 measured, and the two principals are not one.** The registry account's
+  CloudTrail carries the two spaces' pulls at 18:37:43Z and 18:38:31Z — `BatchGetImage` on
+  `awsds-prod-ecr-dev-env`, `userIdentity.type AWSAccount`, principal
+  `datazone_usr_role_<project>_<env>` (resolved by role id, not by name in prose) with session name
+  `SageMaker`, **by digest** `sha256:6916fc13…`. Beside it, 17:05:37Z is the **image role** reading the
+  same repository **by tag** at `CreateImageVersion`. So the tag is resolved once, at registration, and
+  a space never sees it; and the D13 boundary on the project role does not stand in the way of an ECR
+  read, which was the risk 2.3 was watched for. No KMS grant was needed, as the ECR-encryption page
+  says.
 - **2.5 — [Claude] Read the cross-account pull**: the CloudTrail record showing the Sandbox project role
   reading `awsds-prod-ecr-dev-env` — INT-01 measured rather than assumed.
 

@@ -724,9 +724,11 @@ Stage 6d step 2). `sandbox/dev-env/` holds the image, the version and one app im
 app type; `CustomImages` is a field of the domain's user settings, so making an image *selectable* is a
 hand step against an object `Tooling` owns, and `UpdateDomain` replaces `DefaultUserSettings` whole
 (Lesson 60). A **space** cannot name an image at all — `SpaceSettings.CodeEditorAppSettings` carries
-neither `CustomImages` nor `LifecycleConfigArns`. Two readings from the first registration: the version
-resolves the tag to a **digest** at creation, and the image's `RoleArn` is the principal that reads the
-repository across the account boundary. The recipe, per account and per release, is
+neither `CustomImages` nor `LifecycleConfigArns`. Two principals read the repository and they are not the same one: at `CreateImageVersion` the image's
+`RoleArn` reads it **by tag** and pins the version to a digest; when a space starts, the **project
+role** reads it **by digest**, so a space never sees the tag. Both a **JupyterLab** and a **Code
+Editor** space started on this image (2026-09-10) from the `DefaultUserSettings` block, with
+`DefaultSpaceSettings` empty as the control. The recipe, per account and per release, is
 [`runbooks/dev-env.md`](plan/runbooks/dev-env.md).
 
 **What the app image configuration cannot carry is the proxy environment.**
