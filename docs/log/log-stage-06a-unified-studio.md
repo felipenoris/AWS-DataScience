@@ -1240,18 +1240,18 @@ arch:    x86_64
 disk:    /dev/nvme0n1p1  64G  2.5G  62G  4% /
 ```
 
-**`52.89.212.1` is the WireGuard host's Elastic IP.** That single line is the whole claim measured rather
-than argued: the build host is in a tier with no internet gateway, it reaches the internet, and it leaves
-under the address of the one host in this design that is allowed to face the world. `buildbox.py sync` also
-ran clean — 16 728 bytes of base64, 8 files, landed at `/opt/awsds/images`.
+`52.89.212.1` is the WireGuard host's Elastic IP. The build host is in a tier with no internet gateway, it
+reaches the internet, and it leaves under the address of the one host in this design that is allowed to
+face the world. `buildbox.py sync` also ran clean — 16 728 bytes of base64, 8 files, landed at
+`/opt/awsds/images`.
 
-### One more thing I got wrong, and it was already written down two lines away
+### The rule description that cost a plan
 
 The security group rule description I first wrote carried an apostrophe, and
 `AuthorizeSecurityGroupIngress` rejects the whole call — at **plan** time, on a regex. The file I was
-editing already said so, in capitals, eight lines above the block I was adding to: *"A RULE DESCRIPTION
-CARRIES NO APOSTROPHE … measured in Stage 3."* It cost one plan. **No new lesson**: the fact was recorded,
-in the right place, and I did not read it — which is a reading failure, not a missing rule.
+editing already said so, eight lines above the block I was adding to: *"A RULE DESCRIPTION CARRIES NO
+APOSTROPHE … measured in Stage 3."* It cost one plan. No new lesson: the fact was recorded, in the right
+place, and I did not read it.
 
 ### Files, commits, and what is owed
 
@@ -1264,68 +1264,63 @@ disagreed with the sibling lock file I had copied in (6.61.0 cached, 6.60.0 lock
 `make check` green, `checkov` 0 failed on both new trees, all three touched slices re-plan `No changes`,
 `./aws/vpn.py` 0 FAILED.
 
-**Owed, and both are the user's:** the `docker build` of the two images on this host — which is what the
-box exists for and has not been done — and the push of the results into the Production ECR from an identity
-that may. **The buildbox is UP and billing at 0.1664 USD/h as this is written**; `./scripts/buildbox.py down`
-is the cure and `status` is the reading.
+Owed, and both are the user's: the `docker build` of the two images on this host — what the box exists for
+and has not been done — and the push of the results into the Production ECR from an identity that may. The
+buildbox is up and billing at 0.1664 USD/h as this is written; `./scripts/buildbox.py down` is the cure and
+`status` is the reading.
 
-### A follow-up the same day: the requirement was withdrawn rather than delivered in name
+### A follow-up the same day: the VPN-only requirement withdrawn
 
-The user asked *"`buildbox.py ssm` works without me being on the VPN — is that expected?"* **It is, and the
-sentence I had written was wrong.** `ssm start-session` goes laptop → the **public** SSM API → the channel
-the agent holds open **outbound**; the security group never sees it. So *"reachable only with the tunnel
-up"* was false for the one path anybody uses — and the slice README said so **itself**, two clauses after
-claiming the opposite. A sentence disagreeing with itself inside one table cell.
+The user asked *"`buildbox.py ssm` works without me being on the VPN — is that expected?"* It is, and the
+sentence I had written was wrong. `ssm start-session` goes laptop → the public SSM API → the channel the
+agent holds open outbound; the security group never sees it. So *"reachable only with the tunnel up"* was
+false for the one path anybody uses — and the slice README said so itself, two clauses after claiming the
+opposite.
 
-**What the measurement found beside it, and it is the half that decided the outcome.** Asked what other
-ways in exist, the host answered: `sshd` **active on 0.0.0.0:22**, `ec2-instance-connect` **installed**,
-`AuthorizedKeysCommand` already wired to it, and **zero authorized keys**. So the ingress rule was not
-merely failing to gate the shell — it was leaving port 22 *reachable* from the tunnel on a host one
-`key_name` away from a second way in that nothing in this design asked for. **A grant with no consumer is
-not neutral; it is the shape a later convenience grows out of** (Lesson 5, from the side where the control
-is real but guards nothing). Two other paths were priced and reported: **EC2 Instance Connect** would have
-worked today with no infrastructure change *and* would genuinely have required the tunnel (ephemeral
-60-second key, IAM-authenticated, but the SSH still has to reach a private IP) — and the **serial console**
-is shut off org-wide, which the API states in its own words: `SerialConsoleAccessEnabled: false`,
-**`ManagedBy: declarative-policy`**. That is Stage 1c step 7.8's declarative policy exercised for the first
-time against something real.
+The same measurement found the half that decided the outcome. Asked what other ways in exist, the host
+answered: `sshd` active on `0.0.0.0:22`, `ec2-instance-connect` installed, `AuthorizedKeysCommand` already
+wired to it, and zero authorized keys. The ingress rule was not merely failing to gate the shell — it was
+leaving port 22 reachable from the tunnel on a host one `key_name` away from a second way in that nothing
+in this design asked for. A grant with no consumer is the shape a later convenience grows out of (Lesson 5,
+from the side where the control is real but guards nothing). Two other paths were priced and reported:
+**EC2 Instance Connect** would have worked today with no infrastructure change and would have required the
+tunnel (ephemeral 60-second key, IAM-authenticated, but the SSH still has to reach a private IP); the
+**serial console** is shut off org-wide, which the API states in its own words:
+`SerialConsoleAccessEnabled: false`, `ManagedBy: declarative-policy`. That is Stage 1c step 7.8's
+declarative policy exercised for the first time against something real.
 
-**The user's decision: SSM only, and drop the VPN-only requirement — keep the egress one.** So the ingress
-rule was **removed entirely** rather than narrowed, `peer_cidr` left the slice's variables and
-`backend.py`'s emission with it, and five documents stopped claiming a control that was not one. The
-security group now has an **empty ingress list**, and the host registers `Online` with it that way —
-which is the same fact measured from the other side.
+The user's decision: **SSM only, and drop the VPN-only requirement — keep the egress one.** The ingress
+rule was removed entirely rather than narrowed, `peer_cidr` left the slice's variables and `backend.py`'s
+emission with it, and five documents stopped claiming a control that was not one. The security group now
+has an empty ingress list, and the host registers `Online` with it that way.
 
-**A `description` change forces a security-group replacement, so this went out as `down` then `up`** rather
+A `description` change forces a security-group replacement, so this went out as `down` then `up` rather
 than as an in-place edit fought through ordering. That is what the `[E]` layer is for, and it cost one
 teardown.
 
-**And the re-`up` found a defect in my own helper.** `docker --version` taken the moment `up` returned came
-back **empty**, with `systemctl is-active docker` saying `inactive` and the boot log mid-install: **the SSM
-agent registers while cloud-init is still running**, so `up` had been reporting *"up. next: sync, ssm"*
-about the agent while the toolchain was not there yet — one measurement standing in for another
-(Lesson 13). `up` now waits for `docker` to be **active** and says which of the two it is waiting on.
+The re-`up` found a defect in my own helper. `docker --version` taken the moment `up` returned came back
+empty, with `systemctl is-active docker` saying `inactive` and the boot log mid-install: the SSM agent
+registers while cloud-init is still running, so `up` had been reporting *"up. next: sync, ssm"* about the
+agent while the toolchain was not there yet — one measurement standing in for another (Lesson 13). `up`
+now waits for `docker` to be active and says which of the two it is waiting on.
 
-**What did not change, and is the requirement that stayed:** egress. The build host still reaches the
-internet only through the WireGuard host, still with no NAT gateway anywhere, and still leaves under
-`52.89.212.1` — re-measured after the rebuild.
+Egress did not change. The build host still reaches the internet only through the WireGuard host, still
+with no NAT gateway anywhere, and still leaves under `52.89.212.1`, re-measured after the rebuild.
 
-**Not edited: `objectives.md`.** The brief's *"All user access to the cloud infrastructure will be
-performed through a VPN"* is untouched by this, because open question 17 already records the reading that
-covers it — the objective is delivered **for every persona**, and the administrative credential is
-deliberately outside it. This is that exemption being leaned on again, in a new place; the question exists
-to keep it visible rather than let it become furniture.
+`objectives.md` was not edited. The brief's *"All user access to the cloud infrastructure will be performed
+through a VPN"* is untouched by this, because open question 17 already records the reading that covers it —
+the objective is delivered for every persona, and the administrative credential is deliberately outside it.
+This is that exemption being leaned on again, in a new place; the question exists to keep it visible.
 
-**AMENDED 2026-08-22 — the clause *"delivered for every persona"* was sound about the surfaces this
-entry reasons over and is false as a standing claim.** That evening's off-VPN reading put a Data
-Scientist in **JupyterLab with the tunnel down**: the objective is delivered for the private network
-and for the AWS control plane, and **not** for the Unified Studio portal — the surface a persona
-actually works in. This entry's own decision is untouched (SSM egress is unaffected, and the
-administrative exemption is still open question 17's). The amendment exists because the sentence is
-quotable out of its paragraph, and read that way it is exactly the kind of confident, undated,
-unmeasured claim about another surface that Lesson 37 names.
+Amended 2026-08-22: the clause *"delivered for every persona"* was sound about the surfaces this entry
+reasons over and is false as a standing claim. That evening's off-VPN reading put a Data Scientist in
+JupyterLab with the tunnel down: the objective is delivered for the private network and for the AWS
+control plane, and **not** for the Unified Studio portal — the surface a persona works in. This entry's own
+decision is untouched (SSM egress is unaffected, and the administrative exemption is still open question
+17's). The amendment exists because the sentence is quotable out of its paragraph, and read that way it is
+the kind of confident, undated, unmeasured claim about another surface that Lesson 37 names.
 
-## 2026-08-21 — Step 1.3 RAN: the association auto-accepts, the RAM permission is not one the plan could name, and a check failed because the step worked
+## 2026-08-21 — Step 1.3 ran: the association auto-accepts, the RAM permission is not one the plan could name, and a check failed because the step worked
 
 ### What was done in the console — **the user's hand, their words, verbatim**
 
@@ -1390,49 +1385,48 @@ succeed at all. Empty is the correct pre-1.4 state, and the *success* is the ass
 
 ### The check that failed because the step succeeded
 
-`./aws/studio.py` came back **`2 check(s) FAILED`** immediately after the association: `US-2`, *"DataZone
+`./aws/studio.py` came back `2 check(s) FAILED` immediately after the association: `US-2`, *"DataZone
 domain in awsds-infra-sandbox-1 — 1 domain(s) outside Data Governance"*, and the same in Development. It
 was wrong, and the tell was that the failure arrived from the act that was supposed to work.
 
-**Measured before being believed** — the domain visible in each member account is `dzd-d8yrvx1ko7im6o`,
-and its **ARN names Data Governance**, not the local account, in all three accounts. There is one domain.
-INT-12's fallback did not happen and the 1c root deny is holding.
+The domain visible in each member account is `dzd-d8yrvx1ko7im6o`, and its ARN names Data Governance, not
+the local account, in all three accounts. There is one domain. INT-12's fallback did not happen and the 1c
+root deny is holding.
 
-**The defect:** `US-2` counted the rows `datazone list-domains` returns and treated any non-zero as *"a
-domain was created here"*. The collection built a 4-tuple of `(id, name, version, status)` and **discarded
-the ARN** — the only field that separates *visible* from *owned*. The premise held exactly as long as
-nothing was shared; step 1.3 is the event that made it false. **Lesson 31, arriving as a false FAIL
-instead of a false pass** — a check whose scope was inherited from the world it was written in.
+The defect: `US-2` counted the rows `datazone list-domains` returns and treated any non-zero as *"a domain
+was created here"*. The collection built a 4-tuple of `(id, name, version, status)` and discarded the ARN,
+the only field that separates *visible* from *owned*. The premise held as long as nothing was shared; step
+1.3 is the event that made it false — **Lesson 31**, arriving as a false FAIL instead of a false pass.
 
-**Fixed in the same sitting.** The owner is split out of the ARN and kept as element 4; `US-2` now fails
-on a domain **owned** by a member account, passes with *"sees the shared domain and owns none"* when the
-shared one is the expected `dzd-*`, and fails distinctly if some other domain is shared in from a place
-nobody chose. Section 2 of the report gained an **OWNER** column reading `self` / `shared in`, and its
-prose now says to read that column rather than the row count. Two further messages were made to follow the
-measurement rather than a guess: `US-2`'s empty case distinguishes an account awaiting association from
-one that is never associated (D28), and `US-3`'s note now points at **1.4** once it can see the shared
-domain, instead of continuing to ask for a 1.3 that has already happened. **Battery re-run: 0 FAILED.**
+Fixed in the same sitting. The owner is split out of the ARN and kept as element 4; `US-2` now fails on a
+domain owned by a member account, passes with *"sees the shared domain and owns none"* when the shared one
+is the expected `dzd-*`, and fails distinctly if some other domain is shared in from a place nobody chose.
+Section 2 of the report gained an **OWNER** column reading `self` / `shared in`, and its prose now says to
+read that column rather than the row count. Two further messages follow the measurement rather than a
+guess: `US-2`'s empty case distinguishes an account awaiting association from one that is never associated
+(D28), and `US-3`'s note now points at 1.4 once it can see the shared domain, instead of continuing to ask
+for a 1.3 that has already happened. Battery re-run: 0 FAILED.
 
-### What was deliberately NOT done, and it looks like bookkeeping
+### What was not done
 
-**No row was added to `backend.SMUS_ASSOCIATED`.** It reads like the clerical half of 1.3 and it is the
-**trigger** for the next two steps: it flips `blueprints_enabled` in both `sagemaker/` slices (1.4) and,
+No row was added to `backend.SMUS_ASSOCIATED`. It reads like the clerical half of 1.3 and it is the
+trigger for the next two steps: it flips `blueprints_enabled` in both `sagemaker/` slices (1.4) and,
 because it would then hold every member, `profiles_enabled` in `data-governance/governance/` (1.5). Both
 slices already carry the gated resources, so the row puts an apply one command away — and that apply would
-cross two gates this stage has open in writing: **decision 1 is reopened**, yet `category_one_blueprints`
-already lists `EMRServerless` and would enable it, and **`AmazonBedrockGenerativeAI`'s `PRICING.md` row is
-owed before the 1.4 apply** by the step's own text. The ordering also matters and is not encoded anywhere:
-the two `sagemaker/` slices apply **before** `governance/`, because a project profile names blueprints that
-must already be configured. Written down here so the next sitting starts from it.
+cross two gates this stage has open in writing: decision 1 is reopened, yet `category_one_blueprints`
+already lists `EMRServerless` and would enable it, and `AmazonBedrockGenerativeAI`'s `PRICING.md` row is
+owed before the 1.4 apply by the step's own text. The ordering is not encoded anywhere: the two
+`sagemaker/` slices apply **before** `governance/`, because a project profile names blueprints that must
+already be configured.
 
-## 2026-08-21 — Steps 1.4 and 1.5 RAN: twelve failures that were the provider's contract, two probes that bracketed it, and a base variant the service refused to bundle
+## 2026-08-21 — Steps 1.4 and 1.5 ran: the provider's contract, the probes that bracketed it, and a base variant the service refused to bundle
 
 **Claude's hand throughout, under the user's authorizations given in the sitting**: *"pode fazer o
 apply"* for the step 1.4/1.5 applies; *"Sim, pode fazer o teste sugerido"* for the two write probes;
 and the reclassification below in the user's own words. Every AWS write in this entry is one of those
 three. The plan-facing consequences are the stage file's findings 7-11 — this entry is what happened.
 
-### 1.4, first attempt — twelve for twelve, and the error contradicted a read
+### 1.4, first attempt — the error contradicted a read
 
 Recipe A on `sandbox/sagemaker/` (`sagemaker-prereqs-v0.2.0`): plan `12 to add`, apply — **all twelve
 blueprint configurations failed**, each with
@@ -1444,14 +1438,14 @@ while `get-environment-blueprint`, same profile, same domain, same region, **ans
 ids**. Nothing was created: re-plan read `12 to add` again and
 `list-environment-blueprint-configurations` returned `{"items": []}`.
 
-### The contract, measured three ways and bracketed by two authorized probes
+### The contract, measured and bracketed by authorized probes
 
 The CFN page's `EnvironmentBlueprintIdentifier` is documented against **names** (*"only
 `DefaultDataLake` and `DefaultDataWarehouse` are supported"* — V1-era names) with the resolved id in a
-**separate** `EnvironmentBlueprintId` GetAtt; the awscc example passes the literal `"DefaultDataLake"`;
-and the live type schema (`describe-type`) marks the identifier **createOnly + writeOnly**. The `aws`
-provider's resource takes the id; the `awscc` one rides CloudFormation and takes the **NAME**. We fed
-it ids, so the handler hunted for blueprints *named* like ids (Lesson 32).
+separate `EnvironmentBlueprintId` GetAtt; the awscc example passes the literal `"DefaultDataLake"`; and
+the live type schema (`describe-type`) marks the identifier **createOnly + writeOnly**. The `aws`
+provider's resource takes the id; the `awscc` one rides CloudFormation and takes the **name**. We fed it
+ids, so the handler hunted for blueprints *named* like ids (Lesson 32).
 
 Two probes, individually authorized, separated tool from world (Lesson 30): a plain-CLI
 `put-environment-blueprint-configuration` for `Tooling` **with the id** — provisioning role, boundary,
@@ -1463,15 +1457,15 @@ boundary drift will never appear in a plan, so `US-8` is verification (v)'s sent
 
 ### v0.2.2, and the fix cycle's scar
 
-`sagemaker-prereqs-v0.2.2` passes the name, routed through the data source's `.name` so the roster
-guard is a declared dependency (tflint had refused the dangling form — correctly). The cycle minted a
-**stillborn `sagemaker-prereqs-v0.2.1`**: the tag was cut while commit 1 was still hook-blocked, the
-failure hidden behind a piped exit code, so it landed on the previous `main` tip — v0.2.0 content
-under a v0.2.1 name. Runbook §8 forbids moving tags; the version stepped forward and **nothing may
-ever reference v0.2.1**. After the merge: `12 added` in Sandbox, `12 added` in Development, re-plan
-`No changes` in both, 12/12 carrying the boundary — and `get-data-lake-settings` **byte-identical
-before and after** in both members (verification (xiv)'s enablement half: enabling touches no
-`DataLakeSettings`), the two-subnet parameters accepted (verification (iii)'s first half).
+`sagemaker-prereqs-v0.2.2` passes the name, routed through the data source's `.name` so the roster guard
+is a declared dependency (tflint had refused the dangling form). The cycle minted a stillborn
+`sagemaker-prereqs-v0.2.1`: the tag was cut while commit 1 was still hook-blocked, the failure hidden
+behind a piped exit code, so it landed on the previous `main` tip — v0.2.0 content under a v0.2.1 name.
+Runbook §8 forbids moving tags; the version stepped forward and **nothing may ever reference v0.2.1**.
+After the merge: `12 added` in Sandbox, `12 added` in Development, re-plan `No changes` in both, 12/12
+carrying the boundary — and `get-data-lake-settings` byte-identical before and after in both members
+(verification (xiv)'s enablement half: enabling touches no `DataLakeSettings`), the two-subnet parameters
+accepted (verification (iii)'s first half).
 
 ### 1.5, first attempt — the service refused the bundle, and the user re-cut the roster
 
@@ -1484,7 +1478,7 @@ against `sts` without printing ids. **Both profile creates failed**, DataZone 40
 Nothing was created. The domain's own descriptions settled what that means — `Tooling`: *"Creates
 resources for the project, including IAM user role, security groups, Amazon Athena workgroup for
 querying data, and Amazon SageMaker domain."*; `ToolingLite`: *"Create basic resources for SageMaker
-Unified Studio project."* — a second **BASE**, not a capability, exactly the shape `SMUS.md`'s row had
+Unified Studio project."* — a second **base** rather than a capability, the shape `SMUS.md`'s row had
 flagged for reading before trusting. **The user's decision, verbatim: "Reclassifique ToolingLite como
 Categoria 3."** Decision 5 re-cut 12/5/6 → 11/5/7; `sagemaker-prereqs-v0.2.3` moved all three copies
 of the list; the member applies each read `0 to add, 0 to change, 1 to destroy` — **11 configurations
@@ -1492,18 +1486,18 @@ stand per member**.
 
 ### 1.5, second attempt — done
 
-`2 added`: `experimentation` → Sandbox, `engineering` → Development. Read back by
-`get-project-profile` (the list call omits configurations — Lesson 13's shape, so the get answered):
-**11 environment configurations each, `Tooling` the only base, `ON_CREATE`**, and the five locked
-parameters non-editable — `sagemakerDomainNetworkType=VpcOnly`, `lifecycleManagement=true`,
-`maxIdleTimeoutInMinutes=120`, `maxEbsVolumeSize=100`, `enableTrustedIdentityPropagationPermissions=false`
-— with `idleTimeoutInMinutes=60` the one editable default. **Decision 2 is delivered as coded.**
-`./aws/studio.py`: **0 checks FAILED** — `US-3` *"11 blueprint configuration(s) … all inside decision
-5's category 1"* in both members, `US-4` *"experimentation and engineering exist"*.
+`2 added`: `experimentation` → Sandbox, `engineering` → Development. Read back by `get-project-profile`
+(the list call omits configurations — Lesson 13's shape, so the get answered): 11 environment
+configurations each, `Tooling` the only base, `ON_CREATE`, and the five locked parameters non-editable —
+`sagemakerDomainNetworkType=VpcOnly`, `lifecycleManagement=true`, `maxIdleTimeoutInMinutes=120`,
+`maxEbsVolumeSize=100`, `enableTrustedIdentityPropagationPermissions=false` — with
+`idleTimeoutInMinutes=60` the one editable default. **Decision 2 is delivered as coded.**
+`./aws/studio.py`: `0 checks FAILED` — `US-3` *"11 blueprint configuration(s) … all inside decision 5's
+category 1"* in both members, `US-4` *"experimentation and engineering exist"*.
 
-**Left owed after this sitting**: 1.7's portal reading (user), 5.0's image push (user), passes 3-5.
+Left owed after this sitting: 1.7's portal reading (user), 5.0's image push (user), passes 3-5.
 
-## 2026-08-22 — Step 1.7 RAN and answered INT-16; the same click found two project profiles nobody could instantiate, and `grants.tf` closed it
+## 2026-08-22 — Step 1.7 ran and answered INT-16; the same click found project profiles nobody could instantiate, and `grants.tf` closed it
 
 **Two hands, and the split matters for every claim below.** The portal readings are the **user's**,
 in their browser, and are quoted verbatim. Everything else — the read-only AWS calls, the
@@ -1512,44 +1506,42 @@ sitting: *"Pode sincronizar e preparar a próxima etapa do plano"*, then the ass
 the user's own words, then *"Pode realizar o apply. Faça commit e abra um PR."* The stage file's
 findings 12-13 are the plan-facing consequences; this entry is what happened.
 
-### Before the portal — the push procedure, written from measurements rather than from intent
+### Before the portal — the push procedure, written from measurements
 
 The sitting opened by synchronising after PR #30 and preparing step 5.0. Preparing it turned up three
 things the repository did not say, and one it said wrongly.
 
-**The buildbox was absent** (`./scripts/buildbox.py status`: *"absent (nothing billing)"*), so the clean
-build of 2026-08-21 was gone with its volume. `images/README.md` and step 5.0 described the build and
-the push in consecutive sentences that read as two sittings; they are **one session**, because the
-host is `[E]` and holds nothing. That reading costs a full rebuild, and it is now stated in three
-places.
+The buildbox was absent (`./scripts/buildbox.py status`: *"absent (nothing billing)"*), so the clean
+build of 2026-08-21 was gone with its volume. `images/README.md` and step 5.0 described the build and the
+push in consecutive sentences that read as two sittings; they are **one session**, because the host is
+`[E]` and holds nothing. That reading costs a full rebuild, and it is now stated in three places.
 
-**No identity in Sandbox can push.** Both repository policies were read live: one statement each,
-`AllowConsumerAccountsToPull`, granting the two Interactive accounts
-`BatchCheckLayerAvailability`, `BatchGetImage`, `GetDownloadUrlForLayer`, `DescribeImages`. **Nothing
-grants a push to anybody**, and nothing needs to — a same-account push is decided by the identity
-policy alone. So the push is a Production principal's act and the credential has to travel to the
-build host as a 12-hour ECR authorization token; the host's role stays without an `ecr:` permission.
+No identity in Sandbox can push. Both repository policies were read live: one statement each,
+`AllowConsumerAccountsToPull`, granting the two Interactive accounts `BatchCheckLayerAvailability`,
+`BatchGetImage`, `GetDownloadUrlForLayer`, `DescribeImages`. Nothing grants a push to anybody, and
+nothing needs to — a same-account push is decided by the identity policy alone. So the push is a
+Production principal's act and the credential has to travel to the build host as a 12-hour ECR
+authorization token; the host's role stays without an `ecr:` permission.
 
-**The ceiling permits it and denies its mirror image.** `awsds-org-scp-perimeter`'s
+The ceiling permits it and denies its mirror image. `awsds-org-scp-perimeter`'s
 `DenyEcrPushOutsideOrganization` denies the four push verbs when `aws:ResourceOrgID` is *not* ours;
 `awsds-org-rcp-perimeter`'s `EnforceOrgIdentitiesOnRegistry` denies `ecr:*` to principals outside the
 organization. Neither sees an org identity pushing into an org registry.
 
-**And the S3 gateway endpoint is not on the push path**, which was checked because the Sandbox
-endpoint policy grants `s3:GetObject`/`ListBucket` on `prod-us-west-2-starport-layer-bucket` and no
-`PutObject` — a shape that reads like a gap until AWS's own page is read: `ecr.dkr` is the Docker
-Registry API and *"Docker client commands such as `push` and `pull` use this endpoint"*, while S3 is
-what a container reaches to **download** layers (documented minimum: `s3:GetObject`). The Sandbox VPC
-has **no interface endpoint of any kind** (the `egress/` slice is `[E]` and down), so the upload
-leaves through the WireGuard `t3.nano` — the same path the build already pulled the distribution in
-through, which is what makes it slow rather than novel.
+The S3 gateway endpoint is not on the push path, checked because the Sandbox endpoint policy grants
+`s3:GetObject`/`ListBucket` on `prod-us-west-2-starport-layer-bucket` and no `PutObject` — a shape that
+reads like a gap until AWS's own page is read: `ecr.dkr` is the Docker Registry API and *"Docker client
+commands such as `push` and `pull` use this endpoint"*, while S3 is what a container reaches to download
+layers (documented minimum: `s3:GetObject`). The Sandbox VPC has no interface endpoint of any kind (the
+`egress/` slice is `[E]` and down), so the upload leaves through the WireGuard `t3.nano` — the same path
+the build already pulled the distribution in through, which is what makes it slow.
 
-One more read, so the procedure's safety claim is a measurement: the account has **no
-`SSM-SessionManagerRunShell` document**, so Session Manager runs on defaults and no session stream is
+One more read, so the procedure's safety claim is a measurement: the account has no
+`SSM-SessionManagerRunShell` document, so Session Manager runs on defaults and no session stream is
 logged — `read -rs` keeps the token off the screen and out of history, and nothing else records it.
 
 All of it became [`buildbox.md`](../plan/runbooks/buildbox.md) **§P**, with `images/README.md`, step 5.0
-and two pass-table rows corrected to match. **Step 5.0 itself did not run** and is still owed.
+and two pass-table rows corrected to match. Step 5.0 itself did not run and is still owed.
 
 ### 1.7 — the user's reading, verbatim
 
@@ -1564,57 +1556,56 @@ user took the second and third:
 > perform operation: CreateProject`. Habilitando VPN, IP `52.89.212.1`, e executando o mesmo
 > procedimento, o resultado é exatamente o mesmo.
 
-**The carrier address is deliberately not written down here.** It locates a person, and the
-measurement is the *inequality* — that it was not the Elastic IP — not the literal.
+The carrier address is not written down here. It locates a person, and the measurement is the
+*inequality* — that it was not the Elastic IP — not the literal.
 
 Two things were then verified rather than assumed, because the reading is worthless without them.
-**`52.89.212.1` is the Sandbox WireGuard Elastic IP** (`describe-addresses`, tagged
-`awsds-sandbox-vpn`, attached to the running host), so the second leg genuinely exited through the
-perimeter and the tunnel was full rather than split. And **the identity was a persona**: the domain
-holds exactly **one `ACTIVATED` SSO user profile**, and that IdC principal is assigned — by group —
-to `DataScientistAccess` in Sandbox and Development and `DataScientistProdAccess` in Production, both
-of which carry `DenyControlPlaneOffVpn`.
+`52.89.212.1` is the Sandbox WireGuard Elastic IP (`describe-addresses`, tagged `awsds-sandbox-vpn`,
+attached to the running host), so the second leg exited through the perimeter and the tunnel was full
+rather than split. And the identity was a persona: the domain holds one `ACTIVATED` SSO user profile, and
+that IdC principal is assigned — by group — to `DataScientistAccess` in Sandbox and Development and
+`DataScientistProdAccess` in Production, both of which carry `DenyControlPlaneOffVpn`.
 
-**So INT-16 is answered, and the answer is its fallback (ii).** A `Deny *` on `*` would have refused
-the `datazone:` reads that enumerated those two profiles from outside the perimeter; it did not, so
-it does not reach the portal's session. What the control delivers is what `policies-shared.tf`
-already refused to overclaim — VPN-only APIs and console, not a VPN-only portal.
+**INT-16 is answered, and the answer is its fallback (ii).** A `Deny *` on `*` would have refused the
+`datazone:` reads that enumerated those two profiles from outside the perimeter; it did not, so it does
+not reach the portal's session. What the control delivers is what `policies-shared.tf` already refused to
+overclaim — VPN-only APIs and console, not a VPN-only portal.
 
-**What is still missing is one cheap leg**, and it is recorded rather than glossed: the positive
-control was not taken in the same sitting, so the attribution rests on the deny being in those two
-sets *by code* plus the read-back of 2026-08-20, rather than on a same-minute contrast.
+One cheap leg is still missing: the positive control was not taken in the same sitting, so the
+attribution rests on the deny being in those two sets by code plus the read-back of 2026-08-20, rather
+than on a same-minute contrast.
 
-### The second half of the same click, which nobody had planned for
+### The second half of the same click
 
-`User is not permitted to perform operation: CreateProject` — **identical with the tunnel up and
-down**, which is the contrast that ruled the network out from inside the user's own observation. The
-locating reads followed, all read-only through `awsds-infra-data`:
+`User is not permitted to perform operation: CreateProject` — identical with the tunnel up and down,
+which is the contrast that ruled the network out from inside the user's own observation. The locating
+reads followed, all read-only through `awsds-infra-data`:
 
 - `list-policy-grants` on the root domain unit: **empty list** for `CREATE_PROJECT` *and* for
   `CREATE_PROJECT_FROM_PROJECT_PROFILE`;
 - `list-entity-owners` on the same unit: **one owner**, the group profile whose `rolePrincipalArn` is
   the `InfrastructureAccess` role that created the domain.
 
-**Creating a project from a profile is an authorization, not a property of the profile** — listing
-them is a read and needs neither — so the design had exactly one principal able to create a project
-and it was the one that runs Terraform. Pass 3 was blocked before it began, and nothing in the stage
-would have said so: step 2.4 says *"user provisions one throwaway project per profile"* and no step
-created the authorization. `docs/SMUS.md` had carried the facet (*"which users/groups may create
-projects from it"*) since it was written; it never became a step.
+Creating a project from a profile is an **authorization**, not a property of the profile — listing them
+is a read and needs neither — so the design had one principal able to create a project and it was the one
+that runs Terraform. Pass 3 was blocked before it began, and nothing in the stage would have said so:
+step 2.4 says *"user provisions one throwaway project per profile"* and no step created the
+authorization. `docs/SMUS.md` had carried the facet (*"which users/groups may create projects from it"*)
+since it was written; it never became a step.
 
-**Checked before being called a gap** (Lesson 8): `AWS::DataZone::PolicyGrant` is in the
-CloudFormation registry, and `awscc_datazone_policy_grant` is present in the **pinned** awscc 1.98.0
-binary — the same provider the slice already loads. The schema also settled the grain question:
-`Principal` accepts a `Group`, the detail of `CREATE_PROJECT_FROM_PROJECT_PROFILE` takes a
-`ProjectProfiles` list, and **every field is `createOnly`**.
+Checked before being called a gap (Lesson 8): `AWS::DataZone::PolicyGrant` is in the CloudFormation
+registry, and `awscc_datazone_policy_grant` is present in the pinned awscc 1.98.0 binary — the same
+provider the slice already loads. The schema also settled the grain question: `Principal` accepts a
+`Group`, the detail of `CREATE_PROJECT_FROM_PROJECT_PROFILE` takes a `ProjectProfiles` list, and every
+field is `createOnly`.
 
 ### The user's decision, and what got asked before it
 
-Asked what actually differs between the two profiles today, the answer was measured rather than
-recalled: field by field, the two are identical in all eleven environment configurations — same
-blueprint ids, same order, same deployment modes, same Tooling parameters — and **the only divergent
-field is `awsAccountId`**, Sandbox against Development. The names promise a difference of *kind*
-(D21) and today deliver a difference of *place*.
+Asked what differs between the two profiles today, the answer was measured rather than recalled: field by
+field, the two are identical in all eleven environment configurations — same blueprint ids, same order,
+same deployment modes, same Tooling parameters — and the only divergent field is `awsAccountId`, Sandbox
+against Development. The names promise a difference of *kind* (D21) and today deliver a difference of
+*place*.
 
 That reframed the grant: choosing who may create from `engineering` is choosing who may work
 interactively **in Development**, which is the open half of D21. The user's decision, verbatim:
@@ -1628,31 +1619,30 @@ closes against the interactive surface.
 
 ### The code, and the apply
 
-The association became a **column on the profile's own row** in the slice's `locals.tf`, not a second
+The association became a column on the profile's own row in the slice's `locals.tf` rather than a second
 structure beside it, so a profile cannot end up pinned to one account while its grant names another
 (Lesson 33). `grants.tf` iterates that map. Two supporting pieces: a third read-only provider alias,
-`aws.identity`, because Identity Center is delegated to the Identity account and the directory cannot
-be read from Data Governance at all; and `identity_profile` emitted from
-`scripts/tfhygiene/backend.py`, so no profile literal sits in a `.tf` file. The **group names** are
-the decision and live in `locals.tf`; the ids are resolved from `DisplayName` on every plan, which
-also turns a renamed or deleted group into a readable plan failure (Lesson 38).
+`aws.identity`, because Identity Center is delegated to the Identity account and the directory cannot be
+read from Data Governance at all; and `identity_profile` emitted from `scripts/tfhygiene/backend.py`, so
+no profile literal sits in a `.tf` file. The group names are the decision and live in `locals.tf`; the
+ids are resolved from `DisplayName` on every plan, which also turns a renamed or deleted group into a
+readable plan failure (Lesson 38).
 
-Recipe A, as `awsds-infra-data`: plan **`2 to add`** → apply **`2 added`** → re-plan **`No changes`**.
+Recipe A, as `awsds-infra-data`: plan `2 to add` → apply `2 added` → re-plan `No changes`.
 
-**One named risk did not materialise.** Both groups show `status: None` in
-`search-group-profiles` — no DataZone group profile has been created for either — and the grant was
-expected to possibly refuse an unmaterialised group; the fallback, `awscc_datazone_group_profile`,
-had been confirmed present in the pinned provider before the apply. The service accepted the IdC
-group id directly.
+One named risk did not materialise. Both groups show `status: None` in `search-group-profiles` — no
+DataZone group profile has been created for either — and the grant was expected to possibly refuse an
+unmaterialised group; the fallback, `awscc_datazone_group_profile`, had been confirmed present in the
+pinned provider before the apply. The service accepted the IdC group id directly.
 
-**Read back through the API rather than off Terraform's state**, which is the half that matters:
-`list-policy-grants` now returns two grants, `includeChildDomainUnits` false in both, and the pairing
-is the decided one — the deployment-managers group against the `engineering` profile id, the
-data-scientists group against `experimentation`. `./aws/studio.py`: **0 checks FAILED**.
+Read back through the API rather than off Terraform's state: `list-policy-grants` now returns two grants,
+`includeChildDomainUnits` false in both, and the pairing is the decided one — the deployment-managers
+group against the `engineering` profile id, the data-scientists group against `experimentation`.
+`./aws/studio.py`: `0 checks FAILED`.
 
-No new `US-` check was added for this control, and the reason is that one is not needed: unlike the
-environment-role boundary, a policy grant **is** readable, so Terraform's own plan is the drift
-sentinel — a grant removed by hand comes back as `1 to add`.
+No new `US-` check was added for this control, and none is needed: unlike the environment-role boundary,
+a policy grant is readable, so Terraform's own plan is the drift sentinel — a grant removed by hand comes
+back as `1 to add`.
 
 ### Files, and what is owed
 
@@ -1663,13 +1653,13 @@ owed table, two pass rows), `docs/plan/integrations.md` (INT-16 answered), `docs
 `CLAUDE.md`, and the governance slice — `grants.tf` (new), `locals.tf`, `data.tf`, `providers.tf`,
 `variables.tf`, `outputs.tf`, plus `scripts/tfhygiene/backend.py`.
 
-Owed after this sitting: **step 5.0's build and push, one buildbox session** (§P); INT-16's missing
-positive control, a minute's work; and then pass 3, which the grants have unblocked — **and whose
-projects are now provisioned by each profile's persona, not by the infrastructure identity**.
+Owed after this sitting: step 5.0's build and push, one buildbox session (§P); INT-16's missing positive
+control; and then pass 3, which the grants have unblocked, and whose projects are now provisioned by each
+profile's persona rather than by the infrastructure identity.
 
 ---
 
-## 2026-08-22 — Step 5.0's BUILD ran: both images clean in fifteen minutes, and the tag convention the first push will spend
+## 2026-08-22 — Step 5.0's build ran: both images clean, and the tag convention the first push will spend
 
 **Two hands, and the split is the point of the entry.** The user brought the buildbox up and gave the
 authorization — *"O buildbox está ativo. Pode fazer o passo 5.0?"* — and the **tag convention below is
@@ -1685,52 +1675,51 @@ activity-monitor assertion, its firing half is 8.1. The user then asked for the 
 
 ### The state the host was found in, before anything was built
 
-`./scripts/buildbox.py status`: the buildbox **running** and **Online** in Session Manager (agent
-3.3.4624.0), the WireGuard host **running**, no probe instance — the refusal that matters was not
-even close.
+`./scripts/buildbox.py status`: the buildbox running and `Online` in Session Manager (agent 3.3.4624.0),
+the WireGuard host running, no probe instance.
 
-Four readings taken because the alternative was to assume them:
+Four readings, taken rather than assumed:
 
 - **Both ECR repositories exist and are empty.** `IMMUTABLE`, KMS-encrypted, scan-on-push, and
-  `describe-images` returns nothing in either — **no tag has been spent**, so pass 0 is applied and
-  the first push is still free to choose its convention.
+  `describe-images` returns nothing in either — no tag has been spent, so pass 0 is applied and the
+  first push is still free to choose its convention.
 - **The build context was already on the host and is the repository's.** `/opt/awsds/images` was
-  compared file by file against `images/` — **eight files, every md5 identical** — so no `sync` was
-  needed and there is no question about *what* was built. `images/` is clean in git.
+  compared file by file against `images/` — eight files, every md5 identical — so no `sync` was needed
+  and there is no question about *what* was built. `images/` is clean in git.
 - **The host was clean**: no images, no containers, no build cache, 62 GiB free of 64.
-- **The egress path is the designed one, measured rather than believed**: `curl` from inside the box
-  returns the **WireGuard host's Elastic IP**, and that instance carries `SourceDestCheck: false`.
-  The `[E]` route, the `[D]` masquerade and the `[P]` security-group rule were all doing their jobs
-  at once, which is the intersection `buildbox.md` §C says is easy to get wrong.
+- **The egress path is the designed one**: `curl` from inside the box returns the WireGuard host's
+  Elastic IP, and that instance carries `SourceDestCheck: false`. The `[E]` route, the `[D]` masquerade
+  and the `[P]` security-group rule were doing their jobs at once, the intersection `buildbox.md` §C says
+  is easy to get wrong.
 
 ### The mechanism, and where it deviates from the runbook
 
-§P's build is typed into an interactive `ssm start-session`; Claude cannot hold a TTY, so the build
-was driven by **`ssm send-command`** — the same write API `buildbox.py sync` and `vpn.py --on-host` are
-fenced behind, under this sitting's authorization — and launched **detached under `systemd-run`**,
-logging to `/var/log/awsds-build.log`, so a twenty-minute build does not depend on the invocation
-that started it. Progress was polled with short Run Commands.
+§P's build is typed into an interactive `ssm start-session`; Claude cannot hold a TTY, so the build was
+driven by **`ssm send-command`** — the same write API `buildbox.py sync` and `vpn.py --on-host` are
+fenced behind, under this sitting's authorization — and launched detached under `systemd-run`, logging to
+`/var/log/awsds-build.log`, so a twenty-minute build does not depend on the invocation that started it.
+Progress was polled with short Run Commands.
 
-**Nothing about the push was sent this way, and that is deliberate.** Run Command parameters stay
-readable from the command history for weeks, so relaying an ECR authorization token through it would
-put a 12-hour credential exactly where §P's `read -rs` exists to keep it out of. The runbook's
-procedure is unchanged and the push stays the user's act.
+Nothing about the push was sent this way. Run Command parameters stay readable from the command history
+for weeks, so relaying an ECR authorization token through it would put a 12-hour credential exactly where
+§P's `read -rs` exists to keep it out of. The runbook's procedure is unchanged and the push stays the
+user's act.
 
 ### The build
 
-`base` **`exit=0` at 04:17:21Z**, about 4m45s. `dev-env` **`exit=0` at 04:27:35Z**, `BUILD DONE
-rc=0` — roughly fifteen minutes end to end. `base` 12.1 GB and `dev-env` 17.5 GB by `docker images`,
-which counts shared layers twice: `docker system df` de-duplicates them to **17.46 GB**, and the
-root volume went to 19 GiB of 64.
+`base` `exit=0` at 04:17:21Z, about 4m45s. `dev-env` `exit=0` at 04:27:35Z, `BUILD DONE rc=0` — roughly
+fifteen minutes end to end. `base` 12.1 GB and `dev-env` 17.5 GB by `docker images`, which counts shared
+layers twice: `docker system df` de-duplicates them to **17.46 GB**, and the root volume went to 19 GiB
+of 64.
 
 ### What the images were asked, rather than assumed
 
-- **The activity-monitor assertion passed with a name and a version**, which is the half of
-  verification (x) that lives at 5.0: *"== searching the base for the activity-monitor extension =="*
-  then `jupyter-activity-monitor-extension 0.3.2 pyhd8ed1ab_1 conda-forge`. The distribution still
-  ships it, so nothing was installed over it. **This does not answer (x)** — that idle shutdown
-  *fires* is 8.1's measurement; what is closed here is the failure mode where the base quietly stops
-  carrying the extension and the discovery arrives as an app billing overnight.
+- **The activity-monitor assertion passed with a name and a version**, the half of verification (x) that
+  lives at 5.0: *"== searching the base for the activity-monitor extension =="* then
+  `jupyter-activity-monitor-extension 0.3.2 pyhd8ed1ab_1 conda-forge`. The distribution still ships it,
+  so nothing was installed over it. This does not answer (x) — that idle shutdown *fires* is 8.1's
+  measurement; what is closed here is the failure mode where the base quietly stops carrying the
+  extension and the discovery arrives as an app billing overnight.
 - **The BYOI entrypoint rule holds**: `Entrypoint=["/usr/local/bin/_entrypoint.sh"]`,
   `Cmd=["/bin/bash"]`, `User=sagemaker-user`, `WorkingDir=/home/sagemaker-user` — the distribution's
   own, inherited, neither `Dockerfile` having set one. Read from `docker inspect` and exercised by a
@@ -1741,55 +1730,54 @@ root volume went to 19 GiB of 64.
   `org.opencontainers.image.base.name=public.ecr.aws/sagemaker/sagemaker-distribution:4.3.0-cpu`
   with `base.digest=sha256:7f5d9c64684cebd53f65173c1f41d7bfe68419e5de9d0f55c4c25910a92f5f2c`.
 - **The runtimes, from `/opt/awsds-runtimes.txt` inside the image**: Python 3.12.13, uv 0.12.5,
-  Julia 1.12.7, R 4.5.3 (2026-03-11), rustc 1.98.0. **One thing that file does not carry**: it
-  records `base image : awsds/base:local`, the build-time reference — not the ECR tag the image is
-  given afterwards. The image cannot be asked what it was published as; only the digest chain can.
+  Julia 1.12.7, R 4.5.3 (2026-03-11), rustc 1.98.0. One thing that file does not carry: it records
+  `base image : awsds/base:local`, the build-time reference, not the ECR tag the image is given
+  afterwards. The image cannot be asked what it was published as; only the digest chain can.
 
-### The tag convention — the user's decision, and two corrections on the way to it
+### The tag convention — the user's decision, and the corrections on the way to it
 
 The tag had to be settled before the push because both repositories are `IMMUTABLE`: it is spent on
 first landing, and Stage 8 step 1's pipeline inherits whatever the first push writes.
 
-The user's requirement is the **flavour** axis — a project wanting GPUs, one wanting Spark libraries,
-and one wanting neither are three runtimes — and their first proposal was `dev-env-default-v0.1.0`.
-Two corrections were needed before it became the rule:
+The user's requirement is the **flavour** axis — a project wanting GPUs, one wanting Spark libraries, and
+one wanting neither are three runtimes — and their first proposal was `dev-env-default-v0.1.0`. Two
+corrections were needed before it became the rule:
 
-1. **The two repositories are not "production" and "development".** Both live in the Production
-   account: `production/registry/ecr.tf` builds them as `awsds-${var.env}-ecr-*` with `env = prod`,
-   and the consumer accounts hold a *pull*. The axis between them is **ancestor** (`base`, D17)
-   versus **BYOI runtime** (`dev-env`), not environment.
+1. **The two repositories are not "production" and "development".** Both live in the Production account:
+   `production/registry/ecr.tf` builds them as `awsds-${var.env}-ecr-*` with `env = prod`, and the
+   consumer accounts hold a *pull*. The axis between them is ancestor (`base`, D17) versus BYOI runtime
+   (`dev-env`), not environment.
 2. **The repository already is the name**, so `dev-env-…` inside the tag spends it twice in every
    pipeline line that ever references it.
 
-**Decided: `<flavour>-v<major>.<minor>.<patch>`, the same number in both repositories** —
+Decided: **`<flavour>-v<major>.<minor>.<patch>`**, the same number in both repositories, with
 `default-v0.1.0` first. The flavour axis reaches `base` too, because a GPU `dev-env` needs a GPU
-ancestor; naming the plain one `default` from the start stops `v0.1.0` from silently coming to mean
-*the CPU one*.
+ancestor; naming the plain one `default` from the start stops `v0.1.0` from coming to mean *the CPU one*.
 
-**And one of Claude's arguments was checked instead of asserted, which changed it.** Flavour-first
-was offered on the claim that a lifecycle policy can only select tags by prefix; the page says
-`tagPrefixList` does match a prefix only, but `tagPatternList` takes up to four `*` wildcards, would
-match `*-gpu` just as well, and is the one AWS calls best practice. So flavour-first is **convenience
-and grouping, not capability**, and `docs/SMUS.md` says that rather than the stronger claim. The same
-read turned up the trap for whoever writes the first policy: the two selectors are mutually exclusive
-in a rule, and multiple entries are an **AND**.
+One of Claude's arguments was checked instead of asserted, which changed it. Flavour-first was offered on
+the claim that a lifecycle policy can only select tags by prefix; the page says `tagPrefixList` does
+match a prefix only, but `tagPatternList` takes up to four `*` wildcards, would match `*-gpu` just as
+well, and is the one AWS calls best practice. So flavour-first is convenience and grouping rather than
+capability, and `docs/SMUS.md` says that rather than the stronger claim. The same read turned up the trap
+for whoever writes the first policy: the two selectors are mutually exclusive in a rule, and multiple
+entries are an **AND**.
 
 ### Files, and what is owed
 
-Touched, all documentation — **no Terraform, no apply, and the only AWS writes were the Run Commands
-that drove the build**: `docs/SMUS.md` (new section, *Custom images (BYOI) — and how they are
-named*), `docs/REFERENCES.md` (the ECR lifecycle-policy page, with the three sentences the argument
-rests on), `images/README.md` (a pointer, so the convention has one copy and it is not there), and
-`CLAUDE.md`'s routing row. `make check` **OK**; `./scripts/check-identifiers.py` **OK**.
+Touched, all documentation — no Terraform, no apply, and the only AWS writes were the Run Commands that
+drove the build: `docs/SMUS.md` (new section, *Custom images (BYOI) — and how they are named*),
+`docs/REFERENCES.md` (the ECR lifecycle-policy page, with the three sentences the argument rests on),
+`images/README.md` (a pointer, so the convention has one copy and it is not there), and `CLAUDE.md`'s
+routing row. `make check` OK; `./scripts/check-identifiers.py` OK.
 
-Owed: **the push** — `default-v0.1.0` into both repositories, §P, **on this host while it is still
-up**, because build and push are one session and a `down` in between costs the fifteen minutes
-again. The host bills 0.1664 USD/h meanwhile. Both digests belong in this entry once they exist;
-then pass 3, and 5.1's cross-account pull question (INT-01/INT-17, verification (vi)).
+Owed: the push — `default-v0.1.0` into both repositories, §P, on this host while it is still up, because
+build and push are one session and a `down` in between costs the fifteen minutes again. The host bills
+0.1664 USD/h meanwhile. Both digests belong in this entry once they exist; then pass 3, and 5.1's
+cross-account pull question (INT-01/INT-17, verification (vi)).
 
 ---
 
-## 2026-08-22 — Step 5.0 CLOSED: the push ran, both tags spent, and `default-v0.1.0` exists in the registry
+## 2026-08-22 — Step 5.0 closed: the push ran, both tags spent, and `default-v0.1.0` exists in the registry
 
 **Two hands, and the order tells them apart.** The section immediately below is the **user's** — the
 procedure as they ran it, their commands and their pasted output, verbatim. The readings under
@@ -1859,79 +1847,77 @@ sudo docker push "$REGISTRY/awsds-prod-ecr-dev-env:default-v0.1.0"
 sudo docker logout "$REGISTRY"
 ```
 
-**The warning in that paste is the reason the procedure ends with `logout`.** `docker login` writes
-the token to `/root/.docker/config.json` in clear; the host is `[E]` and takes it to the grave either
-way, but `logout` is what makes that a *choice* rather than a dependency on the teardown happening.
+The warning in that paste is why the procedure ends with `logout`. `docker login` writes the token to
+`/root/.docker/config.json` in clear; the host is `[E]` and takes it to the grave either way, but
+`logout` makes that a choice rather than a dependency on the teardown happening.
 
 ### After the push — Claude's readings, read-only
 
-**Both tags landed, and they are now spent** (both repositories are `IMMUTABLE`, so a re-push under
-either is refused from here on):
+Both tags landed and are now spent (both repositories are `IMMUTABLE`, so a re-push under either is
+refused from here on):
 
 | Repository | Tag | Digest | Stored | Pushed (UTC) |
 |---|---|---|---|---|
 | `awsds-prod-ecr-base` | `default-v0.1.0` | `sha256:6c53def4fb30acbfff112e8c85c454019d96ca5a256eba563b455d21aeec5b3a` | 3,959,751,035 B | 05:21:51 |
 | `awsds-prod-ecr-dev-env` | `default-v0.1.0` | `sha256:76d9b5e8b6b9ada94ba52ae27a8e9a43ba37e7196d0de46f5859cd2325cd3e56` | 5,648,737,291 B | 05:30:34 |
 
-**The stored sizes are the compressed ones and §P's warning is confirmed from the other side**: 12.1
-GB and 17.5 GB uncompressed on the buildbox became 3.96 GB and 5.65 GB in ECR — and `dev-env` carries
-its own copy of `base`'s layers, because ECR stores layers per repository. Two uploads, not one
-deduplicated push.
+The stored sizes are the compressed ones, which confirms §P's warning from the other side: 12.1 GB and
+17.5 GB uncompressed on the buildbox became 3.96 GB and 5.65 GB in ECR — and `dev-env` carries its own
+copy of `base`'s layers, because ECR stores layers per repository. Two uploads, not one deduplicated
+push.
 
-**Scan-on-push ran, and the first reading of it was a trap worth writing down.** `describe-images`
-returns **no scan field at all** for these images — not `IN_PROGRESS`, not null-because-pending: the
-key is absent from the response — while `describe-image-scan-findings` answers `COMPLETE` for both.
-A check written where a reader would naturally look would therefore report *"never scanned"* on a
-scanned image, and would report the same thing if scanning were genuinely off (Lesson 13).
-`./aws/supplychain.py` does not fall into it — it measures the *configuration* (`BASIC (no rules)`,
-the legacy per-repository `scanOnPush: True`) and its own comment already names
-`DescribeImageScanFindings` as what the Stage 8 gate must call.
+Scan-on-push ran, and the first reading of it was a trap. `describe-images` returns no scan field at all
+for these images — not `IN_PROGRESS`, not null-because-pending: the key is absent from the response —
+while `describe-image-scan-findings` answers `COMPLETE` for both. A check written where a reader would
+naturally look would report *"never scanned"* on a scanned image, and would report the same thing if
+scanning were genuinely off (Lesson 13). `./aws/supplychain.py` does not fall into it: it measures the
+configuration (`BASIC (no rules)`, the legacy per-repository `scanOnPush: True`) and its own comment
+already names `DescribeImageScanFindings` as what the Stage 8 gate must call.
 
-**And the findings counts are identical in the two images**, which is the reading that matters more
-than the numbers:
+The findings counts are identical in the two images, which matters more than the numbers:
 
 ```
 base     COMPLETE 05:23:55Z   CRITICAL 30  HIGH 430  MEDIUM 514  LOW 3  UNDEFINED 7
 dev-env  COMPLETE 05:34:30Z   CRITICAL 30  HIGH 430  MEDIUM 514  LOW 3  UNDEFINED 7
 ```
 
-`dev-env` is `base` plus Julia, R and Rust, and it contributed **exactly zero** findings: **basic
-scanning reads OS packages only**, so it is blind to the three ecosystems this image exists to add,
-and to the conda environment the Python stack lives in. That is Stage 7 decision 2's input measured
-rather than argued — the counts themselves are the SageMaker Distribution's inherited debt (the
-sampled MEDIUM was a Linux **kernel** CVE, which a container cannot exercise against the host's
-kernel), so the number to watch after an ENHANCED upgrade is not this one.
+`dev-env` is `base` plus Julia, R and Rust, and it contributed zero findings: **basic scanning reads OS
+packages only**, so it is blind to the three ecosystems this image exists to add, and to the conda
+environment the Python stack lives in. That is Stage 7 decision 2's input, measured rather than argued —
+the counts themselves are the SageMaker Distribution's inherited debt (the sampled MEDIUM was a Linux
+kernel CVE, which a container cannot exercise against the host's kernel), so the number to watch after an
+ENHANCED upgrade is not this one.
 
-**The consumer side answered for the first time against a real image.** `./aws/supplychain.py`:
-**0 checks FAILED**, `SC-4` both repositories `IMMUTABLE`, and `SC-7` *"ECR cross-account read from
-`awsds-infra-sandbox-1`: ok (1 image(s) visible)"* — the first exercise of
-`AllowConsumerAccountsToPull` with something behind it. **This is visibility, not a pull**:
-`DescribeImages` is one of that statement's four actions, and whether the layers actually come down
-cross-account is 5.1's question (INT-01/INT-17, verification (vi)).
+The consumer side answered for the first time against a real image. `./aws/supplychain.py`:
+`0 checks FAILED`, `SC-4` both repositories `IMMUTABLE`, and `SC-7` *"ECR cross-account read from
+`awsds-infra-sandbox-1`: ok (1 image(s) visible)"* — the first exercise of `AllowConsumerAccountsToPull`
+with something behind it. This is visibility, not a pull: `DescribeImages` is one of that statement's
+four actions, and whether the layers come down cross-account is 5.1's question (INT-01/INT-17,
+verification (vi)).
 
-**One correction to a document written earlier in the same sitting, and the tool caught it.**
-`docs/SMUS.md`'s new tag section said the lifecycle policy was still to be written; `supplychain.py`
-reports `LIFECYCLE: yes` on both repositories, and `terraform-modules/ecr-repo` does build one — read
-back live: **untagged expire at 14 days**, and **tagged kept to the most recent 30**, selected with
-`tagPatternList = ["*"]`. The first draft had grepped the live slice and not the module that builds
-it. The argument survives and gets sharper: **rule 2 counts every flavour together**, so the day a
-`gpu-` image exists a burst of `default-` pushes evicts it, and rule 2 has to be split per flavour —
-which is what the flavour segment makes expressible. `docs/SMUS.md` now says this.
+One correction to a document written earlier in the same sitting, caught by the tool. `docs/SMUS.md`'s
+new tag section said the lifecycle policy was still to be written; `supplychain.py` reports
+`LIFECYCLE: yes` on both repositories, and `terraform-modules/ecr-repo` does build one — read back live:
+untagged expire at 14 days, tagged kept to the most recent 30, selected with `tagPatternList = ["*"]`.
+The first draft had grepped the live slice and not the module that builds it. The argument survives and
+gets sharper: rule 2 counts every flavour together, so the day a `gpu-` image exists a burst of
+`default-` pushes evicts it, and rule 2 has to be split per flavour — which is what the flavour segment
+makes expressible. `docs/SMUS.md` now says this.
 
 ### What this closes, and what it leaves
 
-**Step 5.0 is DONE** — build and push, one buildbox session, as §P requires. Pass 1 has no unfinished
-step left, and **pass 3 is unblocked** (its other predecessor, the `grants.tf` apply, closed in the
-previous entry).
+Step 5.0 is done — build and push, one buildbox session, as §P requires. Pass 1 has no unfinished step
+left, and pass 3 is unblocked (its other predecessor, the `grants.tf` apply, closed in the previous
+entry).
 
-**The buildbox was still `running` when this was written**, at 0.1664 USD/h, with its images now
-redundant — everything worth keeping is in ECR. `./scripts/buildbox.py down` is the user's call and the
-only thing standing between this sitting and 0 USD/h in Sandbox.
+The buildbox was still `running` when this was written, at 0.1664 USD/h, with its images now redundant —
+everything worth keeping is in ECR. `./scripts/buildbox.py down` is the user's call and the only thing
+standing between this sitting and 0 USD/h in Sandbox.
 
 Owed next: **5.1** — image, image version, app image config, and the domain's `CustomImages`, which is
 where the cross-account pull is answered rather than assumed.
 
-## 2026-08-22 — Step 1.7's missing leg: the console contrast, and a message that named two things by itself
+## 2026-08-22 — Step 1.7's missing leg: the console contrast
 
 **Two hands.** The readings below are the **user's** — the browser, both directions, one sitting, on a
 procedure Claude wrote. The probe design and the readings *against the provisioned policy documents*
@@ -1939,13 +1925,13 @@ are **Claude's**, offline. **Substitution, declared once for the whole entry: `<
 replaces that account's twelve-digit id, and `<data scientist user>` the e-mail inside the ARN** — the
 id resolved against `awsds-infra-sandbox-1`, not guessed. Nothing else in the pasted output is touched.
 
-### What was missing, and why it was not a formality
+### What was missing
 
-The 1.7 sitting's entry — *"Step 1.7 RAN and answered INT-16…"*, which is no longer the one above, step 5.0's two having landed between — answered INT-16: the portal opened off the tunnel and enumerated both project
-profiles — but the attribution rested on the deny being in those six sets *by code*, plus the
-2026-08-20 read-back. **A deny that was simply not in effect that afternoon would have produced an
-identical portal reading**, and nothing in the observation separated the two. Lesson 24: what separates
-them is a different **channel**, never a better reading of the same one.
+The 1.7 sitting's entry — *"Step 1.7 ran and answered INT-16…"* — answered INT-16: the portal opened off
+the tunnel and enumerated both project profiles. But the attribution rested on the deny being in those
+six sets by code, plus the 2026-08-20 read-back. A deny that was simply not in effect that afternoon
+would have produced an identical portal reading, and nothing in the observation separated the two.
+Lesson 24: what separates them is a different **channel**, never a better reading of the same one.
 
 ### The probe, and why this action
 
@@ -1968,9 +1954,9 @@ User: arn:aws:sts::<Sandbox Account 1>:assumed-role/AWSReservedSSO_DataScientist
 
 ### Claude's readings, offline, against the documents that were provisioned
 
-**The wording names the statement, and only one statement is left.** *Identity-based* excludes an SCP
-(which says *"service control policy"*) and a boundary (*"permissions boundary"*), so the deny is in the
-set's own documents. Of those:
+The wording names the statement, and only one statement is left. *Identity-based* excludes an SCP (which
+says *"service control policy"*) and a boundary (*"permissions boundary"*), so the deny is in the set's
+own documents. Of those:
 
 | Document | What its denies reach |
 |---|---|
@@ -1980,40 +1966,39 @@ set's own documents. Of those:
 | `control_plane_vpn` | **`DenyControlPlaneOffVpn` — `Deny *` on `*`** |
 
 `DenyEveryWrite` and `DenyProductionControlPlane` sit in the same file but belong to the
-`data_scientist_staging` and `data_scientist_prod` documents, and the session was Sandbox. **Nothing but
-`DenyControlPlaneOffVpn` can produce an explicit deny on `logs:` for that principal.**
+`data_scientist_staging` and `data_scientist_prod` documents, and the session was Sandbox. Nothing but
+**`DenyControlPlaneOffVpn`** can produce an explicit deny on `logs:` for that principal.
 
-**Two things came out of the message itself rather than out of the operator's report**, and that is the
-half worth reusing. The principal reads `AWSReservedSSO_DataScientistAccess_…`, so the session was the
-persona set — *measured*, where the previous entry inferred it from the domain holding a single
-`ACTIVATED` SSO user profile. And the resource ARN reads `us-west-2`, so Stage 4 verification (iv)'s
-wrong-Region trap — a console opened elsewhere, meeting the OU ceiling, naming the wrong policy — is
-ruled out from inside the observation instead of from a report about the Region selector.
+Two things came out of the message itself rather than out of the operator's report. The principal reads
+`AWSReservedSSO_DataScientistAccess_…`, so the session was the persona set — measured, where the previous
+entry inferred it from the domain holding a single `ACTIVATED` SSO user profile. And the resource ARN
+reads `us-west-2`, so Stage 4 verification (iv)'s wrong-Region trap — a console opened elsewhere, meeting
+the OU ceiling, naming the wrong policy — is ruled out from inside the observation instead of from a
+report about the Region selector.
 
-**The probe turned out not to be new.** Stage 4 step 8.3's pair ran `aws logs describe-log-groups` off
-the tunnel on 2026-08-17, against the same role, and got the **IAM sentence byte for byte**
-(`log-stage-04-vpn.md`, reading 1). Not a redundant measurement — that was the **CLI** channel on its
-own day, and INT-16 needed the **console** channel inside the **portal's** sitting — but the agreement
-across five days, two channels and two sittings is a consistency neither reading gives alone. It also
-settles Stage 4 verification (iv)'s residual, which asked for an action chosen *for producing the
-canonical wording* and conceded that `logs:DescribeLogGroups` qualified by luck: **the console wraps but
-does not rewrite** — its own `This IAM user does not have permission…` line, then the IAM sentence
-intact.
+The probe turned out not to be new. Stage 4 step 8.3's pair ran `aws logs describe-log-groups` off the
+tunnel on 2026-08-17, against the same role, and got the IAM sentence byte for byte
+(`log-stage-04-vpn.md`, reading 1). That was the CLI channel on its own day, and INT-16 needed the
+console channel inside the portal's sitting, so the agreement across five days, two channels and two
+sittings is a consistency neither reading gives alone. It also settles Stage 4 verification (iv)'s
+residual, which asked for an action chosen for producing the canonical wording and conceded that
+`logs:DescribeLogGroups` qualified by luck: the console wraps but does not rewrite — its own
+`This IAM user does not have permission…` line, then the IAM sentence intact.
 
 ### What this closes
 
-**Step 1.7 is fully attributed; nothing measurable is left in it.** Written up in
+Step 1.7 is fully attributed; nothing measurable is left in it. Written up in
 `stage-06a-unified-studio.md` (finding 12 and the owed table), `integrations.md` (INT-16), `README.md`
 (the third role of the VPN, which stopped saying *unverified*), `CLAUDE.md`, the `policies-shared.tf`
 comment that had refused to overclaim — and `stage-04-vpn.md`, whose `Proves` row, `UNVERIFIED` diagram
-label and the paragraph written *for* a negative INT-16 now describe one.
+label and the paragraph written for a negative INT-16 now describe one.
 
-Owed next: **the `README.md` decision** — item 3 stated as bounded, or INT-16 fallback (i) adopted. The
-stage file carries the input that decides it.
+Owed next: the `README.md` decision — item 3 stated as bounded, or INT-16 fallback (i) adopted. The stage
+file carries the input that decides it.
 
 ---
 
-## 2026-08-22 — The plan read back against the session: seven places where the two disagreed, and a paid upgrade that turns out never to close the gap it was deferred against
+## 2026-08-22 — The plan read back against the session: where the two disagreed, and the paid upgrade that never closes the gap
 
 **Claude's hand throughout, under four requests in this sitting** — *"Verifique se todas as suas
 alterações estão no arquivo. Verifique necessidade de revisar algum aspecto do plano com base no que
@@ -2023,14 +2008,14 @@ apply**: this sitting is documentation and two web reads. Where a choice was the
 
 ### The two readings it opened with
 
-The buildbox reads **`absent (nothing billing)`** — `buildbox.py down` ran, and the Sandbox `[E]` layer is
+The buildbox reads `absent (nothing billing)` — `buildbox.py down` ran, and the Sandbox `[E]` layer is
 back to nothing. The previous sitting's three files are all in `HEAD`: the `docs/SMUS.md` section with
 its lifecycle correction, this log's fifteenth entry with the account id redacted, and the index cell.
 
-### What the review found, and the shape of the list
+### What the review found
 
-Seven places. Four were **stale prose** — the file asserting something the session had already
-falsified — one was an **unrecorded answer**, and **two were decisions** that no reading could settle:
+Seven places. Four were stale prose — the file asserting something the session had already falsified —
+one was an unrecorded answer, and two were decisions that no reading could settle:
 
 | # | What | Fate |
 |---|---|---|
@@ -2042,52 +2027,51 @@ falsified — one was an **unrecorded answer**, and **two were decisions** that 
 | 6 | Julia, R and Rust are scanned by nothing | the user asked what the question was; measured, then written as (a)+(c) |
 | 7 | Stage 7 step 2.6 named no tag; the lifecycle trigger had no receiving end | both given one |
 
-**Item 1 is the interesting one and it is not about ECR.** Two hands were editing
-`stage-06a-unified-studio.md` in the same minutes: the first edit was refused with *"File has been
-modified since read"*, and the re-read showed the row already corrected plus a new owed row that had
-not existed a moment earlier. Nothing was lost, and the reason nothing was lost is that the tool
+Item 1 is not about ECR. Two hands were editing `stage-06a-unified-studio.md` in the same minutes: the
+first edit was refused with *"File has been modified since read"*, and the re-read showed the row already
+corrected plus a new owed row that had not existed a moment earlier. Nothing was lost, because the tool
 refuses to write over a file it has not seen — the same guarantee the two-commit module rule buys for
 Terraform, applied to prose.
 
 ### The propagation, and the thing it uncovered
 
-The user's instruction was to carry `<flavour>-v<semver>` into the rest of the plan. It **changes shape
-once**, and the three rows are now a table in `docs/SMUS.md` — hand builds bare (`default-v0.1.0`,
+The user's instruction was to carry `<flavour>-v<semver>` into the rest of the plan. It changes shape
+once, and the three rows are now a table in `docs/SMUS.md` — hand builds bare (`default-v0.1.0`,
 `default-v0.2.0` at Stage 7 step 2.6), pipeline builds with `-<short-sha>` (Stage 8 step 1.1), and
-**application images with no flavour at all** (`v<semver>-<short-sha>`), because the flavour axis is
-about *runtimes* branching and an application does not branch that way. That last row is written as a
-decision so the absence is not read later as an oversight.
+application images with no flavour at all (`v<semver>-<short-sha>`), because the flavour axis is about
+*runtimes* branching and an application does not branch that way. That last row is written as a decision
+so the absence is not read later as an oversight.
 
-**And the propagation found something no one was looking for.** GitLab's protected-tag pattern for
-`dev-env/` is **`v*`** in Stage 8 step 1.0 — and `v*` **does not match `default-v0.2.0`**. Stage 7 step
-3.3's recorded answer makes the protected tag *the whole of the CE authorization* for the release gate,
-so the pattern left alone would silently unprotect every release of that repository while the settings
-page still read as protected: creating an unprotected tag simply succeeds. Corrected to `*-v*`, with
-the instruction to **verify by attempting a tag creation as a Developer** rather than by re-reading the
-pattern — a control that cannot be confirmed by looking at its own configuration (Lesson 5).
+The propagation found something no one was looking for. GitLab's protected-tag pattern for `dev-env/` is
+`v*` in Stage 8 step 1.0, and `v*` does not match `default-v0.2.0`. Stage 7 step 3.3's recorded answer
+makes the protected tag the whole of the CE authorization for the release gate, so the pattern left alone
+would silently unprotect every release of that repository while the settings page still read as
+protected: creating an unprotected tag simply succeeds. Corrected to `*-v*`, with the instruction to
+verify by attempting a tag creation as a Developer rather than by re-reading the pattern — a control that
+cannot be confirmed by looking at its own configuration (Lesson 5).
 
 ### Item 6 — the question could not be framed until something was measured
 
-The user asked, fairly, what the decision actually was. The framing needed one fact that no file in
-this repository had: **Amazon Inspector's supported languages for ECR images are C#, Go, Java,
-JavaScript, PHP, Python, Ruby and Rust — Julia and R are on no list at any price** (read 2026-08-22,
-both pages in `REFERENCES.md`). That turns the previous sitting's measurement — `base` and `dev-env`
-scanning to **identical** counts, so the three added ecosystems produced zero findings — from a cost
-question into a **permanent** one, because Stage 7 decision 2 had deferred the language half to Stage
-11 step 4 *against a real bill*, and no bill buys Julia or R.
+The user asked what the decision actually was. The framing needed one fact that no file in this
+repository had: **Amazon Inspector's supported languages for ECR images are C#, Go, Java, JavaScript,
+PHP, Python, Ruby and Rust — Julia and R are on no list at any price** (read 2026-08-22, both pages in
+`REFERENCES.md`). That turns the previous sitting's measurement — `base` and `dev-env` scanning to
+identical counts, so the three added ecosystems produced zero findings — from a cost question into a
+permanent one, because Stage 7 decision 2 had deferred the language half to Stage 11 step 4 against a
+real bill, and no bill buys Julia or R.
 
 The user chose **(a) accept, with the control named** and **(c) re-frame the deferral**, declining the
-optional `cargo audit`. Written to four places, deliberately split between where the acceptance **lives**
-and where someone **trips over it**: the acceptance is one row in
+optional `cargo audit`. Written to four places, split between where the acceptance lives and where
+someone trips over it: the acceptance is one row in
 [`institutional-delta.md`](../plan/institutional-delta.md) (*"Vulnerability scanning of what the
 notebook image actually contains"*), with its price and its revision trigger — a second data scientist,
 or the first Julia/R package from outside a registry the steward reads; `images/README.md` says that for
-two of its four manifest rows the merge-request review **is** the control, and what that review
-structurally cannot see; Stage 8 step 1.4's *"the two compose"* is corrected to **OS + Python and no
-further**, with *do not close this by enabling enhanced scanning*; and Stage 7 decision 2 keeps its
-recommendation while losing the implication that waiting eventually covers everything. **Lesson 34 is
-why it is four places and not one** — an acceptance recorded only in the decision that deferred it never
-reaches the hand that writes the gate.
+two of its four manifest rows the merge-request review is the control, and what that review structurally
+cannot see; Stage 8 step 1.4's *"the two compose"* is corrected to OS + Python and no further, with *do
+not close this by enabling enhanced scanning*; and Stage 7 decision 2 keeps its recommendation while
+losing the implication that waiting eventually covers everything. Lesson 34 is why it is four places and
+not one: an acceptance recorded only in the decision that deferred it never reaches the hand that writes
+the gate.
 
 ### Files, and what is owed
 
@@ -2107,7 +2091,7 @@ Owed: nothing from this sitting but the commit. The stage's own next move is **p
 
 ---
 
-## 2026-08-22 — Pass 3's first project: five attempts, seven findings, one success — and the boundary read off the first real role
+## 2026-08-22 — Pass 3's first project succeeds, and the boundary is read off the first real role
 
 *Claude's hand throughout, at the user's request in the same sitting. Every portal and console reading
 quoted below is the user's, verbatim (two are in Portuguese — the user's chat language; the log stays
@@ -2116,13 +2100,13 @@ English around them). Redactions declared once: the member account id inside one
 
 ### The shape of the sitting
 
-One data scientist clicked "create project" (`experimentation` profile, Sandbox 1) five times across
-one long day, and the five attempts produced **seven findings, each one layer deeper than the last** —
-three authorization layers, two wizard fields, two service-role defects, one template enum. Every
-round ran the same loop: the user pastes the portal's error → measurement → a Terraform fix → a
-user-authorized apply (and twice a user-authorized CLI `put`) → the user retries. The detailed
-engineering record is the stage file's owed table (six struck rows); what follows is what was done by
-hand in AWS, with the readings that drove it.
+One data scientist clicked "create project" (`experimentation` profile, Sandbox 1) five times across one
+long day, and the attempts produced seven findings, each a layer deeper than the last: three
+authorization layers, two wizard fields, two service-role defects, one template enum. Every round ran the
+same loop: the user pastes the portal's error → measurement → a Terraform fix → a user-authorized apply
+(and twice a user-authorized CLI `put`) → the user retries. The detailed engineering record is the stage
+file's owed table (six struck rows); what follows is what was done by hand in AWS, with the readings that
+drove it.
 
 | attempt | died on (user's paste, trimmed) | root cause → fix |
 |---|---|---|
@@ -2133,36 +2117,36 @@ hand in AWS, with the readings that drove it.
 | 4 | `Stack creation failed with Parameter 'lifecycleManagement' must be one of AllowedValues` (stack `DataZone-Env-djh2z3p7erhcpc`, CloudFormation 400) | the profile locked `"true"` against the template's `ENABLED`/`DISABLED` enum — and the fix apply then met `Missing required Blueprint parameter(s): bucketName`: **`UpdateProjectProfile` validates what `CreateProjectProfile` never did.** Governance apply, `2 changed`: `ENABLED`, plus the only two required-no-default parameters in all 11 blueprints (`S3Bucket.bucketName`, `S3TableCatalog.catalogName`) as editable placeholders |
 | 5 | — | **"O projeto foi criado com sucesso!"** |
 
-Attempt 4 was itself the proof the first five findings landed: the failure had **moved inside the
-member account** — the stage's first CloudFormation-level error — and the three stuck projects **all
-deleted cleanly** in the same sitting ("Os projetos anteriores foram excluídos com sucesso!"), the
-teardown half of the trust fix measured. The fourth project deleted cleanly too.
+Attempt 4 was itself the proof the first five findings landed: the failure had moved inside the member
+account — the stage's first CloudFormation-level error — and the three stuck projects all deleted cleanly
+in the same sitting ("Os projetos anteriores foram excluídos com sucesso!"), the teardown half of the
+trust fix measured. The fourth project deleted cleanly too.
 
 ### What success left standing, read in this sitting
 
-`fifth-experimentation` is `ACTIVE` (created 20:58 UTC by the data-scientist SSO identity), its
-Tooling environment `ACTIVE`, and stack `DataZone-Env-cdvdkco1klne6o` in Sandbox 1 reads
-**`CREATE_COMPLETE`** — created 20:58:27, roles at 20:58:47, the environment updated 21:02: about four
-and a half minutes from click to a working environment, forty resources in the template.
+`fifth-experimentation` is `ACTIVE` (created 20:58 UTC by the data-scientist SSO identity), its Tooling
+environment `ACTIVE`, and stack `DataZone-Env-cdvdkco1klne6o` in Sandbox 1 reads `CREATE_COMPLETE` —
+created 20:58:27, roles at 20:58:47, the environment updated 21:02: about four and a half minutes from
+click to a working environment, forty resources in the template.
 
-**Verification (v) took its first real reading, and the mechanism works — via the template.** The one
+Verification (v) took its first real reading, and the mechanism works via the template. The one
 blueprint-provisioned role, `datazone_usr_role_5ihyqdcj9fpl00_cdvdkco1klne6o`, carries
-`awsds-sandbox-project-boundary` — and the stack's template shows HOW: the configuration's write-only
+`awsds-sandbox-project-boundary`, and the stack's template shows how: the configuration's write-only
 `environmentRolePermissionBoundary` is injected as the `PermissionsBoundary` property of the
 `ToolingUserRole` resource (and of the two conditional Bedrock roles). The role's tags close two loops
-from this sitting's own fixes: `DomainBucketName = awsds-sandbox-smus-projects`, `KmsKeyId` = the
-project CMK. **One qualification, recorded before anyone needs it:** the template's two conditional
-EMR roles (`createEmrResourceInTooling`, false today) declare **no** boundary — if EMR-in-Tooling is
-ever enabled, those two are born unbounded, and that is AWS's template, not our configuration.
+from this sitting's own fixes: `DomainBucketName = awsds-sandbox-smus-projects`, `KmsKeyId` = the project
+CMK. One qualification: the template's two conditional EMR roles (`createEmrResourceInTooling`, false
+today) declare no boundary — if EMR-in-Tooling is ever enabled, those two are born unbounded, and that is
+AWS's template, not our configuration.
 
-**US-8 first reported the opposite, and the fail was the instrument's** (Lesson 30). The check read
-boundaries through `iam list-roles`, whose response **omits `PermissionsBoundary` by documented
-contract** (`GetRole`-only, along with `Tags` and `RoleLastUsed`) — so it would have said "no
-boundary" about every bounded role in existence. It was never caught because until 20:58 today there
-was **no datazone role anywhere for it to misread**: the check's first exercise with a real object was
-the thing that falsified it. Fixed in the same sitting — one `get-role` per discovered role — and the
-re-run reads `pass US-8 … all 1 datazone role(s) bounded`, battery otherwise unchanged (0 FAILED;
-US-10 notes the running Tooling apps as the burn they are).
+`US-8` first reported the opposite, and the fail was the instrument's (Lesson 30). The check read
+boundaries through `iam list-roles`, whose response omits `PermissionsBoundary` by documented contract
+(`GetRole`-only, along with `Tags` and `RoleLastUsed`), so it would have said "no boundary" about every
+bounded role in existence. It was never caught because until 20:58 today there was no datazone role
+anywhere for it to misread: the check's first exercise with a real object falsified it. Fixed in the same
+sitting — one `get-role` per discovered role — and the re-run reads
+`pass US-8 … all 1 datazone role(s) bounded`, battery otherwise unchanged (0 FAILED; `US-10` notes the
+running Tooling apps as the burn they are).
 
 ### Files, and what is owed
 
@@ -2171,8 +2155,8 @@ Touched this closing sitting: `aws/studio.py` (the US-8 fix), `docs/plan/stages/
 rounds' own files — `sagemaker-prereqs` v0.3.0→v0.3.3, both member slices, the governance slice, and
 their records — are the branch's earlier commits.
 
-Owed after this sitting: **the off-VPN portal reading** (user's browser, the input to `README.md`'s
-item-3 choice), then **passes 3-5 and 5.1** — pass 3 now standing on a measured, working create path.
+Owed after this sitting: the off-VPN portal reading (user's browser, the input to `README.md`'s item-3
+choice), then passes 3-5 and 5.1 — pass 3 now standing on a measured, working create path.
 
 ---
 
@@ -2193,27 +2177,26 @@ finding.
 
 ### What the reading decides
 
-This is the strong form of the answer — the one that costs something. INT-16's fallback (ii) leaned
-on two facts: the data access is LF-gated, and *the project compute the portal fronts is VPC-only*.
-The second fact is true and does not help. `VpcOnly` governs the **app's** traffic — its ENIs and its
-egress live in the VPC — while the **user's** ingress arrives through the Studio front-end under the
-portal session, a path neither a permission-set deny nor a VPC boundary touches. That was an
-architecture sentence until today; rung (c) working with the tunnel down is what makes it a
+INT-16's fallback (ii) leaned on two facts: the data access is LF-gated, and *the project compute the
+portal fronts is VPC-only*. The second fact is true and does not help. `VpcOnly` governs the **app's**
+traffic — its ENIs and its egress live in the VPC — while the **user's** ingress arrives through the
+Studio front-end under the portal session, a path neither a permission-set deny nor a VPC boundary
+touches. That was an architecture sentence until today; rung (c) working with the tunnel down makes it a
 measurement.
 
-So "all user access through the VPN" holds for `README.md`'s items 1 and 2 — the private network and
-the AWS control plane — and **not for the portal's interactive surface, JupyterLab included**, which
-is the data scientist's primary one. The missing measurement that kept the item-3 decision open is
-now taken, and the decision is ripe. It is the user's, not this entry's: **adopt INT-16 fallback
-(i)** — the documented `DenyUserAccessFromUnauthorizedVPCs` shape on the domain execution role,
-re-keyed from `aws:SourceVpc` to the WireGuard EIP, keeping the `aws:userid = *:user-*` third
-condition that spares the catalog service — **or record acceptance** in the threat model (fallback
-(iii)'s discipline). The recommendation on record is (i), because `objectives.md`'s sentence names
-*user access* and this surface is the one a data scientist actually works in.
+So "all user access through the VPN" holds for `README.md`'s items 1 and 2 — the private network and the
+AWS control plane — and not for the portal's interactive surface, JupyterLab included, which is the data
+scientist's primary one. The missing measurement that kept the item-3 decision open is now taken, and the
+decision is ripe. It is the user's, not this entry's: adopt INT-16 fallback (i) — the documented
+`DenyUserAccessFromUnauthorizedVPCs` shape on the domain execution role, re-keyed from `aws:SourceVpc` to
+the WireGuard EIP, keeping the `aws:userid = *:user-*` third condition that spares the catalog service —
+or record acceptance in the threat model (fallback (iii)'s discipline). The recommendation on record is
+(i), because `objectives.md`'s sentence names *user access* and this surface is the one a data scientist
+works in.
 
-One reading could not be taken in this sitting: the SSO token had expired when Claude went to read
-the running apps, so **the probe's teardown is recorded as owed-to-confirm rather than as read** —
-whatever the reading provisioned meters by the hour until its space stops and the project is deleted.
+One reading could not be taken in this sitting: the SSO token had expired when Claude went to read the
+running apps, so the probe's teardown is recorded as owed-to-confirm rather than as read — whatever the
+reading provisioned meters by the hour until its space stops and the project is deleted.
 
 ### Files
 
@@ -2221,10 +2204,10 @@ whatever the reading provisioned meters by the hour until its space stops and th
 INT-16 (the reading; fallback (ii)'s premise half-measured false; the choice marked ripe), the stage
 file's owed row, `CLAUDE.md`, this log and its index cell.
 
-Owed after this sitting: **the fallback-(i)-or-acceptance decision** (user), **the probe's teardown
-confirmed**, then passes 3-5 + 5.1.
+Owed after this sitting: the fallback-(i)-or-acceptance decision (user), the probe's teardown confirmed,
+then passes 3-5 + 5.1.
 
-## 2026-08-22 — Can fallback (i) even work? The premise measured, the cost measured, and the reason the VPN exists at all
+## 2026-08-22 — Whether fallback (i) can work: the premise measured, the cost measured, and why the VPN exists
 
 *Claude's hand. Both readings are Claude's, read-only, on the user's request while the implementation
 strategy was being agreed; the paragraph on device trust is the **user's**, given in chat and recorded
@@ -2233,17 +2216,17 @@ two carrier addresses appear as `<carrier address, 21 Aug>` and `<carrier addres
 locate a person, and the finding is that **they differ from each other and from the Elastic IP**, never
 the literals.*
 
-The entry above recommends **adopting INT-16 fallback (i)** — the `DenyUserAccessFromUnauthorizedVPCs`
-shape on the domain execution role, "re-keyed from `aws:SourceVpc` to the WireGuard EIP". **Nothing in
-the repository said whether that re-keying can work.** A deny on `aws:SourceIp` discriminates only if
-the portal user's address reaches that role's request context, and no file recorded a measurement of
-it. That is a control recommended on an unrecorded premise, so the premise was measured before a line
-of Terraform was written.
+The entry above recommends adopting **INT-16 fallback (i)** — the `DenyUserAccessFromUnauthorizedVPCs`
+shape on the domain execution role, "re-keyed from `aws:SourceVpc` to the WireGuard EIP". Nothing in the
+repository said whether that re-keying can work. A deny on `aws:SourceIp` discriminates only if the
+portal user's address reaches that role's request context, and no file recorded a measurement of it. That
+is a control recommended on an unrecorded premise, so the premise was measured before a line of Terraform
+was written.
 
-### Reading 1 — does the user's address travel? CloudTrail, Data Governance, `awsds-infra-data`
+### Reading 1 — whether the user's address travels: CloudTrail, Data Governance, `awsds-infra-data`
 
-`lookup-events` over `EventSource = datazone.amazonaws.com`, from 2026-08-21. **770 events under
-`awsds-data-studio-domain-execution`**, carrying three distinct source addresses:
+`lookup-events` over `EventSource = datazone.amazonaws.com`, from 2026-08-21. 770 events under
+`awsds-data-studio-domain-execution`, carrying three distinct source addresses:
 
 | `sourceIPAddress` | Events |
 |---|---|
@@ -2251,7 +2234,7 @@ of Terraform was written.
 | `<carrier address, 22 Aug>` | 246 |
 | `<carrier address, 21 Aug>` | 134 |
 
-**What makes it conclusive is not the list but the distribution in time** (UTC):
+The distribution in time is what makes it conclusive (UTC):
 
 | Hour | Off VPN | On VPN |
 |---|---|---|
@@ -2259,38 +2242,38 @@ of Terraform was written.
 | 22 Aug 05h | 89 | 78 |
 | 22 Aug 06h | 157 | 169 |
 
-02h is the 1.7 sitting, 05h/06h the console-contrast sitting — **each with its tunnel-up and
-tunnel-down halves in the same hour, exactly as the user described them, reconstructed from the trail
-without reference to their report.** The end user's browser address reaches the execution role's
-request context, and it changes when the tunnel state changes. **Fallback (i) is mechanically viable.**
+02h is the 1.7 sitting, 05h/06h the console-contrast sitting — each with its tunnel-up and tunnel-down
+halves in the same hour, as the user described them, reconstructed from the trail without reference to
+their report. The end user's browser address reaches the execution role's request context, and it changes
+when the tunnel state changes. **Fallback (i) is mechanically viable.**
 
-Two by-products. **Every session name is `user-<uuid>`** — the shape AWS's third condition
+Two by-products. Every session name is `user-<uuid>`, the shape AWS's third condition
 (`StringLike aws:userid = *:user-*`) selects, predicted by the 2026-08-19 re-read of the isolation page
-and now matched against real sessions. And **no call under that role was service-initiated**
-(`invokedBy` absent on all 770). *(The 691 events with no principal ARN that appeared in the first cut
-are `AWSAccount` — the blueprint-configuration applies from the two members. Not portal traffic.)*
+and now matched against real sessions. And no call under that role was service-initiated (`invokedBy`
+absent on all 770). *(The 691 events with no principal ARN that appeared in the first cut are
+`AWSAccount` — the blueprint-configuration applies from the two members. Not portal traffic.)*
 
-**One link is an identification, not a measurement, and it is the last one:** CloudTrail's
-`sourceIPAddress` and the IAM key `aws:SourceIp` are populated from the same request context, so one
-discriminates if the other does. Sound, but the policy is only measured after it is applied.
+One link is an identification rather than a measurement: CloudTrail's `sourceIPAddress` and the IAM key
+`aws:SourceIp` are populated from the same request context, so one discriminates if the other does.
+Sound, but the policy is only measured after it is applied.
 
-**And what the window does not show is where a careless reading would go wrong.** No non-`user-`
-session appeared — which is *not* evidence that the role only ever carries humans. The window is two
-days of a domain that had **no project** for almost all of it; the catalog had nothing to do. The
-`*:user-*` carve-out therefore goes in because AWS wrote it and it costs nothing, **not** because its
-necessity was demonstrated here (Lesson 31: a check inherits the scope of the period it was taken in).
+What the window does not show is where a careless reading would go wrong. No non-`user-` session
+appeared, which is not evidence that the role only ever carries humans. The window is two days of a
+domain that had no project for almost all of it; the catalog had nothing to do. The `*:user-*` carve-out
+goes in because AWS wrote it and it costs nothing, not because its necessity was demonstrated here
+(Lesson 31: a check inherits the scope of the period it was taken in).
 
-### The trap in taking that reading, because it nearly produced a false correlation
+### The trap in taking that reading
 
 The first correlation was wrong and looked right. `cloudwatch get-metric-statistics` rendered its
-timestamps in **local time (`-03:00`)** while CloudTrail returned **UTC**; lining the two up by the
-hour field put a 14 GB spike inside a portal sitting and made the portal look expensive. The tell was
-structural rather than semantic — **a list requested from midnight came back starting at 21:00** — and
-the fix was to stop reading the hour field and print the offset. Lesson 30, in the shape this project
-keeps meeting it: the tool's rendering is not a property of the world. **Anything correlating
-CloudTrail with a CloudWatch metric in this repository has to normalise the zone first.**
+timestamps in local time (`-03:00`) while CloudTrail returned UTC; lining the two up by the hour field
+put a 14 GB spike inside a portal sitting and made the portal look expensive. The tell was structural
+rather than semantic — a list requested from midnight came back starting at 21:00 — and the fix was to
+stop reading the hour field and print the offset (Lesson 30: the tool's rendering is not a property of
+the world). Anything correlating CloudTrail with a CloudWatch metric in this repository has to normalise
+the zone first.
 
-### Reading 2 — what the tunnel actually costs, because a control was about to be rejected on it
+### Reading 2 — what the tunnel costs
 
 `NetworkOut` on `awsds-sandbox-vpn`, hourly, both days (local time, as the API returns it):
 
@@ -2301,19 +2284,19 @@ CloudTrail with a CloudWatch metric in this repository has to normalise the zone
 | Idle, nobody connected | 0.4 MB/h |
 | 21 Aug 14h–16h and 22 Aug 01h–02h | **4.6 + 5.2 + 1.1 + 5.0 + 9.7 GB** |
 
-**The gigabytes are the devbox** — step 5.0's image build and push, which leave through this host
-because `egress/` is `[E]` and down. **A portal sitting is tens of megabytes**: 18.6 MB at 0.09 USD/GB
-is **USD 0.0017**.
+The gigabytes are the devbox — step 5.0's image build and push, which leave through this host because
+`egress/` is `[E]` and down. A portal sitting is tens of megabytes: 18.6 MB at 0.09 USD/GB is
+**USD 0.0017**.
 
-Two things that number is not. `NetworkOut` counts every byte leaving the instance and **not every
-byte is priced the same** — the laptop's traffic is internet egress and is charged, the push went to
-ECR **in-region** and by AWS's rules is not; the authoritative figure is the bill, not this metric
-(Lesson 6). And **these sittings had no project and no JupyterLab** — this bounds the portal shell, not
-a working day. It should be re-read once pass 3's project has been used in anger.
+Two things that number is not. `NetworkOut` counts every byte leaving the instance and not every byte is
+priced the same — the laptop's traffic is internet egress and is charged, the push went to ECR in-region
+and by AWS's rules is not; the authoritative figure is the bill, not this metric (Lesson 6). And these
+sittings had no project and no JupyterLab, so this bounds the portal shell rather than a working day. It
+should be re-read once pass 3's project has been used in anger.
 
-**What it settles anyway is the shape of the argument.** The expense is not SageMaker crossing the
-tunnel; it is the **full tunnel carrying everything else**, a 14 GB docker push included. A control was
-about to be traded away against a cost that, measured, sits somewhere else — Lesson 7 exactly.
+It settles the shape of the argument. The expense is not SageMaker crossing the tunnel; it is the full
+tunnel carrying everything else, a 14 GB docker push included. A control was about to be traded away
+against a cost that, measured, sits somewhere else (Lesson 7).
 
 ### Why the VPN exists — the user's context, recorded because no file held it
 
@@ -2322,40 +2305,39 @@ about to be traded away against a cost that, measured, sits somewhere else — L
 > scientist extracts through SageMaker cannot be forwarded freely. On a personal computer, without
 > those endpoint controls, it could be.
 
-**The consequence for how this design is read: the VPN is a stand-in for device trust, not the control
-itself.** The control lives on the endpoint; an IP allow-list is the cheap way to *observe* that the
-device is a managed one. Left unwritten, a reader learns *"IP allow-list = DLP"*, which is the
-laboratory's compromise rather than the pattern — `institutional-delta.md` gains a row, and it is also
-the sentence Stage 11 needs, where DLP is a requirement in its own right.
+The VPN is a stand-in for device trust rather than the control itself. The control lives on the endpoint;
+an IP allow-list is the cheap way to *observe* that the device is a managed one. Left unwritten, a reader
+learns *"IP allow-list = DLP"*, which is the laboratory's compromise rather than the pattern —
+`institutional-delta.md` gains a row, and it is also the sentence Stage 11 needs, where DLP is a
+requirement in its own right.
 
-**It also sharpens what the off-VPN reading found.** Rung (c) — JupyterLab reachable with the tunnel
-down — is not merely a perimeter gap in the abstract: it is *the* path the DLP argument exists to
-close, available from an unmanaged laptop.
+It sharpens what the off-VPN reading found. Rung (c) — JupyterLab reachable with the tunnel down — is the
+path the DLP argument exists to close, available from an unmanaged laptop.
 
 ### The implementation strategy, agreed in this sitting
 
-The user's instinct to **isolate the statement in its own file** is kept, and for a second reason
-beyond reversibility: its conditions depend on live infrastructure, which is the same argument that
-already split `shared_denies` from `control_plane_vpn` in `policies-shared.tf`.
+The user's instinct to isolate the statement in its own file is kept, for a second reason beyond
+reversibility: its conditions depend on live infrastructure, the same argument that already split
+`shared_denies` from `control_plane_vpn` in `policies-shared.tf`.
 
-**The toggle-by-commenting is not.** The disabled state would be the normal one and nothing would
-record it — the indexes and `./aws/studio.py` would describe a statement that is not attached (Lesson
-5), and each flip would be a commit turning a security control on and off with a diff that does not say
-why. **The undo is `git revert` of one commit whose message says what it does** — strictly easier than
-commenting, and it leaves the repository never claiming a control it is not running. No flag, no dead
-code; `profiles_enabled` remains the precedent if a runtime switch is ever genuinely wanted.
+The toggle-by-commenting is not kept. The disabled state would be the normal one and nothing would record
+it — the indexes and `./aws/studio.py` would describe a statement that is not attached (Lesson 5), and
+each flip would be a commit turning a security control on and off with a diff that does not say why. The
+undo is `git revert` of one commit whose message says what it does, which is easier than commenting and
+leaves the repository never claiming a control it is not running. No flag, no dead code;
+`profiles_enabled` remains the precedent if a runtime switch is ever wanted.
 
 ### Files
 
-This entry and its index cell. Two corrections of wording elsewhere in this file are noted at the
-entries they belong to.
+This entry and its index cell. Two corrections of wording elsewhere in this file are noted at the entries
+they belong to.
 
-Owed: unchanged — **the fallback-(i)-or-acceptance decision** is the user's, now with both its premise
-and its cost measured; the probe's teardown; passes 3-5 and 5.1.
+Owed: unchanged — the fallback-(i)-or-acceptance decision is the user's, now with both its premise and
+its cost measured; the probe's teardown; passes 3-5 and 5.1.
 
 ---
 
-## 2026-08-22 — The plan read back against the closed create path: sixty-five findings, one new lesson, and the tag check the merge owed
+## 2026-08-22 — The plan read back against the closed create path: the findings, the new lesson, and the tag check the merge owed
 
 *Claude's hand, at the user's request ("revisit the stage's findings and review the plan for the next
 stages"). No AWS write, no apply — one read-only battery run earlier in the sitting and a `git
@@ -2375,45 +2357,43 @@ never to be re-cut.
 Eight parallel read-only reviewers, each holding the session's measured facts against one disjoint file
 set (the stage file; stages 7-15 + the plan core; decisions + open questions; lessons + `CLAUDE.md`;
 `SMUS.md`/`GOVERNANCE.md`/`AWS_STATE.md`; architecture/conventions/integrations/`README.md`; both
-Terraform trees + `PRICING.md`; `aws/` + this log). **Sixty-five findings, every one verified against
-the session history before an edit was made, all accepted.** They fall in exactly the two classes a
-closed stage produces: **promises already delivered that nobody struck** (the Status row still owing
-5.0's push; verification rows (v), (vii), (xviii), (xx) unannotated; `AWS_STATE.md` still asserting "no
-blueprint configuration and no project profile"; the stages INDEX calling Stage 6 "not started" and
-still carrying the un-re-cut pki prerequisite; INT-12/INT-15/INT-16 residuals; D21's uncrossed
-boundary) and **premises the measurements falsified** (the project CMK "with no consumer today"; the
-projects bucket as "service-created, name `amazon-datazone-*`"; the association's "invitation";
-`lifecycleManagement true`; "SEVEN ENTRIES" over six Bedrock names in both roster copies and the
-PRICING header; the slice count one `[E]` behind; `versions.tf`'s "one resource and one attribute";
-`GENERAL_PLAN`'s unqualified "only public entry point" and both `architecture.md` VPN-only claims —
-qualified with the measurement, the fallback-(i) decision stated as the user's and deferred,
-everywhere).
+Terraform trees + `PRICING.md`; `aws/` + this log). Sixty-five findings, every one verified against the
+session history before an edit was made, all accepted. They fall in the two classes a closed stage
+produces: **promises already delivered that nobody struck** (the Status row still owing 5.0's push;
+verification rows (v), (vii), (xviii), (xx) unannotated; `AWS_STATE.md` still asserting "no blueprint
+configuration and no project profile"; the stages INDEX calling Stage 6 "not started" and still carrying
+the un-re-cut pki prerequisite; INT-12/INT-15/INT-16 residuals; D21's uncrossed boundary) and **premises
+the measurements falsified** (the project CMK "with no consumer today"; the projects bucket as
+"service-created, name `amazon-datazone-*`"; the association's "invitation"; `lifecycleManagement true`;
+"SEVEN ENTRIES" over six Bedrock names in both roster copies and the PRICING header; the slice count one
+`[E]` behind; `versions.tf`'s "one resource and one attribute"; `GENERAL_PLAN`'s unqualified "only public
+entry point" and both `architecture.md` VPN-only claims — qualified with the measurement, the
+fallback-(i) decision stated as the user's and deferred, everywhere).
 
-Three corrections deserve their own line. **`aws/INDEX.md` still described US-2 and US-3's
-pre-2026-08-21 semantics** — visibility as the violation, one direction of judgement — which would have
-sent a future reader to re-file step 1.3's success as a finding (the exact false-FAIL Lesson 31
-removed). **`aws/studio.py`'s header claimed reads it never makes** (`GetDomain`,
-`ListEnvironmentBlueprints`, `ListSpaces`, `ListAppImageConfigs`) and omitted one it does
-(`GetEnvironmentBlueprint`); and **US-8 now emits an explicit `note` for a live account with zero
-datazone roles** — silence there was the same shape that hid the `list-roles` defect until the first
-real role arrived. **Stage 14's onboarding choreography** was brought to the measured order and the
-complete field set (a next member following the old text would have replayed the five-attempt ladder),
-and **open question 21 received a measured input**: `AddPolicyGrant`/`RemovePolicyGrant` are now
-exercised by the estate's own member-slice Terraform, so a blanket Interactive-OU deny on them breaks
-the estate's own applies — and the question's deferred reading is unblocked, a real provisioned role
-existing at last.
+Three corrections deserve their own line. `aws/INDEX.md` still described `US-2` and `US-3`'s
+pre-2026-08-21 semantics — visibility as the violation, one direction of judgement — which would have
+sent a future reader to re-file step 1.3's success as a finding (the false FAIL Lesson 31 removed).
+`aws/studio.py`'s header claimed reads it never makes (`GetDomain`, `ListEnvironmentBlueprints`,
+`ListSpaces`, `ListAppImageConfigs`) and omitted one it does (`GetEnvironmentBlueprint`); and `US-8` now
+emits an explicit `note` for a live account with zero datazone roles — silence there was the same shape
+that hid the `list-roles` defect until the first real role arrived. Stage 14's onboarding choreography
+was brought to the measured order and the complete field set (a next member following the old text would
+have replayed the five-attempt ladder), and open question 21 received a measured input:
+`AddPolicyGrant`/`RemovePolicyGrant` are now exercised by the estate's own member-slice Terraform, so a
+blanket Interactive-OU deny on them breaks the estate's own applies — and the question's deferred reading
+is unblocked, a real provisioned role existing at last.
 
 ### The lessons verdict
 
-Four candidates were weighed against all thirty-eight. **One earned a number — Lesson 39**: what a
-console wizard fills and the authoring API does not require is still required, the validator is the
-deploy AND the teardown (an incomplete object pins its dependents in both directions), and the strict
-validator arrives one act late (`CreateProjectProfile`/`UpdateProjectProfile`'s asymmetry folded in as
-the second face; Lesson 16 cited as the inverse shape). **Two became dated occurrences under standing
-numbers**: the trust defect's absent-event attribution under Lesson 24 (ambiguous text → silent text →
-absent event, documentation as the outside channel) and the `ListRoles` contract omission under
-Lesson 30 (the drop can live in the API's own documented contract; a check no object can falsify).
-The fourth decomposed into 21/32 and was folded into 39's second face rather than numbered.
+Four candidates were weighed against all thirty-eight. One earned a number, **Lesson 39**: what a console
+wizard fills and the authoring API does not require is still required, the validator is the deploy AND
+the teardown (an incomplete object pins its dependents in both directions), and the strict validator
+arrives one act late (`CreateProjectProfile`/`UpdateProjectProfile`'s asymmetry folded in as the second
+face; Lesson 16 cited as the inverse shape). Two became dated occurrences under standing numbers: the
+trust defect's absent-event attribution under Lesson 24 (ambiguous text → silent text → absent event,
+documentation as the outside channel) and the `ListRoles` contract omission under Lesson 30 (the drop can
+live in the API's own documented contract; a check no object can falsify). The fourth decomposed into
+21/32 and was folded into 39's second face rather than numbered.
 
 ### Files
 
@@ -2426,22 +2406,22 @@ the module's `versions.tf`/`variables.tf`/`outputs.tf` (comment-only — they re
 next tag, the `ecr-repo` precedent), `PRICING.md` (3, CloudFormation added to §10), `aws/studio.py`,
 `aws/INDEX.md`, this log and its index cell.
 
-**One process note, the entry-17 precedent repeating**: while this sweep ran, the fallback-(i) sitting
-(the entry above) landed its own index-cell update from another session; this entry's first index write
-was refused by its own anchor check against the changed cell, re-read, and re-applied as the
-twenty-first on top of that sitting's twentieth — two hands, one file, nothing lost, for the same
-reason as before: no write happens over a state the writer has not seen.
+One process note, the entry-17 precedent repeating: while this sweep ran, the fallback-(i) sitting (the
+entry above) landed its own index-cell update from another session; this entry's first index write was
+refused by its own anchor check against the changed cell, re-read, and re-applied as the twenty-first on
+top of that sitting's twentieth — two hands, one file, nothing lost, because no write happens over a
+state the writer has not seen.
 
-Owed after this sitting: unchanged — the INT-16 decision (user; its premise and cost now measured by
-the entry above), the probe project's teardown confirmation, passes 3-5 + 5.1.
+Owed after this sitting: unchanged — the INT-16 decision (user; its premise and cost now measured by the
+entry above), the probe project's teardown confirmation, passes 3-5 + 5.1.
 
-## 2026-08-22 — The DNS Firewall allow-list: six domains it was missing, the wildcard rule measured, and the diff that will never converge
+## 2026-08-22 — The DNS Firewall allow-list: the missing domains, the wildcard rule, and the diff that will never converge
 
-> **SUPERSEDED IN ITS DIAGNOSIS BY THE 2026-08-23 ENTRY BELOW, and left standing as evidence.**
-> The six domains were necessary and nowhere near sufficient: what governs a match is the whole
-> CNAME chain, not the name. And the wildcard-depth claim below says *"measured rather than
-> assumed"* when its source was documentation — true, but not measured, and that wording is what
-> closed the question for a day (Lesson 38, 2026-08-23 occurrence).
+> Superseded in its diagnosis by the 2026-08-23 entry below, and left standing as evidence. The six
+> domains were necessary and nowhere near sufficient: what governs a match is the whole CNAME chain,
+> not the name. And the wildcard-depth claim below says *"measured rather than assumed"* when its
+> source was documentation — true, but not measured, and that wording is what closed the question for
+> a day (Lesson 38, 2026-08-23 occurrence).
 
 *Both hands. The eighteen hostnames are the **user's**, brought back from a working session and taken
 as given; the coverage reading, the wildcard measurement, the release and the apply are Claude's, on the
@@ -2449,7 +2429,7 @@ user's request ("revise a whitelist em vpc-egress variables acrescentando os dom
 its explicit authorisation of the commits, the push, the PR and the apply. The user reported the Sandbox
 up before the apply. No identifiers to redact.*
 
-### What opened it, and the one thing it did not establish
+### What opened it
 
 A JupyterLab session in SMUS had no internet, and the question was which parameter in this repository
 imposes that. The chain was read out of the code, not measured — the SSO token had expired at that point
@@ -2463,14 +2443,14 @@ imposes that. The chain was read out of the code, not measured — the SSO token
 - and where the route does exist, `block-everything-else` (`*` → NXDOMAIN, priority 200) is what makes it
   *limited* internet rather than internet.
 
-**Which of the last two was actually biting was never established, and this entry does not pick one.**
-The two earlier entries of this day record `egress/` as `[E]` and down; the user then reported the
-Sandbox up, and `make status` in the same sitting read `egress` **UP, 25 resources**, the firewall among
-them. What was handed over instead was the distinguishing symptom — a hang is a missing route, an
-immediate *could not resolve host* is the firewall — and the instrument, `/awsds/sandbox/dns-firewall`,
-which carries the rule action beside the name.
+Which of the last two was biting was never established, and this entry does not pick one. The two earlier
+entries of this day record `egress/` as `[E]` and down; the user then reported the Sandbox up, and
+`make status` in the same sitting read `egress` UP, 25 resources, the firewall among them. What was
+handed over instead was the distinguishing symptom — a hang is a missing route, an immediate *could not
+resolve host* is the firewall — and the instrument, `/awsds/sandbox/dns-firewall`, which carries the rule
+action beside the name.
 
-### The coverage reading — eleven of the eighteen were already reachable
+### The coverage reading
 
 | Already covered by | The user's names |
 |---|---|
@@ -2496,54 +2476,54 @@ it matches that label **and every subdomain beneath it at any depth** — but ne
 makes the file's pair-every-entry convention correct rather than superstitious. Recorded in
 `REFERENCES.md` and beside the pairing rule in `dns-firewall.tf`.
 
-**The name a wildcard does not save is `storage.julialang.net`.** Julia's package server is
+The name a wildcard does not save is `storage.julialang.net`. Julia's package server is
 `julialang.`**`org`** and its storage server is `julialang.`**`net`**: depth is crossed, a sibling TLD is
-not. So an ecosystem is not "on the list" because one of its names is — the trap is now written above the
+not. An ecosystem is not "on the list" because one of its names is — the trap is now written above the
 list, with this as its case.
 
-### The release — Recipe B, and the hook arriving exactly where the runbook says
+### The release — Recipe B, and the hook the runbook predicts
 
-1. **Commit 1, the module alone** (`e863b7b`).
-2. **`vpc-egress-v0.2.1` tagged and pushed with `--tags`**, then asked of origin: `git ls-remote` returned
+1. Commit 1, the module alone (`e863b7b`).
+2. `vpc-egress-v0.2.1` tagged and pushed with `--tags`, then asked of origin: `git ls-remote` returned
    the one-line success shape at the same hash `git rev-parse` gives locally.
-3. **Commit 2, both Interactive callers — refused by the `terraform validate` hook**: *"The source
-   address was changed since this module was installed"*, §7's block. `terraform init` re-run on both
-   slices (each then recording `vpc-egress-v0.2.1` in `.terraform/modules/modules.json`), the commit
-   re-run, all hooks passed (`89676eb`).
-4. **PR #33**, unmerged at the close of the sitting.
+3. Commit 2, both Interactive callers — refused by the `terraform validate` hook: *"The source address
+   was changed since this module was installed"*, §7's block. `terraform init` re-run on both slices
+   (each then recording `vpc-egress-v0.2.1` in `.terraform/modules/modules.json`), the commit re-run, all
+   hooks passed (`89676eb`).
+4. PR #33, unmerged at the close of the sitting.
 
 `production/egress/` is untouched on `v0.1.0`: it never sets `dns_firewall`, whose default is `false`, so
 the list is not consulted there at all.
 
 ### The apply, and the hazard that made the plans worth reading
 
-`make up ENV=sandbox` applies **three** `[E]` slices, not one, and `buildbox` takes its AMI from an SSM
-public parameter — a newer AL2023 image would have **replaced the running build host, whose volume dies
-with it**. All three were planned first: `egress` **`0 to add, 2 to change, 0 to destroy`**, `buildbox`
-and `probes` both **`No changes`**. The hazard did not materialise; the reading is what says so.
+`make up ENV=sandbox` applies three `[E]` slices, not one, and `buildbox` takes its AMI from an SSM
+public parameter — a newer AL2023 image would have replaced the running build host, whose volume dies
+with it. All three were planned first: `egress` `0 to add, 2 to change, 0 to destroy`, `buildbox` and
+`probes` both `No changes`. The hazard did not materialise; the reading is what says so.
 
-Then `make up ENV=sandbox AUTO=1`, and the result read back **from the API rather than from the apply's
-own output**: `list-firewall-domains` on `rslvr-fdl-7a0eaf765a5b4333` returns **38 names** — nineteen
-pairs, the six new ones present in both forms. Burn unchanged at **USD 0.3500/h**.
+Then `make up ENV=sandbox AUTO=1`, and the result read back from the API rather than from the apply's own
+output: `list-firewall-domains` on `rslvr-fdl-7a0eaf765a5b4333` returns **38 names** — nineteen pairs,
+the six new ones present in both forms. Burn unchanged at USD 0.3500/h.
 
-### Two findings the apply exposed
+### The findings the apply exposed
 
-**The plan on this slice will never be clean, and that costs a check this project relies on.** Re-planning
+The plan on this slice will never be clean, and that costs a check this project relies on. Re-planning
 immediately after the successful apply reads `0 to add, 2 to change, 0 to destroy` again. The Route 53
-Resolver API **canonicalises every entry with a trailing dot** — it returns `pypi.org.`,
-`*.amazonaws.com.`, and the catch-all list reads `["*."]` — while the code writes them without one, so the
-provider compares two spellings of the same list and issues an `UpdateFirewallDomains` on every apply.
-Pre-existing rather than introduced here. What it costs is specific: *"re-plan reads `No changes`"* is the
-closing check for every change in this repository, and it is **unavailable on both Interactive `egress/`
-slices** — a future reader sees all 38 names churn and cannot tell an edit from the noise. The fix is a
-**hypothesis and not a reading** (write the defaults in the dotted FQDN form) and needs one apply cycle,
-because it could normalise the other way and produce the mirror diff.
+Resolver API canonicalises every entry with a trailing dot — it returns `pypi.org.`, `*.amazonaws.com.`,
+and the catch-all list reads `["*."]` — while the code writes them without one, so the provider compares
+two spellings of the same list and issues an `UpdateFirewallDomains` on every apply. Pre-existing rather
+than introduced here. The cost is specific: *"re-plan reads `No changes`"* is the closing check for every
+change in this repository, and it is unavailable on both Interactive `egress/` slices — a future reader
+sees all 38 names churn and cannot tell an edit from the noise. The fix is a hypothesis and not a reading
+(write the defaults in the dotted FQDN form) and needs one apply cycle, because it could normalise the
+other way and produce the mirror diff.
 
-**This list binds the whole VPC, `buildbox` included.** The rule group associates to the **VPC id**, not
-to a route table, so the isolated tier's build host is filtered by it too — even though its egress leaves
-through the WireGuard NAT instance and never touches this slice's NAT. Its security-group comment names
-what it pulls (`public.ecr.aws`, PyPI, conda-forge, julialang, `static.rust-lang.org`) and **defers the
-naming to here; two of those five were not on the list.** Never exercised — no build has run while
+This list binds the whole VPC, `buildbox` included. The rule group associates to the **VPC id** rather
+than to a route table, so the isolated tier's build host is filtered by it too — even though its egress
+leaves through the WireGuard NAT instance and never touches this slice's NAT. Its security-group comment
+names what it pulls (`public.ecr.aws`, PyPI, conda-forge, julialang, `static.rust-lang.org`) and defers
+the naming to here; two of those five were not on the list. Never exercised — no build has run while
 `egress/` was up. Written into `variables.tf` beside the list, because nothing else names the coupling.
 
 One state observation, and not a finding of this work: `make status` reads `buildbox` **and** `probes`
@@ -2561,8 +2541,8 @@ they explain), `docs/REFERENCES.md` (the domain-list syntax reading),
 tag, `vpc-egress-v0.2.1`.
 
 Owed after this sitting: unchanged — the INT-16 decision, the probe project's teardown confirmation,
-passes 3-5 + 5.1. Plus one new and small: **`development/egress/` carries the bump in code and not in the
-account.** It is down, and picks `v0.2.1` up on its next `make up`.
+passes 3-5 + 5.1. Plus one new and small: `development/egress/` carries the bump in code and not in the
+account. It is down, and picks `v0.2.1` up on its next `make up`.
 
 ## 2026-08-23 — Step 4.3 ran: the allow-list was never a list of names, and a correct hypothesis was abandoned on a log that named the wrong object
 
@@ -2572,32 +2552,32 @@ taken verbatim; so is the SSO session that made the rest possible, the authorisa
 buildbox over SSM, and the apply. The resolver readings, the query-log analysis, the probes and the
 redesign are Claude's. No identifiers to redact.*
 
-### What the session showed, and it was two tools with one cause
+### What the session showed
 
-`uv pip install pandas` **resolved the index, found `pandas==3.0.5`, and died fetching the wheel** from
+`uv pip install pandas` resolved the index, found `pandas==3.0.5`, and died fetching the wheel from
 `files.pythonhosted.org` (*"dns error … Name or service not known"*), while `wget pythonhosted.org` in
 the same shell succeeded. `apt install htop` died the same way on `archive.ubuntu.com`. `getent hosts
-public.ecr.aws` and `curl https://static.rust-lang.org/` returned nothing — and `public.ecr.aws` had
-been added to the allow-list the previous day, as an **exact** entry.
+public.ecr.aws` and `curl https://static.rust-lang.org/` returned nothing — and `public.ecr.aws` had been
+added to the allow-list the previous day, as an exact entry.
 
-### The wrong turn, recorded because it is the useful part
+### The wrong turn
 
 The first reading was the right one: resolving each failing name showed a **CNAME leaving the
 allow-listed domain** — `files.pythonhosted.org` → Fastly, `public.ecr.aws` → Global Accelerator,
 `archive.ubuntu.com` → Cloudflare — while every name that worked answered with A records directly.
 
-Then the Resolver query log was read for attribution, and **it appeared to refute that**. For every
-failing name the log reported `BLOCK` against **the queried name** with the catch-all domain list id,
-which reads as *"this name is not on the allow-list"*. `checkip.amazonaws.com` appeared blocked although
+Then the Resolver query log was read for attribution, and it appeared to refute that. For every failing
+name the log reported `BLOCK` against the queried name with the catch-all domain list id, which reads as
+*"this name is not on the allow-list"*. `checkip.amazonaws.com` appeared blocked although
 `*.amazonaws.com` has been listed since the beginning; `public.ecr.aws` appeared blocked 75 minutes after
-its own list finished updating (`DomainCount 38`, `Status COMPLETE`). And in **881 records there was not
-one `ALLOW`** — the names that worked carried no `firewall_rule_action` at all. On that reading the
-conclusion was that the ALLOW rule matched nothing and the hypothesis was dropped.
+its own list finished updating (`DomainCount 38`, `Status COMPLETE`). And in 881 records there was not
+one `ALLOW` — the names that worked carried no `firewall_rule_action` at all. On that reading the
+conclusion was that the ALLOW rule matched nothing, and the hypothesis was dropped.
 
-**It was the log naming the wrong object.** The block was caused by a CNAME target one hop down, a name
-the log never prints; and an ALLOW match populates no `firewall_rule_action` in log version `1.100000`,
-so allowed names looked un-evaluated. Two ambiguities in one field, both pointing the same wrong way.
-Recorded as a dated occurrence under **Lesson 24** — the discriminator cannot be a better reading of the
+The log was naming the wrong object. The block was caused by a CNAME target one hop down, a name the log
+never prints; and an ALLOW match populates no `firewall_rule_action` in log version `1.100000`, so
+allowed names looked un-evaluated. Two ambiguities in one field, both pointing the same wrong way.
+Recorded as a dated occurrence under **Lesson 24**: the discriminator cannot be a better reading of the
 answer.
 
 ### What settled it: a paired probe, from a second host, under one rule shape
@@ -2614,23 +2594,23 @@ entries chosen so that only one variable differed:
 
 Same rule, same wildcard depth, opposite outcomes, one variable. **DNS Firewall evaluates the whole
 resolution chain.** The one apparent counterexample was checked rather than waved through:
-`julialang.net` failed because its apex **has no A record at all** — ordinary DNS, not the firewall.
+`julialang.net` failed because its apex has no A record at all — ordinary DNS, not the firewall.
 
-### What that means for design A, which is the finding rather than the fix
+### What that means for design A
 
-Every ecosystem serves its **artifacts** from a shared CDN. Of the twenty-one hostnames the four required
-ecosystems actually use, **fourteen are CNAMEs leaving any plausible allow-list**. So the list carried
-every index and no download path — `pip`, `cargo`, `rustup`, CRAN, `apt` and ECR Public all broken — and
-the only fix is to allow `*.fastly.net`, `*.cloudfront.net`, `*.cdn.cloudflare.net`, `*.fastlydns.net`
-and `*.awsglobalaccelerator.com`, which are **self-service**: anyone can publish into them in minutes.
-Allowing them ends the control. **This is step 6.1's input, not this step's problem to solve.**
+Every ecosystem serves its artifacts from a shared CDN. Of the twenty-one hostnames the four required
+ecosystems use, fourteen are CNAMEs leaving any plausible allow-list. So the list carried every index and
+no download path — `pip`, `cargo`, `rustup`, CRAN, `apt` and ECR Public all broken — and the only fix is
+to allow `*.fastly.net`, `*.cloudfront.net`, `*.cdn.cloudflare.net`, `*.fastlydns.net` and
+`*.awsglobalaccelerator.com`, which are self-service: anyone can publish into them in minutes. Allowing
+them ends the control. This is step 6.1's input, not this step's problem to solve.
 
-### One finding that was the estate blocking itself
+### The estate blocking itself
 
-`datazone.<region>.api.aws` — **52 blocked lookups in one session**. SMUS's own control plane, on the
-`aws` TLD that no `*.amazonaws.com` wildcard reaches, and uncovered by the `datazone` interface endpoint,
-whose private DNS is the `amazonaws.com` spelling. Two more of the same shape, left alone: `time.aws.com`
-(54) and `cdn.amazonlinux.com` (2).
+`datazone.<region>.api.aws` — 52 blocked lookups in one session. SMUS's own control plane, on the `aws`
+TLD that no `*.amazonaws.com` wildcard reaches, and uncovered by the `datazone` interface endpoint, whose
+private DNS is the `amazonaws.com` spelling. Two more of the same shape, left alone: `time.aws.com` (54)
+and `cdn.amazonlinux.com` (2).
 
 ### The redesign, on the user's instruction
 
@@ -2640,24 +2620,24 @@ every lookup. Each Interactive slice declares its own set, which the two account
 Sandbox carries `sandbox.internal`, Development authors no zone and carries only Production's two. The
 cost side is written into the module: two lists can now diverge and nothing compares them.
 
-**Applied to Sandbox 2026-08-23** — `0 added, 2 changed, 0 destroyed`, `buildbox` and `probes` planned
+Applied to Sandbox 2026-08-23 — `0 added, 2 changed, 0 destroyed`, `buildbox` and `probes` planned
 `No changes` first because `make up` applies all three and the build host takes its AMI from an SSM
-parameter. **18 names, read back `COMPLETE` from the API.** `development/egress/` has the bump in code
-only; its slice is down.
+parameter. 18 names, read back `COMPLETE` from the API. `development/egress/` has the bump in code only;
+its slice is down.
 
 ### The verification, behavioural rather than read-back
 
-From inside the VPC, **23 of 23 as designed, nothing unexpected**. Resolving: `datazone.<region>.api.aws`,
+From inside the VPC, 23 of 23 as designed, nothing unexpected. Resolving: `datazone.<region>.api.aws`,
 both conda hosts, `us-west.pkg.julialang.org`, `storage.julialang.net`, `releases.astral.sh`, both DuckDB
 hosts, `pypi.org`, `sts.<region>.amazonaws.com`. Blocked: the eight CDN-backed artifact hosts, the
 `google.com` control, and the five entries removed for serving no path (`crates.io`, `ubuntu.com`,
 `debian.org`, `r-project.org`, `duckdb.org`).
 
-**`us-west.pkg.julialang.org` resolving is the strongest single result.** It is a CNAME to
-`us-west.pkg.julialang.net`, and it works *because both are on the list* — the chain closing inside the
-allow-list, which is the mechanism confirmed in the positive direction rather than only through failures.
-Julia therefore has a working path, provided `JULIA_PKG_SERVER` points at the regional server; the
-default `pkg.julialang.org` is Fastly.
+`us-west.pkg.julialang.org` resolving is the strongest single result. It is a CNAME to
+`us-west.pkg.julialang.net`, and it works because both are on the list — the chain closing inside the
+allow-list, the mechanism confirmed in the positive direction rather than only through failures. Julia
+therefore has a working path, provided `JULIA_PKG_SERVER` points at the regional server; the default
+`pkg.julialang.org` is Fastly.
 
 ### Files
 
@@ -2670,16 +2650,16 @@ either*), `REFERENCES.md`, `lessons.md` (occurrences under **24** and **38**), `
 `sandbox/buildbox/main.tf` and `runbooks/buildbox.md` (**build with `egress/` down** — while it is up
 this host cannot pull `public.ecr.aws`, and adding the name does not fix it).
 
-**The previous entry's account of this is superseded**, and the pointer is on it rather than an edit: it
+The previous entry's account of this is superseded, and the pointer is on it rather than an edit: it
 recorded six missing domains as the explanation and the wildcard-depth reading as the finding. The
 domains were necessary and nowhere near sufficient, and the depth reading came from documentation while
 being written down as *"measured"* — Lesson 38's occurrence.
 
-Owed after this sitting: passes 3 and 5 plus 5.1; 4.2's measurement half; **4.3's friction reading** —
-what a working day costs under the names that do work, which is the other half of step 6.1's evidence.
-And the INT-16 decision, unchanged.
+Owed after this sitting: passes 3 and 5 plus 5.1; 4.2's measurement half; 4.3's friction reading — what a
+working day costs under the names that do work, the other half of step 6.1's evidence. And the INT-16
+decision, unchanged.
 
-## 2026-08-23 — Eight of the nine names are CDN-fronted: "does it use a CDN" was the wrong question, and the sentence that hid it was true
+## 2026-08-23 — Most of the names are CDN-fronted: "does it use a CDN" was the wrong question, and the sentence that hid it was true
 
 *Second sitting of the day, and a quiet one: **no AWS call, no SSO session, nothing applied**. The
 question that opened it is the **user's**, as is every authorisation to commit and push and the decision
@@ -2688,7 +2668,7 @@ identifiers to redact.*
 
 ### What opened it — a verification question, not a failure
 
-The user asked how one **verifies** that a name goes through a CDN, naming `static.rust-lang.org`. Nothing
+The user asked how one verifies that a name goes through a CDN, naming `static.rust-lang.org`. Nothing
 was broken. The allow-list applied that morning was working, `US-8` was green, and the previous entry had
 just closed step 4.3.
 
@@ -2702,10 +2682,10 @@ dig +noall +answer static.rust-lang.org
 ```
 
 `+short` was what the freshly written module comment prescribed, and it is the wrong form: it flattens the
-answer into a column of bare values and **hides the record type**, which is the discriminator. Three names
+answer into a column of bare values and hides the **record type**, which is the discriminator. Three names
 in that chain, two of them unlistable.
 
-### The measurement, run because writing about names that had not been measured is how the last mistake happened
+### The measurement
 
 Rather than answer from the four names already in hand, every name on both lists was resolved and every
 answer address attributed by `whois` and by response header. That produced the finding:
@@ -2720,29 +2700,29 @@ answer address attributed by `whois` and by response header. That produced the f
 | `extensions.duckdb.org`, `blobs.duckdb.org` | **Cloudflare** | flat |
 | `us-west.pkg.julialang.org` → `.net` | Amazon | CNAME, own namespace |
 
-**Eight of the nine external names are CDN-fronted.** Exactly one — `us-west.pkg.julialang.net` — is a
-host of its own. They resolve because the authoritative side **flattens**: the A record is served under
-the name that was queried, so the chain never leaves the list and the firewall matches.
+Eight of the nine external names are CDN-fronted. Exactly one — `us-west.pkg.julialang.net` — is a host
+of its own. They resolve because the authoritative side **flattens**: the A record is served under the
+name that was queried, so the chain never leaves the list and the firewall matches.
 
-So the object the firewall matches is the **shape of the DNS answer**, never the provider. Whether a CDN
-serves the bytes afterwards is not its business.
+The object the firewall matches is the shape of the DNS answer, never the provider. Whether a CDN serves
+the bytes afterwards is not its business.
 
-### The part worth recording: the sentence was true
+### The sentence was true
 
 The previous entry said *"every name that worked answered with A records directly"*. That is correct, was
 correct when written, and remains correct. The module comment derived a rule from it — *"a name that
 answers with A records only is listable"* — and that rule is also correct: every name it admits does
 work.
 
-What was wrong was neither the sentence nor the rule but the **model** a reader builds from them, that A
+What was wrong was neither the sentence nor the rule but the model a reader builds from them, that A
 records mean *not a CDN*. Under that model the estate's own allow-list is a list of non-CDN hosts, and it
 never was. The user's design instruction of the previous day — *"only the cases that do not go through a
 CDN"* — describes almost nothing, and the list that came out of it was right for a reason nobody had
 stated.
 
-**Nothing would have caught this.** Every gate in this repository reads text or structure; none reads a
+Nothing would have caught this. Every gate in this repository reads text or structure; none reads a
 model, and both the sentence and the rule pass any test one could write for them. It surfaced only
-because someone asked how to *verify* a claim that was already believed.
+because someone asked how to verify a claim that was already believed.
 
 *Candidate for lesson 40, left uncut and recorded here rather than in `lessons.md`, because cutting a
 number is authorship and the key belongs in a `CLAUDE.md` that is over its budget:* **a true statement
@@ -2753,10 +2733,10 @@ false clothing.
 
 ### What was corrected
 
-The rule became **three shapes** rather than two, and the missing one is the shape the estate actually
-uses: a CNAME staying inside the project's own namespace is listable **if every hop is listed**, which is
-why `us-west.pkg.julialang.net` sits beside the `.org` and is load-bearing rather than decoration. The
-third shape — a CNAME into a shared multi-tenant namespace — remains the unusable one, and the note that
+The rule became three shapes rather than two, and the missing one is the shape the estate uses: a CNAME
+staying inside the project's own namespace is listable if every hop is listed, which is why
+`us-west.pkg.julialang.net` sits beside the `.org` and is load-bearing rather than decoration. The third
+shape — a CNAME into a shared multi-tenant namespace — remains the unusable one, and the note that
 listing its tail *ends* the control stayed where it was.
 
 `architecture.md` §4.3, `stage-06` 4.1 and the buildbox files were left as the morning had them: their
@@ -2765,13 +2745,13 @@ statements are about **what has no path**, which this measurement does not touch
 ### `EXC-05` — the risk, registered by its symptom
 
 Flattening is a switch its owner controls. The day one of the eight turns it off, that name answers with
-a CNAME, its chain leaves the list, and the lookup is blocked — **and the query log will report the block
-against the queried name**, which is precisely the misattribution that cost a correct hypothesis nine
-hours earlier in this same file.
+a CNAME, its chain leaves the list, and the lookup is blocked — and the query log will report the block
+against the queried name, the misattribution that cost a correct hypothesis nine hours earlier in this
+same file.
 
-It is therefore filed under the **symptom** and not the cause: *a name still on the list, code untouched,
-stops resolving inside the VPC*. That is the sentence someone will be holding. The disposition names the
-one command, and says plainly that the repair is **not** to list the CNAME target.
+It is filed under the **symptom** rather than the cause: *a name still on the list, code untouched, stops
+resolving inside the VPC*. That is the sentence someone will be holding. The disposition names the one
+command, and says the repair is not to list the CNAME target.
 
 ### The instrument, and the control that makes it one
 
@@ -2783,33 +2763,33 @@ who owns it.
 `DN-3` the two Interactive lists carry the same external names · `DN-4` the exposure count, a note.
 Exits 2 on a failure. First run: **22 names, DN-1/2/3 pass, 20 resolve flat.**
 
-**`DN-3` is the one nothing else did.** `vpc-egress` v0.3.0 moved the list to the callers and its own
-comment admits the cost — two slices that can diverge, with nothing mechanical comparing them. That
-sentence was written the previous day as an accepted cost; it is now closed for the price of six lines.
+`DN-3` is the one nothing else did. `vpc-egress` v0.3.0 moved the list to the callers and its own comment
+admits the cost — two slices that can diverge, with nothing mechanical comparing them. That sentence was
+written the previous day as an accepted cost; it is now closed for the price of six lines.
 
-**The negative control, run because a check that passes either way is not a check (Lesson 13).**
-`DN-2` against `static.rust-lang.org` with only that name listed returned `BROKEN` and named both
-uncovered hops; the same answer with **every** hop listed returned `ok-chain`. The wildcard semantics were
-tested in the same pass: `*.foo.com` covers `a.b.foo.com`, does **not** cover `foo.com`, and does not
-match `barfoo.com` by substring.
+The negative control, run because a check that passes either way is not a check (Lesson 13): `DN-2`
+against `static.rust-lang.org` with only that name listed returned `BROKEN` and named both uncovered
+hops; the same answer with every hop listed returned `ok-chain`. The wildcard semantics were tested in
+the same pass: `*.foo.com` covers `a.b.foo.com`, does not cover `foo.com`, and does not match
+`barfoo.com` by substring.
 
-Two deviations from `aws/INDEX.md`'s norms, both deliberate. It needs **no AWS identity** — every other
+Two deviations from `aws/INDEX.md`'s norms, both deliberate. It needs no AWS identity — every other
 script there photographs AWS and this one photographs the public DNS the allow-list depends on, which is
 not AWS's to answer. And `--from-api` is not the default, because `egress/` is `[E]` and down most of the
 time: a check that only ran while the slice was up would not be running at the moment it matters, which
 is *before* it goes up.
 
-**One extraction bug caught in its own trap.** `whois 151.101.64.223` answers first with RIPE's
+One extraction bug was caught in its own trap. `whois 151.101.64.223` answers first with RIPE's
 `NON-RIPE-NCC-MANAGED-ADDRESS-BLOCK` placeholder and only then refers to ARIN, which says `Fastly, Inc.`.
 Taking the first owner-shaped line printed the placeholder under a column headed OWNER — an appearance of
-a reading, in a script written to stop exactly that. Placeholders are dropped and `OrgName` preferred.
+a reading, in a script written to stop that. Placeholders are dropped and `OrgName` preferred.
 
 ### What this sitting did not establish
 
-**The resolver is not the VPC's.** Every reading here came from a laptop, and a CDN can steer a chain by
+The resolver is not the VPC's. Every reading here came from a laptop, and a CDN can steer a chain by
 geography or by EDNS client subnet, so a name can be flat here and a CNAME there. The script says so in
 its header, in its report and in its index row. A `BROKEN` row is real from any vantage point; an `ok` row
-is *no reason to worry from this one*. The proof stays what it was: a resolution from inside the VPC.
+is no reason to worry from this one. The proof stays what it was: a resolution from inside the VPC.
 
 ### Files
 
@@ -2825,9 +2805,9 @@ same branch, as `97d26dd`. Recorded because a working tree with two authors in i
 which someone else's change gets swept into an unrelated commit.*
 
 Owed after this sitting: unchanged from the morning — passes 3 and 5 plus 5.1, 4.2's measurement half,
-**4.3's friction reading**, and the INT-16 decision. Available and not taken, because it is the user's
-call: a `make check-dns` target in the `check-ou` family, since the script needs the network and
-`make check` is offline by contract.
+4.3's friction reading, and the INT-16 decision. Available and not taken, because it is the user's call:
+a `make check-dns` target in the `check-ou` family, since the script needs the network and `make check`
+is offline by contract.
 
 ## 2026-08-23 — The laptop reaches the project's S3 path, and the persona set hit its ceiling doing it
 
@@ -2837,19 +2817,19 @@ authorisation to commit, push and open the PR, and **all three applies, run by t
 investigation, the library, the Terraform, the adversarial review and the documentation are Claude's. No
 AWS write was made by Claude in this sitting. No identifiers to redact.*
 
-### What opened it, and the answer that was measured dead
+### What opened it, and the answer measured dead
 
-The user asked for a `boto3`-based library letting a data scientist **on their laptop**, outside Studio,
-read, write and list the S3 storage their SMUS project shows — and proposed three ways it might be done:
-(1) it may already work, (2) statements on the projects bucket, (3) a separate bucket mapped into the
-project. The user also named the doubt that turned out to be the whole thing: *"acredito que ao ler/escrever
-os arquivos via interface do SageMaker o aplicativo utilize uma role do SageMaker de forma independente do
+The user asked for a `boto3`-based library letting a data scientist on their laptop, outside Studio, read,
+write and list the S3 storage their SMUS project shows — and proposed three ways it might be done: (1) it
+may already work, (2) statements on the projects bucket, (3) a separate bucket mapped into the project.
+The user also named the doubt that turned out to be the whole thing: *"acredito que ao ler/escrever os
+arquivos via interface do SageMaker o aplicativo utilize uma role do SageMaker de forma independente do
 usuário sso"*.
 
-That doubt is correct and it is the design. With TIP `false` (decision 2, non-editable), Studio acts as the
-**project role**; the persona's own set was read and holds **no allow on `awsds-sandbox-smus-projects` and
-none on the project CMK**. So (1) as stated is dead, and the reason kills (2) and (3) together: neither a
-bucket policy nor a key policy can see *project membership* or an *SSO group* — both would have to
+That doubt is correct and it is the design. With TIP `false` (decision 2, non-editable), Studio acts as
+the **project role**; the persona's own set was read and holds no allow on `awsds-sandbox-smus-projects`
+and none on the project CMK. So (1) as stated is dead, and the reason kills (2) and (3) together: neither
+a bucket policy nor a key policy can see *project membership* or an *SSO group* — both would have to
 enumerate project ids that exist in no Terraform state, producing a second permission surface over objects
 the SMUS machinery already governs.
 
@@ -2863,48 +2843,48 @@ Four readings, all read-only, and the third is the one the strategy is built on:
 - its trust admits **no human principal** — DataZone, thirteen service principals and the provisioning
   role — so `sts:AssumeRole` from a laptop is impossible whatever the identity policy says;
 - **SMUS had already provisioned an S3 Access Grants instance** (`default`, created at first project
-  provisioning) with **one location per project**, `LocationScope` = the project prefix and the location's
-  IAM role = **the project role**, `enableS3AccessGrantsForTools = true` on the environment — and **zero
-  grants**. The vending machinery for exactly this requirement was in the account, unused;
-- `GetEnvironmentCredentials`, the obvious DataZone path, is **deprecated inside AWS's own SDK**:
+  provisioning) with one location per project, `LocationScope` = the project prefix and the location's
+  IAM role = the project role, `enableS3AccessGrantsForTools = true` on the environment — and zero grants.
+  The vending machinery for this requirement was in the account, unused;
+- `GetEnvironmentCredentials`, the obvious DataZone path, is deprecated inside AWS's own SDK:
   `sagemaker-studio` 1.1.31 marks its wrapper *"uses GetEnvironmentCredentials which is being removed"* and
   delegates to `GetConnection(withSecret=True)`.
 
-**The user chose 1-A**: vend through S3 Access Grants, so the laptop borrows the project role scoped to the
-granted prefix — the same identity Studio uses, and no second surface over the bucket or the CMK.
+The user chose **1-A**: vend through S3 Access Grants, so the laptop borrows the project role scoped to
+the granted prefix — the same identity Studio uses, and no second surface over the bucket or the CMK.
 
 ### The library
 
-`s3-read-write/`, an independent `uv` project with **`boto3` as the only runtime dependency**, conventions
+`s3-read-write/`, an independent `uv` project with `boto3` as the only runtime dependency, conventions
 taken from the user's `benes3` (session-first functions, a pagination helper, `py.typed`). Two modules on
 one seam: `vending.py` holds every SMUS-specific fact and returns a scoped `boto3.Session`; `s3.py` is
-ordinary read/write/list that knows nothing about SMUS. AWS's own `sagemaker-studio` SDK was deliberately
-not used — no public repository, ~10 database drivers, and it sets `AWS_DATA_PATH` process-wide at import.
+ordinary read/write/list that knows nothing about SMUS. AWS's own `sagemaker-studio` SDK was not used — no
+public repository, ~10 database drivers, and it sets `AWS_DATA_PATH` process-wide at import.
 
-### The wall, and the instrument that had been reporting it all along
+### The wall, and the instrument that had been reporting it
 
-The statement was written inline in `DataScientistAccess`, and **the slice's own precondition refused it**:
+The statement was written inline in `DataScientistAccess`, and the slice's own precondition refused it:
 `terraform output inline_policy_bytes` reads **10217** against `var.inline_policy_max_bytes` of **10240** —
 23 characters of headroom against the ~251 the statement costs.
 
-That ceiling is not a house preference: a permission set **becomes an IAM role** in every account it is
+That ceiling is not a house preference: a permission set becomes an IAM role in every account it is
 provisioned into, where the inline limit is 10240, so raising the threshold only moves the failure to
 provisioning time, per account, silently. `identity/sso/README.md` had prescribed the answer before anyone
 needed it — *"the answer is a customer-managed policy, not a larger threshold"* — and the output exists,
-in its own words, to let somebody *"see the margin shrinking before it does"*. It did. **The user chose
-option A**, the prescribed one.
+in its own words, to let somebody *"see the margin shrinking before it does"*. It did. The user chose
+**option A**, the prescribed one.
 
 ### What option A turned out to be worth beyond fitting
 
 Two things that were not the reason for choosing it:
 
 - **the per-account form is better than the inline one was.** One document serving N accounts had to pin a
-  single account's Access Grants instance, so the statement was **Sandbox-only by construction**. Each
-  account's policy now names its **own** instance, read from the caller. Development's does not exist yet
-  and the policy is simply inert there — an IAM policy may name a resource that does not exist;
+  single account's Access Grants instance, so the statement was Sandbox-only by construction. Each
+  account's policy now names its own instance, read from the caller. Development's does not exist yet and
+  the policy is inert there — an IAM policy may name a resource that does not exist;
 - **decision 4's stated blocker had expired.** Its reason — *"no governed account has a `foundation/` slice
   yet"* — stopped being true at Stage 3, and this change demonstrated the whole mechanism end to end. The
-  README now says so. The boundary stays deferred **on its own merits**; what is gone is the sentence
+  README now says so. The boundary stays deferred on its own merits; what is gone is the sentence
   underneath it, which would otherwise have been inherited as a live blocker.
 
 The name is generated, not typed: `PERSONA_VENDING_POLICY_NAME` in `scripts/tfhygiene/backend.py`, emitted
@@ -2914,53 +2894,52 @@ would make the two objects' names differ.
 
 ### The apply, and the read-back that is the actual proof
 
-Three slices, **members before `identity/sso`** — applied in that order by the user. Plans read `1 to add`
-in each `foundation` (Sandbox also carried **one pre-existing in-place change**: a stale ingress
-description from `e3885a7`'s devbox → buildbox rename, never applied) and `1 to add` in `identity/sso`,
-where the size precondition passed with the headroom restored.
+Three slices, members before `identity/sso`, applied in that order by the user. Plans read `1 to add` in
+each `foundation` (Sandbox also carried one pre-existing in-place change: a stale ingress description from
+`e3885a7`'s devbox → buildbox rename, never applied) and `1 to add` in `identity/sso`, where the size
+precondition passed with the headroom restored.
 
-**The verification did not come from the provisioning-status API**, which returned no useful rows. It came
-from the roles, which is where the effect lands: `AWSReservedSSO_DataScientistAccess_*` in **both** member
-accounts lists `awsds-org-project-storage-vending` beside `CloudWatchLogsReadOnlyAccess`. The two policy
-objects read back `v1`, each naming its own account's `access-grants/default`, and the two accounts are
-distinct — which is the per-account claim above, measured rather than asserted. **Grants remain zero.**
+The verification did not come from the provisioning-status API, which returned no useful rows. It came
+from the roles, where the effect lands: `AWSReservedSSO_DataScientistAccess_*` in both member accounts
+lists `awsds-org-project-storage-vending` beside `CloudWatchLogsReadOnlyAccess`. The two policy objects
+read back `v1`, each naming its own account's `access-grants/default`, and the two accounts are distinct,
+which is the per-account claim above measured rather than asserted. Grants remain zero.
 
 ### The price nobody publishes
 
 S3 Access Grants requests cost **USD 0.03 per 1,000** (both Regions; deletes free). The S3 pricing page,
-the user guide and the FAQ were all read and **none of them mentions a charge** — the meter is written only
-in the Price List offer file. A reasoned answer would have been *"no separate charge"*, and it would have
-been wrong. Lesson 6, on a service whose documentation invites the mistake.
+the user guide and the FAQ were all read and none of them mentions a charge — the meter is written only in
+the Price List offer file. A reasoned answer would have been *"no separate charge"*, and it would have
+been wrong (Lesson 6).
 
-### The review, and the three findings worth carrying
+### The review, and what it found
 
-Three lenses (AWS mechanics, repo conventions, security), every finding adversarially verified: **7
-confirmed and applied, 3 refuted**.
+Three lenses (AWS mechanics, repo conventions, security), every finding adversarially verified: 7
+confirmed and applied, 3 refuted.
 
-- **the no-delete promise was false.** Access Grants' `READWRITE` includes `s3:DeleteObject` and the service
-  has **no put-without-delete level**, so the library's missing delete helper is an API-surface convention,
-  never a control (Lesson 5). Three files said otherwise; all three now say what is true.
+- **the no-delete promise was false.** Access Grants' `READWRITE` includes `s3:DeleteObject` and the
+  service has no put-without-delete level, so the library's missing delete helper is an API-surface
+  convention rather than a control (Lesson 5). Three files said otherwise; all three now say what is true.
 - **grants are membership-blind.** Access Grants never consults SMUS project membership, so once a project
-  holds a grant, **every** `DataScientistAccess` holder vends for it, member or not — strictly coarser than
-  Studio's own gate. Accepted with the decision, and now written where a reader meets it rather than left
-  to be discovered.
+  holds a grant, every `DataScientistAccess` holder vends for it, member or not — strictly coarser than
+  Studio's own gate. Accepted with the decision, and now written where a reader meets it.
 - **the on-VPN branch is unmeasured.** `DenyControlPlaneOffVpn` denies off-tunnel whichever branch is
-  asked — that half is invariant — but **which** branch admits the vending call on-tunnel is a routing fact
+  asked — that half is invariant — but which branch admits the vending call on-tunnel is a routing fact
   nobody has read. `aws:SourceVpce` via the gateway is the expectation (the pass-4d split). The paragraph
   in `persona-vending.tf` is hedged on purpose and the first `GetDataAccess` CloudTrail event replaces it.
 
 ### What this sitting raised and did not answer — open question 22
 
 Asked by the user while deciding option A: *if we manage our own policy, what happens when AWS revises a
-managed one, and can we monitor it?* Answering it exposed that **nothing in this repository notices such a
-revision**, and that the exposure is not where the question assumed. The persona's permissions were already
+managed one, and can we monitor it?* Answering it exposed that nothing in this repository notices such a
+revision, and that the exposure is not where the question assumed. The persona's permissions were already
 ours; what is AWS's, and load-bearing, sits on the **project role**:
 `SageMakerStudioProjectUserRolePolicy` **v74** and `SageMakerStudioProjectRoleMachineLearningPolicy`
-**v42**, both revised **2026-08-11**, carrying the S3, KMS and Access Grants statements this strategy
-vends through — plus `SageMakerStudioProjectProvisioningRolePolicy` **v81**, which a bucket-naming argument
-rests on. Two claims here are written against a version number **in prose** and nothing re-reads them.
-AWS emits **no CloudTrail event** for its own revisions, so any answer is a stored (version, hash) pair and
-an instrument that fails when it moves. **Registered rather than built, on the user's instruction.**
+**v42**, both revised 2026-08-11, carrying the S3, KMS and Access Grants statements this strategy vends
+through — plus `SageMakerStudioProjectProvisioningRolePolicy` **v81**, which a bucket-naming argument rests
+on. Two claims here are written against a version number in prose and nothing re-reads them. AWS emits no
+CloudTrail event for its own revisions, so any answer is a stored (version, hash) pair and an instrument
+that fails when it moves. Registered rather than built, on the user's instruction.
 
 ### Files
 
@@ -2972,11 +2951,11 @@ Docs: `docs/SMUS.md` (S3 relationship **1a**), `docs/AWS_STATE.md` (the row), `d
 `docs/REFERENCES.md`, `docs/plan/conventions.md` (§6, both member `foundation/` lines),
 `docs/plan/open-questions.md` (**22**).
 
-Owed after this sitting: **the per-project grant**, which is the only object that opens a path and is a
-write the user authorizes per occurrence; then the first-run probe as the persona, which settles the last
-unknown (SSE-KMS end to end through a vended, scope-reduced session) and yields the CloudTrail reading the
-hedged paragraph is waiting for. Stage 6's own ledger is unchanged by this sitting: passes 3 and 5 plus
-5.1, 4.2's measurement half, 4.3's friction reading, and the INT-16 decision.
+Owed after this sitting: the per-project grant, the only object that opens a path and a write the user
+authorizes per occurrence; then the first-run probe as the persona, which settles the last unknown
+(SSE-KMS end to end through a vended, scope-reduced session) and yields the CloudTrail reading the hedged
+paragraph is waiting for. Stage 6's own ledger is unchanged by this sitting: passes 3 and 5 plus 5.1,
+4.2's measurement half, 4.3's friction reading, and the INT-16 decision.
 
 ## 2026-08-23 — The VPN pin was correct in the case it was measured in, and the estate's own endpoints were the case it missed
 
@@ -2988,7 +2967,7 @@ the diagnosis and the fix are Claude's. **The fix is written and NOT applied.** 
 address appear in the user's pasted errors and are redacted here as `<the Sandbox account>` and
 `<the data scientist user>`.*
 
-### Two true readings that could not both be true
+### The readings that could not both be true
 
 The persona signed in, and `aws sts get-caller-identity --profile awsds-scientist-sandbox` came back:
 
@@ -3009,7 +2988,7 @@ curl -s https://checkip.amazonaws.com
 ```
 
 That is the address the deny compares against. A request from it cannot satisfy `NotIpAddress`, so the deny
-should not have fired. **Both readings were true, and they were reading different paths.**
+should not have fired. Both readings were true, and they were reading different paths.
 
 ### What the estate does to its own operator while `egress/` is up
 
@@ -3034,19 +3013,19 @@ dig +short s3.us-west-2.amazonaws.com    →  3.5.81.24, 16.15.…    (public: t
 ```
 
 The second line is what turns the first from a plausible story into a reading (Lesson 13): the two services
-differ in exactly the way the hypothesis requires, and S3 — the case 4d measured and fixed — still behaves as
-4d described. **The earlier fix was not wrong. It was complete for the path it was measured on.**
+differ in the way the hypothesis requires, and S3 — the case 4d measured and fixed — still behaves as 4d
+described. The earlier fix was not wrong; it was complete for the path it was measured on.
 
 ### The fix: a swap, not a fourth condition
 
 `aws:SourceVpce` → **`aws:SourceVpc`**, on the VPN home's VPC id, read from the same `vpn_home` remote state
 the Elastic IP already comes from. Three reasons it is a swap:
 
-- **it subsumes** what it replaces — a request through *any* endpoint in that VPC carries both keys, so the S3
+- **it subsumes** what it replaces — a request through any endpoint in that VPC carries both keys, so the S3
   gateway path that 4d fixed keeps passing untouched;
-- **the anchor is `[P]`** — a VPC id survives every `make up`, which is precisely what Lesson 3 prescribes in
-  its own words: *"anchor on the `[P]` S3 gateway endpoint, or on `aws:SourceVpc`"*;
-- **it is smaller**, and that mattered: the `data_scientist` document had **23 characters of headroom** hours
+- **the anchor is `[P]`** — a VPC id survives every `make up`, which is what Lesson 3 prescribes in its own
+  words: *"anchor on the `[P]` S3 gateway endpoint, or on `aws:SourceVpc`"*;
+- **it is smaller**, and that mattered: the `data_scientist` document had 23 characters of headroom hours
   earlier, and one VPC id costs less than two vpce ids. A fourth condition would have re-hit the ceiling the
   same day the ceiling was first paid for.
 
@@ -3056,11 +3035,11 @@ profile. The plan-time guard beside it swapped with it (`vpce-` → `vpc-` shape
 
 ### What this says about the control, beyond the bug
 
-The pin has now been wrong twice in the same direction, and both times the same way: **it was written against
-the path somebody had just measured, and the estate had another path**. 4d found the gateway split; today
-found the interface one; the durable form is the one that names the *network* rather than the *doors in it*.
-Worth carrying: `curl checkip` proves the tunnel is full — it does **not** prove that the call you are about
-to make will leave the same way, and while `egress/` is up most AWS API calls will not.
+The pin has been wrong twice in the same direction and both times the same way: it was written against the
+path somebody had just measured, and the estate had another path. 4d found the gateway split; today found
+the interface one; the durable form names the *network* rather than the *doors in it*. `curl checkip`
+proves the tunnel is full — it does not prove that the call you are about to make will leave the same way,
+and while `egress/` is up most AWS API calls will not.
 
 ### Files
 
@@ -3069,10 +3048,10 @@ measurement beside the values), `policies-shared.tf` (the condition and the bran
 `permission-sets.tf` (the guard). Docs: `docs/AWS_STATE.md` (the row, with the superseded form kept as
 history), `docs/NETWORK.md` (§the tunnel's path — the split is three-way).
 
-Owed after this sitting: **the apply**, which re-provisions all six persona sets and is the user's; then the
+Owed after this sitting: the apply, which re-provisions all six persona sets and is the user's; then the
 probe run this sitting interrupted — the per-project grant, `examples/demo.py`, and the CloudTrail reading
-the `persona-vending.tf` paragraph is still hedged against. That reading is now half-answered in advance:
-the vending call will present a vpce id, not the Elastic IP.
+the `persona-vending.tf` paragraph is still hedged against. That reading is half-answered in advance: the
+vending call will present a vpce id, not the Elastic IP.
 
 ## 2026-08-23 — The path runs end to end, and the tunnel question was two questions
 
@@ -3092,38 +3071,35 @@ Read back OK
 ```
 
 - **The laptop is the project role.** The vended ARN is `datazone_usr_role_…`, in a session the vend names
-  `access-grants-<uuid>` — attributable as a vend rather than as an assume, which is worth knowing before
-  anyone reads a trail.
+  `access-grants-<uuid>` — attributable as a vend rather than as an assume, worth knowing before anyone
+  reads a trail.
 - **The grant's scope composed correctly** — `…/avhvbqn37ty7m8/shared/*`, the location scope's trailing
   slash plus `S3SubPrefix='shared/*'`, the concatenation AWS documents and does not validate.
 - **SSE-KMS passes through a vended, scope-reduced session.** That was the one thing the strategy analysis
   could not settle by reading, and the write settled it: the persona holds nothing on the bucket and
-  nothing on the project CMK, and the object landed anyway, because the credentials are the project
-  role's.
-- **What the listing shows is the Studio file browser's own content** — `getting_started.ipynb`,
-  `README.md`, `.libs.json`. The requirement was "the S3 storage visible in their project", and that is
-  literally what came back.
+  nothing on the project CMK, and the object landed anyway, because the credentials are the project role's.
+- **The listing shows the Studio file browser's own content** — `getting_started.ipynb`, `README.md`,
+  `.libs.json`. The requirement was "the S3 storage visible in their project", and that is what came back.
 
 ### The tunnel question, decomposed rather than answered
 
 The hedged paragraph asked which branch of `DenyControlPlaneOffVpn` admits the vending call. The run shows
-the path needs **both**, for different reasons:
+the path needs both, for different reasons:
 
 - **`sts:GetCallerIdentity`** — which the library calls to learn the account id `s3control` demands — takes
-  the VPC's **`sts` interface endpoint** and is admitted by `aws:SourceVpc`. This is measured, and it is
-  measured by the failure: before that branch existed, this was the call that was explicitly denied with
-  the tunnel up.
-- **`s3control`** has **no endpoint in this VPC** — the `vpc-egress` core list is `sts, logs, kms,
-  ecr.api, ecr.dkr, athena, glue, lakeformation` and Sandbox's extras are `sagemaker.*, datazone` — so
+  the VPC's `sts` interface endpoint and is admitted by `aws:SourceVpc`. This is measured by the failure:
+  before that branch existed, this was the call that was explicitly denied with the tunnel up.
+- **`s3control`** has no endpoint in this VPC — the `vpc-egress` core list is `sts, logs, kms, ecr.api,
+  ecr.dkr, athena, glue, lakeformation` and Sandbox's extras are `sagemaker.*, datazone` — so
   `ListCallerAccessGrants` and `GetDataAccess` resolve publicly, leave by the IGW and are admitted by
   `aws:SourceIp`.
 
-**The second bullet is derived from the endpoint lists, not read**, and the paragraph now says so along
+The second bullet is derived from the endpoint lists rather than read, and the paragraph now says so along
 with the event that would confirm it (`GetDataAccess` carrying the Elastic IP and no `vpcEndpointId`). It
 is left falsifiable on purpose: an `s3control` endpoint added to `extra_services` later would move that
 call to the other branch with nothing announcing it.
 
-### One change to the library, motivated by the day rather than by taste
+### One change to the library
 
 `_account_id` is now memoised per session (a `WeakKeyDictionary`). The reason is not the round trip: STS
 and s3control turned out to travel **different paths from the same laptop**, so an STS call the work does
@@ -3159,32 +3135,32 @@ GetDataAccess       s3.amazonaws.com   sourceIPAddress 10.20.160.87   vpcEndpoin
 GetCallerIdentity   (same session)     sourceIPAddress 10.20.160.87   vpcEndpointId vpce-0b3231af86fbedd72
 ```
 
-**The derivation was wrong.** `GetDataAccess` presents the WireGuard host's **private** address and a
-**GATEWAY** endpoint id — one of the two the old `aws:SourceVpce` list carried. `s3-control.<region>
+The derivation was wrong. `GetDataAccess` presents the WireGuard host's **private** address and a
+**gateway** endpoint id — one of the two the old `aws:SourceVpce` list carried. `s3-control.<region>
 .amazonaws.com` resolves inside the ranges the `pl-s3` prefix-list route captures, so it takes the S3
 gateway exactly as an S3 call does; "no interface endpoint" says nothing about the IGW, because the gateway
-route matches a **prefix list, not a hostname**. The first hedge this repository wrote — before the
-derivation replaced it — had said so.
+route matches a prefix list rather than a hostname. The first hedge this repository wrote, before the
+derivation replaced it, had said so.
 
-`GetCallerIdentity` from the same session carries the same private address with a **different** id,
-`vpce-0b3231af86fbedd72`, the STS interface endpoint. **Two doors, one session, and neither is the Elastic
-IP.**
+`GetCallerIdentity` from the same session carries the same private address with a different id,
+`vpce-0b3231af86fbedd72`, the STS interface endpoint. Two doors, one session, and neither is the Elastic
+IP.
 
 ### The consequence that outlives the correction
 
-**Only `sts` ever needed the swap.** The vending calls were admitted by the old list all along, so a client
+Only `sts` ever needed the swap. The vending calls were admitted by the old list all along, so a client
 that never called STS would have run on the unchanged policy. What made the path fail was a convenience —
-the library asking STS for the account id `s3control` requires — and that is now memoised for exactly this
-reason, written down one sitting before it was justified by the reading.
+the library asking STS for the account id `s3control` requires — and that is now memoised for this reason,
+written down one sitting before it was justified by the reading.
 
-### An unplanned negative control, and it is a better one than a designed one
+### An unplanned negative control
 
 The same query shows this session's own calls: `Infra … 177.12.8.141 … (no vpcEndpointId)` — the same API,
 off the tunnel, from a home address, carrying no endpoint key at all. Three paths in one listing: interface
 endpoint, gateway endpoint, and plain internet. That is the whole of `DenyControlPlaneOffVpn`'s condition
 space, read from one command.
 
-### One trap for the next reader of this trail
+### A trap for the next reader of this trail
 
 `GetDataAccess` is an event NAME shared by two services. The same lookup returned rows from
 `lakeformation.amazonaws.com` (2026-08-20, sourced `athena.amazonaws.com` and `glue.amazonaws.com` — the
@@ -3203,7 +3179,7 @@ remains is the estate's: passes 3/5 + 5.1, 4.2's measurement half, 4.3's frictio
 
 ---
 
-## 2026-08-26 — The stage read back against the live account: OQ 21 answered, US-8 caught reading a third of its subject, and two of Claude's own sentences corrected
+## 2026-08-26 — The stage read back against the live account: OQ 21 answered, and `US-8` caught reading part of its subject
 
 *Provenance: **this entry is Claude's**, written on the user's request at the end of the sitting. **Every
 AWS call was a READ** — `./aws/studio.py`, `iam get-role`/`list-attached-role-policies`/`get-policy-version`
@@ -3219,15 +3195,15 @@ using it, and then — after the answers — an analysis of where the plan stand
 The third produced a work list, the user authorized the half of it that needs no browser, and the rest of
 this entry is that half.
 
-### The opening reading, and it is Stage 5's object rather than this stage's
+### The opening reading: Stage 5's object rather than this stage's
 
-`awsds-sandbox-derived` holds **8 objects, ~800 bytes, all under `results/`** — four CSVs and four
-`.metadata`, timestamped 2026-08-20T00:42–01:20Z. That is exactly what Stage 5 pass 4d's log recorded, one
-listing later and from a different hand, so the inventory reproduces. `derived/${aws:userid}/` and
-`scratch/` have **never held an object**. It is logged here rather than in the Stage 5 file because it is
-this sitting's act, and because the sentence it settles is a Stage 6 one: **the SMUS project path is a
-different bucket** (`awsds-sandbox-smus-projects`), so nothing pass 3 built writes into the derived zone,
-and the zone's only producer remains the enforced Athena workgroup.
+`awsds-sandbox-derived` holds 8 objects, ~800 bytes, all under `results/` — four CSVs and four
+`.metadata`, timestamped 2026-08-20T00:42–01:20Z. That is what Stage 5 pass 4d's log recorded, one listing
+later and from a different hand, so the inventory reproduces. `derived/${aws:userid}/` and `scratch/` have
+never held an object. It is logged here rather than in the Stage 5 file because it is this sitting's act,
+and because the sentence it settles is a Stage 6 one: the SMUS project path is a different bucket
+(`awsds-sandbox-smus-projects`), so nothing pass 3 built writes into the derived zone, and the zone's only
+producer remains the enforced Athena workgroup.
 
 ### The status reading: `./aws/studio.py`, 0 FAILED, and one row that closes an owed item
 
@@ -3240,17 +3216,17 @@ and the zone's only producer remains the enforced Athena workgroup.
 | **running apps** | **zero** |
 | projects | one, `eighth-experimentation`, `ACTIVE` |
 
-**The zero closes the owed table's off-VPN-probe teardown row**: nothing meters hourly, which is what that
-row was waiting to confirm. And the reading carries a negative that matters more than the passes —
-**`engineering` has never been provisioned in Development**, so `US-8` reads `note` there and pass 3 is
+The zero closes the owed table's off-VPN-probe teardown row: nothing meters hourly, which is what that row
+was waiting to confirm. The reading also carries a negative that matters more than the passes —
+`engineering` has never been provisioned in Development, so `US-8` reads `note` there and pass 3 is
 half-done rather than pending.
 
-### OQ 21, measured: three of the four verbs are ours, the fourth is the product's
+### OQ 21, measured
 
 The question prescribed the reading at 1.5 and could not take it there — no blueprint-authored role existed
-until 2026-08-22. Taken now, against everything the Tooling stack left behind: **five roles, eleven
-AWS-managed documents, and not one inline policy anywhere**, so *"AWS's own policy authorship"* is the whole
-of the surface, exactly as the question predicted.
+until 2026-08-22. Taken now, against everything the Tooling stack left behind: five roles, eleven
+AWS-managed documents, and not one inline policy anywhere, so *"AWS's own policy authorship"* is the whole
+of the surface, as the question predicted.
 
 | Verb | In AWS's authorship? | Why a blanket deny is off the table anyway |
 |---|---|---|
@@ -3259,15 +3235,15 @@ of the surface, exactly as the question predicted.
 | `DeleteEnvironmentBlueprintConfiguration` | absent | a `sagemaker/` slice's own destroy calls it — the product break is **ours** |
 | `GetDomainExecutionRoleCredentials` | **PRESENT** | `SageMakerStudioProjectUserRolePolicy` v74, `Sid` `DataZoneUserPermissions`, scoped to `arn:aws:datazone:*:*:domain/${aws:PrincipalTag/AmazonDataZoneDomain}` — **every project role holds it** |
 
-**So all four are "recorded ceiling, no blanket deny" — outcome (b) of the question's own menu**, but by
-two mechanisms worth keeping apart, because they fail differently: three break *this estate*, one breaks
-*the product*. A principal-conditioned deny stays expressible and would reach nothing — the persona sets
-carry no `datazone:` action outside `policies-approvers.tf`, so it would be attached and never exercised
-([Lesson 20](../plan/lessons.md)). **The decision is the user's and is left open**; the recommendation on
+All four are "recorded ceiling, no blanket deny" — outcome (b) of the question's own menu — but by two
+mechanisms worth keeping apart, because they fail differently: three break *this estate*, one breaks *the
+product*. A principal-conditioned deny stays expressible and would reach nothing — the persona sets carry
+no `datazone:` action outside `policies-approvers.tf`, so it would be attached and never exercised
+([Lesson 20](../plan/lessons.md)). The decision is the user's and is left open; the recommendation on
 record is to write the ceiling down and attach nothing.
 
-Two riders the same reading produced, neither of which moves the answer. The **widest `datazone:` reach in
-the account** is not on the user role at all: `SageMakerStudioProjectRoleMachineLearningPolicy` grants
+Two riders the same reading produced, neither of which moves the answer. The widest `datazone:` reach in
+the account is not on the user role: `SageMakerStudioProjectRoleMachineLearningPolicy` grants
 `datazone:*Compute*`, `CreateAsset*`, `List*` and `Search*` on `Resource: "*"` — unscoped by domain, unlike
 the statement beside it. And the project role's S3 reach is **principal-tag-shaped**, not path-shaped:
 `${aws:PrincipalTag/DomainBucketName}/${aws:PrincipalTag/AmazonDataZoneDomain}/${aws:PrincipalTag/AmazonDataZoneProject}/*`
@@ -3282,9 +3258,9 @@ project: `datazone_usr_role_<project>_<env>` and two `AmazonBedrock*Role-<projec
 `awsds-sandbox-project-boundary`, so the check reported `pass` about a third of its own subject and nothing
 looked wrong.
 
-**The sharp edge is ahead rather than behind**, which is why this is worth the fix and not just the note:
-AWS's Tooling template leaves its two conditional **EMR** roles with **no** permissions boundary — recorded
-on 2026-08-22 as a qualification — and those match neither name pattern. The day
+The sharp edge is ahead rather than behind, which is why this is worth the fix and not just the note:
+AWS's Tooling template leaves its two conditional EMR roles with no permissions boundary — recorded on
+2026-08-22 as a qualification — and those match neither name pattern. The day
 `createEmrResourceInTooling` turns true, the old filter would have said `pass` beside two unbounded roles.
 
 Discovery now uses **the service's own stamp**: the tag `AmazonDataZoneDomain`, measured present on all
@@ -3295,7 +3271,7 @@ and a blueprint cannot provision one. Cost: ~14 `GetRole` calls per account inst
 `all 3 blueprint-provisioned role(s) bounded (3 found by tag)`; section 6 gains a `FOUND BY` column.
 Battery re-run **0 FAILED**.
 
-**This is the second instrument defect this one check has produced** — [Lesson 30](../plan/lessons.md) on
+This is the second instrument defect this one check has produced — [Lesson 30](../plan/lessons.md) on
 2026-08-22 (`iam list-roles` omits `PermissionsBoundary` by documented contract), [Lesson
 31](../plan/lessons.md) today (a check inherits the scope it was written in). Both were invisible while no
 project existed, and both surfaced only because something else was being read.
@@ -3310,32 +3286,31 @@ becoming `SMApp` — gaining `sagemaker:CreateApp` and `AddTags`, resource widen
 ARNs to `arn:aws:sagemaker:*:*:app/*`, the `AmazonDataZoneProject` tag condition kept. `GetS3GenAI` is
 byte-identical, so the claim resting on it stands **this time**.
 
-What the occurrence settles is the question's premise rather than its scope: **a revision landed inside
-four days, and the estate learned about it because a human opened the document for an unrelated reason.**
-Scope, storage and procedure are still the user's to decide; the frequency argument is no longer
-hypothetical.
+What the occurrence settles is the question's premise rather than its scope: a revision landed inside four
+days, and the estate learned about it because a human opened the document for an unrelated reason. Scope,
+storage and procedure are still the user's to decide; the frequency argument is no longer hypothetical.
 
 ### Step 8.2 was done and the stage file did not know
 
 `scripts/down-studio-apps.py` has had its body since `83fc126` (2026-08-21) — it landed in the pass 0/1/2a
 commit, not in pass 5, and the step still read as owed. Exercised read-only here:
 `./scripts/down-studio-apps.py sandbox --dry-run` discovers `d-p6gthxc82ckg` and reports `no running app`,
-exit 0; with `--spaces` it adds the line it would then act on. **The discovery half is proven against a
-real domain; the delete path needs a running app and stays 8.4's**, in the same portal sitting as pass 3.
+exit 0; with `--spaces` it adds the line it would then act on. The discovery half is proven against a real
+domain; the delete path needs a running app and stays 8.4's, in the same portal sitting as pass 3.
 
-### Two things Claude told the user in this sitting that were wrong
+### What Claude told the user in this sitting that was wrong
 
 Recorded because the log is where a correction survives, and because both are the same shape — a summary
 built from the plan's prose rather than from the repository.
 
 1. **Step 8.2 was listed as pending work** in the analysis handed to the user an hour earlier. It had been
    done for five days. The stage file said so nowhere, and the analysis inherited the stage file.
-2. **The stage map said "7-15 not started"** and there is a **Stage 16**, whose passes 0-3 were applied
-   **the same day**, before this sitting. It was missed because the index was read with a truncating
-   filter — an instrument error inside an analysis about instrument errors. Stage 16 also leaves a
-   **Stage 6 residue** this stage now owes a reading of: SMUS made itself a Lake Formation administrator in
-   Sandbox, the seats were adopted in `consumer-data-v0.5.0`, and *whether a provisioning role should
-   administer Lake Formation* is nobody's question yet.
+2. **The stage map said "7-15 not started"** and there is a Stage 16, whose passes 0-3 were applied the
+   same day, before this sitting. It was missed because the index was read with a truncating filter — an
+   instrument error inside an analysis about instrument errors. Stage 16 also leaves a Stage 6 residue this
+   stage now owes a reading of: SMUS made itself a Lake Formation administrator in Sandbox, the seats were
+   adopted in `consumer-data-v0.5.0`, and *whether a provisioning role should administer Lake Formation* is
+   nobody's question yet.
 
 ### Files
 
@@ -3369,52 +3344,52 @@ waiting since 2026-08-19 on one input: **what the SMUS project's S3 path actuall
 reading and settle the decision, and closed with the decision **dissolved** and its subject removed from
 the estate.
 
-### The reading decision 6 was waiting for, and the three things beside it
+### The reading decision 6 was waiting for
 
 Read read-only as `awsds-infra-sandbox-1` and `awsds-infra-data`. The path is
-`<domain-id>/<project-id>/<scope>/` — **no person grain anywhere**, `shared/` and `dev/` the scopes. The
-bucket held **73 objects / 494,825 B**, `shared/` 68 of them, `dev/` five empty prefix markers.
-Encryption `aws:kms` under `alias/awsds-sandbox-project`, `BucketKeyEnabled: true`, SSE-C blocked.
+`<domain-id>/<project-id>/<scope>/` — no person grain anywhere, `shared/` and `dev/` the scopes. The bucket
+held 73 objects / 494,825 B, `shared/` 68 of them, `dev/` five empty prefix markers. Encryption `aws:kms`
+under `alias/awsds-sandbox-project`, `BucketKeyEnabled: true`, SSE-C blocked.
 
-Three findings the step had not asked for, and each one changed something:
+Three findings the step had not asked for, each of which changed something:
 
 1. **A deleted project keeps its prefix, and nothing expires a current object.** Five project prefixes
-   stood against **one** live project (`avhvbqn37ty7m8`); one orphan carried a complete `.git` tree (40
+   stood against one live project (`avhvbqn37ty7m8`); one orphan carried a complete `.git` tree (40
    objects) and an `Untitled.ipynb`. The house module gives the bucket versioning, a 90-day *noncurrent*
    rule and MPU abort — nothing touches a current object. **Open question 25** was raised for it.
 2. **The project's own Athena workgroup is a fourth designed destination** —
    `workgroup-<project-id>-<environment-id>`, `EnforceWorkGroupConfiguration = true`, output
-   `…/<project-id>/dev/sys/athena/`. The environment id was confirmed as the **Tooling** environment's
-   through `datazone list-environments`, so the name shape is a reading rather than a guess. Decision 6's
-   own pre-declared fourth-destination branch, fired by its own input.
+   `…/<project-id>/dev/sys/athena/`. The environment id was confirmed as the Tooling environment's through
+   `datazone list-environments`, so the name shape is a reading rather than a guess. Decision 6's own
+   pre-declared fourth-destination branch, fired by its own input.
 3. **The Spark workgroup exists by design** and 1.6's SCP is the only thing making it inert.
 
-### The user's revision: the SMUS project path IS the derived zone
+### The user's revision: the SMUS project path is the derived zone
 
-The reading put **two designed destinations for the same class of data** in front of the user — ours per
-account, the service's per project — which is exactly the second copy zone the enforced-location argument
-exists to prevent, except both were designed. The user kept the service's: `awsds-<env>-derived` and
-`awsds-<env>-athena` are **removed**, the project path is the derived zone, and **decision 6 is dissolved**
-(its subject no longer exists). [D19](../plan/decisions/D19-derived-zone.md) carries the revision — the one
-copy — with the six practices re-read against the new home: (ii) per-principal prefixes **withdrawn** (no
-person grain; attribution moves to Stage 11's data events), (iii) expiry **open and currently absent**
-(OQ 25 is now this decision's expiry question), (vi) the CMK read control **re-homed onto the project CMK**.
+The reading put two designed destinations for the same class of data in front of the user — ours per
+account, the service's per project — which is the second copy zone the enforced-location argument exists
+to prevent, except both were designed. The user kept the service's: `awsds-<env>-derived` and
+`awsds-<env>-athena` are removed, the project path is the derived zone, and decision 6 is dissolved (its
+subject no longer exists). [D19](../plan/decisions/D19-derived-zone.md) carries the revision, with the six
+practices re-read against the new home: (ii) per-principal prefixes withdrawn (no person grain;
+attribution moves to Stage 11's data events), (iii) expiry open and currently absent (OQ 25 is now this
+decision's expiry question), (vi) the CMK read control re-homed onto the project CMK.
 
-**One thing was measured before it was assumed, and it changed the shape of the removal**: the account data
-CMK does **not** die with the bucket — `awsds-sandbox-lake` (Stage 16, the same day) encrypts under it. So
-the key stays, in Development standing empty and dated, and what leaves it is the **persona statement**:
-with the derived zone gone, the only bucket under that key is the sandbox lake, which the persona reaches
-only through vended, prefix-scoped credentials. Keeping `AllowDataScientistUseViaS3` would have left a
-KMS-layer path around that vending door. The removal is a **tightening**, not a leftover.
+One thing was measured before it was assumed, and it changed the shape of the removal: the account data
+CMK does not die with the bucket — `awsds-sandbox-lake` (Stage 16, the same day) encrypts under it. So the
+key stays, in Development standing empty and dated, and what leaves it is the persona statement: with the
+derived zone gone, the only bucket under that key is the sandbox lake, which the persona reaches only
+through vended, prefix-scoped credentials. Keeping `AllowDataScientistUseViaS3` would have left a
+KMS-layer path around that vending door. The removal is a tightening rather than a leftover.
 
 ### What was written
 
 `consumer-data-v0.6.0` (`buckets.tf` and `athena.tf` deleted, the persona statement out of `kms.tf`, four
-outputs and three variables gone), both slice bumps under Recipe B's two-commit order, and **six statements
-out of `DataScientistAccess`** — the set carries **no `athena:` action at all** now, and its rendered inline
-policy went **10,151 → 7,573 bytes**. `DL-8`/`DL-9` were **inverted into absence checks** (FAIL until the
+outputs and three variables gone), both slice bumps under Recipe B's two-commit order, and six statements
+out of `DataScientistAccess` — the set now carries no `athena:` action at all, and its rendered inline
+policy went **10,151 → 7,573 bytes**. `DL-8`/`DL-9` were inverted into absence checks (FAIL until the
 destroys land, deliberately), `DP-4` re-aimed at `*-smus-projects`. Roughly thirty files;
-PR [#47](https://github.com/felipenoris/AWS-DataScience/pull/47), which **contains** PR #46's reading.
+PR [#47](https://github.com/felipenoris/AWS-DataScience/pull/47), which contains PR #46's reading.
 
 ### The rebase, and a tag the runbook had already ruled on
 
@@ -3441,9 +3416,9 @@ destination but the only one.
 ### Open question 26: the promotion door exists in the blueprint, and it is empty
 
 The user asked how work produced in the re-homed zone reaches Production, and said the SMUS tooling for it
-was not clear. It was not clear because **nothing had read it**: `docs/SMUS.md` said *"S3 or Git"* from the
+was not clear. It was not clear because nothing had read it: `docs/SMUS.md` said *"S3 or Git"* from the
 documentation and promised the console's real offer when step 1.5 ran, and 1.5 never recorded it. Read from
-**both** project profiles (`get-project-profile`, the `Tooling` configuration's `resolvedParameters`):
+both project profiles (`get-project-profile`, the `Tooling` configuration's `resolvedParameters`):
 
 | parameter | value | editable |
 |---|---|---|
@@ -3453,25 +3428,25 @@ documentation and promised the console's real offer when step 1.5 ran, and 1.5 n
 | `isNewGitRepository` | `""` | true |
 | `enableProjectRepositoryAutoSync` | `"false"` | true |
 
-So the product **does** carry a project repository with an auto-sync flag, it is off, and the binding field
-is not editable per project — a project cannot bring its own connection, the profile must carry one, and
-ours carries none: **no project in this domain can have a project repository today**. It is also not an
+So the product does carry a project repository with an auto-sync flag, it is off, and the binding field is
+not editable per project — a project cannot bring its own connection, the profile must carry one, and ours
+carries none: **no project in this domain can have a project repository today**. It is also not an
 either/or — the S3 path is full while every git field is empty. `docs/SMUS.md` §S3 item 2 was rewritten from
 the reading (the 1.5 promise discharged there), and **open question 26** carries what it opens. Beside it,
-`ListConnections` at project scope is **denied to `InfrastructureAccess`**.
+`ListConnections` at project scope is denied to `InfrastructureAccess`.
 
 ### The applies: two landed, two refused, and the refusal is a finding
 
-Planned by Claude, read, saved, and applied by the user in step 2.6's order. Each plan was **7 delete + 1
-update** per member, symmetric, touching no Lake Formation resource, no resource link and no
+Planned by Claude, read, saved, and applied by the user in step 2.6's order. Each plan was 7 delete + 1
+update per member, symmetric, touching no Lake Formation resource, no resource link and no
 `DataLakeSettings` — and `prevent_destroy` did not block, because the `derived` sub-module left the
 configuration and its `lifecycle` block went with it.
 
-**Landed:** `identity/sso` (`0 add, 2 change, 0 destroy`; re-plan **`No changes`**), and **both derived
-buckets are gone** — emptied first by hand, 8 versions in Sandbox and 4 in Development, every one an Athena
-result CSV or `.metadata` sidecar from the 2026-08-19/20 verification, nothing authored by a person.
+Landed: `identity/sso` (`0 add, 2 change, 0 destroy`; re-plan `No changes`), and both derived buckets are
+gone — emptied first by hand, 8 versions in Sandbox and 4 in Development, every one an Athena result CSV
+or `.metadata` sidecar from the 2026-08-19/20 verification, nothing authored by a person.
 
-**Refused, both accounts, identically** (the user's paste):
+Refused, both accounts, identically (the user's paste):
 
 ```
 │ Error: deleting Athena WorkGroup (awsds-sandbox-athena): operation error Athena: DeleteWorkGroup, https response error StatusCode: 400, RequestID: dd26bbea-f190-4bbf-9537-9d0d500b9532, InvalidRequestException: WorkGroup awsds-sandbox-athena is not empty
@@ -3481,23 +3456,22 @@ result CSV or `.metadata` sidecar from the 2026-08-19/20 verification, nothing a
 │ Error: deleting Athena WorkGroup (awsds-dev-athena): operation error Athena: DeleteWorkGroup, https response error StatusCode: 400, RequestID: c76477e9-637d-40a6-bfb4-88c26877bcfd, InvalidRequestException: WorkGroup awsds-dev-athena is not empty
 ```
 
-**"Not empty" was measured rather than assumed, and it is not what the phrase suggests.** Named queries: **0
-and 0**. Prepared statements: **0 and 0**. Query executions: **4 and 2** — the Stage 5 verification's own
-`SELECT 1` and `SELECT * FROM curated.sample_trades LIMIT 10`, from 2026-08-19/20, the same queries that
-wrote the CSVs deleted an hour earlier. So **`DeleteWorkGroup` counts query *history* as contents**, and
-unlike a named query there is **no API that deletes a query execution**: the history ages out on Athena's own
-45-day clock and cannot be emptied by hand. The only door is `RecursiveDeleteOption`.
+"Not empty" was measured rather than assumed, and it is not what the phrase suggests. Named queries: 0 and
+0. Prepared statements: 0 and 0. Query executions: **4 and 2** — the Stage 5 verification's own `SELECT 1`
+and `SELECT * FROM curated.sample_trades LIMIT 10`, from 2026-08-19/20, the same queries that wrote the
+CSVs deleted an hour earlier. `DeleteWorkGroup` counts query *history* as contents, and unlike a named
+query there is no API that deletes a query execution: the history ages out on Athena's own 45-day clock and
+cannot be emptied by hand. The only door is `RecursiveDeleteOption`.
 
-**And that door cannot be reached from here, which is the reusable half.** Terraform exposes it as
-`force_destroy` on `aws_athena_workgroup` — a *configuration* argument, and the resource left the
-configuration in `v0.6.0`. A destroy runs from the attributes in **state**, where the flag is `false`. So
-**a destroy-time flag has to be set in the configuration before the resource is removed from it**: deleting
-the block and the flag in the same version leaves the destroy unarmed, and the failure surfaces only at
-apply, after the resources beside it are already gone. This is lesson-shaped and is **not** yet in
-`docs/plan/lessons.md`.
+That door cannot be reached from here, which is the reusable half. Terraform exposes it as `force_destroy`
+on `aws_athena_workgroup` — a *configuration* argument, and the resource left the configuration in
+`v0.6.0`. A destroy runs from the attributes in **state**, where the flag is `false`. So a destroy-time
+flag has to be set in the configuration before the resource is removed from it: deleting the block and the
+flag in the same version leaves the destroy unarmed, and the failure surfaces only at apply, after the
+resources beside it are already gone. This is lesson-shaped and is not yet in `docs/plan/lessons.md`.
 
-**Closed in a second act, the same night.** Both workgroups deleted with `--recursive-delete-option` (the
-user's hand), then both `data/` slices applied — the aborted run had stopped **before** the KMS update, so
+Closed in a second act, the same night. Both workgroups deleted with `--recursive-delete-option` (the
+user's hand), then both `data/` slices applied — the aborted run had stopped before the KMS update, so
 `AllowDataScientistUseViaS3` was still live on both key policies until this one landed. Read back after it:
 
 - **Workgroups**: `awsds-sandbox-athena` and `awsds-dev-athena` gone. Sandbox keeps `primary` and the two
@@ -3505,21 +3479,19 @@ user's hand), then both `data/` slices applied — the aborted run had stopped *
   writer, and the Spark one 1.6's SCP makes inert. Development keeps `primary` alone.
 - **Key policies**: `AllowDataScientistUseViaS3` is gone from both. Sandbox's `alias/awsds-sandbox-data`
   carries `EnableKeyAdministrationInThisAccount` + `AllowSandboxLakeAccessRoleViaS3` — the sandbox lake, the
-  measured reason the key survived. Development's carries the administration statement **alone**: the
+  measured reason the key survived. Development's carries the administration statement alone: the
   no-consumer branch, standing empty and dated rather than deleted.
-- **Buckets**: both gone. **Re-plan**: `No changes` on all three slices — `sandbox/data`, `development/data`
+- **Buckets**: both gone. Re-plan: `No changes` on all three slices — `sandbox/data`, `development/data`
   and `identity/sso`.
 - **`./aws/datalake.py`**: `DL-8` *"no `awsds-*` workgroup — the removed design staying removed"* and `DL-9`
-  *"no `*-derived` bucket on any consumer"* both **`pass`**. The absence checks written the same day now
-  measure the absence they were written for, which is the only proof that the inversion was real work and
-  not a comment.
+  *"no `*-derived` bucket on any consumer"* both `pass`. The absence checks written the same day now measure
+  the absence they were written for.
 
 ### A sweep after the merge, and it caught the same defect three more times
 
-Asked whether anything left on the stage's owed list was *executable* rather than *decidable*, Claude ran
-`make check-ou` — **OK**, the one gate that needs a live session — and then swept every tracked file for
-prose still describing the removed objects as live. Four places, and three of them were this sitting's own
-work:
+Asked whether anything left on the stage's owed list was executable rather than decidable, Claude ran
+`make check-ou` — OK, the one gate that needs a live session — and then swept every tracked file for prose
+still describing the removed objects as live. Four places, and three of them were this sitting's own work:
 
 - **`docs/SMUS.md`'s working-storage table** still listed both destroyed objects as present, and its
   closing paragraph still posed decision 6's question — *"a project workgroup writes into the project path
@@ -3530,26 +3502,26 @@ work:
   family (there is no persona Athena family), and *"whether the two query paths stay parallel or
   converge"* (there is one path).
 - **Stage 11 in two places** — the internal-access analyzer's resource map (2.1.3) and the
-  monitored-resource decision (item 3) — still named `awsds-<env>-derived`, both missed while the *same*
-  PR updated that stage's Macie scope and trail map. **Lesson 14 for the third time in one sitting**,
-  after the Staging note and OQ 25's stale bullet.
+  monitored-resource decision (item 3) — still named `awsds-<env>-derived`, both missed while the same PR
+  updated that stage's Macie scope and trail map. Lesson 14 for the third time in one sitting, after the
+  Staging note and OQ 25's stale bullet.
 - **This stage's own Status row** still read *"applies owed to the user"* an hour after they were applied,
-  and **step 2.6 described `awsds-dev-derived` as "(never written)"** — an unmeasured claim written into a
-  procedure and contradicted by the reading taken before the delete (**4 versions, not none**: the same
+  and step 2.6 described `awsds-dev-derived` as "(never written)" — an unmeasured claim written into a
+  procedure and contradicted by the reading taken before the delete (4 versions, not none: the same
   verification queried from Development too). Both corrected; 2.6 now carries the fourth act and the
   `force_destroy` finding at the point of use.
 - **Stage 5's step 9** describes two objects that no longer exist. Its text stays as the record of what
-  that stage built, under a dated marker, and its `GetBucketLocation` contrast pair is flagged as **no
-  longer reproducible as written** — the account-owned, LF-ungoverned bucket it leaned on is gone, and
+  that stage built, under a dated marker, and its `GetBucketLocation` contrast pair is flagged as no longer
+  reproducible as written — the account-owned, LF-ungoverned bucket it leaned on is gone, and
   `awsds-sandbox-lake` is the one that could replace it.
 
-The pattern is worth naming because it is the third distinct instance in one day: **a revision updates
-the files it is thinking about, and misses the ones that merely mention its subject** — and the miss
-survives review precisely because those files still read as fluent, current prose.
+The pattern is the third distinct instance in one day: a revision updates the files it is thinking about
+and misses the ones that merely mention its subject, and the miss survives review because those files
+still read as fluent, current prose.
 
 ### Files
 
-`docs/plan/decisions/D19-derived-zone.md` (the revision, the one copy) and `D31-approver-read.md`;
+`docs/plan/decisions/D19-derived-zone.md` (the revision) and `D31-approver-read.md`;
 `docs/GOVERNANCE.md`; `docs/SMUS.md`; this stage file (Status, step 2.6 re-cut, decision 6 dissolved,
 (xviii) answered, (xix) re-homed); `stage-09` (both deployment-target rows and step 4.2), `stage-11`,
 `stage-14`; `docs/plan/open-questions.md` (OQ 25 raised then corrected, **OQ 26** added);
@@ -3566,14 +3538,14 @@ on branch `claude/stale-prose-after-the-removal`.
 
 ### Owed after this sitting
 
-**Nothing from the removal itself** — it closed the same night, and `docs/AWS_STATE.md` and `CLAUDE.md`'s
-two rows were brought to the measurement rather than left describing the old shape. One question survives
-it: whether the `force_destroy` finding becomes **Lesson 44**, which is the user's to say. Unchanged by this sitting: pass 3's browser
-half, 4.2's measurement half, 4.3's friction reading, design B entire, INT-16's fallback (i) versus recorded
-acceptance, OQ 21's SCP, OQ 24, and `EXC-06`. New and the user's: **OQ 25**'s numbers and **OQ 26**'s first
-bullet.
+Nothing from the removal itself — it closed the same night, and `docs/AWS_STATE.md` and `CLAUDE.md`'s two
+rows were brought to the measurement rather than left describing the old shape. One question survives it:
+whether the `force_destroy` finding becomes **Lesson 44**, which is the user's to say. Unchanged by this
+sitting: pass 3's browser half, 4.2's measurement half, 4.3's friction reading, design B entire, INT-16's
+fallback (i) versus recorded acceptance, OQ 21's SCP, OQ 24, and `EXC-06`. New and the user's: **OQ 25**'s
+numbers and **OQ 26**'s first bullet.
 
-## 2026-08-29 — Read back for what the stage still owes: everything reproduces, one instrument reads past the control it was written for, and one conclusion in the stage file has been superseded in code
+## 2026-08-29 — Read back for what the stage still owes: everything reproduces, one instrument reads past its control, and one stage-file conclusion is superseded in code
 
 *Provenance: **this entry is Claude's**, written on the user's request in the same sitting. **Every AWS call
 was a READ** — `./aws/studio.py`, `make status` (a `terraform show -json` per `[E]` slice plus one
@@ -3582,16 +3554,16 @@ was a READ** — `./aws/studio.py`, `make status` (a `terraform show -json` per 
 the infrastructure user and asked what Stage 6 still owes; the answer was assembled from the plan files
 first and then measured against the account, and this entry is the measured half. Redacted as elsewhere.*
 
-### What reproduces, three days on and with no apply in between
+### What reproduces, with no apply in between
 
-`./aws/studio.py` — **0 FAILED**. The domain, 11 blueprint configurations per member and none in the domain
-account, both project profiles `ENABLED`, one runtime (`d-p6gthxc82ckg`, `VpcOnly`), **zero running apps**,
-one project (`eighth-experimentation`, `ACTIVE`), and `US-8` `all 3 blueprint-provisioned role(s) bounded
-(3 found by tag)` — the 2026-08-26 discovery fix reproducing on the same three roles. In Development `US-8`
-is still `note` and section 4 is still `(none)`: **no SageMaker AI domain, no blueprint-provisioned role, no
-project there**, so pass 3's second half is absent from the account rather than merely unrecorded.
+`./aws/studio.py` — `0 FAILED`. The domain, 11 blueprint configurations per member and none in the domain
+account, both project profiles `ENABLED`, one runtime (`d-p6gthxc82ckg`, `VpcOnly`), zero running apps, one
+project (`eighth-experimentation`, `ACTIVE`), and `US-8` `all 3 blueprint-provisioned role(s) bounded (3
+found by tag)` — the 2026-08-26 discovery fix reproducing on the same three roles. In Development `US-8` is
+still `note` and section 4 is still `(none)`: no SageMaker AI domain, no blueprint-provisioned role, no
+project there, so pass 3's second half is absent from the account rather than merely unrecorded.
 
-### Four readings that are about the owed list rather than about the checks
+### The readings about the owed list rather than about the checks
 
 | Reading | What it settles |
 |---|---|
@@ -3600,7 +3572,7 @@ project there**, so pass 3's second half is absent from the account rather than 
 | `ecr describe-images` on both Production repositories | `default-v0.1.0` in each, pushed 2026-08-22: 5.0's artifact survives and 5.1 has something to register |
 | five project prefixes under the domain id against one live project | **four orphans**, the same count as 2026-08-26 and including the `.git`-carrying `ddjgwl1ebyhcb4` that entry named — OQ 25's magnitude is not growing, because nothing has been created or deleted since |
 
-### 8.1 is delivered end to end, and the instrument written to say so reads past the control
+### 8.1 is delivered end to end, and its instrument reads past the control
 
 `describe-domain` on the provisioned domain returns the whole block, not the two fields the check quotes:
 
@@ -3609,42 +3581,42 @@ project there**, so pass 3's second half is absent from the account rather than 
     MinIdleTimeoutInMinutes   60
     MaxIdleTimeoutInMinutes   120
 
-**The ceiling is on the runtime and it is the declared one** (`max_idle_timeout_minutes`, default 120), so
+The ceiling is on the runtime and it is the declared one (`max_idle_timeout_minutes`, default 120), so
 1.5's non-editable Tooling parameters reach the provisioned domain with the ceiling intact. Step 8.1's
-enforcement half is therefore done *and measured*; what step 8 still owes is whether the shutdown **fires**
+enforcement half is therefore done and measured; what step 8 still owes is whether the shutdown fires
 (verification (x)) and 8.4's lifecycle proof.
 
-**`US-7` reads none of that.** It composes its detail from `LifecycleManagement` and `IdleTimeoutInMinutes`
-alone and reports `ENABLED/60min` — the DEFAULT, which a project member may change — while
+`US-7` reads none of that. It composes its detail from `LifecycleManagement` and `IdleTimeoutInMinutes`
+alone and reports `ENABLED/60min` — the default, which a project member may change — while
 `MaxIdleTimeoutInMinutes`, the field step 8.1 names as *"the admin ceiling the user cannot raise"*, sits in
 the same API response and is never looked at. The check would read `pass` on a domain whose ceiling had
-been raised to a day, or removed. **This is the third instrument defect this stage has produced** — after
+been raised to a day, or removed. This is the third instrument defect this stage has produced — after
 `US-8`'s documented `list-roles` boundary omission and `US-8`'s name-scoped role discovery — and it is the
-same shape both times: `pass` reported about a subset of the check's own subject. **Not fixed in this
-sitting**: the request was for the record, and the edit is named here so it is not rediscovered.
+same shape: `pass` reported about a subset of the check's own subject. Not fixed in this sitting: the
+request was for the record, and the edit is named here so it is not rediscovered.
 
-### The one thing that is not a reproduction, and the stage file is what does not know
+### The one thing that is not a reproduction
 
 `vpc-egress-v0.4.0` — `firewall_domain_redirection_action` as a module input, both Interactive slices
 passing `TRUST_REDIRECTION_DOMAIN` — is pinned by `sandbox/egress/main.tf` and `development/egress/main.tf`,
 argued at length in the module's own `dns-firewall.tf` comments and carried by `AWS_STATE.md`'s `EXC-05`,
-and appears **nowhere in this log and nowhere in the stage file**. Both slices are down, so it has **no
-deployed instance**: the flip is code, and no session has met it.
+and appears nowhere in this log and nowhere in the stage file. Both slices are down, so it has no deployed
+instance: the flip is code, and no session has met it.
 
-What that costs is not the tag, it is the sentence the tag supersedes. Step 4.1 records, as 4.3's result and
-as *"a measured input for step 6.1"*, that **"under design A there is no path for pip downloads, cargo,
-rustup, CRAN, apt or ECR Public"**, and the Status row repeats it. That describes `v0.3.0`. Under the pinned
+What that costs is not the tag but the sentence the tag supersedes. Step 4.1 records, as 4.3's result and
+as *"a measured input for step 6.1"*, that "under design A there is no path for pip downloads, cargo,
+rustup, CRAN, apt or ECR Public", and the Status row repeats it. That describes `v0.3.0`. Under the pinned
 code it is expected false — `EXC-05` says so in the other direction — so an executor planning 4.3's
 friction reading or 6.1's comparison out of the stage file would weigh design A against a ceiling the code
-has already removed and nobody has yet observed. **The repair is a stage-file edit and waits for the user
-like any other**; what is recorded here is that the divergence exists, and which side is stale.
+has already removed and nobody has yet observed. The repair is a stage-file edit and waits for the user
+like any other; what is recorded here is that the divergence exists, and which side is stale.
 
-One second-order note from the same reading, because it is the same tense error a level down: `EXC-05`'s
-closure and `EXC-06`'s wildcard both describe a **Sandbox allow-list that does not exist right now** — the
-slice is `[E]` and it is down. Neither entry is wrong about what the code says; both are written in a tense
-the `[E]` lifecycle does not hold.
+One second-order note from the same reading, the same tense error a level down: `EXC-05`'s closure and
+`EXC-06`'s wildcard both describe a Sandbox allow-list that does not exist right now — the slice is `[E]`
+and it is down. Neither entry is wrong about what the code says; both are written in a tense the `[E]`
+lifecycle does not hold.
 
-## 2026-08-30 — Both repairs the previous entry named were authorized and made, and a third staleness turned up inside the second
+## 2026-08-30 — The repairs the previous entry named were authorized and made, and a third staleness turned up
 
 *Provenance: **this entry is Claude's**, written on the user's request in the same sitting, and it amends
 the entry above rather than adding a finding: that entry closes with "not fixed in this sitting" and "the
@@ -3653,48 +3625,48 @@ the fixes in one line ("pode corrigir os erros que você encontrou"). **The only
 `./aws/studio.py`, re-run to prove the first repair. Nothing was applied, provisioned or deleted. Nothing
 is committed. Redacted as elsewhere.*
 
-### `US-7` reads the ceiling — and the shape of the fix is the part worth keeping
+### `US-7` reads the ceiling
 
 `aws/studio.py` now takes `MaxIdleTimeoutInMinutes` out of the same `describe-domain` response it was
-already parsing, as its own value rather than folded into a display string, and `US-7` gained a **second
-failure branch**: shutdown not `ENABLED` fails as before, and **`ENABLED` with no ceiling** fails too —
-the case that read `pass` for a week. Section 4's `IDLE SETTINGS` column carries the number, so a raised
-ceiling shows in the diff two runs make, which is how INT-15 is already measured.
+already parsing, as its own value rather than folded into a display string, and `US-7` gained a second
+failure branch: shutdown not `ENABLED` fails as before, and `ENABLED` with no ceiling fails too — the case
+that read `pass` for a week. Section 4's `IDLE SETTINGS` column carries the number, so a raised ceiling
+shows in the diff two runs make, which is how INT-15 is already measured.
 
-**The number is reported and never asserted, and that was a choice.** A threshold hard-coded here would be
-a second copy of `max_idle_timeout_minutes`, which is declared once in
-`data-governance/governance/variables.tf` — [Lesson 33](../plan/lessons.md) exactly. What the check owns is
-that the control **exists**; what its value should be is the profile's, in the slice where it is set.
+The number is reported and never asserted. A threshold hard-coded here would be a second copy of
+`max_idle_timeout_minutes`, which is declared once in `data-governance/governance/variables.tf`
+([Lesson 33](../plan/lessons.md)). What the check owns is that the control exists; what its value should
+be is the profile's, in the slice where it is set.
 
-**Re-run against the account, same sitting: `US-7` `pass — ENABLED/60min ceiling=120min`, 0 FAILED, and
-nothing else moved** (the same domain, the same 11 configurations per member, the same three bounded roles,
-zero apps, Development still `note`). So the ceiling was there all along and the instrument now says so —
-the defect was never in the estate.
+Re-run against the account, same sitting: `US-7` `pass — ENABLED/60min ceiling=120min`, 0 FAILED, and
+nothing else moved (the same domain, the same 11 configurations per member, the same three bounded roles,
+zero apps, Development still `note`). The ceiling was there all along and the instrument now says so; the
+defect was never in the estate.
 
 ### The stage file: the CDN conclusion marked superseded, in place
 
-Step 4.1's header stopped claiming Sandbox carries the firewall (**both** slices are down, **both** pin
-`v0.4.0`, and what the accounts last held is not what the code declares), and a block under the
-consequence paragraph records the supersession without deleting what it supersedes: chain evaluation was
-the **API default**, `v0.4.0` makes it a module input, both Interactive slices pass
-`TRUST_REDIRECTION_DOMAIN`, the CDN namespace stays shut because the trust is one query transaction, a
-listed hop becomes a **widening**, and the six ecosystems are **expected** to have a path.
+Step 4.1's header stopped claiming Sandbox carries the firewall (both slices are down, both pin `v0.4.0`,
+and what the accounts last held is not what the code declares), and a block under the consequence paragraph
+records the supersession without deleting what it supersedes: chain evaluation was the API default,
+`v0.4.0` makes it a module input, both Interactive slices pass `TRUST_REDIRECTION_DOMAIN`, the CDN
+namespace stays shut because the trust is one query transaction, a listed hop becomes a widening, and the
+six ecosystems are **expected** to have a path.
 
-**Expected, written down before the apply so the apply can contradict it** — the shape 4.2's `datazone`
-removal used. Two consequences are written where the executor meets them: 4.3's friction reading is owed
-*under* `v0.4.0`, and its 2026-08-23 sitting is the record of the **mechanism**, not the standing answer to
-what a data scientist can install.
+Expected, written down before the apply so the apply can contradict it — the shape 4.2's `datazone` removal
+used. Two consequences are written where the executor meets them: 4.3's friction reading is owed under
+`v0.4.0`, and its 2026-08-23 sitting is the record of the mechanism rather than the standing answer to what
+a data scientist can install.
 
 ### The third one, found while editing the second
 
 The Status row's `datazone` clause still read *"code-only, the prediction owed at the next `make up`"* —
-**four days after that `make up` happened and both halves were measured** (2026-08-26; the step body has
+four days after that `make up` happened and both halves were measured (2026-08-26; the step body has
 carried the record since). Corrected, along with *"4.1 is applied in Sandbox and revised twice"*, which is
 now three revisions and a slice that is down.
 
-**All three are one defect with one address: the Status row summarising step bodies that moved without
-it.** Two of the three were found only because something else was being edited nearby — the same way the
-Lake Formation admin seats surfaced from an unrelated plan ([Lesson 31](../plan/lessons.md)'s neighbour).
-The row is long, it is read first by anyone planning a pass, and nothing mechanical checks it against the
+All three are one defect with one address: the Status row summarising step bodies that moved without it.
+Two of the three were found only because something else was being edited nearby — the same way the Lake
+Formation admin seats surfaced from an unrelated plan ([Lesson 31](../plan/lessons.md)'s neighbour). The
+row is long, it is read first by anyone planning a pass, and nothing mechanical checks it against the
 bodies it summarises. Recorded here rather than turned into a rule: the gate that would catch it does not
 exist, and inventing one on the strength of three occurrences is a bigger claim than the evidence carries.
