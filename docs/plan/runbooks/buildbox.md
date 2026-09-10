@@ -6,13 +6,12 @@ The `amd64` build host of [Stage 6a step 5.0](../stages/stage-06a-unified-studio
 account, layer **`[E]`** — created for a build session, destroyed at its end. Driven by
 [`scripts/buildbox.py`](../../../scripts/buildbox.py), never by `make up`.
 
-> **Rewritten 2026-09-06 for the move ([6c step 5.8](../stages/stage-06c-networking-hub.md)), reviewed
-> 2026-09-08.** The host used to sit in Sandbox's isolated tier behind a default route at the WireGuard
-> host's ENI. D38 deleted every default route and moved that host to `VPC-Networking`, where a route in
-> another VPC cannot point — so the old shape was unbuildable, not deprecated. The host now lives in
-> **`VPC-SharedServices`**, private tier, as a **client of the explicit proxy**.
-> [Stage 7](../stages/stage-07-gitlab-runners-ecr.md) retires it into the build runner; until then this is
-> the live procedure. The estate-wide picture — VPCs, routes, addresses — is
+> **The host lives in `VPC-SharedServices`**, private tier, as a **client of the explicit proxy**, since
+> [6c step 5.8](../stages/stage-06c-networking-hub.md). It used to sit in Sandbox's isolated tier behind a
+> default route at the WireGuard host's ENI; D38 deleted every default route and moved that host to
+> `VPC-Networking`, where a route in another VPC cannot point, so the old shape was unbuildable rather than
+> deprecated. [Stage 7](../stages/stage-07-gitlab-runners-ecr.md) retires it into the build runner; until
+> then this is the live procedure. The estate-wide picture — VPCs, routes, addresses — is
 > [`docs/NETWORK.md`](../../NETWORK.md); this file is the procedure.
 
 ## D. What it is
@@ -30,10 +29,10 @@ and anything that must survive leaves as an image in ECR.
   only while a build runs.
 - **It is a builder, not a workstation.** Its role carries `AmazonSSMManagedInstanceCore` and no `ecr:`
   action at all. The push is the user's act, from the laptop, with a token — §P.
-- **Since the move, that absent permission is the whole control.** In Sandbox a push was also refused at
-  the far end: the registry grants the Interactive accounts a pull and nothing more. The host is now in
-  the registry's own account, where same-account access is decided by the identity policy alone — an
-  `ecr:` action added here in a hurry would simply work.
+- **That absent permission is now the whole control.** In Sandbox a push was also refused at the far end:
+  the registry grants the Interactive accounts a pull and nothing more. The host is now in the registry's
+  own account, where same-account access is decided by the identity policy alone — an `ecr:` action added
+  here in a hurry would simply work.
 
 ## C. The components
 
@@ -42,7 +41,7 @@ and anything that must survive leaves as an image in ECR.
 | the instance | `VPC-SharedServices`, **private** tier, no public IP | the build host |
 | its security group | the slice, `[E]` | **no ingress rule at all**; egress unrestricted — the control is the absent route plus the proxy's allow-list |
 | the **proxy** | `production/proxy/` in `VPC-Networking`, `[D]` | the estate's only way to the internet: `proxy.awsds.internal:3128`, over the SharedServices ↔ Networking peering |
-| its **egress plane** | `production/networking/`, `[P]` SSM parameter | the `production-foundation` plane, **`open` since 2026-09-08** (D38 §6 amended): any public name, all of it logged. It used to be an allow-list — the notebook list minus `.amazonaws.com` plus one CloudFront name — and the reason it is gone is that a build host's control is the **reviewed Dockerfile**, not a hostname list. Still bounded by the three global denies (private destinations, unsafe ports, `CONNECT` to anything but 443), by the absent default route, and by a security group that admits only 3128 |
+| its **egress plane** | `production/networking/`, `[P]` SSM parameter | the `production-foundation` plane, **`open` since 2026-09-08** (D38 §6): any public name, all of it logged, because a build host's control is the **reviewed Dockerfile**, not a hostname list. Still bounded by the three global denies (private destinations, unsafe ports, `CONNECT` to anything but 443), by the absent default route, and by a security group that admits only 3128 |
 | the **SSM endpoints** | `production/egress/`, `[E]` | `ssm`, `ssmmessages`, `ec2messages` — **the only door into the host** |
 | the **ECR endpoints** | `production/egress/`, `[E]`, core list | `ecr.api`, `ecr.dkr` — private-registry calls stay inside the VPC |
 | the **gateway** endpoints | `production/foundation/`, `[P]` | S3 and DynamoDB by route, free: the AL2023 repositories, and the layers of a private-registry pull |
@@ -73,8 +72,7 @@ boot on 2026-09-06.
 
 **Three couplings:**
 
-- **`production/egress/` is a prerequisite**, not the obstacle the old note called it: its SSM endpoints are
-  the shell.
+- **`production/egress/` is a prerequisite**: its SSM endpoints are the shell.
 - **A stopped proxy is the blackhole** — a *connection refused* to a name that resolves. `up` starts it;
   `down` never stops it (`[D]`, the whole estate's egress).
 - **A build session is three bills**, and `down` ends only the first:
@@ -125,12 +123,12 @@ Rust download again — and a rebuild writes a second ~17 GB image before the ol
 first. The base image comes through the proxy: manifest from `public.ecr.aws`, blobs from the CloudFront
 distribution its redirect names.
 
-**Since 2026-09-08 neither name has to be listed** (D38 §6 amended, 6d step 9): this plane is `open`, and
+**Since 2026-09-08 neither name has to be listed** (D38 §6, 6d step 9): this plane is `open`, and
 `d5l0dvt14r5h8.cloudfront.net` was deleted with the allow-list it was added to. **This build is what
-exercises that** — step 9.5. Measured 2026-09-06, and kept because it is what a future refusal will look
-like: `docker pull` said only `Forbidden` and named nothing; the proxy's access log named the host. A
-`Forbidden` here now would mean the **mode** did not reach the proxy, not that a name is missing — read
-`./aws/proxy.py --on-host` and check the plane renders as a bare `http_access allow`.
+exercises that** — step 9.5. What a refusal looks like, measured 2026-09-06: `docker pull` said only
+`Forbidden` and named nothing; the proxy's access log named the host. A `Forbidden` here now means the
+**mode** did not reach the proxy, not that a name is missing — read `./aws/proxy.py --on-host` and check
+the plane renders as a bare `http_access allow`.
 
 **4. Test:**
 
@@ -154,11 +152,10 @@ body names Squid (Lesson 42).
 | 000 | 000 | the proxy is unreachable — stopped, or the peering route is missing |
 | 200 | **200** | **`deny to_private` is gone or has been moved below an allow** — the one failure in `squid.conf` that opens a path between spokes |
 
-**The second probe changed on 2026-09-08 and the old one is why.** It was `http://example.com/`, chosen
-as a name on no plane, and it read 403. This plane is **`open`** now (D38 §6 amended), so `example.com`
-returns **200** — the line would have printed `must be 403: 200` at every boot, a diagnostic announcing a
-failure that is the design, in the file somebody opens precisely when something *is* wrong. The private
-address is the better probe anyway: on an open plane, `deny to_private` **is** the perimeter.
+**The second probe is a private address, not `http://example.com/`.** On an **`open`** plane (D38 §6)
+`example.com` returns **200**, so the old probe printed `must be 403: 200` at every boot — a diagnostic
+announcing a failure that is the design, in the file somebody opens when something *is* wrong. On an open
+plane, `deny to_private` **is** the perimeter.
 
 ### GitHub from the host
 
@@ -171,8 +168,7 @@ git clone https://github.com/felipenoris/AWS-DataScience
 ```
 
 A private clone would need a credential on a throwaway host, which is what `sync` exists to avoid. The
-SSH-key steps below were written on 2026-08-21, when the host still had a route; they now apply to the
-**laptop**, where port 22 has a path:
+SSH-key steps below apply to the **laptop**, where port 22 has a path:
 
 ```bash
 ssh-keygen -t ed25519 -C "<EMAIL>" && eval "$(ssh-agent -s)" && cat ~/.ssh/id_ed25519.pub
@@ -210,7 +206,7 @@ The escape hatch is the layer: `down` then `up` gives a clean 64 GiB in about tw
 
 ## P. Push — the one act this host cannot do under its own name
 
-**Build and push are ONE session.** The volume dies with the instance, so a `down` between the two throws
+**Build and push are one session.** The volume dies with the instance, so a `down` between the two throws
 the build away — measured 2026-08-22, when the previous day's images had gone with the host.
 
 **The credential travels; the permission does not.** No repository policy grants a push to anybody (read

@@ -1,21 +1,20 @@
 # Reading the estate's logs — a debugging runbook
 
-*Written 2026-09-09 from the commands the implementation sittings actually used — Stages 4, 5, 6a, 6c and
-6d — rather than from what the APIs offer. Every format below was read off a live record on the day this
-was written; every trap cost a measurement, and carries the date it cost one.*
+*From the commands Stages 4, 5, 6a, 6c and 6d ran, rather than from what the APIs offer. Every format below
+was read off a live record on 2026-09-09; every trap carries the date it cost a measurement.*
 
-**The rule this file exists for: pick the log from the question, never the question from the log.** Five
-logs answer five different things, and the one that looks closest to the symptom is often the one that
-cannot see it. The recurring shape of a real diagnosis here is **two logs that do not share a failure
-mode** ([Lesson 24](../lessons.md)) — one says *which name was asked for*, the other says *which door the
-call took*, and only the pair rules out the failure that succeeds.
+**Pick the log from the question, never the question from the log.** Each log answers a different thing,
+and the one that looks closest to the symptom is often the one that cannot see it. The recurring shape of a
+real diagnosis here is **two logs that do not share a failure mode** ([Lesson 24](../lessons.md)): one says
+*which name was asked for*, the other *which door the call took*, and only the pair rules out the failure
+that succeeds.
 
 ---
 
-## 1. The map — what exists, where, and what it answers
+## 1. The map of log groups — where each one is, and what it answers
 
-Measured 2026-09-09 with `aws logs describe-log-groups` in both accounts. **Retention is in the row
-because it bounds every "this has never happened" claim below.**
+Measured 2026-09-09 with `aws logs describe-log-groups` in both accounts. Retention is in the row because
+it bounds every "this has never happened" claim below.
 
 | log group | account · profile | written by | answers |
 |---|---|---|---|
@@ -26,12 +25,11 @@ because it bounds every "this has never happened" claim below.**
 | `/awsds/<env>/studio` **30 d** | the compute account · same | `sagemaker-prereqs` | Studio app output |
 | CloudTrail — no group; the `lookup-events` **API** | every account · any profile that can read it | the organization trail | which **principal** made which API call, and **by which door** |
 
-**Three families this estate did not create and does not control**, found in the same reading and worth
-knowing before one is mistaken for ours:
+**Families this estate did not create and does not control**, so that none is mistaken for ours:
 
-- `datazone-<id>-dev` — one per DataZone project, service-created. **Their retention is whatever the
-  service felt like**: measured 3, 30 and **731** days in one account on one day. Nobody chose those
-  numbers ([Lesson 17](../lessons.md)), and 731 days is a cost line nobody priced.
+- `datazone-<id>-dev` — one per DataZone project, service-created. **Retention is whatever the service
+  chose**: measured 3, 30 and **731** days in one account on one day. Nobody chose those numbers
+  ([Lesson 17](../lessons.md)), and 731 days is a cost line nobody priced.
 - `/aws/sagemaker/studio` and `/aws/mwaa-serverless/dzd-<domain>-<project>/<workflow>` — AWS's own,
   retention `None` (**never expires**). The MWAA one carries the task's traceback; **§W** is why it is the
   second instrument and not the first.
@@ -42,7 +40,7 @@ does not. A silent group is usually a stopped host, not a broken pipeline — §
 
 ---
 
-## 2. The three commands, and the one idiom
+## 2. The commands, and the idiom
 
 ### 2.1 `filter-log-events` — the workhorse
 
@@ -53,7 +51,7 @@ aws logs filter-log-events --log-group-name /awsds/prod/proxy \
   --profile awsds-infra-prod --region us-west-2 --output json
 ```
 
-- **`--start-time` is epoch MILLISECONDS.** A date string is silently useless.
+- **`--start-time` is epoch milliseconds.** A date string is silently useless.
 - `--filter-pattern "foo"` on an unstructured group is a **substring** match on the message. Leave it out
   to take the whole window.
 - **Omit `--start-time` entirely to search the group's whole life.** That is the reading that turns *"I
@@ -122,8 +120,8 @@ exactly like a finding.
 2026-09-08T03:49:44+0000 10.20.66.132  GET http://repo.anaconda.com/pkgs/main/noarch/repodata.json 403 TCP_DENIED
 ```
 
-**`%<st` is bytes from the upstream server and it is BYTES** — divide by 2²⁰ before writing MiB anywhere.
-(Written down because it was got wrong on 2026-09-09, in this repository, by reading raw counts as MiB.)
+**`%<st` is bytes from the upstream server** — divide by 2²⁰ before writing MiB anywhere. Got wrong in this
+repository on 2026-09-09, by reading raw counts as MiB.
 
 ### What each shape means
 
@@ -133,10 +131,10 @@ exactly like a finding.
 | `403 TCP_DENIED` | **the plane refused it, and the line names the host.** This is the first stop for *"why can't the space reach X"* |
 | the name is **absent** | either it took another door, or nobody asked. **Absence is a verdict only with a positive control** — see §7 |
 
-### Four things this log will not tell you unless you already know them
+### What this log will not tell you unless you already know it
 
-- **Squid matches the name the client REQUESTED, never a DNS answer** (measured 2026-09-08). A **CNAME is
-  invisible**; an **HTTP redirect is a NEW name** (`github.com` → `codeload.github.com`, `public.ecr.aws`
+- **Squid matches the name the client requested, never a DNS answer** (measured 2026-09-08). A **CNAME is
+  invisible**; an **HTTP redirect is a new name** (`github.com` → `codeload.github.com`, `public.ecr.aws`
   → its CloudFront); a **bare entry matches exactly**, so `github.com` covers neither `api.github.com`
   nor `raw.githubusercontent.com`. Read the new name out of this log and add *that*, never the namespace.
 - **A `403` over `https` reads `000` at the client.** The refusal is a `CONNECT` refusal, so
@@ -179,7 +177,7 @@ Records are **one JSON object per query**. The fields, read off a live record 20
  "firewall_domain_list_id": "rslvr-fdl-…", "answers": []}
 ```
 
-- **`firewall_rule_action` is ABSENT when no firewall rule fired.** An allowed query simply has no such
+- **`firewall_rule_action` is absent when no firewall rule fired.** An allowed query simply has no such
   field — do not read the absence as a rule that permitted it. `BLOCK` arrives with
   `rcode: NXDOMAIN`.
 - `query_name` is an **FQDN with a trailing dot**. Every comparison against a list has to normalise
@@ -262,7 +260,7 @@ PY
 
 ### §W — an MWAA Serverless workflow: the log group is the second instrument, not the first
 
-Added 2026-09-10, from the run that debugged 6d step 4. `/aws/mwaa-serverless/<domain>-<project>/<workflow>`
+From the run that debugged 6d step 4 (2026-09-10). `/aws/mwaa-serverless/<domain>-<project>/<workflow>`
 holds the task's stdout — the traceback — but **the service's own API holds the verdict**, and it is faster:
 
 ```bash
@@ -274,17 +272,17 @@ aws mwaa-serverless list-task-instances --workflow-arn "$WF" --run-id "$RUN"    
 - **`DurationInSeconds` is a first-cut diagnosis.** A task that dies before the AWS SDK, one that dies in
   the operator's own validation, and one that reaches the API and is refused sat at **7 s, 8 s and 12-17 s**
   on the same workflow — three modes separated before a log line was opened.
-- **Read the TASK's duration, never the RUN's.** Every run here is **two attempts** (try 1 `UP_FOR_RETRY`,
+- **Read the task's duration, never the run's.** Every run here is **two attempts** (try 1 `UP_FOR_RETRY`,
   try 2 `FAILED`) — the default retry — so a 7-second task sits inside a 6-minute run.
 - **`WorkflowVersion` on the run names the exact definition it used**, and every `update-workflow` mints a
   new one. That is how a run is attributed to a definition without trusting memory.
-- **The log group can be the WRONG one.** `LoggingConfiguration` is a field of the workflow, so an update
+- **The log group can be the wrong one.** `LoggingConfiguration` is a field of the workflow, so an update
   that drops it silently re-points the logs at a service-default group — the symptom is *"the run produced
   no logs"* while a second, orphan group fills up ([Lesson 60](../lessons.md)).
 
 ---
 
-## 7. The four readings that recur
+## 7. The readings that recur
 
 1. **Two channels that do not share a failure mode.** The strongest result in this repository has this
    shape: *the name is absent from the proxy log* **and** *CloudTrail shows the calls carrying the
