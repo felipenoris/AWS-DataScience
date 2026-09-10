@@ -1,14 +1,13 @@
 # The backend, in a file of its own - Stage 2 steps 2.2, 2.5 and 3.5.
 #
-# WHY A SEPARATE FILE FOR THREE LINES. EVERY bootstrap/ slice creates the bucket that will hold
-# its own state, so every one of them applies once with LOCAL state and then migrates (2.2).
-# While that is pending the block cannot be declared - and a block commented out inside
-# providers.tf would make providers.tf differ between a migrated slice and a fresh one, which
-# is precisely the file step 3.5's parity check compares across the five bootstrap slices.
-# Isolated here, the transition is ONE file with two known forms and the other five are
-# byte-identical.
+# A separate file for three lines, because every bootstrap/ slice creates the bucket that will hold
+# its own state: each applies once with local state and then migrates (2.2). While that is pending
+# the block cannot be declared, and a block commented out inside providers.tf would make
+# providers.tf differ between a migrated slice and a fresh one - the file step 3.5's parity check
+# compares across the five bootstrap slices. Isolated here, the transition is one file with two
+# known forms and the others stay byte-identical.
 #
-# THE TWO PHASES, and this file is the whole of the transition:
+# The two phases, which this file is the whole of:
 #
 #   1. ./scripts/gen-tfvars.py <account> bootstrap
 #      terraform init                                   (block still commented - local state)
@@ -20,14 +19,14 @@
 #                                                         .gitignore covers them, deleting
 #                                                         them is what makes that moot)
 #
-# Every OTHER slice in this repository declares its backend from the first `init` and never
-# holds local state at all (step 4) - there is no migration to perform anywhere else.
+# Every other slice declares its backend from the first `init` and never holds local state at all
+# (step 4), so there is no migration to perform anywhere else.
 #
-# WHY THE BLOCK IS EMPTY. `backend` cannot interpolate anything - no var, no local - so the
-# bucket, the key and the REGION would have to be literals in a .tf file, which
+# The block is empty because `backend` cannot interpolate anything, no var and no local, so the
+# bucket, the key and the region would have to be literals in a .tf file - which
 # docs/plan/architecture.md forbids and step 9.1's check rejects. Partial configuration is the
-# reconciliation: the literals live in a per-slice backend.hcl, which is generated, is not a
-# .tf file and is gitignored.
+# reconciliation: the literals live in a per-slice backend.hcl, generated, not a .tf file, and
+# gitignored.
 
 terraform {
   backend "s3" {}

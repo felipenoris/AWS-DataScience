@@ -1,9 +1,9 @@
-# The CA-install layer's source directory — empty on purpose
+# The CA-install layer's source directory
 
 `images/base/Dockerfile` copies this directory into `/usr/local/share/ca-certificates/awsds/`
-and runs `update-ca-certificates`. **Today it contains no certificate**, and the build asserts
-that: `CA_ROOTS_EXPECTED` defaults to `0`, and a `.crt` appearing here without the build
-argument being raised fails the build rather than being silently trusted.
+and runs `update-ca-certificates`. It contains no certificate, and the build asserts that:
+`CA_ROOTS_EXPECTED` defaults to `0`, and a `.crt` appearing here without the build argument
+being raised fails the build rather than being silently trusted.
 
 **Why it is empty** — D36 §3, amended 2026-08-21. The internal CA root moved back to
 [Stage 7](../../../docs/plan/stages/stage-07-gitlab-runners-ecr.md) with the leaf certificates,

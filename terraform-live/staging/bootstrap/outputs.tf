@@ -1,9 +1,9 @@
 # Outputs - Stage 2 step 2.
 #
-# NO SLICE READS THESE THROUGH terraform_remote_state, and none should: the backend literals
-# come from scripts/tfhygiene/backend.py (step 2.5), which is the one place that knows how to
-# build them. These exist so the apply ENDS by printing what it created - the values the log
-# entry records and the values `./aws/tf-backends.py` is then checked against.
+# No slice reads these through terraform_remote_state, and none should: the backend literals come
+# from scripts/tfhygiene/backend.py (step 2.5), the one place that knows how to build them. These
+# exist so the apply ends by printing what it created - the values the log entry records, and the
+# values `./aws/tf-backends.py` is then checked against.
 
 output "state_bucket" {
   description = "The state bucket this account's slices use as their backend."

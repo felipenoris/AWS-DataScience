@@ -16,67 +16,67 @@
 #   exits:    0 the report was produced FROM MANAGEMENT | 1 a call failed
 #             | 2 it ran somewhere else, so the report is not an answer - see below
 #
-# WHAT IS BEING ASKED, AND WHY IT IS THE LAST THING OPEN IN STAGE 2. Step 5.1 put a
-# RESOURCE-BASED POLICY on the organization itself - `organizations:PutResourcePolicy`,
+# What is being asked, and why it is the last thing open in Stage 2. Step 5.1 put a
+# resource-based policy on the organization itself - `organizations:PutResourcePolicy`,
 # delegating the four policy types to the Identity account - and 5.1a then amended it. The
 # organization is Control Tower's own object, so the question is whether the landing zone
 # regards that document as drift. Every other verification in the stage was answerable from
-# the Identity account; this one is a MANAGEMENT read, which is why it is a script in this
+# the Identity account; this one is a Management read, which is why it is a script in this
 # folder rather than a line in a stage file.
 #
-# THE HEADLINE FIELD IS `driftStatus`, AND ON ITS OWN IT IS A WEAK NEGATIVE. Stage 1d
-# verification (iv) already established the reading discipline and this script inherits it:
-# Control Tower watches a CLOSED LIST of things it owns, so IN_SYNC confirms that nothing was
-# tripped rather than predicting what a landing-zone UPDATE would do. The same fact is why
-# 1c's ten customer SCPs never raised drift - a customer SCP is not Control Tower's object.
-# A script that printed IN_SYNC and stopped would be reporting a clean bill it cannot issue.
+# The headline field is `driftStatus`, and on its own it is a weak negative. Stage 1d
+# verification (iv) established the reading discipline and this script inherits it: Control
+# Tower watches a closed list of things it owns, so IN_SYNC confirms that nothing was tripped
+# rather than predicting what a landing-zone update would do. The same fact is why 1c's ten
+# customer SCPs never raised drift - a customer SCP is not Control Tower's object. A script
+# that printed IN_SYNC and stopped would be reporting a clean bill it cannot issue.
 #
-# SO THREE MORE READINGS, EACH OF WHICH MAKES THE FIRST ONE MEAN SOMETHING:
+# So three more readings, each of which makes the first one mean something:
 #
-#   - THE MANIFEST (section 3). It is what the landing zone is CONFIGURED with - governed
+#   - The manifest (section 3). It is what the landing zone is configured with - governed
 #     Regions, the logging and security accounts, the retention days, the access-management
 #     setting. Printed whole, on purpose: nothing in it concerns organization resource
-#     policies, so IN_SYNC is SILENT about the 5.1 delegation rather than approving of it.
+#     policies, so IN_SYNC is silent about the 5.1 delegation rather than approving of it.
 #
-#     AND IT IS NOT THE INVENTORY OF WHAT DRIFT DETECTION COMPARES - measured 2026-08-16, on
-#     the first real run, against an earlier version of this comment that said it was. The
-#     manifest contains NO policy of any kind, not even the `aws-guardrails-*` SCPs Control
-#     Tower demonstrably owns and 1c step 7.7 read one by one. So it bounds the CONFIGURATION
-#     and not the comparison: it proves resource policies are not part of what the landing
-#     zone is set up to be, which is the narrower claim, and the one this report makes.
+#     It is not the inventory of what drift detection compares - measured 2026-08-16, on the
+#     first real run. The manifest contains no policy of any kind, not even the
+#     `aws-guardrails-*` SCPs Control Tower demonstrably owns and 1c step 7.7 read one by one.
+#     So it bounds the configuration and not the comparison: it proves resource policies are
+#     not part of what the landing zone is set up to be, which is the narrower claim, and the
+#     one this report makes.
 #
-#   - THE OPERATION HISTORY (section 4), and this is the STRONGEST evidence available without
-#     writing anything. `driftStatus` is a flag; an OPERATION is the landing zone actually
-#     doing work. An UPDATE or RESET that ran AFTER the delegation was applied and returned
-#     SUCCEEDED is positive evidence of coexistence, of a kind no flag can give. If the last
-#     operation predates the delegation, say so - it means the landing zone has not yet had
-#     occasion to disagree, which is a different answer and the honest one.
+#   - The operation history (section 4), the strongest evidence available without writing
+#     anything. `driftStatus` is a flag; an operation is the landing zone actually doing work.
+#     An update or reset that ran after the delegation was applied and returned SUCCEEDED is
+#     positive evidence of coexistence, of a kind no flag can give. If the last operation
+#     predates the delegation, say so - it means the landing zone has not yet had occasion to
+#     disagree, which is a different answer and the honest one.
 #
-#   - THE DOCUMENT ITSELF (section 5). Read back from Management, including whether 5.1a's
+#   - The document itself (section 5). Read back from Management, including whether 5.1a's
 #     `ArnLike` narrowing is still on both write statements. If Control Tower had quietly
 #     reverted or replaced the resource policy, this is where it shows - and `DEL-10` going
 #     red on the Identity side would be the same finding arriving later and further away.
 #
-# WHAT THIS SCRIPT DELIBERATELY CANNOT DO, and it is Lesson 22 rather than an omission. The
-# strong test is to make the landing zone RE-EVALUATE - `update-landing-zone` or
-# `reset-landing-zone` - and observe whether the delegation survives. Both are writes on the
-# landing zone, both are slow and hard to undo, and neither is a measurement anybody should
-# take to answer a question. So the failing case cannot be produced by this harness, the
-# verification is by READING, and the report says which of its statements are readings rather
-# than letting them pass as tests. The occasion for the strong test arrives on its own: the
-# next real landing-zone update, whose section 4 row is what to re-read afterwards.
+# What this script cannot do (Lesson 22). The strong test is to make the landing zone
+# re-evaluate - `update-landing-zone` or `reset-landing-zone` - and observe whether the
+# delegation survives. Both are writes on the landing zone, both are slow and hard to undo,
+# and neither is a measurement anybody should take to answer a question. So the failing case
+# cannot be produced by this harness, the verification is by reading, and the report says
+# which of its statements are readings rather than letting them pass as tests. The occasion
+# for the strong test arrives on its own: the next real landing-zone update, whose section 4
+# row is what to re-read afterwards.
 #
 # IDENTITY. Management holds no CLI profile by design (D33/D34) - the two
 # `awsds-ctadmin-orgfull-*` profiles of 2026-08-15 carry `AWSOrganizationsFullAccess` in
 # Identity and Development and reach Management not at all. So this is a CloudShell script
 # like management-quotas.sh and audit-iam-analyser.sh: sign in to the access portal as
-# `AWS Control Tower Admin`, open CloudShell on the MANAGEMENT account with
+# `AWS Control Tower Admin`, open CloudShell on the Management account with
 # `AWSAdministratorAccess`, paste or clone, run. It takes a profile argument in case one ever
 # exists there.
 #
-# AND IT REFUSES TO INTERPRET THE RESULT FROM ANYWHERE ELSE, WHICH WAS MEASURED RATHER THAN
-# ASSUMED (2026-08-16, run as `awsds-infra-identity` before the first real run). From a member
-# account BOTH landing-zone calls SUCCEED AND RETURN EMPTY: `list-landing-zones` gives `None`
+# It refuses to interpret the result from anywhere else, which was measured rather than
+# assumed (2026-08-16, run as `awsds-infra-identity` before the first real run). From a member
+# account both landing-zone calls succeed and return empty: `list-landing-zones` gives `None`
 # and `list-landing-zone-operations` gives `{"landingZoneOperations": []}`. Neither is an
 # error, so exit codes say nothing, and section 4 read from the wrong account would state
 # "the landing zone has never run" - a strong claim, wrong, and indistinguishable from the
@@ -84,26 +84,26 @@
 # 9 paid for once). Hence: sections 2-4 are gated on the caller being Management, and a run
 # from anywhere else exits 2.
 #
-# SECTION 5 IS THE EXCEPTION, and it is a finding rather than a leak. `describe-resource-policy`
-# ANSWERS FROM THE IDENTITY ACCOUNT - the 5.1 delegation grants it there deliberately, which is
+# Section 5 is the exception, and it is a finding rather than a leak. `describe-resource-policy`
+# answers from the Identity account - the 5.1 delegation grants it there deliberately, which is
 # how step 5.0's reading 1 ran before the delegation existed. So "is the document still there
 # and still narrowed to two statements" is answerable without Management at all, and
 # `./aws/org-delegation.py` is the fuller instrument for it. What Management is needed for is
-# everything ABOVE section 5.
+# everything above section 5.
 #
-# A SECOND QUESTION, ANSWERED BY A FIELD THIS FILE ALREADY READ (added 2026-09-05, for
-# Stage 6b step 0.5). `GetLandingZone` returns `remediationTypes` alongside the version and
-# the drift flag, and section 2 has printed it since the first run without saying what it
-# decides. It is the ACCOUNT AUTO-ENROLLMENT switch: with `INHERITANCE_DRIFT` in that array,
-# Control Tower reacts to Organizations `MoveAccount` events and re-baselines the moved
-# account on its own; with the array empty, moving an account by hand between two registered
-# OUs leaves the SOURCE OU's baseline and controls attached and raises inheritance drift.
-# Stage 6b moves one account from `Interactive` to `Workloads`, so the switch decides whether
-# its step 3.4 has a supported by-hand path at all - and the answer is a reading taken here,
-# not an assumption. The feature needs landing zone 3.1 or later (this one is 4.0), and
-# turning it on is an `update-landing-zone` - a write, printed in section 6 and not performed.
+# A second question, answered by a field this file already read (Stage 6b step 0.5).
+# `GetLandingZone` returns `remediationTypes` alongside the version and the drift flag, and
+# section 2 has printed it since the first run without saying what it decides. It is the
+# account auto-enrollment switch: with `INHERITANCE_DRIFT` in that array, Control Tower reacts
+# to Organizations `MoveAccount` events and re-baselines the moved account on its own; with
+# the array empty, moving an account by hand between two registered OUs leaves the source OU's
+# baseline and controls attached and raises inheritance drift. Stage 6b moves one account from
+# `Interactive` to `Workloads`, so the switch decides whether its step 3.4 has a supported
+# by-hand path at all, and the answer is a reading taken here. The feature needs landing zone
+# 3.1 or later (this one is 4.0), and turning it on is an `update-landing-zone` - a write,
+# printed in section 6 and not performed.
 #
-# NO ACCOUNT IDS ARE PRINTED, in keeping with aws/INDEX.md rule 1: the report names the
+# No account ids are printed, in keeping with aws/INDEX.md rule 1: the report names the
 # management account only as `is Management: yes|no`, and the delegation's principal is shown
 # with its account digits masked.
 
@@ -226,7 +226,7 @@ if [ -n "${LZ_ARN:-}" ] && [ "$LZ_ARN" != "None" ]; then
     LZ_VERSION=$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["landingZone"].get("version","(absent)"))' "$LZ_JSON" 2>/dev/null || echo "(unparsed)")
     LZ_LATEST=$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["landingZone"].get("latestAvailableVersion","(absent)"))' "$LZ_JSON" 2>/dev/null || echo "(unparsed)")
     LZ_REMED=$(python3 -c 'import json,sys; print(",".join(json.load(open(sys.argv[1]))["landingZone"].get("remediationTypes",[])) or "(none)")' "$LZ_JSON" 2>/dev/null || echo "(unparsed)")
-    # The switch is the PRESENCE of the inheritance-drift remediation type, not the exact
+    # The switch is the presence of the inheritance-drift remediation type, not the exact
     # spelling: AWS`s API reference writes it `INHERITANCE_DRIFT` and its user guide writes
     # `Inheritance Drift` in prose, so the match is case-insensitive and ignores the
     # separator. Anything else in the array is printed above and left uninterpreted.
@@ -247,7 +247,7 @@ printf '%s' "$RUN_OUT" >"$RP_JSON"
 RP_STATE="ABSENT"
 [ "$RUN_STATUS" -eq 0 ] && [ -s "$RP_JSON" ] && RP_STATE="PRESENT"
 
-# 5.1a's narrowing, counted rather than eyeballed: it belongs on the two WRITE statements and
+# 5.1a's narrowing, counted rather than eyeballed: it belongs on the two write statements and
 # on neither read statement. A count of 2 is the state DEL-10 reports green from Identity.
 #
 # The counter is written to a file rather than inlined as a heredoc inside a command
@@ -531,10 +531,10 @@ fi
 printf '\n'
 }
 
-# A RUN FROM THE WRONG ACCOUNT MUST NOT CLOBBER A GOOD REPORT. Sections 2-4 are suppressed
+# A run from the wrong account must not clobber a good report. Sections 2-4 are suppressed
 # there, so writing the file would replace a real Management reading with one that answers
-# nothing - and the file name would still say it was the answer. Same rule the auth-failure
-# path above states, and the same reason.
+# nothing, under a file name that still says it was the answer. Same rule the auth-failure
+# path above states.
 if [ "$IS_MGMT" = "yes" ]; then
   main | mask | tee "$OUT"
 else
@@ -552,7 +552,7 @@ if [ -s "$ERRORS" ]; then
   exit 1
 fi
 if [ "$IS_MGMT" != "yes" ]; then
-  # NOT 0. Sections 2-4 were suppressed, so this run did not answer verification (iii), and a
+  # Not 0. Sections 2-4 were suppressed, so this run did not answer verification (iii), and a
   # zero exit is how a report that says nothing gets filed as one that says everything is fine.
   note "this did NOT run in the Management account - sections 2-4 are suppressed."
   note "re-run from CloudShell on Management as \`AWS Control Tower Admin\`."

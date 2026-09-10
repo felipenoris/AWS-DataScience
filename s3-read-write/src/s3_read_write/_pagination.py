@@ -3,13 +3,12 @@
 The ``_`` prefix in the module name marks it as an internal detail of the
 ``s3_read_write`` package, not part of the public API.
 
-Why this helper exists: AWS listing APIs return results in batches
-("pages"), and obtaining the complete list means repeating the call with a
-continuation token. boto3 abstracts that loop with *paginators*
-(``client.get_paginator(...)``); this module abstracts the remaining step —
-accumulating the items of every page — so the other modules do not repeat
-the same loop (following the convention of the reference project,
-`benes3 <https://github.com/felipenoris/benes3>`_).
+AWS listing APIs return results in batches ("pages"), and the complete list
+means repeating the call with a continuation token. boto3 abstracts that
+loop with *paginators* (``client.get_paginator(...)``); this module
+abstracts the remaining step, accumulating the items of every page, so the
+other modules do not repeat it — the convention of the reference project,
+`benes3 <https://github.com/felipenoris/benes3>`_.
 """
 
 from typing import Any

@@ -2,35 +2,35 @@
 
 | | |
 |---|---|
-| **What this is** | One picture of every network this project builds: five VPCs and their address plan, every element that holds an internal address, the route tables, **the estate's single internet egress** and the explicit proxy that is it, the VPN, the DNS layer with its association matrix, and the security groups — and the two questions the picture exists to answer: **how a SageMaker app sees the internet**, and **what can reach a SageMaker app** |
-| **What it is not** | A procedure. Connecting a device and the session's up/down order: [`plan/runbooks/client-vpn-proxy-configuration.md`](plan/runbooks/client-vpn-proxy-configuration.md); the VPN host itself, building an image, applying a slice: [`plan/runbooks/vpn.md`](plan/runbooks/vpn.md), [`plan/runbooks/buildbox.md`](plan/runbooks/buildbox.md), [`plan/runbooks/terraform-changes.md`](plan/runbooks/terraform-changes.md). The design argument is [`plan/architecture.md`](plan/architecture.md); the build steps are [`plan/stages/stage-03-networking.md`](plan/stages/stage-03-networking.md) and [`plan/stages/stage-04-vpn.md`](plan/stages/stage-04-vpn.md). **Nor is it the authority on whether a reading is *expected*** — that is [`AWS_STATE.md`](AWS_STATE.md)'s invariants and exceptions, and the slice tree is [`plan/conventions.md`](plan/conventions.md)'s |
-| **Kept true, and how** | **Reviewed in the same sitting as any change to a network-bearing slice or module** — the rule is `CLAUDE.md`'s upkeep table, and §2.1 below is the list this file must keep naming. **`./scripts/check-network-doc.py` decides the mechanical half**: every allocated CIDR, every per-tier subnet **recomputed from the `vpc` module's own arithmetic**, and every slice that declares a network object or calls a network module has to appear here. Whether a sentence is still *true* is the reading, which no check makes — and the **measured** date in the row above is what a reader compares against `aws/output/` |
+| **What this is** | One picture of every network this project builds: five VPCs and their address plan, every element that holds an internal address, the route tables, **the estate's single internet egress** and the explicit proxy that is it, the VPN, the DNS layer with its association matrix, and the security groups — and the two questions the picture answers: **how a SageMaker app sees the internet**, and **what can reach a SageMaker app** |
+| **What it is not** | A procedure. Connecting a device and the session's up/down order: [`plan/runbooks/client-vpn-proxy-configuration.md`](plan/runbooks/client-vpn-proxy-configuration.md); the VPN host itself, building an image, applying a slice: [`plan/runbooks/vpn.md`](plan/runbooks/vpn.md), [`plan/runbooks/buildbox.md`](plan/runbooks/buildbox.md), [`plan/runbooks/terraform-changes.md`](plan/runbooks/terraform-changes.md). The design argument is [`plan/architecture.md`](plan/architecture.md); the build steps are [`plan/stages/stage-03-networking.md`](plan/stages/stage-03-networking.md) and [`plan/stages/stage-04-vpn.md`](plan/stages/stage-04-vpn.md). Whether a reading is *expected* is [`AWS_STATE.md`](AWS_STATE.md)'s invariants and exceptions, and the slice tree is [`plan/conventions.md`](plan/conventions.md)'s |
+| **Kept true, and how** | **Reviewed in the same sitting as any change to a network-bearing slice or module** — the rule is `CLAUDE.md`'s upkeep table, and §2.1 below is the list this file must keep naming. **`./scripts/check-network-doc.py` decides the mechanical half**: every allocated CIDR, every per-tier subnet **recomputed from the `vpc` module's own arithmetic**, and every slice that declares a network object or calls a network module has to appear here. Whether a sentence is still *true* is the reading, which no check makes; the **measured** date in the row below is what a reader compares against `aws/output/` |
 | **Where each fact comes from** | Two kinds, marked throughout. **As code** — read from [`../terraform-modules/vpc/`](../terraform-modules/vpc/main.tf), [`../terraform-modules/vpc-egress/`](../terraform-modules/vpc-egress/endpoints.tf), [`../terraform-modules/wireguard/`](../terraform-modules/wireguard/main.tf), [`../terraform-modules/sagemaker-prereqs/`](../terraform-modules/sagemaker-prereqs/blueprints.tf) and the `foundation/`, `egress/`, `vpn/`, `buildbox/`, `probes/` and `sagemaker/` slices under [`../terraform-live/`](../terraform-live/README.md); the address allocation from [`../scripts/tfhygiene/backend.py`](../scripts/tfhygiene/backend.py). **Measured** — read back from the accounts on **2026-09-07** with `./aws/networking.py`, `./aws/proxy.py`, `./aws/vpn.py`, `./aws/dns-allowlist.py` and direct read-only `describe-*` calls, as the infrastructure user. A measured value that is `[E]` or `[D]` describes **that session**, never the design — §13 says which |
-| **Written** | 2026-08-23, Claude, at the user's request. **Rewritten 2026-09-07 at [6c](plan/stages/stage-06c-networking-hub.md) step 6.7, from the readings** — the previous body described a three-VPC estate with a NAT gateway per account, and the `§T` block that had been carrying the target *as unbuilt* is now the body. Stable ids (`D38`, `INT-22`, `NT-12`, `Lesson 44`) are the references; section numbers in other files are not |
+| **Written** | 2026-08-23, Claude, at the user's request; rewritten 2026-09-07 at [6c](plan/stages/stage-06c-networking-hub.md) step 6.7 from the readings. Stable ids (`D38`, `INT-22`, `NT-12`, `Lesson 44`) are the references; section numbers in other files are not |
 
 ---
 
-## 0. Four rules for reading this picture
+## 0. Rules for reading this picture
 
 1. **Every fact is marked `[as code]` or `[measured]`.** A `[measured]` value that describes an `[E]`
    or `[D]` object describes **that session**, never the design: endpoint ids, instance ids and
    private addresses are new on every rebuild, and §13 says which session this one was.
 2. **Reach is an intersection.** A route, a security group, a proxy allow-list and an endpoint policy
    are four independent gates, in four different slices, and traffic needs all four (Lesson 28). No
-   single file answers *"can X reach Y"*, and neither does this one on its own.
-3. **What is ABSENT is often the control.** There are five peerings and there could be ten; there is
+   single file answers *"can X reach Y"*, this one included.
+3. **What is absent is often the control.** There are five peerings and there could be ten; there is
    no default route in any spoke; `prod.awsds.internal` is not associated with Sandbox. Each absence
    is deliberate and named where it matters.
-4. **A network fact is re-measured, never re-imagined.** This file is rewritten from readings taken
-   in one sitting, with the instruments named in §14 — not from the plan that asked for them.
+4. **A network fact is re-measured, never re-imagined.** This file is written from readings taken in
+   one sitting, with the instruments named in §14.
 
 ---
 
 ## 1. The address plan  `[as code]`
 
-The one table is [`scripts/tfhygiene/backend.py`](../scripts/tfhygiene/backend.py)'s `VPC_CIDRS`,
-keyed by **(account, slice)** since Stage 6c — a per-account key stopped being expressible the day
-Production got three VPCs.
+The one table is [`scripts/tfhygiene/backend.py`](../scripts/tfhygiene/backend.py)'s `VPC_CIDRS`, keyed
+by **(account, slice)** since Stage 6c: Production holds three VPCs, so a per-account key cannot express
+the plan.
 
 | VPC | CIDR | Account | What it holds |
 |---|---|---|---|
@@ -41,10 +41,9 @@ Production got three VPCs.
 | Staging | `10.50.0.0/16` | Staging | the runtime target — **the CIDR is inherited, not re-cut**: a VPC CIDR is immutable, and the `[P]` gateway-endpoint ids the lake names survive with it |
 | WireGuard peers | `10.90.0.0/24` + `fd90::/64` | — | in **no** route table except VPC-Networking's public tier (`NT-4` asserts both halves) |
 
-`10.40.0.0/16` is **released and stays unallocated** — it was Staging's reservation before 6b renamed
-an account instead. `10.60.0.0/16` is reserved for the `shared` platform account D38's trigger names.
-`10.16.0.0/13` remains the Sandbox supernet, and the rule for the next unit is *the lowest free `/16`*
-in it.
+`10.40.0.0/16` is released and stays unallocated. `10.60.0.0/16` is reserved for the `shared` platform
+account D38's trigger names. `10.16.0.0/13` remains the Sandbox supernet, and the rule for the next
+unit is *the lowest free `/16`* in it.
 
 **The tiers, recomputed by the `vpc` module from each VPC's `/16`** `[measured, and they match]` —
 every VPC has the same six subnets, two AZs × three tiers, anchored on AZ `zone_id`:
@@ -55,8 +54,8 @@ every VPC has the same six subnets, two AZs × three tiers, anchored on AZ `zone
 | **isolated** | the gateway endpoints and **nothing else, ever** |
 | **public** | a default route to an internet gateway — and only in VPC-Networking does anything sit in it |
 
-Written out, because the arithmetic is the module's and this table is what `check-network-doc.py`
-compares it against — **az1 · az2** in each column:
+Written out — **az1 · az2** in each column. `check-network-doc.py` compares this table against the
+module's arithmetic:
 
 | VPC | private | isolated | public |
 |---|---|---|---|
@@ -81,7 +80,7 @@ compares it against — **az1 · az2** in each column:
 | **Probe hosts** | Sandbox/Staging/Production, private + isolated | `[E]`, new every session | `[E]` the three `probes/` slices |
 | **Build host** `awsds-prod-buildbox` | **VPC-SharedServices · private** · az1 | `[E]` | `[E]` `production/buildbox/` |
 
-**No NAT gateway appears in this table, in any VPC, and that is [D38](plan/decisions/D38-single-egress-hub.md).**
+**No NAT gateway appears in this table, in any VPC** ([D38](plan/decisions/D38-single-egress-hub.md)).
 
 ### 2.1 Which slice puts each of those on the network
 
@@ -102,7 +101,7 @@ compares it against — **az1 · az2** in each column:
 
 ---
 
-## 3. The estate — five VPCs, five peerings, one way in and one way out  `[measured]`
+## 3. The estate — the VPCs, their peerings, and the one way in and out  `[measured]`
 
 ```
                     the internet
@@ -122,39 +121,38 @@ compares it against — **az1 · az2** in each column:
             └── pcx-0001…── SharedServices   (INT-09: a notebook clones GitLab)
 ```
 
-**Five peerings, and the absent ones are the control.** Sandbox↔Staging, Sandbox↔Workloads,
-Staging↔SharedServices, Staging↔Workloads and Workloads↔SharedServices do **not** exist. Nothing has to
-enforce that isolation — peering is not transitive, so it is free (Lesson 44).
+**The absent peerings are the control.** Sandbox↔Staging, Sandbox↔Workloads, Staging↔SharedServices,
+Staging↔Workloads and Workloads↔SharedServices do **not** exist. Nothing has to enforce that isolation —
+peering is not transitive, so it is free (Lesson 44).
 
 **`NT-11` asserts both sides of every one** `[measured]`: 5 active peerings, routed in both accounts.
 A peering routed on one side only is an `active` attachment whose traffic dies in one direction with
-no ICMP and no log line — the defect the reference implementation has.
+no ICMP and no log line — the defect in the reference implementation.
 
-**The peering routes are in the PRIVATE route tables and not the isolated one**, which is why the
-build host is in the private tier and why `production/probes`' isolated host is unreachable from a
-spoke by construction.
+**The peering routes are in the private route tables, not the isolated one**, which is why the build
+host is in the private tier and why `production/probes`' isolated host is unreachable from a spoke by
+construction.
 
 ---
 
-## 4. The route tables are the truth  `[measured]`
+## 4. The route tables  `[measured]`
 
 | Route table | What is in it | What is NOT |
 |---|---|---|
 | **VPC-Networking · public** | `0.0.0.0/0` → IGW · the two gateway prefix lists · **`10.90.0.0/24` → the WireGuard ENI** | — |
 | **every other public tier** | `0.0.0.0/0` → that VPC's IGW · the gateway prefix lists | nothing reaches those IGWs: no host sits in those tiers |
-| **every private tier** | the peer VPCs' ranges via peering · the gateway prefix lists | **no `0.0.0.0/0`, in any account.** This is design B, and it is the whole of it |
+| **every private tier** | the peer VPCs' ranges via peering · the gateway prefix lists | **no `0.0.0.0/0`, in any account** — design B in one line |
 | **every isolated tier** | the gateway prefix lists, and nothing else, ever | no peering route, no default |
 
-**The single exception in the estate is the `10.90.0.0/24` line**, and it is safe *because it never
-leaves one VPC*: it gives Squid a **per-device** source address instead of one blur. `NT-4` asserts it
-positively — *the one `10.90.0.0/24` route, inside the hub* — as well as asserting its absence
-everywhere else.
+**The single exception in the estate is the `10.90.0.0/24` line**, safe because it never leaves one
+VPC: it gives Squid a **per-device** source address instead of one blur. `NT-4` asserts it both ways —
+the one `10.90.0.0/24` route inside the hub, and its absence everywhere else.
 
 ---
 
 ## 5. How a SageMaker app sees the internet  `[as code + measured]`
 
-Three paths, and reading them apart is what makes a failure diagnosable:
+Three paths, and reading them apart is what makes a failure diagnosable.
 
 | destination | path | cost |
 |---|---|---|
@@ -167,7 +165,7 @@ directly has nowhere to go — which is why `NO_PROXY` is **generated per VPC** 
 endpoint list (`vpc-egress`'s output) rather than written: a blanket suffix would send a service with
 no endpoint into a timeout with no message, where the proxy gives a **403 naming the host**.
 
-**The names come from the ENDPOINTS, not from the service roster** (`vpc-egress-v0.11.1`, 2026-09-09).
+**The names come from the endpoints, not from the service roster** (`vpc-egress-v0.11.1`, 2026-09-09).
 A service has one canonical private DNS name; an endpoint answers for **several**, and the bypass list
 has to carry all of them or the ones it misses stop being bypassed. Measured in Sandbox: **16 of 18**
 interface endpoints answer for at least one name beyond the canonical one, and the list went from **28
@@ -175,20 +173,19 @@ entries to 50** the day it was repaired — `datazone.<region>.api.aws` beside
 `datazone.<region>.amazonaws.com`, **four** names for `sagemaker.studio`, and
 `streaming-logs.<region>.amazonaws.com`, which is a different *label* that no suffix rule covers.
 
-**A missing entry fails two different ways and only one of them is visible**, which is why the count
-above matters more than it looks:
+**A missing entry fails two different ways and only one of them is visible:**
 
 | the missing name's family | what Squid does | what arrives |
 |---|---|---|
 | `.api.aws`, `.app.aws`, `.on.aws` | on no compute plane — **403** | nothing; the tool reports a refusal naming the host |
 | `.amazonaws.com` | **on** the plane — **200** | a **public** call out through the hub's IGW, carrying neither `aws:SourceVpc` nor `aws:SourceVpce` |
 
-That second row is the same fail-open **S3 and DynamoDB are hand-named against**: a *gateway* endpoint
-has no private DNS at all, so no reading can produce them, and omitting them sends every S3 call to
-Squid. **Eight of the twenty-nine service names are also not derivable from their token** — `ecr.dkr`
-answers on `*.dkr.ecr.<region>.amazonaws.com`, `emr-dashboard` on `*.emrappui-prod.…` — which is why
-none of this is written by hand. A **wildcard** name is emitted in **both** spellings, bare and
-dot-prefixed, because the clients disagree about which one covers a subtree.
+That second row is the fail-open **S3 and DynamoDB are hand-named against**: a *gateway* endpoint has
+no private DNS at all, so no reading can produce them, and omitting them sends every S3 call to Squid.
+**Eight of the twenty-nine service names are also not derivable from their token** — `ecr.dkr` answers
+on `*.dkr.ecr.<region>.amazonaws.com`, `emr-dashboard` on `*.emrappui-prod.…` — which is why none of
+this is written by hand. A **wildcard** name is emitted in **both** spellings, bare and dot-prefixed,
+because the clients disagree about which one covers a subtree.
 
 ---
 
@@ -198,18 +195,18 @@ dot-prefixed, because the clients disagree about which one covers a subtree.
 load balancer. From inside the estate, reach needs a peering **and** a security-group rule **and**,
 for anything crossing the proxy, a plane on its allow-list. The absent peerings do most of the work.
 
-**And the proxy is not a way around them.** `http_access deny to_private` is the **first** rule in
+**The proxy is not a way around them.** `http_access deny to_private` is the **first** rule in
 `squid.conf`, above every allow, so a client that asks the proxy for a private address gets a
 **403** — measured from two different source planes. Without that rule the proxy would be an L7
 bridge between VPCs the peering matrix deliberately keeps apart.
 
 ---
 
-## 7. The tunnel — what a packet from a laptop can and cannot reach, under which profile  `[measured 2026-09-07/08]`
+## 7. The tunnel — what a packet from a laptop reaches, by profile  `[measured 2026-09-07/08]`
 
-**Two client profiles since 2026-09-08** (`objectives.md`; 6c pass 8): the same device, the same key, one
-`AllowedIPs` line apart. The cloud side is identical under both — the difference is what the laptop sends
-into the tunnel — and it was measured from both ends on 2026-09-08 (6c steps 8.3 and 8.4).
+**Two client profiles** (`objectives.md`; 6c pass 8): the same device, the same key, one `AllowedIPs`
+line apart. The cloud side is identical under both — the difference is what the laptop sends into the
+tunnel — and it was measured from both ends on 2026-09-08 (6c steps 8.3 and 8.4).
 
 | | **monitored** — `AllowedIPs = 0.0.0.0/0, ::/0` | **split-tunnel** — the five VPC CIDRs + `10.90.0.0/24` |
 |---|---|---|
@@ -223,7 +220,7 @@ into the tunnel — and it was measured from both ends on 2026-09-08 (6c steps 8
 | **`InfrastructureAccess`** | through the proxy | direct — no proxy anywhere |
 | **the laptop's routes** | the tunnel's default is primary in both families | the `utun`'s default carries the **`I`** flag in both families — interface-scoped, inert; `en0` keeps the primary |
 
-**The refusal is real and the sender usually cannot see it.** `curl https://1.1.1.1` from a client
+The refusal is real and the sender usually cannot see it. `curl https://1.1.1.1` from a client
 read as a **timeout** twice and as `Couldn't connect … after 194 ms` once (2026-09-07): the host
 rejects — 27681 packets by 16:54 UTC — but **rate-limits the ICMP it answers with, per destination**,
 and a laptop's refused background traffic starves the bucket: 4366 ICMPs sent, **23318 suppressed**
@@ -231,10 +228,10 @@ and a laptop's refused background traffic starves the bucket: 4366 ICMPs sent, *
 counters on the refusing side (Lesson 55): the `REJECT` rule and `/proc/net/snmp`'s `Icmp` line, both
 in `./aws/vpn.py --on-host`.
 
-**The client's IPv6 enters the tunnel and is rejected there — since 2026-09-07 and not before.**
-`AllowedIPs = ::/0` was **inert** without a matching `Address` line, so every IPv6-capable
-application was leaving outside the tunnel, the proxy and the access log. The ULA closes that; it is
-**not** a control against the device's owner (Lesson 56, `runbooks/vpn.md` §C6).
+**The client's IPv6 enters the tunnel and is rejected there, since 2026-09-07.** `AllowedIPs = ::/0`
+was **inert** without a matching `Address` line, so every IPv6-capable application was leaving outside
+the tunnel, the proxy and the access log. The ULA closes that; it is **not** a control against the
+device's owner (Lesson 56, `runbooks/vpn.md` §C6).
 
 ---
 
@@ -255,7 +252,7 @@ otherwise, naming the endpoint. The case that forced it: `sagemaker.studio` answ
 
 ---
 
-## 9. Security groups — the second gate  `[measured]`
+## 9. Security groups  `[measured]`
 
 | group | admits |
 |---|---|
@@ -265,17 +262,17 @@ otherwise, naming the endpoint. The case that forced it: `sagemaker.studio` answ
 | `awsds-prod-buildbox` `[E]` | **nothing** — no ingress rule at all; Session Manager needs none |
 | the probe groups `[E]` | no ingress; egress scoped to the peers the **peering matrix** generates |
 
-**The dated exception of 2026-09-07 closed on 2026-09-08 (6c step 6.5)**: `awsds-sandbox-vpn` is
-destroyed, the estate holds **one** world-open rule again, and `VP-3` reads **every** account's security
-groups to say so (Lesson 31).
+**The second world-open rule closed on 2026-09-08 (6c step 6.5)**: `awsds-sandbox-vpn` is destroyed,
+the estate holds **one** world-open rule again, and `VP-3` reads **every** account's security groups to
+say so (Lesson 31).
 
 ---
 
 ## 10. DNS — who resolves what  `[measured 2026-09-07]`
 
-**Five private zones, and the association matrix is the design** (INT-22). A private zone answers for
-its **whole subtree**, and a VPC resolves a zone only by being associated with it — *"you cannot query
-the Amazon DNS server in a peer VPC"*.
+**The association matrix is the design** (INT-22). A private zone answers for its **whole subtree**, and
+a VPC resolves a zone only by being associated with it — *"you cannot query the Amazon DNS server in a
+peer VPC"*.
 
 | Zone | Associated with | Why |
 |---|---|---|
@@ -289,30 +286,30 @@ the Amazon DNS server in a peer VPC"*.
 others**. An *extra* association is a spoke resolving into a plane the matrix keeps it out of — the
 half no expected-direction test would find.
 
-**The client plane resolves at VPC-Networking's `.2`, which carries no interface endpoint with
-private DNS — measured from the tunnel on 2026-09-07 (6c step 6.2).** `agent.datazone.us-west-2.api.aws`
+**The client plane resolves at VPC-Networking's `.2`**, which carries no interface endpoint with
+private DNS — measured from the tunnel on 2026-09-07 (6c step 6.2). `agent.datazone.us-west-2.api.aws`
 answered three **public** addresses; `<domain-id>.studio.us-west-2.sagemaker.aws` a CNAME to
 `studio.us-west-2.sagemaker.aws` and three public ones. In a Chrome pointed at the proxy and nothing
 else, the portal, a project, its catalog tab and a JupyterLab space opened **with no Local Network
-Access prompt** — the two surfaces that demanded the grant on 2026-08-26. That is the structural
-repair: a private zone answers for its whole subtree, so a client resolving through a VPC full of
-endpoints inherited every one of their names (Lessons 40-43).
+Access prompt** — the two surfaces that demanded the grant on 2026-08-26. A private zone answers for
+its whole subtree, so a client resolving through a VPC full of endpoints inherited every one of their
+names (Lessons 40-43).
 
-**The DNS Firewall's job changed.** It is in the two **compute** VPCs only, its allow-list is
-**fourteen** entries — AWS's own namespaces and this estate's private zones — and its purpose is no
-longer filtering the internet (the proxy does that) but **closing the recursive resolver as an
-exfiltration channel**. `VPC-Networking` carries none: the proxy has to resolve.
+**The DNS Firewall** is in the two **compute** VPCs only, its allow-list is **fourteen** entries —
+AWS's own namespaces and this estate's private zones — and its job is **closing the recursive resolver
+as an exfiltration channel** rather than filtering the internet, which the proxy does.
+`VPC-Networking` carries none: the proxy has to resolve.
 
 **It was ten until 2026-09-09**, when the same reading that repaired `NO_PROXY` was pointed at this
 list and found two endpoints both compute VPCs pay for hourly answering on families it did not carry:
 `dkr-ecr.<region>.on.aws` (`ecr.dkr`) and `studio.sagemaker.<region>.app.aws` (`sagemaker.studio`).
 Both were NXDOMAIN. `app.aws` and `on.aws` joined the list with their apexes, on the argument that put
-`sagemaker.aws` there. **One consequence is worth knowing rather than rediscovering:** `on.aws` also
-makes `dzd-<id>.sagemaker.<region>.on.aws` — the Unified Studio domain's own URL — resolvable, which is
-the DNS block 6d step 8.6 could attribute to nothing. **Resolving is not reaching**: that name has no
-endpoint, so it leaves as a proxy request and comes back a 403 naming the host.
+`sagemaker.aws` there. One consequence: `on.aws` also makes `dzd-<id>.sagemaker.<region>.on.aws` — the
+Unified Studio domain's own URL — resolvable, which is the DNS block 6d step 8.6 could attribute to
+nothing. **Resolving is not reaching**: that name has no endpoint, so it leaves as a proxy request and
+comes back a 403 naming the host.
 
-**The proxy's filters are the estate's egress policy, and they are two KINDS of list:**
+**The proxy's filters are the estate's egress policy, and they are two kinds of list:**
 
 | plane | source | mode | entries |
 |---|---|---|---|
@@ -321,25 +318,25 @@ endpoint, so it leaves as a proxy request and comes back a 403 naming the host.
 | `production-foundation` | `10.30.0.0/16` | **`open`** — the build plane † | 0 (a *deny* list, empty by decision) |
 | `production-workloads` · `staging-foundation` | `10.32` · `10.50` | `allowlist` | 0 — **refuse everything**, by decision |
 
-† **APPLIED 2026-09-08** (6d steps 8.3/9.3): `0 added, 1 changed, 0 destroyed` — the SSM parameter — and
+† Applied 2026-09-08 (6d steps 8.3/9.3): `0 added, 1 changed, 0 destroyed` — the SSM parameter — and
 the re-plan reads `No changes`. `DN-1`, `DN-2`, `DN-3` and `DN-4` all pass, so **code and parameter agree,
-entry for entry**. **Read back on the host the same evening**: the rendered drop-in carries `Rendered
+entry for entry**. Read back on the host the same evening: the rendered drop-in carries `Rendered
 2026-09-09T00:01:22Z`, after the parameter write, its Sandbox list matches the parameter name for name,
 and the build plane renders as `acl src_production_foundation` plus a **bare** `http_access allow` — the
 tunnel's shape, sitting after `deny to_private` and the port guards and before the backstop. **An `open`
-plane emits no `dstdeny_` ACL, and an `allowlist` plane with an empty list emits nothing at all** — so
+plane emits no `dstdeny_` ACL, and an `allowlist` plane with an empty list emits nothing at all**, so
 the rendered file cannot distinguish *refuses everything* from *does not exist*, which is why `PX-3`
 compares it against the parameter rather than reading it alone.
 
-**Why the build plane is not an allow-list** (D38 §6, amended 2026-09-08): `VPC-SharedServices` holds the
+**The build plane is not an allow-list** (D38 §6, amended 2026-09-08): `VPC-SharedServices` holds the
 tooling that **builds** the restricted environment — the buildbox today, the GitLab runners from Stage 7 —
 and its control is the reviewed Dockerfile in git, not a hostname list. `open` here still means the three
 global denies apply (private destinations, unsafe ports, `CONNECT` to anything but 443), there is still no
 default route in that VPC, and the security group still admits only 3128. **`sandbox-foundation` is
-unaffected** — that is what source-scoped planes are for.
+unaffected**, which is what source-scoped planes are for.
 
-**Empty means opposite things in the two modes**, and that is the sentence to carry away. The
-objectives ask for the client's internet to be *monitored* and the **compute's** to be restricted.
+**Empty means opposite things in the two modes.** The objectives ask for the client's internet to be
+*monitored* and the **compute's** to be restricted.
 
 ---
 
@@ -348,21 +345,21 @@ objectives ask for the client's internet to be *monitored* and the **compute's**
 | trace | where | what it answers |
 |---|---|---|
 | **VPC flow logs** | one per VPC, `[P]` | ACCEPT/REJECT per flow — *did the packet arrive* |
-| **the proxy's access log** | `/awsds/prod/proxy`, `[P]`, 365 days, CMK-encrypted | **the requested hostname**, per device on the tunnel plane. This is where an unlisted name gets NAMED: `docker pull` says only `Forbidden` |
+| **the proxy's access log** | `/awsds/prod/proxy`, `[P]`, 365 days, CMK-encrypted | **the requested hostname**, per device on the tunnel plane. This is where an unlisted name is named: `docker pull` says only `Forbidden` |
 | **DNS Firewall query log** | `[E]` with its slice | which name was blocked, and by which rule |
 | **the handshake log** | `/awsds/prod/vpn`, `[D]` | which peer, how long since its last handshake |
 | **CloudTrail** | org-wide | `sourceIPAddress` and `vpcEndpointId` per API call — how the perimeter sees a call |
 
-**The access log has no export to Log Archive yet** — 6c step 4.11's second half is an open decision,
-and `PX-4` reports it as a note rather than a failure. Until it lands, the author of the allow-list
-also owns its record (Lesson 18).
+**The access log has no export to Log Archive yet**: 6c step 4.11's second half is an open decision, and
+`PX-4` reports it as a note rather than a failure. Until it lands, the author of the allow-list also owns
+its record (Lesson 18).
 
 ---
 
 ## 12. What is deliberately not there
 
 - **Any NAT gateway.** Priced and unbuilt; the contingency is a named candidate with no instance, and
-  its first fallback — *pull the public image through the proxy and push it into ECR* — was measured
+  its first fallback — pull the public image through the proxy and push it into ECR — was measured
   working on 2026-09-06.
 - **A Transit Gateway.** Five attachments ≈ USD 182/month standing before a byte, against peering's
   zero per hour. Re-measured 2026-09-06.
@@ -383,22 +380,21 @@ also owns its record (Lesson 18).
 host. Every `[E]` row above is *what the slice builds*, read from the code; every `[P]` and `[D]` row
 is read from AWS.
 
-**The one reading the first draft did not carry landed the same day**: step **6.2**, §10 — the two
-client-plane names public from the tunnel, and the portal, a catalog tab and a JupyterLab space
-opening with no browser grant. **And a reading nobody planned**: a space started while
-`sandbox/egress` was **down** came up with a working terminal and JupyterLab stuck at *"IDE
-configuration in progress"* — under design B the app's DataZone and SageMaker calls have **no path
-at all**, and the symptom is silence, not an error (Lesson 42). With the endpoints up (`getent` →
-`10.20.x`, STS answering `302`) and the space restarted, everything worked — §5's *"there is no
-fourth path"*, met from inside an app.
+Step **6.2** landed the same day, in §10: the two client-plane names public from the tunnel, and the
+portal, a catalog tab and a JupyterLab space opening with no browser grant. **A reading nobody
+planned**: a space started while `sandbox/egress` was **down** came up with a working terminal and
+JupyterLab stuck at *"IDE configuration in progress"* — under design B the app's DataZone and SageMaker
+calls have **no path at all**, and the symptom is silence, not an error (Lesson 42). With the endpoints
+up (`getent` → `10.20.x`, STS answering `302`) and the space restarted, everything worked — §5's *"there
+is no fourth path"*, met from inside an app.
 
 ---
 
-## 14. The instruments, and when to run each
+## 14. The instruments
 
 | instrument | reads | run it when |
 |---|---|---|
-| `./aws/networking.py` | VPCs, routes, peerings, zones, endpoints — `NT-1`..`NT-12` | any network change, and before believing this file |
+| `./aws/networking.py` | VPCs, routes, peerings, zones, endpoints — `NT-1`..`NT-12` | any network change, and before trusting this file |
 | `./aws/proxy.py` | the proxy host, its `[P]` anchors, the ORDER of its rules, running-vs-committed — `PX-1`..`PX-5` | any allow-list or `squid.conf` change |
 | `./aws/dns-allowlist.py` | every name on every proxy plane, re-resolved — `DN-1`..`DN-4` | before adding a name, and when one stops working |
 | `./aws/vpn.py` | the tunnel host, the EIP, the world-open rule, the deny — `VP-1`..`VP-9` | any VPN question, `--on-host` for what the interface holds |

@@ -14,41 +14,41 @@
 #             It never creates, updates or deletes anything, and it never REQUESTS an increase.
 #   exits:    0 the report was produced | 1 a call failed
 #
-# WHY THIS EXISTS, AND IT IS ONE NUMBER. The `Staging` vend is the last item the landing zone
+# Why this exists, and it is one number. The `Staging` vend is the last item the landing zone
 # left open, and it is held on `Maximum number of accounts` - measured 10 during Stage 1c
 # step 7.0, against the 15 that were requested. Stage 2 step 3.2 skips staging/bootstrap/ for
-# exactly that reason, and Stage 8 is the first stage that actually needs the account. So
-# "has the increase landed" is a question somebody asks every few weeks, and it should not
-# require remembering which console page shows it.
+# that reason, and Stage 8 is the first stage that needs the account. "Has the increase
+# landed" is a question somebody asks every few weeks, and it should not require remembering
+# which console page shows it.
 #
-# THE MEASUREMENT ONLY MEANS SOMETHING FROM MANAGEMENT, and this is the trap the script is
-# built around. From a MEMBER account the same quota reads 0.0 - Service Quotas answers about
-# the account it is asked in, and a member account has no authority to create accounts at all.
+# The measurement only means something from Management, and the script is built around that
+# trap. From a member account the same quota reads 0.0 - Service Quotas answers about the
+# account it is asked in, and a member account has no authority to create accounts at all.
 # Since 7.7 a governed member does not even get the 0.0: the Region ceiling denies
-# servicequotas:* in us-east-1 outright, naming its policy (measured 2026-08-15). Either
-# way a run from awsds-infra-identity does not return the real number, it returns a MEANINGLESS
-# one, and 0.0 read as "the cap is zero" is worse than no reading. Section 1 therefore resolves
-# which account answered BEFORE printing any quota, and refuses to interpret the number if it
-# is not Management - the same check audit-iam-analyser.sh makes for the same reason.
+# servicequotas:* in us-east-1 outright, naming its policy (measured 2026-08-15). Either way a
+# run from awsds-infra-identity returns a meaningless number, and 0.0 read as "the cap is
+# zero" is worse than no reading. Section 1 therefore resolves which account answered before
+# printing any quota, and refuses to interpret the number if it is not Management - the same
+# check audit-iam-analyser.sh makes.
 #
-# QUOTA CODES ARE DISCOVERED, NEVER TYPED. `list-service-quotas` is paged and printed whole,
-# and the account cap is then picked out by NAME. A hardcoded `L-...` that AWS renames or
+# Quota codes are discovered, never typed. `list-service-quotas` is paged and printed whole,
+# and the account cap is then picked out by name. A hardcoded `L-...` that AWS renames or
 # re-scopes reports the wrong number confidently, which is the failure mode this whole folder
 # is written against. The full list is worth printing anyway: Stage 1c step 7.0 established
-# that Service Quotas publishes NO policy-size quota for `organizations`, and that absence is
+# that Service Quotas publishes no policy-size quota for `organizations`, and that absence is
 # only visible if the list is shown rather than filtered.
 #
-# THE QUOTAS OF A GLOBAL SERVICE LIVE IN us-east-1, and the first authoritative run proved
-# it (2026-08-15): from Management, us-west-2 answers NoSuchResourceException for the whole
+# The quotas of a global service live in us-east-1, measured on the first authoritative run
+# (2026-08-15): from Management, us-west-2 answers NoSuchResourceException for the whole
 # `organizations` service-code - not an empty list. Organizations is homed in N. Virginia,
 # so the three service-quotas calls below carry `--region us-east-1` explicitly (the last
 # --region on a command wins), while sts/organizations stay on the script's default Region.
 # The 1a log recorded the same fact from the console: the increase had to be requested
 # under us-east-1.
 #
-# WHAT IT DELIBERATELY DOES NOT DO: request an increase. `request-service-quota-increase` is a
-# write, it is one command, and it belongs to a human on Management - the same line aws/probes/
-# draws. The script prints the command with its arguments filled in and stops there.
+# What it does not do: request an increase. `request-service-quota-increase` is a write, it is
+# one command, and it belongs to a human on Management - the same line aws/probes/ draws. The
+# script prints the command with its arguments filled in and stops there.
 #
 # IDENTITY. Management holds no CLI profile by design (D33/D34), so this is a CloudShell
 # script like audit-iam-analyser.sh: sign in to the access portal as `AWS Control Tower Admin`,
@@ -161,14 +161,14 @@ run service-quotas list-service-quotas --region "$QUOTAS_REGION" --service-code 
 QUOTAS="$TMP/quotas.tsv"
 printf '%s\n' "$RUN_OUT" >"$QUOTAS"
 
-# Pick the account cap by NAME, and print what matched, so a rename is visible rather than
+# Pick the account cap by name, and print what matched, so a rename is visible rather than
 # silently producing a different row.
 CAP_LINE=$(grep -i 'number of accounts' "$QUOTAS" | head -1)
 CAP_CODE=$(printf '%s' "$CAP_LINE" | cut -f1)
 CAP_NAME=$(printf '%s' "$CAP_LINE" | cut -f2)
 CAP_VALUE=$(printf '%s' "$CAP_LINE" | cut -f3)
 
-# The APPLIED value can differ from the default one; get-service-quota is the authority.
+# The applied value can differ from the default one; get-service-quota is the authority.
 APPLIED=""
 if [ -n "${CAP_CODE:-}" ]; then
   run service-quotas get-service-quota --region "$QUOTAS_REGION" \

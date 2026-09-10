@@ -1,30 +1,30 @@
-# awsds dev-env - THE SMUS CUSTOM IMAGE (BYOI). Stage 6 step 5.0; Stage 8 step 1 owns it after.
+# awsds dev-env - the SMUS custom image (BYOI). Stage 6 step 5.0; Stage 8 step 1 owns it after.
 #
 # This is the runtime every notebook and every Unified Studio project app runs on, and it is
 # the one artifact in this plan that reaches an account without a pipeline - once, by hand, at
 # bootstrap (Stage 6 step 5.0), replaced by Stage 8's pipeline building this same file.
 #
-# FROM `base`, NOT FROM THE DISTRIBUTION DIRECTLY, and that is D17 rather than tidiness: the
-# application images are `FROM base:<pinned tag>`, so the only way "the runtime the code runs
-# on is the runtime it was written against" is true BY CONSTRUCTION is for this image to share
-# that ancestor. images/base/Dockerfile carries the argument and the SMUS BYOI constraint that
-# forced base's own root; read it before changing either.
+# FROM `base`, not from the distribution directly, because of D17: the application images are
+# `FROM base:<pinned tag>`, so "the runtime the code runs on is the runtime it was written
+# against" is true BY CONSTRUCTION only if this image shares that ancestor.
+# images/base/Dockerfile carries the argument and the SMUS BYOI constraint that forced base's
+# own root; read it before changing either.
 #
-# WHAT THIS IMAGE ADDS, AND WHY IT IS THREE LANGUAGES AND NOT ONE (docs/plan/architecture.md
-# §4.3): the environment must support Python, Julia, Rust and R, and CodeArtifact covers only
-# two of them - PyPI and crates.io. Julia and CRAN have no external connection, so under
-# egress design B (no NAT at all) THIS IMAGE IS THE DELIVERY MECHANISM for them. That is the
-# reframing design B rests on, and step 6.1 measures its cost: an ad-hoc `pip install` under
-# design A becomes a merge request, a build, a scan and a steward approval under design B.
+# What this image adds, and why it is three languages (docs/plan/architecture.md §4.3): the
+# environment must support Python, Julia, Rust and R, and CodeArtifact covers only two of them
+# - PyPI and crates.io. Julia and CRAN have no external connection, so under egress design B
+# (no NAT at all) this image is the delivery mechanism for them. Step 6.1 measures the cost: an
+# ad-hoc `pip install` under design A becomes a merge request, a build, a scan and a steward
+# approval under design B.
 #
-# NO ENTRYPOINT, NO CMD - see images/base/Dockerfile §the SMUS BYOI rule. The base's
+# No ENTRYPOINT, no CMD - see images/base/Dockerfile §the SMUS BYOI rule. The base's
 # /usr/local/bin/_entrypoint.sh must survive.
 #
-# NOTHING IS COMPILED HERE. Julia, rustup and the R environment are all prebuilt binary
+# Nothing is compiled here. Julia, rustup and the R environment are all prebuilt binary
 # downloads, which is what keeps an amd64 build under emulation on an Apple Silicon laptop
 # slow rather than impossible (images/README.md).
 #
-# BUILD (after base, amd64):
+# Build (after base, amd64):
 #   docker buildx build --platform linux/amd64 -t awsds/dev-env:local images/dev-env
 
 ARG BASE_IMAGE=awsds/base
@@ -46,7 +46,7 @@ ARG BASE_TAG
 #   rustup   static.rust-lang.org/rustup/archive/1.29.0/x86_64-unknown-linux-gnu/rustup-init.sha256
 #   Rust     static.rust-lang.org/dist/channel-rust-stable.toml (1.98.0, 2026-08-18)
 #
-# A DOWNLOAD WITHOUT A CHECKSUM IS AN UNSIGNED DEPENDENCY, and this image is the runtime the
+# A download without a checksum is an unsigned dependency, and this image is the runtime the
 # whole estate shares. Both archives are verified before anything is executed.
 ARG JULIA_VERSION=1.12.7
 ARG JULIA_SHA256=4e7e9e776634d24835250de67cde39b0d4af15bc432eb20697e6be6c28ea69e8
@@ -68,7 +68,7 @@ RUN set -eu; \
 
 # --------------------------------------------------------------------------------- 2. Julia
 #
-# THE DEPOT IS SHARED AND READ-ONLY, AND THE SEARCH PATH PUTS THE USER'S FIRST. A depot under
+# The depot is shared and read-only, and the search path puts the user's first. A depot under
 # /opt is baked into the image and identical for everyone; a Pkg operation a user runs in a
 # notebook must not need to write there, so JULIA_DEPOT_PATH lists the home depot first (Pkg
 # writes to the first entry) and the shared one second (Pkg reads from all of them). The home
@@ -92,7 +92,7 @@ RUN set -eu; \
 
 # The package set, and the kernel.
 #
-# THE KERNELSPEC IS RELOCATED AND THEN ASSERTED, because where IJulia puts it depends on what
+# The kernelspec is relocated and then asserted, because where IJulia puts it depends on what
 # it finds: `installkernel` delegates to `jupyter kernelspec install --user` when a `jupyter`
 # is on the PATH - and there is one, the base environment's - which lands the spec in ROOT's
 # home, where `sagemaker-user` never looks. JUPYTER_DATA_DIR is set for the branch where it
@@ -141,17 +141,17 @@ RUN set -eu; \
 
 # ---------------------------------------------------------------------------------- 4. Rust
 #
-# NO JUPYTER KERNEL, ON PURPOSE. Rust here is a toolchain for building things - the ecosystem
+# No Jupyter kernel, on purpose. Rust here is a toolchain for building things - the ecosystem
 # open question 5 asks about against CodeArtifact's `crates` repository - not a notebook
 # language; the one kernel that exists (evcxr) compiles on install and would be the only
 # compilation in this image.
 #
-# CARGO_HOME IS DELIBERATELY LEFT UNSET so it defaults to the user's ~/.cargo at runtime: the
+# CARGO_HOME is deliberately left unset so it defaults to the user's ~/.cargo at runtime: the
 # registry cache and anything `cargo install` produces then land on the space's EBS volume,
-# writable, instead of failing against a read-only /opt. The rustup SHIMS come from PATH and
+# writable, instead of failing against a read-only /opt. The rustup shims come from PATH and
 # resolve the toolchain through RUSTUP_HOME, which is what makes that split work.
 #
-# THE CODEARTIFACT HOOK IS STEP 5.2's, NOT THIS FILE'S: cargo reads its registry configuration
+# The CodeArtifact hook is step 5.2's, not this file's: cargo reads its registry configuration
 # from $CARGO_HOME/config.toml (i.e. the user's home) or from the environment, so pointing it
 # at the `crates` repository is a runtime setting on the project, not a build-time layer here.
 ENV RUSTUP_HOME=/opt/rust/rustup \

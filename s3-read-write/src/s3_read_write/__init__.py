@@ -1,6 +1,6 @@
 """Laptop access to a SageMaker Unified Studio project's S3 storage.
 
-Two modules, one seam:
+The modules, and the seam between them:
 
 * :mod:`s3_read_write.vending` — turns the SSO persona session into a
   short-lived session of the **project role**, scoped to the project's S3
