@@ -200,8 +200,14 @@ is the one the environment will have. A denied name is a decision to take, not a
   PyPI `torch` pulls **3.03 GiB of `nvidia-*`** into a CPU image, so torch and torchvision come from
   PyTorch's CPU index; and `xgboost` pulls `nvidia-nccl` (241 MiB), so the dependency is
   `xgboost-cpu` — which is the same choice the distribution makes (`py-xgboost-cpu` in its own
-  list). The set is **about 1.5 GiB** of wheels, against 4.7 GiB before the two CPU changes. Nothing here is built yet — the rebuild is still owed, and it is the same one decision 8
-  owes.
+  list). The set is **about 1.5 GiB** of wheels, against 4.7 GiB before the two CPU changes. **Sharing the distribution's packages was raised and refused the same day**: a venv inherits
+  site-packages from its own interpreter, and reaching across to `/opt/conda`'s by hand imports until
+  two trees hold one package — the distribution's pandas compiled against its numpy, loading ours,
+  failing as `numpy.dtype size changed` in a notebook. Pinning to the distribution's exact version
+  makes the modules loadable and does not fix the overlap; it only gives up the independent version.
+  The estate therefore carries **two Python kernels in the Launcher** — the distribution's
+  conda-based default and `awsds-python` on uv — and pays the duplication in image size. Nothing here
+  is built yet: the rebuild is still owed, and it is the same one decision 8 owes.
 - **3.1 — [user] Install packages** from a JupyterLab terminal, one ecosystem per command, and paste each
   result: `pip`, `uv`, `conda`, `Pkg` (Julia) and R. Read against the compute plane's list
   (`hub-anchors.tf`, `proxy_allow_sandbox`) before running, so a refusal is expected rather than
