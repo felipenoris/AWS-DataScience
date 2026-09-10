@@ -1,23 +1,20 @@
 # SageMaker Unified Studio — the object model, blueprints, configuration
 
-A reference for what the SMUS/DataZone-V2 surface is made of, written 2026-08-19 while preparing
-Stage 6's decisions; **the object-model and S3 sections were added later the same day**, from the
-terminology page and the project-profile admin pages (their links: [`REFERENCES.md`](REFERENCES.md),
-beside the 2026-08-16 documentation-pass block). Prices quoted are the measured ones from
-[`PRICING.md`](PRICING.md) (Lesson 6 — a cell without a number means *not measured yet*, never
-*free*). **The blueprint categories below were decided by the user on 2026-08-19 — Stage 6
-decisions 4 and 5, recorded in [the stage log](log/log-stage-06a-unified-studio.md)**;
+What the SMUS/DataZone-V2 surface is made of, read from the terminology page and the project-profile
+admin pages ([`REFERENCES.md`](REFERENCES.md), beside the 2026-08-16 documentation-pass block). Prices
+quoted are the measured ones from [`PRICING.md`](PRICING.md) (Lesson 6 — a cell without a number means
+*not measured yet*, never *free*). The blueprint categories are the user's decision of 2026-08-19 —
+Stage 6 decisions 4 and 5, recorded in [the stage log](log/log-stage-06a-unified-studio.md);
 `./aws/studio.py`'s `US-3` measures them.
 
 
-> **RE-SCOPED 2026-09-05 — read this before using the numbers below.** The domain has **one** associated
-> account, not two — DONE 2026-09-06: `Development` became the headless `Staging` at
-> [Stage 6b](plan/stages/stage-06b-development-becomes-staging.md), so its eleven blueprint configurations,
-> its eleven authorization grants and the `engineering` project profile are all unwound, and the
-> associated-account count is **N Sandboxes** rather than N + 1 (D26 amended). Two more corrections that
-> touch this file's subject: **the SageMaker Unified Studio CI/CD feature is the open-source
-> `aws-smus-cicd-cli`, and it deploys only into projects that already exist** — a deployment target has
-> none, so it is an *exporter* on the Sandbox side and the pipeline stays the deployer (D28); and the
+> **The domain has one associated account, not two.** `Development` became the headless `Staging` at
+> [Stage 6b](plan/stages/stage-06b-development-becomes-staging.md) on 2026-09-06, so its eleven blueprint
+> configurations, its eleven authorization grants and the `engineering` project profile are all unwound,
+> and the associated-account count is **N Sandboxes** rather than N + 1 (D26 amended). Two more
+> corrections touch this file's subject. The SageMaker Unified Studio CI/CD feature is the open-source
+> `aws-smus-cicd-cli`, and it deploys only into projects that already exist — a deployment target has
+> none, so it is an *exporter* on the Sandbox side and the pipeline stays the deployer (D28). The
 > `Workflows` surface is **MWAA Serverless only** (D7 amended), which moves the provisioned `Workflows`
 > blueprint out of category 2 — its cost trigger no longer exists. Whether a Studio-authored workflow
 > produces a promotable definition is measured at
@@ -37,20 +34,18 @@ publishes is discoverable by every project in the domain, and by nothing outside
 is `aws_datazone_domain` with `domain_version = "V2"` — without that argument the same resource
 creates plain DataZone (V1), which is *not* Unified Studio ([`GLOSSARY.md`](GLOSSARY.md)).
 
-Three properties this design leans on:
+Properties this design leans on:
 
-- **A domain is a registry, not a runtime** — Stage 6's most-easily-misread sentence. It holds
-  projects, profiles, blueprint configurations and the catalog; all compute comes from blueprints,
-  and no blueprint is enabled in the domain account. Here the domain lives in `Data Governance`,
-  where `sagemaker:Create*` is denied (1c step 7.6) — a denial that stays free precisely because of
-  this split (Stage 6 step 0.4).
+- **A domain is a registry, not a runtime.** It holds projects, profiles, blueprint configurations and
+  the catalog; all compute comes from blueprints, and no blueprint is enabled in the domain account.
+  The domain lives in `Data Governance`, where `sagemaker:Create*` is denied (1c step 7.6) — a denial
+  that stays free because of this split (Stage 6 step 0.4).
 - **Member accounts join by *account association*** — console-only (**no public API**, read
-  2026-08-16): a RAM share DataZone initiates. **Sandbox alone is associated since 2026-09-06** — the second
-  association was removed from the member side at Stage 6b step 1.4; **Staging and
-  Production never are** (D28). **RUN 2026-08-21, and the invitation half of this line was wrong**:
-  under Stage 1d's org-wide RAM enablement the share is created organization-scoped and
-  **auto-accepts** — zero invitations either side, so *"invitations expiring in 7 days"* names a clock
-  that never starts. §RAM below had the evidence for that before the measurement did.
+  2026-08-16): a RAM share DataZone initiates. Sandbox alone is associated since 2026-09-06 — the
+  second association was removed from the member side at Stage 6b step 1.4; **Staging and Production
+  never are** (D28). Measured 2026-08-21: under Stage 1d's org-wide RAM enablement the share is created
+  organization-scoped and **auto-accepts**, zero invitations either side, so *"invitations expiring in
+  7 days"* names a clock that never starts.
 - **The domain and IdC must share a Region** (Stage 6 step 1.1) — `us-west-2` twice, and neither can
   move afterwards.
 
@@ -67,55 +62,52 @@ domain.
 ### RAM under this surface
 
 RAM is AWS **Resource Access Manager** — the cross-account sharing service, never memory
-([`GLOSSARY.md`](GLOSSARY.md) owns the definition). It is the machinery under two SMUS seams, one
-visible and one that should stay invisible:
+([`GLOSSARY.md`](GLOSSARY.md) owns the definition). It is the machinery under two SMUS seams:
 
-- **Account association *is* a RAM share** the domain initiates on your behalf — which is why there
-  is no public API for it. **Both particulars in this line were wrong and are now measured
-  (2026-08-21).** The permission is
-  **`AWSRAMPermissionsAmazonDatazoneDomainExtendedServiceAccess`**; `AWSRAMPermissionDataZoneDefault`
-  **does not exist in RAM at all** — it was a name copied out of the V1 user guide's prose, and
-  `ram list-permissions --resource-type datazone:Domain` publishes six, none of them called that. It
-  is also **152 actions against the resource-type default's 111**, the extras being the SMUS **V2**
-  workbench surface (notebooks, cells, compute, connections, `GetDomainExecutionRoleCredentials`).
-  And there is **no invitation to expire**: the share is organization-scoped, so it auto-accepts —
-  the same behaviour the LF shares below already showed. **Read that permission as a CEILING on the
-  share, never as access** (Lesson 28); what any principal can do is that ∩ its IAM ∩ the SCPs, and
-  the Interactive OU carries no `datazone:` deny — open question 21.
+- **Account association *is* a RAM share** the domain initiates on your behalf, which is why there is
+  no public API for it. Measured 2026-08-21: the permission is
+  **`AWSRAMPermissionsAmazonDatazoneDomainExtendedServiceAccess`**, and
+  `AWSRAMPermissionDataZoneDefault` **does not exist in RAM at all** — a name copied out of the V1 user
+  guide's prose, while `ram list-permissions --resource-type datazone:Domain` publishes six, none of
+  them called that. It carries **152 actions against the resource-type default's 111**, the extras
+  being the SMUS **V2** workbench surface (notebooks, cells, compute, connections,
+  `GetDomainExecutionRoleCredentials`). There is **no invitation to expire**: the share is
+  organization-scoped, so it auto-accepts, the same behaviour the LF shares below show. **Read that
+  permission as a ceiling on the share, never as access** (Lesson 28); what any principal can do is
+  that ∩ its IAM ∩ the SCPs, and the Interactive OU carries no `datazone:` deny — open question 21.
 - **Cross-account catalog access rides Lake Formation cross-account sharing, which rides RAM.** The
   substrate is already exercised: Stage 5's TBAC shares are RAM shares, measured at INT-11's close
-  as 4 `ACTIVE` with **0 invitations** in both consumers — the zero is Stage 1d step 11's
-  `ram enable-sharing-with-aws-organization` doing its job. Without the org-wide enablement, every
-  recreated share is a hand-accepted invitation (INT-11's fallback column prices that tax). A
-  catalog subscription fulfilled across accounts lands on this same path.
+  as 4 `ACTIVE` with **0 invitations** in both consumers — the zero comes from Stage 1d step 11's
+  `ram enable-sharing-with-aws-organization`. Without the org-wide enablement, every recreated share
+  is a hand-accepted invitation (INT-11's fallback column prices that tax). A catalog subscription
+  fulfilled across accounts lands on this same path.
 - The organization half lives in Management: `ram.amazonaws.com` is a trusted-access principal, with
   `AWSServiceRoleForResourceAccessManager` (INV-09).
 
 ### Project
 
-The unit the data scientist inhabits. The docs give it three capabilities, worth keeping in their
-words: "business context for the user's work", "a collaboration boundary", and "a permissions
-boundary which gives users access to all the project artifacts and data/compute permissions after
-the users are added". A domain holds several projects; a user can sit in several; the creator
-becomes the first **owner**, and owners add **members** (owners or contributors). Artifacts stay
-inside the project unless published to the catalog.
+The unit the data scientist inhabits. The docs give it three capabilities, in their words: "business
+context for the user's work", "a collaboration boundary", and "a permissions boundary which gives
+users access to all the project artifacts and data/compute permissions after the users are added". A
+domain holds several projects; a user can sit in several; the creator becomes the first **owner**, and
+owners add **members** (owners or contributors). Artifacts stay inside the project unless published to
+the catalog.
 
 What a project physically *is* in the member account is whatever the blueprints its profile bundles
 have provisioned: the SageMaker AI domain and its apps (Tooling), the project roles, the
 consumer-side Glue database and Athena workgroup (`DataLake`), the project S3 path (§S3 below), the
 file storage.
 
-One console sentence deserves quoting, because it is AWS's own argument for this design's shape:
-"Projects do not provide strong security isolation. To limit cross-domain and cross-project resource
-discovery you can consider creating projects in separate accounts." That is what the two profiles
-pinned to two accounts do (D21/D35): the *account* boundary carries the isolation the project
-boundary does not.
+The console states: "Projects do not provide strong security isolation. To limit cross-domain and
+cross-project resource discovery you can consider creating projects in separate accounts." That is
+what the two profiles pinned to two accounts do (D21/D35): the *account* boundary carries the
+isolation the project boundary does not.
 
 ### The project's "permissions boundary" — grant-shaped, and a name collision
 
 The third capability in the definition above is a boundary of **membership**: being added to the
 project is what *grants* — the project roles' powers, and the data the project subscribed to. It is
-a concession mechanism wearing a restriction's name, and what it can natively restrict is thin:
+a concession mechanism wearing a restriction's name, and what it natively restricts is thin:
 
 - the member's **designation** — owner vs contributor — plus the domain's authorization policies
   over who creates projects, who joins, who assumes ownership;
@@ -124,35 +116,35 @@ a concession mechanism wearing a restriction's name, and what it can natively re
 - **which assets the project reaches** — every catalog asset crosses a subscription request approved
   by the producer project. Membership ≠ access to the domain's data.
 
-What it does not hold is the isolation sentence quoted above — so every restriction this design
-actually counts on lives *outside* the project object, in four layers whose intersection is the
-answer (Lesson 28):
+What it does not hold is the isolation sentence quoted above, so every restriction this design counts
+on lives *outside* the project object, in layers whose intersection is the answer (Lesson 28):
 
 | Layer | The control |
 |---|---|
-| the **IAM permissions boundary** — the literal object | `awsds-<env>-project-boundary` (Stage 6 step 2.1; name contract `US-8`), imposed on the roles the blueprint authors: no `s3:*` on LF-registered prefixes (D13), the drop-box `PutObject` + lake-data-key KMS pair as the one sanctioned direct write. **First real reading 2026-08-22: it IS on the provisioned role** — the configuration's write-only field is injected into the environment's stack template as the `ToolingUserRole`'s `PermissionsBoundary` (the conditional Bedrock roles too; **the template's two conditional EMR roles carry NONE** — AWS's template, the recorded gap for the day EMR-in-Tooling turns on). Whether it **survives blueprint reconciliation** is INT-15's remaining half, measured at step 2.5 — `US-8` reads it per role via `get-role` (`list-roles` omits the field by contract, Lesson 30) |
+| the **IAM permissions boundary** — the literal object | `awsds-<env>-project-boundary` (Stage 6 step 2.1; name contract `US-8`), imposed on the roles the blueprint authors: no `s3:*` on LF-registered prefixes (D13), the drop-box `PutObject` + lake-data-key KMS pair as the one sanctioned direct write. **Measured 2026-08-22: it is on the provisioned role** — the configuration's write-only field is injected into the environment's stack template as the `ToolingUserRole`'s `PermissionsBoundary` (the conditional Bedrock roles too; **the template's two conditional EMR roles carry none** — AWS's template, the recorded gap for the day EMR-in-Tooling turns on). Whether it **survives blueprint reconciliation** is INT-15's remaining half, measured at step 2.5 — `US-8` reads it per role via `get-role` (`list-roles` omits the field by contract, Lesson 30) |
 | OU SCPs | reach every IAM principal in the member accounts, project roles included — why the Athena Spark disable is an SCP (step 1.6), never an edit to blueprint-authored policies (Lesson 11) |
 | Lake Formation | what a project *queries* is governed by LF grants, not IAM — broad IAM with no grant reads no table (Lesson 28's producer-README section) |
 | network | `VpcOnly` non-Editable, the endpoint policies, both egress designs (§`VpcOnly` below) |
 
-**The name collision, named:** the docs' "permissions boundary" (membership, above) and the IAM
-*permissions boundary* ([`GLOSSARY.md`](GLOSSARY.md): a policy capping what a role can ever be
-granted) are two objects sharing three words. The D13 control is the IAM one; a sentence saying
-"the project's permissions boundary" without qualification is ambiguous in exactly the way this
-file exists to prevent.
+**The name collision:** the docs' "permissions boundary" (membership, above) and the IAM *permissions
+boundary* ([`GLOSSARY.md`](GLOSSARY.md): a policy capping what a role can ever be granted) are two
+objects sharing three words. The D13 control is the IAM one; "the project's permissions boundary"
+without qualification is ambiguous.
 
 ### Project profile
 
 "A template for projects … a collection of blueprints, which are configurations used to create
 projects. A project profile can define if a particular blueprint is enabled during the creation of
 the project, or available later for the project users to enable on demand." Domain-admin-only,
-created in the domain account (Stage 6 step 1.5). **Two validation facts, measured 2026-08-22 (Lesson 39):
-`CreateProjectProfile` validates NOTHING against the blueprint templates — a locked value the template
-rejects sails through and dies at the first deploy — while `UpdateProjectProfile` validates required
-template parameters without defaults. The templates themselves are downloadable by any associated account
-via the blueprint's `templateUrl`, so locked values are checked against the template, never against prose
-(Lesson 38).** What one fixes, per the custom-create console flow
-(read 2026-08-19):
+created in the domain account (Stage 6 step 1.5).
+
+Validation, measured 2026-08-22 (Lesson 39): **`CreateProjectProfile` validates nothing against the
+blueprint templates** — a locked value the template rejects sails through and dies at the first deploy
+— while **`UpdateProjectProfile` validates required template parameters without defaults**. The
+templates are downloadable by any associated account via the blueprint's `templateUrl`, so locked
+values are checked against the template, never against prose (Lesson 38).
+
+What a profile fixes, per the custom-create console flow (read 2026-08-19):
 
 | Field | What it fixes |
 |---|---|
@@ -172,8 +164,8 @@ Each one names the blueprint it exercises, the target account and Region, a **de
 (*on create*: provisioned the moment the project is born; *on demand*: sits in the portal until a
 project member enables it — the API spelling of the enabled-vs-available distinction in the profile
 definition above), and the blueprint's parameters, **each with its own Editable flag**. One profile
-holds one per blueprint it bundles. Both SMUS levers this project pulls live at exactly this grain:
-*which account* a project provisions into, and *which parameters* its creator can no longer change.
+holds one per blueprint it bundles. Both SMUS levers this project pulls live at this grain: *which
+account* a project provisions into, and *which parameters* its creator can no longer change.
 
 ### Environment — and the V1 "environment profile"
 
@@ -192,9 +184,10 @@ model (a blueprint configuration carries "create environment profiles using this
 policies, grantable to projects and to domain-unit owners) but nothing in this plan touches it. The
 practical rule has Lesson 32's shape: **material speaking "environment profile" is V1-flow
 material** — for this V2 domain the object to write is the project profile
-(`awscc_datazone_project_profile`, in `terraform-live/data-governance/governance/profiles.tf` — Stage 6 step **1.5**, which this file already says twice above).
+(`awscc_datazone_project_profile`, in `terraform-live/data-governance/governance/profiles.tf`,
+Stage 6 step **1.5**).
 
-### The chain, in one place
+### The chain
 
 blueprint (AWS-owned template)
 → **blueprint configuration** — enabled per domain × member account, naming the provisioning role,
@@ -208,7 +201,7 @@ parameters
 | Object | Written by | Lives in | In this design |
 |---|---|---|---|
 | blueprint | AWS | the service | the 23 in the table below (custom blueprints exist as a console feature; outside decision 5, so outside `US-3`'s allow-list) |
-| blueprint configuration | Terraform, per member account (1.4) | domain × account | category 1's **eleven**, in Sandbox and in Development (applied 2026-08-21; **Development's 22 objects — 11 configurations and their 11 grants — were destroyed 2026-09-06**, so eleven stand, in one account) |
+| blueprint configuration | Terraform, per member account (1.4) | domain × account | category 1's **eleven**, applied 2026-08-21 in Sandbox and in Development; Development's 22 objects — 11 configurations and their 11 grants — were destroyed 2026-09-06, so eleven stand, in one account |
 | project profile + its environment configurations | domain admin (1.5) | the domain | `experimentation`, `engineering` |
 | project | an authorized user, in the portal | the domain (registry) | step 2.4's throwaway first |
 | environment | DataZone, through the provisioning role | the member account | read back by `US-8` / step 2.5 |
@@ -222,22 +215,22 @@ The two project profiles this installation carries — created 2026-08-21 by the
 | Profile | Provisions into | The unit of work (D21) | Who may create from it |
 |---|---|---|---|
 | `experimentation` | **Sandbox** | a notebook — experimentation happens where nothing downstream depends on it | `sso-group-data-scientists` |
-| ~~`engineering`~~ | ~~**Development**~~ | **DESTROYED 2026-09-06** (Stage 6b step 1.1). The account it targeted became the headless `Staging`, and the chain now starts at a repository rather than an account | — |
+| ~~`engineering`~~ | ~~**Development**~~ | **Destroyed 2026-09-06** (Stage 6b step 1.1). The account it targeted became the headless `Staging`, and the chain now starts at a repository rather than an account | — |
 
 Identical in everything but the target account: **eleven environment configurations** (decision 5's
 category 1), `Tooling` the only base — `ON_CREATE`, every other blueprint `ON_DEMAND`; a second base
 cannot ride along on demand, which is what re-cut `ToolingLite` to category 3 (its row in the
-blueprint table below) — and the same Tooling parameters, read back after the apply. **Since 2026-08-22
-both profiles also declare the only two required-no-default blueprint parameters across all 11**
-(`S3Bucket.bucketName`, `S3TableCatalog.catalogName`, both consumed by literal `Ref`) **as editable
-placeholders** (`changeme-project-bucket`, `changemecatalog`) **that the member replaces per project at
-capability-enable time** — `UpdateProjectProfile` demands them declared even though `CreateProjectProfile`
-never did:
+blueprint table below) — and the same Tooling parameters, read back after the apply. Since 2026-08-22
+both profiles also declare the only two required-no-default blueprint parameters across the eleven
+(`S3Bucket.bucketName`, `S3TableCatalog.catalogName`, both consumed by literal `Ref`) as **editable
+placeholders** (`changeme-project-bucket`, `changemecatalog`) that the member replaces per project at
+capability-enable time: `UpdateProjectProfile` demands them declared even though
+`CreateProjectProfile` does not.
 
 | Parameter | Value | Editable |
 |---|---|---|
 | `sagemakerDomainNetworkType` | `VpcOnly` | no |
-| `lifecycleManagement` | `ENABLED` | no — **corrected 2026-08-22**: the template's AllowedValues are the enum `ENABLED`/`DISABLED`, and the boolean `"true"` this row used to carry was rejected by CloudFormation at the first deploy (`CreateProjectProfile` had validated nothing; Lesson 39) |
+| `lifecycleManagement` | `ENABLED` | no — the template's AllowedValues are the enum `ENABLED`/`DISABLED`; the boolean `"true"` was rejected by CloudFormation at the first deploy on 2026-08-22, `CreateProjectProfile` having validated nothing (Lesson 39) |
 | `idleTimeoutInMinutes` | `60` | **yes** — the per-project default a member may tune, under the ceiling |
 | `maxIdleTimeoutInMinutes` | `120` | no — the admin ceiling (step 8.1) |
 | `maxEbsVolumeSize` | `100` (GB) | no |
@@ -245,59 +238,56 @@ never did:
 
 #### Who may create a project, and from which profile
 
-**The fourth column is a separate object from the other three, and forgetting that is how the
-installation spent a day with two profiles nobody could instantiate.** A project profile is a
-*template*; creating a project from it is an **authorization**, granted on a domain unit and named
+The fourth column is a separate object from the other three. A project profile is a *template*;
+creating a project from it is an **authorization**, granted on a domain unit and named
 `CREATE_PROJECT_FROM_PROJECT_PROFILE`. Listing the profiles in the portal is a read and needs
 neither.
 
 **Measured 2026-08-22, in step 1.7's portal sitting:** the portal offered both profiles and the
-button returned `User is not permitted to perform operation: CreateProject` — **identical with the
-tunnel up and down**, which is what ruled the network out. `list-policy-grants` on the root domain
-unit then returned an **empty list** for `CREATE_PROJECT` *and*
-`CREATE_PROJECT_FROM_PROJECT_PROFILE`, and the unit's only owner was the group profile whose
-`rolePrincipalArn` is the `InfrastructureAccess` role that created the domain. So the only principal
-that could create a project was the one that runs Terraform.
+button returned `User is not permitted to perform operation: CreateProject`, identical with the
+tunnel up and down, which ruled the network out. `list-policy-grants` on the root domain unit then
+returned an **empty list** for `CREATE_PROJECT` *and* `CREATE_PROJECT_FROM_PROJECT_PROFILE`, and the
+unit's only owner was the group profile whose `rolePrincipalArn` is the `InfrastructureAccess` role
+that created the domain. So the only principal that could create a project was the one that runs
+Terraform.
 
-**The association above is the user's decision of 2026-08-22**, and the two halves are not the same
-kind of claim:
+The association above is the user's decision of 2026-08-22, and the two halves are not the same kind
+of claim:
 
 - **`experimentation` → the data scientists** is a standing right. It is the Sandbox, where D21 is
   already decided.
 - **`engineering` → the deployment managers** is the **instrument of D21's open half** — whether a
   person needs an interactive surface next to a second account's data at all. It goes to the persona
   that owns the promotion chain the account exists to start, and if that question closes against the
-  surface, the grant is removed. **That removal would be the expected outcome, not a regression.**
+  surface, the grant is removed. That removal is the expected outcome, not a regression.
 
 **The grain is per profile, not domain-wide** (`CREATE_PROJECT` would carry every profile the domain
 gains later), and **every field of a grant is `createOnly`** in the CFN schema — there is no in-place
-edit, so moving a profile to another group destroys and re-creates the grant, and a coarse grant
-would not have been a cheap starting point to refine. The entity is the **root domain unit**, the
-only one this design has; `include_child_domain_units` is `false`, describing today's shape rather
-than restricting anything.
+edit, so moving a profile to another group destroys and re-creates the grant. The entity is the
+**root domain unit**, the only one this design has; `include_child_domain_units` is `false`,
+describing today's shape rather than restricting anything.
 
-**Status: applied 2026-08-22** — `2 added`, re-plan `No changes`, read back independently through
-`list-policy-grants`; the stage file's owed table carries the record. **The same day's first real
-project creation then measured the next layer down — the twin section below.**
+**Applied 2026-08-22** — `2 added`, re-plan `No changes`, read back independently through
+`list-policy-grants`; the stage file's owed table carries the record.
 
 The account pinning is D21's boundary as a property of the *project* rather than of the URL a person
 opened, and the two names are the `US-4` contract. The reasoning lives with the code
-(`terraform-live/data-governance/governance/locals.tf`); this section is the index.
+(`terraform-live/data-governance/governance/locals.tf`).
 
 #### Who may create an environment, and from which blueprint
 
-**The authorization above has a twin one layer down, and the first real project creation found it
-(2026-08-22).** With the profile grants applied, `CreateProject` succeeded — and the project died in
+The authorization above has a twin one layer down, found at the first real project creation
+(2026-08-22). With the profile grants applied, `CreateProject` succeeded and the project died in
 deployment: *"Caller is not authorized to create environment using blueprintId \<Tooling's id\>"*,
 full rollback, nothing provisioned or billed in the member account. Creating a project and creating
 the environments its profile bundles are **separate authorizations**: the second is
 `CREATE_ENVIRONMENT_FROM_BLUEPRINT`, granted on the **blueprint configuration** rather than on a
-domain unit — and `list-policy-grants` read **zero** such grants across all 22 configurations
+domain unit, and `list-policy-grants` read **zero** such grants across all 22 configurations
 (11 per member). The cause is the same shape as the profile gap: the console's *enable blueprint*
 flow fills **"Authorized domain units"**, which emits this grant; `PutEnvironmentBlueprintConfiguration`
 — all step 1.4 ran — only creates the configuration.
 
-Two facts about the grant are documented nowhere, and were measured, then confirmed against AWS's
+Two facts about the grant are documented nowhere. Both were measured, then confirmed against AWS's
 own working sample (`aws-samples/sample-automate-sagemaker-unified-studio-using-iac`):
 
 - **the entity identifier is `<account-id>:<blueprint-id>`** — the account is the configuration's
@@ -306,16 +296,15 @@ own working sample (`aws-samples/sample-automate-sagemaker-unified-studio-using-
   rejected as *format invalid*, and the API reference gives no format at all;
 - **the principal is copied from the sample, not designed**: every project in the root domain unit,
   designation `CONTRIBUTOR`. What a designation means for this policy type is unwritten; the sample
-  is a working end-to-end implementation whose `ON_CREATE` Tooling deploys at project creation —
-  exactly the failure mode above — so its principal is a measurement where a choice of ours would be
-  a guess.
+  is a working end-to-end implementation whose `ON_CREATE` Tooling deploys at project creation — the
+  failure mode above — so its principal is a measurement where a choice of ours would be a guess.
 
 Because the entity is per member account, the grant lives in **`terraform-modules/sagemaker-prereqs/`
 (`grants.tf`, tag `v0.3.0`)**, riding `for_each` over the blueprint configurations so a blueprint
 joining category 1 arrives authorized in the same apply. Without its grant, every `ON_DEMAND`
-blueprint fails exactly as Tooling did — one capability-enable at a time. **Status: applied 2026-08-22 in both
-member slices** — `11 added` each, re-plan `No changes`, all 22 read back with exactly one grant
-(the stage file's owed table is the record).
+blueprint fails as Tooling did, one capability-enable at a time. **Applied 2026-08-22 in both member
+slices** — `11 added` each, re-plan `No changes`, all 22 read back with exactly one grant (the stage
+file's owed table is the record).
 
 ## Blueprints — the object
 
@@ -325,26 +314,24 @@ An **environment blueprint** is a provisioning template owned by AWS. It works i
    member account, naming the provisioning role, the manage-access role and the VPC parameters it
    may use. Enabling by itself creates no billed resource.
 
-   **Two things about that resource were measured on 2026-08-21 and neither was what the plan
-   assumed.** *(a)* **The API takes a `domainIdentifier` and no account parameter**, so
-   `PutEnvironmentBlueprintConfiguration` configures the **caller's** account — which is why
-   enabling blueprints is something an *associated* account does against a *shared* domain
-   (the share's RAM permission is what lets it — `…DatazoneDomainExtendedServiceAccess`, measured
-   2026-08-21; §RAM), and why the resources live in each member's
-   `sagemaker/` slice rather than in `data-governance/governance/`. *(b)* **The resource this
-   project uses is `awscc_datazone_environment_blueprint_configuration`, not the `aws` provider's**,
-   because only the `awscc` one carries **`environment_role_permission_boundary`** — the field that
-   makes DataZone attach the D13 boundary **while it creates a project role**, instead of the
-   boundary being attached afterwards and racing reconciliation. That is INT-15's mechanism, and it
-   is Lesson 8 (check `awscc` before declaring a Terraform gap) paying off rather than a workaround.
-   **The trade measured 2026-08-22: an EXISTING configuration is immutable through `awscc`** — its
+   *(a)* **The API takes a `domainIdentifier` and no account parameter** (measured 2026-08-21), so
+   `PutEnvironmentBlueprintConfiguration` configures the **caller's** account. That is why enabling
+   blueprints is something an *associated* account does against a *shared* domain (the share's RAM
+   permission is what lets it — `…DatazoneDomainExtendedServiceAccess`, measured 2026-08-21; §RAM),
+   and why the resources live in each member's `sagemaker/` slice rather than in
+   `data-governance/governance/`. *(b)* **The resource this project uses is
+   `awscc_datazone_environment_blueprint_configuration`, not the `aws` provider's**, because only the
+   `awscc` one carries **`environment_role_permission_boundary`** — the field that makes DataZone
+   attach the D13 boundary **while it creates a project role**, instead of the boundary being attached
+   afterwards and racing reconciliation. That is INT-15's mechanism (Lesson 8).
+   **The trade, measured 2026-08-22: an existing configuration is immutable through `awscc`** — its
    identifiers are createOnly *and* write-only, the read never returns them, so every update patch
    looks like it adds createOnly properties and CloudControl refuses (`NotUpdatableException`).
    A field change on a configuration already applied is therefore a **`put-environment-blueprint-configuration`
    that re-sends the full object to match the already-committed code** (recorded per occurrence in
    the stage file; the Tooling manage-access fix is the first), or a replace — never an in-place
    update. Creates are unaffected. *(c)* **Every field the console wizard fills and the Put API
-   does not require is validated at environment DEPLOYMENT and TEARDOWN, not at Put** — an
+   does not require is validated at environment deployment and teardown, not at Put** — an
    incomplete configuration pins its projects in both directions. Tooling's full set, measured
    rung by rung on 2026-08-22: `manageAccessRoleArn`, and the regional parameters `S3Location`
    (`s3://awsds-<env>-smus-projects`, one bucket per member under the project CMK) and
@@ -354,9 +341,9 @@ An **environment blueprint** is a provisioning template owned by AWS. It works i
    the registered provisioning role. The resource set this leaves behind is an **environment**
    (§object model above).
 
-A blueprint is therefore a **capability gate, not an example**: enabled, the feature exists in the
-portal for every project the profile admits and the service holds the right to create those
-resources in the account; disabled, the feature is absent. Three consequences follow:
+A blueprint is therefore a **capability gate**: enabled, the feature exists in the portal for every
+project the profile admits and the service holds the right to create those resources in the account;
+disabled, the feature is absent. Consequences:
 
 - **The cost lever of Unified Studio is which blueprints exist**, not the domain (D26; the domain's
   metadata is cents per month, `PRICING.md` §5). What a blueprint provisions ranges from
@@ -367,11 +354,11 @@ resources in the account; disabled, the feature is absent. Three consequences fo
 - **Enabling is cheap to do later** (one Terraform resource per account); disabling after
   environments were provisioned from it is not symmetrical. Start minimal.
 
-### Blueprint Categories
+### Blueprint categories
 
-The three are the user's decision of 2026-08-19; **`undefined` is not a fourth choice but the absence
-of one**, and it exists because the 2026-08-21 roster reading found thirteen blueprints no decision
-covers. Mechanically, *every* blueprint requires a Terraform apply to exist — what distinguishes the
+The categories are the user's decision of 2026-08-19. **`undefined` is the absence of a choice**, not
+a fourth category; it exists because the 2026-08-21 roster reading found thirteen blueprints no
+decision covers. Every blueprint requires a Terraform apply to exist — what distinguishes the
 categories is what must happen **before** that apply:
 
 | Category | Meaning | To enable |
@@ -379,14 +366,13 @@ categories is what must happen **before** that apply:
 | **1 — enabled by default** | in the step 1.4 map from the stage's first apply | nothing — born with the stage |
 | **2 — on demand** | already authorized, with a **named trigger**; outside the map until it fires | commit + apply when the trigger fires — and the price measured at that moment if the row below lacks one (Lesson 6) |
 | **3 — disabled** | outside the decision | an **amendment to Stage 6 decision 5**: price measured first, recorded in the stage log, then commit + apply. The *never* subset requires reopening an earlier decision instead |
-| **`undefined`** | **nothing has been weighed** — the blueprint was never seen by the plan, or the decision that would have covered it named an object with no API identifier | decide its category first. **`US-3` fails on an `undefined` exactly as it fails on a category-3**, which is the point: a red battery that is merely uncategorised is indistinguishable from one that caught something |
+| **`undefined`** | **nothing has been weighed** — the blueprint was never seen by the plan, or the decision that would have covered it named an object with no API identifier | decide its category first. **`US-3` fails on an `undefined` as it fails on a category-3**: a red battery that is merely uncategorised is indistinguishable from one that caught something |
 
 The `US-3` allow-list in [`aws/studio.py`](../aws/studio.py) holds **category 1**; a category-2
 blueprint joins the constant in the same commit that adds it to the step 1.4 map, so the check and
 the code never disagree (Lesson 14).
 
-**Promoting a blueprint out of category 2 — the checklist (2026-08-22, Lesson 39's discipline made
-reusable, so the next enabler does not re-climb the five-attempt ladder).** One commit, one module tag
+**Promoting a blueprint out of category 2 — the checklist** (Lesson 39). One commit, one module tag
 bump, in this order:
 
 1. **The three roster copies move together** (Lesson 14): `sagemaker-prereqs`' `blueprint_names`
@@ -400,7 +386,7 @@ bump, in this order:
    against its `AllowedValues`** (the `lifecycleManagement` trap).
 4. **Enumerate the console's enable-wizard fields for that blueprint and treat every one as required**
    (Lesson 39): a field the wizard fills and the Put does not demand is validated at environment deploy
-   AND teardown, and an incomplete configuration pins its projects in both directions.
+   and teardown, and an incomplete configuration pins its projects in both directions.
 5. **What arrives free**: the `CREATE_ENVIRONMENT_FROM_BLUEPRINT` grant (`grants.tf` `for_each`s the
    configurations) and — because a NEW configuration is a create, not an update — no reconciliation Put
    (§Blueprints item (b) bites only on changes to an existing one).
@@ -409,12 +395,11 @@ bump, in this order:
 
 ### Blueprints
 
-**THE ROSTER IS MEASURED, AND THE HEADING THIS REPLACES SAID *"the eleven blueprints"*.** Read
-2026-08-21 from the live domain `awsds-studio` — `datazone list-environment-blueprints --managed`
-returns **23**, and the console's *Blueprints* page lists **13**. The two reconcile exactly, and the
-way they reconcile is the reason this table is keyed on the **API name**:
+The roster is measured. Read 2026-08-21 from the live domain `awsds-studio`,
+`datazone list-environment-blueprints --managed` returns **23**, and the console's *Blueprints* page
+lists **13**. How the two reconcile is why this table is keyed on the **API name**:
 
-- **`AmazonBedrockGenerativeAI` is a console GROUPING, not an API blueprint.** The console shows one
+- **`AmazonBedrockGenerativeAI` is a console grouping, not an API blueprint.** The console shows one
   entry — *"consists of multiple blueprints"* — and the API returns the **seven** `AmazonBedrock*`
   rows below. Terraform and `US-3` can only name the seven. Stage 6 decision 5 put the *grouping* in
   category 1, which is why all seven arrive here as `undefined`: the decision was taken about an
@@ -424,9 +409,9 @@ way they reconcile is the reason this table is keyed on the **API name**:
   offers**: `LakehouseAdmin`, `S3Bucket`, `S3TableCatalog`, `ToolingLite`. Their descriptions below
   come from `get-environment-blueprint`, the only place they are written down.
 
-**Three names in the previous table did not exist**: `EMRServerless` → **`EmrServerless`**, `EMRonEC2`
-→ **`EmrOnEc2`**, `Quicksight` → **`QuickSight`**. All three were read off documentation prose and
-none resolves — Lesson 38, and the reason the column header says *API name* rather than *name*.
+**Three names read off documentation prose do not resolve**: `EMRServerless` is **`EmrServerless`**,
+`EMRonEC2` is **`EmrOnEc2`**, `Quicksight` is **`QuickSight`** — Lesson 38, and why the column header
+says *API name* rather than *name*.
 
 Billing **shape** is read from documentation; billing **numbers** only where `PRICING.md` measured
 them. The per-blueprint resource lists were re-read 2026-08-19 (that pass caught `LakehouseCatalog`
@@ -449,7 +434,7 @@ can be diffed against this table directly.
 | `EmrOnEc2` | EMR clusters on EC2 instances — Spark, Hive and other big-data workloads from a reusable CloudFormation template | **Standing in practice** — instance-hours + EMR uplift while the cluster exists; a forgotten cluster bills on. Not measured | amend the decision (unowned until 2026-08-19) | **3** |
 | `EmrOnEks` | Amazon EMR on EKS resources, same workload family as `EmrOnEc2` | **Standing in practice** — an EKS cluster underneath, plus EMR uplift. Not measured | — | **3** |
 | `EmrServerless` | An EMR Serverless application per project — the VPC-capable Spark runtime replacing the Athena-Spark default (open question 12), and **the only engine whose compute connection documents an LF fine-grained mode** (`project.spark.fineGrained`; the notebook Spark Connect path is full-table on every engine). Under `VpcOnly` it asks for **four** optional endpoints against Glue interactive sessions' one (≈USD 0.06/h across both Interactive accounts under Stage 3's single-AZ rule, while the `egress/` slices are up) | **Per use**: **USD 0.0526/vCPU-h + 0.0058/GB-h** (x86; ARM cheaper), billed only while a session runs (`PRICING.md` §5). Near-standing tail: a **started** interactive application keeps one 4 vCPU/16 GB kernel worker even with no *pre-initialized capacity* configured (`autoStop` 30 min idle; the 60-min kernel timeout is not configurable) | default — **Stage 6 decision 1, taken 2026-08-21 as KEEP-or-REMOVE**: enabled at 1.4, and removed if either of the two in-stage readings comes out against it | **1** |
-| `LakehouseAdmin` | *"Creates a unified data source across all Lakehouse catalogs in the account and automatically ingests and catalogs all available data."* **Read this row before categorising it**: an automatic, account-wide ingest-and-catalog is the shape `docs/GOVERNANCE.md` exists to prevent, and the account it would run in holds a governed lake | Not documented. Whatever a standing crawl of everything costs, plus the catalog it writes | **step 2.4 has measured** what the environment provisions, under whose role, and what the D13 boundary actually stops — **or** a category-1 blueprint proves it depends on this one. Until then it is not registered, so no project can create it | **2** |
+| `LakehouseAdmin` | *"Creates a unified data source across all Lakehouse catalogs in the account and automatically ingests and catalogs all available data."* An automatic, account-wide ingest-and-catalog is the shape `docs/GOVERNANCE.md` exists to prevent, and the account it would run in holds a governed lake | Not documented. Whatever a standing crawl of everything costs, plus the catalog it writes | **step 2.4 has measured** what the environment provisions, under whose role, and what the D13 boundary actually stops — **or** a category-1 blueprint proves it depends on this one. Until then it is not registered, so no project can create it | **2** |
 | `LakehouseCatalog` | A new catalog in the SageMaker Lakehouse **backed by S3 tables or Redshift Managed Storage** — *not* the Glue/Athena surface its name suggests (the 2026-08-19 re-read) | RMS storage + the Redshift query path — the same cost family D12 excluded. Not measured | amend **decision 4** (2026-08-19); the Glue/Athena form this project uses is `DataLake` | **3** |
 | `MLExperiments` | An **MLflow tracking server** for the project (OnDemand blueprint) | **Standing** — the server bills per hour while up (no idle shutdown like the apps have) + storage; **not measured**. Known floor under `VpcOnly`: the `aws.sagemaker.us-west-2.mlflow` interface endpoint, +USD 0.010/h per account | experiment tracking concretely needed; **measure the tracking-server price first** (Lesson 6) | **2** |
 | `MLflowApp` | *"Creates an MLflow App for SageMaker Unified Studio."* **The same capability as `MLExperiments`, arriving twice** — categorise the pair together, so enabling one does not quietly imply the other | Not measured. App-shaped rather than server-shaped, so probably per app-hour — **unread** | — | **2** |
@@ -459,81 +444,73 @@ can be diffed against this table directly.
 | `S3Bucket` | *"Create S3 bucket for SageMaker Unified Studio project."* Not offered by the console — read from `get-environment-blueprint` | Storage + requests. Not measured. **The governing question is not cost**: a bucket born here has an encryption key and a policy nobody in this project chose (`docs/GOVERNANCE.md` §Encryption) | — | **1** |
 | `S3TableCatalog` | *"Create S3 table catalog for SageMaker Unified Studio project."* Not offered by the console. **Possibly what `LakehouseCatalog` expands into when its S3-tables form is picked** — the same one-console-entry-to-many-API-rows shape as the Bedrock grouping. **Hypothesis, not a reading** | S3 Tables storage + maintenance. Not measured | — | **1** |
 | `Tooling` | The project's basic environment: the per-project **SageMaker AI domain**, project roles, security groups, Athena workgroups, the project S3 location — and the parameter surface Stage 6 step 1.5 locks (`sagemakerDomainNetworkType`, idle shutdown, `maxEbsVolumeSize`, TIP). Mandatory — nothing else provisions a working environment | Per **app-hour running** (`ml.t3.medium` JupyterLab/Code Editor at **USD 0.050/h**, `PRICING.md` §8) + EBS. An open app bills whether used or not — the step 8 idle shutdown is what converts "up" into "in use" | default — mandatory | **1** |
-| `ToolingLite` | *"Create basic resources for SageMaker Unified Studio project."* Not offered by the console. **Measured at step 1.5 (2026-08-21): a BASE variant, not a capability** — bundled in a project profile, the service demands `deployment_mode = ON_CREATE` (*"ToolingLite environment blueprint configuration must have deployment mode ON_CREATE"*, DataZone 400), so it cannot ride a `Tooling` profile as an on-demand extra, and a second base would double-provision every new project | Not documented. Presumably the same app-hour shape as `Tooling` with fewer resources — **unread** | amending the decision | **3** |
+| `ToolingLite` | *"Create basic resources for SageMaker Unified Studio project."* Not offered by the console. **Measured at step 1.5 (2026-08-21): a base variant, not a capability** — bundled in a project profile, the service demands `deployment_mode = ON_CREATE` (*"ToolingLite environment blueprint configuration must have deployment mode ON_CREATE"*, DataZone 400), so it cannot ride a `Tooling` profile as an on-demand extra, and a second base would double-provision every new project | Not documented. Presumably the same app-hour shape as `Tooling` with fewer resources — **unread** | amending the decision | **3** |
 | `Workflows` | A **provisioned MWAA (Airflow) environment** from a CloudFormation template — billed hourly while it exists | **Standing**: MWAA `mw1.micro` **≈ USD 211.70/month** left up (`PRICING.md` §1) — the shape D7 rejected for daily use | **D28's documented last-rung fallback**: enabled only if INT-14's chain falls through at Stage 10 (`awscc_mwaaserverless_workflow`, then the CFN wrapper, then this) — and then as `[E]`, torn down between uses. The *serverless* Workflows surface is separate: Stage 10 verification (i) finds what enables it | **2** |
 
-**ALL 23 ROWS CARRY A CATEGORY (user, 2026-08-21)** — settled against the measured roster rather than
-against the console grouping decision 5 had addressed; closed at 12/5/6 and **re-cut to 11/5/7 the
-same day**, when step 1.5's refusal measured `ToolingLite` as a second BASE (its row above).
+**All 23 rows carry a category** (user, 2026-08-21), settled against the measured roster rather than
+against the console grouping decision 5 had addressed: closed at 12/5/6 and re-cut to 11/5/7 the same
+day, when step 1.5's refusal measured `ToolingLite` as a second base (its row above).
 **Category 1 is eleven**: `Tooling`, `DataLake`, `S3Bucket`, `S3TableCatalog`, `EmrServerless` and
 six of the seven `AmazonBedrock*`. Category 2 is five, category 3 is seven, and **no row is
-`undefined`** — which is what step 1.4 needed, because `US-3` fails on an uncategorised blueprint
-exactly as it fails on a forbidden one.
+`undefined`** — which is what step 1.4 needed, because `US-3` fails on an uncategorised blueprint as
+it fails on a forbidden one.
 
-**Three placements carry a consequence worth holding rather than rediscovering.**
-
-**`AmazonBedrockKnowledgeBase` is in category 2 and its six siblings are in category 1** — the Bedrock
-family is deliberately **not uniform**, so nothing downstream may reason about "the Bedrock blueprints"
-as one thing. The reason is billing shape: the other six are purely token-billed, while a knowledge
-base stands up a **vector store that bills while it exists**. That is the standing shape D12's silent
-budget is worst at catching, and it is unmeasured — hence a category-2 trigger that names the
-measurement (Lesson 6) instead of a category-1 default that would meet the bill first.
+**`AmazonBedrockKnowledgeBase` is in category 2 and its six siblings are in category 1**, so nothing
+downstream may reason about "the Bedrock blueprints" as one thing. The reason is billing shape: the
+other six are purely token-billed, while a knowledge base stands up a **vector store that bills while
+it exists**. That is the standing shape D12's silent budget is worst at catching, and it is
+unmeasured — hence a category-2 trigger that names the measurement (Lesson 6).
 
 **`S3Bucket` and `S3TableCatalog` create storage this project did not author.** The governing question
 is not their cost but their **encryption key and bucket policy**, which come from the blueprint rather
 than from `docs/GOVERNANCE.md` §Encryption's per-account CMK rule. Stage 6 step 2.4's throwaway project
-is where those fields get read (Lesson 16); verification (xviii) is the receiving end. **`ToolingLite`
-moved 1 → 3 by measurement (step 1.5, 2026-08-21), and the trap its category-1 placement guarded
-against does not exist in that form**: the service does not select the lighter variant on its own —
-it refuses a profile that bundles it `ON_DEMAND`, which makes it a second BASE, present only by
-explicit choice. A base beside `Tooling` would double-provision every new project with an unmeasured
-shape, so it is disabled; if it ever returns, it returns as its own project profile, never as an
-extra on these two.
+is where those fields get read (Lesson 16); verification (xviii) is the receiving end.
 
-**`LakehouseAdmin` is category 2, and the move is the clearest case in this table of what the
-categories are *for*.**
+**`ToolingLite` moved 1 → 3 by measurement** (step 1.5, 2026-08-21): the service does not select the
+lighter variant on its own, it refuses a profile that bundles it `ON_DEMAND`, which makes it a second
+base, present only by explicit choice. A base beside `Tooling` would double-provision every new
+project with an unmeasured shape, so it is disabled; if it ever returns, it returns as its own project
+profile, never as an extra on these two.
 
-> **It was placed in category 1 and moved on the same day, before anything was applied.** The
-> category-1 row carried a note — *read it at step 2.4's throwaway project before a real project uses
-> it* — and a note is an **intention, not a control** (Lesson 5): nothing executes it, and the
-> capability exists from the apply regardless. In category 2 that same sentence becomes the **trigger**,
-> which is the condition of enabling. The measurement stops being advice and starts being a gate.
-> **The asymmetry is what makes it cheap**: nothing in `objectives.md` asks for this blueprint, no stage
-> consumes it, and it was not known to exist before 2026-08-21 — so category 2 costs nothing anyone has
-> named, while category 1 buys availability nobody requested. §Blueprints — the object already says it:
-> *"Enabling is cheap to do later … disabling after environments were provisioned from it is not
-> symmetrical. Start minimal."*
-> **The counter-argument, recorded because it is not settled**: if *"a unified data source across all
-> Lakehouse catalogs"* turns out to be how a project sees the shared catalog at all, this belongs in
-> category 1 and its absence would break the point of the stage. That looks unlikely — `DataLake`
-> provisions the per-project catalog surface and Stage 5 already established the lake path through
-> resource links and Athena — but it is unread. Category 2 handles that uncertainty better than
-> category 1 does: if step 2.4 finds a dependency, it moves up **with evidence**, before any real
-> project exists. The failure mode of being wrong this way is a loud apply error; the other way it is an
-> unmeasured account-wide ingest sitting one click from a project member.
+**`LakehouseAdmin` is category 2.**
 
-> **And it is NOT Lake Formation's *data lake administrator*, which is what makes the name a trap.** The AWS portal text consulted on 2026-08-21 describes that other object — a privileged IAM
-> principal designated under *Administration → Data lake administrators*, which this project already
-> owns and already assigned (Stage 5 pass 4, `DL-6`, and `docs/ORGANIZATION.md` names who). **This
-> blueprint's own description, from `get-environment-blueprint`, is a provisioning template**:
-> *"Creates a unified data source across all Lakehouse catalogs in the account and **automatically
-> ingests and catalogs all available data**."* The two share a word and nothing else, and reading one
-> as the other is Lesson 38's shape in reverse — a real name attached to the wrong object.
+> It was placed in category 1 and moved the same day, before anything was applied. The category-1 row
+> carried a note — *read it at step 2.4's throwaway project before a real project uses it* — and a
+> note is an **intention, not a control** (Lesson 5): nothing executes it, and the capability exists
+> from the apply regardless. In category 2 that same sentence becomes the **trigger**, the condition of
+> enabling. Nothing in `objectives.md` asks for this blueprint, no stage consumes it, and it was not
+> known to exist before 2026-08-21, so category 2 costs nothing anyone has named while category 1 buys
+> availability nobody requested.
+> **The counter-argument is not settled**: if *"a unified data source across all Lakehouse catalogs"*
+> turns out to be how a project sees the shared catalog at all, this belongs in category 1 and its
+> absence would break the point of the stage. That looks unlikely — `DataLake` provisions the
+> per-project catalog surface and Stage 5 already established the lake path through resource links and
+> Athena — but it is unread. If step 2.4 finds a dependency, it moves up **with evidence**, before any
+> real project exists. The failure mode of being wrong this way is a loud apply error; the other way it
+> is an unmeasured account-wide ingest sitting one click from a project member.
+
+> **It is not Lake Formation's *data lake administrator*.** The AWS portal text consulted on
+> 2026-08-21 describes that other object — a privileged IAM principal designated under
+> *Administration → Data lake administrators*, which this project already owns and already assigned
+> (Stage 5 pass 4, `DL-6`, and `docs/ORGANIZATION.md` names who). **This blueprint's own description,
+> from `get-environment-blueprint`, is a provisioning template**: *"Creates a unified data source
+> across all Lakehouse catalogs in the account and **automatically ingests and catalogs all available
+> data**."* The two share a word and nothing else; reading one as the other is Lesson 38's shape in
+> reverse, a real name attached to the wrong object.
 >
-> **What the risk actually is, stated so the trigger can retire it.** Enabling a blueprint provisions
-> nothing — it *registers* a template, and the ingest happens only if a project creates an environment
-> from it. So the concern was never the apply; it was that a category-1 placement puts an account-wide
-> automatic ingest **one click from a project member**, in an account holding a governed lake. Whether
-> the D13 boundary `awsds-<env>-project-boundary` and Lake Formation's own permissions stop that ingest
-> reaching registered locations is **unmeasured** — squarely INT-15 and Stage 6 verification (v)'s
-> question, what a service-authored role can do that this project did not grant. Note that the
-> boundary's S3 deny names the **LF-registered** buckets, so it says nothing about the derived zone,
-> which is where a project's outputs live.
+> **The risk, stated so the trigger can retire it.** Enabling a blueprint provisions nothing — it
+> *registers* a template, and the ingest happens only if a project creates an environment from it. The
+> concern is that a category-1 placement puts an account-wide automatic ingest **one click from a
+> project member**, in an account holding a governed lake. Whether the D13 boundary
+> `awsds-<env>-project-boundary` and Lake Formation's own permissions stop that ingest reaching
+> registered locations is **unmeasured** — INT-15 and Stage 6 verification (v)'s question, what a
+> service-authored role can do that this project did not grant. The boundary's S3 deny names the
+> **LF-registered** buckets, so it says nothing about the derived zone, where a project's outputs live.
 
 ## S3 — the project's own storage, and where the lake is not
 
-Four distinct S3 relationships meet the SMUS surface; confusing any two of them costs an afternoon.
-All read 2026-08-19 except where dated otherwise.
+Four distinct S3 relationships meet the SMUS surface. All read 2026-08-19 except where dated
+otherwise.
 
 **1. The project S3 path — the project's working storage.** Purpose, in the doc's words: "a secure,
 project-isolated location for storing temporary execution data and other project-related artifacts",
@@ -542,20 +519,21 @@ projects". Three named tenants: "the location for the provisioned consumer AWS G
 Workgroup output, and temporary storage for individual workflow runs". The bucket pattern in AWS's
 2025-09 shared-storage announcement is `amazon-datazone-<account-id>-<region>-<domain-id>`; the
 `shared/` scope mounts as a folder in JupyterLab and Code Editor (a space's *personal* work is its
-EBS volume, not S3). **Measured 2026-08-22 (v0.3.2), and the answer overrode the default**: the bucket is
-`awsds-<env>-smus-projects`, one per member account, created by **Terraform** (the `sagemaker-prereqs`
-module's house `s3-bucket` call — not by the service; the `amazon-datazone-*` pattern above is what the
-wizard would have defaulted to), handed to Tooling as the `S3Location` regional parameter, and encrypted
-under the **project CMK** — a key this project chose, the deliberate exception `docs/GOVERNANCE.md`
-§Encryption names beside the data-CMK rule. The name is FREE because the managed provisioning policy
-reaches content by the PATH shape (`*/dzd*/<project>/…`), never by bucket name. **The path shape itself
-was MEASURED 2026-08-26** — Stage 6 step 2.4, verification (xviii)'s remaining third, read-only:
-`<bucket>/<domain-id>/<project-id>/<scope>/`, exactly the documented structure, with **two** scopes live,
+EBS volume, not S3). **Measured 2026-08-22 (v0.3.2)**: the bucket is `awsds-<env>-smus-projects`, one
+per member account, created by **Terraform** (the `sagemaker-prereqs` module's house `s3-bucket` call,
+not by the service; the `amazon-datazone-*` pattern above is what the wizard would have defaulted to),
+handed to Tooling as the `S3Location` regional parameter, and encrypted under the **project CMK** — a
+key this project chose, the deliberate exception `docs/GOVERNANCE.md` §Encryption names beside the
+data-CMK rule. The name is free because the managed provisioning policy reaches content by the **path
+shape** (`*/dzd*/<project>/…`), never by bucket name. **The path shape was measured 2026-08-26** —
+Stage 6 step 2.4, verification (xviii)'s remaining third, read-only:
+`<bucket>/<domain-id>/<project-id>/<scope>/`, the documented structure, with **two** scopes live,
 `shared/` and `dev/`, and **no per-person grain anywhere** — the project id is the finest division the
-path has. **And since the same evening this path IS the estate's derived zone** ([D19 revised
+path has. Since the same evening this path **is** the estate's derived zone ([D19 revised
 2026-08-26](plan/decisions/D19-derived-zone.md), the user's decision on this reading:
-`awsds-<env>-derived` and the enforced workgroups removed, the persona's Athena path with them —
-`docs/GOVERNANCE.md` §"Derived zone" carries the surviving contracts). Two things the reading found that the documentation does not say:
+`awsds-<env>-derived` and the enforced workgroups removed, the persona's Athena path with them;
+`docs/GOVERNANCE.md` §"Derived zone" carries the surviving contracts). Two things the reading found
+that the documentation does not say:
 
 - **Deleting a project does not delete its path.** Five project prefixes stood under the domain id
   against **one** live project — four orphans of deleted projects, one carrying a whole `.git` tree and a
@@ -567,11 +545,10 @@ path has. **And since the same evening this path IS the estate's derived zone** 
   against `list-environments` rather than inferred from the shape (it is the same suffix the provisioned
   roles carry: `datazone_usr_role_<project-id>_<environment-id>`, underscores there and hyphens here) —
   carries `EnforceWorkGroupConfiguration = true` and an output location of `…/<project-id>/dev/sys/athena/`
-  — so the doc's "Athena Workgroup output" tenant is *this* path and **not** the derived zone, which is
-  the premise Stage 6 decision 6 rests on, now measured rather than argued. The Spark workgroup the same
-  blueprint provisions (`sagemaker-studio-spark-workgroup-<project>`) exists and has **no** output
-  location: what makes it inert is Stage 6 step 1.6's SCP, never the absence of the object — read its
-  existence as expected, not as the SCP having failed.
+  — so the doc's "Athena Workgroup output" tenant is *this* path and **not** the derived zone, the
+  premise Stage 6 decision 6 rests on. The Spark workgroup the same blueprint provisions
+  (`sagemaker-studio-spark-workgroup-<project>`) exists and has **no** output location: what makes it
+  inert is Stage 6 step 1.6's SCP, never the absence of the object, so its existence is expected.
 
 **1a. The vending surface under that same path — S3 Access Grants (measured 2026-08-23).** At first
 project provisioning in a member account, SMUS also creates the account×Region **S3 Access Grants**
@@ -583,30 +560,27 @@ per-project, user-authorized **grant** to the `DataScientistAccess` role lets a 
 vend prefix-scoped **project-role** credentials (`s3control GetDataAccess`) — the same identity
 Studio uses, so no second permission surface appears over the projects bucket or the project CMK.
 The persona's half is a **customer-managed policy**, `awsds-org-project-storage-vending`, created by
-each member's `foundation/` slice and referenced by name from `DataScientistAccess` (**applied 2026-08-23**) — one object per
-member account, each naming its **own** account's instance (the second member's never existed, and since
-  2026-09-06 never will — that account is the headless `Staging` and its vending policy went at Stage 6b
-  step 2.2; the wording below dates from when it was expected
-account's first project, and a policy may name a resource that does not exist); the consumer is
-**`s3-read-write/`**,
-whose README carries the grant recipe and the first-run probe sequence. Two properties to hold onto:
-grants are **membership-blind** (the grantee grain is the persona role — every set holder vends for
-every granted project), and the vended credentials are **bearer** for their duration (the OQ-14
-shape). Requests are metered: USD 0.03 per 1,000 non-delete AG calls (`PRICING.md` §5).
+each member's `foundation/` slice and referenced by name from `DataScientistAccess` (applied
+2026-08-23) — one object per member account, each naming its **own** account's instance, and a policy
+may name a resource that does not exist. The second member's instance never existed and since
+2026-09-06 never will: that account is the headless `Staging`, and its vending policy went at Stage 6b
+step 2.2. The consumer is **`s3-read-write/`**, whose README carries the grant recipe and the
+first-run probe sequence. Two properties: grants are **membership-blind** (the grantee grain is the
+persona role — every set holder vends for every granted project), and the vended credentials are
+**bearer** for their duration (the OQ-14 shape). Requests are metered: USD 0.03 per 1,000 non-delete
+AG calls (`PRICING.md` §5).
 
-**2. Project files storage — S3, and a git repository BESIDE it, not instead of it (measured
-2026-08-26).** This item used to read *"S3 or Git"* from the documentation and promised the console's
-real offer at step 1.5; **the profile answers it directly**, so the promise is discharged here. The
-`Tooling` configuration carries five parameters — `gitConnectionArn`, `gitFullRepositoryId`,
-`gitBranchName`, `isNewGitRepository`, `enableProjectRepositoryAutoSync` — and in **both** profiles
-every one is empty or `false`. So it is not an either/or: the S3 project path is the storage
-regardless (the live project's is full — item 1 above), and the repository is an **additional**,
-currently unconfigured binding carrying an **auto-sync** flag. **`gitConnectionArn` is
-`isEditable = false`** — the blueprint template's own doing, not a lock this project wrote — so a
-project cannot bring its own connection and the profile must carry one: **no project in this domain
-can have a project repository today.** Whether enabling it *syncs* the folder or *replaces* it is
-unmeasured. The connection is Stage 7's surface (INT-09/INT-13), and **open question 26** carries the
-promotion question all of this opens.
+**2. Project files storage — S3, and a git repository beside it, not instead of it** (measured
+2026-08-26). The documentation reads *"S3 or Git"*; the profile answers it directly. The `Tooling`
+configuration carries five parameters — `gitConnectionArn`, `gitFullRepositoryId`, `gitBranchName`,
+`isNewGitRepository`, `enableProjectRepositoryAutoSync` — and in **both** profiles every one is empty
+or `false`. So it is not an either/or: the S3 project path is the storage regardless (the live
+project's is full — item 1 above), and the repository is an **additional**, currently unconfigured
+binding carrying an **auto-sync** flag. **`gitConnectionArn` is `isEditable = false`** — the blueprint
+template's own doing, not a lock this project wrote — so a project cannot bring its own connection and
+the profile must carry one: **no project in this domain can have a project repository today.** Whether
+enabling it *syncs* the folder or *replaces* it is unmeasured. The connection is Stage 7's surface
+(INT-09/INT-13), and **open question 26** carries the promotion question all of this opens.
 
 **3. The lake — reached through the catalog, never mounted.** Governed data enters a project by
 publish/subscribe on the SageMaker Catalog, fulfilled on the Lake Formation substrate Stage 5 built
@@ -622,31 +596,27 @@ catalog as an **S3 Object Collection** asset — a curated, versioned *metadata*
 subscription rules. No stage uses it: this lake's path into the catalog is tables on the LF
 substrate, not object collections.
 
-Three things in a member account all answered to "working storage" — **two buckets and a workgroup** —
-and the third row read as a bucket until 2026-08-20, which is the error that made the destination question
-below easy to miss. **Since 2026-08-26/27 there is ONE**: the other two were destroyed with D19's revision,
-and the rows that described them are kept struck, as the record of what the account used to hold.
+Three things in a member account all answered to "working storage" — **two buckets and a workgroup**.
+Since 2026-08-26/27 there is one: the other two were destroyed with D19's revision, and their rows are
+kept struck as the record of what the account used to hold.
 
 | Object | Created by | Holds |
 |---|---|---|
 | `awsds-<env>-smus-projects`, a **bucket** (the project path lives inside it) | **Terraform** — the member's `sagemaker-prereqs` slice (v0.3.2), consumed by Tooling's `S3Location`; settled 2026-08-22 | `shared/` files, the blueprint workgroup's Athena output, workflow temp, the consumer Glue database location |
-| ~~`awsds-<env>-derived`, a **bucket**~~ | ~~`consumer-data` (Stage 5 pass 4a)~~ | **DESTROYED 2026-08-26/27.** Held the persona's derived zone — per-user write, persona-grain read, the `scratch/` prefix |
-| ~~`awsds-<env>-athena`, **a workgroup, not a bucket**~~ | ~~`consumer-data` (Stage 5 pass 4a)~~ | **DELETED 2026-08-26/27, and not quietly**: `DeleteWorkGroup` counts query *history* as contents, so it took `RecursiveDeleteOption` after refusing the plain destroy. It was the *enforced* workgroup, forcing results into `s3://awsds-<env>-derived/results/` under a 10 GiB cap |
+| ~~`awsds-<env>-derived`, a **bucket**~~ | ~~`consumer-data` (Stage 5 pass 4a)~~ | **Destroyed 2026-08-26/27.** Held the persona's derived zone — per-user write, persona-grain read, the `scratch/` prefix |
+| ~~`awsds-<env>-athena`, **a workgroup, not a bucket**~~ | ~~`consumer-data` (Stage 5 pass 4a)~~ | **Deleted 2026-08-26/27**: `DeleteWorkGroup` counts query *history* as contents, so it took `RecursiveDeleteOption` after refusing the plain destroy. It was the *enforced* workgroup, forcing results into `s3://awsds-<env>-derived/results/` under a 10 GiB cap |
 
-**This section told its reader to come back and record an answer, and the answer arrived.** It used to
-end: *a project workgroup writes into the project path, not into `awsds-<env>-derived`, unless Stage 6 step
-2.4/2.6 measures that the location can be repointed and enforced.* Step 2.4 measured it on **2026-08-26**
-— the project's own workgroup is enforced into `…/<project-id>/dev/sys/athena/` — and the user's answer was
-not to repoint anything but to **keep the service's destination and delete ours** ([D19
-revised](plan/decisions/D19-derived-zone.md)).
+Step 2.4 measured the destination on **2026-08-26**: the project's own workgroup is enforced into
+`…/<project-id>/dev/sys/athena/`. The user's answer was not to repoint anything but to **keep the
+service's destination and delete ours** ([D19 revised](plan/decisions/D19-derived-zone.md)).
 
-Two things that used to be true here died with the objects. The boundary the old last row stated — pass 4c
-scoping the persona's Athena family to the two *enforced* workgroup ARNs, with a blueprint-provisioned
-project workgroup as **a third workgroup outside that scope** — has no subject left: `DataScientistAccess`
-carries **no `athena:` action at all**, so the project workgroup is not a third one, it is the only one, and
-it is exercised by project roles because there is no other kind of caller. And *"whether the two query paths
-stay parallel or converge"* (TIP — Stage 6 decision 2) is moot from the same date for the same reason:
-there is one path. TIP itself was delivered `false` and non-editable in both project profiles.
+Two consequences follow from the deletions. Pass 4c's boundary — the persona's Athena family scoped to
+the two *enforced* workgroup ARNs, with a blueprint-provisioned project workgroup outside that scope —
+has no subject left: `DataScientistAccess` carries **no `athena:` action at all**, so the project
+workgroup is the only one, exercised by project roles because there is no other kind of caller. And
+*"whether the two query paths stay parallel or converge"* (TIP — Stage 6 decision 2) is moot from the
+same date for the same reason: there is one path. TIP itself was delivered `false` and non-editable in
+both project profiles.
 
 ## SageMaker configuration
 
@@ -672,81 +642,75 @@ reached *from*, not where it runs — open question 12, Stage 6 step 1.6).
 
 **The consequences of choosing it:**
 
-- **Under the admin guide's own premise — no public egress from the VPC, its "network isolation",
-  which is design B and NOT a property of `VpcOnly`** (the scope corrected 2026-08-24; under design A
-  the NAT + allow-list serves, measured: six of the fifteen names have never had an endpoint here and
-  the create path closed end to end; **design A is gone since 6c step 5.1, and 5.2 completed the required
-  set — 18 endpoints in `sandbox/egress/`, each checked against the Region's own catalog**) — every AWS service an app reaches needs a **VPC interface
-  endpoint** in the account. The guide's required list is `athena`, `datazone` + `datazone-fips`,
-  `ec2`, `ec2messages`, `q`, `s3`, `sagemaker.api`, `sagemaker.runtime`, `glue`, `kms`,
-  `secretsmanager`, `sts`, `ssm`, `ssmmessages` (re-read 2026-08-19; `REFERENCES.md` — Stage 6 step
-  4.2 points here rather than carrying a second copy), plus per-blueprint optional ones. Each costs
-  **USD 0.010/h** (~USD 7/month) per account, continuously — the hidden fixed cost a new blueprint
-  can carry. **And the same page's third table caps the direction (read 2026-08-24): the PORTAL
-  requires the public internet** — client assets, client APIs (`agent.datazone.<region>.api.aws`
-  among them), the IdC sign-in endpoints — while an interface endpoint's private zone shadows exactly
-  such subdomains (`NETWORK.md` §5, the measured break). A no-egress VPC can host the *apps*; it
-  cannot host the *portal experience*, by AWS's own documentation — **and since 2026-08-25 the portal
-  experience is assigned to the CLIENT plane by requirement** (the objectives clarification; D5
-  re-scoped): the user's browser is to reach those public names through the VPN's egress — monitored by
-  the institutional HTTP/HTTPS proxy once Stage 11 builds it (today the plain masquerade; nothing
-  monitored is built) — never through the compute VPC's — what the compute
-  VPC owes the portal is only that its endpoints not shadow the client's DNS.
-- **The required table's own framing carries a premise this design does not meet, and reading it without
-  the premise is what cost the estate a working portal in August (Lesson 41).** The page introduces the
-  list with *"The Amazon SageMaker Unified Studio portal calls the following AWS services"*, and its
-  `DenyUserAccessFromUnauthorizedVPCs` example is written for *"portal calls to AWS service APIs from
-  outside the allowed Amazon VPC"* — so AWS is describing an estate in which **the user's browser resolves
-  and routes through the same VPC as the compute**. Ours does not, by decision: the client plane resolves
-  through `VPC-Networking` and leaves through the institutional proxy (D38), while the compute plane keeps
-  its own endpoints. The consequence is practical rather than academic: **the compute needs only the
-  subset of that list that its own calls use**, and chasing the rest buys nothing — every name in the
-  page's *public internet* tables is the browser's, which the page states three times
-  (*"These endpoints are used by the Amazon SageMaker Unified Studio portal"*, and once
-  *"...by the AWS console"*).
-- **A space started while the endpoint set is down does not fail — it hangs (measured 2026-09-07, 6c
-  step 6.2).** JupyterLab loads, the terminal works, the banner *"IDE configuration in progress"* never
+- **Every AWS service an app reaches needs a VPC interface endpoint in the account**, under the admin
+  guide's premise of no public egress from the VPC — its "network isolation", which is design B and
+  **not** a property of `VpcOnly`. Design A is gone since 6c step 5.1, and 5.2 completed the required
+  set: **18 endpoints in `sandbox/egress/`**, each checked against the Region's own catalog. The
+  guide's required list is `athena`, `datazone` + `datazone-fips`, `ec2`, `ec2messages`, `q`, `s3`,
+  `sagemaker.api`, `sagemaker.runtime`, `glue`, `kms`, `secretsmanager`, `sts`, `ssm`, `ssmmessages`
+  (re-read 2026-08-19; `REFERENCES.md` — Stage 6 step 4.2 points here rather than carrying a second
+  copy), plus per-blueprint optional ones. Each costs **USD 0.010/h** (~USD 7/month) per account,
+  continuously — the hidden fixed cost a new blueprint can carry. **The same page's third table caps
+  the direction (read 2026-08-24): the portal requires the public internet** — client assets, client
+  APIs (`agent.datazone.<region>.api.aws` among them), the IdC sign-in endpoints — while an interface
+  endpoint's private zone shadows exactly such subdomains (`NETWORK.md` §5, the measured break). A
+  no-egress VPC can host the *apps*; it cannot host the *portal experience*. **The portal experience is
+  assigned to the client plane by requirement** (the 2026-08-25 objectives clarification; D5
+  re-scoped): the user's browser reaches those public names through the VPN's egress — monitored by the
+  institutional HTTP/HTTPS proxy once Stage 11 builds it, today the plain masquerade — never through
+  the compute VPC's. What the compute VPC owes the portal is only that its endpoints not shadow the
+  client's DNS.
+- **The required table's framing carries a premise this design does not meet** (Lesson 41). The page
+  introduces the list with *"The Amazon SageMaker Unified Studio portal calls the following AWS
+  services"*, and its `DenyUserAccessFromUnauthorizedVPCs` example is written for *"portal calls to AWS
+  service APIs from outside the allowed Amazon VPC"* — AWS is describing an estate in which **the
+  user's browser resolves and routes through the same VPC as the compute**. Ours does not, by decision:
+  the client plane resolves through `VPC-Networking` and leaves through the institutional proxy (D38),
+  while the compute plane keeps its own endpoints. So **the compute needs only the subset of that list
+  that its own calls use**, and chasing the rest buys nothing — every name in the page's *public
+  internet* tables is the browser's, which the page states three times (*"These endpoints are used by
+  the Amazon SageMaker Unified Studio portal"*, and once *"...by the AWS console"*).
+- **A space started while the endpoint set is down does not fail — it hangs** (measured 2026-09-07, 6c
+  step 6.2). JupyterLab loads, the terminal works, the banner *"IDE configuration in progress"* never
   clears and a kernel never returns: the app's DataZone and SageMaker calls have **no path at all** under
   design B — no default route, no endpoint — so they get silence rather than an error (Lesson 42).
   `make up ENV=sandbox` and a stop/start of the space cleared it. The discriminator from the space's own
   terminal: `getent hosts sts.us-west-2.amazonaws.com` → `10.20.x.x` and
   `curl https://sts.us-west-2.amazonaws.com/` → `302` with the endpoints up; public addresses and a
-  timeout without. The terminal working is what makes it look like a Studio fault rather than a network one.
+  timeout without. The working terminal is what makes it look like a Studio fault, not a network one.
 - One required entry cannot be satisfied in-Region: the `q` row pairs with
   `com.amazonaws.us-east-1.codewhisperer`, *available only in `us-east-1`* — a `us-west-2` VPC
   cannot reach it through an interface endpoint at all (Stage 6 step 4.2 records what that breaks).
-- **The page's OPTIONAL table is not optional once a blueprint is enabled**, and this is the half that
-  design A hid. It is introduced with *"Create these Amazon VPC endpoints if you plan to deploy Amazon
-  SageMaker Unified Studio projects that include blueprints using the services listed below"* — so it is
-  keyed to the **enabled blueprint list**, not to taste. This estate's category 1 contains the six
-  `AmazonBedrock*` blueprints and `EmrServerless`, whose rows are `bedrock-agent`, `bedrock-agent-runtime`,
-  `bedrock-runtime` and the `emr-serverless`/`elasticmapreduce` family. With a NAT their absence was
-  invisible; with **no default route** a project using either blueprint fails on first use. **The rule to
-  carry: the enabled-blueprint list and the endpoint list are one decision** — enabling a blueprint has an
-  hourly price that is not the blueprint's own (Stage 6c step 5).
+- **The page's optional table is not optional once a blueprint is enabled.** It is introduced with
+  *"Create these Amazon VPC endpoints if you plan to deploy Amazon SageMaker Unified Studio projects
+  that include blueprints using the services listed below"* — so it is keyed to the **enabled blueprint
+  list**, not to taste. This estate's category 1 contains the six `AmazonBedrock*` blueprints and
+  `EmrServerless`, whose rows are `bedrock-agent`, `bedrock-agent-runtime`, `bedrock-runtime` and the
+  `emr-serverless`/`elasticmapreduce` family. With a NAT their absence was invisible; with **no default
+  route** a project using either blueprint fails on first use. **The enabled-blueprint list and the
+  endpoint list are one decision** — enabling a blueprint has an hourly price that is not the
+  blueprint's own (Stage 6c step 5).
 - **`sagemaker.runtime` carries an AZ affinity the rest of the list does not** (SageMaker AI developer
   guide, read 2026-09-05): *"you must ensure that the VPC interface endpoint is activated in the
   Availability Zone of your client in order for private DNS resolution to work. Otherwise, you may see DNS
   failures when attempting to resolve the URL."* This collides with D9's single-AZ rule for metered
   resources whenever an app lands in the other AZ, and it fails as a **resolution error**, not as the
   cross-AZ data charge D9 weighed. Stage 6c step 5 carries the three ways out and the recommendation.
-- **The `s3` entry in that list is the one to verify rather than provision on faith, and Stage 5 pass
-  4d is why.** Each account already carries a `[P]` **gateway** endpoint for S3, whose prefix-list
-  route is more specific than any default — so where that route is on an app subnet's route table,
-  S3 traffic takes the **gateway**, and the request arrives carrying the **gateway's**
-  `aws:SourceVpce`, not the interface endpoint's. Stage 5 measured exactly this on the VPN home and
-  it cost a working control: a network condition written for one endpoint id silently failed to
-  match traffic that took the other (Lesson 33). **What Stage 6 step 4.2 owes, therefore, is a
-  measurement and not an assumption** — for each project subnet, which S3 route wins, and which
-  endpoint id the resulting call presents in CloudTrail. Every `aws:SourceVpce` list the SMUS
-  projects must satisfy (the lake's `trusted_vpce_ids`, the derived buckets') is written against
-  that answer, and the failure mode if it is guessed is the 4d one: an `AccessDenied` on a path
-  everybody believes is allowed.
+- **The `s3` entry in that list is verified, not provisioned on faith** (Stage 5 pass 4d). Each account
+  already carries a `[P]` **gateway** endpoint for S3, whose prefix-list route is more specific than
+  any default — so where that route is on an app subnet's route table, S3 traffic takes the
+  **gateway**, and the request arrives carrying the **gateway's** `aws:SourceVpce`, not the interface
+  endpoint's. Stage 5 measured this on the VPN home and it cost a working control: a network condition
+  written for one endpoint id silently failed to match traffic that took the other (Lesson 33). **Stage
+  6 step 4.2 owes a measurement** — for each project subnet, which S3 route wins, and which endpoint id
+  the resulting call presents in CloudTrail. Every `aws:SourceVpce` list the SMUS projects must satisfy
+  (the lake's `trusted_vpce_ids`, the derived buckets') is written against that answer, and the failure
+  mode if it is guessed is the 4d one: an `AccessDenied` on a path everybody believes is allowed.
 
-**How it is enforced, not just chosen:** `VpcOnly` is already the blueprint **default** (read
-2026-08-16). Stage 6 step 1.5 sets `sagemakerDomainNetworkType = VpcOnly` in both project profiles
-and marks the parameter **non-Editable** — the *Editable* flag is what turns a default into a
-control (Lesson 5): the parameter exists so nobody can flip a project to `PublicInternetOnly`.
+**How it is enforced:** `VpcOnly` is already the blueprint **default** (read 2026-08-16). Stage 6
+step 1.5 sets `sagemakerDomainNetworkType = VpcOnly` in both project profiles and marks the parameter
+**non-Editable** — the *Editable* flag is what turns a default into a control (Lesson 5): the
+parameter exists so nobody can flip a project to `PublicInternetOnly`.
 
 ### Custom images (BYOI) — and how they are named
 
@@ -758,12 +722,11 @@ verification (vi) is where the working mechanism gets recorded).
 **What such an image must satisfy** — the `public.ecr.aws/sagemaker/sagemaker-distribution` ancestor at
 ≥ `2.6-cpu`, **no `ENTRYPOINT`**, AWS's three owned paths, the EBS mount at `/home/sagemaker-user`, the
 activity-monitor extension idle shutdown reads — is [`images/README.md`](../images/README.md)'s and
-Stage 6 step 5.0's, and is deliberately **not repeated here**. What this section owns is the
-**naming**, because naming is the part that outlives the hand build: Stage 8 step 1's pipeline inherits
-whatever convention the first push wrote, and both repositories are **tag-immutable**, so a tag is
-spent the first time it lands.
+Stage 6 step 5.0's, and is not repeated here. This section owns the **naming**: Stage 8 step 1's
+pipeline inherits whatever convention the first push wrote, and both repositories are
+**tag-immutable**, so a tag is spent the first time it lands.
 
-#### The repository is the name — the tag is everything else
+#### The image reference
 
 ```
 <account-id>.dkr.ecr.us-west-2.amazonaws.com/awsds-prod-ecr-dev-env:default-v0.1.0
@@ -771,7 +734,7 @@ spent the first time it lands.
 ```
 
 **Both repositories live in the Production account, and the `prod` in their names is where the
-*registry* is, not who the image serves** — `terraform-live/production/registry/ecr.tf` builds them as
+*registry* is, not who the image serves.** `terraform-live/production/registry/ecr.tf` builds them as
 `awsds-${var.env}-ecr-*` with `env = prod`, and Sandbox and Staging reach them by
 `AllowConsumerAccountsToPull`. Reading the pair as "one for production, one for development" inverts
 D17: there is **one** ancestor for every environment, and what gets promoted is the code, never a
@@ -785,70 +748,66 @@ per-environment image.
 So the repository already answers *what the image is*. Putting that word back inside the tag —
 `awsds-prod-ecr-dev-env:dev-env-…` — spends it twice in every pipeline line that ever references it.
 
-#### The rule
+#### The tag rule
 
 **`<flavour>-v<major>.<minor>.<patch>`, and the same number in both repositories.**
 
-The **flavour** is the axis this estate will actually branch on, decided by the user on 2026-08-22
-while choosing the first tag: a project wanting **GPUs**, one wanting **Spark** libraries, and one
-wanting neither are three different runtimes, and the plain one is named `default` rather than left
-implicit. **The flavour axis reaches `base` too, and that is the half that is easy to miss** — a GPU
-`dev-env` descends from `sagemaker-distribution:<version>-gpu`, a different digest and therefore a
-different ancestor, so the branch happens at `base` first. If only `dev-env` carried the flavour, the
-day a GPU base arrives `base:v0.1.0` silently starts meaning *the CPU one*.
+The **flavour** is the axis this estate branches on, decided by the user on 2026-08-22 while choosing
+the first tag: a project wanting **GPUs**, one wanting **Spark** libraries, and one wanting neither
+are three different runtimes, and the plain one is named `default` rather than left implicit. **The
+flavour axis reaches `base` too** — a GPU `dev-env` descends from
+`sagemaker-distribution:<version>-gpu`, a different digest and therefore a different ancestor, so the
+branch happens at `base` first. If only `dev-env` carried the flavour, the day a GPU base arrives
+`base:v0.1.0` silently starts meaning *the CPU one*.
 
 **Why flavour first and version second**, when the ancestor itself writes `4.3.0-cpu` the other way
-round: the lifecycle policy is what will select a subset of these tags, and *"keep the last N GPU
-images"* is a rule worth having separately from the CPU ones, because a GPU image costs several times
-the storage.
+round: the lifecycle policy is what selects a subset of these tags, and *"keep the last N GPU images"*
+is a rule worth having separately from the CPU ones, because a GPU image costs several times the
+storage.
 
-**And the policy already exists, which sharpens the argument rather than making it hypothetical**
-(corrected 2026-08-22, after `./aws/supplychain.py` reported `LIFECYCLE: yes` against a sentence here
-that had assumed otherwise — the first draft grepped the live slice and not the module that builds it).
-`terraform-modules/ecr-repo` gives every repository two rules, applied and read back: **untagged
-expire after 14 days**, and **tagged images are kept to the most recent 30** — selected with
-`tagPatternList = ["*"]`, so **rule 2 counts every flavour together**. That is exactly the collision:
-the day a second flavour exists, a burst of `default-` pushes evicts `gpu-` images that nothing else
-would have touched, and the fix is to split rule 2 per flavour. The flavour segment is what makes that
-split expressible at all.
+**The policy already exists.** `terraform-modules/ecr-repo` gives every repository two rules, applied
+and read back (`./aws/supplychain.py` reports `LIFECYCLE: yes`): **untagged expire after 14 days**, and
+**tagged images are kept to the most recent 30** — selected with `tagPatternList = ["*"]`, so **rule 2
+counts every flavour together**. That is the collision: the day a second flavour exists, a burst of
+`default-` pushes evicts `gpu-` images that nothing else would have touched, and the fix is to split
+rule 2 per flavour. The flavour segment is what makes that split expressible.
 
-**What flavour-first buys, stated at its real size** (read 2026-08-22): ECR's simpler selector,
-`tagPrefixList`, matches a **prefix** only, so flavour-first is selectable with it and groups the
-flavours in any listing — but `tagPatternList` takes up to four `*` wildcards per string, would match
-`*-gpu` just as well, and is both AWS's stated best practice and what this module already uses. So the
-ordering is **readability and convenience, not capability**. Two things to know before amending that
-rule either way: the two selectors are **mutually exclusive** within a rule, and *"if you specify
-multiple tags, only the images with all specified tags are selected"* — an **AND** where a list reads
-like an OR.
+**What flavour-first buys** (read 2026-08-22): ECR's simpler selector, `tagPrefixList`, matches a
+**prefix** only, so flavour-first is selectable with it and groups the flavours in any listing — but
+`tagPatternList` takes up to four `*` wildcards per string, would match `*-gpu` just as well, and is
+both AWS's stated best practice and what this module already uses. So the ordering is **readability and
+convenience, not capability**. Before amending that rule either way: the two selectors are **mutually
+exclusive** within a rule, and *"if you specify multiple tags, only the images with all specified tags
+are selected"* — an **AND** where a list reads like an OR.
 
 **Why one number across both repositories.** `dev-env` is `FROM base`, so a change to `base` rebuilds
 `dev-env` from its first layer — Julia, R and Rust download again. The two therefore never move alone,
 and a shared number says so; **Stage 7 step 2.6**, which fills the CA-install layer with the internal
 PKI root, is the first scheduled bump and takes both to `default-v0.2.0`.
 
-**When a flavour graduates from a tag to its own repository.** The trigger is not size or taste, it is
-reaching for a knob that exists **per repository and not per tag**: a different set of accounts allowed
-to pull (the repository policy), a different retention (the lifecycle policy), a different scan
-configuration, or a different KMS key. Until one of those differs, a flavour is a tag — reversible, and
-one `module "ecr_…"` block cheaper.
+**When a flavour graduates from a tag to its own repository.** The trigger is reaching for a knob that
+exists **per repository and not per tag**: a different set of accounts allowed to pull (the repository
+policy), a different retention (the lifecycle policy), a different scan configuration, or a different
+KMS key. Until one of those differs, a flavour is a tag — reversible, and one `module "ecr_…"` block
+cheaper.
 
-**And the tag is not the identity — the digest is.** A tag is a movable pointer everywhere except here,
+**The tag is not the identity — the digest is.** A tag is a movable pointer everywhere except here,
 where `IMMUTABLE` freezes it on first landing; what Stage 6 step 5.1 registers as an image version and
 what Stage 7 step 2.6 must be able to say it replaced is the **digest**, which is why both are recorded
 in the stage log at push time. The image cannot be asked either: `dev-env`'s own
 `/opt/awsds-runtimes.txt` records the **build-time** reference (`awsds/base:local`), not the ECR tag it
 was later given.
 
-**First applied 2026-08-22, Stage 6 step 5.0:** `default-v0.1.0` in both repositories.
-**Second, 2026-09-08, Stage 6d step 9.5:** `default-v0.1.1` in both — the same recipe rebuilt to exercise
-the `open` build plane, so the bump is a **patch**. Digests: `base` `sha256:a4b763a3…1ea6`, `dev-env`
+**Applied 2026-08-22, Stage 6 step 5.0:** `default-v0.1.0` in both repositories.
+**2026-09-08, Stage 6d step 9.5:** `default-v0.1.1` in both — the same recipe rebuilt to exercise the
+`open` build plane, so the bump is a **patch**. Digests: `base` `sha256:a4b763a3…1ea6`, `dev-env`
 `sha256:6916fc13…6d13`.
 
-#### How it survives the hand-off to the pipeline
+#### The hand-off to the pipeline
 
-The convention was written by a hand build, and **Stage 8 step 1 is where a pipeline takes it over** —
-so it is propagated rather than merely inherited, and it changes shape once on the way (all three rows
-settled 2026-08-22, with the stage files carrying the same words):
+The convention was written by a hand build; **Stage 8 step 1 is where a pipeline takes it over**, and
+it changes shape once on the way (all three rows settled 2026-08-22, the stage files carrying the same
+words):
 
 | Who builds | Tag | Why the difference |
 |---|---|---|
@@ -856,9 +815,9 @@ settled 2026-08-22, with the stage files carrying the same words):
 | the **pipeline**, Stage 8 step 1.1 | `<flavour>-v<semver>-<short-sha>` | two runs of one release tag must not collide where a tag is spent on first landing — and the suffix's absence is what identifies the two hand-built images forever |
 | **application** images (`app-etl` and successors), Stage 8 step 2 | `v<semver>-<short-sha>` — **no flavour** | the flavour axis is about *runtimes* branching (GPU, Spark, plain); an application does not branch that way, and a mandatory `default-` would be a word that never varies |
 
-**One consequence is not cosmetic and is easy to miss**: GitLab's protected-tag pattern for `dev-env/`
-was `v*`, which **does not match `default-v0.2.0`**. Since a Community Edition release gate *is* the
-protected tag (who may create it), leaving the pattern alone would quietly unprotect every release of
-this repository while the settings page still reads as protected. Stage 8 step 1.0 now specifies `*-v*`
-and says to verify it by attempting a tag creation as a Developer — the application repositories keep
-`v*`, correctly, because their tags have no flavour segment.
+One consequence reaches GitLab: the protected-tag pattern for `dev-env/` was `v*`, which **does not
+match `default-v0.2.0`**. Since a Community Edition release gate *is* the protected tag (who may create
+it), leaving the pattern alone would quietly unprotect every release of this repository while the
+settings page still reads as protected. Stage 8 step 1.0 specifies `*-v*` and says to verify it by
+attempting a tag creation as a Developer — the application repositories keep `v*`, because their tags
+have no flavour segment.
