@@ -1,13 +1,12 @@
-# Inputs. The first six arrive from the generated, untracked terraform.auto.tfvars
-# (./scripts/gen-tfvars.py sandbox probes) - region and env for Stage 2's standing reasons,
-# zone_ids because the AZ choice lives in scripts/tfhygiene/backend.py (D9), account_folder
-# because the remote-state key is keyed by the account FOLDER, and peer_cidrs because an
-# address range written in a .tf file is a copy of the allocation table that nothing keeps in
-# step (Lesson 14).
+# Inputs, most of them from the generated, untracked terraform.auto.tfvars
+# (./scripts/gen-tfvars.py sandbox probes): region and env for Stage 2's standing reasons, zone_ids
+# because the AZ choice lives in scripts/tfhygiene/backend.py (D9), account_folder because the
+# remote-state key is keyed by the account folder, and peer_cidrs because an address range written
+# in a .tf file is a copy of the allocation table that nothing keeps in step (Lesson 14).
 #
-# WHAT IS DELIBERATELY NOT AN INPUT: the target's addresses. This slice reaches Production by
-# NAME, in a private zone pass 2 associated with this VPC - so no id crosses the account
-# boundary, nothing is pasted, and the two slices can be applied in either sitting.
+# The target's addresses are not an input. This slice reaches Production by name, in a private zone
+# pass 2 associated with this VPC, so no id crosses the account boundary, nothing is pasted, and the
+# two slices can be applied in either sitting.
 
 variable "region" {
   description = "AWS region for this slice. No default: see the note above."

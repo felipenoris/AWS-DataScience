@@ -1,8 +1,8 @@
-# Inputs. The first six arrive from the generated, untracked terraform.auto.tfvars
-# (./scripts/gen-tfvars.py sandbox foundation) - region and env for Stage 2's standing
-# reasons, vpc_cidr and zone_ids because the address allocation lives in
-# scripts/tfhygiene/backend.py (Stage 3 decision 1) and may be a literal in no .tf file,
-# and peers because the profile names live in the same module's PROFILES table (pass 2).
+# Inputs, most of them from the generated, untracked terraform.auto.tfvars
+# (./scripts/gen-tfvars.py sandbox foundation): region and env for Stage 2's standing reasons,
+# vpc_cidr and zone_ids because the address allocation lives in scripts/tfhygiene/backend.py
+# (Stage 3 decision 1) and may be a literal in no .tf file, and peers because the profile names
+# live in the same module's PROFILES table (pass 2).
 
 variable "region" {
   description = "AWS region for this slice. No default: see the note above."
@@ -63,8 +63,8 @@ variable "cost_center" {
   default     = "stage-03"
 }
 
-# GENERATED INTO THE TFVARS, NEVER TYPED (Lesson 14): the same name must resolve in every account
-# DataScientistAccess reaches, and identity/sso/ references it from a third place. The one copy is
+# Generated into the tfvars, never typed (Lesson 14): the same name must resolve in every account
+# DataScientistAccess reaches, and identity/sso/ references it from a third place. It lives in
 # scripts/tfhygiene/backend.py's PERSONA_VENDING_POLICY_NAME, which carries the argument for the
 # `org` token in a name that lives in a per-account object. See persona-vending.tf.
 variable "persona_vending_policy_name" {
@@ -83,11 +83,11 @@ variable "name_suffix" {
   nullable    = false
 }
 
-# Stage 6c steps 0.6 / 3.1 - every peering this slice is an end of, generated from ONE list in
+# Stage 6c steps 0.6 / 3.1 - every peering this slice is an end of, generated from one list in
 # scripts/tfhygiene/backend.py so a requester and an accepter can never disagree about which
 # peerings exist. A slice can hold both roles: production/foundation requests one and accepts
-# another. `same_account` decides the SHAPE - within an account a single resource with
-# auto_accept is the whole handshake; across one it is a requester, an accepter and two applies.
+# another. `same_account` decides the shape - within an account a single resource with auto_accept
+# is the whole handshake; across one it is a requester, an accepter and two applies.
 variable "peerings" {
   description = "The peering matrix, projected onto this slice. Generated - never authored here."
   type = list(object({
