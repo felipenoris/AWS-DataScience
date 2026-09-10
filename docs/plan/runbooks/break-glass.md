@@ -5,63 +5,59 @@
 | **Credential** | The **Management account root user**, and nothing else ([D16](../decisions/D16-break-glass.md)) |
 | **Built by** | [Stage 1a](../stages/stage-01a-landing-zone.md) steps 1 and 5 |
 | **Detects use** | CloudWatch alarm **`AWS Break Glass Alert`** → SNS `awsds-org-break-glass-alerts` (e-mail + SMS) |
-| **Last tested** | **2026-08-14** — **unplanned, and it counts**: two root sign-ins to activate *IAM user and role access to Billing* (Stage 1d step 10) notified on **both** channels, and `AccountAccessKeysPresent` read `0` the same day, so §6 steps 3 and 4 were both exercised end to end. The last *deliberate* test is **2026-08-09** — root sign-in, no actions, delivered on both channels ([log](../../log/log-stage-01a-landing-zone.md)) |
+| **Last tested** | **2026-08-14**, unplanned and counted: two root sign-ins to activate *IAM user and role access to Billing* (Stage 1d step 10) notified on **both** channels, and `AccountAccessKeysPresent` read `0` the same day, so §6 steps 3 and 4 were both exercised end to end. The last *deliberate* test is **2026-08-09** — root sign-in, no actions, delivered on both channels ([log](../../log/log-stage-01a-landing-zone.md)) |
 
 ---
 
 ## 0. What this is
 
-**The credential was never built, and that is the point.** "No IAM Users" (principle 2) has no answer for an
-Identity Center outage or a misapplied SCP, and an absolute rule with no escape hatch is one that gets broken
-improvised, under pressure, at the worst moment. D16 settled the escape hatch as the **Management account
-root**, which removes the exception instead of documenting one: the root is not an IAM user, it exists
-whether or not you want it, there is nothing to create and nothing for Terraform to manage. So Stage 1a step
-1 (secure the root) and step 5 (build the break-glass) are two halves of one thing, and what step 5 adds is
-not a credential — it is what makes that credential a *break-glass* rather than just an account owner: this
-written procedure, an alarm on its use, and one test.
+**The credential was never built.** "No IAM Users" (principle 2) has no answer for an Identity Center
+outage or a misapplied SCP, and an absolute rule with no escape hatch gets broken improvised, under
+pressure. D16 settled the escape hatch as the **Management account root**, which removes the exception
+instead of documenting one: the root is not an IAM user, it exists whether or not you want it, there is
+nothing to create and nothing for Terraform to manage. Stage 1a step 1 (secure the root) and step 5 (build
+the break-glass) are two halves of one thing; step 5 adds no credential, only what makes that credential a
+*break-glass* — this written procedure, an alarm on its use, and one test.
 
-**It is the only recovery path, and that is a decision rather than an omission.** A second, narrower
-principal — standing, exempt from every custom `Deny` — was proposed, adopted and then reverted
-([D30](../decisions/D30-scp-recovery.md)). The lab keeps no exemption, so this root carries all three
-failures in §1 alone, and no principal inside a governed account can work around a bad `Deny`. Two
-consequences, both already written into the plan: the chain in §7 must work **before** the first policy is
-attached in Stage 1c step 7, and every candidate policy is exercised against the `Policy Canary`
-([D29](../decisions/D29-policy-canary.md)) first — with no exemption, catching a bad policy before
-attachment is far cheaper than repairing it afterwards.
+**It is the only recovery path, by decision.** A second, narrower principal — standing, exempt from every
+custom `Deny` — was proposed, adopted and then reverted ([D30](../decisions/D30-scp-recovery.md)). The lab
+keeps no exemption, so this root carries the three failures in §1 alone, and no principal inside a governed
+account can work around a bad `Deny`. Two consequences: the chain in §7 must work **before** the first
+policy is attached in Stage 1c step 7, and every candidate policy is exercised against the `Policy Canary`
+([D29](../decisions/D29-policy-canary.md)) first.
 
-**Which is also why it is built in Stage 1a and not later.** Every policy Stage 1c attaches is a way to lock
-yourself out of your own organization. The escape hatch has to predate the hazard, or it is being built by
-someone who already needs it.
+**It is built in Stage 1a, not later**, because every policy Stage 1c attaches is a way to lock yourself
+out of your own organization: the escape hatch has to predate the hazard.
 
 **An intention is not a control** (Lesson 5): the alarm needs a *delivery path* that can be named. A
 CloudWatch alarm cannot watch an S3 bucket, and the Control Tower organization trail delivers to the Log
-Archive account's bucket — so "alarm on root usage" is not a setting, it is the explicit chain in §7: trail
-→ CloudWatch Logs group → metric filter → metric → alarm → SNS topic → subscriptions. Each link is a place
-it can silently fail, which is why §6 exists.
+Archive account's bucket, so "alarm on root usage" is not a setting but the explicit chain in §7: trail
+→ CloudWatch Logs group → metric filter → metric → alarm → SNS topic → subscriptions. Each link can
+silently fail, which is why §6 exists.
 
 **The subscription must not be the address that logs in.** Root sign-in *is* e-mail plus password, so
 alarming to the login address hands one person the credential and its own warning. Since
 [D33](../decisions/D33-control-tower-admin-user.md) that address is disqualified twice over: it is also the
-`AWS Control Tower Admin` login, i.e. a *routine* daily login, which would make every alarm ambiguous.
-**But be honest about how much that rule buys here.** In an institution the alarm reaches someone who is not
-holding the credential. In this lab every address is a `+alias` on one Gmail account and there is one human,
-so a distinct address buys **routing and filterability — not separation**: the same mailbox compromise
-defeats both. What adds a genuine second factor is a **second channel**, which is why the SMS endpoint in §7
-is not optional decoration — it is the only part of the separation that survives the one-inbox problem.
+`AWS Control Tower Admin` login, a *routine* daily login, which would make every alarm ambiguous. **What
+that rule buys here is limited.** In an institution the alarm reaches someone who is not holding the
+credential; in this lab every address is a `+alias` on one Gmail account and there is one human, so a
+distinct address buys **routing and filterability, not separation** — the same mailbox compromise defeats
+both. The **second channel** is the genuine second factor, which is why the SMS endpoint in §7 is the only
+part of the separation that survives the one-inbox problem.
 
 **Two SNS topics already exist and neither is this one.** Control Tower created
 `aws-controltower-SecurityNotifications` per Region and `aws-controltower-AggregateSecurityNotifications` in
 the Audit account, and subscribed the Audit account's e-mail to the aggregate topic automatically. They are
 deliberately noisy — AWS Config notifies on every resource it discovers — and an alarm that arrives in a
-stream nobody reads is not an alarm. Note that the Audit account's *root* address being a notification
-endpoint has the same shape as the rule above, one account over; Stage 1a step 6 defuses it by removing that
-account's root credentials centrally, after which the address is a mailbox rather than a credential.
+stream nobody reads is not an alarm. The Audit account's *root* address being a notification endpoint has
+the same shape as the rule above, one account over; Stage 1a step 6 defuses it by removing that account's
+root credentials centrally, after which the address is a mailbox rather than a credential.
 
 ---
 
 ## 1. When using it is justified
 
-Only these three failures. They are the whole list, because they are the only ones no other identity can fix:
+Only these failures — the whole list, because they are the only ones no other identity can fix:
 
 1. **IAM Identity Center is unavailable** — the access portal does not authenticate, so no human has a role
    to assume anywhere in the organization.
@@ -87,8 +83,8 @@ If any of these is the reason you are reaching for root, stop — the answer is 
   S3 bucket policy or an SQS queue policy that denies everyone. Since Stage 1a step 6 that is a **privileged
   root session** taken from the Management account by `AWS Control Tower Admin`, scoped to one of five task
   policies and capped at 15 minutes. It fires this alarm (§7) and it is *not* this runbook.
-- **"It is faster."** It is, and that is exactly the habit this runbook exists to prevent: a credential used
-  routinely stops being detectable, because its alarm stops meaning anything.
+- **"It is faster."** It is, and that is the habit this runbook prevents: a credential used routinely stops
+  being detectable, because its alarm stops meaning anything.
 
 ## 3. Before you sign in
 
@@ -145,25 +141,23 @@ trail, the log group, the metric filter, the alarm or the subscriptions.
    (CloudTrail → CloudWatch Logs → metric → alarm → SNS).
 3. Expect: the alarm goes to `In alarm`, and a message arrives on **both** subscriptions.
 4. **While signed in, check that the root still has no access key** — *Security credentials* → *Access
-   keys*, which must be empty. **Added 2026-08-14 by Stage 1d decision 8**, which declined the AWS Config
-   rule D16 named (`iam-root-access-key-check`) because Management carries no configuration recorder and
-   building one meant five hand-made resources there. This read is what replaces it, and it is deliberately
-   hung on this procedure rather than left to memory: the alarm above sees the *act* of creating a key, this
-   sees the *state*, and the tester is already signed in as the only principal that can look. It is
-   read-only and does not disturb the test — the alarm has already been triggered by the sign-in itself.
-   The equivalent from CloudShell as `AWS Control Tower Admin` on Management, if the check is ever wanted
-   outside a test, is `aws iam get-account-summary --query 'SummaryMap.AccountAccessKeysPresent'`, where
-   `0` is the expected answer. **A non-empty list is an incident, not a finding**: that key is permanent,
-   unscoped and beyond every SCP in the organization.
+   keys*, which must be empty. **Stage 1d decision 8 (2026-08-14)** declined the AWS Config rule D16 named
+   (`iam-root-access-key-check`) because Management carries no configuration recorder and building one
+   meant five hand-made resources there; this read replaces it, hung on this procedure rather than left to
+   memory. The alarm above sees the *act* of creating a key, this sees the *state*, and the tester is
+   already signed in as the only principal that can look. It is read-only and does not disturb the test —
+   the sign-in itself has already triggered the alarm. The equivalent from CloudShell as `AWS Control Tower
+   Admin` on Management is `aws iam get-account-summary --query 'SummaryMap.AccountAccessKeysPresent'`,
+   where `0` is the expected answer. **A non-empty list is an incident, not a finding**: that key is
+   permanent, unscoped and beyond every SCP in the organization.
 5. Update the **Last tested** row at the top of this file.
 
-### 6.1 Attributing an alarm to an event — read this before concluding anything from one
+### 6.1 Attributing an alarm to an event
 
-**The notification's arrival time is not the event's time**, and that gap is the whole of it: the metric
-filter stamps its datapoint with the CloudTrail `eventTime`, but the alarm can only evaluate once the record
-has travelled trail → S3 → CloudWatch Logs, which is minutes. So an alarm that lands *while you are doing
-something else* is usually reporting what you did **before** that. Two consequences that decide what you are
-looking at:
+**The notification's arrival time is not the event's time.** The metric filter stamps its datapoint with the
+CloudTrail `eventTime`, but the alarm can only evaluate once the record has travelled trail → S3 →
+CloudWatch Logs, which is minutes. So an alarm that lands *while you are doing something else* is usually
+reporting what you did **before** that. Consequences that decide what you are looking at:
 
 - **Since Stage 1a step 6, the ordinary cause of this alarm is a privileged root session, not a sign-in.**
   `sts:AssumeRoot` returns credentials that *are* the member account's root, so `DeleteLoginProfile`,
@@ -195,9 +189,9 @@ aws logs filter-log-events --log-group-name 'aws-controltower/CloudTrailLogs-gcs
 ```
 
 The second runs the *same pattern the filter runs*, so what it returns is exactly what produced the metric —
-`eventName`, `eventTime`, `sourceIPAddress` and `recipientAccountId` per event. Note the honest limit
-(Lesson 13): an empty result proves only that no root call landed in that window, which is a useful answer
-here only because the alarm firing is already known.
+`eventName`, `eventTime`, `sourceIPAddress` and `recipientAccountId` per event. Its limit (Lesson 13): an
+empty result proves only that no root call landed in that window, which is a useful answer here only
+because the alarm firing is already known.
 
 ## 7. What the alarm is, exactly
 
@@ -231,13 +225,12 @@ Control Tower organization trail  (aws-controltower-BaselineCloudTrail, multi-re
   git-ignored; neither value appears anywhere in this repository.
 ```
 
-**The alarm and the metric filter do not share a name, and Stage 1a asked for one that they would.** The
-plan's step 5.4 named the alarm `awsds-org-root-activity`, matching the filter; it was created as
-**`AWS Break Glass Alert`**. Nothing is wrong — an alarm's name is a label — but every command in §6.1 takes
-the name literally, so the built name is the one recorded here and the plan's is the stale one. If it is ever
-renamed to match, this file and §6.1 change with it.
+**The alarm and the metric filter do not share a name.** Stage 1a step 5.4 named the alarm
+`awsds-org-root-activity`, matching the filter; it was created as **`AWS Break Glass Alert`**. An alarm's
+name is a label, but every command in §6.1 takes it literally, so the built name is the one recorded here.
+If it is ever renamed to match, this file and §6.1 change with it.
 
-Four properties of this chain that are load-bearing:
+Properties of this chain that are load-bearing:
 
 - **It covers the whole organization, not just Management.** The trail is an organization trail, so member
   account events reach the same log group. Root use in *any* account fires this alarm — which matters until
@@ -271,12 +264,12 @@ a few cents per message. The metric is a **custom** metric (USD 0.30/metric-mont
 ## 8. The recovery path of the recovery path
 
 If the **MFA device is lost**, AWS account recovery is what is left, and it depends on the **phone number**
-and **payment method** registered on the Management account. Both must be current — that is part of this
-design, not account hygiene (D16). Check them whenever this runbook is tested.
+and **payment method** registered on the Management account. Both must be current — part of this design,
+not account hygiene (D16). Check them whenever this runbook is tested.
 
 If **only one MFA device is registered**, losing it means that process. Registering a second device on the
-root is the cheap way out and is deliberately left as a choice: D16 does not specify the MFA *type*, and
-nothing in the plan depends on it.
+root is the cheap way out and is left as a choice: D16 does not specify the MFA *type*, and nothing in the
+plan depends on it.
 
 ---
 

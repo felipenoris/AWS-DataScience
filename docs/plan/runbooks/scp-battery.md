@@ -5,9 +5,7 @@ for [Stage 1c step 7.3](../stages/stage-01c-preventive-policies.md), and **re-ru
 amended** — Stage 6 and Stage 9 both come back to the perimeter document, and an amended policy that was
 never exercised is an intention rather than a control (Lesson 5).
 
-A policy that passed both halves is a control. One that was only attached is a hope.
-
-> ## The probes are a script now — [`aws/probes/`](../../../aws/probes/README.md)
+> ## The probe script — [`aws/probes/`](../../../aws/probes/README.md)
 >
 > ```bash
 > ./aws/probes/scp-battery.py              # read-back, then every phase
@@ -15,33 +13,31 @@ A policy that passed both halves is a control. One that was only attached is a h
 > ./aws/probes/scp-battery.py --list       # what would run, and where
 > ```
 >
-> **This file stayed, and the division of labour is the point.** The script executes and classifies; this
-> runbook is *why each probe is shaped the way it is* and what each outcome means — which is the part that
-> cannot be automated and the part a reader needs before trusting a green run. The probe list itself lives
-> in `aws/probes/probes.py`, so **amending the ceiling means editing that file**, and the tables below are what
-> tell you what to write in it.
+> The script executes and classifies; this runbook holds why each probe is shaped the way it is and what
+> each outcome means. The probe list lives in `aws/probes/probes.py`, so **amending the ceiling means
+> editing that file**, and the tables below say what to write in it.
 >
-> Three things the script encodes because the hand-run version kept getting them wrong: a dead SSO session
-> **aborts** instead of being recorded as a battery of denies; the outcome is read from the error *wording*
-> and never from the exit code; and each probe declares the wording that proves *that action* reached
-> authorization, so anything else is reported `UNTESTED` rather than assumed allowed. **What the script does
-> not do is attach anything** — policy changes stay a deliberate act by a human on the Management console.
+> Three things the script encodes: a dead SSO session **aborts** instead of being recorded as a battery of
+> denies; the outcome is read from the error *wording* and never from the exit code; and each probe declares
+> the wording that proves *that action* reached authorization, so anything else is reported `UNTESTED`
+> rather than assumed allowed. **The script attaches nothing** — policy changes stay a deliberate act by a
+> human on the Management console.
 
-## The two identities, and why each one is the one it is
+## The identities the battery runs as
 
 | Role in the battery | Identity | Why not the other one |
 |---|---|---|
 | The **subject** — the principal every probe runs as | `awsds-policy-canary`, which is Control Tower's `AWSAdministratorAccess` as a **direct** assignment (D32) | An SCP is a *ceiling*. A deny exercised by a principal that lacked the permission anyway proves nothing, so the subject has to be an administrator |
-| The **attacher** — `create-policy`, `attach-policy`, `detach-policy` | **`AWS Control Tower Admin` on Management**, console or CloudShell | Management is exempt from SCPs by AWS's design (D16). It is the whole recovery path, which is why it is open *before* the first attach and not after |
-| One probe only — the decision-7 carve-out, positive direction | `awsds-infra-staging` (`InfrastructureAccess`; it was `awsds-infra-dev` until Stage 6b renamed the account) | That probe asks whether the carve-out matches. The canary's principal is deliberately *outside* it |
+| The **attacher** — `create-policy`, `attach-policy`, `detach-policy` | **`AWS Control Tower Admin` on Management**, console or CloudShell | Management is exempt from SCPs by AWS's design (D16), and is the recovery path — so it is opened *before* the first attach |
+| One probe only — the decision-7 carve-out, positive direction | `awsds-infra-staging` (`InfrastructureAccess`; `awsds-infra-dev` until Stage 6b renamed the account) | That probe asks whether the carve-out matches. The canary's principal sits *outside* it |
 
 `Policy Canary` is alone in the `Policy Test` OU, so a candidate attached to that OU reaches exactly one
 account. **A document attached to the organization root reaches the canary too**, because `Policy Test`
-hangs off the root like every other OU — which is what makes the root set testable here at all.
+hangs off the root like every other OU, so the root set is testable here.
 
 ## Before the first attach
 
-1. Management console open, signed in as `AWS Control Tower Admin`. **A precondition, not a precaution.**
+1. Management console open, signed in as `AWS Control Tower Admin`.
 2. The detach command written down with the id blank, and the id filled in **as each policy is attached**:
 
    ```bash
@@ -66,27 +62,26 @@ are indistinguishable at the CLI. The discriminating string is in the error body
 | no explicit-deny clause at all | an implicit deny: nothing granted it. Same note — wrong thing measured |
 | *"`ForbiddenException` … `GetRoleCredentials`: No access"*, on **every profile at once** | **not a probe result — the sign-in path itself is denied.** Indistinguishable from an expired token at the exit code, which is why the battery reads the wording: it prints `FAIL … NO-CREDENTIALS` per account, marks every probe behind it untested, and keeps going. The tell that it is the ceiling and not the token: **Management still answers and the member accounts do not**, because RCPs do not apply to the management account (Lesson 24) |
 
-**A vended credential outlives the attach that should have broken it, and that is how a bad policy passes
-its own probes.** An Identity Center role session is cached in `~/.aws/cli/cache` for **four hours**
-(measured), so a document that denies the *sign-in* changes nothing until the next `GetRoleCredentials` —
-the probes run straight after the attach are answered by a session minted before it existed. Before probing
-anything that could reach STS, sign-in or federation, force a fresh vend:
+**A vended credential outlives the attach that should have broken it.** An Identity Center role session is
+cached in `~/.aws/cli/cache` for **four hours** (measured), so a document that denies the *sign-in* changes
+nothing until the next `GetRoleCredentials`: probes run straight after the attach are answered by a session
+minted before it existed. Before probing anything that could reach STS, sign-in or federation, force a
+fresh vend:
 
 ```bash
 rm -f ~/.aws/cli/cache/*.json && aws sts get-caller-identity --profile awsds-policy-canary
 ```
 
-**The error body also names the policy, and this plan under-sold it until 2026-08-13.** An SCP denial ends
-with `… with an explicit deny in a service control policy: arn:aws:organizations::…/service_control_policy/p-xxxxxxxx`
-— **the policy id, in the CLI response itself**, no CloudTrail and no lag. That is what makes it survivable
-to have several candidates parked on `Policy Test` at once. **Its one limit, and it decides whether a
-document was really exercised:** when more than one attached policy denies the same call, AWS names **one**
-of them, so a document can be attached and never be the deciding one — attached is not exercised. Isolate
-it, or re-probe it after it reaches its own OU, where nothing else denies that action.
+**The error body also names the policy.** An SCP denial ends with `… with an explicit deny in a service
+control policy: arn:aws:organizations::…/service_control_policy/p-xxxxxxxx` — **the policy id, in the CLI
+response itself**, no CloudTrail and no lag, so several candidates can be parked on `Policy Test` at once.
+Its limit decides whether a document was really exercised: when more than one attached policy denies the
+same call, AWS names **one** of them, so a document can be attached and never be the deciding one
+(Lesson 20). Isolate it, or re-probe it after it reaches its own OU, where nothing else denies that action.
 
 **Prefer a probe whose two outcomes are different errors over one whose outcomes are success and failure.**
 `--dry-run`, a non-existent resource id, and a call that needs no resource all give that shape, and none of
-them leaves anything behind in an account whose whole point is to stay empty.
+them leaves anything behind in an account meant to stay empty.
 
 ## Phase 0 — the *must still succeed* half, before anything is attached
 
@@ -149,10 +144,10 @@ aws ecr initiate-layer-upload --repository-name awsds-canary-throwaway --region 
 
 ## Phase 1 — the perimeter, tested by its complement, on `Policy Test` only
 
-**The obvious test cannot be run and its evidence would not exist.** There is no bucket outside this
-organization to write to, and `s3:PutObject` is a CloudTrail *data* event that the Control Tower trail does
-not record — so the record would be missing in success and in failure alike (Lesson 13, in the verification
-rather than in the control). What *can* be wrong is the condition, so the condition is what gets exercised.
+**The obvious test cannot be run.** There is no bucket outside this organization to write to, and
+`s3:PutObject` is a CloudTrail *data* event that the Control Tower trail does not record, so the record
+would be missing in success and in failure alike (Lesson 13). What *can* be wrong is the condition, so the
+condition is what gets exercised.
 
 Attach `canary/awsds-canary-scp-perimeter-inverted.json` — the real statement with one comparison flipped,
 `StringEqualsIfExists` where production has `StringNotEqualsIfExists` — to the **`Policy Test` OU**, never
@@ -187,14 +182,14 @@ aws organizations detach-policy --policy-id <POLICY_ID> --target-id <OU_ID_POLIC
 aws organizations delete-policy --policy-id <POLICY_ID>
 ```
 
-**What this does not prove**, stated so nobody reads more into it: that a write to a genuinely external
-bucket is denied. That rests on the production document being the complement of the tested one — a
-one-character review — and it is the honest limit of a lab with a single organization.
+**What this does not prove:** that a write to a genuinely external bucket is denied. That rests on the
+production document being the complement of the tested one — a one-character review — and it is the limit
+of a lab with a single organization.
 
 ## Phase 2 — `awsds-org-scp-baseline.json` on the organization root
 
-Attach, then run every probe below. One policy at a time: a batch that breaks tells you something in the
-batch is wrong, which is the least useful form of that information.
+Attach, then run every probe below. One policy at a time: a batch that breaks says only that something in
+the batch is wrong.
 
 ```bash
 aws organizations attach-policy --policy-id <POLICY_ID> --target-id <ROOT_ID>
@@ -209,24 +204,24 @@ aws organizations attach-policy --policy-id <POLICY_ID> --target-id <ROOT_ID>
 | 3 | `aws ec2 modify-image-attribute --image-id ami-0000000000000000f --launch-permission "Add=[{UserId=000000000000}]" --region us-west-2 --profile awsds-policy-canary` | same statement, separate action — snapshot controls do not cover EBS-backed AMIs | `AccessDenied` vs `InvalidAMIID.NotFound` |
 | 4 | `aws ecr-public describe-registries --region us-east-1 --profile awsds-policy-canary` | `DenyEcrPublicEntirely` | The deny is `ecr-public:*`, so even this read must fail. A registry list = the deny is not reaching the namespace |
 | 5 | `aws guardduty delete-detector --detector-id 00000000000000000000000000000000 --region us-west-2 --profile awsds-policy-canary` | `DenyGuardDutyTampering` | `AccessDenied` vs `BadRequestException`. **Inert until GuardDuty is turned on (Stage 15 since the 2026-08-18 split)** — this probe is what says the statement is nonetheless live |
-| 6 | `aws datazone create-domain --name awsds-canary-probe --domain-version V2 --domain-execution-role arn:aws:iam::<CANARY_ACCT>:role/awsds-datazone-probe --region us-west-2 --profile awsds-policy-canary` | `DenyDataZoneDomainOutsideDataOu` | `AccessDenied` = denied. **A validation error about the role means the probe never reached authorization — it measures NOTHING, and is not evidence of `allowed`** (the row said the opposite until 2026-08-20, and `POLICIES.md` said *"the probe measures nothing"* about the same outcome all along — Lesson 24: a result that cannot be attributed from its own text is not fixed by a better reading). **So the role must be REAL**: create the throwaway execution role first — trust `datazone.amazonaws.com`, `arn:aws:iam::aws:policy/service-role/AmazonDataZoneDomainExecutionRolePolicy` — per [Stage 6 step 0](../stages/stage-06a-unified-studio.md), and delete it after. If validation still blocks (a V2 domain may also demand `--service-role`), fall back to `--domain-version V1`: **both condition keys of this statement, `aws:PrincipalOrgPaths` and `aws:PrincipalIsAWSService`, are version-independent**, so the authorization decision is identical and only the validation ahead of it is lighter. The canary is **not** in the `Data` OU, so this is the negative direction — and it is only half the measurement: the positive half runs in Data Governance (Stage 6 step 0.1), because a deny that names no policy is attributable only against its contrast. **Run the same day, and the real role does NOT clear validation either (2026-08-20)**: four shapes — throwaway and the conventional `AmazonDataZoneDomainExecutionRole`, trust with and without `aws:SourceAccount`, V2 and V1 — in the canary **and** in Data Governance, one byte-identical `Cross-account pass role is not allowed`. **RUNNABLE SINCE 2026-08-21, AND THE MISSING INGREDIENT WAS THE *SERVICE* ROLE, NOT THE EXECUTION ROLE.** Create **two** throwaway roles in the canary — an execution role and a service role, both trusting `datazone.amazonaws.com` with `aws:SourceAccount`, carrying `service-role/SageMakerStudioDomainExecutionRolePolicy` and `service-role/SageMakerStudioDomainServiceRolePolicy` respectively (the pair the succeeding replay copied; the `AmazonDataZone…` name this row named above was the pre-measurement guess, and Stage 6 step 0.0's table carries it too) — and pass **both**: `aws datazone create-domain --profile awsds-policy-canary --region us-west-2 --name awsds-probe-canary --domain-version V2 --domain-execution-role <exec> --service-role <svc>`. That reaches authorization and returns `AccessDeniedException … not authorized to perform: datazone:CreateDomain … **with an explicit deny in a service control policy**`, naming this document's id. **Delete both roles in the same sitting.** The V1 fallback is retired — it was never the blocker — though both condition keys do remain version-independent, so a V1 probe would have measured the same authorization decision |
+| 6 | `aws datazone create-domain --name awsds-canary-probe --domain-version V2 --domain-execution-role arn:aws:iam::<CANARY_ACCT>:role/awsds-datazone-probe --region us-west-2 --profile awsds-policy-canary` | `DenyDataZoneDomainOutsideDataOu` | `AccessDenied` = denied. **A validation error about the role means the probe never reached authorization: it measures nothing, and is not evidence of `allowed`** (Lesson 24). **The missing ingredient is the *service* role, not the execution role** (measured 2026-08-21): create **two** throwaway roles in the canary per [Stage 6 step 0](../stages/stage-06a-unified-studio.md) — an execution role and a service role, both trusting `datazone.amazonaws.com` with `aws:SourceAccount`, carrying `service-role/SageMakerStudioDomainExecutionRolePolicy` and `service-role/SageMakerStudioDomainServiceRolePolicy` respectively — and pass **both**: `aws datazone create-domain --profile awsds-policy-canary --region us-west-2 --name awsds-probe-canary --domain-version V2 --domain-execution-role <exec> --service-role <svc>`. That reaches authorization and returns `AccessDeniedException … not authorized to perform: datazone:CreateDomain … **with an explicit deny in a service control policy**`, naming this document's id. **Delete both roles in the same sitting.** The canary is **not** in the `Data` OU, so this is the negative direction; the positive half runs in Data Governance (Stage 6 step 0.1), because a deny that names no policy is attributable only against its contrast. **An execution role alone does not clear validation** (measured 2026-08-20): four shapes — throwaway and the conventional `AmazonDataZoneDomainExecutionRole` with `arn:aws:iam::aws:policy/service-role/AmazonDataZoneDomainExecutionRolePolicy`, trust with and without `aws:SourceAccount`, V2 and V1 — in the canary **and** in Data Governance, one byte-identical `Cross-account pass role is not allowed`; Stage 6 step 0.0's table carries that `AmazonDataZone…` name too. The `--domain-version V1` fallback is retired, though both condition keys of this statement, `aws:PrincipalOrgPaths` and `aws:PrincipalIsAWSService`, are version-independent, so a V1 probe measures the same authorization decision |
 | 7 | `aws s3control put-public-access-block --account-id <CANARY_ACCT> --profile awsds-policy-canary --public-access-block-configuration BlockPublicAcls=true,IgnorePublicAcls=true,BlockPublicPolicy=true,RestrictPublicBuckets=true` | `DenyAccountBpaChangeExceptInfrastructure`, **negative direction** | Must fail. If it succeeds it is harmless — the values are the ones already set — but the carve-out is matching a principal it should not |
 
-### Must still succeed — the decision-7 carve-out, and it is the load-bearing probe of this phase
+### Must still succeed — the decision-7 carve-out
 
-**As `awsds-infra-staging` (`awsds-infra-dev` before 6b), not as the canary.** Same call, same values, a principal *inside* the carve-out:
+The load-bearing probe of this phase. **As `awsds-infra-staging` (`awsds-infra-dev` before 6b), not as the
+canary.** Same call, same values, a principal *inside* the carve-out:
 
 ```bash
 aws s3control put-public-access-block --account-id <STAGING_ACCT> --profile awsds-infra-staging --public-access-block-configuration BlockPublicAcls=true,IgnorePublicAcls=true,BlockPublicPolicy=true,RestrictPublicBuckets=true
 ```
 
-**This is the one probe whose failure is silent in the expensive direction.** `aws:PrincipalArn` for an
-assumed role resolves to the **IAM role ARN** — `arn:aws:iam::<acct>:role/aws-reserved/sso.amazonaws.com/<region>/AWSReservedSSO_…`
-— **not** the `arn:aws:sts::<acct>:assumed-role/…` form that `sts:GetCallerIdentity` prints and that 1b's log
-is full of. A carve-out written from that output matches nothing, and a carve-out that matches nothing means
-**every future account is permanently without account-level BPA and no principal anywhere can set it**
-(there is no cross-account API for it). If this probe is denied, detach the baseline document before doing
-anything else.
+This probe's failure is silent in the expensive direction. `aws:PrincipalArn` for an assumed role resolves
+to the **IAM role ARN** — `arn:aws:iam::<acct>:role/aws-reserved/sso.amazonaws.com/<region>/AWSReservedSSO_…`
+— **not** the `arn:aws:sts::<acct>:assumed-role/…` form that `sts:GetCallerIdentity` prints. A carve-out
+written from that output matches nothing, which leaves **every future account permanently without
+account-level BPA and no principal anywhere able to set it** (there is no cross-account API for it). If this
+probe is denied, detach the baseline document before doing anything else.
 
 Then re-run all of phase 0. Denies compose, so a *must still succeed* failure here is real regardless of
 which policy caused it.
@@ -236,8 +231,8 @@ which policy caused it.
 **Do not probe it.** It is the one statement whose "allowed" outcome is the damage: a successful call
 removes `Policy Canary` from the organization, dropping every SCP and every Control Tower control for it,
 and the account comes back only through a re-invitation it has no billing profile to accept. The statement
-is verified by review of the rendered JSON and by the fact that its neighbours in the same document
-evaluate — which is weaker evidence, and is written down as weaker rather than quietly counted as a pass.
+is verified by review of the rendered JSON and by its neighbours in the same document evaluating: weaker
+evidence, recorded as weaker.
 
 ## Phase 3 — `awsds-org-scp-perimeter.json` on the organization root
 
@@ -258,12 +253,12 @@ aws s3 rm "s3://$BUCKET" --recursive --profile awsds-policy-canary && aws s3 rb 
 aws ecr delete-repository --repository-name awsds-canary-throwaway --force --region us-west-2 --profile awsds-policy-canary
 ```
 
-## Phase 4 — the four per-OU documents (step 7.6), one at a time
+## Phase 4 — the per-OU documents (step 7.6), one at a time
 
-**These are the first documents with a second, better place to exercise them**, and using only the canary
-would waste it. A per-OU document is attached to an OU the canary is not in, so the canary can only test it
-while it is parked on `Policy Test` — but each target OU already holds an account with a profile, and a
-probe there measures the document *where it will actually live*, composed with everything above it:
+**These are the first documents with a second, better place to exercise them.** A per-OU document is
+attached to an OU the canary is not in, so the canary can only test it while it is parked on `Policy Test`.
+Each target OU already holds an account with a profile, and a probe there measures the document *where it
+will live*, composed with everything above it:
 
 | Document | Parked on `Policy Test` for | Then attached to | And re-probed as |
 |---|---|---|---|
@@ -272,21 +267,21 @@ probe there measures the document *where it will actually live*, composed with e
 | `awsds-org-scp-ou-interactive` | the deny half | `Interactive` | `awsds-infra-sandbox-1` — the nested-OU reading (`Sandboxes` under `Interactive`); the direct-child reading lost its principal when `Development` left the OU at 6b |
 | `awsds-org-scp-ou-identity` | the deny half | `Identity` | `awsds-infra-identity` |
 
-**It is one policy object, moved — not created twice.** `create-policy` once, `attach-policy` to
-`Policy Test`, probe, `detach-policy` from `Policy Test`, then `attach-policy` to the real OU. The
-throwaway-and-delete shape of phase 1 belongs to the *inverted* document, which must never reach anything
-real; these four are the real documents and their id is the one recorded in the log. **Left attached to
-both targets, a document governs an OU nobody meant to govern** — and `Policy Canary` would then be carrying
-a tier written for someone else's OU into every later battery.
+**It is one policy object, moved.** `create-policy` once, `attach-policy` to `Policy Test`, probe,
+`detach-policy` from `Policy Test`, then `attach-policy` to the real OU. The throwaway-and-delete shape of
+phase 1 belongs to the *inverted* document, which must never reach anything real; these are the real
+documents and their id is the one recorded in the log. **Left attached to both targets, a document governs
+an OU nobody meant to govern**, and `Policy Canary` carries a tier written for someone else's OU into every
+later battery.
 
 **Check the SSO token immediately before each block of probes.** It expired twice during sitting A, and
 both times every probe came back as a non-answer that reads exactly like a deny.
 
 ### The probes, by document
 
-Every one of them is shaped so that *both* outcomes are errors and nothing is created. Where the service
-validates its input before authorizing — which 1c already met twice — the probe measures nothing, and the
-honest record is *untested*, not *passed*.
+Every one is shaped so that *both* outcomes are errors and nothing is created. Where the service validates
+its input before authorizing — 1c met that twice — the probe measures nothing and the record is *untested*,
+not *passed*.
 
 | Document | Probe | Denied | Allowed |
 |---|---|---|---|
@@ -294,50 +289,49 @@ honest record is *untested*, not *passed*.
 | workloads | `aws sagemaker create-space --domain-id d-0000000000000 --space-name awsds-canary-probe --region us-west-2` | `AccessDenied` | `ValidationException` / `ResourceNotFound` = SageMaker validated first, so **untested** |
 | workloads | `aws sagemaker start-session --resource-identifier arn:aws:sagemaker:us-west-2:<ACCT>:space/d-0000000000000/none` | `AccessDenied` | any validation error = untested |
 | data, identity | `aws ec2 run-instances --dry-run --image-id <REAL AMI> --instance-type t3.micro --subnet-id <REAL SUBNET>` | `UnauthorizedOperation`, naming the policy | `DryRunOperation` = allowed |
-| | **Both ids must be real, and that is the whole trick** (measured 2026-08-13): an invented AMI returns `InvalidAMIID.Malformed`, a well-formed but non-existent one `InvalidAMIID.NotFound`, and omitting the subnet `VPCIdNotSpecified` — **all three before authorization**, so the naive probe reports "untested" and reads like a pass. Take the AMI from the public SSM parameter and the subnet from the account itself; `--dry-run` still creates nothing: `aws ssm get-parameter --name /aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-x86_64 --query Parameter.Value --output text` and `aws ec2 describe-subnets --query 'Subnets[0].SubnetId' --output text` | |
+| | **Both ids must be real** (measured 2026-08-13): an invented AMI returns `InvalidAMIID.Malformed`, a well-formed but non-existent one `InvalidAMIID.NotFound`, and omitting the subnet `VPCIdNotSpecified` — **all three before authorization**, so the naive probe reports *untested* and reads like a pass. Take the AMI from the public SSM parameter and the subnet from the account itself; `--dry-run` still creates nothing: `aws ssm get-parameter --name /aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-x86_64 --query Parameter.Value --output text` and `aws ec2 describe-subnets --query 'Subnets[0].SubnetId' --output text` | |
 | data, identity | `aws glue start-job-run --job-name awsds-canary-probe --region us-west-2` | `AccessDenied` | `EntityNotFoundException` |
 | data | `aws glue start-crawler --name awsds-canary-probe --region us-west-2` | `AccessDenied` — **the negative half of the D27 carve-out** | `EntityNotFoundException` = the `ArnNotEquals` matched a principal it should not |
 | data | `aws lakeformation deregister-resource --resource-arn arn:aws:s3:::awsds-canary-does-not-exist --region us-west-2` | `AccessDenied` | `EntityNotFoundException` |
 | data | `aws s3api delete-bucket --bucket awsds-canary-does-not-exist-$(date +%s)` | `AccessDenied` | `NoSuchBucket` — **which is what it actually returns** (measured 2026-08-13): S3 checks existence before authorizing, so this probe measures nothing and `s3:DeleteBucket` is recorded **untested**. Its statement is not: `lakeformation:DeregisterResource` sits in the same `Sid` and *was* denied, so what is unverified is the spelling of one action string, which is a read. Testing it for real costs a bucket that cannot then be deleted until the policy moves — **name a bucket that cannot exist** rather than a real one |
 | interactive | `aws sagemaker create-notebook-instance --notebook-instance-name awsds-canary-probe --instance-type ml.t3.medium --role-arn arn:aws:iam::<ACCT>:role/nonexistent --region us-west-2` | `AccessDenied` | a role/validation error. **The nonexistent role is deliberate**: it is what keeps an "allowed" outcome from billing a notebook instance |
 
-**The positive half of the D27 carve-out could not be run in this stage; it is now owed at Stage 5 pass
-4d.** The role and both crawlers have existed since 2026-08-18 (Stage 5 pass 1, unscheduled by design), so
-"the maintenance role *can* start a crawler" is untested because **no run has been attempted**, not because
-the principal is missing. *Written at Stage 1c, when `awsds-data-catalog-maintenance` did not yet exist:*
-it is the first thing to check after the role is created — before anything is wired to trigger it. A
-carve-out that silently matches nothing is a job that will not run, and it does not announce itself.
+**The positive half of the D27 carve-out could not be run in this stage; it is owed at Stage 5 pass 4d.**
+The role and both crawlers have existed since 2026-08-18 (Stage 5 pass 1, unscheduled by design), so "the
+maintenance role *can* start a crawler" is untested because **no run has been attempted**, not because the
+principal is missing. Check it before anything is wired to trigger the crawler: a carve-out that silently
+matches nothing is a job that will not run, and it does not announce itself.
 
 **Then the *must still succeed* half, in the target account rather than in the canary.** After each real
 attachment, from that OU's own profile: `aws sts get-caller-identity`, `aws s3 ls`, and
 `aws ec2 describe-vpcs --region us-west-2`. Denies compose, so a failure here is real no matter which
-document caused it — and this is the half the canary cannot give you for these four.
+document caused it. The canary cannot give you this half for these documents.
 
 ### Amending a **root** document is phases 1-3, not phase 4b
 
-**The distinction is which targets the document reaches.** A per-OU document is attached to one OU the
-canary is not in, so an amendment to it can only be measured in that OU's own account — phase 4b below.
-The two root documents reach **`Policy Canary` as well**, which means the canary is available again and the
-amendment goes back through the normal battery: probe the amended statements there, confirm the *must still
-succeed* floor, and only then treat it as done. `update-policy` replaces the content in place and the id
-does not change, so nothing is created, moved or detached.
+**Which targets the document reaches decides this.** A per-OU document is attached to one OU the canary is
+not in, so an amendment to it can only be measured in that OU's own account — phase 4b below. The two root
+documents reach **`Policy Canary` as well**, so the amendment goes back through the normal battery: probe
+the amended statements there, confirm the *must still succeed* floor, and only then treat it as done.
+`update-policy` replaces the content in place and the id does not change, so nothing is created, moved or
+detached.
 
 **The 2026-08-13 amendment to `awsds-org-scp-baseline`** — five GuardDuty actions and the new
 `DenyImageAndSnapshotExport` statement:
 
 | Probe (from `awsds-policy-canary`) | Denied | Allowed |
 |---|---|---|
-| `aws guardduty disassociate-from-administrator-account --detector-id 00000000000000000000000000000000 --region us-west-2` | `AccessDenied` naming the policy — **this is the whole point of the amendment**, the modern spelling that used to be open | `BadRequestException` / detector-not-found = validated first, **untested** |
+| `aws guardduty disassociate-from-administrator-account --detector-id 00000000000000000000000000000000 --region us-west-2` | `AccessDenied` naming the policy — the modern spelling of the action, which the amendment closed | `BadRequestException` / detector-not-found = validated first, **untested** |
 | `aws guardduty update-detector --detector-id 00000000000000000000000000000000 --no-enable --region us-west-2` | `AccessDenied` | validation error = untested. Regression only: it was already denied |
 | `aws ec2 create-store-image-task --image-id <REAL public AMI> --bucket awsds-canary-does-not-exist --region us-west-2` | `UnauthorizedOperation` | an AMI validation error = untested. **The AMI must be real** — measured 2026-08-13: `ami-0123456789abcdef0` returns `InvalidAMIID.Malformed`, the public Amazon Linux AMI reaches authorization and is denied |
-| `aws ec2 export-image --image-id ami-0123456789abcdef0 --disk-image-format VMDK --s3-export-location S3Bucket=awsds-canary-does-not-exist --region us-west-2` | `UnauthorizedOperation` | validation error = untested. **This one authorizes even with a malformed AMI**, which is the whole point of the rule below |
+| `aws ec2 export-image --image-id ami-0123456789abcdef0 --disk-image-format VMDK --s3-export-location S3Bucket=awsds-canary-does-not-exist --region us-west-2` | `UnauthorizedOperation` | validation error = untested. **This one authorizes even with a malformed AMI**, which is what the rule below is written from |
 | `aws ec2 create-instance-export-task --instance-id i-1234abcd --target-environment vmware --export-to-s3-task '{"S3Bucket":"awsds-canary-does-not-exist","DiskImageFormat":"VMDK","ContainerFormat":"ova"}' --region us-west-2` | `UnauthorizedOperation` | validation error = untested |
 | `aws rds start-export-task --export-task-identifier awsds-canary-probe --source-arn arn:aws:rds:us-west-2:<ACCT>:snapshot:nonexistent --s3-bucket-name awsds-canary-does-not-exist --iam-role-arn arn:aws:iam::<ACCT>:role/nonexistent --kms-key-id alias/aws/rds --region us-west-2` | `AccessDenied` | `DBSnapshotNotFound` = untested |
 
 > ### Before recording *untested*, retry with a **real** resource id
 >
-> **The validation-before-authorization wall is per-action, not per-service, and this was measured rather
-> than assumed (2026-08-13).** In the same account, in the same run: `ec2:ExportImage` and
+> **The validation-before-authorization wall is per-action, not per-service** (measured 2026-08-13). In the
+> same account, in the same run: `ec2:ExportImage` and
 > `ec2:CreateInstanceExportTask` authorized against a **malformed** id and came back denied, while
 > `ec2:CreateStoreImageTask` rejected the same shape of id as malformed and only reached authorization once
 > a **real public AMI** was passed. `ec2:StartInstances` never reached it at all — a 17-character id is
@@ -346,31 +340,25 @@ does not change, so nothing is created, moved or detached.
 > So "the service validates first" is a property of the API being probed, and **a first-try validation error
 > is a reason to retry, not a result**. Reach for something that exists: the public Amazon Linux AMI from
 > SSM, a subnet from `describe-subnets`, the account's own id in an ARN. Recording *untested* on the first
-> error understates the ceiling — a statement that is in fact exercised gets carried in the notes as
-> unproven, and the next reader spends an evening re-testing it.
+> error understates the ceiling and carries an exercised statement in the notes as unproven.
 
 ### Phase 4b — re-probing an amended document, in place
 
-**An amendment is not a smaller version of phase 4; it is the same phase with a shorter probe list.** Once a
-document sits on its real OU, the update replaces its content in place and the id does not change — so
-there is nothing to park on `Policy Test` and nothing to move. What must happen is that **every statement
-the amendment touched is probed again in that OU's own account**, plus the *must still succeed* trio, before
-the sitting is called done. A document amended and not re-probed is a document whose last measurement
-describes a version that no longer exists.
+**An amendment is phase 4 with a shorter probe list.** Once a document sits on its real OU, the update
+replaces its content in place and the id does not change, so there is nothing to park on `Policy Test` and
+nothing to move. **Every statement the amendment touched is probed again in that OU's own account**, plus
+the *must still succeed* trio, before the sitting is called done. A document amended and not re-probed has
+a last measurement describing a version that no longer exists.
 
-> **⚠ WHO ISSUES THAT UPDATE CHANGED AT STAGE 2, AND THIS PARAGRAPH USED TO SAY `update-policy`.**
-> It described the Stage 1c world, where these documents were authored by hand and pasted into the console.
-> **Stage 2 step 5.5 adopted all ten into Terraform** (`aws_organizations_policy.this`, imported,
-> `prevent_destroy`), so **the amendment is [Recipe A](terraform-changes.md), never a hand
-> `update-policy`** — which would be drift the next apply reverts, and which skips the four
-> `precondition` blocks written to catch a bad amendment. **This is not pedantry about tooling.** The
-> tracked JSONs carry `<PLACEHOLDER>` tokens; `awsds-org-scp-ou-data.json` carries `<ACCOUNT_ID_DATA>`
-> *inside the D27 crawler carve-out*, and uploading the tracked file raw leaves an `ArnNotEquals`
-> comparing against that literal string — a carve-out matching nothing, with no error at upload and none
-> at evaluation. Two guards exist against exactly that (`render.py`'s survivor check, `policies.tf`'s
-> precondition) and the hand path uses neither. **Read this paragraph as being about the OBJECT, not the
-> command: everything below about probes is unchanged.** Found 2026-08-20, on the sitting that had
-> already copied the stale instruction into a stage file — see Lesson 35.
+> **⚠ Terraform issues the update, not a hand `update-policy`.** **Stage 2 step 5.5 adopted all ten
+> documents** (`aws_organizations_policy.this`, imported, `prevent_destroy`), so the amendment is
+> [Recipe A](terraform-changes.md) — a hand `update-policy` is drift the next apply reverts, and it skips
+> the four `precondition` blocks written to catch a bad amendment. The tracked JSONs carry
+> `<PLACEHOLDER>` tokens; `awsds-org-scp-ou-data.json` carries `<ACCOUNT_ID_DATA>` *inside the D27 crawler
+> carve-out*, so uploading the tracked file raw leaves an `ArnNotEquals` comparing against that literal
+> string — a carve-out matching nothing, with no error at upload and none at evaluation. Two guards exist
+> against that (`render.py`'s survivor check, `policies.tf`'s precondition) and the hand path uses neither
+> (Lesson 35, 2026-08-20).
 
 **The 2026-08-13 amendment — the EC2 launch siblings in `awsds-org-scp-ou-data` and
 `awsds-org-scp-ou-identity`, and the service guard on the D27 carve-out:**
@@ -382,15 +370,15 @@ describes a version that no longer exists.
 | `awsds-infra-data`, `awsds-infra-identity` | `aws ec2 create-fleet --dry-run --launch-template-configs '[{"LaunchTemplateSpecification":{"LaunchTemplateName":"awsds-canary-probe","Version":"1"}}]' --target-capacity-specification '{"TotalTargetCapacity":1,"DefaultTargetCapacityType":"on-demand"}' --region us-west-2` | `UnauthorizedOperation` on `…:fleet/*` | a launch-template error = untested. **This was predicted to be untestable and is not**: `--dry-run` authorizes *before* resolving the launch template, so a template name that does not exist still produces a real answer |
 | `awsds-infra-data` | `aws glue start-crawler --name awsds-canary-probe --region us-west-2` | `AccessDenied` | `EntityNotFoundException` = the carve-out matched a principal it should not. **Re-run after the guard was added**: `BoolIfExists` evaluates *true* when the key is absent, so a human principal must still land on the deny side — if this one flips to allowed, the guard is inverted and the whole carve-out is open |
 
-**The guard's own effect cannot be probed from a CLI session**, because `aws:PrincipalIsAWSService` is set by
-AWS, not by the caller: there is no way to present as a service principal on purpose. What the re-run above
-proves is the half that matters for regression — that adding the guard did not open the deny for people.
+**The guard's own effect cannot be probed from a CLI session**, because `aws:PrincipalIsAWSService` is set
+by AWS, not by the caller: there is no way to present as a service principal on purpose. The re-run above
+proves the regression half — adding the guard did not open the deny for people.
 
-## Phase 5 — step 7.8's four documents, one attach at a time
+## Phase 5 — step 7.8's documents, one attach at a time
 
-**7.8 is the first sitting where the four documents are not all the same kind of thing**, and the ordering
-below is not taste: each document is attached alone, measured, and only then is the next one touched. Two of
-them break in ways the previous phases have no equivalent for.
+**7.8 is the first sitting where the documents are not all the same kind of thing.** Each is attached alone,
+measured, and only then is the next one touched; two of them break in ways the previous phases have no
+equivalent for.
 
 | Order | Document | Attach to | Measure with | Undo |
 |---|---|---|---|---|
@@ -399,7 +387,7 @@ them break in ways the previous phases have no equivalent for.
 | 3 | `awsds-org-rcp-perimeter` | **`Policy Test` OU first**, root after | `--phase rcp` | detach |
 | 4 | `awsds-org-declarative-ec2` | root | `--phase decl` **and** `./aws/declarative-ec2.py` | detach **rolls state back** |
 
-### 1 — the tag-enforcement SCP, and why the middle probe is the whole test
+### 1 — the tag-enforcement SCP
 
 `--phase tags` is six rows and only the pattern is evidence. The **before** reading was taken 2026-08-13 in
 `Development`: all four command forms returned `DryRunOperation`, so an untagged launch succeeded. After the
@@ -411,10 +399,10 @@ produces: `aws:RequestTag` does not populate for the subnet, security group or v
 `RunInstances` call references, so `Resource: "*"` denies every launch, tagged or not. The fully tagged row
 is the only thing that separates the intended control from that.
 
-### 2 — the tag policy, which has no probe and is not supposed to have one
+### 2 — the tag policy, which has no probe
 
-It carries no `enforced_for`, so it **reports** and prevents nothing; there is no call it refuses and
-therefore nothing for the battery to attempt. It is read, not probed:
+It carries no `enforced_for`, so it **reports** and prevents nothing: there is no call it refuses, and
+nothing for the battery to attempt. It is read, not probed:
 
 ```bash
 aws organizations describe-effective-policy --policy-type TAG_POLICY --profile awsds-infra-staging --region us-east-1
@@ -431,51 +419,47 @@ effective policy answering at all.
 caller has **no AWS principal yet**, so `aws:PrincipalOrgID` cannot populate and the `StringNotEqualsIfExists`
 form denies **unconditionally**.
 
-**On 2026-08-14 that is exactly what happened, and this section used to end the paragraph above with the
-sentence that caused it:** *"nothing federates that way today — Identity Center vends through
-`sso:GetRoleCredentials`"*. It is false. **Identity Center *is* the external federation**: every account
+**On 2026-08-14 that is what happened.** **Identity Center *is* the external federation**: every account
 holds a SAML provider `AWSSSO_<id>_DO_NOT_DELETE`, and the trust policy of `AWSReservedSSO_*` permits
-**only** `sts:AssumeRoleWithSAML` + `sts:TagSession` from it — read it and see, it is two lines. The document
-named both, so the root attach made every permission-set role in all six member accounts unreachable, by
-CLI and by browser alike. The document is now scoped to `sts:AssumeRole` + `sts:SetContext`, matching AWS's
-own `CT.STS.PV.1`, whose usage note is the authority on which STS actions may not appear here.
+**only** `sts:AssumeRoleWithSAML` + `sts:TagSession` from it — two lines, read them. The document named
+both, so the root attach made every permission-set role in all six member accounts unreachable, by CLI and
+by browser alike. The document is now scoped to `sts:AssumeRole` + `sts:SetContext`, matching AWS's own
+`CT.STS.PV.1`, whose usage note is the authority on which STS actions may not appear here.
 
-**So the rule that replaces the old claim: before adding any `sts:` action to an RCP, read the trust policy
-of the role that action reaches.** A statement that names an action a *trust policy* depends on is not a
-perimeter — it is a lockout, and it will not announce itself as one.
+**Before adding any `sts:` action to an RCP, read the trust policy of the role that action reaches.** A
+statement naming an action a *trust policy* depends on is a lockout, and it will not announce itself as one.
 
-Between the two attaches, and this is the step that cannot be delegated to a script: **sign in to `Policy
-Canary` through the access portal in a browser, as the infrastructure user** — not as `AWS Control Tower
-Admin`, who has no assignment there at all. `Policy Canary` is reached by the infrastructure user's
+Between the two attaches comes the step no script can take: **sign in to `Policy Canary` through the access
+portal in a browser, as the infrastructure user** — not as `AWS Control Tower Admin`, who has no assignment
+there at all. `Policy Canary` is reached by the infrastructure user's
 **permanent direct assignment** of `AWSAdministratorAccess` (`docs/ORGANIZATION.md`; Stage 1b step 3.8), which is
 the same identity behind the `awsds-policy-canary` profile. The CLI path and the console path are not the
 same path — 8.3's filter already showed the console emitting `sso.amazonaws.com` where the CLI emits
 something else — and only the console login exercises the federation half.
 
-If it locks the canary out: **detach from the Management account, which is exempt from RCPs.** That exemption
-is the reason this staging is safe, and it is also the reason the root attach must never be the first one.
-It is also the only reason the 2026-08-14 lockout was recoverable rather than terminal — **the recovery path
-is the console as `AWS Control Tower Admin` on `Management`, and it works precisely because RCPs cannot
-reach it.** Verify that identity still signs in *before* attaching an RCP that touches STS, not after.
+If it locks the canary out: **detach from the Management account, which is exempt from RCPs.** That
+exemption is why this staging is safe, why the root attach is never the first one, and why the 2026-08-14
+lockout was recoverable — **the recovery path is the console as `AWS Control Tower Admin` on
+`Management`**. Verify that identity still signs in *before* attaching an RCP that touches STS.
 
 **The staging only proves something if the canary's credentials are re-vended between the two attaches** —
 see the cache rule under *How to read every outcome*. The first attempt at this section's procedure ran the
 `Policy Test` probes on a session minted before the attach, they passed, and the document went to the root
 on that evidence.
 
-The `rcp` phase is **all floor and no deny**, which is a finding rather than an omission — see the block at
-the top of that phase in `probes.py`. Producing an out-of-organization principal needs an identity this
-project does not have and will not create, so the deny half is Lesson 22: verified by `readback.py` and
+The `rcp` phase is **all floor and no deny** — a finding, not an omission; see the block at the top of that
+phase in `probes.py`. Producing an out-of-organization principal needs an identity this project does not
+have and will not create, so the deny half is Lesson 22: verified by `readback.py` and
 `./aws/org-policies.py`, never by attempting.
 
 ### 4 — the declarative policy, the only document that changes state
 
-Three things separate it from every other document in `policies/`:
+It differs from every other document in `policies/`:
 
 - **It is enforced in the service's control plane, not in authorization.** It names no policy id and emits no
   *"explicit deny"* wording. The attribution is the **exception message**, which is why the document sets a
-  custom one — and the `decl` phase reports `custom-message` or `AWS-default-msg` precisely so that an
-  `exception_message` lost in the upload is visible.
+  custom one; the `decl` phase reports `custom-message` or `AWS-default-msg` so that an `exception_message`
+  lost in the upload is visible.
 - **`--dry-run` measures the wrong layer.** It stops after authorization and returns `DryRunOperation`
   whether or not the policy is attached. The four probes therefore carry **no** `--dry-run` and are
   `creates`, canary-only; each has a one-command undo written beside it in `probes.py`. **If any comes back
@@ -486,11 +470,11 @@ Three things separate it from every other document in `policies/`:
   the authoritative check; the probes only show that the account is refused when it tries to change them.
 
 **It is also the first root-attached document expected to reach the management account.** SCPs and RCPs skip
-Management by design; AWS documents no such exemption for declarative policies, and control-plane enforcement
-is not where that exemption lives. **This is unmeasured** — run `./aws/declarative-ec2.py -` in CloudShell on
-Management, as `AWS Control Tower Admin`, and record the answer. It is a reading nobody else will take.
+Management by design; AWS documents no such exemption for declarative policies, and control-plane
+enforcement is not where that exemption lives. **This is unmeasured** — run `./aws/declarative-ec2.py -` in
+CloudShell on Management, as `AWS Control Tower Admin`, and record the answer.
 
-### The canary cleanup gains four commands
+### The canary cleanup after the declarative probes
 
 The existing step empties `Policy Canary` after a battery. Add, and only if the corresponding `decl` row came
 back `ALLOWED`:
@@ -507,12 +491,12 @@ The other three are in `probes.py` next to their probes: `enable-snapshot-block-
 - **The Region restriction.** It is not written in 7.5 or 7.6 — it is a Control Tower managed control
   (`CT.MULTISERVICE.PV.1`, decision 6) enabled in **7.7**. Its probe is a pair, run afterwards:
   `aws ec2 run-instances --dry-run` in `us-east-1` must return **`UnauthorizedOperation`** and in
-  `us-west-2` must return **`DryRunOperation`**. Under the loose construction this plan once described —
-  adding `us-east-1` to the allowed list — the first call would succeed and look like a pass.
-- **The `datazone` carve-out — *neither* direction, and this was measured rather than assumed.** DataZone
-  validates `--domain-execution-role` **before** authorizing, so a call with a throwaway role returns
+  `us-west-2` must return **`DryRunOperation`**. Under a loose construction — adding `us-east-1` to the
+  allowed list — the first call would succeed and look like a pass.
+- **The `datazone` carve-out — *neither* direction** (measured). DataZone validates
+  `--domain-execution-role` **before** authorizing, so a call with a throwaway role returns
   `Cross-account pass role is not allowed` and never reaches the SCP. The same error comes back from the
-  exempt account (`awsds-infra-data`), which is what proves the probe measures nothing — an authorization
+  exempt account (`awsds-infra-data`), which proves the probe measures nothing: an authorization
   difference would have made the two accounts differ. It needs a role DataZone accepts, so it is
   **[Stage 6 step 0](../stages/stage-06a-unified-studio.md)**, run before the domain is created rather than
   after. Note the direction of the risk: `ForAllValues:` over a key that does not populate evaluates
@@ -525,14 +509,14 @@ The other three are in `probes.py` next to their probes: `enable-snapshot-block-
 - **The positive half of the `Data` OU's catalog-maintenance carve-out** — phase 4 says why, and Stage 5 is
   where it is answered.
 
-### The class the battery cannot reach at all — verified by *reading*, never by attempting
+### The class the battery cannot reach — verified by *reading*, never by attempting
 
-**A green run is silent about these, which is why they are listed by name** (Lesson 22). Every principal
-this project can obtain is an Identity Center role, so any statement whose condition selects a principal of
-a kind the harness cannot produce is invisible to a probe **in both directions** — the call is never made,
-nothing is recorded, and an absent row reads exactly like a covered one. The discriminator when a new
-statement is written: *can the harness produce a principal that satisfies this condition?* If not, the
-verification is a document read, and the plan states the string that proves it.
+**A green run is silent about these, so they are listed by name** (Lesson 22). Every principal this project
+can obtain is an Identity Center role, so any statement whose condition selects a principal of a kind the
+harness cannot produce is invisible to a probe **in both directions**: the call is never made, nothing is
+recorded, and an absent row reads exactly like a covered one. The discriminator when a new statement is
+written: *can the harness produce a principal that satisfies this condition?* If not, the verification is a
+document read, and the plan states the string that proves it.
 
 | Statement | Why no probe reaches it | What to read instead |
 |---|---|---|
@@ -541,22 +525,20 @@ verification is a document read, and the plan states the string that proves it.
 | positive half of the `aws:PrincipalIsAWSService` guard | needs a service principal, which cannot be assumed | the `BoolIfExists` clause is present and spelled `false` |
 | all four statements of `awsds-org-rcp-perimeter` | an RCP denies principals from **outside** the organization; there is no IAM user, no second organization and no external IdP here, so every principal the harness can produce carries the org id that makes the deny *not* fire | `readback.py` (four `Sid`s, correct action counts) and the org id in each `StringNotEqualsIfExists`. An anonymous request is denied for three other reasons and names no policy — it proves nothing (Lesson 20) |
 
-**All three are checked mechanically by [`aws/org-policies.py`](../../../aws/org-policies.py)**, which reads
-the deployed documents and exits 2 if any of them stops saying what it must — run it after every attachment,
-in the same sitting as the battery. It is a *different instrument*, not a phase of the battery, and that is
-the whole point.
+**These are checked mechanically by [`aws/org-policies.py`](../../../aws/org-policies.py)**, which reads
+the deployed documents and exits 2 if any of them stops saying what it must — run it after every
+attachment, in the same sitting as the battery. It is a different instrument, not a phase of the battery.
 
 **This is the one place where "0 untested" in the driver's summary is not the whole answer** — the driver
 counts probes that ran, and these were never probes. Re-read this table whenever a policy is amended.
 
-## The canary's one permanent limitation
+## The canary's permanent limitation
 
 **Once the root set is attached, `Policy Canary` inherits it forever**, so every later candidate is tested
-*on top of* the existing ceiling rather than in isolation. That is right for regression — it is the real
-evaluation order — and wrong for answering "does *this policy* deny X", because denies only ever compose: a
-call that fails may be failing on the root set. The half that stays clean is *must still succeed*, which
-composition can only make stricter. For the deny half, read the CloudTrail `errorMessage`, which names the
-policy id.
+*on top of* the existing ceiling rather than in isolation. That is right for regression, since it is the
+real evaluation order, and wrong for answering "does *this policy* deny X": denies compose, so a call that
+fails may be failing on the root set. The half that stays clean is *must still succeed*, which composition
+can only make stricter. For the deny half, read the CloudTrail `errorMessage`, which names the policy id.
 
 ---
 
