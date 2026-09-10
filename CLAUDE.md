@@ -205,6 +205,18 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   progress"; the no-internet timeout is the host's per-destination **ICMP rate limit** (Lesson 55); a
   laptop call takes **two doors by service family**. **`aws sso logout` invalidates EVERY cached session's
   token; a browser sign-out invalidates none.**
+- **6d STEP 4 HAD ALREADY RUN, UNREAD, SINCE 2026-08-27 — found 2026-09-09 in a log-group inventory.**
+  One MWAA Serverless workflow, `READY`, `manual_only`; one run, two attempts, **both failed**. **4.1: the
+  surface needs NOTHING** — 6a's eleven configurations unchanged, no `Workflows` blueprint. **4.4: the
+  vendor's *"its own execution role"* is FALSE** — it runs as the **project role**
+  (`datazone_usr_role_*`, session `AmazonMWAAServerless`), which is blueprint-authored and therefore
+  **inside the D13 boundary**. **4.6 measured**: workers in **two AZs**, this estate's private subnets,
+  CMK `alias/awsds-sandbox-project`. **It failed on our own control**: `DenySageMakerJobsOffVpc` in
+  `awsds-sandbox-project-boundary`, naming the policy. **A "Notebook task" IS a `CreateTrainingJob`** —
+  which is how a *compute* control reaches the *orchestration* surface — and **the portal emits
+  `compute: {}`**, so **every default notebook workflow is dead on arrival** until it carries subnets
+  (4.5's sharpest lint rule; a Stage 10 input). **Step 1 is exercised in SUBSTANCE only**: the refusal came
+  from the **boundary**, not from the six persona sets' copy (Lesson 20).
 - **D38 §6 AMENDED (2026-09-08, the user): THE BUILD PLANE IS `open`, NOT AN ALLOW-LIST.**
   `production-foundation` (= all of `VPC-SharedServices`) reaches **any** public name through the proxy,
   everything logged. **A build host's control is the reviewed Dockerfile, not a hostname list.**

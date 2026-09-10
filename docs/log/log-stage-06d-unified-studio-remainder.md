@@ -1382,3 +1382,54 @@ the log's raw counts — `aws-language-servers` as *54.98 MiB* — with no divis
 container moved **98.1 MiB in 76 requests**, of which that host is **52.4 MiB**. Corrected in place, and
 the trap is in the runbook's §8 with its date, because the error is invisible: it produces a number of
 plausible size in the right column.
+
+### [Claude, at the user's request] The MWAA Serverless log group — step 4 had already run, unread, since 2026-08-27
+
+The runbook's inventory turned up `/aws/mwaa-serverless/dzd-<domain>-<project>/MyWorkflow-<epoch-ms>` in
+Sandbox, retention `None`. The user asked for it to be opened. **Nothing was submitted to produce any of
+what follows** — it is a run from 2026-08-27 that nobody had read.
+
+`aws mwaa-serverless list-workflows` returns **one workflow, `READY`**, created 2026-08-27 18:57 UTC,
+`TriggerMode: manual_only`. The log group holds **one run, one task, two attempts**, 18:58 and 19:04, and
+**both failed**.
+
+**Four of step 4's questions are answered by that one object.**
+
+| | reading |
+|---|---|
+| **4.1** — what enables the surface | **Nothing.** It exists with 6a's eleven blueprint configurations unchanged — no `Workflows` blueprint, no capability prompt. 6a's decision 5 does not re-open |
+| **4.4** — the run's identity | **`datazone_usr_role_<project>_<domain>`, session name `AmazonMWAAServerless`.** The vendor's *"its own execution role and worker"* is **false for the role half**: there is no per-workflow role. **This is the governance-favourable outcome** — a blueprint-authored role sits inside the D13 boundary's reach |
+| **4.6** — the network shape | **Measured, not read from a page**: the workflow's `NetworkConfiguration` carries **two subnets in two AZs**, `awsds-sandbox-private-usw2-az1` and `-usw2-az2`, this estate's own private tier, and one security group. Encryption is a `CUSTOMER_MANAGED_KEY` on `alias/awsds-sandbox-project` — ours |
+| **4.3** — the definition | Readable two ways: inline as `WorkflowDefinition`, and at `DefinitionS3Location` = the projects bucket, `dzd-<domain>/<project>/dev/workflows/<name>.yaml` |
+
+**And the run failed on this estate's own control, with the wording naming it:**
+
+```
+AccessDeniedException … not authorized to perform: sagemaker:CreateTrainingJob on resource:
+arn:aws:sagemaker:us-west-2:<acct>:training-job/Notebook-task-… with an explicit deny in a
+permissions boundary: arn:aws:iam::<acct>:policy/awsds-sandbox-project-boundary
+```
+
+The statement is **`DenySageMakerJobsOffVpc`** — `Null sagemaker:VpcSubnets = true`, read back from the
+policy.
+
+**Two things follow that were in no plan file.**
+
+- **A "Notebook task" in a SMUS workflow IS a SageMaker training job.**
+  `SageMakerNotebookOperator` executes the notebook by calling `CreateTrainingJob`. That is why a
+  **compute** control reaches the **orchestration** surface at all — the two were being reasoned about as
+  separate perimeters.
+- **The portal emits `compute: {}`** — an empty block, so the operator supplies no `VpcConfig`, so the
+  boundary denies. **Every default notebook workflow in this estate is dead on arrival** until that block
+  carries subnets. It is 4.5's sharpest lint rule and a Stage 10 input.
+
+**Step 1's deny pair is exercised in SUBSTANCE and not in the object it was written for**, which is
+exactly Lesson 20's distinction. The refusal proves the *statement* works and that its wording is
+attributable — but it came from the **project boundary**, while step 1 was written for the **six persona
+sets'** copy of the same statement. One intent in two objects (Lesson 33's shape). A persona-submitted job
+is still owed.
+
+**One observation held back from being a finding**: `TriggerMode` is `manual_only`, the definition carries
+`is_paused_upon_creation: false`, and the run id is `scheduled__2026-08-27T00:00:00+00:00`. Those are two
+different switches and which one the portal's *Run* button uses is unmeasured — 4.2's to settle, not this
+sitting's to guess.
