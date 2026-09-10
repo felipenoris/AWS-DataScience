@@ -230,14 +230,14 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   2026-09-09/10; 7.1/7.2 read 2026-09-07; decision due 6 taken in full 2026-09-09. **2.1/2.2 applied
   2026-09-10**: `sandbox/dev-env/` (rank 49, `[P]`) registers `awsds-sandbox-dev-env` v1 against
   `default-v0.1.1`, `CREATED`, digest `sha256:6916fc13…` — 9.5's own. SageMaker assumes the image role
-  `awsds-sandbox-sagemaker-image` to read the repository cross-account, so the `RoleArn` is not
-  decorative. **`ContainerEnvironmentVariables` caps each value at 256 characters** against a
+  to read the repository cross-account, so the `RoleArn` is not decorative. **`ContainerEnvironmentVariables` caps each value at 256 characters** against a
   `NO_PROXY` of ~2,300, so the app image configs carry no environment: **decision 8 (the user) put the
   six variables in `images/dev-env/Dockerfile` as `ENV`**, the bypass list a dated literal (50 entries,
   sha256 `856bc57bb…`) beside its refresh command, plus the apt and sudoers files. The image is now
   shaped by one VPC's endpoint list, and `./aws/devenv.py` (`DE-1`..`DE-4`) reads the divergence.
-  Owed: **the rebuild**; 2.3-2.5, behind the attach (a hand `update-domain` on the blueprint's
-  domain); 3.1's `uv`/Julia/R; 1.2/1.3, 3.4, 3.5, 3.7; step 5 beyond the idle shutdown observed
+  **Attached 2026-09-10** (hand `update-domain`, both app settings, v1): only the two entries moved,
+  `DefaultSpaceSettings` holds none — 2.3 is the portal reading. Owed: **the rebuild**; 2.3-2.5;
+  3.1's `uv`/Julia/R; 1.2/1.3, 3.4, 3.5, 3.7; step 5 beyond the idle shutdown observed
   unasked; step 6; and 7.3-7.9, which wait on decision due 4.
 - **The hub (D38, 6c).** Five VPCs, five peerings, zero NAT, no spoke default route, one explicit Squid
   proxy, no interface endpoint in the hub; peering shares an address, never a path (Lesson 44). Endpoint

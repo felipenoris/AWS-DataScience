@@ -101,11 +101,17 @@ work at all* — is still open.
     without the bypass list: with `.amazonaws.com` on the compute plane a missing `NO_PROXY` succeeds
     while losing `aws:SourceVpce`, which is the failure that does not announce itself (8.8's own
     finding, from the other end).
-  - **The attach is a hand step and it is unexercised.** `CustomImages` lives on the domain's user
-    settings, which the `Tooling` blueprint provisions; `UpdateDomain` replaces `DefaultUserSettings`
-    whole (Lesson 60), and this domain's block carries idle shutdown, the `shared` mount, the storage
-    ceiling and `AutoMountHomeEFS`. The recipe, both routes, and the unmeasured question — whether a
-    SMUS space reads `DefaultUserSettings` or `DefaultSpaceSettings` — are the runbook's §C6.
+  - **The attach ran the same day, by hand, and the block survived it.** `CustomImages` lives on the
+    domain's user settings, which the `Tooling` blueprint provisions, and `UpdateDomain` replaces
+    `DefaultUserSettings` whole (Lesson 60). Version 1 went into **both** app settings in one write
+    (the user ran it; the CLI is fenced here): the domain came back `InService` with no
+    `FailureReason`, and the before/after diff of the whole block showed only the two added entries —
+    the `shared` mount, the idle settings, the storage ceiling and `AutoMountHomeEFS` all still there.
+    `DefaultSpaceSettings` was read in the same minute and carries **no** `CustomImages` and no
+    `CodeEditorAppSettings`, which makes it the control for the question 2.3 answers: whether a SMUS
+    space reads the user-settings block. The Code Editor entry rides along **unexercised** — the image
+    is JupyterLab-shaped by its Dockerfile, and whether a Code Editor space starts on it is unread.
+    The recipe and both routes are the runbook's §C6.
 - **2.1 — [Claude⚡] Register the image**: the SageMaker AI image and image-version resources in a new
   `sandbox/dev-env/` slice, `[P]` (registration is metadata), with the ECR URI and the `<flavour>-v<semver>`
   tag convention `docs/SMUS.md` owns. Add the `dev-env` rank in `layers.py` first. A hand apply, once:
