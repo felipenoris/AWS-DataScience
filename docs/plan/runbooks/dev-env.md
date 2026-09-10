@@ -6,7 +6,7 @@
 | **Operator** | The **infrastructure user** — account **Sandbox** (or the member account being configured), permission set **`InfrastructureAccess`**, profile `awsds-infra-sandbox-1`. §C's registry read also touches Production through `awsds-infra-prod`, and one SSO login covers both. Every write is authorized per occurrence. §C6 is the one act this repository does not own in code |
 | **The rules** | **The domain is the blueprint's object, not Terraform's.** `Tooling` provisions the SageMaker AI domain per project, so the attachment (§C6) is a hand step against a live object and never an `import` (Lesson 17). **A registered version is frozen to a digest**: SageMaker resolves the tag once, at `CreateImageVersion`, and a rebuilt tag would not move it — the repositories are tag-immutable anyway. **Half a proxy environment is worse than none** (§E) |
 | **The picture around it** | Why there is a house image at all: [D17](../decisions/D17-interactive-vs-runtime.md) and `images/README.md`. What a space reaches once it starts: [`docs/NETWORK.md`](../../NETWORK.md) and [`sg-proxy.md`](sg-proxy.md). What the portal does with the image: [`docs/SMUS.md`](../../SMUS.md), *Custom images (BYOI)* |
-| **Written** | 2026-09-10, at [Stage 6d](../stages/stage-06d-unified-studio-remainder.md) step 2, from the applies it describes. §C steps 1-5 and §V ran that day, on `default-v0.1.1` in Sandbox; §C6, §C7, §B and §X are written from the API contract and the vendor pages (the 2026-09-10 rows of [`docs/REFERENCES.md`](../../REFERENCES.md)) and are **unexercised** — each says so in place (Lesson 37) |
+| **Written** | 2026-09-10, at [Stage 6d](../stages/stage-06d-unified-studio-remainder.md) step 2, from the applies it describes. §C steps 1-6 and §V ran that day, on `default-v0.1.1` in Sandbox — §C6 by the CLI route, with the whole settings block diffed before and after. §C7, §B and §X are written from the API contract and the vendor pages (the 2026-09-10 rows of [`docs/REFERENCES.md`](../../REFERENCES.md)) and are **unexercised** — each says so in place (Lesson 37) |
 
 ---
 
@@ -108,7 +108,14 @@ A role with no ECR reach registers nothing: the version would land `CREATE_FAILE
 
 ### 6. Attaching the image to the domain
 
-**Unexercised as of 2026-09-10.** Two routes, and the difference is who assembles the settings block.
+**The CLI route ran on 2026-09-10 and the block survived it.** `awsds-sandbox-dev-env` version 1 was
+attached to both app settings in one `update-domain`; the domain came back `InService` with no
+`FailureReason`, and the before/after diff of the whole `DefaultUserSettings` showed **only the two
+added entries** — the mount, the idle settings, the storage ceiling and `AutoMountHomeEFS` all still
+there. Lesson 60's hazard is real and did not fire here, which is a reading about one write and not a
+property of the API. The console route stays unexercised.
+
+Two routes, and the difference is who assembles the settings block.
 
 The domain to attach to is the project's, and its id is not guessable — read it, never transcribe it:
 
@@ -171,10 +178,12 @@ omitted version resolves to — the latest, by the vendor's description — is u
 version named is a version reviewed, and §B's bump then reaches a space only when somebody moves this
 number.
 
-**Which settings block governs a SMUS space is unmeasured.** `DefaultSpaceSettings.JupyterLabAppSettings`
-carries a `CustomImages` field of its own, and whether the portal's project spaces read the user-settings
-block, the space-settings block or a user profile is exactly what step 7 finds out. If the image does not
-appear, that fallback is the next thing to try, not a defect in the registration.
+**Which settings block governs a SMUS space is unmeasured**, and this attach is the experiment.
+`DefaultSpaceSettings.JupyterLabAppSettings` carries a `CustomImages` field of its own; on this domain
+it is **absent** (read 2026-09-10, after the attach, so it is the control rather than a leftover), and
+`DefaultSpaceSettings` has no `CodeEditorAppSettings` at all. If the picker offers the image, the
+user-settings block is what a SMUS space reads. If it does not, that block is the next thing to try —
+not a defect in the registration.
 
 ### 7. Selecting it, and reading the attachment back
 
